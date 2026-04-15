@@ -28,6 +28,10 @@ export function startApiServer(config: ApiServerConfig = {}): any {
       
       daemonLogger.debug(`${method} ${pathname}`)
       
+      if (pathname === '/api/v1/health' && method === 'GET') {
+        return handleRequest(method, pathname, request, null as any, '')
+      }
+      
       const projectPath = request.headers.get('X-Project-Path')
       const context = loadProjectContext(projectPath)
       
