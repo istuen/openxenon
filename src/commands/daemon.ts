@@ -45,6 +45,38 @@ const stopCommand = defineCommand({
   }
 })
 
+const restartCommand = defineCommand({
+  meta: {
+    name: 'restart',
+    description: '重启全局 Core 引擎'
+  },
+  async run() {
+    console.log('重启 Xenonix Core 守护进程...')
+    
+    const stopResult = await stopDaemon()
+    
+    if (stopResult.success) {
+      console.log('✓ Daemon stopped')
+    } else if (stopResult.error?.includes('not running')) {
+      console.log('  Daemon was not running, starting...')
+    } else {
+      console.error(`✗ Failed to stop daemon: ${stopResult.error}`)
+      process.exit(1)
+    }
+    
+    const serverPath = join(process.cwd(), 'src', 'server.ts')
+    const startResult = await startDaemonWithHealthCheck(serverPath)
+    
+    if (startResult.success) {
+      console.log(`✓ Daemon restarted successfully (PID: ${startResult.pid})`)
+      console.log(`  Health check passed in ${startResult.healthCheckMs}ms`)
+    } else {
+      console.error(`✗ Failed to start daemon: ${startResult.error}`)
+      process.exit(1)
+    }
+  }
+})
+
 const statusCommand = defineCommand({
   meta: {
     name: 'status',
@@ -80,6 +112,7 @@ export default defineCommand({
   subCommands: {
     start: () => Promise.resolve(startCommand),
     stop: () => Promise.resolve(stopCommand),
+    restart: () => Promise.resolve(restartCommand),
     status: () => Promise.resolve(statusCommand)
   }
 })
