@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { startDaemon, stopDaemon, getDaemonStatus } from '../daemon'
+import { startDaemonWithHealthCheck, stopDaemon, getDaemonStatus } from '../daemon'
 import { join } from 'path'
 
 const startCommand = defineCommand({
@@ -11,10 +11,11 @@ const startCommand = defineCommand({
     console.log('启动 Xenonix Core 守护进程...')
     
     const serverPath = join(process.cwd(), 'src', 'server.ts')
-    const result = await startDaemon(serverPath)
+    const result = await startDaemonWithHealthCheck(serverPath)
     
     if (result.success) {
       console.log(`✓ Daemon started successfully (PID: ${result.pid})`)
+      console.log(`  Health check passed in ${result.healthCheckMs}ms`)
       console.log(`  API server listening on 127.0.0.1:8420`)
       console.log(`  PID file: ~/.xenonix/daemon.pid`)
       console.log(`  Log file: ~/.xenonix/daemon.log`)

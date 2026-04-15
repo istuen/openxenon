@@ -101,3 +101,39 @@ The system SHALL provide logging for the daemon:
 #### Scenario: Log file rotation
 - **WHEN** log file exceeds size limit (e.g., 10MB)
 - **THEN** system rotates log file (future enhancement, not required for initial implementation)
+
+### Requirement: Zombie PID detection
+
+The system SHALL detect when PID file exists but the process is not running.
+
+#### Scenario: Detect zombie PID
+- **WHEN** PID file exists but process with that PID is not running
+- **THEN** `isDaemonRunning()` returns `{ pid: <pid>, isRunning: false }`
+
+#### Scenario: Clean zombie PID file
+- **WHEN** zombie PID is detected
+- **THEN** `startDaemon()` cleans up PID file before proceeding with startup
+
+### Requirement: PID cleanup on exception
+
+The system SHALL clean up PID file when the process exits abnormally.
+
+#### Scenario: Uncaught exception
+- **WHEN** daemon process throws an uncaught exception
+- **THEN** PID file is cleaned up before exit
+
+#### Scenario: Unhandled promise rejection
+- **WHEN** daemon process has an unhandled promise rejection
+- **THEN** PID file is cleaned up before exit
+
+### Requirement: Database operation error handling
+
+The system SHALL handle daemon_address database operation failures gracefully.
+
+#### Scenario: Write failure
+- **WHEN** `saveDaemonAddress()` execution fails
+- **THEN** error is logged but daemon continues running
+
+#### Scenario: Clear failure
+- **WHEN** `clearDaemonAddress()` execution fails
+- **THEN** error is logged but exit flow continues

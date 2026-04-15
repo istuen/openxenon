@@ -1,11 +1,21 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
 import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH } from '../core/global'
 import { daemonLogger } from './logger'
+import { waitForHealth } from './health-check'
 
 export interface DaemonProcessInfo {
   pid: number
   isRunning: boolean
 }
+
+export interface StartDaemonResult {
+  success: boolean
+  pid?: number
+  error?: string
+  healthCheckMs?: number
+}
+
+const DAEMON_ADDRESS = 'http://127.0.0.1:8420'
 
 export function isDaemonRunning(): DaemonProcessInfo {
   if (!existsSync(DAEMON_PID_PATH)) {
@@ -32,7 +42,7 @@ export function isDaemonRunning(): DaemonProcessInfo {
   }
 }
 
-export function startDaemon(serverPath: string): { success: boolean; pid?: number; error?: string } {
+export function startDaemon(serverPath: string): StartDaemonResult {
   const { isRunning, pid: existingPid } = isDaemonRunning()
   
   if (isRunning) {
@@ -72,7 +82,8 @@ export function startDaemon(serverPath: string): { success: boolean; pid?: numbe
     
     return {
       success: true,
-      pid
+      pid,
+      healthCheckMs: 0
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -81,6 +92,41 @@ export function startDaemon(serverPath: string): { success: boolean; pid?: numbe
       success: false,
       error: errorMessage
     }
+  }
+}
+
+export async function startDaemonWithHealthCheck(
+  serverPath: string
+): Promise<StartDaemonResult> {
+  const result = startDaemon(serverPath)
+  
+  if (!result.success) {
+    return result
+  }
+  
+  const healthResult = await waitForHealth(DAEMON_ADDRESS)
+  
+  if (!healthResult.success) {
+    daemonLogger.error('Health check failed, cleaning up')
+    
+    if (existsSync(DAEMON_PID_PATH)) {
+      try {
+        unlinkSync(DAEMON_PID_PATH)
+      } catch (error) {
+        daemonLogger.error(`Failed to remove PID file: ${error}`)
+      }
+    }
+    
+    return {
+      success: false,
+      error: 'Daemon started but health check failed'
+    }
+  }
+  
+  return {
+    success: true,
+    pid: result.pid,
+    healthCheckMs: healthResult.elapsedMs
   }
 }
 
