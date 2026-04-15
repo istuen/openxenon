@@ -75,6 +75,53 @@ pnpm build:windows # Windows x64
 | `pnpm typecheck` | TypeScript 类型检查 |
 | `pnpm clean` | 清理构建产物和依赖 |
 
+## Skill 系统
+
+Xenonix 提供了一套 Skill 系统，用于指导 AI 助手执行特定操作。Skill 采用 **TypeScript 源码 → Markdown 编译产物** 架构，确保类型安全。
+
+### Skill 架构
+
+```
+src/skills/              # Skill TS 源码（类型安全）
+├── types.ts             # XenonixSkill 接口定义
+├── xn-init.ts           # /xn-init 指令
+├── xn-task.ts           # /xn-task 指令
+└── ...
+
+src/adapters/            # 适配器
+├── opencode.adapter.ts  # 编译到 .opencode/skills/
+└── ...
+
+.opencode/skills/        # 编译产物（AI 读取）
+├── xn-init/SKILL.md
+├── xn-task/SKILL.md
+└── ...
+```
+
+### 编译 Skill
+
+```bash
+# 初始化项目时自动编译
+xn init --adapter opencode
+
+# 强制重写所有 Skill
+xn init --adapter opencode --compile-force
+```
+
+### 动态寻址
+
+所有 Skill 使用 `xn api base` 命令获取 Core 通信地址，避免硬编码：
+
+```bash
+# 获取 Core 当前地址
+xn api base
+# 输出: http://127.0.0.1:8420
+```
+
+### 开发新 Skill
+
+详见 [docs/skill-development.md](docs/skill-development.md) 和 [docs/adapter-development.md](docs/adapter-development.md)
+
 ## 核心运转机制
 Xenonix 的运转完全围绕上述三句话展开，它重新定义了人类、AI 助手与底层引擎之间的协作边界：
 ### 演化工程意图：从人类需求到结构化目标

@@ -2,7 +2,7 @@ import { spawn } from 'bun'
 import { existsSync } from 'fs'
 import type { ProofInput, ProofOutput, ProofExecutionContext, CustomProofConfig } from '../types/proof'
 import { ProofTimeoutError, ProofExecutionError } from '../types/proof'
-import { serializeProofInput } from './proof-parameters'
+import { serializeProofInput } from '../core/proof-parameters'
 
 export interface CustomProofExecutionOptions {
   proof: CustomProofConfig

@@ -9,6 +9,7 @@ const main = defineCommand({
   subCommands: {
     init: () => import('./commands/init').then(m => m.default),
     daemon: () => import('./commands/daemon').then(m => m.default),
+    api: () => import('./commands/api').then(m => m.default),
     inspect: () => import('./commands/inspect').then(m => m.default),
     trace: () => import('./commands/trace').then(m => m.default),
     rollback: () => import('./commands/rollback').then(m => m.default),

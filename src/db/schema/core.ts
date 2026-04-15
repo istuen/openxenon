@@ -10,6 +10,14 @@ CREATE TABLE IF NOT EXISTS projects (
 );
 `
 
+export const CREATE_DAEMON_CONFIG_TABLE = `
+CREATE TABLE IF NOT EXISTS daemon_config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+`
+
 export const PROJECTS_SCHEMA = {
   tableName: 'projects',
   columns: {
@@ -19,6 +27,15 @@ export const PROJECTS_SCHEMA = {
     status: "TEXT DEFAULT 'active'",
     last_heartbeat: 'INTEGER',
     created_at: "INTEGER DEFAULT (strftime('%s', 'now'))",
+    updated_at: "INTEGER DEFAULT (strftime('%s', 'now'))"
+  }
+} as const
+
+export const DAEMON_CONFIG_SCHEMA = {
+  tableName: 'daemon_config',
+  columns: {
+    key: 'TEXT PRIMARY KEY',
+    value: 'TEXT NOT NULL',
     updated_at: "INTEGER DEFAULT (strftime('%s', 'now'))"
   }
 } as const

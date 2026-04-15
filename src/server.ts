@@ -1,8 +1,12 @@
 import { writeFileSync, unlinkSync, existsSync } from 'fs'
-import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH } from './core/global'
+import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, CORE_DB_PATH } from './core/global'
 import { daemonLogger } from './daemon/logger'
 import { startApiServer, stopApiServer } from './api/server'
+import { initCoreDb } from './db/init'
+import { setDaemonAddress, clearDaemonAddress } from './db/operations/daemon-config'
 import './api/handlers'
+
+const DAEMON_ADDRESS = 'http://127.0.0.1:8420'
 
 function ensureGlobalDirectory(): void {
   if (!existsSync(GLOBAL_BOUNDARY_PATH)) {
@@ -24,10 +28,23 @@ function removePidFile(): void {
   }
 }
 
+function saveDaemonAddress(): void {
+  const db = initCoreDb(CORE_DB_PATH)
+  setDaemonAddress(db, DAEMON_ADDRESS)
+  daemonLogger.info(`Daemon address saved: ${DAEMON_ADDRESS}`)
+}
+
+function clearDaemonAddressFromDb(): void {
+  const db = initCoreDb(CORE_DB_PATH)
+  clearDaemonAddress(db)
+  daemonLogger.info('Daemon address cleared')
+}
+
 function handleShutdown(signal: string): void {
   daemonLogger.info(`Received ${signal}, shutting down gracefully...`)
   
   stopApiServer()
+  clearDaemonAddressFromDb()
   removePidFile()
   
   daemonLogger.info('Daemon stopped')
@@ -38,6 +55,7 @@ async function main(): Promise<void> {
   ensureGlobalDirectory()
   
   writePidFile()
+  saveDaemonAddress()
   
   process.on('SIGTERM', () => handleShutdown('SIGTERM'))
   process.on('SIGINT', () => handleShutdown('SIGINT'))
@@ -55,6 +73,7 @@ async function main(): Promise<void> {
 
 main().catch((error) => {
   daemonLogger.error(`Daemon failed: ${error}`)
+  clearDaemonAddressFromDb()
   removePidFile()
   process.exit(1)
 })

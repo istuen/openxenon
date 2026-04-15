@@ -1,5 +1,5 @@
 import { Database } from 'bun:sqlite'
-import { CREATE_PROJECTS_TABLE } from './schema/core'
+import { CREATE_PROJECTS_TABLE, CREATE_DAEMON_CONFIG_TABLE } from './schema/core'
 import { 
   CREATE_TASKS_TABLE, 
   CREATE_STEPS_TABLE, 
@@ -11,6 +11,7 @@ import { CREATE_INDEXES } from './schema/indexes'
 export function initCoreDb(dbPath: string): Database {
   const db = new Database(dbPath)
   db.run(CREATE_PROJECTS_TABLE)
+  db.run(CREATE_DAEMON_CONFIG_TABLE)
   return db
 }
 

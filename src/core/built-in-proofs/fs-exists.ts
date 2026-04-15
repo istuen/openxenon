@@ -1,6 +1,6 @@
 import { existsSync, statSync } from 'fs'
-import type { BuiltInProofDefinition, ProofInput, ProofExecutionContext, ProofOutput } from '../types/proof'
-import { registerBuiltInProof } from './built-in-proofs-registry'
+import type { BuiltInProofDefinition, ProofInput, ProofExecutionContext, ProofOutput } from '../../types/proof'
+import { registerBuiltInProof } from '../built-in-proofs-registry'
 
 export const fsExistsProof: BuiltInProofDefinition = {
   id: 'fs_exists',
