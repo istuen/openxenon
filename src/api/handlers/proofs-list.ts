@@ -1,6 +1,6 @@
 import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
-import { scanProjectProofs } from '../../core/proofs-project'
+import { listAllProofs } from '../../core/proof-dispatcher'
 
 async function handleProofsList(
   _request: Request,
@@ -8,14 +8,15 @@ async function handleProofsList(
   projectPath: string
 ): Promise<Response> {
   try {
-    const proofs = scanProjectProofs(projectPath)
+    const proofs = listAllProofs(projectPath)
     
     return new Response(
       JSON.stringify({
         proofs: proofs.map(p => ({
           id: p.id,
           name: p.name,
-          type: p.type,
+          category: p.category,
+          layer: p.layer,
           path: p.path
         }))
       }),
