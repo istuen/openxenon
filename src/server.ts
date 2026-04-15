@@ -29,15 +29,23 @@ function removePidFile(): void {
 }
 
 function saveDaemonAddress(): void {
-  const db = initCoreDb(CORE_DB_PATH)
-  setDaemonAddress(db, DAEMON_ADDRESS)
-  daemonLogger.info(`Daemon address saved: ${DAEMON_ADDRESS}`)
+  try {
+    const db = initCoreDb(CORE_DB_PATH)
+    setDaemonAddress(db, DAEMON_ADDRESS)
+    daemonLogger.info(`Daemon address saved: ${DAEMON_ADDRESS}`)
+  } catch (error) {
+    daemonLogger.error(`Failed to save daemon address: ${error}`)
+  }
 }
 
 function clearDaemonAddressFromDb(): void {
-  const db = initCoreDb(CORE_DB_PATH)
-  clearDaemonAddress(db)
-  daemonLogger.info('Daemon address cleared')
+  try {
+    const db = initCoreDb(CORE_DB_PATH)
+    clearDaemonAddress(db)
+    daemonLogger.info('Daemon address cleared')
+  } catch (error) {
+    daemonLogger.error(`Failed to clear daemon address: ${error}`)
+  }
 }
 
 function handleShutdown(signal: string): void {
@@ -51,6 +59,16 @@ function handleShutdown(signal: string): void {
   process.exit(0)
 }
 
+function handleFatalError(type: string, error: unknown): void {
+  daemonLogger.error(`Fatal error (${type}): ${error}`)
+  
+  stopApiServer()
+  clearDaemonAddressFromDb()
+  removePidFile()
+  
+  process.exit(1)
+}
+
 async function main(): Promise<void> {
   ensureGlobalDirectory()
   
@@ -59,6 +77,8 @@ async function main(): Promise<void> {
   
   process.on('SIGTERM', () => handleShutdown('SIGTERM'))
   process.on('SIGINT', () => handleShutdown('SIGINT'))
+  process.on('uncaughtException', (error) => handleFatalError('uncaughtException', error))
+  process.on('unhandledRejection', (reason) => handleFatalError('unhandledRejection', reason))
   
   startApiServer({
     port: 8420,
