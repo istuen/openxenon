@@ -1,0 +1,56 @@
+{
+  "name": "xenonix",
+  "version": "1.0.0",
+  "description": "Xenonix - 工程化控制引擎，面向大语言模型的工程化控制引擎",
+  "author": "Xenonix Team",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/cli.js",
+  "types": "./dist/types/index.d.ts",
+  "bin": {
+    "xn": "./dist/xn"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build ./src/cli.ts --compile --outfile dist/xn",
+    "build:all": "bun run build:linux && bun run build:macos && bun run build:windows",
+    "build:linux": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile dist/xn-linux",
+    "build:macos": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile dist/xn-macos",
+    "build:windows": "bun build ./src/cli.ts --compile --target=bun-windows-x64 --outfile dist/xn.exe",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist node_modules",
+    "prepublishOnly": "bun run build"
+  },
+  "dependencies": {
+    "citty": "^0.1.6"
+  },
+  "devDependencies": {
+    "bun-types": "^1.1.38",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "llm",
+    "engineering",
+    "automation",
+    "verification",
+    "proof"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xenonix/xenonix.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xenonix/xenonix/issues"
+  },
+  "homepage": "https://xenonix.dev"
+}

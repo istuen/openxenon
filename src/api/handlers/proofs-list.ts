@@ -1,0 +1,46 @@
+import type { Database } from 'bun:sqlite'
+import { registerRoute } from '../router'
+import { scanProjectProofs } from '../../core/proofs-project'
+
+async function handleProofsList(
+  _request: Request,
+  _db: Database,
+  projectPath: string
+): Promise<Response> {
+  try {
+    const proofs = scanProjectProofs(projectPath)
+    
+    return new Response(
+      JSON.stringify({
+        proofs: proofs.map(p => ({
+          id: p.id,
+          name: p.name,
+          type: p.type,
+          path: p.path
+        }))
+      }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
+    return new Response(
+      JSON.stringify({
+        error: 'ProofsListFailed',
+        message: errorMessage,
+        statusCode: 500
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+  }
+}
+
+registerRoute('GET', '/api/v1/proofs/list', handleProofsList)
+
+export { handleProofsList }
