@@ -6,6 +6,11 @@ import { fileURLToPath } from 'url'
 function getServerPath(): string {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = dirname(__filename)
+  
+  if (__filename.includes('dist/xn') || __filename.includes('dist\\xn')) {
+    return join(__dirname, '..', 'src', 'server.ts')
+  }
+  
   return join(__dirname, '..', 'server.ts')
 }
 
