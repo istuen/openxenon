@@ -1,6 +1,13 @@
 import { defineCommand } from 'citty'
 import { startDaemonWithHealthCheck, stopDaemon, getDaemonStatus } from '../daemon'
-import { join } from 'path'
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+function getServerPath(): string {
+  const __filename = fileURLToPath(import.meta.url)
+  const __dirname = dirname(__filename)
+  return join(__dirname, '..', 'server.ts')
+}
 
 const startCommand = defineCommand({
   meta: {
@@ -10,7 +17,7 @@ const startCommand = defineCommand({
   async run() {
     console.log('启动 Xenonix Core 守护进程...')
     
-    const serverPath = join(process.cwd(), 'src', 'server.ts')
+    const serverPath = getServerPath()
     const result = await startDaemonWithHealthCheck(serverPath)
     
     if (result.success) {
@@ -64,7 +71,7 @@ const restartCommand = defineCommand({
       process.exit(1)
     }
     
-    const serverPath = join(process.cwd(), 'src', 'server.ts')
+    const serverPath = getServerPath()
     const startResult = await startDaemonWithHealthCheck(serverPath)
     
     if (startResult.success) {

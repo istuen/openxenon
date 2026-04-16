@@ -3,6 +3,7 @@ export interface Step {
   name: string
   spec: string
   proof: string
+  targetState?: string
 }
 
 export interface Playbook {
