@@ -7,11 +7,18 @@ function getServerPath(): string {
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = dirname(__filename)
   
+  console.log('DEBUG: __filename =', __filename)
+  console.log('DEBUG: __dirname =', __dirname)
+  
   if (__filename.includes('dist/xn') || __filename.includes('dist\\xn')) {
-    return join(__dirname, '..', 'src', 'server.ts')
+    const path = join(__dirname, '..', 'src', 'server.ts')
+    console.log('DEBUG: serverPath (compiled) =', path)
+    return path
   }
   
-  return join(__dirname, '..', 'server.ts')
+  const path = join(__dirname, '..', 'server.ts')
+  console.log('DEBUG: serverPath (dev) =', path)
+  return path
 }
 
 const startCommand = defineCommand({
