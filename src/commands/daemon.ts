@@ -2,23 +2,37 @@ import { defineCommand } from 'citty'
 import { startDaemonWithHealthCheck, stopDaemon, getDaemonStatus } from '../daemon'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { existsSync } from 'fs'
 
 function getServerPath(): string {
+  const homePath = process.env.XENONIX_HOME
+  if (homePath) {
+    const serverPath = join(homePath, 'src', 'server.ts')
+    if (existsSync(serverPath)) {
+      return serverPath
+    }
+  }
+  
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = dirname(__filename)
   
-  console.log('DEBUG: __filename =', __filename)
-  console.log('DEBUG: __dirname =', __dirname)
-  
-  if (__filename.includes('dist/xn') || __filename.includes('dist\\xn')) {
-    const path = join(__dirname, '..', 'src', 'server.ts')
-    console.log('DEBUG: serverPath (compiled) =', path)
-    return path
+  if (__filename.includes('$bunfs')) {
+    const candidates = [
+      '/Users/issac/pro/xenonix/src/server.ts',
+      join(process.cwd(), 'src', 'server.ts'),
+    ]
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        return candidate
+      }
+    }
   }
   
-  const path = join(__dirname, '..', 'server.ts')
-  console.log('DEBUG: serverPath (dev) =', path)
-  return path
+  if (__filename.includes('dist/xn') || __filename.includes('dist\\xn')) {
+    return join(__dirname, '..', 'src', 'server.ts')
+  }
+  
+  return join(__dirname, '..', 'server.ts')
 }
 
 const startCommand = defineCommand({
