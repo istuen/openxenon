@@ -3,9 +3,11 @@ import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest } from '../errors'
 import { createTask } from '../../db/operations/tasks'
+import { createStep } from '../../db/operations/steps'
 import { createTaskDirectory } from '../../core/boundary-project'
 import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
 import type { Playbook } from '../../types'
+import { join } from 'path'
 
 async function handleTaskSubmit(
   request: Request,
@@ -32,6 +34,12 @@ async function handleTaskSubmit(
     
     const task = createTask(db, playbook.task, playbook)
     
+    for (const [index, step] of playbook.steps.entries()) {
+      const stepId = `${task.id}-${index + 1}`
+      const stepData = step as { name: string; spec: string; proof: string }
+      createStep(db, stepId, task.id, stepData.name, stepData.spec, stepData.proof)
+    }
+    
     const taskDir = createTaskDirectory(projectPath, task.id)
     
     const manifest = createEmptyStepManifest(task.id)
@@ -42,6 +50,7 @@ async function handleTaskSubmit(
       JSON.stringify({
         taskId: task.id,
         status: task.status,
+        stepsCount: playbook.steps.length,
         message: 'Task created successfully'
       }),
       {
@@ -65,8 +74,6 @@ async function handleTaskSubmit(
     )
   }
 }
-
-import { join } from 'path'
 
 registerRoute('POST', '/api/v1/task/submit', handleTaskSubmit)
 

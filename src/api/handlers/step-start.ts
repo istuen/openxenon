@@ -1,26 +1,19 @@
 import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
-import { parseJSONBody, validateRequiredFields } from '../validation'
+import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
-import { getStepById, getStepByTaskIdAndName } from '../../db/operations/steps'
-import { verifyStep } from '../../verification/dual-track'
+import { getStepById, updateStepStatus, getStepByTaskIdAndName } from '../../db/operations/steps'
 
-async function handleStepVerify(
+async function handleStepStart(
   request: Request,
   db: Database,
   _projectPath: string
 ): Promise<Response> {
   try {
-    const body = await parseJSONBody<{ stepId?: string; taskId?: string; stepName?: string; proofPath?: string }>(request)
+    const body = await parseJSONBody<{ stepId?: string; taskId?: string; stepName?: string }>(request)
     
     if (!body) {
       return badRequest('Request body is required')
-    }
-    
-    const validation = validateRequiredFields(body as Record<string, unknown>, ['proofPath'])
-    
-    if (!validation.valid) {
-      return badRequest(`Field '${validation.missingField}' is required`)
     }
     
     let step = null
@@ -37,17 +30,14 @@ async function handleStepVerify(
       return notFound('Step not found')
     }
     
-    const result = await verifyStep({
-      db,
-      stepId: step.id,
-      proofPath: body.proofPath!
-    })
+    if (step.status === 'pending') {
+      updateStepStatus(db, step.id, 'running')
+    }
     
     return new Response(
       JSON.stringify({
-        success: result.success,
-        output: result.output,
-        error: result.error
+        stepId: step.id,
+        status: step.status === 'pending' ? 'running' : step.status
       }),
       {
         status: 200,
@@ -59,7 +49,7 @@ async function handleStepVerify(
     
     return new Response(
       JSON.stringify({
-        error: 'StepVerifyFailed',
+        error: 'StepStartFailed',
         message: errorMessage,
         statusCode: 500
       }),
@@ -71,6 +61,6 @@ async function handleStepVerify(
   }
 }
 
-registerRoute('POST', '/api/v1/step/verify', handleStepVerify)
+registerRoute('POST', '/api/v1/step/start', handleStepStart)
 
-export { handleStepVerify }
+export { handleStepStart }

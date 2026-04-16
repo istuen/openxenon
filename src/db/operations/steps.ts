@@ -48,6 +48,24 @@ export function getStepsByTaskId(db: Database, taskId: string): StepRow[] {
   return rows.map(mapRowToStep)
 }
 
+export function getStepByTaskIdAndName(db: Database, taskId: string, name: string): StepRow | null {
+  const stmt = db.prepare('SELECT * FROM steps WHERE task_id = ? AND name = ?')
+  const row = stmt.get(taskId, name) as any
+  
+  if (!row) return null
+  
+  return mapRowToStep(row)
+}
+
+export function getNextPendingStep(db: Database, taskId: string): StepRow | null {
+  const stmt = db.prepare('SELECT * FROM steps WHERE task_id = ? AND status = ? ORDER BY id LIMIT 1')
+  const row = stmt.get(taskId, 'pending') as any
+  
+  if (!row) return null
+  
+  return mapRowToStep(row)
+}
+
 export function updateStepStatus(db: Database, id: string, status: StepStatus): StepRow | null {
   const step = getStepById(db, id)
   if (!step) return null
