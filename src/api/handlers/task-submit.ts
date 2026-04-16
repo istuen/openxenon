@@ -36,8 +36,8 @@ async function handleTaskSubmit(
     
     for (const [index, step] of playbook.steps.entries()) {
       const stepId = `${task.id}-${index + 1}`
-      const stepData = step as { name: string; spec: string; proof: string }
-      createStep(db, stepId, task.id, stepData.name, stepData.spec, stepData.proof)
+      const stepData = step as { name: string; spec: string; proof: string; targetState?: string }
+      createStep(db, stepId, task.id, stepData.name, stepData.spec, stepData.proof, stepData.targetState)
     }
     
     const taskDir = createTaskDirectory(projectPath, task.id)

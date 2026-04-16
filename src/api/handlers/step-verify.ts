@@ -1,26 +1,21 @@
 import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
-import { parseJSONBody, validateRequiredFields } from '../validation'
+import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getStepById, getStepByTaskIdAndName } from '../../db/operations/steps'
 import { verifyStep } from '../../verification/dual-track'
+import { findProof, listAvailableProofs } from '../proof-finder'
 
 async function handleStepVerify(
   request: Request,
   db: Database,
-  _projectPath: string
+  projectPath: string
 ): Promise<Response> {
   try {
     const body = await parseJSONBody<{ stepId?: string; taskId?: string; stepName?: string; proofPath?: string }>(request)
     
     if (!body) {
       return badRequest('Request body is required')
-    }
-    
-    const validation = validateRequiredFields(body as Record<string, unknown>, ['proofPath'])
-    
-    if (!validation.valid) {
-      return badRequest(`Field '${validation.missingField}' is required`)
     }
     
     let step = null
@@ -37,10 +32,21 @@ async function handleStepVerify(
       return notFound('Step not found')
     }
     
+    let proofPath = body.proofPath
+    
+    if (!proofPath) {
+      const proofLocation = findProof(step.proof, projectPath)
+      if (!proofLocation) {
+        const available = listAvailableProofs(projectPath)
+        return notFound(`Proof '${step.proof}' not found. Available proofs: ${available.slice(0, 10).join(', ')}${available.length > 10 ? '...' : ''}`)
+      }
+      proofPath = proofLocation.path
+    }
+    
     const result = await verifyStep({
       db,
       stepId: step.id,
-      proofPath: body.proofPath!
+      proofPath
     })
     
     return new Response(

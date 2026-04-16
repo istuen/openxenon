@@ -7,6 +7,7 @@ export interface StepRow {
   name: string
   spec: string
   proof: string
+  targetState: string | null
   status: StepStatus
   startedAt: number | null
   completedAt: number | null
@@ -20,14 +21,15 @@ export function createStep(
   taskId: string,
   name: string,
   spec: string,
-  proof: string
+  proof: string,
+  targetState?: string
 ): StepRow {
   const stmt = db.prepare(`
-    INSERT INTO steps (id, task_id, name, spec, proof, status)
-    VALUES (?, ?, ?, ?, ?, 'pending')
+    INSERT INTO steps (id, task_id, name, spec, proof, target_state, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'pending')
   `)
   
-  stmt.run(id, taskId, name, spec, proof)
+  stmt.run(id, taskId, name, spec, proof, targetState || null)
   
   return getStepById(db, id)!
 }
@@ -120,6 +122,7 @@ function mapRowToStep(row: any): StepRow {
     name: row.name,
     spec: row.spec,
     proof: row.proof,
+    targetState: row.target_state,
     status: row.status,
     startedAt: row.started_at,
     completedAt: row.completed_at,
