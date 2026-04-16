@@ -24,6 +24,6 @@
 
 ## 6. 测试验证
 
-- [ ] 6.1 手动测试：提交任务并验证 steps 已创建
-- [ ] 6.2 手动测试：完整执行流程（start → next → step-start → verify）
-- [ ] 6.3 手动测试：通过 stepName 验证 step
+- [x] 6.1 手动测试：提交任务并验证 steps 已创建
+- [x] 6.2 手动测试：完整执行流程（start → next → step-start → verify）
+- [x] 6.3 手动测试：通过 stepName 验证 step
