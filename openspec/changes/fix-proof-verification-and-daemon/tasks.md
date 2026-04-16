@@ -1,7 +1,7 @@
 ## 1. Daemon 启动路径修复
 
 - [x] 1.1 修改 `src/commands/daemon.ts` 使用 `import.meta.dir` 获取 server.ts 路径
-- [ ] 1.2 测试从任意目录启动 daemon
+- [x] 1.2 测试从任意目录启动 daemon
 
 ## 2. Target State 存储
 
@@ -18,6 +18,6 @@
 
 ## 4. 测试验证
 
-- [ ] 4.1 手动测试：从非 xenonix 目录启动 daemon
+- [x] 4.1 手动测试：从非 xenonix 目录启动 daemon
 - [ ] 4.2 手动测试：提交含 target_state 的 Playbook
 - [ ] 4.3 手动测试：不带 proofPath 验证 step
