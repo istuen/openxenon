@@ -1,20 +1,31 @@
-import type { Playbook } from './playbook'
-import type { StepStatus } from './core'
+import type { Playbook, XnBlueprint } from './playbook'
+import type { TaskStatus, XnTaskStatus, XnStageStatus } from './core'
 import type { Artifact } from './artifact'
+import type { XnAction } from './xn-action'
 
 export interface Task {
   id: string
   name: string
   playbook: Playbook
-  status: import('./core').TaskStatus
+  status: TaskStatus
   createdAt: number
   updatedAt: number
+}
+
+export interface XnTask {
+  id: string;
+  name: string;
+  xnBlueprint: XnBlueprint;
+  xnTaskStatus: XnTaskStatus;
+  xnAction?: XnAction;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface StepManifest {
   taskId: string
   stepId: string
-  status: StepStatus
+  status: XnStageStatus
   artifacts: Artifact[]
   timestamp: number
 }

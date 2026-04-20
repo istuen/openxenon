@@ -22,6 +22,10 @@ export interface Proof {
   description?: string
 }
 
+export interface XnProof extends Proof {
+  layer: ProofLayer;
+}
+
 export interface ProofInput {
   [key: string]: unknown
 }
