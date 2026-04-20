@@ -7,9 +7,10 @@ The system SHALL provide `xn daemon start` command that:
 - Writes the process PID to `~/.xenonix/daemon.pid`
 - Creates log file at `~/.xenonix/daemon.log`
 - Returns immediately after spawning the daemon
+- Works from any working directory (via fallback path detection)
 
-#### Scenario: Start daemon successfully
-- **WHEN** user runs `xn daemon start`
+#### Scenario: Start daemon from any directory
+- **WHEN** user runs `xn daemon start` from any directory
 - **THEN** system spawns background process and returns success message with PID
 
 #### Scenario: Start daemon when already running
