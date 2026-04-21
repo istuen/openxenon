@@ -1,8 +1,18 @@
 import type { Stage } from './stage';
 
-export interface Blueprint {
+export interface Step {
   id: string;
-  taskId: string;
-  stages: Stage[];
-  status: 'canonical' | 'drafting' | 'executing' | 'pending_review' | 'promoted' | 'rejected';
+  name: string;
+  spec: string;
+  proof: string;
+  targetState?: string;
+}
+
+export interface Blueprint {
+  id?: string;
+  taskId?: string;
+  task?: string;
+  stages?: Stage[];
+  steps?: Step[];
+  status?: 'canonical' | 'drafting' | 'executing' | 'pending_review' | 'promoted' | 'rejected';
 }

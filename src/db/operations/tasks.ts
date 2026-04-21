@@ -1,21 +1,21 @@
 import { randomUUID } from 'crypto'
 import type { Database } from 'bun:sqlite'
-import type { Task, Playbook, TaskStatus } from '../../types'
+import type { Task, Blueprint, TaskStatus } from '../../types'
 
 export function createTask(
   db: Database, 
   name: string, 
-  playbook: Playbook
+  blueprint: Blueprint
 ): Task {
   const id = randomUUID()
   const now = Math.floor(Date.now() / 1000)
   
   const stmt = db.prepare(`
-    INSERT INTO tasks (id, name, playbook, status, created_at, updated_at)
+    INSERT INTO tasks (id, name, blueprint, status, created_at, updated_at)
     VALUES (?, ?, ?, 'pending', ?, ?)
   `)
   
-  stmt.run(id, name, JSON.stringify(playbook), now, now)
+  stmt.run(id, name, JSON.stringify(blueprint), now, now)
   
   return getTaskById(db, id)!
 }
@@ -72,9 +72,9 @@ export function updateTask(db: Database, id: string, updates: Partial<Omit<Task,
     values.push(updates.name)
   }
   
-  if (updates.playbook !== undefined) {
-    setClause.push('playbook = ?')
-    values.push(JSON.stringify(updates.playbook))
+  if (updates.blueprint !== undefined) {
+    setClause.push('blueprint = ?')
+    values.push(JSON.stringify(updates.blueprint))
   }
   
   if (updates.status !== undefined) {
@@ -105,7 +105,7 @@ function mapRowToTask(row: any): Task {
   return {
     id: row.id,
     name: row.name,
-    playbook: JSON.parse(row.playbook),
+    blueprint: JSON.parse(row.blueprint),
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at

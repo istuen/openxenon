@@ -1,4 +1,3 @@
-import type { Playbook } from './playbook'
 import type { Blueprint } from './blueprint'
 import type { TaskStatus, XnTaskStatus, XnStageStatus } from './core'
 import type { Artifact } from './artifact'
@@ -7,7 +6,7 @@ import type { Action } from './action'
 export interface Task {
   id: string
   name: string
-  playbook: Playbook
+  blueprint: Blueprint
   status: TaskStatus
   createdAt: number
   updatedAt: number

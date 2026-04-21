@@ -1,5 +1,4 @@
 export * from './core'
-export * from './playbook'
 export * from './task'
 export * from './artifact'
 export * from './proof'

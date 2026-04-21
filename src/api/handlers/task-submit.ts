@@ -6,7 +6,7 @@ import { createTask } from '../../db/operations/tasks'
 import { createStep } from '../../db/operations/steps'
 import { createTaskDirectory } from '../../core/boundary-project'
 import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
-import type { Playbook } from '../../types'
+import type { Blueprint } from '../../types'
 import { join } from 'path'
 
 async function handleTaskSubmit(
@@ -27,14 +27,15 @@ async function handleTaskSubmit(
       return badRequest(`Field '${validation.missingField}' is required`)
     }
     
-    const playbook: Playbook = {
+    const blueprint: Blueprint = {
       task: body.task!,
       steps: body.steps as any[]
     }
     
-    const task = createTask(db, playbook.task, playbook)
+    const task = createTask(db, blueprint.task!, blueprint)
+    const steps = blueprint.steps || []
     
-    for (const [index, step] of playbook.steps.entries()) {
+    for (const [index, step] of steps.entries()) {
       const stepId = `${task.id}-${index + 1}`
       const stepData = step as { name: string; spec: string; proof: string; targetState?: string }
       createStep(db, stepId, task.id, stepData.name, stepData.spec, stepData.proof, stepData.targetState)
@@ -50,7 +51,7 @@ async function handleTaskSubmit(
       JSON.stringify({
         taskId: task.id,
         status: task.status,
-        stepsCount: playbook.steps.length,
+        stepsCount: steps.length,
         message: 'Task created successfully'
       }),
       {

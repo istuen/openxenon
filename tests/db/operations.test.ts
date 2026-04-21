@@ -5,7 +5,7 @@ import { join } from 'path'
 import { initProjectDb, closeDb } from '../../src/db/init'
 import { createTask, getTaskById, updateTaskStatus, deleteTask } from '../../src/db/operations/tasks'
 import { createStep, getStepsByTaskId, updateStepStatus } from '../../src/db/operations/steps'
-import type { Playbook } from '../../src/types'
+import type { Blueprint } from '../../src/types'
 
 describe('Database Operations', () => {
   const testDir = join(process.cwd(), 'test-temp')
@@ -27,12 +27,12 @@ describe('Database Operations', () => {
 
   describe('Tasks Operations', () => {
     it('should create a task', () => {
-      const playbook: Playbook = {
+      const blueprint: Blueprint = {
         task: 'Test Task',
         steps: []
       }
       
-      const task = createTask(db, 'Test Task', playbook)
+      const task = createTask(db, 'Test Task', blueprint)
       
       expect(task.id).toBeDefined()
       expect(task.name).toBe('Test Task')
@@ -40,8 +40,8 @@ describe('Database Operations', () => {
     })
 
     it('should get task by id', () => {
-      const playbook: Playbook = { task: 'Test', steps: [] }
-      const created = createTask(db, 'Test Task', playbook)
+      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const created = createTask(db, 'Test Task', blueprint)
       
       const found = getTaskById(db, created.id)
       
@@ -50,8 +50,8 @@ describe('Database Operations', () => {
     })
 
     it('should update task status', () => {
-      const playbook: Playbook = { task: 'Test', steps: [] }
-      const created = createTask(db, 'Test Task', playbook)
+      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const created = createTask(db, 'Test Task', blueprint)
       
       const updated = updateTaskStatus(db, created.id, 'running')
       
@@ -59,8 +59,8 @@ describe('Database Operations', () => {
     })
 
     it('should delete a task', () => {
-      const playbook: Playbook = { task: 'Test', steps: [] }
-      const created = createTask(db, 'Test Task', playbook)
+      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const created = createTask(db, 'Test Task', blueprint)
       
       const result = deleteTask(db, created.id)
       
@@ -71,8 +71,8 @@ describe('Database Operations', () => {
 
   describe('Steps Operations', () => {
     it('should create a step', () => {
-      const playbook: Playbook = { task: 'Test', steps: [] }
-      const task = createTask(db, 'Test Task', playbook)
+      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const task = createTask(db, 'Test Task', blueprint)
       
       const step = createStep(db, 'step-1', task.id, 'Step 1', 'Do something', 'proof-1')
       
@@ -82,8 +82,8 @@ describe('Database Operations', () => {
     })
 
     it('should get steps by task id', () => {
-      const playbook: Playbook = { task: 'Test', steps: [] }
-      const task = createTask(db, 'Test Task', playbook)
+      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const task = createTask(db, 'Test Task', blueprint)
       
       createStep(db, 'step-1', task.id, 'Step 1', 'Spec 1', 'proof-1')
       createStep(db, 'step-2', task.id, 'Step 2', 'Spec 2', 'proof-2')
@@ -94,8 +94,8 @@ describe('Database Operations', () => {
     })
 
     it('should update step status', () => {
-      const playbook: Playbook = { task: 'Test', steps: [] }
-      const task = createTask(db, 'Test Task', playbook)
+      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const task = createTask(db, 'Test Task', blueprint)
       const step = createStep(db, 'step-1', task.id, 'Step 1', 'Spec 1', 'proof-1')
       
       const updated = updateStepStatus(db, step.id, 'passed')

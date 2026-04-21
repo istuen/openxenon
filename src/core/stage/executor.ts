@@ -6,8 +6,9 @@ export class StageExecutor {
   private blueprints: Map<string, Blueprint> = new Map();
 
   loadStage(stageId: string, blueprint: Blueprint): Stage | undefined {
-    const stage = blueprint.stages.find(s => s.id === stageId);
-    if (stage) {
+    const stages = blueprint.stages || [];
+    const stage = stages.find(s => s.id === stageId);
+    if (stage && blueprint.id) {
       this.blueprints.set(blueprint.id, blueprint);
     }
     return stage;

@@ -5,7 +5,7 @@ import { Database } from 'bun:sqlite'
 import { initProjectDb, closeDb } from '../../src/db/init'
 import { startApiServer, stopApiServer } from '../../src/api/server'
 import { updateTaskStatus } from '../../src/db/operations/tasks'
-import type { Playbook } from '../../src/types'
+import type { Blueprint } from '../../src/types'
 import '../../src/api/handlers'
 
 const TEST_PORT = 8421
@@ -49,7 +49,7 @@ describe('Task Execution API', () => {
 
   describe('Task Submit', () => {
     it('should create task and steps', async () => {
-      const playbook: Playbook = {
+      const blueprint: Blueprint = {
         task: 'Test Task',
         steps: [
           { id: 'step-1', name: 'Step 1', spec: 'Spec 1', proof: 'proof-1' },
@@ -63,7 +63,7 @@ describe('Task Execution API', () => {
           'Content-Type': 'application/json',
           'X-Project-Path': testDir
         },
-        body: JSON.stringify(playbook)
+        body: JSON.stringify(blueprint)
       })
 
       const data: any = await response.json()
