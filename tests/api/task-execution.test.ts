@@ -51,9 +51,9 @@ describe('Task Execution API', () => {
     it('should create task and steps', async () => {
       const blueprint: Blueprint = {
         task: 'Test Task',
-        steps: [
-          { id: 'step-1', name: 'Step 1', spec: 'Spec 1', proof: 'proof-1' },
-          { id: 'step-2', name: 'Step 2', spec: 'Spec 2', proof: 'proof-2' }
+        stages: [
+          { id: 'stage-1', name: 'Stage 1', spec: { constraints: ['Spec 1'] }, proof: 'proof-1' },
+          { id: 'stage-2', name: 'Stage 2', spec: { constraints: ['Spec 2'] }, proof: 'proof-2' }
         ]
       }
 

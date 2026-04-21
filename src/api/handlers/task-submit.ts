@@ -29,16 +29,16 @@ async function handleTaskSubmit(
     
     const blueprint: Blueprint = {
       task: body.task!,
-      steps: body.steps as any[]
+      stages: body.steps as any[]
     }
     
     const task = createTask(db, blueprint.task!, blueprint)
-    const steps = blueprint.steps || []
+    const stages = blueprint.stages || []
     
-    for (const [index, step] of steps.entries()) {
-      const stepId = `${task.id}-${index + 1}`
-      const stepData = step as { name: string; spec: string; proof: string; targetState?: string }
-      createStep(db, stepId, task.id, stepData.name, stepData.spec, stepData.proof, stepData.targetState)
+    for (const [index, stage] of stages.entries()) {
+      const stageId = `${task.id}-${index + 1}`
+      const stageData = stage as unknown as { name: string; spec: string; proof: string; targetState?: string }
+      createStep(db, stageId, task.id, stageData.name, stageData.spec, stageData.proof, stageData.targetState)
     }
     
     const taskDir = createTaskDirectory(projectPath, task.id)
@@ -51,7 +51,7 @@ async function handleTaskSubmit(
       JSON.stringify({
         taskId: task.id,
         status: task.status,
-        stepsCount: steps.length,
+        stagesCount: stages.length,
         message: 'Task created successfully'
       }),
       {

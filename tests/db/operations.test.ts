@@ -29,7 +29,7 @@ describe('Database Operations', () => {
     it('should create a task', () => {
       const blueprint: Blueprint = {
         task: 'Test Task',
-        steps: []
+        stages: []
       }
       
       const task = createTask(db, 'Test Task', blueprint)
@@ -40,7 +40,7 @@ describe('Database Operations', () => {
     })
 
     it('should get task by id', () => {
-      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const blueprint: Blueprint = { task: 'Test', stages: [] }
       const created = createTask(db, 'Test Task', blueprint)
       
       const found = getTaskById(db, created.id)
@@ -50,7 +50,7 @@ describe('Database Operations', () => {
     })
 
     it('should update task status', () => {
-      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const blueprint: Blueprint = { task: 'Test', stages: [] }
       const created = createTask(db, 'Test Task', blueprint)
       
       const updated = updateTaskStatus(db, created.id, 'running')
@@ -59,7 +59,7 @@ describe('Database Operations', () => {
     })
 
     it('should delete a task', () => {
-      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const blueprint: Blueprint = { task: 'Test', stages: [] }
       const created = createTask(db, 'Test Task', blueprint)
       
       const result = deleteTask(db, created.id)
@@ -71,7 +71,7 @@ describe('Database Operations', () => {
 
   describe('Steps Operations', () => {
     it('should create a step', () => {
-      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const blueprint: Blueprint = { task: 'Test', stages: [] }
       const task = createTask(db, 'Test Task', blueprint)
       
       const step = createStep(db, 'step-1', task.id, 'Step 1', 'Do something', 'proof-1')
@@ -82,7 +82,7 @@ describe('Database Operations', () => {
     })
 
     it('should get steps by task id', () => {
-      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const blueprint: Blueprint = { task: 'Test', stages: [] }
       const task = createTask(db, 'Test Task', blueprint)
       
       createStep(db, 'step-1', task.id, 'Step 1', 'Spec 1', 'proof-1')
@@ -94,7 +94,7 @@ describe('Database Operations', () => {
     })
 
     it('should update step status', () => {
-      const blueprint: Blueprint = { task: 'Test', steps: [] }
+      const blueprint: Blueprint = { task: 'Test', stages: [] }
       const task = createTask(db, 'Test Task', blueprint)
       const step = createStep(db, 'step-1', task.id, 'Step 1', 'Spec 1', 'proof-1')
       

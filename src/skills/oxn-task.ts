@@ -1,11 +1,10 @@
 import type { OpenXenonSkill } from './types'
-import type { Step } from '../types/blueprint'
-import type { Blueprint } from '../types/blueprint'
+import type { Stage } from '../types/stage'
 
 export const oxnTaskSkill: OpenXenonSkill = {
   id: 'oxn-task',
-  description: '发起 Xenonix 任务，依据 Target State 拆解并提交 Blueprint',
-  instruction: `# \`/oxn-task\` — 发起 Xenonix 任务
+  description: '发起 OpenXenon 任务，依据 Target State 拆解并提交 Blueprint',
+  instruction: `# \`/oxn-task\` — 发起 OpenXenon 任务
 
 ## 行为约束
 
@@ -37,8 +36,8 @@ curl -s $(oxn api base)/api/v1/proofs/list
 基于用户需求和返回的探针列表，按照 Target State 理念拆解任务：
 
 1. 确定最终目标状态（Target State）
-2. 逆向推导所需的中间步骤
-3. 为每个步骤绑定合适的 Proof 探针
+2. 逆向推导所需的中间 Stage
+3. 为每个 Stage 绑定合适的 Proof 探针
 
 ## 步骤 4：提交 Blueprint
 
@@ -51,10 +50,10 @@ curl -s -X POST $(oxn api base)/api/v1/task/submit \\
     "project_path": "<当前项目绝对路径>",
     "blueprint": {
       "task": "<任务描述>",
-      "steps": [
+      "stages": [
         {
-          "id": "step_1",
-          "name": "<步骤名称>",
+          "id": "stage_1",
+          "name": "<Stage 名称>",
           "spec": "<约束规范>",
           "proof": "<探针名称>"
         }
@@ -65,7 +64,7 @@ curl -s -X POST $(oxn api base)/api/v1/task/submit \\
 
 ## 步骤 5：处理预验证结果
 
-- 若返回 \`PREVALIDATED\`：进入执行循环，开始执行第一个 Step
+- 若返回 \`PREVALIDATED\`：进入执行循环，开始执行第一个 Stage
 - 若返回 \`REJECTED\`：依据 error 信息修正 Blueprint 后重新提交
 
 ## 绝对禁止
@@ -75,12 +74,12 @@ curl -s -X POST $(oxn api base)/api/v1/task/submit \\
 - 禁止在未通过 Core 验证的情况下自行推进任务
 `,
   examples: {
-    playbook_step: {
-      id: 'step_1',
+    stage_example: {
+      id: 'stage_1',
       name: '定义数据模型',
-      spec: '必须使用 TypeScript 接口定义 User 类型',
+      spec: { constraints: ['必须使用 TypeScript 接口定义 User 类型'] },
       proof: 'fs-content-match',
-    } as Step,
+    } as unknown as Stage,
     target_state: {
       type: 'file_content',
       path: 'src/types/user.ts',

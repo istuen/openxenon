@@ -2,7 +2,7 @@ export const CREATE_TASKS_TABLE = `
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  playbook TEXT NOT NULL,
+  blueprint TEXT NOT NULL,
   status TEXT DEFAULT 'pending',
   created_at INTEGER DEFAULT (strftime('%s', 'now')),
   updated_at INTEGER DEFAULT (strftime('%s', 'now'))
@@ -57,7 +57,7 @@ export const PROJECT_DB_SCHEMA = {
     columns: {
       id: 'TEXT PRIMARY KEY',
       name: 'TEXT NOT NULL',
-      playbook: 'TEXT NOT NULL',
+      blueprint: 'TEXT NOT NULL',
       status: "TEXT DEFAULT 'pending'",
       created_at: "INTEGER DEFAULT (strftime('%s', 'now'))",
       updated_at: "INTEGER DEFAULT (strftime('%s', 'now'))"

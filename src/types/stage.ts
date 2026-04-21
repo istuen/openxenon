@@ -6,7 +6,7 @@ export interface Stage {
   id: string;
   name: string;
   spec: Spec;
-  xnProof: string;
+  proof: string;
   action?: Action;
   status: XnStageStatus;
   targetState?: string;

@@ -6,7 +6,7 @@ export class StageDispatcher {
   private stages: Stage[] = [];
 
   dispatch(blueprint: Blueprint): void {
-    this.stages = blueprint.stages;
+    this.stages = blueprint.stages || [];
     this.currentIndex = 0;
   }
 
