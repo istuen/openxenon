@@ -1,4 +1,5 @@
-import type { Playbook, XnBlueprint } from './playbook'
+import type { Playbook } from './playbook'
+import type { XnBlueprint } from './xn-blueprint'
 import type { TaskStatus, XnTaskStatus, XnStageStatus } from './core'
 import type { Artifact } from './artifact'
 import type { XnAction } from './xn-action'
