@@ -1,35 +1,4 @@
 import { defineCommand } from 'citty'
-import { getDaemonAddress } from '../db/operations/daemon-config'
-import { initCoreDb } from '../db/init'
-import { CORE_DB_PATH } from '../core/global'
-import { isDaemonRunning } from '../daemon/process'
-
-const baseCommand = defineCommand({
-  meta: {
-    name: 'base',
-    description: '输出 Core 引擎当前通信地址'
-  },
-  run() {
-    const { isRunning } = isDaemonRunning()
-    
-    if (!isRunning) {
-      console.error('Error: Core daemon is not running')
-      console.error('Start it with: xn daemon start')
-      process.exit(1)
-    }
-    
-    const db = initCoreDb(CORE_DB_PATH)
-    const address = getDaemonAddress(db)
-    
-    if (!address) {
-      console.error('Error: Daemon address not found in database')
-      console.error('This may indicate an incomplete startup. Try restarting the daemon.')
-      process.exit(1)
-    }
-    
-    console.log(address)
-  }
-})
 
 export default defineCommand({
   meta: {
@@ -37,6 +6,17 @@ export default defineCommand({
     description: 'API 相关命令'
   },
   subCommands: {
-    base: () => Promise.resolve(baseCommand)
+    base: () => import('./api/base').then(m => m.default),
+    'task-submit': () => import('./api/task-submit').then(m => m.default),
+    'task-status': () => import('./api/task-status').then(m => m.default),
+    'task-start': () => import('./api/task-start').then(m => m.default),
+    'task-stop': () => import('./api/task-stop').then(m => m.default),
+    'task-next': () => import('./api/task-next').then(m => m.default),
+    'task-trace': () => import('./api/task-trace').then(m => m.default),
+    'step-start': () => import('./api/step-start').then(m => m.default),
+    'step-verify': () => import('./api/step-verify').then(m => m.default),
+    'proofs-list': () => import('./api/proofs-list').then(m => m.default),
+    'workspace-init': () => import('./api/workspace-init').then(m => m.default),
+    health: () => import('./api/health').then(m => m.default)
   }
 })

@@ -16,8 +16,7 @@ async function handleProofsList(
           id: p.id,
           name: p.name,
           category: p.category,
-          layer: p.layer,
-          path: p.path
+          layer: p.layer
         }))
       }),
       {

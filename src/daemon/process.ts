@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
-import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH } from '../core/global'
+import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from '../core/global'
 import { daemonLogger } from './logger'
 import { waitForHealth } from './health-check'
 
@@ -15,7 +15,7 @@ export interface StartDaemonResult {
   healthCheckMs?: number
 }
 
-const DAEMON_ADDRESS = 'http://127.0.0.1:8420'
+export const DAEMON_ADDRESS = DAEMON_SOCK_PATH
 
 export function isDaemonRunning(): DaemonProcessInfo {
   if (!existsSync(DAEMON_PID_PATH)) {

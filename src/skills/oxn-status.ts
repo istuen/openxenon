@@ -3,25 +3,23 @@ import type { OpenXenonSkill } from './types'
 export const oxnStatusSkill: OpenXenonSkill = {
   id: 'oxn-status',
   description: '状态体检，通过自然语言了解项目进度',
-  instruction: `# /oxn-status — 查看任务状态
+  instruction: `# \`/oxn-status\` — 查看任务状态
 
 ## 行为约束
 
 当你收到 \`/oxn-status\` 指令时，必须严格按以下步骤执行，禁止自由发挥。
 
-## 步骤 1：获取 Core 通信地址
+## 步骤 1：查询任务状态
+
+使用 CLI 命令查询当前活跃任务状态：
 
 \`\`\`bash
-oxn api base
+oxn api task-status --task-id <任务ID>
 \`\`\`
 
-## 步骤 2：请求项目状态
+如果不知道任务 ID，先使用 \`oxn inspect\` 获取。
 
-\`\`\`bash
-curl -s $(oxn api base)/api/v1/task/status
-\`\`\`
-
-## 步骤 3：解读状态并报告
+## 步骤 2：解读状态并报告
 
 将返回的状态转化为人类易读的进度报告：
 

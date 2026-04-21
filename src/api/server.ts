@@ -1,89 +1,36 @@
-import { loadProjectContext, closeProjectDatabases } from './context'
-import { handleRequest } from './router'
+import { startSocketServer, stopSocketServer, isSocketServerRunning } from './socket-server'
+import { DAEMON_SOCK_PATH } from '../core/global'
 import { daemonLogger } from '../daemon/logger'
 
 export interface ApiServerConfig {
-  port?: number
-  hostname?: string
+  socketPath?: string
 }
 
-let server: any = null
+export function startApiServer(config: ApiServerConfig = {}): void {
+  const socketPath = config.socketPath || DAEMON_SOCK_PATH
 
-export function startApiServer(config: ApiServerConfig = {}): any {
-  const port = config.port || 8420
-  const hostname = config.hostname || '127.0.0.1'
-  
-  if (server) {
-    daemonLogger.warn('API server already running, stopping previous instance')
-    stopApiServer()
+  if (isSocketServerRunning()) {
+    daemonLogger.warn('API server already running')
+    return
   }
-  
-  server = Bun.serve({
-    port,
-    hostname,
-    async fetch(request: Request): Promise<Response> {
-      const url = new URL(request.url)
-      const method = request.method
-      const pathname = url.pathname
-      
-      daemonLogger.debug(`${method} ${pathname}`)
-      
-      if (pathname === '/api/v1/health' && method === 'GET') {
-        return handleRequest(method, pathname, request, null as any, '')
-      }
-      
-      const projectPath = request.headers.get('X-Project-Path')
-      const context = loadProjectContext(projectPath)
-      
-      if (context instanceof Response) {
-        return context
-      }
-      
-      try {
-        return await handleRequest(
-          method,
-          pathname,
-          request,
-          context.db,
-          context.projectPath
-        )
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        daemonLogger.error(`Request handler error: ${errorMessage}`)
-        
-        return new Response(
-          JSON.stringify({
-            error: 'InternalServerError',
-            message: errorMessage,
-            statusCode: 500
-          }),
-          {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        )
-      }
-    }
-  })
-  
-  daemonLogger.info(`API server started on ${hostname}:${port}`)
-  
-  return server
+
+  try {
+    startSocketServer(socketPath)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    daemonLogger.error(`Failed to start API server: ${errorMessage}`)
+    throw error
+  }
 }
 
 export function stopApiServer(): void {
-  if (server) {
-    server.stop()
-    server = null
-    closeProjectDatabases()
-    daemonLogger.info('API server stopped')
-  }
+  stopSocketServer()
 }
 
 export function isApiServerRunning(): boolean {
-  return server !== null
+  return isSocketServerRunning()
 }
 
-export function getApiServer(): any {
-  return server
+export function getApiServer(): null {
+  return null
 }

@@ -1,4 +1,6 @@
+import { connect } from 'bun'
 import { daemonLogger } from './logger'
+import { existsSync } from 'fs'
 
 export interface HealthCheckResult {
   success: boolean
@@ -6,27 +8,50 @@ export interface HealthCheckResult {
 }
 
 export async function waitForHealth(
-  baseUrl: string,
+  socketPath: string,
   timeout: number = 5000
 ): Promise<HealthCheckResult> {
   const start = Date.now()
-  const healthUrl = `${baseUrl}/api/v1/health`
-  
+
   while (Date.now() - start < timeout) {
     try {
-      const response = await fetch(healthUrl)
-      if (response.ok) {
-        const elapsedMs = Date.now() - start
-        daemonLogger.info(`Daemon health check passed in ${elapsedMs}ms`)
-        return { success: true, elapsedMs }
+      if (!existsSync(socketPath)) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        continue
       }
+
+      const socket = connect({
+        socket: {
+          data(_: any, data: Buffer) {
+            try {
+              const response = JSON.parse(data.toString())
+              if (response.status === 200 || response.body?.taskId) {
+                const elapsedMs = Date.now() - start
+                daemonLogger.info(`Daemon health check passed in ${elapsedMs}ms`)
+              }
+            } catch {
+              // Ignore parse errors
+            }
+          }
+        },
+        path: socketPath
+      })
+
+      socket.write(JSON.stringify({
+        method: 'GET',
+        path: '/api/v1/health'
+      }))
+
+      await new Promise(resolve => setTimeout(resolve, 100))
+      socket.end()
+
+      const elapsedMs = Date.now() - start
+      return { success: true, elapsedMs }
     } catch {
-      // Server not ready yet, continue polling
+      await new Promise(resolve => setTimeout(resolve, 100))
     }
-    
-    await new Promise(resolve => setTimeout(resolve, 100))
   }
-  
+
   const elapsedMs = Date.now() - start
   daemonLogger.error(`Daemon health check timed out after ${elapsedMs}ms`)
   return { success: false, elapsedMs }
