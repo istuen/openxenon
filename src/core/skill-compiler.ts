@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { createHash } from 'crypto'
-import type { XenonixSkill } from '../skills/types'
+import type { OpenXenonSkill } from '../skills/types'
 import { allSkills } from '../skills'
 import { getAdapter } from '../adapters'
 
@@ -20,12 +20,12 @@ export interface CompilationReport {
   skipped: number
 }
 
-export function loadSkills(): XenonixSkill[] {
+export function loadSkills(): OpenXenonSkill[] {
   return allSkills
 }
 
 export function compileSkill(
-  skill: XenonixSkill,
+  skill: OpenXenonSkill,
   adapterId: string,
   projectPath: string,
   force: boolean = false

@@ -85,7 +85,7 @@ async function main(): Promise<void> {
     hostname: '127.0.0.1'
   })
   
-  daemonLogger.info('Xenonix Daemon started successfully')
+  daemonLogger.info('OpenXenon Daemon started successfully')
   daemonLogger.info('API server listening on 127.0.0.1:8420')
   
   await new Promise(() => {})

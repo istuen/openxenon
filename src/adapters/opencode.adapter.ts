@@ -1,5 +1,5 @@
 import type { SkillAdapter } from './types'
-import type { XenonixSkill } from '../skills/types'
+import type { OpenXenonSkill } from '../skills/types'
 
 export class OpenCodeAdapter implements SkillAdapter {
   readonly toolId = 'opencode'
@@ -8,7 +8,7 @@ export class OpenCodeAdapter implements SkillAdapter {
     return `.opencode/skills/${skillId}/SKILL.md`
   }
 
-  render(skill: XenonixSkill): string {
+  render(skill: OpenXenonSkill): string {
     let content = `---
 name: ${skill.id}
 description: ${skill.description}

@@ -1,6 +1,6 @@
-import type { XenonixSkill } from './types'
+import type { OpenXenonSkill } from './types'
 
-export const oxnStatusSkill: XenonixSkill = {
+export const oxnStatusSkill: OpenXenonSkill = {
   id: 'oxn-status',
   description: '状态体检，通过自然语言了解项目进度',
   instruction: `# /oxn-status — 查看任务状态

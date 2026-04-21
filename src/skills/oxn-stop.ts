@@ -1,6 +1,6 @@
-import type { XenonixSkill } from './types'
+import type { OpenXenonSkill } from './types'
 
-export const oxnStopSkill: XenonixSkill = {
+export const oxnStopSkill: OpenXenonSkill = {
   id: 'oxn-stop',
   description: '人工熔断，要求 AI 停止一切生成行为',
   instruction: `# /oxn-stop — 停止任务执行

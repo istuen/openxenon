@@ -1,4 +1,4 @@
-export interface XenonixSkill {
+export interface OpenXenonSkill {
   id: string
   description: string
   instruction: string

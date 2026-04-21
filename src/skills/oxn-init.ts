@@ -1,9 +1,9 @@
-import type { XenonixSkill } from './types'
+import type { OpenXenonSkill } from './types'
 
-export const oxnInitSkill: XenonixSkill = {
+export const oxnInitSkill: OpenXenonSkill = {
   id: 'oxn-init',
-  description: '初始化项目围栏，在当前项目植入 Xenonix 基因',
-  instruction: `# \`/oxn-init\` — 初始化 Xenonix 项目围栏
+  description: '初始化项目围栏，在当前项目植入 OpenXenon 基因',
+  instruction: `# \`/oxn-init\` — 初始化 OpenXenon 项目围栏
 
 ## 行为约束
 
@@ -11,7 +11,7 @@ export const oxnInitSkill: XenonixSkill = {
 
 ## 步骤 1：检查当前环境
 
- 在终端执行以下命令检查是否已在 Xenonix 管理下：
+ 在终端执行以下命令检查是否已在 OpenXenon 管理下：
 
 \`\`\`bash
 oxn status
@@ -48,6 +48,6 @@ oxn status
 
 ## 错误处理
 
- - 如果 \`oxn\` 命令不存在，提示工程师安装 Xenonix CLI
+ - 如果 \`oxn\` 命令不存在，提示工程师安装 OpenXenon CLI
  - 如果项目已初始化，告知工程师当前状态`,
 }

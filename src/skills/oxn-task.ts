@@ -1,8 +1,8 @@
-import type { XenonixSkill } from './types'
+import type { OpenXenonSkill } from './types'
 import type { Step } from '../types/blueprint'
 import type { Blueprint } from '../types/blueprint'
 
-export const oxnTaskSkill: XenonixSkill = {
+export const oxnTaskSkill: OpenXenonSkill = {
   id: 'oxn-task',
   description: '发起 Xenonix 任务，依据 Target State 拆解并提交 Blueprint',
   instruction: `# \`/oxn-task\` — 发起 Xenonix 任务

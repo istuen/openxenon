@@ -1,8 +1,8 @@
 {
-  "name": "xenonix",
+  "name": "openxenon",
   "version": "1.0.0",
-  "description": "Xenonix - 工程化控制引擎，面向大语言模型的工程化控制引擎",
-  "author": "Xenonix Team",
+  "description": "OpenXenon - 工程化控制引擎，面向大语言模型的工程化控制引擎",
+  "author": "OpenXenon Team",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cli.js",
@@ -47,10 +47,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/xenonix/xenonix.git"
+    "url": "https://github.com/openxenon/openxenon.git"
   },
   "bugs": {
-    "url": "https://github.com/xenonix/xenonix/issues"
+    "url": "https://github.com/openxenon/openxenon/issues"
   },
-  "homepage": "https://xenonix.dev"
+  "homepage": "https://openxenon.dev"
 }

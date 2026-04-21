@@ -1,6 +1,6 @@
-import type { XenonixSkill } from './types'
+import type { OpenXenonSkill } from './types'
 
-export const oxnResumeSkill: XenonixSkill = {
+export const oxnResumeSkill: OpenXenonSkill = {
   id: 'oxn-resume',
   description: '恢复断点，从中止的步骤继续执行',
   instruction: `# /oxn-resume — 恢复任务执行

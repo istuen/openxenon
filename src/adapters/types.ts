@@ -1,7 +1,7 @@
-import type { XenonixSkill } from '../skills/types'
+import type { OpenXenonSkill } from '../skills/types'
 
 export interface SkillAdapter {
   readonly toolId: string
-  render(skill: XenonixSkill): string
+  render(skill: OpenXenonSkill): string
   getOutputPath(skillId: string): string
 }

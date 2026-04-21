@@ -4,7 +4,7 @@ const main = defineCommand({
   meta: {
     name: 'xn',
     version: '1.0.0',
-    description: 'Xenonix CLI - 面向大语言模型的工程化控制引擎'
+    description: 'OpenXenon CLI - 面向大语言模型的工程化控制引擎'
   },
   subCommands: {
     init: () => import('./commands/init').then(m => m.default),
@@ -25,8 +25,8 @@ const main = defineCommand({
     }
   },
   async run() {
-    console.log('Xenonix CLI')
-    console.log('Run `xn --help` for usage information')
+    console.log('OpenXenon CLI')
+    console.log('Run `oxn --help` for usage information')
   }
 })
 

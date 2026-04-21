@@ -41,7 +41,7 @@ const startCommand = defineCommand({
     description: '启动全局 Core 引擎'
   },
   async run() {
-    console.log('启动 Xenonix Core 守护进程...')
+    console.log('启动 OpenXenon Core 守护进程...')
     
     const serverPath = getServerPath()
     const result = await startDaemonWithHealthCheck(serverPath)
@@ -65,7 +65,7 @@ const stopCommand = defineCommand({
     description: '停止全局 Core 引擎'
   },
   async run() {
-    console.log('停止 Xenonix Core 守护进程...')
+    console.log('停止 OpenXenon Core 守护进程...')
     
     const result = await stopDaemon()
     
@@ -84,7 +84,7 @@ const restartCommand = defineCommand({
     description: '重启全局 Core 引擎'
   },
   async run() {
-    console.log('重启 Xenonix Core 守护进程...')
+    console.log('重启 OpenXenon Core 守护进程...')
     
     const stopResult = await stopDaemon()
     
@@ -118,7 +118,7 @@ const statusCommand = defineCommand({
   async run() {
     const status = getDaemonStatus()
     
-    console.log('Xenonix Core 状态:')
+    console.log('OpenXenon Core 状态:')
     
     if (status.isRunning) {
       console.log(`  状态: 运行中 (PID: ${status.pid})`)
