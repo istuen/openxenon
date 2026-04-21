@@ -1,11 +1,11 @@
 import { join } from 'path'
 
 export function getProjectBoundaryPath(projectRoot: string): string {
-  return join(projectRoot, '.xenonix')
+  return join(projectRoot, '.openxenon')
 }
 
 export function getProjectDbPath(projectRoot: string): string {
-  return join(getProjectBoundaryPath(projectRoot), 'project.db')
+  return join(getProjectBoundaryPath(projectRoot), 'project.oxn')
 }
 
 export function getProjectProofsPath(projectRoot: string): string {

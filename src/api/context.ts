@@ -17,8 +17,8 @@ export function loadProjectContext(projectPath: string | null): ProjectContext |
     return missingProjectPath()
   }
   
-  const xenonixPath = join(projectPath, '.xenonix')
-  const dbPath = join(xenonixPath, 'project.db')
+  const xenonixPath = join(projectPath, '.openxenon')
+  const dbPath = join(xenonixPath, 'project.oxn')
   
   if (!existsSync(dbPath)) {
     return projectNotFound(projectPath)

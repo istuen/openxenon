@@ -2,21 +2,21 @@ import type { XenonixSkill } from './types'
 import type { Step } from '../types/blueprint'
 import type { Blueprint } from '../types/blueprint'
 
-export const xnTaskSkill: XenonixSkill = {
-  id: 'xn-task',
+export const oxnTaskSkill: XenonixSkill = {
+  id: 'oxn-task',
   description: '发起 Xenonix 任务，依据 Target State 拆解并提交 Blueprint',
-  instruction: `# /xn-task — 发起 Xenonix 任务
+  instruction: `# \`/oxn-task\` — 发起 Xenonix 任务
 
 ## 行为约束
 
-当你收到 \`/xn-task <需求>\` 指令时，必须严格按以下步骤执行，禁止自由发挥。
+当你收到 \`/oxn-task <需求>\` 指令时，必须严格按以下步骤执行，禁止自由发挥。
 
 ## 步骤 1：获取 Core 通信地址
 
 在终端执行以下命令获取 Core 引擎的当前通信地址：
 
 \`\`\`bash
-xn api base
+oxn api base
 \`\`\`
 
 该命令会返回一个地址（如 \`http://127.0.0.1:8420\`）。
@@ -27,7 +27,7 @@ xn api base
 向 Core 发起 GET 请求：
 
 \`\`\`bash
-curl -s $(xn api base)/api/v1/proofs/list
+curl -s $(oxn api base)/api/v1/proofs/list
 \`\`\`
 
 该请求返回当前项目可用的 Proof 探针列表。
@@ -45,7 +45,7 @@ curl -s $(xn api base)/api/v1/proofs/list
 将填充好的 Blueprint 提交给 Core 进行预验证：
 
 \`\`\`bash
-curl -s -X POST $(xn api base)/api/v1/task/submit \\
+curl -s -X POST $(oxn api base)/api/v1/task/submit \\
   -H "Content-Type: application/json" \\
   -d '{
     "project_path": "<当前项目绝对路径>",

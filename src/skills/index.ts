@@ -1,27 +1,27 @@
 import type { XenonixSkill } from './types'
-import { xnInitSkill } from './xn-init'
-import { xnTaskSkill } from './xn-task'
-import { xnResumeSkill } from './xn-resume'
-import { xnStatusSkill } from './xn-status'
-import { xnStopSkill } from './xn-stop'
-import { xnTraceSkill } from './xn-trace'
+import { oxnInitSkill } from './oxn-init'
+import { oxnTaskSkill } from './oxn-task'
+import { oxnResumeSkill } from './oxn-resume'
+import { oxnStatusSkill } from './oxn-status'
+import { oxnStopSkill } from './oxn-stop'
+import { oxnTraceSkill } from './oxn-trace'
 
 export type { XenonixSkill }
 
 export const allSkills: XenonixSkill[] = [
-  xnInitSkill,
-  xnTaskSkill,
-  xnResumeSkill,
-  xnStatusSkill,
-  xnStopSkill,
-  xnTraceSkill,
+  oxnInitSkill,
+  oxnTaskSkill,
+  oxnResumeSkill,
+  oxnStatusSkill,
+  oxnStopSkill,
+  oxnTraceSkill,
 ]
 
 export {
-  xnInitSkill,
-  xnTaskSkill,
-  xnResumeSkill,
-  xnStatusSkill,
-  xnStopSkill,
-  xnTraceSkill,
+  oxnInitSkill,
+  oxnTaskSkill,
+  oxnResumeSkill,
+  oxnStatusSkill,
+  oxnStopSkill,
+  oxnTraceSkill,
 }

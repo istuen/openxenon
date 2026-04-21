@@ -15,7 +15,7 @@ describe('Database Operations', () => {
     if (!existsSync(testDir)) {
       mkdirSync(testDir, { recursive: true })
     }
-    db = initProjectDb(join(testDir, 'project.db'))
+    db = initProjectDb(join(testDir, 'project.oxn'))
   })
 
   afterEach(() => {

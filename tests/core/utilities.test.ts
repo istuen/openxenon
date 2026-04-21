@@ -29,32 +29,32 @@ describe('Core Utilities', () => {
   describe('Project Path Utilities', () => {
     it('should return correct project boundary path', () => {
       const path = getProjectBoundaryPath(testProjectRoot)
-      expect(path).toBe(join(testProjectRoot, '.xenonix'))
+      expect(path).toBe(join(testProjectRoot, '.openxenon'))
     })
 
     it('should return correct project db path', () => {
       const path = getProjectDbPath(testProjectRoot)
-      expect(path).toBe(join(testProjectRoot, '.xenonix', 'project.db'))
+      expect(path).toBe(join(testProjectRoot, '.openxenon', 'project.db'))
     })
 
     it('should return correct tasks path', () => {
       const path = getTasksPath(testProjectRoot)
-      expect(path).toBe(join(testProjectRoot, '.xenonix', 'tasks'))
+      expect(path).toBe(join(testProjectRoot, '.openxenon', 'tasks'))
     })
 
     it('should return correct task path', () => {
       const path = getTaskPath(testProjectRoot, 'task-123')
-      expect(path).toBe(join(testProjectRoot, '.xenonix', 'tasks', 'task-123'))
+      expect(path).toBe(join(testProjectRoot, '.openxenon', 'tasks', 'task-123'))
     })
 
     it('should return correct step manifest path', () => {
       const path = getStepManifestPath(testProjectRoot, 'task-123')
-      expect(path).toBe(join(testProjectRoot, '.xenonix', 'tasks', 'task-123', 'step-manifest.json'))
+      expect(path).toBe(join(testProjectRoot, '.openxenon', 'tasks', 'task-123', 'step-manifest.json'))
     })
 
     it('should return correct task trace path', () => {
       const path = getTaskTracePath(testProjectRoot, 'task-123')
-      expect(path).toBe(join(testProjectRoot, '.xenonix', 'tasks', 'task-123', 'task-trace.yaml'))
+      expect(path).toBe(join(testProjectRoot, '.openxenon', 'tasks', 'task-123', 'task-trace.yaml'))
     })
   })
 

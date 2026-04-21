@@ -19,10 +19,10 @@ describe('Task Execution API', () => {
   beforeAll(async () => {
     if (!existsSync(testDir)) {
       mkdirSync(testDir, { recursive: true })
-      mkdirSync(join(testDir, '.xenonix'), { recursive: true })
+      mkdirSync(join(testDir, '.openxenon'), { recursive: true })
     }
     
-    db = initProjectDb(join(testDir, '.xenonix', 'project.db'))
+    db = initProjectDb(join(testDir, '.openxenon', 'project.db'))
     
     startApiServer({ port: TEST_PORT, hostname: '127.0.0.1' })
     

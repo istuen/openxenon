@@ -8,18 +8,18 @@
   "main": "./dist/cli.js",
   "types": "./dist/types/index.d.ts",
   "bin": {
-    "xn": "./dist/xn"
+    "oxn": "./dist/oxn"
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "dev": "bun run src/cli.ts",
-    "build": "bun build ./src/cli.ts --compile --outfile dist/xn",
+    "build": "bun build ./src/cli.ts --compile --outfile dist/oxn",
     "build:all": "bun run build:linux && bun run build:macos && bun run build:windows",
-    "build:linux": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile dist/xn-linux",
-    "build:macos": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile dist/xn-macos",
-    "build:windows": "bun build ./src/cli.ts --compile --target=bun-windows-x64 --outfile dist/xn.exe",
+    "build:linux": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile dist/oxn-linux",
+    "build:macos": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile dist/oxn-macos",
+    "build:windows": "bun build ./src/cli.ts --compile --target=bun-windows-x64 --outfile dist/oxn.exe",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",

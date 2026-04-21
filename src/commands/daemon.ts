@@ -50,8 +50,8 @@ const startCommand = defineCommand({
       console.log(`✓ Daemon started successfully (PID: ${result.pid})`)
       console.log(`  Health check passed in ${result.healthCheckMs}ms`)
       console.log(`  API server listening on 127.0.0.1:8420`)
-      console.log(`  PID file: ~/.xenonix/daemon.pid`)
-      console.log(`  Log file: ~/.xenonix/daemon.log`)
+console.log(`  PID file: ~/.openxenon/daemon.pid`)
+  console.log(`  Log file: ~/.openxenon/daemon.log`)
     } else {
       console.error(`✗ Failed to start daemon: ${result.error}`)
       process.exit(1)

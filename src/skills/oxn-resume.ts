@@ -1,24 +1,24 @@
 import type { XenonixSkill } from './types'
 
-export const xnResumeSkill: XenonixSkill = {
-  id: 'xn-resume',
+export const oxnResumeSkill: XenonixSkill = {
+  id: 'oxn-resume',
   description: '恢复断点，从中止的步骤继续执行',
-  instruction: `# /xn-resume — 恢复任务执行
+  instruction: `# /oxn-resume — 恢复任务执行
 
 ## 行为约束
 
-当你收到 \`/xn-resume\` 指令时，必须严格按以下步骤执行，禁止自由发挥。
+当你收到 \`/oxn-resume\` 指令时，必须严格按以下步骤执行，禁止自由发挥。
 
 ## 步骤 1：获取 Core 通信地址
 
 \`\`\`bash
-xn api base
+oxn api base
 \`\`\`
 
 ## 步骤 2：查询当前任务状态
 
 \`\`\`bash
-curl -s $(xn api base)/api/v1/task/status
+curl -s $(oxn api base)/api/v1/task/status
 \`\`\`
 
 ## 步骤 3：定位断点
@@ -40,7 +40,7 @@ curl -s $(xn api base)/api/v1/task/status
 
 ## 错误处理
 
-- 如果没有活跃任务，提示工程师使用 \`/xn-task\` 发起新任务
-- 如果任务已完成，提示工程师查看 \`/xn-trace\` 获取案卷
+- 如果没有活跃任务，提示工程师使用 \`/oxn-task\` 发起新任务
+- 如果任务已完成，提示工程师查看 \`/oxn-trace\` 获取案卷
 `,
 }

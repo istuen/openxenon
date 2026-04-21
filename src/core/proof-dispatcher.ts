@@ -70,8 +70,8 @@ export async function dispatchProof(
   
   if (!customProof) {
     searchPaths.push(
-      `${context.projectRoot}/.xenonix/proofs/`,
-      '~/.xenonix/custom-proofs/'
+      `${context.projectRoot}/.openxenon/proofs/`,
+      '~/.openxenon/custom-proofs/'
     )
     
     const error = new ProofNotFoundError(proofId, searchPaths)

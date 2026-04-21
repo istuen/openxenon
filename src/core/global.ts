@@ -1,8 +1,8 @@
 import { homedir } from 'os'
 import { join } from 'path'
 
-export const GLOBAL_BOUNDARY_PATH = join(homedir(), '.xenonix')
-export const CORE_DB_PATH = join(GLOBAL_BOUNDARY_PATH, 'core.db')
+export const GLOBAL_BOUNDARY_PATH = join(homedir(), '.openxenon')
+export const CORE_DB_PATH = join(GLOBAL_BOUNDARY_PATH, 'core.oxn')
 export const GLOBAL_PROOFS_PATH = join(GLOBAL_BOUNDARY_PATH, 'proofs')
 export const COMMON_PROOFS_PATH = join(GLOBAL_PROOFS_PATH, 'common')
 export const TEMPLATES_PATH = join(GLOBAL_PROOFS_PATH, 'templates')

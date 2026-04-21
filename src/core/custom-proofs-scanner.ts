@@ -3,8 +3,8 @@ import { join, extname, basename } from 'path'
 import { homedir } from 'os'
 import type { Proof, CustomProofConfig } from '../types/proof'
 
-const GLOBAL_PROOFS_PATH = join(homedir(), '.xenonix', 'custom-proofs')
-const PROJECT_PROOFS_DIR = join('.xenonix', 'proofs')
+const GLOBAL_PROOFS_PATH = join(homedir(), '.openxenon', 'custom-proofs')
+const PROJECT_PROOFS_DIR = join('.openxenon', 'proofs')
 
 export function scanProjectProofs(projectRoot: string): CustomProofConfig[] {
   const proofsPath = join(projectRoot, PROJECT_PROOFS_DIR)
