@@ -1,4 +1,5 @@
 import { defineCommand, runMain } from 'citty'
+import { cliContext } from './cli-context'
 
 const main = defineCommand({
   meta: {
@@ -14,7 +15,8 @@ const main = defineCommand({
     trace: () => import('./commands/trace').then(m => m.default),
     rollback: () => import('./commands/rollback').then(m => m.default),
     'force-pass': () => import('./commands/force-pass').then(m => m.default),
-    'proof-list': () => import('./commands/proof-list').then(m => m.default)
+    'proof-list': () => import('./commands/proof-list').then(m => m.default),
+    task: () => import('./commands/task').then(m => m.default)
   },
   args: {
     verbose: {
@@ -22,11 +24,20 @@ const main = defineCommand({
       type: 'boolean',
       description: 'Enable verbose output',
       default: false
+    },
+    json: {
+      alias: 'j',
+      type: 'boolean',
+      description: 'Output in JSON format',
+      default: false
     }
   },
-  async run() {
-    console.log('OpenXenon CLI')
-    console.log('Run `oxn --help` for usage information')
+  async run({ args }) {
+    cliContext.setJsonMode(args.json as boolean)
+    if (!cliContext.isJsonMode()) {
+      console.log('OpenXenon CLI')
+      console.log('Run `oxn --help` for usage information')
+    }
   }
 })
 

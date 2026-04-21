@@ -3,6 +3,7 @@ import { listAllProofs } from '../core/proof-dispatcher'
 import { getGlobalProofsPath, getProjectProofsPath } from '../core/custom-proofs-scanner'
 import { existsSync } from 'fs'
 import { resolve } from 'path'
+import { cliContext } from '../cli-context'
 
 export default defineCommand({
   meta: {
@@ -31,11 +32,12 @@ export default defineCommand({
   async run({ args }) {
     const projectRoot = resolve(args.project as string)
     const format = args.format as string
-    
+    const useJson = cliContext.isJsonMode()
+
     try {
       const proofs = listAllProofs(projectRoot)
-      
-      if (format === 'json') {
+
+      if (format === 'json' || useJson) {
         console.log(JSON.stringify(proofs, null, 2))
         return
       }
