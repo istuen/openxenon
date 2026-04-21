@@ -3,11 +3,11 @@ import type { OpenXenonSkill } from './types'
 export const oxnTraceSkill: OpenXenonSkill = {
   id: 'oxn-trace',
   description: '轨迹取证，查看任务执行案卷',
-  instruction: `# /oxn-trace — 查看任务轨迹
+  instruction: `# \`/oxn-trace \`— 查看任务轨迹
 
 ## 行为约束
 
-当你收到 `/oxn-trace` 指令时，必须严格按以下步骤执行，禁止自由发挥。
+当你收到 \`/oxn-trace\` 指令时，必须严格按以下步骤执行，禁止自由发挥。
 
 ## 步骤 1：请求任务轨迹
 

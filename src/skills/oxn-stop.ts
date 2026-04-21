@@ -3,11 +3,11 @@ import type { OpenXenonSkill } from './types'
 export const oxnStopSkill: OpenXenonSkill = {
   id: 'oxn-stop',
   description: '人工熔断，要求 AI 停止一切生成行为',
-  instruction: `# /oxn-stop — 停止任务执行
+  instruction: `# \`/oxn-stop \`— 停止任务执行
 
 ## 行为约束
 
-当你收到 `/oxn-stop` 指令时，必须立即执行以下操作，禁止延迟或忽略。
+当你收到 \`/oxn-stop\` 指令时，必须立即执行以下操作，禁止延迟或忽略。
 
 ## 步骤 1：立即停止
 
