@@ -1,8 +1,8 @@
 import type { Playbook } from './playbook'
-import type { XnBlueprint } from './xn-blueprint'
+import type { Blueprint } from './blueprint'
 import type { TaskStatus, XnTaskStatus, XnStageStatus } from './core'
 import type { Artifact } from './artifact'
-import type { XnAction } from './xn-action'
+import type { Action } from './action'
 
 export interface Task {
   id: string
@@ -16,9 +16,9 @@ export interface Task {
 export interface XnTask {
   id: string;
   name: string;
-  xnBlueprint: XnBlueprint;
+  blueprint: Blueprint;
   xnTaskStatus: XnTaskStatus;
-  xnAction?: XnAction;
+  action?: Action;
   createdAt: number;
   updatedAt: number;
 }

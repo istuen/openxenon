@@ -131,14 +131,14 @@ OpenXenon 的运转完全围绕上述三句话展开，它重新定义了人类�
  工程师在 AI 助手软件中通过 Skill（如输入 `/oxn-task`）触发任务并描述宏观需求。AI 首先探索当前 Space 的项目结构，包括：目录布局、现有代码、技术栈依赖、配置文件等。Core 提供项目探针协助扫描，但不越俎代庖。
 
 ### 演化工程意图：从人类需求到结构化目标
- 在了解项目现状后，AI 将宏观需求转化为结构化的 `XnBlueprint`。OpenXenon Core 作为"武器库"，向下提供当前上下文可用的 `XnProof`（验证探针）和 Blueprint 模板。真正的拆解由 AI 模型自行完成：它分析需求，将模板填充为具体的步骤，然后提交给 Core 保存。这是一种"AI 自主演化 + Core 确权固化"的结构化过程。
+ 在了解项目现状后，AI 将宏观需求转化为结构化的 `Blueprint`。OpenXenon Core 作为"武器库"，向下提供当前上下文可用的 `Proof`（验证探针）和 Blueprint 模板。真正的拆解由 AI 模型自行完成：它分析需求，将模板填充为具体的步骤，然后提交给 Core 保存。这是一种"AI 自主演化 + Core 确权固化"的结构化过程。
 
 ### 收敛 AI 推理：从发散推理到边界约束
-这是系统最硬核的控制环节。AI 助手在执行每个具体的 `XnStage` 时，被底层 Prompt 强制要求将进度写入当前任务目录下的 `step-manifest.json`。系统采用“双轨并行”机制对发散的推理进行强制收敛：
-* **明线（正常约束）**：AI 完成 XnStage 后主动通过 API 请求 Core 验证。Core 调用绑定的 `XnSpec` 规范和 `XnProof` 探针进行机械校验，通过后才允许推进下一个 XnStage。
+这是系统最硬核的控制环节。AI 助手在执行每个具体的 `Stage` 时，被底层 Prompt 强制要求将进度写入当前任务目录下的 `step-manifest.json`。系统采用“双轨并行”机制对发散的推理进行强制收敛：
+* **明线（正常约束）**：AI 完成 Stage 后主动通过 API 请求 Core 验证。Core 调用绑定的 `Spec` 规范和 `Proof` 探针进行机械校验，通过后才允许推进下一个 Stage。
 * **暗线（逃逸兜底）**：Core 绝对不信任 AI 的自觉性。后台的雷达会实时监听项目内 `step-manifest.json` 的物理变更，一旦捕获变更，立即将其快照同步至当前项目的 `space.oxn` 并打上时间戳。系统比对数据库时间戳，若发现状态已变更，但 AI 超时未通过 API 发起验证请求，Core 会直接判定 **“AI 模型逃逸”**，立刻剥夺其执行权，并抛出异常交由工程师人工确认。这彻底封死了大模型自说自话、绕过验证的可能。
 ### 实现软件交付：从输出产物到工程实体
- 软件交付并非最后一步才发生，而是伴随每个 XnStage 验证通过，合规的 `Artifact`（代码文件、配置等）逐步落盘于项目文件系统中。当所有 XnStage 执行完毕，Core 会对全量步骤进行最终复盘，从项目的 `space.oxn` 中抽离记录，输出一份包含所有验证记录的 `task-trace.yaml`。这份"工程案卷"向工程师证明了最终交付的软件实体不是凭空捏造的，而是步步合规、物理确权的工业产物。
+ 软件交付并非最后一步才发生，而是伴随每个 Stage 验证通过，合规的 `Artifact`（代码文件、配置等）逐步落盘于项目文件系统中。当所有 Stage 执行完毕，Core 会对全量步骤进行最终复盘，从项目的 `space.oxn` 中抽离记录，输出一份包含所有验证记录的 `task-trace.yaml`。这份"工程案卷"向工程师证明了最终交付的软件实体不是凭空捏造的，而是步步合规、物理确权的工业产物。
 
 ## 核心原语
 
@@ -149,69 +149,69 @@ OpenXenon 的整个运行机制建立在五个核心原语之上（统称 `Xn*` 
 一次完整的 OpenXenon 运行周期如下：
 
 ```
-[加载 XnBlueprint]
+[加载 Blueprint]
        |
        v
-[执行当前 XnStage，加载边界规则] ---> [将 Prompt 发送给 LLM]
+[执行当前 Stage，加载边界规则] ---> [将 Prompt 发送给 LLM]
        |
        v
 [LLM 返回代码变更]
        |
        v
-[XnProof 执行 Diff 审计与特征匹配]
+[Proof 执行 Diff 审计与特征匹配]
        |
        +---> (越界/违规) ---> [熔断丢弃] ---> [记录审计日志] ---> [终止或人工介入]
        |
        +---> (未违规，但业务逻辑受挫/编译失败)
        |         |
        |         v
-       |    [触发 XnSample 机制] ---> [在临时高隔离边界内生成探索性代码]
+       |    [触发 Sample 机制] ---> [在临时高隔离边界内生成探索性代码]
        |         |
        |         v
-       |    [人工审核或严格沙箱验证] ---> (通过) ---> [固化为新 XnStage，回注 XnBlueprint]
+       |    [人工审核或严格沙箱验证] ---> (通过) ---> [固化为新 Stage，回注 Blueprint]
        |                                 |
        |                                 (失败) ---> [丢弃，保持原状]
        |
        +---> (严格通过) ---> [沉淀为 Artifact，安全合入工作区]
        |
        v
-[解锁下一 XnStage，继承当前 Artifact 状态] ---> 继续流转...
+[解锁下一 Stage，继承当前 Artifact 状态] ---> 继续流转...
 ```
 
 #### 三种水流
 
 通过上述设计，OpenXenon 将复杂的 AI 协作严格切分为三种清晰的水流：
 
-1.  **正常流（确定性）**：AI 严格执行 `CANONICAL` 状态的 XnBlueprint，XnStage 顺序流转，最终沉淀为 Artifact。
-2.  **偏差流（微观自愈）**：触发 XnSample。AI 在单个节点边界内探索变体，系统自动校验。风险极低，无需人工介入。
-3.  **演化流（宏观涌现）**：触发 XnDraft。AI 推翻整体规划，在隔离沙箱中跑通新拓扑，最后以"物理提案"的形式上交人类。风险极高，必须人类裁决。
+1.  **正常流（确定性）**：AI 严格执行 `CANONICAL` 状态的 Blueprint，Stage 顺序流转，最终沉淀为 Artifact。
+2.  **偏差流（微观自愈）**：触发 Sample。AI 在单个节点边界内探索变体，系统自动校验。风险极低，无需人工介入。
+3.  **演化流（宏观涌现）**：触发 Draft。AI 推翻整体规划，在隔离沙箱中跑通新拓扑，最后以"物理提案"的形式上交人类。风险极高，必须人类裁决。
 
 #### 适用场景
 
-1.  **遗留系统安全重构**：在缺乏测试的老代码库中，通过 XnBlueprint 路径锁死，防止 AI 牵一发而动全身；遇到历史遗留的奇葩逻辑时，通过 Sample 打补丁，而非重写。
-2.  **团队工程规范强制落地**：将高级架构师的经验编写为 XnBlueprint。初级工程师在使用 AI 时，其产出物会被强制约束在 XnBlueprint 内，不符合规范的 AI 输出无法成为 Artifact。
+1.  **遗留系统安全重构**：在缺乏测试的老代码库中，通过 Blueprint 路径锁死，防止 AI 牵一发而动全身；遇到历史遗留的奇葩逻辑时，通过 Sample 打补丁，而非重写。
+2.  **团队工程规范强制落地**：将高级架构师的经验编写为 Blueprint。初级工程师在使用 AI 时，其产出物会被强制约束在 Blueprint 内，不符合规范的 AI 输出无法成为 Artifact。
 3.  **复杂业务流编排**：将涉及多表变更、多服务联调的需求，拆解为 DAG 蓝图，让 AI 在确定的拓扑轨道上精确作业。
 
-### 1. XnStage（工序节点）
- 工程隔离的最小执行单元。一个 XnStage 封装了一次完整的 AI 交互意图，并强制声明其**物理边界**。
+### 1. Stage（工序节点）
+ 工程隔离的最小执行单元。一个 Stage 封装了一次完整的 AI 交互意图，并强制声明其**物理边界**。
  * **输入**：包含上下文的 Prompt 模板
  * **边界声明**：精确到文件路径（支持 Glob/正则）、允许调用的 API 范围、甚至特定的代码修改模式
  * **状态声明**：该节点执行成功后，系统应达到的预期状态
 
-### 2. XnProof（校验熔断器）
- 附着在 XnStage 上的硬拦截器。当 LLM 返回结果后，必须经过 XnProof 的审计。
- * **Diff 路径扫描**：比对变更集，任何不在 XnStage 声明路径内的文件变更，直接判定为 `FAILED`
+### 2. Proof（校验熔断器）
+ 附着在 Stage 上的硬拦截器。当 LLM 返回结果后，必须经过 Proof 的审计。
+ * **Diff 路径扫描**：比对变更集，任何不在 Stage 声明路径内的文件变更，直接判定为 `FAILED`
  * **特征正则拦截**：通过正则匹配，拦截危险的代码模式
- * **熔断机制**：一旦 XnProof 校验失败，本次 AI 的输出将被整体丢弃
+ * **熔断机制**：一旦 Proof 校验失败，本次 AI 的输出将被整体丢弃
 
-### 3. XnBlueprint（拓扑蓝图）
- 由多个 XnStage 组成的有向无环图（DAG），代表系统工程的静态规划。节点之间的流转是单向的，前置节点的 XnProof 必须返回 `PASSED`，后续节点才允许被触发。
+### 3. Blueprint（拓扑蓝图）
+ 由多个 Stage 组成的有向无环图（DAG），代表系统工程的静态规划。节点之间的流转是单向的，前置节点的 Proof 必须返回 `PASSED`，后续节点才允许被触发。
 
-### 4. XnSample（受控样本分支）
- 动态逃生机制。当 AI 在 XnStage 中受挫，且无法通过重试解决时，允许生成一个 XnSample。Sample 必须在极其苛刻的临时边界内运行，其产生的代码变更被视为"实验性补丁"。
+### 4. Sample（受控样本分支）
+ 动态逃生机制。当 AI 在 Stage 中受挫，且无法通过重试解决时，允许生成一个 Sample。Sample 必须在极其苛刻的临时边界内运行，其产生的代码变更被视为"实验性补丁"。
 
 ### 5. Artifact（确定性产物）
- 整个 OpenXenon 引擎运转的最终输出物。它是严格经历了 `XnBlueprint` 的拓扑流转、通过了所有 `XnProof` 的校验熔断后，最终沉淀下来的**高信噪比工程资产**。
+ 整个 OpenXenon 引擎运转的最终输出物。它是严格经历了 `Blueprint` 的拓扑流转、通过了所有 `Proof` 的校验熔断后，最终沉淀下来的**高信噪比工程资产**。
 
 ## 系统架构：全局/项目双层边界
 
@@ -255,14 +255,14 @@ OpenXenon 采用严格的全局与项目双层物理隔离架构。Core 引擎�
      AI->>Core: 发起任务请求
      Core->>GFS: 扫描全局 proofs/
      Core->>PFS: 扫描项目结构 (目录、依赖、配置)
-     Core-->>AI: 返回项目结构 + 可用 XnProof 探针
+     Core-->>AI: 返回项目结构 + 可用 Proof 探针
      AI->>AI: LLM 分析项目现状，理解技术栈
      end
      rect rgb(240, 248, 255)
      Note over Eng, PFS: 阶段一：演化工程意图（从人类需求到结构化目标）
-     AI->>AI: LLM 自行分析需求，拆解并填充 XnBlueprint
-     AI->>Core: 提交填充完整的 XnBlueprint
-     Core->>PFS: 将 XnBlueprint 状态持久化至 space.oxn
+     AI->>AI: LLM 自行分析需求，拆解并填充 Blueprint
+     AI->>Core: 提交填充完整的 Blueprint
+     Core->>PFS: 将 Blueprint 状态持久化至 space.oxn
      Core-->>AI: 返回保存成功确认
      end
     rect rgb(255, 250, 240)
@@ -270,18 +270,18 @@ OpenXenon 采用严格的全局与项目双层物理隔离架构。Core 引擎�
     
     AI->>Eng: (可选) 展示计划，请求人工确认
     Eng-->>AI: 确认执行
-    AI->>AI: 开始执行 XnStage 1...
-    loop 针对每一个 XnStage
+    AI->>AI: 开始执行 Stage 1...
+    loop 针对每一个 Stage
         AI->>PFS: 生成代码产物
         AI->>PFS: [强制Hook] 写入 tasks/<id>/step-manifest.json
         
         par 正常验证路径 (明线)
-            AI->>Core: [强制Hook] API 请求当前 XnStage 验证
+            AI->>Core: [强制Hook] API 请求当前 Stage 验证
             Core->>PFS: 读取项目 space.oxn 获取上下文
-            Core->>Core: 执行整合后的 XnProof 探针机械校验
+            Core->>Core: 执行整合后的 Proof 探针机械校验
             alt 校验通过
                 Core->>PFS: 更新 space.oxn 状态
-                Core-->>AI: 返回通过，下发下一个 XnStage 指令
+                Core-->>AI: 返回通过，下发下一个 Stage 指令
             else 校验失败
                 Core-->>AI: 返回失败，要求回滚重试
             end
@@ -298,15 +298,15 @@ OpenXenon 采用严格的全局与项目双层物理隔离架构。Core 引擎�
     rect rgb(240, 255, 240)
     Note over Eng, PFS: 阶段三：实现软件交付（从输出产物到工程实体）
     Note over PFS: 随着上述循环，合规的 Artifact 逐步落盘于项目中
-    AI->>Core: 通知所有 XnStage 执行完毕 (Task 结束)
+    AI->>Core: 通知所有 Stage 执行完毕 (Task 结束)
     Core->>PFS: 对 space.oxn 全量记录进行最终复盘汇总
     Core->>PFS: 导出并保存 tasks/<id>/task-trace.yaml
     Core-->>Eng: 推送最终报告，完成软件工程交付
     Eng->>PFS: 基于确权的工程实体进行后续操作
     end
 ```
-## 数据结构：XnBlueprint 示例
-这是一个由 AI 助手拆解并提交给 Core 保存的最小 XnBlueprint 结构，展示了 `XnStage`、`XnSpec`、`XnProof` 的强绑定关系：
+## 数据结构：Blueprint 示例
+这是一个由 AI 助手拆解并提交给 Core 保存的最小 Blueprint 结构，展示了 `Stage`、`Spec`、`Proof` 的强绑定关系：
 ```yaml
 task: "实现 RBAC 权限校验"
 steps:
@@ -334,23 +334,23 @@ steps:
 
 | 中文术语 | 英文标识 | 定义 |
 | :--- | :--- | :--- |
-| **任务** | `XnTask` | 工程师通过 Skill 触发的最宏观的业务目标。会在 Space 内生成唯一的 `task_id`。 |
-| **执行计划** | `XnBlueprint` | 由 AI 助手基于 Core 提供的模板，自行拆解并填充生成的结构化执行蓝图，提交给 Core 保存确权。 |
+| **任务** | `Task` | 工程师通过 Skill 触发的最宏观的业务目标。会在 Space 内生成唯一的 `task_id`。 |
+| **执行计划** | `Blueprint` | 由 AI 助手基于 Core 提供的模板，自行拆解并填充生成的结构化执行蓝图，提交给 Core 保存确权。 |
 
 ### 三、 推理收敛阶段
 
 | 中文术语 | 英文标识 | 定义 |
 | :--- | :--- | :--- |
-| **原子步骤** | `XnStage` | XnBlueprint 中的最小执行单元。AI 助手必须以 XnStage 为粒度推进任务。 |
-| **执行规范** | `XnSpec` | 绑定在 XnStage 上的边界约束条件，规定了 AI 在这一步"必须遵守什么规则、不能生成什么内容"。 |
-| **验证探针** | `XnProof` | Core 持有的机械级校验程序。采用"项目优先，全局兜底"的整合策略。 |
-| **执行动作** | `XnAction` | 非必填。填写则用于让 LLM 遵守执行的动作（如"使用 TypeScript"、"先写测试再写实现"）。 |
+| **原子步骤** | `Stage` | Blueprint 中的最小执行单元。AI 助手必须以 Stage 为粒度推进任务。 |
+| **执行规范** | `Spec` | 绑定在 Stage 上的边界约束条件，规定了 AI 在这一步"必须遵守什么规则、不能生成什么内容"。 |
+| **验证探针** | `Proof` | Core 持有的机械级校验程序。采用"项目优先，全局兜底"的整合策略。 |
+| **执行动作** | `Action` | 非必填。填写则用于让 LLM 遵守执行的动作（如"使用 TypeScript"、"先写测试再写实现"）。 |
 
 ### 四、 交付与追踪阶段
 
 | 中文术语 | 英文标识 | 定义 |
 | :--- | :--- | :--- |
-| **工程产物** | `Artifact` | 经历了 XnSpec 约束且通过 XnProof 验证的最终合法输出物（落盘于项目业务目录）。 |
+| **工程产物** | `Artifact` | 经历了 Spec 约束且通过 Proof 验证的最终合法输出物（落盘于项目业务目录）。 |
 | **步骤舱单** | `step-manifest.json` | 位于 `.openxenon/tasks/<id>/` 下。**由 AI 写入、由 Core 监听**的物理文件，作为进度同步到 `space.oxn` 的单向管道。 |
 | **任务轨迹** | `task-trace.yaml` | 位于 `.openxenon/tasks/<id>/` 下。Task 完成后由 Core 从 `space.oxn` 导出的链路追踪文件。 |
 
@@ -358,13 +358,13 @@ steps:
 
 | 中文术语 | 英文标识 | 定义 |
 | :--- | :--- | :--- |
-| **样本分支** | `XnSample` | 动态逃生机制。当 AI 在 XnStage 中受挫时，允许在临时边界内探索变体。 |
+| **样本分支** | `Sample` | 动态逃生机制。当 AI 在 Stage 中受挫时，允许在临时边界内探索变体。 |
 
 ### 六、 核心控制机制
 
 | 中文术语 | 英文标识 | 定义 |
 | :--- | :--- | :--- |
-| **明线验证** | `Active Verification` | AI 主动通过 API 发起的正常校验路径（完成 XnStage -> 请求 Core -> XnProof 校验）。 |
+| **明线验证** | `Active Verification` | AI 主动通过 API 发起的正常校验路径（完成 Stage -> 请求 Core -> Proof 校验）。 |
 | **逃逸检测** | `Escape Detection` | Core 的暗线兜底机制。监听 JSON 变更同步至 Space 的 `space.oxn`，若超时未收到 API 验证请求，则判定逃逸。 |
 | **模型逃逸** | `AI Escape` | AI 助手绕过 Core 的验证网关，陷入发散推理或自说自话的失控状态。 |
 ---
@@ -378,24 +378,24 @@ steps:
 | **`oxn daemon`**               | 管理全局 Core 引擎的生命周期                | `oxn daemon start` / `stop` / `status`。拉起或挂载全局唯一的常驻进程。                                                                                                  |
 | **`oxn inspect`**              | 怀疑 AI 篡改了状态，需要看最底层的真相      | 直接 `cat` 输出当前任务下的 `step-manifest.json` 原始内容。                                                                                                            |
 | **`oxn trace`**                | 终端里直接查看案卷，不依赖 AI 解读          | 直接 `cat` 输出当前任务下的 `task-trace.yaml` 原始内容。                                                                                                               |
-| **`oxn rollback <step_id>`**   | **极其危险但必要**。AI 逻辑崩盘，删垃圾代码 | 1. 读取 `task-trace.yaml` 找到该 XnStage 产出的 Artifact。<br>2. 执行物理 `rm -rf`。<br>3. 强行回退 `space.oxn` 及 `step-manifest.json` 状态。<br>*(绝对不能交给 AI 做)* |
-| **`oxn force-pass <step_id>`** | 极端情况：XnProof 探针写错，正常代码无法通过  | 工程师强制修改当前项目的 `space.oxn` 中该 XnStage 状态为 `passed`。                                                                                                      |
+| **`oxn rollback <step_id>`**   | **极其危险但必要**。AI 逻辑崩盘，删垃圾代码 | 1. 读取 `task-trace.yaml` 找到该 Stage 产出的 Artifact。<br>2. 执行物理 `rm -rf`。<br>3. 强行回退 `space.oxn` 及 `step-manifest.json` 状态。<br>*(绝对不能交给 AI 做)* |
+| **`oxn force-pass <step_id>`** | 极端情况：Proof 探针写错，正常代码无法通过  | 工程师强制修改当前项目的 `space.oxn` 中该 Stage 状态为 `passed`。                                                                                                      |
 ---
 ## AI Assistant Skills 词典
  在 AI 助手里输入的 `oxn-*` 指令，核心特征是：**必须经过 LLM 的理解与转化，再由 LLM 代为向全局 Core 发起请求。**
 | Skill 指令 | 阶段映射 | 意图描述 | AI 助手被触发后的内部行为 |
 | :--- | :--- | :--- | :--- |
 | **`/oxn-init`** | 环境准备 | **初始化围栏**。在当前项目植入 OpenXenon 基因。 | 1. 向 Core 发起初始化请求。<br>2. Core 建立 Space 边界并注册至全局。<br>3. AI 提示工程师：围栏已建立。 |
-| **`/oxn-explore`** | 探索项目结构 | **探索现状 + 创建 Blueprint**。扫描项目目录、技术栈、依赖、配置等，分析后生成 XnBlueprint。 | 1. 向 Core 请求项目结构扫描。<br>2. LLM 分析项目现状，理解技术栈。<br>3. LLM 将需求转化为 XnBlueprint。<br>4. 提交 Core 保存确权。 |
-| **`/oxn-task`** | 演化意图 | **分析任务 + 执行 Blueprint**。基于现有 XnBlueprint 执行任务，不探索项目结构。 | 1. 截获需求，向 Core 获取 XnProof 探针 + Blueprint。<br>2. LLM 分析任务，填充或复用 Blueprint。<br>3. 提交 Core 保存并执行。 |
-| **`/oxn-resume`** | 收敛推理 | **恢复断点**。从中止的 XnStage 继续执行。 | 1. 读取项目内的 `step-manifest.json`。<br>2. 定位失败或未完成的 XnStage。<br>3. 恢复执行循环。 |
+| **`/oxn-explore`** | 探索项目结构 | **探索现状 + 创建 Blueprint**。扫描项目目录、技术栈、依赖、配置等，分析后生成 Blueprint。 | 1. 向 Core 请求项目结构扫描。<br>2. LLM 分析项目现状，理解技术栈。<br>3. LLM 将需求转化为 Blueprint。<br>4. 提交 Core 保存确权。 |
+| **`/oxn-task`** | 演化意图 | **分析任务 + 执行 Blueprint**。基于现有 Blueprint 执行任务，不探索项目结构。 | 1. 截获需求，向 Core 获取 Proof 探针 + Blueprint。<br>2. LLM 分析任务，填充或复用 Blueprint。<br>3. 提交 Core 保存并执行。 |
+| **`/oxn-resume`** | 收敛推理 | **恢复断点**。从中止的 Stage 继续执行。 | 1. 读取项目内的 `step-manifest.json`。<br>2. 定位失败或未完成的 Stage。<br>3. 恢复执行循环。 |
 | **`/oxn-status`** | 通用 | **状态体检**。通过 AI 的自然语言了解进度。 | 1. 向 Core 请求当前项目的 `space.oxn` 状态。<br>2. LLM 将状态转化为人类易读的进度报告。 |
-| **`/oxn-stop`** | 收敛推理 | **人工熔断**。要求 AI 停止一切生成行为。 | 1. AI 立即停止当前 XnStage 的写入。<br>2. 向 Core 发送强制终止信号，锁定项目状态。 |
+| **`/oxn-stop`** | 收敛推理 | **人工熔断**。要求 AI 停止一切生成行为。 | 1. AI 立即停止当前 Stage 的写入。<br>2. 向 Core 发送强制终止信号，锁定项目状态。 |
 | **`/oxn-trace`** | 交付实体 | **轨迹取证**。让 AI 帮忙解读交付案卷。 | 1. 向 Core 请求拉取当前任务的 `task-trace.yaml`。<br>2. LLM 总结案卷内容，解释验证得失。 |
 
 > **内部 Hook**：AI 助手在执行任务时，还会被底层 Prompt 强制执行两个不可见的内部 Hook：
 > - `[oxn-update]`：将状态写入项目内的 `step-manifest.json`
-> - `[oxn-verify]`：主动调用 Core API 请求 XnProof 验证
+> - `[oxn-verify]`：主动调用 Core API 请求 Proof 验证
 ---
 ## 技术栈
 
@@ -497,8 +497,8 @@ core.start();
 | :------- | :--- | :--------- | :------- |
 | `/api/v1/workspace/init` | POST | `/oxn-init` | 创建项目 `space.oxn` |
 | `/api/v1/proofs/list` | GET | `/oxn-task` | 返回可用探针列表 |
-| `/api/v1/task/submit` | POST | `/oxn-task` | 接收 XnBlueprint 并落盘 |
-| `/api/v1/step/verify` | POST | `[oxn-verify]` | 触发 XnProof 校验 |
+| `/api/v1/task/submit` | POST | `/oxn-task` | 接收 Blueprint 并落盘 |
+| `/api/v1/step/verify` | POST | `[oxn-verify]` | 触发 Proof 校验 |
 | `/api/v1/task/status` | GET | `/oxn-status` | 返回任务状态机 |
 | `/api/v1/task/stop` | POST | `/oxn-stop` | 强制熔断 |
 | `/api/v1/task/trace` | GET | `/oxn-trace` | 导出 task-trace.yaml |
@@ -518,8 +518,8 @@ core.start();
 
 #### 进程控制
 
-使用 `Bun.spawn` 执行 XnProof 探针，流式精准捕获 Stderr，发现红线时纳秒级 SIGKILL。
+使用 `Bun.spawn` 执行 Proof 探针，流式精准捕获 Stderr，发现红线时纳秒级 SIGKILL。
 
 #### 沙箱机制
 
-在执行 XnProof 前，动态创建隔离环境，将待测 Artifact 映射进去执行，结束后销毁。
+在执行 Proof 前，动态创建隔离环境，将待测 Artifact 映射进去执行，结束后销毁。
