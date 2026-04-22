@@ -27,7 +27,8 @@
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
-    "citty": "^0.1.6"
+    "citty": "^0.1.6",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "bun-types": "^1.1.38",
