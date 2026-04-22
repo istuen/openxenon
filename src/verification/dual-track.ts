@@ -24,33 +24,33 @@ export async function verifyStep(options: VerifyStepOptions): Promise<VerifyStep
     return { success: false, error: `Step ${stepId} not found` }
   }
 
-  updateStepStatus(db, stepId, 'running')
-  updateStepHeartbeat(db, stepId)
+updateStepStatus(db, stepId, 'RUNNING')
+    updateStepHeartbeat(db, stepId)
 
-  try {
-    const result = await executeProof(proofPath)
+    try {
+      const result = await executeProof(proofPath)
 
-    createProofLog(
-      db,
-      stepId,
-      step.proof,
-      result.success ? 'success' : 'failure',
-      result.output
-    )
+      createProofLog(
+        db,
+        stepId,
+        step.proof,
+        result.success ? 'PASSED' : 'FAILED',
+        result.output
+      )
 
-    if (result.success) {
-      updateStepStatus(db, stepId, 'passed')
-    } else {
-      updateStepStatus(db, stepId, 'failed')
-    }
+      if (result.success) {
+        updateStepStatus(db, stepId, 'PASSED')
+      } else {
+        updateStepStatus(db, stepId, 'FAILED')
+      }
 
-    return {
-      success: result.success,
-      output: result.output,
-      error: result.error
-    }
-  } catch (error) {
-    updateStepStatus(db, stepId, 'failed')
+      return {
+        success: result.success,
+        output: result.output,
+        error: result.error
+      }
+    } catch (error) {
+      updateStepStatus(db, stepId, 'FAILED')
     
     createProofLog(
       db,

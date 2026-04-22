@@ -28,7 +28,7 @@ async function handleTaskStop(
       return notFound(`Task '${body.taskId}' not found`)
     }
     
-    const updatedTask = updateTaskStatus(db, body.taskId!, 'failed')
+    const updatedTask = updateTaskStatus(db, body.taskId!, 'FAILED')
     
     return new Response(
       JSON.stringify({

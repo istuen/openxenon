@@ -61,7 +61,7 @@ export function updateStageStatus(
   status: XnStageStatus
 ): StageRow | null {
   const now = Math.floor(Date.now() / 1000)
-  const completedAt = status === 'passed' || status === 'failed' ? now : null
+  const completedAt = status === 'PASSED' || status === 'FAILED' ? now : null
 
   const stmt = db.prepare(`
     UPDATE stages SET status = ?, completed_at = ? WHERE id = ?

@@ -104,7 +104,7 @@ export function exportTaskToMarkdown(
     )
   } else if (statusFilter === 'archive') {
     relevantBlueprints = blueprints.filter(b =>
-      b.status === 'ABANDONED' || task.status === 'completed' || task.status === 'terminated'
+      b.status === 'ABANDONED' || task.status === 'COMPLETED' || task.status === 'TERMINATED'
     )
   }
 

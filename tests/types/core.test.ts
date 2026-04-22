@@ -3,13 +3,13 @@ import type { TaskStatus, StepStatus, ArtifactType, ProofType, ProjectStatus } f
 
 describe('Core Types', () => {
   it('should define valid TaskStatus values', () => {
-    const status: TaskStatus = 'pending'
-    expect(['pending', 'running', 'completed', 'failed']).toContain(status)
+    const status: TaskStatus = 'PENDING'
+    expect(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']).toContain(status)
   })
 
   it('should define valid StepStatus values', () => {
-    const status: StepStatus = 'pending'
-    expect(['pending', 'running', 'passed', 'failed']).toContain(status)
+    const status: StepStatus = 'PENDING'
+    expect(['PENDING', 'RUNNING', 'PASSED', 'FAILED']).toContain(status)
   })
 
   it('should define valid ArtifactType values', () => {

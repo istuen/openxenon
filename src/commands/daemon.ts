@@ -18,7 +18,7 @@ function getServerPath(): string {
   
   if (__filename.includes('$bunfs')) {
     const candidates = [
-      '/Users/issac/pro/xenonix/src/server.ts',
+      '/Users/issac/pro/openxenon/src/server.ts',
       join(process.cwd(), 'src', 'server.ts'),
     ]
     for (const candidate of candidates) {
@@ -28,7 +28,7 @@ function getServerPath(): string {
     }
   }
   
-  if (__filename.includes('dist/xn') || __filename.includes('dist\\xn')) {
+  if (__filename.includes('dist/oxn') || __filename.includes('dist\\oxn')) {
     return join(__dirname, '..', 'src', 'server.ts')
   }
   

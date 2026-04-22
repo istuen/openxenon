@@ -63,7 +63,7 @@ describe('Core Utilities', () => {
       const manifest = createEmptyStepManifest('task-123')
       
       expect(manifest.taskId).toBe('task-123')
-      expect(manifest.status).toBe('pending')
+      expect(manifest.status).toBe('PENDING')
       expect(manifest.artifacts).toEqual([])
     })
 
@@ -71,7 +71,7 @@ describe('Core Utilities', () => {
       const manifestPath = join(testProjectRoot, 'manifest.json')
       const manifest = createEmptyStepManifest('task-123')
       manifest.stepId = 'step-1'
-      manifest.status = 'running'
+      manifest.status = 'RUNNING'
       
       writeStepManifest(manifestPath, manifest)
       const read = readStepManifest(manifestPath)
@@ -79,7 +79,7 @@ describe('Core Utilities', () => {
       expect(read).toBeDefined()
       expect(read?.taskId).toBe('task-123')
       expect(read?.stepId).toBe('step-1')
-      expect(read?.status).toBe('running')
+      expect(read?.status).toBe('RUNNING')
     })
 
     it('should return null for non-existent manifest', () => {

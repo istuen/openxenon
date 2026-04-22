@@ -3,7 +3,7 @@ import { cliContext } from './cli-context'
 
 const main = defineCommand({
   meta: {
-    name: 'xn',
+    name: 'oxn',
     version: '1.0.0',
     description: 'OpenXenon CLI - 面向大语言模型的工程化控制引擎'
   },

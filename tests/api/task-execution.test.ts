@@ -100,7 +100,7 @@ describe('Task Execution API (Socket)', () => {
       
       expect(response.status).toBe(200)
       expect(data.taskId).toBe(taskId)
-      expect(data.status).toBe('running')
+      expect(data.status).toBe('RUNNING')
     })
   })
 
@@ -120,7 +120,7 @@ describe('Task Execution API (Socket)', () => {
       
       expect(response.status).toBe(200)
       expect(data.taskId).toBe(taskId)
-      expect(data.status).toBe('running')
+      expect(data.status).toBe('RUNNING')
     })
   })
 

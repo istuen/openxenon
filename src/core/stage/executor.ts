@@ -32,19 +32,19 @@ export class StageExecutor {
       name: defaultStage.name,
       spec: { constraints: [], description: defaultStage.description },
       proof: defaultStage.proof,
-      status: 'pending',
+      status: 'PENDING',
       targetState: inputStr
     };
   }
 
   async execute(stage: Stage): Promise<Stage> {
-    stage.status = 'running';
+    stage.status = 'RUNNING';
 
     try {
       const proofPassed = await this.validateProof(stage);
-      stage.status = proofPassed ? 'passed' : 'failed';
+      stage.status = proofPassed ? 'PASSED' : 'FAILED';
     } catch (error) {
-      stage.status = 'failed';
+      stage.status = 'FAILED';
       console.error(`Stage ${stage.id} failed:`, error);
     }
 

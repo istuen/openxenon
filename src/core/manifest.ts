@@ -22,7 +22,7 @@ export function createEmptyStepManifest(taskId: string): StepManifest {
   return {
     taskId,
     stepId: '',
-    status: 'pending',
+    status: 'PENDING',
     artifacts: [],
     timestamp: Date.now()
   }

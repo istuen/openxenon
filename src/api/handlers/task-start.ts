@@ -3,11 +3,14 @@ import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getTaskById, updateTaskStatus } from '../../db/operations/tasks'
+import { mkdirSync, existsSync } from 'fs'
+import { join } from 'path'
+import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
 
 async function handleTaskStart(
   request: Request,
   db: Database,
-  _projectPath: string
+  projectPath: string
 ): Promise<Response> {
   try {
     const body = await parseJSONBody<{ taskId?: string }>(request)
@@ -30,6 +33,14 @@ async function handleTaskStart(
 
     let newStatus = task.status
     if (task.status === 'PENDING') {
+      const taskDir = join(projectPath, '.openxenon', 'tasks', task.id)
+      if (!existsSync(taskDir)) {
+        mkdirSync(taskDir, { recursive: true })
+      }
+
+      const manifest = createEmptyStepManifest(task.id)
+      writeStepManifest(join(taskDir, 'step-manifest.json'), manifest)
+
       const updated = updateTaskStatus(db, body.taskId!, 'RUNNING')
       newStatus = updated?.status || 'RUNNING'
     }

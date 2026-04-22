@@ -30,14 +30,14 @@ async function handleStepStart(
       return notFound('Step not found')
     }
     
-    if (step.status === 'pending') {
-      updateStepStatus(db, step.id, 'running')
+    if (step.status === 'PENDING') {
+      updateStepStatus(db, step.id, 'RUNNING')
     }
     
     return new Response(
       JSON.stringify({
         stepId: step.id,
-        status: step.status === 'pending' ? 'running' : step.status
+        status: step.status === 'PENDING' ? 'RUNNING' : step.status
       }),
       {
         status: 200,

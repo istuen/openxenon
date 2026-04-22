@@ -46,7 +46,7 @@ export function startSocketServer(socketPath: string): void {
           }
 
           const { loadProjectContext } = await import('./context')
-          const context = loadProjectContext(projectPath || null)
+          const context = loadProjectContext(projectPath || process.cwd())
 
           if ('status' in context) {
             socket.write(JSON.stringify({ status: 400, body: { error: 'Invalid project' } }) + '\n')

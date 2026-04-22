@@ -36,7 +36,7 @@ describe('Database Operations', () => {
       
       expect(task.id).toBeDefined()
       expect(task.name).toBe('Test Task')
-      expect(task.status).toBe('pending')
+      expect(task.status).toBe('PENDING')
     })
 
     it('should get task by id', () => {
@@ -53,9 +53,9 @@ describe('Database Operations', () => {
       const blueprint: Blueprint = { task: 'Test', stages: [] }
       const created = createTask(db, 'Test Task', blueprint)
       
-      const updated = updateTaskStatus(db, created.id, 'running')
+      const updated = updateTaskStatus(db, created.id, 'RUNNING')
       
-      expect(updated?.status).toBe('running')
+      expect(updated?.status).toBe('RUNNING')
     })
 
     it('should delete a task', () => {
@@ -78,7 +78,7 @@ describe('Database Operations', () => {
       
       expect(step.id).toBe('step-1')
       expect(step.taskId).toBe(task.id)
-      expect(step.status).toBe('pending')
+      expect(step.status).toBe('PENDING')
     })
 
     it('should get steps by task id', () => {
@@ -98,9 +98,9 @@ describe('Database Operations', () => {
       const task = createTask(db, 'Test Task', blueprint)
       const step = createStep(db, 'step-1', task.id, 'Step 1', 'Spec 1', 'proof-1')
       
-      const updated = updateStepStatus(db, step.id, 'passed')
+      const updated = updateStepStatus(db, step.id, 'PASSED')
       
-      expect(updated?.status).toBe('passed')
+      expect(updated?.status).toBe('PASSED')
       expect(updated?.completedAt).toBeDefined()
     })
   })

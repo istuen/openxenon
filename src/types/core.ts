@@ -1,18 +1,18 @@
 export type TaskStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'escaped'
-  | 'terminated'
+  | 'PENDING'
+  | 'RUNNING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'ESCAPED'
+  | 'TERMINATED'
 
 export type XnTaskStatus = TaskStatus;
 
 export type StepStatus =
-  | 'pending'
-  | 'running'
-  | 'passed'
-  | 'failed'
+  | 'PENDING'
+  | 'RUNNING'
+  | 'PASSED'
+  | 'FAILED'
 
 export type XnStageStatus = StepStatus;
 
