@@ -2,11 +2,11 @@ import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest } from '../errors'
-import { createTask } from '../../db/operations/tasks'
-import { createStep } from '../../db/operations/steps'
+import { createTask, updateTaskActiveBlueprint } from '../../db/operations/tasks'
+import { createBlueprint } from '../../db/operations/blueprints'
+import { createStage } from '../../db/operations/stages'
 import { createTaskDirectory } from '../../core/boundary-project'
 import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
-import type { Blueprint } from '../../types'
 import { join } from 'path'
 
 async function handleTaskSubmit(
@@ -15,43 +15,58 @@ async function handleTaskSubmit(
   projectPath: string
 ): Promise<Response> {
   try {
-    const body = await parseJSONBody<{ task?: string; steps?: unknown[] }>(request)
-    
+    const body = await parseJSONBody<{ task?: string; stages?: unknown[] }>(request)
+
     if (!body) {
       return badRequest('Request body is required')
     }
-    
-    const validation = validateRequiredFields(body as Record<string, unknown>, ['task', 'steps'])
-    
+
+    const validation = validateRequiredFields(body as Record<string, unknown>, ['task', 'stages'])
+
     if (!validation.valid) {
       return badRequest(`Field '${validation.missingField}' is required`)
     }
-    
-    const blueprint: Blueprint = {
-      task: body.task!,
-      stages: body.steps as any[]
+
+    const taskName = body.task as string
+    const stagesInput = (body.stages || []) as Array<{
+      name: string
+      spec: string
+      proof: string
+      target?: string
+      deps?: string[]
+      action?: string
+    }>
+
+    const task = createTask(db, taskName)
+
+    const blueprint = createBlueprint(db, task.id, `${taskName}-blueprint`, 'CANONICAL')
+    updateTaskActiveBlueprint(db, task.id, blueprint.id)
+
+    for (const stageInput of stagesInput) {
+      createStage(
+        db,
+        blueprint.id,
+        stageInput.name,
+        stageInput.target || stageInput.spec,
+        stageInput.spec,
+        stageInput.proof,
+        stageInput.deps || [],
+        stageInput.action
+      )
     }
-    
-    const task = createTask(db, blueprint.task!, blueprint)
-    const stages = blueprint.stages || []
-    
-    for (const [index, stage] of stages.entries()) {
-      const stageId = `${task.id}-${index + 1}`
-      const stageData = stage as unknown as { name: string; spec: string; proof: string; targetState?: string }
-      createStep(db, stageId, task.id, stageData.name, stageData.spec, stageData.proof, stageData.targetState)
-    }
-    
+
     const taskDir = createTaskDirectory(projectPath, task.id)
-    
+
     const manifest = createEmptyStepManifest(task.id)
     const manifestPath = join(taskDir, 'step-manifest.json')
     writeStepManifest(manifestPath, manifest)
-    
+
     return new Response(
       JSON.stringify({
         taskId: task.id,
+        blueprintId: blueprint.id,
         status: task.status,
-        stagesCount: stages.length,
+        stagesCount: stagesInput.length,
         message: 'Task created successfully'
       }),
       {
@@ -61,7 +76,7 @@ async function handleTaskSubmit(
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    
+
     return new Response(
       JSON.stringify({
         error: 'TaskSubmitFailed',

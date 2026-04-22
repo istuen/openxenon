@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { loadProjectContext } from '../api/context'
-import { isOldSchema, migrateAllOldData, type MigrationResult } from '../core/legacy-migration'
+import { isOldSchema, migrateAllOldData, getMigrationStats, type MigrationResult } from '../core/legacy-migration'
 
 export default defineCommand({
   meta: {
@@ -24,10 +24,8 @@ export default defineCommand({
       return
     }
 
-    const taskId = args['--task-id'] as string | undefined
     const dryRun = args['--dry-run'] as boolean
 
-    // Check if this is old schema
     if (!isOldSchema(ctx.db)) {
       console.log('Database is already using the new schema. No migration needed.')
       return
@@ -37,26 +35,29 @@ export default defineCommand({
     console.log('')
 
     if (dryRun) {
-      console.log('[Dry-run] Would migrate all old data:')
-      const oldTasks = ctx.db.query('SELECT * FROM tasks').all() as { id: string; name: string; playbook: string }[]
-      console.log(`  Tasks: ${oldTasks.length}`)
-      for (const task of oldTasks) {
-        const playbook = JSON.parse(task.playbook)
-        console.log(`  - ${task.name}: ${playbook.stages?.length || 0} stages`)
-      }
+      const stats = getMigrationStats(ctx.db)
+      console.log('[Dry-run] Would migrate:')
+      console.log(`  Tasks: ${stats.totalTasks}`)
+      console.log(`  Blueprints: ${stats.totalBlueprints}`)
+      console.log(`  Stages: ${stats.totalStages}`)
       console.log('')
-      console.log('No changes made.')
+      console.log('No changes made. Run without --dry-run to execute migration.')
       return
     }
 
-    // Perform migration
     const result: MigrationResult = migrateAllOldData(ctx.db)
 
     console.log('')
-    console.log('Migration complete:')
-    console.log(`  Tasks migrated: ${result.tasksMigrated}`)
-    console.log(`  Blueprints created: ${result.blueprintsCreated}`)
-    console.log(`  Stages created: ${result.stagesCreated}`)
+    if (result.success) {
+      console.log('Migration complete:')
+      console.log(`  Tasks migrated: ${result.tasksMigrated}`)
+      console.log(`  Blueprints created: ${result.blueprintsCreated}`)
+      console.log(`  Stages created: ${result.stagesCreated}`)
+    } else {
+      console.log('Migration completed with errors:')
+      console.log(`  Tasks migrated: ${result.tasksMigrated}`)
+      console.log(`  Errors: ${result.errors.length}`)
+    }
 
     if (result.errors.length > 0) {
       console.log('')

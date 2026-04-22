@@ -20,7 +20,7 @@ export function registerRoute(method: string, path: string, handler: RouteHandle
 }
 
 export function getRoute(method: string, path: string): RouteHandler | null {
-  const key = `${method.toUpperCase()} ${path}`
+  const key = `${method.toUpperCase()} ${path.split('?')[0]}`
   return routes.get(key) || null
 }
 

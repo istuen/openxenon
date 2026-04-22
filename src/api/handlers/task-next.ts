@@ -3,7 +3,7 @@ import { registerRoute } from '../router'
 import { getQueryParams } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getTaskById } from '../../db/operations/tasks'
-import { getNextPendingStep } from '../../db/operations/steps'
+import { getNextPendingStage } from '../../db/operations/stages'
 
 async function handleTaskNext(
   request: Request,
@@ -12,20 +12,19 @@ async function handleTaskNext(
 ): Promise<Response> {
   try {
     const url = new URL(request.url)
-    const params = getQueryParams(url.toString())
-    const taskId = params.taskId
-    
+    const taskId = url.searchParams.get('taskId')
+
     if (!taskId) {
       return badRequest('Query parameter taskId is required')
     }
-    
+
     const task = getTaskById(db, taskId)
-    
+
     if (!task) {
       return notFound(`Task '${taskId}' not found`)
     }
-    
-    if (task.status !== 'running') {
+
+    if (task.status !== 'RUNNING') {
       return new Response(
         JSON.stringify({
           stepId: null,
@@ -37,9 +36,22 @@ async function handleTaskNext(
         }
       )
     }
-    
-    const step = getNextPendingStep(db, taskId)
-    
+
+    if (!task.activeBlueprintId) {
+      return new Response(
+        JSON.stringify({
+          stepId: null,
+          message: 'Task has no active blueprint'
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const step = getNextPendingStage(db, task.activeBlueprintId)
+
     if (!step) {
       return new Response(
         JSON.stringify({
@@ -52,7 +64,7 @@ async function handleTaskNext(
         }
       )
     }
-    
+
     return new Response(
       JSON.stringify({
         stepId: step.id,
@@ -68,7 +80,7 @@ async function handleTaskNext(
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    
+
     return new Response(
       JSON.stringify({
         error: 'TaskNextFailed',

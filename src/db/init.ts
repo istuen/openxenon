@@ -1,12 +1,14 @@
 import { Database } from 'bun:sqlite'
 import { CREATE_PROJECTS_TABLE, CREATE_DAEMON_CONFIG_TABLE } from './schema/core'
-import { 
-  CREATE_TASKS_TABLE, 
-  CREATE_STEPS_TABLE, 
-  CREATE_ESCAPE_LOGS_TABLE, 
-  CREATE_PROOF_LOGS_TABLE 
+import {
+  CREATE_TASKS_TABLE,
+  CREATE_BLUEPRINTS_TABLE,
+  CREATE_STAGES_TABLE,
+  CREATE_ESCAPE_LOGS_TABLE,
+  CREATE_PROOF_LOGS_TABLE,
+  BLUEPRINTS_INDEXES,
+  STAGES_INDEXES
 } from './schema/project'
-import { CREATE_INDEXES } from './schema/indexes'
 
 export function initCoreDb(dbPath: string): Database {
   const db = new Database(dbPath)
@@ -17,18 +19,19 @@ export function initCoreDb(dbPath: string): Database {
 
 export function initProjectDb(dbPath: string): Database {
   const db = new Database(dbPath)
-  
+
   db.run('PRAGMA journal_mode=WAL;')
-  
+
   db.run(CREATE_TASKS_TABLE)
-  db.run(CREATE_STEPS_TABLE)
+  db.run(CREATE_BLUEPRINTS_TABLE)
+  db.run(CREATE_STAGES_TABLE)
   db.run(CREATE_ESCAPE_LOGS_TABLE)
   db.run(CREATE_PROOF_LOGS_TABLE)
-  
-  for (const createIndex of CREATE_INDEXES) {
+
+  for (const createIndex of [...BLUEPRINTS_INDEXES, ...STAGES_INDEXES]) {
     db.run(createIndex)
   }
-  
+
   return db
 }
 

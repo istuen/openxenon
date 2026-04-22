@@ -53,7 +53,7 @@ export function startSocketServer(socketPath: string): void {
             continue
           }
 
-          const mockReq = createMockRequest(body)
+          const mockReq = createMockRequest(method, path, body)
           const response = await handleRequest(
             method,
             path,
@@ -65,8 +65,6 @@ export function startSocketServer(socketPath: string): void {
           const clonedResponse = response.clone()
           const responseBody = await clonedResponse.json()
           socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
-
-          context.db.close()
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error)
           daemonLogger.error(`Socket request error: ${errorMessage}`)
@@ -93,9 +91,9 @@ export function stopSocketServer(): void {
   }
 }
 
-function createMockRequest(body?: unknown): Request {
-  return new Request('http://localhost', {
-    method: 'POST',
+function createMockRequest(method: string, path: string, body?: unknown): Request {
+  return new Request(`http://localhost${path}`, {
+    method,
     body: body ? JSON.stringify(body) : undefined,
     headers: { 'Content-Type': 'application/json' }
   })

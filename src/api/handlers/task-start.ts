@@ -11,31 +11,33 @@ async function handleTaskStart(
 ): Promise<Response> {
   try {
     const body = await parseJSONBody<{ taskId?: string }>(request)
-    
+
     if (!body) {
       return badRequest('Request body is required')
     }
-    
+
     const validation = validateRequiredFields(body as Record<string, unknown>, ['taskId'])
-    
+
     if (!validation.valid) {
       return badRequest(`Field '${validation.missingField}' is required`)
     }
-    
+
     const task = getTaskById(db, body.taskId!)
-    
+
     if (!task) {
       return notFound(`Task '${body.taskId}' not found`)
     }
-    
-    if (task.status === 'pending') {
-      updateTaskStatus(db, body.taskId!, 'running')
+
+    let newStatus = task.status
+    if (task.status === 'PENDING') {
+      const updated = updateTaskStatus(db, body.taskId!, 'RUNNING')
+      newStatus = updated?.status || 'RUNNING'
     }
-    
+
     return new Response(
       JSON.stringify({
         taskId: body.taskId,
-        status: task.status === 'pending' ? 'running' : task.status
+        status: newStatus
       }),
       {
         status: 200,
@@ -44,7 +46,7 @@ async function handleTaskStart(
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    
+
     return new Response(
       JSON.stringify({
         error: 'TaskStartFailed',
