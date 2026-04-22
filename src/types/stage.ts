@@ -1,13 +1,15 @@
-import type { Spec } from './spec';
-import type { Action } from './action';
 import type { XnStageStatus } from './core';
 
 export interface Stage {
   id: string;
+  blueprintId: string;
   name: string;
-  spec: Spec;
-  proof: string;
-  action?: Action;
+  deps: string[];
+  target: string;
+  spec: string;
+  action?: string;
+  proof: string | string[];
   status: XnStageStatus;
-  targetState?: string;
+  createdAt?: number;
+  completedAt?: number;
 }

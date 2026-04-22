@@ -3,6 +3,8 @@ export type TaskStatus =
   | 'running'
   | 'completed'
   | 'failed'
+  | 'escaped'
+  | 'terminated'
 
 export type XnTaskStatus = TaskStatus;
 
@@ -13,6 +15,12 @@ export type StepStatus =
   | 'failed'
 
 export type XnStageStatus = StepStatus;
+
+export type BlueprintStatus =
+  | 'DRAFT'
+  | 'CANONICAL'
+  | 'SAMPLE'
+  | 'ABANDONED'
 
 export type ArtifactType =
   | 'code'

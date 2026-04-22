@@ -1,132 +1,53 @@
+/**
+ * @deprecated Use stages.ts instead - this file is kept for backward compatibility
+ * during the flat schema migration.
+ */
 import type { Database } from 'bun:sqlite'
 import type { StepStatus, StepManifest } from '../../types'
+import * as stages from './stages'
 
-export interface StepRow {
-  id: string
-  taskId: string
-  name: string
-  spec: string
-  proof: string
-  targetState: string | null
-  status: StepStatus
-  startedAt: number | null
-  completedAt: number | null
-  lastHeartbeat: number | null
-  manifestSnapshot: StepManifest | null
-}
+export type StepRow = stages.StageRow
 
 export function createStep(
   db: Database,
-  id: string,
+  _id: string,
   taskId: string,
   name: string,
   spec: string,
   proof: string,
   targetState?: string
 ): StepRow {
-  const stmt = db.prepare(`
-    INSERT INTO steps (id, task_id, name, spec, proof, target_state, status)
-    VALUES (?, ?, ?, ?, ?, ?, 'pending')
-  `)
-  
-  stmt.run(id, taskId, name, spec, proof, targetState || null)
-  
-  return getStepById(db, id)!
+  const blueprintId = taskId
+  return stages.createStage(db, blueprintId, name, targetState || spec, spec, proof)
 }
 
 export function getStepById(db: Database, id: string): StepRow | null {
-  const stmt = db.prepare('SELECT * FROM steps WHERE id = ?')
-  const row = stmt.get(id) as any
-  
-  if (!row) return null
-  
-  return mapRowToStep(row)
+  return stages.getStageById(db, id)
 }
 
 export function getStepsByTaskId(db: Database, taskId: string): StepRow[] {
-  const stmt = db.prepare('SELECT * FROM steps WHERE task_id = ? ORDER BY id')
-  const rows = stmt.all(taskId) as any[]
-  
-  return rows.map(mapRowToStep)
+  return stages.getStagesByBlueprintId(db, taskId)
 }
 
 export function getStepByTaskIdAndName(db: Database, taskId: string, name: string): StepRow | null {
-  const stmt = db.prepare('SELECT * FROM steps WHERE task_id = ? AND name = ?')
-  const row = stmt.get(taskId, name) as any
-  
-  if (!row) return null
-  
-  return mapRowToStep(row)
+  const steps = stages.getStagesByBlueprintId(db, taskId)
+  return steps.find(s => s.name === name) || null
 }
 
 export function getNextPendingStep(db: Database, taskId: string): StepRow | null {
-  const stmt = db.prepare('SELECT * FROM steps WHERE task_id = ? AND status = ? ORDER BY id LIMIT 1')
-  const row = stmt.get(taskId, 'pending') as any
-  
-  if (!row) return null
-  
-  return mapRowToStep(row)
+  return stages.getNextPendingStage(db, taskId)
 }
 
 export function updateStepStatus(db: Database, id: string, status: StepStatus): StepRow | null {
-  const step = getStepById(db, id)
-  if (!step) return null
-  
-  const now = Math.floor(Date.now() / 1000)
-  const startedAt = status === 'running' ? now : step.startedAt
-  const completedAt = status === 'passed' || status === 'failed' ? now : step.completedAt
-  
-  const stmt = db.prepare(`
-    UPDATE steps 
-    SET status = ?, started_at = ?, completed_at = ?
-    WHERE id = ?
-  `)
-  
-  stmt.run(status, startedAt, completedAt, id)
-  
-  return getStepById(db, id)
+  return stages.updateStageStatus(db, id, status.toUpperCase() as any)
 }
 
-export function updateStepHeartbeat(db: Database, id: string): void {
-  const now = Math.floor(Date.now() / 1000)
-  const stmt = db.prepare(`
-    UPDATE steps 
-    SET last_heartbeat = ?
-    WHERE id = ?
-  `)
-  
-  stmt.run(now, id)
+export function updateStepHeartbeat(_db: Database, _id: string): void {
 }
 
-export function updateStepManifest(db: Database, id: string, manifest: StepManifest): void {
-  const now = Math.floor(Date.now() / 1000)
-  const stmt = db.prepare(`
-    UPDATE steps 
-    SET manifest_snapshot = ?, last_heartbeat = ?
-    WHERE id = ?
-  `)
-  
-  stmt.run(JSON.stringify(manifest), now, id)
+export function updateStepManifest(_db: Database, _id: string, _manifest: StepManifest): void {
 }
 
 export function deleteStep(db: Database, id: string): boolean {
-  const stmt = db.prepare('DELETE FROM steps WHERE id = ?')
-  const result = stmt.run(id)
-  return result.changes > 0
-}
-
-function mapRowToStep(row: any): StepRow {
-  return {
-    id: row.id,
-    taskId: row.task_id,
-    name: row.name,
-    spec: row.spec,
-    proof: row.proof,
-    targetState: row.target_state,
-    status: row.status,
-    startedAt: row.started_at,
-    completedAt: row.completed_at,
-    lastHeartbeat: row.last_heartbeat,
-    manifestSnapshot: row.manifest_snapshot ? JSON.parse(row.manifest_snapshot) : null
-  }
+  return stages.deleteStage(db, id)
 }

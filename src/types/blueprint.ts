@@ -1,9 +1,9 @@
-import type { Stage } from './stage';
+import type { BlueprintStatus } from './core';
 
 export interface Blueprint {
-  id?: string;
-  taskId?: string;
-  task?: string;
-  stages?: Stage[];
-  status?: 'canonical' | 'drafting' | 'executing' | 'pending_review' | 'promoted' | 'rejected';
+  id: string;
+  taskId: string;
+  name: string;
+  status: BlueprintStatus;
+  createdAt: number;
 }

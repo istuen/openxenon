@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import { BlueprintSchema } from './blueprint.schema'
 
 export const TaskSchema = z.object({
   id: z.string(),
@@ -7,7 +6,6 @@ export const TaskSchema = z.object({
   status: z.enum(['PENDING', 'RUNNING', 'COMPLETED', 'ESCAPED', 'TERMINATED']),
   activeBlueprintId: z.string().optional(),
   createdAt: z.string().datetime(),
-  blueprints: z.array(BlueprintSchema),
 })
 
 export type Task = z.infer<typeof TaskSchema>
