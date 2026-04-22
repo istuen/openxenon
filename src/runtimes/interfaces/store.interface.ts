@@ -7,7 +7,7 @@
  * - 迁移生命周期管理
  */
 
-import type { XnMigrator, XnMigrationResult } from '../../core/migrator'
+import type { XnMigrator, XnMigrationResult } from '../../db/migrator'
 
 export interface XnStore {
   // ===== 基础 CRUD =====

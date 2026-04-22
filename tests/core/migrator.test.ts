@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach } from 'bun:test'
 import { Database } from 'bun:sqlite'
-import { XnMigrator, type XnMigrationUnit } from '../../src/core/migrator'
+import { XnMigrator, type XnMigrationUnit } from '../../src/db/migrator'
 
 function createTestMigrator(db: Database): { migrator: XnMigrator; executed: string[] } {
   const executed: string[] = []

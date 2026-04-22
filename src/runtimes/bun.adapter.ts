@@ -15,7 +15,7 @@ import type {
 import {
   XnMigrator,
   type XnMigrationUnit
-} from '../core/migrator'
+} from '../db/migrator'
 
 // 类型声明：Bun 的 import.meta.glob 返回类型
 declare module 'bun' {
