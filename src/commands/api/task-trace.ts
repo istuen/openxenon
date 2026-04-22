@@ -28,7 +28,9 @@ export default defineCommand({
       const response = await socketRequest(
         DAEMON_SOCK_PATH,
         'GET',
-        `/api/v1/task/trace?taskId=${args['task-id']}`
+        `/api/v1/task/trace?taskId=${args['task-id']}`,
+        undefined,
+        process.cwd()
       )
 
       console.log(JSON.stringify(response.body, null, 2))

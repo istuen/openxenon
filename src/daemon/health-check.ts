@@ -1,4 +1,4 @@
-import { connect } from 'bun'
+import { createConnection } from 'net'
 import { daemonLogger } from './logger'
 import { existsSync } from 'fs'
 
@@ -9,50 +9,102 @@ export interface HealthCheckResult {
 
 export async function waitForHealth(
   socketPath: string,
-  timeout: number = 5000
+  timeout: number = 10000
 ): Promise<HealthCheckResult> {
   const start = Date.now()
 
-  while (Date.now() - start < timeout) {
-    try {
+  return new Promise((resolve) => {
+    let resolved = false
+    let attempts = 0
+
+    const timeoutId = setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        const elapsedMs = Date.now() - start
+        daemonLogger.error(`Daemon health check timed out after ${elapsedMs}ms`)
+        resolve({ success: false, elapsedMs })
+      }
+    }, timeout)
+
+    const tryConnect = () => {
+      if (resolved) return
+
+      attempts++
+      daemonLogger.info(`Health check attempt ${attempts}...`)
+
       if (!existsSync(socketPath)) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        continue
+        daemonLogger.info(`Socket not found at ${socketPath}, waiting...`)
+        setTimeout(tryConnect, 200)
+        return
       }
 
-      const socket = connect({
-        socket: {
-          data(_: any, data: Buffer) {
+      daemonLogger.info(`Socket found, attempting connection...`)
+
+      try {
+        const socket = createConnection(socketPath, () => {
+          if (resolved) {
+            socket.end()
+            return
+          }
+          daemonLogger.info('Socket connected')
+        })
+
+        let buffer = ''
+
+        socket.on('data', (data: Buffer) => {
+          buffer += data.toString()
+          const lines = buffer.split('\n')
+
+          for (const line of lines) {
+            if (!line.trim()) continue
+
             try {
-              const response = JSON.parse(data.toString())
-              if (response.status === 200 || response.body?.taskId) {
+              const response = JSON.parse(line)
+              daemonLogger.info(`Health check response: ${JSON.stringify(response)}`)
+              if (response.status === 200 && response.body?.status === 'ok') {
                 const elapsedMs = Date.now() - start
                 daemonLogger.info(`Daemon health check passed in ${elapsedMs}ms`)
+                clearTimeout(timeoutId)
+                socket.end()
+                resolved = true
+                resolve({ success: true, elapsedMs })
               }
             } catch {
-              // Ignore parse errors
+              // Continue parsing
             }
           }
-        },
-        path: socketPath
-      })
+        })
 
-      socket.write(JSON.stringify({
-        method: 'GET',
-        path: '/api/v1/health'
-      }))
+        socket.on('error', (err) => {
+          if (!resolved) {
+            daemonLogger.error(`Health check socket error: ${err.message}`)
+            setTimeout(tryConnect, 200)
+          }
+        })
 
-      await new Promise(resolve => setTimeout(resolve, 100))
-      socket.end()
+        socket.on('close', () => {
+          if (!resolved) {
+            daemonLogger.info('Socket closed, retrying...')
+            setTimeout(tryConnect, 200)
+          }
+        })
 
-      const elapsedMs = Date.now() - start
-      return { success: true, elapsedMs }
-    } catch {
-      await new Promise(resolve => setTimeout(resolve, 100))
+        const request = JSON.stringify({
+          method: 'GET',
+          path: '/api/v1/health'
+        }) + '\n'
+
+        socket.write(request)
+      } catch (error) {
+        if (!resolved) {
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          daemonLogger.error(`Health check connection error: ${errorMessage}`)
+          setTimeout(tryConnect, 200)
+        }
+      }
     }
-  }
 
-  const elapsedMs = Date.now() - start
-  daemonLogger.error(`Daemon health check timed out after ${elapsedMs}ms`)
-  return { success: false, elapsedMs }
+    daemonLogger.info('Starting health check...')
+    tryConnect()
+  })
 }

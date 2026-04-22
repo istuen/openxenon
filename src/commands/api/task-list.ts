@@ -22,7 +22,9 @@ export default defineCommand({
       const response = await socketRequest(
         DAEMON_SOCK_PATH,
         'GET',
-        '/api/v1/task/list'
+        '/api/v1/task/list',
+        undefined,
+        process.cwd()
       )
 
       if (cliContext.isJsonMode()) {

@@ -29,7 +29,8 @@ export default defineCommand({
         DAEMON_SOCK_PATH,
         'POST',
         '/api/v1/task/stop',
-        { taskId: args['task-id'] }
+        { taskId: args['task-id'] },
+        process.cwd()
       )
 
       console.log(JSON.stringify(response.body, null, 2))
