@@ -33,12 +33,12 @@ MVP 保留：blueprint-loader, blueprint-persister, staging, arsenal-probe-route
 
 ## 4. 测试验证
 
-- [ ] 4.1 运行 `bun test` 确保 MVP 测试通过
+- [x] 4.1 运行 `bun test` 确保 MVP 测试通过
 - [ ] 4.2 手动测试核心 API：task-submit → step-verify → task-trace
 - [ ] 4.3 验证 CLI 基本命令可用
 
 ## 5. 提交变更
 
-- [ ] 5.1 提交清理后的代码
-- [ ] 5.2 打 tag：`v0.1.0-alpha`
+- [x] 5.1 提交清理后的代码
+- [x] 5.2 打 tag：`v0.1.0-alpha`
 - [ ] 5.3 推送 archive 分支到远程（如有）
