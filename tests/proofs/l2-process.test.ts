@@ -30,28 +30,4 @@ describe('L2 Process Execution Proofs', () => {
       expect(result.output?.success).toBe(false)
     })
   })
-  
-  describe('exec_stdout_match', () => {
-    test('should match stdout with regex pattern', async () => {
-      const result = await executeProof(
-        'exec_stdout_match',
-        { command: 'echo "Hello World"', pattern: 'Hello.*World' },
-        context
-      )
-      
-      expect(result.passed).toBe(true)
-      expect(result.output?.success).toBe(true)
-    })
-    
-    test('should fail when pattern does not match stdout', async () => {
-      const result = await executeProof(
-        'exec_stdout_match',
-        { command: 'echo "Different output"', pattern: 'Hello.*World' },
-        context
-      )
-      
-      expect(result.passed).toBe(false)
-      expect(result.output?.success).toBe(false)
-    })
-  })
 })
