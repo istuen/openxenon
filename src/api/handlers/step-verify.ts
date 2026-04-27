@@ -2,9 +2,11 @@ import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
-import { getStepById, getStepByTaskIdAndName } from '../../db/operations/steps'
-import { verifyStep } from '../../verification/dual-track'
-import { findProof, listAvailableProofs } from '../proof-finder'
+import { getTaskById, updateTaskStatus } from '../../db/operations/tasks'
+import { loadBlueprintFromYaml } from '../../core/blueprint-loader'
+import { StagingManager } from '../../core/staging'
+import { dispatchArsenalProof } from '../../core/proof-dispatcher'
+import type { ProofExecutionContext } from '../../types/proof'
 
 async function handleStepVerify(
   request: Request,
@@ -12,48 +14,62 @@ async function handleStepVerify(
   projectPath: string
 ): Promise<Response> {
   try {
-    const body = await parseJSONBody<{ stepId?: string; taskId?: string; stepName?: string; proofPath?: string }>(request)
-    
+    const body = await parseJSONBody<{
+      taskId?: string
+      stageId?: string
+    }>(request)
+
     if (!body) {
       return badRequest('Request body is required')
     }
-    
-    let step = null
-    
-    if (body.stepId) {
-      step = getStepById(db, body.stepId)
-    } else if (body.taskId && body.stepName) {
-      step = getStepByTaskIdAndName(db, body.taskId, body.stepName)
+
+    if (!body.taskId) {
+      return badRequest('taskId is required')
+    }
+
+    const task = getTaskById(db, body.taskId)
+    if (!task) {
+      return notFound('Task not found')
+    }
+
+    let blueprint
+    try {
+      blueprint = loadBlueprintFromYaml(projectPath, body.taskId)
+    } catch {
+      return notFound('Blueprint YAML not found for this task')
+    }
+
+    const stageId = body.stageId || (blueprint.stages[0]?.id)
+    const stage = blueprint.stages.find(s => s.id === stageId)
+
+    if (!stage) {
+      return notFound(`Stage '${stageId}' not found in blueprint`)
+    }
+
+    const staging = new StagingManager(projectPath, body.taskId)
+    const stagingPath = staging.getStagingPath()
+
+    const context: ProofExecutionContext = {
+      projectRoot: stagingPath,
+      timeout: 30000
+    }
+
+    const proofResult = await dispatchArsenalProof(stage.proof, context)
+
+    if (proofResult.passed) {
+      staging.moveToSrc()
+      updateTaskStatus(db, body.taskId, 'RUNNING')
     } else {
-      return badRequest('Either stepId or (taskId + stepName) is required')
+      staging.cleanup()
     }
-    
-    if (!step) {
-      return notFound('Step not found')
-    }
-    
-    let proofPath = body.proofPath
-    
-    if (!proofPath) {
-      const proofLocation = findProof(step.proof, projectPath)
-      if (!proofLocation) {
-        const available = listAvailableProofs(projectPath)
-        return notFound(`Proof '${step.proof}' not found. Available proofs: ${available.slice(0, 10).join(', ')}${available.length > 10 ? '...' : ''}`)
-      }
-      proofPath = proofLocation.path
-    }
-    
-    const result = await verifyStep({
-      db,
-      stepId: step.id,
-      proofPath
-    })
-    
+
     return new Response(
       JSON.stringify({
-        success: result.success,
-        output: result.output,
-        error: result.error
+        success: proofResult.passed,
+        stageId: stage.id,
+        probeResults: proofResult.probeResults,
+        errors: proofResult.errors,
+        stagingPath
       }),
       {
         status: 200,
@@ -62,7 +78,7 @@ async function handleStepVerify(
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    
+
     return new Response(
       JSON.stringify({
         error: 'StepVerifyFailed',

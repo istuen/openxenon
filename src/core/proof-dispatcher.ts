@@ -6,6 +6,8 @@ import { findCustomProof, getAllCustomProofs } from './custom-proofs-scanner'
 import { executeCustomProofSafe } from '../verification/custom-proof-executor'
 import { validateProofInput } from './proof-parameters'
 import { FORBIDDEN_PROOF_TYPES } from '../types/proof'
+import { type Proof } from '../types/arsenal/blueprint'
+import { routeProbeToBuiltin, type ProbeResult } from './arsenal-probe-router'
 
 export interface ProofDispatchResult {
   proofId: string
@@ -184,7 +186,33 @@ export function hasProof(proofId: string, projectRoot: string): boolean {
   if (hasBuiltInProof(proofId)) {
     return true
   }
-  
+
   const customProof = findCustomProof(proofId, projectRoot)
   return customProof !== undefined
+}
+
+export interface ArsenalProofResult {
+  passed: boolean
+  probeResults: ProbeResult[]
+  errors: string[]
+}
+
+export async function dispatchArsenalProof(
+  proof: Proof,
+  context: ProofExecutionContext
+): Promise<ArsenalProofResult> {
+  const probeResults: ProbeResult[] = []
+  const errors: string[] = []
+
+  for (const probe of proof.probes) {
+    const result = await routeProbeToBuiltin(probe, context)
+    probeResults.push(result)
+    if (result.error) {
+      errors.push(result.error)
+    }
+  }
+
+  const passed = probeResults.every(r => r.passed)
+
+  return { passed, probeResults, errors }
 }

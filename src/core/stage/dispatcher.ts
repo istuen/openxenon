@@ -1,27 +1,32 @@
-import type { Stage } from '../../types/stage';
-import type { Blueprint } from '../../types/blueprint';
+import type { Stage as LegacyStage } from '../../types/stage'
+import type { Blueprint as ArsenalBlueprint } from '../../types/arsenal/blueprint'
 
 export class StageDispatcher {
-  private currentIndex: number = 0;
-  private stages: Stage[] = [];
+  private currentIndex: number = 0
+  private stages: LegacyStage[] = []
 
-  dispatch(blueprint: Blueprint): void {
-    this.stages = blueprint.stages || [];
-    this.currentIndex = 0;
+  dispatchArsenal(blueprint: ArsenalBlueprint): void {
+    this.stages = blueprint.stages.map(s => ({
+      id: s.id,
+      name: s.name,
+      deps: s.deps,
+      status: 'PENDING'
+    })) as LegacyStage[]
+    this.currentIndex = 0
   }
 
-  nextStage(): Stage | undefined {
+  nextStage(): LegacyStage | undefined {
     if (!this.hasNext()) {
-      return undefined;
+      return undefined
     }
-    return this.stages[this.currentIndex++];
+    return this.stages[this.currentIndex++]
   }
 
   hasNext(): boolean {
-    return this.currentIndex < this.stages.length;
+    return this.currentIndex < this.stages.length
   }
 
   reset(): void {
-    this.currentIndex = 0;
+    this.currentIndex = 0
   }
 }

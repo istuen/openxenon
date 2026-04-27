@@ -1,62 +1,28 @@
-import type { Stage } from '../../types/stage';
-import type { Blueprint } from '../../types/blueprint';
-import type { Action } from '../../types/action';
-import { getDefaultStageById, isDefaultStageId } from './default-stages';
-import type { DefaultStage } from './default-stages';
+import { StagingManager } from '../staging'
 
 export class StageExecutor {
-  private blueprints: Map<string, Blueprint> = new Map();
+  private projectRoot: string
+  private taskId: string
 
-  loadStage(stageId: string, blueprint: Blueprint, userInput?: Record<string, unknown>): Stage | undefined {
-    if (isDefaultStageId(stageId)) {
-      const defaultStage = getDefaultStageById(stageId);
-      if (defaultStage) {
-        return this.createStageFromDefault(defaultStage, userInput);
-      }
-      return undefined;
-    }
-
-    const stages = blueprint.stages || [];
-    const stage = stages.find(s => s.id === stageId);
-    if (stage && blueprint.id) {
-      this.blueprints.set(blueprint.id, blueprint);
-    }
-    return stage;
+  constructor(projectRoot: string, taskId: string) {
+    this.projectRoot = projectRoot
+    this.taskId = taskId
   }
 
-  private createStageFromDefault(defaultStage: DefaultStage, userInput?: Record<string, unknown>): Stage {
-    const input = { ...defaultStage.exampleInput, ...userInput };
-    const inputStr = JSON.stringify(input);
-    return {
-      id: defaultStage.id,
-      name: defaultStage.name,
-      spec: { constraints: [], description: defaultStage.description },
-      proof: defaultStage.proof,
-      status: 'PENDING',
-      targetState: inputStr
-    };
-  }
-
-  async execute(stage: Stage): Promise<Stage> {
-    stage.status = 'RUNNING';
+  async execute(stageId: string, passed: boolean): Promise<void> {
+    const staging = new StagingManager(this.projectRoot, this.taskId)
 
     try {
-      const proofPassed = await this.validateProof(stage);
-      stage.status = proofPassed ? 'PASSED' : 'FAILED';
+      staging.ensureStagingDir()
+
+      if (passed) {
+        staging.moveToSrc()
+      } else {
+        staging.cleanup()
+      }
     } catch (error) {
-      stage.status = 'FAILED';
-      console.error(`Stage ${stage.id} failed:`, error);
+      staging.cleanup()
+      console.error(`Stage ${stageId} failed:`, error)
     }
-
-    return stage;
-  }
-
-  applyAction(action: Action, prompt: string): string {
-    const actionInstructions = action.instructions.join('\n');
-    return `${prompt}\n\n${actionInstructions}`;
-  }
-
-  private async validateProof(_stage: Stage): Promise<boolean> {
-    return true;
   }
 }

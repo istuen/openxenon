@@ -1,14 +1,13 @@
 import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
-import { getQueryParams } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getTaskById } from '../../db/operations/tasks'
-import { getNextPendingStage } from '../../db/operations/stages'
+import { loadBlueprintFromYaml } from '../../core/blueprint-loader'
 
 async function handleTaskNext(
   request: Request,
   db: Database,
-  _projectPath: string
+  projectPath: string
 ): Promise<Response> {
   try {
     const url = new URL(request.url)
@@ -27,7 +26,7 @@ async function handleTaskNext(
     if (task.status !== 'RUNNING') {
       return new Response(
         JSON.stringify({
-          stepId: null,
+          stageId: null,
           message: 'Task not started'
         }),
         {
@@ -37,26 +36,20 @@ async function handleTaskNext(
       )
     }
 
-    if (!task.activeBlueprintId) {
-      return new Response(
-        JSON.stringify({
-          stepId: null,
-          message: 'Task has no active blueprint'
-        }),
-        {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      )
+    let blueprint
+    try {
+      blueprint = loadBlueprintFromYaml(projectPath, taskId)
+    } catch {
+      return notFound('Blueprint YAML not found for this task')
     }
 
-    const step = getNextPendingStage(db, task.activeBlueprintId)
+    const firstStage = blueprint.stages[0]
 
-    if (!step) {
+    if (!firstStage) {
       return new Response(
         JSON.stringify({
-          stepId: null,
-          message: 'All steps complete'
+          stageId: null,
+          message: 'No stages defined in blueprint'
         }),
         {
           status: 200,
@@ -67,11 +60,10 @@ async function handleTaskNext(
 
     return new Response(
       JSON.stringify({
-        stepId: step.id,
-        name: step.name,
-        status: step.status,
-        spec: step.spec,
-        proof: step.proof
+        stageId: firstStage.id,
+        name: firstStage.name,
+        proof: firstStage.proof,
+        spec: firstStage.proof.spec.description
       }),
       {
         status: 200,

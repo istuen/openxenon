@@ -4,9 +4,10 @@ import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest } from '../errors'
 import { createTask, updateTaskActiveBlueprint } from '../../db/operations/tasks'
 import { createBlueprint } from '../../db/operations/blueprints'
-import { createStage } from '../../db/operations/stages'
 import { createTaskDirectory } from '../../core/boundary-project'
 import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
+import { saveBlueprintToYaml } from '../../core/blueprint-persister'
+import { type Blueprint } from '../../types/arsenal/blueprint'
 import { join } from 'path'
 
 async function handleTaskSubmit(
@@ -15,47 +16,38 @@ async function handleTaskSubmit(
   projectPath: string
 ): Promise<Response> {
   try {
-    const body = await parseJSONBody<{ task?: string; stages?: unknown[] }>(request)
+    const body = await parseJSONBody<{
+      task?: string
+      blueprint?: Blueprint
+    }>(request)
 
     if (!body) {
       return badRequest('Request body is required')
     }
 
-    const validation = validateRequiredFields(body as Record<string, unknown>, ['task', 'stages'])
+    const validation = validateRequiredFields(body as Record<string, unknown>, ['task', 'blueprint'])
 
     if (!validation.valid) {
       return badRequest(`Field '${validation.missingField}' is required`)
     }
 
     const taskName = body.task as string
-    const stagesInput = (body.stages || []) as Array<{
-      name: string
-      spec: string
-      proof: string
-      target?: string
-      deps?: string[]
-      action?: string
-    }>
+    const blueprintInput = body.blueprint as Blueprint
 
     const task = createTask(db, taskName)
 
-    const blueprint = createBlueprint(db, task.id, `${taskName}-blueprint`, 'CANONICAL')
+    const blueprint = createBlueprint(db, task.id, blueprintInput.name || `${taskName}-blueprint`, 'CANONICAL')
     updateTaskActiveBlueprint(db, task.id, blueprint.id)
 
-    for (const stageInput of stagesInput) {
-      createStage(
-        db,
-        blueprint.id,
-        stageInput.name,
-        stageInput.target || stageInput.spec,
-        stageInput.spec,
-        stageInput.proof,
-        stageInput.deps || [],
-        stageInput.action
-      )
+    const taskDir = createTaskDirectory(projectPath, task.id)
+
+    const blueprintWithIds = {
+      ...blueprintInput,
+      id: blueprint.id,
+      status: 'CANONICAL' as const
     }
 
-    const taskDir = createTaskDirectory(projectPath, task.id)
+    saveBlueprintToYaml(projectPath, task.id, blueprintWithIds)
 
     const manifest = createEmptyStepManifest(task.id)
     const manifestPath = join(taskDir, 'step-manifest.json')
@@ -65,9 +57,10 @@ async function handleTaskSubmit(
       JSON.stringify({
         taskId: task.id,
         blueprintId: blueprint.id,
+        blueprintFile: `tasks/${task.id}/blueprint.json`,
         status: task.status,
-        stagesCount: stagesInput.length,
-        message: 'Task created successfully'
+        stagesCount: blueprintInput.stages?.length || 0,
+        message: 'Task created successfully with Blueprint YAML'
       }),
       {
         status: 200,
