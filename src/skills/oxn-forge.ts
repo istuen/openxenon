@@ -24,13 +24,13 @@ export const oxnForgeSkill: OpenXenonSkill = {
 
 4. 输出以下格式的确认信息：
    "已生成 Draft [资产类型]：[名称]
-   路径：.openxenon/standards/[类型]/DRAFT/[文件名]
-   请使用 'oxn standards inspect' 查看内容，确认后使用 'oxn standards promote' 转正。"
+   路径：.openxenon/arsenal/[类型]/DRAFT/[文件名]
+   请使用 'oxn arsenal inspect' 查看内容，确认后使用 'oxn arsenal promote' 转正。"
 
 约束：
 - 只生成 DRAFT 状态的资产
 - 不执行任何探针逻辑
-- 确保 YAML/JSON 结构符合 Schema`',
+- 确保 YAML/JSON 结构符合 Schema`,
   examples: {
     '生成 Probe': '/oxn-forge 帮我写一个检查文件存在的 Probe',
     '生成 Proof': '/oxn-forge 写一个验证 Laravel 安装的 Proof',
