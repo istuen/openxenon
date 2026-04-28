@@ -5,6 +5,7 @@ import { oxnResumeSkill } from './oxn-resume'
 import { oxnStatusSkill } from './oxn-status'
 import { oxnStopSkill } from './oxn-stop'
 import { oxnTraceSkill } from './oxn-trace'
+import { oxnForgeSkill } from './oxn-forge'
 
 export type { OpenXenonSkill }
 
@@ -15,6 +16,7 @@ export const allSkills: OpenXenonSkill[] = [
   oxnStatusSkill,
   oxnStopSkill,
   oxnTraceSkill,
+  oxnForgeSkill,
 ]
 
 export {
@@ -24,4 +26,5 @@ export {
   oxnStatusSkill,
   oxnStopSkill,
   oxnTraceSkill,
+  oxnForgeSkill,
 }
