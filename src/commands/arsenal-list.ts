@@ -5,7 +5,7 @@ import type { AssetState } from '../core/standards-paths'
 
 export default defineCommand({
   meta: {
-    name: 'standards-list',
+    name: 'arsenal-list',
     description: '列出标准资产'
   },
   args: {

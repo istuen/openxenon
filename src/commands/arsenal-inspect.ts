@@ -4,14 +4,14 @@ import { ensureStandardsDirectories } from '../core/standards-init'
 
 export default defineCommand({
   meta: {
-    name: 'standards-inspect',
+    name: 'arsenal-inspect',
     description: '查看标准资产内容'
   },
   args: {
     path: {
       type: 'positional',
       required: true,
-      description: '资产路径（如 standards/proofs/DRAFT/my-proof.yaml）'
+      description: '资产路径（如 arsenal/proofs/DRAFT/my-proof.yaml）'
     }
   },
   async run(ctx) {

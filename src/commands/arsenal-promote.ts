@@ -4,7 +4,7 @@ import { ensureStandardsDirectories } from '../core/standards-init'
 
 export default defineCommand({
   meta: {
-    name: 'standards-promote',
+    name: 'arsenal-promote',
     description: '将 DRAFT 资产转正为 CANONICAL'
   },
   args: {
