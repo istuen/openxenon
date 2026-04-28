@@ -1,0 +1,84 @@
+# Blueprint Template for OpenXenon Tasks
+# =========================================
+
+# Task Information
+# ----------------
+# 任务的基本信息，供 AI 模型和工程师理解任务背景
+task:
+  id: "{{TASK_ID}}"
+  name: "{{TASK_NAME}}"
+  description: "{{TASK_DESCRIPTION}}"
+  createdAt: "{{CREATED_AT}}"
+
+# Stage Selection
+# ---------------
+# 可选的 Stage 列表，选择需要在 selected 中声明
+# available: 所有可选的 Stage
+# selected: 当前任务选择的 Stage（从 available 中选择）
+stages:
+  available:
+    - name: Build
+      description: 构建阶段 - 编译代码生成产物
+    - name: Test
+      description: 测试阶段 - 运行单元测试和集成测试
+    - name: Deploy
+      description: 部署阶段 - 将产物部署到目标环境
+    - name: Verify
+      description: 验证阶段 - 验证部署结果和功能
+  selected:
+    - Build
+    - Test
+
+# Stage Definitions
+# -----------------
+# 定义每个选中 Stage 的详细步骤和 Proof 配置
+# 每个 Stage 包含多个 steps，每个 step 包含 proof 配置
+stageDefinitions:
+  Build:
+    description: 构建阶段
+    steps:
+      - id: build-step-1
+        name: 安装依赖
+        proof:
+          type: exec_exit_zero
+          params:
+            command: npm install
+      - id: build-step-2
+        name: 执行构建
+        proof:
+          type: fs_exists
+          params:
+            path: dist/index.js
+  Test:
+    description: 测试阶段
+    steps:
+      - id: test-step-1
+        name: 运行单元测试
+        proof:
+          type: exec_exit_zero
+          params:
+            command: npm test
+      - id: test-step-2
+        name: 验证测试覆盖率
+        proof:
+          type: fs_exists
+          params:
+            path: coverage/index.html
+  Deploy:
+    description: 部署阶段
+    steps:
+      - id: deploy-step-1
+        name: 执行部署
+        proof:
+          type: exec_exit_zero
+          params:
+            command: npm run deploy
+  Verify:
+    description: 验证阶段
+    steps:
+      - id: verify-step-1
+        name: 健康检查
+        proof:
+          type: exec_exit_zero
+          params:
+            command: curl -f http://localhost:3000/health

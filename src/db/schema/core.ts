@@ -18,6 +18,19 @@ CREATE TABLE IF NOT EXISTS daemon_config (
 );
 `
 
+export const CREATE_TASKS_TABLE = `
+CREATE TABLE IF NOT EXISTS tasks (
+  id TEXT PRIMARY KEY,
+  project_path TEXT NOT NULL,
+  blueprint_path TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'CREATED' CHECK (
+    status IN ('CREATED', 'IN_PROGRESS', 'PASSED', 'FAILED')
+  ),
+  created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
+  updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
+);
+`
+
 export const PROJECTS_SCHEMA = {
   tableName: 'projects',
   columns: {
@@ -37,5 +50,17 @@ export const DAEMON_CONFIG_SCHEMA = {
     key: 'TEXT PRIMARY KEY',
     value: 'TEXT NOT NULL',
     updated_at: "INTEGER DEFAULT (strftime('%s', 'now'))"
+  }
+} as const
+
+export const TASKS_SCHEMA = {
+  tableName: 'tasks',
+  columns: {
+    id: 'TEXT PRIMARY KEY',
+    project_path: 'TEXT NOT NULL',
+    blueprint_path: 'TEXT NOT NULL',
+    status: "TEXT NOT NULL DEFAULT 'CREATED'",
+    created_at: "INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))",
+    updated_at: "INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))"
   }
 } as const
