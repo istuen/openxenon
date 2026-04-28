@@ -18,6 +18,7 @@ const main = defineCommand({
     'proof-list': () => import('./commands/proof-list').then(m => m.default),
     migrate: () => import('./commands/migrate').then(m => m.default),
     task: () => import('./commands/task').then(m => m.default),
+    standards: () => import('./commands/standards').then(m => m.default),
     draft: () => import('./commands/draft').then(m => m.default),
     export: () => import('./commands/export').then(m => m.default),
     gc: () => import('./commands/gc').then(m => m.default),
