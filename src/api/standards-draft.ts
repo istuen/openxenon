@@ -1,8 +1,9 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { validateProbe, validateProof, validateStage } from '../types/standards'
-import { getStandardsStatePath, type AssetType } from '../core/standards-paths'
-import { ensureStandardsDirectories } from '../core/standards-init'
+import { type AssetType } from '../core/arsenals-paths'
+import { ensureArsenalsDirectories } from '../core/arsenals-init'
+import { getProjectBoundaryPath } from '../core/project'
 import { randomUUID } from 'crypto'
 
 export interface DraftAssetResult {
@@ -25,10 +26,15 @@ function getTypeFromContent(content: string): AssetType | null {
   return null
 }
 
-function saveDraftAsset(type: AssetType, name: string, content: string): DraftAssetResult {
-  ensureStandardsDirectories()
+function getProjectArsenalStatePath(type: AssetType, state: string): string {
+  const projectBoundary = getProjectBoundaryPath(process.cwd())
+  return join(projectBoundary, 'arsenals', type, state)
+}
 
-  const draftPath = getStandardsStatePath(type, 'DRAFT')
+function saveDraftAsset(type: AssetType, name: string, content: string): DraftAssetResult {
+  ensureArsenalsDirectories()
+
+  const draftPath = getProjectArsenalStatePath(type, 'draft')
   const fileName = `${name || 'draft_' + randomUUID().slice(0, 8)}.yaml`
   const filePath = join(draftPath, fileName)
 

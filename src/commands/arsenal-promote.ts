@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
-import { promoteStandard, loadStandardByPath } from '../core/standards-loader'
-import { ensureStandardsDirectories } from '../core/standards-init'
+import { promoteStandard, loadStandardByPath } from '../core/arsenals-loader'
+import { ensureArsenalsDirectories } from '../core/arsenals-init'
 
 export default defineCommand({
   meta: {
@@ -25,9 +25,9 @@ export default defineCommand({
       return
     }
 
-    if (asset.state !== 'DRAFT') {
-      console.error(`Asset is not in DRAFT state: ${relativePath}`)
-      console.error('Only DRAFT assets can be promoted.')
+    if (asset.state !== 'draft') {
+      console.error(`Asset is not in draft state: ${relativePath}`)
+      console.error('Only draft assets can be promoted.')
       return
     }
 

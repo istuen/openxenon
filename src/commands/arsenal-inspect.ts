@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { createInterface } from 'node:readline'
-import { loadStandardsByState, loadStandardByPath, type StandardAsset } from '../core/standards-loader'
-import { ensureStandardsDirectories } from '../core/standards-init'
+import { loadArsenalsByState, loadStandardByPath, type StandardAsset } from '../core/arsenals-loader'
+import { ensureArsenalsDirectories } from '../core/arsenals-init'
 
 export default defineCommand({
   meta: {
@@ -12,26 +12,26 @@ export default defineCommand({
     path: {
       type: 'positional',
       required: false,
-      description: '资产路径（如 arsenal/proofs/DRAFT/my-proof.yaml）'
+      description: '资产路径（如 arsenals/proofs/draft/my-proof.yaml）'
     }
   },
   async run(ctx) {
-    ensureStandardsDirectories()
+    ensureArsenalsDirectories()
 
     const relativePath = ctx.args.path as string | undefined
 
     if (!relativePath) {
-      const draftAssets = loadStandardsByState('DRAFT')
+      const draftAssets = loadArsenalsByState('draft')
 
       if (draftAssets.length === 0) {
-        console.log('当前没有 DRAFT 状态的资产')
+        console.log('当前没有 draft 状态的资产')
         return
       }
 
       console.log('请选择要查看的资产：\n')
 
       draftAssets.forEach((asset, index) => {
-        const relativeAssetPath = asset.path.split('.openxenon/arsenal/')[1]
+        const relativeAssetPath = asset.path.split('.openxenon/arsenals/')[1]
         console.log(`  [${index + 1}] ${relativeAssetPath}`)
       })
 

@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
-import { listStandards, type StandardAsset } from '../core/standards-loader'
-import { ensureStandardsDirectories } from '../core/standards-init'
-import type { AssetState } from '../core/standards-paths'
+import { listStandards, type StandardAsset } from '../core/arsenals-loader'
+import { ensureArsenalsDirectories } from '../core/arsenals-init'
+import type { AssetState } from '../core/arsenals-paths'
 
 export default defineCommand({
   meta: {
@@ -11,12 +11,12 @@ export default defineCommand({
   args: {
     state: {
       type: 'positional',
-      description: '按状态筛选（DRAFT 或 CANONICAL）',
+      description: '按状态筛选（draft 或 canonical）',
       required: false
     }
   },
   async run(ctx) {
-    ensureStandardsDirectories()
+    ensureArsenalsDirectories()
 
     const state = ctx.args.state as AssetState | undefined
     const assets = listStandards(state)

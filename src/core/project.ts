@@ -24,6 +24,10 @@ export function getStepManifestPath(projectRoot: string, taskId: string): string
   return join(getTaskPath(projectRoot, taskId), 'step-manifest.json')
 }
 
+export function getProjectArsenalPath(projectRoot: string): string {
+  return join(getProjectBoundaryPath(projectRoot), 'arsenals')
+}
+
 export function getTaskTracePath(projectRoot: string, taskId: string): string {
   return join(getTaskPath(projectRoot, taskId), 'task-trace.yaml')
 }

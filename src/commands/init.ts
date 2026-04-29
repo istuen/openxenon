@@ -18,7 +18,7 @@ export default defineCommand({
     force: {
       alias: 'f',
       type: 'boolean',
-      description: '强制重新初始化（更新心跳时间）',
+      description: '强制重新初始化（更新心跳时间 + 强制重编译 Skill）',
       default: false
     },
     adapter: {
@@ -38,7 +38,7 @@ export default defineCommand({
     const projectName = ctx.args.name || projectPath.split('/').pop() || 'unnamed'
     const force = ctx.args.force as boolean
     const adapterId = ctx.args.adapter as string
-    const compileForce = ctx.args['compile-force'] as boolean
+    const compileForce = ctx.args['compile-force'] as boolean || force
     
     try {
       console.log(`正在初始化项目: ${projectName}`)
