@@ -49,7 +49,10 @@ export const BlueprintSchema = z.object({
   id: z.string(),
   name: z.string(),
   status: z.enum(['DRAFT', 'CANONICAL', 'ABANDONED']).default('CANONICAL'),
-  stages: z.array(StageSchema),
+  stages: z.array(StageSchema).optional(),
+  topology: z.array(z.string()).optional(),
+  edges: z.array(z.object({ from: z.string(), to: z.string() })).optional(),
+  source: z.string().optional(),
 })
 
 export type Blueprint = z.infer<typeof BlueprintSchema>
