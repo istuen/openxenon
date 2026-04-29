@@ -1,10 +1,11 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { validateProbe, validateProof, validateStage } from '../types/standards'
-import { type AssetType } from '../core/arsenals-paths'
+import { type AssetType, ARSENALS_ROOT } from '../core/arsenals-paths'
 import { ensureArsenalsDirectories } from '../core/arsenals-init'
 import { getProjectBoundaryPath } from '../core/project'
 import { randomUUID } from 'crypto'
+import type { Scope } from '../core/arsenals-loader'
 
 export interface DraftAssetResult {
   success: boolean
@@ -26,15 +27,18 @@ function getTypeFromContent(content: string): AssetType | null {
   return null
 }
 
-function getProjectArsenalStatePath(type: AssetType, state: string): string {
+function getArsenalStatePath(type: AssetType, state: string, scope: Scope = 'project'): string {
+  if (scope === 'global') {
+    return join(ARSENALS_ROOT, type, state)
+  }
   const projectBoundary = getProjectBoundaryPath(process.cwd())
   return join(projectBoundary, 'arsenals', type, state)
 }
 
-function saveDraftAsset(type: AssetType, name: string, content: string): DraftAssetResult {
+function saveDraftAsset(type: AssetType, name: string, content: string, scope: Scope = 'project'): DraftAssetResult {
   ensureArsenalsDirectories()
 
-  const draftPath = getProjectArsenalStatePath(type, 'draft')
+  const draftPath = getArsenalStatePath(type, 'draft', scope)
   const fileName = `${name || 'draft_' + randomUUID().slice(0, 8)}.yaml`
   const filePath = join(draftPath, fileName)
 
@@ -58,7 +62,7 @@ function saveDraftAsset(type: AssetType, name: string, content: string): DraftAs
   }
 }
 
-export function createDraftProbe(content: string, name?: string): DraftAssetResult {
+export function createDraftProbe(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
     validateProbe(parsed)
@@ -66,10 +70,10 @@ export function createDraftProbe(content: string, name?: string): DraftAssetResu
     return { success: false, error: 'Invalid probe structure' }
   }
 
-  return saveDraftAsset('probes', name, content)
+  return saveDraftAsset('probes', name, content, scope)
 }
 
-export function createDraftProof(content: string, name?: string): DraftAssetResult {
+export function createDraftProof(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
     validateProof(parsed)
@@ -77,10 +81,10 @@ export function createDraftProof(content: string, name?: string): DraftAssetResu
     return { success: false, error: 'Invalid proof structure' }
   }
 
-  return saveDraftAsset('proofs', name, content)
+  return saveDraftAsset('proofs', name, content, scope)
 }
 
-export function createDraftStage(content: string, name?: string): DraftAssetResult {
+export function createDraftStage(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
     validateStage(parsed)
@@ -88,10 +92,10 @@ export function createDraftStage(content: string, name?: string): DraftAssetResu
     return { success: false, error: 'Invalid stage structure' }
   }
 
-  return saveDraftAsset('stages', name, content)
+  return saveDraftAsset('stages', name, content, scope)
 }
 
-export function createDraftFromYaml(yamlContent: string, name?: string): DraftAssetResult {
+export function createDraftFromYaml(yamlContent: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   const type = getTypeFromContent(yamlContent)
 
   if (!type) {
@@ -100,10 +104,10 @@ export function createDraftFromYaml(yamlContent: string, name?: string): DraftAs
 
   switch (type) {
     case 'probes':
-      return createDraftProbe(yamlContent, name)
+      return createDraftProbe(yamlContent, name, scope)
     case 'proofs':
-      return createDraftProof(yamlContent, name)
+      return createDraftProof(yamlContent, name, scope)
     case 'stages':
-      return createDraftStage(yamlContent, name)
+      return createDraftStage(yamlContent, name, scope)
   }
 }

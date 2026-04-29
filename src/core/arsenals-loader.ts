@@ -1,7 +1,10 @@
 import { readdirSync, readFileSync, existsSync, renameSync } from 'fs'
-import { join, extname } from 'path'
+import { join, extname, dirname, basename } from 'path'
 import { type AssetState, type AssetType } from './arsenals-paths'
 import { getProjectBoundaryPath } from './project'
+import { ARSENALS_ROOT } from './arsenals-paths'
+
+export type Scope = 'project' | 'global' | 'fallback'
 
 export interface StandardAsset {
   name: string
@@ -59,11 +62,17 @@ function getTypeFromPath(assetPath: string): AssetType | null {
   return null
 }
 
-function scanArsenalsDirectory(type: AssetType, state: AssetState): StandardAsset[] {
+function directoryExists(dirPath: string): boolean {
+  const parent = dirname(dirPath)
+  const name = basename(dirPath)
+  if (!existsSync(parent)) return false
+  return readdirSync(parent).includes(name)
+}
+
+function scanArsenalsDirectory(type: AssetType, state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
   const projectBoundary = getProjectBoundaryPath(process.cwd())
 
-  const pluralPath = join(projectBoundary, 'arsenals', type, state)
-  const pluralAssets = existsSync(pluralPath) ? scanDirectory(pluralPath, type, state) : []
+  const stateVariants = [state, state.toUpperCase() as AssetState]
 
   const typeToSingular: Record<AssetType, string> = {
     probes: 'probe',
@@ -71,23 +80,59 @@ function scanArsenalsDirectory(type: AssetType, state: AssetState): StandardAsse
     stages: 'stage',
     blueprints: 'blueprint'
   }
-  const singularPath = join(projectBoundary, 'arsenals', typeToSingular[type], state)
-  const singularAssets = existsSync(singularPath) ? scanDirectory(singularPath, type, state) : []
 
-  return [...pluralAssets, ...singularAssets]
+  function scanProject(type: AssetType, state: AssetState): StandardAsset[] {
+    const assets: StandardAsset[] = []
+    for (const s of stateVariants) {
+      const pluralPath = join(projectBoundary, 'arsenals', type, s)
+      if (directoryExists(pluralPath)) assets.push(...scanDirectory(pluralPath, type, state))
+      const singularPath = join(projectBoundary, 'arsenals', typeToSingular[type], s)
+      if (directoryExists(singularPath)) assets.push(...scanDirectory(singularPath, type, state))
+    }
+    return assets
+  }
+
+  function scanGlobal(type: AssetType, state: AssetState): StandardAsset[] {
+    const assets: StandardAsset[] = []
+    for (const s of stateVariants) {
+      const pluralPath = join(ARSENALS_ROOT, type, s)
+      if (directoryExists(pluralPath)) assets.push(...scanDirectory(pluralPath, type, state))
+      const singularPath = join(ARSENALS_ROOT, typeToSingular[type], s)
+      if (directoryExists(singularPath)) assets.push(...scanDirectory(singularPath, type, state))
+    }
+    return assets
+  }
+
+  let projectAssets: StandardAsset[] = []
+  let globalAssets: StandardAsset[] = []
+
+  if (scope === 'project' || scope === 'fallback') {
+    projectAssets = scanProject(type, state)
+  }
+  if (scope === 'global' || (scope === 'fallback' && projectAssets.length === 0)) {
+    globalAssets = scanGlobal(type, state)
+  }
+
+  const allAssets = [...projectAssets, ...globalAssets]
+  const seen = new Set<string>()
+  return allAssets.filter(asset => {
+    if (seen.has(asset.path)) return false
+    seen.add(asset.path)
+    return true
+  })
 }
 
-export function loadArsenalsByState(state: AssetState): StandardAsset[] {
-  const projectProbes = scanArsenalsDirectory('probes', state)
-  const projectProofs = scanArsenalsDirectory('proofs', state)
-  const projectStages = scanArsenalsDirectory('stages', state)
-  const projectBlueprints = scanArsenalsDirectory('blueprints', state)
+export function loadArsenalsByState(state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
+  const projectProbes = scanArsenalsDirectory('probes', state, scope)
+  const projectProofs = scanArsenalsDirectory('proofs', state, scope)
+  const projectStages = scanArsenalsDirectory('stages', state, scope)
+  const projectBlueprints = scanArsenalsDirectory('blueprints', state, scope)
 
   return [...projectProbes, ...projectProofs, ...projectStages, ...projectBlueprints]
 }
 
-export function loadArsenalsByTypeAndState(type: AssetType, state: AssetState): StandardAsset[] {
-  return scanArsenalsDirectory(type, state)
+export function loadArsenalsByTypeAndState(type: AssetType, state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
+  return scanArsenalsDirectory(type, state, scope)
 }
 
 export function loadStandardByPath(assetPath: string): StandardAsset | null {
@@ -148,12 +193,48 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
   }
 }
 
-export function listStandards(state?: AssetState): StandardAsset[] {
+export function loadStandardByName(name: string, type: AssetType): StandardAsset | null {
+  const projectPath = join(getProjectBoundaryPath(process.cwd()), 'arsenals', type, 'canonical')
+  const projectAsset = loadStandardFromDirectory(projectPath, name)
+  if (projectAsset) return projectAsset
+
+  const globalPath = join(ARSENALS_ROOT, type, 'canonical')
+  const globalAsset = loadStandardFromDirectory(globalPath, name)
+  if (globalAsset) return globalAsset
+
+  return null
+}
+
+function loadStandardFromDirectory(dirPath: string, name: string): StandardAsset | null {
+  if (!directoryExists(dirPath)) return null
+
+  const files = readdirSync(dirPath)
+  for (const file of files) {
+    const filePath = join(dirPath, file)
+    const ext = extname(file)
+    const baseName = file.replace(ext, '')
+    if (baseName === name) {
+      const content = readFileSync(filePath, 'utf-8')
+      const state: AssetState = dirPath.includes('/draft/') ? 'draft' : 'canonical'
+      const typeFromPath = getTypeFromPath(filePath)
+      return {
+        name: baseName,
+        type: typeFromPath || 'stages',
+        state,
+        path: filePath,
+        content
+      }
+    }
+  }
+  return null
+}
+
+export function listStandards(state?: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
   if (state) {
-    return loadArsenalsByState(state)
+    return loadArsenalsByState(state, scope)
   }
 
-  const draft = loadArsenalsByState('draft')
-  const canonical = loadArsenalsByState('canonical')
+  const draft = loadArsenalsByState('draft', scope)
+  const canonical = loadArsenalsByState('canonical', scope)
   return [...draft, ...canonical]
 }

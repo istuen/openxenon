@@ -21,44 +21,51 @@ export const oxnForgeSkill: OpenXenonSkill = {
 
 3. 调用 Core API 将 Draft 资产保存到 DRAFT 目录：
    使用 createDraftFromYaml 函数保存资产
+   - 默认保存到项目级：<project>/.openxenon/arsenals/<type>/draft/
+   - 如果用户请求包含 "--global"，保存到全局：~/.openxenon/arsenals/<type>/draft/
 
 4. 输出以下格式的确认信息：
    "已生成 Draft [资产类型]：[名称]
-   路径：.openxenon/arsenals/[类型]/draft/[文件名]
+   路径：.openxenon/arsenals/[类型]/draft/[文件名]（项目级）
+   或：~/.openxenon/arsenals/[类型]/draft/[文件名]（全局级）
    请使用 'oxn arsenal inspect' 查看内容，确认后使用 'oxn arsenal promote' 转正。"
 
 约束：
 - 只生成 DRAFT 状态的资产
 - 不执行任何探针逻辑
-- 确保 YAML/JSON 结构符合 Schema`,
+- 确保 YAML/JSON 结构符合 Schema
+- 如果用户明确说"全局"或"--global"，使用全局作用域`,
   examples: {
     '生成 Probe': '/oxn-forge 帮我写一个检查文件存在的 Probe',
+    '生成全局 Probe': '/oxn-forge --global 帮我写一个检查文件存在的 Probe',
     '生成 Proof': '/oxn-forge 写一个验证 Laravel 安装的 Proof',
     '生成 Stage': '/oxn-forge 创建一个安装 Laravel 的 Stage'
   }
 }
 
-export function parseForgeRequest(input: string): { type: 'probe' | 'proof' | 'stage', description: string } {
+export function parseForgeRequest(input: string): { type: 'probe' | 'proof' | 'stage', description: string, scope: 'project' | 'global' } {
   const lowerInput = input.toLowerCase()
+  const isGlobal = lowerInput.includes('--global') || lowerInput.includes('全局')
+  const cleanInput = input.replace(/--global/gi, '').trim()
 
-  if (lowerInput.includes('probe')) {
-    return { type: 'probe', description: input }
+  if (cleanInput.toLowerCase().includes('probe')) {
+    return { type: 'probe', description: cleanInput, scope: isGlobal ? 'global' : 'project' }
   }
-  if (lowerInput.includes('proof')) {
-    return { type: 'proof', description: input }
+  if (cleanInput.toLowerCase().includes('proof')) {
+    return { type: 'proof', description: cleanInput, scope: isGlobal ? 'global' : 'project' }
   }
-  if (lowerInput.includes('stage')) {
-    return { type: 'stage', description: input }
-  }
-
-  if (lowerInput.includes('检查') || lowerInput.includes('check')) {
-    return { type: 'probe', description: input }
-  }
-  if (lowerInput.includes('验证') || lowerInput.includes('验证')) {
-    return { type: 'proof', description: input }
+  if (cleanInput.toLowerCase().includes('stage')) {
+    return { type: 'stage', description: cleanInput, scope: isGlobal ? 'global' : 'project' }
   }
 
-  return { type: 'probe', description: input }
+  if (cleanInput.includes('检查') || cleanInput.includes('check')) {
+    return { type: 'probe', description: cleanInput, scope: isGlobal ? 'global' : 'project' }
+  }
+  if (cleanInput.includes('验证') || cleanInput.includes('验证')) {
+    return { type: 'proof', description: cleanInput, scope: isGlobal ? 'global' : 'project' }
+  }
+
+  return { type: 'probe', description: cleanInput, scope: 'project' }
 }
 
 export { createDraftFromYaml }

@@ -1,63 +1,69 @@
 import { defineCommand } from 'citty'
-import { createInterface } from 'node:readline'
-import { loadArsenalsByState, loadStandardByPath, type StandardAsset } from '../core/arsenals-loader'
+import { listStandards, type StandardAsset, type Scope } from '../core/arsenals-loader'
 import { ensureArsenalsDirectories } from '../core/arsenals-init'
+import type { AssetState } from '../core/arsenals-paths'
 
 export default defineCommand({
   meta: {
     name: 'arsenal-inspect',
-    description: '查看标准资产内容'
+    description: '查看标准资产内容（默认显示所有状态）'
   },
   args: {
-    path: {
+    name: {
       type: 'positional',
       required: false,
-      description: '资产路径（如 arsenals/proofs/draft/my-proof.yaml）'
+      description: '资产名称（不指定则列出所有）'
+    },
+    global: {
+      type: 'boolean',
+      short: 'g',
+      description: '操作全局 Arsenal（默认项目级，fallback 全局）'
+    },
+    draft: {
+      type: 'boolean',
+      description: '只显示 draft 状态的资产'
+    },
+    canonical: {
+      type: 'boolean',
+      description: '只显示 canonical 状态的资产'
     }
   },
   async run(ctx) {
     ensureArsenalsDirectories()
 
-    const relativePath = ctx.args.path as string | undefined
+    const scope: Scope = ctx.args.global ? 'global' : 'fallback'
+    const state: AssetState | undefined = ctx.args.draft ? 'draft' : ctx.args.canonical ? 'canonical' : undefined
+    const name = ctx.args.name as string | undefined
 
-    if (!relativePath) {
-      const draftAssets = loadArsenalsByState('draft')
-
-      if (draftAssets.length === 0) {
-        console.log('当前没有 draft 状态的资产')
-        return
+    if (name) {
+      const asset = findAssetByName(name, state, scope)
+      if (asset) {
+        displayAsset(asset)
+      } else {
+        console.error(`Asset '${name}' not found`)
       }
-
-      console.log('请选择要查看的资产：\n')
-
-      draftAssets.forEach((asset, index) => {
-        const relativeAssetPath = asset.path.split('.openxenon/arsenals/')[1]
-        console.log(`  [${index + 1}] ${relativeAssetPath}`)
-      })
-
-      console.log('\n输入编号 (或 q 退出):')
-
-      const selectedAsset = await promptSelection(draftAssets)
-      if (!selectedAsset) {
-        console.log('已退出')
-        return
-      }
-
-      displayAsset(selectedAsset)
       return
     }
 
-    const asset = loadStandardByPath(relativePath)
+    const assets = listStandards(state, scope)
 
-    if (!asset) {
-      console.error(`资产不存在: ${relativePath}`)
-      console.error('请提供有效的资产路径。')
+    if (assets.length === 0) {
+      console.log('No assets found.')
       return
     }
 
-    displayAsset(asset)
+    console.log('Available assets:\n')
+    assets.forEach((asset, index) => {
+      const relativePath = asset.path.split('.openxenon/arsenals/')[1]
+      console.log(`  [${index + 1}] ${relativePath}`)
+    })
   }
 })
+
+function findAssetByName(name: string, state: AssetState | undefined, scope: Scope): StandardAsset | null {
+  const assets = listStandards(state, scope)
+  return assets.find(a => a.name === name) || null
+}
 
 function displayAsset(asset: StandardAsset): void {
   console.log(`# ${asset.name}`)
@@ -66,31 +72,4 @@ function displayAsset(asset: StandardAsset): void {
   console.log(`Path: ${asset.path}`)
   console.log('\n--- Content ---')
   console.log(asset.content)
-}
-
-async function promptSelection(assets: StandardAsset[]): Promise<StandardAsset | null> {
-  const iface = createInterface({
-    input: process.stdin,
-    output: process.stdout
-  })
-
-  return new Promise((resolve) => {
-    iface.question('', (answer) => {
-      iface.close()
-
-      if (answer.toLowerCase() === 'q') {
-        resolve(null)
-        return
-      }
-
-      const index = parseInt(answer, 10) - 1
-      if (isNaN(index) || index < 0 || index >= assets.length) {
-        console.log('无效的选择')
-        resolve(null)
-        return
-      }
-
-      resolve(assets[index]!)
-    })
-  })
 }

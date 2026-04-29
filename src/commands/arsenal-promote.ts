@@ -12,10 +12,15 @@ export default defineCommand({
       type: 'positional',
       required: true,
       description: 'DRAFT 资产路径'
+    },
+    global: {
+      type: 'boolean',
+      short: 'g',
+      description: '操作全局 Arsenal'
     }
   },
   async run(ctx) {
-    ensureStandardsDirectories()
+    ensureArsenalsDirectories()
 
     const relativePath = ctx.args.path
 
