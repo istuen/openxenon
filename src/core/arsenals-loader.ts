@@ -53,6 +53,9 @@ function getTypeFromPath(assetPath: string): AssetType | null {
   if (assetPath.includes('/stages/') || assetPath.includes('/stage/')) {
     return 'stages'
   }
+  if (assetPath.includes('/blueprints/') || assetPath.includes('/blueprint/')) {
+    return 'blueprints'
+  }
   return null
 }
 
@@ -65,7 +68,8 @@ function scanArsenalsDirectory(type: AssetType, state: AssetState): StandardAsse
   const typeToSingular: Record<AssetType, string> = {
     probes: 'probe',
     proofs: 'proof',
-    stages: 'stage'
+    stages: 'stage',
+    blueprints: 'blueprint'
   }
   const singularPath = join(projectBoundary, 'arsenals', typeToSingular[type], state)
   const singularAssets = existsSync(singularPath) ? scanDirectory(singularPath, type, state) : []
@@ -77,8 +81,9 @@ export function loadArsenalsByState(state: AssetState): StandardAsset[] {
   const projectProbes = scanArsenalsDirectory('probes', state)
   const projectProofs = scanArsenalsDirectory('proofs', state)
   const projectStages = scanArsenalsDirectory('stages', state)
+  const projectBlueprints = scanArsenalsDirectory('blueprints', state)
 
-  return [...projectProbes, ...projectProofs, ...projectStages]
+  return [...projectProbes, ...projectProofs, ...projectStages, ...projectBlueprints]
 }
 
 export function loadArsenalsByTypeAndState(type: AssetType, state: AssetState): StandardAsset[] {
