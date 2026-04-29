@@ -9,6 +9,7 @@ import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
 import { saveBlueprintToYaml } from '../../core/blueprint-persister'
 import { type Blueprint } from '../../types/arsenal/blueprint'
 import { join } from 'path'
+import { mkdirSync, existsSync, writeFileSync } from 'fs'
 
 async function handleTaskSubmit(
   request: Request,
@@ -40,6 +41,23 @@ async function handleTaskSubmit(
     updateTaskActiveBlueprint(db, task.id, blueprint.id)
 
     const taskDir = createTaskDirectory(projectPath, task.id)
+
+    const blueprintDir = join(taskDir, 'blueprints')
+    if (!existsSync(blueprintDir)) {
+      mkdirSync(blueprintDir, { recursive: true })
+    }
+
+    if (blueprintInput.topology && blueprintInput.topology.length > 0) {
+      const bpFilePath = join(blueprintDir, 'bp_001.json')
+      const bpContent = {
+        id: blueprint.id,
+        status: 'DRAFT',
+        topology: blueprintInput.topology,
+        edges: blueprintInput.edges || [],
+        source: blueprintInput.source || null
+      }
+      writeFileSync(bpFilePath, JSON.stringify(bpContent, null, 2), 'utf-8')
+    }
 
     const blueprintWithIds = {
       ...blueprintInput,

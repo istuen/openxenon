@@ -32,6 +32,11 @@ export function createTaskDirectory(projectRoot: string, taskId: string): string
   if (!existsSync(taskPath)) {
     mkdirSync(taskPath, { recursive: true })
   }
+
+  const blueprintsPath = join(taskPath, 'blueprints')
+  if (!existsSync(blueprintsPath)) {
+    mkdirSync(blueprintsPath, { recursive: true })
+  }
   
   const manifestPath = join(taskPath, 'step-manifest.json')
   if (!existsSync(manifestPath)) {
