@@ -1,12 +1,12 @@
 import { defineCommand } from 'citty'
-import { socketRequest } from '../../api/socket-client'
-import { DAEMON_SOCK_PATH } from '../../core/global'
-import { isDaemonRunning } from '../../daemon/process'
+import { existsSync } from 'fs'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace, updateTaskStatus } from '../../lib/task-trace'
 
 export default defineCommand({
   meta: {
     name: 'task-stop',
-    description: '停止执行任务'
+    description: '停止执行任务（文件系统优先模式）'
   },
   args: {
     'task-id': {
@@ -16,28 +16,33 @@ export default defineCommand({
     }
   },
   async run({ args }) {
-    const { isRunning } = isDaemonRunning()
+    const projectRoot = process.cwd()
+    const taskId = args['task-id']
+    const taskDir = getTaskDirectory(projectRoot, taskId)
 
-    if (!isRunning) {
-      console.error('Error: Daemon is not running')
-      console.error('Start it with: oxn daemon start')
+    if (!existsSync(taskDir.root)) {
+      console.error(`Error: Task '${taskId}' not found`)
       process.exit(1)
     }
 
-    try {
-      const response = await socketRequest(
-        DAEMON_SOCK_PATH,
-        'POST',
-        '/api/v1/task/stop',
-        { taskId: args['task-id'] },
-        process.cwd()
-      )
+    const trace = readTaskTrace(taskDir)
 
-      console.log(JSON.stringify(response.body, null, 2))
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error(`Error: ${errorMessage}`)
+    if (!trace) {
+      console.error(`Error: Task trace not found for '${taskId}'`)
       process.exit(1)
     }
+
+    if (trace.status === 'COMPLETED' || trace.status === 'FAILED' || trace.status === 'ESCAPED') {
+      console.error(`Error: Task '${taskId}' has already ${trace.status.toLowerCase()}`)
+      process.exit(1)
+    }
+
+    updateTaskStatus(taskDir, 'TERMINATED')
+
+    console.log(JSON.stringify({
+      taskId,
+      status: 'TERMINATED',
+      message: 'Task stopped successfully'
+    }))
   }
 })

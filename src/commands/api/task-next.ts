@@ -1,12 +1,14 @@
 import { defineCommand } from 'citty'
-import { socketRequest } from '../../api/socket-client'
-import { DAEMON_SOCK_PATH } from '../../core/global'
-import { isDaemonRunning } from '../../daemon/process'
+import { existsSync, readFileSync } from 'fs'
+import { join } from 'path'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace, getNextPendingStage } from '../../lib/task-trace'
+import { parseBlueprintYaml } from '../../lib/blueprint-parser'
 
 export default defineCommand({
   meta: {
     name: 'task-next',
-    description: '获取下一步任务'
+    description: '获取下一步任务（文件系统优先模式）'
   },
   args: {
     'task-id': {
@@ -16,28 +18,57 @@ export default defineCommand({
     }
   },
   async run({ args }) {
-    const { isRunning } = isDaemonRunning()
+    const projectRoot = process.cwd()
+    const taskId = args['task-id']
+    const taskDir = getTaskDirectory(projectRoot, taskId)
 
-    if (!isRunning) {
-      console.error('Error: Daemon is not running')
-      console.error('Start it with: oxn daemon start')
+    if (!existsSync(taskDir.root)) {
+      console.error(`Error: Task '${taskId}' not found`)
       process.exit(1)
     }
 
-    try {
-      const response = await socketRequest(
-        DAEMON_SOCK_PATH,
-        'GET',
-        `/api/v1/task/next?taskId=${args['task-id']}`,
-        undefined,
-        process.cwd()
-      )
+    const trace = readTaskTrace(taskDir)
 
-      console.log(JSON.stringify(response.body, null, 2))
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error(`Error: ${errorMessage}`)
+    if (!trace) {
+      console.error(`Error: Task trace not found for '${taskId}'`)
       process.exit(1)
     }
+
+    if (trace.status !== 'RUNNING') {
+      console.log(JSON.stringify({
+        stepId: null,
+        message: `Task is not running (status: ${trace.status})`
+      }))
+      return
+    }
+
+    const pendingStage = getNextPendingStage(taskDir)
+
+    if (!pendingStage) {
+      const allComplete = trace.stages.every(s => s.status === 'PASSED' || s.status === 'FAILED')
+      if (allComplete) {
+        console.log(JSON.stringify({
+          stepId: null,
+          message: 'All stages completed'
+        }))
+      } else {
+        console.log(JSON.stringify({
+          stepId: null,
+          message: 'No pending stages found'
+        }))
+      }
+      return
+    }
+
+    const blueprintContent = readFileSync(taskDir.blueprintPath, 'utf-8')
+    const parsedBlueprint = parseBlueprintYaml(blueprintContent)
+    const stageBlueprint = parsedBlueprint.stages.find(s => s.id === pendingStage.stageId)
+
+    console.log(JSON.stringify({
+      stepId: pendingStage.stageId,
+      name: pendingStage.stageName,
+      status: pendingStage.status,
+      proof: stageBlueprint?.proof || null
+    }))
   }
 })

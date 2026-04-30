@@ -53,7 +53,7 @@ export const DAEMON_CONFIG_SCHEMA = {
   }
 } as const
 
-export const TASKS_SCHEMA = {
+export const TASKS_SCHEMA_DEPRECATED = {
   tableName: 'tasks',
   columns: {
     id: 'TEXT PRIMARY KEY',
@@ -62,5 +62,7 @@ export const TASKS_SCHEMA = {
     status: "TEXT NOT NULL DEFAULT 'CREATED'",
     created_at: "INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))",
     updated_at: "INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))"
-  }
+  },
+  deprecated: true,
+  note: '全局任务表已废弃。任务状态现在由文件系统管理。'
 } as const

@@ -83,7 +83,7 @@ export const STAGES_INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_stages_status ON stages(status);',
 ]
 
-export const PROJECT_DB_SCHEMA = {
+export const PROJECT_DB_SCHEMA_DEPRECATED = {
   tasks: {
     tableName: 'tasks',
     columns: {
@@ -93,7 +93,9 @@ export const PROJECT_DB_SCHEMA = {
       active_blueprint_id: 'TEXT',
       created_at: 'INTEGER NOT NULL DEFAULT (unixepoch())',
       updated_at: 'INTEGER NOT NULL DEFAULT (unixepoch())'
-    }
+    },
+    deprecated: true,
+    note: '任务状态现在存储在 .openxenon/tasks/{task_id}/task-trace.yaml 文件中'
   },
   blueprints: {
     tableName: 'blueprints',
@@ -103,7 +105,9 @@ export const PROJECT_DB_SCHEMA = {
       name: 'TEXT NOT NULL',
       status: "TEXT NOT NULL DEFAULT 'DRAFT'",
       created_at: 'INTEGER NOT NULL DEFAULT (unixepoch())'
-    }
+    },
+    deprecated: true,
+    note: 'Blueprint 现在存储在 .openxenon/tasks/{task_id}/blueprint.yaml 文件中'
   },
   stages: {
     tableName: 'stages',
@@ -119,7 +123,9 @@ export const PROJECT_DB_SCHEMA = {
       status: "TEXT NOT NULL DEFAULT 'PENDING'",
       created_at: 'INTEGER NOT NULL DEFAULT (unixepoch())',
       completed_at: 'INTEGER'
-    }
+    },
+    deprecated: true,
+    note: 'Stage 信息现在嵌入在 blueprint.yaml 中'
   },
   escape_logs: {
     tableName: 'escape_logs',
@@ -130,7 +136,9 @@ export const PROJECT_DB_SCHEMA = {
       detected_at: 'INTEGER NOT NULL',
       manifest_before: 'TEXT',
       manifest_after: 'TEXT'
-    }
+    },
+    deprecated: true,
+    note: 'Escape 日志现在存储在 task-trace.yaml 中'
   },
   proof_logs: {
     tableName: 'proof_logs',
@@ -141,6 +149,8 @@ export const PROJECT_DB_SCHEMA = {
       result: 'TEXT NOT NULL',
       output: 'TEXT',
       executed_at: 'INTEGER NOT NULL'
-    }
+    },
+    deprecated: true,
+    note: 'Probe 结果现在存储在 task-trace.yaml 的 probes 数组中'
   }
 } as const

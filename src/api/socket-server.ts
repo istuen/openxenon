@@ -10,6 +10,8 @@ export interface SocketRequest {
   projectPath?: string
 }
 
+const FS_EXECUTE_PATH = '/api/v1/fs/execute'
+
 let server: ReturnType<typeof createServer> | null = null
 
 export function startSocketServer(socketPath: string): void {
@@ -41,6 +43,28 @@ export function startSocketServer(socketPath: string): void {
           if (path === '/api/v1/health' && method === 'GET') {
             const response = await handleRequest(method, path, createMockRequest(body), null!, '')
             const responseBody = await response.json()
+            socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
+            continue
+          }
+
+          if (path === FS_EXECUTE_PATH && method === 'POST') {
+            const { loadProjectContext } = await import('./context')
+            const context = loadProjectContext(projectPath || process.cwd())
+            const xenonDir = projectPath || process.cwd()
+
+            if ('status' in context) {
+              const mockReq = createMockRequest(method, path, body)
+              const response = await handleRequest(method, path, mockReq, null!, xenonDir)
+              const clonedResponse = response.clone()
+              const responseBody = await clonedResponse.json()
+              socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
+              continue
+            }
+
+            const mockReq = createMockRequest(method, path, body)
+            const response = await handleRequest(method, path, mockReq, context.db, context.projectPath)
+            const clonedResponse = response.clone()
+            const responseBody = await clonedResponse.json()
             socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
             continue
           }

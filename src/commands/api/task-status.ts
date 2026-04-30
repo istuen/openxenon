@@ -1,12 +1,13 @@
 import { defineCommand } from 'citty'
-import { socketRequest } from '../../api/socket-client'
-import { DAEMON_SOCK_PATH } from '../../core/global'
-import { isDaemonRunning } from '../../daemon/process'
+import { existsSync, readFileSync } from 'fs'
+import { join } from 'path'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace } from '../../lib/task-trace'
 
 export default defineCommand({
   meta: {
     name: 'task-status',
-    description: '查询任务状态'
+    description: '查询任务状态（文件系统优先模式）'
   },
   args: {
     'task-id': {
@@ -16,28 +17,35 @@ export default defineCommand({
     }
   },
   async run({ args }) {
-    const { isRunning } = isDaemonRunning()
+    const projectRoot = process.cwd()
+    const taskId = args['task-id']
+    const taskDir = getTaskDirectory(projectRoot, taskId)
 
-    if (!isRunning) {
-      console.error('Error: Daemon is not running')
-      console.error('Start it with: oxn daemon start')
+    if (!existsSync(taskDir.root)) {
+      console.error(`Error: Task '${taskId}' not found`)
       process.exit(1)
     }
 
-    try {
-      const response = await socketRequest(
-        DAEMON_SOCK_PATH,
-        'GET',
-        `/api/v1/task/status?taskId=${args['task-id']}`,
-        undefined,
-        process.cwd()
-      )
+    const trace = readTaskTrace(taskDir)
 
-      console.log(JSON.stringify(response.body, null, 2))
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error(`Error: ${errorMessage}`)
+    if (!trace) {
+      console.error(`Error: Task trace not found for '${taskId}'`)
       process.exit(1)
     }
+
+    console.log(JSON.stringify({
+      taskId: trace.taskId,
+      name: trace.taskName,
+      status: trace.status,
+      startedAt: trace.startedAt,
+      completedAt: trace.completedAt,
+      stages: trace.stages.map(s => ({
+        stageId: s.stageId,
+        stageName: s.stageName,
+        status: s.status,
+        executedAt: s.executedAt,
+        completedAt: s.completedAt
+      }))
+    }, null, 2))
   }
 })
