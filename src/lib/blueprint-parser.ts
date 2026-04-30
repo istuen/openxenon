@@ -65,6 +65,20 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       continue
     }
 
+    if (trimmed.startsWith('- id:') && currentSection === 'probes' && stageIndex >= 0) {
+      stageIndex++
+      probeIndex = -1
+      currentSection = 'stage'
+      const stageId = trimmed.slice(5).trim()
+      stages[stageIndex] = {
+        id: stageId,
+        name: '',
+        deps: [],
+        proof: { target: { description: '' }, spec: { description: '' }, probes: [] }
+      }
+      continue
+    }
+
     if (trimmed.startsWith('name:') && currentSection === 'stage' && stageIndex >= 0) {
       stages[stageIndex].name = trimmed.slice(5).trim()
       continue
@@ -103,6 +117,11 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
     if (trimmed === 'probes:') {
       currentSection = 'probes'
       probeIndex = -1
+      continue
+    }
+
+    if (trimmed.startsWith('deps:') && currentSection === 'probes' && stageIndex >= 0) {
+      currentSection = 'stage'
       continue
     }
 
