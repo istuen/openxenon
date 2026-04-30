@@ -3,6 +3,7 @@ import { ensureProjectBoundary } from '../core/boundary-project'
 import { registerProject, getProjectByPath, updateProjectHeartbeat } from '../core/registry'
 import { ensureGlobalBoundary } from '../core/boundary'
 import { compileAllSkills, formatCompilationReport } from '../core/skill-compiler'
+import { setSpaceMode } from '../db/operations/config'
 
 export default defineCommand({
   meta: {
@@ -31,6 +32,12 @@ export default defineCommand({
       type: 'boolean',
       description: '强制重写所有 Skill 文件（忽略内容比对）',
       default: false
+    },
+    sandbox: {
+      alias: 's',
+      type: 'boolean',
+      description: '初始化为沙箱模式',
+      default: false
     }
   },
   async run(ctx) {
@@ -39,16 +46,22 @@ export default defineCommand({
     const force = ctx.args.force as boolean
     const adapterId = ctx.args.adapter as string
     const compileForce = ctx.args['compile-force'] as boolean || force
-    
+    const sandbox = ctx.args.sandbox as boolean
+
     try {
       console.log(`正在初始化项目: ${projectName}`)
       console.log(`项目路径: ${projectPath}`)
-      
+      console.log(`模式: ${sandbox ? 'SANDBOX' : 'PRODUCTION'}`)
+
       const globalDb = ensureGlobalBoundary()
-      ensureProjectBoundary(projectPath)
-      
+      const projectDb = ensureProjectBoundary(projectPath)
+
+      if (sandbox) {
+        setSpaceMode(projectDb, 'SANDBOX')
+      }
+
       const existingProject = getProjectByPath(globalDb, projectPath)
-      
+
       if (existingProject) {
         if (force) {
           updateProjectHeartbeat(globalDb, existingProject.id)
@@ -64,19 +77,19 @@ export default defineCommand({
         }
       } else {
         const project = registerProject(globalDb, projectPath, projectName)
-        
+
         console.log('✓ 项目初始化成功')
         console.log(`  项目ID: ${project.id}`)
         console.log(`  状态: ${project.status}`)
       }
-      
+
       console.log('')
       console.log(`正在编译 Skill (适配器: ${adapterId})...`)
-      
+
       const report = compileAllSkills(adapterId, projectPath, compileForce)
       console.log('')
       console.log(formatCompilationReport(report))
-      
+
       if (report.total > 0) {
         console.log('')
         console.log('✓ Skill 编译完成')

@@ -66,6 +66,13 @@ CREATE TABLE IF NOT EXISTS proof_logs (
 );
 `
 
+export const CREATE_CONFIG_TABLE = `
+CREATE TABLE IF NOT EXISTS config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+`
+
 export const BLUEPRINTS_INDEXES = [
   'CREATE INDEX IF NOT EXISTS idx_blueprints_task_id ON blueprints(task_id);',
   'CREATE INDEX IF NOT EXISTS idx_blueprints_status ON blueprints(status);',

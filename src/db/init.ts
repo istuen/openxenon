@@ -6,6 +6,7 @@ import {
   CREATE_STAGES_TABLE,
   CREATE_ESCAPE_LOGS_TABLE,
   CREATE_PROOF_LOGS_TABLE,
+  CREATE_CONFIG_TABLE,
   BLUEPRINTS_INDEXES,
   STAGES_INDEXES
 } from './schema/project'
@@ -28,6 +29,7 @@ export function initProjectDb(dbPath: string): Database {
   db.run(CREATE_STAGES_TABLE)
   db.run(CREATE_ESCAPE_LOGS_TABLE)
   db.run(CREATE_PROOF_LOGS_TABLE)
+  db.run(CREATE_CONFIG_TABLE)
 
   for (const createIndex of [...BLUEPRINTS_INDEXES, ...STAGES_INDEXES]) {
     db.run(createIndex)
