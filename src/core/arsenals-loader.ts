@@ -1,6 +1,6 @@
-import { readdirSync, readFileSync, existsSync, renameSync } from 'fs'
+import { readdirSync, readFileSync, existsSync, renameSync, mkdirSync } from 'fs'
 import { join, extname, dirname, basename } from 'path'
-import { type AssetState, type AssetType } from './arsenals-paths'
+import { type AssetState, type AssetType, getPathStructure } from './arsenals-paths'
 import { getProjectBoundaryPath } from './project'
 import { ARSENALS_ROOT } from './arsenals-paths'
 
@@ -39,11 +39,6 @@ function scanDirectory(dirPath: string, type: AssetType, state: AssetState): Sta
   }
 
   return assets
-}
-
-function getProjectArsenalStatePath(type: AssetType, state: AssetState): string {
-  const projectBoundary = getProjectBoundaryPath(process.cwd())
-  return join(projectBoundary, 'arsenals', type, state)
 }
 
 function getTypeFromPath(assetPath: string): AssetType | null {
@@ -181,50 +176,68 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
     throw new Error(`Asset is not in draft state: ${fromPath}`)
   }
 
-  const newState: AssetState = 'canonical'
-  const newPath = fromPath.replace('/draft/', '/canonical/')
+  const pathStructure = getPathStructure(fromPath)
+  let newPath: string
+
+  if (pathStructure === 'new') {
+    newPath = fromPath.replace('/draft.yaml', '/canonical.yaml')
+  } else {
+    newPath = fromPath.replace('/draft/', '/canonical/')
+  }
+
+  const assetDir = dirname(newPath)
+  if (!existsSync(assetDir)) {
+    mkdirSync(assetDir, { recursive: true })
+  }
 
   renameSync(fromPath, newPath)
 
   return {
     ...asset,
-    state: newState,
+    state: 'canonical',
     path: newPath
   }
 }
 
 export function loadStandardByName(name: string, type: AssetType): StandardAsset | null {
-  const projectPath = join(getProjectBoundaryPath(process.cwd()), 'arsenals', type, 'canonical')
-  const projectAsset = loadStandardFromDirectory(projectPath, name)
-  if (projectAsset) return projectAsset
+  const projectBoundary = getProjectBoundaryPath(process.cwd())
 
-  const globalPath = join(ARSENALS_ROOT, type, 'canonical')
-  const globalAsset = loadStandardFromDirectory(globalPath, name)
-  if (globalAsset) return globalAsset
+  const newCanonicalPath = join(projectBoundary, 'arsenals', type, name, 'canonical.yaml')
+  if (existsSync(newCanonicalPath)) {
+    const content = readFileSync(newCanonicalPath, 'utf-8')
+    return { name, type, state: 'canonical', path: newCanonicalPath, content }
+  }
+
+  const oldCanonicalPath = join(projectBoundary, 'arsenals', type, 'canonical', `${name}.yaml`)
+  if (existsSync(oldCanonicalPath)) {
+    const content = readFileSync(oldCanonicalPath, 'utf-8')
+    return { name, type, state: 'canonical', path: oldCanonicalPath, content }
+  }
+
+  const newDraftPath = join(projectBoundary, 'arsenals', type, name, 'draft.yaml')
+  if (existsSync(newDraftPath)) {
+    const content = readFileSync(newDraftPath, 'utf-8')
+    return { name, type, state: 'draft', path: newDraftPath, content }
+  }
+
+  const oldDraftPath = join(projectBoundary, 'arsenals', type, 'draft', `${name}.yaml`)
+  if (existsSync(oldDraftPath)) {
+    const content = readFileSync(oldDraftPath, 'utf-8')
+    return { name, type, state: 'draft', path: oldDraftPath, content }
+  }
 
   return null
 }
 
-function loadStandardFromDirectory(dirPath: string, name: string): StandardAsset | null {
-  if (!directoryExists(dirPath)) return null
-
-  const files = readdirSync(dirPath)
-  for (const file of files) {
-    const filePath = join(dirPath, file)
-    const ext = extname(file)
-    const baseName = file.replace(ext, '')
-    if (baseName === name) {
-      const content = readFileSync(filePath, 'utf-8')
-      const state: AssetState = dirPath.includes('/draft/') ? 'draft' : 'canonical'
-      const typeFromPath = getTypeFromPath(filePath)
-      return {
-        name: baseName,
-        type: typeFromPath || 'stages',
-        state,
-        path: filePath,
-        content
-      }
-    }
+export function resolveAssetPath(name: string, type: AssetType, state: AssetState): string | null {
+  const projectBoundary = getProjectBoundaryPath(process.cwd())
+  const newPath = join(projectBoundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+  if (existsSync(newPath)) {
+    return newPath
+  }
+  const oldPath = join(projectBoundary, 'arsenals', type, state, `${name}.yaml`)
+  if (existsSync(oldPath)) {
+    return oldPath
   }
   return null
 }

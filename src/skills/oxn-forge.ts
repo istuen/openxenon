@@ -1,5 +1,5 @@
 import type { OpenXenonSkill } from './types'
-import { createDraftFromYaml } from '../api/standards-draft'
+import { createDraftFromYaml } from '../api/arsenal-draft'
 import { metaForgeBlueprint } from '../core/blueprints/meta-forge'
 
 export const oxnForgeSkill: OpenXenonSkill = {

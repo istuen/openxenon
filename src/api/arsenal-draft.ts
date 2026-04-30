@@ -27,20 +27,19 @@ function getTypeFromContent(content: string): AssetType | null {
   return null
 }
 
-function getArsenalStatePath(type: AssetType, state: string, scope: Scope = 'project'): string {
+function getNewStructurePath(type: AssetType, name: string, state: string, scope: Scope = 'project'): string {
   if (scope === 'global') {
-    return join(ARSENALS_ROOT, type, state)
+    return join(ARSENALS_ROOT, type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
   }
   const projectBoundary = getProjectBoundaryPath(process.cwd())
-  return join(projectBoundary, 'arsenals', type, state)
+  return join(projectBoundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
 }
 
-function saveDraftAsset(type: AssetType, name: string, content: string, scope: Scope = 'project'): DraftAssetResult {
+function saveDraftAsset(type: AssetType, name: string | undefined, content: string, scope: Scope = 'project'): DraftAssetResult {
   ensureArsenalsDirectories()
 
-  const draftPath = getArsenalStatePath(type, 'draft', scope)
-  const fileName = `${name || 'draft_' + randomUUID().slice(0, 8)}.yaml`
-  const filePath = join(draftPath, fileName)
+  const assetName = name || 'draft_' + randomUUID().slice(0, 8)
+  const filePath = getNewStructurePath(type, assetName, 'draft', scope)
 
   try {
     const dir = dirname(filePath)
@@ -109,5 +108,7 @@ export function createDraftFromYaml(yamlContent: string, name?: string, scope: S
       return createDraftProof(yamlContent, name, scope)
     case 'stages':
       return createDraftStage(yamlContent, name, scope)
+    default:
+      return { success: false, error: 'Unknown asset type' }
   }
 }
