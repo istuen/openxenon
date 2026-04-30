@@ -1,6 +1,34 @@
 import { defineCommand } from 'citty'
-import { promoteStandard, loadStandardByPath } from '../core/arsenals-loader'
+import { promoteStandard, loadStandardByName } from '../core/arsenals-loader'
 import { ensureArsenalsDirectories } from '../core/arsenals-init'
+import { type AssetType } from '../core/arsenals-paths'
+
+const TYPE_ALIASES: Record<string, AssetType> = {
+  'blueprint': 'blueprints',
+  'blueprints': 'blueprints',
+  'probe': 'probes',
+  'probes': 'probes',
+  'proof': 'proofs',
+  'proofs': 'proofs',
+  'stage': 'stages',
+  'stages': 'stages'
+}
+
+function parseAssetName(input: string): { type: AssetType, name: string } | null {
+  const parts = input.split('/')
+  if (parts.length !== 2) {
+    return null
+  }
+  const [typePart, name] = parts
+  if (!typePart || !name) {
+    return null
+  }
+  const type = TYPE_ALIASES[typePart]
+  if (!type) {
+    return null
+  }
+  return { type, name }
+}
 
 export default defineCommand({
   meta: {
@@ -8,10 +36,10 @@ export default defineCommand({
     description: '将 DRAFT 资产转正为 CANONICAL'
   },
   args: {
-    path: {
+    name: {
       type: 'positional',
       required: true,
-      description: 'DRAFT 资产路径'
+      description: '资产名称 (格式: <type>/<name>, 如 blueprints/my-blueprint)'
     },
     global: {
       type: 'boolean',
@@ -22,22 +50,29 @@ export default defineCommand({
   async run(ctx) {
     ensureArsenalsDirectories()
 
-    const relativePath = ctx.args.path
+    const input = ctx.args.name as string
+    const parsed = parseAssetName(input)
 
-    const asset = loadStandardByPath(relativePath)
+    if (!parsed) {
+      console.error(`Invalid asset name format: ${input}`)
+      console.error('Expected format: <type>/<name> (e.g., blueprints/my-blueprint)')
+      return
+    }
+
+    const asset = loadStandardByName(parsed.name, parsed.type)
     if (!asset) {
-      console.error(`Asset not found: ${relativePath}`)
+      console.error(`Asset not found: ${input}`)
       return
     }
 
     if (asset.state !== 'draft') {
-      console.error(`Asset is not in draft state: ${relativePath}`)
+      console.error(`Asset is not in draft state: ${input}`)
       console.error('Only draft assets can be promoted.')
       return
     }
 
     try {
-      const promoted = promoteStandard(relativePath)
+      const promoted = promoteStandard(asset.path)
 
       if (!promoted) {
         console.error('Failed to promote asset.')
