@@ -2,15 +2,22 @@
 
 ## 概述
 
-Xenonix 使用 SQLite 作为数据持久化引擎，采用双层数据库架构：
-- **core.db**: 全局元数据数据库
-- **project.db**: 项目状态数据库
+Xenonix 使用 SQLite 作为数据持久化引擎，采用双层数据库架构。
 
-## 全局数据库 (core.db)
+**核心理念**：文件系统即真理源。任务状态存储在文件系统中，数据库仅用于存储元数据和配置。
+
+## 文件变更说明
+
+> **重要更新**：2026-04-30 起，任务状态从 SQLite 迁移到文件系统。
+>
+> 原 `project.db` 中的 tasks、blueprints、stages、escape_logs、proof_logs 表已废弃。
+> 现任务状态存储在 `.openxenon/tasks/{task_id}/task-trace.yaml` 中。
+
+## 全局数据库 (core.oxn)
 
 ### 位置
 
-`~/.xenonix/core.db`
+`~/.xenonix/core.oxn`
 
 ### 表结构
 
@@ -23,8 +30,8 @@ CREATE TABLE projects (
   id TEXT PRIMARY KEY,               -- 项目 UUID
   path TEXT UNIQUE NOT NULL,         -- 项目绝对路径
   name TEXT,                         -- 项目名称
-  status TEXT DEFAULT 'active',      -- active | archived
-  last_heartbeat INTEGER,            -- 最后心跳时间戳
+  status TEXT DEFAULT 'active',       -- active | archived
+  last_heartbeat INTEGER,             -- 最后心跳时间戳
   created_at INTEGER DEFAULT (strftime('%s', 'now')),
   updated_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
@@ -42,11 +49,23 @@ CREATE TABLE projects (
 | created_at | INTEGER | 创建时间 (Unix 时间戳) |
 | updated_at | INTEGER | 更新时间 (Unix 时间戳) |
 
-## 项目数据库 (project.db)
+#### daemon_config 表
+
+守护进程配置表，存储 Core 引擎的配置。
+
+```sql
+CREATE TABLE daemon_config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at INTEGER DEFAULT (strftime('%s', 'now'))
+);
+```
+
+## 项目数据库 (project.oxn)
 
 ### 位置
 
-`<project>/.xenonix/project.db`
+`<project>/.openxenon/project.oxn`
 
 ### WAL 模式
 
@@ -63,237 +82,143 @@ PRAGMA journal_mode=WAL;
 
 ### 表结构
 
-#### tasks 表
+#### config 表
 
-任务表，存储任务的基本信息。
+项目配置表，存储项目级配置。
 
+```sql
+CREATE TABLE config (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+```
+
+## 已废弃的表
+
+以下表已废弃，任务状态现在存储在文件系统中。
+
+### tasks 表 (已废弃)
+
+```
+位置: project.oxn
+状态: 已废弃 (2026-04-30)
+迁移: 任务状态现在存储在 .openxenon/tasks/{task_id}/task-trace.yaml
+```
+
+**原 schema**：
 ```sql
 CREATE TABLE tasks (
-  id TEXT PRIMARY KEY,               -- 任务 ID
-  name TEXT NOT NULL,                -- 任务名称
-  playbook TEXT NOT NULL,            -- Playbook JSON
-  status TEXT DEFAULT 'pending',     -- pending | running | completed | failed
-  created_at INTEGER DEFAULT (strftime('%s', 'now')),
-  updated_at INTEGER DEFAULT (strftime('%s', 'now'))
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  status TEXT DEFAULT 'PENDING',
+  active_blueprint_id TEXT,
+  created_at INTEGER,
+  updated_at INTEGER
 );
 ```
 
-**字段说明**：
+### blueprints 表 (已废弃)
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | TEXT | 任务唯一标识符 |
-| name | TEXT | 任务名称 |
-| playbook | TEXT | Playbook JSON 序列化字符串 |
-| status | TEXT | 任务状态：pending, running, completed, failed |
-| created_at | INTEGER | 创建时间 |
-| updated_at | INTEGER | 更新时间 |
-
-#### steps 表
-
-步骤状态表，存储每个步骤的执行状态。
-
-```sql
-CREATE TABLE steps (
-  id TEXT PRIMARY KEY,               -- 步骤 ID
-  task_id TEXT NOT NULL,             -- 所属任务 ID
-  name TEXT NOT NULL,                -- 步骤名称
-  spec TEXT NOT NULL,                -- 执行规范
-  proof TEXT NOT NULL,               -- 验证探针
-  status TEXT DEFAULT 'pending',     -- pending | running | passed | failed
-  started_at INTEGER,                -- 开始时间
-  completed_at INTEGER,              -- 完成时间
-  last_heartbeat INTEGER,            -- 最后心跳时间
-  manifest_snapshot TEXT,            -- step-manifest.json 快照
-  FOREIGN KEY (task_id) REFERENCES tasks(id)
-);
+```
+位置: project.oxn
+状态: 已废弃
+迁移: Blueprint 现在存储在 .openxenon/tasks/{task_id}/blueprint.yaml
 ```
 
-**字段说明**：
+### stages 表 (已废弃)
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | TEXT | 步骤唯一标识符 |
-| task_id | TEXT | 所属任务 ID |
-| name | TEXT | 步骤名称 |
-| spec | TEXT | 执行规范描述 |
-| proof | TEXT | 验证探针 ID |
-| status | TEXT | 步骤状态：pending, running, passed, failed |
-| started_at | INTEGER | 开始执行时间 |
-| completed_at | INTEGER | 执行完成时间 |
-| last_heartbeat | INTEGER | 最后心跳时间 |
-| manifest_snapshot | TEXT | step-manifest.json 快照 (JSON) |
-
-#### escape_logs 表
-
-逃逸检测日志表，记录 AI 模型逃逸事件。
-
-```sql
-CREATE TABLE escape_logs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  task_id TEXT NOT NULL,
-  step_id TEXT NOT NULL,
-  detected_at INTEGER NOT NULL,      -- 检测时间
-  manifest_before TEXT,              -- 变更前快照
-  manifest_after TEXT,               -- 变更后快照
-  FOREIGN KEY (task_id) REFERENCES tasks(id),
-  FOREIGN KEY (step_id) REFERENCES steps(id)
-);
+```
+位置: project.oxn
+状态: 已废弃
+迁移: Stage 信息现在嵌入在 blueprint.yaml 中
 ```
 
-**字段说明**：
+### escape_logs 表 (已废弃)
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 日志 ID (自增) |
-| task_id | TEXT | 任务 ID |
-| step_id | TEXT | 步骤 ID |
-| detected_at | INTEGER | 检测到逃逸的时间 |
-| manifest_before | TEXT | 变更前的 manifest 快照 |
-| manifest_after | TEXT | 变更后的 manifest 快照 |
-
-#### proof_logs 表
-
-Proof 校验日志表，记录所有验证执行结果。
-
-```sql
-CREATE TABLE proof_logs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  step_id TEXT NOT NULL,
-  proof_name TEXT NOT NULL,
-  result TEXT NOT NULL,              -- success | failure
-  output TEXT,                       -- 校验输出
-  executed_at INTEGER NOT NULL,
-  FOREIGN KEY (step_id) REFERENCES steps(id)
-);
+```
+位置: project.oxn
+状态: 已废弃
+迁移: Escape 日志现在存储在 task-trace.yaml 中
 ```
 
-**字段说明**：
+### proof_logs 表 (已废弃)
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | INTEGER | 日志 ID (自增) |
-| step_id | TEXT | 步骤 ID |
-| proof_name | TEXT | Proof 探针名称 |
-| result | TEXT | 验证结果：success 或 failure |
-| output | TEXT | 验证输出信息 |
-| executed_at | INTEGER | 执行时间 |
+```
+位置: project.oxn
+状态: 已废弃
+迁移: Probe 结果现在存储在 task-trace.yaml 的 probes 数组中
+```
 
-## 索引
+## 任务文件系统结构
 
-为优化查询性能，创建以下索引：
+任务数据存储在 `.openxenon/tasks/{task_id}/` 目录中：
 
-```sql
-CREATE INDEX idx_steps_task ON steps(task_id);
-CREATE INDEX idx_escape_logs_task ON escape_logs(task_id);
-CREATE INDEX idx_proof_logs_step ON proof_logs(step_id);
+```
+.openxenon/
+└── tasks/
+    └── {task_id}/
+        ├── blueprint.yaml      # 任务蓝图定义
+        ├── step-manifest.json   # AI 写入的状态管道
+        └── task-trace.yaml      # 任务执行轨迹（状态真理源）
+```
+
+### task-trace.yaml 结构
+
+```yaml
+taskId: "uuid"
+taskName: "任务名称"
+status: "RUNNING"  # PENDING | RUNNING | COMPLETED | FAILED | ESCAPED
+startedAt: "2026-04-30T03:00:00.000Z"
+completedAt: null
+stages:
+  - stageId: "stage-1"
+    stageName: "阶段名称"
+    status: "PASSED"  # PENDING | RUNNING | PASSED | FAILED
+    probes:
+      - probeType: "fs_exists"
+        result: "PASSED"
+        output: "File found"
+        executedAt: "2026-04-30T03:01:00.000Z"
+    executedAt: "2026-04-30T03:00:30.000Z"
+    completedAt: "2026-04-30T03:01:00.000Z"
 ```
 
 ## 数据关系图
 
 ```
-┌─────────────┐
-│   tasks     │
-├─────────────┤
-│ id (PK)     │◄─────────────┐
-│ name        │              │
-│ playbook    │              │
-│ status      │              │
-└─────────────┘              │
-                             │
-┌─────────────┐              │
-│   steps     │              │
-├─────────────┤              │
-│ id (PK)     │              │
-│ task_id (FK)│──────────────┘
-│ name        │◄─────────────┐
-│ spec        │              │
-│ proof       │              │
-│ status      │              │
-└─────────────┘              │
-                             │
-┌─────────────────┐          │
-│ escape_logs     │          │
-├─────────────────┤          │
-│ id (PK)         │          │
-│ task_id (FK)    │──────────┼───► tasks.id
-│ step_id (FK)    │──────────┘───► steps.id
-│ detected_at     │
+┌─────────────────┐         ┌─────────────────┐
+│   projects       │         │     config       │
+├─────────────────┤         ├─────────────────┤
+│ id (PK)         │         │ key (PK)        │
+│ path            │         │ value           │
+│ name            │         └─────────────────┘
+│ status          │
+│ last_heartbeat  │
 └─────────────────┘
 
-┌─────────────────┐
-│ proof_logs      │
-├─────────────────┤
-│ id (PK)         │
-│ step_id (FK)    │───────► steps.id
-│ proof_name      │
-│ result          │
-│ output          │
-│ executed_at     │
-└─────────────────┘
-```
-
-## 查询示例
-
-### 获取任务及其所有步骤
-
-```sql
-SELECT 
-  t.id as task_id,
-  t.name as task_name,
-  t.status as task_status,
-  s.id as step_id,
-  s.name as step_name,
-  s.status as step_status
-FROM tasks t
-LEFT JOIN steps s ON t.id = s.task_id
-WHERE t.id = ?;
-```
-
-### 获取项目的逃逸日志
-
-```sql
-SELECT 
-  el.*,
-  t.name as task_name,
-  s.name as step_name
-FROM escape_logs el
-JOIN tasks t ON el.task_id = t.id
-JOIN steps s ON el.step_id = s.id
-ORDER BY el.detected_at DESC;
-```
-
-### 获取步骤的验证历史
-
-```sql
-SELECT *
-FROM proof_logs
-WHERE step_id = ?
-ORDER BY executed_at DESC;
+任务数据 (文件系统):
+.openxenon/tasks/{task_id}/
+├── blueprint.yaml      ← 任务蓝图
+├── step-manifest.json   ← AI 状态更新
+└── task-trace.yaml      ← 执行轨迹 (状态真理源)
 ```
 
 ## 备份策略
 
-### core.db 备份
+### core.oxn 备份
 
 ```bash
-cp ~/.xenonix/core.db ~/.xenonix/core.db.backup
+cp ~/.xenonix/core.oxn ~/.xenonix/core.oxn.backup
 ```
 
-### project.db 备份
+### project.oxn 备份
 
 ```bash
-# 项目数据库支持在线备份
-sqlite3 .xenonix/project.db ".backup .xenonix/project.db.backup"
+sqlite3 .openxenon/project.oxn ".backup .openxenon/project.oxn.backup"
 ```
 
-## 数据迁移
+### 任务目录备份
 
-迁移脚本存放在 `src/db/migrations/` 目录，按版本号命名：
-
-```
-src/db/migrations/
-├── 001_initial.sql
-├── 002_add_column.sql
-└── ...
+```bash
+cp -r .openxenon/tasks/{task_id} .openxenon/tasks/{task_id}.backup
 ```

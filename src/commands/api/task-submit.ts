@@ -1,16 +1,13 @@
 import { defineCommand } from 'citty'
 import { getTaskBlueprintPath } from '../../core/task-blueprint'
 import { getProjectBoundaryPath } from '../../core/project'
-import { CORE_DB_PATH } from '../../core/global'
-import { createCoreTask, getCoreTaskById, updateCoreTaskStatus } from '../../db/operations/core-tasks'
-import { initCoreDb } from '../../db/init'
 import { existsSync } from 'fs'
 import { resolve } from 'path'
 
 export default defineCommand({
   meta: {
     name: 'task-submit',
-    description: '提交任务到 Core 进行追踪'
+    description: '提交任务到 Core 进行追踪 (已废弃 - 使用文件系统)'
   },
   args: {
     taskId: {
@@ -42,24 +39,9 @@ export default defineCommand({
       return
     }
 
-    const db = initCoreDb(CORE_DB_PATH)
-
-    try {
-      const existingTask = getCoreTaskById(db, taskId)
-
-      if (existingTask) {
-        updateCoreTaskStatus(db, taskId, 'IN_PROGRESS')
-        console.log(`Task ${taskId} status updated to IN_PROGRESS`)
-        return
-      }
-
-      const task = createCoreTask(db, projectRoot, blueprintPath)
-      console.log(`Task ${taskId} submitted to Core successfully`)
-      console.log(`  Project: ${projectRoot}`)
-      console.log(`  Blueprint: ${blueprintPath}`)
-      console.log(`  Status: ${task.status}`)
-    } finally {
-      db.close()
-    }
+    console.log(`Task ${taskId} is now managed by filesystem.`)
+    console.log(`  Project: ${projectRoot}`)
+    console.log(`  Blueprint: ${blueprintPath}`)
+    console.log(`Use 'oxn task start --task-id ${taskId}' to start execution.`)
   }
 })

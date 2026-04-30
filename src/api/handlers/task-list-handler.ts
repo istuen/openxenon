@@ -1,21 +1,50 @@
 import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
-import { getAllTasks } from '../../db/operations/tasks'
+import { readdirSync, existsSync, readFileSync } from 'fs'
+import { join } from 'path'
 
 async function handleTaskListHandler(
   _request: Request,
-  db: Database,
-  _projectPath: string
+  _db: Database,
+  projectPath: string
 ): Promise<Response> {
   try {
-    const tasks = getAllTasks(db)
+    const tasksDir = join(projectPath, '.openxenon', 'tasks')
 
-    const simplifiedTasks = tasks.map(t => ({
-      id: t.id,
-      name: t.name,
+    if (!existsSync(tasksDir)) {
+      return new Response(
+        JSON.stringify({
+          tasks: [],
+          total: 0
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const taskIds = readdirSync(tasksDir).filter(f => {
+      const tracePath = join(tasksDir, f, 'task-trace.yaml')
+      return existsSync(tracePath)
+    })
+
+    const tasks = taskIds.map(taskId => {
+      const tracePath = join(tasksDir, taskId, 'task-trace.yaml')
+      try {
+        const content = readFileSync(tracePath, 'utf-8')
+        return JSON.parse(content)
+      } catch {
+        return null
+      }
+    }).filter(Boolean)
+
+    const simplifiedTasks = tasks.map((t: any) => ({
+      id: t.taskId,
+      name: t.taskName,
       status: t.status,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt
+      startedAt: t.startedAt,
+      completedAt: t.completedAt
     }))
 
     return new Response(

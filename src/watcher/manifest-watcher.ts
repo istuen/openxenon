@@ -1,22 +1,20 @@
-import { watch, type FSWatcher } from 'fs'
-import { readFileSync } from 'fs'
-import type { Database } from 'bun:sqlite'
+import { watch, type FSWatcher, readFileSync, existsSync } from 'fs'
 import type { StepManifest } from '../types'
-import { updateStepManifest, getStepById } from '../db/operations/steps'
-import { createEscapeLog } from '../db/operations/escape-logs'
+import { getTaskDirectory } from '../lib/task-dir'
+import { readTaskTrace, updateStageTrace } from '../lib/task-trace'
 
 export interface ManifestWatcherOptions {
-  db: Database
-  manifestPath: string
+  projectRoot: string
   taskId: string
+  manifestPath: string
   escapeTimeout?: number
   onEscape?: (manifest: StepManifest) => void
 }
 
 export class ManifestWatcher {
-  private db: Database
-  private manifestPath: string
+  private projectRoot: string
   private taskId: string
+  private manifestPath: string
   private escapeTimeout: number
   private onEscape?: (manifest: StepManifest) => void
   private watcher: FSWatcher | null = null
@@ -24,14 +22,18 @@ export class ManifestWatcher {
   private lastHeartbeat: number = 0
 
   constructor(options: ManifestWatcherOptions) {
-    this.db = options.db
-    this.manifestPath = options.manifestPath
+    this.projectRoot = options.projectRoot
     this.taskId = options.taskId
+    this.manifestPath = options.manifestPath
     this.escapeTimeout = options.escapeTimeout || 30000
     this.onEscape = options.onEscape
   }
 
   watch(): FSWatcher {
+    if (!existsSync(this.manifestPath)) {
+      throw new Error(`Manifest path does not exist: ${this.manifestPath}`)
+    }
+
     this.watcher = watch(this.manifestPath, (event) => {
       if (event === 'change') {
         this.handleManifestChange()
@@ -46,15 +48,20 @@ export class ManifestWatcher {
       const manifest = this.readManifest()
       if (!manifest) return
 
-      const manifestBefore = this.lastManifest ? JSON.stringify(this.lastManifest) : null
-      const manifestAfter = JSON.stringify(manifest)
-
-      updateStepManifest(this.db, manifest.stepId, manifest)
-
       this.lastManifest = manifest
       this.lastHeartbeat = Date.now()
 
-      this.detectEscape(manifest, manifestBefore, manifestAfter)
+      const taskDir = getTaskDirectory(this.projectRoot, this.taskId)
+      const trace = readTaskTrace(taskDir)
+
+      if (trace) {
+        const stageTrace = trace.stages.find(s => s.stageId === manifest.stepId)
+        if (stageTrace) {
+          stageTrace.status = manifest.status as any
+        }
+      }
+
+      this.detectEscape(manifest)
     } catch (error) {
       console.error('Error handling manifest change:', error)
     }
@@ -69,23 +76,12 @@ export class ManifestWatcher {
     }
   }
 
-  private detectEscape(manifest: StepManifest, manifestBefore: string | null, manifestAfter: string): void {
-    const step = getStepById(this.db, manifest.stepId)
-    if (!step) return
+  private detectEscape(_manifest: StepManifest): void {
+    if (this.onEscape && this.lastHeartbeat > 0) {
+      const timeSinceLastHeartbeat = Date.now() - this.lastHeartbeat
 
-    const timeSinceLastHeartbeat = Date.now() - (step.lastHeartbeat || 0) * 1000
-
-    if (timeSinceLastHeartbeat > this.escapeTimeout) {
-      createEscapeLog(
-        this.db,
-        this.taskId,
-        manifest.stepId,
-        manifestBefore || undefined,
-        manifestAfter
-      )
-
-      if (this.onEscape) {
-        this.onEscape(manifest)
+      if (timeSinceLastHeartbeat > this.escapeTimeout) {
+        this.onEscape(_manifest)
       }
     }
   }

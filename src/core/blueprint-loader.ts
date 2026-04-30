@@ -2,9 +2,10 @@ import { readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { getTaskPath } from './project'
 import { safeParseBlueprint, type Blueprint } from '../types/arsenal/blueprint'
+import { TASK_BLUEPRINT_FILE } from '../lib/task-dir'
 
 export function resolveBlueprintPath(projectRoot: string, taskId: string): string {
-  return join(getTaskPath(projectRoot, taskId), 'blueprint.json')
+  return join(getTaskPath(projectRoot, taskId), TASK_BLUEPRINT_FILE)
 }
 
 export function loadBlueprintFromYaml(projectRoot: string, taskId: string): Blueprint {

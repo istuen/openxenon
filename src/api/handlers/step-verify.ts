@@ -2,15 +2,17 @@ import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
-import { getTaskById, updateTaskStatus } from '../../db/operations/tasks'
-import { loadBlueprintFromYaml } from '../../core/blueprint-loader'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace } from '../../lib/task-trace'
+import { readBlueprint } from '../../lib/blueprint-parser'
 import { StagingManager } from '../../core/staging'
 import { dispatchArsenalProof } from '../../core/proof-dispatcher'
 import type { ProofExecutionContext } from '../../types/proof'
+import { existsSync } from 'fs'
 
 async function handleStepVerify(
   request: Request,
-  db: Database,
+  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {
@@ -27,20 +29,20 @@ async function handleStepVerify(
       return badRequest('taskId is required')
     }
 
-    const task = getTaskById(db, body.taskId)
-    if (!task) {
+    const taskDir = getTaskDirectory(projectPath, body.taskId)
+    const trace = readTaskTrace(taskDir)
+
+    if (!trace) {
       return notFound('Task not found')
     }
 
-    let blueprint
-    try {
-      blueprint = loadBlueprintFromYaml(projectPath, body.taskId)
-    } catch {
+    const parsed = readBlueprint(taskDir)
+    if (!parsed) {
       return notFound('Blueprint YAML not found for this task')
     }
 
-    const stageId = body.stageId || (blueprint.stages[0]?.id)
-    const stage = blueprint.stages.find(s => s.id === stageId)
+    const stageId = body.stageId || (parsed.stages[0]?.id)
+    const stage = parsed.stages.find(s => s.id === stageId)
 
     if (!stage) {
       return notFound(`Stage '${stageId}' not found in blueprint`)
@@ -58,7 +60,6 @@ async function handleStepVerify(
 
     if (proofResult.passed) {
       staging.moveToSrc()
-      updateTaskStatus(db, body.taskId, 'RUNNING')
     } else {
       staging.cleanup()
     }

@@ -4,22 +4,26 @@
 
 Xenonix 采用全局/项目双层物理隔离架构，通过严格的边界约束确保 AI 推理过程的可控性和可追溯性。
 
+**核心理念**：文件系统即真理源（File System as Single Source of Truth）
+
+任务状态不再存储在 SQLite 数据库中，而是存储在文件系统中的 `task-trace.yaml` 文件里。
+
 ## 架构图
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        工程师 (Engineer)                         │
 └────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
+                              │
+                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    AI 助手软件 (AI Assistant)                    │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
 │  │  /xn-task    │  │  /xn-status  │  │  /xn-trace   │         │
 │  └──────────────┘  └──────────────┘  └──────────────┘         │
 └────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
+                              │
+                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                   Xenonix Core (全局唯一)                        │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐         │
@@ -27,15 +31,15 @@ Xenonix 采用全局/项目双层物理隔离架构，通过严格的边界约�
 │  │  (Bun.serve) │  │  (FS Watch)  │  │ (Bun.spawn)  │         │
 │  └──────────────┘  └──────────────┘  └──────────────┘         │
 └────────────────────────────┬────────────────────────────────────┘
-                             │
-              ┌──────────────┴──────────────┐
-              ▼                              ▼
+                              │
+               ┌──────────────┴──────────────┐
+               ▼                              ▼
 ┌──────────────────────────┐  ┌──────────────────────────┐
 │   全局物理边界            │  │   项目物理边界            │
-│   ~/.xenonix/            │  │   .xenonix/              │
+│   ~/.xenonix/            │  │   .openxenon/            │
 │  ┌─────────────────┐    │  │  ┌─────────────────┐    │
-│  │    core.db      │    │  │  │   project.db    │    │
-│  │  (项目注册表)   │    │  │  │  (状态真理源)   │    │
+│  │    core.oxn    │    │  │  │   project.oxn   │    │
+│  │  (项目注册表)   │    │  │  │  (仅存 config)  │    │
 │  └─────────────────┘    │  │  └─────────────────┘    │
 │  ┌─────────────────┐    │  │  ┌─────────────────┐    │
 │  │ proofs/         │    │  │  │ tasks/          │    │
@@ -53,12 +57,12 @@ Core 引擎是全局唯一的常驻进程，负责：
 - **API 服务**：提供 HTTP API 供 AI 助手调用
 - **文件监听**：监听 step-manifest.json 变更
 - **Proof 执行**：执行验证探针脚本
-- **状态管理**：管理项目和任务状态
+- **状态管理**：通过文件系统管理任务状态
 
 **技术栈**：
 - 运行时：Bun
 - 类型系统：TypeScript (Strict Mode)
-- 数据库：SQLite (WAL mode)
+- 数据库：SQLite（仅用于 projects 和 config 表）
 - HTTP 服务：Bun.serve
 
 ### 2. 双层物理边界
@@ -67,26 +71,45 @@ Core 引擎是全局唯一的常驻进程，负责：
 
 ```
 ~/.xenonix/
-├── core.db            # 全局项目注册表
-├── proofs/            # 全局探针库
-│   ├── common/        # 通用验证探针
-│   └── templates/     # Playbook 模板
-└── daemon.sock        # Core 进程通信 Socket
+├── core.oxn            # 全局项目注册表（projects 表）
+├── proofs/             # 全局探针库
+│   ├── common/         # 通用验证探针
+│   └── templates/      # Playbook 模板
+└── daemon.sock         # Core 进程通信 Socket
 ```
 
-#### 项目边界 (`<project>/.xenonix/`)
+#### 项目边界 (`<project>/.openxenon/`)
 
 ```
-<project>/.xenonix/
-├── project.db         # 项目状态数据库 (WAL)
-├── proofs/            # 项目探针库 (可选)
+<project>/.openxenon/
+├── config.json         # 项目配置
+├── project.oxn         # 项目数据库（仅存 config 表）
 └── tasks/
     └── <task_id>/
+        ├── blueprint.yaml      # 任务蓝图
         ├── step-manifest.json   # AI 写入的状态管道
-        └── task-trace.yaml      # 任务完成后的案卷
+        └── task-trace.yaml      # 任务执行轨迹（状态真理源）
 ```
 
-### 3. 双轨验证机制
+### 3. 文件系统优先的任务执行
+
+任务状态存储在文件系统中的 YAML/JSON 文件里：
+
+- **blueprint.yaml**: 任务蓝图定义
+- **step-manifest.json**: AI 实时更新的意图和尝试次数
+- **task-trace.yaml**: Core 写入的执行案卷（状态真理源）
+
+```
+任务执行流程：
+
+1. oxn task new <id>           → CLI 创建 tasks/<id>/ 目录
+2. AI 写入 blueprint.yaml      → 定义任务蓝图
+3. oxn task start              → CLI 读取 blueprint，发送 Payload 给 Core
+4. Core 执行探针                → 结果写入 task-trace.yaml
+5. oxn task status             → CLI 读取 task-trace.yaml 返回状态
+```
+
+### 4. 双轨验证机制
 
 #### 明线（主动验证）
 
@@ -95,7 +118,7 @@ Core 引擎是全局唯一的常驻进程，负责：
 2. AI 写入 step-manifest.json
 3. AI 调用 /api/v1/step/verify
 4. Core 执行 Proof 探针
-5. Core 更新 project.db
+5. Core 更新 task-trace.yaml
 6. Core 返回结果
 ```
 
@@ -103,7 +126,7 @@ Core 引擎是全局唯一的常驻进程，负责：
 
 ```
 1. Core 监听 step-manifest.json 变更
-2. Core 同步快照到 project.db
+2. Core 同步快照到 task-trace.yaml
 3. Core 记录时间戳
 4. Core 检查是否超时未验证
 5. 若超时，判定逃逸并记录
@@ -114,24 +137,39 @@ Core 引擎是全局唯一的常驻进程，负责：
 ### 任务创建流程
 
 ```
-工程师 → AI 助手 → Core → 全局 Proof 扫描 → 项目 Proof 扫描 → 返回 Proof 列表 → AI 填充 Playbook → Core 保存到 project.db
+工程师 → AI 助手 → Core → 全局 Proof 扫描 → 项目 Proof 扫描 → 返回 Proof 列表 → AI 填充 Blueprint → Core 保存到 tasks/<id>/blueprint.yaml
 ```
 
 ### 步骤执行流程
 
 ```
-AI 执行 Step → 写入 step-manifest.json → 
-  ├─→ [明线] 调用 API 验证 → Core 执行 Proof → 更新状态
+AI 执行 Step → 写入 step-manifest.json →
+  ├─→ [明线] 调用 API 验证 → Core 执行 Proof → 更新 task-trace.yaml
   └─→ [暗线] Core 监听变更 → 同步快照 → 逃逸检测
 ```
 
 ### 任务完成流程
 
 ```
-AI 通知完成 → Core 从 project.db 导出记录 → 生成 task-trace.yaml → 推送报告给工程师
+AI 通知完成 → Core 从 task-trace.yaml 导出记录 → 推送报告给工程师
 ```
 
 ## 设计决策
+
+### 为什么选择文件系统优先？
+
+- **简单性**：无需数据库同步机制
+- **可追溯性**：每个任务有独立目录，便于 Git 版本控制
+- **可调试性**：直接查看 YAML/JSON 文件，无需 SQL 查询
+- **可靠性**：操作系统级别的文件锁定，无数据库损坏风险
+
+### 为什么仍保留 SQLite？
+
+仅用于存储：
+- **projects 表**：全局项目注册表
+- **config 表**：项目配置
+
+这些是不经常变更且需要跨任务共享的数据。
 
 ### 为什么选择 Bun？
 
@@ -140,17 +178,10 @@ AI 通知完成 → Core 从 project.db 导出记录 → 生成 task-trace.yaml 
 - 内置 SQLite 绑定，零 npm 依赖
 - 内置 HTTP 服务和文件监听
 
-### 为什么选择 SQLite？
-
-- 无外部依赖，符合"无依赖分发"原则
-- WAL 模式支持并发读写
-- 零配置，数据文件可直接备份
-- Bun 原生绑定，性能极佳
-
 ### 为什么选择双层物理边界？
 
 - 全局与项目严格隔离，避免跨项目污染
-- 每个项目有独立的状态真理源
+- 每个项目有独立的状态目录
 - 支持多项目并行工作
 - 项目删除不影响全局注册表
 
@@ -158,7 +189,7 @@ AI 通知完成 → Core 从 project.db 导出记录 → 生成 task-trace.yaml 
 
 ### 添加新的 Proof 类型
 
-在 `~/.xenonix/proofs/common/` 或 `<project>/.xenonix/proofs/` 下添加脚本：
+在 `~/.xenonix/proofs/common/` 或 `<project>/.openxenon/proofs/` 下添加脚本：
 
 - `.ts` / `.js` - JavaScript/TypeScript 脚本
 - `.sh` - Shell 脚本

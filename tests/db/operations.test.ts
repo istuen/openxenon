@@ -1,15 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
-import { Database } from 'bun:sqlite'
 import { mkdirSync, rmSync, existsSync } from 'fs'
 import { join } from 'path'
 import { initProjectDb, closeDb } from '../../src/db/init'
-import { createTask, getTaskById, updateTaskStatus, deleteTask } from '../../src/db/operations/tasks'
-import { createStep, getStepsByTaskId, updateStepStatus } from '../../src/db/operations/steps'
-import type { Blueprint } from '../../src/types'
+import { getTaskDirectory, ensureTaskDirectory, TASK_BLUEPRINT_FILE, TASK_TRACE_FILE } from '../../src/lib/task-dir'
+import { createTaskTrace, readTaskTrace, updateTaskStatus, addStageTrace, createStageTrace } from '../../src/lib/task-trace'
+import { randomUUID } from 'crypto'
 
-describe('Database Operations', () => {
-  const testDir = join(process.cwd(), 'test-temp')
-  let db: Database
+describe('Filesystem Operations (Task Trace)', () => {
+  const testDir = join(process.cwd(), 'test-temp-fs')
+  let db: ReturnType<typeof initProjectDb>
 
   beforeEach(() => {
     if (!existsSync(testDir)) {
@@ -25,83 +24,108 @@ describe('Database Operations', () => {
     }
   })
 
-  describe('Tasks Operations', () => {
-    it('should create a task', () => {
-      const blueprint: Blueprint = {
-        task: 'Test Task',
-        stages: []
-      }
-      
-      const task = createTask(db, 'Test Task', blueprint)
-      
-      expect(task.id).toBeDefined()
-      expect(task.name).toBe('Test Task')
-      expect(task.status).toBe('PENDING')
-    })
+  describe('Task Directory', () => {
+    it('should create task directory', () => {
+      const taskId = 'test-' + randomUUID().slice(0, 8)
+      const taskDir = getTaskDirectory(testDir, taskId)
 
-    it('should get task by id', () => {
-      const blueprint: Blueprint = { task: 'Test', stages: [] }
-      const created = createTask(db, 'Test Task', blueprint)
-      
-      const found = getTaskById(db, created.id)
-      
-      expect(found).toBeDefined()
-      expect(found?.name).toBe('Test Task')
-    })
+      expect(existsSync(taskDir.root)).toBe(false)
 
-    it('should update task status', () => {
-      const blueprint: Blueprint = { task: 'Test', stages: [] }
-      const created = createTask(db, 'Test Task', blueprint)
-      
-      const updated = updateTaskStatus(db, created.id, 'RUNNING')
-      
-      expect(updated?.status).toBe('RUNNING')
-    })
+      ensureTaskDirectory(taskDir)
 
-    it('should delete a task', () => {
-      const blueprint: Blueprint = { task: 'Test', stages: [] }
-      const created = createTask(db, 'Test Task', blueprint)
-      
-      const result = deleteTask(db, created.id)
-      
-      expect(result).toBe(true)
-      expect(getTaskById(db, created.id)).toBeNull()
+      expect(existsSync(taskDir.root)).toBe(true)
+      expect(taskDir.blueprintPath).toContain(TASK_BLUEPRINT_FILE)
+      expect(taskDir.tracePath).toContain(TASK_TRACE_FILE)
     })
   })
 
-  describe('Steps Operations', () => {
-    it('should create a step', () => {
-      const blueprint: Blueprint = { task: 'Test', stages: [] }
-      const task = createTask(db, 'Test Task', blueprint)
-      
-      const step = createStep(db, 'step-1', task.id, 'Step 1', 'Do something', 'proof-1')
-      
-      expect(step.id).toBe('step-1')
-      expect(step.taskId).toBe(task.id)
-      expect(step.status).toBe('PENDING')
+  describe('Task Trace Operations', () => {
+    it('should create a task trace', () => {
+      const taskId = 'test-' + randomUUID().slice(0, 8)
+      const taskDir = getTaskDirectory(testDir, taskId)
+      ensureTaskDirectory(taskDir)
+
+      const trace = createTaskTrace(taskDir, taskId, 'Test Task')
+
+      expect(trace.taskId).toBe(taskId)
+      expect(trace.taskName).toBe('Test Task')
+      expect(trace.status).toBe('RUNNING')
+      expect(trace.stages).toEqual([])
+      expect(existsSync(taskDir.tracePath)).toBe(true)
     })
 
-    it('should get steps by task id', () => {
-      const blueprint: Blueprint = { task: 'Test', stages: [] }
-      const task = createTask(db, 'Test Task', blueprint)
-      
-      createStep(db, 'step-1', task.id, 'Step 1', 'Spec 1', 'proof-1')
-      createStep(db, 'step-2', task.id, 'Step 2', 'Spec 2', 'proof-2')
-      
-      const steps = getStepsByTaskId(db, task.id)
-      
-      expect(steps.length).toBe(2)
+    it('should read task trace', () => {
+      const taskId = 'test-' + randomUUID().slice(0, 8)
+      const taskDir = getTaskDirectory(testDir, taskId)
+      ensureTaskDirectory(taskDir)
+
+      createTaskTrace(taskDir, taskId, 'Test Task')
+
+      const read = readTaskTrace(taskDir)
+
+      expect(read).not.toBeNull()
+      expect(read!.taskId).toBe(taskId)
+      expect(read!.taskName).toBe('Test Task')
     })
 
-    it('should update step status', () => {
-      const blueprint: Blueprint = { task: 'Test', stages: [] }
-      const task = createTask(db, 'Test Task', blueprint)
-      const step = createStep(db, 'step-1', task.id, 'Step 1', 'Spec 1', 'proof-1')
-      
-      const updated = updateStepStatus(db, step.id, 'PASSED')
-      
-      expect(updated?.status).toBe('PASSED')
-      expect(updated?.completedAt).toBeDefined()
+    it('should update task status', () => {
+      const taskId = 'test-' + randomUUID().slice(0, 8)
+      const taskDir = getTaskDirectory(testDir, taskId)
+      ensureTaskDirectory(taskDir)
+
+      createTaskTrace(taskDir, taskId, 'Test Task')
+
+      updateTaskStatus(taskDir, 'COMPLETED')
+
+      const read = readTaskTrace(taskDir)
+      expect(read!.status).toBe('COMPLETED')
+      expect(read!.completedAt).toBeDefined()
     })
+
+    it('should add stage trace', () => {
+      const taskId = 'test-' + randomUUID().slice(0, 8)
+      const taskDir = getTaskDirectory(testDir, taskId)
+      ensureTaskDirectory(taskDir)
+
+      createTaskTrace(taskDir, taskId, 'Test Task')
+
+      const stageTrace = createStageTrace('stage-1', 'Stage One')
+      addStageTrace(taskDir, stageTrace)
+
+      const read = readTaskTrace(taskDir)
+      expect(read!.stages).toHaveLength(1)
+      expect(read!.stages[0].stageId).toBe('stage-1')
+      expect(read!.stages[0].stageName).toBe('Stage One')
+      expect(read!.stages[0].status).toBe('PENDING')
+    })
+  })
+})
+
+describe('Config Table', () => {
+  const testDir = join(process.cwd(), 'test-temp-config')
+  let db: ReturnType<typeof initProjectDb>
+
+  beforeEach(() => {
+    if (!existsSync(testDir)) {
+      mkdirSync(testDir, { recursive: true })
+    }
+    db = initProjectDb(join(testDir, 'project.oxn'))
+  })
+
+  afterEach(() => {
+    if (db) closeDb(db)
+    if (existsSync(testDir)) {
+      rmSync(testDir, { recursive: true, force: true })
+    }
+  })
+
+  it('should still support config table', () => {
+    db.run('INSERT INTO config (key, value) VALUES (?, ?)', ['test.key', 'test.value'])
+
+    const result = db.query('SELECT * FROM config WHERE key = ?').get('test.key') as { key: string; value: string } | undefined
+
+    expect(result).toBeDefined()
+    expect(result!.key).toBe('test.key')
+    expect(result!.value).toBe('test.value')
   })
 })

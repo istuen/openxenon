@@ -2,39 +2,47 @@ import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest, notFound } from '../errors'
-import { getTaskById, updateTaskStatus } from '../../db/operations/tasks'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace, updateTaskStatus } from '../../lib/task-trace'
+import { existsSync } from 'fs'
 
 async function handleTaskStop(
   request: Request,
-  db: Database,
-  _projectPath: string
+  _db: Database,
+  projectPath: string
 ): Promise<Response> {
   try {
     const body = await parseJSONBody<{ taskId?: string }>(request)
-    
+
     if (!body) {
       return badRequest('Request body is required')
     }
-    
+
     const validation = validateRequiredFields(body as Record<string, unknown>, ['taskId'])
-    
+
     if (!validation.valid) {
       return badRequest(`Field '${validation.missingField}' is required`)
     }
-    
-    const task = getTaskById(db, body.taskId!)
-    
-    if (!task) {
-      return notFound(`Task '${body.taskId}' not found`)
+
+    const taskId = body.taskId!
+    const taskDir = getTaskDirectory(projectPath, taskId)
+
+    if (!existsSync(taskDir.root)) {
+      return notFound(`Task '${taskId}' not found`)
     }
-    
-    const updatedTask = updateTaskStatus(db, body.taskId!, 'FAILED')
-    
+
+    const trace = readTaskTrace(taskDir)
+    if (!trace) {
+      return notFound(`Task '${taskId}' not found`)
+    }
+
+    updateTaskStatus(taskDir, 'FAILED')
+
     return new Response(
       JSON.stringify({
         status: 'stopped',
-        taskId: body.taskId,
-        taskStatus: updatedTask?.status
+        taskId: taskId,
+        taskStatus: 'FAILED'
       }),
       {
         status: 200,
@@ -43,7 +51,7 @@ async function handleTaskStop(
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    
+
     return new Response(
       JSON.stringify({
         error: 'TaskStopFailed',

@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'bun:test'
 import { mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, cpSync } from 'fs'
 import { join } from 'path'
-import { Database } from 'bun:sqlite'
 import { initProjectDb, closeDb } from '../src/db/init'
 import { startSocketServer, stopSocketServer } from '../src/api/socket-server'
 import { socketRequest } from '../src/api/socket-client'
-import { updateTaskStatus } from '../src/db/operations/tasks'
 import { loadBlueprintFromYaml, resolveBlueprintPath } from '../src/core/blueprint-loader'
 import { saveBlueprintToYaml } from '../src/core/blueprint-persister'
 import { StagingManager } from '../src/core/staging'
 import { type Blueprint } from '../src/types/arsenal/blueprint'
+import { getTaskDirectory, ensureTaskDirectory } from '../src/lib/task-dir'
+import { createTaskTrace } from '../src/lib/task-trace'
 import '../src/api/handlers'
 
 const testDir = join(process.cwd(), 'test-temp-mvp-01')
@@ -60,7 +60,6 @@ const SAMPLE_BLUEPRINT: Blueprint = {
 }
 
 describe('MVP 0.1: Blueprint Storage & Staging', () => {
-  let db: Database
   let taskId: string
   let socketPath: string
 
@@ -73,15 +72,16 @@ describe('MVP 0.1: Blueprint Storage & Staging', () => {
     mkdirSync(join(testDir, 'src', 'models'), { recursive: true })
     mkdirSync(join(testDir, 'src', 'services'), { recursive: true })
 
+    const db = initProjectDb(join(testDir, '.openxenon', 'project.oxn'))
+    db.close()
+
     socketPath = testSocketPath
-    db = initProjectDb(join(testDir, '.openxenon', 'project.oxn'))
     startSocketServer(socketPath)
     await new Promise(resolve => setTimeout(resolve, 100))
   })
 
   afterAll(() => {
     stopSocketServer()
-    if (db) closeDb(db)
     if (existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true })
     }
@@ -166,7 +166,7 @@ describe('MVP 0.1: Blueprint Storage & Staging', () => {
       expect(response.status).toBe(200)
       const data = response.body as any
       expect(data.taskId).toBeDefined()
-      expect(data.blueprintFile).toContain('blueprint.json')
+      expect(data.blueprintFile).toContain('blueprint.yaml')
 
       taskId = data.taskId
 
@@ -188,7 +188,9 @@ describe('MVP 0.1: Blueprint Storage & Staging', () => {
         )
         taskId = (response.body as any).taskId
       }
-      updateTaskStatus(db, taskId, 'RUNNING')
+      const taskDir = getTaskDirectory(testDir, taskId)
+      ensureTaskDirectory(taskDir)
+      createTaskTrace(taskDir, taskId, 'Another Task')
     })
 
     it('should return stage info from YAML blueprint', async () => {
@@ -249,7 +251,9 @@ describe('MVP 0.1: Blueprint Storage & Staging', () => {
       expect(submitResponse.status).toBe(200)
       const e2eTaskId = (submitResponse.body as any).taskId
 
-      updateTaskStatus(db, e2eTaskId, 'RUNNING')
+      const e2eTaskDir = getTaskDirectory(testDir, e2eTaskId)
+      ensureTaskDirectory(e2eTaskDir)
+      createTaskTrace(e2eTaskDir, e2eTaskId, 'E2E Test Task')
 
       const nextResponse = await socketRequest(
         socketPath,

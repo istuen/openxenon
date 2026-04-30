@@ -1,13 +1,13 @@
 import type { Database } from 'bun:sqlite'
-import { updateStepStatus, getStepById, updateStepHeartbeat } from '../db/operations/steps'
-import { createProofLog } from '../db/operations/proof-logs'
 import { executeProof } from './proof-executor'
-import { ManifestWatcher } from '../watcher'
+import { getTaskDirectory } from '../lib/task-dir'
+import { readTaskTrace, updateStageTrace, createProbeResult } from '../lib/task-trace'
+import { readBlueprint } from '../lib/blueprint-parser'
 
 export interface VerifyStepOptions {
-  db: Database
-  stepId: string
-  proofPath: string
+  projectRoot: string
+  taskId: string
+  stageId: string
 }
 
 export interface VerifyStepResult {
@@ -17,78 +17,59 @@ export interface VerifyStepResult {
 }
 
 export async function verifyStep(options: VerifyStepOptions): Promise<VerifyStepResult> {
-  const { db, stepId, proofPath } = options
+  const { projectRoot, taskId, stageId } = options
 
-  const step = getStepById(db, stepId)
-  if (!step) {
-    return { success: false, error: `Step ${stepId} not found` }
+  const taskDir = getTaskDirectory(projectRoot, taskId)
+  const trace = readTaskTrace(taskDir)
+
+  if (!trace) {
+    return { success: false, error: `Task ${taskId} not found` }
   }
 
-updateStepStatus(db, stepId, 'RUNNING')
-    updateStepHeartbeat(db, stepId)
+  const parsed = readBlueprint(taskDir)
+  if (!parsed) {
+    return { success: false, error: 'Blueprint not found' }
+  }
 
-    try {
-      const result = await executeProof(proofPath)
+  const stage = parsed.stages.find(s => s.id === stageId)
+  if (!stage) {
+    return { success: false, error: `Stage ${stageId} not found` }
+  }
 
-      createProofLog(
-        db,
-        stepId,
-        step.proof,
-        result.success ? 'PASSED' : 'FAILED',
-        result.output
-      )
+  try {
+    const result = await executeProof(stageId)
 
-      if (result.success) {
-        updateStepStatus(db, stepId, 'PASSED')
-      } else {
-        updateStepStatus(db, stepId, 'FAILED')
-      }
+    if (result.success) {
+      updateStageTrace(taskDir, stageId, {
+        status: 'PASSED',
+        completedAt: new Date().toISOString()
+      })
+    } else {
+      updateStageTrace(taskDir, stageId, {
+        status: 'FAILED',
+        completedAt: new Date().toISOString()
+      })
+    }
 
-      return {
-        success: result.success,
-        output: result.output,
-        error: result.error
-      }
-    } catch (error) {
-      updateStepStatus(db, stepId, 'FAILED')
-    
-    createProofLog(
-      db,
-      stepId,
-      step.proof,
-      'failure',
-      error instanceof Error ? error.message : String(error)
-    )
+    const stageTrace = trace.stages.find(s => s.stageId === stageId)
+    if (stageTrace) {
+      stageTrace.probes.push(createProbeResult('verification', result.success ? 'PASSED' : 'FAILED', result.output, result.error))
+    }
+
+    return {
+      success: result.success,
+      output: result.output,
+      error: result.error
+    }
+  } catch (error) {
+    updateStageTrace(taskDir, stageId, {
+      status: 'FAILED',
+      completedAt: new Date().toISOString()
+    })
 
     return {
       success: false,
       error: error instanceof Error ? error.message : String(error)
     }
   }
-}
-
-export interface EscapeMonitorOptions {
-  db: Database
-  manifestPath: string
-  taskId: string
-  escapeTimeout?: number
-  onEscape?: (stepId: string) => void
-}
-
-export function startEscapeMonitor(options: EscapeMonitorOptions): ManifestWatcher {
-  const watcher = new ManifestWatcher({
-    db: options.db,
-    manifestPath: options.manifestPath,
-    taskId: options.taskId,
-    escapeTimeout: options.escapeTimeout,
-    onEscape: (manifest) => {
-      if (options.onEscape) {
-        options.onEscape(manifest.stepId)
-      }
-    }
-  })
-
-  watcher.watch()
-
-  return watcher
 }

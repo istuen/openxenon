@@ -1,21 +1,16 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
 import { mkdirSync, rmSync, existsSync } from 'fs'
 import { join } from 'path'
-import { Database } from 'bun:sqlite'
 import { createServer } from 'net'
-import { initProjectDb, closeDb } from '../../src/db/init'
 import { startSocketServer, stopSocketServer } from '../../src/api/socket-server'
-import { updateTaskStatus } from '../../src/db/operations/tasks'
 import type { Blueprint } from '../../src/types'
 import { socketRequest } from '../../src/api/socket-client'
-import { DAEMON_SOCK_PATH } from '../../src/core/global'
 import '../../src/api/handlers'
 
 const testDir = join(process.cwd(), 'test-temp-socket')
 const testSocketPath = join(testDir, '.openxenon', 'test.sock')
 
 describe('Task Execution API (Socket)', () => {
-  let db: Database
   let taskId: string
   let socketPath: string
 
@@ -27,11 +22,6 @@ describe('Task Execution API (Socket)', () => {
     
     socketPath = testSocketPath
     
-    db = initProjectDb(join(testDir, '.openxenon', 'project.oxn'))
-
-    const dbPath = join(testDir, '.openxenon', 'project.oxn')
-    console.log('DB path:', dbPath, 'exists:', existsSync(dbPath))
-    
     startSocketServer(socketPath)
     
     await new Promise(resolve => setTimeout(resolve, 100))
@@ -39,7 +29,6 @@ describe('Task Execution API (Socket)', () => {
 
   afterAll(() => {
     stopSocketServer()
-    if (db) closeDb(db)
     if (existsSync(testDir)) {
       rmSync(testDir, { recursive: true, force: true })
     }

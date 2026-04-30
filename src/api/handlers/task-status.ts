@@ -2,19 +2,21 @@ import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { getQueryParams } from '../validation'
 import { notFound } from '../errors'
-import { getTaskById } from '../../db/operations/tasks'
-import { getStepsByTaskId } from '../../db/operations/steps'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace, getTaskStatus } from '../../lib/task-trace'
+import { readBlueprint } from '../../lib/blueprint-parser'
+import { existsSync } from 'fs'
 
 async function handleTaskStatus(
   request: Request,
-  db: Database,
-  _projectPath: string
+  _db: Database,
+  projectPath: string
 ): Promise<Response> {
   try {
     const url = new URL(request.url)
     const params = getQueryParams(url.toString())
     const taskId = params.taskId
-    
+
     if (!taskId) {
       return new Response(
         JSON.stringify({
@@ -28,30 +30,36 @@ async function handleTaskStatus(
         }
       )
     }
-    
-    const task = getTaskById(db, taskId)
-    
-    if (!task) {
+
+    const taskDir = getTaskDirectory(projectPath, taskId)
+
+    if (!existsSync(taskDir.root)) {
       return notFound(`Task '${taskId}' not found`)
     }
-    
-    const steps = getStepsByTaskId(db, taskId)
-    
+
+    const trace = readTaskTrace(taskDir)
+
+    if (!trace) {
+      return notFound(`Task '${taskId}' not found`)
+    }
+
+    const parsed = readBlueprint(taskDir)
+    const stages = parsed?.stages || []
+
     return new Response(
       JSON.stringify({
         task: {
-          id: task.id,
-          name: task.name,
-          status: task.status,
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt
+          id: trace.taskId,
+          name: trace.taskName,
+          status: trace.status,
+          startedAt: trace.startedAt,
+          completedAt: trace.completedAt
         },
-        steps: steps.map(s => ({
-          id: s.id,
-          name: s.name,
+        stages: trace.stages.map(s => ({
+          id: s.stageId,
+          name: s.stageName,
           status: s.status,
-          proof: s.proof,
-          startedAt: s.startedAt,
+          executedAt: s.executedAt,
           completedAt: s.completedAt
         }))
       }),
@@ -62,7 +70,7 @@ async function handleTaskStatus(
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    
+
     return new Response(
       JSON.stringify({
         error: 'TaskStatusFailed',

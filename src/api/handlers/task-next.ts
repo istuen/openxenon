@@ -1,12 +1,13 @@
 import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { badRequest, notFound } from '../errors'
-import { getTaskById } from '../../db/operations/tasks'
-import { loadBlueprintFromYaml } from '../../core/blueprint-loader'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace } from '../../lib/task-trace'
+import { readBlueprint } from '../../lib/blueprint-parser'
 
 async function handleTaskNext(
   request: Request,
-  db: Database,
+  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {
@@ -17,13 +18,14 @@ async function handleTaskNext(
       return badRequest('Query parameter taskId is required')
     }
 
-    const task = getTaskById(db, taskId)
+    const taskDir = getTaskDirectory(projectPath, taskId)
+    const trace = readTaskTrace(taskDir)
 
-    if (!task) {
+    if (!trace) {
       return notFound(`Task '${taskId}' not found`)
     }
 
-    if (task.status !== 'RUNNING') {
+    if (trace.status !== 'RUNNING') {
       return new Response(
         JSON.stringify({
           stageId: null,
@@ -36,14 +38,12 @@ async function handleTaskNext(
       )
     }
 
-    let blueprint
-    try {
-      blueprint = loadBlueprintFromYaml(projectPath, taskId)
-    } catch {
+    const parsed = readBlueprint(taskDir)
+    if (!parsed) {
       return notFound('Blueprint YAML not found for this task')
     }
 
-    const firstStage = blueprint.stages[0]
+    const firstStage = parsed.stages[0]
 
     if (!firstStage) {
       return new Response(

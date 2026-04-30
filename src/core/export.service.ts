@@ -1,35 +1,25 @@
-/**
- * 导出服务 - 将数据库状态反编译为 Markdown 文档
- */
-
-import type { Database } from 'bun:sqlite'
-import { getTaskById } from '../db/operations/tasks'
-import { getBlueprintsByTaskId } from '../db/operations/blueprints'
-import { getStagesByBlueprintId } from '../db/operations/stages'
+import { getTaskDirectory } from '../lib/task-dir'
+import { readTaskTrace } from '../lib/task-trace'
+import { readBlueprint } from '../lib/blueprint-parser'
 
 export interface ExportOptions {
   taskId: string
-  db: Database
-  outputDir: string
-  statusFilter?: 'active' | 'archive'
+  projectPath: string
+  outputDir?: string
 }
 
-/**
- * 生成 Mermaid DAG 图
- */
 export function generateMermaidDag(stages: Array<{
   id: string
   name: string
-  deps: string
+  deps: string[]
 }>): string {
   let mermaid = '```mermaid\ngraph LR\n'
 
   for (const stage of stages) {
-    const deps = JSON.parse(stage.deps || '[]')
-    if (deps.length === 0) {
+    if (stage.deps.length === 0) {
       mermaid += `  ${stage.id}[${stage.name}]\n`
     } else {
-      for (const dep of deps) {
+      for (const dep of stage.deps) {
         mermaid += `  ${dep} --> ${stage.id}\n`
       }
     }
@@ -39,92 +29,34 @@ export function generateMermaidDag(stages: Array<{
   return mermaid
 }
 
-/**
- * 生成 YAML 代码块
- */
-export function generateYamlBlock(
-  blueprintName: string,
-  blueprintStatus: string,
-  stages: Array<{
-    id: string
-    name: string
-    deps: string
-    target: string
-    spec: string
-    action: string | null
-    proof: string
-  }>
-): string {
-  let yaml = '```yaml\n'
-  yaml += `blueprint:\n`
-  yaml += `  name: ${blueprintName}\n`
-  yaml += `  status: ${blueprintStatus}\n`
-  yaml += `stages:\n`
-
-  for (const stage of stages) {
-    const deps = JSON.parse(stage.deps || '[]')
-    const proof = JSON.parse(stage.proof)
-
-    yaml += `  - id: ${stage.id}\n`
-    yaml += `    name: ${stage.name}\n`
-    yaml += `    deps: ${JSON.stringify(deps)}\n`
-    yaml += `    target: "${stage.target.replace(/"/g, '\\"')}"\n`
-    yaml += `    spec: "${stage.spec.replace(/"/g, '\\"')}"\n`
-    if (stage.action) {
-      yaml += `    action: "${stage.action.replace(/"/g, '\\"')}"\n`
-    }
-    yaml += `    proof: ${JSON.stringify(proof)}\n`
-  }
-
-  yaml += '```\n'
-  return yaml
-}
-
-/**
- * 导出 Task 为 Markdown 文档
- */
 export function exportTaskToMarkdown(
-  db: Database,
-  taskId: string,
-  statusFilter?: 'active' | 'archive'
+  projectPath: string,
+  taskId: string
 ): string | null {
-  const task = getTaskById(db, taskId)
-  if (!task) return null
+  const taskDir = getTaskDirectory(projectPath, taskId)
+  const trace = readTaskTrace(taskDir)
 
-  const blueprints = getBlueprintsByTaskId(db, taskId)
+  if (!trace) return null
 
-  let md = `# ${task.name}\n\n`
-  md += `> **状态**: ${task.status} | **创建时间**: ${new Date(task.createdAt * 1000).toISOString()}\n\n`
+  const parsed = readBlueprint(taskDir)
 
-  // Filter blueprints based on status
-  let relevantBlueprints = blueprints
-  if (statusFilter === 'active') {
-    relevantBlueprints = blueprints.filter(b =>
-      b.status === 'CANONICAL' || b.status === 'DRAFT'
-    )
-  } else if (statusFilter === 'archive') {
-    relevantBlueprints = blueprints.filter(b =>
-      b.status === 'ABANDONED' || task.status === 'COMPLETED' || task.status === 'TERMINATED'
-    )
+  let md = `# ${trace.taskName}\n\n`
+  md += `> **状态**: ${trace.status} | **开始时间**: ${trace.startedAt}\n\n`
+
+  if (parsed) {
+    md += `## 阶段 (${parsed.stages.length})\n\n`
+    md += generateMermaidDag(parsed.stages)
   }
 
-  if (task.activeBlueprintId) {
-    const activeBp = blueprints.find(b => b.id === task.activeBlueprintId)
-    if (activeBp) {
-      md += `## 活跃拓扑 (${activeBp.status})\n\n`
-      const stages = getStagesByBlueprintId(db, activeBp.id)
-      md += generateMermaidDag(stages)
-      md += generateYamlBlock(activeBp.name, activeBp.status, stages)
-    }
-  }
-
-  if (relevantBlueprints.length > 0) {
-    md += `## 所有版本\n\n`
-    for (const bp of relevantBlueprints) {
-      md += `### ${bp.name} (${bp.status})\n\n`
-      const stages = getStagesByBlueprintId(db, bp.id)
-      md += generateMermaidDag(stages)
-      md += generateYamlBlock(bp.name, bp.status, stages)
+  if (trace.stages.length > 0) {
+    md += `## 执行轨迹\n\n`
+    for (const stage of trace.stages) {
+      md += `### ${stage.stageId}: ${stage.stageName} [${stage.status}]\n\n`
+      if (stage.probes.length > 0) {
+        for (const probe of stage.probes) {
+          md += `- ${probe.probeType}: ${probe.result}\n`
+        }
+      }
     }
   }
 

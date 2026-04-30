@@ -1,19 +1,18 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest } from '../errors'
-import { createTask, updateTaskActiveBlueprint } from '../../db/operations/tasks'
-import { createBlueprint } from '../../db/operations/blueprints'
-import { createTaskDirectory } from '../../core/boundary-project'
-import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
+import { ensureTaskDirectory, getTaskDirectory, TASK_BLUEPRINT_FILE } from '../../lib/task-dir'
+import { createTaskTrace } from '../../lib/task-trace'
 import { saveBlueprintToYaml } from '../../core/blueprint-persister'
-import { type Blueprint } from '../../types/arsenal/blueprint'
+import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
+import type { Blueprint } from '../../types/arsenal/blueprint'
 import { join } from 'path'
-import { mkdirSync, existsSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { randomUUID } from 'crypto'
 
 async function handleTaskSubmit(
   request: Request,
-  db: Database,
+  _db: unknown,
   projectPath: string
 ): Promise<Response> {
   try {
@@ -35,48 +34,31 @@ async function handleTaskSubmit(
     const taskName = body.task as string
     const blueprintInput = body.blueprint as Blueprint
 
-    const task = createTask(db, taskName)
+    const taskId = randomUUID()
 
-    const blueprint = createBlueprint(db, task.id, blueprintInput.name || `${taskName}-blueprint`, 'CANONICAL')
-    updateTaskActiveBlueprint(db, task.id, blueprint.id)
-
-    const taskDir = createTaskDirectory(projectPath, task.id)
-
-    const blueprintDir = join(taskDir, 'blueprints')
-    if (!existsSync(blueprintDir)) {
-      mkdirSync(blueprintDir, { recursive: true })
-    }
-
-    if (blueprintInput.topology && blueprintInput.topology.length > 0) {
-      const bpFilePath = join(blueprintDir, 'bp_001.json')
-      const bpContent = {
-        id: blueprint.id,
-        status: 'DRAFT',
-        topology: blueprintInput.topology,
-        edges: blueprintInput.edges || [],
-        source: blueprintInput.source || null
-      }
-      writeFileSync(bpFilePath, JSON.stringify(bpContent, null, 2), 'utf-8')
-    }
+    const taskDir = getTaskDirectory(projectPath, taskId)
+    ensureTaskDirectory(taskDir)
 
     const blueprintWithIds = {
       ...blueprintInput,
-      id: blueprint.id,
+      id: taskId,
       status: 'CANONICAL' as const
     }
 
-    saveBlueprintToYaml(projectPath, task.id, blueprintWithIds)
+    saveBlueprintToYaml(projectPath, taskId, blueprintWithIds)
 
-    const manifest = createEmptyStepManifest(task.id)
-    const manifestPath = join(taskDir, 'step-manifest.json')
+    const manifest = createEmptyStepManifest(taskId)
+    const manifestPath = join(taskDir.root, 'step-manifest.json')
     writeStepManifest(manifestPath, manifest)
+
+    createTaskTrace(taskDir, taskId, taskName)
 
     return new Response(
       JSON.stringify({
-        taskId: task.id,
-        blueprintId: blueprint.id,
-        blueprintFile: `tasks/${task.id}/blueprint.json`,
-        status: task.status,
+        taskId: taskId,
+        blueprintId: taskId,
+        blueprintFile: `tasks/${taskId}/${TASK_BLUEPRINT_FILE}`,
+        status: 'PENDING',
         stagesCount: blueprintInput.stages?.length || 0,
         message: 'Task created successfully with Blueprint YAML'
       }),

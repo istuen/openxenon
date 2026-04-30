@@ -2,42 +2,65 @@ import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
-import { getStepById, updateStepStatus, getStepByTaskIdAndName } from '../../db/operations/steps'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace, updateStageTrace, createStageTrace, createProbeResult } from '../../lib/task-trace'
+import { readBlueprint } from '../../lib/blueprint-parser'
+import { existsSync } from 'fs'
 
 async function handleStepStart(
   request: Request,
-  db: Database,
-  _projectPath: string
+  _db: Database,
+  projectPath: string
 ): Promise<Response> {
   try {
     const body = await parseJSONBody<{ stepId?: string; taskId?: string; stepName?: string }>(request)
-    
+
     if (!body) {
       return badRequest('Request body is required')
     }
-    
-    let step = null
-    
-    if (body.stepId) {
-      step = getStepById(db, body.stepId)
-    } else if (body.taskId && body.stepName) {
-      step = getStepByTaskIdAndName(db, body.taskId, body.stepName)
-    } else {
-      return badRequest('Either stepId or (taskId + stepName) is required')
+
+    const taskId = body.taskId
+    if (!taskId) {
+      return badRequest('taskId is required')
     }
-    
-    if (!step) {
-      return notFound('Step not found')
+
+    const taskDir = getTaskDirectory(projectPath, taskId)
+    const trace = readTaskTrace(taskDir)
+
+    if (!trace) {
+      return notFound('Task not found')
     }
-    
-    if (step.status === 'PENDING') {
-      updateStepStatus(db, step.id, 'RUNNING')
+
+    const parsed = readBlueprint(taskDir)
+    if (!parsed) {
+      return notFound('Blueprint not found')
     }
-    
+
+    let stage = parsed.stages.find(s => s.id === body.stepId || s.name === body.stepName)
+
+    if (!stage) {
+      return notFound('Stage not found')
+    }
+
+    let stageTrace = trace.stages.find(s => s.stageId === stage!.id)
+
+    if (!stageTrace) {
+      stageTrace = createStageTrace(stage.id, stage.name)
+      trace.stages.push(stageTrace)
+    }
+
+    if (stageTrace.status === 'PENDING') {
+      updateStageTrace(taskDir, stage.id, {
+        status: 'RUNNING',
+        executedAt: new Date().toISOString()
+      })
+      stageTrace.status = 'RUNNING'
+    }
+
     return new Response(
       JSON.stringify({
-        stepId: step.id,
-        status: step.status === 'PENDING' ? 'RUNNING' : step.status
+        stepId: stage.id,
+        status: stageTrace.status === 'PENDING' ? 'RUNNING' : stageTrace.status
       }),
       {
         status: 200,
@@ -46,7 +69,7 @@ async function handleStepStart(
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    
+
     return new Response(
       JSON.stringify({
         error: 'StepStartFailed',

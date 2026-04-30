@@ -2,14 +2,15 @@ import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest, notFound } from '../errors'
-import { getTaskById, updateTaskStatus } from '../../db/operations/tasks'
-import { mkdirSync, existsSync } from 'fs'
-import { join } from 'path'
+import { getTaskDirectory, ensureTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace, updateTaskStatus } from '../../lib/task-trace'
 import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
+import { existsSync, mkdirSync } from 'fs'
+import { join } from 'path'
 
 async function handleTaskStart(
   request: Request,
-  db: Database,
+  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {
@@ -25,29 +26,35 @@ async function handleTaskStart(
       return badRequest(`Field '${validation.missingField}' is required`)
     }
 
-    const task = getTaskById(db, body.taskId!)
+    const taskId = body.taskId!
+    const taskDir = getTaskDirectory(projectPath, taskId)
 
-    if (!task) {
-      return notFound(`Task '${body.taskId}' not found`)
+    if (!existsSync(taskDir.root)) {
+      return notFound(`Task '${taskId}' not found`)
     }
 
-    let newStatus = task.status
-    if (task.status === 'PENDING') {
-      const taskDir = join(projectPath, '.openxenon', 'tasks', task.id)
-      if (!existsSync(taskDir)) {
-        mkdirSync(taskDir, { recursive: true })
+    const trace = readTaskTrace(taskDir)
+
+    if (!trace) {
+      return notFound(`Task '${taskId}' not found`)
+    }
+
+    let newStatus = trace.status
+    if (trace.status === 'PENDING') {
+      if (!existsSync(taskDir.root)) {
+        mkdirSync(taskDir.root, { recursive: true })
       }
 
-      const manifest = createEmptyStepManifest(task.id)
-      writeStepManifest(join(taskDir, 'step-manifest.json'), manifest)
+      const manifest = createEmptyStepManifest(taskId)
+      writeStepManifest(join(taskDir.root, 'step-manifest.json'), manifest)
 
-      const updated = updateTaskStatus(db, body.taskId!, 'RUNNING')
-      newStatus = updated?.status || 'RUNNING'
+      updateTaskStatus(taskDir, 'RUNNING')
+      newStatus = 'RUNNING'
     }
 
     return new Response(
       JSON.stringify({
-        taskId: body.taskId,
+        taskId: taskId,
         status: newStatus
       }),
       {
