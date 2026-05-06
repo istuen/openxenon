@@ -1,6 +1,40 @@
 import type { OpenXenonSkill } from './types'
 import { createDraftFromYaml } from '../api/arsenal-draft'
 import { metaForgeBlueprint } from '../core/blueprints/meta-forge'
+import { existsSync, readFileSync } from 'fs'
+import { join } from 'path'
+import { getProjectBoundaryPath } from '../core/project'
+
+const META_BLUEPRINTS = {
+  probe: 'meta-blueprint-for-probe',
+  proof: 'meta-blueprint-for-proof',
+  stage: 'meta-blueprint-for-stage',
+  blueprint: 'meta-blueprint-for-blueprint'
+} as const
+
+function loadMetaBlueprintFromArsenal(type: keyof typeof META_BLUEPRINTS): string[] | null {
+  const name = META_BLUEPRINTS[type]
+  const projectBoundary = getProjectBoundaryPath(process.cwd())
+
+  const newPath = join(projectBoundary, 'arsenals', 'stages', name, 'draft.yaml')
+  if (existsSync(newPath)) {
+    try {
+      const content = readFileSync(newPath, 'utf-8')
+      const parsed = JSON.parse(content)
+      return parsed.constraints ?? null
+    } catch {
+      return null
+    }
+  }
+
+  return null
+}
+
+function getConstraintsFromMetaForge(type: keyof typeof META_BLUEPRINTS): string[] {
+  const stageId = `create-${type}`
+  const stage = metaForgeBlueprint.stages?.find(s => s.id === stageId)
+  return stage?.proof.spec.constraints ?? []
+}
 
 export const oxnForgeSkill: OpenXenonSkill = {
   id: 'oxn-forge',
@@ -13,7 +47,7 @@ export const oxnForgeSkill: OpenXenonSkill = {
    - Proof（验证闭环）：组合多个 Probe 或检查
    - Stage（工序节点）：包含 Proof 和执行顺序
 
-2. 使用 metaForgeBlueprint 中的 constraints 指导生成：
+2. 使用元蓝图中的 constraints 指导生成：
    - Blueprint 生成时必须满足：必须包含 id, name, stages; stages 必须是数组; 每个 stage 必须包含 id, name, proof
    - Stage 生成时必须满足：必须包含 id, name, proof; proof 必须包含 target, spec, probes; deps 必须是字符串数组
    - Proof 生成时必须满足：必须包含 target, spec, probes; target 必须包含 description; spec 必须包含 description; probes 必须是数组
@@ -82,9 +116,14 @@ export function parseForgeRequest(input: string): { type: 'probe' | 'proof' | 's
 }
 
 export function getForgeConstraints(type: 'Blueprint' | 'Stage' | 'Proof'): string[] {
-  const stageId = `create-${type.toLowerCase()}`
-  const stage = metaForgeBlueprint.stages?.find(s => s.id === stageId)
-  return stage?.proof.spec.constraints ?? []
+  const key = type.toLowerCase() as keyof typeof META_BLUEPRINTS
+
+  const fromArsenal = loadMetaBlueprintFromArsenal(key)
+  if (fromArsenal) {
+    return fromArsenal
+  }
+
+  return getConstraintsFromMetaForge(key)
 }
 
 export { createDraftFromYaml }
