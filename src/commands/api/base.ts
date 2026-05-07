@@ -1,7 +1,5 @@
 import { defineCommand } from 'citty'
-import { getDaemonAddress } from '../../db/operations/daemon-config'
-import { initCoreDb } from '../../db/init'
-import { CORE_DB_PATH } from '../../core/global'
+import { getDaemonAddress } from '../../core/daemon-config'
 import { isDaemonRunning } from '../../daemon/process'
 
 export default defineCommand({
@@ -18,11 +16,10 @@ export default defineCommand({
       process.exit(1)
     }
 
-    const db = initCoreDb(CORE_DB_PATH)
-    const address = getDaemonAddress(db)
+    const address = getDaemonAddress()
 
     if (!address) {
-      console.error('Error: Daemon address not found in database')
+      console.error('Error: Daemon address not found in config')
       console.error('This may indicate an incomplete startup. Try restarting the daemon.')
       process.exit(1)
     }

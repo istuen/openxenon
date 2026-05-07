@@ -12,7 +12,7 @@ export default defineCommand({
   },
   async run({ args }) {
     const taskId = args._[0] || `task_${randomUUID().slice(0, 8)}`
-    const taskName = args.name || '新任务'
+    const taskName = (args.name as string) || '新任务'
 
     const projectRoot = process.cwd()
     const taskDir = getTaskDirectory(projectRoot, taskId)

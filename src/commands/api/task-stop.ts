@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync } from 'fs'
 import { getTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, updateTaskStatus } from '../../lib/task-trace'
+import { readTaskTrace, appendTaskStatus } from '../../lib/task-trace'
 
 export default defineCommand({
   meta: {
@@ -37,7 +37,7 @@ export default defineCommand({
       process.exit(1)
     }
 
-    updateTaskStatus(taskDir, 'TERMINATED')
+    appendTaskStatus(taskDir, taskId, 'TERMINATED')
 
     console.log(JSON.stringify({
       taskId,

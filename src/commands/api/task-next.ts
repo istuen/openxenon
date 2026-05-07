@@ -1,6 +1,5 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
 import { getTaskDirectory } from '../../lib/task-dir'
 import { readTaskTrace, getNextPendingStage } from '../../lib/task-trace'
 import { parseBlueprintYaml } from '../../lib/blueprint-parser'
@@ -45,7 +44,7 @@ export default defineCommand({
     const pendingStage = getNextPendingStage(taskDir)
 
     if (!pendingStage) {
-      const allComplete = trace.stages.every(s => s.status === 'PASSED' || s.status === 'FAILED')
+      const allComplete = Array.from(trace.stages.values()).every(s => s.status === 'PASSED' || s.status === 'FAILED')
       if (allComplete) {
         console.log(JSON.stringify({
           stepId: null,

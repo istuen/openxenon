@@ -1,6 +1,5 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
+import { existsSync } from 'fs'
 import { getTaskDirectory } from '../../lib/task-dir'
 import { readTaskTrace } from '../../lib/task-trace'
 
@@ -39,11 +38,11 @@ export default defineCommand({
       status: trace.status,
       startedAt: trace.startedAt,
       completedAt: trace.completedAt,
-      stages: trace.stages.map(s => ({
+      stages: Array.from(trace.stages.values()).map(s => ({
         stageId: s.stageId,
         stageName: s.stageName,
         status: s.status,
-        executedAt: s.executedAt,
+        startedAt: s.startedAt,
         completedAt: s.completedAt
       }))
     }, null, 2))

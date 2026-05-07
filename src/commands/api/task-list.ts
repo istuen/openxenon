@@ -9,8 +9,8 @@ import { cliContext } from '../../cli-context'
 interface TaskInfo {
   id: string
   name: string
-  status: TaskStatus
-  createdAt?: string
+  status: TaskStatus | 'NOT_FOUND'
+  createdAt?: number
 }
 
 export default defineCommand({

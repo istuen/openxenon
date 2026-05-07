@@ -16,12 +16,12 @@ const main = defineCommand({
     rollback: () => import('./commands/rollback').then(m => m.default),
     'force-pass': () => import('./commands/force-pass').then(m => m.default),
     'proof-list': () => import('./commands/proof-list').then(m => m.default),
-    migrate: () => import('./commands/migrate').then(m => m.default),
     task: () => import('./commands/task').then(m => m.default),
     arsenal: () => import('./commands/arsenal').then(m => m.default),
     draft: () => import('./commands/draft').then(m => m.default),
     export: () => import('./commands/export').then(m => m.default),
     gc: () => import('./commands/gc').then(m => m.default),
+    forge: () => import('./commands/forge').then(m => m.default),
   },
   args: {
     verbose: {

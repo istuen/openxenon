@@ -65,7 +65,9 @@ export default defineCommand({
       return
     }
 
-    if (asset.state !== 'draft') {
+    const isNewDraft = asset.path.includes('/draft.yaml')
+    const isOldDraft = asset.path.includes('/draft/')
+    if (!isNewDraft && !isOldDraft) {
       console.error(`Asset is not in draft state: ${input}`)
       console.error('Only draft assets can be promoted.')
       return
