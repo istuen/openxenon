@@ -26,5 +26,4 @@ export interface StepManifest {
   stepId: string
   status: XnStageStatus
   artifacts: Artifact[]
-  timestamp: number
 }
