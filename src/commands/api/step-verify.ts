@@ -34,7 +34,8 @@ export default defineCommand({
         DAEMON_SOCK_PATH,
         'POST',
         '/api/v1/step/verify',
-        { taskId: args['task-id'], stepId: args['step-id'] }
+        { taskId: args['task-id'], stepId: args['step-id'] },
+        process.cwd()
       )
 
       console.log(JSON.stringify(response.body, null, 2))
