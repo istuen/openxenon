@@ -1,4 +1,4 @@
-import type { ProofResult, ProofOutput } from '../types/proof'
+import type { ProofResult } from '../types/proof'
 import type { Database } from 'bun:sqlite'
 
 export interface ProofLogEntry {
@@ -51,7 +51,7 @@ export class ProofLogger {
     category: 'project' | 'global',
     result: ProofResult,
     executionTime: number,
-    filePath: string,
+    _filePath: string,
     metadata?: {
       projectId?: string
       taskId?: string

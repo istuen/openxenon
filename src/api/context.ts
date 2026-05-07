@@ -1,17 +1,13 @@
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { Database } from 'bun:sqlite'
 import { missingProjectPath, projectNotFound } from './errors'
-import { initProjectDb } from '../db/init'
-import { isOldSchema, migrateProjectDb } from '../core/legacy-migration'
+import { getSpaceMode } from '../core/config'
 
 export interface ProjectContext {
   projectPath: string
-  dbPath: string
-  db: Database
+  configPath: string
+  mode: 'PRODUCTION' | 'SANDBOX'
 }
-
-const projectDatabases: Map<string, Database> = new Map()
 
 export function loadProjectContext(projectPath: string | null): ProjectContext | Response {
   if (!projectPath) {
@@ -19,43 +15,21 @@ export function loadProjectContext(projectPath: string | null): ProjectContext |
   }
 
   const xenonixPath = join(projectPath, '.openxenon')
-  const dbPath = join(xenonixPath, 'project.oxn')
+  const configPath = join(xenonixPath, 'config.json')
 
-  if (!existsSync(dbPath)) {
+  if (!existsSync(xenonixPath)) {
     return projectNotFound(projectPath)
   }
 
-  let db = projectDatabases.get(projectPath)
-
-  if (!db) {
-    db = initProjectDb(dbPath)
-    projectDatabases.set(projectPath, db)
-
-    if (isOldSchema(db)) {
-      console.log('Detected old schema, migrating to new flat schema...')
-      const result = migrateProjectDb(db)
-      if (result.success) {
-        console.log(`Migration complete: ${result.tasksMigrated} tasks, ${result.blueprintsCreated} blueprints, ${result.stagesCreated} stages`)
-      } else {
-        console.error('Migration failed:', result.errors)
-      }
-    }
-  }
+  const mode = getSpaceMode(projectPath)
 
   return {
     projectPath,
-    dbPath,
-    db
+    configPath,
+    mode
   }
 }
 
 export function closeProjectDatabases(): void {
-  for (const [path, db] of projectDatabases) {
-    try {
-      db.close()
-    } catch (error) {
-      console.error(`Failed to close database for ${path}:`, error)
-    }
-  }
-  projectDatabases.clear()
+  // No-op: JSON files don't need connection management
 }

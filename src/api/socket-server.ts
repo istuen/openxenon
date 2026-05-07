@@ -41,7 +41,7 @@ export function startSocketServer(socketPath: string): void {
           const { method, path, body, projectPath } = request
 
           if (path === '/api/v1/health' && method === 'GET') {
-            const response = await handleRequest(method, path, createMockRequest(body), null!, '')
+            const response = await handleRequest(method, path, createMockRequest('GET', '/api/v1/health', undefined), null, '')
             const responseBody = await response.json()
             socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
             continue
@@ -54,7 +54,7 @@ export function startSocketServer(socketPath: string): void {
 
             if ('status' in context) {
               const mockReq = createMockRequest(method, path, body)
-              const response = await handleRequest(method, path, mockReq, null!, xenonDir)
+              const response = await handleRequest(method, path, mockReq, null, xenonDir)
               const clonedResponse = response.clone()
               const responseBody = await clonedResponse.json()
               socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
@@ -62,7 +62,7 @@ export function startSocketServer(socketPath: string): void {
             }
 
             const mockReq = createMockRequest(method, path, body)
-            const response = await handleRequest(method, path, mockReq, context.db, context.projectPath)
+            const response = await handleRequest(method, path, mockReq, null, context.projectPath)
             const clonedResponse = response.clone()
             const responseBody = await clonedResponse.json()
             socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
@@ -82,7 +82,7 @@ export function startSocketServer(socketPath: string): void {
             method,
             path,
             mockReq,
-            context.db,
+            null,
             context.projectPath
           )
 

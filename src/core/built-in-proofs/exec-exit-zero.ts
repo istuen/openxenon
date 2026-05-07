@@ -21,7 +21,15 @@ export const execExitZeroProof: BuiltInProofDefinition = {
       const cmdParts = command.split(' ')
       const cmd = cmdParts[0]
       const args = cmdParts.slice(1)
-      
+
+      if (!cmd) {
+        return {
+          success: false,
+          message: `Empty command provided`,
+          data: { command }
+        }
+      }
+
       const proc = spawn({
         cmd: [cmd, ...args],
         cwd,

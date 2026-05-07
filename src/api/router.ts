@@ -1,8 +1,5 @@
-import type { Database } from 'bun:sqlite'
-
 export type RouteHandler = (
   request: Request,
-  db: Database,
   projectPath: string
 ) => Response | Promise<Response>
 
@@ -28,11 +25,11 @@ export function handleRequest(
   method: string,
   pathname: string,
   request: Request,
-  db: Database,
+  _db: unknown,
   projectPath: string
 ): Response | Promise<Response> {
   const handler = getRoute(method, pathname)
-  
+
   if (!handler) {
     return new Response(
       JSON.stringify({
@@ -46,6 +43,6 @@ export function handleRequest(
       }
     )
   }
-  
-  return handler(request, db, projectPath)
+
+  return handler(request, projectPath)
 }

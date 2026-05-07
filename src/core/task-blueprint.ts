@@ -88,7 +88,6 @@ export function loadTaskBlueprint(projectRoot: string, taskId: string): string {
 export function validateBlueprintYaml(yamlContent: string): boolean {
   try {
     const lines = yamlContent.split('\n')
-    let braceCount = 0
 
     for (const line of lines) {
       if (line.includes('task:') || line.includes('stages:') || line.includes('stageDefinitions:')) {

@@ -1,5 +1,5 @@
-import type { ProofInput } from '../types/proof'
-import { FORBIDDEN_PROOF_TYPES, ForbiddenProofType } from '../types/proof'
+import { FORBIDDEN_PROOF_TYPES } from '../types/proof'
+import type { ForbiddenProofType } from '../types/proof'
 
 export { FORBIDDEN_PROOF_TYPES }
 export type { ForbiddenProofType }

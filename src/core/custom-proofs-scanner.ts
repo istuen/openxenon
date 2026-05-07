@@ -1,7 +1,7 @@
 import { readdirSync, statSync, existsSync } from 'fs'
 import { join, extname, basename } from 'path'
 import { homedir } from 'os'
-import type { Proof, CustomProofConfig } from '../types/proof'
+import type { CustomProofConfig } from '../types/proof'
 
 const GLOBAL_PROOFS_PATH = join(homedir(), '.openxenon', 'custom-proofs')
 const PROJECT_PROOFS_DIR = join('.openxenon', 'proofs')

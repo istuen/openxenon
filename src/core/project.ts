@@ -4,8 +4,8 @@ export function getProjectBoundaryPath(projectRoot: string): string {
   return join(projectRoot, '.openxenon')
 }
 
-export function getProjectDbPath(projectRoot: string): string {
-  return join(getProjectBoundaryPath(projectRoot), 'project.oxn')
+export function getProjectConfigPath(projectRoot: string): string {
+  return join(getProjectBoundaryPath(projectRoot), 'config.json')
 }
 
 export function getProjectProofsPath(projectRoot: string): string {

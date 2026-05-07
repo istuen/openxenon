@@ -63,7 +63,7 @@ export function promoteBlueprint(fromPath: string): Blueprint | null {
 
 export function copyBlueprintToTask(
   sourcePath: string,
-  taskId: string,
+  _taskId: string,
   taskBlueprintsDir: string
 ): Blueprint | null {
   const blueprint = loadBlueprint(sourcePath)
