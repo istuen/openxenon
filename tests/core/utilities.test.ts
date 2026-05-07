@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
 import { mkdirSync, rmSync, existsSync } from 'fs'
 import { join } from 'path'
-import { 
-  getProjectBoundaryPath, 
-  getProjectDbPath, 
-  getTasksPath, 
+import {
+  getProjectBoundaryPath,
+  getProjectConfigPath,
+  getTasksPath,
   getTaskPath,
   getStepManifestPath,
   getTaskTracePath
@@ -32,9 +32,9 @@ describe('Core Utilities', () => {
       expect(path).toBe(join(testProjectRoot, '.openxenon'))
     })
 
-    it('should return correct project db path', () => {
-      const path = getProjectDbPath(testProjectRoot)
-      expect(path).toBe(join(testProjectRoot, '.openxenon', 'project.db'))
+    it('should return correct project config path', () => {
+      const path = getProjectConfigPath(testProjectRoot)
+      expect(path).toBe(join(testProjectRoot, '.openxenon', 'config.json'))
     })
 
     it('should return correct tasks path', () => {

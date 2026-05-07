@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'bun:test'
-import { mkdirSync, rmSync, existsSync, writeFileSync, readFileSync, cpSync } from 'fs'
+import { mkdirSync, rmSync, existsSync, writeFileSync, readFileSync } from 'fs'
 import { join } from 'path'
-import { initProjectDb, closeDb } from '../src/db/init'
 import { startSocketServer, stopSocketServer } from '../src/api/socket-server'
 import { socketRequest } from '../src/api/socket-client'
 import { loadBlueprintFromYaml, resolveBlueprintPath } from '../src/core/blueprint-loader'
@@ -71,9 +70,6 @@ describe('MVP 0.1: Blueprint Storage & Staging', () => {
     mkdirSync(join(testDir, '.openxenon'), { recursive: true })
     mkdirSync(join(testDir, 'src', 'models'), { recursive: true })
     mkdirSync(join(testDir, 'src', 'services'), { recursive: true })
-
-    const db = initProjectDb(join(testDir, '.openxenon', 'project.oxn'))
-    db.close()
 
     socketPath = testSocketPath
     startSocketServer(socketPath)
@@ -145,8 +141,8 @@ describe('MVP 0.1: Blueprint Storage & Staging', () => {
       expect(loaded.id).toBe('bp_001')
       expect(loaded.name).toBe('user-module')
       expect(loaded.stages).toHaveLength(2)
-      expect(loaded.stages[0].proof.target.description).toBe('User 模型文件必须存在于 src/models/')
-      expect(loaded.stages[0].proof.probes[0].type).toBe('fs_exists')
+      expect(loaded.stages![0]!.proof.target.description).toBe('User 模型文件必须存在于 src/models/')
+      expect(loaded.stages![0]!.proof.probes[0]!.type).toBe('fs_exists')
     })
   })
 

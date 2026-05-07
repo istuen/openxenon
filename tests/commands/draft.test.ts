@@ -1,8 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach } from 'bun:test'
-import { Database } from 'bun:sqlite'
-import { randomUUID } from 'crypto'
-import { join } from 'path'
-import { writeFileSync, unlinkSync, mkdirSync, rmdirSync } from 'fs'
+import { describe, expect, test } from 'bun:test'
 
 // We'll test the core logic directly since the CLI requires a project context
 
@@ -38,7 +34,7 @@ describe('Draft System Integration', () => {
 
       expect(draftContent.blueprint.status).toBe('DRAFT')
       expect(draftContent.stages).toHaveLength(2)
-      expect(draftContent.stages[1].deps).toEqual(['stage-1'])
+      expect(draftContent.stages[1]!.deps).toEqual(['stage-1'])
     })
 
     test('draft YAML format is parseable', async () => {

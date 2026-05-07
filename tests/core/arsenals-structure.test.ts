@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test'
 import { join } from 'path'
-import { writeFileSync, unlinkSync, mkdirSync, rmdirSync, existsSync, readFileSync, cpSync } from 'fs'
+import { writeFileSync, unlinkSync, mkdirSync, rmSync, existsSync, readFileSync, cpSync } from 'fs'
 import { randomUUID } from 'crypto'
 
 const TEST_DIR = join('/tmp', 'oxn-arsenals-test-' + randomUUID().slice(0, 8))
@@ -20,7 +20,7 @@ function setupNewStructure(type: string, name: string, state: string, content: s
 
 function cleanup() {
   if (existsSync(TEST_DIR)) {
-    rmdirSync(TEST_DIR, { recursive: true })
+    rmSync(TEST_DIR, { recursive: true, force: true })
   }
 }
 
@@ -37,7 +37,6 @@ describe('Arsenals Directory Structure', () => {
     test('generates correct new structure path for draft asset', () => {
       const type = 'blueprints'
       const name = 'my-blueprint'
-      const state = 'draft'
 
       const expectedPath = join(TEST_DIR, 'arsenals', type, name, 'draft.yaml')
       const dir = join(TEST_DIR, 'arsenals', type, name)
@@ -50,7 +49,6 @@ describe('Arsenals Directory Structure', () => {
     test('generates correct new structure path for canonical asset', () => {
       const type = 'probes'
       const name = 'check-files'
-      const state = 'canonical'
 
       const expectedPath = join(TEST_DIR, 'arsenals', type, name, 'canonical.yaml')
       const dir = join(TEST_DIR, 'arsenals', type, name)
@@ -120,7 +118,6 @@ describe('Arsenals Directory Structure', () => {
       setupOldStructure(type, name, 'draft', content)
       setupNewStructure(type, name, 'draft', 'new: content')
 
-      const oldPath = join(TEST_DIR, 'arsenals', type, 'draft', `${name}.yaml`)
       const newPath = join(TEST_DIR, 'arsenals', type, name, 'draft.yaml')
 
       const newContent = readFileSync(newPath, 'utf-8')

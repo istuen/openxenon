@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test'
 import { mkdirSync, rmSync, existsSync } from 'fs'
 import { join } from 'path'
-import { createServer } from 'net'
 import { startSocketServer, stopSocketServer } from '../../src/api/socket-server'
-import type { Blueprint } from '../../src/types'
 import { socketRequest } from '../../src/api/socket-client'
 import '../../src/api/handlers'
 
@@ -45,7 +43,7 @@ describe('Task Execution API (Socket)', () => {
 
   describe('Task Submit', () => {
     it('should create task and stages', async () => {
-      const blueprint: Blueprint = {
+      const blueprint = {
         task: 'Test Task',
         stages: [
           { id: 'stage-1', name: 'Stage 1', spec: { constraints: ['Spec 1'] }, proof: 'proof-1' },
