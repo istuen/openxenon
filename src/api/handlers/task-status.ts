@@ -1,15 +1,12 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { getQueryParams } from '../validation'
 import { notFound } from '../errors'
 import { getTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, getTaskStatus } from '../../lib/task-trace'
-import { readBlueprint } from '../../lib/blueprint-parser'
+import { readTaskTrace } from '../../lib/task-trace'
 import { existsSync } from 'fs'
 
 async function handleTaskStatus(
   request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {
@@ -43,9 +40,6 @@ async function handleTaskStatus(
       return notFound(`Task '${taskId}' not found`)
     }
 
-    const parsed = readBlueprint(taskDir)
-    const stages = parsed?.stages || []
-
     return new Response(
       JSON.stringify({
         task: {
@@ -55,11 +49,11 @@ async function handleTaskStatus(
           startedAt: trace.startedAt,
           completedAt: trace.completedAt
         },
-        stages: trace.stages.map(s => ({
+        stages: Array.from(trace.stages.values()).map(s => ({
           id: s.stageId,
           name: s.stageName,
           status: s.status,
-          executedAt: s.executedAt,
+          executedAt: s.startedAt,
           completedAt: s.completedAt
         }))
       }),

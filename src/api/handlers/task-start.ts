@@ -1,16 +1,14 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest, notFound } from '../errors'
-import { getTaskDirectory, ensureTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, updateTaskStatus } from '../../lib/task-trace'
+import { getTaskDirectory } from '../../lib/task-dir'
+import { readTaskTrace, appendTaskStatus } from '../../lib/task-trace'
 import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
 import { existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 
 async function handleTaskStart(
   request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {
@@ -48,7 +46,7 @@ async function handleTaskStart(
       const manifest = createEmptyStepManifest(taskId)
       writeStepManifest(join(taskDir.root, 'step-manifest.json'), manifest)
 
-      updateTaskStatus(taskDir, 'RUNNING')
+      appendTaskStatus(taskDir, taskId, 'RUNNING')
       newStatus = 'RUNNING'
     }
 

@@ -1,4 +1,3 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { badRequest, notFound } from '../errors'
 import { getTaskDirectory } from '../../lib/task-dir'
@@ -7,7 +6,6 @@ import { readBlueprint } from '../../lib/blueprint-parser'
 
 async function handleTaskNext(
   request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {

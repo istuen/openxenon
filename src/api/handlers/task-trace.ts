@@ -1,14 +1,11 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { getQueryParams } from '../validation'
 import { notFound } from '../errors'
 import { getTaskDirectory } from '../../lib/task-dir'
 import { readTaskTrace } from '../../lib/task-trace'
-import { existsSync, readFileSync } from 'fs'
 
 async function handleTaskTrace(
   request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {

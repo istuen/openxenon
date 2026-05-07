@@ -6,7 +6,7 @@ export class StageDispatcher {
   private stages: LegacyStage[] = []
 
   dispatchArsenal(blueprint: ArsenalBlueprint): void {
-    this.stages = blueprint.stages.map(s => ({
+    this.stages = (blueprint.stages ?? []).map(s => ({
       id: s.id,
       name: s.name,
       deps: s.deps,

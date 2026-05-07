@@ -1,15 +1,12 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, updateStageTrace, createStageTrace, createProbeResult } from '../../lib/task-trace'
+import { readTaskTrace, appendStageStart, appendStageComplete, createStageState } from '../../lib/task-trace'
 import { readBlueprint } from '../../lib/blueprint-parser'
-import { existsSync } from 'fs'
 
 async function handleStepStart(
   request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {
@@ -42,25 +39,24 @@ async function handleStepStart(
       return notFound('Stage not found')
     }
 
-    let stageTrace = trace.stages.find(s => s.stageId === stage!.id)
+    let stageState = trace.stages.get(stage!.id)
 
-    if (!stageTrace) {
-      stageTrace = createStageTrace(stage.id, stage.name)
-      trace.stages.push(stageTrace)
+    if (!stageState) {
+      appendStageStart(taskDir, taskId, stage.id, stage.name)
+      stageState = createStageState(stage.id, stage.name)
+      stageState.status = 'PENDING'
+      trace.stages.set(stage.id, stageState)
     }
 
-    if (stageTrace.status === 'PENDING') {
-      updateStageTrace(taskDir, stage.id, {
-        status: 'RUNNING',
-        executedAt: new Date().toISOString()
-      })
-      stageTrace.status = 'RUNNING'
+    if (stageState.status === 'PENDING') {
+      appendStageComplete(taskDir, taskId, stage.id, 'RUNNING')
+      stageState.status = 'RUNNING'
     }
 
     return new Response(
       JSON.stringify({
         stepId: stage.id,
-        status: stageTrace.status === 'PENDING' ? 'RUNNING' : stageTrace.status
+        status: stageState.status
       }),
       {
         status: 200,

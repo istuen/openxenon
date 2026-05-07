@@ -1,10 +1,8 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { listAllProofs } from '../../core/proof-dispatcher'
 
 async function handleProofsList(
   _request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {

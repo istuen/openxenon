@@ -1,4 +1,3 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
@@ -8,11 +7,9 @@ import { readBlueprint } from '../../lib/blueprint-parser'
 import { StagingManager } from '../../core/staging'
 import { dispatchArsenalProof } from '../../core/proof-dispatcher'
 import type { ProofExecutionContext } from '../../types/proof'
-import { existsSync } from 'fs'
 
 async function handleStepVerify(
   request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {

@@ -6,13 +6,11 @@ import { createTaskTrace } from '../../lib/task-trace'
 import { saveBlueprintToYaml } from '../../core/blueprint-persister'
 import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
 import type { Blueprint } from '../../types/arsenal/blueprint'
-import { join } from 'path'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { randomUUID } from 'crypto'
+import { join } from 'path'
 
 async function handleTaskSubmit(
   request: Request,
-  _db: unknown,
   projectPath: string
 ): Promise<Response> {
   try {

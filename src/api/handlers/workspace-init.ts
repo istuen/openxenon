@@ -1,20 +1,49 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
-import { ensureProjectBoundary } from '../../core/boundary-project'
 import { registerProject } from '../../core/registry'
-import { ensureGlobalBoundary } from '../../core/boundary'
+import { existsSync, mkdirSync } from 'fs'
+import { getProjectBoundaryPath, getTasksPath, getProjectProofsPath } from '../../core/project'
+import { GLOBAL_BOUNDARY_PATH, GLOBAL_PROOFS_PATH, COMMON_PROOFS_PATH, TEMPLATES_PATH } from '../../core/global'
+
+function ensureGlobalBoundary(): void {
+  if (!existsSync(GLOBAL_BOUNDARY_PATH)) {
+    mkdirSync(GLOBAL_BOUNDARY_PATH, { recursive: true })
+  }
+  if (!existsSync(GLOBAL_PROOFS_PATH)) {
+    mkdirSync(GLOBAL_PROOFS_PATH, { recursive: true })
+  }
+  if (!existsSync(COMMON_PROOFS_PATH)) {
+    mkdirSync(COMMON_PROOFS_PATH, { recursive: true })
+  }
+  if (!existsSync(TEMPLATES_PATH)) {
+    mkdirSync(TEMPLATES_PATH, { recursive: true })
+  }
+}
+
+function ensureProjectBoundary(projectRoot: string): void {
+  const boundaryPath = getProjectBoundaryPath(projectRoot)
+  if (!existsSync(boundaryPath)) {
+    mkdirSync(boundaryPath, { recursive: true })
+  }
+  const proofsPath = getProjectProofsPath(projectRoot)
+  if (!existsSync(proofsPath)) {
+    mkdirSync(proofsPath, { recursive: true })
+  }
+  const tasksPath = getTasksPath(projectRoot)
+  if (!existsSync(tasksPath)) {
+    mkdirSync(tasksPath, { recursive: true })
+  }
+}
 
 async function handleWorkspaceInit(
   _request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {
-    const globalDb = ensureGlobalBoundary()
+    ensureGlobalBoundary()
     ensureProjectBoundary(projectPath)
-    
-    const project = registerProject(globalDb, projectPath)
-    
+
+    const project = registerProject(projectPath, projectPath.split('/').pop() || 'unnamed')
+
     return new Response(
       JSON.stringify({
         projectId: project.id,
@@ -28,7 +57,7 @@ async function handleWorkspaceInit(
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    
+
     if (errorMessage.includes('already exists') || errorMessage.includes('UNIQUE constraint')) {
       return new Response(
         JSON.stringify({
@@ -42,7 +71,7 @@ async function handleWorkspaceInit(
         }
       )
     }
-    
+
     return new Response(
       JSON.stringify({
         error: 'InitializationFailed',

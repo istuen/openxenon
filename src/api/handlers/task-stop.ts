@@ -1,14 +1,12 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, updateTaskStatus } from '../../lib/task-trace'
+import { readTaskTrace, appendTaskStatus } from '../../lib/task-trace'
 import { existsSync } from 'fs'
 
 async function handleTaskStop(
   request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {
@@ -36,7 +34,7 @@ async function handleTaskStop(
       return notFound(`Task '${taskId}' not found`)
     }
 
-    updateTaskStatus(taskDir, 'FAILED')
+    appendTaskStatus(taskDir, taskId, 'FAILED')
 
     return new Response(
       JSON.stringify({

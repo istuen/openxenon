@@ -48,9 +48,9 @@ export function exportTaskToMarkdown(
     md += generateMermaidDag(parsed.stages)
   }
 
-  if (trace.stages.length > 0) {
+  if (trace.stages.size > 0) {
     md += `## 执行轨迹\n\n`
-    for (const stage of trace.stages) {
+    for (const stage of Array.from(trace.stages.values())) {
       md += `### ${stage.stageId}: ${stage.stageName} [${stage.status}]\n\n`
       if (stage.probes.length > 0) {
         for (const probe of stage.probes) {

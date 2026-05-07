@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'fs'
 import type { BlueprintPayload, StagePayload } from '../types/daemon-payload'
-import { getTaskDirectory, type TaskDirectory } from './task-dir'
+import type { TaskDirectory } from './task-dir'
 
 export interface ParsedBlueprint {
   id: string
@@ -80,7 +80,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
     }
 
     if (trimmed.startsWith('name:') && currentSection === 'stage' && stageIndex >= 0) {
-      stages[stageIndex].name = trimmed.slice(5).trim()
+      stages[stageIndex]!.name = trimmed.slice(5).trim()
       continue
     }
 
@@ -95,7 +95,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
 
     if (trimmed.startsWith('- ') && currentSection === 'stage' && stageIndex >= 0) {
       const dep = trimmed.slice(2).trim()
-      stages[stageIndex].deps.push(dep)
+      stages[stageIndex]!.deps.push(dep)
       continue
     }
 
@@ -128,7 +128,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
     if (trimmed.startsWith('- type:') && currentSection === 'probes' && stageIndex >= 0) {
       probeIndex++
       const probeType = trimmed.slice(7).trim()
-      stages[stageIndex].proof.probes[probeIndex] = { type: probeType }
+      stages[stageIndex]!.proof.probes[probeIndex] = { type: probeType }
       continue
     }
 
@@ -138,7 +138,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           (pattern.startsWith("'") && pattern.endsWith("'"))) {
         pattern = pattern.slice(1, -1)
       }
-      stages[stageIndex].proof.probes[probeIndex].pattern = pattern
+      stages[stageIndex]!.proof.probes[probeIndex]!.pattern = pattern
       continue
     }
 
@@ -148,20 +148,20 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           (command.startsWith("'") && command.endsWith("'"))) {
         command = command.slice(1, -1)
       }
-      stages[stageIndex].proof.probes[probeIndex].command = command
+      stages[stageIndex]!.proof.probes[probeIndex]!.command = command
       continue
     }
 
     if (currentSection === 'target' && stageIndex >= 0) {
       if (trimmed.startsWith('description:')) {
-        stages[stageIndex].proof.target.description = trimmed.slice(12).trim()
+        stages[stageIndex]!.proof.target.description = trimmed.slice(12).trim()
       }
       continue
     }
 
     if (currentSection === 'spec' && stageIndex >= 0) {
       if (trimmed.startsWith('description:')) {
-        stages[stageIndex].proof.spec.description = trimmed.slice(12).trim()
+        stages[stageIndex]!.proof.spec.description = trimmed.slice(12).trim()
       }
       continue
     }

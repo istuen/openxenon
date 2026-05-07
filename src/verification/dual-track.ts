@@ -1,7 +1,6 @@
-import type { Database } from 'bun:sqlite'
 import { executeProof } from './proof-executor'
 import { getTaskDirectory } from '../lib/task-dir'
-import { readTaskTrace, updateStageTrace, createProbeResult } from '../lib/task-trace'
+import { readTaskTrace, appendStageComplete, appendProbeResult } from '../lib/task-trace'
 import { readBlueprint } from '../lib/blueprint-parser'
 
 export interface VerifyStepOptions {
@@ -40,21 +39,12 @@ export async function verifyStep(options: VerifyStepOptions): Promise<VerifyStep
     const result = await executeProof(stageId)
 
     if (result.success) {
-      updateStageTrace(taskDir, stageId, {
-        status: 'PASSED',
-        completedAt: new Date().toISOString()
-      })
+      appendStageComplete(taskDir, taskId, stageId, 'PASSED')
     } else {
-      updateStageTrace(taskDir, stageId, {
-        status: 'FAILED',
-        completedAt: new Date().toISOString()
-      })
+      appendStageComplete(taskDir, taskId, stageId, 'FAILED')
     }
 
-    const stageTrace = trace.stages.find(s => s.stageId === stageId)
-    if (stageTrace) {
-      stageTrace.probes.push(createProbeResult('verification', result.success ? 'PASSED' : 'FAILED', result.output, result.error))
-    }
+    appendProbeResult(taskDir, taskId, stageId, 'verification', result.success ? 'PASSED' : 'FAILED', result.output, result.error)
 
     return {
       success: result.success,
@@ -62,10 +52,7 @@ export async function verifyStep(options: VerifyStepOptions): Promise<VerifyStep
       error: result.error
     }
   } catch (error) {
-    updateStageTrace(taskDir, stageId, {
-      status: 'FAILED',
-      completedAt: new Date().toISOString()
-    })
+    appendStageComplete(taskDir, taskId, stageId, 'FAILED')
 
     return {
       success: false,

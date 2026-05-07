@@ -1,11 +1,9 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { readdirSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 
 async function handleTaskListHandler(
   _request: Request,
-  _db: Database,
   projectPath: string
 ): Promise<Response> {
   try {

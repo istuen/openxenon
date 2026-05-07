@@ -1,18 +1,15 @@
-import type { Database } from 'bun:sqlite'
 import { registerRoute } from '../router'
 import { badRequest, notFound } from '../errors'
-import type { DaemonPayload, ExecutionPolicyType } from '../../types/daemon-payload'
+import type { DaemonPayload } from '../../types/daemon-payload'
 import { getTaskDirectory, ensureTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, createTaskTrace, updateTaskStatus, addStageTrace, updateStageTrace, createStageTrace, createProbeResult } from '../../lib/task-trace'
-import { readBlueprint, parseBlueprintYaml } from '../../lib/blueprint-parser'
+import { readTaskTrace, createTaskTrace, appendTaskStatus, appendStageStart, appendStageComplete, createProbeResult } from '../../lib/task-trace'
 import { existsSync } from 'fs'
 
 const CURRENT_SCHEMA_VERSION = '1.0.0'
 
 async function handleFsExecute(
   request: Request,
-  _db: Database | null,
-  projectPath: string
+  _projectPath: string
 ): Promise<Response> {
   try {
     const body = await request.json() as DaemonPayload
@@ -83,13 +80,12 @@ function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typeof ge
     )
   }
 
-  updateTaskStatus(taskDir, 'RUNNING')
+  appendTaskStatus(taskDir, payload.task_id, 'RUNNING')
 
   for (const stage of payload.blueprint.stages) {
-    const stageTrace = createStageTrace(stage.id, stage.name)
-    addStageTrace(taskDir, stageTrace)
+    appendStageStart(taskDir, payload.task_id, stage.id, stage.name)
 
-    updateStageTrace(taskDir, stage.id, { status: 'RUNNING', executedAt: new Date().toISOString() })
+    appendStageComplete(taskDir, payload.task_id, stage.id, 'RUNNING')
 
     for (const probe of stage.proof.probes) {
       const result = executeProbe(probe.type, probe.pattern || probe.command || '', payload.project_root)
@@ -97,24 +93,22 @@ function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typeof ge
 
       const currentTrace = readTaskTrace(taskDir)
       if (currentTrace) {
-        const stageIndex = currentTrace.stages.findIndex(s => s.stageId === stage.id)
-        if (stageIndex !== -1) {
-          currentTrace.stages[stageIndex].probes.push(probeResult)
-          updateStageTrace(taskDir, stage.id, { probes: currentTrace.stages[stageIndex].probes })
+        const stageState = currentTrace.stages.get(stage.id)
+        if (stageState) {
+          stageState.probes.push(probeResult)
         }
       }
     }
 
-    const allProbesPassed = trace.stages[trace.stages.length - 1]?.probes.every(p => p.result === 'PASSED') ?? true
-    updateStageTrace(taskDir, stage.id, {
-      status: allProbesPassed ? 'PASSED' : 'FAILED',
-      completedAt: new Date().toISOString()
-    })
+    const currentTrace = readTaskTrace(taskDir)
+    const lastStage = currentTrace ? Array.from(currentTrace.stages.values())[currentTrace.stages.size - 1] : null
+    const allProbesPassed = lastStage?.probes.every(p => p.result === 'PASSED') ?? true
+    appendStageComplete(taskDir, payload.task_id, stage.id, allProbesPassed ? 'PASSED' : 'FAILED')
   }
 
   const finalTrace = readTaskTrace(taskDir)
-  const allPassed = finalTrace?.stages.every(s => s.status === 'PASSED') ?? false
-  updateTaskStatus(taskDir, allPassed ? 'COMPLETED' : 'FAILED')
+  const allPassed = finalTrace ? Array.from(finalTrace.stages.values()).every(s => s.status === 'PASSED') : false
+  appendTaskStatus(taskDir, payload.task_id, allPassed ? 'COMPLETED' : 'FAILED')
 
   return new Response(
     JSON.stringify({
@@ -149,7 +143,7 @@ function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typeof ge
     return notFound(`Stage not found: ${payload.step_id}`)
   }
 
-  updateStageTrace(taskDir, payload.step_id, { status: 'RUNNING', executedAt: new Date().toISOString() })
+  appendStageComplete(taskDir, payload.task_id, payload.step_id, 'RUNNING')
 
   for (const probe of stage.proof.probes) {
     const result = executeProbe(probe.type, probe.pattern || probe.command || '', taskDir.root)
@@ -157,18 +151,14 @@ function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typeof ge
 
     const currentTrace = readTaskTrace(taskDir)
     if (currentTrace) {
-      const stageIndex = currentTrace.stages.findIndex(s => s.stageId === payload.step_id)
-      if (stageIndex !== -1) {
-        currentTrace.stages[stageIndex].probes.push(probeResult)
-        updateStageTrace(taskDir, payload.step_id, { probes: currentTrace.stages[stageIndex].probes })
+      const stageState = currentTrace.stages.get(payload.step_id)
+      if (stageState) {
+        stageState.probes.push(probeResult)
       }
     }
   }
 
-  updateStageTrace(taskDir, payload.step_id, {
-    status: 'PASSED',
-    completedAt: new Date().toISOString()
-  })
+  appendStageComplete(taskDir, payload.task_id, payload.step_id, 'PASSED')
 
   return new Response(
     JSON.stringify({
@@ -194,7 +184,7 @@ function handleVerifyStep(payload: DaemonPayload, taskDir: ReturnType<typeof get
     return notFound('Task trace not found')
   }
 
-  const stage = trace.stages.find(s => s.stageId === payload.step_id)
+  const stage = trace.stages.get(payload.step_id)
   if (!stage) {
     return notFound(`Stage not found: ${payload.step_id}`)
   }
@@ -251,6 +241,10 @@ function executeFsContentMatchProbe(pattern: string, projectRoot: string): Probe
 
   if (!existsSync(fullPath)) {
     return { passed: false, error: `File not found: ${fullPath}` }
+  }
+
+  if (!regexPattern) {
+    return { passed: false, error: 'Regex pattern is required for fs_content_match probe' }
   }
 
   try {
