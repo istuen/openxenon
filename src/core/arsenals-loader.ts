@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, existsSync, renameSync, mkdirSync } from 'fs'
 import { join, extname, dirname, basename } from 'path'
-import { type AssetState, type AssetType, getPathStructure } from './arsenals-paths'
+import { type AssetState, type AssetType } from './arsenals-paths'
 import { getProjectBoundaryPath } from './project'
 import { ARSENALS_ROOT } from './arsenals-paths'
 
@@ -30,6 +30,39 @@ function scanDirectory(dirPath: string, type: AssetType, state: AssetState): Sta
       const content = readFileSync(filePath, 'utf-8')
       assets.push({
         name: file.replace(ext, ''),
+        type,
+        state,
+        path: filePath,
+        content
+      })
+    }
+  }
+
+  return assets
+}
+
+function scanNewStructure(type: AssetType, state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
+  const projectBoundary = getProjectBoundaryPath(process.cwd())
+  const rootPath = scope === 'global' ? ARSENALS_ROOT : projectBoundary
+  const typePath = join(rootPath, type)
+
+  if (!existsSync(typePath)) {
+    return []
+  }
+
+  const assets: StandardAsset[] = []
+  const entries = readdirSync(typePath, { withFileTypes: true })
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue
+    const assetName = entry.name
+    const yamlFile = state === 'draft' ? 'draft.yaml' : 'canonical.yaml'
+    const filePath = join(typePath, assetName, yamlFile)
+
+    if (existsSync(filePath)) {
+      const content = readFileSync(filePath, 'utf-8')
+      assets.push({
+        name: assetName,
         type,
         state,
         path: filePath,
@@ -84,6 +117,7 @@ function scanArsenalsDirectory(type: AssetType, state: AssetState, scope: Scope 
       const singularPath = join(projectBoundary, 'arsenals', typeToSingular[type], s)
       if (directoryExists(singularPath)) assets.push(...scanDirectory(singularPath, type, state))
     }
+    assets.push(...scanNewStructure(type, state, 'project'))
     return assets
   }
 
@@ -95,6 +129,7 @@ function scanArsenalsDirectory(type: AssetType, state: AssetState, scope: Scope 
       const singularPath = join(ARSENALS_ROOT, typeToSingular[type], s)
       if (directoryExists(singularPath)) assets.push(...scanDirectory(singularPath, type, state))
     }
+    assets.push(...scanNewStructure(type, state, 'global'))
     return assets
   }
 
@@ -143,9 +178,9 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
   const type = getTypeFromPath(assetPath)
   let state: AssetState | null = null
 
-  if (assetPath.includes('/draft/')) {
+  if (assetPath.endsWith('draft.yaml')) {
     state = 'draft'
-  } else if (assetPath.includes('/canonical/')) {
+  } else if (assetPath.endsWith('canonical.yaml')) {
     state = 'canonical'
   }
 
@@ -163,8 +198,15 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
 }
 
 export function promoteStandard(fromPath: string): StandardAsset | null {
+  const isNewFormat = fromPath.endsWith('draft.yaml') || fromPath.endsWith('draft.yml')
+  const isOldFormat = fromPath.includes('/draft/') && (fromPath.endsWith('.yaml') || fromPath.endsWith('.yml'))
+
+  if (!isNewFormat && !isOldFormat) {
+    throw new Error(`Asset is not in draft state: ${fromPath}`)
+  }
+
   if (!existsSync(fromPath)) {
-    return null
+    throw new Error(`draft.yaml not found: ${fromPath}`)
   }
 
   const asset = loadStandardByPath(fromPath)
@@ -172,18 +214,10 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
     return null
   }
 
-  const pathStructure = getPathStructure(fromPath)
-  if (pathStructure === 'old' && !fromPath.includes('/draft/')) {
-    throw new Error(`Asset is not in draft state: ${fromPath}`)
-  }
-  if (pathStructure === 'new' && !fromPath.includes('/draft.yaml')) {
-    throw new Error(`Asset is not in draft state: ${fromPath}`)
-  }
-
   let newPath: string
 
-  if (pathStructure === 'new') {
-    newPath = fromPath.replace('/draft.yaml', '/canonical.yaml')
+  if (isNewFormat) {
+    newPath = fromPath.replace('/draft.yaml', '/canonical.yaml').replace('/draft.yml', '/canonical.yml')
   } else {
     newPath = fromPath.replace('/draft/', '/canonical/')
   }
