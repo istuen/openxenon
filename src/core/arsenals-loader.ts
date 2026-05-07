@@ -172,11 +172,14 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
     return null
   }
 
-  if (asset.state !== 'draft') {
+  const pathStructure = getPathStructure(fromPath)
+  if (pathStructure === 'old' && !fromPath.includes('/draft/')) {
+    throw new Error(`Asset is not in draft state: ${fromPath}`)
+  }
+  if (pathStructure === 'new' && !fromPath.includes('/draft.yaml')) {
     throw new Error(`Asset is not in draft state: ${fromPath}`)
   }
 
-  const pathStructure = getPathStructure(fromPath)
   let newPath: string
 
   if (pathStructure === 'new') {
