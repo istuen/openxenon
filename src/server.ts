@@ -1,9 +1,8 @@
 import { writeFileSync, unlinkSync, existsSync } from 'fs'
-import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, CORE_DB_PATH, DAEMON_SOCK_PATH } from './core/global'
+import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from './core/global'
 import { daemonLogger } from './daemon/logger'
 import { startApiServer, stopApiServer } from './api/server'
-import { initCoreDb } from './db/init'
-import { setDaemonAddress, clearDaemonAddress } from './db/operations/daemon-config'
+import { setDaemonAddress, clearDaemonAddress } from './core/daemon-config'
 import './api/handlers'
 
 function ensureGlobalDirectory(): void {
@@ -28,8 +27,7 @@ function removePidFile(): void {
 
 function saveDaemonAddress(): void {
   try {
-    const db = initCoreDb(CORE_DB_PATH)
-    setDaemonAddress(db, DAEMON_SOCK_PATH)
+    setDaemonAddress(DAEMON_SOCK_PATH)
     daemonLogger.info(`Daemon address saved: ${DAEMON_SOCK_PATH}`)
   } catch (error) {
     daemonLogger.error(`Failed to save daemon address: ${error}`)
@@ -38,8 +36,7 @@ function saveDaemonAddress(): void {
 
 function clearDaemonAddressFromDb(): void {
   try {
-    const db = initCoreDb(CORE_DB_PATH)
-    clearDaemonAddress(db)
+    clearDaemonAddress()
     daemonLogger.info('Daemon address cleared')
   } catch (error) {
     daemonLogger.error(`Failed to clear daemon address: ${error}`)

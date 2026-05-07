@@ -37,9 +37,8 @@ export async function executeCustomProof(options: CustomProofExecutionOptions): 
     })
     
     const inputJson = serializeProofInput(input)
-    const writer = proc.stdin.getWriter()
-    writer.write(new TextEncoder().encode(inputJson))
-    writer.close()
+    proc.stdin.write(new TextEncoder().encode(inputJson))
+    proc.stdin.end()
     
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
@@ -64,12 +63,9 @@ export async function executeCustomProof(options: CustomProofExecutionOptions): 
         }
       }
     } else {
-      const stderr = await new Response(proc.stderr).text()
-      
       return {
         success: false,
         message: `Custom proof failed with exit code ${exitCode}: ${proof.id}`,
-        error: stderr || `Exit code: ${exitCode}`,
         data: {
           proofId: proof.id,
           path: proof.path,
@@ -99,23 +95,20 @@ export async function executeCustomProofSafe(
     if (error instanceof ProofTimeoutError) {
       return {
         success: false,
-        message: `Proof execution timed out after ${error.timeout}ms: ${error.proofId}`,
-        error: error.message
+        message: `Proof execution timed out after ${error.timeout}ms: ${error.proofId}`
       }
     }
     
     if (error instanceof ProofExecutionError) {
       return {
         success: false,
-        message: `Proof execution failed: ${error.proofId}`,
-        error: error.reason
+        message: `Proof execution failed: ${error.proofId}`
       }
     }
     
     return {
       success: false,
-      message: `Unexpected error during proof execution: ${options.proof.id}`,
-      error: error instanceof Error ? error.message : String(error)
+      message: `Unexpected error during proof execution: ${options.proof.id}`
     }
   }
 }
