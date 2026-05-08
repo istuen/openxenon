@@ -1,11 +1,9 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { validateProbe, validateProof, validateStage } from '../types/standards'
-import { type AssetType, ARSENALS_ROOT } from '../core/arsenals-paths'
-import { ensureArsenalsDirectories } from '../core/arsenals-init'
-import { getProjectBoundaryPath } from '../core/project'
-import { randomUUID } from 'crypto'
-import type { Scope } from '../core/arsenals-loader'
+import { validateProbe, validateProof, validateStage } from '../arsenals/standards'
+import { type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
+import { ensureArsenalsDirectories } from '../arsenals/init'
+import type { Scope } from '../arsenals/loader'
 
 export interface DraftAssetResult {
   success: boolean

@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'fs'
-import { DAEMON_LOG_PATH } from '../core/global'
+import { DAEMON_LOG_PATH } from '../infra/global'
 import { isDaemonRunning } from './process'
 
 export interface DaemonStatus {

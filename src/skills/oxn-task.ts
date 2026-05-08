@@ -1,5 +1,5 @@
 import type { OpenXenonSkill } from './types'
-import type { Stage } from '../types/stage'
+import type { Stage } from '../kernel/lib/types/stage'
 
 export const oxnTaskSkill: OpenXenonSkill = {
   id: 'oxn-task',

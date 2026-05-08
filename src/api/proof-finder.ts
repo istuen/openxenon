@@ -1,9 +1,9 @@
 import { existsSync, statSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { getProjectProofsPath } from '../core/project'
-import { COMMON_PROOFS_PATH } from '../core/global'
-import { scanProjectProofs } from '../core/proofs-project'
+import { getProjectProofsPath } from '../kernel/lib/project'
+import { COMMON_PROOFS_PATH } from '../infra/global'
+import { scanProjectProofs } from '../kernel/lib/proofs-project'
 
 export interface ProofLocation {
   path: string

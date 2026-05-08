@@ -3,7 +3,7 @@ import { createDraftFromYaml } from '../api/arsenal-draft'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { BOUNDARY_DIR } from '../common/constants'
+import { BOUNDARY_DIR } from '../kernel/constants'
 
 const META_BLUEPRINTS = {
   probe: 'meta-probe',

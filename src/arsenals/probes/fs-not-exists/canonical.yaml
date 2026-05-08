@@ -1,0 +1,13 @@
+id: fs-not-exists
+name: File System Not Exists Probe
+type: fs_not_exists
+description: 检查文件或目录是否不存在
+parameters:
+  - name: pattern
+    type: string
+    description: 要检查的路径（相对于 projectRoot）
+spec:
+  description: 验证文件或目录不存在
+  constraints:
+    - "pattern 必须是字符串"
+    - "pattern 不应为空"

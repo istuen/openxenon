@@ -1,5 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync } from 'fs'
-import { DAEMON_LOG_PATH, GLOBAL_BOUNDARY_PATH } from '../core/global'
+import { DAEMON_LOG_PATH, GLOBAL_BOUNDARY_PATH } from '../infra/global'
 
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
 

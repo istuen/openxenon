@@ -1,7 +1,7 @@
 import { watch, type FSWatcher, readFileSync, existsSync } from 'fs'
-import type { StepManifest } from '../types'
-import { getTaskDirectory } from '../lib/task-dir'
-import { readTaskTrace } from '../lib/task-trace'
+import type { StepManifest } from '../kernel/lib/types/task'
+import { getTaskDirectory } from '../kernel/lib/task-dir'
+import { readTaskTrace } from '../kernel/lib/task-trace'
 
 export interface ManifestWatcherOptions {
   projectRoot: string

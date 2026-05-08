@@ -1,0 +1,17 @@
+id: shell-exec
+name: Shell Execute Probe
+type: shell_exec
+description: 执行 shell 命令并验证退出码
+parameters:
+  - name: command
+    type: string
+    description: 要执行的 shell 命令
+  - name: cwd
+    type: string
+    required: false
+    description: 工作目录（默认 projectRoot）
+spec:
+  description: 验证命令执行成功（退出码为 0）
+  constraints:
+    - "command 必须是字符串"
+    - "command 不应为空"
