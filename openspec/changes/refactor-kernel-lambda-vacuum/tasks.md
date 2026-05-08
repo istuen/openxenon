@@ -45,7 +45,7 @@
   - 删除 `import { getTaskPath } from '../../kernel'`
   - **验收**：`grep -r "from.*kernel" src/infra/` 返回空
 
-- [ ] 3.2 更新所有 `StagingManager` 调用方
+- [x] 3.2 更新所有 `StagingManager` 调用方
   - 找到所有 `new StagingManager(...)` 的地方
   - 传入计算好的路径字符串，而非让 StagingManager 自己计算
 
@@ -58,33 +58,43 @@
   - 阻止 `cli/**` 导入 `daemon/**`
   - 阻止 `daemon/**` 导入 `cli/**`
 
-- [ ] 4.2 验证规则有效性
+- [x] 4.2 验证规则有效性
   - 运行 ESLint 确认能检测现有违规
 
 ## 5. 验证
 
-- [ ] 5.1 运行 `pnpm run typecheck` 确认无类型错误
-- [ ] 5.2 运行 `pnpm build` 确认构建成功
-- [ ] 5.3 确认 `grep -r "appendFileSync\|writeFileSync" src/kernel/` 返回空
-- [ ] 5.4 确认 `grep -r "from.*kernel" src/infra/` 返回空
+- [x] 5.1 运行 `pnpm run typecheck` 确认无类型错误
+- [x] 5.2 运行 `pnpm build` 确认构建成功
+- [x] 5.3 确认 `grep -r "appendFileSync\|writeFileSync" src/kernel/` 返回空
+- [x] 5.4 确认 `grep -r "from.*kernel" src/infra/` 返回空
 
 ## 依赖关系
 
 ```
 Phase 1 (无依赖，可并行):
-├─ 任务 1.1 (创建 writer.ts)
-├─ 任务 1.2 (重构 task-trace.ts)
-└─ 任务 2.1 (创建 evaluator.ts)
+├─ [x] 1.1 (创建 writer.ts)
+├─ [x] 1.2 (重构 task-trace.ts)
+└─ [x] 2.1 (创建 evaluator.ts)
     │
     ▼
 Phase 2 (依赖 Phase 1):
-├─ 任务 1.3 (更新调用方)
-├─ 任务 2.2 (创建 infra/probes/)
-└─ 任务 2.3 (更新 engine.ts)
+├─ [x] 1.3 (更新调用方)
+├─ [x] 2.2 (创建 infra/probes/)
+└─ [x] 2.3 (更新 engine.ts)
     │
     ▼
 Phase 3 (依赖 Phase 2):
-├─ 任务 3.1 (修正 staging-manager)
-├─ 任务 4 (ESLint 规则)
-└─ 任务 5 (验证)
+├─ [x] 3.1 (修正 staging-manager)
+├─ [x] 3.2 (无调用方)
+├─ [x] 4 (ESLint 规则)
+└─ [x] 5 (验证 - typecheck & build 通过)
 ```
+
+## 验证结果
+
+| 检查项 | 状态 |
+|--------|------|
+| typecheck | ✓ 通过 |
+| build | ✓ 通过 |
+| `grep kernel.*fs` | ✓ 无 fs 写入 |
+| `grep infra.*kernel` | ✓ 无反向依赖 |
