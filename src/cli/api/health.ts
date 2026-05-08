@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { socketRequest } from '../../api/socket-client'
+import { socketRequest } from '../../daemon/api/socket-client'
 import { DAEMON_SOCK_PATH } from '../../core/global'
 import { isDaemonRunning } from '../../daemon/process'
 

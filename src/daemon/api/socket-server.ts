@@ -1,6 +1,6 @@
 import { createServer, type Socket } from 'net'
 import { handleRequest } from './router'
-import { daemonLogger } from '../daemon/logger'
+import { daemonLogger } from '../logger'
 import { existsSync, unlinkSync } from 'fs'
 
 export interface SocketRequest {

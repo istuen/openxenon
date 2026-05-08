@@ -1,6 +1,6 @@
 import { startSocketServer, stopSocketServer, isSocketServerRunning } from './socket-server'
-import { DAEMON_SOCK_PATH } from '../infra/global'
-import { daemonLogger } from '../daemon/logger'
+import { DAEMON_SOCK_PATH } from '../../infra/global'
+import { daemonLogger } from '../logger'
 
 export interface ApiServerConfig {
   socketPath?: string
