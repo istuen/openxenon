@@ -1,10 +1,10 @@
 import { registerRoute } from '../../daemon/ipc/router'
-import { parseJSONBody, validateRequiredFields } from '../validation'
-import { badRequest, notFound } from '../errors'
+import { parseJSONBody, validateRequiredFields } from '../../daemon/ipc/validation'
+import { badRequest, notFound } from '../../daemon/ipc/errors'
 import { readTaskTrace } from '../../daemon/trace/writer'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { BOUNDARY_DIR } from '../../common/constants'
+import { BOUNDARY_DIR } from '../../kernel/constants'
 
 async function handleTaskStart(
   request: Request,

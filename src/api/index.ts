@@ -13,9 +13,4 @@ export {
   missingField,
   type ErrorResponse 
 } from './errors'
-export { 
-  parseJSONBody, 
-  validateRequiredFields, 
-  getProjectPath, 
-  getQueryParams 
-} from './validation'
+export { socketRequest, type SocketRequest, type SocketResponse } from './socket-client'

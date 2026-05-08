@@ -1,6 +1,6 @@
-import { registerRoute } from '../router'
-import { parseJSONBody } from '../validation'
-import { badRequest } from '../errors'
+import { registerRoute } from '../../daemon/ipc/router'
+import { parseJSONBody } from '../../daemon/ipc/validation'
+import { badRequest } from '../../daemon/ipc/errors'
 
 async function handleStepVerify(
   request: Request,

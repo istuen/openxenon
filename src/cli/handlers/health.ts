@@ -1,4 +1,4 @@
-import { registerRoute } from '../router'
+import { registerRoute } from '../../daemon/ipc/router'
 
 async function handleHealth(
   _request: Request,

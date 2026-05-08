@@ -1,4 +1,4 @@
-import { registerRoute } from '../router'
+import { registerRoute } from '../../daemon/ipc/router'
 import { readdirSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 

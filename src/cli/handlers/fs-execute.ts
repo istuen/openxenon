@@ -1,8 +1,8 @@
-import { registerRoute } from '../router'
-import { badRequest, notFound } from '../errors'
-import type { DaemonPayload } from '../../types/daemon-payload'
-import { getTaskDirectory, ensureTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, createTaskTrace, appendTaskStatus, appendStageStart, appendStageComplete, createProbeResult } from '../../lib/task-trace'
+import { registerRoute } from '../../daemon/ipc/router'
+import { badRequest, notFound } from '../../daemon/ipc/errors'
+import type { DaemonPayload } from '../../daemon/types/daemon-payload'
+import { getTaskDirectory, ensureTaskDirectory } from '../../kernel/lib/task-dir'
+import { readTaskTrace, createTaskTrace, appendTaskStatus, appendStageStart, appendStageComplete, createProbeResult } from '../../kernel/lib/task-trace'
 import { existsSync } from 'fs'
 
 const CURRENT_SCHEMA_VERSION = '1.0.0'

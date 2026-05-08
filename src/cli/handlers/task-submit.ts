@@ -1,12 +1,12 @@
 import { registerRoute } from '../../daemon/ipc/router'
-import { parseJSONBody, validateRequiredFields } from '../validation'
-import { badRequest } from '../errors'
+import { parseJSONBody, validateRequiredFields } from '../../daemon/ipc/validation'
+import { badRequest } from '../../daemon/ipc/errors'
 import { createTaskTrace, appendTaskStatus } from '../../daemon/trace/writer'
-import type { Blueprint } from '../../common/schemas/blueprint.schema'
+import type { Blueprint } from '../../kernel/schemas/blueprint.schema'
 import { randomUUID } from 'crypto'
 import { join } from 'path'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
-import { BOUNDARY_DIR, BLUEPRINT_FILE } from '../../common/constants'
+import { BOUNDARY_DIR, BLUEPRINT_FILE } from '../../kernel/constants'
 
 async function handleTaskSubmit(
   request: Request,

@@ -1,5 +1,5 @@
 import type { OpenXenonSkill } from './types'
-import { createDraftFromYaml } from '../api/arsenal-draft'
+import { createDraftFromYaml } from '../cli/draft'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'

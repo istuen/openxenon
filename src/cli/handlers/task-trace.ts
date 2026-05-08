@@ -1,11 +1,10 @@
-import { registerRoute } from '../router'
-import { getQueryParams } from '../validation'
-import { notFound } from '../errors'
-import { getTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace } from '../../lib/task-trace'
-import { existsSync } from 'fs'
+import { registerRoute } from '../../daemon/ipc/router'
+import { getQueryParams } from '../../daemon/ipc/validation'
+import { notFound } from '../../daemon/ipc/errors'
+import { getTaskDirectory } from '../../kernel/lib/task-dir'
+import { readTaskTrace } from '../../kernel/lib/task-trace'
 
-async function handleTaskStatus(
+async function handleTaskTrace(
   request: Request,
   projectPath: string
 ): Promise<Response> {
@@ -29,11 +28,6 @@ async function handleTaskStatus(
     }
 
     const taskDir = getTaskDirectory(projectPath, taskId)
-
-    if (!existsSync(taskDir.root)) {
-      return notFound(`Task '${taskId}' not found`)
-    }
-
     const trace = readTaskTrace(taskDir)
 
     if (!trace) {
@@ -42,20 +36,9 @@ async function handleTaskStatus(
 
     return new Response(
       JSON.stringify({
-        task: {
-          id: trace.taskId,
-          name: trace.taskName,
-          status: trace.status,
-          startedAt: trace.startedAt,
-          completedAt: trace.completedAt
-        },
-        stages: Array.from(trace.stages.values()).map(s => ({
-          id: s.stageId,
-          name: s.stageName,
-          status: s.status,
-          executedAt: s.startedAt,
-          completedAt: s.completedAt
-        }))
+        taskId,
+        tracePath: taskDir.tracePath,
+        trace
       }),
       {
         status: 200,
@@ -67,7 +50,7 @@ async function handleTaskStatus(
 
     return new Response(
       JSON.stringify({
-        error: 'TaskStatusFailed',
+        error: 'TaskTraceFailed',
         message: errorMessage,
         statusCode: 500
       }),
@@ -79,6 +62,6 @@ async function handleTaskStatus(
   }
 }
 
-registerRoute('GET', '/api/v1/task/status', handleTaskStatus)
+registerRoute('GET', '/api/v1/task/trace', handleTaskTrace)
 
-export { handleTaskStatus }
+export { handleTaskTrace }

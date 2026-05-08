@@ -1,9 +1,9 @@
-import { registerRoute } from '../router'
-import { parseJSONBody } from '../validation'
-import { badRequest, notFound } from '../errors'
-import { getTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, appendStageStart, appendStageComplete, createStageState } from '../../lib/task-trace'
-import { readBlueprint } from '../../lib/blueprint-parser'
+import { registerRoute } from '../../daemon/ipc/router'
+import { parseJSONBody } from '../../daemon/ipc/validation'
+import { badRequest, notFound } from '../../daemon/ipc/errors'
+import { getTaskDirectory } from '../../kernel/lib/task-dir'
+import { readTaskTrace, appendStageStart, appendStageComplete, createStageState } from '../../kernel/lib/task-trace'
+import { readBlueprint } from '../../kernel/lib/blueprint-parser'
 
 async function handleStepStart(
   request: Request,

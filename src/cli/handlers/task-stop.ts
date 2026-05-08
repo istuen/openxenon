@@ -1,8 +1,8 @@
-import { registerRoute } from '../router'
-import { parseJSONBody, validateRequiredFields } from '../validation'
-import { badRequest, notFound } from '../errors'
-import { getTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, appendTaskStatus } from '../../lib/task-trace'
+import { registerRoute } from '../../daemon/ipc/router'
+import { parseJSONBody, validateRequiredFields } from '../../daemon/ipc/validation'
+import { badRequest, notFound } from '../../daemon/ipc/errors'
+import { getTaskDirectory } from '../../kernel/lib/task-dir'
+import { readTaskTrace, appendTaskStatus } from '../../kernel/lib/task-trace'
 import { existsSync } from 'fs'
 
 async function handleTaskStop(
