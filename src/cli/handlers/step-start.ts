@@ -2,7 +2,8 @@ import { registerRoute } from '../../daemon/ipc/router'
 import { parseJSONBody } from '../../daemon/ipc/validation'
 import { badRequest, notFound } from '../../daemon/ipc/errors'
 import { getTaskDirectory } from '../../kernel/lib/task-dir'
-import { readTaskTrace, appendStageStart, appendStageComplete, createStageState } from '../../kernel/lib/task-trace'
+import { readTaskTrace, writeStageStart, writeStageComplete } from '../../daemon/trace/writer'
+import { createStageState } from '../../kernel/lib/task-trace'
 import { readBlueprint } from '../../kernel/lib/blueprint-parser'
 
 async function handleStepStart(
@@ -42,14 +43,14 @@ async function handleStepStart(
     let stageState = trace.stages.get(stage!.id)
 
     if (!stageState) {
-      appendStageStart(taskDir, taskId, stage.id, stage.name)
+      writeStageStart(taskDir, taskId, stage.id, stage.name)
       stageState = createStageState(stage.id, stage.name)
       stageState.status = 'PENDING'
       trace.stages.set(stage.id, stageState)
     }
 
     if (stageState.status === 'PENDING') {
-      appendStageComplete(taskDir, taskId, stage.id, 'RUNNING')
+      writeStageComplete(taskDir, taskId, stage.id, 'RUNNING')
       stageState.status = 'RUNNING'
     }
 

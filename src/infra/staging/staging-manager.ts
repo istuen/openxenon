@@ -1,15 +1,13 @@
 import { mkdirSync, rmSync, existsSync, cpSync, readdirSync } from 'fs'
 import { join } from 'path'
-import { getTaskPath } from '../../kernel'
 
 export class StagingManager {
   constructor(
-    private projectRoot: string,
-    private taskId: string
+    private taskPath: string
   ) {}
 
   private get stagingPath(): string {
-    return join(getTaskPath(this.projectRoot, this.taskId), 'staging')
+    return join(this.taskPath, 'staging')
   }
 
   ensureStagingDir(): void {
@@ -28,12 +26,12 @@ export class StagingManager {
     }
   }
 
-  moveToSrc(): void {
+  moveToSrc(projectRoot: string): void {
     if (!existsSync(this.stagingPath)) {
       return
     }
 
-    const destDir = join(this.projectRoot, 'src')
+    const destDir = join(projectRoot, 'src')
     mkdirSync(destDir, { recursive: true })
 
     const entries = readdirSync(this.stagingPath)

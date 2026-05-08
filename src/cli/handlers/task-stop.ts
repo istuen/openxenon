@@ -2,7 +2,7 @@ import { registerRoute } from '../../daemon/ipc/router'
 import { parseJSONBody, validateRequiredFields } from '../../daemon/ipc/validation'
 import { badRequest, notFound } from '../../daemon/ipc/errors'
 import { getTaskDirectory } from '../../kernel/lib/task-dir'
-import { readTaskTrace, appendTaskStatus } from '../../kernel/lib/task-trace'
+import { readTaskTrace, writeTaskStatus } from '../../daemon/trace/writer'
 import { existsSync } from 'fs'
 
 async function handleTaskStop(
@@ -34,7 +34,7 @@ async function handleTaskStop(
       return notFound(`Task '${taskId}' not found`)
     }
 
-    appendTaskStatus(taskDir, taskId, 'FAILED')
+    writeTaskStatus(taskDir, taskId, 'FAILED')
 
     return new Response(
       JSON.stringify({

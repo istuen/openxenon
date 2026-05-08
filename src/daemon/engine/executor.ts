@@ -1,4 +1,6 @@
 import type { Blueprint, Stage } from '../../kernel/schemas/blueprint.schema'
+import { getProbeHandler, type ProbeResult } from '../../infra/probes'
+import type { ProbeContext } from '../../infra/probes'
 
 export interface ExecutorOptions {
   projectRoot: string
@@ -9,37 +11,53 @@ export interface ExecutorOptions {
 export interface ExecuteStageResult {
   success: boolean
   stageId: string
-  output?: string
-  error?: string
+  probeResults: ProbeResult[]
 }
 
 export async function executeStage(
   stage: Stage,
-  _options: ExecutorOptions
+  options: ExecutorOptions
 ): Promise<ExecuteStageResult> {
   const { id: stageId, name, proof } = stage
+  const context: ProbeContext = { projectRoot: options.projectRoot }
 
   console.log(`[Executor] Executing stage: ${stageId} (${name})`)
 
-  const probeResults: Array<{ probe: string; success: boolean; output?: string; error?: string }> = []
+  const probeResults: ProbeResult[] = []
 
   for (const probe of proof.probes || []) {
     console.log(`[Executor] Running probe: ${probe.type}`)
-    // Probe execution would be handled by daemon/probes/
-    probeResults.push({
-      probe: probe.type,
-      success: true,
-      output: `Probe ${probe.type} executed`
-    })
+
+    const handler = getProbeHandler(probe.type)
+    if (!handler) {
+      probeResults.push({
+        probeType: probe.type,
+        result: 'FAILED',
+        error: `Unknown probe type: ${probe.type}`,
+        executedAt: Date.now()
+      })
+      continue
+    }
+
+    try {
+      const result = await handler(probe.params || {}, context) as ProbeResult
+      probeResults.push(result)
+    } catch (error) {
+      probeResults.push({
+        probeType: probe.type,
+        result: 'FAILED',
+        error: error instanceof Error ? error.message : String(error),
+        executedAt: Date.now()
+      })
+    }
   }
 
-  const allPassed = probeResults.every(r => r.success)
+  const allPassed = probeResults.every(r => r.result === 'PASSED')
 
   return {
     success: allPassed,
     stageId,
-    output: JSON.stringify(probeResults),
-    error: allPassed ? undefined : 'Some probes failed'
+    probeResults
   }
 }
 

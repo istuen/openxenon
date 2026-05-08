@@ -2,7 +2,7 @@ import { registerRoute } from '../../daemon/ipc/router'
 import { getQueryParams } from '../../daemon/ipc/validation'
 import { notFound } from '../../daemon/ipc/errors'
 import { getTaskDirectory } from '../../kernel/lib/task-dir'
-import { readTaskTrace } from '../../kernel/lib/task-trace'
+import { readTaskTrace } from '../../daemon/trace/writer'
 import { existsSync } from 'fs'
 
 async function handleTaskStatus(

@@ -1,7 +1,7 @@
 import { registerRoute } from '../../daemon/ipc/router'
 import { parseJSONBody, validateRequiredFields } from '../../daemon/ipc/validation'
 import { badRequest } from '../../daemon/ipc/errors'
-import { createTaskTrace, appendTaskStatus } from '../../daemon/trace/writer'
+import { writeTaskStart, writeTaskStatus } from '../../daemon/trace/writer'
 import type { Blueprint } from '../../kernel/schemas/blueprint.schema'
 import { randomUUID } from 'crypto'
 import { join } from 'path'
@@ -41,13 +41,13 @@ async function handleTaskSubmit(
     const blueprintPath = join(taskDir, BLUEPRINT_FILE)
     writeFileSync(blueprintPath, JSON.stringify(blueprintInput, null, 2), 'utf-8')
 
-    createTaskTrace(
+    writeTaskStart(
       { root: taskDir, taskId, blueprintPath, tracePath: join(taskDir, 'task-trace.yaml'), manifestPath: join(taskDir, 'step-manifest.json') },
       taskId,
       taskName
     )
 
-    appendTaskStatus(
+    writeTaskStatus(
       { root: taskDir, taskId, blueprintPath, tracePath: join(taskDir, 'task-trace.yaml'), manifestPath: join(taskDir, 'step-manifest.json') },
       taskId,
       'PENDING'

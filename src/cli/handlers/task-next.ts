@@ -1,7 +1,7 @@
 import { registerRoute } from '../../daemon/ipc/router'
 import { badRequest, notFound } from '../../daemon/ipc/errors'
 import { getTaskDirectory } from '../../kernel/lib/task-dir'
-import { readTaskTrace } from '../../kernel/lib/task-trace'
+import { readTaskTrace } from '../../daemon/trace/writer'
 import { readBlueprint } from '../../kernel/lib/blueprint-parser'
 
 async function handleTaskNext(

@@ -2,80 +2,27 @@ import { existsSync, readFileSync, appendFileSync } from 'fs'
 import type { TaskDirectory } from '../../kernel/lib/task-dir'
 import type { TraceEvent, TaskTraceState, StageState } from '../../kernel/lib/types/task-state'
 import type { TaskStatus, StepStatus } from '../../kernel/enums'
+import { buildTraceEvent, reduceTraceEvents } from '../../kernel/lib/task-trace'
 
-function appendEvent(taskDir: TaskDirectory, event: TraceEvent): void {
+function appendEventToFile(tracePath: string, event: TraceEvent): void {
   const line = JSON.stringify(event) + '\n'
-  appendFileSync(taskDir.tracePath, line, 'utf-8')
+  appendFileSync(tracePath, line, 'utf-8')
 }
 
-function readLines(filePath: string): string[] {
-  if (!existsSync(filePath)) return []
-  const content = readFileSync(filePath, 'utf-8')
-  return content.split('\n').filter(line => line.trim())
-}
-
-function applyEvent(state: TaskTraceState, event: TraceEvent): void {
-  switch (event.type) {
-    case 'TASK_START':
-      state.taskId = event.taskId
-      state.taskName = event.taskName || ''
-      state.startedAt = event.timestamp
-      state.status = 'RUNNING'
-      break
-
-    case 'TASK_STATUS':
-      state.status = event.status as 'RUNNING' | 'COMPLETED' | 'FAILED'
-      if (event.status !== 'RUNNING') {
-        state.completedAt = event.timestamp
-      }
-      break
-
-    case 'STAGE_START':
-      state.stages.set(event.stageId!, {
-        stageId: event.stageId!,
-        stageName: event.stageName || '',
-        status: 'PENDING',
-        probes: [],
-        startedAt: event.timestamp
-      })
-      break
-
-    case 'STAGE_COMPLETE': {
-      const stage = state.stages.get(event.stageId!)
-      if (stage) {
-        stage.status = event.status as StepStatus
-        stage.completedAt = event.timestamp
-      }
-      break
-    }
-
-    case 'PROBE_RESULT': {
-      const stage = state.stages.get(event.stageId!)
-      if (stage) {
-        stage.probes.push({
-          probeType: event.probeType || '',
-          result: event.result,
-          output: event.output,
-          error: event.error,
-          executedAt: event.timestamp || Date.now()
-        })
-      }
-      break
-    }
+function readContent(tracePath: string): string | null {
+  if (!existsSync(tracePath)) {
+    return null
   }
+  return readFileSync(tracePath, 'utf-8')
 }
 
-export function createTaskTrace(
+export function writeTaskStart(
   taskDir: TaskDirectory,
   taskId: string,
   taskName: string
 ): TaskTraceState {
-  appendEvent(taskDir, {
-    type: 'TASK_START',
-    taskId,
-    taskName,
-    timestamp: Date.now()
-  })
+  const event = buildTraceEvent('TASK_START', taskId, { taskName })
+  appendEventToFile(taskDir.tracePath, event)
 
   return {
     taskId,
@@ -86,73 +33,36 @@ export function createTaskTrace(
   }
 }
 
-export function readTaskTrace(taskDir: TaskDirectory): TaskTraceState | null {
-  if (!existsSync(taskDir.tracePath)) {
-    return null
-  }
-
-  const lines = readLines(taskDir.tracePath)
-  const state: TaskTraceState = {
-    taskId: '',
-    taskName: '',
-    status: 'NOT_FOUND',
-    startedAt: 0,
-    stages: new Map()
-  }
-
-  for (const line of lines) {
-    if (!line.trim()) continue
-    try {
-      const event = JSON.parse(line) as TraceEvent
-      applyEvent(state, event)
-    } catch {
-      // Skip malformed lines
-    }
-  }
-
-  return state
+export function writeTaskStatus(
+  taskDir: TaskDirectory,
+  taskId: string,
+  status: TaskStatus
+): void {
+  const event = buildTraceEvent('TASK_STATUS', taskId, { status })
+  appendEventToFile(taskDir.tracePath, event)
 }
 
-export function appendTaskStatus(taskDir: TaskDirectory, taskId: string, status: TaskStatus): void {
-  appendEvent(taskDir, {
-    type: 'TASK_STATUS',
-    taskId,
-    status,
-    timestamp: Date.now()
-  })
-}
-
-export function appendStageStart(
+export function writeStageStart(
   taskDir: TaskDirectory,
   taskId: string,
   stageId: string,
   stageName: string
 ): void {
-  appendEvent(taskDir, {
-    type: 'STAGE_START',
-    taskId,
-    stageId,
-    stageName,
-    timestamp: Date.now()
-  })
+  const event = buildTraceEvent('STAGE_START', taskId, { stageId, stageName })
+  appendEventToFile(taskDir.tracePath, event)
 }
 
-export function appendStageComplete(
+export function writeStageComplete(
   taskDir: TaskDirectory,
   taskId: string,
   stageId: string,
   status: StepStatus
 ): void {
-  appendEvent(taskDir, {
-    type: 'STAGE_COMPLETE',
-    taskId,
-    stageId,
-    status,
-    timestamp: Date.now()
-  })
+  const event = buildTraceEvent('STAGE_COMPLETE', taskId, { stageId, status })
+  appendEventToFile(taskDir.tracePath, event)
 }
 
-export function appendProbeResult(
+export function writeProbeResult(
   taskDir: TaskDirectory,
   taskId: string,
   stageId: string,
@@ -161,22 +71,28 @@ export function appendProbeResult(
   output?: string,
   error?: string
 ): void {
-  appendEvent(taskDir, {
-    type: 'PROBE_RESULT',
-    taskId,
+  const event = buildTraceEvent('PROBE_RESULT', taskId, {
     stageId,
     probeType,
     result,
     output,
-    error,
-    timestamp: Date.now()
+    error
   })
+  appendEventToFile(taskDir.tracePath, event)
+}
+
+export function readTaskTrace(taskDir: TaskDirectory): TaskTraceState | null {
+  const content = readContent(taskDir.tracePath)
+  if (!content) {
+    return null
+  }
+  return readTaskTraceFromContent(content)
 }
 
 export function getTaskStatus(taskDir: TaskDirectory): TaskStatus | 'NOT_FOUND' {
   const state = readTaskTrace(taskDir)
   if (!state || state.status === 'NOT_FOUND') return 'NOT_FOUND'
-  return state.status as TaskStatus
+  return state.status
 }
 
 export function getNextPendingStage(taskDir: TaskDirectory): StageState | null {
@@ -195,4 +111,27 @@ export function getStageState(taskDir: TaskDirectory, stageId: string): StageSta
   const state = readTaskTrace(taskDir)
   if (!state) return null
   return state.stages.get(stageId) || null
+}
+
+function readTaskTraceFromContent(content: string): TaskTraceState | null {
+  if (!content.trim()) {
+    return null
+  }
+  return reduceTraceEventsFromString(content)
+}
+
+function reduceTraceEventsFromString(content: string): TaskTraceState {
+  const lines = content.split('\n').filter(line => line.trim())
+  const events: TraceEvent[] = []
+
+  for (const line of lines) {
+    if (!line.trim()) continue
+    try {
+      events.push(JSON.parse(line) as TraceEvent)
+    } catch {
+      // Skip malformed lines
+    }
+  }
+
+  return reduceTraceEvents(events)
 }
