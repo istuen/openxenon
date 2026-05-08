@@ -1,5 +1,5 @@
 import type { XnStageStatus } from './core'
-import type { Proof } from './arsenal/blueprint'
+import type { Proof } from './proof'
 
 /**
  * @deprecated MVP 0.1 后被 Blueprint YAML 中的 Stage 替代。

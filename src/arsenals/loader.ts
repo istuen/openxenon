@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync, existsSync, renameSync, mkdirSync } from 'fs'
 import { join, extname, dirname, basename } from 'path'
-import { type AssetState, type AssetType } from './arsenals-paths'
-import { getProjectBoundaryPath } from './project'
-import { ARSENALS_ROOT } from './arsenals-paths'
+import { type AssetState, type AssetType } from './paths'
+import { getProjectBoundaryPath } from '../kernel'
+import { ARSENALS_ROOT } from './paths'
 
 export type Scope = 'project' | 'global' | 'fallback'
 

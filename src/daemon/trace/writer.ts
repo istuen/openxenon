@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, appendFileSync } from 'fs'
-import type { TaskDirectory, TraceEvent, TaskTraceState, StageState } from '../../common/types/task-state'
-import type { TaskStatus, StepStatus } from '../../common/enums'
+import type { TaskDirectory } from '../../kernel/lib/task-dir'
+import type { TraceEvent, TaskTraceState, StageState } from '../../kernel/lib/types/task-state'
+import type { TaskStatus, StepStatus } from '../../kernel/enums'
 
 function appendEvent(taskDir: TaskDirectory, event: TraceEvent): void {
   const line = JSON.stringify(event) + '\n'
@@ -53,9 +54,10 @@ function applyEvent(state: TaskTraceState, event: TraceEvent): void {
       if (stage) {
         stage.probes.push({
           probeType: event.probeType || '',
-          success: event.result === 'PASSED',
+          result: event.result,
           output: event.output,
-          error: event.error
+          error: event.error,
+          executedAt: event.timestamp || Date.now()
         })
       }
       break

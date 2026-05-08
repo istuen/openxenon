@@ -1,8 +1,9 @@
 import { readdirSync, statSync } from 'fs'
 import { join, extname } from 'path'
-import { getProjectProofsPath } from './project'
+import { getProjectProofsPath } from './custom-proofs-scanner'
 import { scanGlobalProofs } from './proofs'
-import type { Proof } from '../types'
+export { scanGlobalProofs }
+import type { Proof } from './types'
 
 export function scanProjectProofs(projectRoot: string): Proof[] {
   const proofs: Proof[] = []

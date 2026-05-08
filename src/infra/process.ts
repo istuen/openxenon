@@ -1,4 +1,5 @@
 import { spawn } from 'bun'
+import { cwd } from 'process'
 
 export interface ExecResult {
   code: number
@@ -8,25 +9,18 @@ export interface ExecResult {
 }
 
 export const process = {
-  exec(command: string, cwd?: string): ExecResult {
+  async exec(command: string, cwdArg?: string): Promise<ExecResult> {
     try {
       const proc = spawn({
         cmd: ['sh', '-c', command],
-        cwd: cwd || process.cwd(),
+        cwd: cwdArg || cwd(),
         stdout: 'pipe',
         stderr: 'pipe'
       })
 
-      const exitCode = proc.exitCode
-      let stdout = ''
-      let stderr = ''
-
-      try {
-        stdout = new Response(proc.stdout).text()
-        stderr = new Response(proc.stderr).text()
-      } catch {
-        // Ignore read errors
-      }
+      const exitCode = proc.exitCode ?? -1
+      const stdout = await new Response(proc.stdout).text()
+      const stderr = await new Response(proc.stderr).text()
 
       return {
         code: exitCode,

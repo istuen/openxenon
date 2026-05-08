@@ -1,5 +1,5 @@
 import { existsSync, unlinkSync } from 'fs'
-import { createServer, type Socket } from 'net'
+import { createServer } from 'net'
 
 export interface SocketMessage {
   method: string
@@ -16,7 +16,7 @@ export interface SocketServer {
 let server: ReturnType<typeof createServer> | null = null
 
 export const socket = {
-  createServer(onMessage: (msg: SocketMessage) => void): SocketServer {
+  createServer(_onMessage: (msg: SocketMessage) => void): SocketServer {
     return {
       start(_path: string) {
         // Socket server implementation is in daemon/ipc/server.ts

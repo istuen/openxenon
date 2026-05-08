@@ -1,5 +1,5 @@
 import { join } from 'path'
-import { GLOBAL_BOUNDARY_PATH } from './global'
+import { GLOBAL_BOUNDARY_PATH } from '../infra/global'
 
 export const ARSENALS_ROOT = join(GLOBAL_BOUNDARY_PATH, 'arsenals')
 export const ARSENALS_PROBES = join(ARSENALS_ROOT, 'probes')

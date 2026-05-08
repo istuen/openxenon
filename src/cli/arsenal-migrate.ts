@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { readdirSync, existsSync, unlinkSync, cpSync } from 'fs'
 import { join, basename, dirname } from 'path'
 import { type AssetType, type AssetState } from '../arsenals/paths'
-import { getProjectBoundaryPath } from '../kernel/lib/project'
+import { getProjectBoundaryPath } from '../kernel'
 
 interface MigrationResult {
   name: string

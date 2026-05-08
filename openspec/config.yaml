@@ -8,12 +8,17 @@ context: |
   语言：中文（简体）
   所有产出物必须用简体中文撰写。
 
+  架构背景: 参考 docs/ARCHITECTURE.md (v1.1)
+  核心原则:
+    - 三大公理: AI 不被信任 / Kernel 是兰姆达真空 / Infra 是唯一物理出口
+    - 三权分立: 探针分为契约(YAML) / 能力(Infra) / 评判(Kernel)
+    - CLI/Daemon 必须通过 Unix Socket 通信, 只能传递纯 JSON
+    - Kernel 绝对禁止任何 I/O 操作
+
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  tasks:
+    - 斩首任务优先, 依赖最少的先做
+    - 每个任务必须验证 Kernel 无 I/O import
+    - 禁止引入新的"辐射狗"(欺骗性纯函数)

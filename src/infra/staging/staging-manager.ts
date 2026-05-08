@@ -1,6 +1,6 @@
 import { mkdirSync, rmSync, existsSync, cpSync, readdirSync } from 'fs'
 import { join } from 'path'
-import { getTaskPath } from '../../kernel/lib/project'
+import { getTaskPath } from '../../kernel'
 
 export class StagingManager {
   constructor(

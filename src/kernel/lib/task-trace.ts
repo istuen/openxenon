@@ -322,3 +322,5 @@ export function createStageState(stageId: string, stageName: string): StageState
     startedAt: Date.now()
   }
 }
+
+export type { TaskTraceState, StageState, TraceEvent, ProbeResult }

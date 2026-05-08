@@ -6,7 +6,7 @@ import {
   ARSENALS_PROOFS_CANONICAL,
   ARSENALS_STAGES_DRAFT,
   ARSENALS_STAGES_CANONICAL
-} from './arsenals-paths'
+} from './paths'
 
 const ARSENALS_DIRECTORIES = [
   ARSENALS_PROBES_DRAFT,

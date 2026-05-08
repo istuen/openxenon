@@ -1,4 +1,4 @@
-import type { BlueprintStatus } from './core';
+export type BlueprintStatus = 'DRAFT' | 'CANONICAL' | 'SAMPLE' | 'ABANDONED'
 
 export interface Blueprint {
   id: string;

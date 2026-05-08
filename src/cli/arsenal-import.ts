@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { join, basename } from 'path'
 import { existsSync, mkdirSync, copyFileSync, readdirSync, statSync } from 'fs'
-import { getProjectBoundaryPath } from '../kernel/lib/project'
+import { getProjectBoundaryPath } from '../kernel'
 
 type ImportFilter = 'draft' | 'canonical' | 'all' | 'archive'
 

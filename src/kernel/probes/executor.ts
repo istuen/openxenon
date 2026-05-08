@@ -22,9 +22,9 @@ export interface ProbeContext {
   projectRoot: string
 }
 
-export type ProbeExecutor = (probe: Probe, context: ProbeContext) => ProbeResult
+export type ProbeExecutor = (probe: Probe, context: ProbeContext) => Promise<ProbeResult>
 
-export const executeProbe: ProbeExecutor = (probe, context) => {
+export const executeProbe: ProbeExecutor = async (probe, context) => {
   const { type, pattern, patterns, command, cwd } = probe
 
   switch (type) {
@@ -91,7 +91,7 @@ export const executeProbe: ProbeExecutor = (probe, context) => {
       if (!cmd) {
         return { success: false, probeType: type, error: 'command is required for shell_exec' }
       }
-      const result = process.exec(cmd, cwd || context.projectRoot)
+      const result = await process.exec(cmd, cwd || context.projectRoot)
       if (result.success) {
         return { success: true, probeType: type, output: result.stdout }
       }
@@ -103,8 +103,8 @@ export const executeProbe: ProbeExecutor = (probe, context) => {
   }
 }
 
-export function executeProbeList(probes: Probe[], context: ProbeContext): ProbeResult[] {
-  return probes.map(probe => executeProbe(probe, context))
+export async function executeProbeList(probes: Probe[], context: ProbeContext): Promise<ProbeResult[]> {
+  return Promise.all(probes.map(probe => executeProbe(probe, context)))
 }
 
 export function reduceToVerdict(results: ProbeResult[]): 'PASSED' | 'FAILED' {

@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { getTaskPath } from './project'
+import { getTaskPath } from '../../kernel'
 import { homedir } from 'os'
 import { fileURLToPath } from 'url'
 

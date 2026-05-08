@@ -1,4 +1,4 @@
-import type { Blueprint, Stage } from '../../common/schemas/blueprint.schema'
+import type { Blueprint, Stage } from '../../kernel/schemas/blueprint.schema'
 
 export interface ExecutorOptions {
   projectRoot: string

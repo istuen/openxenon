@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from 'fs'
 import { join, extname } from 'path'
-import { COMMON_PROOFS_PATH, TEMPLATES_PATH } from './global'
+import { COMMON_PROOFS_PATH, TEMPLATES_PATH } from '../../infra/global'
 import type { Proof } from './types'
 
 export function scanGlobalProofs(): Proof[] {
