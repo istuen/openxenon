@@ -1,4 +1,3 @@
-export { handleWorkspaceInit } from './workspace-init'
 export { handleProofsList } from './proofs-list'
 export { handleTaskSubmit } from './task-submit'
 export { handleTaskStart } from './task-start'

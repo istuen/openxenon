@@ -3,7 +3,7 @@ import { createDraftFromYaml } from '../api/arsenal-draft'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { getProjectBoundaryPath } from '../core/project'
+import { BOUNDARY_DIR } from '../common/constants'
 
 const META_BLUEPRINTS = {
   probe: 'meta-probe',
@@ -14,9 +14,9 @@ const META_BLUEPRINTS = {
 
 function loadMetaBlueprintFromProject(type: keyof typeof META_BLUEPRINTS): string[] | null {
   const name = META_BLUEPRINTS[type]
-  const projectBoundary = getProjectBoundaryPath(process.cwd())
+  const projectBoundary = join(process.cwd(), BOUNDARY_DIR)
 
-  const forgePath = join(projectBoundary, 'forges', name, 'canonical.yaml')
+  const forgePath = join(projectBoundary, 'meta', name, 'canonical.yaml')
   if (existsSync(forgePath)) {
     try {
       const content = readFileSync(forgePath, 'utf-8')

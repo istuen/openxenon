@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { getProjectBoundaryPath } from '../core/project'
+import { BOUNDARY_DIR } from '../common/constants'
 
 const META_FORGE_NAMES = {
   probe: 'meta-probe',
@@ -14,9 +14,9 @@ const META_FORGE_NAMES = {
 type ForgeType = keyof typeof META_FORGE_NAMES
 
 function loadMetaForge(type: ForgeType): { name: string, constraints: string[] } | null {
-  const projectBoundary = getProjectBoundaryPath(process.cwd())
+  const projectBoundary = join(process.cwd(), BOUNDARY_DIR)
   const name = META_FORGE_NAMES[type]
-  const forgePath = join(projectBoundary, 'forges', name, 'canonical.yaml')
+  const forgePath = join(projectBoundary, 'meta', name, 'canonical.yaml')
 
   if (existsSync(forgePath)) {
     try {

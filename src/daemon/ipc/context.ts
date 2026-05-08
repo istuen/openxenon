@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { missingProjectPath, projectNotFound } from './errors'
-import { BOUNDARY_DIR, CONFIG_FILE } from '../common/constants'
+import { BOUNDARY_DIR, CONFIG_FILE } from '../../common/constants'
 
 interface ProjectConfig {
   version: 1

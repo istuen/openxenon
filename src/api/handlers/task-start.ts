@@ -1,11 +1,10 @@
-import { registerRoute } from '../router'
+import { registerRoute } from '../../daemon/ipc/router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest, notFound } from '../errors'
-import { getTaskDirectory } from '../../lib/task-dir'
-import { readTaskTrace, appendTaskStatus } from '../../lib/task-trace'
-import { createEmptyStepManifest, writeStepManifest } from '../../core/manifest'
-import { existsSync, mkdirSync } from 'fs'
+import { readTaskTrace } from '../../daemon/trace/writer'
+import { existsSync } from 'fs'
 import { join } from 'path'
+import { BOUNDARY_DIR } from '../../common/constants'
 
 async function handleTaskStart(
   request: Request,
@@ -25,28 +24,22 @@ async function handleTaskStart(
     }
 
     const taskId = body.taskId!
-    const taskDir = getTaskDirectory(projectPath, taskId)
+    const taskDir = join(projectPath, BOUNDARY_DIR, 'tasks', taskId)
 
-    if (!existsSync(taskDir.root)) {
+    if (!existsSync(taskDir)) {
       return notFound(`Task '${taskId}' not found`)
     }
 
-    const trace = readTaskTrace(taskDir)
+    const trace = readTaskTrace(
+      { root: taskDir, taskId, blueprintPath: join(taskDir, 'blueprint.yaml'), tracePath: join(taskDir, 'task-trace.yaml'), manifestPath: join(taskDir, 'step-manifest.json') }
+    )
 
     if (!trace) {
       return notFound(`Task '${taskId}' not found`)
     }
 
     let newStatus = trace.status
-    if (trace.status === 'PENDING') {
-      if (!existsSync(taskDir.root)) {
-        mkdirSync(taskDir.root, { recursive: true })
-      }
-
-      const manifest = createEmptyStepManifest(taskId)
-      writeStepManifest(join(taskDir.root, 'step-manifest.json'), manifest)
-
-      appendTaskStatus(taskDir, taskId, 'RUNNING')
+    if (trace.status === 'RUNNING') {
       newStatus = 'RUNNING'
     }
 

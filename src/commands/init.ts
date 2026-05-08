@@ -1,13 +1,17 @@
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readdirSync, cpSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, cpSync, rmSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { registerProject, getProjectByPath, updateProjectHeartbeat } from '../core/registry'
-import { GLOBAL_BOUNDARY_PATH, GLOBAL_PROOFS_PATH, COMMON_PROOFS_PATH, TEMPLATES_PATH } from '../core/global'
-import { getProjectBoundaryPath, getProjectProofsPath, getTasksPath } from '../core/project'
-import { setSpaceMode } from '../core/config'
+import { BOUNDARY_DIR, CONFIG_FILE, GLOBAL_BOUNDARY_PATH, GLOBAL_PROOFS_PATH } from '../common/constants'
 import { compileAllSkills, formatCompilationReport } from '../core/skill-compiler'
 
-const FORGES_SOURCE_PATH = join(__dirname, '..', 'forges')
+const META_SOURCE_PATH = join(__dirname, '..', 'meta')
+
+interface ProjectConfig {
+  version: 1
+  mode: 'PRODUCTION' | 'SANDBOX'
+  name?: string
+  createdAt?: number
+}
 
 function ensureGlobalBoundary(): void {
   if (!existsSync(GLOBAL_BOUNDARY_PATH)) {
@@ -17,47 +21,56 @@ function ensureGlobalBoundary(): void {
   if (!existsSync(GLOBAL_PROOFS_PATH)) {
     mkdirSync(GLOBAL_PROOFS_PATH, { recursive: true })
   }
-
-  if (!existsSync(COMMON_PROOFS_PATH)) {
-    mkdirSync(COMMON_PROOFS_PATH, { recursive: true })
-  }
-
-  if (!existsSync(TEMPLATES_PATH)) {
-    mkdirSync(TEMPLATES_PATH, { recursive: true })
-  }
 }
 
 function ensureProjectBoundary(projectRoot: string): void {
-  const boundaryPath = getProjectBoundaryPath(projectRoot)
+  const boundaryPath = join(projectRoot, BOUNDARY_DIR)
 
   if (!existsSync(boundaryPath)) {
     mkdirSync(boundaryPath, { recursive: true })
   }
 
-  const proofsPath = getProjectProofsPath(projectRoot)
+  const proofsPath = join(boundaryPath, 'proofs')
   if (!existsSync(proofsPath)) {
     mkdirSync(proofsPath, { recursive: true })
   }
 
-  const tasksPath = getTasksPath(projectRoot)
+  const tasksPath = join(boundaryPath, 'tasks')
   if (!existsSync(tasksPath)) {
     mkdirSync(tasksPath, { recursive: true })
   }
 }
 
-function copyForgesToProject(projectRoot: string): void {
-  const forgesDestPath = join(getProjectBoundaryPath(projectRoot), 'forges')
+function readProjectConfig(projectRoot: string): ProjectConfig | null {
+  const configPath = join(projectRoot, BOUNDARY_DIR, CONFIG_FILE)
+  if (!existsSync(configPath)) {
+    return null
+  }
+  try {
+    return JSON.parse(readFileSync(configPath, 'utf-8')) as ProjectConfig
+  } catch {
+    return null
+  }
+}
 
-  if (!existsSync(FORGES_SOURCE_PATH)) {
+function writeProjectConfig(projectRoot: string, config: ProjectConfig): void {
+  const configPath = join(projectRoot, BOUNDARY_DIR, CONFIG_FILE)
+  writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+}
+
+function copyMetaToProject(projectRoot: string): void {
+  const metaDestPath = join(projectRoot, BOUNDARY_DIR, 'meta')
+
+  if (!existsSync(META_SOURCE_PATH)) {
     return
   }
 
-  mkdirSync(forgesDestPath, { recursive: true })
+  mkdirSync(metaDestPath, { recursive: true })
 
-  const forgeDirs = readdirSync(FORGES_SOURCE_PATH)
-  for (const dir of forgeDirs) {
-    const srcDir = join(FORGES_SOURCE_PATH, dir)
-    const destDir = join(forgesDestPath, dir)
+  const metaDirs = readdirSync(META_SOURCE_PATH)
+  for (const dir of metaDirs) {
+    const srcDir = join(META_SOURCE_PATH, dir)
+    const destDir = join(metaDestPath, dir)
 
     if (existsSync(destDir)) {
       rmSync(destDir, { recursive: true, force: true })
@@ -70,30 +83,13 @@ function copyForgesToProject(projectRoot: string): void {
 export default defineCommand({
   meta: {
     name: 'init',
-    description: '初始化项目，在当前项目建立物理围栏并注册到全局'
+    description: '初始化项目，在当前项目建立物理围栏'
   },
   args: {
     name: {
       type: 'positional',
       description: '项目名称',
       required: false
-    },
-    force: {
-      alias: 'f',
-      type: 'boolean',
-      description: '强制重新初始化（更新心跳时间 + 强制重编译 Skill）',
-      default: false
-    },
-    adapter: {
-      alias: 'a',
-      type: 'string',
-      description: '指定适配器编译 Skill（默认: opencode）',
-      default: 'opencode'
-    },
-    'compile-force': {
-      type: 'boolean',
-      description: '强制重写所有 Skill 文件（忽略内容比对）',
-      default: false
     },
     sandbox: {
       alias: 's',
@@ -105,9 +101,6 @@ export default defineCommand({
   async run(ctx) {
     const projectPath = process.cwd()
     const projectName = ctx.args.name || projectPath.split('/').pop() || 'unnamed'
-    const force = ctx.args.force as boolean
-    const adapterId = ctx.args.adapter as string
-    const compileForce = ctx.args['compile-force'] as boolean || force
     const sandbox = ctx.args.sandbox as boolean
 
     try {
@@ -117,39 +110,32 @@ export default defineCommand({
 
       ensureGlobalBoundary()
       ensureProjectBoundary(projectPath)
-      copyForgesToProject(projectPath)
+      copyMetaToProject(projectPath)
 
-      if (sandbox) {
-        setSpaceMode(projectPath, 'SANDBOX')
-      }
+      const existingConfig = readProjectConfig(projectPath)
 
-      const existingProject = getProjectByPath(projectPath)
-
-      if (existingProject) {
-        if (force) {
-          updateProjectHeartbeat(projectPath)
-          console.log('✓ 项目已更新（更新心跳时间）')
-          console.log(`  项目ID: ${existingProject.id}`)
-          console.log(`  状态: ${existingProject.status}`)
-        } else {
-          console.log('✓ 项目已存在')
-          console.log(`  项目ID: ${existingProject.id}`)
-          console.log(`  状态: ${existingProject.status}`)
-          console.log(`  创建时间: ${new Date(existingProject.createdAt).toLocaleString()}`)
-          console.log('\n提示: 使用 --force 或 -f 参数可以更新心跳时间')
+      if (existingConfig) {
+        console.log('✓ 项目已存在')
+        if (sandbox !== (existingConfig.mode === 'SANDBOX')) {
+          existingConfig.mode = sandbox ? 'SANDBOX' : 'PRODUCTION'
+          writeProjectConfig(projectPath, existingConfig)
+          console.log(`  模式已更新为: ${existingConfig.mode}`)
         }
       } else {
-        const project = registerProject(projectPath, projectName)
-
+        const config: ProjectConfig = {
+          version: 1,
+          mode: sandbox ? 'SANDBOX' : 'PRODUCTION',
+          name: projectName,
+          createdAt: Date.now()
+        }
+        writeProjectConfig(projectPath, config)
         console.log('✓ 项目初始化成功')
-        console.log(`  项目ID: ${project.id}`)
-        console.log(`  状态: ${project.status}`)
       }
 
       console.log('')
-      console.log(`正在编译 Skill (适配器: ${adapterId})...`)
+      console.log('正在编译 Skill (适配器: opencode)...')
 
-      const report = compileAllSkills(adapterId, projectPath, compileForce)
+      const report = compileAllSkills('opencode', projectPath, false)
       console.log('')
       console.log(formatCompilationReport(report))
 

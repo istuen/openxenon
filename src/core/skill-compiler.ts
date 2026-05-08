@@ -3,7 +3,6 @@ import { dirname, join } from 'path'
 import { createHash } from 'crypto'
 import type { OpenXenonSkill } from '../skills/types'
 import { allSkills } from '../skills'
-import { getAdapter } from '../adapters'
 
 export interface CompilationResult {
   skillId: string
@@ -24,20 +23,23 @@ export function loadSkills(): OpenXenonSkill[] {
   return allSkills
 }
 
+function defaultRender(skill: OpenXenonSkill): string {
+  return `---
+skill: ${skill.id}
+description: ${skill.description}
+---
+${skill.instruction}
+`
+}
+
 export function compileSkill(
   skill: OpenXenonSkill,
-  adapterId: string,
+  _adapterId: string,
   projectPath: string,
   force: boolean = false
 ): CompilationResult {
-  const adapter = getAdapter(adapterId)
-  
-  if (!adapter) {
-    throw new Error(`Adapter not found: ${adapterId}`)
-  }
-  
-  const content = adapter.render(skill)
-  const outputPath = join(projectPath, adapter.getOutputPath(skill.id))
+  const content = defaultRender(skill)
+  const outputPath = join(projectPath, '.opencode', 'skills', `${skill.id}.md`)
   const action: 'created' | 'updated' | 'skipped' = determineAction(outputPath, content, force)
   
   if (action !== 'skipped') {
