@@ -1,7 +1,42 @@
-import { glob } from 'glob'
+import { readdirSync, statSync } from 'fs'
+import { join, relative } from 'path'
 
 export interface ProbeContext {
   projectRoot: string
+}
+
+function matchGlob(pattern: string, baseDir: string): string[] {
+  const results: string[] = []
+
+  function walk(dir: string): void {
+    const entries = readdirSync(dir)
+    for (const entry of entries) {
+      const fullPath = join(dir, entry)
+      const relativePath = relative(baseDir, fullPath)
+
+      try {
+        const stat = statSync(fullPath)
+        if (stat.isDirectory()) {
+          walk(fullPath)
+        } else if (matchPattern(relativePath, pattern)) {
+          results.push(fullPath)
+        }
+      } catch {
+        // Skip files we can't access
+      }
+    }
+  }
+
+  walk(baseDir)
+  return results
+}
+
+function matchPattern(path: string, pattern: string): boolean {
+  if (pattern.includes('*')) {
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$')
+    return regex.test(path)
+  }
+  return path === pattern || path.endsWith(pattern)
 }
 
 export async function executeFsExists(
@@ -10,11 +45,20 @@ export async function executeFsExists(
 ): Promise<string[]> {
   const fullPattern = pattern.startsWith('/')
     ? pattern
-    : `${context.projectRoot}/${pattern}`
+    : join(context.projectRoot, pattern)
 
-  const files = await glob(fullPattern, {
-    absolute: true
-  })
+  if (fullPattern.includes('*') || fullPattern.includes('?')) {
+    const baseDir = fullPattern.includes('*') || fullPattern.includes('?')
+      ? context.projectRoot
+      : fullPattern.substring(0, fullPattern.lastIndexOf('/'))
+    const globPattern = fullPattern.substring(baseDir.length + (baseDir.endsWith('/') ? 0 : 1))
+    return matchGlob(globPattern, baseDir || context.projectRoot)
+  }
 
-  return files
+  try {
+    const stat = statSync(fullPattern)
+    return stat.isDirectory() || stat.isFile() ? [fullPattern] : []
+  } catch {
+    return []
+  }
 }

@@ -5,7 +5,7 @@ import type {
   TaskTraceState,
   StageState
 } from './types/task-trace'
-import type { TaskStatus, StepStatus } from './types/core'
+import type { TaskStatus } from './types/core'
 
 function isOldFormat(content: string): boolean {
   const trimmed = content.trim()

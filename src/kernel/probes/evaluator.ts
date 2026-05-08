@@ -21,7 +21,7 @@ export function evaluateProbe(
   definition: ProbeDefinition,
   actualResult: ProbeResult
 ): ProbeVerdict {
-  const { type, params, expected } = definition
+  const { type } = definition
 
   switch (type) {
     case 'fs_exists': {

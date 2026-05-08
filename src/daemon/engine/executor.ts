@@ -40,7 +40,13 @@ export async function executeStage(
     }
 
     try {
-      const result = await handler(probe.params || {}, context) as ProbeResult
+      const probeParams = {
+        pattern: probe.pattern,
+        patterns: probe.patterns,
+        command: probe.command,
+        cwd: probe.cwd
+      }
+      const result = await handler(probeParams, context) as ProbeResult
       probeResults.push(result)
     } catch (error) {
       probeResults.push({

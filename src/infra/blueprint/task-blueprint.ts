@@ -1,10 +1,10 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { getTaskPath } from '../../kernel'
 import { homedir } from 'os'
 import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
+const BOUNDARY_DIR = '.openxenon'
 export const TEMPLATE_BLUEPRINT_SOURCE = join(__dirname, '..', 'templates', 'blueprint.yaml')
 export const TEMPLATE_BLUEPRINT_PATH = join(homedir(), '.openxenon', 'templates', 'blueprint.yaml')
 
@@ -15,12 +15,16 @@ export interface CreateTaskOptions {
   taskDescription: string
 }
 
+function computeTaskPath(projectRoot: string, taskId: string): string {
+  return join(projectRoot, BOUNDARY_DIR, 'tasks', taskId)
+}
+
 export function getTaskBlueprintPath(projectRoot: string, taskId: string): string {
-  return join(getTaskPath(projectRoot, taskId), 'blueprint.yaml')
+  return join(computeTaskPath(projectRoot, taskId), 'blueprint.yaml')
 }
 
 export function createTaskDirectory(projectRoot: string, taskId: string): string {
-  const taskPath = getTaskPath(projectRoot, taskId)
+  const taskPath = computeTaskPath(projectRoot, taskId)
 
   if (!existsSync(taskPath)) {
     mkdirSync(taskPath, { recursive: true })

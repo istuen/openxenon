@@ -62,6 +62,21 @@ export function writeStageComplete(
   appendEventToFile(taskDir.tracePath, event)
 }
 
+export function createProbeResult(
+  probeType: string,
+  result: 'PASSED' | 'FAILED',
+  output?: string,
+  error?: string
+): { probeType: string; result: 'PASSED' | 'FAILED'; output?: string; error?: string; executedAt: number } {
+  return {
+    probeType,
+    result,
+    output,
+    error,
+    executedAt: Date.now()
+  }
+}
+
 export function writeProbeResult(
   taskDir: TaskDirectory,
   taskId: string,
