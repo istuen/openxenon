@@ -4,27 +4,27 @@ import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { getProjectBoundaryPath } from '../core/project'
 
-const META_BLUEPRINT_NAMES = {
-  probe: 'meta-blueprint-for-probe',
-  proof: 'meta-blueprint-for-proof',
-  stage: 'meta-blueprint-for-stage',
-  blueprint: 'meta-blueprint-for-blueprint'
+const META_FORGE_NAMES = {
+  probe: 'meta-probe',
+  proof: 'meta-proof',
+  stage: 'meta-stage',
+  blueprint: 'meta-blueprint'
 } as const
 
-type BlueprintType = keyof typeof META_BLUEPRINT_NAMES
+type ForgeType = keyof typeof META_FORGE_NAMES
 
-function loadMetaBlueprint(type: BlueprintType): { name: string, constraints: string[] } | null {
+function loadMetaForge(type: ForgeType): { name: string, constraints: string[] } | null {
   const projectBoundary = getProjectBoundaryPath(process.cwd())
-  const name = META_BLUEPRINT_NAMES[type]
-  const newPath = join(projectBoundary, 'arsenals', 'stages', name, 'draft.yaml')
+  const name = META_FORGE_NAMES[type]
+  const forgePath = join(projectBoundary, 'forges', name, 'canonical.yaml')
 
-  if (existsSync(newPath)) {
+  if (existsSync(forgePath)) {
     try {
-      const content = readFileSync(newPath, 'utf-8')
+      const content = readFileSync(forgePath, 'utf-8')
       const parsed = parseYaml(content)
       return {
         name: parsed.name || name,
-        constraints: parsed.constraints || []
+        constraints: parsed.stages?.[0]?.proof?.spec?.constraints || []
       }
     } catch {
       return null
@@ -34,30 +34,30 @@ function loadMetaBlueprint(type: BlueprintType): { name: string, constraints: st
   return null
 }
 
-function displayMetaBlueprint(type: BlueprintType): void {
-  const blueprint = loadMetaBlueprint(type)
+function displayMetaForge(type: ForgeType): void {
+  const forge = loadMetaForge(type)
 
-  if (!blueprint) {
-    console.log(`元蓝图 '${type}' 不存在。`)
-    console.log(`可用的类型: ${Object.keys(META_BLUEPRINT_NAMES).join(', ')}`)
+  if (!forge) {
+    console.log(`元Forge '${type}' 不存在。`)
+    console.log(`可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}`)
     return
   }
 
-  console.log(`\n=== ${blueprint.name} ===\n`)
+  console.log(`\n=== ${forge.name} ===\n`)
   console.log('约束 (Constraints):')
-  for (const constraint of blueprint.constraints) {
+  for (const constraint of forge.constraints) {
     console.log(`  - ${constraint}`)
   }
   console.log()
 }
 
-function displayAllMetaBlueprints(): void {
-  console.log('\n=== 所有元蓝图 ===\n')
-  for (const type of Object.keys(META_BLUEPRINT_NAMES) as BlueprintType[]) {
-    const blueprint = loadMetaBlueprint(type)
-    if (blueprint) {
-      console.log(`[${type}] ${blueprint.name}`)
-      console.log(`  约束数量: ${blueprint.constraints.length}`)
+function displayAllMetaForges(): void {
+  console.log('\n=== 所有元Forge ===\n')
+  for (const type of Object.keys(META_FORGE_NAMES) as ForgeType[]) {
+    const forge = loadMetaForge(type)
+    if (forge) {
+      console.log(`[${type}] ${forge.name}`)
+      console.log(`  约束数量: ${forge.constraints.length}`)
       console.log()
     }
   }
@@ -66,28 +66,28 @@ function displayAllMetaBlueprints(): void {
 export default defineCommand({
   meta: {
     name: 'forge',
-    description: '显示元蓝图约束（用于生成标准资产）'
+    description: '显示元Forge约束（用于生成标准资产）'
   },
   args: {
     type: {
       type: 'positional',
       required: false,
-      description: '元蓝图类型: probe, proof, stage, blueprint, all'
+      description: '元Forge类型: probe, proof, stage, blueprint, all'
     }
   },
   async run(ctx) {
     const type = ctx.args.type as string | undefined
 
     if (!type || type === 'all') {
-      displayAllMetaBlueprints()
+      displayAllMetaForges()
       return
     }
 
     if (type === 'probe' || type === 'proof' || type === 'stage' || type === 'blueprint') {
-      displayMetaBlueprint(type)
+      displayMetaForge(type as ForgeType)
     } else {
       console.log(`未知类型: ${type}`)
-      console.log(`可用的类型: ${Object.keys(META_BLUEPRINT_NAMES).join(', ')}, all`)
+      console.log(`可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}, all`)
     }
   }
 })

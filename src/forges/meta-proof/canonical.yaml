@@ -1,0 +1,22 @@
+id: meta-proof
+name: Meta Proof Forge
+status: CANONICAL
+stages:
+  - id: validate-proof
+    name: 验证 Proof 结构
+    deps: []
+    proof:
+      target:
+        description: Proof YAML 文件
+        glob: "**/*.yaml"
+      spec:
+        description: 验证 Proof YAML 结构
+        constraints:
+          - "必须包含 target, spec, probes"
+          - "target 必须包含 description"
+          - "spec 必须包含 description"
+          - "probes 必须是数组"
+          - "每个 probe 必须包含 type"
+      probes:
+        - type: fs_exists
+          pattern: "**/*.yaml"

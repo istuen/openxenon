@@ -1,28 +1,28 @@
 import type { OpenXenonSkill } from './types'
 import { createDraftFromYaml } from '../api/arsenal-draft'
-import { metaForgeBlueprint } from '../core/blueprints/meta-forge'
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { getProjectBoundaryPath } from '../core/project'
 
 const META_BLUEPRINTS = {
-  probe: 'meta-blueprint-for-probe',
-  proof: 'meta-blueprint-for-proof',
-  stage: 'meta-blueprint-for-stage',
-  blueprint: 'meta-blueprint-for-blueprint'
+  probe: 'meta-probe',
+  proof: 'meta-proof',
+  stage: 'meta-stage',
+  blueprint: 'meta-blueprint'
 } as const
 
-function loadMetaBlueprintFromArsenal(type: keyof typeof META_BLUEPRINTS): string[] | null {
+function loadMetaBlueprintFromProject(type: keyof typeof META_BLUEPRINTS): string[] | null {
   const name = META_BLUEPRINTS[type]
   const projectBoundary = getProjectBoundaryPath(process.cwd())
 
-  const newPath = join(projectBoundary, 'arsenals', 'stages', name, 'draft.yaml')
-  if (existsSync(newPath)) {
+  const forgePath = join(projectBoundary, 'forges', name, 'canonical.yaml')
+  if (existsSync(forgePath)) {
     try {
-      const content = readFileSync(newPath, 'utf-8')
+      const content = readFileSync(forgePath, 'utf-8')
       const parsed = parseYaml(content)
-      return parsed.constraints ?? null
+      const constraints = parsed?.stages?.[0]?.proof?.spec?.constraints
+      return constraints ?? null
     } catch {
       return null
     }
@@ -31,10 +31,30 @@ function loadMetaBlueprintFromArsenal(type: keyof typeof META_BLUEPRINTS): strin
   return null
 }
 
-function getConstraintsFromMetaForge(type: keyof typeof META_BLUEPRINTS): string[] {
-  const stageId = `create-${type}`
-  const stage = metaForgeBlueprint.stages?.find(s => s.id === stageId)
-  return stage?.proof.spec.constraints ?? []
+function getDefaultConstraints(type: keyof typeof META_BLUEPRINTS): string[] {
+  const defaults: Record<string, string[]> = {
+    probe: [
+      '必须包含 type',
+      'type 必须是 fs_exists, fs_content_match, fs_not_exists, fs_parseable, exec_exit_zero 之一',
+    ],
+    proof: [
+      '必须包含 target, spec, probes',
+      'target 必须包含 description',
+      'spec 必须包含 description',
+      'probes 必须是数组',
+    ],
+    stage: [
+      '必须包含 id, name, proof',
+      'proof 必须包含 target, spec, probes',
+      'deps 必须是字符串数组',
+    ],
+    blueprint: [
+      '必须包含 id, name, stages',
+      'stages 必须是数组',
+      '每个 stage 必须包含 id, name, proof',
+    ]
+  }
+  return defaults[type] || []
 }
 
 export const oxnForgeSkill: OpenXenonSkill = {
@@ -101,12 +121,12 @@ export function parseForgeRequest(input: string): { type: 'probe' | 'proof' | 's
 export function getForgeConstraints(type: 'Blueprint' | 'Stage' | 'Proof'): string[] {
   const key = type.toLowerCase() as keyof typeof META_BLUEPRINTS
 
-  const fromArsenal = loadMetaBlueprintFromArsenal(key)
-  if (fromArsenal) {
-    return fromArsenal
+  const fromProject = loadMetaBlueprintFromProject(key)
+  if (fromProject) {
+    return fromProject
   }
 
-  return getConstraintsFromMetaForge(key)
+  return getDefaultConstraints(key)
 }
 
 export { createDraftFromYaml }

@@ -1,10 +1,13 @@
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, cpSync, rmSync } from 'fs'
+import { join } from 'path'
 import { registerProject, getProjectByPath, updateProjectHeartbeat } from '../core/registry'
 import { GLOBAL_BOUNDARY_PATH, GLOBAL_PROOFS_PATH, COMMON_PROOFS_PATH, TEMPLATES_PATH } from '../core/global'
 import { getProjectBoundaryPath, getProjectProofsPath, getTasksPath } from '../core/project'
 import { setSpaceMode } from '../core/config'
 import { compileAllSkills, formatCompilationReport } from '../core/skill-compiler'
+
+const FORGES_SOURCE_PATH = join(__dirname, '..', 'forges')
 
 function ensureGlobalBoundary(): void {
   if (!existsSync(GLOBAL_BOUNDARY_PATH)) {
@@ -39,6 +42,28 @@ function ensureProjectBoundary(projectRoot: string): void {
   const tasksPath = getTasksPath(projectRoot)
   if (!existsSync(tasksPath)) {
     mkdirSync(tasksPath, { recursive: true })
+  }
+}
+
+function copyForgesToProject(projectRoot: string): void {
+  const forgesDestPath = join(getProjectBoundaryPath(projectRoot), 'forges')
+
+  if (!existsSync(FORGES_SOURCE_PATH)) {
+    return
+  }
+
+  mkdirSync(forgesDestPath, { recursive: true })
+
+  const forgeDirs = readdirSync(FORGES_SOURCE_PATH)
+  for (const dir of forgeDirs) {
+    const srcDir = join(FORGES_SOURCE_PATH, dir)
+    const destDir = join(forgesDestPath, dir)
+
+    if (existsSync(destDir)) {
+      rmSync(destDir, { recursive: true, force: true })
+    }
+
+    cpSync(srcDir, destDir, { recursive: true })
   }
 }
 
@@ -92,6 +117,7 @@ export default defineCommand({
 
       ensureGlobalBoundary()
       ensureProjectBoundary(projectPath)
+      copyForgesToProject(projectPath)
 
       if (sandbox) {
         setSpaceMode(projectPath, 'SANDBOX')
