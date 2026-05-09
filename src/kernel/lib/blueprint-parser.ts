@@ -1,20 +1,9 @@
-import { existsSync, readFileSync } from 'fs'
 import type { BlueprintPayload, StagePayload } from '../../daemon/types/daemon-payload'
-import type { TaskDirectory } from './task-dir'
 
 export interface ParsedBlueprint {
   id: string
   name: string
   stages: StagePayload[]
-}
-
-export function readBlueprint(taskDir: TaskDirectory): ParsedBlueprint | null {
-  if (!existsSync(taskDir.blueprintPath)) {
-    return null
-  }
-
-  const content = readFileSync(taskDir.blueprintPath, 'utf-8')
-  return parseBlueprintYaml(content)
 }
 
 export function parseBlueprintYaml(yaml: string): ParsedBlueprint {

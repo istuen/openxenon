@@ -1,8 +1,7 @@
 import { registerRoute } from '../router'
 import { badRequest, notFound } from '../errors'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace } from '../../trace/writer'
-import { readBlueprint } from '../../../kernel/lib/blueprint-parser'
+import { readTaskTrace, readBlueprint } from '../../trace/writer'
 
 async function handleTaskNext(
   request: Request,

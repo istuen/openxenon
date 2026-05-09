@@ -3,6 +3,7 @@ import type { TaskDirectory } from '../../kernel/lib/task-dir'
 import type { TraceEvent, TaskTraceState, StageState } from '../../kernel/lib/types/task-state'
 import type { TaskStatus, StepStatus } from '../../kernel/enums'
 import { buildTraceEvent, reduceTraceEvents } from '../../kernel/lib/task-trace'
+import { parseBlueprintYaml, type ParsedBlueprint } from '../../kernel/lib/blueprint-parser'
 
 function appendEventToFile(tracePath: string, event: TraceEvent): void {
   const line = JSON.stringify(event) + '\n'
@@ -14,6 +15,14 @@ function readContent(tracePath: string): string | null {
     return null
   }
   return readFileSync(tracePath, 'utf-8')
+}
+
+export function readBlueprint(taskDir: TaskDirectory): ParsedBlueprint | null {
+  if (!existsSync(taskDir.blueprintPath)) {
+    return null
+  }
+  const content = readFileSync(taskDir.blueprintPath, 'utf-8')
+  return parseBlueprintYaml(content)
 }
 
 export function writeTaskStart(

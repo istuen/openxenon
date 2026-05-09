@@ -2,8 +2,7 @@ import { writeFileSync, unlinkSync, existsSync } from 'fs'
 import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from './infra/global'
 import { daemonLogger } from './daemon/logger'
 import { startApiServer, stopApiServer } from './daemon/api/server'
-import { setDaemonAddress, clearDaemonAddress } from './core/daemon-config'
-import './api/handlers'
+import { setDaemonAddress, clearDaemonAddress } from './daemon/status'
 
 function ensureGlobalDirectory(): void {
   if (!existsSync(GLOBAL_BOUNDARY_PATH)) {

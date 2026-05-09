@@ -1,7 +1,7 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
-import { validateProbe, validateProof, validateStage } from '../arsenals/proofs'
+import { validateProbe, validateProof, validateStage } from '../kernel/schemas'
 import { type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { Scope } from '../arsenals/loader'

@@ -2,9 +2,8 @@ import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace, writeStageStart, writeStageComplete } from '../../trace/writer'
+import { readTaskTrace, writeStageStart, writeStageComplete, readBlueprint } from '../../trace/writer'
 import { createStageState } from '../../../kernel/lib/task-trace'
-import { readBlueprint } from '../../../kernel/lib/blueprint-parser'
 
 async function handleStepStart(
   request: Request,

@@ -1,9 +1,9 @@
 import { registerRoute } from '../router'
 import { badRequest, notFound } from '../errors'
 import type { DaemonPayload } from '../../types/daemon-payload'
-import { getTaskDirectory, ensureTaskDirectory } from '../../../kernel/lib/task-dir'
+import { getTaskDirectory } from '../../../kernel/lib/task-dir'
+import { ensureDirectory, directoryExists } from '../../../infra/fs'
 import { readTaskTrace, writeTaskStart, writeTaskStatus, writeStageStart, writeStageComplete, createProbeResult } from '../../trace/writer'
-import { existsSync } from 'fs'
 import { getProbeHandler, type ProbeResult as InfraProbeResult } from '../../../infra/probes'
 import { evaluateProbe, type ProbeDefinition } from '../../../kernel/probes/evaluator'
 
@@ -26,7 +26,7 @@ async function handleFsExecute(
 
     const taskDir = getTaskDirectory(body.project_root, body.task_id)
 
-    if (!existsSync(taskDir.root)) {
+    if (!directoryExists(taskDir.root)) {
       return notFound(`Task directory not found: ${taskDir.root}`)
     }
 
@@ -61,7 +61,7 @@ async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typ
     return badRequest('EXECUTE_TASK requires blueprint in payload')
   }
 
-  ensureTaskDirectory(taskDir)
+  ensureDirectory(taskDir.root)
 
   let trace = readTaskTrace(taskDir)
   if (!trace) {

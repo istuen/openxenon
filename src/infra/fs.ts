@@ -1,10 +1,9 @@
-import { existsSync, readFileSync, appendFileSync, writeFileSync, renameSync, unlinkSync, statSync } from 'fs'
+import { existsSync, readFileSync, appendFileSync, writeFileSync, renameSync, unlinkSync, statSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
 
 function ensureDir(filePath: string): void {
   const dir = dirname(filePath)
   if (!existsSync(dir)) {
-    const { mkdirSync } = require('fs')
     mkdirSync(dir, { recursive: true })
   }
 }
@@ -17,6 +16,34 @@ function atomicWrite(filePath: string, data: string): void {
     unlinkSync(filePath)
   }
   renameSync(tmpPath, filePath)
+}
+
+export function ensureDirectory(path: string): void {
+  if (!existsSync(path)) {
+    mkdirSync(path, { recursive: true })
+  }
+}
+
+export function directoryExists(path: string): boolean {
+  if (!existsSync(path)) return false
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
+}
+
+export function readFile(path: string): string | null {
+  if (!existsSync(path)) return null
+  try {
+    return readFileSync(path, 'utf-8')
+  } catch {
+    return null
+  }
+}
+
+export function fileExists(path: string): boolean {
+  return existsSync(path)
 }
 
 export const fs = {
