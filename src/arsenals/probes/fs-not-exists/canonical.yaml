@@ -2,6 +2,11 @@ id: fs-not-exists
 name: File System Not Exists Probe
 type: fs_not_exists
 description: 检查文件或目录是否不存在
+semantics:
+  intent: 验证文件/目录不存在
+  tags: ["文件系统", "不存在检查", "fs"]
+  useWhen: 当你需要确认某个文件或目录被删除时
+  relatedAssets: ["fs_exists", "fs_match"]
 parameters:
   - name: pattern
     type: string

@@ -2,6 +2,11 @@ id: fs-exists
 name: File System Exists Probe
 type: fs_exists
 description: 检查文件或目录是否存在
+semantics:
+  intent: 验证文件/目录的存在性
+  tags: ["文件系统", "存在性检查", "fs", "file"]
+  useWhen: 当你需要确认某个文件或目录已被创建时
+  relatedAssets: ["fs_not_exists", "fs_match"]
 parameters:
   - name: pattern
     type: string

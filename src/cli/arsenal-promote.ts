@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { promoteStandard, loadStandardByName } from '../arsenals/loader'
+import { promoteStandard, arsenalLoadStandardByName as loadStandardByName } from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import { type AssetType } from '../arsenals/paths'
 

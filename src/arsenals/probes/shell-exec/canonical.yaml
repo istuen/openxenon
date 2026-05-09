@@ -2,6 +2,11 @@ id: shell-exec
 name: Shell Execute Probe
 type: shell_exec
 description: 执行 shell 命令并验证退出码
+semantics:
+  intent: 验证命令执行成功（退出码为 0）
+  tags: ["命令执行", "shell", "进程"]
+  useWhen: 当你需要验证某个命令能够成功执行时
+  relatedAssets: ["fs_exists", "fs_match"]
 parameters:
   - name: command
     type: string

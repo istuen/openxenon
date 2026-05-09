@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { listStandards, type StandardAsset, type Scope } from '../arsenals/loader'
+import { arsenalListStandards as listStandards, type StandardAsset, type Scope } from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetState } from '../arsenals/paths'
 
