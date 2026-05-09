@@ -1,9 +1,3 @@
-export { fs } from '../infra/fs'
-export { socket } from '../infra/socket'
-export { StagingManager } from '../infra/staging/staging-manager'
-export type { SocketMessage, SocketServer } from '../infra/socket'
-export { GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH, DAEMON_PID_PATH, DAEMON_LOG_PATH, GLOBAL_PROOFS_PATH, COMMON_PROOFS_PATH } from '../infra/global'
-
 export { evaluateProbe, reduceProbeResults, reduceStageVerdict } from './probes/evaluator'
 export type { ProbeDefinition, ProbeResult, ProbeVerdict } from './probes/evaluator'
 
@@ -34,6 +28,3 @@ export { validateDagTopology, topologicalSort } from './schemas/dag-validator'
 export type { DagNode, DagValidationResult } from './schemas/dag-validator'
 export { Action as ActionType, ProductionPolicy, SandboxPolicy, getExecutionPolicy } from './policy'
 export type { ExecutionPolicy, ExecutionContext } from './policy'
-
-export { process } from '../infra/process'
-export type { ExecResult } from '../infra/process'

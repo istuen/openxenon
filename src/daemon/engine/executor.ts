@@ -1,6 +1,6 @@
 import type { Blueprint, Stage } from '../../kernel/schemas/blueprint.schema'
-import { getProbeHandler, type ProbeResult } from '../../infra/probes'
-import type { ProbeContext } from '../../infra/probes'
+import { getProbeHandler, type ProbeResult, type ProbeContext } from '../../infra/probes'
+import { evaluateProbe, reduceProbeResults, type ProbeDefinition } from '../../kernel/probes/evaluator'
 
 export interface ExecutorOptions {
   projectRoot: string
@@ -46,8 +46,15 @@ export async function executeStage(
         command: probe.command,
         cwd: probe.cwd
       }
-      const result = await handler(probeParams, context) as ProbeResult
-      probeResults.push(result)
+      const actualResult = await handler(probeParams, context) as ProbeResult
+
+      const definition: ProbeDefinition = {
+        type: probe.type,
+        params: { pattern: probe.pattern, patterns: probe.patterns, command: probe.command, cwd: probe.cwd }
+      }
+      evaluateProbe(definition, actualResult)
+
+      probeResults.push(actualResult)
     } catch (error) {
       probeResults.push({
         probeType: probe.type,
@@ -58,10 +65,10 @@ export async function executeStage(
     }
   }
 
-  const allPassed = probeResults.every(r => r.result === 'PASSED')
+  const verdict = reduceProbeResults(probeResults, 'AND')
 
   return {
-    success: allPassed,
+    success: verdict.passed,
     stageId,
     probeResults
   }
