@@ -1,24 +1,11 @@
-import { registerRoute } from '../../daemon/ipc/router'
+import { sendToDaemon } from '../socket-client'
 
-async function handleProofsList(
-  _request: Request,
-  _projectPath: string
-): Promise<Response> {
-  return new Response(
-    JSON.stringify({
-      proofs: [
-        { id: 'fs_exists', name: 'File System Exists', category: 'built-in', layer: 'L1' },
-        { id: 'fs_match', name: 'File System Match', category: 'built-in', layer: 'L1' },
-        { id: 'shell_exec', name: 'Shell Execute', category: 'built-in', layer: 'L1' }
-      ]
-    }),
-    {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    }
-  )
+export async function handleProofsList(projectPath: string): Promise<unknown> {
+  const response = await sendToDaemon({
+    method: 'GET',
+    path: '/api/v1/proofs/list',
+    projectPath
+  }) as { status: number; body: unknown }
+
+  return response.body
 }
-
-registerRoute('GET', '/api/v1/proofs/list', handleProofsList)
-
-export { handleProofsList }

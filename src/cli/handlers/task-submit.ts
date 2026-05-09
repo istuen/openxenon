@@ -1,89 +1,16 @@
-import { registerRoute } from '../../daemon/ipc/router'
-import { parseJSONBody, validateRequiredFields } from '../../daemon/ipc/validation'
-import { badRequest } from '../../daemon/ipc/errors'
-import { writeTaskStart, writeTaskStatus } from '../../daemon/trace/writer'
-import type { Blueprint } from '../../kernel/schemas/blueprint.schema'
-import { randomUUID } from 'crypto'
-import { join } from 'path'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
-import { BOUNDARY_DIR, BLUEPRINT_FILE } from '../../kernel/constants'
+import { sendToDaemon } from '../socket-client'
 
-async function handleTaskSubmit(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
-  try {
-    const body = await parseJSONBody<{
-      task?: string
-      blueprint?: Blueprint
-    }>(request)
+export async function handleTaskSubmit(
+  projectPath: string,
+  task: string,
+  blueprint: unknown
+): Promise<unknown> {
+  const response = await sendToDaemon({
+    method: 'POST',
+    path: '/api/v1/task/submit',
+    body: { task, blueprint },
+    projectPath
+  }) as { status: number; body: unknown }
 
-    if (!body) {
-      return badRequest('Request body is required')
-    }
-
-    const validation = validateRequiredFields(body as Record<string, unknown>, ['task', 'blueprint'])
-
-    if (!validation.valid) {
-      return badRequest(`Field '${validation.missingField}' is required`)
-    }
-
-    const taskName = body.task as string
-    const blueprintInput = body.blueprint as Blueprint
-
-    const taskId = randomUUID()
-    const taskDir = join(projectPath, BOUNDARY_DIR, 'tasks', taskId)
-
-    if (!existsSync(taskDir)) {
-      mkdirSync(taskDir, { recursive: true })
-    }
-
-    const blueprintPath = join(taskDir, BLUEPRINT_FILE)
-    writeFileSync(blueprintPath, JSON.stringify(blueprintInput, null, 2), 'utf-8')
-
-    writeTaskStart(
-      { root: taskDir, taskId, blueprintPath, tracePath: join(taskDir, 'task-trace.yaml'), manifestPath: join(taskDir, 'step-manifest.json') },
-      taskId,
-      taskName
-    )
-
-    writeTaskStatus(
-      { root: taskDir, taskId, blueprintPath, tracePath: join(taskDir, 'task-trace.yaml'), manifestPath: join(taskDir, 'step-manifest.json') },
-      taskId,
-      'PENDING'
-    )
-
-    return new Response(
-      JSON.stringify({
-        taskId: taskId,
-        blueprintId: taskId,
-        blueprintFile: `tasks/${taskId}/${BLUEPRINT_FILE}`,
-        status: 'PENDING',
-        stagesCount: blueprintInput.stages?.length || 0,
-        message: 'Task created successfully'
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-
-    return new Response(
-      JSON.stringify({
-        error: 'TaskSubmitFailed',
-        message: errorMessage,
-        statusCode: 500
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    )
-  }
+  return response.body
 }
-
-registerRoute('POST', '/api/v1/task/submit', handleTaskSubmit)
-
-export { handleTaskSubmit }

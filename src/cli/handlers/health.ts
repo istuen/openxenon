@@ -1,17 +1,11 @@
-import { registerRoute } from '../../daemon/ipc/router'
+import { sendToDaemon } from '../socket-client'
 
-async function handleHealth(
-  _request: Request,
-): Promise<Response> {
-  return new Response(
-    JSON.stringify({ status: 'ok' }),
-    {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    }
-  )
+export async function handleHealth(): Promise<unknown> {
+  const response = await sendToDaemon({
+    method: 'GET',
+    path: '/api/v1/health',
+    projectPath: ''
+  }) as { status: number; body: unknown }
+
+  return response.body
 }
-
-registerRoute('GET', '/api/v1/health', handleHealth)
-
-export { handleHealth }
