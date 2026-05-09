@@ -1,25 +1,24 @@
-import { writeFileSync, unlinkSync, existsSync } from 'fs'
+import { fileExists, ensureDirectory, writeFile, deleteFile } from './infra/fs'
 import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from './infra/global'
 import { daemonLogger } from './daemon/logger'
 import { startApiServer, stopApiServer } from './daemon/api/server'
 import { setDaemonAddress, clearDaemonAddress } from './daemon/status'
 
 function ensureGlobalDirectory(): void {
-  if (!existsSync(GLOBAL_BOUNDARY_PATH)) {
-    const { mkdirSync } = require('fs')
-    mkdirSync(GLOBAL_BOUNDARY_PATH, { recursive: true })
+  if (!fileExists(GLOBAL_BOUNDARY_PATH)) {
+    ensureDirectory(GLOBAL_BOUNDARY_PATH)
   }
 }
 
 function writePidFile(): void {
   const pid = process.pid
-  writeFileSync(DAEMON_PID_PATH, pid.toString(), 'utf-8')
+  writeFile(DAEMON_PID_PATH, pid.toString())
   daemonLogger.info(`Daemon PID file created: ${pid}`)
 }
 
 function removePidFile(): void {
-  if (existsSync(DAEMON_PID_PATH)) {
-    unlinkSync(DAEMON_PID_PATH)
+  if (fileExists(DAEMON_PID_PATH)) {
+    deleteFile(DAEMON_PID_PATH)
     daemonLogger.info('Daemon PID file removed')
   }
 }

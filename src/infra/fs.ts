@@ -46,6 +46,17 @@ export function fileExists(path: string): boolean {
   return existsSync(path)
 }
 
+export function writeFile(path: string, content: string): void {
+  ensureDir(dirname(path))
+  writeFileSync(path, content, 'utf-8')
+}
+
+export function deleteFile(path: string): void {
+  if (existsSync(path)) {
+    unlinkSync(path)
+  }
+}
+
 export const fs = {
   exists(path: string): boolean {
     return existsSync(path)
