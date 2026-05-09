@@ -56,3 +56,14 @@ coverage/
 # OpenXenon specific
 .openxenon/
 !src/
+
+# OpenSpec 工作流
+openspec/
+
+# IDE 配置
+.kilocode/
+.opencode/
+
+# 过时/重复文档
+OpenXenon (修订版).md
+README-v2.md
