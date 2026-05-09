@@ -16,7 +16,7 @@ function loadMetaBlueprintFromProject(type: keyof typeof META_BLUEPRINTS): strin
   const name = META_BLUEPRINTS[type]
   const projectBoundary = join(process.cwd(), BOUNDARY_DIR)
 
-  const forgePath = join(projectBoundary, 'meta', name, 'canonical.yaml')
+  const forgePath = join(projectBoundary, 'arsenals', 'forges', name, 'canonical.yaml')
   if (existsSync(forgePath)) {
     try {
       const content = readFileSync(forgePath, 'utf-8')

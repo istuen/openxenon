@@ -3,8 +3,6 @@ import { join } from 'path'
 
 export const BOUNDARY_DIR = '.openxenon'
 export const TASKS_DIR = 'tasks'
-export const FORGES_DIR = 'forges'
-export const META_DIR = 'meta'
 
 export const BLUEPRINT_FILE = 'blueprint.yaml'
 export const TASK_TRACE_FILE = 'task-trace.yaml'

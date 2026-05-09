@@ -1,0 +1,21 @@
+id: meta-probe
+name: Meta Probe Forge
+status: CANONICAL
+stages:
+  - id: validate-probe
+    name: 验证 Probe 结构
+    deps: []
+    proof:
+      target:
+        description: Probe YAML 文件
+        glob: "**/*.yaml"
+      spec:
+        description: 验证 Probe YAML 结构
+        constraints:
+          - "必须包含 type"
+          - "type 必须是 fs_exists, fs_content_match, fs_not_exists, fs_parseable, exec_exit_zero 之一"
+          - "可选 pattern（正则表达式字符串）"
+          - "可选 command（字符串）"
+      probes:
+        - type: fs_exists
+          pattern: "**/*.yaml"

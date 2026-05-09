@@ -16,7 +16,7 @@ type ForgeType = keyof typeof META_FORGE_NAMES
 function loadMetaForge(type: ForgeType): { name: string, constraints: string[] } | null {
   const projectBoundary = join(process.cwd(), BOUNDARY_DIR)
   const name = META_FORGE_NAMES[type]
-  const forgePath = join(projectBoundary, 'meta', name, 'canonical.yaml')
+  const forgePath = join(projectBoundary, 'arsenals', 'forges', name, 'canonical.yaml')
 
   if (existsSync(forgePath)) {
     try {

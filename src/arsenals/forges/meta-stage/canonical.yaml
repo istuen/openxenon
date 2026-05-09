@@ -1,0 +1,23 @@
+id: meta-stage
+name: Meta Stage Forge
+status: CANONICAL
+stages:
+  - id: validate-stage
+    name: 验证 Stage 结构
+    deps: []
+    proof:
+      target:
+        description: Stage YAML 文件
+        glob: "**/*.yaml"
+      spec:
+        description: 验证 Stage YAML 结构
+        constraints:
+          - "必须包含 id, name, proof"
+          - "proof 必须包含 target, spec, probes"
+          - "deps 必须是字符串数组"
+          - "target 必须包含 description"
+          - "spec 必须包含 description"
+          - "probes 必须是数组"
+      probes:
+        - type: fs_exists
+          pattern: "**/*.yaml"

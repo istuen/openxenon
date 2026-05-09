@@ -4,7 +4,7 @@ import { join } from 'path'
 import { BOUNDARY_DIR, CONFIG_FILE, GLOBAL_BOUNDARY_PATH, GLOBAL_PROOFS_PATH } from '../kernel/constants'
 import { compileAllSkills, formatCompilationReport } from './skill-compiler'
 
-const META_SOURCE_PATH = join(__dirname, '..', 'meta')
+const META_SOURCE_PATH = join(__dirname, '..', 'arsenals', 'forges')
 
 interface ProjectConfig {
   version: 1
