@@ -1,2 +1,2 @@
-export type { Probe, ProbeResult, ProbeContext, ProbeExecutor } from './executor'
-export { executeProbe, executeProbeList, reduceToVerdict } from './executor'
+export type { ProbeDefinition, ProbeResult, ProbeVerdict } from './evaluator'
+export { evaluateProbe, reduceProbeResults, reduceStageVerdict } from './evaluator'

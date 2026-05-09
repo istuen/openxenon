@@ -4,8 +4,8 @@ export { StagingManager } from '../infra/staging/staging-manager'
 export type { SocketMessage, SocketServer } from '../infra/socket'
 export { GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH, DAEMON_PID_PATH, DAEMON_LOG_PATH, GLOBAL_PROOFS_PATH, COMMON_PROOFS_PATH } from '../infra/global'
 
-export { executeProbe, executeProbeList, reduceToVerdict } from './probes/executor'
-export type { Probe as ProbeFromExecutor, ProbeResult, ProbeContext, ProbeExecutor } from './probes/executor'
+export { evaluateProbe, reduceProbeResults, reduceStageVerdict } from './probes/evaluator'
+export type { ProbeDefinition, ProbeResult, ProbeVerdict } from './probes/evaluator'
 
 export type { TaskStatus, StepStatus, BlueprintStatus, ArtifactType, ProofType, ProjectStatus, ProbeType, Action } from './enums'
 export { BOUNDARY_DIR, TASKS_DIR, CONFIG_FILE } from './constants'
