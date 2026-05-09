@@ -4,6 +4,8 @@ import type { DaemonPayload } from '../../types/daemon-payload'
 import { getTaskDirectory, ensureTaskDirectory } from '../../../kernel/lib/task-dir'
 import { readTaskTrace, writeTaskStart, writeTaskStatus, writeStageStart, writeStageComplete, createProbeResult } from '../../trace/writer'
 import { existsSync } from 'fs'
+import { getProbeHandler, type ProbeResult as InfraProbeResult } from '../../../infra/probes'
+import { evaluateProbe, type ProbeDefinition } from '../../../kernel/probes/evaluator'
 
 const CURRENT_SCHEMA_VERSION = '1.0.0'
 
@@ -54,7 +56,7 @@ async function handleFsExecute(
   }
 }
 
-function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typeof getTaskDirectory>): Response {
+async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typeof getTaskDirectory>): Promise<Response> {
   if (!payload.blueprint) {
     return badRequest('EXECUTE_TASK requires blueprint in payload')
   }
@@ -88,8 +90,8 @@ function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typeof ge
     writeStageComplete(taskDir, payload.task_id, stage.id, 'RUNNING')
 
     for (const probe of stage.proof.probes) {
-      const result = executeProbe(probe.type, probe.pattern || probe.command || '', payload.project_root)
-      const probeResult = createProbeResult(probe.type, result.passed ? 'PASSED' : 'FAILED', result.output, result.error)
+      const result = await executeProbe(probe.type, probe.pattern || probe.command || '', payload.project_root)
+      const probeResult = createProbeResult(probe.type, result.result, result.output, result.error)
 
       const currentTrace = readTaskTrace(taskDir)
       if (currentTrace) {
@@ -124,7 +126,7 @@ function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typeof ge
   )
 }
 
-function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typeof getTaskDirectory>): Response {
+async function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typeof getTaskDirectory>): Promise<Response> {
   if (!payload.step_id) {
     return badRequest('EXECUTE_STEP requires step_id in payload')
   }
@@ -146,8 +148,8 @@ function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typeof ge
   writeStageComplete(taskDir, payload.task_id, payload.step_id, 'RUNNING')
 
   for (const probe of stage.proof.probes) {
-    const result = executeProbe(probe.type, probe.pattern || probe.command || '', taskDir.root)
-    const probeResult = createProbeResult(probe.type, result.passed ? 'PASSED' : 'FAILED', result.output, result.error)
+    const result = await executeProbe(probe.type, probe.pattern || probe.command || '', taskDir.root)
+    const probeResult = createProbeResult(probe.type, result.result, result.output, result.error)
 
     const currentTrace = readTaskTrace(taskDir)
     if (currentTrace) {
@@ -206,84 +208,51 @@ function handleVerifyStep(payload: DaemonPayload, taskDir: ReturnType<typeof get
   )
 }
 
-interface ProbeResult {
-  passed: boolean
-  output?: string
-  error?: string
-}
+async function executeProbe(probeType: string, pattern: string, projectRoot: string): Promise<InfraProbeResult> {
+  let params: Record<string, unknown>
+  let actualType = probeType
 
-function executeProbe(probeType: string, pattern: string, projectRoot: string): ProbeResult {
   switch (probeType) {
-    case 'fs_exists':
-      return executeFsExistsProbe(pattern, projectRoot)
-    case 'fs_content_match':
-      return executeFsContentMatchProbe(pattern, projectRoot)
-    case 'exec_exit_zero':
-      return executeExecExitZeroProbe(pattern, projectRoot)
+    case 'fs_content_match': {
+      actualType = 'fs_match'
+      const [file, regex] = pattern.split(':')
+      params = { file, regex }
+      break
+    }
+    case 'exec_exit_zero': {
+      actualType = 'shell_exec'
+      params = { command: pattern }
+      break
+    }
     default:
-      return { passed: false, error: `Unknown probe type: ${probeType}` }
-  }
-}
-
-function executeFsExistsProbe(pattern: string, projectRoot: string): ProbeResult {
-  const { existsSync } = require('fs')
-  const path = require('path')
-  const fullPath = path.isAbsolute(pattern) ? pattern : path.join(projectRoot, pattern)
-  const exists = existsSync(fullPath)
-  return { passed: exists, output: exists ? 'File exists' : 'File not found' }
-}
-
-function executeFsContentMatchProbe(pattern: string, projectRoot: string): ProbeResult {
-  const { existsSync, readFileSync } = require('fs')
-  const path = require('path')
-  const [filePattern, regexPattern] = pattern.split(':')
-  const fullPath = path.isAbsolute(filePattern) ? filePattern : path.join(projectRoot, filePattern)
-
-  if (!existsSync(fullPath)) {
-    return { passed: false, error: `File not found: ${fullPath}` }
+      params = { pattern }
   }
 
-  if (!regexPattern) {
-    return { passed: false, error: 'Regex pattern is required for fs_content_match probe' }
+  const handler = getProbeHandler(actualType)
+  if (!handler) {
+    return { probeType, result: 'FAILED', error: `Unknown probe type: ${probeType}`, executedAt: Date.now() }
   }
+
+  const context = { projectRoot }
 
   try {
-    const content = readFileSync(fullPath, 'utf-8')
-    const regex = new RegExp(regexPattern)
-    const matches = regex.test(content)
-    return { passed: matches, output: matches ? 'Pattern matched' : 'Pattern not found' }
+    const result = await handler(params, context) as InfraProbeResult
+    const definition: ProbeDefinition = { type: actualType, params }
+    const verdict = evaluateProbe(definition, result)
+
+    return {
+      ...result,
+      result: verdict.passed ? 'PASSED' : 'FAILED',
+      executedAt: Date.now()
+    }
   } catch (error) {
-    return { passed: false, error: `Error reading file: ${error}` }
+    return {
+      probeType,
+      result: 'FAILED',
+      error: error instanceof Error ? error.message : String(error),
+      executedAt: Date.now()
+    }
   }
-}
-
-function executeExecExitZeroProbe(command: string, projectRoot: string): ProbeResult {
-  const { spawn } = require('child_process')
-  const path = require('path')
-
-  return new Promise((resolve) => {
-    const isAbsolute = path.isAbsolute(command)
-    const fullCommand = isAbsolute ? command : path.join(projectRoot, command)
-    const proc = spawn(fullCommand, [], { shell: true, cwd: projectRoot })
-
-    let stdout = ''
-    let stderr = ''
-
-    proc.stdout.on('data', (data: Buffer) => { stdout += data.toString() })
-    proc.stderr.on('data', (data: Buffer) => { stderr += data.toString() })
-
-    proc.on('close', (code: number) => {
-      resolve({
-        passed: code === 0,
-        output: stdout || stderr,
-        error: code !== 0 ? `Command exited with code ${code}` : undefined
-      })
-    })
-
-    proc.on('error', (err: Error) => {
-      resolve({ passed: false, error: err.message })
-    })
-  }) as unknown as ProbeResult
 }
 
 registerRoute('POST', '/api/v1/fs/execute', handleFsExecute)
