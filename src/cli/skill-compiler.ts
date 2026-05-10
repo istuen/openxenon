@@ -39,7 +39,7 @@ export function compileSkill(
   force: boolean = false
 ): CompilationResult {
   const content = defaultRender(skill)
-  const outputPath = join(projectPath, '.opencode', 'skills', `${skill.id}.md`)
+  const outputPath = join(projectPath, '.opencode', 'skills', skill.id, 'SKILL.md')
   const action: 'created' | 'updated' | 'skipped' = determineAction(outputPath, content, force)
   
   if (action !== 'skipped') {
