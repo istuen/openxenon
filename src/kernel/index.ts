@@ -3,6 +3,7 @@ export type { ProbeDefinition, ProbeResult, ProbeVerdict } from './probes/evalua
 
 export type { TaskStatus, StepStatus, BlueprintStatus, ArtifactType, ProofType, ProjectStatus, ProbeType, Action } from './enums'
 export { BOUNDARY_DIR, TASKS_DIR, CONFIG_FILE } from './constants'
+export { OxnErrorCode, ErrorCategory } from './enums'
 
 export { BlueprintSchema, StageSchema, ProofSchema, ProbeSchema, parseBlueprint, safeParseBlueprint } from './schemas/blueprint.schema'
 export type { Blueprint, Stage, Proof, Probe as ProbeSchemaType } from './schemas/blueprint.schema'
@@ -21,7 +22,7 @@ export { readTaskTraceFromContent, reduceTraceEvents, getTaskStatus, getNextPend
 export { parseBlueprintYaml } from './lib/blueprint-parser'
 export type { ParsedBlueprint } from './lib/blueprint-parser'
 export { getProjectBoundaryPath, getProjectConfigPath, getProjectProofsPath, getTasksPath, getTaskPath, getStepManifestPath, getProjectArsenalPath, getTaskTracePath } from './lib/project'
-export { scanProjectProofs, scanGlobalProofs, getAllCustomProofs, findCustomProof, getGlobalProofsPath, getProjectProofsPath as getProjectProofsPathFn } from './lib/custom-proofs-scanner'
+export { resolveCustomProofsRecursive } from './lib/custom-proofs-resolver'
 export { FORBIDDEN_PROOF_TYPES, isForbiddenProof, validateProofType, getForbiddenReason, filterForbiddenProofs, getForbiddenProofTypes } from './proof-blacklist'
 export { validateProofInput, getProofSchema, serializeProofInput, deserializeProofInput, STANDARD_PROOF_SCHEMAS } from './proof-parameters'
 export { validateDagTopology, topologicalSort } from './schemas/dag-validator'

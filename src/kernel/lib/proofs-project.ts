@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from 'fs'
 import { join, extname } from 'path'
-import { getProjectProofsPath } from './custom-proofs-scanner'
+import { getProjectProofsPath } from '../../infra/scanner'
 import { scanGlobalProofs } from './proofs'
 export { scanGlobalProofs }
 import type { Proof } from './types'

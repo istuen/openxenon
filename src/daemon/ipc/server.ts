@@ -3,6 +3,8 @@ import { handleRequest } from './router'
 import { daemonLogger } from '../logger'
 import { existsSync, unlinkSync } from 'fs'
 
+import './handlers'
+
 export interface SocketRequest {
   method: string
   path: string
@@ -43,7 +45,7 @@ export function startSocketServer(socketPath: string): void {
           if (path === '/api/v1/health' && method === 'GET') {
             const response = await handleRequest(method, path, createMockRequest('GET', '/api/v1/health', undefined), null, '')
             const responseBody = await response.json()
-            socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
+            writeSocketResponse(socket, response.status, responseBody)
             continue
           }
 
@@ -57,7 +59,7 @@ export function startSocketServer(socketPath: string): void {
               const response = await handleRequest(method, path, mockReq, null, xenonDir)
               const clonedResponse = response.clone()
               const responseBody = await clonedResponse.json()
-              socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
+              writeSocketResponse(socket, response.status, responseBody)
               continue
             }
 
@@ -65,7 +67,7 @@ export function startSocketServer(socketPath: string): void {
             const response = await handleRequest(method, path, mockReq, null, context.projectPath)
             const clonedResponse = response.clone()
             const responseBody = await clonedResponse.json()
-            socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
+            writeSocketResponse(socket, response.status, responseBody)
             continue
           }
 
@@ -73,7 +75,7 @@ export function startSocketServer(socketPath: string): void {
           const context = loadProjectContext(projectPath || process.cwd())
 
           if ('status' in context) {
-            socket.write(JSON.stringify({ status: 400, body: { error: 'Invalid project' } }) + '\n')
+            writeSocketResponse(socket, 400, { message: 'Invalid project', code: 'OXN_INVALID_PARAMS', category: 'USER', recoverable: false, suggestion: '请检查 projectPath 是否有效' })
             continue
           }
 
@@ -88,11 +90,11 @@ export function startSocketServer(socketPath: string): void {
 
           const clonedResponse = response.clone()
           const responseBody = await clonedResponse.json()
-          socket.write(JSON.stringify({ status: response.status, body: responseBody }) + '\n')
+          writeSocketResponse(socket, response.status, responseBody)
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error)
           daemonLogger.error(`Socket request error: ${errorMessage}`)
-          socket.write(JSON.stringify({ status: 500, body: { error: 'InternalError', message: errorMessage } }) + '\n')
+          writeSocketResponse(socket, 500, { message: errorMessage, code: 'OXN_INTERNAL_ERROR', category: 'SYSTEM', recoverable: false, suggestion: 'Daemon 内部错误，请查看 daemon.log' })
         }
       }
     })
@@ -123,6 +125,37 @@ function createMockRequest(method: string, path: string, body?: unknown): Reques
   })
 }
 
+function writeSocketResponse(socket: Socket, status: number, body: unknown): void {
+  if (status >= 200 && status < 300) {
+    socket.write(JSON.stringify({ ok: true, data: body }) + '\n')
+  } else {
+    const err = body as { error?: string; message?: string; code?: string; category?: string; recoverable?: boolean; suggestion?: string }
+    socket.write(JSON.stringify({
+      ok: false,
+      error: {
+        code: err.code || 'OXN_INTERNAL_ERROR',
+        message: err.message || err.error || 'Unknown error',
+        category: err.category || 'SYSTEM',
+        recoverable: err.recoverable ?? false,
+        suggestion: err.suggestion || ''
+      }
+    }) + '\n')
+  }
+}
+
 export function isSocketServerRunning(): boolean {
   return server !== null
+}
+
+export interface ApiServerConfig {
+  socketPath?: string
+}
+
+export function startApiServer(config: ApiServerConfig = {}): void {
+  const socketPath = config.socketPath || '/tmp/oxn-daemon.sock'
+  startSocketServer(socketPath)
+}
+
+export function stopApiServer(): void {
+  stopSocketServer()
 }

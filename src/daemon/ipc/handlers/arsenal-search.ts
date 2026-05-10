@@ -1,6 +1,6 @@
 import { registerRoute } from '../router'
-import { globalArsenalRegistry, type ArsenalEntry } from '../../registry'
-import { getProjectBoundaryPath } from '../../kernel'
+import { globalArsenalRegistry } from '../../registry'
+import { getProjectBoundaryPath } from '../../../kernel'
 
 async function handleArsenalSearch(
   _request: Request,

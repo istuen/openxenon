@@ -1,7 +1,5 @@
-import { existsSync, readdirSync, readFileSync } from 'fs'
-import { join } from 'path'
-import type { AssetState, AssetType } from '../../arsenals/paths'
-import { ARSENALS_ROOT } from '../../arsenals/paths'
+import type { AssetState, AssetType } from '../arsenals/paths'
+import { listStandards, type StandardAsset } from '../infra/loader'
 
 export interface ArsenalSemantics {
   intent: string
@@ -24,52 +22,28 @@ export class ArsenalRegistry {
   buildIndex(projectBoundary: string): void {
     this.entries.clear()
 
-    this.scanDirectory(ARSENALS_ROOT, 'global')
-
-    const projectArsenals = join(projectBoundary, 'arsenals')
-    if (existsSync(projectArsenals)) {
-      this.scanDirectory(projectArsenals, 'project')
+    const canonicalAssets = listStandards(projectBoundary, 'canonical', 'fallback')
+    for (const asset of canonicalAssets) {
+      this.addAsset(asset)
     }
   }
 
-  private scanDirectory(rootPath: string, scope: 'project' | 'global'): void {
-    const types: AssetType[] = ['probes', 'proofs', 'stages', 'blueprints']
+  private addAsset(asset: StandardAsset): void {
+    try {
+      const parsed = JSON.parse(asset.content)
+      const semantics = this.extractSemantics(parsed)
 
-    for (const type of types) {
-      const typePath = join(rootPath, type)
-      if (!existsSync(typePath)) continue
-
-      const entries = readdirSync(typePath, { withFileTypes: true })
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue
-
-        const assetName = entry.name
-        const canonicalPath = join(typePath, assetName, 'canonical.yaml')
-        const draftPath = join(typePath, assetName, 'draft.yaml')
-
-        const assetPath = existsSync(canonicalPath) ? canonicalPath :
-                         existsSync(draftPath) ? draftPath : null
-
-        if (!assetPath) continue
-
-        try {
-          const content = readFileSync(assetPath, 'utf-8')
-          const parsed = JSON.parse(content)
-          const semantics = this.extractSemantics(parsed)
-
-          const entry: ArsenalEntry = {
-            name: assetName,
-            type,
-            state: assetPath.endsWith('canonical.yaml') ? 'canonical' : 'draft',
-            path: assetPath,
-            semantics
-          }
-
-          this.entries.set(assetPath, entry)
-        } catch {
-          // Skip malformed YAML files
-        }
+      const entry: ArsenalEntry = {
+        name: asset.name,
+        type: asset.type,
+        state: asset.state,
+        path: asset.path,
+        semantics
       }
+
+      this.entries.set(asset.path, entry)
+    } catch {
+      // Skip malformed files
     }
   }
 

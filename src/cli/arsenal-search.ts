@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { sendToDaemon } from './socket-client'
 import { isDaemonRunning } from '../daemon/process'
 import { DAEMON_SOCK_PATH } from '../infra/global'
+import { OxnErrorCode, ErrorCategory } from '../kernel/enums'
 
 export default defineCommand({
   meta: {
@@ -20,41 +21,49 @@ export default defineCommand({
     const { isRunning } = isDaemonRunning()
 
     if (!isRunning) {
-      console.error('Daemon is not running. Start with `oxn daemon start`')
-      console.error(`Socket: ${DAEMON_SOCK_PATH}`)
+      console.log(JSON.stringify({
+        ok: false,
+        error: {
+          code: OxnErrorCode.SOCKET_REFUSED,
+          message: 'Daemon 未运行',
+          category: ErrorCategory.INFRA,
+          recoverable: true,
+          suggestion: `请先执行 oxn daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`
+        }
+      }))
       return
     }
 
     const query = ctx.args.query as string || ''
 
-    try {
-      const response = await sendToDaemon({
-        method: 'GET',
-        path: '/api/v1/arsenal/search',
-        body: { query }
-      }) as { matches: Array<{ name: string; type: string; semantics: { intent: string; tags: string[]; useWhen: string } }> }
+    const response = await sendToDaemon({
+      method: 'GET',
+      path: '/api/v1/arsenal/search',
+      body: { query }
+    }) as { ok: boolean; data?: { matches: Array<{ name: string; type: string; semantics: { intent: string; tags: string[]; useWhen: string } }> }; error?: { code: string; message: string; category: string; recoverable: boolean; suggestion: string } }
 
-      const { matches } = response
+    if (!response.ok) {
+      throw response.error
+    }
 
-      if (matches.length === 0) {
-        console.log('No assets found.')
-        return
-      }
+    const matches = response.data?.matches || []
 
-      console.log(`Found ${matches.length} asset(s):\n`)
+    if (matches.length === 0) {
+      console.log('No assets found.')
+      return
+    }
 
-      console.log('NAME          TYPE       TAGS                USEWHEN')
-      console.log('─'.repeat(70))
+    console.log(`Found ${matches.length} asset(s):\n`)
 
-      for (const match of matches) {
-        const name = match.name.padEnd(12)
-        const type = match.type.padEnd(9)
-        const tags = JSON.stringify(match.semantics.tags).padEnd(18)
-        const useWhen = match.semantics.useWhen ? match.semantics.useWhen.substring(0, 30) + '...' : ''
-        console.log(`${name} ${type} ${tags} ${useWhen}`)
-      }
-    } catch (error) {
-      console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    console.log('NAME          TYPE       TAGS                USEWHEN')
+    console.log('─'.repeat(70))
+
+    for (const match of matches) {
+      const name = match.name.padEnd(12)
+      const type = match.type.padEnd(9)
+      const tags = JSON.stringify(match.semantics.tags).padEnd(18)
+      const useWhen = match.semantics.useWhen ? match.semantics.useWhen.substring(0, 30) + '...' : ''
+      console.log(`${name} ${type} ${tags} ${useWhen}`)
     }
   }
 })
