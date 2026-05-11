@@ -109,7 +109,7 @@ Error: Asset is not in DRAFT state
 
 **解决方案**：
 
-- 使用 `oxn standards list` 确认资产当前状态
+- 使用 `oxn arsenal list` 确认资产当前状态
 - 只有 DRAFT 目录下的资产可以 promote
 
 ---
@@ -135,7 +135,7 @@ oxn daemon status
 
 ---
 
-### Q7: `oxn standards promote` 无效
+### Q7: `oxn arsenal promote` 无效
 
 **症状**：
 
@@ -143,14 +143,14 @@ oxn daemon status
 Asset promoted successfully! (但资产仍在 DRAFT 目录)
 ```
 
-**原因**：`oxn standards promote` 是移动文件，不是复制。
+**原因**：`oxn arsenal promote` 是移动文件，不是复制。
 
 **解决方案**：
 
 1. 确认资产已被移动到 CANONICAL 目录：
 
 ```bash
-ls -la .openxenon/standards/proofs/CANONICAL/
+ls -la .openxenon/arsenal/proofs/CANONICAL/
 ```
 
 2. 如果原文件仍然存在，检查是否有权限问题
@@ -200,10 +200,10 @@ Draft 资产不会被其他任务引用，完成审查后及时 promote：
 
 ```bash
 # 审查
-oxn standards inspect standards/proofs/DRAFT/my-proof.yaml
+oxn arsenal inspect standards/proofs/DRAFT/my-proof.yaml
 
 # 转正
-oxn standards promote standards/proofs/DRAFT/my-proof.yaml
+oxn arsenal promote standards/proofs/DRAFT/my-proof.yaml
 ```
 
 ### 5. 保持 Blueprint 简洁
@@ -237,10 +237,10 @@ task:
 
 ```bash
 # 查看 Draft 资产
-oxn standards list DRAFT
+oxn arsenal list DRAFT
 
 # 清理不需要的 Draft
-rm .openxenon/standards/*/DRAFT/old-asset.yaml
+rm .openxenon/arsenal/*/DRAFT/old-asset.yaml
 ```
 
 ---
@@ -292,7 +292,7 @@ oxn force-pass <step-id>
 在 promote 之前，务必审查资产内容，防止恶意代码：
 
 ```bash
-oxn standards inspect <asset-path>
+oxn arsenal inspect <asset-path>
 ```
 
 ### 限制 Core 权限

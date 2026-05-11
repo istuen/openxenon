@@ -56,8 +56,12 @@ AI 会生成类似以下的 YAML：
 
 ```yaml
 type: fs_exists
-params:
-  path: target/file.txt
+description: "检查文件是否存在"
+parameters:
+  - name: path
+    type: string
+    required: true
+    description: "要检查的文件路径"
 ```
 
 #### 生成 Proof
@@ -70,12 +74,15 @@ AI 会生成类似以下的 YAML：
 
 ```yaml
 name: laravel_install_proof
-description: 验证 Laravel 安装成功
-target: Laravel 框架已成功安装
-proofs:
-  - check_composer_json
-  - check_laravel_dependency
-  - check_vendor_exists
+target:
+  description: "验证 Laravel 安装成功"
+spec:
+  description: "Laravel 框架已成功安装"
+probes:
+  - ref: check_composer_json
+    description: "检查 composer.json 存在"
+  - ref: check_vendor_exists
+    description: "检查 vendor 目录存在"
 ```
 
 #### 生成 Stage
@@ -87,8 +94,9 @@ proofs:
 AI 会生成类似以下的 YAML：
 
 ```yaml
+id: install-laravel
 name: install_laravel
-description: 安装 Laravel 项目骨架
+description: "安装 Laravel 项目骨架"
 proof: laravel_install_proof
 deps: []
 ```

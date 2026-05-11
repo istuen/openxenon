@@ -1,4 +1,4 @@
-# 3. CLI 命令参考
+# 4. CLI 命令参考
 
 ## oxn init
 
@@ -8,103 +8,72 @@
 oxn init
 ```
 
-**输出示例：**
+## oxn daemon
 
-```
-[OXN] 初始化项目围栏...
-[OXN] 项目围栏已创建: /path/to/project/.openxenon/
-[OXN] 初始化完成！
+管理全局 Core 引擎的生命周期。
+
+```bash
+oxn daemon start   # 启动 daemon
+oxn daemon stop    # 停止 daemon
+oxn daemon status  # 查看状态
 ```
 
 ## oxn task
 
-Task 相关命令的入口。
+任务管理命令的入口。
 
 ```bash
 oxn task <subcommand>
 ```
 
-### oxn task new
-
-输出 Task JSON 模板（不创建实际任务）。
-
-```bash
-oxn task new
-```
-
-### oxn task list
-
-列出所有已登记的任务。
-
-```bash
-oxn task list
-```
-
-### oxn task show
-
-查看指定任务的 Blueprint 内容。
-
-```bash
-oxn task show <task-id> [--project <path>]
-```
-
-**参数：**
-
-- `task-id`：任务 ID
-- `--project`：项目路径（默认：当前目录）
-
 ### oxn task submit
 
-提交任务到 Core 进行追踪。
+提交 Blueprint 创建任务。
 
 ```bash
-oxn task submit <task-id> [--project <path>]
+oxn task submit --blueprint <file>
 ```
 
 **参数：**
 
-- `task-id`：任务 ID
-- `--project`：项目路径（默认：当前目录）
-
-### oxn task status
-
-查询任务状态。
-
-```bash
-oxn task status <task-id> [--project <path>]
-```
-
-### oxn task start
-
-开始执行任务。
-
-```bash
-oxn task start <task-id> [--project <path>]
-```
-
-### oxn task stop
-
-停止执行任务。
-
-```bash
-oxn task stop <task-id> [--project <path>]
-```
+- `--blueprint <file>`：Blueprint YAML 文件路径（必需）
 
 ### oxn task next
 
-获取下一个待执行的 Stage。
+获取当前 Task 下一个待执行的 Stage。
 
 ```bash
-oxn task next <task-id> [--project <path>]
+oxn task next --task-id <id>
 ```
 
-### oxn task trace
+**参数：**
 
-获取任务执行轨迹。
+- `--task-id <id>`：任务 ID（必需）
+
+### oxn task verify
+
+提交 Stage 验证。
 
 ```bash
-oxn task trace <task-id> [--project <path>]
+oxn task verify --task-id <id> --stage-id <id>
 ```
+
+**参数：**
+
+- `--task-id <id>`：任务 ID（必需）
+- `--stage-id <id>`：Stage ID（必需）
+
+### oxn task status
+
+获取任务状态。
+
+```bash
+oxn task status --task-id <id>
+```
+
+**参数：**
+
+- `--task-id <id>`：任务 ID（必需）
 
 ## oxn arsenal
 
@@ -194,86 +163,84 @@ Asset promoted successfully!
   New Path: /home/user/.openxenon/arsenal/proofs/CANONICAL/laravel_install_proof.yaml
 ```
 
-## oxn prove
+### oxn arsenal search
 
-执行指定路径的 Proof 验证。
+搜索标准资产。
 
 ```bash
-oxn prove <proof-name> [--params <json>]
+oxn arsenal search <query>
+```
+
+### oxn arsenal export
+
+导出标准资产。
+
+```bash
+oxn arsenal export <asset-path>
+```
+
+### oxn arsenal import
+
+导入标准资产。
+
+```bash
+oxn arsenal import <file>
+```
+
+### oxn arsenal migrate
+
+迁移资产格式。
+
+```bash
+oxn arsenal migrate
+```
+
+## oxn forge
+
+锻造 Draft 标准资产。
+
+```bash
+oxn forge [probe|proof|stage|blueprint] --save <yaml> --name <name>
 ```
 
 **参数：**
 
-- `proof-name`：Proof 名称
-- `--params`：Proof 参数（JSON 格式）
+- `type`（可选）：元 Forge 类型，不指定则显示所有
+- `--save <yaml>`：直接保存 YAML 内容
+- `--name <name>`：资产名称
+- `--global`：保存到全局 Arsenal
 
 **示例：**
 
 ```bash
-oxn prove fs_exists --params '{"path": "package.json"}'
+# 显示所有元 Forge
+oxn forge
+
+# 生成 Probe 定义
+oxn forge probe --save 'type: fs_exists
+description: "检查文件存在"
+parameters:
+  - name: path
+    type: string
+    required: true
+    description: "文件路径"' --name check-file
 ```
 
-## oxn proof-list
+## oxn export
 
-列出所有可用的 Proof。
+导出数据。
 
 ```bash
-oxn proof-list
+oxn export
 ```
 
-## oxn trace
+## oxn gc
 
-查看当前任务的 task-trace.yaml 原始内容。
+清理垃圾数据。
 
 ```bash
-oxn trace [--project <path>]
+oxn gc
 ```
-
-## oxn inspect
-
-查看当前任务的 step-manifest.json 原始内容。
-
-```bash
-oxn inspect [--project <path>]
-```
-
-## oxn daemon
-
-管理全局 Core 引擎的生命周期。
-
-```bash
-oxn daemon start   # 启动 daemon
-oxn daemon stop   # 停止 daemon
-oxn daemon status  # 查看状态
-```
-
-## oxn migrate
-
-迁移旧版本数据库到新 Schema。
-
-```bash
-oxn migrate
-```
-
-## oxn force-pass
-
-强制通过指定步骤（仅用于 Proof 探针错误的情况）。
-
-```bash
-oxn force-pass <step-id> [--project <path>]
-```
-
-**警告**：此命令极其危险，可能导致工程契约失效。
-
-## oxn rollback
-
-回滚指定步骤。
-
-```bash
-oxn rollback <step-id> [--project <path>]
-```
-
-**警告**：此命令极其危险，可能导致数据丢失。
 
 ## 全局选项
 
@@ -284,4 +251,4 @@ oxn rollback <step-id> [--project <path>]
 
 ## 下一章
 
-下一章将介绍 [Arsenal 资产生成](./04-arsenal.md)。
+下一章将介绍 [Arsenal 资产生成](./05-arsenal.md)。

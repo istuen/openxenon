@@ -23,12 +23,17 @@ oxn init
 | 命令 | 描述 |
 |------|------|
 | `oxn daemon start` | 启动全局 Core |
+| `oxn daemon stop` | 停止全局 Core |
+| `oxn daemon status` | 查看 Core 状态 |
 | `oxn init` | 初始化项目围栏 |
-| `oxn task new <name>` | 创建任务 |
-| `oxn task submit <id>` | 提交任务到 Core |
-| `oxn task status <id>` | 查看任务状态 |
-| `oxn arsenal list` | 列出标准资产 |
-| `oxn arsenal promote <path>` | DRAFT → CANONICAL |
+| `oxn task submit --blueprint <file>` | 提交 Blueprint 创建任务 |
+| `oxn task next --task-id <id>` | 获取下一个 Stage |
+| `oxn task verify --task-id <id> --stage-id <id>` | 提交 Stage 验证 |
+| `oxn task status --task-id <id>` | 查看任务状态 |
+| `oxn arsenal list [DRAFT|CANONICAL]` | 列出标准资产 |
+| `oxn arsenal inspect <asset-path>` | 查看资产内容 |
+| `oxn arsenal promote <asset-path>` | DRAFT → CANONICAL |
+| `oxn forge [probe|proof|stage] --save <yaml> --name <name>` | 锻造 Draft 资产 |
 
 完整命令参考：[docs/manual/04-cli-ref.md](docs/manual/04-cli-ref.md)
 
