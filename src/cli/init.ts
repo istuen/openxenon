@@ -96,12 +96,19 @@ export default defineCommand({
       type: 'boolean',
       description: '初始化为沙箱模式',
       default: false
+    },
+    force: {
+      alias: 'f',
+      type: 'boolean',
+      description: '强制重新编译 Skills',
+      default: false
     }
   },
   async run(ctx) {
     const projectPath = process.cwd()
     const projectName = ctx.args.name || projectPath.split('/').pop() || 'unnamed'
     const sandbox = ctx.args.sandbox as boolean
+    const force = ctx.args.force as boolean
 
     try {
       console.log(`正在初始化项目: ${projectName}`)
@@ -135,7 +142,7 @@ export default defineCommand({
       console.log('')
       console.log('正在编译 Skill (适配器: opencode)...')
 
-      const report = compileAllSkills('opencode', projectPath, false)
+      const report = compileAllSkills('opencode', projectPath, force)
       console.log('')
       console.log(formatCompilationReport(report))
 

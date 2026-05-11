@@ -25,7 +25,7 @@ export function loadSkills(): OpenXenonSkill[] {
 
 function defaultRender(skill: OpenXenonSkill): string {
   return `---
-skill: ${skill.id}
+name: ${skill.id}
 description: ${skill.description}
 ---
 ${skill.instruction}
