@@ -16,6 +16,7 @@ export function validateStageInvocation(data: unknown): StageInvocation {
 export const StageDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  description: z.string(),
   proof: z.string(),
   deps: z.array(z.string()).optional()
 })

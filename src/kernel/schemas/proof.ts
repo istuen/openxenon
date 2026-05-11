@@ -15,6 +15,12 @@ export function validateProofInvocation(data: unknown): ProofInvocation {
   return ProofInvocationSchema.parse(data)
 }
 
+export const ProbeRefSchema = z.object({
+  ref: z.string(),
+  description: z.string(),
+  params: z.record(z.string(), z.unknown()).optional()
+})
+
 export const ProofDefinitionSchema = z.object({
   target: z.object({
     description: z.string()
@@ -23,7 +29,7 @@ export const ProofDefinitionSchema = z.object({
     description: z.string(),
     constraints: z.array(z.string()).optional()
   }),
-  probes: z.array(z.string())
+  probes: z.array(ProbeRefSchema)
 })
 
 export type ProofDefinition = z.infer<typeof ProofDefinitionSchema>

@@ -26,7 +26,7 @@ export const ParameterDefSchema = z.object({
   type: z.enum(['string', 'number', 'boolean']),
   required: z.boolean().optional().default(false),
   default: z.unknown().optional(),
-  description: z.string().optional()
+  description: z.string()
 })
 
 export const SemanticsSchema = z.object({

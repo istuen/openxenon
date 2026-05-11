@@ -1,7 +1,7 @@
 import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest } from '../errors'
-import { writeTaskStart, writeTaskStatus } from '../../trace/writer'
+import { writeTaskStart } from '../../trace/writer'
 import type { Blueprint } from '../../../kernel/schemas/blueprint.schema'
 import { randomUUID } from 'crypto'
 import { join } from 'path'
