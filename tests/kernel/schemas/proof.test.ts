@@ -46,7 +46,7 @@ describe('ProofDefinitionSchema', () => {
 
 describe('ProofInvocationSchema', () => {
   describe('合法 Invocation 通过校验', () => {
-    it('合法 Proof Invocation 通过校验', () => {
+    it('合法 Proof Invocation 通过校验（无 probeRefs）', () => {
       const input = {
         name: 'build-success',
         target: '构建成功'
@@ -54,17 +54,47 @@ describe('ProofInvocationSchema', () => {
       expect(() => ProofInvocationSchema.parse(input)).not.toThrow()
     })
 
-    it('带 probeRefs 的 Proof Invocation 通过校验', () => {
+    it('合法 Proof Invocation 通过校验（带内联 ProbeInvocation）', () => {
       const input = {
         name: 'build-success',
         target: '构建成功',
-        probeRefs: ['exec_exit_zero', 'fs_exists']
+        probeRefs: [{ type: 'fs_exists', params: { path: '/foo/bar' } }]
+      }
+      expect(() => ProofInvocationSchema.parse(input)).not.toThrow()
+    })
+
+    it('合法 Proof Invocation 通过校验（带多个内联 ProbeInvocation）', () => {
+      const input = {
+        name: 'build-success',
+        target: '构建成功',
+        probeRefs: [
+          { type: 'fs_exists', params: { path: '/foo' } },
+          { type: 'exec_exit_zero', params: { command: 'npm test' } }
+        ]
       }
       expect(() => ProofInvocationSchema.parse(input)).not.toThrow()
     })
   })
 
   describe('拒绝非法 Invocation', () => {
+    it('probeRefs 为 string 时抛出异常（旧格式）', () => {
+      const input = {
+        name: 'build-success',
+        target: '构建成功',
+        probeRefs: ['exec_exit_zero', 'fs_exists']
+      }
+      expect(() => ProofInvocationSchema.parse(input)).toThrow()
+    })
+
+    it('probeRefs 包含 Definition 格式时抛出异常', () => {
+      const input = {
+        name: 'build',
+        target: '构建',
+        probeRefs: [{ type: 'fs_exists', description: '检查', parameters: [] }]
+      }
+      expect(() => ProofInvocationSchema.parse(input)).toThrow()
+    })
+
     it('使用 Definition 格式时抛出异常', () => {
       const definitionInput = {
         target: { description: '验证构建成功' },

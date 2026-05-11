@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ProbeInvocationSchema } from './probe'
 
 export const ProofInvocationSchema = z.object({
   name: z.string(),
@@ -6,7 +7,7 @@ export const ProofInvocationSchema = z.object({
   target: z.string(),
   spec: z.string().optional(),
   action: z.string().optional(),
-  probeRefs: z.array(z.string()).optional()
+  probeRefs: z.array(ProbeInvocationSchema).optional()
 })
 
 export type ProofInvocation = z.infer<typeof ProofInvocationSchema>
