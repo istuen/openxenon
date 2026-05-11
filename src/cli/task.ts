@@ -1,22 +1,15 @@
 import { defineCommand } from 'citty'
-import { readFileSync } from 'fs'
-import { parse as parseYaml } from 'yaml'
-import { sendToDaemon } from './socket-client'
-import { isDaemonRunning } from '../daemon/process'
-import { DAEMON_SOCK_PATH } from '../infra/global'
-import { OxnErrorCode, ErrorCategory } from '../kernel/enums'
+import { existsSync } from 'fs'
+import { taskSubmit, taskNext, taskVerify, taskStatus, type SubmitResult, type NextResult, type VerifyResult, type StatusResult } from './task-filesystem'
+import { BOUNDARY_DIR } from '../kernel/constants'
+import { join } from 'path'
 
-async function ensureDaemonRunning(): Promise<void> {
-  const { isRunning } = isDaemonRunning()
-  if (!isRunning) {
-    throw {
-      code: OxnErrorCode.SOCKET_REFUSED,
-      message: 'Daemon 未运行',
-      category: ErrorCategory.INFRA,
-      recoverable: true,
-      suggestion: `请先执行 oxn daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`
-    }
-  }
+function getProjectRoot(): string {
+  return process.cwd()
+}
+
+function projectBoundaryExists(): boolean {
+  return existsSync(join(getProjectRoot(), BOUNDARY_DIR))
 }
 
 export default defineCommand({
@@ -38,33 +31,33 @@ export default defineCommand({
           description: 'Blueprint YAML 文件路径'
         }
       },
-      async run(ctx) {
+      run(ctx) {
         try {
-          await ensureDaemonRunning()
-
-          const blueprintPath = ctx.args.blueprint as string
-          const content = readFileSync(blueprintPath, 'utf-8')
-          const parsed = parseYaml(content)
-
-          const result = await sendToDaemon({
-            method: 'POST',
-            path: '/api/v1/task/submit',
-            body: { task: parsed.name || 'unnamed', blueprint: parsed }
-          }) as { taskId?: string; status?: string; error?: string; message?: string }
-
-          if (result.error) {
-            console.log(JSON.stringify({ ok: false, error: { code: 'OXN_TASK_SUBMIT_FAILED', message: result.message || result.error } }))
+          if (!projectBoundaryExists()) {
+            console.log(JSON.stringify({
+              ok: false,
+              error: {
+                code: 'OXN_NO_PROJECT',
+                message: '项目未初始化，请先执行 oxn init',
+                suggestion: '在项目根目录执行 oxn init'
+              }
+            }))
             return
           }
 
+          const blueprintPath = ctx.args.blueprint as string
+          const result = taskSubmit(blueprintPath, getProjectRoot()) as SubmitResult
+
           console.log(JSON.stringify({ ok: true, data: result }))
         } catch (err: unknown) {
-          const error = err as { code?: string; message?: string }
-          if (error.code) {
-            console.log(JSON.stringify({ ok: false, error }))
-          } else {
-            console.log(JSON.stringify({ ok: false, error: { code: OxnErrorCode.UNKNOWN, message: String(err) } }))
-          }
+          const error = err as Error
+          console.log(JSON.stringify({
+            ok: false,
+            error: {
+              code: 'OXN_TASK_SUBMIT_FAILED',
+              message: error.message || String(err)
+            }
+          }))
         }
       }
     }),
@@ -81,30 +74,33 @@ export default defineCommand({
           description: '任务 ID'
         }
       },
-      async run(ctx) {
+      run(ctx) {
         try {
-          await ensureDaemonRunning()
-
-          const taskId = ctx.args['task-id'] as string
-
-          const result = await sendToDaemon({
-            method: 'GET',
-            path: `/api/v1/task/next?taskId=${encodeURIComponent(taskId)}`
-          }) as { stageId?: string; status?: string; error?: string; message?: string }
-
-          if (result.error) {
-            console.log(JSON.stringify({ ok: false, error: { code: 'OXN_TASK_NEXT_FAILED', message: result.message || result.error } }))
+          if (!projectBoundaryExists()) {
+            console.log(JSON.stringify({
+              ok: false,
+              error: {
+                code: 'OXN_NO_PROJECT',
+                message: '项目未初始化，请先执行 oxn init',
+                suggestion: '在项目根目录执行 oxn init'
+              }
+            }))
             return
           }
 
+          const taskId = ctx.args['task-id'] as string
+          const result = taskNext(taskId, getProjectRoot()) as NextResult
+
           console.log(JSON.stringify({ ok: true, data: result }))
         } catch (err: unknown) {
-          const error = err as { code?: string; message?: string }
-          if (error.code) {
-            console.log(JSON.stringify({ ok: false, error }))
-          } else {
-            console.log(JSON.stringify({ ok: false, error: { code: OxnErrorCode.UNKNOWN, message: String(err) } }))
-          }
+          const error = err as Error
+          console.log(JSON.stringify({
+            ok: false,
+            error: {
+              code: 'OXN_TASK_NEXT_FAILED',
+              message: error.message || String(err)
+            }
+          }))
         }
       }
     }),
@@ -129,30 +125,32 @@ export default defineCommand({
       },
       async run(ctx) {
         try {
-          await ensureDaemonRunning()
-
-          const taskId = ctx.args['task-id'] as string
-          const stageId = ctx.args['stage-id'] as string
-
-          const result = await sendToDaemon({
-            method: 'POST',
-            path: '/api/v1/step/verify',
-            body: { taskId, stageId }
-          }) as { passed?: boolean; verdict?: string; error?: string; message?: string }
-
-          if (result.error) {
-            console.log(JSON.stringify({ ok: false, error: { code: 'OXN_STEP_VERIFY_FAILED', message: result.message || result.error } }))
+          if (!projectBoundaryExists()) {
+            console.log(JSON.stringify({
+              ok: false,
+              error: {
+                code: 'OXN_NO_PROJECT',
+                message: '项目未初始化，请先执行 oxn init',
+                suggestion: '在项目根目录执行 oxn init'
+              }
+            }))
             return
           }
 
+          const taskId = ctx.args['task-id'] as string
+          const stageId = ctx.args['stage-id'] as string
+          const result = await taskVerify(taskId, stageId, getProjectRoot()) as VerifyResult
+
           console.log(JSON.stringify({ ok: true, data: result }))
         } catch (err: unknown) {
-          const error = err as { code?: string; message?: string }
-          if (error.code) {
-            console.log(JSON.stringify({ ok: false, error }))
-          } else {
-            console.log(JSON.stringify({ ok: false, error: { code: OxnErrorCode.UNKNOWN, message: String(err) } }))
-          }
+          const error = err as Error
+          console.log(JSON.stringify({
+            ok: false,
+            error: {
+              code: 'OXN_STEP_VERIFY_FAILED',
+              message: error.message || String(err)
+            }
+          }))
         }
       }
     }),
@@ -169,35 +167,38 @@ export default defineCommand({
           description: '任务 ID'
         }
       },
-      async run(ctx) {
+      run(ctx) {
         try {
-          await ensureDaemonRunning()
-
-          const taskId = ctx.args['task-id'] as string
-
-          const result = await sendToDaemon({
-            method: 'GET',
-            path: `/api/v1/task/status?taskId=${encodeURIComponent(taskId)}`
-          }) as { status?: string; error?: string; message?: string }
-
-          if (result.error) {
-            console.log(JSON.stringify({ ok: false, error: { code: 'OXN_TASK_STATUS_FAILED', message: result.message || result.error } }))
+          if (!projectBoundaryExists()) {
+            console.log(JSON.stringify({
+              ok: false,
+              error: {
+                code: 'OXN_NO_PROJECT',
+                message: '项目未初始化，请先执行 oxn init',
+                suggestion: '在项目根目录执行 oxn init'
+              }
+            }))
             return
           }
 
+          const taskId = ctx.args['task-id'] as string
+          const result = taskStatus(taskId, getProjectRoot()) as StatusResult
+
           console.log(JSON.stringify({ ok: true, data: result }))
         } catch (err: unknown) {
-          const error = err as { code?: string; message?: string }
-          if (error.code) {
-            console.log(JSON.stringify({ ok: false, error }))
-          } else {
-            console.log(JSON.stringify({ ok: false, error: { code: OxnErrorCode.UNKNOWN, message: String(err) } }))
-          }
+          const error = err as Error
+          console.log(JSON.stringify({
+            ok: false,
+            error: {
+              code: 'OXN_TASK_STATUS_FAILED',
+              message: error.message || String(err)
+            }
+          }))
         }
       }
     })
   },
-  async run() {
+  run() {
     console.log('使用 oxn task <subcommand> 查看可用子命令')
     console.log('子命令: submit, next, verify, status')
   }
