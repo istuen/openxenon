@@ -5,10 +5,12 @@ OpenXenon 是一个面向大语言模型的工程化控制引擎，通过"综合
 ## 目录
 
 - [1. 系统介绍](./01-intro.md) - OpenXenon 简介和核心价值
-- [2. 核心概念](./02-concepts.md) - Blueprint、Arsenal、Stage、Proof
-- [3. CLI 命令参考](./03-cli.md) - 所有命令的完整用法
-- [4. Arsenal 资产生成](./04-arsenal.md) - /oxn-forge → Draft → CANONICAL 流程
-- [5. 故障排查](./05-troubleshooting.md) - 常见问题解答
+- [2. 核心概念](./02-concepts.md) - Blueprint、Arsenal、Stage、Proof + 术语表
+- [3. 完整生命周期](./03-lifecycle.md) - 交互流程 + Mermaid 流程图
+- [4. CLI 命令参考](./04-cli-ref.md) - 所有命令的完整用法
+- [5. Arsenal 资产生成](./05-arsenal.md) - /oxn-forge → Draft → CANONICAL 流程
+- [6. 故障排查](./06-troubleshooting.md) - 常见问题解答
+- [7. 从源码构建](./07-dev.md) - 开发环境配置和贡献指南
 
 ## 快速开始
 
