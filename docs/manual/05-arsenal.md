@@ -150,11 +150,17 @@ oxn arsenal promote arsenal/proofs/DRAFT/laravel_install_proof.yaml
 
 ```yaml
 name: laravel_install_proof
-description: 验证 Laravel 安装成功
-proofs:
-  - check_composer_json       # 检查 composer.json 存在
-  - check_laravel_dependency  # 检查包含 laravel 依赖
-  - check_vendor_exists       # 检查 vendor 目录存在
+target:
+  description: "验证 Laravel 安装成功"
+spec:
+  description: "Laravel 框架已成功安装"
+probes:
+  - ref: check_composer_json
+    description: "检查 composer.json 存在"
+  - ref: check_laravel_dependency
+    description: "检查包含 laravel 依赖"
+  - ref: check_vendor_exists
+    description: "检查 vendor 目录存在"
 ```
 
 ## 目录结构

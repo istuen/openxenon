@@ -4,6 +4,8 @@
 
 Blueprint 是 OpenXenon 中的"工程图"，定义了任务的完整结构。
 
+> **注意**：以下为简化示例。完整的 Blueprint Schema 尚未定义，proof 字段格式将在 BlueprintSchema 定义后更新。
+
 ### Blueprint 结构
 
 ```yaml

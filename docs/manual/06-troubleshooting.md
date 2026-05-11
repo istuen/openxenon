@@ -30,7 +30,7 @@ sudo chown -R $(whoami) ~/.openxenon
 
 ```
 Error: Blueprint not found for task: my-task
-Please create the task first with 'oxn task new my-task'.
+请先使用 `oxn task submit --blueprint <file>` 提交 Blueprint。
 ```
 
 **原因**：任务尚未创建或 Blueprint 文件不存在。
@@ -162,9 +162,8 @@ ls -la .openxenon/arsenal/proofs/CANONICAL/
 ### 1. 任务创建后立即提交
 
 ```bash
-# 创建任务后立即提交，避免 Blueprint 丢失
-oxn task new my-task
-oxn task submit my-task
+# 提交 Blueprint 创建任务
+oxn task submit --blueprint <blueprint-file>
 ```
 
 ### 2. 使用绝对路径
@@ -200,10 +199,10 @@ Draft 资产不会被其他任务引用，完成审查后及时 promote：
 
 ```bash
 # 审查
-oxn arsenal inspect standards/proofs/DRAFT/my-proof.yaml
+oxn arsenal inspect arsenal/proofs/DRAFT/my-proof.yaml
 
 # 转正
-oxn arsenal promote standards/proofs/DRAFT/my-proof.yaml
+oxn arsenal promote arsenal/proofs/DRAFT/my-proof.yaml
 ```
 
 ### 5. 保持 Blueprint 简洁

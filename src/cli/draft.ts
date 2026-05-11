@@ -17,11 +17,11 @@ function getTypeFromContent(content: string): AssetType | null {
   try {
     const parsed = JSON.parse(content)
     if (parsed.type === 'fs_exists' || parsed.type === 'fs_content_match' || parsed.type === 'exec_exit_zero') return 'probes'
-    if (parsed.proofs || parsed.probeRefs) return 'proofs'
+    if (parsed.probes || parsed.probeRefs) return 'proofs'
     if (parsed.proof || parsed.deps) return 'stages'
   } catch {
     if (content.includes('type:') && content.includes('fs_exists')) return 'probes'
-    if (content.includes('proofRefs:') || content.includes('proofs:')) return 'proofs'
+    if (content.includes('probeRefs:') || content.includes('probes:')) return 'proofs'
     if (content.includes('proof:') || content.includes('deps:')) return 'stages'
   }
   return null
