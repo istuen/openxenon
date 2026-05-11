@@ -20,38 +20,59 @@ oxn daemon start
 
 如果 daemon 已运行则跳过此步骤。
 
-## 步骤 2：申请可用探针与空白 Blueprint
+## 步骤 2：搜索可用资产
 
-使用 CLI 命令获取可用 Proof 探针列表：
+使用 CLI 命令搜索可用的 Stage/Probe 资产：
 
 \`\`\`bash
-oxn api proofs-list
+oxn arsenal search <关键词>
 \`\`\`
 
-该命令返回当前项目可用的 Proof 探针列表。
+该命令返回当前项目可用的 Arsenal 资产列表。
 
 ## 步骤 3：拆解任务
 
-基于用户需求和返回的探针列表，按照 Target State 理念拆解任务：
+基于用户需求和可用资产列表，按照 Target State 理念拆解任务：
 
 1. 确定最终目标状态（Target State）
 2. 逆向推导所需的中间 Stage
-3. 为每个 Stage 绑定合适的 Proof 探针
+3. 为每个 Stage 选择合适的 Probe
 
-## 步骤 4：提交 Blueprint
+## 步骤 4：编写 Blueprint
 
-将填充好的 Blueprint 提交给 Core 进行预验证：
+将 Blueprint 保存为 YAML 文件（如 \`my-task.yaml\`），包含：
+- 任务名称
+- 各个 Stage 的定义和依赖关系
+- 每个 Stage 对应的 Probe
+
+## 步骤 5：提交 Blueprint
+
+将填充好的 Blueprint 提交给 Daemon：
 
 \`\`\`bash
-oxn api task-submit \\
-  --task "<任务描述>" \\
-  --steps '[{"name":"<Stage 名称>","spec":"<约束规范>","proof":"<探针名称>"}]'
+oxn task submit --blueprint <path-to-blueprint.yaml>
 \`\`\`
 
-## 步骤 5：处理预验证结果
+该命令会创建任务并返回 taskId。
 
-- 若返回 \`PREVALIDATED\`：进入执行循环，开始执行第一个 Stage
-- 若返回 \`REJECTED\`：依据 error 信息修正 Blueprint 后重新提交
+## 步骤 6：获取下一个 Stage
+
+\`\`\`bash
+oxn task next --task-id <taskId>
+\`\`\`
+
+## 步骤 7：执行并验证
+
+1. AI 执行 Stage 定义的工作
+2. 执行完成后，提交验证：
+
+\`\`\`bash
+oxn task verify --task-id <taskId> --stage-id <stageId>
+\`\`\`
+
+## 步骤 8：循环直到完成
+
+重复步骤 6-7，直到所有 Stage 通过验证。
 
 ## 绝对禁止
 

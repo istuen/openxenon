@@ -11,13 +11,13 @@ export const oxnStatusSkill: OpenXenonSkill = {
 
 ## 步骤 1：查询任务状态
 
-使用 CLI 命令查询当前活跃任务状态：
+使用 CLI 命令查询任务状态：
 
 \`\`\`bash
-oxn api task-status --task-id <任务ID>
+oxn task status --task-id <任务ID>
 \`\`\`
 
-如果不知道任务 ID，先使用 \`oxn inspect\` 获取。
+如果不知道任务 ID，先使用 \`oxn task list\` 获取。
 
 ## 步骤 2：解读状态并报告
 

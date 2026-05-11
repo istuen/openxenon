@@ -69,13 +69,28 @@ export const oxnForgeSkill: OpenXenonSkill = {
    - Stage（工序节点）：包含 Proof 和执行顺序
 
 2. 通过 CLI 获取元蓝图约束：
-   - 执行 'oxn forge <type>' 获取对应类型的元蓝图
+   \`\`\`bash
+   oxn forge <type>
+   \`\`\`
    - type 可选值: probe, proof, stage, blueprint
    - 例如: oxn forge probe
 
 3. 根据元蓝图约束生成资产 YAML
 
-4. 调用 createDraftFromYaml 保存到 .openxenon/arsenals/<type>/<name>/draft.yaml
+4. 使用 \`--save\` 保存到 Draft：
+   \`\`\`bash
+   oxn forge <type> --save '<yaml内容>' --name <资产名称>
+   \`\`\`
+   - 添加 \`--global\` 参数可保存到全局 Arsenal
+   - 例如:
+     \`\`\`bash
+     oxn forge probe --save 'type: fs_exists
+description: "检查 Redis 配置文件"
+parameters:
+  - name: pattern
+    type: string
+    required: true' --name redis-config-check
+     \`\`\`
 
 约束：
 - 只生成 DRAFT 状态的资产

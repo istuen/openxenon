@@ -11,13 +11,13 @@ export const oxnInitSkill: OpenXenonSkill = {
 
 ## 步骤 1：检查当前环境
 
- 在终端执行以下命令检查是否已在 OpenXenon 管理下：
+ 在终端执行以下命令检查 Daemon 是否在运行：
 
-\`\`\`bash
-oxn status
-\`\`\`
+ \`\`\`bash
+ oxn daemon status
+ \`\`\`
 
- 如果返回错误，说明项目尚未初始化。
+ 如果返回"Damon 未运行"，说明需要先启动 Daemon。
 
 ## 步骤 2：初始化项目围栏
 
@@ -36,11 +36,11 @@ oxn init
 
  执行以下命令验证：
 
-\`\`\`bash
-oxn status
-\`\`\`
+ \`\`\`bash
+ oxn daemon status
+ \`\`\`
 
- 应返回当前项目的状态信息。
+ 应返回 Daemon 的运行状态。
 
 ## 步骤 4：通知工程师
 
