@@ -5,31 +5,49 @@ import { parse as parseYaml } from 'yaml'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { createDraftFromYaml } from './draft'
 import type { Scope } from '../arsenals/loader'
+import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
 
-const META_FORGE_NAMES = {
+type ForgeType = 'probe' | 'proof' | 'stage' | 'blueprint'
+
+const META_FORGE_NAMES: Record<ForgeType, BuiltinForgeName> = {
   probe: 'meta-probe',
   proof: 'meta-proof',
   stage: 'meta-stage',
   blueprint: 'meta-blueprint'
-} as const
+}
 
-type ForgeType = keyof typeof META_FORGE_NAMES
+function tryLoadForgeFile(path: string, fallbackName: string): { name: string, constraints: string[] } | null {
+  if (!existsSync(path)) return null
+  try {
+    const content = readFileSync(path, 'utf-8')
+    const parsed = parseYaml(content)
+    return {
+      name: parsed.name || fallbackName,
+      constraints: parsed.stages?.[0]?.proof?.spec?.constraints || []
+    }
+  } catch {
+    return null
+  }
+}
 
 function loadMetaForge(type: ForgeType): { name: string, constraints: string[] } | null {
-  const projectBoundary = join(process.cwd(), BOUNDARY_DIR)
-  const name = META_FORGE_NAMES[type]
-  const forgePath = join(projectBoundary, 'arsenals', 'forges', name, 'canonical.yaml')
+  const builtinName = META_FORGE_NAMES[type]
+  const relPath = join('forges', builtinName, 'canonical.yaml')
 
-  if (existsSync(forgePath)) {
-    try {
-      const content = readFileSync(forgePath, 'utf-8')
-      const parsed = parseYaml(content)
-      return {
-        name: parsed.name || name,
-        constraints: parsed.stages?.[0]?.proof?.spec?.constraints || []
-      }
-    } catch {
-      return null
+  const projectPath = join(process.cwd(), BOUNDARY_DIR, 'arsenals', relPath)
+  const r1 = tryLoadForgeFile(projectPath, builtinName)
+  if (r1) return r1
+
+  const homeDir = process.env.HOME || process.env.USERPROFILE || '~'
+  const globalPath = join(homeDir, '.openxenon', 'arsenals', relPath)
+  const r2 = tryLoadForgeFile(globalPath, builtinName)
+  if (r2) return r2
+
+  const builtin = BUILTIN_FORGES[builtinName]
+  if (builtin) {
+    return {
+      name: builtin.name,
+      constraints: [...(builtin.stages?.[0]?.proof?.spec?.constraints || [])]
     }
   }
 

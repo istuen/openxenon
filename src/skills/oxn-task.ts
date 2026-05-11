@@ -9,22 +9,20 @@ export const oxnTaskSkill: OpenXenonSkill = {
 
 当你收到 \`/oxn-task <需求>\` 指令时，必须严格按以下步骤执行，禁止自由发挥。
 
-## 步骤 1：确保 Daemon 运行
+## 步骤 1：初始化项目围栏（如需要）
 
-在终端执行以下命令确保 Core daemon 正在运行：
+在终端执行以下命令确保项目围栏存在：
 
 \`\`\`bash
-oxn daemon start
+oxn init
 \`\`\`
 
-如果 daemon 已运行则跳过此步骤。
+## 步骤 2：列出可用资产
 
-## 步骤 2：搜索可用资产
-
-使用 CLI 命令搜索可用的 Stage/Probe 资产：
+使用 CLI 命令列出可用的 Stage/Probe 资产：
 
 \`\`\`bash
-oxn arsenal search <关键词>
+oxn arsenal list
 \`\`\`
 
 该命令返回当前项目可用的 Arsenal 资产列表。
@@ -46,7 +44,7 @@ oxn arsenal search <关键词>
 
 ## 步骤 5：提交 Blueprint
 
-将填充好的 Blueprint 提交给 Daemon：
+将填充好的 Blueprint 提交：
 
 \`\`\`bash
 oxn task submit --blueprint <path-to-blueprint.yaml>

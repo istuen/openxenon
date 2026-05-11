@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "dev": "bun run src/cli.ts",
-    "build": "bun build ./src/cli.ts --compile --outfile dist/oxn",
+    "build": "bun build ./src/cli.ts --compile --outfile dist/oxn && cp -r src/arsenals dist/arsenals",
     "build:all": "bun run build:linux && bun run build:macos && bun run build:windows",
     "build:linux": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile dist/oxn-linux",
     "build:macos": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile dist/oxn-macos",

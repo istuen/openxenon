@@ -1,8 +1,9 @@
 import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync } from 'fs'
 import { join, extname, dirname, basename } from 'path'
 import { type AssetState, type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
+import { BUILTIN_PROBES, BUILTIN_PROOFS } from '../arsenals/builtin'
 
-export type Scope = 'project' | 'global' | 'fallback'
+export type Scope = 'project' | 'global' | 'fallback' | 'builtin'
 
 export interface StandardAsset {
   name: string
@@ -127,8 +128,39 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
     return assets
   }
 
+  function scanBuiltin(type: AssetType, state: AssetState): StandardAsset[] {
+    if (state !== 'canonical') return []
+
+    const assets: StandardAsset[] = []
+
+    if (type === 'probes') {
+      for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
+        assets.push({
+          name,
+          type: 'probes' as AssetType,
+          state: 'canonical' as AssetState,
+          path: `builtin:${name}`,
+          content: JSON.stringify(def)
+        })
+      }
+    } else if (type === 'proofs') {
+      for (const [name, def] of Object.entries(BUILTIN_PROOFS)) {
+        assets.push({
+          name,
+          type: 'proofs' as AssetType,
+          state: 'canonical' as AssetState,
+          path: `builtin:${name}`,
+          content: JSON.stringify(def)
+        })
+      }
+    }
+
+    return assets
+  }
+
   let projectAssets: StandardAsset[] = []
   let globalAssets: StandardAsset[] = []
+  let builtinAssets: StandardAsset[] = []
 
   if (scope === 'project' || scope === 'fallback') {
     projectAssets = scanProject(type, state)
@@ -136,8 +168,11 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
   if (scope === 'global' || (scope === 'fallback' && projectAssets.length === 0)) {
     globalAssets = scanGlobal(type, state)
   }
+  if (scope === 'builtin' || (scope === 'fallback' && globalAssets.length === 0)) {
+    builtinAssets = scanBuiltin(type, state)
+  }
 
-  const allAssets = [...projectAssets, ...globalAssets]
+  const allAssets = [...projectAssets, ...globalAssets, ...builtinAssets]
   const seen = new Set<string>()
   return allAssets.filter(asset => {
     if (seen.has(asset.path)) return false

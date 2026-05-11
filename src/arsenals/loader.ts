@@ -1,4 +1,5 @@
-export type { Scope, StandardAsset } from '../infra/loader'
+export type { StandardAsset } from '../infra/loader'
+export type { Scope } from '../infra/loader'
 import type { AssetType } from './paths'
 
 import { getProjectBoundaryPath } from '../kernel'
@@ -6,7 +7,7 @@ import { listStandards, loadStandardByName, promoteStandard, loadStandardByPath,
 
 const getProjectBoundary = (): string => getProjectBoundaryPath(process.cwd())
 
-export const arsenalListStandards = (state?: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback') => {
+export const arsenalListStandards = (state?: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
   return listStandards(getProjectBoundary(), state, scope)
 }
 
@@ -19,11 +20,11 @@ export {
   loadStandardByPath
 }
 
-export const arsenalLoadArsenalsByState = (state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback') => {
+export const arsenalLoadArsenalsByState = (state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
   return loadArsenalsByState(getProjectBoundary(), state, scope)
 }
 
-export const arsenalLoadArsenalsByTypeAndState = (type: AssetType, state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback') => {
+export const arsenalLoadArsenalsByTypeAndState = (type: AssetType, state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
   return loadArsenalsByTypeAndState(getProjectBoundary(), type, state, scope)
 }
 
