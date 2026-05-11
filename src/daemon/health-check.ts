@@ -61,7 +61,7 @@ export async function waitForHealth(
             try {
               const response = JSON.parse(line)
               daemonLogger.info(`Health check response: ${JSON.stringify(response)}`)
-              if (response.status === 200 && response.body?.status === 'ok') {
+              if (response.ok === true && response.data?.status === 'ok') {
                 const elapsedMs = Date.now() - start
                 daemonLogger.info(`Daemon health check passed in ${elapsedMs}ms`)
                 clearTimeout(timeoutId)

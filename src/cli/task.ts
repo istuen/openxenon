@@ -89,8 +89,7 @@ export default defineCommand({
 
           const result = await sendToDaemon({
             method: 'GET',
-            path: '/api/v1/task/next',
-            body: { taskId }
+            path: `/api/v1/task/next?taskId=${encodeURIComponent(taskId)}`
           }) as { stageId?: string; status?: string; error?: string; message?: string }
 
           if (result.error) {
@@ -178,8 +177,7 @@ export default defineCommand({
 
           const result = await sendToDaemon({
             method: 'GET',
-            path: '/api/v1/task/status',
-            body: { taskId }
+            path: `/api/v1/task/status?taskId=${encodeURIComponent(taskId)}`
           }) as { status?: string; error?: string; message?: string }
 
           if (result.error) {

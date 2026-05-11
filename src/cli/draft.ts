@@ -1,7 +1,7 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
-import { validateProbe, validateProof, validateStage } from '../kernel/schemas'
+import { validateProbeDefinition, validateProofDefinition, validateStageDefinition } from '../kernel/schemas'
 import { type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { Scope } from '../arsenals/loader'
@@ -16,7 +16,7 @@ export interface DraftAssetResult {
 function getTypeFromContent(content: string): AssetType | null {
   try {
     const parsed = JSON.parse(content)
-    if (parsed.type === 'probe' || parsed.probe) return 'probes'
+    if (parsed.type === 'fs_exists' || parsed.type === 'fs_content_match' || parsed.type === 'exec_exit_zero') return 'probes'
     if (parsed.proofs || parsed.probeRefs) return 'proofs'
     if (parsed.proof || parsed.deps) return 'stages'
   } catch {
@@ -64,7 +64,7 @@ function saveDraftAsset(type: AssetType, name: string | undefined, content: stri
 export function createDraftProbe(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
-    validateProbe(parsed)
+    validateProbeDefinition(parsed)
   } catch {
     return { success: false, error: 'Invalid probe structure' }
   }
@@ -75,7 +75,7 @@ export function createDraftProbe(content: string, name?: string, scope: Scope = 
 export function createDraftProof(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
-    validateProof(parsed)
+    validateProofDefinition(parsed)
   } catch {
     return { success: false, error: 'Invalid proof structure' }
   }
@@ -86,7 +86,7 @@ export function createDraftProof(content: string, name?: string, scope: Scope = 
 export function createDraftStage(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
-    validateStage(parsed)
+    validateStageDefinition(parsed)
   } catch {
     return { success: false, error: 'Invalid stage structure' }
   }

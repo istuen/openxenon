@@ -47,18 +47,12 @@ async function handleTaskSubmit(
       taskName
     )
 
-    writeTaskStatus(
-      { root: taskDir, taskId, blueprintPath, tracePath: join(taskDir, 'task-trace.yaml'), manifestPath: join(taskDir, 'step-manifest.json') },
-      taskId,
-      'PENDING'
-    )
-
     return new Response(
       JSON.stringify({
         taskId: taskId,
         blueprintId: taskId,
         blueprintFile: `tasks/${taskId}/${BLUEPRINT_FILE}`,
-        status: 'PENDING',
+        status: 'RUNNING',
         stagesCount: blueprintInput.stages?.length || 0,
         message: 'Task created successfully'
       }),

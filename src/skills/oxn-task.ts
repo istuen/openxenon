@@ -1,10 +1,9 @@
 import type { OpenXenonSkill } from './types'
-import type { Stage } from '../kernel/lib/types/stage'
 
 export const oxnTaskSkill: OpenXenonSkill = {
   id: 'oxn-task',
   description: '发起 OpenXenon 任务，依据 Target State 拆解并提交 Blueprint',
-  instruction: `# \`/oxn-task\` — 发起 OpenXenon 任务
+  instruction: `# /oxn-task — 发起 OpenXenon 任务
 
 ## 行为约束
 
@@ -81,16 +80,7 @@ oxn task verify --task-id <taskId> --stage-id <stageId>
 - 禁止在未通过 Core 验证的情况下自行推进任务
 `,
   examples: {
-    stage_example: {
-      id: 'stage_1',
-      name: '定义数据模型',
-      spec: { constraints: ['必须使用 TypeScript 接口定义 User 类型'] },
-      proof: 'fs-content-match',
-    } as unknown as Stage,
-    target_state: {
-      type: 'file_content',
-      path: 'src/types/user.ts',
-      must_contain: 'export interface User',
-    },
+    '提交任务': '/oxn-task 部署 Laravel 应用',
+    '查看状态': '/oxn-task 查看部署进度',
   },
 }

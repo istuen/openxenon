@@ -7,6 +7,33 @@ export interface ParsedBlueprint {
 }
 
 export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
+  const trimmed = yaml.trim()
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      return {
+        id: parsed.id || '',
+        name: parsed.name || '',
+        stages: (parsed.stages || []).map((s: any) => ({
+          id: s.id || '',
+          name: s.name || '',
+          deps: s.deps || [],
+          proof: {
+            target: { description: s.proof?.target?.description || '' },
+            spec: { description: s.proof?.spec?.description || '' },
+            probes: (s.proof?.probes || []).map((p: any) => ({
+              type: p.type || '',
+              ...(p.params?.path ? { pattern: p.params.path } : {}),
+              ...(p.params?.command ? { command: p.params.command } : {})
+            }))
+          }
+        }))
+      }
+    } catch {
+      // Fall through to YAML parser
+    }
+  }
+
   const lines = yaml.split('\n')
   let id = ''
   let name = ''

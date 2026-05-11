@@ -1,14 +1,33 @@
 import { z } from 'zod'
 
-export const StageSchema = z.object({
+export const StageInvocationSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   proof: z.string(),
   deps: z.array(z.string()).optional()
 })
 
-export type Stage = z.infer<typeof StageSchema>
+export type StageInvocation = z.infer<typeof StageInvocationSchema>
+
+export function validateStageInvocation(data: unknown): StageInvocation {
+  return StageInvocationSchema.parse(data)
+}
+
+export const StageDefinitionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  proof: z.string(),
+  deps: z.array(z.string()).optional()
+})
+
+export type StageDefinition = z.infer<typeof StageDefinitionSchema>
+
+export function validateStageDefinition(data: unknown): StageDefinition {
+  return StageDefinitionSchema.parse(data)
+}
+
+export type Stage = z.infer<typeof StageInvocationSchema>
 
 export function validateStage(data: unknown): Stage {
-  return StageSchema.parse(data)
+  return StageInvocationSchema.parse(data)
 }

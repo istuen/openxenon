@@ -1,17 +1,39 @@
 import { z } from 'zod'
 
-export const ProofSchema = z.object({
+export const ProofInvocationSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
   target: z.string(),
   spec: z.string().optional(),
   action: z.string().optional(),
-  proofs: z.array(z.string()).optional(),
   probeRefs: z.array(z.string()).optional()
 })
 
-export type Proof = z.infer<typeof ProofSchema>
+export type ProofInvocation = z.infer<typeof ProofInvocationSchema>
+
+export function validateProofInvocation(data: unknown): ProofInvocation {
+  return ProofInvocationSchema.parse(data)
+}
+
+export const ProofDefinitionSchema = z.object({
+  target: z.object({
+    description: z.string()
+  }),
+  spec: z.object({
+    description: z.string(),
+    constraints: z.array(z.string()).optional()
+  }),
+  probes: z.array(z.string())
+})
+
+export type ProofDefinition = z.infer<typeof ProofDefinitionSchema>
+
+export function validateProofDefinition(data: unknown): ProofDefinition {
+  return ProofDefinitionSchema.parse(data)
+}
+
+export type Proof = z.infer<typeof ProofInvocationSchema>
 
 export function validateProof(data: unknown): Proof {
-  return ProofSchema.parse(data)
+  return ProofInvocationSchema.parse(data)
 }
