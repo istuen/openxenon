@@ -68,7 +68,7 @@ oxn task verify --task-id abc123 --stage-id build
 以下为 0.2 目标架构，当前尚未实现：
 
 - Daemon 长驻进程持有 DAG 状态
-- 自动超时检测（逃逸检测）
+- 自动超时检测
 - 任务队列和并发控制
 - `oxn daemon start` 启动后可通过 `oxn arsenal search` 搜索全局资产
 

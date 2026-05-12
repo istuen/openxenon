@@ -13,13 +13,13 @@ OpenXenon 通过 Draft/CANONICAL 两态生命周期管理标准资产。标准�
     /oxn-forge
         │
         ▼
-    AI 降维生成 YAML
+    AI 根据约束生成 YAML
         │
         ▼
     Kernel Schema 校验
         │
         ▼
-    物理落盘到 DRAFT 目录
+    保存到 Arsenal 目录
         │
         ▼
     [阻断] 等待工程师审查
@@ -110,7 +110,7 @@ AI 在生成资产时必须遵守以下约束：
 3. **符合 Zod Schema**：生成的 YAML 必须符合类型定义
 4. **原子化 Probe**：每个 Probe 只做单一检查
 
-## 审查与确权
+## 审查与转正
 
 AI 生成 Draft 资产后，会输出以下提示：
 
@@ -141,8 +141,8 @@ oxn arsenal promote arsenal/proofs/DRAFT/laravel_install_proof.yaml
 | Probe 类型 | 检查内容 |
 |------------|----------|
 | `fs_exists` | 文件是否存在 |
-| `fs_content_match` | 文件内容是否匹配正则 |
-| `exec_exit_zero` | 命令退出码是否为 0 |
+| `fs_match` | 文件内容是否匹配正则 |
+| `shell_exec` | 命令退出码是否为 0 |
 
 ### 组合使用
 
@@ -165,24 +165,24 @@ probes:
 
 ## 目录结构
 
-标准资产在 `.openxenon/arsenal/` 下按类型和状态组织：
+标准资产在 `.openxenon/arsenals/` 下按类型 flat 组织：
 
 ```
 .openxenon/
-└── arsenal/
+└── arsenals/
     ├── probes/
-    │   ├── DRAFT/
-    │   │   └── (AI 生成的 Probe)
-    │   └── CANONICAL/
-    │       ├── fs_exists.yaml
-    │       ├── fs_content_match.yaml
-    │       └── exec_exit_zero.yaml
+    │   ├── fs_exists/
+    │   │   └── probe.yaml
+    │   ├── fs_match/
+    │   │   └── probe.yaml
+    │   └── shell_exec/
+    │       └── probe.yaml
     ├── proofs/
-    │   ├── DRAFT/
-    │   └── CANONICAL/
+    │   └── <proof-name>/
+    │       └── proof.yaml
     └── stages/
-        ├── DRAFT/
-        └── CANONICAL/
+        └── <stage-name>/
+            └── stage.yaml
 ```
 
 ## 最佳实践

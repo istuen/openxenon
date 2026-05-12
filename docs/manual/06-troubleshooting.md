@@ -304,6 +304,6 @@ oxn arsenal inspect <asset-path>
 
 如果遇到本文未涵盖的问题：
 
-1. 查看 Core 日志：`.openxenon/daemon.log`
+1. 查看 Daemon 日志：`~/.openxenon/daemon.log`
 2. 使用 `--verbose` 选项获取详细输出
 3. 提交 Issue 到项目仓库

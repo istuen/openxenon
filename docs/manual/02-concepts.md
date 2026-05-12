@@ -26,7 +26,7 @@ stages:
             command: npm test
 ```
 
-### Blueprint 的二象性
+### Blueprint 的两个视角
 
 - **对工程师**：可读的 YAML，包含任务描述、阶段划分
 - **对系统**：机器可解析的结构化数据，用于执行调度
@@ -61,7 +61,7 @@ Stage 是 Blueprint 中的"工序节点"，代表任务执行的一个阶段。
 
 ### Stage 执行流程
 
-1. AI 通过 `/oxn-task` 获取任务
+1. AI 通过 `oxn task next` 获取任务
 2. 按 Blueprint 中的顺序执行 Stage
 3. 每个 Stage 的 Proof 被 Kernel 判定
 4. 验证结果通过 task-trace.yaml 记录
