@@ -1,14 +1,18 @@
 # OpenXenon 架构设计文档
 
-> **版本**: 1.1
-> **状态**: 物理学定稿 (含审查修复)
-> **最后更新**: 2026-05-08
+> **版本**: 0.1
+> **状态**: 探索阶段 — 物理学框架已建立，核心假设待验证
+> **最后更新**: 2026-05-12
 
 ---
 
 ## 一、概述
 
-OpenXenon 是一个面向大语言模型（LLM）的工程化控制引擎。它的核心职责是：**以物理隔离的确定性，裁决 AI 助手的工程行为**。
+OpenXenon 是一个实验性框架，探索工程师意图如何成为 AI 工程里的资产。
+
+它的核心机制是：用物理隔离的约束，让 AI 的工程行为可验证。
+
+我们还不确定这是否是正确的方向，但物理学框架（三权分立、Kernel 真空、Infra 边界）为探索提供了清晰的边界——哪怕结论是"这条路走不通"，至少能说清为什么。
 
 OpenXenon 不运行 AI 的推理过程，不理解 AI 代码的语义，只负责一件事——**验证 AI 声称的工作成果是否与物理事实一致**。
 
@@ -34,6 +38,31 @@ OpenXenon 的设计建立在三大不可违背的物理学公理之上：
 | **公理一** | AI 是不被信任的观测者 | 系统丧失事实基础 |
 | **公理二** | Kernel 是盲目的判官（只做符号归约） | 系统丧失可验证性 |
 | **公理三** | Infra 是唯一的物理出口（死守边界） | 系统丧失安全性 |
+
+### 1.2 探索问题清单
+
+以下是 0.x 阶段要回答的核心问题。每个问题有对应的验证指标。
+
+| # | 问题 | 验证指标 | 目标 |
+|---|------|----------|------|
+| Q1 | 约束能否提升 AI 生成质量？ | Draft → CANONICAL 通过率 | > 70% |
+| Q2 | 资产复用是否可行？ | 跨任务资产复用率 | > 30% |
+| Q3 | 工程师意图能否系统资产化？ | 意图 → 可用资产的平均轮次 | < 3 轮 |
+| Q4 | Probe 验证是否比人工检查更可靠？ | Probe 误报率 | < 5% |
+| Q5 | 物理学架构是否必要？ | 去掉约束后 AI 执行质量下降幅度 | 显著下降 |
+| Q6 | Daemon 裁决模式是否优于 CLI 直连？ | 逃逸率对比 | Daemon < CLI |
+
+**Q5 最关键**——如果去掉约束 AI 也一样好，那整个项目的存在价值就是零。这正是探索的意义：**验证假设，而不是预设结论**。
+
+### 1.3 自举验证定义
+
+| 级别 | 定义 | 验证方式 | 状态 |
+|------|------|----------|------|
+| **L1 编译自举** | `pnpm build` 产出的二进制能执行 `oxn forge probe` | `./dist/oxn forge probe` 输出约束 | ✅ 已达成 |
+| **L2 资产自举** | AI 通过 Skills 完成 Forge→Draft→Promote→Task→Verify 全链路 | 执行 L2 验证脚本 | ⚠️ 待验证 |
+| **L3 质量自举** | OpenXenon 自身的开发过程（加 Probe、修 Bug）全部通过 OpenXenon 管理 | 项目 `.openxenon/tasks/` 里有真实任务历史 | ❌ 未开始 |
+
+**0.1 的目标 = L2 通过。** L3 是 0.2 的目标。
 
 ---
 
@@ -295,104 +324,168 @@ function reduceDAG(
 
 ---
 
-## 五、CLI 与 Daemon 的物理隔离
+## 五、运行模式
 
-CLI 和 Daemon 是两个完全独立的物理实体，它们唯一需要达成共识的，是流过 Unix Socket 的 JSON 字符串。
+OpenXenon 有两种运行模式。0.1 实现 CLI 直连，0.2 目标是实现 Daemon 裁决。
 
-### 5.1 禁止的拓扑
+### 5.1 模式对比
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    物理倒灌 (绝对禁止!)                          │
+│ 0.1 CLI 直连（当前）          │ 0.2 Daemon 裁决（目标）         │
+├───────────────────────────────┼─────────────────────────────────┤
+│                               │                                  │
+│  CLI ──直接调用──▶ Infra      │  CLI ──Socket──▶ Daemon          │
+│       ──直接调用──▶ Kernel    │                   ├─▶ Infra      │
+│       ──直接读写──▶ 文件系统  │                   ├─▶ Kernel     │
+│                               │                   └─▶ 文件系统   │
+│                               │                                  │
+│  无状态，无守护进程           │  有状态，Daemon 持有 DAG         │
+│  无逃逸检测                   │  Radar 时钟 + 逃逸检测          │
+│  无并发控制                   │  任务队列 + 锁                  │
+│                               │                                  │
+│  ✅ 0.1 默认模式              │  ⚠️ 依赖 Daemon 打包问题解决    │
+│  所有核心命令可用             │  arsenal search 需要 Daemon      │
+│                               │                                  │
+└───────────────────────────────┴─────────────────────────────────┘
+```
+
+### 5.2 0.1 架构：CLI 直连
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 0.1 CLI 直连模式                                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  工程师/AI                                                       │
+│     │                                                            │
+│     ▼                                                            │
+│  oxn CLI                                                         │
+│     ├── oxn init              → Infra/fs: 创建 .openxenon/      │
+│     ├── oxn forge probe       → Kernel/compiler: 返回约束        │
+│     ├── oxn forge probe -s    → Infra/fs: 保存 Draft YAML       │
+│     ├── oxn arsenal list      → Infra/fs: 扫描 arsenals/         │
+│     ├── oxn arsenal promote   → Infra/fs: draft.yaml → canonical │
+│     ├── oxn task submit       → Infra/fs: 写入 tasks/<id>/       │
+│     ├── oxn task next         → Infra/fs: 读取 blueprint.yaml    │
+│     ├── oxn task verify       → Infra/probes: 执行观测           │
+│     │                        → Kernel/evaluator: 纯函数评判       │
+│     │                        → Infra/fs: 追加 task-trace.yaml    │
+│     └── oxn task status       → Infra/fs: 读取 task-trace.yaml  │
+│                                                                  │
+│  关键特征:                                                       │
+│  ├── CLI 进程内直接调用 Kernel + Infra                           │
+│  ├── 每个命令是独立进程，无共享状态                               │
+│  ├── 文件系统是唯一的状态持久层                                  │
+│  └── 无超时检测，依赖 AI 主动调用 verify                         │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 5.3 0.2 目标：Daemon 裁决
+
+> ⚠️ 以下为 0.2 目标架构，当前尚未完全实现。
+> Daemon 启动（`oxn daemon start`）依赖 `./src/server.ts`，编译后路径问题待解决。
+
+CLI 和 Daemon 是两个完全独立的物理实体，它们唯一需要达成共识的，是流过 Unix Socket 的 JSON 字符串。
+
+#### 5.3.1 禁止的拓扑
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ 物理倒灌 (绝对禁止!)                                             │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  错误示范:                                                       │
 │                                                                  │
 │  src/cli/handlers/                                               │
-│       │                                                         │
-│       │ ◄── 物理倒灌! Daemon 依赖这个目录                        │
-│       ▼                                                         │
+│       │                                                          │
+│       ◄── 物理倒灌! Daemon 依赖这个目录                          │
+│       ▼                                                          │
 │  src/daemon/ipc/handlers.ts                                      │
-│  import '../../cli/handlers/*'  // ← 绝对禁止!                   │
+│  import '../../cli/handlers/*' // ← 绝对禁止!                    │
 │                                                                  │
 │  这不是 IPC，这是内存共享。CLI 和 Daemon 必须物理隔离。           │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.2 正确的调用链
+#### 5.3.2 Daemon 调用链
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   CLI → Daemon 调用链                            │
+│ CLI → Daemon 调用链                                              │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │  ⚠️ 重要：CLI 的一切物理 I/O 必须通过 Infra                       │
-│     CLI 本身绝对不能直接调用 fs.readFileSync！                   │
+│  CLI 本身绝对不能直接调用 fs.readFileSync！                       │
 │                                                                  │
-│  [CLI] task.cmd.ts                                               │
-│  │  1. 调用 Infra/fs: const yamlString = readYAML(path)        │
-│  │     ↑ 唯一合法的物理读取路径                                 │
-│  │  2. 调用 Kernel: const payload = compiler.pipe(yamlString)  │
-│  │  3. 调用 Infra/socket: send(payload)  // 发送纯 JSON 字符串  │
-│  │  4. 退出 (CLI 是"开火即忘"，不阻塞等待)                      │
+│  [CLI] task submit                                               │
+│     1. 调用 Infra/fs: 读取 blueprint YAML                         │
+│     2. 调用 Kernel: compiler.pipe(yaml) → JSON Payload           │
+│     3. 调用 Infra/socket: send(payload)                          │
+│     4. 退出（开火即忘）                                          │
 │                                                                  │
 │  ┌─────────────────────────────────────────────────────────┐    │
-│  │  Unix Socket (~/.openxenon/daemon.sock)                │    │
-│  │  只有纯 JSON 在流动，没有任何代码耦合                      │    │
+│  │ Unix Socket (~/.openxenon/daemon.sock)                  │    │
+│  │ 只有纯 JSON 在流动，没有任何代码耦合                      │    │
 │  └─────────────────────────────────────────────────────────┘    │
 │                                                                  │
 │  [Daemon] ipc/receiver.ts                                        │
-│  │  1. 解析 JSON payload                                       │
-│  │  2. 调用 Daemon Engine: orchestrate(payload)                │
+│     1. 解析 JSON payload                                         │
+│     2. 调用 Daemon Engine: orchestrate(payload)                   │
 │                                                                  │
 │  [Daemon] engine.ts (编排层)                                      │
-│  │  1. 读取 canonical.yaml (通过 Infra)                         │
-│  │  2. 提取 manifest.probeArgs (通过 Infra)                    │
-│  │  3. 合并为完整 ProbeDefinition (Daemon 内部操作)             │
-│  │  4. 调用 Infra 执行 -> 拿到 actualFiles                      │
-│  │  5. 调用 Kernel: evaluate(ProbeDefinition, actualFiles)      │
-│  │  6. 调用 Kernel: reduceDAG(currentState, verdict)          │
-│  │  7. 调用 Infra/fs: appendTrace(traceEvent)                  │
+│     1. 读取 canonical.yaml (通过 Infra)                          │
+│     2. 提取 manifest.probeArgs (通过 Infra)                      │
+│     3. 合并为完整 ProbeDefinition (Daemon 内部操作)               │
+│     4. 调用 Infra 执行 → 拿到 actualFiles                       │
+│     5. 调用 Kernel: evaluate(ProbeDefinition, actualFiles)         │
+│     6. 调用 Kernel: reduceDAG(currentState, verdict)             │
+│     7. 调用 Infra/fs: appendTrace(traceEvent)                   │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### 5.3 CLI 的两种模式
-
-CLI 命令分为两种严格分离的模式：
+#### 5.3.3 CLI 观测器模式
 
 | 模式 | 命令 | 行为 |
 |------|------|------|
-| **开火即忘** | `oxn task start` | 发送 JSON 后立即退出，不阻塞 |
-| **观测器** | `oxn task trace --watch` | 持续读取 task-trace.yaml，tail -f 模式 |
+| **开火即忘** | `oxn task submit` | 发送 JSON 后立即退出，不阻塞 |
+| **观测器** | `oxn task status` | 读取 task-trace.yaml，输出当前状态 |
+| **持续观测** | `oxn export` + tail | 导出并持续观察 |
 
-**CLI 永远不需要长时间阻塞占用资源。** 如果需要观察进度，使用观测器模式。
+CLI 永远不需要长时间阻塞占用资源。如果需要观察进度，使用观测器模式。
 
-### 5.3 CLI 命令目录结构
-
-```
-src/cli/                    # CLI 外壳 (绝无 handlers!)
-├── entry.ts               # 入口，使用 citty 框架
-└── commands/
-    ├── task.cmd.ts        # 编排: 读 YAML -> kernel/compiler -> infra/socket
-    ├── forge.cmd.ts       # 编排: 读 ROM -> kernel/forge -> infra/fs
-    ├── init.cmd.ts        # 初始化项目边界
-    └── daemon.cmd.ts      # 进程生命周期管理
-```
-
-### 5.4 Daemon IPC 目录结构
+### 5.4 CLI 目录结构（实际）
 
 ```
-src/daemon/                 # Daemon 裁决容器 (独立于 CLI)
-├── entry.ts               # 启动长驻进程
+src/cli/
+├── entry.ts             # 入口，citty 框架
+├── init.ts              # oxn init
+├── daemon-start.ts      # oxn daemon start（0.2 目标）
+├── task.ts              # oxn task (submit|next|verify|status)
+├── task-filesystem.ts   # CLI-direct 模式实现
+├── arsenal.ts           # oxn arsenal (list|inspect|promote|search|export|import|migrate)
+├── arsenal-list.ts      # 不依赖 Daemon
+├── arsenal-search.ts    # ⚠️ 依赖 Daemon
+├── forge.ts             # oxn forge <type> [-s] [-n] [-g]
+├── export.ts            # oxn export
+└── gc.ts                # oxn gc
+```
+
+### 5.5 Daemon 目录结构（0.2 目标）
+
+```
+src/daemon/
+├── server.ts            # 启动长驻进程（⚠️ 编译后路径问题待解决）
 ├── ipc/
-│   └── receiver.ts        # 接收 Socket JSON (绝无共享 CLI 代码!)
-├── engine.ts              # 编排: 收 JSON -> kernel/executor -> infra/fs
+│   └── receiver.ts      # 接收 Socket JSON（绝无共享 CLI 代码!）
+├── engine.ts            # 编排: 收 JSON → kernel → infra
 ├── radar/
-│   └── clock.ts          # 内存时钟 (纯 HashMap，无 I/O)
+│   └── clock.ts         # 内存时钟（纯 HashMap，无 I/O）
 └── trace/
-    └── writer.ts          # 追加 task-trace.yaml (唯一的文件系统写入)
+    └── writer.ts        # 追加 task-trace.yaml（唯一的文件系统写入）
 ```
 
 ---
@@ -538,7 +631,7 @@ OpenXenon 采用全局/项目双层物理隔离架构，通过严格的边界约
 
 ---
 
-## 八、逃逸检测 (暗线)
+## 八、逃逸检测 (暗线)（0.2 目标）
 
 逃逸检测是通过文件系统变更监听实现的被动验证机制。
 
@@ -604,7 +697,7 @@ Tx: Radar 产生 TIMEOUT 事件
 
 ---
 
-## 九、安全模型
+## 九、安全模型（0.2 目标）
 
 ### 9.1 核心命题
 
@@ -676,7 +769,7 @@ Kernel 是盲目的判官，它不理解什么是"删除"，什么是"破坏"。
 
 ---
 
-## 十、宪法强制执行
+## 十、宪法强制执行（0.2 目标）
 
 ### 10.1 ESLint 物理铁丝网
 
@@ -732,27 +825,33 @@ module.exports = {
 
 ### 11.1 需要斩首的"辐射狗"
 
-| 文件 | 问题 | 修正方案 |
-|------|------|----------|
-| `kernel/lib/task-trace.ts` | `appendFileSync` 写文件，欺骗性纯函数 | 拆分：kernel 只返回 `TraceEntry[]`，写入移至 `daemon/trace/writer.ts` |
-| `daemon/ipc/handlers.ts` | `import '../../cli/handlers/*'` | 删除！建立 `daemon/ipc/receiver.ts` |
-| `kernel/probes/executor.ts` | 硬编码 switch 路由 | 重构为：`kernel/probes/evaluator.ts` (纯) + `infra/probes/` (能力) |
-| `kernel/built-in-proofs-registry.ts` | 硬编码注册表 | 删除！扫描 YAML 动态构建路由表 |
-| `infra/staging/staging-manager.ts` | 反向依赖 Kernel | 修正：`taskPath` 作为原始参数传入，不引用 Kernel |
-| `core/daemon-config.ts` | 写配置 | 写入动作移入 `infra/fs.ts` 或 `daemon/` 边界层 |
+| 文件 | 问题 | 状态 |
+|------|------|------|
+| `kernel/lib/task-trace.ts` | 欺骗性纯函数（含 I/O） | ✅ 已修复：拆分为纯函数 + Infra/fs 写入 |
+| `daemon/ipc/handlers.ts` | `import '../../cli/handlers/*'` | ⚠️ 残留：已有 `receiver.ts`，但 handlers.ts 仍存在 |
+| `kernel/probes/executor.ts` | 硬编码 switch 路由 | ✅ 已修复：重构为 `evaluator.ts` (纯) + `infra/probes/` |
+| `kernel/built-in-proofs-registry.ts` | 硬编码注册表 | ✅ 已删除：探针由 `infra/probes/` 动态路由 |
+| `infra/staging/staging-manager.ts` | 反向依赖 Kernel | ⚠️ 待确认 |
+| `core/daemon-config.ts` | 写配置 | ⚠️ 待确认 |
 
-### 11.2 重构后的目标结构
+### 11.2 实际目录结构（0.1）
 
 ```
 src/
 ├── kernel/                     # 🌟 [兰姆达真空] 纯逻辑，零副作用
 │   ├── types.ts                # 纯代数类型
-│   ├── schemas.ts              # Zod 校验器
-│   ├── dag-validator.ts        # 拓扑验证 (纯图论)
-│   ├── dag-reducer.ts          # DAG 归约 (纯函数)
+│   ├── schemas/                # Zod 校验器
+│   │   ├── proof.ts
+│   │   ├── stage.ts
+│   │   ├── dag-validator.ts
+│   │   └── probe.ts
 │   ├── probes/
 │   │   └── evaluator.ts       # 探针评判 (纯函数)
-│   └── compiler/               # YAML -> JSON 编译
+│   ├── lib/
+│   │   ├── task-trace.ts      # ✅ 已净化为纯函数
+│   │   ├── blueprint-parser.ts
+│   │   └── proofs.ts
+│   └── constants.ts
 │
 ├── infra/                      # 🌟 [图灵机边界] 唯一触碰硬件的电线
 │   ├── fs.ts                   # 原子写、追加读
@@ -763,31 +862,47 @@ src/
 │   │   ├── fs-not-exists.ts
 │   │   ├── fs-match.ts
 │   │   └── shell-exec.ts
-│   └── watcher.ts             # fs.watch 封装
+│   └── loader.ts
 │
 ├── arsenals/                   # 🌟 [出厂 ROM] 纯数据定义
-│   ├── probes/fs-exists/canonical.yaml
-│   └── meta/meta-blueprint.yaml
+│   ├── builtin.ts              # ✅ 内置资产（TS 常量，编译进二进制）
+│   ├── loader.ts
+│   └── paths.ts
 │
-├── cli/                        # 🌟 [外壳 1] 编排器 (绝无 handlers!)
+├── cli/                        # 🌟 [外壳 1] 编排器
 │   ├── entry.ts
-│   └── commands/
-│       ├── task.cmd.ts
-│       └── forge.cmd.ts
+│   ├── task.ts                 # oxn task (submit|next|verify|status)
+│   ├── task-filesystem.ts      # CLI-direct 模式实现
+│   ├── forge.ts                # oxn forge <type> [-s] [-n] [-g]
+│   ├── arsenal.ts              # oxn arsenal (list|inspect|promote|...)
+│   ├── init.ts
+│   └── skill-compiler.ts       # Skills 编译
 │
-├── daemon/                     # 🌟 [外壳 2] 裁决容器 (独立于 CLI)
-│   ├── entry.ts
+├── daemon/                     # 🌟 [外壳 2] 裁决容器 (0.2 目标)
+│   ├── server.ts               # ⚠️ 编译后路径问题未解决
 │   ├── ipc/
-│   │   └── receiver.ts        # 🌟 接收 Socket JSON (绝无共享代码!)
-│   ├── engine.ts              # 编排: 收 JSON -> kernel -> infra
+│   │   ├── receiver.ts         # ✅ 接收 Socket JSON
+│   │   ├── router.ts
+│   │   ├── validation.ts
+│   │   └── handlers/           # ⚠️ 残留，仍导入 cli/handlers
 │   ├── radar/
-│   │   └── clock.ts           # 内存时钟 (纯 HashMap)
+│   │   └── clock.ts            # 内存时钟（未启用）
 │   └── trace/
-│       └── writer.ts          # 追加 task-trace.yaml
+│       └── writer.ts           # 追加 task-trace.yaml
 │
-└── skills/                     # 🌟 [AI 语义层] 纯文本
-    └── oxn-forge.md
+└── skills/                     # 🌟 [AI 语义层] TS 模块 → 编译为 .md
+    ├── index.ts
+    ├── types.ts
+    ├── oxn-forge.ts
+    ├── oxn-task.ts
+    ├── oxn-init.ts
+    ├── oxn-resume.ts
+    ├── oxn-status.ts
+    ├── oxn-stop.ts
+    └── oxn-trace.ts
 ```
+
+> 注：Skills 模块通过 `skill-compiler.ts` 编译为 `.opencode/skills/*.md` 供 AI 使用。
 
 ---
 

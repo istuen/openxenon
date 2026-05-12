@@ -1,83 +1,90 @@
 # OpenXenon
-> 演化工程意图，收敛 AI 推理，实现软件交付。
 
-面向大语言模型的工程化控制引擎。通过物理约束和机械验证，将不可靠的 AI 能力转化为可靠、可追溯的软件实体。
+> 探索工程师意图如何成为 AI 工程里的资产。
+
+一个实验性框架，尝试用物理约束让 AI 的工程行为可验证。
+我们还在摸索：约束到底能提升多少 AI 的执行质量？资产化能否让 AI 越用越好？
+
+## 当前状态
+
+⚠️ **0.1 — 探索阶段**
+
+- [x] AI 能在 Forge 约束下生成 Draft 资产
+- [x] 内置资产编译进二进制，随处可用
+- [x] CLI 直连模式（不依赖 Daemon）
+- [ ] 自举验证（L2）：AI 完成完整的 Forge→Task→Verify 循环
+- [ ] 质量度量：约束是否真的提升了 AI 的执行质量
+
+## 核心假设
+
+| # | 假设 | 验证方式 | 当前信心 |
+|---|------|----------|----------|
+| H1 | AI 在约束下生成的资产质量高于自由生成 | 对比有无约束的 Draft 通过率 | 待验证 |
+| H2 | 资产可以积累和复用，不是一次性的 | 度量跨任务的资产复用率 | 待验证 |
+| H3 | 工程师意图可以系统性地转化为可验证资产 | 完成 L3 质量自举 | 待验证 |
+| H4 | 物理约束架构（三权分立）是必要的 | 去掉约束后 AI 执行质量下降 | 待验证 |
+
+**如果 H4 被证伪——去掉约束 AI 也一样好——那整个项目的存在价值就是零。这正是探索的意义：验证假设，而不是预设结论。**
+
+## 自举验证
+
+| 级别 | 定义 | 状态 |
+|------|------|------|
+| L1 编译自举 | `pnpm build` 产出的二进制能执行 `oxn forge probe` | ✅ |
+| L2 资产自举 | AI 通过 Skills 完成 Forge→Draft→Promote→Task→Verify 全链路 | ⚠️ 待验证 |
+| L3 质量自举 | OpenXenon 自身的开发过程通过 OpenXenon 管理 | 0.2 目标 |
+
+**0.1 的目标 = L2 通过。**
 
 ## 快速开始
 
 ```bash
-# 1. 安装 CLI
-pnpm install -g @istuen/openxenon
-
-# 2. 启动全局 Core
-oxn daemon start
-
-# 3. 初始化项目
-oxn init
-
-# 4. 在 AI 助手中输入 /oxn-task 开始工作
+pnpm install && pnpm build
+./dist/oxn init
+./dist/oxn arsenal list
+./dist/oxn forge probe
 ```
 
 ## CLI 速查
 
-| 命令 | 描述 |
-|------|------|
-| `oxn daemon start` | 启动全局 Core |
-| `oxn daemon stop` | 停止全局 Core |
-| `oxn daemon status` | 查看 Core 状态 |
-| `oxn init` | 初始化项目围栏 |
-| `oxn task submit --blueprint <file>` | 提交 Blueprint 创建任务 |
-| `oxn task next --task-id <id>` | 获取下一个 Stage |
-| `oxn task verify --task-id <id> --stage-id <id>` | 提交 Stage 验证 |
-| `oxn task status --task-id <id>` | 查看任务状态 |
-| `oxn arsenal list [DRAFT|CANONICAL]` | 列出标准资产 |
-| `oxn arsenal inspect <asset-path>` | 查看资产内容 |
-| `oxn arsenal promote <asset-path>` | DRAFT → CANONICAL |
-| `oxn forge [probe|proof|stage] --save <yaml> --name <name>` | 锻造 Draft 资产 |
+| 命令 | 描述 | 依赖 Daemon |
+|------|------|-------------|
+| `oxn init` | 初始化项目，建立物理围栏 | ❌ |
+| `oxn forge <type>` | 查看元 Forge 约束（probe/proof/stage/blueprint/all） | ❌ |
+| `oxn forge <type> -s -n <name>` | 锻造并保存 Draft 资产 | ❌ |
+| `oxn arsenal list` | 列出标准资产 | ❌ |
+| `oxn arsenal inspect` | 查看资产内容 | ❌ |
+| `oxn arsenal promote` | DRAFT → CANONICAL | ❌ |
+| `oxn arsenal search` | 搜索资产（通过 Daemon Registry） | ✅ |
+| `oxn task submit` | 提交 Blueprint 创建任务 | ❌ |
+| `oxn task next` | 获取下一个待执行 Stage | ❌ |
+| `oxn task verify` | 提交 Stage 验证 | ❌ |
+| `oxn task status` | 获取任务状态 | ❌ |
+| `oxn export` | 导出 task-trace.yaml | ❌ |
+| `oxn gc` | 清理已完成任务的旧资产 | ❌ |
+| `oxn daemon` | 管理全局 Core 引擎生命周期 | — |
 
-完整命令参考：[docs/manual/04-cli-ref.md](docs/manual/04-cli-ref.md)
+**全局选项**: `-v, --verbose` | `-j, --json`
 
-## 文档导航
+0.1 阶段仅 `arsenal search` 需要 Daemon，其余全部 CLI 直连可用。
 
-| 文档 | 说明 |
-|------|------|
-| [docs/manual/01-intro.md](docs/manual/01-intro.md) | 系统介绍 |
-| [docs/manual/02-concepts.md](docs/manual/02-concepts.md) | 核心概念（Blueprint、Arsenal、Stage、Proof） |
-| [docs/manual/03-lifecycle.md](docs/manual/03-lifecycle.md) | 完整生命周期 + 交互流程图 |
-| [docs/manual/04-cli-ref.md](docs/manual/04-cli-ref.md) | CLI 完整参考 |
-| [docs/manual/05-arsenal.md](docs/manual/05-arsenal.md) | Arsenal 资产生成 |
-| [docs/manual/06-troubleshooting.md](docs/manual/06-troubleshooting.md) | 故障排查 |
-| [docs/manual/07-dev.md](docs/manual/07-dev.md) | 从源码构建 |
-| [docs/architecture.md](docs/architecture.md) | 架构设计（单一真相源） |
+## 架构概要
 
-## 从源码构建
-
-### 环境要求
-- **Bun**: >= 1.0.0
-- **pnpm**: >= 8.0.0
-
-### 构建步骤
-
-```bash
-# 克隆仓库
-git clone https://github.com/istuen/openxenon.git
-cd openxenon
-
-# 安装依赖
-pnpm install
-
-# 构建
-pnpm build
-
-# 运行
-./dist/oxn --help
+```
+工程师意图 ──▶ Forge（约束）──▶ AI 生成 Draft ──▶ Schema 校验 ──▶ Promote ──▶ Canonical 资产
+                                                                    │
+                                                                    ▼
+Blueprint ──▶ Stage ──▶ Probe（物理观测）──▶ Kernel（纯函数评判）──▶ Verdict
 ```
 
-### 开发命令
+三层物理隔离：
 
-| 命令 | 说明 |
-|------|------|
-| `pnpm dev` | 开发模式运行 CLI |
-| `pnpm build` | 构建当前平台 |
-| `pnpm test` | 运行测试 |
-| `pnpm typecheck` | TypeScript 类型检查 |
+- **Kernel（兰姆达真空）**：纯函数，零副作用，只做符号归约
+- **Infra（图灵机边界）**：唯一触碰物理硬件的组件
+- **Arsenals（出厂 ROM）**：内置资产，编译进二进制
+
+详见 [architecture.md](docs/architecture.md)。
+
+## License
+
+MIT
