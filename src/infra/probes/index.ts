@@ -19,7 +19,7 @@ export interface ProbeResult {
 
 export const probeHandlers: Record<string, ProbeHandler> = {
   fs_exists: async (params, context) => {
-    const pattern = params.pattern as string
+    const pattern = (params.pattern || params.path) as string
     const files = await executeFsExists(pattern, context)
     return {
       probeType: 'fs_exists',
@@ -30,7 +30,7 @@ export const probeHandlers: Record<string, ProbeHandler> = {
   },
 
   fs_not_exists: async (params, context) => {
-    const pattern = params.pattern as string
+    const pattern = (params.pattern || params.path) as string
     const files = await executeFsNotExists(pattern, context)
     return {
       probeType: 'fs_not_exists',

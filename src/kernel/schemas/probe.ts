@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_content_match', 'exec_exit_zero'])
 
 export const FsExistsParamsSchema = z.object({
-  path: z.string()
+  pattern: z.string()
 })
 
 export const FsContentMatchParamsSchema = z.object({
