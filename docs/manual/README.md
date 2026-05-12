@@ -39,6 +39,6 @@ oxn task status --task-id abc123
 | `oxn task verify --task-id <id> --stage-id <id>` | 提交 Stage 验证 |
 | `oxn task status --task-id <id>` | 获取任务状态 |
 | `oxn arsenal list` | 列出标准资产 |
-| `oxn arsenal promote <path>` | 将 Draft 资产转正 |
+| `oxn arsenal promote <type>/<name>` | 将 Draft 资产转正 |
 
 详细用法请参阅各章节文档。

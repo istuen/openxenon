@@ -146,12 +146,13 @@ proofs:
 将 DRAFT 资产转正为 CANONICAL。
 
 ```bash
-oxn arsenal promote <asset-path>
+oxn arsenal promote <type>/<name>
 ```
 
 **参数：**
 
-- `asset-path`：DRAFT 资产路径
+- `type`：资产类型（blueprints、probes、proofs、stages）
+- `name`：资产名称
 
 **输出示例：**
 

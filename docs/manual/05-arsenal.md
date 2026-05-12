@@ -129,7 +129,7 @@ oxn arsenal inspect arsenal/proofs/DRAFT/laravel_install_proof.yaml
 ### 转正资产
 
 ```bash
-oxn arsenal promote arsenal/proofs/DRAFT/laravel_install_proof.yaml
+oxn arsenal promote proofs/laravel_install_proof
 ```
 
 ## Probe 设计原则

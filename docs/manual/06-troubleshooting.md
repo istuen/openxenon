@@ -199,10 +199,10 @@ Draft 资产不会被其他任务引用，完成审查后及时 promote：
 
 ```bash
 # 审查
-oxn arsenal inspect arsenal/proofs/DRAFT/my-proof.yaml
+oxn arsenal inspect proofs/my-proof
 
 # 转正
-oxn arsenal promote arsenal/proofs/DRAFT/my-proof.yaml
+oxn arsenal promote proofs/my-proof
 ```
 
 ### 5. 保持 Blueprint 简洁
