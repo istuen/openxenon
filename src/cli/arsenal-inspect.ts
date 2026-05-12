@@ -1,7 +1,34 @@
 import { defineCommand } from 'citty'
-import { arsenalListStandards as listStandards, type StandardAsset, type Scope } from '../arsenals/loader'
+import { arsenalListStandards as listStandards, arsenalLoadStandardByName as loadStandardByName, type StandardAsset, type Scope } from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
-import type { AssetState } from '../arsenals/paths'
+import type { AssetState, AssetType } from '../arsenals/paths'
+
+const TYPE_ALIASES: Record<string, AssetType> = {
+  'blueprint': 'blueprints',
+  'blueprints': 'blueprints',
+  'probe': 'probes',
+  'probes': 'probes',
+  'proof': 'proofs',
+  'proofs': 'proofs',
+  'stage': 'stages',
+  'stages': 'stages'
+}
+
+function parseAssetName(input: string): { type: AssetType, name: string } | null {
+  const parts = input.split('/')
+  if (parts.length !== 2) {
+    return null
+  }
+  const [typePart, name] = parts
+  if (!typePart || !name) {
+    return null
+  }
+  const type = TYPE_ALIASES[typePart]
+  if (!type) {
+    return null
+  }
+  return { type, name }
+}
 
 export default defineCommand({
   meta: {
@@ -61,6 +88,15 @@ export default defineCommand({
 })
 
 function findAssetByName(name: string, state: AssetState | undefined, scope: Scope): StandardAsset | null {
+  const parsed = parseAssetName(name)
+  if (parsed) {
+    const asset = loadStandardByName(parsed.name, parsed.type)
+    if (asset && (!state || asset.state === state)) {
+      return asset
+    }
+    return null
+  }
+
   const assets = listStandards(state, scope)
   return assets.find(a => a.name === name) || null
 }
