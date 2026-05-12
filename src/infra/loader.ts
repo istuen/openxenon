@@ -112,7 +112,7 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
       const singularPath = join(projectBoundary, 'arsenals', typeToSingular[type], s)
       if (directoryExists(singularPath)) assets.push(...scanDirectory(singularPath, type, state))
     }
-    assets.push(...scanNewStructure(projectBoundary, type, state))
+    assets.push(...scanNewStructure(join(projectBoundary, 'arsenals'), type, state))
     return assets
   }
 
