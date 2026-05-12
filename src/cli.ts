@@ -63,6 +63,7 @@ const main = defineCommand({
     export: () => import('./cli/export').then(m => m.default),
     gc: () => import('./cli/gc').then(m => m.default),
     forge: () => import('./cli/forge').then(m => m.default),
+    explore: () => import('./cli/explore').then(m => m.default),
   },
   args: {
     verbose: {

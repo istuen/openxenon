@@ -1,0 +1,25 @@
+name: quality
+description: "检查项目代码质量基础设施"
+scope:
+  - project_structure
+  - arsenal_manifest
+output: quality-report.md
+rules:
+  - name: missing-lint-probe
+    description: "项目有 linter 配置但无 lint 探针"
+    level: warning
+    condition: "fileExists('.eslintrc*')"
+    message: "检测到 linter 配置但无对应的 shell_exec 探针"
+    suggestion: "建议添加 shell_exec { command: 'npm run lint' }"
+  - name: missing-test-probe
+    description: "项目有测试框架但无测试探针"
+    level: warning
+    condition: "fileExists('jest.config.*|vitest.config.*|playwright.config.*')"
+    message: "检测到测试框架配置但无对应的 shell_exec 探针"
+    suggestion: "建议添加 shell_exec { command: 'npm test' }"
+  - name: missing-typecheck-probe
+    description: "TypeScript 项目但无类型检查探针"
+    level: info
+    condition: "fileExists('tsconfig.json')"
+    message: "TypeScript 项目但无类型检查探针"
+    suggestion: "建议添加 shell_exec { command: 'npx tsc --noEmit' }"
