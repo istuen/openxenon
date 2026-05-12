@@ -114,7 +114,7 @@ Error: Asset is not in DRAFT state
 
 ---
 
-### Q6: Core 引擎无响应
+### Q6: Daemon 无响应
 
 **症状**：
 
@@ -294,9 +294,9 @@ oxn force-pass <step-id>
 oxn arsenal inspect <asset-path>
 ```
 
-### 限制 Core 权限
+### 限制 Daemon 权限
 
-确保 Core 引擎运行在受控环境中，不要给予过高权限。
+确保 Daemon 运行在受控环境中，不要给予过高权限。
 
 ---
 

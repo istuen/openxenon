@@ -16,7 +16,7 @@ OpenXenon 通过 Draft/CANONICAL 两态生命周期管理标准资产。标准�
     AI 降维生成 YAML
         │
         ▼
-    Core Zod Schema 校验
+    Kernel Schema 校验
         │
         ▼
     物理落盘到 DRAFT 目录
@@ -36,7 +36,7 @@ OpenXenon 通过 Draft/CANONICAL 两态生命周期管理标准资产。标准�
 
 ## /oxn-forge 指令
 
-`/oxn-forge` 是 OpenXenon 的"资产锻造"指令，用于通过自然语言生成标准资产。
+`/oxn-forge` 是 AI Skill 指令，用于通过自然语言生成标准资产。在 AI 助手中输入 `/oxn-forge <描述>` 即可触发。
 
 ### 使用方式
 

@@ -1,6 +1,6 @@
 # OpenXenon 使用手册
 
-OpenXenon 是一个面向大语言模型的工程化控制引擎，通过"综合集成研讨厅"模式实现人机协同。
+OpenXenon 是一个实验性框架，探索如何让工程师与 AI 更有效地协作。
 
 ## 目录
 
@@ -18,14 +18,15 @@ OpenXenon 是一个面向大语言模型的工程化控制引擎，通过"综合
 # 1. 初始化项目
 oxn init
 
-# 2. 创建任务
-oxn task new my-task
+# 2. 编写 Blueprint 文件
+#    编辑 my-task.yaml 定义 stages 和 proofs
 
 # 3. 提交任务
-oxn task submit my-task
+oxn task submit --blueprint my-task.yaml
 
-# 4. 查看任务状态
-oxn task status my-task
+# 4. 获取任务 ID，查看状态
+#    假设任务 ID 是 abc123
+oxn task status --task-id abc123
 ```
 
 ## 核心命令
@@ -33,8 +34,10 @@ oxn task status my-task
 | 命令 | 描述 |
 |------|------|
 | `oxn init` | 初始化项目 |
-| `oxn task new <name>` | 创建新任务 |
-| `oxn task submit <id>` | 提交任务到 Core |
+| `oxn task submit --blueprint <file>` | 提交 Blueprint 创建任务 |
+| `oxn task next --task-id <id>` | 获取下一个待执行 Stage |
+| `oxn task verify --task-id <id> --stage-id <id>` | 提交 Stage 验证 |
+| `oxn task status --task-id <id>` | 获取任务状态 |
 | `oxn arsenal list` | 列出标准资产 |
 | `oxn arsenal promote <path>` | 将 Draft 资产转正 |
 

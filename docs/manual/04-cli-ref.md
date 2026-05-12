@@ -10,7 +10,7 @@ oxn init
 
 ## oxn daemon
 
-管理全局 Core 引擎的生命周期。
+管理全局 Daemon 进程的生命周期（0.2 目标，0.1 阶段可选）。
 
 ```bash
 oxn daemon start   # 启动 daemon

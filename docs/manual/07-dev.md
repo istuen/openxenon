@@ -10,7 +10,7 @@
 ### 1. 克隆仓库
 
 ```bash
-git clone https://github.com/istuen/openxenon.git
+git clone https://forgejo.isteed.dev/issac/openxenon.git
 cd openxenon
 ```
 
@@ -69,8 +69,8 @@ pnpm build:windows # Windows x64
 openxenon/
 ├── src/
 │   ├── cli/          # CLI 命令实现
-│   ├── daemon/       # Core 引擎守护进程
-│   ├── kernel/       # 核心状态机
+│   ├── daemon/       # Daemon（0.2 目标）
+│   ├── kernel/       # 核心逻辑层（纯函数）
 │   ├── infra/        # 基础设施层
 │   └── skills/       # Skill 源码（AI 读取）
 ├── docs/
