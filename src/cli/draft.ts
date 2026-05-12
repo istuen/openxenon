@@ -1,6 +1,7 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
+import * as yaml from 'yaml'
 import { validateProbeDefinition, validateProofDefinition, validateStageDefinition } from '../kernel/schemas'
 import { type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
 import { ensureArsenalsDirectories } from '../arsenals/init'
@@ -20,7 +21,7 @@ function getTypeFromContent(content: string): AssetType | null {
     if (parsed.probes || parsed.probeRefs) return 'proofs'
     if (parsed.proof || parsed.deps) return 'stages'
   } catch {
-    if (content.includes('type:') && content.includes('fs_exists')) return 'probes'
+    if (content.includes('type:') && (content.includes('fs_exists') || content.includes('fs_content_match') || content.includes('exec_exit_zero'))) return 'probes'
     if (content.includes('probeRefs:') || content.includes('probes:')) return 'proofs'
     if (content.includes('proof:') || content.includes('deps:')) return 'stages'
   }
@@ -62,8 +63,19 @@ function saveDraftAsset(type: AssetType, name: string | undefined, content: stri
 }
 
 export function createDraftProbe(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
+  let parsed: unknown
+
   try {
-    const parsed = JSON.parse(content)
+    parsed = JSON.parse(content)
+  } catch {
+    try {
+      parsed = yaml.parse(content)
+    } catch {
+      return { success: false, error: 'Invalid probe structure' }
+    }
+  }
+
+  try {
     validateProbeDefinition(parsed)
   } catch {
     return { success: false, error: 'Invalid probe structure' }
