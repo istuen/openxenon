@@ -26,7 +26,7 @@ stages:
     name: 准备环境
     proof:
       probeRefs:
-        - type: shell_exec
+        - type: exec_exit_zero
           params:
             command: docker ps | grep mysql
   - id: deploy
@@ -42,10 +42,10 @@ stages:
 ## probeRefs 参数速查
 
 \`\`\`yaml
-fs_exists:    { pattern: "glob模式" }
-fs_not_exists: { pattern: "glob模式" }
-fs_match:     { pattern: "文件路径", contains: "正则" }
-shell_exec:   { command: "shell命令" }
+fs_exists:        { pattern: "glob模式" }
+fs_not_exists:    { pattern: "glob模式" }
+fs_content_match: { path: "文件路径", contains: "正则" }
+exec_exit_zero:   { command: "shell命令" }
 \`\`\`
 
 ## 命令用法
@@ -76,6 +76,34 @@ submit → next → execute → verify → (repeat until done)
 3. execute：AI 执行 Stage 定义的工作
 4. verify：验证 Stage 是否通过
 5. 循环直到所有 Stage 完成
+
+## ❌ 常见错误
+
+1. **使用了旧类型名**
+   \`\`\`yaml
+   # 错误
+   type: fs_match        # 旧名，应改为 fs_content_match
+   type: shell_exec      # 旧名，应改为 exec_exit_zero
+
+   # 正确
+   type: fs_content_match
+   type: exec_exit_zero
+   \`\`\`
+
+2. **fs_content_match 使用了错误的参数名**
+   \`\`\`yaml
+   # 错误
+   type: fs_content_match
+   params:
+     pattern: "*.ts"        # 错误：应该是 path
+     contains: "export"
+
+   # 正确
+   type: fs_content_match
+   params:
+     path: "*.ts"
+     contains: "export"
+   \`\`\`
 `
 
 export const oxnTaskSkill: OpenXenonSkill = {

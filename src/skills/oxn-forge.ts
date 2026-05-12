@@ -53,30 +53,30 @@ parameters:
     description: "不应存在的文件模式"
 \`\`\`
 
-### fs_match
-参数：pattern (string, required) + contains (string, required)
+### fs_content_match
+参数：path (string, required) + contains (string, required)
 
 示例：
 \`\`\`yaml
-type: fs_match
+type: fs_content_match
 description: "检查源码包含版权声明"
 parameters:
-  - name: pattern
+  - name: path
     type: string
     required: true
-    description: "文件路径"
+    description: "要检查的文件路径（glob 模式）"
   - name: contains
     type: string
     required: true
     description: "文件内容必须匹配的正则"
 \`\`\`
 
-### shell_exec
+### exec_exit_zero
 参数：command (string, required)
 
 示例：
 \`\`\`yaml
-type: shell_exec
+type: exec_exit_zero
 description: "执行 lint 检查"
 parameters:
   - name: command
@@ -107,8 +107,31 @@ parameters:
    parameters: [{ name: pattern, type: string }]
    \`\`\`
 
-3. **忘了 required 字段**
-   可选字段可以不写 required，但必填字段建议显式标注
+3. **使用了旧类型名**
+   \`\`\`yaml
+   # 错误
+   type: fs_match         # 旧名，应改为 fs_content_match
+   type: shell_exec       # 旧名，应改为 exec_exit_zero
+
+   # 正确
+   type: fs_content_match
+   type: exec_exit_zero
+   \`\`\`
+
+4. **fs_content_match 使用了错误的参数名**
+   \`\`\`yaml
+   # 错误
+   type: fs_content_match
+   params:
+     pattern: "*.ts"        # 错误：应该是 path
+     contains: "export"
+
+   # 正确
+   type: fs_content_match
+   params:
+     path: "*.ts"
+     contains: "export"
+   \`\`\`
 `
 
 const blueprintFormatMd = `# Blueprint 格式参考
@@ -151,7 +174,7 @@ stages:
     name: 检查 lint 通过
     proof:
       probeRefs:
-        - type: shell_exec
+        - type: exec_exit_zero
           params:
             command: npm run lint
     dependsOn: [check-package-json]
@@ -162,10 +185,10 @@ stages:
 ⚠️ Blueprint 里的 probeRefs 用的是 \`params\` 对象，不是 \`parameters\` 数组！
 
 \`\`\`yaml
-fs_exists:    { pattern: "glob模式" }
-fs_not_exists: { pattern: "glob模式" }
-fs_match:     { pattern: "文件路径", contains: "正则" }
-shell_exec:   { command: "shell命令" }
+fs_exists:        { pattern: "glob模式" }
+fs_not_exists:    { pattern: "glob模式" }
+fs_content_match:  { path: "文件路径", contains: "正则" }
+exec_exit_zero:   { command: "shell命令" }
 \`\`\`
 
 ## dependsOn 规则
@@ -185,10 +208,27 @@ shell_exec:   { command: "shell命令" }
    probeRefs: [{ type: fs_exists, params: { pattern: "src" } }]
    \`\`\`
 
-2. **dependsOn 引用了不存在的 stage id**
+2. **使用了旧类型名**
+   \`\`\`yaml
+   # 错误
+   probeRefs:
+     - type: fs_match        # 旧名
+       params:
+         pattern: "*.ts"     # 错误：应该是 path
+         contains: "export"
+
+   # 正确
+   probeRefs:
+     - type: fs_content_match
+       params:
+         path: "*.ts"
+         contains: "export"
+   \`\`\`
+
+3. **dependsOn 引用了不存在的 stage id**
    确保 dependsOn 里的每个 id 都在 stages 里有定义
 
-3. **stage id 含空格或中文**
+4. **stage id 含空格或中文**
    stage id 只用小写字母、数字和连字符：check-readme, deploy-mysql
 `
 
@@ -212,10 +252,27 @@ proofs:
 Blueprint 里直接定义 stage，不需要单独的 Stage 资产。
 详见 blueprint-format.md
 
+## 探针类型（必须使用正确名称）
+
+\`\`\`yaml
+# 正确
+fs_exists
+fs_not_exists
+fs_content_match
+exec_exit_zero
+
+# 错误（旧名）
+fs_match          # 应改为 fs_content_match
+shell_exec        # 应改为 exec_exit_zero
+\`\`\`
+
 ## ❌ 常见错误
 
 1. 在 Blueprint 里用了 Forge 的 parameters 格式
    Blueprint 用的是 \`params\`，不是 \`parameters\`
+
+2. 使用了旧的探针类型名
+   确保使用 fs_content_match 和 exec_exit_zero，而不是旧名
 `
 
 export const oxnForgeSkill: OpenXenonSkill = {
