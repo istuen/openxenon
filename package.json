@@ -1,7 +1,7 @@
 {
   "name": "openxenon",
   "version": "1.0.0",
-  "description": "OpenXenon - 工程化控制引擎，面向大语言模型的工程化控制引擎",
+  "description": "OpenXenon - 面向大语言模型的工程化控制引擎",
   "author": "OpenXenon Team",
   "license": "MIT",
   "type": "module",

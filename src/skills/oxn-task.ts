@@ -1,5 +1,83 @@
 import type { OpenXenonSkill } from './types'
 
+const blueprintFormatMd = `# Blueprint 格式参考（oxn-task 用）
+
+## 基本结构
+
+\`\`\`yaml
+name: <blueprint名称>
+stages:
+  - id: <stage唯一标识>
+    name: <显示名称>
+    proof:
+      probeRefs:
+        - type: <探针类型>
+          params:
+            <探针参数>
+    dependsOn: [<依赖的stage id>]   # 可选
+\`\`\`
+
+## 完整示例
+
+\`\`\`yaml
+name: deploy-mysql
+stages:
+  - id: prepare
+    name: 准备环境
+    proof:
+      probeRefs:
+        - type: shell_exec
+          params:
+            command: docker ps | grep mysql
+  - id: deploy
+    name: 部署 MySQL
+    dependsOn: [prepare]
+    proof:
+      probeRefs:
+        - type: fs_exists
+          params:
+            pattern: "/data/mysql"
+\`\`\`
+
+## probeRefs 参数速查
+
+\`\`\`yaml
+fs_exists:    { pattern: "glob模式" }
+fs_not_exists: { pattern: "glob模式" }
+fs_match:     { pattern: "文件路径", contains: "正则" }
+shell_exec:   { command: "shell命令" }
+\`\`\`
+
+## 命令用法
+
+### 提交任务
+\`\`\`bash
+oxn task submit --blueprint <path-to-blueprint.yaml>
+\`\`\`
+
+### 获取下一个 Stage
+\`\`\`bash
+oxn task next --task-id <taskId>
+\`\`\`
+
+### 验证 Stage
+\`\`\`bash
+oxn task verify --task-id <taskId> --stage-id <stageId>
+\`\`\`
+
+## Task 工作流
+
+\`\`\`
+submit → next → execute → verify → (repeat until done)
+\`\`\`
+
+1. submit：提交 Blueprint，创建任务
+2. next：获取当前需要执行的 Stage
+3. execute：AI 执行 Stage 定义的工作
+4. verify：验证 Stage 是否通过
+5. 循环直到所有 Stage 完成
+`
+
 export const oxnTaskSkill: OpenXenonSkill = {
   id: 'oxn-task',
   description: '发起 OpenXenon 任务，依据 Target State 拆解并提交 Blueprint',
@@ -71,6 +149,11 @@ oxn task verify --task-id <taskId> --stage-id <stageId>
 
 重复步骤 6-7，直到所有 Stage 通过验证。
 
+## 参考
+
+需要 Blueprint 详细格式说明时，读取：
+- references/blueprint-format.md：格式说明 + 命令用法 + 完整示例
+
 ## 绝对禁止
 
 - 禁止跳过任何步骤
@@ -81,4 +164,7 @@ oxn task verify --task-id <taskId> --stage-id <stageId>
     '提交任务': '/oxn-task 部署 Laravel 应用',
     '查看状态': '/oxn-task 查看部署进度',
   },
+  references: [
+    { filename: 'blueprint-format.md', content: blueprintFormatMd }
+  ]
 }
