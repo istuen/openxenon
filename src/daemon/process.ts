@@ -21,24 +21,29 @@ export function isDaemonRunning(): DaemonProcessInfo {
   if (!existsSync(DAEMON_PID_PATH)) {
     return { pid: 0, isRunning: false }
   }
-  
+
   try {
     const pidContent = readFileSync(DAEMON_PID_PATH, 'utf-8').trim()
     const pid = parseInt(pidContent, 10)
-    
+
     if (isNaN(pid) || pid <= 0) {
       return { pid: 0, isRunning: false }
     }
-    
-    try {
-      process.kill(pid, 0)
-      return { pid, isRunning: true }
-    } catch {
-      return { pid, isRunning: false }
-    }
+
+    const running = checkProcessRunning(pid)
+    return { pid, isRunning: running }
   } catch (error) {
     daemonLogger.error(`Failed to read PID file: ${error}`)
     return { pid: 0, isRunning: false }
+  }
+}
+
+function checkProcessRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
   }
 }
 

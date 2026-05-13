@@ -72,11 +72,18 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       stageIndex++
       probeIndex = -1
       const stageId = trimmed.slice(5).trim()
-      stages[stageIndex] = {
-        id: stageId,
-        name: '',
-        deps: [],
-        proof: { target: { description: '' }, spec: { description: '' }, probes: [] }
+      if (stageIndex >= stages.length) {
+        stages.push({
+          id: stageId,
+          name: '',
+          deps: [],
+          proof: { target: { description: '' }, spec: { description: '' }, probes: [] }
+        })
+      } else {
+        stages[stageIndex]!.id = stageId
+        stages[stageIndex]!.name = ''
+        stages[stageIndex]!.deps = []
+        stages[stageIndex]!.proof.probes = []
       }
       continue
     }
@@ -86,17 +93,25 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       probeIndex = -1
       currentSection = 'stage'
       const stageId = trimmed.slice(5).trim()
-      stages[stageIndex] = {
-        id: stageId,
-        name: '',
-        deps: [],
-        proof: { target: { description: '' }, spec: { description: '' }, probes: [] }
+      if (stageIndex >= stages.length) {
+        stages.push({
+          id: stageId,
+          name: '',
+          deps: [],
+          proof: { target: { description: '' }, spec: { description: '' }, probes: [] }
+        })
+      } else {
+        stages[stageIndex]!.id = stageId
+        stages[stageIndex]!.name = ''
+        stages[stageIndex]!.deps = []
+        stages[stageIndex]!.proof.probes = []
       }
       continue
     }
 
     if (trimmed.startsWith('name:') && currentSection === 'stage' && stageIndex >= 0) {
-      stages[stageIndex]!.name = trimmed.slice(5).trim()
+      const stage = stages[stageIndex]
+      if (stage) stage.name = trimmed.slice(5).trim()
       continue
     }
 
@@ -111,7 +126,8 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
 
     if (trimmed.startsWith('- ') && currentSection === 'stage' && stageIndex >= 0) {
       const dep = trimmed.slice(2).trim()
-      stages[stageIndex]!.deps.push(dep)
+      const stage = stages[stageIndex]
+      if (stage) stage.deps.push(dep)
       continue
     }
 
@@ -144,7 +160,14 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
     if (trimmed.startsWith('- type:') && currentSection === 'probes' && stageIndex >= 0) {
       probeIndex++
       const probeType = trimmed.slice(7).trim()
-      stages[stageIndex]!.proof.probes[probeIndex] = { type: probeType }
+      const stage = stages[stageIndex]
+      if (!stage) continue
+      const probes = stage.proof.probes
+      if (probeIndex >= probes.length) {
+        probes.push({ type: probeType })
+      } else {
+        probes[probeIndex]!.type = probeType
+      }
       continue
     }
 
@@ -154,7 +177,9 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           (pattern.startsWith("'") && pattern.endsWith("'"))) {
         pattern = pattern.slice(1, -1)
       }
-      stages[stageIndex]!.proof.probes[probeIndex]!.pattern = pattern
+      const stage = stages[stageIndex]
+      const probe = stage?.proof.probes[probeIndex]
+      if (probe) probe.pattern = pattern
       continue
     }
 
@@ -164,20 +189,24 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           (command.startsWith("'") && command.endsWith("'"))) {
         command = command.slice(1, -1)
       }
-      stages[stageIndex]!.proof.probes[probeIndex]!.command = command
+      const stage = stages[stageIndex]
+      const probe = stage?.proof.probes[probeIndex]
+      if (probe) probe.command = command
       continue
     }
 
     if (currentSection === 'target' && stageIndex >= 0) {
       if (trimmed.startsWith('description:')) {
-        stages[stageIndex]!.proof.target.description = trimmed.slice(12).trim()
+        const stage = stages[stageIndex]
+        if (stage) stage.proof.target.description = trimmed.slice(12).trim()
       }
       continue
     }
 
     if (currentSection === 'spec' && stageIndex >= 0) {
       if (trimmed.startsWith('description:')) {
-        stages[stageIndex]!.proof.spec.description = trimmed.slice(12).trim()
+        const stage = stages[stageIndex]
+        if (stage) stage.proof.spec.description = trimmed.slice(12).trim()
       }
       continue
     }

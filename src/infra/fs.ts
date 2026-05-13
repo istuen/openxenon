@@ -12,8 +12,14 @@ function atomicWrite(filePath: string, data: string): void {
   const tmpPath = filePath + '.tmp'
   ensureDir(filePath)
   writeFileSync(tmpPath, data, 'utf-8')
-  if (process.platform === 'win32' && existsSync(filePath)) {
-    unlinkSync(filePath)
+  if (process.platform === 'win32') {
+    try {
+      if (existsSync(filePath)) {
+        unlinkSync(filePath)
+      }
+    } catch (error) {
+      // File might not exist or be locked - proceed with rename
+    }
   }
   renameSync(tmpPath, filePath)
 }

@@ -19,13 +19,24 @@ export const process = {
       })
 
       const exitCode = proc.exitCode ?? -1
-      const stdout = await new Response(proc.stdout).text()
-      const stderr = await new Response(proc.stderr).text()
+      const stdoutChunks: string[] = []
+      const stderrChunks: string[] = []
+
+      if (proc.stdout) {
+        for await (const chunk of proc.stdout) {
+          stdoutChunks.push(chunk instanceof Uint8Array ? new TextDecoder().decode(chunk) : String(chunk))
+        }
+      }
+      if (proc.stderr) {
+        for await (const chunk of proc.stderr) {
+          stderrChunks.push(chunk instanceof Uint8Array ? new TextDecoder().decode(chunk) : String(chunk))
+        }
+      }
 
       return {
         code: exitCode,
-        stdout,
-        stderr,
+        stdout: stdoutChunks.join(''),
+        stderr: stderrChunks.join(''),
         success: exitCode === 0
       }
     } catch (error) {
