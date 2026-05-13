@@ -54,11 +54,11 @@ describe('ProofInvocationSchema', () => {
       expect(() => ProofInvocationSchema.parse(input)).not.toThrow()
     })
 
-    it('合法 Proof Invocation 通过校验（带内联 ProbeInvocation）', () => {
+it('合法 Proof Invocation 通过校验（带内联 ProbeInvocation）', () => {
       const input = {
         name: 'build-success',
         target: '构建成功',
-        probeRefs: [{ type: 'fs_exists', params: { path: '/foo/bar' } }]
+        probeRefs: [{ type: 'fs_exists', params: { pattern: '/foo/bar' } }]
       }
       expect(() => ProofInvocationSchema.parse(input)).not.toThrow()
     })
@@ -68,8 +68,8 @@ describe('ProofInvocationSchema', () => {
         name: 'build-success',
         target: '构建成功',
         probeRefs: [
-          { type: 'fs_exists', params: { path: '/foo' } },
-          { type: 'exec_exit_zero', params: { command: 'npm test' } }
+          { type: 'fs_exists', params: { pattern: '/foo' } },
+          { type: 'shell_exec', params: { command: 'npm test' } }
         ]
       }
       expect(() => ProofInvocationSchema.parse(input)).not.toThrow()

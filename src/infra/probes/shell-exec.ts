@@ -1,5 +1,4 @@
 import { spawn } from 'child_process'
-import { join } from 'path'
 
 export interface ProbeContext {
   projectRoot: string
@@ -17,13 +16,20 @@ export function executeShellExec(
   context: ProbeContext
 ): Promise<ShellExecResult> {
   return new Promise((resolve) => {
-    const isAbsolute = command.startsWith('/')
-    const fullCommand = isAbsolute ? command : join(context.projectRoot, command)
-
-    const proc = spawn(fullCommand, [], {
+    const proc = spawn(command, [], {
       shell: true,
       cwd: context.projectRoot
     })
+
+    const timeout = setTimeout(() => {
+      proc.kill()
+      resolve({
+        success: false,
+        stdout: '',
+        stderr: 'Command timed out (30s)',
+        exitCode: null
+      })
+    }, 30000)
 
     let stdout = ''
     let stderr = ''
@@ -37,6 +43,7 @@ export function executeShellExec(
     })
 
     proc.on('close', (code: number | null) => {
+      clearTimeout(timeout)
       resolve({
         success: code === 0,
         stdout,
@@ -46,6 +53,7 @@ export function executeShellExec(
     })
 
     proc.on('error', (err: Error) => {
+      clearTimeout(timeout)
       resolve({
         success: false,
         stdout: '',

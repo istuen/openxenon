@@ -15,21 +15,21 @@ describe('ProbeDefinitionSchema', () => {
       expect(() => ProbeDefinitionSchema.parse(input)).not.toThrow()
     })
 
-    it('合法 fs_content_match Definition 通过校验', () => {
+    it('合法 fs_match Definition 通过校验', () => {
       const input = {
-        type: 'fs_content_match',
+        type: 'fs_match',
         description: '检查文件内容',
         parameters: [
-          { name: 'path', type: 'string', description: '文件路径' },
-          { name: 'pattern', type: 'string', description: '正则模式' }
+          { name: 'pattern', type: 'string', description: '文件路径' },
+          { name: 'contains', type: 'string', description: '正则模式' }
         ]
       }
       expect(() => ProbeDefinitionSchema.parse(input)).not.toThrow()
     })
 
-    it('合法 exec_exit_zero Definition 通过校验', () => {
+    it('合法 shell_exec Definition 通过校验', () => {
       const input = {
-        type: 'exec_exit_zero',
+        type: 'shell_exec',
         description: '检查命令成功',
         parameters: [{ name: 'command', type: 'string', description: '命令' }]
       }
@@ -79,22 +79,22 @@ describe('ProbeInvocationSchema', () => {
     it('合法 fs_exists Invocation 通过校验', () => {
       const input = {
         type: 'fs_exists',
-        params: { path: '/foo/bar' }
+        params: { pattern: '/foo/bar' }
       }
       expect(() => ProbeInvocationSchema.parse(input)).not.toThrow()
     })
 
-    it('合法 fs_content_match Invocation 通过校验', () => {
+    it('合法 fs_match Invocation 通过校验', () => {
       const input = {
-        type: 'fs_content_match',
-        params: { path: '/foo', pattern: '*.js' }
+        type: 'fs_match',
+        params: { pattern: '/foo', contains: '*.js' }
       }
       expect(() => ProbeInvocationSchema.parse(input)).not.toThrow()
     })
 
-    it('合法 exec_exit_zero Invocation 通过校验', () => {
+    it('合法 shell_exec Invocation 通过校验', () => {
       const input = {
-        type: 'exec_exit_zero',
+        type: 'shell_exec',
         params: { command: 'npm test' }
       }
       expect(() => ProbeInvocationSchema.parse(input)).not.toThrow()

@@ -11,12 +11,11 @@ parameters:
   - name: pattern
     type: string
     description: 文件路径（相对于 projectRoot）
-  - name: patterns
-    type: array
-    description: 正则表达式数组（所有正则都必须匹配）
+  - name: contains
+    type: string
+    description: 正则表达式（可选，匹配文件内容）
 spec:
   description: 验证文件内容匹配正则表达式
   constraints:
     - "pattern 必须是字符串"
-    - "patterns 必须是字符串数组"
-    - "至少需要一个 pattern"
+    - "contains 必须是字符串（可选）"

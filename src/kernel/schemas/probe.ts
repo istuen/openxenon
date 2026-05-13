@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_content_match', 'exec_exit_zero'])
+export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
 
 export const FsExistsParamsSchema = z.object({
   pattern: z.string()
@@ -10,20 +10,20 @@ export const FsNotExistsParamsSchema = z.object({
   pattern: z.string()
 })
 
-export const FsContentMatchParamsSchema = z.object({
-  path: z.string(),
-  contains: z.string()
+export const FsMatchParamsSchema = z.object({
+  pattern: z.string(),
+  contains: z.string().optional()
 })
 
-export const ExecExitZeroParamsSchema = z.object({
+export const ShellExecParamsSchema = z.object({
   command: z.string()
 })
 
 export const ProbeParamsSchema = z.union([
   FsExistsParamsSchema,
   FsNotExistsParamsSchema,
-  FsContentMatchParamsSchema,
-  ExecExitZeroParamsSchema
+  FsMatchParamsSchema,
+  ShellExecParamsSchema
 ])
 
 export const ParameterDefSchema = z.object({
