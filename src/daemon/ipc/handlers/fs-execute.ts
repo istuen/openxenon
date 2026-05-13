@@ -86,30 +86,26 @@ async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typ
 
   for (const stage of payload.blueprint.stages) {
     writeStageStart(taskDir, payload.task_id, stage.id, stage.name)
-
     writeStageComplete(taskDir, payload.task_id, stage.id, 'RUNNING')
+
+    let stageState = trace.stages.get(stage.id)
+    if (!stageState) {
+      stageState = { stageId: stage.id, stageName: stage.name, status: 'RUNNING', probes: [], startedAt: Date.now() }
+      trace.stages.set(stage.id, stageState)
+    }
 
     for (const probe of stage.proof.probes) {
       const result = await executeProbe(probe.type, probe.pattern || probe.command || '', payload.project_root)
       const probeResult = createProbeResult(probe.type, result.result, result.output, result.error)
-
-      const currentTrace = readTaskTrace(taskDir)
-      if (currentTrace) {
-        const stageState = currentTrace.stages.get(stage.id)
-        if (stageState) {
-          stageState.probes.push(probeResult)
-        }
-      }
+      stageState.probes.push(probeResult)
     }
 
-    const currentTrace = readTaskTrace(taskDir)
-    const lastStage = currentTrace ? Array.from(currentTrace.stages.values())[currentTrace.stages.size - 1] : null
-    const allProbesPassed = lastStage?.probes.every(p => p.result === 'PASSED') ?? true
-    writeStageComplete(taskDir, payload.task_id, stage.id, allProbesPassed ? 'PASSED' : 'FAILED')
+    const allProbesPassed = stageState.probes.every(p => p.result === 'PASSED')
+    stageState.status = allProbesPassed ? 'PASSED' : 'FAILED'
+    writeStageComplete(taskDir, payload.task_id, stage.id, stageState.status)
   }
 
-  const finalTrace = readTaskTrace(taskDir)
-  const allPassed = finalTrace ? Array.from(finalTrace.stages.values()).every(s => s.status === 'PASSED') : false
+  const allPassed = Array.from(trace.stages.values()).every(s => s.status === 'PASSED')
   writeTaskStatus(taskDir, payload.task_id, allPassed ? 'COMPLETED' : 'FAILED')
 
   return new Response(

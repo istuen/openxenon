@@ -119,8 +119,10 @@ export async function executeBlueprint(options: ExecutorOptions): Promise<{ succ
   const { order } = buildDag(stages)
   const results: ExecuteStageResult[] = []
 
+  const stageMap = new Map<string, Stage>(stages.map(s => [s.id, s]))
+
   for (const stageId of order) {
-    const stage = stages.find(s => s.id === stageId)
+    const stage = stageMap.get(stageId)
     if (!stage) continue
 
     const result = await executeStage(stage, options)
