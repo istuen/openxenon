@@ -264,6 +264,9 @@ export function taskNext(taskId: string, cwd: string): NextResult {
   state.currentStage = null
   writeState(cwd, taskId, state)
 
+  const completedEvent = buildTraceEvent('TASK_STATUS', taskId, { status: 'COMPLETED' })
+  appendTraceEvent(cwd, taskId, completedEvent)
+
   return {
     stageId: null,
     status: 'COMPLETED',

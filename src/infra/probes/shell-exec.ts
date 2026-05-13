@@ -11,13 +11,39 @@ export interface ShellExecResult {
   exitCode: number | null
 }
 
+function validateCommand(command: string): boolean {
+  const dangerousPatterns = [
+    /;/,
+    /\|/,
+    /&&/,
+    /\|\|/,
+    /`/,
+    /\$\(/,
+    />/,
+    /</,
+    /\n/,
+    /\r/,
+  ]
+  return !dangerousPatterns.some(pattern => pattern.test(command))
+}
+
 export function executeShellExec(
   command: string,
   context: ProbeContext
 ): Promise<ShellExecResult> {
   return new Promise((resolve) => {
+    if (!validateCommand(command)) {
+      resolve({
+        success: false,
+        stdout: '',
+        stderr: 'Invalid command: dangerous characters detected',
+        exitCode: null
+      })
+      return
+    }
+
     const proc = spawn(command, [], {
-      shell: true,
+      shell: false,
       cwd: context.projectRoot
     })
 

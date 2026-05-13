@@ -215,7 +215,12 @@ async function executeProbe(probeType: string, pattern: string, projectRoot: str
   switch (probeType) {
     case 'fs_content_match': {
       actualType = 'fs_match'
-      const [file, regex] = pattern.split(':')
+      const colonIndex = pattern.indexOf(':')
+      if (colonIndex === -1) {
+        return { probeType, result: 'FAILED', error: 'fs_content_match requires file:regex format', executedAt: Date.now() }
+      }
+      const file = pattern.substring(0, colonIndex)
+      const regex = pattern.substring(colonIndex + 1)
       params = { file, regex }
       break
     }

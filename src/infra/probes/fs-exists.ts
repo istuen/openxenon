@@ -1,5 +1,5 @@
 import { readdirSync, statSync } from 'fs'
-import { join, relative } from 'path'
+import { join, relative, dirname } from 'path'
 
 export interface ProbeContext {
   projectRoot: string
@@ -36,7 +36,7 @@ function matchPattern(path: string, pattern: string): boolean {
     const regex = new RegExp('^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$')
     return regex.test(path)
   }
-  return path === pattern || path.endsWith(pattern)
+  return path === pattern || path.endsWith('/' + pattern) || path === pattern
 }
 
 export async function executeFsExists(
@@ -48,10 +48,9 @@ export async function executeFsExists(
     : join(context.projectRoot, pattern)
 
   if (fullPattern.includes('*') || fullPattern.includes('?')) {
-    const baseDir = fullPattern.includes('*') || fullPattern.includes('?')
-      ? context.projectRoot
-      : fullPattern.substring(0, fullPattern.lastIndexOf('/'))
-    const globPattern = fullPattern.substring(baseDir.length + (baseDir.endsWith('/') ? 0 : 1))
+    const lastSlash = fullPattern.lastIndexOf('/')
+    const baseDir = lastSlash > 0 ? fullPattern.substring(0, lastSlash) : context.projectRoot
+    const globPattern = lastSlash > 0 ? fullPattern.substring(lastSlash + 1) : fullPattern
     return matchGlob(globPattern, baseDir || context.projectRoot)
   }
 

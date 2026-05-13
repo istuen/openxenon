@@ -31,7 +31,9 @@ export function loadProjectContext(projectPath: string | null): ProjectContext |
     try {
       const content = readFileSync(configPath, 'utf-8')
       const config = JSON.parse(content) as ProjectConfig
-      mode = config.mode || 'PRODUCTION'
+      if (config.mode === 'PRODUCTION' || config.mode === 'SANDBOX') {
+        mode = config.mode
+      }
     } catch {
       // Use default
     }

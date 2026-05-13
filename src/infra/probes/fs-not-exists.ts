@@ -36,7 +36,7 @@ function matchPattern(path: string, pattern: string): boolean {
     const regex = new RegExp('^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$')
     return regex.test(path)
   }
-  return path === pattern || path.endsWith(pattern)
+  return path === pattern || path.endsWith('/' + pattern) || path === pattern
 }
 
 export async function executeFsNotExists(
@@ -48,8 +48,9 @@ export async function executeFsNotExists(
     : join(context.projectRoot, pattern)
 
   if (fullPattern.includes('*') || fullPattern.includes('?')) {
-    const baseDir = context.projectRoot
-    const globPattern = fullPattern.substring(fullPattern.indexOf('/') + 1)
+    const lastSlash = fullPattern.lastIndexOf('/')
+    const baseDir = lastSlash > 0 ? fullPattern.substring(0, lastSlash) : context.projectRoot
+    const globPattern = lastSlash > 0 ? fullPattern.substring(lastSlash + 1) : fullPattern
     return matchGlob(globPattern, baseDir)
   }
 

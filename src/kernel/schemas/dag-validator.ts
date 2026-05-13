@@ -21,7 +21,6 @@ export function validateDagTopology(nodes: DagNode[]): DagValidationResult {
   const errors: string[] = []
   const nodeIds = new Set(nodes.map(n => n.id))
 
-  // 铁律1：依赖引用完整性
   for (const node of nodes) {
     for (const dep of node.deps) {
       if (!nodeIds.has(dep)) {
@@ -34,7 +33,6 @@ export function validateDagTopology(nodes: DagNode[]): DagValidationResult {
     return { valid: false, errors }
   }
 
-  // 铁律2：无环检测（Kahn 算法）
   const inDegree = new Map<string, number>()
   const adjList = new Map<string, string[]>()
 
@@ -45,9 +43,18 @@ export function validateDagTopology(nodes: DagNode[]): DagValidationResult {
 
   for (const node of nodes) {
     for (const dep of node.deps) {
-      adjList.get(dep)!.push(node.id)
-      inDegree.set(node.id, inDegree.get(node.id)! + 1)
+      const adj = adjList.get(dep)
+      if (!adj) {
+        errors.push(`Stage '${node.id}' depends on non-existent stage '${dep}'`)
+        continue
+      }
+      adj.push(node.id)
+      inDegree.set(node.id, (inDegree.get(node.id) ?? 0) + 1)
     }
+  }
+
+  if (errors.length > 0) {
+    return { valid: false, errors }
   }
 
   const queue: string[] = []
@@ -59,10 +66,13 @@ export function validateDagTopology(nodes: DagNode[]): DagValidationResult {
   while (queue.length > 0) {
     const current = queue.shift()!
     visitedCount++
-    for (const neighbor of adjList.get(current)!) {
-      const newDegree = inDegree.get(neighbor)! - 1
-      inDegree.set(neighbor, newDegree)
-      if (newDegree === 0) queue.push(neighbor)
+    const neighbors = adjList.get(current)
+    if (neighbors) {
+      for (const neighbor of neighbors) {
+        const newDegree = (inDegree.get(neighbor) ?? 0) - 1
+        inDegree.set(neighbor, newDegree)
+        if (newDegree === 0) queue.push(neighbor)
+      }
     }
   }
 
@@ -71,7 +81,6 @@ export function validateDagTopology(nodes: DagNode[]): DagValidationResult {
     return { valid: false, errors }
   }
 
-  // 铁律3：单一入口
   const entryNodes = nodes.filter(n => n.deps.length === 0)
   if (entryNodes.length === 0) {
     errors.push('DAG has no entry node (at least one stage must have no dependencies)')
@@ -85,9 +94,6 @@ export function validateDagTopology(nodes: DagNode[]): DagValidationResult {
   }
 }
 
-/**
- * 扁平拓扑排序（用于执行顺序）
- */
 export function topologicalSort(nodes: DagNode[]): string[] {
   const result: string[] = []
   const inDegree = new Map<string, number>()
@@ -100,7 +106,8 @@ export function topologicalSort(nodes: DagNode[]): string[] {
 
   for (const node of nodes) {
     for (const dep of node.deps) {
-      adjList.get(dep)!.push(node.id)
+      const adj = adjList.get(dep)
+      if (adj) adj.push(node.id)
     }
   }
 
@@ -112,10 +119,13 @@ export function topologicalSort(nodes: DagNode[]): string[] {
   while (queue.length > 0) {
     const current = queue.shift()!
     result.push(current)
-    for (const neighbor of adjList.get(current)!) {
-      const newDegree = inDegree.get(neighbor)! - 1
-      inDegree.set(neighbor, newDegree)
-      if (newDegree === 0) queue.push(neighbor)
+    const neighbors = adjList.get(current)
+    if (neighbors) {
+      for (const neighbor of neighbors) {
+        const newDegree = (inDegree.get(neighbor) ?? 0) - 1
+        inDegree.set(neighbor, newDegree)
+        if (newDegree === 0) queue.push(neighbor)
+      }
     }
   }
 

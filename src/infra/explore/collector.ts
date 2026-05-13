@@ -187,7 +187,7 @@ async function collectBlueprintRefs(
  * 采集 Trace 汇总
  */
 async function collectTraceSummary(
-  projectRoot: string
+  _projectRoot: string
 ): Promise<TraceSummary | undefined> {
   // Phase 1 暂不实现 Trace 分析
   return undefined

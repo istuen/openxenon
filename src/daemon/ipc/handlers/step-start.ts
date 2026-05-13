@@ -49,9 +49,11 @@ async function handleStepStart(
     }
 
     if (stageState.status === 'PENDING') {
-      writeStageComplete(taskDir, taskId, stage.id, 'RUNNING')
+      writeStageStart(taskDir, taskId, stage.id, stage.name)
       stageState.status = 'RUNNING'
     }
+
+    writeStageComplete(taskDir, taskId, stage.id, stageState.status)
 
     return new Response(
       JSON.stringify({

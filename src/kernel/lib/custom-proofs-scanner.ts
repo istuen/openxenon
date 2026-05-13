@@ -1,30 +1,40 @@
+import { join } from 'path'
 import type { CustomProofConfig } from './types/proof'
-import { scanProjectProofsSync, scanGlobalProofsSync, getGlobalProofsPath, getProjectProofsPath } from '../../infra/scanner'
 import { resolveCustomProofsRecursive, mergeCustomProofs, findProofById } from './custom-proofs-resolver'
 
-export function scanProjectProofs(projectRoot: string): CustomProofConfig[] {
-  const scanned = scanProjectProofsSync(projectRoot)
-  return resolveCustomProofsRecursive(scanned, 'project')
+const GLOBAL_PROOFS_DIR = '.openxenon/custom-proofs'
+
+export function getGlobalProofsDir(): string {
+  return GLOBAL_PROOFS_DIR
 }
 
-export function scanGlobalProofs(): CustomProofConfig[] {
-  const scanned = scanGlobalProofsSync()
-  return resolveCustomProofsRecursive(scanned, 'global')
+export function getProjectProofsDir(projectRoot: string): string {
+  return join(projectRoot, '.openxenon', 'proofs')
 }
 
-export function getAllCustomProofs(projectRoot: string): CustomProofConfig[] {
-  const projectProofs = scanProjectProofs(projectRoot)
-  const globalProofs = scanGlobalProofs()
+export function scanProjectProofs(scannedEntries: ReturnType<typeof import('../../infra/scanner').scanProjectProofsSync>, projectRoot: string): CustomProofConfig[] {
+  return resolveCustomProofsRecursive(scannedEntries, 'project')
+}
+
+export function scanGlobalProofs(scannedEntries: ReturnType<typeof import('../../infra/scanner').scanGlobalProofsSync>): CustomProofConfig[] {
+  return resolveCustomProofsRecursive(scannedEntries, 'global')
+}
+
+export function getAllCustomProofs(
+  projectScanned: ReturnType<typeof import('../../infra/scanner').scanProjectProofsSync>,
+  globalScanned: ReturnType<typeof import('../../infra/scanner').scanGlobalProofsSync>
+): CustomProofConfig[] {
+  const projectProofs = resolveCustomProofsRecursive(projectScanned, 'project')
+  const globalProofs = resolveCustomProofsRecursive(globalScanned, 'global')
   return mergeCustomProofs(projectProofs, globalProofs)
 }
 
 export function findCustomProof(
   proofId: string,
-  projectRoot: string
+  projectScanned: ReturnType<typeof import('../../infra/scanner').scanProjectProofsSync>,
+  globalScanned: ReturnType<typeof import('../../infra/scanner').scanGlobalProofsSync>
 ): CustomProofConfig | undefined {
-  const projectProofs = scanProjectProofs(projectRoot)
-  const globalProofs = scanGlobalProofs()
+  const projectProofs = resolveCustomProofsRecursive(projectScanned, 'project')
+  const globalProofs = resolveCustomProofsRecursive(globalScanned, 'global')
   return findProofById(proofId, projectProofs, globalProofs)
 }
-
-export { getGlobalProofsPath, getProjectProofsPath }
