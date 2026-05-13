@@ -1,8 +1,9 @@
 import { defineCommand } from 'citty'
-import { existsSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { taskSubmit, taskNext, taskVerify, taskStatus, type SubmitResult, type NextResult, type VerifyResult, type StatusResult } from './task-filesystem'
-import { BOUNDARY_DIR } from '../kernel/constants'
+import { BOUNDARY_DIR, TASKS_DIR, TASK_TRACE_FILE } from '../kernel/constants'
 import { join } from 'path'
+import { taskTraceToHtml } from './render/task-trace-renderer'
 
 function getProjectRoot(): string {
   return process.cwd()
@@ -203,10 +204,66 @@ export default defineCommand({
           }))
         }
       }
+    }),
+    render: defineCommand({
+      meta: {
+        name: 'render',
+        description: '将 task-trace.yaml 渲染为 HTML 报告'
+      },
+      args: {
+        'task-id': {
+          type: 'string',
+          alias: 't',
+          required: true,
+          description: '任务 ID'
+        },
+        'format': {
+          type: 'string',
+          required: false,
+          default: 'html',
+          description: '输出格式（仅支持 html）'
+        }
+      },
+      run(ctx) {
+        try {
+          if (!projectBoundaryExists()) {
+            console.error('错误: 项目未初始化，请先执行 oxn init')
+            return
+          }
+
+          const taskId = ctx.args['task-id'] as string
+          const cwd = getProjectRoot()
+          const tracePath = join(cwd, BOUNDARY_DIR, TASKS_DIR, taskId, TASK_TRACE_FILE)
+
+          if (!existsSync(tracePath)) {
+            console.error(`错误: 任务不存在: ${taskId}`)
+            return
+          }
+
+          const traceContent = readFileSync(tracePath, 'utf-8')
+          const html = taskTraceToHtml({ taskId, traceContent })
+
+          const htmlPath = join(cwd, BOUNDARY_DIR, TASKS_DIR, taskId, `report-${Date.now()}.html`)
+          writeFileSync(htmlPath, html, 'utf-8')
+
+          console.log(`HTML 报告已生成: ${htmlPath}`)
+          console.log('正在打开浏览器...')
+
+          const { exec } = require('child_process')
+          exec(`open "${htmlPath}"`, (err: Error | null) => {
+            if (err) {
+              console.error('警告: 无法自动打开浏览器，请手动打开报告文件')
+            }
+          })
+        } catch (err: unknown) {
+          const error = err as Error
+          console.error(`错误: ${error.message || String(err)}`)
+        }
+      }
     })
   },
   run() {
     console.log('使用 oxn task <subcommand> 查看可用子命令')
-    console.log('子命令: submit, next, verify, status')
+    console.log('子命令: submit, next, verify, status, render')
   }
 })

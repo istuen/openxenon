@@ -12,6 +12,7 @@ export default defineCommand({
     search: () => import('./arsenal-search').then(m => m.default),
     export: () => import('./arsenal-export').then(m => m.default),
     import: () => import('./arsenal-import').then(m => m.default),
-    migrate: () => import('./arsenal-migrate').then(m => m.default)
+    migrate: () => import('./arsenal-migrate').then(m => m.default),
+    render: () => import('./arsenal-render').then(m => m.default)
   }
 })
