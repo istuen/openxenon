@@ -11,6 +11,7 @@ stages:
   - id: stage-1
     name: 第一阶段
     description: 测试阶段
+    deps: []
     proof:
       probeRefs:
         - type: fs_exists
@@ -32,6 +33,7 @@ const BLUEPRINT_NO_NAME = `
 stages:
   - id: stage-1
     name: 第一阶段
+    deps: []
     proof:
       probeRefs:
         - type: fs_exists
@@ -44,6 +46,7 @@ name: Test-Task-UPPERCASE
 stages:
   - id: stage-1
     name: 第一阶段
+    deps: []
     proof:
       probeRefs:
         - type: fs_exists
@@ -99,6 +102,58 @@ describe('CLI Task Filesystem Operations', () => {
       const invalidPath = join(TEST_WORKDIR, 'invalid-name.yaml')
       writeFileSync(invalidPath, BLUEPRINT_INVALID_NAME)
       expect(() => taskSubmit(invalidPath, TEST_WORKDIR)).toThrow('Task name required')
+    })
+
+    it('DAG 拓扑校验：循环依赖拒绝', () => {
+      const cyclicBlueprint = `
+name: cyclic-test
+stages:
+  - id: a
+    name: A
+    deps: [b]
+    proof:
+      probeRefs:
+        - type: fs_exists
+          params:
+            pattern: package.json
+  - id: b
+    name: B
+    deps: [a]
+    proof:
+      probeRefs:
+        - type: fs_exists
+          params:
+            pattern: package.json
+`
+      const cyclicPath = join(TEST_WORKDIR, 'cyclic.yaml')
+      writeFileSync(cyclicPath, cyclicBlueprint)
+      expect(() => taskSubmit(cyclicPath, TEST_WORKDIR)).toThrow('cycle')
+    })
+
+    it('DAG 拓扑校验：多入口拒绝', () => {
+      const multiEntryBlueprint = `
+name: multi-entry-test
+stages:
+  - id: a
+    name: A
+    deps: []
+    proof:
+      probeRefs:
+        - type: fs_exists
+          params:
+            pattern: package.json
+  - id: b
+    name: B
+    deps: []
+    proof:
+      probeRefs:
+        - type: fs_exists
+          params:
+            pattern: package.json
+`
+      const multiPath = join(TEST_WORKDIR, 'multi-entry.yaml')
+      writeFileSync(multiPath, multiEntryBlueprint)
+      expect(() => taskSubmit(multiPath, TEST_WORKDIR)).toThrow('entry')
     })
 
     it('nameOverride 参数覆盖 Blueprint 名称', () => {

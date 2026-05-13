@@ -5,6 +5,7 @@ import { ensureDirectory } from '../infra/fs'
 import { parse as parseYaml } from 'yaml'
 import { probeHandlers, type ProbeResult, type ProbeContext } from '../infra/probes'
 import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
+import { topologicalSort, validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
 import type { ProbeInvocation } from '../kernel/schemas/probe'
 import { buildTraceEvent, type TraceEvent } from '../kernel/lib/task-trace'
 import type { StageDefinition } from '../kernel/schemas/stage'
@@ -143,6 +144,15 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
     throw new Error(`Task "${taskId}" already exists. Choose a different name with --name.`)
   }
 
+  const dagNodes: DagNode[] = (parsed.stages || []).map(s => ({
+    id: s.id || s.name,
+    deps: s.deps || []
+  }))
+  const dagValidation = validateDagTopology(dagNodes)
+  if (!dagValidation.valid) {
+    throw new Error(`Invalid DAG: ${dagValidation.errors.join(', ')}`)
+  }
+
   const taskDir = getTaskDir(cwd, taskId)
   ensureDirectory(taskDir)
 
@@ -207,23 +217,44 @@ export function taskNext(taskId: string, cwd: string): NextResult {
     throw new Error('No stages defined in blueprint')
   }
 
+  const dagNodes: DagNode[] = blueprint.stages.map(s => ({
+    id: s.id || s.name,
+    deps: s.deps || []
+  }))
+  const executionOrder = topologicalSort(dagNodes)
+
+  const stageNameById: Record<string, string> = {}
   for (const stage of blueprint.stages) {
-    const stageStatus = state.stages[stage.name]
-    if (!stageStatus || stageStatus === 'PENDING') {
-      state.stages[stage.name] = 'RUNNING'
-      state.currentStage = stage.name
+    stageNameById[stage.id || stage.name] = stage.name
+  }
+
+  for (const stageId of executionOrder) {
+    const stageName = stageNameById[stageId]
+    if (!stageName) continue
+
+    const stageStatus = state.stages[stageName]
+
+    const deps = blueprint.stages.find(s => (s.id || s.name) === stageId)?.deps || []
+    const depsSatisfied = deps.every(depId => {
+      const depName = stageNameById[depId] || depId
+      return state.stages[depName] === 'PASSED'
+    })
+
+    if (depsSatisfied && (!stageStatus || stageStatus === 'PENDING')) {
+      state.stages[stageName] = 'RUNNING'
+      state.currentStage = stageName
       writeState(cwd, taskId, state)
 
       const traceEvent = buildTraceEvent('STAGE_START', taskId, {
-        stageId: stage.id || stage.name,
-        stageName: stage.name
+        stageId,
+        stageName
       })
       appendTraceEvent(cwd, taskId, traceEvent)
 
       return {
-        stageId: stage.id || stage.name,
-        name: stage.name,
-        proof: stage.proof,
+        stageId,
+        name: stageName,
+        proof: blueprint.stages.find(s => (s.id || s.name) === stageId)?.proof,
         message: 'Stage started'
       }
     }
