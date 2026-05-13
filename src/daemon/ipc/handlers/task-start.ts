@@ -38,15 +38,10 @@ async function handleTaskStart(
       return notFound(`Task '${taskId}' not found`)
     }
 
-    let newStatus = trace.status
-    if (trace.status === 'RUNNING') {
-      newStatus = 'RUNNING'
-    }
-
     return new Response(
       JSON.stringify({
         taskId: taskId,
-        status: newStatus
+        status: trace.status
       }),
       {
         status: 200,

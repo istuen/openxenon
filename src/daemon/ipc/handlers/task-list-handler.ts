@@ -1,6 +1,7 @@
 import { registerRoute } from '../router'
 import { readdirSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { daemonLogger } from '../../logger'
 
 async function handleTaskListHandler(
   _request: Request,
@@ -32,7 +33,8 @@ async function handleTaskListHandler(
       try {
         const content = readFileSync(tracePath, 'utf-8')
         return JSON.parse(content)
-      } catch {
+      } catch (error) {
+        daemonLogger.warn(`Failed to read task trace: ${tracePath} - ${error}`)
         return null
       }
     }).filter(Boolean)

@@ -36,9 +36,16 @@ export function getQueryParams(url: string): Record<string, string> {
   const params: Record<string, string> = {}
   
   for (const pair of queryString.split('&')) {
-    const [key, value] = pair.split('=')
+    if (!pair) continue
+    const eqIndex = pair.indexOf('=')
+    if (eqIndex === -1) {
+      if (pair) params[decodeURIComponent(pair)] = ''
+      continue
+    }
+    const key = pair.substring(0, eqIndex)
+    const value = pair.substring(eqIndex + 1)
     if (key) {
-      params[decodeURIComponent(key)] = value ? decodeURIComponent(value) : ''
+      params[decodeURIComponent(key)] = decodeURIComponent(value)
     }
   }
   

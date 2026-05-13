@@ -36,6 +36,13 @@ async function handleArsenalPromote(
 
     const canonicalPath = join(projectBoundary, 'arsenals', assetType, asset, 'canonical.yaml')
 
+    if (existsSync(canonicalPath)) {
+      return new Response(
+        JSON.stringify({ error: 'Conflict', message: `Canonical asset already exists: ${asset}/${assetType}` }),
+        { status: 409, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
     renameSync(draftPath, canonicalPath)
 
     globalArsenalRegistry.buildIndex(projectBoundary)

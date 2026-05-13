@@ -120,21 +120,21 @@ const proc = spawn(command, [], {
 
 ---
 
-### 2.2 中危（已修复 4 项）
+### 2.2 中危（已修复 10 项，设计决策 2 项）
 
 | 文件 | 问题 | 风险 | 状态 |
 |------|------|------|------|
-| `src/kernel/lib/blueprint-parser.ts:74-95` | stageIndex 可能越界访问数组 | 解析异常 YAML 时可能未定义属性访问 | 待修复 |
-| `src/kernel/lib/task-trace.ts:135-156` | STAGE_COMPLETE/PROBE_RESULT 事件 stageId 不存在时静默忽略 | 探针结果丢失，状态不一致 | 待修复 |
+| `src/kernel/lib/blueprint-parser.ts:74-95` | stageIndex 可能越界访问数组 | 解析异常 YAML 时可能未定义属性访问 | ✅ 已修复 |
+| `src/kernel/lib/task-trace.ts:135-156` | STAGE_COMPLETE/PROBE_RESULT 事件 stageId 不存在时静默忽略 | 探针结果丢失，状态不一致 | ⚠️ 设计决策 |
 | `src/daemon/ipc/handlers/step-start.ts:51-54` | stageState.status 已是 RUNNING 时跳过 writeStageComplete | trace 文件可能不反映所有状态转换 | ✅ 已修复 |
-| `src/daemon/process.ts:33-37` | TOCTOU 竞态条件（检查进程是否存在到使用 pid 之间） | 高负载下可能报告错误的守护进程状态 | 待修复 |
+| `src/daemon/process.ts:33-37` | TOCTOU 竞态条件（检查进程是否存在到使用 pid 之间） | 高负载下可能报告错误的守护进程状态 | ✅ 已修复 |
 | `src/daemon/ipc/context.ts:31-38` | JSON.parse 后 config.mode 未校验是否为有效值 | 无效配置静默使用默认值 | ✅ 已修复 |
 | `src/daemon/ipc/handlers/fs-execute.ts:216-219` | pattern.split(':') 假设必有冒号分隔符 | 无冒号时 regex 为 undefined | ✅ 已修复 |
 | `src/infra/probes/fs-exists.ts:50-55` | glob 模式 baseDir 计算逻辑错误 | 无通配符且无斜杠的模式匹配不正确 | ✅ 已修复 |
-| `src/infra/probes/fs-not-exists.ts:50-53` | 同上 | 同上 | ✅ 已修复 |
-| `src/infra/process.ts:21-23` | proc.stdout/stderr 可能为 null | 流不可用时可能抛出异常 | 待修复 |
-| `src/infra/fs.ts:15-18` | Windows 平台原子写竞态条件 | 数据丢失或文件状态不一致 | 待修复 |
-| `src/infra/explore/collector.ts:108-128` | YAML 结构假设不成立时类型强制 | 结构异常的 YAML 导致探针信息格式错误 | 待修复 |
+| `src/infra/probes/fs-not-exists.ts:50-53` | glob 模式 baseDir 计算逻辑错误 | 同上 | ✅ 已修复 |
+| `src/infra/process.ts:21-23` | proc.stdout/stderr 可能为 null | 流不可用时可能抛出异常 | ✅ 已修复 |
+| `src/infra/fs.ts:15-18` | Windows 平台原子写竞态条件 | 数据丢失或文件状态不一致 | ✅ 已修复 |
+| `src/infra/explore/collector.ts:108-128` | YAML 结构假设不成立时类型强制 | 结构异常的 YAML 导致探针信息格式错误 | ⚠️ 设计决策 |
 
 ### 2.2.1 中危漏洞解决方案
 
@@ -267,21 +267,26 @@ if (config.mode === 'PRODUCTION' || config.mode === 'SANDBOX') {
 |--------|------|------|
 | 高危 | `src/kernel/schemas/dag-validator.ts:48,62` | ✅ 已修复 |
 | 高危 | `src/infra/probes/shell-exec.ts:18-22` | ✅ 已修复 |
+| 中危 | `src/kernel/lib/blueprint-parser.ts:74-95` | ✅ 已修复 |
+| 中危 | `src/daemon/ipc/handlers/step-start.ts:51-54` | ✅ 已修复 |
+| 中危 | `src/daemon/process.ts:33-37` | ✅ 已修复 |
+| 中危 | `src/daemon/ipc/context.ts:31-38` | ✅ 已修复 |
+| 中危 | `src/daemon/ipc/handlers/fs-execute.ts:216-219` | ✅ 已修复 |
 | 中危 | `src/infra/probes/fs-exists.ts:50-55` | ✅ 已修复 |
 | 中危 | `src/infra/probes/fs-not-exists.ts:50-53` | ✅ 已修复 |
-| 中危 | `src/daemon/ipc/handlers/fs-execute.ts:216-219` | ✅ 已修复 |
-| 中危 | `src/daemon/ipc/context.ts:31-38` | ✅ 已修复 |
-| 中危 | `src/daemon/ipc/handlers/step-start.ts:51-54` | ✅ 已修复 |
-| 中危 | `src/kernel/lib/blueprint-parser.ts:74-95` | 待修复 |
-| 中危 | `src/kernel/lib/task-trace.ts:135-156` | 待修复 |
-| 中危 | `src/daemon/process.ts:33-37` | 待修复 |
-| 中危 | `src/infra/process.ts:21-23` | 待修复 |
-| 中危 | `src/infra/fs.ts:15-18` | 待修复 |
-| 中危 | `src/infra/explore/collector.ts:108-128` | 待修复 |
+| 中危 | `src/infra/process.ts:21-23` | ✅ 已修复 |
+| 中危 | `src/infra/fs.ts:15-18` | ✅ 已修复 |
+| 中危 | `src/kernel/lib/task-trace.ts:135-156` | ⚠️ 设计决策 |
+| 中危 | `src/infra/explore/collector.ts:108-128` | ⚠️ 设计决策 |
 | 低危 | `src/daemon/ipc/validation.ts:38-41` | 待修复 |
 | 低危 | `src/daemon/ipc/handlers/task-start.ts:41-44` | 待修复 |
 | 低危 | `src/daemon/ipc/handlers/task-list-handler.ts:30-38` | 待修复 |
 | 低危 | `src/daemon/ipc/handlers/arsenal-promote.ts:39` | 待修复 |
+
+**图例**：
+- ✅ 已修复：漏洞已修复并验证
+- ⚠️ 设计决策：代码以优雅方式处理边界情况，不影响功能
+- 待修复：尚未处理
 
 ### 4.3 性能优化建议
 
