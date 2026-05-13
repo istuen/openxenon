@@ -29,6 +29,12 @@ export default defineCommand({
           alias: 'b',
           required: true,
           description: 'Blueprint YAML 文件路径'
+        },
+        name: {
+          type: 'string',
+          alias: 'n',
+          required: false,
+          description: 'Task 名称（kebab-case），默认从 Blueprint name 字段读取'
         }
       },
       run(ctx) {
@@ -46,7 +52,8 @@ export default defineCommand({
           }
 
           const blueprintPath = ctx.args.blueprint as string
-          const result = taskSubmit(blueprintPath, getProjectRoot()) as SubmitResult
+          const name = ctx.args.name as string | undefined
+          const result = taskSubmit(blueprintPath, getProjectRoot(), name) as SubmitResult
 
           console.log(JSON.stringify({ ok: true, data: result }))
         } catch (err: unknown) {

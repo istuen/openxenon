@@ -28,6 +28,29 @@ stages:
             command: echo "hello"
 `
 
+const BLUEPRINT_NO_NAME = `
+stages:
+  - id: stage-1
+    name: 第一阶段
+    proof:
+      probeRefs:
+        - type: fs_exists
+          params:
+            pattern: package.json
+`
+
+const BLUEPRINT_INVALID_NAME = `
+name: Test-Task-UPPERCASE
+stages:
+  - id: stage-1
+    name: 第一阶段
+    proof:
+      probeRefs:
+        - type: fs_exists
+          params:
+            pattern: package.json
+`
+
 describe('CLI Task Filesystem Operations', () => {
   let blueprintPath: string
 
@@ -44,11 +67,10 @@ describe('CLI Task Filesystem Operations', () => {
   })
 
   describe('taskSubmit', () => {
-    it('创建任务并返回 task-id', () => {
+    it('创建任务并返回 kebab-case task-id', () => {
       const result = taskSubmit(blueprintPath, TEST_WORKDIR)
 
-      expect(result.taskId).toBeDefined()
-      expect(result.taskId.length).toBeGreaterThan(0)
+      expect(result.taskId).toBe('test-task')
       expect(result.status).toBe('RUNNING')
       expect(result.stagesCount).toBe(2)
       expect(result.message).toBe('Task created successfully')
@@ -65,6 +87,28 @@ describe('CLI Task Filesystem Operations', () => {
 
     it('Blueprint 文件不存在时抛出错误', () => {
       expect(() => taskSubmit('/nonexistent.yaml', TEST_WORKDIR)).toThrow()
+    })
+
+    it('Blueprint 无 name 字段时抛出错误', () => {
+      const noNamePath = join(TEST_WORKDIR, 'no-name.yaml')
+      writeFileSync(noNamePath, BLUEPRINT_NO_NAME)
+      expect(() => taskSubmit(noNamePath, TEST_WORKDIR)).toThrow('Blueprint must have name or id field')
+    })
+
+    it('无效 name 格式抛出错误', () => {
+      const invalidPath = join(TEST_WORKDIR, 'invalid-name.yaml')
+      writeFileSync(invalidPath, BLUEPRINT_INVALID_NAME)
+      expect(() => taskSubmit(invalidPath, TEST_WORKDIR)).toThrow('Task name required')
+    })
+
+    it('nameOverride 参数覆盖 Blueprint 名称', () => {
+      const result = taskSubmit(blueprintPath, TEST_WORKDIR, 'custom-task-name')
+      expect(result.taskId).toBe('custom-task-name')
+    })
+
+    it('重复 task 名称抛出错误', () => {
+      taskSubmit(blueprintPath, TEST_WORKDIR)
+      expect(() => taskSubmit(blueprintPath, TEST_WORKDIR)).toThrow('already exists')
     })
 
     it('state.json 包含正确的初始状态', () => {

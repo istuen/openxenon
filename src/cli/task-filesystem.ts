@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto'
 import { join } from 'path'
 import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'fs'
 import { BOUNDARY_DIR, BLUEPRINT_FILE, TASKS_DIR, STEP_MANIFEST_FILE } from '../kernel/constants'
@@ -27,8 +26,43 @@ export interface ParsedBlueprint {
   stages: StageDefinition[]
 }
 
+function validateTaskName(name: string): { valid: boolean; error?: string } {
+  if (!name) return { valid: false, error: 'Name is required' }
+  if (name.length < 2) return { valid: false, error: 'Name too short (min 2 chars)' }
+  if (name.length > 64) return { valid: false, error: 'Name too long (max 64 chars)' }
+  if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+    return { valid: false, error: 'Name must be kebab-case (lowercase letter, lowercase letters/numbers, hyphens)' }
+  }
+  if (name.endsWith('-')) return { valid: false, error: 'Name cannot end with hyphen' }
+  return { valid: true }
+}
+
 function getTaskDir(cwd: string, taskId: string): string {
   return join(cwd, BOUNDARY_DIR, TASKS_DIR, taskId)
+}
+
+function resolveTaskName(
+  content: string,
+  nameOverride?: string
+): string {
+  const candidate = nameOverride || content.match(/^name:\s*["']?([a-z][a-z0-9-]*)/m)?.[1]
+
+  if (!candidate) {
+    throw new Error(
+      'Task name required. Use --name or ensure blueprint has a name field.'
+    )
+  }
+
+  const validation = validateTaskName(candidate)
+  if (!validation.valid) {
+    throw new Error(`Invalid task name: ${validation.error}`)
+  }
+
+  return candidate
+}
+
+function taskDirExists(cwd: string, name: string): boolean {
+  return existsSync(join(cwd, BOUNDARY_DIR, TASKS_DIR, name))
 }
 
 function getBlueprintPath(cwd: string, taskId: string): string {
@@ -91,7 +125,7 @@ export interface SubmitResult {
   message: string
 }
 
-export function taskSubmit(blueprintPath: string, cwd: string): SubmitResult {
+export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: string): SubmitResult {
   if (!existsSync(blueprintPath)) {
     throw new Error(`Blueprint file not found: ${blueprintPath}`)
   }
@@ -103,7 +137,12 @@ export function taskSubmit(blueprintPath: string, cwd: string): SubmitResult {
     throw new Error('Blueprint must have name or id field')
   }
 
-  const taskId = randomUUID().slice(0, 8)
+  const taskId = resolveTaskName(content, nameOverride)
+
+  if (taskDirExists(cwd, taskId)) {
+    throw new Error(`Task "${taskId}" already exists. Choose a different name with --name.`)
+  }
+
   const taskDir = getTaskDir(cwd, taskId)
   ensureDirectory(taskDir)
 
