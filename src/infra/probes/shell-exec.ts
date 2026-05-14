@@ -12,17 +12,11 @@ export interface ShellExecResult {
 }
 
 function validateCommand(command: string): boolean {
+  if (!command || command.trim().length === 0) return false
+  if (command.length > 4096) return false
   const dangerousPatterns = [
-    /;/,
-    /\|/,
-    /&&/,
-    /\|\|/,
-    /`/,
-    /\$\(/,
-    />/,
-    /</,
-    /\n/,
-    /\r/,
+    /\0/,
+    /\r?\n(?=[^])/,
   ]
   return !dangerousPatterns.some(pattern => pattern.test(command))
 }
@@ -36,14 +30,14 @@ export function executeShellExec(
       resolve({
         success: false,
         stdout: '',
-        stderr: 'Invalid command: dangerous characters detected',
+        stderr: 'Invalid command: empty, too long, or contains null bytes',
         exitCode: null
       })
       return
     }
 
     const proc = spawn(command, [], {
-      shell: false,
+      shell: true,
       cwd: context.projectRoot
     })
 

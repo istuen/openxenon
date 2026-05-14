@@ -62,6 +62,19 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       error: result.success ? undefined : `Exit code: ${result.exitCode}`,
       executedAt: Date.now()
     } as ProbeResult
+  },
+
+  exec_exit_zero: async (params, context) => {
+    const command = params.command as string
+    const result: ShellExecResult = await executeShellExec(command, context)
+    const passed = result.exitCode === 0
+    return {
+      probeType: 'exec_exit_zero',
+      result: passed ? 'PASSED' : 'FAILED',
+      output: result.stdout || result.stderr,
+      error: passed ? undefined : `Exit code: ${result.exitCode}`,
+      executedAt: Date.now()
+    } as ProbeResult
   }
 }
 

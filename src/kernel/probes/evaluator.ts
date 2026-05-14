@@ -58,6 +58,14 @@ export function evaluateProbe(
       }
     }
 
+    case 'exec_exit_zero': {
+      const passed = actualResult.result === 'PASSED'
+      return {
+        passed,
+        message: passed ? `Exit code 0` : (actualResult.error || 'Non-zero exit')
+      }
+    }
+
     default:
       return {
         passed: false,

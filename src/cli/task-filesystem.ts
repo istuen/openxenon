@@ -1,14 +1,16 @@
 import { join } from 'path'
 import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'fs'
-import { BOUNDARY_DIR, BLUEPRINT_FILE, TASKS_DIR, STEP_MANIFEST_FILE } from '../kernel/constants'
+import { BOUNDARY_DIR, BLUEPRINT_FILE, TASKS_DIR, STEP_MANIFEST_FILE, FROZEN_BLUEPRINT_FILE } from '../kernel/constants'
 import { ensureDirectory } from '../infra/fs'
 import { parse as parseYaml } from 'yaml'
 import { probeHandlers, type ProbeResult, type ProbeContext } from '../infra/probes'
 import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
 import { topologicalSort, validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
-import type { ProbeInvocation } from '../kernel/schemas/probe'
 import { buildTraceEvent, type TraceEvent } from '../kernel/lib/task-trace'
-import type { StageDefinition } from '../kernel/schemas/stage'
+import { compileBlueprint } from '../kernel/compiler/blueprint-compiler'
+import type { Blueprint } from '../kernel/schemas/blueprint.schema'
+import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
+import { stringify as stringifyYaml } from 'yaml'
 
 const TASK_TRACE_FILE = 'task-trace.yaml'
 const STATE_FILE = 'state.json'
@@ -24,7 +26,7 @@ export interface TaskState {
 export interface ParsedBlueprint {
   name?: string
   id?: string
-  stages: StageDefinition[]
+  stages?: Array<Record<string, unknown>>
 }
 
 function validateTaskName(name: string): { valid: boolean; error?: string } {
@@ -70,6 +72,10 @@ function getBlueprintPath(cwd: string, taskId: string): string {
   return join(getTaskDir(cwd, taskId), BLUEPRINT_FILE)
 }
 
+function getFrozenBlueprintPath(cwd: string, taskId: string): string {
+  return join(getTaskDir(cwd, taskId), FROZEN_BLUEPRINT_FILE)
+}
+
 function getStatePath(cwd: string, taskId: string): string {
   return join(getTaskDir(cwd, taskId), STATE_FILE)
 }
@@ -82,12 +88,12 @@ function getStepManifestPath(cwd: string, taskId: string): string {
   return join(getTaskDir(cwd, taskId), STEP_MANIFEST_FILE)
 }
 
-function readBlueprint(cwd: string, taskId: string): ParsedBlueprint | null {
-  const path = getBlueprintPath(cwd, taskId)
+function readFrozenBlueprint(cwd: string, taskId: string): FrozenBlueprint | null {
+  const path = getFrozenBlueprintPath(cwd, taskId)
   if (!existsSync(path)) return null
   try {
     const content = readFileSync(path, 'utf-8')
-    return parseYaml(content) as ParsedBlueprint
+    return parseYaml(content) as FrozenBlueprint
   } catch {
     return null
   }
@@ -132,9 +138,9 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   }
 
   const content = readFileSync(blueprintPath, 'utf-8')
-  const parsed = parseYaml(content) as ParsedBlueprint
+  const rawParsed = parseYaml(content) as ParsedBlueprint
 
-  if (!parsed.name && !parsed.id) {
+  if (!rawParsed.name && !rawParsed.id) {
     throw new Error('Blueprint must have name or id field')
   }
 
@@ -144,14 +150,16 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
     throw new Error(`Task "${taskId}" already exists. Choose a different name with --name.`)
   }
 
-  const dagNodes: DagNode[] = (parsed.stages || []).map(s => ({
-    id: s.id || s.name,
-    deps: s.deps || []
+  const dagNodes: DagNode[] = (rawParsed.stages || []).map(s => ({
+    id: String(s.id || s.name),
+    deps: (s.deps || []) as string[]
   }))
   const dagValidation = validateDagTopology(dagNodes)
   if (!dagValidation.valid) {
     throw new Error(`Invalid DAG: ${dagValidation.errors.join(', ')}`)
   }
+
+  const parsed = rawParsed as unknown as Blueprint
 
   const taskDir = getTaskDir(cwd, taskId)
   ensureDirectory(taskDir)
@@ -159,9 +167,17 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   const blueprintDestPath = getBlueprintPath(cwd, taskId)
   writeFileSync(blueprintDestPath, content, 'utf-8')
 
+  const frozenBlueprint = compileBlueprint(parsed, {
+    taskId,
+    taskName: parsed.name || parsed.id || taskId,
+    params: {}
+  })
+  const frozenDestPath = getFrozenBlueprintPath(cwd, taskId)
+  writeFileSync(frozenDestPath, stringifyYaml(frozenBlueprint), 'utf-8')
+
   const stages: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'> = {}
-  if (parsed.stages) {
-    for (const stage of parsed.stages) {
+  if (frozenBlueprint.stages) {
+    for (const stage of frozenBlueprint.stages) {
       stages[stage.name] = 'PENDING'
     }
   }
@@ -182,10 +198,10 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
 
   return {
     taskId,
-    blueprintId: taskId,
-    blueprintFile: `${TASKS_DIR}/${taskId}/${BLUEPRINT_FILE}`,
+    blueprintId: frozenBlueprint.id,
+    blueprintFile: `${TASKS_DIR}/${taskId}/${FROZEN_BLUEPRINT_FILE}`,
     status: 'RUNNING',
-    stagesCount: parsed.stages?.length || 0,
+    stagesCount: frozenBlueprint.stages.length,
     message: 'Task created successfully'
   }
 }
@@ -212,19 +228,19 @@ export function taskNext(taskId: string, cwd: string): NextResult {
     }
   }
 
-  const blueprint = readBlueprint(cwd, taskId)
-  if (!blueprint || !blueprint.stages || blueprint.stages.length === 0) {
-    throw new Error('No stages defined in blueprint')
+  const frozenBlueprint = readFrozenBlueprint(cwd, taskId)
+  if (!frozenBlueprint || !frozenBlueprint.stages || frozenBlueprint.stages.length === 0) {
+    throw new Error('No stages defined in frozen blueprint')
   }
 
-  const dagNodes: DagNode[] = blueprint.stages.map(s => ({
+  const dagNodes: DagNode[] = frozenBlueprint.stages.map(s => ({
     id: s.id || s.name,
     deps: s.deps || []
   }))
   const executionOrder = topologicalSort(dagNodes)
 
   const stageNameById: Record<string, string> = {}
-  for (const stage of blueprint.stages) {
+  for (const stage of frozenBlueprint.stages) {
     stageNameById[stage.id || stage.name] = stage.name
   }
 
@@ -234,7 +250,7 @@ export function taskNext(taskId: string, cwd: string): NextResult {
 
     const stageStatus = state.stages[stageName]
 
-    const deps = blueprint.stages.find(s => (s.id || s.name) === stageId)?.deps || []
+    const deps = frozenBlueprint.stages.find(s => (s.id || s.name) === stageId)?.deps || []
     const depsSatisfied = deps.every(depId => {
       const depName = stageNameById[depId] || depId
       return state.stages[depName] === 'PASSED'
@@ -251,10 +267,13 @@ export function taskNext(taskId: string, cwd: string): NextResult {
       })
       appendTraceEvent(cwd, taskId, traceEvent)
 
+      const stage = frozenBlueprint.stages.find(s => (s.id || s.name) === stageId)
+      const probeRefs = stage?.probes || []
+
       return {
         stageId,
         name: stageName,
-        proof: blueprint.stages.find(s => (s.id || s.name) === stageId)?.proof,
+        proof: JSON.stringify({ probeRefs }),
         message: 'Stage started'
       }
     }
@@ -287,12 +306,12 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
     throw new Error(`Task not found: ${taskId}`)
   }
 
-  const blueprint = readBlueprint(cwd, taskId)
-  if (!blueprint || !blueprint.stages) {
-    throw new Error('No blueprint or stages found')
+  const frozenBlueprint = readFrozenBlueprint(cwd, taskId)
+  if (!frozenBlueprint || !frozenBlueprint.stages) {
+    throw new Error('No frozen blueprint or stages found')
   }
 
-  const stage = blueprint.stages.find(s => s.id === stageId || s.name === stageId)
+  const stage = frozenBlueprint.stages.find(s => s.id === stageId || s.name === stageId)
   if (!stage) {
     throw new Error(`Stage not found: ${stageId}`)
   }
@@ -300,71 +319,69 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
   const probeResults: ProbeResult[] = []
   const startTime = Date.now()
 
-  if (stage.proof) {
-    const proofConfig = stage.proof
-    if (typeof proofConfig === 'object' && proofConfig !== null) {
-      const proof = proofConfig as unknown as { probeRefs?: ProbeInvocation[] }
-      if (proof.probeRefs && Array.isArray(proof.probeRefs)) {
-        const context: ProbeContext = { projectRoot: cwd }
+  const probes = stage.probes || []
+  if (probes.length > 0) {
+    const context: ProbeContext = { projectRoot: cwd }
 
-        for (const probeRef of proof.probeRefs) {
-          const handler = probeHandlers[probeRef.type]
-          if (!handler) {
-            probeResults.push({
-              probeType: probeRef.type,
-              result: 'FAILED',
-              output: undefined,
-              error: `Unknown probe type: ${probeRef.type}`,
-              executedAt: Date.now()
-            })
-            continue
-          }
+    for (const probe of probes) {
+      const probeType = probe.type
+      if (!probeType) continue
 
-          try {
-            const result = await handler(probeRef.params as Record<string, unknown>, context)
-            const probeResult = result as ProbeResult
+      const handler = probeHandlers[probeType]
+      if (!handler) {
+        probeResults.push({
+          probeType,
+          result: 'FAILED',
+          output: undefined,
+          error: `Unknown probe type: ${probeType}`,
+          executedAt: Date.now()
+        })
+        continue
+      }
 
-            const probeDef: ProbeDefinition = {
-              type: probeRef.type,
-              params: probeRef.params as Record<string, unknown>
-            }
+      try {
+        const result = await handler(probe.params || {}, context)
+        const probeResult = result as ProbeResult
 
-            const verdict = evaluateProbe(probeDef, probeResult)
-
-            probeResults.push({
-              ...probeResult,
-              result: verdict.passed ? 'PASSED' : 'FAILED',
-              error: verdict.passed ? undefined : verdict.message
-            })
-
-            const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
-              stageId,
-              probeType: probeRef.type,
-              result: verdict.passed ? 'PASSED' : 'FAILED',
-              output: probeResult.output,
-              error: verdict.message
-            })
-            appendTraceEvent(cwd, taskId, traceEvent)
-          } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : String(err)
-            probeResults.push({
-              probeType: probeRef.type,
-              result: 'FAILED',
-              output: undefined,
-              error: errorMsg,
-              executedAt: Date.now()
-            })
-
-            const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
-              stageId,
-              probeType: probeRef.type,
-              result: 'FAILED',
-              output: undefined,
-              error: errorMsg
-            })
-            appendTraceEvent(cwd, taskId, traceEvent)
-          }
+        const probeDef: ProbeDefinition = {
+          type: probeType,
+          params: probe.params || {}
         }
+
+        const verdict = evaluateProbe(probeDef, probeResult)
+
+        probeResults.push({
+          ...probeResult,
+          result: verdict.passed ? 'PASSED' : 'FAILED',
+          error: verdict.passed ? undefined : verdict.message
+        })
+
+        const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
+          stageId,
+          probeType,
+          result: verdict.passed ? 'PASSED' : 'FAILED',
+          output: probeResult.output,
+          error: verdict.message
+        })
+        appendTraceEvent(cwd, taskId, traceEvent)
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err)
+        probeResults.push({
+          probeType,
+          result: 'FAILED',
+          output: undefined,
+          error: errorMsg,
+          executedAt: Date.now()
+        })
+
+        const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
+          stageId,
+          probeType,
+          result: 'FAILED',
+          output: undefined,
+          error: errorMsg
+        })
+        appendTraceEvent(cwd, taskId, traceEvent)
       }
     }
   }
