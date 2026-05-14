@@ -327,6 +327,15 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
       const probeType = probe.type
       if (!probeType) continue
 
+      const params: Record<string, unknown> = {}
+      if (probe.params) {
+        Object.assign(params, probe.params)
+      } else {
+        if (probe.pattern) params.pattern = probe.pattern
+        if (probe.command) params.command = probe.command
+        if (probe.patterns) params.patterns = probe.patterns
+      }
+
       const handler = probeHandlers[probeType]
       if (!handler) {
         probeResults.push({
@@ -340,7 +349,7 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
       }
 
       try {
-        const result = await handler(probe.params || {}, context)
+        const result = await handler(params, context)
         const probeResult = result as ProbeResult
 
         const probeDef: ProbeDefinition = {
