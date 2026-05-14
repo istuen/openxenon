@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { parseProbeNamespace, isValidProbeRef, isBareProbeRef } from '../../infra/loader'
+import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, ProbeTypeSchema } from '../../infra/loader'
 
 export const StageRefSchema = z.string().refine(
   (val) => {
@@ -11,16 +11,31 @@ export const StageRefSchema = z.string().refine(
   { message: 'Stage ref 必须带有命名空间前缀 (oxn/、@scope/、./)' }
 )
 
+export const SemanticsSchema = z.object({
+  intent: z.string(),
+  useWhen: z.string().optional(),
+  tags: z.array(z.string()).optional()
+})
+
 export const ParamsSchemaPropertySchema = z.object({
   type: z.union([z.enum(['string', 'number', 'boolean', 'array', 'object']), z.string()]),
   description: z.string().optional(),
   default: z.unknown().optional()
 })
 
-export const StageAssetSchema = z.object({
+export const ProbeDefinitionSchema = z.object({
+  ref: z.string().optional(),
+  type: ProbeTypeSchema.optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
+  pattern: z.string().optional(),
+  command: z.string().optional()
+})
+
+export const StageDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
+  semantics: SemanticsSchema.optional(),
   params_schema: z.object({
     type: z.literal('object'),
     properties: z.record(z.string(), ParamsSchemaPropertySchema),
@@ -39,21 +54,16 @@ export const StageAssetSchema = z.object({
     instruction: z.string().optional(),
     command: z.string().optional()
   }).optional(),
-  probes: z.array(z.object({
-    ref: z.string().optional(),
-    type: z.string().optional(),
-    params: z.record(z.string(), z.unknown()).optional(),
-    pattern: z.string().optional(),
-    command: z.string().optional()
-  })).optional(),
+  probes: z.array(ProbeDefinitionSchema).optional(),
   deps: z.array(z.string()).optional()
 })
 
-export type StageAsset = z.infer<typeof StageAssetSchema>
+export type StageDefinition = z.infer<typeof StageDefinitionSchema>
+export type StageAsset = StageDefinition
 export type StageRef = z.infer<typeof StageRefSchema>
 
-export function validateStageAsset(data: unknown): StageAsset {
-  return StageAssetSchema.parse(data)
+export function validateStageAsset(data: unknown): StageDefinition {
+  return StageDefinitionSchema.parse(data)
 }
 
 export function getNamespaceFromRef(ref: string): 'oxn' | 'scope' | 'project' | null {

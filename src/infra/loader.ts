@@ -1,7 +1,10 @@
 import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync } from 'fs'
 import { join, extname, dirname, basename } from 'path'
+import { z } from 'zod'
 import { type AssetState, type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
-import { BUILTIN_PROBES, BUILTIN_PROOFS } from '../arsenals/builtin'
+import { BUILTIN_PROBES } from '../arsenals/builtin'
+
+export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
 
 export type Scope = 'project' | 'global' | 'fallback' | 'builtin'
 
@@ -108,9 +111,6 @@ function getTypeFromPath(assetPath: string): AssetType | null {
   if (assetPath.includes('/probes/') || assetPath.includes('/probe/')) {
     return 'probes'
   }
-  if (assetPath.includes('/proofs/') || assetPath.includes('/proof/')) {
-    return 'proofs'
-  }
   if (assetPath.includes('/stages/') || assetPath.includes('/stage/')) {
     return 'stages'
   }
@@ -132,7 +132,6 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
 
   const typeToSingular: Record<AssetType, string> = {
     probes: 'probe',
-    proofs: 'proof',
     stages: 'stage',
     blueprints: 'blueprint'
   }
@@ -176,16 +175,6 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
           content: JSON.stringify(def)
         })
       }
-    } else if (type === 'proofs') {
-      for (const [name, def] of Object.entries(BUILTIN_PROOFS)) {
-        assets.push({
-          name,
-          type: 'proofs' as AssetType,
-          state: 'canonical' as AssetState,
-          path: `builtin:${name}`,
-          content: JSON.stringify(def)
-        })
-      }
     }
 
     return assets
@@ -216,11 +205,10 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
 
 export function loadArsenalsByState(projectBoundary: string, state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
   const projectProbes = scanArsenalsDirectory(projectBoundary, 'probes', state, scope)
-  const projectProofs = scanArsenalsDirectory(projectBoundary, 'proofs', state, scope)
   const projectStages = scanArsenalsDirectory(projectBoundary, 'stages', state, scope)
   const projectBlueprints = scanArsenalsDirectory(projectBoundary, 'blueprints', state, scope)
 
-  return [...projectProbes, ...projectProofs, ...projectStages, ...projectBlueprints]
+  return [...projectProbes, ...projectStages, ...projectBlueprints]
 }
 
 export function loadArsenalsByTypeAndState(projectBoundary: string, type: AssetType, state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {

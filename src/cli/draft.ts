@@ -2,7 +2,7 @@ import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
 import * as yaml from 'yaml'
-import { validateProbeDefinition, validateProofDefinition, validateStageDefinition } from '../kernel/schemas'
+import { validateProbeDefinition, validateStageDefinition } from '../kernel/schemas'
 import { type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { Scope } from '../arsenals/loader'
@@ -17,13 +17,12 @@ export interface DraftAssetResult {
 function getTypeFromContent(content: string): AssetType | null {
   try {
     const parsed = JSON.parse(content)
-    if (parsed.type === 'fs_exists' || parsed.type === 'fs_content_match' || parsed.type === 'exec_exit_zero') return 'probes'
-    if (parsed.probes || parsed.probeRefs) return 'proofs'
-    if (parsed.proof || parsed.deps) return 'stages'
+    if (parsed.type === 'fs_exists' || parsed.type === 'fs_match' || parsed.type === 'shell_exec') return 'probes'
+    if (parsed.probes && Array.isArray(parsed.probes)) return 'stages'
+    if (parsed.target || parsed.spec) return 'stages'
   } catch {
-    if (content.includes('type:') && (content.includes('fs_exists') || content.includes('fs_content_match') || content.includes('exec_exit_zero'))) return 'probes'
-    if (content.includes('probeRefs:') || content.includes('probes:')) return 'proofs'
-    if (content.includes('proof:') || content.includes('deps:')) return 'stages'
+    if (content.includes('type:') && (content.includes('fs_exists') || content.includes('fs_match') || content.includes('shell_exec'))) return 'probes'
+    if (content.includes('probes:') || content.includes('target:')) return 'stages'
   }
   return null
 }
@@ -84,17 +83,6 @@ export function createDraftProbe(content: string, name?: string, scope: Scope = 
   return saveDraftAsset('probes', name, content, scope)
 }
 
-export function createDraftProof(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
-  try {
-    const parsed = JSON.parse(content)
-    validateProofDefinition(parsed)
-  } catch {
-    return { success: false, error: 'Invalid proof structure' }
-  }
-
-  return saveDraftAsset('proofs', name, content, scope)
-}
-
 export function createDraftStage(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
@@ -116,8 +104,6 @@ export function createDraftFromYaml(yamlContent: string, name?: string, scope: S
   switch (type) {
     case 'probes':
       return createDraftProbe(yamlContent, name, scope)
-    case 'proofs':
-      return createDraftProof(yamlContent, name, scope)
     case 'stages':
       return createDraftStage(yamlContent, name, scope)
     default:

@@ -8,11 +8,10 @@ import type { Scope } from '../arsenals/loader'
 import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
 import { output, outputError, getFormatFromArgs } from './output'
 
-type ForgeType = 'probe' | 'proof' | 'stage' | 'blueprint'
+type ForgeType = 'probe' | 'stage' | 'blueprint'
 
 const META_FORGE_NAMES: Record<ForgeType, BuiltinForgeName> = {
   probe: 'meta-probe',
-  proof: 'meta-proof',
   stage: 'meta-stage',
   blueprint: 'meta-blueprint'
 }
@@ -24,7 +23,7 @@ function tryLoadForgeFile(path: string, fallbackName: string): { name: string, c
     const parsed = parseYaml(content)
     return {
       name: parsed.name || fallbackName,
-      constraints: parsed.stages?.[0]?.proof?.spec?.constraints || []
+      constraints: parsed.stages?.[0]?.spec?.constraints || []
     }
   } catch {
     return null
@@ -48,7 +47,7 @@ function loadMetaForge(type: ForgeType): { name: string, constraints: string[] }
   if (builtin) {
     return {
       name: builtin.name,
-      constraints: [...(builtin.stages?.[0]?.proof?.spec?.constraints || [])]
+      constraints: [...(builtin.stages?.[0]?.spec?.constraints || [])]
     }
   }
 
@@ -64,7 +63,7 @@ export default defineCommand({
     type: {
       type: 'positional',
       required: false,
-      description: '元Forge类型: probe, proof, stage, blueprint, all'
+      description: '元Forge类型: probe, stage, blueprint, all'
     },
     save: {
       type: 'string',
@@ -110,7 +109,7 @@ export default defineCommand({
     }
 
     if (!type || type === 'all') {
-      const forges = (['probe', 'proof', 'stage', 'blueprint'] as ForgeType[]).map(t => {
+      const forges = (['probe', 'stage', 'blueprint'] as ForgeType[]).map(t => {
         const forge = loadMetaForge(t)
         return forge ? { type: t, name: forge.name, constraints: forge.constraints } : null
       }).filter(Boolean)
@@ -118,7 +117,7 @@ export default defineCommand({
       return output({ data: { forges } }, format)
     }
 
-    if (type === 'probe' || type === 'proof' || type === 'stage' || type === 'blueprint') {
+    if (type === 'probe' || type === 'stage' || type === 'blueprint') {
       const forge = loadMetaForge(type as ForgeType)
       if (!forge) {
         return outputError({

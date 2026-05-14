@@ -1,6 +1,5 @@
 import { z } from 'zod'
-
-export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
+import { ProbeTypeSchema } from '../../infra/loader'
 
 export const FsExistsParamsSchema = z.object({
   pattern: z.string()

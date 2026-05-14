@@ -9,8 +9,6 @@ const TYPE_ALIASES: Record<string, AssetType> = {
   'blueprints': 'blueprints',
   'probe': 'probes',
   'probes': 'probes',
-  'proof': 'proofs',
-  'proofs': 'proofs',
   'stage': 'stages',
   'stages': 'stages'
 }

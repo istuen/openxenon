@@ -168,13 +168,13 @@ function renderDagSvg(opts: DagsSvgOptions): string {
 }
 
 function renderProbesHtml(stage: Stage): string {
-  if (!stage.proof || !stage.proof.probes || stage.proof.probes.length === 0) {
+  if (!stage.probes || stage.probes.length === 0) {
     return '<div class="no-probes">No probes</div>'
   }
 
-  return stage.proof.probes.map(probe => {
-    const pattern = probe.pattern || probe.patterns?.join(', ') || ''
-    return `<div class="probe-tag">${escapeHtml(probe.type)}${pattern ? ` ${escapeHtml(pattern)}` : ''}</div>`
+  return stage.probes.map(probe => {
+    const pattern = probe.pattern || ''
+    return `<div class="probe-tag">${escapeHtml(probe.type || '')}${pattern ? ` ${escapeHtml(pattern)}` : ''}</div>`
   }).join('')
 }
 

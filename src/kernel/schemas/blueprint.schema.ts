@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import { isValidProbeRef, isBareProbeRef } from '../../infra/loader'
+import { isValidProbeRef, isBareProbeRef, ProbeTypeSchema } from '../../infra/loader'
 
-export const ProbeSchema = z.object({
-  type: z.enum(['fs_exists', 'fs_content_match', 'fs_not_exists', 'fs_parseable', 'exec_exit_zero']).optional(),
+export const ProbeInvocationSchema = z.object({
+  type: ProbeTypeSchema,
   ref: z.string().optional(),
   params: z.record(z.string(), z.unknown()).optional(),
   pattern: z.string().optional(),
@@ -24,11 +24,11 @@ export const ProbeSchema = z.object({
   { message: 'Probe ref 必须带有命名空间前缀' }
 )
 
-export type Probe = z.infer<typeof ProbeSchema>
+export type Probe = z.infer<typeof ProbeInvocationSchema>
 
-export const StageSchema = z.object({
+export const StageInvocationSchema = z.object({
   id: z.string(),
-  name: z.string(),
+  name: z.string().optional(),
   deps: z.array(z.string()).default([]),
   ref: z.string().optional(),
   condition: z.string().optional(),
@@ -45,9 +45,9 @@ export const StageSchema = z.object({
     instruction: z.string().optional(),
     command: z.string().optional(),
   }).optional(),
-  probes: z.array(ProbeSchema).optional(),
-  probes_append: z.array(ProbeSchema).optional(),
-  probes_override: z.array(ProbeSchema).optional(),
+  probes: z.array(ProbeInvocationSchema).optional(),
+  probes_append: z.array(ProbeInvocationSchema).optional(),
+  probes_override: z.array(ProbeInvocationSchema).optional(),
 }).refine(
   (data) => {
     if (data.probes_append !== undefined && data.probes_override !== undefined) {
@@ -64,13 +64,13 @@ export const StageSchema = z.object({
   { message: 'probes_append 和 probes_override 互斥' }
 )
 
-export type Stage = z.infer<typeof StageSchema>
+export type Stage = z.infer<typeof StageInvocationSchema>
 
 export const BlueprintSchema = z.object({
   id: z.string(),
   name: z.string(),
   status: z.enum(['DRAFT', 'CANONICAL', 'ABANDONED']).default('CANONICAL'),
-  stages: z.array(StageSchema).optional(),
+  stages: z.array(StageInvocationSchema).optional(),
   topology: z.array(z.string()).optional(),
   edges: z.array(z.object({ from: z.string(), to: z.string() })).optional(),
   source: z.string().optional(),
