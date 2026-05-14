@@ -5,8 +5,8 @@ export type { TaskStatus, StepStatus, BlueprintStatus, ArtifactType, ProofType, 
 export { BOUNDARY_DIR, TASKS_DIR, CONFIG_FILE } from './constants'
 export { OxnErrorCode, ErrorCategory } from './enums'
 
-export { BlueprintSchema, StageSchema, ProofSchema, ProbeSchema, parseBlueprint, safeParseBlueprint } from './schemas/blueprint.schema'
-export type { Blueprint, Stage, Proof, Probe as ProbeSchemaType } from './schemas/blueprint.schema'
+export { BlueprintSchema, StageSchema, ProbeSchema, parseBlueprint, safeParseBlueprint, validateStageTemplates, extractTemplateVariables, validateTemplateVariables, ALLOWED_VARIABLE_SCOPES } from './schemas/blueprint.schema'
+export type { Blueprint, Stage, Probe as ProbeSchemaType } from './schemas/blueprint.schema'
 
 export { getTaskDirectory, validateTaskId } from './lib/task-dir'
 export type { TaskDirectory } from './lib/task-dir'

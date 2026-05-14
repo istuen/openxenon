@@ -10,7 +10,7 @@ describe('ProofDefinitionSchema', () => {
       const input = {
         target: { description: '验证构建成功' },
         spec: { description: '构建必须成功' },
-        probes: [{ ref: 'exec_exit_zero', description: '检查命令' }]
+        probes: [{ ref: 'oxn/exec-exit-zero', description: '检查命令' }]
       }
       expect(() => ProofDefinitionSchema.parse(input)).not.toThrow()
     })
@@ -99,7 +99,7 @@ it('合法 Proof Invocation 通过校验（带内联 ProbeInvocation）', () => 
       const definitionInput = {
         target: { description: '验证构建成功' },
         spec: { description: '构建必须成功' },
-        probes: [{ ref: 'exec_exit_zero', description: '检查命令' }]
+        probes: [{ ref: 'oxn/exec-exit-zero', description: '检查命令' }]
       }
       expect(() => ProofInvocationSchema.parse(definitionInput)).toThrow()
     })
@@ -126,7 +126,7 @@ describe('Definition 和 Invocation 格式互斥', () => {
     const definitionInput = {
       target: { description: '验证构建成功' },
       spec: { description: '构建必须成功' },
-      probes: [{ ref: 'exec_exit_zero', description: '检查命令' }]
+      probes: [{ ref: 'oxn/exec-exit-zero', description: '检查命令' }]
     }
     expect(() => ProofInvocationSchema.parse(definitionInput)).toThrow()
   })

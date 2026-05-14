@@ -139,6 +139,24 @@ export const BUILTIN_FORGES = {
   }
 } as const
 
+export const BUILTIN_STAGES: Record<string, {
+  id?: string
+  name?: string
+  description?: string
+  params_schema?: {
+    type: 'object'
+    properties: Record<string, { type: string; default?: unknown; description?: string }>
+    required?: string[]
+    default?: Record<string, unknown>
+  }
+  target?: { description: string; glob?: string }
+  spec?: { description: string; constraints?: string[] }
+  action?: { instruction?: string; command?: string }
+  probes?: Array<{ ref?: string; type?: string; params?: Record<string, unknown>; pattern?: string; command?: string }>
+  deps?: string[]
+}> = {}
+
 export type BuiltinForgeName = keyof typeof BUILTIN_FORGES
 export type BuiltinProbeName = keyof typeof BUILTIN_PROBES
 export type BuiltinProofName = keyof typeof BUILTIN_PROOFS
+export type BuiltinStageName = keyof typeof BUILTIN_STAGES
