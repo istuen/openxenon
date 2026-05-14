@@ -6,6 +6,7 @@ import { BOUNDARY_DIR } from '../kernel/constants'
 import { createDraftFromYaml } from './draft'
 import type { Scope } from '../arsenals/loader'
 import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
+import { output, outputError, getFormatFromArgs } from './output'
 
 type ForgeType = 'probe' | 'proof' | 'stage' | 'blueprint'
 
@@ -54,35 +55,6 @@ function loadMetaForge(type: ForgeType): { name: string, constraints: string[] }
   return null
 }
 
-function displayMetaForge(type: ForgeType): void {
-  const forge = loadMetaForge(type)
-
-  if (!forge) {
-    console.log(`元Forge '${type}' 不存在。`)
-    console.log(`可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}`)
-    return
-  }
-
-  console.log(`\n=== ${forge.name} ===\n`)
-  console.log('约束 (Constraints):')
-  for (const constraint of forge.constraints) {
-    console.log(`  - ${constraint}`)
-  }
-  console.log()
-}
-
-function displayAllMetaForges(): void {
-  console.log('\n=== 所有元Forge ===\n')
-  for (const type of Object.keys(META_FORGE_NAMES) as ForgeType[]) {
-    const forge = loadMetaForge(type)
-    if (forge) {
-      console.log(`[${type}] ${forge.name}`)
-      console.log(`  约束数量: ${forge.constraints.length}`)
-      console.log()
-    }
-  }
-}
-
 export default defineCommand({
   meta: {
     name: 'forge',
@@ -109,9 +81,18 @@ export default defineCommand({
       alias: 'g',
       default: false,
       description: '保存到全局 Arsenal'
+    },
+    '--json': {
+      type: 'boolean',
+      description: 'JSON 格式输出'
+    },
+    '--yaml': {
+      type: 'boolean',
+      description: 'YAML 格式输出'
     }
   },
   async run(ctx) {
+    const format = getFormatFromArgs(ctx.args)
     const type = ctx.args.type as string | undefined
     const save = ctx.args.save as string | undefined
     const name = ctx.args.name as string | undefined
@@ -120,23 +101,41 @@ export default defineCommand({
     if (save) {
       const result = createDraftFromYaml(save, name, scope)
       if (result.success) {
-        console.log(JSON.stringify({ ok: true, data: { path: result.path } }))
-      } else {
-        console.log(JSON.stringify({ ok: false, error: { code: 'OXN_FORGE_SAVE_FAILED', message: result.error } }))
+        return output({ data: { path: result.path } }, format)
       }
-      return
+      return outputError({
+        code: 'OXN_FORGE_SAVE_FAILED',
+        message: result.error || 'Failed to save draft'
+      }, format)
     }
 
     if (!type || type === 'all') {
-      displayAllMetaForges()
-      return
+      const forges = (['probe', 'proof', 'stage', 'blueprint'] as ForgeType[]).map(t => {
+        const forge = loadMetaForge(t)
+        return forge ? { type: t, name: forge.name, constraints: forge.constraints } : null
+      }).filter(Boolean)
+
+      return output({ data: { forges } }, format)
     }
 
     if (type === 'probe' || type === 'proof' || type === 'stage' || type === 'blueprint') {
-      displayMetaForge(type as ForgeType)
-    } else {
-      console.log(`未知类型: ${type}`)
-      console.log(`可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}, all`)
+      const forge = loadMetaForge(type as ForgeType)
+      if (!forge) {
+        return outputError({
+          code: 'OXN_FORGE_NOT_FOUND',
+          message: `元Forge '${type}' 不存在`
+        }, format)
+      }
+      return output({
+        data: { name: forge.name, constraints: forge.constraints },
+        human: `\n=== ${forge.name} ===\n\n约束 (Constraints):\n${forge.constraints.map(c => `  - ${c}`).join('\n')}\n`
+      }, format)
     }
+
+    return outputError({
+      code: 'OXN_UNKNOWN_FORGE_TYPE',
+      message: `未知类型: ${type}`,
+      suggestion: `可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}, all`
+    }, format)
   }
 })

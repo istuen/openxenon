@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { collectContext, saveReport, loadExplorationAssets } from '../infra/explore/collector'
 import { evaluateExploration } from '../kernel/explore/evaluator'
 import { renderMarkdown } from '../kernel/explore/reporter'
+import { output, outputError, getFormatFromArgs } from './output'
 
 export default defineCommand({
   meta: {
@@ -14,35 +15,33 @@ export default defineCommand({
       description: '探索器名称 (coverage/quality/automation/all)',
       default: 'all'
     },
-    json: {
+    '--json': {
       type: 'boolean',
-      alias: 'j',
-      description: 'JSON 输出（不写文件）',
-      default: false
+      description: 'JSON 格式输出'
+    },
+    '--yaml': {
+      type: 'boolean',
+      description: 'YAML 格式输出'
     }
   },
-  async run({ args }) {
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args)
     const projectRoot = process.cwd()
 
-    // 1. Infra: 采集上下文
     const context = await collectContext(projectRoot)
 
-    // 2. 加载探索器资产
-    const names = args.name === 'all' ? undefined : [args.name]
+    const names = ctx.args.name === 'all' ? undefined : [ctx.args.name as string]
     const explorations = await loadExplorationAssets(projectRoot, names)
 
     if (explorations.length === 0) {
-      console.log(JSON.stringify({
-        ok: false,
-        error: {
-          code: 'OXN_EXPLORE_NO_ASSET',
-          message: `未找到探索器: ${args.name}`
-        }
-      }))
-      return
+      return outputError({
+        code: 'OXN_EXPLORE_NO_ASSET',
+        message: `未找到探索器: ${ctx.args.name}`
+      }, format)
     }
 
-    // 3. Kernel: 逐个执行探索器
+    const results = []
+
     for (const exploration of explorations) {
       const result = evaluateExploration(
         context,
@@ -50,29 +49,27 @@ export default defineCommand({
         { name: exploration.name, title: exploration.description }
       )
 
-      // 4. Kernel: 渲染 Markdown
       const markdown = renderMarkdown(result)
 
-      if (args.json) {
-        console.log(JSON.stringify(result, null, 2))
-      } else {
-        // 5. Infra: 写入文件
-        const filepath = await saveReport(
-          projectRoot,
-          exploration.output,
-          markdown
-        )
-        console.log(JSON.stringify({
-          ok: true,
-          data: {
-            name: exploration.name,
-            description: exploration.description,
-            path: filepath,
-            summary: result.summary,
-            findingsCount: result.findings.length
-          }
-        }))
+      let filepath: string | undefined
+      if (!format || format === 'human') {
+        filepath = await saveReport(projectRoot, exploration.output, markdown)
       }
+
+      results.push({
+        name: exploration.name,
+        description: exploration.description,
+        path: filepath,
+        summary: result.summary,
+        findingsCount: result.findings.length
+      })
     }
+
+    return output({
+      data: { explorations: results },
+      human: format === 'human' || !format
+        ? results.map(r => `${r.name}: ${r.summary}`).join('\n')
+        : undefined
+    }, format)
   }
 })

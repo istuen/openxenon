@@ -1,5 +1,5 @@
 import { defineCommand, runMain } from 'citty'
-import { cliContext } from './cli-context'
+import { cliContext, detectCliFormat } from './cli-context'
 import { OxnErrorCode, ErrorCategory } from './kernel/enums'
 import { DAEMON_SOCK_PATH } from './infra/global'
 
@@ -72,16 +72,31 @@ const main = defineCommand({
       description: 'Enable verbose output',
       default: false
     },
-    json: {
-      alias: 'j',
+    '--json': {
       type: 'boolean',
-      description: 'Output in JSON format',
+      description: 'JSON 格式输出',
+      default: false
+    },
+    '--yaml': {
+      type: 'boolean',
+      description: 'YAML 格式输出',
+      default: false
+    },
+    '--html': {
+      type: 'boolean',
+      description: 'HTML 格式输出',
+      default: false
+    },
+    '--md': {
+      type: 'boolean',
+      description: 'Markdown 格式输出',
       default: false
     }
   },
   async run({ args }) {
-    cliContext.setJsonMode(args.json as boolean)
-    if (!cliContext.isJsonMode()) {
+    const format = detectCliFormat()
+    cliContext.setFormatMode(format)
+    if (format === 'human') {
       console.log('OpenXenon CLI')
       console.log('Run `oxn --help` for usage information')
     }

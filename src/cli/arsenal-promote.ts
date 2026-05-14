@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { promoteStandard, arsenalLoadStandardByName as loadStandardByName } from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import { type AssetType } from '../arsenals/paths'
+import { output, outputError, getFormatFromArgs } from './output'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
   'blueprint': 'blueprints',
@@ -45,49 +46,74 @@ export default defineCommand({
       type: 'boolean',
       short: 'g',
       description: '操作全局 Arsenal'
+    },
+    '--json': {
+      type: 'boolean',
+      description: 'JSON 格式输出'
+    },
+    '--yaml': {
+      type: 'boolean',
+      description: 'YAML 格式输出'
     }
   },
   async run(ctx) {
+    const format = getFormatFromArgs(ctx.args)
     ensureArsenalsDirectories()
 
     const input = ctx.args.name as string
     const parsed = parseAssetName(input)
 
     if (!parsed) {
-      console.error(`Invalid asset name format: ${input}`)
-      console.error('Expected format: <type>/<name> (e.g., blueprints/my-blueprint)')
-      return
+      return outputError({
+        code: 'OXN_INVALID_FORMAT',
+        message: `Invalid asset name format: ${input}`,
+        suggestion: 'Expected format: <type>/<name> (e.g., blueprints/my-blueprint)'
+      }, format)
     }
 
     const asset = loadStandardByName(parsed.name, parsed.type)
     if (!asset) {
-      console.error(`Asset not found: ${input}`)
-      return
+      return outputError({
+        code: 'OXN_ASSET_NOT_FOUND',
+        message: `Asset not found: ${input}`
+      }, format)
     }
 
     const isNewDraft = asset.path.includes('/draft.yaml')
     const isOldDraft = asset.path.includes('/draft/')
     if (!isNewDraft && !isOldDraft) {
-      console.error(`Asset is not in draft state: ${input}`)
-      console.error('Only draft assets can be promoted.')
-      return
+      return outputError({
+        code: 'OXN_NOT_DRAFT',
+        message: `Asset is not in draft state: ${input}`,
+        suggestion: 'Only draft assets can be promoted'
+      }, format)
     }
 
     try {
       const promoted = promoteStandard(asset.path)
 
       if (!promoted) {
-        console.error('Failed to promote asset.')
-        return
+        return outputError({
+          code: 'OXN_PROMOTE_FAILED',
+          message: 'Failed to promote asset'
+        }, format)
       }
 
-      console.log('Asset promoted successfully!')
-      console.log(`  Name: ${promoted.name}`)
-      console.log(`  Type: ${promoted.type}`)
-      console.log(`  New State: ${promoted.state}`)
-      console.log(`  New Path: ${promoted.path}`)
-    } catch (error) {
-      console.error(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      return output({
+        data: {
+          name: promoted.name,
+          type: promoted.type,
+          state: promoted.state,
+          path: promoted.path
+        },
+        human: `Asset promoted successfully!\n  Name: ${promoted.name}\n  Type: ${promoted.type}\n  New State: ${promoted.state}\n  New Path: ${promoted.path}`
+      }, format)
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Unknown error'
+      return outputError({
+        code: 'OXN_PROMOTE_ERROR',
+        message: errorMsg
+      }, format)
     }
   }
 })

@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readdirSync, cpSync, rmSync, readFileSync, write
 import { join } from 'path'
 import { BOUNDARY_DIR, CONFIG_FILE, GLOBAL_BOUNDARY_PATH, GLOBAL_PROOFS_PATH } from '../kernel/constants'
 import { compileAllSkills, formatCompilationReport } from './skill-compiler'
+import { output, outputError, getFormatFromArgs } from './output'
 
 const META_SOURCE_PATH = join(__dirname, '..', 'arsenals', 'forges')
 
@@ -102,31 +103,37 @@ export default defineCommand({
       type: 'boolean',
       description: '强制重新编译 Skills',
       default: false
+    },
+    '--json': {
+      type: 'boolean',
+      description: 'JSON 格式输出'
+    },
+    '--yaml': {
+      type: 'boolean',
+      description: 'YAML 格式输出'
     }
   },
   async run(ctx) {
+    const format = getFormatFromArgs(ctx.args)
     const projectPath = process.cwd()
     const projectName = ctx.args.name || projectPath.split('/').pop() || 'unnamed'
     const sandbox = ctx.args.sandbox as boolean
     const force = ctx.args.force as boolean
 
     try {
-      console.log(`正在初始化项目: ${projectName}`)
-      console.log(`项目路径: ${projectPath}`)
-      console.log(`模式: ${sandbox ? 'SANDBOX' : 'PRODUCTION'}`)
-
       ensureGlobalBoundary()
       ensureProjectBoundary(projectPath)
       copyMetaToProject(projectPath)
 
       const existingConfig = readProjectConfig(projectPath)
+      let message = ''
 
       if (existingConfig) {
-        console.log('✓ 项目已存在')
+        message = `项目已存在: ${projectName}`
         if (sandbox !== (existingConfig.mode === 'SANDBOX')) {
           existingConfig.mode = sandbox ? 'SANDBOX' : 'PRODUCTION'
           writeProjectConfig(projectPath, existingConfig)
-          console.log(`  模式已更新为: ${existingConfig.mode}`)
+          message += `\n  模式已更新为: ${existingConfig.mode}`
         }
       } else {
         const config: ProjectConfig = {
@@ -136,24 +143,28 @@ export default defineCommand({
           createdAt: Date.now()
         }
         writeProjectConfig(projectPath, config)
-        console.log('✓ 项目初始化成功')
+        message = `项目初始化成功: ${projectName}`
       }
-
-      console.log('')
-      console.log('正在编译 Skill (适配器: opencode)...')
 
       const report = compileAllSkills('opencode', projectPath, force)
-      console.log('')
-      console.log(formatCompilationReport(report))
+      const reportStr = formatCompilationReport(report)
 
-      if (report.total > 0) {
-        console.log('')
-        console.log('✓ Skill 编译完成')
-        console.log(`  输出目录: .opencode/skills/`)
-      }
-    } catch (error) {
-      console.error('✗ 初始化失败:', error instanceof Error ? error.message : String(error))
-      process.exit(1)
+      return output({
+        data: {
+          name: projectName,
+          path: projectPath,
+          mode: sandbox ? 'SANDBOX' : 'PRODUCTION',
+          skillsCompiled: report.total,
+          skillsReport: reportStr
+        },
+        human: `${message}\n\n正在编译 Skill (适配器: opencode)...\n\n${reportStr}\n\n✓ Skill 编译完成\n  输出目录: .opencode/skills/`
+      }, format)
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      return outputError({
+        code: 'OXN_INIT_FAILED',
+        message: errorMsg
+      }, format)
     }
   }
 })

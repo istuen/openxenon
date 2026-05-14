@@ -1,18 +1,25 @@
-export const cliContext = {
-  jsonMode: false,
+import type { OutputFormat } from './output'
 
-  setJsonMode(enabled: boolean) {
-    this.jsonMode = enabled
+export const cliContext = {
+  formatMode: 'human' as OutputFormat,
+
+  setFormatMode(format: OutputFormat) {
+    this.formatMode = format
+  },
+
+  getFormatMode(): OutputFormat {
+    return this.formatMode
   },
 
   isJsonMode(): boolean {
-    if (this.jsonMode) return true
-    return process.argv.includes('--json') || process.argv.includes('-j')
+    return this.formatMode === 'json'
   }
 }
 
-export function outputJson(data: unknown): void {
-  if (cliContext.isJsonMode()) {
-    console.log(JSON.stringify(data, null, 2))
-  }
+export function detectCliFormat(): OutputFormat {
+  if (process.argv.includes('--json')) return 'json'
+  if (process.argv.includes('--yaml')) return 'yaml'
+  if (process.argv.includes('--html')) return 'html'
+  if (process.argv.includes('--md')) return 'md'
+  return 'human'
 }

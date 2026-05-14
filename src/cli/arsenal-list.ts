@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { arsenalListStandards as listStandards, type StandardAsset, type Scope } from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetState } from '../arsenals/paths'
+import { output, outputError, getFormatFromArgs } from './output'
 
 export default defineCommand({
   meta: {
@@ -29,9 +30,18 @@ export default defineCommand({
     scope: {
       type: 'string',
       description: '过滤来源: project, global, builtin, fallback'
+    },
+    '--json': {
+      type: 'boolean',
+      description: 'JSON 格式输出'
+    },
+    '--yaml': {
+      type: 'boolean',
+      description: 'YAML 格式输出'
     }
   },
   async run(ctx) {
+    const format = getFormatFromArgs(ctx.args)
     ensureArsenalsDirectories()
 
     const scopeArg = ctx.args.scope as string | undefined
@@ -40,46 +50,24 @@ export default defineCommand({
     const assets = listStandards(state, scope)
 
     const typeFilter = ctx.args.type as string | undefined
-    if (typeFilter) {
-      const typeMap: Record<string, string> = {
-        probe: 'probes',
-        proof: 'proofs',
-        stage: 'stages',
-        blueprint: 'blueprints'
-      }
-      const normalizedType = typeMap[typeFilter] || typeFilter
-      const filtered = assets.filter(a => a.type === normalizedType)
+    const filtered = typeFilter
+      ? assets.filter(a => a.type === typeFilter.replace('probe', 'probes').replace('proof', 'proofs').replace('stage', 'stages').replace('blueprint', 'blueprints'))
+      : assets
 
-      if (filtered.length === 0) {
-        console.log('No standard assets found.')
-        return
-      }
-
-      const grouped = groupByType(filtered)
-      for (const [type, items] of Object.entries(grouped)) {
-        if (items.length === 0) continue
-        console.log(`\n## ${type.toUpperCase()}`)
-        for (const asset of items) {
-          console.log(`  [${asset.state}] ${asset.name}`)
-        }
-      }
-      console.log(`\nTotal: ${filtered.length} assets`)
-    } else {
-      if (assets.length === 0) {
-        console.log('No standard assets found.')
-        return
-      }
-
-      const grouped = groupByType(assets)
-      for (const [type, items] of Object.entries(grouped)) {
-        if (items.length === 0) continue
-        console.log(`\n## ${type.toUpperCase()}`)
-        for (const asset of items) {
-          console.log(`  [${asset.state}] ${asset.name}`)
-        }
-      }
-      console.log(`\nTotal: ${assets.length} assets`)
+    if (filtered.length === 0) {
+      return outputError({
+        code: 'OXN_NO_ASSETS',
+        message: 'No standard assets found'
+      }, format)
     }
+
+    const grouped = groupByType(filtered)
+    const result = {
+      total: filtered.length,
+      assets: grouped
+    }
+
+    output({ data: result }, format)
   }
 })
 

@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { arsenalListStandards as listStandards, arsenalLoadStandardByName as loadStandardByName, type StandardAsset, type Scope } from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetState, AssetType } from '../arsenals/paths'
+import { output, outputError, getFormatFromArgs } from './output'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
   'blueprint': 'blueprints',
@@ -53,9 +54,18 @@ export default defineCommand({
     canonical: {
       type: 'boolean',
       description: '只显示 canonical 状态的资产'
+    },
+    '--json': {
+      type: 'boolean',
+      description: 'JSON 格式输出'
+    },
+    '--yaml': {
+      type: 'boolean',
+      description: 'YAML 格式输出'
     }
   },
   async run(ctx) {
+    const format = getFormatFromArgs(ctx.args)
     ensureArsenalsDirectories()
 
     const scope: Scope = ctx.args.global ? 'global' : 'fallback'
@@ -65,25 +75,42 @@ export default defineCommand({
     if (name) {
       const asset = findAssetByName(name, state, scope)
       if (asset) {
-        displayAsset(asset)
-      } else {
-        console.error(`Asset '${name}' not found`)
+        return output({
+          data: {
+            name: asset.name,
+            type: asset.type,
+            state: asset.state,
+            path: asset.path,
+            content: asset.content
+          }
+        }, format)
       }
-      return
+      return outputError({
+        code: 'OXN_ASSET_NOT_FOUND',
+        message: `Asset '${name}' not found`
+      }, format)
     }
 
     const assets = listStandards(state, scope)
 
     if (assets.length === 0) {
-      console.log('No assets found.')
-      return
+      return outputError({
+        code: 'OXN_NO_ASSETS',
+        message: 'No assets found'
+      }, format)
     }
 
-    console.log('Available assets:\n')
-    assets.forEach((asset, index) => {
-      const relativePath = asset.path.split('.openxenon/arsenals/')[1]
-      console.log(`  [${index + 1}] ${relativePath}`)
-    })
+    const result = {
+      total: assets.length,
+      assets: assets.map(a => ({
+        name: a.name,
+        type: a.type,
+        state: a.state,
+        path: a.path.split('.openxenon/arsenals/')[1]
+      }))
+    }
+
+    output({ data: result }, format)
   }
 })
 
@@ -99,13 +126,4 @@ function findAssetByName(name: string, state: AssetState | undefined, scope: Sco
 
   const assets = listStandards(state, scope)
   return assets.find(a => a.name === name) || null
-}
-
-function displayAsset(asset: StandardAsset): void {
-  console.log(`# ${asset.name}`)
-  console.log(`Type: ${asset.type}`)
-  console.log(`State: ${asset.state}`)
-  console.log(`Path: ${asset.path}`)
-  console.log('\n--- Content ---')
-  console.log(asset.content)
 }
