@@ -1,10 +1,10 @@
 import { readdirSync, statSync, existsSync } from 'fs'
 import { join } from 'path'
-import { homedir } from 'os'
-import type { ScannedFile } from '../kernel/lib/custom-proofs-resolver'
 
-const GLOBAL_PROOFS_PATH = join(homedir(), '.openxenon', 'custom-proofs')
-const PROJECT_PROOFS_DIR = '.openxenon/proofs'
+interface ScannedFile {
+  path: string
+  isDirectory: boolean
+}
 
 export function scanDirectory(dirPath: string): ScannedFile[] {
   if (!existsSync(dirPath)) {
@@ -85,21 +85,4 @@ export function scanDirectoryRecursive(
   }
 
   return results
-}
-
-export function getGlobalProofsPath(): string {
-  return GLOBAL_PROOFS_PATH
-}
-
-export function getProjectProofsPath(projectRoot: string): string {
-  return join(projectRoot, PROJECT_PROOFS_DIR)
-}
-
-export function scanProjectProofsSync(projectRoot: string): ReturnType<typeof scanDirectoryRecursive> {
-  const proofsPath = getProjectProofsPath(projectRoot)
-  return scanDirectoryRecursive(proofsPath)
-}
-
-export function scanGlobalProofsSync(): ReturnType<typeof scanDirectoryRecursive> {
-  return scanDirectoryRecursive(GLOBAL_PROOFS_PATH)
 }

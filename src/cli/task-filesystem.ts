@@ -333,7 +333,6 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
       } else {
         if (probe.pattern) params.pattern = probe.pattern
         if (probe.command) params.command = probe.command
-        if (probe.patterns) params.patterns = probe.patterns
       }
 
       const handler = probeHandlers[probeType]

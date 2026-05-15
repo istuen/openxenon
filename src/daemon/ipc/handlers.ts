@@ -1,6 +1,5 @@
 import './handlers/fs-execute'
 import './handlers/health'
-import './handlers/proofs-list'
 import './handlers/step-start'
 import './handlers/step-verify'
 import './handlers/task-list-handler'

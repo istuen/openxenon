@@ -11,7 +11,6 @@ import type {
   ExplorationRule,
   ExplorationContext,
   ProjectDir,
-  ProbeInfo,
 } from './types'
 
 /**
@@ -114,7 +113,9 @@ function evaluateCondition(
   if (compareMatch) {
     const objName = compareMatch[1]
     const propName = compareMatch[2]
-    const threshold = parseInt(compareMatch[3], 10)
+    const thresholdStr = compareMatch[3]
+    if (!objName || !propName || !thresholdStr) return false
+    const threshold = parseInt(thresholdStr, 10)
     const obj = vars[objName] as Record<string, unknown> | undefined
     if (!obj) return false
     const value = obj[propName]
@@ -129,11 +130,13 @@ function evaluateCondition(
   if (hasDirectMatch) {
     const targetObj = hasDirectMatch[1]
     const probeType = hasDirectMatch[2]
+    if (!targetObj || !probeType) return false
     const dir = vars[targetObj] as Record<string, unknown> | undefined
     if (!dir) return false
 
-    const path = dir.path as string
-    const fileCount = dir.fileCount as number
+    const path = dir.path as string | undefined
+    const fileCount = dir.fileCount as number | undefined
+    if (!path || typeof fileCount !== 'number') return false
     if (fileCount < 3) return false
 
     const hasCover = context.probes.some(
@@ -148,6 +151,7 @@ function evaluateCondition(
   const fileExistsMatch = trimmed.match(/^fileExists\('(.+)'\)$/)
   if (fileExistsMatch) {
     const pattern = fileExistsMatch[1]
+    if (!pattern) return false
     return context.projectFiles.some(
       (f) =>
         f === pattern ||

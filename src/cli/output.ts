@@ -47,6 +47,15 @@ export function outputSuccess(data: unknown, format: OutputFormat = 'human'): vo
   }
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 export function outputError(error: { code: string; message: string; suggestion?: string }, format: OutputFormat = 'human'): void {
   const errorObj = { ok: false, error }
 
@@ -71,23 +80,44 @@ export function outputError(error: { code: string; message: string; suggestion?:
   }
 }
 
-export function output(options: OutputOptions): void {
-  const { data, error, format = 'human', human } = options
+export function output(options: OutputOptions): void
+export function output(data: unknown, format?: OutputFormat): void
+export function output(optionsOrData: OutputOptions | unknown, format?: OutputFormat): void {
+  if (typeof optionsOrData === 'object' && optionsOrData !== null && 'data' in optionsOrData) {
+    const options = optionsOrData as OutputOptions
+    const fmt = format || options.format || 'human'
+    const { data, error, human } = options
 
-  if (error) {
-    return outputError(error, format)
-  }
-
-  if (format === 'human' && human) {
-    if (typeof human === 'function') {
-      console.log(human(data))
-    } else {
-      console.log(human)
+    if (error) {
+      return outputError(error, fmt)
     }
+
+    if (fmt === 'human' && human) {
+      if (typeof human === 'function') {
+        console.log(human(data))
+      } else {
+        console.log(human)
+      }
+      return
+    }
+
+    if (fmt === 'human') {
+      if (typeof data === 'object' && data !== null) {
+        console.log(JSON.stringify({ ok: true, data }, null, 2))
+      } else {
+        console.log(data)
+      }
+      return
+    }
+
+    outputSuccess(data, fmt)
     return
   }
 
-  if (format === 'human') {
+  const data = optionsOrData
+  const fmt = format || 'human'
+
+  if (fmt === 'human') {
     if (typeof data === 'object' && data !== null) {
       console.log(JSON.stringify({ ok: true, data }, null, 2))
     } else {
@@ -96,16 +126,7 @@ export function output(options: OutputOptions): void {
     return
   }
 
-  outputSuccess(data, format)
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
+  outputSuccess(data, fmt)
 }
 
 export function addFormatArgs(argsDef: Record<string, any>): Record<string, any> {

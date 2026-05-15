@@ -21,10 +21,6 @@ export function getProjectConfigPath(projectRoot: string): string {
   return join(getProjectBoundaryPath(projectRoot), 'config.json')
 }
 
-export function getProjectProofsPath(projectRoot: string): string {
-  return join(getProjectBoundaryPath(projectRoot), 'proofs')
-}
-
 export function getTasksPath(projectRoot: string): string {
   return join(getProjectBoundaryPath(projectRoot), 'tasks')
 }

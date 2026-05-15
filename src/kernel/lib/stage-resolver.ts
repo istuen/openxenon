@@ -1,10 +1,10 @@
 import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, loadStandardByName } from '../../infra/loader'
 import { BUILTIN_STAGES } from '../../arsenals/builtin'
-import type { StageAsset } from '../schemas/stage-asset'
+import type { StageDefinition } from '../schemas/stage-asset'
 
 export interface StageResolution {
   found: boolean
-  stage?: StageAsset
+  stage?: StageDefinition
   namespace: 'oxn' | 'scope' | 'project'
   scopeName?: string
   shadow: boolean
@@ -12,7 +12,7 @@ export interface StageResolution {
   rawRef: string
 }
 
-export function resolveBuiltinStage(name: string): StageAsset | null {
+export function resolveBuiltinStage(name: string): StageDefinition | null {
   const builtin = BUILTIN_STAGES[name]
   if (!builtin) return null
   return {
@@ -23,7 +23,7 @@ export function resolveBuiltinStage(name: string): StageAsset | null {
     target: builtin.target,
     spec: builtin.spec,
     action: builtin.action,
-    probes: builtin.probes,
+    probes: builtin.probes as StageDefinition['probes'],
     deps: builtin.deps
   }
 }
@@ -62,7 +62,7 @@ export function resolveStageRef(
     const stageData = loadStandardByName(projectBoundary, probeName, 'stages')
     if (stageData) {
       try {
-        const stage = JSON.parse(stageData.content) as StageAsset
+        const stage = JSON.parse(stageData.content) as StageDefinition
         return {
           found: true,
           stage,
@@ -83,7 +83,7 @@ export function resolveStageRef(
     const stageData = loadStandardByName(projectBoundary, probeName, 'stages')
     if (stageData) {
       try {
-        const stage = JSON.parse(stageData.content) as StageAsset
+        const stage = JSON.parse(stageData.content) as StageDefinition
         return {
           found: true,
           stage,

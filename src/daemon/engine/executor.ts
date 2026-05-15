@@ -18,14 +18,14 @@ export async function executeStage(
   stage: Stage,
   options: ExecutorOptions
 ): Promise<ExecuteStageResult> {
-  const { id: stageId, name, proof } = stage
+  const { id: stageId, name, probes } = stage
   const context: ProbeContext = { projectRoot: options.projectRoot }
 
   console.log(`[Executor] Executing stage: ${stageId} (${name})`)
 
   const probeResults: ProbeResult[] = []
 
-  for (const probe of proof.probes || []) {
+  for (const probe of probes || []) {
     console.log(`[Executor] Running probe: ${probe.type}`)
 
     const handler = getProbeHandler(probe.type)
@@ -42,7 +42,6 @@ export async function executeStage(
     try {
       const probeParams = {
         pattern: probe.pattern,
-        patterns: probe.patterns,
         command: probe.command,
         cwd: probe.cwd
       }
@@ -50,7 +49,7 @@ export async function executeStage(
 
       const definition: ProbeDefinition = {
         type: probe.type,
-        params: { pattern: probe.pattern, patterns: probe.patterns, command: probe.command, cwd: probe.cwd }
+        params: { pattern: probe.pattern, command: probe.command, cwd: probe.cwd }
       }
       evaluateProbe(definition, actualResult)
 

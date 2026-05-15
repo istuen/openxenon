@@ -1,5 +1,4 @@
 import type { XnStageStatus } from './core'
-import type { Proof } from './proof'
 
 /**
  * @deprecated MVP 0.1 后被 Blueprint YAML 中的 Stage 替代。
@@ -28,6 +27,7 @@ export interface Stage {
   blueprintId?: string
   name: string
   deps: string[]
-  proof: Proof
+  target?: { description: string; glob?: string }
+  spec?: { description: string; constraints?: string[] }
   status?: XnStageStatus
 }
