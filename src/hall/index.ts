@@ -130,6 +130,20 @@ export function getHallStats(projectRoot: string): HallStats {
   }
 }
 
+export interface ProbeDetail {
+  probeType: string
+  result: 'PASSED' | 'FAILED'
+  output?: string
+  error?: string
+}
+
+export interface StageDetail {
+  stageId: string
+  stageName: string
+  status: string
+  probes: ProbeDetail[]
+}
+
 export interface TaskDetails {
   taskId: string
   taskName: string
@@ -138,6 +152,55 @@ export interface TaskDetails {
   stages: Record<string, string>
   frozenPath: string | null
   tracePath: string | null
+  stageDetails?: StageDetail[]
+}
+
+function readTaskTrace(tracePath: string | null): Map<string, StageDetail> {
+  const stages = new Map<string, StageDetail>()
+
+  if (!tracePath || !existsSync(tracePath)) {
+    return stages
+  }
+
+  try {
+    const content = readFileSync(tracePath, 'utf-8')
+    const lines = content.split('\n').filter(line => line.trim())
+
+    for (const line of lines) {
+      try {
+        const event = JSON.parse(line)
+        if (event.type === 'STAGE_START') {
+          stages.set(event.stageId, {
+            stageId: event.stageId,
+            stageName: event.stageName,
+            status: 'PENDING',
+            probes: []
+          })
+        } else if (event.type === 'STAGE_COMPLETE') {
+          const stage = stages.get(event.stageId)
+          if (stage) {
+            stage.status = event.status
+          }
+        } else if (event.type === 'PROBE_RESULT') {
+          const stage = stages.get(event.stageId)
+          if (stage) {
+            stage.probes.push({
+              probeType: event.probeType,
+              result: event.result,
+              output: event.output,
+              error: event.error
+            })
+          }
+        }
+      } catch {
+        // skip malformed lines
+      }
+    }
+  } catch {
+    // ignore read errors
+  }
+
+  return stages
 }
 
 export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
@@ -155,11 +218,14 @@ export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
     const statePath = join(tasksDir, taskId, 'state.json')
     const frozenPath = join(tasksDir, taskId, 'blueprint.frozen.yaml')
     const tracePath = join(tasksDir, taskId, 'task-trace.yaml')
+    const manifestPath = join(tasksDir, taskId, 'step-manifest.json')
 
     if (existsSync(statePath)) {
       try {
         const content = readFileSync(statePath, 'utf-8')
         const state = JSON.parse(content) as TaskState
+        const stageDetails = readTaskTrace(tracePath)
+
         tasks.push({
           taskId: state.taskId,
           taskName: state.taskName,
@@ -167,7 +233,8 @@ export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
           currentStage: state.currentStage,
           stages: state.stages,
           frozenPath: existsSync(frozenPath) ? frozenPath : null,
-          tracePath: existsSync(tracePath) ? tracePath : null
+          tracePath: existsSync(tracePath) ? tracePath : null,
+          stageDetails: Array.from(stageDetails.values())
         })
       } catch {
         // ignore invalid state files
@@ -188,7 +255,8 @@ export function generateHallIndexHtml(projectRoot: string): string {
     taskName: t.taskName,
     status: t.status,
     currentStage: t.currentStage,
-    stages: t.stages
+    stages: t.stages,
+    stageDetails: t.stageDetails || []
   })))
 
   return `<!DOCTYPE html>
@@ -370,16 +438,49 @@ export function generateHallIndexHtml(projectRoot: string): string {
       dagContainer.innerHTML = generateDag(task.stages);
 
       const stageList = document.getElementById('stageList');
+      const stageDetails = task.stageDetails || [];
+
       stageList.innerHTML = Object.entries(task.stages).map(([name, status]) => {
         const indicatorClass = status.toLowerCase();
-        return '<li class="stage-item">' +
-          '<span class="stage-indicator ' + indicatorClass + '"></span>' +
-          '<span>' + name + '</span>' +
-          '<span style="color: #888; margin-left: auto;">' + status + '</span>' +
+        const stageDetail = stageDetails.find(s => s.stageName === name || s.stageId === name);
+
+        let probeHtml = '';
+        if (stageDetail && stageDetail.probes && stageDetail.probes.length > 0) {
+          probeHtml = '<div class="probe-list" style="margin-top: 0.5rem; padding-left: 1.5rem;">' +
+            stageDetail.probes.map(p => {
+              const probeClass = p.result === 'PASSED' ? 'passed' : 'failed';
+              const probeIcon = p.result === 'PASSED' ? '✓' : '✗';
+              const probeOutput = p.output ? '<span style="color: #888; font-size: 0.75rem; margin-left: 0.5rem;">' + escapeHtml(String(p.output).substring(0, 50)) + '</span>' : '';
+              const probeError = p.error ? '<span style="color: #ef4444; font-size: 0.7rem; margin-left: 0.5rem;">' + escapeHtml(String(p.error).substring(0, 50)) + '</span>' : '';
+              return '<div class="probe-item" style="display: flex; align-items: center; margin: 0.25rem 0; font-size: 0.8rem;">' +
+                '<span style="color: ' + (p.result === 'PASSED' ? '#22c55e' : '#ef4444') + '; margin-right: 0.25rem;">' + probeIcon + '</span>' +
+                '<span style="color: #888;">' + p.probeType + '</span>' +
+                probeOutput + probeError +
+              '</div>';
+            }).join('') +
+            '</div>';
+        }
+
+        return '<li class="stage-item" style="flex-direction: column; align-items: flex-start;">' +
+          '<div style="display: flex; align-items: center; gap: 1rem;">' +
+            '<span class="stage-indicator ' + indicatorClass + '"></span>' +
+            '<span>' + name + '</span>' +
+            '<span style="color: #888; margin-left: auto;">' + status + '</span>' +
+          '</div>' +
+          probeHtml +
         '</li>';
       }).join('');
 
       document.getElementById('taskDetail').classList.add('active');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     function closeTaskDetail() {
