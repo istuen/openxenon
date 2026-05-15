@@ -175,7 +175,7 @@ export default defineCommand({
     console.log(`过滤条件: ${filter}`)
     console.log(`模式: ${ctx.args.force ? '覆盖已存在文件' : '跳过已存在文件'}`)
 
-    const types = ['probes', 'proofs', 'stages', 'blueprints']
+    const types = ['probes', 'stages', 'blueprints']
     let totalImported = 0
     let totalSkipped = 0
     let totalOverwritten = 0

@@ -238,9 +238,7 @@ export class BlueprintCompiler {
         validateParams(resolution.content, stage.params || {})
 
         const baseProbes = (resolution.content.probes as Array<Record<string, unknown>>) || []
-        const refProofProbes = (resolution.content as any).proof?.probes as Array<Record<string, unknown>> || []
-        const allBaseProbes = [...refProofProbes, ...baseProbes]
-        const mergedProbes = mergeProbes(allBaseProbes, stage as any)
+        const mergedProbes = mergeProbes(baseProbes, stage as any)
 
         resolvedStage = {
           ...resolution.content,
@@ -254,8 +252,7 @@ export class BlueprintCompiler {
         }
       } else {
         const inlineProbes = (stage.probes as Array<Record<string, unknown>>) || []
-        const proofProbes = (stage as any).proof?.probes as Array<Record<string, unknown>> || []
-        const mergedInlineProbes = [...inlineProbes, ...proofProbes]
+        const mergedInlineProbes = [...inlineProbes]
 
         resolvedStage = {
           id: stage.id,

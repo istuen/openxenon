@@ -143,12 +143,15 @@ name: <blueprint名称>
 stages:
   - id: <stage唯一标识>
     name: <显示名称>
-    proof:
-      probeRefs:
-        - type: <探针类型>
-          params:
-            <探针参数>
-    dependsOn: [<依赖的stage id>]   # 可选
+    deps: [<依赖的stage id>]   # 可选
+    target:
+      description: <目标描述>
+    spec:
+      description: <规格描述>
+    probes:
+      - type: <探针类型>
+        params:
+          <探针参数>
 \`\`\`
 
 ## 完整示例
@@ -158,79 +161,80 @@ name: check-project-structure
 stages:
   - id: check-package-json
     name: 检查 package.json
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
+    target:
+      description: package.json 存在
+    probes:
+      - type: fs_exists
+        params:
+          pattern: package.json
   - id: check-readme
     name: 检查 README
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: README.md
+    target:
+      description: README 存在
+    probes:
+      - type: fs_exists
+        params:
+          pattern: README.md
   - id: check-lint
     name: 检查 lint 通过
-    proof:
-      probeRefs:
-        - type: exec_exit_zero
-          params:
-            command: npm run lint
-    dependsOn: [check-package-json]
+    deps: [check-package-json]
+    target:
+      description: lint 检查通过
+    probes:
+      - type: exec_exit_zero
+        params:
+          command: npm run lint
 \`\`\`
 
-## probeRefs 参数格式
-
-⚠️ Blueprint 里的 probeRefs 用的是 \`params\` 对象，不是 \`parameters\` 数组！
+## probes 参数格式
 
 \`\`\`yaml
 fs_exists:        { pattern: "glob模式" }
 fs_not_exists:    { pattern: "glob模式" }
-fs_content_match:  { path: "文件路径", contains: "正则" }
+fs_content_match: { path: "文件路径", contains: "正则" }
 exec_exit_zero:   { command: "shell命令" }
 \`\`\`
 
-## dependsOn 规则
+## deps 规则
 
-- dependsOn 是可选的，没有依赖的 stage 可以并行验证
-- dependsOn 里只能引用同 blueprint 内的 stage id
+- deps 是可选的，没有依赖的 stage 可以并行验证
+- deps 里只能引用同 blueprint 内的 stage id
 - 不能循环依赖（A→B→A）
 
 ## ❌ 常见错误
 
-1. **probeRefs 里用了 parameters 数组**
+1. **probes 里用了 parameters 数组**
    \`\`\`yaml
    # 错误
-   probeRefs: [{ type: fs_exists, parameters: [{name: pattern, type: string}] }]
+   probes: [{ type: fs_exists, parameters: [{name: pattern, type: string}] }]
 
    # 正确
-   probeRefs: [{ type: fs_exists, params: { pattern: "src" } }]
+   probes: [{ type: fs_exists, params: { pattern: "src" } }]
    \`\`\`
 
 2. **使用了旧类型名**
    \`\`\`yaml
    # 错误
-   probeRefs:
+   probes:
      - type: fs_match        # 旧名
        params:
-         pattern: "*.ts"     # 错误：应该是 path
+         pattern: "*.ts"
          contains: "export"
 
    # 正确
-   probeRefs:
+   probes:
      - type: fs_content_match
        params:
          path: "*.ts"
          contains: "export"
    \`\`\`
 
-3. **dependsOn 引用了不存在的 stage id**
-   确保 dependsOn 里的每个 id 都在 stages 里有定义
+3. **deps 引用了不存在的 stage id**
+   确保 deps 里的每个 id 都在 stages 里有定义
 
 4. **stage id 含空格或中文**
    stage id 只用小写字母、数字和连字符：check-readme, deploy-mysql
-`
+ `
 
 const stageFormatMd = `# Stage 格式参考
 
@@ -239,12 +243,13 @@ const stageFormatMd = `# Stage 格式参考
 \`\`\`yaml
 name: <stage名称>
 description: "<stage描述>"
-proofs:
-  - name: "<proof名称>"
-    policy: AND    # AND 或 OR
-    probes:
-      - type: <探针类型>
-        parameters: { <参数键值> }
+target:
+  description: "<目标描述>"
+spec:
+  description: "<规格描述>"
+probes:
+  - type: <探针类型>
+    params: { <参数键值> }
 \`\`\`
 
 ## Blueprint 格式（在 Blueprint 中引用 Stage）
@@ -273,11 +278,11 @@ shell_exec        # 应改为 exec_exit_zero
 
 2. 使用了旧的探针类型名
    确保使用 fs_content_match 和 exec_exit_zero，而不是旧名
-`
+ `
 
 export const oxnForgeSkill: OpenXenonSkill = {
   id: 'oxn-forge',
-  description: '通过自然语言生成 Draft 标准资产（Blueprint/Probe/Proof/Stage）',
+  description: '通过自然语言生成 Draft 标准资产（Blueprint/Probe/Stage）',
   instruction: `# /oxn-forge — 锻造 Draft 标准资产
 
 你是 OpenXenon 的资产锻造专家。当你收到工程师的自然语言请求时：
@@ -287,8 +292,7 @@ export const oxnForgeSkill: OpenXenonSkill = {
 解析工程师的意图，确定要生成什么类型的资产：
 - Blueprint（蓝图）：包含多个 Stage 的完整流程定义
 - Probe（探针）：单一检查，如"检查文件存在"、"检查命令执行成功"
-- Proof（验证闭环）：组合多个 Probe 或检查
-- Stage（工序节点）：包含 Proof 和执行顺序
+- Stage（工序节点）：包含 target/spec/probes 和执行顺序
 
 ## 步骤 2：获取约束
 
@@ -296,7 +300,7 @@ export const oxnForgeSkill: OpenXenonSkill = {
 \`\`\`bash
 oxn forge <type>
 \`\`\`
-- type 可选值: probe, proof, stage, blueprint
+- type 可选值: probe, stage, blueprint
 - 例如: oxn forge probe
 
 ## 步骤 3：生成 YAML
@@ -338,12 +342,12 @@ parameters:
 - 生成 Probe: \`/oxn-forge 帮我写一个检查文件存在的 Probe\`
 - 生成 Blueprint: \`/oxn-forge 创建一个部署 MySQL 的 Blueprint\`
 - 生成全局 Probe: \`/oxn-forge --global 帮我写一个检查文件存在的 Probe\`
+- 生成 Stage: \`/oxn-forge 创建一个安装 Laravel 的 Stage\`
 `,
   examples: {
     '生成 Probe': '/oxn-forge 帮我写一个检查文件存在的 Probe',
     '生成 Blueprint': '/oxn-forge 创建一个部署 MySQL 的 Blueprint',
     '生成全局 Probe': '/oxn-forge --global 帮我写一个检查文件存在的 Probe',
-    '生成 Proof': '/oxn-forge 写一个验证 Laravel 安装的 Proof',
     '生成 Stage': '/oxn-forge 创建一个安装 Laravel 的 Stage'
   },
   references: [

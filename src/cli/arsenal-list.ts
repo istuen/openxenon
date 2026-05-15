@@ -25,7 +25,7 @@ export default defineCommand({
     },
     type: {
       type: 'string',
-      description: '过滤类型: probe, proof, stage, blueprint'
+      description: '过滤类型: probe, stage, blueprint'
     },
     scope: {
       type: 'string',
@@ -51,7 +51,7 @@ export default defineCommand({
 
     const typeFilter = ctx.args.type as string | undefined
     const filtered = typeFilter
-      ? assets.filter(a => a.type === typeFilter.replace('probe', 'probes').replace('proof', 'proofs').replace('stage', 'stages').replace('blueprint', 'blueprints'))
+      ? assets.filter(a => a.type === typeFilter.replace('probe', 'probes').replace('stage', 'stages').replace('blueprint', 'blueprints'))
       : assets
 
     if (filtered.length === 0) {
@@ -74,7 +74,6 @@ export default defineCommand({
 function groupByType(assets: StandardAsset[]): Record<string, StandardAsset[]> {
   const grouped: Record<string, StandardAsset[]> = {
     probes: [],
-    proofs: [],
     stages: [],
     blueprints: []
   }

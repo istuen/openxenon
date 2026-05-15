@@ -161,10 +161,10 @@ async function collectBlueprintRefs(
         const content = await readFile(blueprintPath, 'utf-8')
         const parsed = parseYaml(content) as Record<string, unknown>
         if (parsed.stages) {
-          for (const stage of parsed.stages as Array<{ proof?: { probeRefs?: Array<{ type: string }> } }>) {
-            if (stage.proof?.probeRefs) {
-              for (const ref of stage.proof.probeRefs) {
-                refMap.set(ref.type, (refMap.get(ref.type) || 0) + 1)
+          for (const stage of parsed.stages as Array<{ probes?: Array<{ type: string }> }>) {
+            if (stage.probes) {
+              for (const probe of stage.probes) {
+                refMap.set(probe.type, (refMap.get(probe.type) || 0) + 1)
               }
             }
           }

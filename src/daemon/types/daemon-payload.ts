@@ -22,14 +22,10 @@ export interface StagePayload {
   id: string
   name: string
   deps: string[]
-  proof: ProofPayload
-}
-
-export interface ProofPayload {
-  target: {
+  target?: {
     description: string
   }
-  spec: {
+  spec?: {
     description: string
   }
   probes: ProbePayload[]

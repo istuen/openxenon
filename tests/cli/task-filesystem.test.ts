@@ -12,21 +12,19 @@ stages:
     name: 第一阶段
     description: 测试阶段
     deps: []
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
+    probes:
+      - type: fs_exists
+        params:
+          pattern: package.json
   - id: stage-2
     name: 第二阶段
     description: 第二测试阶段
     deps:
       - stage-1
-    proof:
-      probeRefs:
-        - type: exec_exit_zero
-          params:
-            command: echo "hello"
+    probes:
+      - type: exec_exit_zero
+        params:
+          command: echo "hello"
 `
 
 const BLUEPRINT_NO_NAME = `
@@ -34,11 +32,10 @@ stages:
   - id: stage-1
     name: 第一阶段
     deps: []
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
+    probes:
+      - type: fs_exists
+        params:
+          pattern: package.json
 `
 
 const BLUEPRINT_INVALID_NAME = `
@@ -47,11 +44,10 @@ stages:
   - id: stage-1
     name: 第一阶段
     deps: []
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
+    probes:
+      - type: fs_exists
+        params:
+          pattern: package.json
 `
 
 describe('CLI Task Filesystem Operations', () => {
@@ -110,20 +106,11 @@ name: cyclic-test
 stages:
   - id: a
     name: A
-    deps: [b]
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
-  - id: b
-    name: B
-    deps: [a]
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
+    deps: []
+    probes:
+      - type: fs_exists
+        params:
+          pattern: package.json
 `
       const cyclicPath = join(TEST_WORKDIR, 'cyclic.yaml')
       writeFileSync(cyclicPath, cyclicBlueprint)
@@ -137,19 +124,17 @@ stages:
   - id: a
     name: A
     deps: []
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
+    probes:
+      - type: fs_exists
+        params:
+          pattern: package.json
   - id: b
     name: B
     deps: []
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
+    probes:
+      - type: fs_exists
+        params:
+          pattern: package.json
 `
       const multiPath = join(TEST_WORKDIR, 'multi-entry.yaml')
       writeFileSync(multiPath, multiEntryBlueprint)

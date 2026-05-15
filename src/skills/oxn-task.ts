@@ -9,12 +9,15 @@ name: <blueprint名称>
 stages:
   - id: <stage唯一标识>
     name: <显示名称>
-    proof:
-      probeRefs:
-        - type: <探针类型>
-          params:
-            <探针参数>
-    dependsOn: [<依赖的stage id>]   # 可选
+    deps: [<依赖的stage id>]   # 可选
+    target:
+      description: <目标描述>
+    spec:
+      description: <规格描述>
+    probes:
+      - type: <探针类型>
+        params:
+          <探针参数>
 \`\`\`
 
 ## 完整示例
@@ -24,22 +27,24 @@ name: deploy-mysql
 stages:
   - id: prepare
     name: 准备环境
-    proof:
-      probeRefs:
-        - type: exec_exit_zero
-          params:
-            command: docker ps | grep mysql
+    target:
+      description: Docker 环境就绪
+    probes:
+      - type: exec_exit_zero
+        params:
+          command: docker ps | grep mysql
   - id: deploy
     name: 部署 MySQL
-    dependsOn: [prepare]
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: "/data/mysql"
+    deps: [prepare]
+    target:
+      description: MySQL 数据目录存在
+    probes:
+      - type: fs_exists
+        params:
+          pattern: "/data/mysql"
 \`\`\`
 
-## probeRefs 参数速查
+## probes 参数速查
 
 \`\`\`yaml
 fs_exists:        { pattern: "glob模式" }

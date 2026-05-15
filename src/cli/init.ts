@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readdirSync, cpSync, rmSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { BOUNDARY_DIR, CONFIG_FILE, GLOBAL_BOUNDARY_PATH, GLOBAL_PROOFS_PATH } from '../kernel/constants'
+import { BOUNDARY_DIR, CONFIG_FILE, GLOBAL_BOUNDARY_PATH } from '../kernel/constants'
 import { compileAllSkills, formatCompilationReport } from './skill-compiler'
 import { output, outputError, getFormatFromArgs } from './output'
 
@@ -18,10 +18,6 @@ function ensureGlobalBoundary(): void {
   if (!existsSync(GLOBAL_BOUNDARY_PATH)) {
     mkdirSync(GLOBAL_BOUNDARY_PATH, { recursive: true })
   }
-
-  if (!existsSync(GLOBAL_PROOFS_PATH)) {
-    mkdirSync(GLOBAL_PROOFS_PATH, { recursive: true })
-  }
 }
 
 function ensureProjectBoundary(projectRoot: string): void {
@@ -29,11 +25,6 @@ function ensureProjectBoundary(projectRoot: string): void {
 
   if (!existsSync(boundaryPath)) {
     mkdirSync(boundaryPath, { recursive: true })
-  }
-
-  const proofsPath = join(boundaryPath, 'proofs')
-  if (!existsSync(proofsPath)) {
-    mkdirSync(proofsPath, { recursive: true })
   }
 
   const tasksPath = join(boundaryPath, 'tasks')

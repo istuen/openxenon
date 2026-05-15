@@ -59,8 +59,8 @@ async function handleTaskNext(
       JSON.stringify({
         stageId: firstStage.id,
         name: firstStage.name,
-        proof: firstStage.proof,
-        spec: firstStage.proof.spec.description
+        target: firstStage.target,
+        spec: firstStage.spec?.description
       }),
       {
         status: 200,

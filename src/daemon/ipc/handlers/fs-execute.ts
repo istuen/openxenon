@@ -94,7 +94,7 @@ async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typ
       trace.stages.set(stage.id, stageState)
     }
 
-    for (const probe of stage.proof.probes) {
+    for (const probe of stage.probes) {
       const result = await executeProbe(probe.type, probe.pattern || probe.command || '', payload.project_root)
       const probeResult = createProbeResult(probe.type, result.result, result.output, result.error)
       stageState.probes.push(probeResult)
@@ -143,7 +143,7 @@ async function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typ
 
   writeStageComplete(taskDir, payload.task_id, payload.step_id, 'RUNNING')
 
-  for (const probe of stage.proof.probes) {
+  for (const probe of stage.probes) {
     const result = await executeProbe(probe.type, probe.pattern || probe.command || '', taskDir.root)
     const probeResult = createProbeResult(probe.type, result.result, result.output, result.error)
 

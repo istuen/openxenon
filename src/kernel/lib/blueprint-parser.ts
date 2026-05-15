@@ -18,15 +18,13 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           id: s.id || '',
           name: s.name || '',
           deps: s.deps || [],
-          proof: {
-            target: { description: s.proof?.target?.description || '' },
-            spec: { description: s.proof?.spec?.description || '' },
-            probes: (s.proof?.probes || []).map((p: any) => ({
-              type: p.type || '',
-              ...(p.params?.path ? { pattern: p.params.path } : {}),
-              ...(p.params?.command ? { command: p.params.command } : {})
-            }))
-          }
+          target: { description: s.target?.description || '' },
+          spec: { description: s.spec?.description || '' },
+          probes: (s.probes || []).map((p: any) => ({
+            type: p.type || '',
+            ...(p.params?.path ? { pattern: p.params.path } : {}),
+            ...(p.params?.command ? { command: p.params.command } : {})
+          }))
         }))
       }
     } catch {
@@ -39,7 +37,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
   let name = ''
   const stages: StagePayload[] = []
 
-  let currentSection: 'root' | 'stage' | 'proof' | 'probes' | 'target' | 'spec' | 'probe' = 'root'
+  let currentSection: 'root' | 'stage' | 'probes' | 'target' | 'spec' | 'probe' = 'root'
   let stageIndex = -1
   let probeIndex = -1
 
@@ -77,13 +75,15 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           id: stageId,
           name: '',
           deps: [],
-          proof: { target: { description: '' }, spec: { description: '' }, probes: [] }
+          target: { description: '' },
+          spec: { description: '' },
+          probes: []
         })
       } else {
         stages[stageIndex]!.id = stageId
         stages[stageIndex]!.name = ''
         stages[stageIndex]!.deps = []
-        stages[stageIndex]!.proof.probes = []
+        stages[stageIndex]!.probes = []
       }
       continue
     }
@@ -98,13 +98,15 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           id: stageId,
           name: '',
           deps: [],
-          proof: { target: { description: '' }, spec: { description: '' }, probes: [] }
+          target: { description: '' },
+          spec: { description: '' },
+          probes: []
         })
       } else {
         stages[stageIndex]!.id = stageId
         stages[stageIndex]!.name = ''
         stages[stageIndex]!.deps = []
-        stages[stageIndex]!.proof.probes = []
+        stages[stageIndex]!.probes = []
       }
       continue
     }
@@ -119,20 +121,10 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       continue
     }
 
-    if (trimmed === 'proof:' && stageIndex >= 0) {
-      currentSection = 'proof'
-      continue
-    }
-
     if (trimmed.startsWith('- ') && currentSection === 'stage' && stageIndex >= 0) {
       const dep = trimmed.slice(2).trim()
       const stage = stages[stageIndex]
       if (stage) stage.deps.push(dep)
-      continue
-    }
-
-    if (trimmed === 'proof:') {
-      currentSection = 'proof'
       continue
     }
 
@@ -162,7 +154,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       const probeType = trimmed.slice(7).trim()
       const stage = stages[stageIndex]
       if (!stage) continue
-      const probes = stage.proof.probes
+      const probes = stage.probes
       if (probeIndex >= probes.length) {
         probes.push({ type: probeType })
       } else {
@@ -178,7 +170,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
         pattern = pattern.slice(1, -1)
       }
       const stage = stages[stageIndex]
-      const probe = stage?.proof.probes[probeIndex]
+      const probe = stage?.probes[probeIndex]
       if (probe) probe.pattern = pattern
       continue
     }
@@ -190,7 +182,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
         command = command.slice(1, -1)
       }
       const stage = stages[stageIndex]
-      const probe = stage?.proof.probes[probeIndex]
+      const probe = stage?.probes[probeIndex]
       if (probe) probe.command = command
       continue
     }
@@ -198,7 +190,10 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
     if (currentSection === 'target' && stageIndex >= 0) {
       if (trimmed.startsWith('description:')) {
         const stage = stages[stageIndex]
-        if (stage) stage.proof.target.description = trimmed.slice(12).trim()
+        if (stage) {
+          if (!stage.target) stage.target = { description: '' }
+          stage.target.description = trimmed.slice(12).trim()
+        }
       }
       continue
     }
@@ -206,7 +201,10 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
     if (currentSection === 'spec' && stageIndex >= 0) {
       if (trimmed.startsWith('description:')) {
         const stage = stages[stageIndex]
-        if (stage) stage.proof.spec.description = trimmed.slice(12).trim()
+        if (stage) {
+          if (!stage.spec) stage.spec = { description: '' }
+          stage.spec.description = trimmed.slice(12).trim()
+        }
       }
       continue
     }
