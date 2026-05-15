@@ -15,12 +15,15 @@ export interface DraftAssetResult {
 }
 
 function getTypeFromContent(content: string): AssetType | null {
+  const trimmed = content.trim()
   try {
     const parsed = JSON.parse(content)
     if (parsed.type === 'fs_exists' || parsed.type === 'fs_match' || parsed.type === 'shell_exec') return 'probes'
     if (parsed.probes && Array.isArray(parsed.probes)) return 'stages'
+    if (parsed.stages && Array.isArray(parsed.stages)) return 'blueprints'
     if (parsed.target || parsed.spec) return 'stages'
   } catch {
+    if (trimmed.startsWith('name:') && trimmed.includes('stages:')) return 'blueprints'
     if (content.includes('type:') && (content.includes('fs_exists') || content.includes('fs_match') || content.includes('shell_exec'))) return 'probes'
     if (content.includes('probes:') || content.includes('target:')) return 'stages'
   }
@@ -106,6 +109,8 @@ export function createDraftFromYaml(yamlContent: string, name?: string, scope: S
       return createDraftProbe(yamlContent, name, scope)
     case 'stages':
       return createDraftStage(yamlContent, name, scope)
+    case 'blueprints':
+      return saveDraftAsset('blueprints', name, yamlContent, scope)
     default:
       return { success: false, error: 'Unknown asset type' }
   }
