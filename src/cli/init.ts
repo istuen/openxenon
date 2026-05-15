@@ -31,6 +31,16 @@ function ensureProjectBoundary(projectRoot: string): void {
   if (!existsSync(tasksPath)) {
     mkdirSync(tasksPath, { recursive: true })
   }
+
+  const forgesPath = join(boundaryPath, 'forges')
+  if (!existsSync(forgesPath)) {
+    mkdirSync(forgesPath, { recursive: true })
+  }
+
+  const arsenalsPath = join(boundaryPath, 'arsenals')
+  if (!existsSync(arsenalsPath)) {
+    mkdirSync(arsenalsPath, { recursive: true })
+  }
 }
 
 function readProjectConfig(projectRoot: string): ProjectConfig | null {

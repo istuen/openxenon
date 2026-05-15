@@ -230,8 +230,43 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
 
   if (assetPath.endsWith('draft.yaml')) {
     state = 'draft'
+    // For forge/arsenal-new structure, name is the directory
+    if (assetPath.includes('/forges/') || assetPath.includes('/arsenals/')) {
+      const parts = assetPath.split('/')
+      const draftIndex = parts.indexOf('draft.yaml')
+      if (draftIndex > 0) {
+        // path is .../forges/probes/<name>/draft.yaml or .../arsenals/probes/<name>/draft.yaml
+        const possibleName = parts[draftIndex - 1]
+        if (possibleName && possibleName !== 'forges' && possibleName !== 'arsenals' && possibleName !== 'probes' && possibleName !== 'stages' && possibleName !== 'blueprints') {
+          return {
+            name: possibleName,
+            type: type!,
+            state: 'draft',
+            path: assetPath,
+            content
+          }
+        }
+      }
+    }
   } else if (assetPath.endsWith('canonical.yaml')) {
     state = 'canonical'
+    // For arsenal-new structure, name is the directory
+    if (assetPath.includes('/arsenals/')) {
+      const parts = assetPath.split('/')
+      const canonicalIndex = parts.indexOf('canonical.yaml')
+      if (canonicalIndex > 0) {
+        const possibleName = parts[canonicalIndex - 1]
+        if (possibleName && possibleName !== 'arsenals' && possibleName !== 'probes' && possibleName !== 'stages' && possibleName !== 'blueprints') {
+          return {
+            name: possibleName,
+            type: type!,
+            state: 'canonical',
+            path: assetPath,
+            content
+          }
+        }
+      }
+    }
   }
 
   if (!type || !state) {
@@ -248,10 +283,11 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
 }
 
 export function promoteStandard(fromPath: string): StandardAsset | null {
-  const isNewFormat = fromPath.endsWith('draft.yaml') || fromPath.endsWith('draft.yml')
+  const isForgeFormat = fromPath.includes('/forges/') && fromPath.endsWith('/draft.yaml')
+  const isArsenalNewFormat = fromPath.includes('/arsenals/') && fromPath.endsWith('/draft.yaml')
   const isOldFormat = fromPath.includes('/draft/') && (fromPath.endsWith('.yaml') || fromPath.endsWith('.yml'))
 
-  if (!isNewFormat && !isOldFormat) {
+  if (!isForgeFormat && !isArsenalNewFormat && !isOldFormat) {
     throw new Error(`Asset is not in draft state: ${fromPath}`)
   }
 
@@ -266,8 +302,12 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
 
   let newPath: string
 
-  if (isNewFormat) {
-    newPath = fromPath.replace('/draft.yaml', '/canonical.yaml').replace('/draft.yml', '/canonical.yml')
+  if (isForgeFormat) {
+    newPath = fromPath
+      .replace('/forges/', '/arsenals/')
+      .replace('/draft.yaml', '/canonical.yaml')
+  } else if (isArsenalNewFormat) {
+    newPath = fromPath.replace('/draft.yaml', '/canonical.yaml')
   } else {
     newPath = fromPath.replace('/draft/', '/canonical/')
   }
@@ -297,6 +337,12 @@ export function loadStandardByName(projectBoundary: string, name: string, type: 
   if (existsSync(oldCanonicalPath)) {
     const content = readFileSync(oldCanonicalPath, 'utf-8')
     return { name, type, state: 'canonical', path: oldCanonicalPath, content }
+  }
+
+  const forgeDraftPath = join(projectBoundary, 'forges', type, name, 'draft.yaml')
+  if (existsSync(forgeDraftPath)) {
+    const content = readFileSync(forgeDraftPath, 'utf-8')
+    return { name, type, state: 'draft', path: forgeDraftPath, content }
   }
 
   const newDraftPath = join(projectBoundary, 'arsenals', type, name, 'draft.yaml')

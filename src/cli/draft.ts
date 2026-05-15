@@ -3,8 +3,8 @@ import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
 import * as yaml from 'yaml'
 import { validateProbeDefinition, validateStageDefinition } from '../kernel/schemas'
-import { type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
-import { ensureArsenalsDirectories } from '../arsenals/init'
+import { type AssetType, FORGES_ROOT } from '../arsenals/paths'
+import { ensureForgesDirectories } from '../arsenals/init'
 import type { Scope } from '../arsenals/loader'
 import { getProjectBoundaryPath } from '../kernel'
 
@@ -27,19 +27,19 @@ function getTypeFromContent(content: string): AssetType | null {
   return null
 }
 
-function getNewStructurePath(type: AssetType, name: string, state: string, scope: Scope = 'project'): string {
+function getForgePath(type: AssetType, name: string, scope: Scope): string {
   if (scope === 'global') {
-    return join(ARSENALS_ROOT, type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+    return join(FORGES_ROOT, type, name, 'draft.yaml')
   }
   const projectBoundary = getProjectBoundaryPath(process.cwd())
-  return join(projectBoundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+  return join(projectBoundary, 'forges', type, name, 'draft.yaml')
 }
 
 function saveDraftAsset(type: AssetType, name: string | undefined, content: string, scope: Scope = 'project'): DraftAssetResult {
-  ensureArsenalsDirectories()
+  ensureForgesDirectories()
 
   const assetName = name || 'draft_' + randomUUID().slice(0, 8)
-  const filePath = getNewStructurePath(type, assetName, 'draft', scope)
+  const filePath = getForgePath(type, assetName, scope)
 
   try {
     const dir = dirname(filePath)
