@@ -248,6 +248,8 @@ export class BlueprintCompiler {
           name: stage.name || (resolution.content.name as string),
           deps: stage.deps || (resolution.content.deps as string[] || []),
           params: stage.params || {},
+          target: (stage as any).target || (resolution.content as any).target,
+          action: (stage as any).action || (resolution.content as any).action,
           probes: mergedProbes
         }
       } else {
@@ -260,6 +262,8 @@ export class BlueprintCompiler {
           name: stage.name,
           deps: stage.deps || [],
           params: stage.params || {},
+          target: (stage as any).target,
+          action: (stage as any).action,
           probes: mergedInlineProbes
         }
       }

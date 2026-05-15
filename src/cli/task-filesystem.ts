@@ -207,9 +207,11 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
 }
 
 export interface NextResult {
+  taskId: string
   stageId: string | null
   name?: string
-  proof?: string
+  target?: { description: string; glob?: string }
+  action?: { instruction?: string; command?: string }
   status?: string
   message?: string
 }
@@ -222,6 +224,7 @@ export function taskNext(taskId: string, cwd: string): NextResult {
 
   if (state.status === 'COMPLETED') {
     return {
+      taskId,
       stageId: null,
       status: 'COMPLETED',
       message: 'Task already completed'
@@ -250,6 +253,10 @@ export function taskNext(taskId: string, cwd: string): NextResult {
 
     const stageStatus = state.stages[stageName]
 
+    if (stageStatus === 'FAILED') {
+      throw new Error(`Stage "${stageName}" verification failed. Abort or retry.`)
+    }
+
     const deps = frozenBlueprint.stages.find(s => (s.id || s.name) === stageId)?.deps || []
     const depsSatisfied = deps.every(depId => {
       const depName = stageNameById[depId] || depId
@@ -268,12 +275,16 @@ export function taskNext(taskId: string, cwd: string): NextResult {
       appendTraceEvent(cwd, taskId, traceEvent)
 
       const stage = frozenBlueprint.stages.find(s => (s.id || s.name) === stageId)
-      const probeRefs = stage?.probes || []
+
+      const target = (stage?.target as { description?: string; glob?: string } | undefined) || { description: stageName }
+      const action = (stage?.action as { instruction?: string; command?: string } | undefined) || {}
 
       return {
+        taskId,
         stageId,
         name: stageName,
-        proof: JSON.stringify({ probeRefs }),
+        target: { description: target.description || stageName, glob: target.glob },
+        action: { instruction: action.instruction, command: action.command },
         message: 'Stage started'
       }
     }
@@ -287,6 +298,7 @@ export function taskNext(taskId: string, cwd: string): NextResult {
   appendTraceEvent(cwd, taskId, completedEvent)
 
   return {
+    taskId,
     stageId: null,
     status: 'COMPLETED',
     message: 'All stages completed'
