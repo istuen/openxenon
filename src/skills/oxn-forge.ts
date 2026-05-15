@@ -324,11 +324,30 @@ parameters:
     required: true' --name redis-config-check
   \`\`\`
 
+## 步骤 5：审查 Draft
+
+执行以下命令读取生成的 Draft 内容：
+\`\`\`bash
+cat .openxenon/forges/<type>/<name>/draft.yaml
+\`\`\`
+
+将 Draft 内容转化为人类可读的摘要，向工程师展示：
+- 资产类型和名称
+- 主要参数和用途
+- 判定逻辑说明
+
+## 步骤 6：请求 Promote 确认
+
+向工程师确认是否提升为正式资产：
+> 审查完成后，是否提升为正式资产？
+> 执行：\`oxn arsenal promote <type>/<name>\`
+
 ## 约束
 
-- 只生成 DRAFT 状态的资产
+- 只生成 DRAFT 状态的资产（保存到 forges/ 目录）
 - 不执行任何探针逻辑
 - 确保 YAML/JSON 结构符合 Schema
+- 审查阶段必须读取实际文件内容，不能假设
 
 ## 参考
 

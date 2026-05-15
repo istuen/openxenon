@@ -1,0 +1,454 @@
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { join } from 'path'
+import { HALL_PATH } from '../infra/global'
+import { TASK_DIR_NAME } from '../kernel/lib/task-dir'
+import type { TaskState } from '../cli/task-filesystem'
+
+export interface HallStats {
+  totalTasks: number
+  completedTasks: number
+  failedTasks: number
+  runningTasks: number
+  pendingTasks: number
+  draftAssets: number
+  canonicalAssets: number
+  recentTasks: Array<{
+    taskId: string
+    taskName: string
+    status: string
+    updatedAt: number
+  }>
+}
+
+export interface ForgeDraft {
+  name: string
+  type: string
+  path: string
+  updatedAt: number
+}
+
+export function ensureHallDirectory(): void {
+  if (!existsSync(HALL_PATH)) {
+    mkdirSync(HALL_PATH, { recursive: true })
+  }
+  const assetsPath = join(HALL_PATH, 'assets')
+  if (!existsSync(assetsPath)) {
+    mkdirSync(assetsPath, { recursive: true })
+  }
+}
+
+export function getHallPath(): string {
+  return HALL_PATH
+}
+
+export function scanProjectTasks(projectRoot: string): TaskState[] {
+  const tasksDir = join(projectRoot, 'tasks')
+  if (!existsSync(tasksDir)) {
+    return []
+  }
+
+  const tasks: TaskState[] = []
+  const entries = readdirSync(tasksDir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue
+    const taskId = entry.name
+    const statePath = join(tasksDir, taskId, 'state.json')
+    if (existsSync(statePath)) {
+      try {
+        const content = readFileSync(statePath, 'utf-8')
+        const state = JSON.parse(content) as TaskState
+        tasks.push(state)
+      } catch {
+        // ignore invalid state files
+      }
+    }
+  }
+
+  return tasks
+}
+
+export function scanForgeDrafts(projectRoot: string): ForgeDraft[] {
+  const forgesDir = join(projectRoot, 'forges')
+  if (!existsSync(forgesDir)) {
+    return []
+  }
+
+  const drafts: ForgeDraft[] = []
+  const assetTypes = ['probes', 'stages', 'blueprints']
+
+  for (const type of assetTypes) {
+    const typePath = join(forgesDir, type)
+    if (!existsSync(typePath)) continue
+
+    const entries = readdirSync(typePath, { withFileTypes: true })
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const draftPath = join(typePath, entry.name, 'draft.yaml')
+      if (existsSync(draftPath)) {
+        try {
+          const stat = require('fs').statSync(draftPath)
+          drafts.push({
+            name: entry.name,
+            type,
+            path: draftPath,
+            updatedAt: stat.mtimeMs
+          })
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+
+  return drafts
+}
+
+export function getHallStats(projectRoot: string): HallStats {
+  const tasks = scanProjectTasks(projectRoot)
+
+  const completedTasks = tasks.filter(t => t.status === 'COMPLETED' && Object.values(t.stages).every(s => s === 'PASSED')).length
+  const failedTasks = tasks.filter(t => t.status === 'COMPLETED' && Object.values(t.stages).some(s => s === 'FAILED')).length
+  const runningTasks = tasks.filter(t => t.status === 'RUNNING').length
+
+  const recentTasks = tasks.slice(0, 10).map(t => ({
+    taskId: t.taskId,
+    taskName: t.taskName,
+    status: t.status,
+    updatedAt: Date.now()
+  }))
+
+  return {
+    totalTasks: tasks.length,
+    completedTasks,
+    failedTasks,
+    runningTasks,
+    pendingTasks: tasks.filter(t => t.status === 'PENDING').length,
+    draftAssets: scanForgeDrafts(projectRoot).length,
+    canonicalAssets: 0,
+    recentTasks
+  }
+}
+
+export interface TaskDetails {
+  taskId: string
+  taskName: string
+  status: string
+  currentStage: string | null
+  stages: Record<string, string>
+  frozenPath: string | null
+  tracePath: string | null
+}
+
+export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
+  const tasksDir = join(projectRoot, 'tasks')
+  if (!existsSync(tasksDir)) {
+    return []
+  }
+
+  const tasks: TaskDetails[] = []
+  const entries = readdirSync(tasksDir, { withFileTypes: true })
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue
+    const taskId = entry.name
+    const statePath = join(tasksDir, taskId, 'state.json')
+    const frozenPath = join(tasksDir, taskId, 'blueprint.frozen.yaml')
+    const tracePath = join(tasksDir, taskId, 'task-trace.yaml')
+
+    if (existsSync(statePath)) {
+      try {
+        const content = readFileSync(statePath, 'utf-8')
+        const state = JSON.parse(content) as TaskState
+        tasks.push({
+          taskId: state.taskId,
+          taskName: state.taskName,
+          status: state.status,
+          currentStage: state.currentStage,
+          stages: state.stages,
+          frozenPath: existsSync(frozenPath) ? frozenPath : null,
+          tracePath: existsSync(tracePath) ? tracePath : null
+        })
+      } catch {
+        // ignore invalid state files
+      }
+    }
+  }
+
+  return tasks
+}
+
+export function generateHallIndexHtml(projectRoot: string): string {
+  const stats = getHallStats(projectRoot)
+  const drafts = scanForgeDrafts(projectRoot)
+  const tasks = scanProjectTasksDetailed(projectRoot)
+
+  const tasksJson = JSON.stringify(tasks.map(t => ({
+    taskId: t.taskId,
+    taskName: t.taskName,
+    status: t.status,
+    currentStage: t.currentStage,
+    stages: t.stages
+  })))
+
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenXenon Hall - 研讨厅</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #333; }
+    h1 { color: #fff; font-size: 1.5rem; }
+    .badge { background: #1a1a1a; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.875rem; border: 1px solid #333; }
+
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: #1a1a1a; border: 1px solid #333; border-radius: 0.5rem; padding: 1.25rem; }
+    .stat-card h3 { color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .stat-card .value { font-size: 2rem; font-weight: 600; color: #fff; }
+    .stat-card .value.running { color: #22c55e; }
+    .stat-card .value.failed { color: #ef4444; }
+    .stat-card .value.completed { color: #3b82f6; }
+
+    .section { background: #1a1a1a; border: 1px solid #333; border-radius: 0.5rem; margin-bottom: 1.5rem; }
+    .section-header { padding: 1rem 1.25rem; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+    .section-title { font-size: 1rem; font-weight: 500; color: #fff; }
+    .section-count { background: #333; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; }
+
+    .item-list { list-style: none; }
+    .item { padding: 0.75rem 1.25rem; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+    .item:last-child { border-bottom: none; }
+    .item-info { display: flex; align-items: center; gap: 0.75rem; }
+    .item-name { font-weight: 500; }
+    .item-type { font-size: 0.75rem; color: #888; background: #252525; padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
+    .item-status { font-size: 0.75rem; padding: 0.125rem 0.5rem; border-radius: 0.25rem; }
+    .status-running { background: #22c55e20; color: #22c55e; }
+    .status-completed { background: #3b82f620; color: #3b82f6; }
+    .status-failed { background: #ef444420; color: #ef4444; }
+    .status-pending { background: #888820; color: #facc15; }
+
+    .empty-state { padding: 3rem; text-align: center; color: #666; }
+    .empty-state-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    .actions { display: flex; gap: 0.5rem; }
+    .btn { padding: 0.5rem 1rem; border-radius: 0.375rem; font-size: 0.875rem; cursor: pointer; border: 1px solid #333; background: #252525; color: #e0e0e0; text-decoration: none; display: inline-block; }
+    .btn:hover { background: #333; }
+    .btn-primary { background: #3b82f6; border-color: #3b82f6; }
+    .btn-primary:hover { background: #2563eb; }
+
+    .dag-container { padding: 1.5rem; }
+    .dag-svg { display: block; margin: 0 auto; }
+
+    .task-detail { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; }
+    .task-detail.active { display: flex; align-items: center; justify-content: center; }
+    .task-detail-content { background: #1a1a1a; border: 1px solid #333; border-radius: 0.5rem; max-width: 800px; width: 90%; max-height: 80vh; overflow-y: auto; }
+    .task-detail-header { padding: 1rem 1.25rem; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+    .task-detail-body { padding: 1.5rem; }
+    .stage-list { list-style: none; }
+    .stage-item { padding: 0.75rem; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 1rem; }
+    .stage-item:last-child { border-bottom: none; }
+    .stage-indicator { width: 10px; height: 10px; border-radius: 50%; }
+    .stage-indicator.passed { background: #22c55e; }
+    .stage-indicator.failed { background: #ef4444; }
+    .stage-indicator.running { background: #3b82f6; }
+    .stage-indicator.pending { background: #888; }
+    .close-btn { background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; }
+    .close-btn:hover { color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏛️ OpenXenon Hall</h1>
+      <span class="badge">研讨厅</span>
+    </header>
+
+    <div class="dashboard">
+      <div class="stat-card">
+        <h3>总任务数</h3>
+        <div class="value">${stats.totalTasks}</div>
+      </div>
+      <div class="stat-card">
+        <h3>运行中</h3>
+        <div class="value running">${stats.runningTasks}</div>
+      </div>
+      <div class="stat-card">
+        <h3>已完成</h3>
+        <div class="value completed">${stats.completedTasks}</div>
+      </div>
+      <div class="stat-card">
+        <h3>失败</h3>
+        <div class="value failed">${stats.failedTasks}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">📋 待审查 Draft</span>
+        <span class="section-count">${drafts.length}</span>
+      </div>
+      ${drafts.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <p>暂无待审查的 Draft 资产</p>
+        </div>
+      ` : `
+        <ul class="item-list">
+          ${drafts.map(d => `
+            <li class="item">
+              <div class="item-info">
+                <span class="item-name">${d.name}</span>
+                <span class="item-type">${d.type}</span>
+              </div>
+              <div class="actions">
+                <button class="btn">审查</button>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+      `}
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">📊 任务列表</span>
+        <span class="section-count">${tasks.length}</span>
+      </div>
+      ${tasks.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <p>暂无任务</p>
+          <p style="font-size: 0.875rem; margin-top: 0.5rem;">使用 /oxn-task 发起新任务</p>
+        </div>
+      ` : `
+        <ul class="item-list">
+          ${tasks.map(t => {
+            const statusClass = t.status === 'RUNNING' ? 'status-running' : t.status === 'COMPLETED' ? (Object.values(t.stages).some(s => s === 'FAILED') ? 'status-failed' : 'status-completed') : 'status-pending'
+            return `
+              <li class="item" onclick="showTaskDetail('${t.taskId}')" style="cursor: pointer;">
+                <div class="item-info">
+                  <span class="item-name">${t.taskName}</span>
+                  <span class="item-type">${t.taskId}</span>
+                </div>
+                <div class="item-status ${statusClass}">${t.status}</div>
+              </li>
+            `
+          }).join('')}
+        </ul>
+      `}
+    </div>
+  </div>
+
+  <div id="taskDetail" class="task-detail">
+    <div class="task-detail-content">
+      <div class="task-detail-header">
+        <h2 id="taskDetailTitle">任务详情</h2>
+        <button class="close-btn" onclick="closeTaskDetail()">&times;</button>
+      </div>
+      <div class="task-detail-body">
+        <h3 style="color: #888; font-size: 0.75rem; margin-bottom: 1rem;">STAGE DAG</h3>
+        <div id="dagContainer" class="dag-container"></div>
+        <h3 style="color: #888; font-size: 0.75rem; margin: 1.5rem 0 1rem;">STAGES</h3>
+        <ul id="stageList" class="stage-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    const tasksData = ${tasksJson};
+
+    function showTaskDetail(taskId) {
+      const task = tasksData.find(t => t.taskId === taskId);
+      if (!task) return;
+
+      document.getElementById('taskDetailTitle').textContent = task.taskName + ' (' + task.taskId + ')';
+
+      const dagContainer = document.getElementById('dagContainer');
+      dagContainer.innerHTML = generateDag(task.stages);
+
+      const stageList = document.getElementById('stageList');
+      stageList.innerHTML = Object.entries(task.stages).map(([name, status]) => {
+        const indicatorClass = status.toLowerCase();
+        return '<li class="stage-item">' +
+          '<span class="stage-indicator ' + indicatorClass + '"></span>' +
+          '<span>' + name + '</span>' +
+          '<span style="color: #888; margin-left: auto;">' + status + '</span>' +
+        '</li>';
+      }).join('');
+
+      document.getElementById('taskDetail').classList.add('active');
+    }
+
+    function closeTaskDetail() {
+      document.getElementById('taskDetail').classList.remove('active');
+    }
+
+    function generateDag(stages) {
+      const stageNames = Object.keys(stages);
+      if (stageNames.length === 0) return '';
+
+      const nodeWidth = 120;
+      const nodeHeight = 40;
+      const gapX = 60;
+      const gapY = 30;
+      const cols = Math.min(4, stageNames.length);
+      const rows = Math.ceil(stageNames.length / cols);
+
+      const width = cols * nodeWidth + (cols - 1) * gapX + 40;
+      const height = rows * nodeHeight + (rows - 1) * gapY + 40;
+
+      let svg = '<svg class="dag-svg" width="' + width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '" xmlns="http://www.w3.org/2000/svg">';
+
+      stageNames.forEach((name, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = 20 + col * (nodeWidth + gapX);
+        const y = 20 + row * (nodeHeight + gapY);
+
+        const status = stages[name];
+        let bgColor = '#333';
+        let textColor = '#888';
+        let borderColor = '#444';
+
+        if (status === 'PASSED') {
+          bgColor = '#22c55e20';
+          borderColor = '#22c55e';
+          textColor = '#22c55e';
+        } else if (status === 'FAILED') {
+          bgColor = '#ef444420';
+          borderColor = '#ef4444';
+          textColor = '#ef4444';
+        } else if (status === 'RUNNING') {
+          bgColor = '#3b82f620';
+          borderColor = '#3b82f6';
+          textColor = '#3b82f6';
+        }
+
+        svg += '<g>' +
+          '<rect x="' + x + '" y="' + y + '" width="' + nodeWidth + '" height="' + nodeHeight + '" rx="6" fill="' + bgColor + '" stroke="' + borderColor + '" stroke-width="1.5"/>' +
+          '<text x="' + (x + nodeWidth / 2) + '" y="' + (y + nodeHeight / 2 + 5) + '" text-anchor="middle" fill="' + textColor + '" font-size="12" font-family="system-ui">' + name + '</text>' +
+        '</g>';
+      });
+
+      svg += '</svg>';
+      return svg;
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeTaskDetail();
+    });
+  </script>
+</body>
+</html>`
+}
+
+export function renderHall(projectRoot: string): string {
+  ensureHallDirectory()
+  const html = generateHallIndexHtml(projectRoot)
+  const indexPath = join(HALL_PATH, 'index.html')
+  writeFileSync(indexPath, html, 'utf-8')
+  return indexPath
+}
