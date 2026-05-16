@@ -8,11 +8,11 @@ import { listStandards, loadStandardByName, promoteStandard, loadStandardByPath,
 const getProjectBoundary = (): string => getProjectBoundaryPath(process.cwd())
 
 export const arsenalListStandards = (state?: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
-  return listStandards(getProjectBoundary(), state, scope)
+  return listStandards(scope || 'fallback', getProjectBoundary(), state)
 }
 
 export const arsenalLoadStandardByName = (name: string, type: AssetType) => {
-  return loadStandardByName(getProjectBoundary(), name, type)
+  return loadStandardByName('project', getProjectBoundary(), name, type)
 }
 
 export {
@@ -21,13 +21,13 @@ export {
 }
 
 export const arsenalLoadArsenalsByState = (state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
-  return loadArsenalsByState(getProjectBoundary(), state, scope)
+  return loadArsenalsByState(scope || 'fallback', getProjectBoundary(), state)
 }
 
 export const arsenalLoadArsenalsByTypeAndState = (type: AssetType, state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
-  return loadArsenalsByTypeAndState(getProjectBoundary(), type, state, scope)
+  return loadArsenalsByTypeAndState(scope || 'fallback', getProjectBoundary(), type, state)
 }
 
 export const arsenalResolveAssetPath = (name: string, type: AssetType, state: 'draft' | 'canonical') => {
-  return resolveAssetPath(getProjectBoundary(), name, type, state)
+  return resolveAssetPath('project', getProjectBoundary(), name, type, state)
 }

@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { arsenalListStandards as listStandards, type StandardAsset } from '../arsenals/loader'
+import { listStandards } from '../infra/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetState } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
@@ -7,7 +7,7 @@ import { output, outputError, getFormatFromArgs } from './output'
 export default defineCommand({
   meta: {
     name: 'arsenal-list',
-    description: '列出标准资产（默认显示所有状态）'
+    description: '列出全局标准资产（默认显示所有状态）'
   },
   args: {
     draft: {
@@ -22,10 +22,6 @@ export default defineCommand({
       type: 'string',
       description: '过滤类型: probe, stage, blueprint'
     },
-    scope: {
-      type: 'string',
-      description: '过滤来源: project, global, builtin, fallback'
-    },
     '--json': {
       type: 'boolean',
       description: 'JSON 格式输出'
@@ -36,19 +32,12 @@ export default defineCommand({
     }
   },
   async run(ctx) {
-    if (ctx.args.global || ctx.args.g) {
-      console.error('Option -g/--global is removed.')
-      console.error('Use: oxn global arsenal list')
-      process.exit(1)
-    }
-
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('project')
+    ensureArsenalsDirectories('global')
 
-    const scopeArg = ctx.args.scope as string | undefined
-    const scope = scopeArg || 'fallback'
+    const scope = 'global'
     const state: AssetState | undefined = ctx.args.draft ? 'draft' : ctx.args.canonical ? 'canonical' : undefined
-    const assets = listStandards(state, scope)
+    const assets = listStandards(scope, undefined, state)
 
     const typeFilter = ctx.args.type as string | undefined
     const filtered = typeFilter
@@ -58,7 +47,7 @@ export default defineCommand({
     if (filtered.length === 0) {
       return outputError({
         code: 'OXN_NO_ASSETS',
-        message: 'No standard assets found'
+        message: 'No global standard assets found'
       }, format)
     }
 
@@ -72,8 +61,8 @@ export default defineCommand({
   }
 })
 
-function groupByType(assets: StandardAsset[]): Record<string, StandardAsset[]> {
-  const grouped: Record<string, StandardAsset[]> = {
+function groupByType(assets: { type: string }[]): Record<string, { type: string }[]> {
+  const grouped: Record<string, { type: string }[]> = {
     probes: [],
     stages: [],
     blueprints: []

@@ -1,14 +1,16 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
-import { join, dirname } from 'path'
+import { join } from 'path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { getProjectBoundaryPath } from '../kernel'
+import { ensureForgesDirectories } from '../arsenals/init'
+import { GLOBAL_BOUNDARY } from '../infra/paths'
 import { output, outputError, getFormatFromArgs } from './output'
 
 export default defineCommand({
   meta: {
     name: 'arsenal-harvest',
-    description: '从成功任务中提炼 Blueprint 资产'
+    description: '从成功任务中提炼 Blueprint 到全局'
   },
   args: {
     'task-id': {
@@ -34,12 +36,6 @@ export default defineCommand({
     }
   },
   async run(ctx) {
-    if (ctx.args['--global']) {
-      console.error('Option --global is removed.')
-      console.error('Use: oxn global arsenal harvest')
-      process.exit(1)
-    }
-
     const format = getFormatFromArgs(ctx.args)
     const taskId = ctx.args['task-id'] as string
     const name = ctx.args['--name'] as string | undefined
@@ -96,7 +92,7 @@ export default defineCommand({
 
       if (assetType === 'blueprint') {
         const blueprintName = name || state.taskName || taskId
-        const assetDir = join(boundaryPath, 'forges', 'blueprints', blueprintName)
+        const assetDir = join(GLOBAL_BOUNDARY, 'forges', 'blueprints', blueprintName)
 
         mkdirSync(assetDir, { recursive: true })
 
@@ -122,7 +118,7 @@ export default defineCommand({
             path: draftPath,
             taskId: taskId
           },
-          human: `Blueprint harvested from task "${taskId}"!\n  Name: ${blueprintName}\n  Path: ${draftPath}\n\nReview draft and promote with:\n  oxn arsenal promote blueprints/${blueprintName}`
+          human: `Blueprint harvested from task "${taskId}" to global!\n  Name: ${blueprintName}\n  Path: ${draftPath}\n\nReview draft and promote with:\n  oxn global arsenal promote blueprints/${blueprintName}`
         }, format)
       }
 

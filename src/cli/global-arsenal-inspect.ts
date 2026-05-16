@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { arsenalListStandards as listStandards, arsenalLoadStandardByName as loadStandardByName, type StandardAsset, type Scope } from '../arsenals/loader'
+import { listStandards, loadStandardByName } from '../infra/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetState, AssetType } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
@@ -32,7 +32,7 @@ function parseAssetName(input: string): { type: AssetType, name: string } | null
 export default defineCommand({
   meta: {
     name: 'arsenal-inspect',
-    description: '查看标准资产内容（默认显示所有状态）'
+    description: '查看全局标准资产内容'
   },
   args: {
     name: {
@@ -58,16 +58,10 @@ export default defineCommand({
     }
   },
   async run(ctx) {
-    if (ctx.args.global || ctx.args.g) {
-      console.error('Option -g/--global is removed.')
-      console.error('Use: oxn global arsenal inspect')
-      process.exit(1)
-    }
-
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('project')
+    ensureArsenalsDirectories('global')
 
-    const scope: Scope = 'fallback'
+    const scope = 'global'
     const state: AssetState | undefined = ctx.args.draft ? 'draft' : ctx.args.canonical ? 'canonical' : undefined
     const name = ctx.args.name as string | undefined
 
@@ -86,16 +80,16 @@ export default defineCommand({
       }
       return outputError({
         code: 'OXN_ASSET_NOT_FOUND',
-        message: `Asset '${name}' not found`
+        message: `Asset '${name}' not found in global arsenal`
       }, format)
     }
 
-    const assets = listStandards(state, scope)
+    const assets = listStandards(scope, undefined, state)
 
     if (assets.length === 0) {
       return outputError({
         code: 'OXN_NO_ASSETS',
-        message: 'No assets found'
+        message: 'No global assets found'
       }, format)
     }
 
@@ -113,16 +107,16 @@ export default defineCommand({
   }
 })
 
-function findAssetByName(name: string, state: AssetState | undefined, scope: Scope): StandardAsset | null {
+function findAssetByName(name: string, state: AssetState | undefined, scope: 'global'): ReturnType<typeof loadStandardByName> {
   const parsed = parseAssetName(name)
   if (parsed) {
-    const asset = loadStandardByName(parsed.name, parsed.type)
+    const asset = loadStandardByName(scope, undefined, parsed.name, parsed.type)
     if (asset && (!state || asset.state === state)) {
       return asset
     }
     return null
   }
 
-  const assets = listStandards(state, scope)
+  const assets = listStandards(scope, undefined, state)
   return assets.find(a => a.name === name) || null
 }

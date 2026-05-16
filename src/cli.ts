@@ -18,7 +18,7 @@ function formatError(err: unknown): string {
         message: 'Daemon 未运行',
         category: ErrorCategory.INFRA,
         recoverable: true,
-        suggestion: `请先执行 oxn daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`
+        suggestion: `请先执行 oxn global daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`
       }
     })
   }
@@ -31,7 +31,7 @@ function formatError(err: unknown): string {
         message: 'Daemon 响应超时',
         category: ErrorCategory.INFRA,
         recoverable: true,
-        suggestion: '等 5 秒后重试，或执行 oxn daemon stop && oxn daemon start'
+        suggestion: '等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start'
       }
     })
   }
@@ -57,7 +57,6 @@ const main = defineCommand({
   },
   subCommands: {
     init: () => import('./cli/init').then(m => m.default),
-    daemon: () => import('./cli/daemon').then(m => m.default),
     task: () => import('./cli/task').then(m => m.default),
     arsenal: () => import('./cli/arsenal').then(m => m.default),
     export: () => import('./cli/export').then(m => m.default),
@@ -65,6 +64,7 @@ const main = defineCommand({
     forge: () => import('./cli/forge').then(m => m.default),
     hall: () => import('./cli/hall').then(m => m.default),
     explore: () => import('./cli/explore').then(m => m.default),
+    global: () => import('./cli/global').then(m => m.default),
   },
   args: {
     verbose: {

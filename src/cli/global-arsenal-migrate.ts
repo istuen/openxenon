@@ -2,7 +2,6 @@ import { defineCommand } from 'citty'
 import { readdirSync, existsSync, unlinkSync, cpSync } from 'fs'
 import { join, basename, dirname } from 'path'
 import { type AssetType, type AssetState } from '../arsenals/paths'
-import { getProjectBoundaryPath } from '../kernel'
 import { GLOBAL_ARSENALS_ROOT } from '../infra/paths'
 
 interface MigrationResult {
@@ -17,11 +16,9 @@ interface MigrationResult {
 
 const ASSET_TYPES: AssetType[] = ['probes', 'stages', 'blueprints']
 
-function scanOldStructureAssets(scope: 'project' | 'global'): { path: string, type: AssetType, name: string, state: AssetState }[] {
+function scanOldStructureAssets(): { path: string, type: AssetType, name: string, state: AssetState }[] {
   const assets: { path: string, type: AssetType, name: string, state: AssetState }[] = []
-  const basePath = scope === 'global'
-    ? GLOBAL_ARSENALS_ROOT
-    : join(getProjectBoundaryPath(process.cwd()), 'arsenals')
+  const basePath = GLOBAL_ARSENALS_ROOT
 
   for (const type of ASSET_TYPES) {
     for (const state of ['draft', 'canonical'] as AssetState[]) {
@@ -47,13 +44,9 @@ function scanOldStructureAssets(scope: 'project' | 'global'): { path: string, ty
 
 function migrateAsset(
   asset: { path: string, type: AssetType, name: string, state: AssetState },
-  scope: 'project' | 'global',
   keepOld: boolean
 ): MigrationResult {
-  const basePath = scope === 'global'
-    ? GLOBAL_ARSENALS_ROOT
-    : join(getProjectBoundaryPath(process.cwd()), 'arsenals')
-
+  const basePath = GLOBAL_ARSENALS_ROOT
   const newPath = join(basePath, asset.type, asset.name, asset.state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
 
   if (existsSync(newPath)) {
@@ -114,7 +107,7 @@ function cleanupEmptyDirs(dirPath: string): void {
 export default defineCommand({
   meta: {
     name: 'arsenal-migrate',
-    description: '将旧结构（arsenals/<type>/draft/<name>.yaml）迁移到新结构（arsenals/<type>/<name>/draft.yaml）'
+    description: '将全局旧结构迁移到新结构'
   },
   args: {
     keepOld: {
@@ -124,20 +117,12 @@ export default defineCommand({
     }
   },
   async run(ctx) {
-    if (ctx.args.global || ctx.args.g) {
-      console.error('Option -g/--global is removed.')
-      console.error('Use: oxn global arsenal migrate')
-      process.exit(1)
-    }
-
-    const scope: 'project' | 'global' = 'project'
     const keepOld = ctx.args.keepOld || false
 
-    console.log(`\n🔄 开始迁移项目 arsenals 目录结构...`)
-    console.log(`范围: ${scope}`)
+    console.log(`\n🔄 开始迁移全局 arsenals 目录结构...`)
     console.log(`保留旧文件: ${keepOld}\n`)
 
-    const oldAssets = scanOldStructureAssets(scope)
+    const oldAssets = scanOldStructureAssets()
 
     if (oldAssets.length === 0) {
       console.log('✅ 没有发现需要迁移的旧结构资产')
@@ -148,7 +133,7 @@ export default defineCommand({
 
     const results: MigrationResult[] = []
     for (const asset of oldAssets) {
-      const result = migrateAsset(asset, scope, keepOld)
+      const result = migrateAsset(asset, keepOld)
       results.push(result)
     }
 
@@ -175,11 +160,9 @@ export default defineCommand({
 
     if (!keepOld && successCount > 0) {
       console.log('\n🧹 清理空目录...')
-      const basePath = join(getProjectBoundaryPath(process.cwd()), 'arsenals')
-
       for (const type of ASSET_TYPES) {
-        cleanupEmptyDirs(join(basePath, type, 'draft'))
-        cleanupEmptyDirs(join(basePath, type, 'canonical'))
+        cleanupEmptyDirs(join(GLOBAL_ARSENALS_ROOT, type, 'draft'))
+        cleanupEmptyDirs(join(GLOBAL_ARSENALS_ROOT, type, 'canonical'))
       }
       console.log('✅ 清理完成')
     }

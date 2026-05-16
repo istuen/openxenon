@@ -4,7 +4,6 @@ import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { createDraftFromYaml } from './draft'
-import type { Scope } from '../arsenals/loader'
 import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
 import { output, outputError, getFormatFromArgs } from './output'
 
@@ -34,14 +33,10 @@ function loadMetaForge(type: ForgeType): { name: string, constraints: string[] }
   const builtinName = META_FORGE_NAMES[type]
   const relPath = join('forges', builtinName, 'canonical.yaml')
 
-  const projectPath = join(process.cwd(), BOUNDARY_DIR, 'arsenals', relPath)
-  const r1 = tryLoadForgeFile(projectPath, builtinName)
-  if (r1) return r1
-
   const homeDir = process.env.HOME || process.env.USERPROFILE || '~'
   const globalPath = join(homeDir, '.openxenon', 'arsenals', relPath)
-  const r2 = tryLoadForgeFile(globalPath, builtinName)
-  if (r2) return r2
+  const r = tryLoadForgeFile(globalPath, builtinName)
+  if (r) return r
 
   const builtin = BUILTIN_FORGES[builtinName]
   if (builtin) {
@@ -57,7 +52,7 @@ function loadMetaForge(type: ForgeType): { name: string, constraints: string[] }
 export default defineCommand({
   meta: {
     name: 'forge',
-    description: '锻造 Draft 标准资产'
+    description: '锻造全局 Draft 标准资产'
   },
   args: {
     type: {
@@ -85,20 +80,13 @@ export default defineCommand({
     }
   },
   async run(ctx) {
-    if (ctx.args.global || ctx.args.g) {
-      console.error('Option -g/--global is removed.')
-      console.error('Use: oxn global forge <command>')
-      process.exit(1)
-    }
-
     const format = getFormatFromArgs(ctx.args)
     const type = ctx.args.type as string | undefined
     const save = ctx.args.save as string | undefined
     const name = ctx.args.name as string | undefined
-    const scope: Scope = 'project'
 
     if (save) {
-      const result = createDraftFromYaml(save, name, scope)
+      const result = createDraftFromYaml(save, name, 'global')
       if (result.success) {
         return output({ data: { path: result.path } }, format)
       }

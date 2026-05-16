@@ -265,3 +265,42 @@ oxn daemon status  # 查看状态
 ```
 
 > 0.1 阶段所有核心命令均通过 CLI 直连可用，不依赖 Daemon。
+
+## oxn hall
+
+打开研讨厅 (Hall)，查看项目状态和待办。
+
+```bash
+oxn hall
+oxn hall --open
+```
+
+**参数**：
+
+| 选项 | 描述 |
+|------|------|
+| `--open` | 在浏览器中打开 Hall |
+
+**输出**：
+
+```
+Hall 路径: /path/to/project/.openxenon/hall/index.html
+
+使用 --open 在浏览器中打开
+```
+
+**功能说明**：
+
+- 扫描项目 `.openxenon/` 目录下的 tasks 和 forges
+- 生成静态 HTML 页面展示：
+  - 任务统计（总数、运行中、已完成、失败）
+  - 待审查的 Draft 资产列表
+  - 任务列表（可点击查看详情）
+- 每个项目有独立的 Hall 视图，物理隔离不互相覆盖
+
+**详情弹窗显示**：
+
+- Stage DAG 拓扑图
+- 各 Stage 的执行状态
+- 探针执行结果（PASSED/FAILED）
+- probe 输出和错误信息

@@ -133,6 +133,10 @@ pnpm install && pnpm build
 
 # 6. 模拟 AI 助手构建 Artifact 后，提交 Core 校验
 ./dist/oxn task verify --task-id <id> --stage-id <id>
+
+# 7. 查看研讨厅 (Hall)
+./dist/oxn hall
+# 或使用 --open 在浏览器中打开
 ```
 
 ## 8. 架构概要
@@ -153,6 +157,11 @@ Blueprint ──▶ Frozen ──▶ [Stage.target/action] ──▶ Artifact
 - **Arsenal**：内置资产，编译进二进制
 
 详见 [docs/architecture/](docs/architecture/)。
+
+# 4. 查看状态
+./dist/oxn hall
+# 生成 .openxenon/hall/index.html，可选 --open 在浏览器打开
+```
 
 ## 9. 文档
 

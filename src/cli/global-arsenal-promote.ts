@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { promoteStandard, arsenalLoadStandardByName as loadStandardByName } from '../arsenals/loader'
+import { promoteStandard, loadStandardByName } from '../infra/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import { type AssetType } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
@@ -32,7 +32,7 @@ function parseAssetName(input: string): { type: AssetType, name: string } | null
 export default defineCommand({
   meta: {
     name: 'arsenal-promote',
-    description: '将 DRAFT 资产转正为 CANONICAL'
+    description: '将全局 DRAFT 资产转正为 CANONICAL'
   },
   args: {
     name: {
@@ -50,14 +50,8 @@ export default defineCommand({
     }
   },
   async run(ctx) {
-    if (ctx.args.global || ctx.args.g) {
-      console.error('Option -g/--global is removed.')
-      console.error('Use: oxn global arsenal promote')
-      process.exit(1)
-    }
-
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('project')
+    ensureArsenalsDirectories('global')
 
     const input = ctx.args.name as string
     const parsed = parseAssetName(input)
@@ -70,11 +64,11 @@ export default defineCommand({
       }, format)
     }
 
-    const asset = loadStandardByName(parsed.name, parsed.type)
+    const asset = loadStandardByName('global', undefined, parsed.name, parsed.type)
     if (!asset) {
       return outputError({
         code: 'OXN_ASSET_NOT_FOUND',
-        message: `Asset not found: ${input}`
+        message: `Asset not found in global arsenal: ${input}`
       }, format)
     }
 
@@ -89,7 +83,7 @@ export default defineCommand({
     }
 
     try {
-      const promoted = promoteStandard(asset.path)
+      const promoted = promoteStandard(asset.path, 'global')
 
       if (!promoted) {
         return outputError({
@@ -105,7 +99,7 @@ export default defineCommand({
           state: promoted.state,
           path: promoted.path
         },
-        human: `Asset promoted successfully!\n  Name: ${promoted.name}\n  Type: ${promoted.type}\n  New State: ${promoted.state}\n  New Path: ${promoted.path}`
+        human: `Global asset promoted successfully!\n  Name: ${promoted.name}\n  Type: ${promoted.type}\n  New State: ${promoted.state}\n  New Path: ${promoted.path}`
       }, format)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error'

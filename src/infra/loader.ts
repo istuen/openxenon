@@ -1,12 +1,13 @@
 import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync } from 'fs'
 import { join, extname, dirname, basename } from 'path'
 import { z } from 'zod'
-import { type AssetState, type AssetType, ARSENALS_ROOT } from '../arsenals/paths'
+import { type AssetState, type AssetType } from '../arsenals/paths'
 import { BUILTIN_PROBES } from '../arsenals/builtin'
+import { GLOBAL_ARSENALS_ROOT, resolveArsenalRoot, resolveBoundary, type Scope as InfraScope } from '../infra/paths'
 
 export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
 
-export type Scope = 'project' | 'global' | 'fallback' | 'builtin'
+export type Scope = InfraScope | 'fallback' | 'builtin'
 
 export type ProbeNamespace = 'oxn' | 'scope' | 'project'
 
@@ -76,8 +77,8 @@ function scanDirectory(dirPath: string, type: AssetType, state: AssetState): Sta
   return assets
 }
 
-function scanNewStructure(projectBoundary: string, type: AssetType, state: AssetState): StandardAsset[] {
-  const typePath = join(projectBoundary, type)
+function scanNewStructure(boundary: string, type: AssetType, state: AssetState): StandardAsset[] {
+  const typePath = join(boundary, type)
 
   if (!existsSync(typePath)) {
     return []
@@ -127,7 +128,7 @@ function directoryExists(dirPath: string): boolean {
   return readdirSync(parent).includes(name)
 }
 
-function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
+function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined, type: AssetType, state: AssetState): StandardAsset[] {
   const stateVariants = [state, state.toUpperCase() as AssetState]
 
   const typeToSingular: Record<AssetType, string> = {
@@ -136,7 +137,8 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
     blueprints: 'blueprint'
   }
 
-  function scanProject(type: AssetType, state: AssetState): StandardAsset[] {
+  function scanProjectBoundary(type: AssetType, state: AssetState): StandardAsset[] {
+    if (!projectBoundary) return []
     const assets: StandardAsset[] = []
     for (const s of stateVariants) {
       const pluralPath = join(projectBoundary, 'arsenals', type, s)
@@ -151,12 +153,12 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
   function scanGlobal(type: AssetType, state: AssetState): StandardAsset[] {
     const assets: StandardAsset[] = []
     for (const s of stateVariants) {
-      const pluralPath = join(ARSENALS_ROOT, type, s)
+      const pluralPath = join(GLOBAL_ARSENALS_ROOT, type, s)
       if (directoryExists(pluralPath)) assets.push(...scanDirectory(pluralPath, type, state))
-      const singularPath = join(ARSENALS_ROOT, typeToSingular[type], s)
+      const singularPath = join(GLOBAL_ARSENALS_ROOT, typeToSingular[type], s)
       if (directoryExists(singularPath)) assets.push(...scanDirectory(singularPath, type, state))
     }
-    assets.push(...scanNewStructure(ARSENALS_ROOT, type, state))
+    assets.push(...scanNewStructure(GLOBAL_ARSENALS_ROOT, type, state))
     return assets
   }
 
@@ -185,7 +187,7 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
   let builtinAssets: StandardAsset[] = []
 
   if (scope === 'project' || scope === 'fallback') {
-    projectAssets = scanProject(type, state)
+    projectAssets = scanProjectBoundary(type, state)
   }
   if (scope === 'global' || (scope === 'fallback' && projectAssets.length === 0)) {
     globalAssets = scanGlobal(type, state)
@@ -203,16 +205,16 @@ function scanArsenalsDirectory(projectBoundary: string, type: AssetType, state: 
   })
 }
 
-export function loadArsenalsByState(projectBoundary: string, state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
-  const projectProbes = scanArsenalsDirectory(projectBoundary, 'probes', state, scope)
-  const projectStages = scanArsenalsDirectory(projectBoundary, 'stages', state, scope)
-  const projectBlueprints = scanArsenalsDirectory(projectBoundary, 'blueprints', state, scope)
+export function loadArsenalsByState(scope: Scope, projectBoundary: string | undefined, state: AssetState): StandardAsset[] {
+  const projectProbes = scanArsenalsDirectory(scope, projectBoundary, 'probes', state)
+  const projectStages = scanArsenalsDirectory(scope, projectBoundary, 'stages', state)
+  const projectBlueprints = scanArsenalsDirectory(scope, projectBoundary, 'blueprints', state)
 
   return [...projectProbes, ...projectStages, ...projectBlueprints]
 }
 
-export function loadArsenalsByTypeAndState(projectBoundary: string, type: AssetType, state: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
-  return scanArsenalsDirectory(projectBoundary, type, state, scope)
+export function loadArsenalsByTypeAndState(scope: Scope, projectBoundary: string | undefined, type: AssetType, state: AssetState): StandardAsset[] {
+  return scanArsenalsDirectory(scope, projectBoundary, type, state)
 }
 
 export function loadStandardByPath(assetPath: string): StandardAsset | null {
@@ -230,12 +232,10 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
 
   if (assetPath.endsWith('draft.yaml')) {
     state = 'draft'
-    // For forge/arsenal-new structure, name is the directory
     if (assetPath.includes('/forges/') || assetPath.includes('/arsenals/')) {
       const parts = assetPath.split('/')
       const draftIndex = parts.indexOf('draft.yaml')
       if (draftIndex > 0) {
-        // path is .../forges/probes/<name>/draft.yaml or .../arsenals/probes/<name>/draft.yaml
         const possibleName = parts[draftIndex - 1]
         if (possibleName && possibleName !== 'forges' && possibleName !== 'arsenals' && possibleName !== 'probes' && possibleName !== 'stages' && possibleName !== 'blueprints') {
           return {
@@ -250,7 +250,6 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
     }
   } else if (assetPath.endsWith('canonical.yaml')) {
     state = 'canonical'
-    // For arsenal-new structure, name is the directory
     if (assetPath.includes('/arsenals/')) {
       const parts = assetPath.split('/')
       const canonicalIndex = parts.indexOf('canonical.yaml')
@@ -326,32 +325,34 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
   }
 }
 
-export function loadStandardByName(projectBoundary: string, name: string, type: AssetType): StandardAsset | null {
-  const newCanonicalPath = join(projectBoundary, 'arsenals', type, name, 'canonical.yaml')
+export function loadStandardByName(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType): StandardAsset | null {
+  const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
+
+  const newCanonicalPath = join(boundary, 'arsenals', type, name, 'canonical.yaml')
   if (existsSync(newCanonicalPath)) {
     const content = readFileSync(newCanonicalPath, 'utf-8')
     return { name, type, state: 'canonical', path: newCanonicalPath, content }
   }
 
-  const oldCanonicalPath = join(projectBoundary, 'arsenals', type, 'canonical', `${name}.yaml`)
+  const oldCanonicalPath = join(boundary, 'arsenals', type, 'canonical', `${name}.yaml`)
   if (existsSync(oldCanonicalPath)) {
     const content = readFileSync(oldCanonicalPath, 'utf-8')
     return { name, type, state: 'canonical', path: oldCanonicalPath, content }
   }
 
-  const forgeDraftPath = join(projectBoundary, 'forges', type, name, 'draft.yaml')
+  const forgeDraftPath = join(boundary, 'forges', type, name, 'draft.yaml')
   if (existsSync(forgeDraftPath)) {
     const content = readFileSync(forgeDraftPath, 'utf-8')
     return { name, type, state: 'draft', path: forgeDraftPath, content }
   }
 
-  const newDraftPath = join(projectBoundary, 'arsenals', type, name, 'draft.yaml')
+  const newDraftPath = join(boundary, 'arsenals', type, name, 'draft.yaml')
   if (existsSync(newDraftPath)) {
     const content = readFileSync(newDraftPath, 'utf-8')
     return { name, type, state: 'draft', path: newDraftPath, content }
   }
 
-  const oldDraftPath = join(projectBoundary, 'arsenals', type, 'draft', `${name}.yaml`)
+  const oldDraftPath = join(boundary, 'arsenals', type, 'draft', `${name}.yaml`)
   if (existsSync(oldDraftPath)) {
     const content = readFileSync(oldDraftPath, 'utf-8')
     return { name, type, state: 'draft', path: oldDraftPath, content }
@@ -360,24 +361,25 @@ export function loadStandardByName(projectBoundary: string, name: string, type: 
   return null
 }
 
-export function resolveAssetPath(projectBoundary: string, name: string, type: AssetType, state: AssetState): string | null {
-  const newPath = join(projectBoundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+export function resolveAssetPath(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType, state: AssetState): string | null {
+  const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
+  const newPath = join(boundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
   if (existsSync(newPath)) {
     return newPath
   }
-  const oldPath = join(projectBoundary, 'arsenals', type, state, `${name}.yaml`)
+  const oldPath = join(boundary, 'arsenals', type, state, `${name}.yaml`)
   if (existsSync(oldPath)) {
     return oldPath
   }
   return null
 }
 
-export function listStandards(projectBoundary: string, state?: AssetState, scope: Scope = 'fallback'): StandardAsset[] {
+export function listStandards(scope: Scope, projectBoundary: string | undefined, state?: AssetState): StandardAsset[] {
   if (state) {
-    return loadArsenalsByState(projectBoundary, state, scope)
+    return loadArsenalsByState(scope, projectBoundary, state)
   }
 
-  const draft = loadArsenalsByState(projectBoundary, 'draft', scope)
-  const canonical = loadArsenalsByState(projectBoundary, 'canonical', scope)
+  const draft = loadArsenalsByState(scope, projectBoundary, 'draft')
+  const canonical = loadArsenalsByState(scope, projectBoundary, 'canonical')
   return [...draft, ...canonical]
 }

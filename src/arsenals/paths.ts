@@ -1,15 +1,17 @@
 import { join } from 'path'
-import { GLOBAL_BOUNDARY_PATH } from '../infra/global'
+import { GLOBAL_ARSENALS_ROOT, GLOBAL_ARSENALS_PROBES, GLOBAL_ARSENALS_STAGES, GLOBAL_ARSENALS_BLUEPRINTS, GLOBAL_FORGES_ROOT, GLOBAL_FORGES_PROBES, GLOBAL_FORGES_STAGES, GLOBAL_FORGES_BLUEPRINTS, resolveArsenalRoot, resolveForgeRoot, type Scope } from '../infra/paths'
 
-export const ARSENALS_ROOT = join(GLOBAL_BOUNDARY_PATH, 'arsenals')
-export const ARSENALS_PROBES = join(ARSENALS_ROOT, 'probes')
-export const ARSENALS_STAGES = join(ARSENALS_ROOT, 'stages')
-export const ARSENALS_BLUEPRINTS = join(ARSENALS_ROOT, 'blueprints')
+export { type Scope } from '../infra/paths'
 
-export const FORGES_ROOT = join(GLOBAL_BOUNDARY_PATH, 'forges')
-export const FORGES_PROBES = join(FORGES_ROOT, 'probes')
-export const FORGES_STAGES = join(FORGES_ROOT, 'stages')
-export const FORGES_BLUEPRINTS = join(FORGES_ROOT, 'blueprints')
+export const ARSENALS_ROOT = GLOBAL_ARSENALS_ROOT
+export const ARSENALS_PROBES = GLOBAL_ARSENALS_PROBES
+export const ARSENALS_STAGES = GLOBAL_ARSENALS_STAGES
+export const ARSENALS_BLUEPRINTS = GLOBAL_ARSENALS_BLUEPRINTS
+
+export const FORGES_ROOT = GLOBAL_FORGES_ROOT
+export const FORGES_PROBES = GLOBAL_FORGES_PROBES
+export const FORGES_STAGES = GLOBAL_FORGES_STAGES
+export const FORGES_BLUEPRINTS = GLOBAL_FORGES_BLUEPRINTS
 
 export type AssetState = 'draft' | 'canonical'
 export type AssetType = 'probes' | 'stages' | 'blueprints'
@@ -29,45 +31,45 @@ export const FORGES_DIRECTORY_STRUCTURE = {
   draft: '<type>/<name>/draft.yaml'
 } as const
 
-export function getForgesPath(type: AssetType): string {
-  switch (type) {
-    case 'probes':
-      return FORGES_PROBES
-    case 'stages':
-      return FORGES_STAGES
-    case 'blueprints':
-      return FORGES_BLUEPRINTS
+export function getForgesPath(type: AssetType, scope: Scope = 'project', cwd?: string): string {
+  if (scope === 'global') {
+    switch (type) {
+      case 'probes': return GLOBAL_FORGES_PROBES
+      case 'stages': return GLOBAL_FORGES_STAGES
+      case 'blueprints': return GLOBAL_FORGES_BLUEPRINTS
+    }
   }
+  return resolveForgeRoot(scope, cwd)
 }
 
-export function getForgeDraftPath(type: AssetType, name: string): string {
-  const base = getForgesPath(type)
+export function getForgeDraftPath(type: AssetType, name: string, scope: Scope = 'project', cwd?: string): string {
+  const base = getForgesPath(type, scope, cwd)
   return join(base, name, 'draft.yaml')
 }
 
-export function getArsenalsPath(type: AssetType): string {
-  switch (type) {
-    case 'probes':
-      return ARSENALS_PROBES
-    case 'stages':
-      return ARSENALS_STAGES
-    case 'blueprints':
-      return ARSENALS_BLUEPRINTS
+export function getArsenalsPath(type: AssetType, scope: Scope = 'project', cwd?: string): string {
+  if (scope === 'global') {
+    switch (type) {
+      case 'probes': return GLOBAL_ARSENALS_PROBES
+      case 'stages': return GLOBAL_ARSENALS_STAGES
+      case 'blueprints': return GLOBAL_ARSENALS_BLUEPRINTS
+    }
   }
+  return resolveArsenalRoot(scope, cwd)
 }
 
-export function getArsenalsStatePath(type: AssetType, state: AssetState): string {
-  const base = getArsenalsPath(type)
+export function getArsenalsStatePath(type: AssetType, state: AssetState, scope: Scope = 'project', cwd?: string): string {
+  const base = getArsenalsPath(type, scope, cwd)
   return join(base, state)
 }
 
-export function getNewStructurePath(type: AssetType, name: string, state: AssetState): string {
-  const base = getArsenalsPath(type)
+export function getNewStructurePath(type: AssetType, name: string, state: AssetState, scope: Scope = 'project', cwd?: string): string {
+  const base = getArsenalsPath(type, scope, cwd)
   return join(base, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
 }
 
-export function getOldStructurePath(type: AssetType, name: string, state: AssetState): string {
-  const base = getArsenalsPath(type)
+export function getOldStructurePath(type: AssetType, name: string, state: AssetState, scope: Scope = 'project', cwd?: string): string {
+  const base = getArsenalsPath(type, scope, cwd)
   return join(base, state, `${name}.yaml`)
 }
 
