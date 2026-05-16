@@ -52,7 +52,7 @@ coverage/
 *.tmp
 *.temp
 .cache/
-.docs/
+docs_tmp/
 
 # OpenXenon specific
 .openxenon/

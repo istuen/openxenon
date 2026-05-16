@@ -1,6 +1,8 @@
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
 import { badRequest } from '../errors'
+import { taskCircuitBreaker } from '../../circuit-breaker'
+import { recoveryManager } from '../../recovery'
 
 async function handleStepVerify(
   request: Request,
@@ -10,6 +12,7 @@ async function handleStepVerify(
     const body = await parseJSONBody<{
       taskId?: string
       stageId?: string
+      passed?: boolean
     }>(request)
 
     if (!body) {
@@ -20,12 +23,42 @@ async function handleStepVerify(
       return badRequest('taskId is required')
     }
 
+    if (taskCircuitBreaker.isOpen()) {
+      return new Response(
+        JSON.stringify({
+          error: 'CircuitBreakerOpen',
+          message: 'Task execution is paused due to repeated failures. Please wait and retry.',
+          statusCode: 503
+        }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    if (body.passed === false || body.passed === true) {
+      if (body.passed) {
+        taskCircuitBreaker.recordSuccess()
+      } else {
+        taskCircuitBreaker.recordFailure()
+      }
+
+      if (body.taskId && body.stageId) {
+        recoveryManager.createRecoveryPoint(body.taskId, body.stageId, {
+          verified: body.passed,
+          timestamp: Date.now()
+        })
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         taskId: body.taskId,
         stageId: body.stageId,
-        message: 'Step verify stub - needs implementation with new architecture'
+        circuitBreakerState: taskCircuitBreaker.getState(),
+        message: body.passed ? 'Stage verified successfully' : 'Stage verification failed'
       }),
       {
         status: 200,

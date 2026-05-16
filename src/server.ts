@@ -3,6 +3,10 @@ import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from './infra
 import { daemonLogger } from './daemon/logger'
 import { startApiServer, stopApiServer } from './daemon/ipc/server'
 import { setDaemonAddress, clearDaemonAddress } from './daemon/status'
+import { fileWatcher, type WatchEvent } from './daemon/watcher'
+import { taskCircuitBreaker } from './daemon/circuit-breaker'
+import { recoveryManager } from './daemon/recovery'
+import { daemonSupervisor } from './daemon/supervisor'
 
 function ensureGlobalDirectory(): void {
   if (!fileExists(GLOBAL_BOUNDARY_PATH)) {
@@ -41,9 +45,38 @@ function clearDaemonAddressFromDb(): void {
   }
 }
 
+function startFileWatcher(): void {
+  try {
+    fileWatcher.addCallback(handleFileChange)
+    fileWatcher.start()
+    daemonLogger.info('File watcher started')
+  } catch (error) {
+    daemonLogger.error(`Failed to start file watcher: ${error}`)
+  }
+}
+
+function handleFileChange(event: WatchEvent): void {
+  daemonLogger.info(`File changed: ${event.path} (${event.type})`)
+
+  if (event.type === 'update' && event.path.endsWith('.blueprint.frozen.yaml')) {
+    daemonLogger.info('Blueprint file changed, may trigger task revalidation')
+  }
+}
+
+function stopFileWatcher(): void {
+  try {
+    fileWatcher.stop()
+    daemonLogger.info('File watcher stopped')
+  } catch (error) {
+    daemonLogger.error(`Failed to stop file watcher: ${error}`)
+  }
+}
+
 function handleShutdown(signal: string): void {
   daemonLogger.info(`Received ${signal}, shutting down gracefully...`)
 
+  stopFileWatcher()
+  daemonSupervisor.destroy()
   stopApiServer()
   clearDaemonAddressFromDb()
   removePidFile()
@@ -55,6 +88,8 @@ function handleShutdown(signal: string): void {
 function handleFatalError(type: string, error: unknown): void {
   daemonLogger.error(`Fatal error (${type}): ${error}`)
 
+  stopFileWatcher()
+  daemonSupervisor.destroy()
   stopApiServer()
   clearDaemonAddressFromDb()
   removePidFile()
@@ -68,6 +103,10 @@ async function main(): Promise<void> {
   writePidFile()
   saveDaemonAddress()
 
+  startFileWatcher()
+
+  daemonSupervisor.startDaemon('./src/server.ts')
+
   process.on('SIGTERM', () => handleShutdown('SIGTERM'))
   process.on('SIGINT', () => handleShutdown('SIGINT'))
   process.on('uncaughtException', (error) => handleFatalError('uncaughtException', error))
@@ -79,6 +118,7 @@ async function main(): Promise<void> {
 
   daemonLogger.info('OpenXenon Daemon started successfully')
   daemonLogger.info(`Socket server listening on ${DAEMON_SOCK_PATH}`)
+  daemonLogger.info(`Circuit breaker state: ${taskCircuitBreaker.getState()}`)
 
   await new Promise(() => {})
 }
@@ -89,3 +129,5 @@ main().catch((error) => {
   removePidFile()
   process.exit(1)
 })
+
+export { taskCircuitBreaker, recoveryManager, fileWatcher }

@@ -2,6 +2,8 @@ import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest } from '../errors'
 import { writeTaskStart } from '../../trace/writer'
+import { taskCircuitBreaker } from '../../circuit-breaker'
+import { recoveryManager } from '../../recovery'
 import type { Blueprint } from '../../../kernel/schemas/blueprint.schema'
 import { randomUUID } from 'crypto'
 import { join } from 'path'
@@ -13,6 +15,20 @@ async function handleTaskSubmit(
   projectPath: string
 ): Promise<Response> {
   try {
+    if (taskCircuitBreaker.isOpen()) {
+      return new Response(
+        JSON.stringify({
+          error: 'CircuitBreakerOpen',
+          message: 'Cannot submit new task due to repeated failures. Please wait and retry.',
+          statusCode: 503
+        }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     const body = await parseJSONBody<{
       task?: string
       blueprint?: Blueprint
@@ -47,6 +63,12 @@ async function handleTaskSubmit(
       taskName
     )
 
+    recoveryManager.createRecoveryPoint(taskId, 'init', {
+      taskName,
+      stagesCount: blueprintInput.stages?.length || 0,
+      timestamp: Date.now()
+    })
+
     return new Response(
       JSON.stringify({
         taskId: taskId,
@@ -54,6 +76,7 @@ async function handleTaskSubmit(
         blueprintFile: `tasks/${taskId}/${BLUEPRINT_FILE}`,
         status: 'RUNNING',
         stagesCount: blueprintInput.stages?.length || 0,
+        circuitBreakerState: taskCircuitBreaker.getState(),
         message: 'Task created successfully'
       }),
       {

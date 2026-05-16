@@ -4,6 +4,8 @@ import { notFound } from '../errors'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
 import { readTaskTrace } from '../../trace/writer'
 import { existsSync } from 'fs'
+import { taskCircuitBreaker } from '../../circuit-breaker'
+import { recoveryManager } from '../../recovery'
 
 async function handleTaskStatus(
   request: Request,
@@ -40,6 +42,8 @@ async function handleTaskStatus(
       return notFound(`Task '${taskId}' not found`)
     }
 
+    const latestRecoveryPoint = recoveryManager.getLatestRecoveryPoint(taskId)
+
     return new Response(
       JSON.stringify({
         task: {
@@ -55,7 +59,18 @@ async function handleTaskStatus(
           status: s.status,
           executedAt: s.startedAt,
           completedAt: s.completedAt
-        }))
+        })),
+        circuitBreakerState: taskCircuitBreaker.getState(),
+        recoveryPoints: recoveryManager.getRecoveryPoints(taskId).map(rp => ({
+          id: rp.id,
+          stageId: rp.stageId,
+          timestamp: rp.timestamp
+        })),
+        latestRecoveryPoint: latestRecoveryPoint ? {
+          id: latestRecoveryPoint.id,
+          stageId: latestRecoveryPoint.stageId,
+          timestamp: latestRecoveryPoint.timestamp
+        } : null
       }),
       {
         status: 200,
