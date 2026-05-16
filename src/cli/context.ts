@@ -1,4 +1,4 @@
-import type { OutputFormat } from './cli/output'
+import type { OutputFormat } from './output'
 
 export const cliContext = {
   formatMode: 'human' as OutputFormat,

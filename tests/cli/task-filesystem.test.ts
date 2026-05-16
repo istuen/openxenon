@@ -106,7 +106,16 @@ name: cyclic-test
 stages:
   - id: a
     name: A
-    deps: []
+    deps:
+      - b
+    probes:
+      - type: fs_exists
+        params:
+          pattern: package.json
+  - id: b
+    name: B
+    deps:
+      - a
     probes:
       - type: fs_exists
         params:

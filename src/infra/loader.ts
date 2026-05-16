@@ -77,7 +77,7 @@ function scanDirectory(dirPath: string, type: AssetType, state: AssetState): Sta
   return assets
 }
 
-function scanNewStructure(boundary: string, type: AssetType, state: AssetState): StandardAsset[] {
+function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolean = false): StandardAsset[] {
   const typePath = join(boundary, type)
 
   if (!existsSync(typePath)) {
@@ -88,17 +88,42 @@ function scanNewStructure(boundary: string, type: AssetType, state: AssetState):
   const entries = readdirSync(typePath, { withFileTypes: true })
 
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    const assetName = entry.name
-    const yamlFile = state === 'draft' ? 'draft.yaml' : 'canonical.yaml'
-    const filePath = join(typePath, assetName, yamlFile)
-
-    if (existsSync(filePath)) {
+    if (entry.isDirectory()) {
+      const assetName = entry.name
+      if (scanForges) {
+        const draftFile = join(typePath, assetName, 'draft.yaml')
+        if (existsSync(draftFile)) {
+          const content = readFileSync(draftFile, 'utf-8')
+          assets.push({
+            name: assetName,
+            type,
+            state: 'draft',
+            path: draftFile,
+            content
+          })
+        }
+      } else {
+        const canonicalFile = join(typePath, assetName, 'canonical.yaml')
+        if (existsSync(canonicalFile)) {
+          const content = readFileSync(canonicalFile, 'utf-8')
+          assets.push({
+            name: assetName,
+            type,
+            state: 'canonical',
+            path: canonicalFile,
+            content
+          })
+        }
+      }
+    } else if (!scanForges && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml') || entry.name.endsWith('.json'))) {
+      const name = entry.name.replace(/\.(yaml|yml|json)$/, '')
+      const filePath = join(typePath, entry.name)
       const content = readFileSync(filePath, 'utf-8')
+      const isCanonical = entry.name.includes('canonical') || entry.name.startsWith('canonical')
       assets.push({
-        name: assetName,
+        name,
         type,
-        state,
+        state: isCanonical ? 'canonical' : 'draft',
         path: filePath,
         content
       })
@@ -128,38 +153,14 @@ function directoryExists(dirPath: string): boolean {
   return readdirSync(parent).includes(name)
 }
 
-function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined, type: AssetType, state: AssetState): StandardAsset[] {
-  const stateVariants = [state, state.toUpperCase() as AssetState]
-
-  const typeToSingular: Record<AssetType, string> = {
-    probes: 'probe',
-    stages: 'stage',
-    blueprints: 'blueprint'
-  }
-
-  function scanProjectBoundary(type: AssetType, state: AssetState): StandardAsset[] {
+function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined, type: AssetType): StandardAsset[] {
+  function scanProjectBoundary(type: AssetType): StandardAsset[] {
     if (!projectBoundary) return []
-    const assets: StandardAsset[] = []
-    for (const s of stateVariants) {
-      const pluralPath = join(projectBoundary, 'arsenals', type, s)
-      if (directoryExists(pluralPath)) assets.push(...scanDirectory(pluralPath, type, state))
-      const singularPath = join(projectBoundary, 'arsenals', typeToSingular[type], s)
-      if (directoryExists(singularPath)) assets.push(...scanDirectory(singularPath, type, state))
-    }
-    assets.push(...scanNewStructure(join(projectBoundary, 'arsenals'), type, state))
-    return assets
+    return scanFlatStructure(join(projectBoundary, 'arsenals'), type)
   }
 
-  function scanGlobal(type: AssetType, state: AssetState): StandardAsset[] {
-    const assets: StandardAsset[] = []
-    for (const s of stateVariants) {
-      const pluralPath = join(GLOBAL_ARSENALS_ROOT, type, s)
-      if (directoryExists(pluralPath)) assets.push(...scanDirectory(pluralPath, type, state))
-      const singularPath = join(GLOBAL_ARSENALS_ROOT, typeToSingular[type], s)
-      if (directoryExists(singularPath)) assets.push(...scanDirectory(singularPath, type, state))
-    }
-    assets.push(...scanNewStructure(GLOBAL_ARSENALS_ROOT, type, state))
-    return assets
+  function scanGlobal(type: AssetType): StandardAsset[] {
+    return scanFlatStructure(GLOBAL_ARSENALS_ROOT, type)
   }
 
   function scanBuiltin(type: AssetType, state: AssetState): StandardAsset[] {
@@ -187,13 +188,13 @@ function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined
   let builtinAssets: StandardAsset[] = []
 
   if (scope === 'project' || scope === 'fallback') {
-    projectAssets = scanProjectBoundary(type, state)
+    projectAssets = scanProjectBoundary(type)
   }
   if (scope === 'global' || (scope === 'fallback' && projectAssets.length === 0)) {
-    globalAssets = scanGlobal(type, state)
+    globalAssets = scanGlobal(type)
   }
   if (scope === 'builtin' || (scope === 'fallback' && globalAssets.length === 0)) {
-    builtinAssets = scanBuiltin(type, state)
+    builtinAssets = scanBuiltin(type, 'canonical')
   }
 
   const allAssets = [...projectAssets, ...globalAssets, ...builtinAssets]
@@ -205,16 +206,53 @@ function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined
   })
 }
 
+function scanForgesDirectory(scope: Scope, projectBoundary: string | undefined, type: AssetType): StandardAsset[] {
+  function scanProjectForges(type: AssetType): StandardAsset[] {
+    if (!projectBoundary) return []
+    const forgePath = join(projectBoundary, 'forges', type)
+    if (!existsSync(forgePath)) return []
+    return scanFlatStructure(forgePath, type, true)
+  }
+
+  function scanGlobalForges(type: AssetType): StandardAsset[] {
+    const forgePath = join(GLOBAL_FORGES_ROOT, type)
+    if (!existsSync(forgePath)) return []
+    return scanFlatStructure(forgePath, type, true)
+  }
+
+  let projectAssets: StandardAsset[] = []
+  let globalAssets: StandardAsset[] = []
+
+  if (scope === 'project' || scope === 'fallback') {
+    projectAssets = scanProjectForges(type)
+  }
+  if (scope === 'global' || (scope === 'fallback' && projectAssets.length === 0)) {
+    globalAssets = scanGlobalForges(type)
+  }
+
+  return [...projectAssets, ...globalAssets]
+}
+
 export function loadArsenalsByState(scope: Scope, projectBoundary: string | undefined, state: AssetState): StandardAsset[] {
-  const projectProbes = scanArsenalsDirectory(scope, projectBoundary, 'probes', state)
-  const projectStages = scanArsenalsDirectory(scope, projectBoundary, 'stages', state)
-  const projectBlueprints = scanArsenalsDirectory(scope, projectBoundary, 'blueprints', state)
+  if (state === 'draft') {
+    return []
+  }
+  const projectProbes = scanArsenalsDirectory(scope, projectBoundary, 'probes')
+  const projectStages = scanArsenalsDirectory(scope, projectBoundary, 'stages')
+  const projectBlueprints = scanArsenalsDirectory(scope, projectBoundary, 'blueprints')
 
   return [...projectProbes, ...projectStages, ...projectBlueprints]
 }
 
 export function loadArsenalsByTypeAndState(scope: Scope, projectBoundary: string | undefined, type: AssetType, state: AssetState): StandardAsset[] {
-  return scanArsenalsDirectory(scope, projectBoundary, type, state)
+  if (state === 'draft') {
+    return []
+  }
+  return scanArsenalsDirectory(scope, projectBoundary, type)
+}
+
+export function loadForgesByType(scope: Scope, projectBoundary: string | undefined, type: AssetType): StandardAsset[] {
+  return scanForgesDirectory(scope, projectBoundary, type)
 }
 
 export function loadStandardByPath(assetPath: string): StandardAsset | null {
@@ -223,54 +261,32 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
   }
 
   const content = readFileSync(assetPath, 'utf-8')
-  const fileName = assetPath.split('/').pop() || ''
-  const ext = extname(fileName)
-  const name = fileName.replace(ext, '')
-
   const type = getTypeFromPath(assetPath)
-  let state: AssetState | null = null
-
-  if (assetPath.endsWith('draft.yaml')) {
-    state = 'draft'
-    if (assetPath.includes('/forges/') || assetPath.includes('/arsenals/')) {
-      const parts = assetPath.split('/')
-      const draftIndex = parts.indexOf('draft.yaml')
-      if (draftIndex > 0) {
-        const possibleName = parts[draftIndex - 1]
-        if (possibleName && possibleName !== 'forges' && possibleName !== 'arsenals' && possibleName !== 'probes' && possibleName !== 'stages' && possibleName !== 'blueprints') {
-          return {
-            name: possibleName,
-            type: type!,
-            state: 'draft',
-            path: assetPath,
-            content
-          }
-        }
-      }
-    }
-  } else if (assetPath.endsWith('canonical.yaml')) {
-    state = 'canonical'
-    if (assetPath.includes('/arsenals/')) {
-      const parts = assetPath.split('/')
-      const canonicalIndex = parts.indexOf('canonical.yaml')
-      if (canonicalIndex > 0) {
-        const possibleName = parts[canonicalIndex - 1]
-        if (possibleName && possibleName !== 'arsenals' && possibleName !== 'probes' && possibleName !== 'stages' && possibleName !== 'blueprints') {
-          return {
-            name: possibleName,
-            type: type!,
-            state: 'canonical',
-            path: assetPath,
-            content
-          }
-        }
-      }
-    }
-  }
-
-  if (!type || !state) {
+  if (!type) {
     return null
   }
+
+  const isForge = assetPath.includes('/forges/')
+  const isArsenal = assetPath.includes('/arsenals/')
+
+  if (!isForge && !isArsenal) {
+    return null
+  }
+
+  const parts = assetPath.split('/')
+  const typeIndex = parts.findIndex(p => p === 'forges' || p === 'arsenals')
+  if (typeIndex === -1) return null
+
+  const nameIndex = typeIndex + 2
+  if (nameIndex >= parts.length) return null
+
+  const name = parts[nameIndex]
+  if (!name || name === 'probes' || name === 'stages' || name === 'blueprints') {
+    return null
+  }
+
+  const isDraft = isForge || assetPath.endsWith('/draft.yaml')
+  const state: AssetState = isDraft ? 'draft' : 'canonical'
 
   return {
     name,
@@ -282,16 +298,15 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
 }
 
 export function promoteStandard(fromPath: string): StandardAsset | null {
-  const isForgeFormat = fromPath.includes('/forges/') && fromPath.endsWith('/draft.yaml')
-  const isArsenalNewFormat = fromPath.includes('/arsenals/') && fromPath.endsWith('/draft.yaml')
-  const isOldFormat = fromPath.includes('/draft/') && (fromPath.endsWith('.yaml') || fromPath.endsWith('.yml'))
+  const isForgeFormat = fromPath.includes('/forges/') && fromPath.endsWith('.yaml')
+  const isArsenalDraftFormat = fromPath.includes('/arsenals/') && fromPath.includes('/draft/')
 
-  if (!isForgeFormat && !isArsenalNewFormat && !isOldFormat) {
+  if (!isForgeFormat && !isArsenalDraftFormat) {
     throw new Error(`Asset is not in draft state: ${fromPath}`)
   }
 
   if (!existsSync(fromPath)) {
-    throw new Error(`draft.yaml not found: ${fromPath}`)
+    throw new Error(`Draft file not found: ${fromPath}`)
   }
 
   const asset = loadStandardByPath(fromPath)
@@ -302,13 +317,9 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
   let newPath: string
 
   if (isForgeFormat) {
-    newPath = fromPath
-      .replace('/forges/', '/arsenals/')
-      .replace('/draft.yaml', '/canonical.yaml')
-  } else if (isArsenalNewFormat) {
-    newPath = fromPath.replace('/draft.yaml', '/canonical.yaml')
+    newPath = fromPath.replace('/forges/', '/arsenals/')
   } else {
-    newPath = fromPath.replace('/draft/', '/canonical/')
+    newPath = fromPath.replace('/draft/', '/')
   }
 
   const assetDir = dirname(newPath)
@@ -328,34 +339,16 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
 export function loadStandardByName(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType): StandardAsset | null {
   const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
 
-  const newCanonicalPath = join(boundary, 'arsenals', type, name, 'canonical.yaml')
-  if (existsSync(newCanonicalPath)) {
-    const content = readFileSync(newCanonicalPath, 'utf-8')
-    return { name, type, state: 'canonical', path: newCanonicalPath, content }
-  }
-
-  const oldCanonicalPath = join(boundary, 'arsenals', type, 'canonical', `${name}.yaml`)
-  if (existsSync(oldCanonicalPath)) {
-    const content = readFileSync(oldCanonicalPath, 'utf-8')
-    return { name, type, state: 'canonical', path: oldCanonicalPath, content }
+  const canonicalPath = join(boundary, 'arsenals', type, name, 'canonical.yaml')
+  if (existsSync(canonicalPath)) {
+    const content = readFileSync(canonicalPath, 'utf-8')
+    return { name, type, state: 'canonical' as const, path: canonicalPath, content }
   }
 
   const forgeDraftPath = join(boundary, 'forges', type, name, 'draft.yaml')
   if (existsSync(forgeDraftPath)) {
     const content = readFileSync(forgeDraftPath, 'utf-8')
-    return { name, type, state: 'draft', path: forgeDraftPath, content }
-  }
-
-  const newDraftPath = join(boundary, 'arsenals', type, name, 'draft.yaml')
-  if (existsSync(newDraftPath)) {
-    const content = readFileSync(newDraftPath, 'utf-8')
-    return { name, type, state: 'draft', path: newDraftPath, content }
-  }
-
-  const oldDraftPath = join(boundary, 'arsenals', type, 'draft', `${name}.yaml`)
-  if (existsSync(oldDraftPath)) {
-    const content = readFileSync(oldDraftPath, 'utf-8')
-    return { name, type, state: 'draft', path: oldDraftPath, content }
+    return { name, type, state: 'draft' as const, path: forgeDraftPath, content }
   }
 
   return null
@@ -363,13 +356,9 @@ export function loadStandardByName(scope: Scope, projectBoundary: string | undef
 
 export function resolveAssetPath(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType, state: AssetState): string | null {
   const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
-  const newPath = join(boundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
-  if (existsSync(newPath)) {
-    return newPath
-  }
-  const oldPath = join(boundary, 'arsenals', type, state, `${name}.yaml`)
-  if (existsSync(oldPath)) {
-    return oldPath
+  const assetPath = join(boundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+  if (existsSync(assetPath)) {
+    return assetPath
   }
   return null
 }

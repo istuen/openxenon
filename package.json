@@ -14,12 +14,12 @@
     "dist"
   ],
   "scripts": {
-    "dev": "bun run src/cli.ts",
-    "build": "bun build ./src/cli.ts --compile --outfile dist/oxn && cp -r src/arsenals dist/arsenals",
+    "dev": "bun run src/cli/index.ts",
+    "build": "bun build ./src/cli/index.ts --compile --outfile dist/oxn && cp -r src/arsenals dist/arsenals",
     "build:all": "bun run build:linux && bun run build:macos && bun run build:windows",
-    "build:linux": "bun build ./src/cli.ts --compile --target=bun-linux-x64 --outfile dist/oxn-linux",
-    "build:macos": "bun build ./src/cli.ts --compile --target=bun-darwin-x64 --outfile dist/oxn-macos",
-    "build:windows": "bun build ./src/cli.ts --compile --target=bun-windows-x64 --outfile dist/oxn.exe",
+    "build:linux": "bun build ./src/cli/index.ts --compile --target=bun-linux-x64 --outfile dist/oxn-linux",
+    "build:macos": "bun build ./src/cli/index.ts --compile --target=bun-darwin-x64 --outfile dist/oxn-macos",
+    "build:windows": "bun build ./src/cli/index.ts --compile --target=bun-windows-x64 --outfile dist/oxn.exe",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",
