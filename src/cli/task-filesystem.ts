@@ -132,7 +132,7 @@ export interface SubmitResult {
   message: string
 }
 
-export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: string): SubmitResult {
+export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: string, existingTaskId?: string): SubmitResult {
   if (!existsSync(blueprintPath)) {
     throw new Error(`Blueprint file not found: ${blueprintPath}`)
   }
@@ -140,13 +140,13 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   const content = readFileSync(blueprintPath, 'utf-8')
   const rawParsed = parseYaml(content) as ParsedBlueprint
 
-  if (!rawParsed.name && !rawParsed.id) {
+  if (!rawParsed.name && !rawParsed.id && !existingTaskId) {
     throw new Error('Blueprint must have name or id field')
   }
 
-  const taskId = resolveTaskName(content, nameOverride)
+  const taskId = existingTaskId || resolveTaskName(content, nameOverride)
 
-  if (taskDirExists(cwd, taskId)) {
+  if (!existingTaskId && taskDirExists(cwd, taskId)) {
     throw new Error(`Task "${taskId}" already exists. Choose a different name with --name.`)
   }
 
@@ -203,6 +203,48 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
     status: 'RUNNING',
     stagesCount: frozenBlueprint.stages.length,
     message: 'Task created successfully'
+  }
+}
+
+export interface NewResult {
+  taskId: string
+  taskName: string
+  status: string
+  message: string
+}
+
+export function taskNew(taskId: string, taskName: string, cwd: string): NewResult {
+  if (taskDirExists(cwd, taskId)) {
+    throw new Error(`Task "${taskId}" already exists. Choose a different name.`)
+  }
+
+  const validation = validateTaskName(taskId)
+  if (!validation.valid) {
+    throw new Error(`Invalid task name: ${validation.error}`)
+  }
+
+  const taskDir = getTaskDir(cwd, taskId)
+  ensureDirectory(taskDir)
+
+  const state: TaskState = {
+    taskId,
+    taskName: taskName || taskId,
+    status: 'PENDING',
+    currentStage: null,
+    stages: {}
+  }
+  writeState(cwd, taskId, state)
+
+  const traceEvent = buildTraceEvent('TASK_CREATED', taskId, {
+    taskName: state.taskName
+  })
+  appendTraceEvent(cwd, taskId, traceEvent)
+
+  return {
+    taskId,
+    taskName: state.taskName,
+    status: 'PENDING',
+    message: 'Task created successfully. Use oxn task submit --blueprint <path> --task-id ' + taskId + ' to add a blueprint.'
   }
 }
 

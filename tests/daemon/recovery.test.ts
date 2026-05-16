@@ -1,89 +1,137 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
-import { RecoveryManager } from '../../src/daemon/recovery'
+import { createRecoveryManager } from '../../src/daemon/recovery'
+import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs'
 import { join } from 'path'
-import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
-import { getProjectBoundaryPath } from '../../src/kernel'
 
 const TEST_WORKDIR = '/tmp/oxn-recovery-test'
 
 describe('RecoveryManager', () => {
-  let recoveryManager: RecoveryManager
+  let recoveryManager: ReturnType<typeof createRecoveryManager>
+  let taskId: string
 
   beforeEach(() => {
     rmSync(TEST_WORKDIR, { recursive: true, force: true })
-    mkdirSync(TEST_WORKDIR, { recursive: true })
     mkdirSync(join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task'), { recursive: true })
-
-    writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task', 'state.json'), JSON.stringify({
-      taskId: 'test-task',
-      status: 'RUNNING'
-    }))
+    writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task', 'state.json'), JSON.stringify({ status: 'RUNNING' }))
     writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task', 'artifact.json'), JSON.stringify({}))
 
-    process.chdir(TEST_WORKDIR)
-    recoveryManager = new RecoveryManager({ maxRecoveryPoints: 3 })
+    taskId = 'test-task'
+    recoveryManager = createRecoveryManager({
+      maxRecoveryPoints: 5,
+      autoCheckpointIntervalMs: 1000
+    }, TEST_WORKDIR)
   })
 
   afterEach(() => {
     rmSync(TEST_WORKDIR, { recursive: true, force: true })
-    process.chdir('/Users/issac/pro/openxenon')
   })
 
   describe('createRecoveryPoint', () => {
-    it('creates recovery point for task', () => {
-      const recoveryPoint = recoveryManager.createRecoveryPoint('test-task', 'stage-1', { test: true })
-
-      expect(recoveryPoint).not.toBeNull()
-      expect(recoveryPoint!.taskId).toBe('test-task')
-      expect(recoveryPoint!.stageId).toBe('stage-1')
-      expect(recoveryPoint!.id).toMatch(/^rp-/)
+    it('creates a recovery point and saves to disk', () => {
+      const rp = recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      expect(rp).not.toBeNull()
+      expect(rp!.taskId).toBe(taskId)
+      expect(rp!.stageId).toBe('stage-1')
+      expect(existsSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'recovery', 'index.json'))).toBe(true)
     })
 
     it('returns null when state.json does not exist', () => {
-      rmSync(join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task', 'state.json'))
-      const result = recoveryManager.createRecoveryPoint('test-task', 'stage-1')
-      expect(result).toBeNull()
+      rmSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), { force: true })
+      const rp = recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      expect(rp).toBeNull()
+    })
+
+    it('limits recovery points to maxRecoveryPoints', () => {
+      for (let i = 0; i < 7; i++) {
+        recoveryManager.createRecoveryPoint(taskId, `stage-${i}`)
+      }
+      const points = recoveryManager.getRecoveryPoints(taskId)
+      expect(points.length).toBe(5)
     })
   })
 
   describe('getRecoveryPoints', () => {
-    it('returns empty array for non-existent task', () => {
-      const points = recoveryManager.getRecoveryPoints('nonexistent-task')
+    it('returns empty array when no recovery points exist', () => {
+      const points = recoveryManager.getRecoveryPoints(taskId)
       expect(points).toEqual([])
     })
 
-    it('returns recovery points for task', () => {
-      recoveryManager.createRecoveryPoint('test-task', 'stage-1')
-      recoveryManager.createRecoveryPoint('test-task', 'stage-2')
-
-      const points = recoveryManager.getRecoveryPoints('test-task')
-      expect(points.length).toBe(2)
+    it('loads existing recovery points from disk', () => {
+      recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      const freshManager = createRecoveryManager({}, TEST_WORKDIR)
+      const points = freshManager.getRecoveryPoints(taskId)
+      expect(points.length).toBe(1)
     })
   })
 
   describe('getLatestRecoveryPoint', () => {
-    it('returns null when no recovery points exist', () => {
-      const latest = recoveryManager.getLatestRecoveryPoint('test-task')
-      expect(latest).toBeNull()
+    it('returns the most recent recovery point', () => {
+      recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      recoveryManager.createRecoveryPoint(taskId, 'stage-2')
+      const latest = recoveryManager.getLatestRecoveryPoint(taskId)
+      expect(latest!.stageId).toBe('stage-2')
     })
 
-    it('returns the most recent recovery point', () => {
-      recoveryManager.createRecoveryPoint('test-task', 'stage-1')
-      recoveryManager.createRecoveryPoint('test-task', 'stage-2')
-
-      const latest = recoveryManager.getLatestRecoveryPoint('test-task')
-      expect(latest!.stageId).toBe('stage-2')
+    it('returns null when no recovery points exist', () => {
+      const latest = recoveryManager.getLatestRecoveryPoint(taskId)
+      expect(latest).toBeNull()
     })
   })
 
-  describe('maxRecoveryPoints limit', () => {
-    it('removes oldest when exceeding maxRecoveryPoints', () => {
-      for (let i = 0; i < 5; i++) {
-        recoveryManager.createRecoveryPoint('test-task', `stage-${i}`)
-      }
+  describe('rollbackTo', () => {
+    it('rolls back state.json to target recovery point', () => {
+      recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      const points = recoveryManager.getRecoveryPoints(taskId)
+      const targetId = points[0].id
 
-      const points = recoveryManager.getRecoveryPoints('test-task')
-      expect(points.length).toBe(3)
+      writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), JSON.stringify({ status: 'MODIFIED' }))
+
+      const success = recoveryManager.rollbackTo(taskId, targetId)
+      expect(success).toBe(true)
+      const restoredContent = JSON.parse(readFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), 'utf-8'))
+      expect(restoredContent.status).toBe('RUNNING')
+    })
+
+    it('returns false when recovery point does not exist', () => {
+      const success = recoveryManager.rollbackTo(taskId, 'nonexistent-id')
+      expect(success).toBe(false)
+    })
+  })
+
+  describe('retry', () => {
+    it('returns true and logs retry info when recovery points exist', () => {
+      recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      const success = recoveryManager.retry(taskId)
+      expect(success).toBe(true)
+    })
+
+    it('returns false when no recovery points exist', () => {
+      const success = recoveryManager.retry(taskId)
+      expect(success).toBe(false)
+    })
+
+    it('returns false when task is already completed', () => {
+      recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), JSON.stringify({ status: 'COMPLETED' }))
+      const success = recoveryManager.retry(taskId)
+      expect(success).toBe(false)
+    })
+
+    it('returns false when task has failed', () => {
+      recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), JSON.stringify({ status: 'FAILED' }))
+      const success = recoveryManager.retry(taskId)
+      expect(success).toBe(false)
+    })
+  })
+
+  describe('clearRecoveryPoints', () => {
+    it('removes all recovery points for a task', () => {
+      recoveryManager.createRecoveryPoint(taskId, 'stage-1')
+      recoveryManager.createRecoveryPoint(taskId, 'stage-2')
+      recoveryManager.clearRecoveryPoints(taskId)
+      const points = recoveryManager.getRecoveryPoints(taskId)
+      expect(points).toEqual([])
     })
   })
 })

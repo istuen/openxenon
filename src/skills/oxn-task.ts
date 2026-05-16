@@ -138,7 +138,18 @@ oxn arsenal list
 
 该命令返回当前项目可用的 Arsenal 资产列表。
 
-## 步骤 3：拆解任务
+## 步骤 3：创建任务
+
+使用 CLI 命令创建新任务：
+
+\`\`\`bash
+oxn task new <task-id> --name <任务显示名称>
+\`\`\`
+
+- \`<task-id>\` 必须是 kebab-case（如 my-task-001）
+- \`--name\` 可选，默认与 task-id 相同
+
+## 步骤 4：拆解任务
 
 基于用户需求和可用资产列表，按照 Target State 理念拆解任务：
 
@@ -146,14 +157,14 @@ oxn arsenal list
 2. 逆向推导所需的中间 Stage
 3. 为每个 Stage 选择合适的 Probe
 
-## 步骤 4：编写 Blueprint
+## 步骤 5：编写 Blueprint
 
 将 Blueprint 保存为 YAML 文件（如 my-task.yaml），包含：
 - 任务名称
 - 各个 Stage 的定义和依赖关系
 - 每个 Stage 对应的 Probe
 
-## 步骤 4.1：创建任务描述文档
+## 步骤 5.1：创建任务描述文档
 
 在提交 Blueprint 前，先创建任务描述文档 task.md：
 
@@ -173,23 +184,23 @@ oxn arsenal list
 <工程师如何判断任务成功完成>
 \`\`\`
 
-## 步骤 5：提交 Blueprint
+## 步骤 6：提交 Blueprint
 
 将填充好的 Blueprint 提交：
 
 \`\`\`bash
-oxn task submit --blueprint <path-to-blueprint.yaml>
+oxn task submit --blueprint <path-to-blueprint.yaml> --task-id <task-id>
 \`\`\`
 
 该命令会创建任务并返回 taskId。
 
-## 步骤 6：获取下一个 Stage
+## 步骤 7：获取下一个 Stage
 
 \`\`\`bash
 oxn task next --task-id <taskId>
 \`\`\`
 
-## 步骤 7：执行并验证
+## 步骤 8：执行并验证
 
 1. AI 执行 Stage 定义的工作
 2. 执行完成后，提交验证：
@@ -198,9 +209,9 @@ oxn task next --task-id <taskId>
 oxn task verify --task-id <taskId> --stage-id <stageId>
 \`\`\`
 
-## 步骤 8：循环直到完成
+## 步骤 9：循环直到完成
 
-重复步骤 6-7，直到所有 Stage 通过验证。
+重复步骤 7-8，直到所有 Stage 通过验证。
 
 ## 参考
 

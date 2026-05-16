@@ -5,8 +5,13 @@ export interface RadarEntry {
   timeout: number
 }
 
+export type TimeoutCallback = (taskId: string, stageId: string, elapsed: number) => void
+
 export class RadarClock {
   private entries: Map<string, RadarEntry> = new Map()
+  private timeoutCallbacks: TimeoutCallback[] = []
+  private schedulerTimer: ReturnType<typeof setInterval> | null = null
+  private checkIntervalMs: number = 1000
 
   startMonitor(taskId: string, stageId: string, timeoutMs: number): void {
     const key = `${taskId}:${stageId}`
@@ -49,8 +54,51 @@ export class RadarClock {
     return Math.max(0, entry.timeout - elapsed)
   }
 
+  onTimeout(callback: TimeoutCallback): void {
+    this.timeoutCallbacks.push(callback)
+  }
+
+  offTimeout(callback: TimeoutCallback): void {
+    const idx = this.timeoutCallbacks.indexOf(callback)
+    if (idx !== -1) {
+      this.timeoutCallbacks.splice(idx, 1)
+    }
+  }
+
+  startScheduler(checkIntervalMs: number = 1000): void {
+    this.stopScheduler()
+    this.checkIntervalMs = checkIntervalMs
+    this.schedulerTimer = setInterval(() => {
+      this.checkTimeouts()
+    }, checkIntervalMs)
+  }
+
+  stopScheduler(): void {
+    if (this.schedulerTimer) {
+      clearInterval(this.schedulerTimer)
+      this.schedulerTimer = null
+    }
+  }
+
+  private checkTimeouts(): void {
+    for (const [key, entry] of this.entries) {
+      const elapsed = Date.now() - entry.startTime
+      if (elapsed > entry.timeout) {
+        for (const cb of this.timeoutCallbacks) {
+          cb(entry.taskId, entry.stageId, elapsed)
+        }
+      }
+    }
+  }
+
   clear(): void {
     this.entries.clear()
+  }
+
+  destroy(): void {
+    this.stopScheduler()
+    this.entries.clear()
+    this.timeoutCallbacks = []
   }
 }
 

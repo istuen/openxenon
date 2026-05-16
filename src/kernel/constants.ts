@@ -11,6 +11,8 @@ export const STEP_MANIFEST_FILE = 'step-manifest.json'
 export const CONFIG_FILE = 'config.json'
 export const CANONICAL_FILE = 'canonical.yaml'
 
+export const DEBUG_LOG_FILE = 'debug.log'
+
 export const GLOBAL_BOUNDARY_PATH = join(homedir(), BOUNDARY_DIR)
 export const DAEMON_SOCK_PATH = join(GLOBAL_BOUNDARY_PATH, 'daemon.sock')
 export const DAEMON_PID_PATH = join(GLOBAL_BOUNDARY_PATH, 'daemon.pid')

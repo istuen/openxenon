@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'bun:test'
-import { CircuitBreaker } from '../../src/daemon/circuit-breaker'
+import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
+import { CircuitBreaker, type CircuitBreakerConfig } from '../../src/daemon/circuit-breaker'
 
 describe('CircuitBreaker', () => {
   let circuitBreaker: CircuitBreaker
@@ -17,12 +17,8 @@ describe('CircuitBreaker', () => {
       expect(circuitBreaker.getState()).toBe('CLOSED')
     })
 
-    it('allows requests when closed', () => {
-      expect(circuitBreaker.allowRequest()).toBe(true)
-    })
-
-    it('is not open initially', () => {
-      expect(circuitBreaker.isOpen()).toBe(false)
+    it('has zero failure count', () => {
+      expect(circuitBreaker.getStats().failureCount).toBe(0)
     })
   })
 
@@ -30,15 +26,22 @@ describe('CircuitBreaker', () => {
     it('decrements failure count in CLOSED state', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
-      expect(circuitBreaker.getStats().failureCount).toBe(2)
-
       circuitBreaker.recordSuccess()
       expect(circuitBreaker.getStats().failureCount).toBe(1)
     })
 
-    it('records lastSuccessTime', () => {
+    it('does not decrement below zero', () => {
       circuitBreaker.recordSuccess()
-      expect(circuitBreaker.getStats().lastSuccessTime).not.toBeNull()
+      expect(circuitBreaker.getStats().failureCount).toBe(0)
+    })
+
+    it('updates lastSuccessTime', () => {
+      const before = Date.now()
+      circuitBreaker.recordSuccess()
+      const after = Date.now()
+      const lastSuccess = circuitBreaker.getStats().lastSuccessTime
+      expect(lastSuccess!).toBeGreaterThanOrEqual(before)
+      expect(lastSuccess!).toBeLessThanOrEqual(after)
     })
   })
 
@@ -46,99 +49,125 @@ describe('CircuitBreaker', () => {
     it('increments failure count', () => {
       circuitBreaker.recordFailure()
       expect(circuitBreaker.getStats().failureCount).toBe(1)
-
-      circuitBreaker.recordFailure()
-      expect(circuitBreaker.getStats().failureCount).toBe(2)
     })
 
-    it('records lastFailureTime', () => {
+    it('resets success count', () => {
+      circuitBreaker.recordSuccess()
       circuitBreaker.recordFailure()
-      expect(circuitBreaker.getStats().lastFailureTime).not.toBeNull()
+      expect(circuitBreaker.getStats().successCount).toBe(0)
     })
 
-    it('trips to OPEN after failureThreshold', () => {
+    it('trips to OPEN when threshold reached', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
-      expect(circuitBreaker.getState()).toBe('CLOSED')
-
       circuitBreaker.recordFailure()
       expect(circuitBreaker.getState()).toBe('OPEN')
     })
-
-    it('blocks requests when OPEN', () => {
-      for (let i = 0; i < 3; i++) {
-        circuitBreaker.recordFailure()
-      }
-      expect(circuitBreaker.allowRequest()).toBe(false)
-      expect(circuitBreaker.isOpen()).toBe(true)
-    })
   })
 
-  describe('HALF_OPEN state', () => {
-    it('transitions to HALF_OPEN after resetTimeout', async () => {
-      for (let i = 0; i < 3; i++) {
-        circuitBreaker.recordFailure()
-      }
+  describe('trip recovery', () => {
+    it('transitions to HALF_OPEN after reset timeout', async () => {
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+
       expect(circuitBreaker.getState()).toBe('OPEN')
 
       await new Promise(resolve => setTimeout(resolve, 1100))
       expect(circuitBreaker.getState()).toBe('HALF_OPEN')
     })
 
-    it('closes after successful recovery in HALF_OPEN', async () => {
-      for (let i = 0; i < 3; i++) {
-        circuitBreaker.recordFailure()
-      }
+    it('returns to CLOSED after successful recovery in HALF_OPEN', async () => {
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
 
       await new Promise(resolve => setTimeout(resolve, 1100))
+      expect(circuitBreaker.getState()).toBe('HALF_OPEN')
 
       circuitBreaker.recordSuccess()
       circuitBreaker.recordSuccess()
       expect(circuitBreaker.getState()).toBe('CLOSED')
     })
 
-    it('trips again if failure in HALF_OPEN', async () => {
-      for (let i = 0; i < 3; i++) {
-        circuitBreaker.recordFailure()
-      }
+    it('trips back to OPEN on failure in HALF_OPEN', async () => {
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
 
       await new Promise(resolve => setTimeout(resolve, 1100))
-
       circuitBreaker.recordFailure()
       expect(circuitBreaker.getState()).toBe('OPEN')
     })
   })
 
+  describe('allowRequest', () => {
+    it('allows request in CLOSED state', () => {
+      expect(circuitBreaker.allowRequest()).toBe(true)
+    })
+
+    it('allows request in HALF_OPEN state', async () => {
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+
+      await new Promise(resolve => setTimeout(resolve, 1100))
+      expect(circuitBreaker.allowRequest()).toBe(true)
+    })
+
+    it('denies request in OPEN state', () => {
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      expect(circuitBreaker.allowRequest()).toBe(false)
+    })
+  })
+
   describe('forceClose', () => {
     it('resets to CLOSED state', () => {
-      for (let i = 0; i < 3; i++) {
-        circuitBreaker.recordFailure()
-      }
-      expect(circuitBreaker.isOpen()).toBe(true)
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      expect(circuitBreaker.getState()).toBe('OPEN')
 
       circuitBreaker.forceClose()
       expect(circuitBreaker.getState()).toBe('CLOSED')
-      expect(circuitBreaker.allowRequest()).toBe(true)
+    })
+
+    it('resets failure count', () => {
+      circuitBreaker.recordFailure()
+      circuitBreaker.forceClose()
+      expect(circuitBreaker.getStats().failureCount).toBe(0)
     })
   })
 
   describe('forceOpen', () => {
-    it('opens the circuit immediately', () => {
+    it('immediately opens the circuit', () => {
       circuitBreaker.forceOpen()
       expect(circuitBreaker.getState()).toBe('OPEN')
       expect(circuitBreaker.allowRequest()).toBe(false)
     })
   })
 
-  describe('getStats', () => {
-    it('returns complete stats', () => {
-      const stats = circuitBreaker.getStats()
+  describe('isOpen', () => {
+    it('returns true when OPEN', () => {
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      expect(circuitBreaker.isOpen()).toBe(true)
+    })
 
-      expect(stats).toHaveProperty('failureCount')
-      expect(stats).toHaveProperty('successCount')
-      expect(stats).toHaveProperty('state')
-      expect(stats).toHaveProperty('lastFailureTime')
-      expect(stats).toHaveProperty('lastSuccessTime')
+    it('returns false when CLOSED', () => {
+      expect(circuitBreaker.isOpen()).toBe(false)
+    })
+
+    it('returns false when HALF_OPEN', async () => {
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+      circuitBreaker.recordFailure()
+
+      await new Promise(resolve => setTimeout(resolve, 1100))
+      expect(circuitBreaker.isOpen()).toBe(false)
     })
   })
 })

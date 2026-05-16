@@ -12,6 +12,7 @@ interface ProjectConfig {
   mode: 'PRODUCTION' | 'SANDBOX'
   name?: string
   createdAt?: number
+  debug?: boolean
 }
 
 function ensureGlobalBoundary(): void {

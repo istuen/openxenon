@@ -45,8 +45,27 @@ export function matchPattern(path: string, pattern: string): boolean {
 }
 
 export function parseGlobPattern(fullPattern: string, projectRoot: string): { baseDir: string; globPattern: string } {
-  const lastSlash = fullPattern.lastIndexOf('/')
-  const baseDir = lastSlash > 0 ? fullPattern.substring(0, lastSlash) : projectRoot
-  const globPattern = lastSlash > 0 ? fullPattern.substring(lastSlash + 1) : fullPattern
+  const isAbsolute = fullPattern.startsWith('/')
+  const normalizedPattern = isAbsolute ? fullPattern.substring(1) : fullPattern
+
+  const firstGlobIndex = Math.min(
+    normalizedPattern.indexOf('*') === -1 ? Infinity : normalizedPattern.indexOf('*'),
+    normalizedPattern.indexOf('?') === -1 ? Infinity : normalizedPattern.indexOf('?')
+  )
+
+  let splitIndex: number
+  if (firstGlobIndex === Infinity) {
+    splitIndex = normalizedPattern.lastIndexOf('/')
+  } else {
+    const slashBeforeGlob = normalizedPattern.lastIndexOf('/', firstGlobIndex - 1)
+    splitIndex = slashBeforeGlob
+  }
+
+  if (splitIndex <= 0) {
+    return { baseDir: projectRoot, globPattern: normalizedPattern }
+  }
+
+  const baseDir = (isAbsolute ? '/' : '') + normalizedPattern.substring(0, splitIndex)
+  const globPattern = normalizedPattern.substring(splitIndex + 1)
   return { baseDir, globPattern }
 }

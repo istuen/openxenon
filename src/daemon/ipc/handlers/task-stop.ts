@@ -3,6 +3,8 @@ import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
 import { readTaskTrace, writeTaskStatus } from '../../trace/writer'
+import { processManager } from '../../process-manager'
+import { radarClock } from '../../radar/clock'
 import { existsSync } from 'fs'
 
 async function handleTaskStop(
@@ -34,13 +36,20 @@ async function handleTaskStop(
       return notFound(`Task '${taskId}' not found`)
     }
 
+    const currentStage = trace.stages.find(s => s.status === 'RUNNING')
+    if (currentStage) {
+      processManager.killAll()
+      radarClock.stopMonitor(taskId, currentStage.id)
+    }
+
     writeTaskStatus(taskDir, taskId, 'FAILED')
 
     return new Response(
       JSON.stringify({
         status: 'stopped',
         taskId: taskId,
-        taskStatus: 'FAILED'
+        taskStatus: 'FAILED',
+        killedProcesses: currentStage ? 1 : 0
       }),
       {
         status: 200,

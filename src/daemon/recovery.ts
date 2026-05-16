@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
 import { daemonLogger } from './logger'
 import { getProjectBoundaryPath } from '../kernel'
@@ -26,13 +26,19 @@ const DEFAULT_CONFIG: RecoveryConfig = {
 export class RecoveryManager {
   private config: RecoveryConfig
   private recoveryPoints: Map<string, RecoveryPoint[]> = new Map()
+  private projectRoot: string
 
-  constructor(config: Partial<RecoveryConfig> = {}) {
+  constructor(config: Partial<RecoveryConfig> = {}, projectRoot?: string) {
     this.config = { ...DEFAULT_CONFIG, ...config }
+    this.projectRoot = projectRoot ? getProjectBoundaryPath(projectRoot) : getProjectBoundaryPath(process.cwd())
+  }
+
+  private getProjectBoundary(): string {
+    return this.projectRoot
   }
 
   createRecoveryPoint(taskId: string, stageId: string, metadata: Record<string, unknown> = {}): RecoveryPoint | null {
-    const projectBoundary = getProjectBoundaryPath(process.cwd())
+    const projectBoundary = this.getProjectBoundary()
     const recoveryDir = join(projectBoundary, 'tasks', taskId, 'recovery')
 
     if (!existsSync(recoveryDir)) {
@@ -48,14 +54,28 @@ export class RecoveryManager {
     }
 
     const id = `rp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const stateBackupPath = join(recoveryDir, `${id}-state.json`)
+    const artifactBackupPath = join(recoveryDir, `${id}-artifact.json`)
+
+    try {
+      const stateContent = readFileSync(statePath, 'utf-8')
+      writeFileSync(stateBackupPath, stateContent, 'utf-8')
+      if (existsSync(artifactPath)) {
+        const artifactContent = readFileSync(artifactPath, 'utf-8')
+        writeFileSync(artifactBackupPath, artifactContent, 'utf-8')
+      }
+    } catch (error) {
+      daemonLogger.error(`Failed to backup state files: ${error}`)
+      return null
+    }
 
     const recoveryPoint: RecoveryPoint = {
       id,
       taskId,
       stageId,
       timestamp: Date.now(),
-      statePath,
-      artifactPath,
+      statePath: stateBackupPath,
+      artifactPath: artifactBackupPath,
       metadata
     }
 
@@ -84,7 +104,7 @@ export class RecoveryManager {
       return this.recoveryPoints.get(taskId)!
     }
 
-    const projectBoundary = getProjectBoundaryPath(process.cwd())
+    const projectBoundary = this.getProjectBoundary()
     const indexPath = join(projectBoundary, 'tasks', taskId, 'recovery', 'index.json')
 
     if (!existsSync(indexPath)) {
@@ -115,7 +135,7 @@ export class RecoveryManager {
       return false
     }
 
-    const projectBoundary = getProjectBoundaryPath(process.cwd())
+    const projectBoundary = this.getProjectBoundary()
     const stateDestPath = join(projectBoundary, 'tasks', taskId, 'state.json')
     const artifactDestPath = join(projectBoundary, 'tasks', taskId, 'artifact.json')
 
@@ -146,7 +166,7 @@ export class RecoveryManager {
       return false
     }
 
-    const projectBoundary = getProjectBoundaryPath(process.cwd())
+    const projectBoundary = this.getProjectBoundary()
     const statePath = join(projectBoundary, 'tasks', taskId, 'state.json')
 
     try {
@@ -167,9 +187,40 @@ export class RecoveryManager {
   }
 
   clearRecoveryPoints(taskId: string): void {
+    const points = this.recoveryPoints.get(taskId) || []
+    const projectBoundary = this.getProjectBoundary()
+    const recoveryDir = join(projectBoundary, 'tasks', taskId, 'recovery')
+
+    for (const point of points) {
+      try {
+        if (existsSync(point.statePath)) {
+          rmSync(point.statePath, { force: true })
+        }
+        if (existsSync(point.artifactPath)) {
+          rmSync(point.artifactPath, { force: true })
+        }
+      } catch {
+      }
+    }
+
+    try {
+      const indexPath = join(recoveryDir, 'index.json')
+      if (existsSync(indexPath)) {
+        rmSync(indexPath, { force: true })
+      }
+    } catch {
+    }
+
     this.recoveryPoints.delete(taskId)
     daemonLogger.info(`Cleared recovery points for task ${taskId}`)
   }
 }
 
 export const recoveryManager = new RecoveryManager()
+
+export function createRecoveryManager(
+  config?: Partial<RecoveryConfig>,
+  projectRoot?: string
+): RecoveryManager {
+  return new RecoveryManager(config, projectRoot)
+}

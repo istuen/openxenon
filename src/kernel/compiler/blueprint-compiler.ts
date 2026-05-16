@@ -1,14 +1,15 @@
 import type { Blueprint } from '../schemas/blueprint.schema'
 import type { FrozenBlueprint } from '../schemas/frozen-schema'
 import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, loadStandardByName } from '../../infra/loader'
-import { getProjectBoundaryPath } from '../lib/project'
 import { BUILTIN_PROBES, BUILTIN_STAGES } from '../../arsenals/builtin'
 import { computeContentHash } from '../schemas/frozen-schema'
+import { validateDagTopology, type DagNode } from '../schemas/dag-validator'
 
 export interface CompileContext {
   taskId: string
   taskName: string
   params?: Record<string, unknown>
+  projectBoundary: string
 }
 
 export interface StageResolution {
@@ -223,7 +224,17 @@ function injectMeta(stage: Record<string, unknown>, ref: string, namespace: 'ker
 
 export class BlueprintCompiler {
   compile(raw: Blueprint, ctx: CompileContext): FrozenBlueprint {
-    const projectBoundary = getProjectBoundaryPath(process.cwd())
+    const dagNodes: DagNode[] = (raw.stages || []).map(stage => ({
+      id: stage.id || (stage as any).name,
+      deps: stage.deps || []
+    }))
+
+    const dagResult = validateDagTopology(dagNodes)
+    if (!dagResult.valid) {
+      throw new Error(`DAG 验证失败: ${dagResult.errors.join('; ')}`)
+    }
+
+    const { projectBoundary } = ctx
     const stages: Array<Record<string, unknown>> = []
 
     for (const stage of raw.stages || []) {

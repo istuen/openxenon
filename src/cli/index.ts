@@ -1,5 +1,5 @@
 import { defineCommand, runMain } from 'citty'
-import { cliContext, detectCliFormat } from './context'
+import { cliContext, detectCliFormat, detectVerbosity } from './context'
 import { OxnErrorCode, ErrorCategory } from '../kernel/enums'
 import { DAEMON_SOCK_PATH } from '../infra/global'
 
@@ -65,6 +65,7 @@ const main = defineCommand({
     hall: () => import('./hall').then(m => m.default),
     explore: () => import('./explore-cmd').then(m => m.default),
     global: () => import('./global').then(m => m.default),
+    config: () => import('./config').then(m => m.default),
   },
   args: {
     verbose: {
@@ -96,7 +97,12 @@ const main = defineCommand({
   },
   async run() {
     const format = detectCliFormat()
+    const verbosity = detectVerbosity()
     cliContext.setFormatMode(format)
+    cliContext.setVerbosity(verbosity)
+    if (verbosity > 0) {
+      console.error(`[DEBUG] Verbosity level: ${verbosity}`)
+    }
     if (format === 'human') {
       console.log('OpenXenon CLI')
       console.log('Run `oxn --help` for usage information')

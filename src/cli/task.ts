@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
-import { taskSubmit, taskNext, taskVerify, taskStatus, type SubmitResult, type NextResult, type VerifyResult, type StatusResult } from './task-filesystem'
+import { taskSubmit, taskNext, taskVerify, taskStatus, taskNew, type SubmitResult, type NextResult, type VerifyResult, type StatusResult, type NewResult } from './task-filesystem'
 import { BOUNDARY_DIR, TASKS_DIR, TASK_TRACE_FILE } from '../kernel/constants'
 import { join } from 'path'
 import { taskTraceToHtml } from './render/task-trace-renderer'
@@ -23,7 +23,7 @@ export default defineCommand({
     submit: defineCommand({
       meta: {
         name: 'submit',
-        description: '提交 Blueprint 创建任务'
+        description: '提交 Blueprint 到任务'
       },
       args: {
         blueprint: {
@@ -37,6 +37,12 @@ export default defineCommand({
           alias: 'n',
           required: false,
           description: 'Task 名称（kebab-case），默认从 Blueprint name 字段读取'
+        },
+        'task-id': {
+          type: 'string',
+          alias: 't',
+          required: false,
+          description: '指定已有 Task ID，将 Blueprint 提交到该任务'
         },
         '--json': {
           type: 'boolean',
@@ -61,13 +67,67 @@ export default defineCommand({
         try {
           const blueprintPath = ctx.args.blueprint as string
           const name = ctx.args.name as string | undefined
-          const result = taskSubmit(blueprintPath, getProjectRoot(), name) as SubmitResult
+          const taskId = ctx.args['task-id'] as string | undefined
+          const result = taskSubmit(blueprintPath, getProjectRoot(), name, taskId) as SubmitResult
 
           output({ data: result }, format)
         } catch (err: unknown) {
           const errorMsg = err instanceof Error ? err.message : String(err)
           outputError({
             code: 'OXN_TASK_SUBMIT_FAILED',
+            message: errorMsg
+          }, format)
+        }
+      }
+    }),
+    new: defineCommand({
+      meta: {
+        name: 'new',
+        description: '创建新任务'
+      },
+      args: {
+        'task-id': {
+          type: 'string',
+          alias: 't',
+          required: true,
+          description: '任务 ID（kebab-case）'
+        },
+        'task-name': {
+          type: 'string',
+          alias: 'n',
+          required: false,
+          description: '任务显示名称（可选，默认与 task-id 相同）'
+        },
+        '--json': {
+          type: 'boolean',
+          description: 'JSON 格式输出'
+        },
+        '--yaml': {
+          type: 'boolean',
+          description: 'YAML 格式输出'
+        }
+      },
+      run(ctx) {
+        const format = getFormatFromArgs(ctx.args)
+
+        if (!projectBoundaryExists()) {
+          return outputError({
+            code: 'OXN_NO_PROJECT',
+            message: '项目未初始化，请先执行 oxn init',
+            suggestion: '在项目根目录执行 oxn init'
+          }, format)
+        }
+
+        try {
+          const taskId = ctx.args['task-id'] as string
+          const taskName = ctx.args['task-name'] as string | undefined
+          const result = taskNew(taskId, taskName || taskId, getProjectRoot()) as NewResult
+
+          output({ data: result }, format)
+        } catch (err: unknown) {
+          const errorMsg = err instanceof Error ? err.message : String(err)
+          outputError({
+            code: 'OXN_TASK_NEW_FAILED',
             message: errorMsg
           }, format)
         }
@@ -284,6 +344,6 @@ export default defineCommand({
   },
   run() {
     console.log('使用 oxn task <subcommand> 查看可用子命令')
-    console.log('子命令: submit, next, verify, status, render')
+    console.log('子命令: new, submit, next, verify, status, render')
   }
 })

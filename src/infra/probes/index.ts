@@ -9,12 +9,15 @@ export type ProbeHandler = (
   context: ProbeContext
 ) => Promise<unknown>
 
-export interface ProbeResult {
+export interface ProbeObservation {
   probeType: string
-  result: 'PASSED' | 'FAILED'
   output?: string
   error?: string
   executedAt: number
+}
+
+export interface ProbeResult extends ProbeObservation {
+  result: 'PASSED' | 'FAILED'
 }
 
 export const probeHandlers: Record<string, ProbeHandler> = {
@@ -23,10 +26,9 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     const files = await executeFsExists(pattern, context)
     return {
       probeType: 'fs_exists',
-      result: files.length > 0 ? 'PASSED' : 'FAILED',
       output: files.join('\n'),
       executedAt: Date.now()
-    } as ProbeResult
+    } as ProbeObservation
   },
 
   fs_not_exists: async (params, context) => {
@@ -34,10 +36,9 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     const files = await executeFsNotExists(pattern, context)
     return {
       probeType: 'fs_not_exists',
-      result: files.length === 0 ? 'PASSED' : 'FAILED',
       output: files.join('\n'),
       executedAt: Date.now()
-    } as ProbeResult
+    } as ProbeObservation
   },
 
   fs_match: async (params, context) => {
@@ -45,11 +46,10 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     const result = await executeFsMatch(matchParams, context)
     return {
       probeType: 'fs_match',
-      result: result.matched ? 'PASSED' : 'FAILED',
       output: result.content,
       error: result.error,
       executedAt: Date.now()
-    } as ProbeResult
+    } as ProbeObservation
   },
 
   shell_exec: async (params, context) => {
@@ -57,33 +57,65 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     const result: ShellExecResult = await executeShellExec(command, context)
     return {
       probeType: 'shell_exec',
-      result: result.success ? 'PASSED' : 'FAILED',
       output: result.stdout || result.stderr,
-      error: result.success ? undefined : `Exit code: ${result.exitCode}`,
-      executedAt: Date.now()
-    } as ProbeResult
+      error: result.error,
+      executedAt: Date.now(),
+      exitCode: result.exitCode
+    } as ProbeObservation & { exitCode: number | null }
   },
 
   exec_exit_zero: async (params, context) => {
     const command = params.command as string
     const result: ShellExecResult = await executeShellExec(command, context)
-    const passed = result.exitCode === 0
     return {
       probeType: 'exec_exit_zero',
-      result: passed ? 'PASSED' : 'FAILED',
       output: result.stdout || result.stderr,
-      error: passed ? undefined : `Exit code: ${result.exitCode}`,
-      executedAt: Date.now()
-    } as ProbeResult
+      error: result.error,
+      executedAt: Date.now(),
+      exitCode: result.exitCode
+    } as ProbeObservation & { exitCode: number | null }
   }
 }
 
+class ProbeRegistry {
+  private handlers: Map<string, ProbeHandler> = new Map()
+  private builtinHandlers: Record<string, ProbeHandler> = probeHandlers
+
+  constructor() {
+    for (const [type, handler] of Object.entries(probeHandlers)) {
+      this.handlers.set(type, handler)
+    }
+  }
+
+  register(type: string, handler: ProbeHandler): void {
+    this.handlers.set(type, handler)
+  }
+
+  get(type: string): ProbeHandler | null {
+    return this.handlers.get(type) || null
+  }
+
+  has(type: string): boolean {
+    return this.handlers.has(type)
+  }
+
+  getRegisteredTypes(): string[] {
+    return Array.from(this.handlers.keys())
+  }
+}
+
+export const probeRegistry = new ProbeRegistry()
+
 export function hasProbeHandler(type: string): boolean {
-  return type in probeHandlers
+  return probeRegistry.has(type)
 }
 
 export function getProbeHandler(type: string): ProbeHandler | null {
-  return probeHandlers[type] || null
+  return probeRegistry.get(type)
+}
+
+export function registerProbeHandler(type: string, handler: ProbeHandler): void {
+  probeRegistry.register(type, handler)
 }
 
 export { executeFsExists, executeFsNotExists, executeFsMatch, executeShellExec }

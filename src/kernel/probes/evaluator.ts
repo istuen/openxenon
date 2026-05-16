@@ -9,98 +9,131 @@ export interface ProbeDefinition {
   expected?: unknown
 }
 
-export interface ProbeResult {
+export interface ProbeObservation {
   probeType: string
-  result: 'PASSED' | 'FAILED'
   output?: string
   error?: string
   executedAt: number
 }
 
-export function evaluateProbe(
-  definition: ProbeDefinition,
-  actualResult: ProbeResult
-): ProbeVerdict {
-  const { type } = definition
+export interface ProbeResult extends ProbeObservation {
+  result: 'PASSED' | 'FAILED'
+}
 
-  switch (type) {
-    case 'fs_exists': {
-      const files = (actualResult.output || '').split('\n').filter(Boolean)
-      const passed = files.length > 0
-      return {
-        passed,
-        message: passed ? `Found ${files.length} matching path(s)` : 'No matching paths found'
-      }
+export type ProbeStrategy = (
+  observation: ProbeObservation,
+  params: Record<string, unknown>
+) => ProbeVerdict
+
+const probeStrategies: Record<string, ProbeStrategy> = {
+  fs_exists: (obs, params) => {
+    const files = (obs.output || '').split('\n').filter(Boolean)
+    const passed = files.length > 0
+    return {
+      passed,
+      message: passed ? `Found ${files.length} matching path(s)` : 'No matching paths found'
     }
+  },
 
-    case 'fs_not_exists': {
-      const files = (actualResult.output || '').split('\n').filter(Boolean)
-      const passed = files.length === 0
-      return {
-        passed,
-        message: passed ? 'Path does not exist (as expected)' : `Path exists: ${files.join(', ')}`
-      }
+  fs_not_exists: (obs, params) => {
+    const files = (obs.output || '').split('\n').filter(Boolean)
+    const passed = files.length === 0
+    return {
+      passed,
+      message: passed ? 'Path does not exist (as expected)' : `Path exists: ${files.join(', ')}`
     }
+  },
 
-    case 'fs_match': {
-      const passed = actualResult.result === 'PASSED'
-      return {
-        passed,
-        message: passed ? 'Pattern matched' : (actualResult.error || 'Pattern did not match')
-      }
+  fs_match: (obs, params) => {
+    const matched = obs.error === undefined
+    return {
+      passed: matched,
+      message: matched ? 'Pattern matched' : (obs.error || 'Pattern did not match')
     }
+  },
 
-    case 'shell_exec': {
-      const passed = actualResult.result === 'PASSED'
-      return {
-        passed,
-        message: passed ? `Command succeeded` : (actualResult.error || 'Command failed')
-      }
+  shell_exec: (obs, params) => {
+    const exitCode = (params.exitCode as number | null) ?? -1
+    const passed = exitCode === 0
+    return {
+      passed,
+      message: passed ? 'Command succeeded' : (obs.error || `Exit code: ${exitCode}`)
     }
+  },
 
-    case 'exec_exit_zero': {
-      const passed = actualResult.result === 'PASSED'
-      return {
-        passed,
-        message: passed ? `Exit code 0` : (actualResult.error || 'Non-zero exit')
-      }
+  exec_exit_zero: (obs, params) => {
+    const exitCode = (params.exitCode as number | null) ?? -1
+    const passed = exitCode === 0
+    return {
+      passed,
+      message: passed ? 'Exit code 0' : `Exit code: ${exitCode}`
     }
-
-    default:
-      return {
-        passed: false,
-        message: `Unknown probe type: ${type}`
-      }
   }
 }
 
+export function registerProbeStrategy(type: string, strategy: ProbeStrategy): void {
+  probeStrategies[type] = strategy
+}
+
+export function evaluateProbe(
+  definition: ProbeDefinition,
+  observation: ProbeObservation
+): ProbeVerdict {
+  const hasResult = 'result' in observation && observation.result !== undefined
+  if (hasResult) {
+    const obs = observation as ProbeResult
+    const passed = obs.result === 'PASSED'
+    return {
+      passed,
+      message: passed ? 'OK' : (obs.error || 'Failed')
+    }
+  }
+
+  const strategy = probeStrategies[definition.type]
+  if (!strategy) {
+    return {
+      passed: false,
+      message: `Unknown probe type: ${definition.type}`
+    }
+  }
+  return strategy(observation, definition.params)
+}
+
 export function reduceProbeResults(
-  results: ProbeResult[],
+  observations: ProbeObservation[],
   policy: 'AND' | 'OR'
 ): ProbeVerdict {
-  if (results.length === 0) {
+  if (observations.length === 0) {
     return { passed: false, message: 'No probes executed' }
   }
 
+  const verdicts = observations.map(obs => {
+    const strategy = probeStrategies[obs.probeType]
+    if (!strategy) {
+      return { passed: false, message: `Unknown probe type: ${obs.probeType}` }
+    }
+    return strategy(obs, {})
+  })
+
   if (policy === 'AND') {
-    const allPassed = results.every(r => r.result === 'PASSED')
+    const allPassed = verdicts.every(v => v.passed)
     if (allPassed) {
       return { passed: true, message: 'All probes passed' }
     }
-    const failed = results.filter(r => r.result === 'FAILED')
+    const failed = verdicts.filter(v => !v.passed)
     return {
       passed: false,
-      message: `${failed.length}/${results.length} probes failed`
+      message: `${failed.length}/${verdicts.length} probes failed`
     }
   }
 
   if (policy === 'OR') {
-    const somePassed = results.some(r => r.result === 'PASSED')
+    const somePassed = verdicts.some(v => v.passed)
     if (somePassed) {
-      const passed = results.filter(r => r.result === 'PASSED')
+      const passed = verdicts.filter(v => v.passed)
       return {
         passed: true,
-        message: `${passed.length}/${results.length} probes passed`
+        message: `${passed.length}/${verdicts.length} probes passed`
       }
     }
     return {
@@ -113,9 +146,9 @@ export function reduceProbeResults(
 }
 
 export function reduceStageVerdict(
-  proofResults: ProbeResult[],
+  observations: ProbeObservation[],
   policy: 'AND' | 'OR'
 ): 'PASSED' | 'FAILED' {
-  const verdict = reduceProbeResults(proofResults, policy)
+  const verdict = reduceProbeResults(observations, policy)
   return verdict.passed ? 'PASSED' : 'FAILED'
 }
