@@ -9,6 +9,22 @@
 | `-v, --verbose` | 启用详细输出 |
 | `-j, --json` | 以 JSON 格式输出 |
 
+## 命令作用域
+
+CLI 命令分为 **项目级** 和 **全局** 两种作用域：
+
+| 作用域 | 前缀 | 描述 |
+|--------|------|------|
+| 项目级 | `oxn <command>` | 操作当前项目 `.openxenon/` 下的资产 |
+| 全局 | `oxn global <command>` | 操作全局 Arsenal（`~/.openxenon/`），供所有项目共享 |
+
+**典型场景**：
+
+- `oxn arsenal list` - 查看当前项目的标准资产
+- `oxn global arsenal list` - 查看全局可复用的标准资产
+
+> 全局命令仅供工程师使用，AI 代理应使用项目级命令。
+
 ## oxn init
 
 初始化项目，在当前目录创建 `.openxenon` 围栏。
