@@ -148,10 +148,30 @@ oxn arsenal list
 
 ## 步骤 4：编写 Blueprint
 
-将 Blueprint 保存为 YAML 文件（如 \`my-task.yaml\`），包含：
+将 Blueprint 保存为 YAML 文件（如 my-task.yaml），包含：
 - 任务名称
 - 各个 Stage 的定义和依赖关系
 - 每个 Stage 对应的 Probe
+
+## 步骤 4.1：创建任务描述文档
+
+在提交 Blueprint 前，先创建任务描述文档 task.md：
+
+\`\`\`markdown
+# <任务名称>
+
+## 目标
+<工程师期望达成的最终状态>
+
+## 背景
+<为什么需要这个任务，有什么约束条件>
+
+## 执行计划
+<拆解的 Stage 列表和各自目标>
+
+## 验收标准
+<工程师如何判断任务成功完成>
+\`\`\`
 
 ## 步骤 5：提交 Blueprint
 
