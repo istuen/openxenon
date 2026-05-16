@@ -10,3 +10,7 @@ export const DAEMON_SOCK_PATH = join(GLOBAL_BOUNDARY_PATH, 'daemon.sock')
 export const DAEMON_PID_PATH = join(GLOBAL_BOUNDARY_PATH, 'daemon.pid')
 export const DAEMON_LOG_PATH = join(GLOBAL_BOUNDARY_PATH, 'daemon.log')
 export const HALL_PATH = join(GLOBAL_BOUNDARY_PATH, 'hall')
+
+export function getProjectHallPath(projectRoot: string): string {
+  return join(projectRoot, PROJECT_BOUNDARY_DIR, 'hall')
+}

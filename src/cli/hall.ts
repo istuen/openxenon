@@ -27,7 +27,7 @@ export default defineCommand({
     try {
       const projectRoot = getProjectBoundaryPath(process.cwd())
 
-      ensureHallDirectory()
+      ensureHallDirectory(projectRoot)
       const indexPath = renderHall(projectRoot)
       const hallUrl = `file://${indexPath}`
 

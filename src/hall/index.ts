@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { HALL_PATH } from '../infra/global'
 import { TASK_DIR_NAME } from '../kernel/lib/task-dir'
 import type { TaskState } from '../cli/task-filesystem'
 
@@ -27,18 +26,19 @@ export interface ForgeDraft {
   updatedAt: number
 }
 
-export function ensureHallDirectory(): void {
-  if (!existsSync(HALL_PATH)) {
-    mkdirSync(HALL_PATH, { recursive: true })
+export function ensureHallDirectory(projectRoot: string): void {
+  const hallPath = join(projectRoot, 'hall')
+  if (!existsSync(hallPath)) {
+    mkdirSync(hallPath, { recursive: true })
   }
-  const assetsPath = join(HALL_PATH, 'assets')
+  const assetsPath = join(hallPath, 'assets')
   if (!existsSync(assetsPath)) {
     mkdirSync(assetsPath, { recursive: true })
   }
 }
 
-export function getHallPath(): string {
-  return HALL_PATH
+export function getHallPath(projectRoot: string): string {
+  return join(projectRoot, 'hall')
 }
 
 export function scanProjectTasks(projectRoot: string): TaskState[] {
@@ -547,9 +547,9 @@ export function generateHallIndexHtml(projectRoot: string): string {
 }
 
 export function renderHall(projectRoot: string): string {
-  ensureHallDirectory()
+  ensureHallDirectory(projectRoot)
   const html = generateHallIndexHtml(projectRoot)
-  const indexPath = join(HALL_PATH, 'index.html')
+  const indexPath = join(getHallPath(projectRoot), 'index.html')
   writeFileSync(indexPath, html, 'utf-8')
   return indexPath
 }
