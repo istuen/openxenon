@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
-import { mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync, rmSync } from 'fs'
-import { join } from 'path'
+import { mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync } from 'fs'
+import { join, extname } from 'path'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { output, outputError, getFormatFromArgs } from './output'
 
@@ -21,6 +21,36 @@ function ensureExploresDir(): void {
   if (!existsSync(root)) {
     mkdirSync(root, { recursive: true })
   }
+}
+
+function scanDirectory(dirPath: string, docsPath: string): string[] {
+  const scanned: string[] = []
+  const entries = readdirSync(dirPath, { withFileTypes: true })
+
+  for (const entry of entries) {
+    const fullPath = join(dirPath, entry.name)
+
+    if (entry.isDirectory()) {
+      const subScanned = scanDirectory(fullPath, docsPath)
+      scanned.push(...subScanned)
+    } else if (entry.isFile()) {
+      const ext = extname(entry.name).toLowerCase()
+      if (ext === '.ts' || ext === '.md' || ext === '.yaml' || ext === '.json') {
+        const title = entry.name.replace(ext, '')
+        const destPath = join(docsPath, `${title}.md`)
+
+        try {
+          const content = readFileSync(fullPath, 'utf-8')
+          writeFileSync(destPath, content, 'utf-8')
+          scanned.push(fullPath)
+        } catch {
+          // skip unreadable files
+        }
+      }
+    }
+  }
+
+  return scanned
 }
 
 interface QAPair {
@@ -168,22 +198,33 @@ export default defineCommand({
 
         if (ctx.args.path) {
           const sourcePath = ctx.args.path as string
-          const title = (ctx.args.title as string) || sourcePath.split('/').pop() || 'document'
-          const destPath = join(docsPath, `${title}.md`)
 
-          if (existsSync(sourcePath)) {
-            const content = readFileSync(sourcePath, 'utf-8')
-            writeFileSync(destPath, content, 'utf-8')
-            output({
-              data: { path: destPath },
-              human: `已扫描: ${destPath}`
-            }, format)
-          } else {
+          if (!existsSync(sourcePath)) {
             return outputError({
               code: 'OXN_FILE_NOT_FOUND',
               message: `文件不存在: ${sourcePath}`
             }, format)
           }
+
+          const stat = statSync(sourcePath)
+          if (stat.isDirectory()) {
+            const scanned = scanDirectory(sourcePath, docsPath)
+            return output({
+              data: { count: scanned.length, files: scanned },
+              human: scanned.length > 0
+                ? `已扫描 ${scanned.length} 个文件到 ${docsPath}`
+                : `目录为空，未扫描任何文件`
+            }, format)
+          }
+
+          const title = (ctx.args.title as string) || sourcePath.split('/').pop() || 'document'
+          const destPath = join(docsPath, `${title}.md`)
+          const content = readFileSync(sourcePath, 'utf-8')
+          writeFileSync(destPath, content, 'utf-8')
+          output({
+            data: { path: destPath },
+            human: `已扫描: ${destPath}`
+          }, format)
         } else if (ctx.args.read) {
           const filePath = ctx.args.read as string
           if (existsSync(filePath)) {
