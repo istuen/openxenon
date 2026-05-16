@@ -22,7 +22,7 @@ export class ArsenalRegistry {
   buildIndex(projectBoundary: string): void {
     this.entries.clear()
 
-    const canonicalAssets = listStandards(projectBoundary, 'canonical', 'fallback')
+    const canonicalAssets = listStandards('fallback', projectBoundary, 'canonical')
     for (const asset of canonicalAssets) {
       this.addAsset(asset)
     }

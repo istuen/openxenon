@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { BOUNDARY_DIR, BLUEPRINT_FILE } from '../kernel/constants'
+import { BOUNDARY_DIR } from '../kernel/constants'
 import { blueprintToDagHtml } from './render/blueprint-renderer'
 
 function getProjectRoot(): string {

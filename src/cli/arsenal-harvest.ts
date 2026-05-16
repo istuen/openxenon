@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
-import { join, dirname } from 'path'
+import { join } from 'path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { getProjectBoundaryPath } from '../kernel'
 import { output, outputError, getFormatFromArgs } from './output'
@@ -76,7 +76,7 @@ export default defineCommand({
         }, format)
       }
 
-      const hasFailures = Object.values(state.stages).some((s: string) => s === 'FAILED')
+      const hasFailures = Object.values(state.stages as Record<string, string>).some((s) => s === 'FAILED')
       if (hasFailures) {
         return outputError({
           code: 'OXN_TASK_HAS_FAILURES',

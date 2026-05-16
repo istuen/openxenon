@@ -1,8 +1,6 @@
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync } from 'fs'
-import { join } from 'path'
 import { GLOBAL_BOUNDARY } from '../infra/paths'
-import { renderHall, getHallPath, ensureHallDirectory } from '../hall'
+import { renderHall, ensureHallDirectory } from '../hall'
 import { output, outputError, getFormatFromArgs } from './output'
 
 export default defineCommand({

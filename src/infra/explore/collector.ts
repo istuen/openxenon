@@ -5,7 +5,7 @@
 
 import { glob } from 'glob'
 import { readFile, mkdir, writeFile, readdir } from 'node:fs/promises'
-import { join, dirname } from 'path'
+import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import type {
   ExplorationContext,

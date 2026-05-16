@@ -83,7 +83,7 @@ export default defineCommand({
     }
 
     try {
-      const promoted = promoteStandard(asset.path, 'global')
+      const promoted = promoteStandard(asset.path)
 
       if (!promoted) {
         return outputError({

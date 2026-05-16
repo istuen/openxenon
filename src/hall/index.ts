@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { TASK_DIR_NAME } from '../kernel/lib/task-dir'
 import type { TaskState } from '../cli/task-filesystem'
 
 export interface HallStats {
@@ -218,7 +217,6 @@ export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
     const statePath = join(tasksDir, taskId, 'state.json')
     const frozenPath = join(tasksDir, taskId, 'blueprint.frozen.yaml')
     const tracePath = join(tasksDir, taskId, 'task-trace.yaml')
-    const manifestPath = join(tasksDir, taskId, 'step-manifest.json')
 
     if (existsSync(statePath)) {
       try {

@@ -1,6 +1,6 @@
 import { statSync } from 'fs'
 import { join } from 'path'
-import { matchGlob, matchPattern, parseGlobPattern } from './glob-utils'
+import { matchGlob, parseGlobPattern } from './glob-utils'
 
 export interface ProbeContext {
   projectRoot: string

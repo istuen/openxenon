@@ -3,9 +3,8 @@ import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
 import * as yaml from 'yaml'
 import { validateProbeDefinition, validateStageDefinition } from '../kernel/schemas'
-import { type AssetType, FORGES_ROOT } from '../arsenals/paths'
+import { type AssetType, FORGES_ROOT, type Scope } from '../arsenals/paths'
 import { ensureForgesDirectories } from '../arsenals/init'
-import type { Scope } from '../arsenals/loader'
 import { getProjectBoundaryPath } from '../kernel'
 
 export interface DraftAssetResult {
@@ -39,7 +38,7 @@ function getForgePath(type: AssetType, name: string, scope: Scope): string {
 }
 
 function saveDraftAsset(type: AssetType, name: string | undefined, content: string, scope: Scope = 'project'): DraftAssetResult {
-  ensureForgesDirectories()
+  ensureForgesDirectories(scope)
 
   const assetName = name || 'draft_' + randomUUID().slice(0, 8)
   const filePath = getForgePath(type, assetName, scope)

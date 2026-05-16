@@ -1,9 +1,9 @@
 import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync } from 'fs'
-import { join, extname, dirname, basename } from 'path'
+import { join, dirname } from 'path'
 import { z } from 'zod'
 import { type AssetState, type AssetType } from '../arsenals/paths'
 import { BUILTIN_PROBES } from '../arsenals/builtin'
-import { GLOBAL_ARSENALS_ROOT, resolveArsenalRoot, resolveBoundary, type Scope as InfraScope } from '../infra/paths'
+import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT, resolveBoundary, type Scope as InfraScope } from '../infra/paths'
 
 export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
 
@@ -48,33 +48,6 @@ export interface StandardAsset {
   state: AssetState
   path: string
   content: string
-}
-
-function scanDirectory(dirPath: string, type: AssetType, state: AssetState): StandardAsset[] {
-  if (!existsSync(dirPath)) {
-    return []
-  }
-
-  const files = readdirSync(dirPath)
-  const assets: StandardAsset[] = []
-
-  for (const file of files) {
-    const filePath = join(dirPath, file)
-    const ext = extname(file)
-
-    if (ext === '.yaml' || ext === '.yml' || ext === '.json') {
-      const content = readFileSync(filePath, 'utf-8')
-      assets.push({
-        name: file.replace(ext, ''),
-        type,
-        state,
-        path: filePath,
-        content
-      })
-    }
-  }
-
-  return assets
 }
 
 function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolean = false): StandardAsset[] {
@@ -144,13 +117,6 @@ function getTypeFromPath(assetPath: string): AssetType | null {
     return 'blueprints'
   }
   return null
-}
-
-function directoryExists(dirPath: string): boolean {
-  const parent = dirname(dirPath)
-  const name = basename(dirPath)
-  if (!existsSync(parent)) return false
-  return readdirSync(parent).includes(name)
 }
 
 function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined, type: AssetType): StandardAsset[] {

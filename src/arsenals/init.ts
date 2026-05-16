@@ -34,6 +34,6 @@ export function ensureForgesDirectories(scope: Scope, cwd?: string): void {
   }
 }
 
-export function isArsenalsDirectoryReady(scope: Scope = 'project', cwd?: string): boolean {
+export function isArsenalsDirectoryReady(_scope: Scope = 'project', _cwd?: string): boolean {
   return [GLOBAL_ARSENALS_PROBES, GLOBAL_ARSENALS_STAGES, GLOBAL_ARSENALS_BLUEPRINTS].every(dir => existsSync(dir))
 }

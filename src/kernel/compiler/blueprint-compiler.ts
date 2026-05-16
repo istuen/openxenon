@@ -76,7 +76,7 @@ function resolveRef(ref: string, type: 'stage' | 'probe', projectBoundary: strin
   }
 
   if (namespace === 'scope' && scopeName) {
-    const assetData = loadStandardByName(projectBoundary, probeName, type === 'stage' ? 'stages' : 'probes')
+    const assetData = loadStandardByName('global', projectBoundary, probeName, type === 'stage' ? 'stages' : 'probes')
     if (assetData) {
       try {
         const content = JSON.parse(assetData.content)
@@ -95,7 +95,7 @@ function resolveRef(ref: string, type: 'stage' | 'probe', projectBoundary: strin
   }
 
   if (namespace === 'project') {
-    const assetData = loadStandardByName(projectBoundary, probeName, type === 'stage' ? 'stages' : 'probes')
+    const assetData = loadStandardByName('project', projectBoundary, probeName, type === 'stage' ? 'stages' : 'probes')
     if (assetData) {
       try {
         const content = JSON.parse(assetData.content)

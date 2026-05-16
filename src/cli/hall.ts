@@ -1,9 +1,7 @@
 import { defineCommand } from 'citty'
-import { ensureHallDirectory, renderHall, getHallPath, getHallStats, scanForgeDrafts, scanProjectTasks } from '../hall'
+import { ensureHallDirectory, renderHall } from '../hall'
 import { getProjectBoundaryPath } from '../kernel'
 import { output, outputError, getFormatFromArgs } from './output'
-import { existsSync } from 'fs'
-import { join } from 'path'
 
 export default defineCommand({
   meta: {

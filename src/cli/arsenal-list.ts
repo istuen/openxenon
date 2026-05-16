@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { arsenalListStandards as listStandards, type StandardAsset } from '../arsenals/loader'
+import { arsenalListStandards, type StandardAsset } from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetState } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
@@ -48,7 +48,7 @@ export default defineCommand({
     const scopeArg = ctx.args.scope as string | undefined
     const scope = scopeArg || 'fallback'
     const state: AssetState | undefined = ctx.args.draft ? 'draft' : ctx.args.canonical ? 'canonical' : undefined
-    const assets = listStandards(state, scope)
+    const assets = arsenalListStandards(state, scope as 'project' | 'global' | 'fallback' | 'builtin')
 
     const typeFilter = ctx.args.type as string | undefined
     const filtered = typeFilter

@@ -94,7 +94,7 @@ const main = defineCommand({
       default: false
     }
   },
-  async run({ args }) {
+  async run() {
     const format = detectCliFormat()
     cliContext.setFormatMode(format)
     if (format === 'human') {

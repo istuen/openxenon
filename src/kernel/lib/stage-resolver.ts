@@ -59,7 +59,7 @@ export function resolveStageRef(
   }
 
   if (namespace === 'scope' && scopeName) {
-    const stageData = loadStandardByName(projectBoundary, probeName, 'stages')
+    const stageData = loadStandardByName('global', projectBoundary, probeName, 'stages')
     if (stageData) {
       try {
         const stage = JSON.parse(stageData.content) as StageDefinition
@@ -80,7 +80,7 @@ export function resolveStageRef(
   }
 
   if (namespace === 'project') {
-    const stageData = loadStandardByName(projectBoundary, probeName, 'stages')
+    const stageData = loadStandardByName('project', projectBoundary, probeName, 'stages')
     if (stageData) {
       try {
         const stage = JSON.parse(stageData.content) as StageDefinition
