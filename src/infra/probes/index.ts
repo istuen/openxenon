@@ -74,6 +74,18 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
       exitCode: result.exitCode
     } as ProbeObservation & { exitCode: number | null }
+  },
+
+  exec_output_match: async (params, context) => {
+    const command = params.command as string
+    const result: ShellExecResult = await executeShellExec(command, context)
+    return {
+      probeType: 'exec_output_match',
+      output: result.stdout || result.stderr,
+      error: result.error,
+      executedAt: Date.now(),
+      exitCode: result.exitCode
+    } as ProbeObservation & { exitCode: number | null }
   }
 }
 

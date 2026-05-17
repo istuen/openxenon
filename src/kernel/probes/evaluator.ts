@@ -68,6 +68,20 @@ const probeStrategies: Record<string, ProbeStrategy> = {
       passed,
       message: passed ? 'Exit code 0' : `Exit code: ${exitCode}`
     }
+  },
+
+  exec_output_match: (obs, params) => {
+    const output = obs.output || ''
+    const minLength = (params.minLength as number) ?? 1
+    const pattern = params.pattern as string | undefined
+    let passed = output.trim().length >= minLength
+    if (pattern && typeof pattern === 'string') {
+      passed = passed && output.includes(pattern)
+    }
+    return {
+      passed,
+      message: passed ? 'Output matched' : `Output too short or no match: "${output.substring(0, 50)}"`
+    }
   }
 }
 

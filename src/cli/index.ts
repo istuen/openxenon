@@ -61,6 +61,7 @@ const main = defineCommand({
     arsenal: () => import('./arsenal').then(m => m.default),
     export: () => import('./export').then(m => m.default),
     gc: () => import('./gc').then(m => m.default),
+    cache: () => import('./cache').then(m => m.default),
     forge: () => import('./forge').then(m => m.default),
     hall: () => import('./hall').then(m => m.default),
     explore: () => import('./explore-cmd').then(m => m.default),

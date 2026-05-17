@@ -4,6 +4,7 @@ import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, loadStandardByNam
 import { BUILTIN_PROBES, BUILTIN_STAGES } from '../../arsenals/builtin'
 import { computeContentHash } from '../schemas/frozen-schema'
 import { validateDagTopology, type DagNode } from '../schemas/dag-validator'
+import { compileCache } from './compile-cache'
 
 export interface CompileContext {
   taskId: string
@@ -16,7 +17,6 @@ export interface StageResolution {
   found: boolean
   content?: Record<string, unknown>
   namespace: 'kernel' | 'global' | 'project'
-  shadow: boolean
   originalPath?: string
   rawRef: string
 }
@@ -45,7 +45,7 @@ function resolveRef(ref: string, type: 'stage' | 'probe', projectBoundary: strin
 
   const parsed = parseProbeNamespace(ref)
   if (!parsed) {
-    return { found: false, namespace: 'project', shadow: false, rawRef: ref }
+    return { found: false, namespace: 'project', rawRef: ref }
   }
 
   const { namespace, scopeName, probeName } = parsed
@@ -58,7 +58,6 @@ function resolveRef(ref: string, type: 'stage' | 'probe', projectBoundary: strin
           found: true,
           content: builtin as unknown as Record<string, unknown>,
           namespace: 'kernel',
-          shadow: false,
           rawRef: ref
         }
       }
@@ -69,7 +68,6 @@ function resolveRef(ref: string, type: 'stage' | 'probe', projectBoundary: strin
           found: true,
           content: builtin as unknown as Record<string, unknown>,
           namespace: 'kernel',
-          shadow: false,
           rawRef: ref
         }
       }
@@ -85,12 +83,11 @@ function resolveRef(ref: string, type: 'stage' | 'probe', projectBoundary: strin
           found: true,
           content,
           namespace: 'global',
-          shadow: false,
           originalPath: assetData.path,
           rawRef: ref
         }
       } catch {
-        return { found: false, namespace: 'global', shadow: false, rawRef: ref }
+        return { found: false, namespace: 'global', rawRef: ref }
       }
     }
   }
@@ -104,17 +101,16 @@ function resolveRef(ref: string, type: 'stage' | 'probe', projectBoundary: strin
           found: true,
           content,
           namespace: 'project',
-          shadow: false,
           originalPath: assetData.path,
           rawRef: ref
         }
       } catch {
-        return { found: false, namespace: 'project', shadow: false, rawRef: ref }
+        return { found: false, namespace: 'project', rawRef: ref }
       }
     }
   }
 
-  return { found: false, namespace: 'project', shadow: false, rawRef: ref }
+  return { found: false, namespace: 'project', rawRef: ref }
 }
 
 function validateParams(stageContent: Record<string, unknown>, providedParams: Record<string, unknown> = {}): void {
@@ -191,14 +187,13 @@ function renderTemplates(stage: Record<string, unknown>, ctx: CompileContext): R
   return result
 }
 
-function injectMeta(stage: Record<string, unknown>, ref: string, namespace: 'kernel' | 'global' | 'project', shadow: boolean, originalPath?: string): Record<string, unknown> {
+function injectMeta(stage: Record<string, unknown>, ref: string, namespace: 'kernel' | 'global' | 'project', originalPath?: string): Record<string, unknown> {
   const frozenAt = new Date().toISOString()
   const content = JSON.stringify(stage)
 
   const meta = {
     ref,
     resolved_from: namespace,
-    shadow,
     original_path: originalPath,
     frozen_at: frozenAt,
     content_hash: computeContentHash(content)
@@ -223,6 +218,19 @@ function injectMeta(stage: Record<string, unknown>, ref: string, namespace: 'ker
 }
 
 export class BlueprintCompiler {
+  compileWithCache(raw: Blueprint, ctx: CompileContext, dependencyHashes: Record<string, string> = {}): FrozenBlueprint {
+    const blueprintContent = JSON.stringify(raw)
+    const cached = compileCache.get(blueprintContent)
+
+    if (cached && compileCache.isValid(cached, dependencyHashes)) {
+      return cached.frozenBlueprint
+    }
+
+    const frozen = this.compile(raw, ctx)
+    compileCache.set(blueprintContent, frozen, dependencyHashes)
+    return frozen
+  }
+
   compile(raw: Blueprint, ctx: CompileContext): FrozenBlueprint {
     const dagNodes: DagNode[] = (raw.stages || []).map(stage => ({
       id: stage.id || (stage as any).name,
@@ -286,7 +294,6 @@ export class BlueprintCompiler {
         rendered,
         stage.ref || 'inline',
         stage.ref ? 'project' : 'project',
-        false,
         stage.ref ? `ref:${stage.ref}` : undefined
       )
 
@@ -305,4 +312,9 @@ export class BlueprintCompiler {
 export function compileBlueprint(raw: Blueprint, ctx: CompileContext): FrozenBlueprint {
   const compiler = new BlueprintCompiler()
   return compiler.compile(raw, ctx)
+}
+
+export function compileBlueprintWithCache(raw: Blueprint, ctx: CompileContext, dependencyHashes: Record<string, string> = {}): FrozenBlueprint {
+  const compiler = new BlueprintCompiler()
+  return compiler.compileWithCache(raw, ctx, dependencyHashes)
 }
