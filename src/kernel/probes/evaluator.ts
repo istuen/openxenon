@@ -1,6 +1,10 @@
 export type ProbeVerdict = {
   passed: boolean
   message: string
+  actual?: unknown
+  params?: Record<string, unknown>
+  duration?: number
+  failureMessage?: string
 }
 
 export interface ProbeDefinition {
@@ -27,50 +31,76 @@ export type ProbeStrategy = (
 
 const probeStrategies: Record<string, ProbeStrategy> = {
   fs_exists: (obs, params) => {
+    const start = Date.now()
     const files = (obs.output || '').split('\n').filter(Boolean)
     const passed = files.length > 0
     return {
       passed,
-      message: passed ? `Found ${files.length} matching path(s)` : 'No matching paths found'
+      message: passed ? `Found ${files.length} matching path(s)` : 'No matching paths found',
+      actual: files,
+      params,
+      duration: Date.now() - start,
+      failureMessage: passed ? undefined : `No files match pattern "${params.pattern}"`
     }
   },
 
   fs_not_exists: (obs, params) => {
+    const start = Date.now()
     const files = (obs.output || '').split('\n').filter(Boolean)
     const passed = files.length === 0
     return {
       passed,
-      message: passed ? 'Path does not exist (as expected)' : `Path exists: ${files.join(', ')}`
+      message: passed ? 'Path does not exist (as expected)' : `Path exists: ${files.join(', ')}`,
+      actual: files,
+      params,
+      duration: Date.now() - start,
+      failureMessage: passed ? undefined : `Files exist when they should not: ${files.join(', ')}`
     }
   },
 
   fs_match: (obs, params) => {
+    const start = Date.now()
     const matched = obs.error === undefined
     return {
       passed: matched,
-      message: matched ? 'Pattern matched' : (obs.error || 'Pattern did not match')
+      message: matched ? 'Pattern matched' : (obs.error || 'Pattern did not match'),
+      actual: matched ? true : false,
+      params,
+      duration: Date.now() - start,
+      failureMessage: matched ? undefined : obs.error
     }
   },
 
   shell_exec: (obs, params) => {
+    const start = Date.now()
     const exitCode = (params.exitCode as number | null) ?? -1
     const passed = exitCode === 0
     return {
       passed,
-      message: passed ? 'Command succeeded' : (obs.error || `Exit code: ${exitCode}`)
+      message: passed ? 'Command succeeded' : (obs.error || `Exit code: ${exitCode}`),
+      actual: { exitCode },
+      params,
+      duration: Date.now() - start,
+      failureMessage: passed ? undefined : `Command failed with exit code ${exitCode}`
     }
   },
 
   exec_exit_zero: (obs, params) => {
+    const start = Date.now()
     const exitCode = (params.exitCode as number | null) ?? -1
     const passed = exitCode === 0
     return {
       passed,
-      message: passed ? 'Exit code 0' : `Exit code: ${exitCode}`
+      message: passed ? 'Exit code 0' : `Exit code: ${exitCode}`,
+      actual: { exitCode },
+      params,
+      duration: Date.now() - start,
+      failureMessage: passed ? undefined : `Exit code was ${exitCode}, expected 0`
     }
   },
 
   exec_output_match: (obs, params) => {
+    const start = Date.now()
     const output = obs.output || ''
     const minLength = (params.minLength as number) ?? 1
     const pattern = params.pattern as string | undefined
@@ -80,7 +110,11 @@ const probeStrategies: Record<string, ProbeStrategy> = {
     }
     return {
       passed,
-      message: passed ? 'Output matched' : `Output too short or no match: "${output.substring(0, 50)}"`
+      message: passed ? 'Output matched' : `Output too short or no match: "${output.substring(0, 50)}"`,
+      actual: { outputLength: output.trim().length, hasPattern: pattern ? output.includes(pattern) : undefined },
+      params,
+      duration: Date.now() - start,
+      failureMessage: passed ? undefined : `Output does not match expected pattern`
     }
   }
 }

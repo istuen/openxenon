@@ -20,7 +20,11 @@ export interface StageTrace {
 
 export interface ProbeResult {
   probeType: string
+  params: Record<string, unknown>
   result: 'PASSED' | 'FAILED'
+  actual?: unknown
+  failureMessage?: string
+  duration: number
   output?: string
   error?: string
   executedAt: number
@@ -63,7 +67,11 @@ export interface ProbeResultEvent {
   taskId: string
   stageId: string
   probeType: string
+  params?: Record<string, unknown>
   result: 'PASSED' | 'FAILED'
+  actual?: unknown
+  failureMessage?: string
+  duration?: number
   output?: string
   error?: string
   timestamp: number

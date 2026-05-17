@@ -8,6 +8,7 @@ import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
 import { topologicalSort, validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
 import { buildTraceEvent, type TraceEvent } from '../kernel/lib/task-trace'
 import { compileBlueprint } from '../kernel/compiler/blueprint-compiler'
+import { preloadCompileDependencies } from '../infra/loader'
 import type { Blueprint } from '../kernel/schemas/blueprint.schema'
 import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
 import { stringify as stringifyYaml } from 'yaml'
@@ -170,7 +171,8 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   const frozenBlueprint = compileBlueprint(parsed, {
     taskId,
     taskName: parsed.name || parsed.id || taskId,
-    params: {}
+    params: {},
+    dependencies: preloadCompileDependencies(cwd)
   })
   const frozenDestPath = getFrozenBlueprintPath(cwd, taskId)
   writeFileSync(frozenDestPath, stringifyYaml(frozenBlueprint), 'utf-8')
@@ -415,7 +417,11 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
         probeResults.push({
           ...probeResult,
           result: verdict.passed ? 'PASSED' : 'FAILED',
-          error: verdict.passed ? undefined : verdict.message
+          error: verdict.passed ? undefined : verdict.message,
+          params: probe.params || {},
+          actual: verdict.actual,
+          failureMessage: verdict.failureMessage,
+          duration: verdict.duration
         })
 
         const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
@@ -423,7 +429,11 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
           probeType,
           result: verdict.passed ? 'PASSED' : 'FAILED',
           output: probeResult.output,
-          error: verdict.message
+          error: verdict.message,
+          params: probe.params || {},
+          actual: verdict.actual,
+          failureMessage: verdict.failureMessage,
+          duration: verdict.duration
         })
         appendTraceEvent(cwd, taskId, traceEvent)
       } catch (err) {
@@ -433,7 +443,10 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
           result: 'FAILED',
           output: undefined,
           error: errorMsg,
-          executedAt: Date.now()
+          executedAt: Date.now(),
+          params: probe.params || {},
+          duration: 0,
+          failureMessage: errorMsg
         })
 
         const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
@@ -441,7 +454,10 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
           probeType,
           result: 'FAILED',
           output: undefined,
-          error: errorMsg
+          error: errorMsg,
+          params: probe.params || {},
+          duration: 0,
+          failureMessage: errorMsg
         })
         appendTraceEvent(cwd, taskId, traceEvent)
       }

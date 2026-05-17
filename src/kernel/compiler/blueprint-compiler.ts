@@ -1,7 +1,5 @@
 import type { Blueprint } from '../schemas/blueprint.schema'
 import type { FrozenBlueprint } from '../schemas/frozen-schema'
-import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, loadStandardByName } from '../../infra/loader'
-import { BUILTIN_PROBES, BUILTIN_STAGES } from '../../arsenals/builtin'
 import { computeContentHash } from '../schemas/frozen-schema'
 import { validateDagTopology, type DagNode } from '../schemas/dag-validator'
 import { compileCache } from './compile-cache'
@@ -10,15 +8,28 @@ export interface CompileContext {
   taskId: string
   taskName: string
   params?: Record<string, unknown>
-  projectBoundary: string
+  dependencies?: CompileDependencies
 }
 
-export interface StageResolution {
-  found: boolean
-  content?: Record<string, unknown>
-  namespace: 'kernel' | 'global' | 'project'
-  originalPath?: string
-  rawRef: string
+export interface ResolvedProbe {
+  type: string
+  params: Record<string, unknown>
+  probes_content?: Record<string, unknown>
+}
+
+export interface ResolvedStage {
+  id: string
+  name: string
+  deps: string[]
+  params: Record<string, unknown>
+  probes: ResolvedProbe[]
+  target?: Record<string, unknown>
+  action?: Record<string, unknown>
+}
+
+export interface CompileDependencies {
+  stages: Map<string, Record<string, unknown>>
+  probes: Map<string, Record<string, unknown>>
 }
 
 function evaluateCondition(condition: string, params: Record<string, unknown>): boolean {
@@ -33,84 +44,6 @@ function evaluateCondition(condition: string, params: Record<string, unknown>): 
   const value = String(params[key] ?? '')
   const expected = literal.replace(/^['"]|['"]$/g, '')
   return operator === '==' ? value === expected : value !== expected
-}
-
-function resolveRef(ref: string, type: 'stage' | 'probe', projectBoundary: string): StageResolution {
-  if (isBareProbeRef(ref)) {
-    throw new Error(`Ref "${ref}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
-  }
-  if (!isValidProbeRef(ref)) {
-    throw new Error(`Ref "${ref}" 格式无效`)
-  }
-
-  const parsed = parseProbeNamespace(ref)
-  if (!parsed) {
-    return { found: false, namespace: 'project', rawRef: ref }
-  }
-
-  const { namespace, scopeName, probeName } = parsed
-
-  if (namespace === 'oxn') {
-    if (type === 'probe') {
-      const builtin = BUILTIN_PROBES[probeName as keyof typeof BUILTIN_PROBES]
-      if (builtin) {
-        return {
-          found: true,
-          content: builtin as unknown as Record<string, unknown>,
-          namespace: 'kernel',
-          rawRef: ref
-        }
-      }
-    } else {
-      const builtin = BUILTIN_STAGES[probeName as keyof typeof BUILTIN_STAGES]
-      if (builtin) {
-        return {
-          found: true,
-          content: builtin as unknown as Record<string, unknown>,
-          namespace: 'kernel',
-          rawRef: ref
-        }
-      }
-    }
-  }
-
-  if (namespace === 'scope' && scopeName) {
-    const assetData = loadStandardByName('global', projectBoundary, probeName, type === 'stage' ? 'stages' : 'probes')
-    if (assetData) {
-      try {
-        const content = JSON.parse(assetData.content)
-        return {
-          found: true,
-          content,
-          namespace: 'global',
-          originalPath: assetData.path,
-          rawRef: ref
-        }
-      } catch {
-        return { found: false, namespace: 'global', rawRef: ref }
-      }
-    }
-  }
-
-  if (namespace === 'project') {
-    const assetData = loadStandardByName('project', projectBoundary, probeName, type === 'stage' ? 'stages' : 'probes')
-    if (assetData) {
-      try {
-        const content = JSON.parse(assetData.content)
-        return {
-          found: true,
-          content,
-          namespace: 'project',
-          originalPath: assetData.path,
-          rawRef: ref
-        }
-      } catch {
-        return { found: false, namespace: 'project', rawRef: ref }
-      }
-    }
-  }
-
-  return { found: false, namespace: 'project', rawRef: ref }
 }
 
 function validateParams(stageContent: Record<string, unknown>, providedParams: Record<string, unknown> = {}): void {
@@ -242,31 +175,31 @@ export class BlueprintCompiler {
       throw new Error(`DAG 验证失败: ${dagResult.errors.join('; ')}`)
     }
 
-    const { projectBoundary } = ctx
+    const deps = ctx.dependencies
     const stages: Array<Record<string, unknown>> = []
 
     for (const stage of raw.stages || []) {
       let resolvedStage: Record<string, unknown>
 
       if (stage.ref) {
-        const resolution = resolveRef(stage.ref, 'stage', projectBoundary)
-        if (!resolution.found || !resolution.content) {
+        const stageContent = deps?.stages.get(stage.ref)
+        if (!stageContent) {
           throw new Error(`Stage ref "${stage.ref}" 解析失败，未找到对应资产`)
         }
 
-        validateParams(resolution.content, stage.params || {})
+        validateParams(stageContent, stage.params || {})
 
-        const baseProbes = (resolution.content.probes as Array<Record<string, unknown>>) || []
+        const baseProbes = (stageContent.probes as Array<Record<string, unknown>>) || []
         const mergedProbes = mergeProbes(baseProbes, stage as any)
 
         resolvedStage = {
-          ...resolution.content,
-          id: stage.id || (resolution.content.id as string),
-          name: stage.name || (resolution.content.name as string),
-          deps: stage.deps || (resolution.content.deps as string[] || []),
+          ...stageContent,
+          id: stage.id || (stageContent.id as string),
+          name: stage.name || (stageContent.name as string),
+          deps: stage.deps || (stageContent.deps as string[] || []),
           params: stage.params || {},
-          target: (stage as any).target || (resolution.content as any).target,
-          action: (stage as any).action || (resolution.content as any).action,
+          target: (stage as any).target || (stageContent as any).target,
+          action: (stage as any).action || (stageContent as any).action,
           probes: mergedProbes
         }
       } else {

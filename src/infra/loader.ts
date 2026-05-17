@@ -338,3 +338,53 @@ export function listStandards(scope: Scope, projectBoundary: string | undefined,
   const canonical = loadArsenalsByState(scope, projectBoundary, 'canonical')
   return [...draft, ...canonical]
 }
+
+export interface CompileDependencies {
+  stages: Map<string, Record<string, unknown>>
+  probes: Map<string, Record<string, unknown>>
+}
+
+export function preloadCompileDependencies(projectBoundary: string): CompileDependencies {
+  const stages = new Map<string, Record<string, unknown>>()
+  const probes = new Map<string, Record<string, unknown>>()
+
+  for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
+    probes.set(`oxn/${name}`, def as Record<string, unknown>)
+  }
+
+  const projectProbes = loadArsenalsByTypeAndState('fallback', projectBoundary, 'probes', 'canonical')
+  for (const asset of projectProbes) {
+    try {
+      const content = JSON.parse(asset.content)
+      const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
+      probes.set(ref, content)
+      probes.set(`./${asset.name}`, content)
+    } catch {
+      // skip invalid JSON
+    }
+  }
+
+  const projectStages = loadArsenalsByTypeAndState('fallback', projectBoundary, 'stages', 'canonical')
+  for (const asset of projectStages) {
+    try {
+      const content = JSON.parse(asset.content)
+      const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
+      stages.set(ref, content)
+      stages.set(`./${asset.name}`, content)
+    } catch {
+      // skip invalid JSON
+    }
+  }
+
+  return { stages, probes }
+}
+
+export function listStandards(scope: Scope, projectBoundary: string | undefined, state?: AssetState): StandardAsset[] {
+  if (state) {
+    return loadArsenalsByState(scope, projectBoundary, state)
+  }
+
+  const draft = loadArsenalsByState(scope, projectBoundary, 'draft')
+  const canonical = loadArsenalsByState(scope, projectBoundary, 'canonical')
+  return [...draft, ...canonical]
+}

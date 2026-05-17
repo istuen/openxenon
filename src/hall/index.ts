@@ -10,6 +10,9 @@ export interface HallStats {
   pendingTasks: number
   draftAssets: number
   canonicalAssets: number
+  arsenalProbes: number
+  arsenalStages: number
+  arsenalBlueprints: number
   recentTasks: Array<{
     taskId: string
     taskName: string
@@ -21,6 +24,14 @@ export interface HallStats {
 export interface ForgeDraft {
   name: string
   type: string
+  path: string
+  updatedAt: number
+}
+
+export interface ArsenalAsset {
+  name: string
+  type: 'probes' | 'stages' | 'blueprints'
+  state: 'canonical' | 'draft'
   path: string
   updatedAt: number
 }
@@ -103,8 +114,47 @@ export function scanForgeDrafts(projectRoot: string): ForgeDraft[] {
   return drafts
 }
 
+export function scanArsenalAssets(projectRoot: string): ArsenalAsset[] {
+  const arsenalsDir = join(projectRoot, 'arsenals')
+  if (!existsSync(arsenalsDir)) {
+    return []
+  }
+
+  const assets: ArsenalAsset[] = []
+  const assetTypes: Array<'probes' | 'stages' | 'blueprints'> = ['probes', 'stages', 'blueprints']
+
+  for (const type of assetTypes) {
+    const typePath = join(arsenalsDir, type)
+    if (!existsSync(typePath)) continue
+
+    const entries = readdirSync(typePath, { withFileTypes: true })
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      const canonicalPath = join(typePath, entry.name, 'canonical.yaml')
+      if (existsSync(canonicalPath)) {
+        try {
+          const stat = require('fs').statSync(canonicalPath)
+          assets.push({
+            name: entry.name,
+            type,
+            state: 'canonical',
+            path: canonicalPath,
+            updatedAt: stat.mtimeMs
+          })
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+
+  return assets
+}
+
 export function getHallStats(projectRoot: string): HallStats {
   const tasks = scanProjectTasks(projectRoot)
+  const arsenalAssets = scanArsenalAssets(projectRoot)
+  const forgeDrafts = scanForgeDrafts(projectRoot)
 
   const completedTasks = tasks.filter(t => t.status === 'COMPLETED' && Object.values(t.stages).every(s => s === 'PASSED')).length
   const failedTasks = tasks.filter(t => t.status === 'COMPLETED' && Object.values(t.stages).some(s => s === 'FAILED')).length
@@ -123,8 +173,11 @@ export function getHallStats(projectRoot: string): HallStats {
     failedTasks,
     runningTasks,
     pendingTasks: tasks.filter(t => t.status === 'PENDING').length,
-    draftAssets: scanForgeDrafts(projectRoot).length,
-    canonicalAssets: 0,
+    draftAssets: forgeDrafts.length,
+    canonicalAssets: arsenalAssets.length,
+    arsenalProbes: arsenalAssets.filter(a => a.type === 'probes').length,
+    arsenalStages: arsenalAssets.filter(a => a.type === 'stages').length,
+    arsenalBlueprints: arsenalAssets.filter(a => a.type === 'blueprints').length,
     recentTasks
   }
 }
@@ -246,6 +299,7 @@ export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
 export function generateHallIndexHtml(projectRoot: string): string {
   const stats = getHallStats(projectRoot)
   const drafts = scanForgeDrafts(projectRoot)
+  const arsenalAssets = scanArsenalAssets(projectRoot)
   const tasks = scanProjectTasksDetailed(projectRoot)
 
   const tasksJson = JSON.stringify(tasks.map(t => ({
@@ -255,6 +309,13 @@ export function generateHallIndexHtml(projectRoot: string): string {
     currentStage: t.currentStage,
     stages: t.stages,
     stageDetails: t.stageDetails || []
+  })))
+
+  const arsenalJson = JSON.stringify(arsenalAssets.map(a => ({
+    name: a.name,
+    type: a.type,
+    state: a.state,
+    path: a.path
   })))
 
   return `<!DOCTYPE html>
@@ -349,6 +410,17 @@ export function generateHallIndexHtml(projectRoot: string): string {
         <h3>失败</h3>
         <div class="value failed">${stats.failedTasks}</div>
       </div>
+      <div class="stat-card">
+        <h3>🔧 Arsenal 资产</h3>
+        <div class="value">${stats.canonicalAssets}</div>
+        <div style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">
+          Probes: ${stats.arsenalProbes} | Stages: ${stats.arsenalStages} | Blueprints: ${stats.arsenalBlueprints}
+        </div>
+      </div>
+      <div class="stat-card">
+        <h3>📝 Forge Draft</h3>
+        <div class="value">${stats.draftAssets}</div>
+      </div>
     </div>
 
     <div class="section">
@@ -371,6 +443,33 @@ export function generateHallIndexHtml(projectRoot: string): string {
               </div>
               <div class="actions">
                 <button class="btn">审查</button>
+              </div>
+            </li>
+          `).join('')}
+        </ul>
+      `}
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">🔧 Arsenal 资产</span>
+        <span class="section-count">${arsenalAssets.length}</span>
+      </div>
+      ${arsenalAssets.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-state-icon">📦</div>
+          <p>暂无 Arsenal 资产</p>
+        </div>
+      ` : `
+        <ul class="item-list">
+          ${arsenalAssets.map(a => `
+            <li class="item">
+              <div class="item-info">
+                <span class="item-name">${a.name}</span>
+                <span class="item-type">${a.type}</span>
+              </div>
+              <div class="actions">
+                <button class="btn" onclick="showArsenalDetail('${a.name}')">查看</button>
               </div>
             </li>
           `).join('')}
@@ -425,6 +524,14 @@ export function generateHallIndexHtml(projectRoot: string): string {
 
   <script type="text/javascript">
     const tasksData = ${tasksJson};
+    const arsenalData = ${arsenalJson};
+
+    function showArsenalDetail(name) {
+      const asset = arsenalData.find(a => a.name === name);
+      if (!asset) return;
+      const msg = '资产: ' + asset.name + ' | 类型: ' + asset.type + ' | 路径: ' + asset.path;
+      alert(msg);
+    }
 
     function showTaskDetail(taskId) {
       const task = tasksData.find(t => t.taskId === taskId);

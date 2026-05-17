@@ -75,11 +75,19 @@ export function createProbeResult(
   probeType: string,
   result: 'PASSED' | 'FAILED',
   output?: string,
-  error?: string
-): { probeType: string; result: 'PASSED' | 'FAILED'; output?: string; error?: string; executedAt: number } {
+  error?: string,
+  params?: Record<string, unknown>,
+  actual?: unknown,
+  failureMessage?: string,
+  duration?: number
+): { probeType: string; params: Record<string, unknown>; result: 'PASSED' | 'FAILED'; actual?: unknown; failureMessage?: string; duration: number; output?: string; error?: string; executedAt: number } {
   return {
     probeType,
+    params: params || {},
     result,
+    actual,
+    failureMessage,
+    duration: duration || 0,
     output,
     error,
     executedAt: Date.now()
@@ -93,14 +101,22 @@ export function writeProbeResult(
   probeType: string,
   result: 'PASSED' | 'FAILED',
   output?: string,
-  error?: string
+  error?: string,
+  params?: Record<string, unknown>,
+  actual?: unknown,
+  failureMessage?: string,
+  duration?: number
 ): void {
   const event = buildTraceEvent('PROBE_RESULT', taskId, {
     stageId,
     probeType,
     result,
     output,
-    error
+    error,
+    params,
+    actual,
+    failureMessage,
+    duration
   })
   appendEventToFile(taskDir.tracePath, event)
 }

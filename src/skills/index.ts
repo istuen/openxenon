@@ -7,6 +7,7 @@ import { oxnStopSkill } from './oxn-stop'
 import { oxnTraceSkill } from './oxn-trace'
 import { oxnForgeSkill } from './oxn-forge'
 import { oxnExploreSkill } from './oxn-explore'
+import { oxnArsenalSkill } from './oxn-arsenal'
 
 export type { OpenXenonSkill }
 
@@ -19,6 +20,7 @@ export const allSkills: OpenXenonSkill[] = [
   oxnTraceSkill,
   oxnForgeSkill,
   oxnExploreSkill,
+  oxnArsenalSkill,
 ]
 
 export {
@@ -30,4 +32,5 @@ export {
   oxnTraceSkill,
   oxnForgeSkill,
   oxnExploreSkill,
+  oxnArsenalSkill,
 }

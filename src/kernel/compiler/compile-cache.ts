@@ -152,8 +152,7 @@ export class CompileCache {
     return { count, size: totalSize, oldest, newest }
   }
 
-  isValid(blueprintContent: string, dependencyHashes?: Record<string, string>): boolean {
-    const entry = this.get(blueprintContent)
+  isValid(entry: CacheEntry, dependencyHashes?: Record<string, string>): boolean {
     if (!entry) return false
 
     if (dependencyHashes) {
