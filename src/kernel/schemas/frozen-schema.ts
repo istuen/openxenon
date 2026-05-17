@@ -4,7 +4,6 @@ import { createHash } from 'crypto'
 export interface XenonMeta {
   ref: string
   resolved_from: 'kernel' | 'global' | 'project'
-  shadow: boolean
   original_path?: string
   frozen_at: string
   content_hash: string
@@ -14,7 +13,6 @@ export interface XenonMeta {
 export const XenonMetaSchema: z.ZodType<XenonMeta> = z.object({
   ref: z.string(),
   resolved_from: z.enum(['kernel', 'global', 'project']),
-  shadow: z.boolean(),
   original_path: z.string().optional(),
   frozen_at: z.string(),
   content_hash: z.string(),
@@ -28,14 +26,12 @@ export function computeContentHash(content: string): string {
 export function createXenonMeta(params: {
   ref: string
   resolvedFrom: 'kernel' | 'global' | 'project'
-  shadow: boolean
   originalPath?: string
   content: string
 }): XenonMeta {
   return {
     ref: params.ref,
     resolved_from: params.resolvedFrom,
-    shadow: params.shadow,
     original_path: params.originalPath,
     frozen_at: new Date().toISOString(),
     content_hash: computeContentHash(params.content)

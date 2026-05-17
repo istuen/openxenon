@@ -7,7 +7,6 @@ export interface StageResolution {
   stage?: StageDefinition
   namespace: 'oxn' | 'scope' | 'project'
   scopeName?: string
-  shadow: boolean
   originalPath?: string
   rawRef: string
 }
@@ -42,20 +41,62 @@ export function resolveStageRef(
 
   const parsed = parseProbeNamespace(ref)
   if (!parsed) {
-    return { found: false, namespace: 'project', shadow: false, rawRef: ref }
+    return { found: false, namespace: 'project', rawRef: ref }
   }
 
   const { namespace, scopeName, probeName } = parsed
 
-  if (namespace === 'oxn') {
+if (namespace === 'oxn') {
     const stage = resolveBuiltinStage(probeName)
     return {
       found: stage !== null,
       stage: stage ?? undefined,
       namespace: 'oxn',
-      shadow: false,
       rawRef: ref
     }
+  }
+
+  if (namespace === 'scope' && scopeName) {
+    const stageData = loadStandardByName('global', projectBoundary, probeName, 'stages')
+    if (stageData) {
+      try {
+        const stage = JSON.parse(stageData.content) as StageDefinition
+        return {
+          found: true,
+          stage,
+          namespace: 'scope',
+          scopeName,
+          originalPath: stageData.path,
+          rawRef: ref
+        }
+      } catch {
+        return { found: false, namespace: 'scope', scopeName, rawRef: ref }
+      }
+    }
+    return { found: false, namespace: 'scope', scopeName, rawRef: ref }
+  }
+
+  if (namespace === 'project') {
+    const stageData = loadStandardByName('project', projectBoundary, probeName, 'stages')
+    if (stageData) {
+      try {
+        const stage = JSON.parse(stageData.content) as StageDefinition
+        return {
+          found: true,
+          stage,
+          namespace: 'project',
+          originalPath: stageData.path,
+          rawRef: ref
+        }
+      } catch {
+        return { found: false, namespace: 'project', rawRef: ref }
+      }
+    }
+    return { found: false, namespace: 'project', rawRef: ref }
+  }
+
+  return { found: false, namespace: 'project', rawRef: ref }
+}
   }
 
   if (namespace === 'scope' && scopeName) {
@@ -93,11 +134,11 @@ export function resolveStageRef(
           rawRef: ref
         }
       } catch {
-        return { found: false, namespace: 'project', shadow: false, rawRef: ref }
+        return { found: false, namespace: 'project', rawRef: ref }
       }
     }
-    return { found: false, namespace: 'project', shadow: false, rawRef: ref }
+    return { found: false, namespace: 'project', rawRef: ref }
   }
 
-  return { found: false, namespace: 'project', shadow: false, rawRef: ref }
+  return { found: false, namespace: 'project', rawRef: ref }
 }

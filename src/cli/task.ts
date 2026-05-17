@@ -1,10 +1,13 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
-import { taskSubmit, taskNext, taskVerify, taskStatus, taskNew, type SubmitResult, type NextResult, type VerifyResult, type StatusResult, type NewResult } from './task-filesystem'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { taskSubmit, taskNext, taskVerify, taskStatus, taskNew, type SubmitResult, type NextResult, type VerifyResult, type StatusResult, type NewResult, type TaskState } from './task-filesystem'
 import { BOUNDARY_DIR, TASKS_DIR, TASK_TRACE_FILE } from '../kernel/constants'
 import { join } from 'path'
 import { taskTraceToHtml } from './render/task-trace-renderer'
 import { output, outputError, getFormatFromArgs } from './output'
+
+const EXPLORES_DIR = 'explores'
+const TASK_MD_FILE = 'task.md'
 
 function getProjectRoot(): string {
   return process.cwd()
@@ -12,6 +15,37 @@ function getProjectRoot(): string {
 
 function projectBoundaryExists(): boolean {
   return existsSync(join(getProjectRoot(), BOUNDARY_DIR))
+}
+
+function taskDirExists(cwd: string, name: string): boolean {
+  return existsSync(join(cwd, BOUNDARY_DIR, TASKS_DIR, name))
+}
+
+function getTaskDir(cwd: string, taskId: string): string {
+  return join(cwd, BOUNDARY_DIR, TASKS_DIR, taskId)
+}
+
+function ensureDirectory(dir: string): void {
+  if (!existsSync(dir)) {
+    mkdirSync(dir, { recursive: true })
+  }
+}
+
+function writeState(cwd: string, taskId: string, state: TaskState): void {
+  const path = join(getTaskDir(cwd, taskId), 'state.json')
+  ensureDirectory(getTaskDir(cwd, taskId))
+  writeFileSync(path, JSON.stringify(state, null, 2), 'utf-8')
+}
+
+function validateTaskName(name: string): { valid: boolean; error?: string } {
+  if (!name) return { valid: false, error: 'Name is required' }
+  if (name.length < 2) return { valid: false, error: 'Name too short (min 2 chars)' }
+  if (name.length > 64) return { valid: false, error: 'Name too long (max 64 chars)' }
+  if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+    return { valid: false, error: 'Name must be kebab-case (lowercase letter, lowercase letters/numbers, hyphens)' }
+  }
+  if (name.endsWith('-')) return { valid: false, error: 'Name cannot end with hyphen' }
+  return { valid: true }
 }
 
 export default defineCommand({
@@ -340,10 +374,238 @@ export default defineCommand({
           }, format)
         }
       }
+    }),
+    'explore-new': defineCommand({
+      meta: {
+        name: 'explore-new',
+        description: '从 Explore 报告创建任务'
+      },
+      args: {
+        'explore-and-task': {
+          type: 'string',
+          required: true,
+          description: 'Explore 名称和任务名，格式: <explore-name>/<task-name>'
+        },
+        '--json': {
+          type: 'boolean',
+          description: 'JSON 格式输出'
+        },
+        '--yaml': {
+          type: 'boolean',
+          description: 'YAML 格式输出'
+        }
+      },
+      run(ctx) {
+        const format = getFormatFromArgs(ctx.args)
+        const cwd = getProjectRoot()
+
+        if (!projectBoundaryExists()) {
+          return outputError({
+            code: 'OXN_NO_PROJECT',
+            message: '项目未初始化，请先执行 oxn init'
+          }, format)
+        }
+
+        const input = ctx.args['explore-and-task'] as string
+        const parts = input.split('/')
+
+        if (parts.length !== 2) {
+          return outputError({
+            code: 'OXN_INVALID_FORMAT',
+            message: '格式错误，使用: oxn task explore-new <explore-name>/<task-name>'
+          }, format)
+        }
+
+        const [exploreName, taskName] = parts
+
+        const exploreReportPath = join(cwd, BOUNDARY_DIR, EXPLORES_DIR, exploreName, 'report.md')
+        if (!existsSync(exploreReportPath)) {
+          return outputError({
+            code: 'OXN_EXPLORE_NOT_FOUND',
+            message: `Explore 未找到: ${exploreName}，或报告未生成`
+          }, format)
+        }
+
+        const validation = validateTaskName(taskName)
+        if (!validation.valid) {
+          return outputError({
+            code: 'OXN_INVALID_TASK_NAME',
+            message: `任务名无效: ${validation.error}`
+          }, format)
+        }
+
+        if (taskDirExists(cwd, taskName)) {
+          return outputError({
+            code: 'OXN_TASK_EXISTS',
+            message: `任务已存在: ${taskName}`
+          }, format)
+        }
+
+        try {
+          const reportContent = readFileSync(exploreReportPath, 'utf-8')
+
+          const taskDir = getTaskDir(cwd, taskName)
+          ensureDirectory(taskDir)
+
+          const taskMdPath = join(taskDir, TASK_MD_FILE)
+          writeFileSync(taskMdPath, reportContent, 'utf-8')
+
+          const state: TaskState = {
+            taskId: taskName,
+            taskName: taskName,
+            status: 'PENDING',
+            currentStage: null,
+            stages: {}
+          }
+          writeState(cwd, taskName, state)
+
+          output({
+            data: {
+              taskId: taskName,
+              taskName: taskName,
+              fromExplore: exploreName,
+              taskMdPath: taskMdPath
+            },
+            human: `任务已创建: ${taskName}\n来源: ${exploreName}\n任务描述: ${taskMdPath}\n\n请使用 oxn task submit --blueprint <path> --task-id ${taskName} 提交 Blueprint。`
+          }, format)
+        } catch (err: unknown) {
+          const errorMsg = err instanceof Error ? err.message : String(err)
+          outputError({
+            code: 'OXN_TASK_EXPLORE_NEW_FAILED',
+            message: errorMsg
+          }, format)
+        }
+      }
+    }),
+    list: defineCommand({
+      meta: {
+        name: 'list',
+        description: '列出所有任务'
+      },
+      args: {
+        '--json': {
+          type: 'boolean',
+          description: 'JSON 格式输出'
+        },
+        '--yaml': {
+          type: 'boolean',
+          description: 'YAML 格式输出'
+        }
+      },
+      run(ctx) {
+        const format = getFormatFromArgs(ctx.args)
+        const cwd = getProjectRoot()
+
+        if (!projectBoundaryExists()) {
+          return outputError({
+            code: 'OXN_NO_PROJECT',
+            message: '项目未初始化，请先执行 oxn init'
+          }, format)
+        }
+
+        const tasksDir = join(cwd, BOUNDARY_DIR, TASKS_DIR)
+        if (!existsSync(tasksDir)) {
+          output({
+            data: { tasks: [] },
+            human: '暂无任务'
+          }, format)
+          return
+        }
+
+        const entries = readFileSync(tasksDir, 'utf-8')
+        const dirs = (entries as unknown as string[]).filter(d =>
+          existsSync(join(tasksDir, d, 'state.json'))
+        ) as string[]
+
+        const tasks = dirs.map(dir => {
+          const statePath = join(tasksDir, dir, 'state.json')
+          const state = JSON.parse(readFileSync(statePath, 'utf-8')) as TaskState
+          return {
+            taskId: state.taskId,
+            taskName: state.taskName,
+            status: state.status,
+            currentStage: state.currentStage
+          }
+        })
+
+        if (tasks.length === 0) {
+          output({ data: { tasks: [] }, human: '暂无任务' }, format)
+          return
+        }
+
+        const human = tasks.map(t =>
+          `[${t.status}] ${t.taskId} (${t.taskName})${t.currentStage ? ` - 当前: ${t.currentStage}` : ''}`
+        ).join('\n')
+
+        output({
+          data: { tasks },
+          human
+        }, format)
+      }
+    }),
+    resume: defineCommand({
+      meta: {
+        name: 'resume',
+        description: '继续执行任务（获取下一个 Stage 并展示指令）'
+      },
+      args: {
+        'task-id': {
+          type: 'string',
+          alias: 't',
+          required: true,
+          description: '任务 ID'
+        },
+        '--json': {
+          type: 'boolean',
+          description: 'JSON 格式输出'
+        },
+        '--yaml': {
+          type: 'boolean',
+          description: 'YAML 格式输出'
+        }
+      },
+      run(ctx) {
+        const format = getFormatFromArgs(ctx.args)
+
+        if (!projectBoundaryExists()) {
+          return outputError({
+            code: 'OXN_NO_PROJECT',
+            message: '项目未初始化，请先执行 oxn init'
+          }, format)
+        }
+
+        try {
+          const taskId = ctx.args['task-id'] as string
+          const result = taskNext(taskId, getProjectRoot()) as NextResult
+
+          if (result.status === 'COMPLETED') {
+            output({
+              data: result,
+              human: `任务已完成: ${taskId}\n所有 Stage 已通过验证。`
+            }, format)
+            return
+          }
+
+          const stageInfo = result.stageId
+            ? `Stage: ${result.name || result.stageId}\n目标: ${result.target?.description || 'N/A'}\n指令: ${result.action?.instruction || 'N/A'}`
+            : '无可执行的 Stage'
+
+          output({
+            data: result,
+            human: `任务: ${taskId}\n${stageInfo}\n\n完成后执行: oxn task verify --task-id ${taskId} --stage-id ${result.stageId}`
+          }, format)
+        } catch (err: unknown) {
+          const errorMsg = err instanceof Error ? err.message : String(err)
+          outputError({
+            code: 'OXN_TASK_RESUME_FAILED',
+            message: errorMsg
+          }, format)
+        }
+      }
     })
   },
   run() {
     console.log('使用 oxn task <subcommand> 查看可用子命令')
-    console.log('子命令: new, submit, next, verify, status, render')
+    console.log('子命令: new, submit, next, verify, status, render, explore-new, list, resume')
   }
 })

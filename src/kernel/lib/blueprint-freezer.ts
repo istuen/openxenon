@@ -8,22 +8,19 @@ export interface LineageReportEntry {
   status: '✅' | '⚠️'
   resolved: string
   source: 'kernel' | 'global' | 'project'
-  shadowed: boolean
   message: string
 }
 
 export interface LineageReport {
   entries: LineageReportEntry[]
   totalStages: number
-  shadowCount: number
 }
 
 export function renderLineageReport(report: LineageReport): string {
   const lines: string[] = ['[Core] Resolving blueprint assets...']
   for (const entry of report.entries) {
-    const shadowMsg = entry.shadowed ? ' (Shadowed)' : ''
     lines.push(`  ${entry.status} stage: ${entry.stageId}`)
-    lines.push(`     -> resolved: ${entry.resolved}${shadowMsg}`)
+    lines.push(`     -> resolved: ${entry.resolved}`)
     lines.push(`     -> version frozen.`)
   }
   return lines.join('\n')
@@ -32,21 +29,16 @@ export function renderLineageReport(report: LineageReport): string {
 export function generateLineageReport(stages: Stage[]): LineageReport {
   const projectBoundary = getProjectBoundaryPath(process.cwd())
   const entries: LineageReportEntry[] = []
-  let shadowCount = 0
 
   for (const stage of stages) {
     if (stage.ref) {
       const resolution = resolveStageRef(stage.ref, projectBoundary)
-      const shadowed = resolution.shadow
-
-      if (shadowed) shadowCount++
 
       entries.push({
         stageId: stage.id,
-        status: shadowed ? '⚠️' : '✅',
+        status: '✅',
         resolved: resolution.originalPath || (resolution.namespace === 'oxn' ? 'builtin' : resolution.namespace),
         source: resolution.namespace as 'kernel' | 'global' | 'project',
-        shadowed,
         message: ''
       })
     } else {
@@ -55,13 +47,12 @@ export function generateLineageReport(stages: Stage[]): LineageReport {
         status: '✅',
         resolved: 'inline',
         source: 'project',
-        shadowed: false,
         message: 'inline stage (no ref)'
       })
     }
   }
 
-  return { entries, totalStages: stages.length, shadowCount }
+  return { entries, totalStages: stages.length }
 }
 
 export function injectStageMeta(
@@ -76,7 +67,6 @@ export function injectStageMeta(
     _xenon_meta: {
       ref: resolution.rawRef,
       resolved_from: resolution.namespace,
-      shadow: resolution.shadow,
       original_path: resolution.originalPath,
       frozen_at: frozenAt,
       content_hash: computeContentHash(content),
@@ -100,7 +90,6 @@ export function injectProbeMeta(
     _xenon_meta: {
       ref,
       resolved_from: resolvedFrom,
-      shadow: false,
       frozen_at: frozenAt,
       content_hash: computeContentHash(content),
       appended
@@ -115,7 +104,6 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
   const projectBoundary = getProjectBoundaryPath(process.cwd())
   const frozenStages: Array<Stage & { _xenon_meta: XenonMeta }> = []
   const lineageEntries: LineageReportEntry[] = []
-  let shadowCount = 0
 
   for (const stage of blueprint.stages || []) {
     let resolvedStage: Stage
@@ -136,15 +124,11 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
         probes: mergeStageProbes(resolution.stage, stage)
       }
 
-      const shadowed = resolution.shadow
-      if (shadowed) shadowCount++
-
       lineageEntries.push({
         stageId: stage.id,
-        status: shadowed ? '⚠️' : '✅',
+        status: '✅',
         resolved: resolution.originalPath || (resolution.namespace === 'oxn' ? 'builtin' : resolution.namespace),
         source: resolution.namespace as 'kernel' | 'global' | 'project',
-        shadowed,
         message: ''
       })
     } else {
@@ -154,7 +138,6 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
         status: '✅',
         resolved: 'inline',
         source: 'project',
-        shadowed: false,
         message: 'inline stage (no ref)'
       })
     }
@@ -175,7 +158,6 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
       _xenon_meta: createXenonMeta({
         ref: stage.ref || 'inline',
         resolvedFrom: stage.ref ? 'project' : 'project',
-        shadow: false,
         content: JSON.stringify(resolvedStage)
       }),
       ...resolvedStage,
@@ -187,8 +169,7 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
     frozenStages,
     lineageReport: {
       entries: lineageEntries,
-      totalStages: blueprint.stages?.length || 0,
-      shadowCount
+      totalStages: blueprint.stages?.length || 0
     }
   }
 }

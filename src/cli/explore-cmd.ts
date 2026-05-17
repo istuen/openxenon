@@ -53,21 +53,63 @@ function scanDirectory(dirPath: string, docsPath: string): string[] {
   return scanned
 }
 
-interface QAPair {
+interface QAQuestion {
+  id: string
   question: string
-  answer: string
+  answer: string | null
+  createdAt: string
 }
 
-function parseQA(content: string): QAPair[] {
-  const pairs: QAPair[] = []
-  const regex = /## Q:\s*(.+?)\n\n\*\*A:\*\*\s*(.+?)(?=\n## Q:|$)/gs
-  let match
-  while ((match = regex.exec(content)) !== null) {
-    if (match[1] && match[2]) {
-      pairs.push({ question: match[1].trim(), answer: match[2].trim() })
-    }
+interface QADocument {
+  questions: QAQuestion[]
+}
+
+function getAIQAPath(explorePath: string): string {
+  return join(explorePath, 'ai-qa.json')
+}
+
+function getEngineerQAPath(explorePath: string): string {
+  return join(explorePath, 'engineer-qa.json')
+}
+
+function initQADocument(): QADocument {
+  return { questions: [] }
+}
+
+function loadQADocument(path: string): QADocument {
+  if (!existsSync(path)) {
+    return initQADocument()
   }
-  return pairs
+  try {
+    return JSON.parse(readFileSync(path, 'utf-8'))
+  } catch {
+    return initQADocument()
+  }
+}
+
+function saveQADocument(path: string, doc: QADocument): void {
+  writeFileSync(path, JSON.stringify(doc, null, 2), 'utf-8')
+}
+
+function addQAEntry(path: string, question: string, answer: string | null = null): void {
+  const doc = loadQADocument(path)
+  const id = String(doc.questions.length + 1)
+  doc.questions.push({
+    id,
+    question,
+    answer,
+    createdAt: new Date().toISOString()
+  })
+  saveQADocument(path, doc)
+}
+
+function updateQAAnswer(path: string, id: string, answer: string): boolean {
+  const doc = loadQADocument(path)
+  const q = doc.questions.find(q => q.id === id)
+  if (!q) return false
+  q.answer = answer
+  saveQADocument(path, doc)
+  return true
 }
 
 function generateReport(name: string, docsFiles: string[], qaPairs: QAPair[]): string {
@@ -148,12 +190,13 @@ export default defineCommand({
         }
 
         mkdirSync(join(explorePath, 'docs'), { recursive: true })
-        writeFileSync(join(explorePath, 'qa.md'), '# 问答记录\n\n', 'utf-8')
+        writeFileSync(getAIQAPath(explorePath), JSON.stringify(initQADocument(), null, 2), 'utf-8')
+        writeFileSync(getEngineerQAPath(explorePath), JSON.stringify(initQADocument(), null, 2), 'utf-8')
         writeFileSync(join(explorePath, 'report.md'), '# 探索报告\n\n', 'utf-8')
 
         output({
           data: { name, path: explorePath },
-          human: `探索已创建: ${explorePath}\n\n目录结构:\n  docs/\n  qa.md\n  report.md`
+          human: `探索已创建: ${explorePath}\n\n目录结构:\n  docs/\n  ai-qa.json\n  engineer-qa.json\n  report.md`
         }, getFormatFromArgs(ctx.args))
       }
     }),
@@ -251,7 +294,7 @@ export default defineCommand({
     qa: defineCommand({
       meta: {
         name: 'qa',
-        description: '问答记录管理'
+        description: '问答记录管理 (AI问答 / 工程师问答)'
       },
       args: {
         name: {
@@ -259,19 +302,31 @@ export default defineCommand({
           required: true,
           description: '探索名称'
         },
-        '--add': {
+        '--type': {
           type: 'string',
-          description: '添加问答对，格式: Q:xxx|A:xxx'
+          description: '问答类型: ai | engineer'
+        },
+        '--ask': {
+          type: 'string',
+          description: '添加问题（AI问答使用）'
+        },
+        '--answer': {
+          type: 'string',
+          description: '回答问题，格式: id|answer'
         },
         '--list': {
           type: 'boolean',
           description: '列出所有问答'
+        },
+        '--pending': {
+          type: 'boolean',
+          description: '列出待回答的问题'
         }
       },
       run(ctx) {
         const format = getFormatFromArgs(ctx.args)
         const name = ctx.args.name as string
-        const exploresRoot = getExploresRoot()
+        const explorePath = join(getExploresRoot(), name)
 
         if (!exploreExists(name)) {
           return outputError({
@@ -281,38 +336,73 @@ export default defineCommand({
           }, format)
         }
 
-        const qaPath = join(exploresRoot, name, 'qa.md')
+        const qaType = (ctx.args.type as string) || 'ai'
+        const qaPath = qaType === 'engineer' ? getEngineerQAPath(explorePath) : getAIQAPath(explorePath)
 
-        if (ctx.args.add) {
-          const pair = ctx.args.add as string
-          const [q, a] = pair.split('|')
-          if (!q || !a) {
+        if (ctx.args.ask) {
+          const question = ctx.args.ask as string
+          addQAEntry(qaPath, question)
+          const doc = loadQADocument(qaPath)
+          const lastQ = doc.questions[doc.questions.length - 1]
+          output({
+            data: { id: lastQ.id, question: lastQ.question, answer: null },
+            human: `问题已添加 (ID: ${lastQ.id}):\nQ: ${question}\nA: _待回答_`
+          }, format)
+        } else if (ctx.args.answer) {
+          const [id, ...rest] = (ctx.args.answer as string).split('|')
+          if (!id || rest.length === 0) {
             return outputError({
-              code: 'OXN_INVALID_QA_FORMAT',
-              message: '格式错误，使用: Q:问题|A:回答'
+              code: 'OXN_INVALID_ANSWER_FORMAT',
+              message: '格式错误，使用: --answer id|回答内容'
             }, format)
           }
-          const entry = `\n## Q: ${q.replace(/^Q:/, '')}\n\n**A:** ${a.replace(/^A:/, '')}\n`
-          const existing = existsSync(qaPath) ? readFileSync(qaPath, 'utf-8') : ''
-          writeFileSync(qaPath, existing + entry, 'utf-8')
-          output({
-            data: { added: true },
-            human: '已添加问答'
-          }, format)
-        } else if (ctx.args.list) {
-          if (existsSync(qaPath)) {
-            const content = readFileSync(qaPath, 'utf-8')
+          const answer = rest.join('|')
+          if (updateQAAnswer(qaPath, id, answer)) {
             output({
-              data: { content },
-              human: content
+              data: { id, answer },
+              human: `已更新 (ID: ${id}):\nA: ${answer}`
             }, format)
           } else {
-            output({ data: { content: '' }, human: '暂无问答记录' }, format)
+            return outputError({
+              code: 'OXN_QA_NOT_FOUND',
+              message: `未找到问题 ID: ${id}`
+            }, format)
+          }
+        } else if (ctx.args.pending) {
+          const doc = loadQADocument(qaPath)
+          const pending = doc.questions.filter(q => q.answer === null)
+          if (pending.length === 0) {
+            output({ data: { pending: [] }, human: '无待回答问题' }, format)
+          } else {
+            output({
+              data: { pending: pending.map(q => ({ id: q.id, question: q.question })) },
+              human: pending.map(q => `[${q.id}] ${q.question}`).join('\n')
+            }, format)
+          }
+        } else if (ctx.args.list) {
+          const doc = loadQADocument(qaPath)
+          if (doc.questions.length === 0) {
+            output({ data: { questions: [] }, human: '暂无问答记录' }, format)
+          } else {
+            const lines = doc.questions.map(q =>
+              `[${q.id}] Q: ${q.question}\n    A: ${q.answer ?? '_待回答_'}`
+            ).join('\n\n')
+            output({
+              data: { questions: doc.questions },
+              human: lines
+            }, format)
           }
         } else {
+          const aiPath = getAIQAPath(explorePath)
+          const engPath = getEngineerQAPath(explorePath)
+          const aiDoc = loadQADocument(aiPath)
+          const engDoc = loadQADocument(engPath)
           output({
-            data: { path: qaPath },
-            human: `问答文件: ${qaPath}`
+            data: {
+              ai: { path: aiPath, count: aiDoc.questions.length },
+              engineer: { path: engPath, count: engDoc.questions.length }
+            },
+            human: `AI 问答: ${aiPath} (${aiDoc.questions.length} 条)\n工程师问答: ${engPath} (${engDoc.questions.length} 条)`
           }, format)
         }
       }
@@ -336,7 +426,7 @@ export default defineCommand({
       run(ctx) {
         const format = getFormatFromArgs(ctx.args)
         const name = ctx.args.name as string
-        const exploresRoot = getExploresRoot()
+        const explorePath = join(getExploresRoot(), name)
 
         if (!exploreExists(name)) {
           return outputError({
@@ -346,10 +436,11 @@ export default defineCommand({
           }, format)
         }
 
-        const qaPath = join(exploresRoot, name, 'qa.md')
-        const reportPath = join(exploresRoot, name, 'report.md')
+        const aiQAPath = getAIQAPath(explorePath)
+        const engQAPath = getEngineerQAPath(explorePath)
+        const reportPath = join(explorePath, 'report.md')
 
-        if (!existsSync(qaPath)) {
+        if (!existsSync(aiQAPath) && !existsSync(engQAPath)) {
           return outputError({
             code: 'OXN_QA_NOT_FOUND',
             message: '无问答记录，无法生成报告'
@@ -363,14 +454,63 @@ export default defineCommand({
           }, format)
         }
 
-        const docsPath = join(exploresRoot, name, 'docs')
+        const docsPath = join(explorePath, 'docs')
         const docsFiles = existsSync(docsPath) ? readdirSync(docsPath).filter(f => f.endsWith('.md')) : []
-        const qaContent = readFileSync(qaPath, 'utf-8')
-        const qaPairs = parseQA(qaContent)
 
-        const report = generateReport(name, docsFiles, qaPairs)
+        const aiDoc = loadQADocument(aiQAPath)
+        const engDoc = loadQADocument(engQAPath)
 
-        writeFileSync(reportPath, report, 'utf-8')
+        const sections: string[] = []
+        sections.push(`# 探索报告: ${name}\n`)
+        sections.push(`> 生成时间: ${new Date().toISOString()}\n`)
+
+        sections.push('## 扫描资料\n')
+        if (docsFiles.length > 0) {
+          sections.push(docsFiles.map(f => `- ${f}`).join('\n'))
+        } else {
+          sections.push('_无_')
+        }
+        sections.push('\n')
+
+        sections.push('## AI 提问阶段\n')
+        if (aiDoc.questions.length > 0) {
+          for (const q of aiDoc.questions) {
+            sections.push(`**Q${q.id}:** ${q.question}`)
+            sections.push(`\n**A:** ${q.answer ?? '_待回答_'}\n`)
+          }
+        } else {
+          sections.push('_无_\n')
+        }
+
+        sections.push('\n## 工程师提问阶段\n')
+        if (engDoc.questions.length > 0) {
+          for (const q of engDoc.questions) {
+            sections.push(`**Q${q.id}:** ${q.question}`)
+            sections.push(`\n**A:** ${q.answer ?? '_待回答_'}\n`)
+          }
+        } else {
+          sections.push('_无_\n')
+        }
+
+        sections.push('\n## 关键发现\n')
+        sections.push('_基于问答提取_\n\n')
+
+        sections.push('## 待解决问题\n')
+        const allQ = [...aiDoc.questions, ...engDoc.questions]
+        const openQuestions = allQ.filter(p =>
+          p.answer === null ||
+          (p.answer && (p.answer.includes('未解决') || p.answer.includes('不确定') || p.answer.includes('TODO')))
+        )
+        if (openQuestions.length > 0) {
+          sections.push(openQuestions.map(p => `- [ ] [Q${p.id}] ${p.question}`).join('\n'))
+        } else {
+          sections.push('_无_\n')
+        }
+
+        sections.push('\n## 总结\n')
+        sections.push('_基于以上信息综合_\n')
+
+        writeFileSync(reportPath, sections.join('\n'), 'utf-8')
         output({
           data: { path: reportPath },
           human: `报告已生成: ${reportPath}`
@@ -391,7 +531,7 @@ export default defineCommand({
         }
 
         const dirs = readdirSync(exploresRoot).filter(d =>
-          existsSync(join(exploresRoot, d, 'qa.md'))
+          existsSync(join(exploresRoot, d, 'ai-qa.json'))
         )
 
         output({
