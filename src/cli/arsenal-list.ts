@@ -52,7 +52,7 @@ export default defineCommand({
 
     const typeFilter = ctx.args.type as string | undefined
     const filtered = typeFilter
-      ? assets.filter(a => a.type === typeFilter.replace('probe', 'probes').replace('stage', 'stages').replace('blueprint', 'blueprints'))
+      ? assets.filter(a => a.type === typeFilter.replace('probe', 'probes').replace('blueprint', 'blueprints').replace('part', 'parts'))
       : assets
 
     if (filtered.length === 0) {

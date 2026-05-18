@@ -30,7 +30,7 @@ export interface ForgeDraft {
 
 export interface ArsenalAsset {
   name: string
-  type: 'probes' | 'stages' | 'blueprints'
+  type: 'probes' | 'blueprints' | 'parts'
   state: 'canonical' | 'draft'
   path: string
   updatedAt: number
@@ -85,7 +85,7 @@ export function scanForgeDrafts(projectRoot: string): ForgeDraft[] {
   }
 
   const drafts: ForgeDraft[] = []
-  const assetTypes = ['probes', 'stages', 'blueprints']
+  const assetTypes = ['probes', 'blueprints', 'parts']
 
   for (const type of assetTypes) {
     const typePath = join(forgesDir, type)
@@ -121,7 +121,7 @@ export function scanArsenalAssets(projectRoot: string): ArsenalAsset[] {
   }
 
   const assets: ArsenalAsset[] = []
-  const assetTypes: Array<'probes' | 'stages' | 'blueprints'> = ['probes', 'stages', 'blueprints']
+  const assetTypes: Array<'probes' | 'blueprints' | 'parts'> = ['probes', 'blueprints', 'parts']
 
   for (const type of assetTypes) {
     const typePath = join(arsenalsDir, type)
@@ -176,7 +176,7 @@ export function getHallStats(projectRoot: string): HallStats {
     draftAssets: forgeDrafts.length,
     canonicalAssets: arsenalAssets.length,
     arsenalProbes: arsenalAssets.filter(a => a.type === 'probes').length,
-    arsenalStages: arsenalAssets.filter(a => a.type === 'stages').length,
+    arsenalParts: arsenalAssets.filter(a => a.type === 'parts').length,
     arsenalBlueprints: arsenalAssets.filter(a => a.type === 'blueprints').length,
     recentTasks
   }

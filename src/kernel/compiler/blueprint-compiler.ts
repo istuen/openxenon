@@ -60,16 +60,12 @@ function validateParams(partContent: Record<string, unknown>, providedParams: Re
 
 function mergeProbes(
   baseProbes: Array<Record<string, unknown>>,
-  overridePart: { probes_override?: Array<Record<string, unknown>>; probes_append?: Array<Record<string, unknown>>; probes?: Array<Record<string, unknown>> }
+  partProbes: Array<Record<string, unknown>>
 ): Array<Record<string, unknown>> {
-  const override = overridePart.probes_override || overridePart.probes || []
-  const append = overridePart.probes_append || []
-
-  if (overridePart.probes_override) {
-    return [...override, ...append]
+  if (partProbes.length > 0) {
+    return partProbes
   }
-
-  return [...baseProbes, ...override, ...append]
+  return baseProbes
 }
 
 function pruneParts(
@@ -220,8 +216,20 @@ export class BlueprintCompiler {
 
         validateParams(partContent, part.params || {})
 
+        if ((part as any).min_version !== undefined) {
+          const required = (part as any).min_version as number
+          const actual = (partContent._version as number) || 1
+          if (actual < required) {
+            throw new Error(
+              `Part "${part.id}" requires version >= ${required} of "${resolvedRef}", ` +
+              `but got version ${actual}`
+            )
+          }
+        }
+
         const baseProbes = (partContent.probes as Array<Record<string, unknown>>) || []
-        const mergedProbes = mergeProbes(baseProbes, part as any)
+        const partProbes = ((part as any).probes as Array<Record<string, unknown>>) || []
+        const mergedProbes = mergeProbes(baseProbes, partProbes)
 
         resolvedPart = {
           ...partContent,

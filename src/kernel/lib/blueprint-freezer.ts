@@ -147,13 +147,6 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
       return injectProbeMeta(p, ref, 'project', false)
     })
 
-    if (part.probes_append) {
-      for (const p of part.probes_append) {
-        const ref = p.ref || p.type || ''
-        injectedProbes.push(injectProbeMeta(p, ref, 'project', true))
-      }
-    }
-
     frozenParts.push({
       _xenon_meta: createXenonMeta({
         ref: part.ref || 'inline',
@@ -172,18 +165,6 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
       totalParts: blueprint.parts?.length || 0
     }
   }
-}
-
-function mergePartProbes(basePart: { probes?: any[] }, overridePart: Part): any[] {
-  const baseProbes = basePart.probes || []
-  const overrideProbes = overridePart.probes_override || overridePart.probes || []
-  const appendProbes = overridePart.probes_append || []
-
-  if (overridePart.probes_override) {
-    return [...overrideProbes, ...appendProbes]
-  }
-
-  return [...baseProbes, ...overrideProbes, ...appendProbes]
 }
 
 export function freezeBlueprint(blueprint: Blueprint): {

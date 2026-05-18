@@ -15,7 +15,7 @@ interface MigrationResult {
   error?: string
 }
 
-const ASSET_TYPES: AssetType[] = ['probes', 'stages', 'blueprints']
+const ASSET_TYPES: AssetType[] = ['probes', 'blueprints', 'parts']
 
 function scanOldStructureAssets(scope: 'project' | 'global'): { path: string, type: AssetType, name: string, state: AssetState }[] {
   const assets: { path: string, type: AssetType, name: string, state: AssetState }[] = []

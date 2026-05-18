@@ -1,18 +1,18 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
-import { parse as parseYaml } from 'yaml'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 'fs'
+import { join, dirname } from 'path'
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { createDraftFromYaml } from './draft'
 import type { Scope } from '../arsenals/loader'
 import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
 import { output, outputError, getFormatFromArgs } from './output'
 
-type ForgeType = 'probe' | 'stage' | 'blueprint'
+type ForgeType = 'probe' | 'part' | 'blueprint'
 
 const META_FORGE_NAMES: Record<ForgeType, BuiltinForgeName> = {
   probe: 'meta-probe',
-  stage: 'meta-stage',
+  part: 'meta-part',
   blueprint: 'meta-blueprint'
 }
 
@@ -28,6 +28,68 @@ function tryLoadForgeFile(path: string, fallbackName: string): { name: string, c
   } catch {
     return null
   }
+}
+
+function unpackBlueprint(bpPath: string): { parts: number; probes: number; dir: string } {
+  if (!existsSync(bpPath)) {
+    throw new Error(`Blueprint file not found: ${bpPath}`)
+  }
+  const content = readFileSync(bpPath, 'utf-8')
+  const bp = parseYaml(content) as Record<string, unknown>
+  const bpDir = dirname(bpPath)
+
+  const partsDir = join(bpDir, 'parts')
+  const probesDir = join(bpDir, 'probes')
+
+  let partsCount = 0
+  let probesCount = 0
+
+  const parts = (bp.parts as Array<Record<string, unknown>>) || (bp.stages as Array<Record<string, unknown>>) || []
+  for (const part of parts) {
+    const id = (part.id as string) || (part.name as string) || `part-${partsCount}`
+    if (!existsSync(partsDir)) mkdirSync(partsDir, { recursive: true })
+    writeFileSync(join(partsDir, `${id}.yaml`), stringifyYaml(part), 'utf-8')
+    partsCount++
+  }
+
+  const probes = (bp.probes as Array<Record<string, unknown>>) || []
+  for (const probe of probes) {
+    const id = (probe.type as string) || `probe-${probesCount}`
+    if (!existsSync(probesDir)) mkdirSync(probesDir, { recursive: true })
+    writeFileSync(join(probesDir, `${id}.yaml`), stringifyYaml(probe), 'utf-8')
+    probesCount++
+  }
+
+  return { parts: partsCount, probes: probesCount, dir: bpDir }
+}
+
+function repackBlueprint(dir: string): { path: string; parts: number } {
+  const bpPath = join(dir, 'blueprint.yaml')
+  if (!existsSync(bpPath)) {
+    throw new Error(`blueprint.yaml not found in ${dir}`)
+  }
+
+  const content = readFileSync(bpPath, 'utf-8')
+  const bp = parseYaml(content) as Record<string, unknown>
+
+  const partsDir = join(dir, 'parts')
+  let loadedParts = 0
+
+  if (existsSync(partsDir)) {
+    const files = readdirSync(partsDir, { withFileTypes: true })
+    const partFiles = files.filter(f => f.isFile() && (f.name.endsWith('.yaml') || f.name.endsWith('.yml')))
+    const parts: Array<Record<string, unknown>> = []
+    for (const f of partFiles) {
+      const pContent = readFileSync(join(partsDir, f.name), 'utf-8')
+      const pObj = parseYaml(pContent) as Record<string, unknown>
+      parts.push(pObj)
+      loadedParts++
+    }
+    bp.parts = parts
+  }
+
+  writeFileSync(bpPath, stringifyYaml(bp), 'utf-8')
+  return { path: bpPath, parts: loadedParts }
 }
 
 function loadMetaForge(type: ForgeType): { name: string, constraints: string[] } | null {
@@ -63,7 +125,7 @@ export default defineCommand({
     type: {
       type: 'positional',
       required: false,
-      description: '元Forge类型: probe, stage, blueprint, all'
+      description: '元Forge类型: probe, part, blueprint, all'
     },
     save: {
       type: 'string',
@@ -82,6 +144,14 @@ export default defineCommand({
     '--yaml': {
       type: 'boolean',
       description: 'YAML 格式输出'
+    },
+    unpack: {
+      type: 'string',
+      description: '解包 Blueprint 到 forge 工作区目录'
+    },
+    repack: {
+      type: 'string',
+      description: '重新打包 forge 工作区目录到 Blueprint'
     }
   },
   async run(ctx) {
@@ -95,7 +165,39 @@ export default defineCommand({
     const type = ctx.args.type as string | undefined
     const save = ctx.args.save as string | undefined
     const name = ctx.args.name as string | undefined
+    const unpackPath = ctx.args.unpack as string | undefined
+    const repackPath = ctx.args.repack as string | undefined
     const scope: Scope = 'project'
+
+    if (unpackPath) {
+      try {
+        const result = unpackBlueprint(unpackPath)
+        return output({
+          data: result,
+          human: `Unpacked ${result.parts} part(s), ${result.probes} probe(s) to ${result.dir}`
+        }, format)
+      } catch (err) {
+        return outputError({
+          code: 'OXN_UNPACK_FAILED',
+          message: err instanceof Error ? err.message : 'Failed to unpack'
+        }, format)
+      }
+    }
+
+    if (repackPath) {
+      try {
+        const result = repackBlueprint(repackPath)
+        return output({
+          data: result,
+          human: `Repacked ${result.parts} part(s) into ${result.path}`
+        }, format)
+      } catch (err) {
+        return outputError({
+          code: 'OXN_REPACK_FAILED',
+          message: err instanceof Error ? err.message : 'Failed to repack'
+        }, format)
+      }
+    }
 
     if (save) {
       const result = createDraftFromYaml(save, name, scope)
@@ -109,7 +211,7 @@ export default defineCommand({
     }
 
     if (!type || type === 'all') {
-      const forges = (['probe', 'stage', 'blueprint'] as ForgeType[]).map(t => {
+      const forges = (['probe', 'part', 'blueprint'] as ForgeType[]).map(t => {
         const forge = loadMetaForge(t)
         return forge ? { type: t, name: forge.name, constraints: forge.constraints } : null
       }).filter(Boolean)
@@ -117,7 +219,7 @@ export default defineCommand({
       return output({ data: { forges } }, format)
     }
 
-    if (type === 'probe' || type === 'stage' || type === 'blueprint') {
+    if (type === 'probe' || type === 'part' || type === 'blueprint') {
       const forge = loadMetaForge(type as ForgeType)
       if (!forge) {
         return outputError({

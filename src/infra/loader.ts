@@ -3,7 +3,7 @@ import { join, dirname } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 import { type AssetState, type AssetType } from '../arsenals/paths'
-import { BUILTIN_PROBES } from '../arsenals/builtin'
+import { BUILTIN_PROBES, BUILTIN_PARTS } from '../arsenals/builtin'
 import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT, resolveBoundary, type Scope as InfraScope } from '../infra/paths'
 
 export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
@@ -89,11 +89,11 @@ function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolea
           })
         }
       }
-    } else if (!scanForges && (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml') || entry.name.endsWith('.json'))) {
+    } else if (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml') || entry.name.endsWith('.json')) {
       const name = entry.name.replace(/\.(yaml|yml|json)$/, '')
       const filePath = join(typePath, entry.name)
       const content = readFileSync(filePath, 'utf-8')
-      const isCanonical = entry.name.includes('canonical') || entry.name.startsWith('canonical')
+      const isCanonical = scanForges ? false : true
       assets.push({
         name,
         type,
@@ -111,11 +111,11 @@ function getTypeFromPath(assetPath: string): AssetType | null {
   if (assetPath.includes('/probes/') || assetPath.includes('/probe/')) {
     return 'probes'
   }
-  if (assetPath.includes('/stages/') || assetPath.includes('/stage/')) {
-    return 'stages'
-  }
   if (assetPath.includes('/blueprints/') || assetPath.includes('/blueprint/')) {
     return 'blueprints'
+  }
+  if (assetPath.includes('/parts/') || assetPath.includes('/part/')) {
+    return 'parts'
   }
   return null
 }
@@ -140,6 +140,18 @@ function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined
         assets.push({
           name,
           type: 'probes' as AssetType,
+          state: 'canonical' as AssetState,
+          path: `builtin:${name}`,
+          content: JSON.stringify(def)
+        })
+      }
+    }
+
+    if (type === 'parts') {
+      for (const [name, def] of Object.entries(BUILTIN_PARTS)) {
+        assets.push({
+          name,
+          type: 'parts' as AssetType,
           state: 'canonical' as AssetState,
           path: `builtin:${name}`,
           content: JSON.stringify(def)
@@ -205,10 +217,10 @@ export function loadArsenalsByState(scope: Scope, projectBoundary: string | unde
     return []
   }
   const projectProbes = scanArsenalsDirectory(scope, projectBoundary, 'probes')
-  const projectStages = scanArsenalsDirectory(scope, projectBoundary, 'stages')
   const projectBlueprints = scanArsenalsDirectory(scope, projectBoundary, 'blueprints')
+  const projectParts = scanArsenalsDirectory(scope, projectBoundary, 'parts')
 
-  return [...projectProbes, ...projectStages, ...projectBlueprints]
+  return [...projectProbes, ...projectBlueprints, ...projectParts]
 }
 
 export function loadArsenalsByTypeAndState(scope: Scope, projectBoundary: string | undefined, type: AssetType, state: AssetState): StandardAsset[] {
@@ -248,7 +260,7 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
   if (nameIndex >= parts.length) return null
 
   const name = parts[nameIndex]
-  if (!name || name === 'probes' || name === 'stages' || name === 'blueprints') {
+  if (!name || name === 'probes' || name === 'blueprints' || name === 'parts') {
     return null
   }
 
@@ -306,10 +318,18 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
 export function loadStandardByName(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType): StandardAsset | null {
   const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
 
-  const canonicalPath = join(boundary, 'arsenals', type, name, 'canonical.yaml')
-  if (existsSync(canonicalPath)) {
-    const content = readFileSync(canonicalPath, 'utf-8')
-    return { name, type, state: 'canonical' as const, path: canonicalPath, content }
+  if (type === 'parts' || type === 'probes') {
+    const flatPath = join(boundary, 'arsenals', type, `${name}.yaml`)
+    if (existsSync(flatPath)) {
+      const content = readFileSync(flatPath, 'utf-8')
+      return { name, type, state: 'canonical' as const, path: flatPath, content }
+    }
+  } else {
+    const canonicalPath = join(boundary, 'arsenals', type, name, 'canonical.yaml')
+    if (existsSync(canonicalPath)) {
+      const content = readFileSync(canonicalPath, 'utf-8')
+      return { name, type, state: 'canonical' as const, path: canonicalPath, content }
+    }
   }
 
   const forgeDraftPath = join(boundary, 'forges', type, name, 'draft.yaml')
@@ -323,10 +343,15 @@ export function loadStandardByName(scope: Scope, projectBoundary: string | undef
 
 export function resolveAssetPath(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType, state: AssetState): string | null {
   const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
-  const assetPath = join(boundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
-  if (existsSync(assetPath)) {
-    return assetPath
+
+  if (type === 'parts' || type === 'probes') {
+    const flatPath = join(boundary, 'arsenals', type, `${name}.yaml`)
+    if (existsSync(flatPath)) return flatPath
+  } else {
+    const assetPath = join(boundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+    if (existsSync(assetPath)) return assetPath
   }
+
   return null
 }
 
@@ -351,6 +376,10 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
 
   for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
     probes.set(`oxn/${name}`, def as Record<string, unknown>)
+  }
+
+  for (const [name, def] of Object.entries(BUILTIN_PARTS)) {
+    parts.set(`oxn/${name}`, def as Record<string, unknown>)
   }
 
   const projectProbes = loadArsenalsByTypeAndState('fallback', projectBoundary, 'probes', 'canonical')

@@ -18,22 +18,28 @@ function getTypeFromContent(content: string): AssetType | null {
   try {
     const parsed = JSON.parse(content)
     if (parsed.type === 'fs_exists' || parsed.type === 'fs_match' || parsed.type === 'shell_exec') return 'probes'
-    if (parsed.probes && Array.isArray(parsed.probes)) return 'stages'
+    if (parsed.probes && Array.isArray(parsed.probes)) return 'parts'
     if (parsed.stages && Array.isArray(parsed.stages)) return 'blueprints'
-    if (parsed.target || parsed.spec) return 'stages'
+    if (parsed.target || parsed.spec) return 'parts'
   } catch {
     if (trimmed.startsWith('name:') && trimmed.includes('stages:')) return 'blueprints'
     if (content.includes('type:') && (content.includes('fs_exists') || content.includes('fs_match') || content.includes('shell_exec'))) return 'probes'
-    if (content.includes('probes:') || content.includes('target:')) return 'stages'
+    if (content.includes('probes:') || content.includes('target:')) return 'parts'
   }
   return null
 }
 
 function getForgePath(type: AssetType, name: string, scope: Scope): string {
   if (scope === 'global') {
+    if (type === 'parts' || type === 'probes') {
+      return join(FORGES_ROOT, type, `${name}.yaml`)
+    }
     return join(FORGES_ROOT, type, name, 'draft.yaml')
   }
   const projectBoundary = getProjectBoundaryPath(process.cwd())
+  if (type === 'parts' || type === 'probes') {
+    return join(projectBoundary, 'forges', type, `${name}.yaml`)
+  }
   return join(projectBoundary, 'forges', type, name, 'draft.yaml')
 }
 
@@ -85,15 +91,15 @@ export function createDraftProbe(content: string, name?: string, scope: Scope = 
   return saveDraftAsset('probes', name, content, scope)
 }
 
-export function createDraftStage(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
+export function createDraftPart(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
     validatePartAsset(parsed)
   } catch {
-    return { success: false, error: 'Invalid stage structure' }
+    return { success: false, error: 'Invalid part structure' }
   }
 
-  return saveDraftAsset('stages', name, content, scope)
+  return saveDraftAsset('parts', name, content, scope)
 }
 
 export function createDraftFromYaml(yamlContent: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
@@ -106,8 +112,8 @@ export function createDraftFromYaml(yamlContent: string, name?: string, scope: S
   switch (type) {
     case 'probes':
       return createDraftProbe(yamlContent, name, scope)
-    case 'stages':
-      return createDraftStage(yamlContent, name, scope)
+    case 'parts':
+      return createDraftPart(yamlContent, name, scope)
     case 'blueprints':
       return saveDraftAsset('blueprints', name, yamlContent, scope)
     default:

@@ -9,8 +9,8 @@ const TYPE_ALIASES: Record<string, AssetType> = {
   'blueprints': 'blueprints',
   'probe': 'probes',
   'probes': 'probes',
-  'stage': 'stages',
-  'stages': 'stages'
+  'part': 'parts',
+  'parts': 'parts'
 }
 
 function parseAssetName(input: string): { type: AssetType, name: string } | null {

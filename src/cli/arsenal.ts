@@ -9,6 +9,8 @@ export default defineCommand({
     list: () => import('./arsenal-list').then(m => m.default),
     inspect: () => import('./arsenal-inspect').then(m => m.default),
     promote: () => import('./arsenal-promote').then(m => m.default),
+    fork: () => import('./arsenal-fork').then(m => m.default),
+    extract: () => import('./arsenal-extract').then(m => m.default),
     search: () => import('./arsenal-search').then(m => m.default),
     export: () => import('./arsenal-export').then(m => m.default),
     import: () => import('./arsenal-import').then(m => m.default),

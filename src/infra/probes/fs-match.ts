@@ -6,25 +6,27 @@ export interface ProbeContext {
 }
 
 export interface FsMatchParams {
-  pattern: string
+  pattern?: string
   contains?: string
+  path?: string
 }
 
 export async function executeFsMatch(
   params: FsMatchParams,
   context: ProbeContext
 ): Promise<{ matched: boolean; content?: string; error?: string }> {
-  const { pattern, contains } = params
+  const filePath = params.path || params.pattern || ''
+  const regexStr = params.contains || (params.pattern && params.path ? params.pattern : undefined)
 
-  const fullPath = pattern.startsWith('/')
-    ? pattern
-    : join(context.projectRoot, pattern)
+  const fullPath = filePath.startsWith('/')
+    ? filePath
+    : join(context.projectRoot, filePath)
 
   try {
     const content = readFileSync(fullPath, 'utf-8')
 
-    if (contains) {
-      const regex = new RegExp(contains)
+    if (regexStr) {
+      const regex = new RegExp(regexStr)
       const matched = regex.test(content)
       return { matched, content: matched ? 'Pattern matched' : 'Pattern not found' }
     }

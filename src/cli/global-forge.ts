@@ -6,11 +6,11 @@ import { createDraftFromYaml } from './draft'
 import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
 import { output, outputError, getFormatFromArgs } from './output'
 
-type ForgeType = 'probe' | 'stage' | 'blueprint'
+type ForgeType = 'probe' | 'part' | 'blueprint'
 
 const META_FORGE_NAMES: Record<ForgeType, BuiltinForgeName> = {
   probe: 'meta-probe',
-  stage: 'meta-stage',
+  part: 'meta-part',
   blueprint: 'meta-blueprint'
 }
 
@@ -57,7 +57,7 @@ export default defineCommand({
     type: {
       type: 'positional',
       required: false,
-      description: '元Forge类型: probe, stage, blueprint, all'
+      description: '元Forge类型: probe, part, blueprint, all'
     },
     save: {
       type: 'string',
@@ -96,7 +96,7 @@ export default defineCommand({
     }
 
     if (!type || type === 'all') {
-      const forges = (['probe', 'stage', 'blueprint'] as ForgeType[]).map(t => {
+      const forges = (['probe', 'part', 'blueprint'] as ForgeType[]).map(t => {
         const forge = loadMetaForge(t)
         return forge ? { type: t, name: forge.name, constraints: forge.constraints } : null
       }).filter(Boolean)
@@ -104,7 +104,7 @@ export default defineCommand({
       return output({ data: { forges } }, format)
     }
 
-    if (type === 'probe' || type === 'stage' || type === 'blueprint') {
+    if (type === 'probe' || type === 'part' || type === 'blueprint') {
       const forge = loadMetaForge(type as ForgeType)
       if (!forge) {
         return outputError({

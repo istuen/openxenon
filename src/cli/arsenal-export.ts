@@ -150,7 +150,7 @@ export default defineCommand({
     console.log(`导出 Arsenal 到: ${targetPath}`)
     console.log(`过滤条件: ${filter}`)
 
-    const types = ['probes', 'stages', 'blueprints']
+    const types = ['probes', 'blueprints', 'parts']
     let totalExported = 0
     let totalSkipped = 0
 

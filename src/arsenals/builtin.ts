@@ -53,21 +53,21 @@ export const BUILTIN_FORGES = {
       ]
     }]
   },
-  'meta-stage': {
-    name: 'meta-stage',
-    description: '锻造 Draft Stage 的元 Forge',
+  'meta-part': {
+    name: 'meta-part',
+    description: '锻造 Draft Part 的元 Forge',
     stages: [{
-      id: 'generate-stage',
-      name: '生成 Stage',
-      target: { description: 'Stage YAML 文件', glob: '**/*.yaml' },
+      id: 'generate-part',
+      name: '生成 Part',
+      target: { description: 'Part YAML 文件', glob: '**/*.yaml' },
       spec: {
-        description: '验证 Stage YAML 结构',
+        description: '验证 Part YAML 结构',
         constraints: [
-          'YAML 必须符合 StageDefinitionSchema',
+          'YAML 必须符合 PartDefinitionSchema',
           '必须有 id（kebab-case）、name、description',
           '必须包含 target.description 和 spec.description',
           'probes 必须是数组（可选）',
-          'deps 只能引用已定义的 Stage id'
+          'deps 只能引用已定义的 Part id'
         ]
       },
       probes: [
@@ -102,6 +102,7 @@ export const BUILTIN_PARTS: Record<string, {
   id?: string
   name?: string
   description?: string
+  _version?: number
   params_schema?: {
     type: 'object'
     properties: Record<string, { type: string; default?: unknown; description?: string }>
@@ -113,7 +114,88 @@ export const BUILTIN_PARTS: Record<string, {
   action?: { instruction?: string; command?: string }
   probes?: Array<{ ref?: string; type?: string; params?: Record<string, unknown>; pattern?: string; command?: string }>
   deps?: string[]
-}> = {}
+}> = {
+  'git-commit': {
+    id: 'git-commit',
+    name: 'Git Commit',
+    _version: 1,
+    description: '提交代码到 Git 仓库，验证 commit message 引用当前 feature',
+    target: { description: '代码已提交到 Git' },
+    spec: {
+      description: 'git commit 执行成功，commit message 包含 feature 引用',
+      constraints: ['必须包含 {@feature_ref} 引用']
+    },
+    action: {
+      instruction: '提交代码改动',
+      command: 'git add -A && git commit -m "feat(${feature_ref}): ${message}"'
+    },
+    params_schema: {
+      type: 'object',
+      properties: {
+        feature_ref: { type: 'string', description: 'Feature 引用（如 branch name 或 ticket ID）' },
+        message: { type: 'string', description: 'Commit message 描述', default: 'update' }
+      },
+      required: ['feature_ref']
+    },
+    probes: [
+      {
+        type: 'shell_exec',
+        command: "git log -1 --pretty=%s | grep -q '${feature_ref}'"
+      }
+    ]
+  },
+  'create-branch': {
+    id: 'create-branch',
+    name: 'Create Branch',
+    _version: 1,
+    description: '从 main 分支创建新 feature 分支',
+    target: { description: '新分支已创建并切换' },
+    spec: {
+      description: '创建并切换到 ${branch_name} 分支',
+      constraints: ['分支名必须是 kebab-case', '从 main 分支创建']
+    },
+    action: {
+      instruction: '创建并切换到新分支',
+      command: 'git checkout main && git pull && git checkout -b ${branch_name}'
+    },
+    params_schema: {
+      type: 'object',
+      properties: {
+        branch_name: { type: 'string', description: '新分支名称 (kebab-case)' }
+      },
+      required: ['branch_name']
+    },
+    probes: [
+      { type: 'shell_exec', command: "git branch --show-current | grep -q '${branch_name}'" }
+    ]
+  },
+  'develop-feature': {
+    id: 'develop-feature',
+    name: 'Develop Feature',
+    _version: 1,
+    description: '执行开发任务并通过测试验证',
+    target: { description: '功能代码已编写并通过测试' },
+    spec: {
+      description: '完成代码编写并通过 build + test',
+      constraints: ['代码必须通过 build', '代码必须通过 test']
+    },
+    action: {
+      instruction: '编写功能代码实现 {@feature_desc}'
+    },
+    params_schema: {
+      type: 'object',
+      properties: {
+        feature_desc: { type: 'string', description: '功能描述' },
+        cwd: { type: 'string', description: '工作目录', default: '.' }
+      },
+      required: ['feature_desc']
+    },
+    probes: [
+      { type: 'shell_exec', command: 'pnpm build' },
+      { type: 'shell_exec', command: 'pnpm test' }
+    ]
+  }
+}
 
 export type BuiltinForgeName = keyof typeof BUILTIN_FORGES
 export type BuiltinProbeName = keyof typeof BUILTIN_PROBES

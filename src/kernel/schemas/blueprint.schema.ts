@@ -64,6 +64,7 @@ export const PartInvocationSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
   _version: z.number().int().positive().optional().default(1),
+  min_version: z.number().int().positive().optional(),
   deps: z.array(z.string()).default([]),
   ref: z.string().optional(),
   slot: z.string().optional(),
@@ -82,13 +83,8 @@ export const PartInvocationSchema = z.object({
     command: z.string().optional(),
   }).optional(),
   probes: z.array(ProbeInvocationSchema).optional(),
-  probes_append: z.array(ProbeInvocationSchema).optional(),
-  probes_override: z.array(ProbeInvocationSchema).optional(),
 }).refine(
   (data) => {
-    if (data.probes_append !== undefined && data.probes_override !== undefined) {
-      throw new Error('Part 不能同时包含 probes_append 和 probes_override')
-    }
     if (data.condition !== undefined) {
       const hasRuntimeVar = /\?\s*['"]/.test(data.condition) || /\?\s*"/.test(data.condition)
       if (hasRuntimeVar) {
@@ -100,7 +96,7 @@ export const PartInvocationSchema = z.object({
     }
     return true
   },
-  { message: 'probes_append 和 probes_override 互斥，ref 和 slot 互斥' }
+  { message: 'ref 和 slot 互斥' }
 )
 
 export type Part = z.infer<typeof PartInvocationSchema>
@@ -133,9 +129,7 @@ export function safeParseBlueprint(data: unknown): { success: true; data: Bluepr
 
 export function hasValidProbeRefs(part: Part): boolean {
   const allProbes = [
-    ...(part.probes || []),
-    ...(part.probes_append || []),
-    ...(part.probes_override || [])
+    ...(part.probes || [])
   ]
   return allProbes.every(p => !p.ref || isValidProbeRef(p.ref))
 }

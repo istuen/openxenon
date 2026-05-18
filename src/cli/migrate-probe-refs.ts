@@ -126,8 +126,8 @@ export function migrateProbeRefs(projectRoot: string, dryRun: boolean = false): 
   const blueprintsDir = join(projectRoot, '.openxenon', 'arsenals', 'blueprints')
   results.push(...migrateDirectory(blueprintsDir, dryRun))
 
-  const stagesDir = join(projectRoot, '.openxenon', 'arsenals', 'stages')
-  results.push(...migrateDirectory(stagesDir, dryRun))
+  const partsDir = join(projectRoot, '.openxenon', 'arsenals', 'parts')
+  results.push(...migrateDirectory(partsDir, dryRun))
 
   const rootBlueprint = join(projectRoot, 'blueprint.yaml')
   if (existsSync(rootBlueprint)) {

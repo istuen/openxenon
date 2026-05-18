@@ -4,9 +4,7 @@ import { ensureArsenalsDirectories } from '../arsenals/init'
 import { type AssetType } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
 import { readFileSync, writeFileSync } from 'fs'
-import { join, dirname } from 'path'
-import { BlueprintCompiler } from '../kernel/compiler/blueprint-compiler'
-import { parseBlueprint } from '../kernel/schemas/blueprint.schema'
+import { join } from 'path'
 import * as yaml from 'yaml'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
@@ -14,8 +12,8 @@ const TYPE_ALIASES: Record<string, AssetType> = {
   'blueprints': 'blueprints',
   'probe': 'probes',
   'probes': 'probes',
-  'stage': 'stages',
-  'stages': 'stages'
+  'part': 'parts',
+  'parts': 'parts'
 }
 
 function parseAssetName(input: string): { type: AssetType, name: string } | null {
@@ -103,21 +101,14 @@ export default defineCommand({
         }, format)
       }
 
-      if (parsed.type === 'blueprints' && promoted) {
-        try {
-          const bpContent = readFileSync(promoted.path, 'utf-8')
-          const blueprint = parseBlueprint(yaml.parse(bpContent))
-          const frozenDir = dirname(promoted.path)
-          const frozenPath = join(frozenDir, 'frozen.yaml')
-          const compiler = new BlueprintCompiler()
-          const frozen = compiler.compile(blueprint, {
-            taskId: blueprint.id || blueprint.name,
-            taskName: blueprint.name
-          })
-          writeFileSync(frozenPath, yaml.stringify(frozen), 'utf-8')
-        } catch (err) {
-          // frozen.yaml generation is best-effort during promote
-        }
+      try {
+        const existingContent = readFileSync(promoted.path, 'utf-8')
+        const doc = yaml.parse(existingContent) as Record<string, unknown>
+        const currentVersion = (doc._version as number) || 1
+        doc._version = currentVersion + 1
+        writeFileSync(promoted.path, yaml.stringify(doc), 'utf-8')
+      } catch (err) {
+        // version increment is best-effort
       }
 
       return output({
