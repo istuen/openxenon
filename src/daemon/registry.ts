@@ -1,5 +1,6 @@
 import type { AssetState, AssetType } from '../arsenals/paths'
 import { listStandards, type StandardAsset } from '../infra/loader'
+import { parse as parseYaml } from 'yaml'
 
 export interface ArsenalSemantics {
   intent: string
@@ -30,7 +31,7 @@ export class ArsenalRegistry {
 
   private addAsset(asset: StandardAsset): void {
     try {
-      const parsed = JSON.parse(asset.content)
+      const parsed = parseYaml(asset.content) as Record<string, unknown>
       const semantics = this.extractSemantics(parsed)
 
       const entry: ArsenalEntry = {

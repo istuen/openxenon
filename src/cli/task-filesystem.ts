@@ -172,7 +172,7 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
     taskId,
     taskName: parsed.name || parsed.id || taskId,
     params: {},
-    dependencies: preloadCompileDependencies(cwd)
+    dependencies: preloadCompileDependencies(join(cwd, BOUNDARY_DIR))
   })
   const frozenDestPath = getFrozenBlueprintPath(cwd, taskId)
   writeFileSync(frozenDestPath, stringifyYaml(frozenBlueprint), 'utf-8')

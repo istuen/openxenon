@@ -1,3 +1,4 @@
+import { parse as parseYaml } from 'yaml'
 import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, loadStandardByName } from '../../infra/loader'
 import { BUILTIN_STAGES } from '../../arsenals/builtin'
 import type { StageDefinition } from '../schemas/stage-asset'
@@ -60,7 +61,7 @@ if (namespace === 'oxn') {
     const stageData = loadStandardByName('global', projectBoundary, probeName, 'stages')
     if (stageData) {
       try {
-        const stage = JSON.parse(stageData.content) as StageDefinition
+        const stage = parseYaml(stageData.content) as StageDefinition
         return {
           found: true,
           stage,
@@ -80,7 +81,7 @@ if (namespace === 'oxn') {
     const stageData = loadStandardByName('project', projectBoundary, probeName, 'stages')
     if (stageData) {
       try {
-        const stage = JSON.parse(stageData.content) as StageDefinition
+        const stage = parseYaml(stageData.content) as StageDefinition
         return {
           found: true,
           stage,
@@ -103,7 +104,7 @@ if (namespace === 'oxn') {
     const stageData = loadStandardByName('global', projectBoundary, probeName, 'stages')
     if (stageData) {
       try {
-        const stage = JSON.parse(stageData.content) as StageDefinition
+        const stage = parseYaml(stageData.content) as StageDefinition
         return {
           found: true,
           stage,
@@ -124,7 +125,7 @@ if (namespace === 'oxn') {
     const stageData = loadStandardByName('project', projectBoundary, probeName, 'stages')
     if (stageData) {
       try {
-        const stage = JSON.parse(stageData.content) as StageDefinition
+        const stage = parseYaml(stageData.content) as StageDefinition
         return {
           found: true,
           stage,

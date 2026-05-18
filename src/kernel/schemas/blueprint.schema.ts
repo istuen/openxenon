@@ -26,11 +26,46 @@ export const ProbeInvocationSchema = z.object({
 
 export type Probe = z.infer<typeof ProbeInvocationSchema>
 
+export const SlotDefinitionSchema = z.object({
+  name: z.string(),
+  default: z.string().optional(),
+  description: z.string().optional(),
+})
+
+export type SlotDefinition = z.infer<typeof SlotDefinitionSchema>
+
+export const SlotInvocationSchema: z.ZodType<{
+  name: string
+  inline?: boolean
+  target?: Record<string, unknown>
+  action?: Record<string, unknown>
+  spec?: Record<string, unknown>
+  probes?: Array<Record<string, unknown>>
+}> = z.union([
+  z.string(),
+  z.object({
+    name: z.string(),
+    inline: z.boolean().optional(),
+    target: z.object({ description: z.string(), glob: z.string().optional() }).optional(),
+    action: z.object({ instruction: z.string().optional(), command: z.string().optional() }).optional(),
+    spec: z.object({ description: z.string(), constraints: z.array(z.string()).optional() }).optional(),
+    probes: z.array(ProbeInvocationSchema).optional(),
+  })
+]).transform(val => {
+  if (typeof val === 'string') {
+    return { name: val, inline: false }
+  }
+  return { name: val.name, inline: val.inline ?? false, ...val }
+})
+
+export type SlotInvocation = z.infer<typeof SlotInvocationSchema>
+
 export const StageInvocationSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
   deps: z.array(z.string()).default([]),
   ref: z.string().optional(),
+  slot: z.string().optional(),
   condition: z.string().optional(),
   params: z.record(z.string(), z.unknown()).optional(),
   target: z.object({
@@ -59,9 +94,12 @@ export const StageInvocationSchema = z.object({
         throw new Error('condition 不允许包含三元表达式等运行时逻辑')
       }
     }
+    if (data.ref !== undefined && data.slot !== undefined) {
+      throw new Error('Stage 不能同时包含 ref 和 slot')
+    }
     return true
   },
-  { message: 'probes_append 和 probes_override 互斥' }
+  { message: 'probes_append 和 probes_override 互斥，ref 和 slot 互斥' }
 )
 
 export type Stage = z.infer<typeof StageInvocationSchema>
@@ -70,6 +108,7 @@ export const BlueprintSchema = z.object({
   id: z.string(),
   name: z.string(),
   status: z.enum(['DRAFT', 'CANONICAL', 'ABANDONED']).default('CANONICAL'),
+  slots: z.record(z.string(), z.union([z.string(), SlotInvocationSchema])).optional(),
   stages: z.array(StageInvocationSchema).optional(),
   topology: z.array(z.string()).optional(),
   edges: z.array(z.object({ from: z.string(), to: z.string() })).optional(),

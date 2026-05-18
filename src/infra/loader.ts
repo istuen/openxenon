@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
+import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 import { type AssetState, type AssetType } from '../arsenals/paths'
 import { BUILTIN_PROBES } from '../arsenals/builtin'
@@ -355,24 +356,24 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
   const projectProbes = loadArsenalsByTypeAndState('fallback', projectBoundary, 'probes', 'canonical')
   for (const asset of projectProbes) {
     try {
-      const content = JSON.parse(asset.content)
+      const content = parseYaml(asset.content) as Record<string, unknown>
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
       probes.set(ref, content)
       probes.set(`./${asset.name}`, content)
     } catch {
-      // skip invalid JSON
+      // skip invalid YAML
     }
   }
 
   const projectStages = loadArsenalsByTypeAndState('fallback', projectBoundary, 'stages', 'canonical')
   for (const asset of projectStages) {
     try {
-      const content = JSON.parse(asset.content)
+      const content = parseYaml(asset.content) as Record<string, unknown>
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
       stages.set(ref, content)
       stages.set(`./${asset.name}`, content)
     } catch {
-      // skip invalid JSON
+      // skip invalid YAML
     }
   }
 

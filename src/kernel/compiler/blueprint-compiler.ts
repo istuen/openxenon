@@ -180,11 +180,42 @@ export class BlueprintCompiler {
 
     for (const stage of raw.stages || []) {
       let resolvedStage: Record<string, unknown>
+      let resolvedRef: string | undefined = stage.ref
+      let stageToResolve: Record<string, unknown> = stage as unknown as Record<string, unknown>
 
-      if (stage.ref) {
-        const stageContent = deps?.stages.get(stage.ref)
-        if (!stageContent) {
-          throw new Error(`Stage ref "${stage.ref}" 解析失败，未找到对应资产`)
+      if (stage.slot) {
+        const slotValue = raw.slots?.[stage.slot]
+        if (!slotValue) {
+          throw new Error(`Slot "${stage.slot}" not found in blueprint slots`)
+        }
+        if (typeof slotValue === 'string') {
+          resolvedRef = slotValue
+          let stageContent = deps?.stages.get(slotValue)
+          if (!stageContent) {
+            stageContent = deps?.stages.get(`project/${slotValue}`)
+          }
+          if (!stageContent) {
+            stageContent = deps?.stages.get(`./${slotValue}`)
+          }
+          if (!stageContent) {
+            throw new Error(`Slot "${stage.slot}" resolved to "${slotValue}" but stage not found in dependencies`)
+          }
+          stageToResolve = stageContent
+        } else {
+          resolvedRef = `slot:${stage.slot}:inline`
+          stageToResolve = {
+            ...slotValue,
+            id: stage.id,
+            name: stage.name || slotValue.name,
+            deps: stage.deps || slotValue.deps || []
+          }
+        }
+      }
+
+      if (resolvedRef) {
+        const stageContent = stageToResolve
+        if (!stageContent || typeof stageContent !== 'object') {
+          throw new Error(`Stage ref "${resolvedRef}" 解析失败，未找到对应资产`)
         }
 
         validateParams(stageContent, stage.params || {})
@@ -225,9 +256,9 @@ export class BlueprintCompiler {
 
       const metaStage = injectMeta(
         rendered,
-        stage.ref || 'inline',
-        stage.ref ? 'project' : 'project',
-        stage.ref ? `ref:${stage.ref}` : undefined
+        resolvedRef || 'inline',
+        resolvedRef ? 'project' : 'project',
+        resolvedRef ? `ref:${resolvedRef}` : undefined
       )
 
       stages.push(metaStage)
