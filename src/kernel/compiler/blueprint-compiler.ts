@@ -17,7 +17,7 @@ export interface ResolvedProbe {
   probes_content?: Record<string, unknown>
 }
 
-export interface ResolvedStage {
+export interface ResolvedPart {
   id: string
   name: string
   deps: string[]
@@ -28,7 +28,7 @@ export interface ResolvedStage {
 }
 
 export interface CompileDependencies {
-  stages: Map<string, Record<string, unknown>>
+  parts: Map<string, Record<string, unknown>>
   probes: Map<string, Record<string, unknown>>
 }
 
@@ -46,38 +46,38 @@ function evaluateCondition(condition: string, params: Record<string, unknown>): 
   return operator === '==' ? value === expected : value !== expected
 }
 
-function validateParams(stageContent: Record<string, unknown>, providedParams: Record<string, unknown> = {}): void {
-  const paramsSchema = stageContent.params_schema as { required?: string[] } | undefined
+function validateParams(partContent: Record<string, unknown>, providedParams: Record<string, unknown> = {}): void {
+  const paramsSchema = partContent.params_schema as { required?: string[] } | undefined
   if (!paramsSchema) return
 
   const required = paramsSchema.required || []
   for (const key of required) {
     if (!(key in providedParams)) {
-      throw new Error(`Stage 缺少必填参数 "${key}"`)
+      throw new Error(`Part 缺少必填参数 "${key}"`)
     }
   }
 }
 
 function mergeProbes(
   baseProbes: Array<Record<string, unknown>>,
-  overrideStage: { probes_override?: Array<Record<string, unknown>>; probes_append?: Array<Record<string, unknown>>; probes?: Array<Record<string, unknown>> }
+  overridePart: { probes_override?: Array<Record<string, unknown>>; probes_append?: Array<Record<string, unknown>>; probes?: Array<Record<string, unknown>> }
 ): Array<Record<string, unknown>> {
-  const override = overrideStage.probes_override || overrideStage.probes || []
-  const append = overrideStage.probes_append || []
+  const override = overridePart.probes_override || overridePart.probes || []
+  const append = overridePart.probes_append || []
 
-  if (overrideStage.probes_override) {
+  if (overridePart.probes_override) {
     return [...override, ...append]
   }
 
   return [...baseProbes, ...override, ...append]
 }
 
-function pruneStages(
-  stages: Array<Record<string, unknown>>,
+function pruneParts(
+  parts: Array<Record<string, unknown>>,
   params: Record<string, unknown> = {}
 ): Array<Record<string, unknown>> {
-  return stages.filter(stage => {
-    const condition = stage.condition as string | undefined
+  return parts.filter(part => {
+    const condition = part.condition as string | undefined
     if (!condition) return true
     return evaluateCondition(condition, params)
   })
@@ -100,8 +100,8 @@ function renderString(str: string, ctx: CompileContext): string {
   })
 }
 
-function renderTemplates(stage: Record<string, unknown>, ctx: CompileContext): Record<string, unknown> {
-  const result = { ...stage }
+function renderTemplates(part: Record<string, unknown>, ctx: CompileContext): Record<string, unknown> {
+  const result = { ...part }
 
   if (result.action) {
     const action = result.action as { instruction?: string; command?: string }
@@ -120,9 +120,9 @@ function renderTemplates(stage: Record<string, unknown>, ctx: CompileContext): R
   return result
 }
 
-function injectMeta(stage: Record<string, unknown>, ref: string, namespace: 'kernel' | 'global' | 'project', originalPath?: string): Record<string, unknown> {
+function injectMeta(part: Record<string, unknown>, ref: string, namespace: 'kernel' | 'global' | 'project', originalPath?: string): Record<string, unknown> {
   const frozenAt = new Date().toISOString()
-  const content = JSON.stringify(stage)
+  const content = JSON.stringify(part)
 
   const meta = {
     ref,
@@ -132,7 +132,7 @@ function injectMeta(stage: Record<string, unknown>, ref: string, namespace: 'ker
     content_hash: computeContentHash(content)
   }
 
-  const probes = (stage.probes as Array<Record<string, unknown>> || []).map((probe, idx) => {
+  const probes = (part.probes as Array<Record<string, unknown>> || []).map((probe, idx) => {
     const probeRef = (probe.ref as string) || `inline-probe-${idx}`
     return {
       ...probe,
@@ -144,7 +144,7 @@ function injectMeta(stage: Record<string, unknown>, ref: string, namespace: 'ker
   })
 
   return {
-    ...stage,
+    ...part,
     _xenon_meta: meta,
     probes
   }
@@ -165,9 +165,9 @@ export class BlueprintCompiler {
   }
 
   compile(raw: Blueprint, ctx: CompileContext): FrozenBlueprint {
-    const dagNodes: DagNode[] = (raw.stages || []).map(stage => ({
-      id: stage.id || (stage as any).name,
-      deps: stage.deps || []
+    const dagNodes: DagNode[] = (raw.parts || []).map(part => ({
+      id: part.id || (part as any).name,
+      deps: part.deps || []
     }))
 
     const dagResult = validateDagTopology(dagNodes)
@@ -176,99 +176,99 @@ export class BlueprintCompiler {
     }
 
     const deps = ctx.dependencies
-    const stages: Array<Record<string, unknown>> = []
+    const parts: Array<Record<string, unknown>> = []
 
-    for (const stage of raw.stages || []) {
-      let resolvedStage: Record<string, unknown>
-      let resolvedRef: string | undefined = stage.ref
-      let stageToResolve: Record<string, unknown> = stage as unknown as Record<string, unknown>
+    for (const part of raw.parts || []) {
+      let resolvedPart: Record<string, unknown>
+      let resolvedRef: string | undefined = part.ref
+      let partToResolve: Record<string, unknown> = part as unknown as Record<string, unknown>
 
-      if (stage.slot) {
-        const slotValue = raw.slots?.[stage.slot]
+      if (part.slot) {
+        const slotValue = raw.slots?.[part.slot]
         if (!slotValue) {
-          throw new Error(`Slot "${stage.slot}" not found in blueprint slots`)
+          throw new Error(`Slot "${part.slot}" not found in blueprint slots`)
         }
         if (typeof slotValue === 'string') {
           resolvedRef = slotValue
-          let stageContent = deps?.stages.get(slotValue)
-          if (!stageContent) {
-            stageContent = deps?.stages.get(`project/${slotValue}`)
+          let partContent = deps?.parts.get(slotValue)
+          if (!partContent) {
+            partContent = deps?.parts.get(`project/${slotValue}`)
           }
-          if (!stageContent) {
-            stageContent = deps?.stages.get(`./${slotValue}`)
+          if (!partContent) {
+            partContent = deps?.parts.get(`./${slotValue}`)
           }
-          if (!stageContent) {
-            throw new Error(`Slot "${stage.slot}" resolved to "${slotValue}" but stage not found in dependencies`)
+          if (!partContent) {
+            throw new Error(`Slot "${part.slot}" resolved to "${slotValue}" but part not found in dependencies`)
           }
-          stageToResolve = stageContent
+          partToResolve = partContent
         } else {
-          resolvedRef = `slot:${stage.slot}:inline`
-          stageToResolve = {
+          resolvedRef = `slot:${part.slot}:inline`
+          partToResolve = {
             ...slotValue,
-            id: stage.id,
-            name: stage.name || slotValue.name,
-            deps: stage.deps || slotValue.deps || []
+            id: part.id,
+            name: part.name || slotValue.name,
+            deps: part.deps || slotValue.deps || []
           }
         }
       }
 
       if (resolvedRef) {
-        const stageContent = stageToResolve
-        if (!stageContent || typeof stageContent !== 'object') {
-          throw new Error(`Stage ref "${resolvedRef}" 解析失败，未找到对应资产`)
+        const partContent = partToResolve
+        if (!partContent || typeof partContent !== 'object') {
+          throw new Error(`Part ref "${resolvedRef}" 解析失败，未找到对应资产`)
         }
 
-        validateParams(stageContent, stage.params || {})
+        validateParams(partContent, part.params || {})
 
-        const baseProbes = (stageContent.probes as Array<Record<string, unknown>>) || []
-        const mergedProbes = mergeProbes(baseProbes, stage as any)
+        const baseProbes = (partContent.probes as Array<Record<string, unknown>>) || []
+        const mergedProbes = mergeProbes(baseProbes, part as any)
 
-        resolvedStage = {
-          ...stageContent,
-          id: stage.id || (stageContent.id as string),
-          name: stage.name || (stageContent.name as string),
-          deps: stage.deps || (stageContent.deps as string[] || []),
-          params: stage.params || {},
-          target: (stage as any).target || (stageContent as any).target,
-          action: (stage as any).action || (stageContent as any).action,
+        resolvedPart = {
+          ...partContent,
+          id: part.id || (partContent.id as string),
+          name: part.name || (partContent.name as string),
+          deps: part.deps || (partContent.deps as string[] || []),
+          params: part.params || {},
+          target: (part as any).target || (partContent as any).target,
+          action: (part as any).action || (partContent as any).action,
           probes: mergedProbes
         }
       } else {
-        const inlineProbes = (stage.probes as Array<Record<string, unknown>>) || []
+        const inlineProbes = (part.probes as Array<Record<string, unknown>>) || []
         const mergedInlineProbes = [...inlineProbes]
 
-        resolvedStage = {
-          id: stage.id,
-          name: stage.name,
-          deps: stage.deps || [],
-          params: stage.params || {},
-          target: (stage as any).target,
-          action: (stage as any).action,
+        resolvedPart = {
+          id: part.id,
+          name: part.name,
+          deps: part.deps || [],
+          params: part.params || {},
+          target: (part as any).target,
+          action: (part as any).action,
           probes: mergedInlineProbes
         }
       }
 
-      const pruned = pruneStages([resolvedStage], ctx.params || {})
+      const pruned = pruneParts([resolvedPart], ctx.params || {})
       if (pruned.length === 0) continue
 
-      resolvedStage = pruned[0]!
-      const rendered = renderTemplates(resolvedStage, ctx)
+      resolvedPart = pruned[0]!
+      const rendered = renderTemplates(resolvedPart, ctx)
 
-      const metaStage = injectMeta(
+      const metaPart = injectMeta(
         rendered,
         resolvedRef || 'inline',
         resolvedRef ? 'project' : 'project',
         resolvedRef ? `ref:${resolvedRef}` : undefined
       )
 
-      stages.push(metaStage)
+      parts.push(metaPart)
     }
 
     return {
       id: raw.id,
       name: raw.name,
       frozen_at: new Date().toISOString(),
-      stages: stages as any
+      parts: parts as any
     }
   }
 }

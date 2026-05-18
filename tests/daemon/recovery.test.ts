@@ -31,7 +31,7 @@ describe('RecoveryManager', () => {
       const rp = recoveryManager.createRecoveryPoint(taskId, 'stage-1')
       expect(rp).not.toBeNull()
       expect(rp!.taskId).toBe(taskId)
-      expect(rp!.stageId).toBe('stage-1')
+      expect(rp!.partId).toBe('stage-1')
       expect(existsSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'recovery', 'index.json'))).toBe(true)
     })
 
@@ -69,7 +69,7 @@ describe('RecoveryManager', () => {
       recoveryManager.createRecoveryPoint(taskId, 'stage-1')
       recoveryManager.createRecoveryPoint(taskId, 'stage-2')
       const latest = recoveryManager.getLatestRecoveryPoint(taskId)
-      expect(latest!.stageId).toBe('stage-2')
+      expect(latest!.partId).toBe('stage-2')
     })
 
     it('returns null when no recovery points exist', () => {

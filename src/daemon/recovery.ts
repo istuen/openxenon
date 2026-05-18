@@ -6,7 +6,7 @@ import { getProjectBoundaryPath } from '../kernel'
 export interface RecoveryPoint {
   id: string
   taskId: string
-  stageId: string
+  partId: string
   timestamp: number
   statePath: string
   artifactPath: string
@@ -37,7 +37,7 @@ export class RecoveryManager {
     return this.projectRoot
   }
 
-  createRecoveryPoint(taskId: string, stageId: string, metadata: Record<string, unknown> = {}): RecoveryPoint | null {
+  createRecoveryPoint(taskId: string, partId: string, metadata: Record<string, unknown> = {}): RecoveryPoint | null {
     const projectBoundary = this.getProjectBoundary()
     const recoveryDir = join(projectBoundary, 'tasks', taskId, 'recovery')
 
@@ -72,7 +72,7 @@ export class RecoveryManager {
     const recoveryPoint: RecoveryPoint = {
       id,
       taskId,
-      stageId,
+      partId,
       timestamp: Date.now(),
       statePath: stateBackupPath,
       artifactPath: artifactBackupPath,
@@ -94,7 +94,7 @@ export class RecoveryManager {
     const indexPath = join(recoveryDir, 'index.json')
     writeFileSync(indexPath, JSON.stringify(points, null, 2), 'utf-8')
 
-    daemonLogger.info(`Created recovery point ${id} for task ${taskId} at stage ${stageId}`)
+    daemonLogger.info(`Created recovery point ${id} for task ${taskId} at part ${partId}`)
 
     return recoveryPoint
   }
@@ -158,7 +158,7 @@ export class RecoveryManager {
     }
   }
 
-  retry(taskId: string, fromStageId?: string): boolean {
+  retry(taskId: string, fromPartId?: string): boolean {
     const latest = this.getLatestRecoveryPoint(taskId)
 
     if (!latest) {
@@ -178,7 +178,7 @@ export class RecoveryManager {
         return false
       }
 
-      daemonLogger.info(`Retrying task ${taskId} from stage ${fromStageId || latest.stageId}`)
+      daemonLogger.info(`Retrying task ${taskId} from part ${fromPartId || latest.partId}`)
       return true
     } catch (error) {
       daemonLogger.error(`Retry failed: ${error}`)

@@ -1,11 +1,11 @@
 export interface RadarEntry {
   taskId: string
-  stageId: string
+  partId: string
   startTime: number
   timeout: number
 }
 
-export type TimeoutCallback = (taskId: string, stageId: string, elapsed: number) => void
+export type TimeoutCallback = (taskId: string, partId: string, elapsed: number) => void
 
 export class RadarClock {
   private entries: Map<string, RadarEntry> = new Map()
@@ -13,23 +13,23 @@ export class RadarClock {
   private schedulerTimer: ReturnType<typeof setInterval> | null = null
   private checkIntervalMs: number = 1000
 
-  startMonitor(taskId: string, stageId: string, timeoutMs: number): void {
-    const key = `${taskId}:${stageId}`
+  startMonitor(taskId: string, partId: string, timeoutMs: number): void {
+    const key = `${taskId}:${partId}`
     this.entries.set(key, {
       taskId,
-      stageId,
+      partId,
       startTime: Date.now(),
       timeout: timeoutMs
     })
   }
 
-  stopMonitor(taskId: string, stageId: string): void {
-    const key = `${taskId}:${stageId}`
+  stopMonitor(taskId: string, partId: string): void {
+    const key = `${taskId}:${partId}`
     this.entries.delete(key)
   }
 
-  isTimeout(taskId: string, stageId: string): boolean {
-    const key = `${taskId}:${stageId}`
+  isTimeout(taskId: string, partId: string): boolean {
+    const key = `${taskId}:${partId}`
     const entry = this.entries.get(key)
     if (!entry) return false
 
@@ -37,16 +37,16 @@ export class RadarClock {
     return elapsed > entry.timeout
   }
 
-  getElapsed(taskId: string, stageId: string): number {
-    const key = `${taskId}:${stageId}`
+  getElapsed(taskId: string, partId: string): number {
+    const key = `${taskId}:${partId}`
     const entry = this.entries.get(key)
     if (!entry) return 0
 
     return Date.now() - entry.startTime
   }
 
-  getRemaining(taskId: string, stageId: string): number {
-    const key = `${taskId}:${stageId}`
+  getRemaining(taskId: string, partId: string): number {
+    const key = `${taskId}:${partId}`
     const entry = this.entries.get(key)
     if (!entry) return 0
 
@@ -85,7 +85,7 @@ export class RadarClock {
       const elapsed = Date.now() - entry.startTime
       if (elapsed > entry.timeout) {
         for (const cb of this.timeoutCallbacks) {
-          cb(entry.taskId, entry.stageId, elapsed)
+          cb(entry.taskId, entry.partId, elapsed)
         }
       }
     }

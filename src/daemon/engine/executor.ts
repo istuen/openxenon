@@ -1,4 +1,4 @@
-import type { Blueprint, Stage } from '../../kernel/schemas/blueprint.schema'
+import type { Blueprint, Part } from '../../kernel/schemas/blueprint.schema'
 import { getProbeHandler, type ProbeResult, type ProbeContext } from '../../infra/probes'
 import { evaluateProbe, reduceProbeResults, type ProbeDefinition } from '../../kernel/probes/evaluator'
 import { radarClock } from '../radar/clock'
@@ -14,33 +14,33 @@ export interface ExecutorOptions {
   timeoutMs?: number
 }
 
-export interface ExecuteStageResult {
+export interface ExecutePartResult {
   success: boolean
-  stageId: string
-  stageName: string
+  partId: string
+  partName: string
   probeResults: ProbeResult[]
   timedOut?: boolean
 }
 
 const DEFAULT_TIMEOUT_MS = 300000
 
-export async function executeStage(
-  stage: Stage,
+export async function executePart(
+  part: Part,
   options: ExecutorOptions
-): Promise<ExecuteStageResult> {
-  const { id: stageId, name, probes, action } = stage
+): Promise<ExecutePartResult> {
+  const { id: partId, name, probes, action } = part
   const context: ProbeContext = { projectRoot: options.projectRoot }
   const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS
 
-  hallEmitter.emitStageStarted(options.taskId, stageId, name)
-  radarClock.startMonitor(options.taskId, stageId, timeoutMs)
+  hallEmitter.emitPartStarted(options.taskId, partId, name)
+  radarClock.startMonitor(options.taskId, partId, timeoutMs)
 
-  daemonLogger.info(`[Executor] Executing stage: ${stageId} (${name})`)
+  daemonLogger.info(`[Executor] Executing part: ${partId} (${name})`)
 
   if (action?.command) {
-    const proc = processManager.spawn(options.taskId, stageId, 'bash', ['-c', action.command])
+    const proc = processManager.spawn(options.taskId, partId, 'bash', ['-c', action.command])
     if (proc) {
-      daemonLogger.info(`[Executor] Spawned AI process ${proc.pid} for stage ${stageId}`)
+      daemonLogger.info(`[Executor] Spawned AI process ${proc.pid} for part ${partId}`)
     }
   }
 
@@ -48,12 +48,12 @@ export async function executeStage(
 
   try {
     for (const probe of probes || []) {
-      if (radarClock.isTimeout(options.taskId, stageId)) {
-        handleTimeout(stageId, name, options.taskId)
+      if (radarClock.isTimeout(options.taskId, partId)) {
+        handleTimeout(partId, name, options.taskId)
         return {
           success: false,
-          stageId,
-          stageName: name,
+          partId,
+          partName: name,
           probeResults,
           timedOut: true
         }
@@ -69,7 +69,7 @@ export async function executeStage(
           error: `Unknown probe type: ${probe.type}`,
           executedAt: Date.now()
         })
-        hallEmitter.emitProbeResult(options.taskId, stageId, probe.type, 'FAILED')
+        hallEmitter.emitProbeResult(options.taskId, partId, probe.type, 'FAILED')
         continue
       }
 
@@ -88,7 +88,7 @@ export async function executeStage(
         evaluateProbe(definition, actualResult)
 
         probeResults.push(actualResult)
-        hallEmitter.emitProbeResult(options.taskId, stageId, probe.type, actualResult.result)
+        hallEmitter.emitProbeResult(options.taskId, partId, probe.type, actualResult.result)
       } catch (error) {
         probeResults.push({
           probeType: probe.type,
@@ -96,52 +96,52 @@ export async function executeStage(
           error: error instanceof Error ? error.message : String(error),
           executedAt: Date.now()
         })
-        hallEmitter.emitProbeResult(options.taskId, stageId, probe.type, 'FAILED')
+        hallEmitter.emitProbeResult(options.taskId, partId, probe.type, 'FAILED')
       }
     }
   } finally {
-    radarClock.stopMonitor(options.taskId, stageId)
-    processManager.remove(options.taskId, stageId)
+    radarClock.stopMonitor(options.taskId, partId)
+    processManager.remove(options.taskId, partId)
   }
 
   const verdict = reduceProbeResults(probeResults, 'AND')
 
   if (verdict.passed) {
-    hallEmitter.emitStageCompleted(options.taskId, stageId, name, { probeCount: probeResults.length })
+    hallEmitter.emitPartCompleted(options.taskId, partId, name, { probeCount: probeResults.length })
   } else {
-    hallEmitter.emitStageFailed(options.taskId, stageId, name, { probeCount: probeResults.length })
+    hallEmitter.emitPartFailed(options.taskId, partId, name, { probeCount: probeResults.length })
   }
 
   return {
     success: verdict.passed,
-    stageId,
-    stageName: name,
+    partId,
+    partName: name,
     probeResults
   }
 }
 
-function handleTimeout(stageId: string, stageName: string, taskId: string): void {
-  daemonLogger.warn(`[Executor] Stage ${stageId} timed out`)
-  processManager.markTimeout(taskId, stageId)
-  radarClock.stopMonitor(taskId, stageId)
-  hallEmitter.emitStageTimeout(taskId, stageId, stageName)
+function handleTimeout(partId: string, partName: string, taskId: string): void {
+  daemonLogger.warn(`[Executor] Part ${partId} timed out`)
+  processManager.markTimeout(taskId, partId)
+  radarClock.stopMonitor(taskId, partId)
+  hallEmitter.emitPartTimeout(taskId, partId, partName)
 }
 
-export function buildDag(stages: Stage[]): { order: string[] } {
+export function buildDag(parts: Part[]): { order: string[] } {
   const order: string[] = []
 
   const inDegree = new Map<string, number>()
-  const adjList = new Map<string, string[]()
+  const adjList = new Map<string, string[]>()
 
-  for (const stage of stages) {
-    inDegree.set(stage.id, 0)
-    adjList.set(stage.id, [])
+  for (const part of parts) {
+    inDegree.set(part.id, 0)
+    adjList.set(part.id, [])
   }
 
-  for (const stage of stages) {
-    for (const dep of stage.deps || []) {
-      adjList.get(dep)?.push(stage.id)
-      inDegree.set(stage.id, (inDegree.get(stage.id) || 0) + 1)
+  for (const part of parts) {
+    for (const dep of part.deps || []) {
+      adjList.get(dep)?.push(part.id)
+      inDegree.set(part.id, (inDegree.get(part.id) || 0) + 1)
     }
   }
 
@@ -165,27 +165,27 @@ export function buildDag(stages: Stage[]): { order: string[] } {
   return { order }
 }
 
-export async function executeBlueprint(options: ExecutorOptions): Promise<{ success: boolean; results: ExecuteStageResult[] }> {
+export async function executeBlueprint(options: ExecutorOptions): Promise<{ success: boolean; results: ExecutePartResult[] }> {
   const { blueprint, taskId, taskName } = options
-  const stages = blueprint.stages || []
+  const parts = blueprint.parts || []
 
   hallEmitter.emitTaskRunning(taskId, taskName)
 
-  const { order } = buildDag(stages)
-  const results: ExecuteStageResult[] = []
+  const { order } = buildDag(parts)
+  const results: ExecutePartResult[] = []
 
-  const stageMap = new Map<string, Stage>(stages.map(s => [s.id, s]))
+  const partMap = new Map<string, Part>(parts.map(p => [p.id, p]))
 
-  for (const stageId of order) {
-    const stage = stageMap.get(stageId)
-    if (!stage) continue
+  for (const partId of order) {
+    const part = partMap.get(partId)
+    if (!part) continue
 
-    if (radarClock.isTimeout(taskId, stageId)) {
-      handleTimeout(stageId, stage.name || stageId, taskId)
+    if (radarClock.isTimeout(taskId, partId)) {
+      handleTimeout(partId, part.name || partId, taskId)
       break
     }
 
-    const result = await executeStage(stage, options)
+    const result = await executePart(part, options)
     results.push(result)
 
     if (!result.success) {
@@ -208,11 +208,11 @@ export async function executeBlueprint(options: ExecutorOptions): Promise<{ succ
 }
 
 export function initExecutorTimeoutHandling(): void {
-  radarClock.onTimeout((taskId, stageId, elapsed) => {
-    daemonLogger.warn(`[Executor] Timeout detected for ${taskId}:${stageId} after ${elapsed}ms`)
-    const proc = processManager.get(taskId, stageId)
+  radarClock.onTimeout((taskId, partId, elapsed) => {
+    daemonLogger.warn(`[Executor] Timeout detected for ${taskId}:${partId} after ${elapsed}ms`)
+    const proc = processManager.get(taskId, partId)
     if (proc) {
-      processManager.markTimeout(taskId, stageId)
+      processManager.markTimeout(taskId, partId)
     }
   })
 

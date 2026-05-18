@@ -5,7 +5,7 @@ export interface ManagedProcess {
   id: string
   pid: number
   taskId: string
-  stageId: string
+  partId: string
   command: string
   args: string[]
   startTime: number
@@ -15,8 +15,8 @@ export interface ManagedProcess {
 export class ProcessManager {
   private processes: Map<string, ManagedProcess> = new Map()
 
-  spawn(taskId: string, stageId: string, command: string, args: string[] = []): ManagedProcess | null {
-    const id = `${taskId}:${stageId}`
+  spawn(taskId: string, partId: string, command: string, args: string[] = []): ManagedProcess | null {
+    const id = `${taskId}:${partId}`
     
     if (this.processes.has(id)) {
       daemonLogger.warn(`Process already running for ${id}`)
@@ -33,7 +33,7 @@ export class ProcessManager {
         id,
         pid: child.pid!,
         taskId,
-        stageId,
+        partId,
         command,
         args,
         startTime: Date.now(),
@@ -66,8 +66,8 @@ export class ProcessManager {
     }
   }
 
-  kill(taskId: string, stageId: string): boolean {
-    const id = `${taskId}:${stageId}`
+  kill(taskId: string, partId: string): boolean {
+    const id = `${taskId}:${partId}`
     const proc = this.processes.get(id)
     
     if (!proc) {
@@ -97,16 +97,16 @@ export class ProcessManager {
     this.processes.clear()
   }
 
-  get(taskId: string, stageId: string): ManagedProcess | undefined {
-    return this.processes.get(`${taskId}:${stageId}`)
+  get(taskId: string, partId: string): ManagedProcess | undefined {
+    return this.processes.get(`${taskId}:${partId}`)
   }
 
   getAll(): ManagedProcess[] {
     return Array.from(this.processes.values())
   }
 
-  markTimeout(taskId: string, stageId: string): boolean {
-    const id = `${taskId}:${stageId}`
+  markTimeout(taskId: string, partId: string): boolean {
+    const id = `${taskId}:${partId}`
     const proc = this.processes.get(id)
     
     if (!proc) {
@@ -114,11 +114,11 @@ export class ProcessManager {
     }
 
     proc.status = 'timeout'
-    return this.kill(taskId, stageId)
+    return this.kill(taskId, partId)
   }
 
-  remove(taskId: string, stageId: string): boolean {
-    const id = `${taskId}:${stageId}`
+  remove(taskId: string, partId: string): boolean {
+    const id = `${taskId}:${partId}`
     return this.processes.delete(id)
   }
 }

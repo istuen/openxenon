@@ -1,4 +1,4 @@
-import type { XnStageStatus } from './core'
+import type { XnPartStatus } from './core'
 
 /**
  * @deprecated MVP 0.1 后被 Blueprint YAML 中的 Stage 替代。
@@ -12,7 +12,7 @@ export interface LegacyStage {
   target: string
   spec: string
   action?: string
-  status: XnStageStatus
+  status: XnPartStatus
   createdAt?: number
   completedAt?: number
 }
@@ -28,5 +28,5 @@ export interface Stage {
   deps: string[]
   target?: { description: string; glob?: string }
   spec?: { description: string; constraints?: string[] }
-  status?: XnStageStatus
+  status?: XnPartStatus
 }

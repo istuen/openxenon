@@ -5,21 +5,21 @@ export type { TaskStatus, StepStatus, BlueprintStatus, ArtifactType, ProjectStat
 export { BOUNDARY_DIR, TASKS_DIR, CONFIG_FILE } from './constants'
 export { OxnErrorCode, ErrorCategory } from './enums'
 
-export { BlueprintSchema, StageInvocationSchema, ProbeInvocationSchema, parseBlueprint, safeParseBlueprint, validateStageTemplates, extractTemplateVariables, validateTemplateVariables, ALLOWED_VARIABLE_SCOPES } from './schemas/blueprint.schema'
-export type { Blueprint, Stage, Probe as ProbeSchemaType } from './schemas/blueprint.schema'
+export { BlueprintSchema, PartInvocationSchema, ProbeInvocationSchema, parseBlueprint, safeParseBlueprint, validatePartTemplates, extractTemplateVariables, ALLOWED_VARIABLE_SCOPES } from './schemas/blueprint.schema'
+export type { Blueprint, Part, Probe as ProbeSchemaType } from './schemas/blueprint.schema'
 
-export { StageDefinitionSchema } from './schemas/stage-asset'
+export { PartDefinitionSchema } from './schemas/part-asset'
 
 export { getTaskDirectory, validateTaskId } from './lib/task-dir'
 export type { TaskDirectory } from './lib/task-dir'
 export type { Task } from './lib/types/task'
-export type { Stage as StageType } from './lib/types/stage'
+export type { Part as PartType } from './lib/types/part'
 export type { Artifact } from './lib/types/artifact'
 export type { Spec } from './lib/types/spec'
 export type { Sample } from './lib/types/sample'
-export type { TaskTraceState, StageState, TraceEvent, ProbeResult as ProbeResultType, TaskTraceYaml, StageTrace, TraceEventType } from './lib/types'
+export type { TaskTraceState, PartState, TraceEvent, ProbeResult as ProbeResultType, TaskTraceYaml, PartTrace, TraceEventType } from './lib/types'
 
-export { readTaskTraceFromContent, reduceTraceEvents, getTaskStatus, getNextPendingStage, getStageState, createProbeResult, createStageState, buildTraceEvent } from './lib/task-trace'
+export { readTaskTraceFromContent, reduceTraceEvents, getTaskStatus, getNextPendingPart, getPartState, createProbeResult, createPartState, buildTraceEvent } from './lib/task-trace'
 export { parseBlueprintYaml } from './lib/blueprint-parser'
 export type { ParsedBlueprint } from './lib/blueprint-parser'
 export { getProjectBoundaryPath, getProjectConfigPath, getTasksPath, getTaskPath, getStepManifestPath, getProjectArsenalPath, getTaskTracePath } from './lib/project'

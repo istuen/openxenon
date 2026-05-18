@@ -53,9 +53,9 @@ async function handleTaskStatus(
           startedAt: trace.startedAt,
           completedAt: trace.completedAt
         },
-        stages: Array.from(trace.stages.values()).map(s => ({
-          id: s.stageId,
-          name: s.stageName,
+        parts: Array.from(trace.parts.values()).map(s => ({
+          id: s.partId,
+          name: s.partName,
           status: s.status,
           executedAt: s.startedAt,
           completedAt: s.completedAt
@@ -63,12 +63,12 @@ async function handleTaskStatus(
         circuitBreakerState: taskCircuitBreaker.getState(),
         recoveryPoints: recoveryManager.getRecoveryPoints(taskId).map(rp => ({
           id: rp.id,
-          stageId: rp.stageId,
+          partId: rp.partId,
           timestamp: rp.timestamp
         })),
         latestRecoveryPoint: latestRecoveryPoint ? {
           id: latestRecoveryPoint.id,
-          stageId: latestRecoveryPoint.stageId,
+          partId: latestRecoveryPoint.partId,
           timestamp: latestRecoveryPoint.timestamp
         } : null
       }),

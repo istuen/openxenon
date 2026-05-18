@@ -98,7 +98,7 @@ export const BUILTIN_FORGES = {
   }
 } as const
 
-export const BUILTIN_STAGES: Record<string, {
+export const BUILTIN_PARTS: Record<string, {
   id?: string
   name?: string
   description?: string
@@ -117,4 +117,4 @@ export const BUILTIN_STAGES: Record<string, {
 
 export type BuiltinForgeName = keyof typeof BUILTIN_FORGES
 export type BuiltinProbeName = keyof typeof BUILTIN_PROBES
-export type BuiltinStageName = keyof typeof BUILTIN_STAGES
+export type BuiltinPartName = keyof typeof BUILTIN_PARTS

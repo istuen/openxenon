@@ -11,7 +11,7 @@ async function handleStepVerify(
   try {
     const body = await parseJSONBody<{
       taskId?: string
-      stageId?: string
+      partId?: string
       passed?: boolean
     }>(request)
 
@@ -44,8 +44,8 @@ async function handleStepVerify(
         taskCircuitBreaker.recordFailure()
       }
 
-      if (body.taskId && body.stageId) {
-        recoveryManager.createRecoveryPoint(body.taskId, body.stageId, {
+      if (body.taskId && body.partId) {
+        recoveryManager.createRecoveryPoint(body.taskId, body.partId, {
           verified: body.passed,
           timestamp: Date.now()
         })
@@ -56,9 +56,9 @@ async function handleStepVerify(
       JSON.stringify({
         success: true,
         taskId: body.taskId,
-        stageId: body.stageId,
+        partId: body.partId,
         circuitBreakerState: taskCircuitBreaker.getState(),
-        message: body.passed ? 'Stage verified successfully' : 'Stage verification failed'
+        message: body.passed ? 'Part verified successfully' : 'Part verification failed'
       }),
       {
         status: 200,

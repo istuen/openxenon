@@ -47,7 +47,7 @@ export const FrozenProbeSchema = z.object({
   command: z.string().optional()
 })
 
-export const FrozenStageSchema = z.object({
+export const FrozenPartSchema = z.object({
   _xenon_meta: XenonMetaSchema,
   id: z.string(),
   name: z.string(),
@@ -74,11 +74,11 @@ export const FrozenBlueprintSchema = z.object({
   id: z.string(),
   name: z.string(),
   frozen_at: z.string(),
-  stages: z.array(FrozenStageSchema)
+  parts: z.array(FrozenPartSchema)
 })
 
 export type FrozenBlueprint = z.infer<typeof FrozenBlueprintSchema>
-export type FrozenStage = z.infer<typeof FrozenStageSchema>
+export type FrozenPart = z.infer<typeof FrozenPartSchema>
 export type FrozenProbe = z.infer<typeof FrozenProbeSchema>
 
 export function validateFrozenBlueprint(data: unknown): FrozenBlueprint {

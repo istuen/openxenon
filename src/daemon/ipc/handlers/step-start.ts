@@ -2,8 +2,8 @@ import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace, writeStageStart, writeStageComplete, readBlueprint } from '../../trace/writer'
-import { createStageState } from '../../../kernel/lib/task-trace'
+import { readTaskTrace, writePartStart, writePartComplete, readBlueprint } from '../../trace/writer'
+import { createPartState } from '../../../kernel/lib/task-trace'
 
 async function handleStepStart(
   request: Request,
@@ -33,32 +33,32 @@ async function handleStepStart(
       return notFound('Blueprint not found')
     }
 
-    let stage = parsed.stages.find(s => s.id === body.stepId || s.name === body.stepName)
+    let part = parsed.parts.find(s => s.id === body.stepId || s.name === body.stepName)
 
-    if (!stage) {
-      return notFound('Stage not found')
+    if (!part) {
+      return notFound('Part not found')
     }
 
-    let stageState = trace.stages.get(stage!.id)
+    let partState = trace.parts.get(part!.id)
 
-    if (!stageState) {
-      writeStageStart(taskDir, taskId, stage.id, stage.name)
-      stageState = createStageState(stage.id, stage.name)
-      stageState.status = 'PENDING'
-      trace.stages.set(stage.id, stageState)
+    if (!partState) {
+      writePartStart(taskDir, taskId, part.id, part.name)
+      partState = createPartState(part.id, part.name)
+      partState.status = 'PENDING'
+      trace.parts.set(part.id, partState)
     }
 
-    if (stageState.status === 'PENDING') {
-      writeStageStart(taskDir, taskId, stage.id, stage.name)
-      stageState.status = 'RUNNING'
+    if (partState.status === 'PENDING') {
+      writePartStart(taskDir, taskId, part.id, part.name)
+      partState.status = 'RUNNING'
     }
 
-    writeStageComplete(taskDir, taskId, stage.id, stageState.status)
+    writePartComplete(taskDir, taskId, part.id, partState.status)
 
     return new Response(
       JSON.stringify({
-        stepId: stage.id,
-        status: stageState.status
+        stepId: part.id,
+        status: partState.status
       }),
       {
         status: 200,

@@ -66,34 +66,34 @@ function migrateFromOldFormatToEvents(oldTrace: TaskTraceYaml): TraceEvent[] {
     })
   }
 
-  for (const stage of oldTrace.stages) {
-    if (stage.executedAt) {
+  for (const part of oldTrace.parts) {
+    if (part.executedAt) {
       events.push({
-        type: 'STAGE_START',
+        type: 'PART_START',
         taskId: oldTrace.taskId,
-        stageId: stage.stageId,
-        stageName: stage.stageName,
-        timestamp: new Date(stage.executedAt).getTime()
+        partId: part.partId,
+        partName: part.partName,
+        timestamp: new Date(part.executedAt).getTime()
       })
     }
 
-    if (stage.completedAt || stage.status !== 'PENDING') {
+    if (part.completedAt || part.status !== 'PENDING') {
       events.push({
-        type: 'STAGE_COMPLETE',
+        type: 'PART_COMPLETE',
         taskId: oldTrace.taskId,
-        stageId: stage.stageId,
-        status: stage.status,
-        timestamp: stage.completedAt
-          ? new Date(stage.completedAt).getTime()
+        partId: part.partId,
+        status: part.status,
+        timestamp: part.completedAt
+          ? new Date(part.completedAt).getTime()
           : now
       })
     }
 
-    for (const probe of stage.probes) {
+    for (const probe of part.probes) {
       events.push({
         type: 'PROBE_RESULT',
         taskId: oldTrace.taskId,
-        stageId: stage.stageId,
+        partId: part.partId,
         probeType: probe.probeType,
         result: probe.result,
         output: probe.output,
@@ -122,29 +122,29 @@ function applyEvent(state: TaskTraceState, event: TraceEvent): void {
       }
       break
 
-    case 'STAGE_START':
-      state.stages.set(event.stageId, {
-        stageId: event.stageId,
-        stageName: event.stageName,
+    case 'PART_START':
+      state.parts.set(event.partId, {
+        partId: event.partId,
+        partName: event.partName,
         status: 'PENDING',
         probes: [],
         startedAt: event.timestamp
       })
       break
 
-    case 'STAGE_COMPLETE': {
-      const stage = state.stages.get(event.stageId)
-      if (stage) {
-        stage.status = event.status
-        stage.completedAt = event.timestamp
+    case 'PART_COMPLETE': {
+      const part = state.parts.get(event.partId)
+      if (part) {
+        part.status = event.status
+        part.completedAt = event.timestamp
       }
       break
     }
 
     case 'PROBE_RESULT': {
-      const stage = state.stages.get(event.stageId)
-      if (stage) {
-        stage.probes.push({
+      const part = state.parts.get(event.partId)
+      if (part) {
+        part.probes.push({
           probeType: event.probeType,
           result: event.result,
           output: event.output,
@@ -192,20 +192,20 @@ export function getTaskStatus(state: TaskTraceState | null): TaskStatus | 'NOT_F
   return state.status
 }
 
-export function getNextPendingStage(state: TaskTraceState | null): StageState | null {
+export function getNextPendingPart(state: TaskTraceState | null): PartState | null {
   if (!state) return null
 
-  for (const stage of state.stages.values()) {
-    if (stage.status === 'PENDING') {
-      return stage
+  for (const part of state.parts.values()) {
+    if (part.status === 'PENDING') {
+      return part
     }
   }
   return null
 }
 
-export function getStageState(state: TaskTraceState | null, stageId: string): StageState | null {
+export function getPartState(state: TaskTraceState | null, partId: string): PartState | null {
   if (!state) return null
-  return state.stages.get(stageId) || null
+  return state.parts.get(partId) || null
 }
 
 export function createProbeResult(
@@ -223,10 +223,10 @@ export function createProbeResult(
   }
 }
 
-export function createStageState(stageId: string, stageName: string): StageState {
+export function createPartState(partId: string, partName: string): PartState {
   return {
-    stageId,
-    stageName,
+    partId,
+    partName,
     status: 'PENDING',
     probes: [],
     startedAt: Date.now()
@@ -246,4 +246,4 @@ export function buildTraceEvent(
   } as TraceEvent
 }
 
-export type { TaskTraceState, StageState, TraceEvent, ProbeResult }
+export type { TaskTraceState, PartState, TraceEvent, ProbeResult }

@@ -1,6 +1,6 @@
 export interface Sample {
   id: string;
-  stageId: string;
+  partId: string;
   payload: string;
   status: 'pending' | 'approved' | 'rejected';
 }

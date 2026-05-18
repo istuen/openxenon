@@ -189,9 +189,9 @@ export interface ProbeDetail {
   error?: string
 }
 
-export interface StageDetail {
-  stageId: string
-  stageName: string
+export interface PartDetail {
+  partId: string
+  partName: string
   status: string
   probes: ProbeDetail[]
 }
@@ -200,15 +200,15 @@ export interface TaskDetails {
   taskId: string
   taskName: string
   status: string
-  currentStage: string | null
-  stages: Record<string, string>
+  currentPart: string | null
+  parts: Record<string, string>
   frozenPath: string | null
   tracePath: string | null
-  stageDetails?: StageDetail[]
+  partDetails?: PartDetail[]
 }
 
-function readTaskTrace(tracePath: string | null): Map<string, StageDetail> {
-  const stages = new Map<string, StageDetail>()
+function readTaskTrace(tracePath: string | null): Map<string, PartDetail> {
+  const parts = new Map<string, PartDetail>()
 
   if (!tracePath || !existsSync(tracePath)) {
     return stages
@@ -221,22 +221,22 @@ function readTaskTrace(tracePath: string | null): Map<string, StageDetail> {
     for (const line of lines) {
       try {
         const event = JSON.parse(line)
-        if (event.type === 'STAGE_START') {
-          stages.set(event.stageId, {
-            stageId: event.stageId,
-            stageName: event.stageName,
+        if (event.type === 'PART_START') {
+          parts.set(event.partId, {
+            partId: event.partId,
+            partName: event.partName,
             status: 'PENDING',
             probes: []
           })
-        } else if (event.type === 'STAGE_COMPLETE') {
-          const stage = stages.get(event.stageId)
-          if (stage) {
-            stage.status = event.status
+        } else if (event.type === 'PART_COMPLETE') {
+          const part = parts.get(event.partId)
+          if (part) {
+            part.status = event.status
           }
         } else if (event.type === 'PROBE_RESULT') {
-          const stage = stages.get(event.stageId)
-          if (stage) {
-            stage.probes.push({
+          const part = parts.get(event.partId)
+          if (part) {
+            part.probes.push({
               probeType: event.probeType,
               result: event.result,
               output: event.output,
@@ -252,7 +252,7 @@ function readTaskTrace(tracePath: string | null): Map<string, StageDetail> {
     // ignore read errors
   }
 
-  return stages
+  return parts
 }
 
 export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
@@ -275,7 +275,7 @@ export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
       try {
         const content = readFileSync(statePath, 'utf-8')
         const state = JSON.parse(content) as TaskState
-        const stageDetails = readTaskTrace(tracePath)
+        const partDetails = readTaskTrace(tracePath)
 
         tasks.push({
           taskId: state.taskId,
@@ -285,7 +285,7 @@ export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
           stages: state.stages,
           frozenPath: existsSync(frozenPath) ? frozenPath : null,
           tracePath: existsSync(tracePath) ? tracePath : null,
-          stageDetails: Array.from(stageDetails.values())
+          partDetails: Array.from(partDetails.values())
         })
       } catch {
         // ignore invalid state files
@@ -308,7 +308,7 @@ export function generateHallIndexHtml(projectRoot: string): string {
     status: t.status,
     currentStage: t.currentStage,
     stages: t.stages,
-    stageDetails: t.stageDetails || []
+    partDetails: t.partDetails || []
   })))
 
   const arsenalJson = JSON.stringify(arsenalAssets.map(a => ({
@@ -375,13 +375,13 @@ export function generateHallIndexHtml(projectRoot: string): string {
     .task-detail-header { padding: 1rem 1.25rem; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
     .task-detail-body { padding: 1.5rem; }
     .stage-list { list-style: none; }
-    .stage-item { padding: 0.75rem; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 1rem; }
-    .stage-item:last-child { border-bottom: none; }
-    .stage-indicator { width: 10px; height: 10px; border-radius: 50%; }
-    .stage-indicator.passed { background: #22c55e; }
-    .stage-indicator.failed { background: #ef4444; }
-    .stage-indicator.running { background: #3b82f6; }
-    .stage-indicator.pending { background: #888; }
+    .part-item { padding: 0.75rem; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 1rem; }
+    .part-item:last-child { border-bottom: none; }
+    .part-indicator { width: 10px; height: 10px; border-radius: 50%; }
+    .part-indicator.passed { background: #22c55e; }
+    .part-indicator.failed { background: #ef4444; }
+    .part-indicator.running { background: #3b82f6; }
+    .part-indicator.pending { background: #888; }
     .close-btn { background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer; }
     .close-btn:hover { color: #fff; }
   </style>
@@ -517,7 +517,7 @@ export function generateHallIndexHtml(projectRoot: string): string {
         <h3 style="color: #888; font-size: 0.75rem; margin-bottom: 1rem;">STAGE DAG</h3>
         <div id="dagContainer" class="dag-container"></div>
         <h3 style="color: #888; font-size: 0.75rem; margin: 1.5rem 0 1rem;">STAGES</h3>
-        <ul id="stageList" class="stage-list"></ul>
+        <ul id="partList" class="stage-list"></ul>
       </div>
     </div>
   </div>
@@ -540,19 +540,19 @@ export function generateHallIndexHtml(projectRoot: string): string {
       document.getElementById('taskDetailTitle').textContent = task.taskName + ' (' + task.taskId + ')';
 
       const dagContainer = document.getElementById('dagContainer');
-      dagContainer.innerHTML = generateDag(task.stages);
+      dagContainer.innerHTML = generateDag(task.parts);
 
-      const stageList = document.getElementById('stageList');
-      const stageDetails = task.stageDetails || [];
+      const partList = document.getElementById('partList');
+      const partDetails = task.partDetails || [];
 
-      stageList.innerHTML = Object.entries(task.stages).map(([name, status]) => {
+      partList.innerHTML = Object.entries(task.parts).map(([name, status]) => {
         const indicatorClass = status.toLowerCase();
-        const stageDetail = stageDetails.find(s => s.stageName === name || s.stageId === name);
+        const partDetail = partDetails.find(s => s.partName === name || s.partId === name);
 
         let probeHtml = '';
-        if (stageDetail && stageDetail.probes && stageDetail.probes.length > 0) {
+        if (partDetail && partDetail.probes && partDetail.probes.length > 0) {
           probeHtml = '<div class="probe-list" style="margin-top: 0.5rem; padding-left: 1.5rem;">' +
-            stageDetail.probes.map(p => {
+            partDetail.probes.map(p => {
               const probeClass = p.result === 'PASSED' ? 'passed' : 'failed';
               const probeIcon = p.result === 'PASSED' ? '✓' : '✗';
               const probeOutput = p.output ? '<span style="color: #888; font-size: 0.75rem; margin-left: 0.5rem;">' + escapeHtml(String(p.output).substring(0, 50)) + '</span>' : '';
@@ -566,9 +566,9 @@ export function generateHallIndexHtml(projectRoot: string): string {
             '</div>';
         }
 
-        return '<li class="stage-item" style="flex-direction: column; align-items: flex-start;">' +
+        return '<li class="part-item" style="flex-direction: column; align-items: flex-start;">' +
           '<div style="display: flex; align-items: center; gap: 1rem;">' +
-            '<span class="stage-indicator ' + indicatorClass + '"></span>' +
+            '<span class="part-indicator ' + indicatorClass + '"></span>' +
             '<span>' + name + '</span>' +
             '<span style="color: #888; margin-left: auto;">' + status + '</span>' +
           '</div>' +
@@ -592,29 +592,29 @@ export function generateHallIndexHtml(projectRoot: string): string {
       document.getElementById('taskDetail').classList.remove('active');
     }
 
-    function generateDag(stages) {
-      const stageNames = Object.keys(stages);
-      if (stageNames.length === 0) return '';
+    function generateDag(parts) {
+      const partNames = Object.keys(parts);
+      if (partNames.length === 0) return '';
 
       const nodeWidth = 120;
       const nodeHeight = 40;
       const gapX = 60;
       const gapY = 30;
-      const cols = Math.min(4, stageNames.length);
-      const rows = Math.ceil(stageNames.length / cols);
+      const cols = Math.min(4, partNames.length);
+      const rows = Math.ceil(partNames.length / cols);
 
       const width = cols * nodeWidth + (cols - 1) * gapX + 40;
       const height = rows * nodeHeight + (rows - 1) * gapY + 40;
 
       let svg = '<svg class="dag-svg" width="' + width + '" height="' + height + '" viewBox="0 0 ' + width + ' ' + height + '" xmlns="http://www.w3.org/2000/svg">';
 
-      stageNames.forEach((name, i) => {
+      partNames.forEach((name, i) => {
         const col = i % cols;
         const row = Math.floor(i / cols);
         const x = 20 + col * (nodeWidth + gapX);
         const y = 20 + row * (nodeHeight + gapY);
 
-        const status = stages[name];
+        const status = parts[name];
         let bgColor = '#333';
         let textColor = '#888';
         let borderColor = '#444';

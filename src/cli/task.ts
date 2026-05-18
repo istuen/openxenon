@@ -253,8 +253,8 @@ export default defineCommand({
 
         try {
           const taskId = ctx.args['task-id'] as string
-          const stageId = ctx.args['stage-id'] as string
-          const result = await taskVerify(taskId, stageId, getProjectRoot()) as VerifyResult
+          const partId = ctx.args['part-id'] as string
+          const result = await taskVerify(taskId, partId, getProjectRoot()) as VerifyResult
 
           output({ data: result }, format)
         } catch (err: unknown) {
@@ -586,13 +586,13 @@ export default defineCommand({
             return
           }
 
-          const stageInfo = result.stageId
-            ? `Stage: ${result.name || result.stageId}\n目标: ${result.target?.description || 'N/A'}\n指令: ${result.action?.instruction || 'N/A'}`
-            : '无可执行的 Stage'
+          const partInfo = result.partId
+            ? `Part: ${result.name || result.partId}\n目标: ${result.target?.description || 'N/A'}\n指令: ${result.action?.instruction || 'N/A'}`
+            : '无可执行的 Part'
 
           output({
             data: result,
-            human: `任务: ${taskId}\n${stageInfo}\n\n完成后执行: oxn task verify --task-id ${taskId} --stage-id ${result.stageId}`
+            human: `任务: ${taskId}\n${partInfo}\n\n完成后执行: oxn task verify --task-id ${taskId} --part-id ${result.partId}`
           }, format)
         } catch (err: unknown) {
           const errorMsg = err instanceof Error ? err.message : String(err)

@@ -65,9 +65,9 @@ oxn task submit --blueprint <path-to-blueprint.yaml>
 oxn task next --task-id <taskId>
 \`\`\`
 
-### 验证 Stage
+### 验证 Part
 \`\`\`bash
-oxn task verify --task-id <taskId> --stage-id <stageId>
+oxn task verify --task-id <taskId> --part-id <partId>
 \`\`\`
 
 ## Task 工作流
@@ -206,12 +206,12 @@ oxn task next --task-id <taskId>
 2. 执行完成后，提交验证：
 
 \`\`\`bash
-oxn task verify --task-id <taskId> --stage-id <stageId>
+oxn task verify --task-id <taskId> --part-id <partId>
 \`\`\`
 
 ## 步骤 9：循环直到完成
 
-重复步骤 7-8，直到所有 Stage 通过验证。
+重复步骤 7-8，直到所有 Part 通过验证。
 
 ## 参考
 

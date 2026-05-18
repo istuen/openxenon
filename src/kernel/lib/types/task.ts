@@ -1,4 +1,4 @@
-import type { TaskStatus, XnTaskStatus, XnStageStatus } from './core'
+import type { TaskStatus, XnTaskStatus, XnPartStatus } from './core'
 import type { Artifact } from './artifact'
 import type { Action } from './action'
 
@@ -24,6 +24,6 @@ export interface XnTask {
 export interface StepManifest {
   taskId: string
   stepId: string
-  status: XnStageStatus
+  status: XnPartStatus
   artifacts: Artifact[]
 }

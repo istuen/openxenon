@@ -15,10 +15,10 @@ export interface DaemonPayload {
 export interface BlueprintPayload {
   id: string
   name: string
-  stages: StagePayload[]
+  parts: PartPayload[]
 }
 
-export interface StagePayload {
+export interface PartPayload {
   id: string
   name: string
   deps: string[]

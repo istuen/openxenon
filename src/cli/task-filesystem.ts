@@ -20,14 +20,14 @@ export interface TaskState {
   taskId: string
   taskName: string
   status: 'PENDING' | 'RUNNING' | 'COMPLETED'
-  currentStage: string | null
-  stages: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'>
+  currentPart: string | null
+  parts: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'>
 }
 
 export interface ParsedBlueprint {
   name?: string
   id?: string
-  stages?: Array<Record<string, unknown>>
+  parts?: Array<Record<string, unknown>>
 }
 
 function validateTaskName(name: string): { valid: boolean; error?: string } {
@@ -129,7 +129,7 @@ export interface SubmitResult {
   blueprintId: string
   blueprintFile: string
   status: string
-  stagesCount: number
+  partsCount: number
   message: string
 }
 
@@ -151,9 +151,9 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
     throw new Error(`Task "${taskId}" already exists. Choose a different name with --name.`)
   }
 
-  const dagNodes: DagNode[] = (rawParsed.stages || []).map(s => ({
-    id: String(s.id || s.name),
-    deps: (s.deps || []) as string[]
+  const dagNodes: DagNode[] = (rawParsed.parts || []).map(p => ({
+    id: String(p.id || p.name),
+    deps: (p.deps || []) as string[]
   }))
   const dagValidation = validateDagTopology(dagNodes)
   if (!dagValidation.valid) {
@@ -177,10 +177,10 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   const frozenDestPath = getFrozenBlueprintPath(cwd, taskId)
   writeFileSync(frozenDestPath, stringifyYaml(frozenBlueprint), 'utf-8')
 
-  const stages: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'> = {}
-  if (frozenBlueprint.stages) {
-    for (const stage of frozenBlueprint.stages) {
-      stages[stage.name] = 'PENDING'
+  const parts: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'> = {}
+  if (frozenBlueprint.parts) {
+    for (const part of frozenBlueprint.parts) {
+      parts[part.name] = 'PENDING'
     }
   }
 
@@ -188,8 +188,8 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
     taskId,
     taskName: parsed.name || parsed.id || 'unnamed',
     status: 'RUNNING',
-    currentStage: null,
-    stages
+    currentPart: null,
+    parts
   }
   writeState(cwd, taskId, state)
 
@@ -203,7 +203,7 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
     blueprintId: frozenBlueprint.id,
     blueprintFile: `${TASKS_DIR}/${taskId}/${FROZEN_BLUEPRINT_FILE}`,
     status: 'RUNNING',
-    stagesCount: frozenBlueprint.stages.length,
+    partsCount: frozenBlueprint.parts.length,
     message: 'Task created successfully'
   }
 }
@@ -232,8 +232,8 @@ export function taskNew(taskId: string, taskName: string, cwd: string): NewResul
     taskId,
     taskName: taskName || taskId,
     status: 'PENDING',
-    currentStage: null,
-    stages: {}
+    currentPart: null,
+    parts: {}
   }
   writeState(cwd, taskId, state)
 
@@ -252,7 +252,7 @@ export function taskNew(taskId: string, taskName: string, cwd: string): NewResul
 
 export interface NextResult {
   taskId: string
-  stageId: string | null
+  partId: string | null
   name?: string
   target?: { description: string; glob?: string }
   action?: { instruction?: string; command?: string }
@@ -269,73 +269,73 @@ export function taskNext(taskId: string, cwd: string): NextResult {
   if (state.status === 'COMPLETED') {
     return {
       taskId,
-      stageId: null,
+      partId: null,
       status: 'COMPLETED',
       message: 'Task already completed'
     }
   }
 
   const frozenBlueprint = readFrozenBlueprint(cwd, taskId)
-  if (!frozenBlueprint || !frozenBlueprint.stages || frozenBlueprint.stages.length === 0) {
-    throw new Error('No stages defined in frozen blueprint')
+  if (!frozenBlueprint || !frozenBlueprint.parts || frozenBlueprint.parts.length === 0) {
+    throw new Error('No parts defined in frozen blueprint')
   }
 
-  const dagNodes: DagNode[] = frozenBlueprint.stages.map(s => ({
-    id: s.id || s.name,
-    deps: s.deps || []
+  const dagNodes: DagNode[] = frozenBlueprint.parts.map(p => ({
+    id: p.id || p.name,
+    deps: p.deps || []
   }))
   const executionOrder = topologicalSort(dagNodes)
 
-  const stageNameById: Record<string, string> = {}
-  for (const stage of frozenBlueprint.stages) {
-    stageNameById[stage.id || stage.name] = stage.name
+  const partNameById: Record<string, string> = {}
+  for (const part of frozenBlueprint.parts) {
+    partNameById[part.id || part.name] = part.name
   }
 
-  for (const stageId of executionOrder) {
-    const stageName = stageNameById[stageId]
-    if (!stageName) continue
+  for (const partId of executionOrder) {
+    const partName = partNameById[partId]
+    if (!partName) continue
 
-    const stageStatus = state.stages[stageName]
+    const partStatus = state.parts[partName]
 
-    if (stageStatus === 'FAILED') {
-      throw new Error(`Stage "${stageName}" verification failed. Abort or retry.`)
+    if (partStatus === 'FAILED') {
+      throw new Error(`Part "${partName}" verification failed. Abort or retry.`)
     }
 
-    const deps = frozenBlueprint.stages.find(s => (s.id || s.name) === stageId)?.deps || []
+    const deps = frozenBlueprint.parts.find(p => (p.id || p.name) === partId)?.deps || []
     const depsSatisfied = deps.every(depId => {
-      const depName = stageNameById[depId] || depId
-      return state.stages[depName] === 'PASSED'
+      const depName = partNameById[depId] || depId
+      return state.parts[depName] === 'PASSED'
     })
 
-    if (depsSatisfied && (!stageStatus || stageStatus === 'PENDING')) {
-      state.stages[stageName] = 'RUNNING'
-      state.currentStage = stageName
+    if (depsSatisfied && (!partStatus || partStatus === 'PENDING')) {
+      state.parts[partName] = 'RUNNING'
+      state.currentPart = partName
       writeState(cwd, taskId, state)
 
-      const traceEvent = buildTraceEvent('STAGE_START', taskId, {
-        stageId,
-        stageName
+      const traceEvent = buildTraceEvent('PART_START', taskId, {
+        partId,
+        partName
       })
       appendTraceEvent(cwd, taskId, traceEvent)
 
-      const stage = frozenBlueprint.stages.find(s => (s.id || s.name) === stageId)
+      const part = frozenBlueprint.parts.find(p => (p.id || p.name) === partId)
 
-      const target = (stage?.target as { description?: string; glob?: string } | undefined) || { description: stageName }
-      const action = (stage?.action as { instruction?: string; command?: string } | undefined) || {}
+      const target = (part?.target as { description?: string; glob?: string } | undefined) || { description: partName }
+      const action = (part?.action as { instruction?: string; command?: string } | undefined) || {}
 
       return {
         taskId,
-        stageId,
-        name: stageName,
-        target: { description: target.description || stageName, glob: target.glob },
+        partId,
+        name: partName,
+        target: { description: target.description || partName, glob: target.glob },
         action: { instruction: action.instruction, command: action.command },
-        message: 'Stage started'
+        message: 'Part started'
       }
     }
   }
 
   state.status = 'COMPLETED'
-  state.currentStage = null
+  state.currentPart = null
   writeState(cwd, taskId, state)
 
   const completedEvent = buildTraceEvent('TASK_STATUS', taskId, { status: 'COMPLETED' })
@@ -343,39 +343,39 @@ export function taskNext(taskId: string, cwd: string): NextResult {
 
   return {
     taskId,
-    stageId: null,
+    partId: null,
     status: 'COMPLETED',
-    message: 'All stages completed'
+    message: 'All parts completed'
   }
 }
 
 export interface VerifyResult {
   passed: boolean
-  stageId: string
+  partId: string
   results: ProbeResult[]
   message: string
 }
 
-export async function taskVerify(taskId: string, stageId: string, cwd: string): Promise<VerifyResult> {
+export async function taskVerify(taskId: string, partId: string, cwd: string): Promise<VerifyResult> {
   const state = readState(cwd, taskId)
   if (!state) {
     throw new Error(`Task not found: ${taskId}`)
   }
 
   const frozenBlueprint = readFrozenBlueprint(cwd, taskId)
-  if (!frozenBlueprint || !frozenBlueprint.stages) {
-    throw new Error('No frozen blueprint or stages found')
+  if (!frozenBlueprint || !frozenBlueprint.parts) {
+    throw new Error('No frozen blueprint or parts found')
   }
 
-  const stage = frozenBlueprint.stages.find(s => s.id === stageId || s.name === stageId)
-  if (!stage) {
-    throw new Error(`Stage not found: ${stageId}`)
+  const part = frozenBlueprint.parts.find(p => p.id === partId || p.name === partId)
+  if (!part) {
+    throw new Error(`Part not found: ${partId}`)
   }
 
   const probeResults: ProbeResult[] = []
   const startTime = Date.now()
 
-  const probes = stage.probes || []
+  const probes = part.probes || []
   if (probes.length > 0) {
     const context: ProbeContext = { projectRoot: cwd }
 
@@ -425,7 +425,7 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
         })
 
         const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
-          stageId,
+          partId,
           probeType,
           result: verdict.passed ? 'PASSED' : 'FAILED',
           output: probeResult.output,
@@ -450,7 +450,7 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
         })
 
         const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
-          stageId,
+          partId,
           probeType,
           result: 'FAILED',
           output: undefined,
@@ -465,27 +465,27 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
   }
 
   const allPassed = probeResults.every(r => r.result === 'PASSED')
-  const stageStatus: 'PASSED' | 'FAILED' = allPassed ? 'PASSED' : 'FAILED'
+  const partStatus: 'PASSED' | 'FAILED' = allPassed ? 'PASSED' : 'FAILED'
 
-  state.stages[stage.name] = stageStatus
-  state.currentStage = null
+  state.parts[part.name] = partStatus
+  state.currentPart = null
 
-  if (Object.values(state.stages).every(s => s === 'PASSED' || s === 'FAILED')) {
+  if (Object.values(state.parts).every(s => s === 'PASSED' || s === 'FAILED')) {
     state.status = 'COMPLETED'
   }
   writeState(cwd, taskId, state)
 
-  const traceEvent = buildTraceEvent('STAGE_COMPLETE', taskId, {
-    stageId,
-    status: stageStatus
+  const traceEvent = buildTraceEvent('PART_COMPLETE', taskId, {
+    partId,
+    status: partStatus
   })
   appendTraceEvent(cwd, taskId, traceEvent)
 
   const stepManifest = {
     taskId,
-    stages: {
-      [stage.name]: {
-        status: stageStatus,
+    parts: {
+      [part.name]: {
+        status: partStatus,
         probeResults,
         duration: Date.now() - startTime
       }
@@ -496,7 +496,7 @@ export async function taskVerify(taskId: string, stageId: string, cwd: string): 
 
   return {
     passed: allPassed,
-    stageId,
+    partId,
     results: probeResults,
     message: allPassed ? 'All probes passed' : `${probeResults.filter(r => r.result === 'FAILED').length}/${probeResults.length} probes failed`
   }
@@ -506,8 +506,8 @@ export interface StatusResult {
   taskId: string
   taskName: string
   status: 'PENDING' | 'RUNNING' | 'COMPLETED'
-  currentStage: string | null
-  stages: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'>
+  currentPart: string | null
+  parts: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'>
   stepManifest?: Record<string, unknown>
 }
 
@@ -532,8 +532,8 @@ export function taskStatus(taskId: string, cwd: string): StatusResult {
     taskId: state.taskId,
     taskName: state.taskName,
     status: state.status,
-    currentStage: state.currentStage,
-    stages: state.stages,
+    currentPart: state.currentPart,
+    parts: state.parts,
     stepManifest
   }
 }

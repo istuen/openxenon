@@ -341,12 +341,12 @@ export function listStandards(scope: Scope, projectBoundary: string | undefined,
 }
 
 export interface CompileDependencies {
-  stages: Map<string, Record<string, unknown>>
+  parts: Map<string, Record<string, unknown>>
   probes: Map<string, Record<string, unknown>>
 }
 
 export function preloadCompileDependencies(projectBoundary: string): CompileDependencies {
-  const stages = new Map<string, Record<string, unknown>>()
+  const parts = new Map<string, Record<string, unknown>>()
   const probes = new Map<string, Record<string, unknown>>()
 
   for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
@@ -365,19 +365,19 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
     }
   }
 
-  const projectStages = loadArsenalsByTypeAndState('fallback', projectBoundary, 'stages', 'canonical')
-  for (const asset of projectStages) {
+  const projectParts = loadArsenalsByTypeAndState('fallback', projectBoundary, 'parts', 'canonical')
+  for (const asset of projectParts) {
     try {
       const content = parseYaml(asset.content) as Record<string, unknown>
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
-      stages.set(ref, content)
-      stages.set(`./${asset.name}`, content)
+      parts.set(ref, content)
+      parts.set(`./${asset.name}`, content)
     } catch {
       // skip invalid YAML
     }
   }
 
-  return { stages, probes }
+  return { parts, probes }
 }
 
 export function listStandards(scope: Scope, projectBoundary: string | undefined, state?: AssetState): StandardAsset[] {

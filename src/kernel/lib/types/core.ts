@@ -14,7 +14,7 @@ export type StepStatus =
   | 'PASSED'
   | 'FAILED'
 
-export type XnStageStatus = StepStatus;
+export type XnPartStatus = StepStatus;
 
 export type BlueprintStatus =
   | 'DRAFT'

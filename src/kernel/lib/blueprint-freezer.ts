@@ -1,10 +1,10 @@
-import type { Stage, Blueprint } from '../schemas/blueprint.schema'
-import { resolveStageRef, type StageResolution } from './stage-resolver'
+import type { Part, Blueprint } from '../schemas/blueprint.schema'
+import { resolvePartRef, type PartResolution } from './part-resolver'
 import { createXenonMeta, type XenonMeta, computeContentHash } from '../schemas/frozen-schema'
 import { getProjectBoundaryPath } from './project'
 
 export interface LineageReportEntry {
-  stageId: string
+  partId: string
   status: '✅' | '⚠️'
   resolved: string
   source: 'kernel' | 'global' | 'project'
@@ -13,29 +13,29 @@ export interface LineageReportEntry {
 
 export interface LineageReport {
   entries: LineageReportEntry[]
-  totalStages: number
+  totalParts: number
 }
 
 export function renderLineageReport(report: LineageReport): string {
   const lines: string[] = ['[Core] Resolving blueprint assets...']
   for (const entry of report.entries) {
-    lines.push(`  ${entry.status} stage: ${entry.stageId}`)
+    lines.push(`  ${entry.status} part: ${entry.partId}`)
     lines.push(`     -> resolved: ${entry.resolved}`)
     lines.push(`     -> version frozen.`)
   }
   return lines.join('\n')
 }
 
-export function generateLineageReport(stages: Stage[]): LineageReport {
+export function generateLineageReport(parts: Part[]): LineageReport {
   const projectBoundary = getProjectBoundaryPath(process.cwd())
   const entries: LineageReportEntry[] = []
 
-  for (const stage of stages) {
-    if (stage.ref) {
-      const resolution = resolveStageRef(stage.ref, projectBoundary)
+  for (const part of parts) {
+    if (part.ref) {
+      const resolution = resolvePartRef(part.ref, projectBoundary)
 
       entries.push({
-        stageId: stage.id,
+        partId: part.id,
         status: '✅',
         resolved: resolution.originalPath || (resolution.namespace === 'oxn' ? 'builtin' : resolution.namespace),
         source: resolution.namespace as 'kernel' | 'global' | 'project',
@@ -43,25 +43,25 @@ export function generateLineageReport(stages: Stage[]): LineageReport {
       })
     } else {
       entries.push({
-        stageId: stage.id,
+        partId: part.id,
         status: '✅',
         resolved: 'inline',
         source: 'project',
-        message: 'inline stage (no ref)'
+        message: 'inline part (no ref)'
       })
     }
   }
 
-  return { entries, totalStages: stages.length }
+  return { entries, totalParts: parts.length }
 }
 
-export function injectStageMeta(
-  stage: Stage,
-  resolution: StageResolution,
+export function injectPartMeta(
+  part: Part,
+  resolution: PartResolution,
   _appendedProbeRefs: string[] = []
-): Stage & { _xenon_meta: XenonMeta } {
+): Part & { _xenon_meta: XenonMeta } {
   const frozenAt = new Date().toISOString()
-  const content = JSON.stringify(stage)
+  const content = JSON.stringify(part)
 
   return {
     _xenon_meta: {
@@ -72,8 +72,8 @@ export function injectStageMeta(
       content_hash: computeContentHash(content),
       appended: false
     },
-    ...stage
-  } as Stage & { _xenon_meta: XenonMeta }
+    ...part
+  } as Part & { _xenon_meta: XenonMeta }
 }
 
 export function injectProbeMeta(
@@ -98,88 +98,88 @@ export function injectProbeMeta(
 }
 
 export function resolveBlueprintRefs(blueprint: Blueprint): {
-  frozenStages: Array<Stage & { _xenon_meta: XenonMeta }>
+  frozenParts: Array<Part & { _xenon_meta: XenonMeta }>
   lineageReport: LineageReport
 } {
   const projectBoundary = getProjectBoundaryPath(process.cwd())
-  const frozenStages: Array<Stage & { _xenon_meta: XenonMeta }> = []
+  const frozenParts: Array<Part & { _xenon_meta: XenonMeta }> = []
   const lineageEntries: LineageReportEntry[] = []
 
-  for (const stage of blueprint.stages || []) {
-    let resolvedStage: Stage
+  for (const part of blueprint.parts || []) {
+    let resolvedPart: Part
 
-    if (stage.ref) {
-      const resolution = resolveStageRef(stage.ref, projectBoundary)
+    if (part.ref) {
+      const resolution = resolvePartRef(part.ref, projectBoundary)
 
-      if (!resolution.found || !resolution.stage) {
-        throw new Error(`Stage ref "${stage.ref}" 解析失败，未找到对应资产`)
+      if (!resolution.found || !resolution.part) {
+        throw new Error(`Part ref "${part.ref}" 解析失败，未找到对应资产`)
       }
 
-      resolvedStage = {
-        ...resolution.stage,
-        id: stage.id || resolution.stage.id,
-        name: stage.name || resolution.stage.name,
-        deps: stage.deps || resolution.stage.deps || [],
-        params: stage.params || {},
-        probes: mergeStageProbes(resolution.stage, stage)
+      resolvedPart = {
+        ...resolution.part,
+        id: part.id || resolution.part.id,
+        name: part.name || resolution.part.name,
+        deps: part.deps || resolution.part.deps || [],
+        params: part.params || {},
+        probes: mergePartProbes(resolution.part, part)
       }
 
       lineageEntries.push({
-        stageId: stage.id,
+        partId: part.id,
         status: '✅',
         resolved: resolution.originalPath || (resolution.namespace === 'oxn' ? 'builtin' : resolution.namespace),
         source: resolution.namespace as 'kernel' | 'global' | 'project',
         message: ''
       })
     } else {
-      resolvedStage = stage
+      resolvedPart = part
       lineageEntries.push({
-        stageId: stage.id,
+        partId: part.id,
         status: '✅',
         resolved: 'inline',
         source: 'project',
-        message: 'inline stage (no ref)'
+        message: 'inline part (no ref)'
       })
     }
 
-    const injectedProbes = (resolvedStage.probes || []).map(p => {
+    const injectedProbes = (resolvedPart.probes || []).map(p => {
       const ref = p.ref || p.type || ''
       return injectProbeMeta(p, ref, 'project', false)
     })
 
-    if (stage.probes_append) {
-      for (const p of stage.probes_append) {
+    if (part.probes_append) {
+      for (const p of part.probes_append) {
         const ref = p.ref || p.type || ''
         injectedProbes.push(injectProbeMeta(p, ref, 'project', true))
       }
     }
 
-    frozenStages.push({
+    frozenParts.push({
       _xenon_meta: createXenonMeta({
-        ref: stage.ref || 'inline',
-        resolvedFrom: stage.ref ? 'project' : 'project',
-        content: JSON.stringify(resolvedStage)
+        ref: part.ref || 'inline',
+        resolvedFrom: part.ref ? 'project' : 'project',
+        content: JSON.stringify(resolvedPart)
       }),
-      ...resolvedStage,
+      ...resolvedPart,
       probes: injectedProbes
-    } as Stage & { _xenon_meta: XenonMeta })
+    } as Part & { _xenon_meta: XenonMeta })
   }
 
   return {
-    frozenStages,
+    frozenParts,
     lineageReport: {
       entries: lineageEntries,
-      totalStages: blueprint.stages?.length || 0
+      totalParts: blueprint.parts?.length || 0
     }
   }
 }
 
-function mergeStageProbes(baseStage: { probes?: any[] }, overrideStage: Stage): any[] {
-  const baseProbes = baseStage.probes || []
-  const overrideProbes = overrideStage.probes_override || overrideStage.probes || []
-  const appendProbes = overrideStage.probes_append || []
+function mergePartProbes(basePart: { probes?: any[] }, overridePart: Part): any[] {
+  const baseProbes = basePart.probes || []
+  const overrideProbes = overridePart.probes_override || overridePart.probes || []
+  const appendProbes = overridePart.probes_append || []
 
-  if (overrideStage.probes_override) {
+  if (overridePart.probes_override) {
     return [...overrideProbes, ...appendProbes]
   }
 
@@ -191,18 +191,18 @@ export function freezeBlueprint(blueprint: Blueprint): {
     id: string
     name: string
     frozen_at: string
-    stages: Array<Stage & { _xenon_meta: XenonMeta }>
+    parts: Array<Part & { _xenon_meta: XenonMeta }>
   }
   lineageReport: LineageReport
 } {
-  const { frozenStages, lineageReport } = resolveBlueprintRefs(blueprint)
+  const { frozenParts, lineageReport } = resolveBlueprintRefs(blueprint)
 
   return {
     frozenBlueprint: {
       id: blueprint.id,
       name: blueprint.name,
       frozen_at: new Date().toISOString(),
-      stages: frozenStages
+      parts: frozenParts
     },
     lineageReport
   }

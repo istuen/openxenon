@@ -32,12 +32,12 @@ export function debugLog(projectRoot: string, message: string): void {
   }
 }
 
-export function debugLogStart(projectRoot: string, taskId: string, stageId: string): void {
-  debugLog(projectRoot, `TASK_START taskId=${taskId} stageId=${stageId}`)
+export function debugLogStart(projectRoot: string, taskId: string, partId: string): void {
+  debugLog(projectRoot, `TASK_START taskId=${taskId} partId=${partId}`)
 }
 
-export function debugLogEnd(projectRoot: string, taskId: string, stageId: string, success: boolean): void {
-  debugLog(projectRoot, `TASK_END taskId=${taskId} stageId=${stageId} success=${success}`)
+export function debugLogEnd(projectRoot: string, taskId: string, partId: string, success: boolean): void {
+  debugLog(projectRoot, `TASK_END taskId=${taskId} partId=${partId} success=${success}`)
 }
 
 export function debugLogError(projectRoot: string, err: unknown): void {

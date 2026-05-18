@@ -7,8 +7,8 @@ const TEST_WORKDIR = '/tmp/oxn-task-test'
 
 const SAMPLE_BLUEPRINT = `
 name: test-task
-stages:
-  - id: stage-1
+parts:
+  - id: part-1
     name: 第一阶段
     description: 测试阶段
     deps: []
@@ -16,11 +16,11 @@ stages:
       - type: fs_exists
         params:
           pattern: package.json
-  - id: stage-2
+  - id: part-2
     name: 第二阶段
     description: 第二测试阶段
     deps:
-      - stage-1
+      - part-1
     probes:
       - type: exec_exit_zero
         params:
@@ -71,7 +71,7 @@ describe('CLI Task Filesystem Operations', () => {
 
       expect(result.taskId).toBe('test-task')
       expect(result.status).toBe('RUNNING')
-      expect(result.stagesCount).toBe(2)
+      expect(result.partsCount).toBe(2)
       expect(result.message).toBe('Task created successfully')
     })
 
@@ -103,7 +103,7 @@ describe('CLI Task Filesystem Operations', () => {
     it('DAG 拓扑校验：循环依赖拒绝', () => {
       const cyclicBlueprint = `
 name: cyclic-test
-stages:
+parts:
   - id: a
     name: A
     deps:
@@ -129,7 +129,7 @@ stages:
     it('DAG 拓扑校验：多入口拒绝', () => {
       const multiEntryBlueprint = `
 name: multi-entry-test
-stages:
+parts:
   - id: a
     name: A
     deps: []
@@ -168,45 +168,45 @@ stages:
       expect(state.taskId).toBe(result.taskId)
       expect(state.taskName).toBe('test-task')
       expect(state.status).toBe('RUNNING')
-      expect(state.currentStage).toBeNull()
-      expect(state.stages['第一阶段']).toBe('PENDING')
-      expect(state.stages['第二阶段']).toBe('PENDING')
+      expect(state.currentPart).toBeNull()
+      expect(state.parts['第一阶段']).toBe('PENDING')
+      expect(state.parts['第二阶段']).toBe('PENDING')
     })
   })
 
   describe('taskNext', () => {
-    it('返回下一个 PENDING 的 stage', () => {
+    it('返回下一个 PENDING 的 part', () => {
       const submitResult = taskSubmit(blueprintPath, TEST_WORKDIR)
       const nextResult = taskNext(submitResult.taskId, TEST_WORKDIR)
 
-      expect(nextResult.stageId).toBe('stage-1')
+      expect(nextResult.partId).toBe('part-1')
       expect(nextResult.name).toBe('第一阶段')
-      expect(nextResult.message).toBe('Stage started')
+      expect(nextResult.message).toBe('Part started')
     })
 
-    it('更新 state.json 中的 stage 状态为 RUNNING', () => {
+    it('更新 state.json 中的 part 状态为 RUNNING', () => {
       const submitResult = taskSubmit(blueprintPath, TEST_WORKDIR)
       taskNext(submitResult.taskId, TEST_WORKDIR)
 
       const statePath = join(TEST_WORKDIR, '.openxenon', 'tasks', submitResult.taskId, 'state.json')
       const state = JSON.parse(readFileSync(statePath, 'utf-8'))
 
-      expect(state.stages['第一阶段']).toBe('RUNNING')
-      expect(state.currentStage).toBe('第一阶段')
+      expect(state.parts['第一阶段']).toBe('RUNNING')
+      expect(state.currentPart).toBe('第一阶段')
     })
 
-    it('所有 stage 完成后返回 COMPLETED', async () => {
+    it('所有 part 完成后返回 COMPLETED', async () => {
       const submitResult = taskSubmit(blueprintPath, TEST_WORKDIR)
 
       taskNext(submitResult.taskId, TEST_WORKDIR)
-      await taskVerify(submitResult.taskId, 'stage-1', TEST_WORKDIR)
+      await taskVerify(submitResult.taskId, 'part-1', TEST_WORKDIR)
 
       taskNext(submitResult.taskId, TEST_WORKDIR)
-      await taskVerify(submitResult.taskId, 'stage-2', TEST_WORKDIR)
+      await taskVerify(submitResult.taskId, 'part-2', TEST_WORKDIR)
 
       const finalNext = taskNext(submitResult.taskId, TEST_WORKDIR)
       expect(finalNext.status).toBe('COMPLETED')
-      expect(finalNext.stageId).toBeNull()
+      expect(finalNext.partId).toBeNull()
     })
 
     it('Task 不存在时抛出错误', () => {
@@ -215,41 +215,41 @@ stages:
   })
 
   describe('taskVerify', () => {
-    it('验证通过时 stage 状态更新为 PASSED', async () => {
+    it('验证通过时 part 状态更新为 PASSED', async () => {
       const submitResult = taskSubmit(blueprintPath, TEST_WORKDIR)
       taskNext(submitResult.taskId, TEST_WORKDIR)
 
-      const verifyResult = await taskVerify(submitResult.taskId, 'stage-1', TEST_WORKDIR)
+      const verifyResult = await taskVerify(submitResult.taskId, 'part-1', TEST_WORKDIR)
 
       expect(verifyResult.passed).toBe(true)
-      expect(verifyResult.stageId).toBe('stage-1')
+      expect(verifyResult.partId).toBe('part-1')
 
       const statePath = join(TEST_WORKDIR, '.openxenon', 'tasks', submitResult.taskId, 'state.json')
       const state = JSON.parse(readFileSync(statePath, 'utf-8'))
-      expect(state.stages['第一阶段']).toBe('PASSED')
+      expect(state.parts['第一阶段']).toBe('PASSED')
     })
 
     it('写入 step-manifest.json', async () => {
       const submitResult = taskSubmit(blueprintPath, TEST_WORKDIR)
       taskNext(submitResult.taskId, TEST_WORKDIR)
 
-      await taskVerify(submitResult.taskId, 'stage-1', TEST_WORKDIR)
+      await taskVerify(submitResult.taskId, 'part-1', TEST_WORKDIR)
 
       const manifestPath = join(TEST_WORKDIR, '.openxenon', 'tasks', submitResult.taskId, 'step-manifest.json')
       expect(existsSync(manifestPath)).toBe(true)
 
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-      expect(manifest.stages['第一阶段']).toBeDefined()
-      expect(manifest.stages['第一阶段'].status).toBe('PASSED')
+      expect(manifest.parts['第一阶段']).toBeDefined()
+      expect(manifest.parts['第一阶段'].status).toBe('PASSED')
     })
 
     it('Task 不存在时抛出错误', async () => {
-      await expect(taskVerify('nonexistent', 'stage-1', TEST_WORKDIR)).rejects.toThrow()
+      await expect(taskVerify('nonexistent', 'part-1', TEST_WORKDIR)).rejects.toThrow()
     })
 
-    it('Stage 不存在时抛出错误', async () => {
+    it('Part 不存在时抛出错误', async () => {
       const submitResult = taskSubmit(blueprintPath, TEST_WORKDIR)
-      await expect(taskVerify(submitResult.taskId, 'nonexistent-stage', TEST_WORKDIR)).rejects.toThrow()
+      await expect(taskVerify(submitResult.taskId, 'nonexistent-part', TEST_WORKDIR)).rejects.toThrow()
     })
   })
 
@@ -261,7 +261,7 @@ stages:
       expect(status.taskId).toBe(submitResult.taskId)
       expect(status.taskName).toBe('test-task')
       expect(status.status).toBe('RUNNING')
-      expect(status.stages).toEqual({
+      expect(status.parts).toEqual({
         '第一阶段': 'PENDING',
         '第二阶段': 'PENDING'
       })
@@ -290,8 +290,8 @@ stages:
       expect(state.taskId).toBe('task-with-state')
       expect(state.taskName).toBe('带状态的任务')
       expect(state.status).toBe('PENDING')
-      expect(state.currentStage).toBeNull()
-      expect(state.stages).toEqual({})
+      expect(state.currentPart).toBeNull()
+      expect(state.parts).toEqual({})
     })
 
     it('创建任务后生成 task-trace.yaml', () => {
@@ -326,18 +326,18 @@ stages:
       expect(submitResult.status).toBe('RUNNING')
 
       const nextResult = taskNext(submitResult.taskId, TEST_WORKDIR)
-      expect(nextResult.stageId).toBe('stage-1')
+      expect(nextResult.partId).toBe('part-1')
       expect(nextResult.name).toBe('第一阶段')
 
-      const verifyResult = await taskVerify(submitResult.taskId, 'stage-1', TEST_WORKDIR)
+      const verifyResult = await taskVerify(submitResult.taskId, 'part-1', TEST_WORKDIR)
       expect(verifyResult.passed).toBe(true)
 
       const status = taskStatus(submitResult.taskId, TEST_WORKDIR)
-      expect(status.stages['第一阶段']).toBe('PASSED')
-      expect(status.currentStage).toBeNull()
+      expect(status.parts['第一阶段']).toBe('PASSED')
+      expect(status.currentPart).toBeNull()
 
       const nextResult2 = taskNext(submitResult.taskId, TEST_WORKDIR)
-      expect(nextResult2.stageId).toBe('stage-2')
+      expect(nextResult2.partId).toBe('part-2')
       expect(nextResult2.name).toBe('第二阶段')
     })
   })

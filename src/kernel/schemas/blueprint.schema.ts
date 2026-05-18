@@ -60,7 +60,7 @@ export const SlotInvocationSchema: z.ZodType<{
 
 export type SlotInvocation = z.infer<typeof SlotInvocationSchema>
 
-export const StageInvocationSchema = z.object({
+export const PartInvocationSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
   deps: z.array(z.string()).default([]),
@@ -86,7 +86,7 @@ export const StageInvocationSchema = z.object({
 }).refine(
   (data) => {
     if (data.probes_append !== undefined && data.probes_override !== undefined) {
-      throw new Error('Stage 不能同时包含 probes_append 和 probes_override')
+      throw new Error('Part 不能同时包含 probes_append 和 probes_override')
     }
     if (data.condition !== undefined) {
       const hasRuntimeVar = /\?\s*['"]/.test(data.condition) || /\?\s*"/.test(data.condition)
@@ -95,21 +95,21 @@ export const StageInvocationSchema = z.object({
       }
     }
     if (data.ref !== undefined && data.slot !== undefined) {
-      throw new Error('Stage 不能同时包含 ref 和 slot')
+      throw new Error('Part 不能同时包含 ref 和 slot')
     }
     return true
   },
   { message: 'probes_append 和 probes_override 互斥，ref 和 slot 互斥' }
 )
 
-export type Stage = z.infer<typeof StageInvocationSchema>
+export type Part = z.infer<typeof PartInvocationSchema>
 
 export const BlueprintSchema = z.object({
   id: z.string(),
   name: z.string(),
   status: z.enum(['DRAFT', 'CANONICAL', 'ABANDONED']).default('CANONICAL'),
   slots: z.record(z.string(), z.union([z.string(), SlotInvocationSchema])).optional(),
-  stages: z.array(StageInvocationSchema).optional(),
+  parts: z.array(PartInvocationSchema).optional(),
   topology: z.array(z.string()).optional(),
   edges: z.array(z.object({ from: z.string(), to: z.string() })).optional(),
   source: z.string().optional(),
@@ -129,11 +129,11 @@ export function safeParseBlueprint(data: unknown): { success: true; data: Bluepr
   return { success: false, error: result.error }
 }
 
-export function hasValidProbeRefs(stage: Stage): boolean {
+export function hasValidProbeRefs(part: Part): boolean {
   const allProbes = [
-    ...(stage.probes || []),
-    ...(stage.probes_append || []),
-    ...(stage.probes_override || [])
+    ...(part.probes || []),
+    ...(part.probes_append || []),
+    ...(part.probes_override || [])
   ]
   return allProbes.every(p => !p.ref || isValidProbeRef(p.ref))
 }
@@ -152,27 +152,13 @@ export function extractTemplateVariables(action: { instruction?: string; command
   return vars
 }
 
-export type TemplateVariableScope = 'params' | 'task' | 'stage' | 'env'
+export type TemplateVariableScope = 'params' | 'task' | 'part' | 'env'
 
-export function validateTemplateVariables(
-  vars: string[],
-  allowedScopes: TemplateVariableScope[]
-): { valid: boolean; invalidVars: string[] } {
-  const invalidVars: string[] = []
-  for (const v of vars) {
-    const scope = v.split('.')[0] as TemplateVariableScope
-    if (!allowedScopes.includes(scope)) {
-      invalidVars.push(v)
-    }
-  }
-  return { valid: invalidVars.length === 0, invalidVars }
-}
+export const ALLOWED_VARIABLE_SCOPES: TemplateVariableScope[] = ['params', 'task', 'part']
 
-export const ALLOWED_VARIABLE_SCOPES: TemplateVariableScope[] = ['params', 'task', 'stage']
-
-export function validateStageTemplates(stage: Stage): { valid: boolean; errors: string[] } {
+export function validatePartTemplates(part: Part): { valid: boolean; errors: string[] } {
   const errors: string[] = []
-  const vars = extractTemplateVariables(stage.action)
+  const vars = extractTemplateVariables(part.action)
 
   const validation = validateTemplateVariables(vars, ALLOWED_VARIABLE_SCOPES)
   if (!validation.valid) {
@@ -184,8 +170,8 @@ export function validateStageTemplates(stage: Stage): { valid: boolean; errors: 
     errors.push('action 模板禁止使用 env.* 变量')
   }
 
-  if (stage.condition) {
-    const conditionVars = extractTemplateVariables({ instruction: stage.condition })
+  if (part.condition) {
+    const conditionVars = extractTemplateVariables({ instruction: part.condition })
     const condValidation = validateTemplateVariables(conditionVars, ALLOWED_VARIABLE_SCOPES)
     if (!condValidation.valid) {
       errors.push(`condition 包含不允许的变量: ${condValidation.invalidVars.join(', ')}`)

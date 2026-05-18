@@ -1,6 +1,6 @@
 import { parse as parseYaml } from 'yaml'
 import { topologicalSort, type DagNode } from '../../kernel/schemas/dag-validator'
-import { type Blueprint, type Stage } from '../../kernel/schemas/blueprint.schema'
+import { type Blueprint, type Part } from '../../kernel/schemas/blueprint.schema'
 
 export interface BlueprintRendererOptions {
   blueprintName: string
@@ -18,13 +18,13 @@ export function blueprintToDagHtml(options: BlueprintRendererOptions): string {
     return renderErrorHtml(`无法解析 Blueprint: ${blueprintName}`)
   }
 
-  if (!blueprint.stages || blueprint.stages.length === 0) {
-    return renderErrorHtml(`Blueprint 没有定义任何 Stage: ${blueprintName}`)
+  if (!blueprint.parts || blueprint.parts.length === 0) {
+    return renderErrorHtml(`Blueprint 没有定义任何 Part: ${blueprintName}`)
   }
 
-  const dagNodes: DagNode[] = blueprint.stages.map(s => ({
-    id: s.id,
-    deps: s.deps || []
+  const dagNodes: DagNode[] = blueprint.parts.map(p => ({
+    id: p.id,
+    deps: p.deps || []
   }))
 
   let sortedIds: string[]
@@ -34,9 +34,9 @@ export function blueprintToDagHtml(options: BlueprintRendererOptions): string {
     return renderErrorHtml(`Blueprint DAG 拓扑排序失败: ${blueprintName}`)
   }
 
-  const stageById: Record<string, Stage> = {}
-  for (const stage of blueprint.stages) {
-    stageById[stage.id] = stage
+  const partById: Record<string, Part> = {}
+  for (const part of blueprint.parts) {
+    partById[part.id] = part
   }
 
   const svgWidth = 700
@@ -47,7 +47,7 @@ export function blueprintToDagHtml(options: BlueprintRendererOptions): string {
 
   const svgContent = renderDagSvg({
     sortedIds,
-    stageById,
+    partById,
     nodeWidth,
     nodeHeight,
     nodeGapY,
@@ -68,7 +68,7 @@ export function blueprintToDagHtml(options: BlueprintRendererOptions): string {
 
 interface DagsSvgOptions {
   sortedIds: string[]
-  stageById: Record<string, Stage>
+  partById: Record<string, Part>
   nodeWidth: number
   nodeHeight: number
   nodeGapY: number
@@ -86,24 +86,24 @@ interface DagEdge {
 }
 
 function renderDagSvg(opts: DagsSvgOptions): string {
-  const { sortedIds, stageById, nodeWidth, nodeHeight, nodeGapY, headerHeight, svgWidth } = opts
+  const { sortedIds, partById, nodeWidth, nodeHeight, nodeGapY, headerHeight, svgWidth } = opts
 
-  const nodes: { id: string; x: number; y: number; stage: Stage }[] = []
+  const nodes: { id: string; x: number; y: number; part: Part }[] = []
 
   for (let i = 0; i < sortedIds.length; i++) {
     const id = sortedIds[i]!
-    const stage = stageById[id]!
+    const part = partById[id]!
     nodes.push({
       id,
       x: (svgWidth - nodeWidth) / 2,
       y: headerHeight + i * (nodeHeight + nodeGapY),
-      stage
+      part
     })
   }
 
   const edges: DagEdge[] = []
   for (const node of nodes) {
-    const deps = node.stage.deps || []
+    const deps = node.part.deps || []
     for (const depId of deps) {
       const depNode = nodes.find(n => n.id === depId)
       if (depNode) {
@@ -146,7 +146,7 @@ function renderDagSvg(opts: DagsSvgOptions): string {
   }
 
   for (const node of nodes) {
-    const probesHtml = renderProbesHtml(node.stage)
+    const probesHtml = renderProbesHtml(node.part)
 
     svg += `
       <g class="node" data-id="${node.id}">
@@ -167,12 +167,12 @@ function renderDagSvg(opts: DagsSvgOptions): string {
   return svg
 }
 
-function renderProbesHtml(stage: Stage): string {
-  if (!stage.probes || stage.probes.length === 0) {
+function renderProbesHtml(part: Part): string {
+  if (!part.probes || part.probes.length === 0) {
     return '<div class="no-probes">No probes</div>'
   }
 
-  return stage.probes.map(probe => {
+  return part.probes.map(probe => {
     const pattern = probe.pattern || ''
     return `<div class="probe-tag">${escapeHtml(probe.type || '')}${pattern ? ` ${escapeHtml(pattern)}` : ''}</div>`
   }).join('')

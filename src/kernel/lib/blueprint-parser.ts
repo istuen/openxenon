@@ -1,9 +1,9 @@
-import type { BlueprintPayload, StagePayload } from '../../daemon/types/daemon-payload'
+import type { BlueprintPayload, PartPayload } from '../../daemon/types/daemon-payload'
 
 export interface ParsedBlueprint {
   id: string
   name: string
-  stages: StagePayload[]
+  parts: PartPayload[]
 }
 
 export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
@@ -14,7 +14,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       return {
         id: parsed.id || '',
         name: parsed.name || '',
-        stages: (parsed.stages || []).map((s: any) => ({
+        parts: (parsed.parts || []).map((s: any) => ({
           id: s.id || '',
           name: s.name || '',
           deps: s.deps || [],
@@ -35,10 +35,10 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
   const lines = yaml.split('\n')
   let id = ''
   let name = ''
-  const stages: StagePayload[] = []
+  const parts: PartPayload[] = []
 
-  let currentSection: 'root' | 'stage' | 'probes' | 'target' | 'spec' | 'probe' = 'root'
-  let stageIndex = -1
+  let currentSection: 'root' | 'part' | 'probes' | 'target' | 'spec' | 'probe' = 'root'
+  let partIndex = -1
   let probeIndex = -1
 
   for (const line of lines) {
@@ -61,18 +61,18 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       continue
     }
 
-    if (trimmed === 'stages:') {
-      currentSection = 'stage'
+    if (trimmed === 'parts:') {
+      currentSection = 'part'
       continue
     }
 
-    if (trimmed.startsWith('- id:') && currentSection === 'stage') {
-      stageIndex++
+    if (trimmed.startsWith('- id:') && currentSection === 'part') {
+      partIndex++
       probeIndex = -1
-      const stageId = trimmed.slice(5).trim()
-      if (stageIndex >= stages.length) {
-        stages.push({
-          id: stageId,
+      const partId = trimmed.slice(5).trim()
+      if (partIndex >= parts.length) {
+        parts.push({
+          id: partId,
           name: '',
           deps: [],
           target: { description: '' },
@@ -80,22 +80,22 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           probes: []
         })
       } else {
-        stages[stageIndex]!.id = stageId
-        stages[stageIndex]!.name = ''
-        stages[stageIndex]!.deps = []
-        stages[stageIndex]!.probes = []
+        parts[partIndex]!.id = partId
+        parts[partIndex]!.name = ''
+        parts[partIndex]!.deps = []
+        parts[partIndex]!.probes = []
       }
       continue
     }
 
-    if (trimmed.startsWith('- id:') && currentSection === 'probes' && stageIndex >= 0) {
-      stageIndex++
+    if (trimmed.startsWith('- id:') && currentSection === 'probes' && partIndex >= 0) {
+      partIndex++
       probeIndex = -1
-      currentSection = 'stage'
-      const stageId = trimmed.slice(5).trim()
-      if (stageIndex >= stages.length) {
-        stages.push({
-          id: stageId,
+      currentSection = 'part'
+      const partId = trimmed.slice(5).trim()
+      if (partIndex >= parts.length) {
+        parts.push({
+          id: partId,
           name: '',
           deps: [],
           target: { description: '' },
@@ -103,28 +103,28 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           probes: []
         })
       } else {
-        stages[stageIndex]!.id = stageId
-        stages[stageIndex]!.name = ''
-        stages[stageIndex]!.deps = []
-        stages[stageIndex]!.probes = []
+        parts[partIndex]!.id = partId
+        parts[partIndex]!.name = ''
+        parts[partIndex]!.deps = []
+        parts[partIndex]!.probes = []
       }
       continue
     }
 
-    if (trimmed.startsWith('name:') && currentSection === 'stage' && stageIndex >= 0) {
-      const stage = stages[stageIndex]
-      if (stage) stage.name = trimmed.slice(5).trim()
+    if (trimmed.startsWith('name:') && currentSection === 'part' && partIndex >= 0) {
+      const part = parts[partIndex]
+      if (part) part.name = trimmed.slice(5).trim()
       continue
     }
 
-    if (trimmed.startsWith('deps:') && currentSection === 'stage' && stageIndex >= 0) {
+    if (trimmed.startsWith('deps:') && currentSection === 'part' && partIndex >= 0) {
       continue
     }
 
-    if (trimmed.startsWith('- ') && currentSection === 'stage' && stageIndex >= 0) {
+    if (trimmed.startsWith('- ') && currentSection === 'part' && partIndex >= 0) {
       const dep = trimmed.slice(2).trim()
-      const stage = stages[stageIndex]
-      if (stage) stage.deps.push(dep)
+      const part = parts[partIndex]
+      if (part) part.deps.push(dep)
       continue
     }
 
@@ -144,17 +144,17 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       continue
     }
 
-    if (trimmed.startsWith('deps:') && currentSection === 'probes' && stageIndex >= 0) {
-      currentSection = 'stage'
+    if (trimmed.startsWith('deps:') && currentSection === 'probes' && partIndex >= 0) {
+      currentSection = 'part'
       continue
     }
 
-    if (trimmed.startsWith('- type:') && currentSection === 'probes' && stageIndex >= 0) {
+    if (trimmed.startsWith('- type:') && currentSection === 'probes' && partIndex >= 0) {
       probeIndex++
       const probeType = trimmed.slice(7).trim()
-      const stage = stages[stageIndex]
-      if (!stage) continue
-      const probes = stage.probes
+      const part = parts[partIndex]
+      if (!part) continue
+      const probes = part.probes
       if (probeIndex >= probes.length) {
         probes.push({ type: probeType })
       } else {
@@ -163,60 +163,60 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
       continue
     }
 
-    if (trimmed.startsWith('pattern:') && currentSection === 'probes' && stageIndex >= 0 && probeIndex >= 0) {
+    if (trimmed.startsWith('pattern:') && currentSection === 'probes' && partIndex >= 0 && probeIndex >= 0) {
       let pattern = trimmed.slice(8).trim()
       if ((pattern.startsWith('"') && pattern.endsWith('"')) ||
           (pattern.startsWith("'") && pattern.endsWith("'"))) {
         pattern = pattern.slice(1, -1)
       }
-      const stage = stages[stageIndex]
-      const probe = stage?.probes[probeIndex]
+      const part = parts[partIndex]
+      const probe = part?.probes[probeIndex]
       if (probe) probe.pattern = pattern
       continue
     }
 
-    if (trimmed.startsWith('command:') && currentSection === 'probes' && stageIndex >= 0 && probeIndex >= 0) {
+    if (trimmed.startsWith('command:') && currentSection === 'probes' && partIndex >= 0 && probeIndex >= 0) {
       let command = trimmed.slice(8).trim()
       if ((command.startsWith('"') && command.endsWith('"')) ||
           (command.startsWith("'") && command.endsWith("'"))) {
         command = command.slice(1, -1)
       }
-      const stage = stages[stageIndex]
-      const probe = stage?.probes[probeIndex]
+      const part = parts[partIndex]
+      const probe = part?.probes[probeIndex]
       if (probe) probe.command = command
       continue
     }
 
-    if (currentSection === 'target' && stageIndex >= 0) {
+    if (currentSection === 'target' && partIndex >= 0) {
       if (trimmed.startsWith('description:')) {
-        const stage = stages[stageIndex]
-        if (stage) {
-          if (!stage.target) stage.target = { description: '' }
-          stage.target.description = trimmed.slice(12).trim()
+        const part = parts[partIndex]
+        if (part) {
+          if (!part.target) part.target = { description: '' }
+          part.target.description = trimmed.slice(12).trim()
         }
       }
       continue
     }
 
-    if (currentSection === 'spec' && stageIndex >= 0) {
+    if (currentSection === 'spec' && partIndex >= 0) {
       if (trimmed.startsWith('description:')) {
-        const stage = stages[stageIndex]
-        if (stage) {
-          if (!stage.spec) stage.spec = { description: '' }
-          stage.spec.description = trimmed.slice(12).trim()
+        const part = parts[partIndex]
+        if (part) {
+          if (!part.spec) part.spec = { description: '' }
+          part.spec.description = trimmed.slice(12).trim()
         }
       }
       continue
     }
   }
 
-  return { id, name, stages }
+  return { id, name, parts }
 }
 
 export function blueprintToPayload(parsed: ParsedBlueprint): BlueprintPayload {
   return {
     id: parsed.id,
     name: parsed.name,
-    stages: parsed.stages
+    parts: parsed.parts
   }
 }

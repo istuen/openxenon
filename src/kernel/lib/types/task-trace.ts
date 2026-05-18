@@ -6,12 +6,12 @@ export interface TaskTraceYaml {
   status: TaskStatus
   startedAt: string
   completedAt?: string
-  stages: StageTrace[]
+  parts: PartTrace[]
 }
 
-export interface StageTrace {
-  stageId: string
-  stageName: string
+export interface PartTrace {
+  partId: string
+  partName: string
   status: StepStatus
   probes: ProbeResult[]
   executedAt?: string
@@ -30,7 +30,7 @@ export interface ProbeResult {
   executedAt: number
 }
 
-export type TraceEventType = 'TASK_START' | 'TASK_STATUS' | 'STAGE_START' | 'STAGE_COMPLETE' | 'PROBE_RESULT'
+export type TraceEventType = 'TASK_START' | 'TASK_STATUS' | 'PART_START' | 'PART_COMPLETE' | 'PROBE_RESULT'
 
 export interface TaskStartEvent {
   type: 'TASK_START'
@@ -46,18 +46,18 @@ export interface TaskStatusEvent {
   timestamp: number
 }
 
-export interface StageStartEvent {
-  type: 'STAGE_START'
+export interface PartStartEvent {
+  type: 'PART_START'
   taskId: string
-  stageId: string
-  stageName: string
+  partId: string
+  partName: string
   timestamp: number
 }
 
-export interface StageCompleteEvent {
-  type: 'STAGE_COMPLETE'
+export interface PartCompleteEvent {
+  type: 'PART_COMPLETE'
   taskId: string
-  stageId: string
+  partId: string
   status: StepStatus
   timestamp: number
 }
@@ -65,7 +65,7 @@ export interface StageCompleteEvent {
 export interface ProbeResultEvent {
   type: 'PROBE_RESULT'
   taskId: string
-  stageId: string
+  partId: string
   probeType: string
   params?: Record<string, unknown>
   result: 'PASSED' | 'FAILED'
@@ -80,8 +80,8 @@ export interface ProbeResultEvent {
 export type TraceEvent =
   | TaskStartEvent
   | TaskStatusEvent
-  | StageStartEvent
-  | StageCompleteEvent
+  | PartStartEvent
+  | PartCompleteEvent
   | ProbeResultEvent
 
 export interface TaskTraceState {
@@ -90,12 +90,12 @@ export interface TaskTraceState {
   status: TaskStatus | 'NOT_FOUND'
   startedAt: number
   completedAt?: number
-  stages: Map<string, StageState>
+  parts: Map<string, PartState>
 }
 
-export interface StageState {
-  stageId: string
-  stageName: string
+export interface PartState {
+  partId: string
+  partName: string
   status: StepStatus
   probes: ProbeResult[]
   startedAt?: number

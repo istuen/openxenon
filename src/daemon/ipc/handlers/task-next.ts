@@ -25,7 +25,7 @@ async function handleTaskNext(
     if (trace.status !== 'RUNNING') {
       return new Response(
         JSON.stringify({
-          stageId: null,
+          partId: null,
           message: 'Task not started'
         }),
         {
@@ -40,13 +40,13 @@ async function handleTaskNext(
       return notFound('Blueprint YAML not found for this task')
     }
 
-    const firstStage = parsed.stages[0]
+    const firstPart = parsed.parts[0]
 
-    if (!firstStage) {
+    if (!firstPart) {
       return new Response(
         JSON.stringify({
-          stageId: null,
-          message: 'No stages defined in blueprint'
+          partId: null,
+          message: 'No parts defined in blueprint'
         }),
         {
           status: 200,
@@ -57,10 +57,10 @@ async function handleTaskNext(
 
     return new Response(
       JSON.stringify({
-        stageId: firstStage.id,
-        name: firstStage.name,
-        target: firstStage.target,
-        spec: firstStage.spec?.description
+        partId: firstPart.id,
+        name: firstPart.name,
+        target: firstPart.target,
+        spec: firstPart.spec?.description
       }),
       {
         status: 200,

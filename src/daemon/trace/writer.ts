@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, appendFileSync } from 'fs'
 import type { TaskDirectory } from '../../kernel/lib/task-dir'
-import type { TraceEvent, TaskTraceState, StageState } from '../../kernel/lib/types/task-state'
+import type { TraceEvent, TaskTraceState, PartState } from '../../kernel/lib/types/task-state'
 import type { TaskStatus, StepStatus } from '../../kernel/enums'
 import { buildTraceEvent, reduceTraceEvents } from '../../kernel/lib/task-trace'
 import { parseBlueprintYaml, type ParsedBlueprint } from '../../kernel/lib/blueprint-parser'
@@ -51,23 +51,23 @@ export function writeTaskStatus(
   appendEventToFile(taskDir.tracePath, event)
 }
 
-export function writeStageStart(
+export function writePartStart(
   taskDir: TaskDirectory,
   taskId: string,
-  stageId: string,
-  stageName: string
+  partId: string,
+  partName: string
 ): void {
-  const event = buildTraceEvent('STAGE_START', taskId, { stageId, stageName })
+  const event = buildTraceEvent('PART_START', taskId, { partId, partName })
   appendEventToFile(taskDir.tracePath, event)
 }
 
-export function writeStageComplete(
+export function writePartComplete(
   taskDir: TaskDirectory,
   taskId: string,
-  stageId: string,
+  partId: string,
   status: StepStatus
 ): void {
-  const event = buildTraceEvent('STAGE_COMPLETE', taskId, { stageId, status })
+  const event = buildTraceEvent('PART_COMPLETE', taskId, { partId, status })
   appendEventToFile(taskDir.tracePath, event)
 }
 
@@ -97,7 +97,7 @@ export function createProbeResult(
 export function writeProbeResult(
   taskDir: TaskDirectory,
   taskId: string,
-  stageId: string,
+  partId: string,
   probeType: string,
   result: 'PASSED' | 'FAILED',
   output?: string,
@@ -108,7 +108,7 @@ export function writeProbeResult(
   duration?: number
 ): void {
   const event = buildTraceEvent('PROBE_RESULT', taskId, {
-    stageId,
+    partId,
     probeType,
     result,
     output,
@@ -135,22 +135,22 @@ export function getTaskStatus(taskDir: TaskDirectory): TaskStatus | 'NOT_FOUND' 
   return state.status
 }
 
-export function getNextPendingStage(taskDir: TaskDirectory): StageState | null {
+export function getNextPendingPart(taskDir: TaskDirectory): PartState | null {
   const state = readTaskTrace(taskDir)
   if (!state) return null
 
-  for (const stage of state.stages.values()) {
-    if (stage.status === 'PENDING') {
-      return stage
+  for (const part of state.parts.values()) {
+    if (part.status === 'PENDING') {
+      return part
     }
   }
   return null
 }
 
-export function getStageState(taskDir: TaskDirectory, stageId: string): StageState | null {
+export function getPartState(taskDir: TaskDirectory, partId: string): PartState | null {
   const state = readTaskTrace(taskDir)
   if (!state) return null
-  return state.stages.get(stageId) || null
+  return state.parts.get(partId) || null
 }
 
 function readTaskTraceFromContent(content: string): TaskTraceState | null {

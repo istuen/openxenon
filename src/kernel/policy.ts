@@ -13,7 +13,7 @@ export interface ExecutionPolicy {
 
 export interface ExecutionContext {
   taskId: string
-  stageId: string
+  partId: string
   projectRoot: string
   sandboxMode: boolean
 }

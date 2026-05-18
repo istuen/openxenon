@@ -18,7 +18,7 @@ describe('ProcessManager', () => {
       const proc = processManager.spawn('task-1', 'stage-1', 'sleep', ['10'])
       expect(proc).not.toBeNull()
       expect(proc!.taskId).toBe('task-1')
-      expect(proc!.stageId).toBe('stage-1')
+      expect(proc!.partId).toBe('stage-1')
       expect(proc!.status).toBe('running')
       expect(proc!.pid).toBeGreaterThan(0)
     })
@@ -63,7 +63,7 @@ describe('ProcessManager', () => {
   })
 
   describe('get', () => {
-    it('returns process by taskId and stageId', () => {
+    it('returns process by taskId and partId', () => {
       processManager.spawn('task-1', 'stage-1', 'sleep', ['10'])
       const proc = processManager.get('task-1', 'stage-1')
       expect(proc).not.toBeUndefined()

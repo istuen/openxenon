@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events'
 
-export interface StageEvent {
+export interface PartEvent {
   taskId: string
-  stageId: string
-  stageName: string
+  partId: string
+  partName: string
   status: 'STARTED' | 'COMPLETED' | 'FAILED' | 'TIMEOUT'
   timestamp: number
   details?: Record<string, unknown>
@@ -14,18 +14,18 @@ export interface TaskEvent {
   taskName: string
   status: 'CREATED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'ABANDONED'
   timestamp: number
-  currentStage?: string
+  currentPart?: string
 }
 
 export interface ProbeEvent {
   taskId: string
-  stageId: string
+  partId: string
   probeType: string
   result: 'PASSED' | 'FAILED'
   timestamp: number
 }
 
-export type HallEvent = StageEvent | TaskEvent | ProbeEvent
+export type HallEvent = PartEvent | TaskEvent | ProbeEvent
 
 class HallEmitter extends EventEmitter {
   private static instance: HallEmitter
@@ -37,46 +37,46 @@ class HallEmitter extends EventEmitter {
     return HallEmitter.instance
   }
 
-  emitStageStarted(taskId: string, stageId: string, stageName: string): void {
-    this.emit('stage:started', {
+  emitPartStarted(taskId: string, partId: string, partName: string): void {
+    this.emit('part:started', {
       taskId,
-      stageId,
-      stageName,
+      partId,
+      partName,
       status: 'STARTED',
       timestamp: Date.now()
-    } satisfies StageEvent)
+    } satisfies PartEvent)
   }
 
-  emitStageCompleted(taskId: string, stageId: string, stageName: string, details?: Record<string, unknown>): void {
-    this.emit('stage:completed', {
+  emitPartCompleted(taskId: string, partId: string, partName: string, details?: Record<string, unknown>): void {
+    this.emit('part:completed', {
       taskId,
-      stageId,
-      stageName,
+      partId,
+      partName,
       status: 'COMPLETED',
       timestamp: Date.now(),
       details
-    } satisfies StageEvent)
+    } satisfies PartEvent)
   }
 
-  emitStageFailed(taskId: string, stageId: string, stageName: string, details?: Record<string, unknown>): void {
-    this.emit('stage:failed', {
+  emitPartFailed(taskId: string, partId: string, partName: string, details?: Record<string, unknown>): void {
+    this.emit('part:failed', {
       taskId,
-      stageId,
-      stageName,
+      partId,
+      partName,
       status: 'FAILED',
       timestamp: Date.now(),
       details
-    } satisfies StageEvent)
+    } satisfies PartEvent)
   }
 
-  emitStageTimeout(taskId: string, stageId: string, stageName: string): void {
-    this.emit('stage:timeout', {
+  emitPartTimeout(taskId: string, partId: string, partName: string): void {
+    this.emit('part:timeout', {
       taskId,
-      stageId,
-      stageName,
+      partId,
+      partName,
       status: 'TIMEOUT',
       timestamp: Date.now()
-    } satisfies StageEvent)
+    } satisfies PartEvent)
   }
 
   emitTaskCreated(taskId: string, taskName: string): void {
@@ -88,13 +88,13 @@ class HallEmitter extends EventEmitter {
     } satisfies TaskEvent)
   }
 
-  emitTaskRunning(taskId: string, taskName: string, currentStage?: string): void {
+  emitTaskRunning(taskId: string, taskName: string, currentPart?: string): void {
     this.emit('task:running', {
       taskId,
       taskName,
       status: 'RUNNING',
       timestamp: Date.now(),
-      currentStage
+      currentPart
     } satisfies TaskEvent)
   }
 
@@ -116,10 +116,10 @@ class HallEmitter extends EventEmitter {
     } satisfies TaskEvent)
   }
 
-  emitProbeResult(taskId: string, stageId: string, probeType: string, result: 'PASSED' | 'FAILED'): void {
+  emitProbeResult(taskId: string, partId: string, probeType: string, result: 'PASSED' | 'FAILED'): void {
     this.emit('probe:result', {
       taskId,
-      stageId,
+      partId,
       probeType,
       result,
       timestamp: Date.now()

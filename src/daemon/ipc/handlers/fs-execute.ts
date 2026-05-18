@@ -3,7 +3,7 @@ import { badRequest, notFound } from '../errors'
 import type { DaemonPayload } from '../../types/daemon-payload'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
 import { ensureDirectory, directoryExists } from '../../../infra/fs'
-import { readTaskTrace, writeTaskStart, writeTaskStatus, writeStageStart, writeStageComplete, createProbeResult } from '../../trace/writer'
+import { readTaskTrace, writeTaskStart, writeTaskStatus, writePartStart, writePartComplete, createProbeResult } from '../../trace/writer'
 import { getProbeHandler, type ProbeResult as InfraProbeResult } from '../../../infra/probes'
 import { evaluateProbe, type ProbeDefinition } from '../../../kernel/probes/evaluator'
 
@@ -84,35 +84,35 @@ async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typ
 
   writeTaskStatus(taskDir, payload.task_id, 'RUNNING')
 
-  for (const stage of payload.blueprint.stages) {
-    writeStageStart(taskDir, payload.task_id, stage.id, stage.name)
-    writeStageComplete(taskDir, payload.task_id, stage.id, 'RUNNING')
+  for (const part of payload.blueprint.parts) {
+    writePartStart(taskDir, payload.task_id, part.id, part.name)
+    writePartComplete(taskDir, payload.task_id, part.id, 'RUNNING')
 
-    let stageState = trace.stages.get(stage.id)
-    if (!stageState) {
-      stageState = { stageId: stage.id, stageName: stage.name, status: 'RUNNING', probes: [], startedAt: Date.now() }
-      trace.stages.set(stage.id, stageState)
+    let partState = trace.parts.get(part.id)
+    if (!partState) {
+      partState = { partId: part.id, partName: part.name, status: 'RUNNING', probes: [], startedAt: Date.now() }
+      trace.parts.set(part.id, partState)
     }
 
-    for (const probe of stage.probes) {
+    for (const probe of part.probes) {
       const result = await executeProbe(probe.type, probe.pattern || probe.command || '', payload.project_root)
       const probeResult = createProbeResult(probe.type, result.result, result.output, result.error)
-      stageState.probes.push(probeResult)
+      partState.probes.push(probeResult)
     }
 
-    const allProbesPassed = stageState.probes.every(p => p.result === 'PASSED')
-    stageState.status = allProbesPassed ? 'PASSED' : 'FAILED'
-    writeStageComplete(taskDir, payload.task_id, stage.id, stageState.status)
+    const allProbesPassed = partState.probes.every(p => p.result === 'PASSED')
+    partState.status = allProbesPassed ? 'PASSED' : 'FAILED'
+    writePartComplete(taskDir, payload.task_id, part.id, partState.status)
   }
 
-  const allPassed = Array.from(trace.stages.values()).every(s => s.status === 'PASSED')
+  const allPassed = Array.from(trace.parts.values()).every(s => s.status === 'PASSED')
   writeTaskStatus(taskDir, payload.task_id, allPassed ? 'COMPLETED' : 'FAILED')
 
   return new Response(
     JSON.stringify({
       taskId: payload.task_id,
       status: allPassed ? 'COMPLETED' : 'FAILED',
-      stagesCount: payload.blueprint.stages.length,
+      partsCount: payload.blueprint.parts.length,
       message: allPassed ? 'Task completed successfully' : 'Task failed'
     }),
     {
@@ -136,27 +136,27 @@ async function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typ
     return notFound('Task trace not found')
   }
 
-  const stage = payload.blueprint.stages.find(s => s.id === payload.step_id)
-  if (!stage) {
-    return notFound(`Stage not found: ${payload.step_id}`)
+  const part = payload.blueprint.parts.find(s => s.id === payload.step_id)
+  if (!part) {
+    return notFound(`Part not found: ${payload.step_id}`)
   }
 
-  writeStageComplete(taskDir, payload.task_id, payload.step_id, 'RUNNING')
+  writePartComplete(taskDir, payload.task_id, payload.step_id, 'RUNNING')
 
-  for (const probe of stage.probes) {
+  for (const probe of part.probes) {
     const result = await executeProbe(probe.type, probe.pattern || probe.command || '', taskDir.root)
     const probeResult = createProbeResult(probe.type, result.result, result.output, result.error)
 
     const currentTrace = readTaskTrace(taskDir)
     if (currentTrace) {
-      const stageState = currentTrace.stages.get(payload.step_id)
-      if (stageState) {
-        stageState.probes.push(probeResult)
+      const partState = currentTrace.parts.get(payload.step_id)
+      if (partState) {
+        partState.probes.push(probeResult)
       }
     }
   }
 
-  writeStageComplete(taskDir, payload.task_id, payload.step_id, 'PASSED')
+  writePartComplete(taskDir, payload.task_id, payload.step_id, 'PASSED')
 
   return new Response(
     JSON.stringify({
@@ -182,20 +182,20 @@ function handleVerifyStep(payload: DaemonPayload, taskDir: ReturnType<typeof get
     return notFound('Task trace not found')
   }
 
-  const stage = trace.stages.get(payload.step_id)
-  if (!stage) {
-    return notFound(`Stage not found: ${payload.step_id}`)
+  const part = trace.parts.get(payload.step_id)
+  if (!part) {
+    return notFound(`Part not found: ${payload.step_id}`)
   }
 
-  const allProbesPassed = stage.probes.every(p => p.result === 'PASSED')
+  const allProbesPassed = part.probes.every(p => p.result === 'PASSED')
 
   return new Response(
     JSON.stringify({
       taskId: payload.task_id,
       stepId: payload.step_id,
-      status: stage.status,
+      status: part.status,
       allProbesPassed,
-      probes: stage.probes
+      probes: part.probes
     }),
     {
       status: 200,

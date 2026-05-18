@@ -1,5 +1,5 @@
 import type { TraceEvent } from '../../kernel/lib/types/task-trace'
-import type { TaskTraceState, StageState } from '../../kernel/lib/types/task-trace'
+import type { TaskTraceState, PartState } from '../../kernel/lib/types/task-trace'
 
 export interface TaskTraceRendererOptions {
   taskId: string
@@ -18,8 +18,8 @@ export function taskTraceToHtml(options: TaskTraceRendererOptions): string {
     ? state.completedAt - state.startedAt
     : Date.now() - state.startedAt
 
-  const stages = Array.from(state.stages.values())
-  const failedProbes = stages.flatMap(s => s.probes.filter(p => p.result === 'FAILED'))
+  const parts = Array.from(state.parts.values())
+  const failedProbes = parts.flatMap(s => s.probes.filter(p => p.result === 'FAILED'))
   const overallStatus = state.status === 'COMPLETED' && failedProbes.length === 0 ? 'PASSED' : 'FAILED'
 
   return renderHtmlDocument({
@@ -31,7 +31,7 @@ export function taskTraceToHtml(options: TaskTraceRendererOptions): string {
       status: overallStatus,
       duration: taskDuration,
       startedAt: state.startedAt,
-      stages
+      parts
     })
   })
 }
@@ -58,7 +58,7 @@ function reduceTraceEventsFromContent(content: string): TaskTraceState | null {
     taskName: '',
     status: 'NOT_FOUND',
     startedAt: 0,
-    stages: new Map()
+    parts: new Map()
   }
 
   for (const event of events) {
@@ -84,29 +84,29 @@ function applyEvent(state: TaskTraceState, event: TraceEvent): void {
       }
       break
 
-    case 'STAGE_START':
-      state.stages.set(event.stageId, {
-        stageId: event.stageId,
-        stageName: event.stageName,
+    case 'PART_START':
+      state.parts.set(event.partId, {
+        partId: event.partId,
+        partName: event.partName,
         status: 'PENDING',
         probes: [],
         startedAt: event.timestamp
       })
       break
 
-    case 'STAGE_COMPLETE': {
-      const stage = state.stages.get(event.stageId)
-      if (stage) {
-        stage.status = event.status
-        stage.completedAt = event.timestamp
+    case 'PART_COMPLETE': {
+      const part = state.parts.get(event.partId)
+      if (part) {
+        part.status = event.status
+        part.completedAt = event.timestamp
       }
       break
     }
 
     case 'PROBE_RESULT': {
-      const stage = state.stages.get(event.stageId)
-      if (stage) {
-        stage.probes.push({
+      const part = state.parts.get(event.partId)
+      if (part) {
+        part.probes.push({
           probeType: event.probeType,
           result: event.result,
           output: event.output,
@@ -172,31 +172,31 @@ function renderTaskTraceHead(): string {
       }
       .status-badge.passed { background: #dcfce7; color: #166534; }
       .status-badge.failed { background: #fee2e2; color: #991b1b; }
-      .stages { display: flex; flex-direction: column; gap: 16px; }
-      .stage {
+      .parts { display: flex; flex-direction: column; gap: 16px; }
+      .part {
         background: white;
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       }
-      .stage-header {
+      .part-header {
         padding: 16px 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         border-bottom: 1px solid #eee;
       }
-      .stage-header h2 {
+      .part-header h2 {
         font-size: 16px;
         font-weight: 600;
       }
-      .stage-duration {
+      .part-duration {
         font-size: 13px;
         color: #666;
       }
-      .stage-duration.running { color: #3b82f6; }
-      .stage-duration.passed { color: #22c55e; }
-      .stage-duration.failed { color: #ef4444; }
+      .part-duration.running { color: #3b82f6; }
+      .part-duration.passed { color: #22c55e; }
+      .part-duration.failed { color: #ef4444; }
       .probes { padding: 12px 20px; }
       .probe {
         padding: 12px;
@@ -307,14 +307,14 @@ interface TaskTraceBodyOptions {
   status: 'PASSED' | 'FAILED'
   duration: number
   startedAt: number
-  stages: StageState[]
+  parts: PartState[]
 }
 
 function renderTaskTraceBody(opts: TaskTraceBodyOptions): string {
-  const { taskId, taskName, status, duration, startedAt, stages } = opts
+  const { taskId, taskName, status, duration, startedAt, parts } = opts
   const startDate = new Date(startedAt).toLocaleString()
 
-  const stageCards = stages.map(stage => renderStageCard(stage)).join('\n')
+  const partCards = parts.map(part => renderPartCard(part)).join('\n')
 
   return `
     <div class="container">
@@ -328,8 +328,8 @@ function renderTaskTraceBody(opts: TaskTraceBodyOptions): string {
         </div>
       </div>
 
-      <div class="stages">
-        ${stageCards}
+      <div class="parts">
+        ${partCards}
       </div>
 
       <div class="actions">
@@ -356,22 +356,22 @@ function renderTaskTraceBody(opts: TaskTraceBodyOptions): string {
   `
 }
 
-function renderStageCard(stage: StageState): string {
-  const duration = stage.completedAt && stage.startedAt
-    ? stage.completedAt - stage.startedAt
-    : stage.startedAt ? Date.now() - stage.startedAt : 0
+function renderPartCard(part: PartState): string {
+  const duration = part.completedAt && part.startedAt
+    ? part.completedAt - part.startedAt
+    : part.startedAt ? Date.now() - part.startedAt : 0
 
-  const statusClass = stage.status === 'RUNNING' ? 'running' : stage.status.toLowerCase()
+  const statusClass = part.status === 'RUNNING' ? 'running' : part.status.toLowerCase()
 
-  const probeCards = stage.probes.length > 0
-    ? stage.probes.map((probe, idx) => renderProbeCard(probe, stage.stageId, idx)).join('\n')
+  const probeCards = part.probes.length > 0
+    ? part.probes.map((probe, idx) => renderProbeCard(probe, part.partId, idx)).join('\n')
     : '<div class="skipped">No probes executed</div>'
 
   return `
-    <div class="stage">
-      <div class="stage-header">
-        <h2>${escapeHtml(stage.stageName)}</h2>
-        <span class="stage-duration ${statusClass}">${formatDuration(duration)}</span>
+    <div class="part">
+      <div class="part-header">
+        <h2>${escapeHtml(part.partName)}</h2>
+        <span class="part-duration ${statusClass}">${formatDuration(duration)}</span>
       </div>
       <div class="probes">
         ${probeCards}
@@ -387,9 +387,9 @@ interface ProbeResult {
   error?: string
 }
 
-function renderProbeCard(probe: ProbeResult, stageId: string, probeIndex: number): string {
+function renderProbeCard(probe: ProbeResult, partId: string, probeIndex: number): string {
   const { probeType, result, output, error } = probe
-  const errorId = `error-${stageId}-${probeIndex}`
+  const errorId = `error-${partId}-${probeIndex}`
 
   let outputHtml = ''
   if (output) {
