@@ -27,12 +27,12 @@ OpenXenon 的架构建立在三个核心角色的职责分离之上：
 | 层级          | 定义                                             | 资产化价值                     |
 | ------------- | ------------------------------------------------ | ------------------------------ |
 | **Blueprint** | 任务工程图，定义执行拓扑（DAG）                  | 意图沉淀，可参数化复用         |
-| **Stage**     | 工序节点，包含 target/action/spec/probes 四字段  | 标准沉淀，可跨项目复用         |
+| **Part**       | 零件，包含 target/spec/action/probes 四字段，内置 _version 版本号，单文件存储 | 标准沉淀，可跨项目复用，通过 Fork 变体定制 |
 | **Probe**     | 原子检查，物理观测 + 纯函数判定                  | 判断沉淀，可组合复用           |
 | **Artifact**  | AI 构建的产物，Core 验证的对象                   | 执行结果，可追溯可复盘         |
 | **Hall**      | 研讨厅，工程师查看任务状态和 Draft 资产的 Web UI | 可视化决策，待扩展为动态控制台 |
 
-**Stage 四字段结构**：
+**Part 四字段结构**：
 
 | 字段     | 可见性       | 含义                         |
 | -------- | ------------ | ---------------------------- |
@@ -49,7 +49,7 @@ OpenXenon 的架构建立在三个核心角色的职责分离之上：
 
 **交互链路：工程师 → Core**
 
-1. 工程师通过 Forge 定义 Probe、Stage、Blueprint
+1. 工程师通过 Forge 定义 Probe、Part、Blueprint
 2. 工程师审查资产内容
 3. 工程师将审查通过的资产提交为 Canonical（正式版），归入 Arsenal
 
@@ -100,6 +100,12 @@ Draft ──[审查]──▶ Canonical
 - Arsenal DRAFT→CANONICAL 生命周期
 - Blueprint → frozen.yaml 编译管线
 - 内置资产编译进二进制
+- Part 是单文件（非目录），Probe 统一单文件存储
+- BUILTIN_PARTS：git-commit / create-branch / develop-feature
+- _version 内置版本号，min_version 编译期校验
+- oxn arsenal fork 创建 Part 变体
+- oxn arsenal extract 从 Task 提取历史版本
+- Forge unpack/repack 解包编辑
 
 **0.1 目标 = L2 通过**
 
@@ -124,7 +130,12 @@ pnpm install && pnpm build
 
 # 3. 构建资产（定义意图与标准）
 ./dist/oxn forge probe --save '<yaml>' --name my-check
+./dist/oxn forge part --save '<yaml>' --name my-part
 ./dist/oxn arsenal promote probes/my-check
+./dist/oxn arsenal promote parts/my-part
+
+# 4. 创建 Part 变体（Fork）
+./dist/oxn arsenal fork part git-commit --name git-commit-jira
 
 # 4. 提交 Blueprint（Core 编译并生成冻结快照）
 ./dist/oxn task submit --blueprint my-blueprint.yaml
@@ -133,7 +144,7 @@ pnpm install && pnpm build
 ./dist/oxn task next --task-id <id>
 
 # 6. 模拟 AI 助手构建 Artifact 后，提交 Core 校验
-./dist/oxn task verify --task-id <id> --stage-id <id>
+./dist/oxn task verify --task-id <id> --part-id <id>
 
 # 7. 查看研讨厅 (Hall)
 ./dist/oxn hall
@@ -146,9 +157,9 @@ pnpm install && pnpm build
 工程师经验 ──▶ Forge ──▶ Draft ──▶ Schema 校验 ──▶ Promote ──▶ Canonical 资产
                                                               │
                                                               ▼
-Blueprint ──▶ Frozen ──▶ [Stage.target/action] ──▶ Artifact
-                                                │
-                                 [Stage.probes] ─┘──▶ Kernel ──▶ Verdict
+Blueprint ──▶ Frozen ──▶ [Part.target/action] ──▶ Artifact
+                                                  │
+                                   [Part.probes] ─┘──▶ Kernel ──▶ Verdict
 ```
 
 三层分离：
