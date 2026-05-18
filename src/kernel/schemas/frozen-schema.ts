@@ -51,6 +51,7 @@ export const FrozenPartSchema = z.object({
   _xenon_meta: XenonMetaSchema,
   id: z.string(),
   name: z.string(),
+  _version: z.number().int().positive().optional(),
   deps: z.array(z.string()).default([]),
   ref: z.string().optional(),
   condition: z.string().optional(),
@@ -73,6 +74,7 @@ export const FrozenPartSchema = z.object({
 export const FrozenBlueprintSchema = z.object({
   id: z.string(),
   name: z.string(),
+  _version: z.number().int().positive().optional(),
   frozen_at: z.string(),
   parts: z.array(FrozenPartSchema)
 })

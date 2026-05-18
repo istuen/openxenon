@@ -63,6 +63,7 @@ export type SlotInvocation = z.infer<typeof SlotInvocationSchema>
 export const PartInvocationSchema = z.object({
   id: z.string(),
   name: z.string().optional(),
+  _version: z.number().int().positive().optional().default(1),
   deps: z.array(z.string()).default([]),
   ref: z.string().optional(),
   slot: z.string().optional(),
@@ -107,6 +108,7 @@ export type Part = z.infer<typeof PartInvocationSchema>
 export const BlueprintSchema = z.object({
   id: z.string(),
   name: z.string(),
+  _version: z.number().int().positive().optional().default(1),
   status: z.enum(['DRAFT', 'CANONICAL', 'ABANDONED']).default('CANONICAL'),
   slots: z.record(z.string(), z.union([z.string(), SlotInvocationSchema])).optional(),
   parts: z.array(PartInvocationSchema).optional(),

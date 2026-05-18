@@ -225,11 +225,11 @@ export default defineCommand({
           required: true,
           description: '任务 ID'
         },
-        'stage-id': {
+        'part-id': {
           type: 'string',
-          alias: 's',
+          alias: 'p',
           required: true,
-          description: 'Stage ID'
+          description: 'Part ID'
         },
         '--json': {
           type: 'boolean',

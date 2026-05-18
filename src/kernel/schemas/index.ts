@@ -1,2 +1,2 @@
 export * from './probe'
-export * from './stage'
+export * from './part-asset'

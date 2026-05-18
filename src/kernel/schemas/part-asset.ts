@@ -34,6 +34,7 @@ export const ProbeDefinitionSchema = z.object({
 export const PartDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
+  _version: z.number().int().positive().optional().default(1),
   description: z.string(),
   semantics: SemanticsSchema.optional(),
   params_schema: z.object({

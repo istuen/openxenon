@@ -18,6 +18,7 @@ export interface ProbeObservation {
   output?: string
   error?: string
   executedAt: number
+  exitCode?: number | null
 }
 
 export interface ProbeResult extends ProbeObservation {
@@ -73,7 +74,7 @@ const probeStrategies: Record<string, ProbeStrategy> = {
 
   shell_exec: (obs, params) => {
     const start = Date.now()
-    const exitCode = (params.exitCode as number | null) ?? -1
+    const exitCode = obs.exitCode ?? -1
     const passed = exitCode === 0
     return {
       passed,
@@ -87,7 +88,7 @@ const probeStrategies: Record<string, ProbeStrategy> = {
 
   exec_exit_zero: (obs, params) => {
     const start = Date.now()
-    const exitCode = (params.exitCode as number | null) ?? -1
+    const exitCode = obs.exitCode ?? -1
     const passed = exitCode === 0
     return {
       passed,

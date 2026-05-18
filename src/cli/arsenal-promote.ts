@@ -3,6 +3,11 @@ import { promoteStandard, arsenalLoadStandardByName as loadStandardByName } from
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import { type AssetType } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
+import { readFileSync, writeFileSync } from 'fs'
+import { join, dirname } from 'path'
+import { BlueprintCompiler } from '../kernel/compiler/blueprint-compiler'
+import { parseBlueprint } from '../kernel/schemas/blueprint.schema'
+import * as yaml from 'yaml'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
   'blueprint': 'blueprints',
@@ -96,6 +101,23 @@ export default defineCommand({
           code: 'OXN_PROMOTE_FAILED',
           message: 'Failed to promote asset'
         }, format)
+      }
+
+      if (parsed.type === 'blueprints' && promoted) {
+        try {
+          const bpContent = readFileSync(promoted.path, 'utf-8')
+          const blueprint = parseBlueprint(yaml.parse(bpContent))
+          const frozenDir = dirname(promoted.path)
+          const frozenPath = join(frozenDir, 'frozen.yaml')
+          const compiler = new BlueprintCompiler()
+          const frozen = compiler.compile(blueprint, {
+            taskId: blueprint.id || blueprint.name,
+            taskName: blueprint.name
+          })
+          writeFileSync(frozenPath, yaml.stringify(frozen), 'utf-8')
+        } catch (err) {
+          // frozen.yaml generation is best-effort during promote
+        }
       }
 
       return output({

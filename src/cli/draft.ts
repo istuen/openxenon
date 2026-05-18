@@ -2,7 +2,7 @@ import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
 import * as yaml from 'yaml'
-import { validateProbeDefinition, validateStageDefinition } from '../kernel/schemas'
+import { validateProbeDefinition, validatePartAsset } from '../kernel/schemas'
 import { type AssetType, FORGES_ROOT, type Scope } from '../arsenals/paths'
 import { ensureForgesDirectories } from '../arsenals/init'
 import { getProjectBoundaryPath } from '../kernel'
@@ -88,7 +88,7 @@ export function createDraftProbe(content: string, name?: string, scope: Scope = 
 export function createDraftStage(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
-    validateStageDefinition(parsed)
+    validatePartAsset(parsed)
   } catch {
     return { success: false, error: 'Invalid stage structure' }
   }
