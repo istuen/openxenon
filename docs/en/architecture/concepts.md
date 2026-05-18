@@ -11,19 +11,25 @@ name: My Task
 stages:
   - id: build
     name: Build
-    proof:
-      probes:
-        - ref: shell_exec
-          parameters:
-            command: npm run build
+    target:
+      description: "Build the project"
+    action:
+      description: "Run npm run build"
+    probes:
+      - ref: shell_exec
+        parameters:
+          command: npm run build
   - id: test
     name: Test
     dependsOn: [build]
-    proof:
-      probes:
-        - ref: shell_exec
-          parameters:
-            command: npm test
+    target:
+      description: "Run tests"
+    action:
+      description: "Run npm test"
+    probes:
+      - ref: shell_exec
+        parameters:
+          command: npm test
 ```
 
 ### Two Perspectives of Blueprint
@@ -40,8 +46,7 @@ Arsenal is OpenXenon's "asset library" - it stores all standard assets.
 | Type | Description | Example |
 |------|-------------|---------|
 | **Probe** | Atomic check | `fs_exists`, `shell_exec` |
-| **Proof** | Verification closure | Combines multiple Probes |
-| **Stage** | Work node | `install-laravel`, `run-tests` |
+| **Stage** | Work node with target/action/spec/probes | `install-laravel`, `run-tests` |
 
 ## Stage
 
@@ -52,37 +57,22 @@ Stage is a "work node" in Blueprint, representing a phase of task execution.
 ```yaml
 - id: build
   name: Build
-  proof:
-    probes:
-      - ref: shell_exec
-        parameters:
-          command: npm run build
+  target:
+    description: "Build the project"
+  action:
+    description: "Run npm run build"
+  probes:
+    - ref: shell_exec
+      parameters:
+        command: npm run build
 ```
 
 ### Stage Execution Flow
 
 1. AI gets task via `oxn task next`
 2. Execute Stages in Blueprint order
-3. Each Stage's Proof is evaluated by Kernel
+3. Each Stage's probes are evaluated by Kernel
 4. Verification results recorded in task-trace.yaml
-
-## Proof
-
-Proof is a "verification closure" composed of one or more Probes.
-
-### Proof Example
-
-```yaml
-name: laravel_install_proof
-probes:
-  - ref: fs_exists
-    parameters:
-      pattern: "vendor/laravel"
-  - ref: fs_match
-    parameters:
-      path: "composer.json"
-      pattern: "laravel/framework"
-```
 
 ## DRAFT / CANONICAL Lifecycle
 
@@ -103,8 +93,8 @@ Task is OpenXenon's task instance, bound to a Blueprint.
 
 1. **CREATED** - Task created, Blueprint saved
 2. **IN_PROGRESS** - Task executing
-3. **PASSED** - All Stages and Proofs passed
-4. **FAILED** - Some Proof failed
+3. **PASSED** - All Stages and Probes passed
+4. **FAILED** - Some Probe failed
 
 ## Terminology
 
@@ -121,8 +111,7 @@ Task is OpenXenon's task instance, bound to a Blueprint.
 | Term | Definition |
 |------|------------|
 | **Blueprint** | Complete task structure definition with multiple Stages |
-| **Stage** | One execution phase of a task |
-| **Proof** | Verification closure composed of one or more Probes |
+| **Stage** | One execution phase of a task with target/action/spec/probes |
 | **Probe** | Atomic check (e.g., fs_exists, shell_exec) |
 | **Arsenal** | Directory storing all standard assets |
 
@@ -141,12 +130,10 @@ Blueprint
   ├── name (task name)
   └── stages (stage list)
         └── [Stage Name]
-              └── proof
-                    └── probes
+              └── probes
 
 Arsenal
   ├── probes/ (atomic checks)
-  ├── proofs/ (verification closures)
   └── stages/ (work nodes)
 
 Task

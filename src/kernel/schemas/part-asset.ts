@@ -1,14 +1,14 @@
 import { z } from 'zod'
 import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, ProbeTypeSchema } from '../../infra/loader'
 
-export const StageRefSchema = z.string().refine(
+export const PartRefSchema = z.string().refine(
   (val) => {
     if (isBareProbeRef(val)) {
-      throw new Error(`Stage ref "${val}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
+      throw new Error(`Part ref "${val}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
     }
     return isValidProbeRef(val)
   },
-  { message: 'Stage ref 必须带有命名空间前缀 (oxn/、@scope/、./)' }
+  { message: 'Part ref 必须带有命名空间前缀 (oxn/、@scope/、./)' }
 )
 
 export const SemanticsSchema = z.object({
@@ -31,7 +31,7 @@ export const ProbeDefinitionSchema = z.object({
   command: z.string().optional()
 })
 
-export const StageDefinitionSchema = z.object({
+export const PartDefinitionSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string(),
@@ -58,12 +58,12 @@ export const StageDefinitionSchema = z.object({
   deps: z.array(z.string()).optional()
 })
 
-export type StageDefinition = z.infer<typeof StageDefinitionSchema>
-export type StageAsset = StageDefinition
-export type StageRef = z.infer<typeof StageRefSchema>
+export type PartDefinition = z.infer<typeof PartDefinitionSchema>
+export type PartAsset = PartDefinition
+export type PartRef = z.infer<typeof PartRefSchema>
 
-export function validateStageAsset(data: unknown): StageDefinition {
-  return StageDefinitionSchema.parse(data)
+export function validatePartAsset(data: unknown): PartDefinition {
+  return PartDefinitionSchema.parse(data)
 }
 
 export function getNamespaceFromRef(ref: string): 'oxn' | 'scope' | 'project' | null {
@@ -76,7 +76,7 @@ export function getScopeNameFromRef(ref: string): string | null {
   return parsed?.scopeName ?? null
 }
 
-export function getStageNameFromRef(ref: string): string | null {
+export function getPartNameFromRef(ref: string): string | null {
   const parsed = parseProbeNamespace(ref)
   return parsed?.probeName ?? null
 }

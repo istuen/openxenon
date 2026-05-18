@@ -11,19 +11,25 @@ name: 我的任务
 stages:
   - id: build
     name: 构建
-    proof:
-      probes:
-        - ref: shell_exec
-          parameters:
-            command: npm run build
+    target:
+      description: "构建项目"
+    action:
+      description: "运行 npm run build"
+    probes:
+      - ref: shell_exec
+        parameters:
+          command: npm run build
   - id: test
     name: 测试
     dependsOn: [build]
-    proof:
-      probes:
-        - ref: shell_exec
-          parameters:
-            command: npm test
+    target:
+      description: "运行测试"
+    action:
+      description: "运行 npm test"
+    probes:
+      - ref: shell_exec
+        parameters:
+          command: npm test
 ```
 
 ### Blueprint 的两个视角
@@ -40,8 +46,7 @@ Arsenal 是 OpenXenon 的"资产库"，存放所有标准资产。
 | 类型 | 描述 | 示例 |
 |------|------|------|
 | **Probe** | 原子化检查 | `fs_exists`、`shell_exec` |
-| **Proof** | 验证闭环 | 组合多个 Probe |
-| **Stage** | 工序节点 | `install-laravel`、`run-tests` |
+| **Stage** | 工序节点，包含 target/action/spec/probes | `install-laravel`、`run-tests` |
 
 ## Stage
 
@@ -52,37 +57,22 @@ Stage 是 Blueprint 中的"工序节点"，代表任务执行的一个阶段。
 ```yaml
 - id: build
   name: 构建
-  proof:
-    probes:
-      - ref: shell_exec
-        parameters:
-          command: npm run build
+  target:
+    description: "构建项目"
+  action:
+    description: "运行 npm run build"
+  probes:
+    - ref: shell_exec
+      parameters:
+        command: npm run build
 ```
 
 ### Stage 执行流程
 
 1. AI 通过 `oxn task next` 获取任务
 2. 按 Blueprint 中的顺序执行 Stage
-3. 每个 Stage 的 Proof 被 Kernel 判定
+3. 每个 Stage 的 probes 被 Kernel 判定
 4. 验证结果通过 task-trace.yaml 记录
-
-## Proof
-
-Proof 是"验证闭环"，由一个或多个 Probe 组成。
-
-### Proof 示例
-
-```yaml
-name: laravel_install_proof
-probes:
-  - ref: fs_exists
-    parameters:
-      pattern: "vendor/laravel"
-  - ref: fs_match
-    parameters:
-      path: "composer.json"
-      pattern: "laravel/framework"
-```
 
 ## DRAFT / CANONICAL 生命周期
 
@@ -103,8 +93,8 @@ Task 是 OpenXenon 的任务实例，绑定一个 Blueprint。
 
 1. **CREATED** - 任务已创建，Blueprint 已保存
 2. **IN_PROGRESS** - 任务正在执行
-3. **PASSED** - 所有 Stage 和 Proof 通过
-4. **FAILED** - 某个 Proof 失败
+3. **PASSED** - 所有 Stage 和 Probe 通过
+4. **FAILED** - 某个 Probe 失败
 
 ## 术语表
 
@@ -121,8 +111,7 @@ Task 是 OpenXenon 的任务实例，绑定一个 Blueprint。
 | 术语 | 定义 |
 |------|------|
 | **Blueprint** | 任务的完整结构定义，包含多个 Stage |
-| **Stage** | 任务执行的一个阶段 |
-| **Proof** | 验证闭环，由一个或多个 Probe 组成 |
+| **Stage** | 任务执行的一个阶段，包含 target/action/spec/probes |
 | **Probe** | 原子化检查（如 fs_exists、shell_exec） |
 | **Arsenal** | 存放所有标准资产的目录 |
 
@@ -141,12 +130,10 @@ Blueprint
   ├── name (任务名称)
   └── stages (阶段列表)
         └── [Stage Name]
-              └── proof
-                    └── probes
+              └── probes
 
 Arsenal
   ├── probes/ (原子检查)
-  ├── proofs/ (验证闭环)
   └── stages/ (工序节点)
 
 Task
@@ -157,4 +144,4 @@ Task
 
 ## 下一章
 
-下一章将介绍 [CLI 命令参考](./04-cli-ref.md)。
+下一章将介绍 [CLI 命令参考](./cli-reference.md)。

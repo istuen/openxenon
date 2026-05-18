@@ -12,7 +12,6 @@ export interface LegacyStage {
   target: string
   spec: string
   action?: string
-  proof: string | string[]
   status: XnStageStatus
   createdAt?: number
   completedAt?: number

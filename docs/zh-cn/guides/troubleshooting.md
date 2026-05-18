@@ -53,12 +53,12 @@ cat .openxenon/tasks/my-task/blueprint.yaml
 
 ---
 
-### Q3: Proof 验证失败
+### Q3: Probe 验证失败
 
 **症状**：
 
 ```
-[OXN] Proof failed: fs_exists
+[OXN] Probe failed: fs_exists
 Path: dist/index.js
 Expected: file exists
 Actual: file not found
@@ -70,7 +70,7 @@ Actual: file not found
 
 1. 检查文件路径是否正确
 2. 确认构建步骤已成功执行
-3. 如果是临时文件，考虑调整 Proof 的检查时机
+3. 如果是临时文件，考虑调整 Probe 的检查时机
 
 ---
 
@@ -150,7 +150,7 @@ Asset promoted successfully! (但资产仍在 DRAFT 目录)
 1. 确认资产已被移动到 CANONICAL 目录：
 
 ```bash
-ls -la .openxenon/arsenal/proofs/CANONICAL/
+ls -la .openxenon/arsenals/stages/CANONICAL/
 ```
 
 2. 如果原文件仍然存在，检查是否有权限问题
@@ -181,16 +181,16 @@ params:
 
 ```yaml
 # 推荐
-proof:
-  type: fs_exists
-  params:
-    path: dist/index.js
+probes:
+  - ref: fs_exists
+    params:
+      pattern: dist/index.js
 
 # 不推荐
-proof:
-  type: exec_exit_zero
-  params:
-    command: test -f dist/index.js && echo "exists"
+probes:
+  - ref: shell_exec
+    params:
+      command: test -f dist/index.js && echo "exists"
 ```
 
 ### 4. 及时转正 Draft 资产
@@ -199,10 +199,10 @@ Draft 资产不会被其他任务引用，完成审查后及时 promote：
 
 ```bash
 # 审查
-oxn arsenal inspect proofs/my-proof
+oxn arsenal inspect stages/my-stage
 
 # 转正
-oxn arsenal promote proofs/my-proof
+oxn arsenal promote stages/my-stage
 ```
 
 ### 5. 保持 Blueprint 简洁
@@ -211,23 +211,23 @@ Blueprint 应该是"工程图"而不是"执行日志"：
 
 ```yaml
 # 推荐：简洁的 Blueprint
-task:
-  id: my-task
-  name: 构建项目
-stageDefinitions:
-  Build:
-    steps:
-      - id: build
-        proof:
-          type: exec_exit_zero
-          params:
-            command: npm run build
+name: 构建项目
+stages:
+  - id: build
+    name: Build
+    target:
+      description: "构建项目"
+    action:
+      description: "运行 npm run build"
+    probes:
+      - ref: shell_exec
+        params:
+          command: npm run build
 
 # 不推荐：包含过多细节
-task:
-  description: |
-    这是一个复杂的构建任务...
-    步骤如下：1. 安装依赖 2. 运行 lint 3. 运行测试...
+name: |
+  这是一个复杂的构建任务...
+  步骤如下：1. 安装依赖 2. 运行 lint 3. 运行测试...
 ```
 
 ### 6. 定期清理 Draft 资产
@@ -239,7 +239,7 @@ task:
 oxn arsenal list DRAFT
 
 # 清理不需要的 Draft
-rm .openxenon/arsenal/*/DRAFT/old-asset.yaml
+rm .openxenon/arsenals/*/DRAFT/old-asset.yaml
 ```
 
 ---
@@ -250,15 +250,15 @@ rm .openxenon/arsenal/*/DRAFT/old-asset.yaml
 
 每个 Stage 应该有明确的目的，不要过度拆分。
 
-### 复用已有的 Probe/Proof
+### 复用已有的 Probe
 
-在创建新 Proof 时，优先复用已有的 Probe：
+在创建新 Stage 时，优先复用已有的 Probe：
 
 ```yaml
 # 复用
-proofs:
-  - check_file_exists      # 已存在
-  - check_new_requirement   # 新增
+probes:
+  - ref: fs_exists      # 已存在
+  - ref: fs_match        # 新增
 ```
 
 ### 合理设置 timeout
@@ -266,11 +266,11 @@ proofs:
 对于耗时较长的命令，设置合理的 timeout：
 
 ```yaml
-proof:
-  type: exec_exit_zero
-  params:
-    command: npm test
-    timeout: 30000  # 30 秒
+probes:
+  - ref: shell_exec
+    params:
+      command: npm test
+      timeout: 30000  # 30 秒
 ```
 
 ---

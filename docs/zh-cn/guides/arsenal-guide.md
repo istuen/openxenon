@@ -2,35 +2,35 @@
 
 ## 概述
 
-OpenXenon 通过 Draft/CANONICAL 两态生命周期管理标准资产。标准资产可以是 Probe、Proof 或 Stage。
+OpenXenon 通过 Draft/CANONICAL 两态生命周期管理标准资产。标准资产可以是 Probe 或 Stage。
 
 ## 流程总览
 
 ```
 工程师意图 (自然语言)
-        │
-        ▼
+         │
+         ▼
     /oxn-forge
-        │
-        ▼
+         │
+         ▼
     AI 根据约束生成 YAML
-        │
-        ▼
+         │
+         ▼
     Kernel Schema 校验
-        │
-        ▼
+         │
+         ▼
     保存到 Arsenal 目录
-        │
-        ▼
+         │
+         ▼
     [阻断] 等待工程师审查
-        │
-        ▼
+         │
+         ▼
     oxn arsenal inspect
-        │
-        ▼
+         │
+         ▼
     oxn arsenal promote
-        │
-        ▼
+         │
+         ▼
     资产转正到 CANONICAL
 ```
 
@@ -49,7 +49,7 @@ OpenXenon 通过 Draft/CANONICAL 两态生命周期管理标准资产。标准�
 #### 生成 Probe
 
 ```
-/oxn-forge 帮我写一个检查文件是否存在 Probe
+/oxn-forge 帮我写一个检查文件是否存在的 Probe
 ```
 
 AI 会生成类似以下的 YAML：
@@ -64,27 +64,6 @@ parameters:
     description: "要检查的文件路径"
 ```
 
-#### 生成 Proof
-
-```
-/oxn-forge 写一个验证 Laravel 安装成功的 Proof
-```
-
-AI 会生成类似以下的 YAML：
-
-```yaml
-name: laravel_install_proof
-target:
-  description: "验证 Laravel 安装成功"
-spec:
-  description: "Laravel 框架已成功安装"
-probes:
-  - ref: check_composer_json
-    description: "检查 composer.json 存在"
-  - ref: check_vendor_exists
-    description: "检查 vendor 目录存在"
-```
-
 #### 生成 Stage
 
 ```
@@ -97,7 +76,14 @@ AI 会生成类似以下的 YAML：
 id: install-laravel
 name: install_laravel
 description: "安装 Laravel 项目骨架"
-proof: laravel_install_proof
+target:
+  description: "在项目中安装 Laravel"
+action:
+  description: "运行 composer install"
+probes:
+  - ref: fs_exists
+    parameters:
+      pattern: "vendor/laravel"
 deps: []
 ```
 
@@ -115,21 +101,21 @@ AI 在生成资产时必须遵守以下约束：
 AI 生成 Draft 资产后，会输出以下提示：
 
 ```
-已生成 Draft Proof：laravel_install_proof
-路径：.openxenon/arsenal/proofs/DRAFT/laravel_install_proof.yaml
+已生成 Draft Stage：install-laravel
+路径：.openxenon/arsenals/stages/DRAFT/install-laravel.yaml
 请使用 'oxn arsenal inspect' 查看内容，确认后使用 'oxn arsenal promote' 转正。
 ```
 
 ### 查看资产
 
 ```bash
-oxn arsenal inspect arsenal/proofs/DRAFT/laravel_install_proof.yaml
+oxn arsenal inspect stages/install-laravel
 ```
 
 ### 转正资产
 
 ```bash
-oxn arsenal promote proofs/laravel_install_proof
+oxn arsenal promote stages/install-laravel
 ```
 
 ## Probe 设计原则
@@ -143,25 +129,6 @@ oxn arsenal promote proofs/laravel_install_proof
 | `fs_exists` | 文件是否存在 |
 | `fs_match` | 文件内容是否匹配正则 |
 | `shell_exec` | 命令退出码是否为 0 |
-
-### 组合使用
-
-多个 Probe 可以组合成一个 Proof：
-
-```yaml
-name: laravel_install_proof
-target:
-  description: "验证 Laravel 安装成功"
-spec:
-  description: "Laravel 框架已成功安装"
-probes:
-  - ref: check_composer_json
-    description: "检查 composer.json 存在"
-  - ref: check_laravel_dependency
-    description: "检查包含 laravel 依赖"
-  - ref: check_vendor_exists
-    description: "检查 vendor 目录存在"
-```
 
 ## 目录结构
 
@@ -177,9 +144,6 @@ probes:
     │   │   └── probe.yaml
     │   └── shell_exec/
     │       └── probe.yaml
-    ├── proofs/
-    │   └── <proof-name>/
-    │       └── proof.yaml
     └── stages/
         └── <stage-name>/
             └── stage.yaml
@@ -187,14 +151,14 @@ probes:
 
 ## 最佳实践
 
-1. **先有 Probe，后有 Proof**：先创建原子化 Probe，再组合成 Proof
-2. **先有 Proof，后有 Stage**：Stage 引用已存在的 Proof
-3. **先有 Stage，后有 Blueprint**：Blueprint 选择需要的 Stage
+1. **先有 Probe**：先创建原子化 Probe
+2. **Stage 使用 Probe**：Stage 通过 probes 数组引用已有 Probe
+3. **Blueprint 使用 Stage**：Blueprint 选择需要的 Stage
 4. **审查后再 promote**：不要跳过 `oxn arsenal inspect` 步骤
 
 ## 迁移现有资产
 
-如果已有其他来源的 Probe/Proof/Stage，可以通过以下方式纳入管理：
+如果已有其他来源的 Probe 或 Stage，可以通过以下方式纳入管理：
 
 1. 手动创建 DRAFT 目录下的 YAML 文件
 2. 使用 `oxn arsenal inspect` 验证内容
@@ -202,4 +166,4 @@ probes:
 
 ## 下一章
 
-下一章将介绍[故障排查](./05-troubleshooting.md)。
+下一章将介绍[故障排查](./troubleshooting.md)。

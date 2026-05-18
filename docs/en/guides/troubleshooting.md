@@ -53,12 +53,12 @@ cat .openxenon/tasks/my-task/blueprint.yaml
 
 ---
 
-### Q3: Proof verification fails
+### Q3: Probe verification fails
 
 **Symptom**:
 
 ```
-[OXN] Proof failed: fs_exists
+[OXN] Probe failed: fs_exists
 Path: dist/index.js
 Expected: file exists
 Actual: file not found
@@ -70,7 +70,7 @@ Actual: file not found
 
 1. Check if file path is correct
 2. Confirm build step executed successfully
-3. If temporary file, consider adjusting Proof check timing
+3. If temporary file, consider adjusting Probe check timing
 
 ---
 
@@ -150,7 +150,7 @@ Asset promoted successfully! (But asset still in DRAFT directory)
 1. Confirm asset has been moved to CANONICAL directory:
 
 ```bash
-ls -la .openxenon/arsenal/proofs/CANONICAL/
+ls -la .openxenon/arsenals/stages/CANONICAL/
 ```
 
 2. If original file still exists, check for permission issues
@@ -181,16 +181,16 @@ Prefer atomic Probes over complex multi-step commands:
 
 ```yaml
 # Recommended
-proof:
-  type: fs_exists
-  params:
-    path: dist/index.js
+probes:
+  - ref: fs_exists
+    params:
+      pattern: dist/index.js
 
 # Not recommended
-proof:
-  type: exec_exit_zero
-  params:
-    command: test -f dist/index.js && echo "exists"
+probes:
+  - ref: shell_exec
+    params:
+      command: test -f dist/index.js && echo "exists"
 ```
 
 ### 4. Promptly promote Draft assets
@@ -199,10 +199,10 @@ Draft assets won't be referenced by other tasks, promote promptly after review:
 
 ```bash
 # Review
-oxn arsenal inspect proofs/my-proof
+oxn arsenal inspect stages/my-stage
 
 # Promote
-oxn arsenal promote proofs/my-proof
+oxn arsenal promote stages/my-stage
 ```
 
 ### 5. Keep Blueprint concise
@@ -211,23 +211,23 @@ Blueprint should be "engineering drawing" not "execution log":
 
 ```yaml
 # Recommended: Concise Blueprint
-task:
-  id: my-task
-  name: Build Project
-stageDefinitions:
-  Build:
-    steps:
-      - id: build
-        proof:
-          type: exec_exit_zero
-          params:
-            command: npm run build
+name: Build Project
+stages:
+  - id: build
+    name: Build
+    target:
+      description: "Build the project"
+    action:
+      description: "Run npm run build"
+    probes:
+      - ref: shell_exec
+        params:
+          command: npm run build
 
 # Not recommended: Contains too much detail
-task:
-  description: |
-    This is a complex build task...
-    Steps as follows: 1. Install dependencies 2. Run lint 3. Run tests...
+name: |
+  This is a complex build task...
+  Steps as follows: 1. Install dependencies 2. Run lint 3. Run tests...
 ```
 
 ### 6. Regularly clean up Draft assets
@@ -239,7 +239,7 @@ If Draft assets are left unprocessed for a long time, they may be outdated:
 oxn arsenal list DRAFT
 
 # Clean up unwanted Drafts
-rm .openxenon/arsenal/*/DRAFT/old-asset.yaml
+rm .openxenon/arsenals/*/DRAFT/old-asset.yaml
 ```
 
 ---
@@ -250,15 +250,15 @@ rm .openxenon/arsenal/*/DRAFT/old-asset.yaml
 
 Each Stage should have a clear purpose, don't over-split.
 
-### Reuse existing Probe/Proof
+### Reuse existing Probes
 
-When creating new Proof, prioritize reusing existing Probes:
+When creating new Stage, prioritize reusing existing Probes:
 
 ```yaml
 # Reuse
-proofs:
-  - check_file_exists      # Already exists
-  - check_new_requirement   # New requirement
+probes:
+  - ref: fs_exists      # Already exists
+  - ref: fs_match        # New requirement
 ```
 
 ### Set reasonable timeout
@@ -266,11 +266,11 @@ proofs:
 For time-consuming commands, set reasonable timeout:
 
 ```yaml
-proof:
-  type: exec_exit_zero
-  params:
-    command: npm test
-    timeout: 30000  # 30 seconds
+probes:
+  - ref: shell_exec
+    params:
+      command: npm test
+      timeout: 30000  # 30 seconds
 ```
 
 ---
@@ -288,7 +288,7 @@ oxn force-pass <step-id>
 
 ### Review all Draft assets
 
-Before promoting,务必 review asset content to prevent malicious code:
+Before promoting, review asset content to prevent malicious code:
 
 ```bash
 oxn arsenal inspect <asset-path>

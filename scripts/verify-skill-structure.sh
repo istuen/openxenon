@@ -197,12 +197,15 @@ name: <blueprint名称>
 stages:
   - id: <stage唯一标识>
     name: <显示名称>
-    proof:
-      probeRefs:
-        - type: <探针类型>
-          params:
-            <探针参数>
-    dependsOn: [<依赖的stage id>]   # 可选
+    target:
+      description: "<目标描述>"
+    action:
+      description: "<动作描述>"
+    probes:
+      - ref: <探针类型>
+        params:
+          <探针参数>
+    deps: [<依赖的stage id>]   # 可选
 ```
 
 ## 完整示例
@@ -212,31 +215,40 @@ name: check-project-structure
 stages:
   - id: check-package-json
     name: 检查 package.json
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: package.json
+    target:
+      description: "检查 package.json 存在"
+    action:
+      description: "确保项目根目录有 package.json"
+    probes:
+      - ref: fs_exists
+        params:
+          pattern: package.json
   - id: check-readme
     name: 检查 README
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: README.md
+    target:
+      description: "检查 README 存在"
+    action:
+      description: "确保项目有 README"
+    probes:
+      - ref: fs_exists
+        params:
+          pattern: README.md
   - id: check-lint
     name: 检查 lint 通过
-    proof:
-      probeRefs:
-        - type: shell_exec
-          params:
-            command: npm run lint
-    dependsOn: [check-package-json]
+    deps: [check-package-json]
+    target:
+      description: "检查 lint 通过"
+    action:
+      description: "运行 npm run lint"
+    probes:
+      - ref: shell_exec
+        params:
+          command: npm run lint
 ```
 
-## probeRefs 参数格式
+## probes 参数格式
 
-⚠️ Blueprint 里的 probeRefs 用的是 `params` 对象，不是 `parameters` 数组！
+⚠️ Blueprint 里的 probes 用的是 `params` 对象，不是 `parameters` 数组！
 
 ```yaml
 fs_exists:    { pattern: "glob模式" }
@@ -245,25 +257,25 @@ fs_match:     { pattern: "文件路径", contains: "正则" }
 shell_exec:   { command: "shell命令" }
 ```
 
-## dependsOn 规则
+## deps 规则
 
-- dependsOn 是可选的，没有依赖的 stage 可以并行验证
-- dependsOn 里只能引用同 blueprint 内的 stage id
+- deps 是可选的，没有依赖的 stage 可以并行验证
+- deps 里只能引用同 blueprint 内的 stage id
 - 不能循环依赖（A→B→A）
 
 ## ❌ 常见错误
 
-1. **probeRefs 里用了 parameters 数组**
+1. **probes 里用了 parameters 数组**
    ```yaml
    # 错误
-   probeRefs: [{ type: fs_exists, parameters: [{name: pattern, type: string}] }]
+   probes: [{ ref: fs_exists, parameters: [{name: pattern, type: string}] }]
 
    # 正确
-   probeRefs: [{ type: fs_exists, params: { pattern: "src" } }]
+   probes: [{ ref: fs_exists, params: { pattern: "src" } }]
    ```
 
-2. **dependsOn 引用了不存在的 stage id**
-   确保 dependsOn 里的每个 id 都在 stages 里有定义
+2. **deps 引用了不存在的 stage id**
+   确保 deps 里的每个 id 都在 stages 里有定义
 
 3. **stage id 含空格或中文**
    stage id 只用小写字母、数字和连字符：check-readme, deploy-mysql
@@ -272,17 +284,38 @@ BLUEPRINT_EOF
 cat > .opencode/skills/oxn-forge/references/stage-format.md << 'STAGE_EOF'
 # Stage 格式参考
 
-## Forge 格式（定义 Stage 能力声明）
+## Stage 结构
+
+Stage 是 Blueprint 的执行单元，包含四个字段：
 
 ```yaml
+id: <stage-id>
+name: <stage名称>
+target:
+  description: "<目标描述>"
+action:
+  description: "<动作描述>"
+probes:
+  - ref: <探针类型>
+    params:
+      <探针参数>
+deps: []
+```
+
+## Forge 格式（定义 Stage 元数据）
+
+```yaml
+id: <stage-id>
 name: <stage名称>
 description: "<stage描述>"
-proofs:
-  - name: "<proof名称>"
-    policy: AND    # AND 或 OR
-    probes:
-      - type: <探针类型>
-        parameters: { <参数键值> }
+target:
+  description: "<目标描述>"
+action:
+  description: "<动作描述>"
+probes:
+  - ref: <探针类型>
+    params:
+      <探针参数>
 ```
 
 ## Blueprint 格式（在 Blueprint 中引用 Stage）
@@ -312,12 +345,15 @@ name: <blueprint名称>
 stages:
   - id: <stage唯一标识>
     name: <显示名称>
-    proof:
-      probeRefs:
-        - type: <探针类型>
-          params:
-            <探针参数>
-    dependsOn: [<依赖的stage id>]   # 可选
+    target:
+      description: "<目标描述>"
+    action:
+      description: "<动作描述>"
+    probes:
+      - ref: <探针类型>
+        params:
+          <探针参数>
+    deps: [<依赖的stage id>]   # 可选
 ```
 
 ## 完整示例
@@ -327,22 +363,28 @@ name: deploy-mysql
 stages:
   - id: prepare
     name: 准备环境
-    proof:
-      probeRefs:
-        - type: shell_exec
-          params:
-            command: docker ps | grep mysql
+    target:
+      description: "检查 MySQL 运行状态"
+    action:
+      description: "确认 Docker 中 MySQL 容器运行中"
+    probes:
+      - ref: shell_exec
+        params:
+          command: docker ps | grep mysql
   - id: deploy
     name: 部署 MySQL
-    dependsOn: [prepare]
-    proof:
-      probeRefs:
-        - type: fs_exists
-          params:
-            pattern: "/data/mysql"
+    deps: [prepare]
+    target:
+      description: "检查 MySQL 数据目录"
+    action:
+      description: "确认 /data/mysql 目录存在"
+    probes:
+      - ref: fs_exists
+        params:
+          pattern: "/data/mysql"
 ```
 
-## probeRefs 参数速查
+## probes 参数速查
 
 ```yaml
 fs_exists:    { pattern: "glob模式" }

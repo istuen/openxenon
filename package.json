@@ -45,8 +45,7 @@
     "llm",
     "engineering",
     "automation",
-    "verification",
-    "proof"
+    "verification"
   ],
   "repository": {
     "type": "git",

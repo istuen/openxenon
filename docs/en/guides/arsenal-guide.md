@@ -2,7 +2,7 @@
 
 ## Overview
 
-OpenXenon manages standard assets through a two-state DRAFT/CANONICAL lifecycle. Standard assets can be Probe, Proof, or Stage.
+OpenXenon manages standard assets through a two-state DRAFT/CANONICAL lifecycle. Standard assets can be Probe or Stage.
 
 ## Process Overview
 
@@ -64,27 +64,6 @@ parameters:
     description: "File path to check"
 ```
 
-#### Generate Proof
-
-```
-/oxn-forge Write a Proof that verifies Laravel installation is successful
-```
-
-AI will generate YAML similar to:
-
-```yaml
-name: laravel_install_proof
-target:
-  description: "Verify Laravel installation is successful"
-spec:
-  description: "Laravel framework is successfully installed"
-probes:
-  - ref: check_composer_json
-    description: "Check composer.json exists"
-  - ref: check_vendor_exists
-    description: "Check vendor directory exists"
-```
-
 #### Generate Stage
 
 ```
@@ -97,7 +76,14 @@ AI will generate YAML similar to:
 id: install-laravel
 name: install_laravel
 description: "Install Laravel project skeleton"
-proof: laravel_install_proof
+target:
+  description: "Install Laravel in project"
+action:
+  description: "Run composer install"
+probes:
+  - ref: fs_exists
+    parameters:
+      pattern: "vendor/laravel"
 deps: []
 ```
 
@@ -115,21 +101,21 @@ AI must follow these constraints when generating assets:
 After AI generates Draft asset, it outputs the following prompt:
 
 ```
-Draft Proof generated: laravel_install_proof
-Path: .openxenon/arsenal/proofs/DRAFT/laravel_install_proof.yaml
+Draft Stage generated: install-laravel
+Path: .openxenon/arsenals/stages/DRAFT/install-laravel.yaml
 Use 'oxn arsenal inspect' to view content, then use 'oxn arsenal promote' to promote after confirmation.
 ```
 
 ### View Asset
 
 ```bash
-oxn arsenal inspect arsenal/proofs/DRAFT/laravel_install_proof.yaml
+oxn arsenal inspect stages/install-laravel
 ```
 
 ### Promote Asset
 
 ```bash
-oxn arsenal promote proofs/laravel_install_proof
+oxn arsenal promote stages/install-laravel
 ```
 
 ## Probe Design Principles
@@ -143,25 +129,6 @@ Each Probe only performs single type of check:
 | `fs_exists` | Whether file exists |
 | `fs_match` | Whether file content matches regex |
 | `shell_exec` | Whether command exit code is 0 |
-
-### Composition
-
-Multiple Probes can be combined into one Proof:
-
-```yaml
-name: laravel_install_proof
-target:
-  description: "Verify Laravel installation is successful"
-spec:
-  description: "Laravel framework is successfully installed"
-probes:
-  - ref: check_composer_json
-    description: "Check composer.json exists"
-  - ref: check_laravel_dependency
-    description: "Check contains laravel dependency"
-  - ref: check_vendor_exists
-    description: "Check vendor directory exists"
-```
 
 ## Directory Structure
 
@@ -177,9 +144,6 @@ Standard assets are organized flat under `.openxenon/arsenals/` by type:
     │   │   └── probe.yaml
     │   └── shell_exec/
     │       └── probe.yaml
-    ├── proofs/
-    │   └── <proof-name>/
-    │       └── proof.yaml
     └── stages/
         └── <stage-name>/
             └── stage.yaml
@@ -187,14 +151,14 @@ Standard assets are organized flat under `.openxenon/arsenals/` by type:
 
 ## Best Practices
 
-1. **Probes first, then Proof**: Create atomic Probes first, then combine into Proof
-2. **Proof first, then Stage**: Stage references existing Proof
-3. **Stage first, then Blueprint**: Blueprint selects needed Stages
+1. **Probes first**: Create atomic Probes first
+2. **Stage uses Probes**: Stage references existing Probes via probes array
+3. **Blueprint uses Stages**: Blueprint selects needed Stages
 4. **Review before promote**: Don't skip `oxn arsenal inspect` step
 
 ## Migrating Existing Assets
 
-If you have Probe/Proof/Stage from other sources, bring them under management:
+If you have Probe or Stage from other sources, bring them under management:
 
 1. Manually create YAML file under DRAFT directory
 2. Use `oxn arsenal inspect` to validate content
