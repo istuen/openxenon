@@ -1,4 +1,4 @@
-import { join } from 'path'
+import { join, dirname } from 'path'
 import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'fs'
 import { BOUNDARY_DIR, BLUEPRINT_FILE, TASKS_DIR, STEP_MANIFEST_FILE, FROZEN_BLUEPRINT_FILE } from '../kernel/constants'
 import { ensureDirectory } from '../infra/fs'
@@ -7,7 +7,7 @@ import { probeHandlers, type ProbeResult, type ProbeContext } from '../infra/pro
 import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
 import { topologicalSort, validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
 import { buildTraceEvent, type TraceEvent } from '../kernel/lib/task-trace'
-import { compileBlueprint } from '../kernel/compiler/blueprint-compiler'
+import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
 import { preloadCompileDependencies } from '../infra/loader'
 import type { Blueprint } from '../kernel/schemas/blueprint.schema'
 import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
@@ -168,12 +168,33 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   const blueprintDestPath = getBlueprintPath(cwd, taskId)
   writeFileSync(blueprintDestPath, content, 'utf-8')
 
-  const frozenBlueprint = compileBlueprint(parsed, {
+  const bpProps = (rawParsed as any).props || {}
+  const propDefaults: Record<string, unknown> = {}
+  for (const [key, val] of Object.entries(bpProps as Record<string, any>)) {
+    if (val && val.default !== undefined) {
+      propDefaults[key] = val.default
+    }
+  }
+
+  const compileCtx = {
     taskId,
     taskName: parsed.name || parsed.id || taskId,
-    params: { ...((rawParsed as any).params || {}), ...(params || {}) },
-    dependencies: preloadCompileDependencies(join(cwd, BOUNDARY_DIR))
-  })
+    params: { ...propDefaults, ...(params || {}) }
+  }
+
+  let frozenBlueprint: FrozenBlueprint
+
+  const bpDir = dirname(blueprintPath)
+  const assemblyPath = join(bpDir, 'blueprint.assembly.json')
+  if (existsSync(assemblyPath)) {
+    const assembly = JSON.parse(readFileSync(assemblyPath, 'utf-8'))
+    frozenBlueprint = compileFrozen(assembly, compileCtx)
+  } else {
+    frozenBlueprint = compileBlueprint(parsed, {
+      ...compileCtx,
+      dependencies: preloadCompileDependencies(join(cwd, BOUNDARY_DIR))
+    })
+  }
   const frozenDestPath = getFrozenBlueprintPath(cwd, taskId)
   writeFileSync(frozenDestPath, stringifyYaml(frozenBlueprint), 'utf-8')
 

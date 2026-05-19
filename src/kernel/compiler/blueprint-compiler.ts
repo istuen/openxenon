@@ -293,17 +293,6 @@ export class BlueprintCompiler {
           }
         }
 
-        if ((part as any)._depHash !== undefined) {
-          const expected = (part as any)._depHash as string
-          const actual = (partContent._compiled_hash as string) || ''
-          if (actual && actual !== expected) {
-            throw new Error(
-              `Part "${part.id}" requires compiled hash "${expected}" of "${resolvedRef}", ` +
-              `but got "${actual}". The dependency has been updated - rebuild required.`
-            )
-          }
-        }
-
         const baseProbes = (partContent.probes as Array<Record<string, unknown>>) || []
         const partProbes = ((part as any).probes as Array<Record<string, unknown>>) || []
         const mergedProbes = mergeProbes(baseProbes, partProbes)
@@ -375,6 +364,17 @@ export class BlueprintCompiler {
           deps?.parts.get(`project/${part.ref}`) ||
           deps?.parts.get(`./${part.ref}`)
         if (partContent) {
+          if ((part as any)._depHash && partContent._compiled_hash) {
+            const expected = (part as any)._depHash as string
+            const actual = partContent._compiled_hash as string
+            if (actual !== expected) {
+              throw new Error(
+                `Part "${part.id}" requires compiled hash "${expected}", ` +
+                `got "${actual}". Dependency updated - re-promote required.`
+              )
+            }
+          }
+
           Object.assign(resolved, {
             ...partContent,
             id: part.id || partContent.id,
@@ -395,9 +395,54 @@ export class BlueprintCompiler {
       _version: raw._version,
       assembly_at: new Date().toISOString(),
       props: raw.props,
-      params: raw.params,
       slots: raw.slots,
       parts
+    }
+  }
+
+  compileFrozen(assembly: Record<string, unknown>, ctx: CompileContext): FrozenBlueprint {
+    const slots = (assembly.slots as Record<string, unknown>) || {}
+    const parts: Array<Record<string, unknown>> = []
+
+    for (const part of (assembly.parts as Array<Record<string, unknown>>) || []) {
+      const resolved = { ...part }
+
+      if (resolved._assembly_slot) {
+        const slotName = resolved._assembly_slot as string
+        const slotValue = slots[slotName]
+        if (slotValue) {
+          const slotDef = typeof slotValue === 'string'
+            ? { ref: slotValue }
+            : (slotValue as Record<string, unknown>)
+          Object.assign(resolved, slotDef)
+        }
+      }
+
+      const resolvedParams = resolveParams(resolved, (part.params || {}) as Record<string, unknown>)
+
+      const pruned = pruneParts([resolved], ctx.params || {})
+      if (pruned.length === 0) continue
+
+      const partOut = { ...pruned[0], params: resolvedParams }
+      const rendered = renderTemplates(partOut, ctx)
+      const metaPart = injectMeta(rendered, (part.ref as string) || (part.slot as string) || 'inline', 'project')
+      parts.push(metaPart)
+    }
+
+    const dagNodes: DagNode[] = parts.map(p => ({
+      id: (p.id || p.name) as string,
+      deps: (p.deps as string[]) || []
+    }))
+    const dagResult = validateDagTopology(dagNodes)
+    if (!dagResult.valid) {
+      throw new Error(`DAG validation failed: ${dagResult.errors.join('; ')}`)
+    }
+
+    return {
+      id: (assembly.id || assembly.name) as string,
+      name: (assembly.name || assembly.id) as string,
+      frozen_at: new Date().toISOString(),
+      parts: parts as any
     }
   }
 }
@@ -410,6 +455,11 @@ export function compileBlueprint(raw: Blueprint, ctx: CompileContext): FrozenBlu
 export function compileAssembly(raw: Blueprint, ctx: CompileContext): Record<string, unknown> {
   const compiler = new BlueprintCompiler()
   return compiler.compileAssembly(raw, ctx)
+}
+
+export function compileFrozen(assembly: Record<string, unknown>, ctx: CompileContext): FrozenBlueprint {
+  const compiler = new BlueprintCompiler()
+  return compiler.compileFrozen(assembly, ctx)
 }
 
 export function compileBlueprintWithCache(raw: Blueprint, ctx: CompileContext, dependencyHashes: Record<string, string> = {}): FrozenBlueprint {

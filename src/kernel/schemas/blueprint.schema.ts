@@ -113,7 +113,6 @@ export const BlueprintSchema = z.object({
     default: z.unknown().optional(),
     description: z.string().optional()
   })).optional(),
-  params: z.record(z.string(), z.unknown()).optional(),
   slots: z.record(z.string(), z.union([z.string(), SlotInvocationSchema])).optional(),
   parts: z.array(PartInvocationSchema).optional(),
   topology: z.array(z.string()).optional(),
