@@ -8,7 +8,7 @@ Forge 定义的是"能力声明"（我需要什么参数）：
 \`\`\`yaml
 type: fs_exists
 description: "检查文件存在"
-parameters:           ← 注意：是数组
+props:           ← 注意：是数组
   - name: pattern
     type: string
     required: true
@@ -32,7 +32,7 @@ params:               ← 注意：是对象
 \`\`\`yaml
 type: fs_exists
 description: "检查配置文件存在"
-parameters:
+props:
   - name: pattern
     type: string
     required: true
@@ -46,7 +46,7 @@ parameters:
 \`\`\`yaml
 type: fs_not_exists
 description: "检查临时文件已清理"
-parameters:
+props:
   - name: pattern
     type: string
     required: true
@@ -60,7 +60,7 @@ parameters:
 \`\`\`yaml
 type: fs_content_match
 description: "检查源码包含版权声明"
-parameters:
+props:
   - name: path
     type: string
     required: true
@@ -78,7 +78,7 @@ parameters:
 \`\`\`yaml
 type: exec_exit_zero
 description: "执行 lint 检查"
-parameters:
+props:
   - name: command
     type: string
     required: true
@@ -95,16 +95,16 @@ parameters:
 
    # 正确
    type: fs_exists
-   parameters: [{ name: pattern, type: string, required: true }]
+   props: [{ name: pattern, type: string, required: true }]
    \`\`\`
 
-2. **parameters 里的 name 和 type 写反**
+2. **props 里的 name 和 type 写反**
    \`\`\`yaml
    # 错误
-   parameters: [{ type: pattern, name: string }]
+   props: [{ type: pattern, name: string }]
 
    # 正确
-   parameters: [{ name: pattern, type: string }]
+   props: [{ name: pattern, type: string }]
    \`\`\`
 
 3. **使用了旧类型名**
@@ -203,10 +203,10 @@ exec_exit_zero:   { command: "shell命令" }
 
 ## ❌ 常见错误
 
-1. **probes 里用了 parameters 数组**
+1. **probes 里用了 props 数组**
    \`\`\`yaml
    # 错误
-   probes: [{ type: fs_exists, parameters: [{name: pattern, type: string}] }]
+   probes: [{ type: fs_exists, props: [{name: pattern, type: string}] }]
 
    # 正确
    probes: [{ type: fs_exists, params: { pattern: "src" } }]
@@ -273,8 +273,8 @@ shell_exec        # 应改为 exec_exit_zero
 
 ## ❌ 常见错误
 
-1. 在 Blueprint 里用了 Forge 的 parameters 格式
-   Blueprint 用的是 \`params\`，不是 \`parameters\`
+1. 在 Blueprint 里用了 Forge 的 props 格式
+   Blueprint 用的是 \`params\`，不是 \`props\`
 
 2. 使用了旧的探针类型名
    确保使用 fs_content_match 和 exec_exit_zero，而不是旧名
@@ -318,7 +318,7 @@ oxn forge <type> --save '<yaml内容>' --name <资产名称>
   \`\`\`bash
   oxn forge probe --save 'type: fs_exists
 description: "检查 Redis 配置文件"
-parameters:
+props:
   - name: pattern
     type: string
     required: true' --name redis-config-check

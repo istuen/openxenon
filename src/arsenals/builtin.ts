@@ -2,21 +2,21 @@ export const BUILTIN_PROBES = {
   'fs_exists': {
     type: 'fs_exists' as const,
     description: '检查指定 glob 模式的文件是否存在',
-    parameters: [
+    props: [
       { name: 'pattern', type: 'string', required: true, description: 'glob 模式，如 src/**/*.ts 或 package.json' }
     ]
   },
   'fs_not_exists': {
     type: 'fs_not_exists' as const,
     description: '检查指定 glob 模式的文件是否不存在',
-    parameters: [
+    props: [
       { name: 'pattern', type: 'string', required: true, description: 'glob 模式，文件不应存在' }
     ]
   },
   'fs_match': {
     type: 'fs_match' as const,
     description: '检查文件内容是否匹配指定模式',
-    parameters: [
+    props: [
       { name: 'path', type: 'string', required: true, description: '要检查的文件路径' },
       { name: 'pattern', type: 'string', required: true, description: '正则表达式匹配模式' }
     ]
@@ -24,7 +24,7 @@ export const BUILTIN_PROBES = {
   'shell_exec': {
     type: 'shell_exec' as const,
     description: '检查 Shell 命令执行退出码是否为 0',
-    parameters: [
+    props: [
       { name: 'command', type: 'string', required: true, description: '要执行的 Shell 命令' }
     ]
   }
@@ -44,7 +44,7 @@ export const BUILTIN_FORGES = {
           'YAML 必须符合 ProbeDefinitionSchema',
           'type 必须是 fs_exists / fs_not_exists / fs_match / shell_exec 之一',
           '必须有 description 字段',
-          'parameters 中每个参数必须有 description',
+          'props 中每个参数必须有 description',
           'required 参数必须标记 required: true'
         ]
       },
@@ -103,7 +103,7 @@ export const BUILTIN_PARTS: Record<string, {
   name?: string
   description?: string
   _version?: number
-  params_schema?: {
+  props?: {
     type: 'object'
     properties: Record<string, { type: string; default?: unknown; description?: string }>
     required?: string[]
@@ -129,7 +129,7 @@ export const BUILTIN_PARTS: Record<string, {
       instruction: '提交代码改动',
       command: 'git add -A && git commit -m "feat(${feature_ref}): ${message}"'
     },
-    params_schema: {
+    props: {
       type: 'object',
       properties: {
         feature_ref: { type: 'string', description: 'Feature 引用（如 branch name 或 ticket ID）' },
@@ -158,7 +158,7 @@ export const BUILTIN_PARTS: Record<string, {
       instruction: '创建并切换到新分支',
       command: 'git checkout main && git pull && git checkout -b ${branch_name}'
     },
-    params_schema: {
+    props: {
       type: 'object',
       properties: {
         branch_name: { type: 'string', description: '新分支名称 (kebab-case)' }
@@ -182,7 +182,7 @@ export const BUILTIN_PARTS: Record<string, {
     action: {
       instruction: '编写功能代码实现 {@feature_desc}'
     },
-    params_schema: {
+    props: {
       type: 'object',
       properties: {
         feature_desc: { type: 'string', description: '功能描述' },

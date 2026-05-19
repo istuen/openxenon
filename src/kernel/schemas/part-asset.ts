@@ -38,7 +38,7 @@ export const PartDefinitionSchema = z.object({
   _forked_from: z.string().optional(),
   description: z.string(),
   semantics: SemanticsSchema.optional(),
-  params_schema: z.object({
+  props: z.object({
     type: z.literal('object'),
     properties: z.record(z.string(), ParamsSchemaPropertySchema),
     required: z.array(z.string()).optional(),

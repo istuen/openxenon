@@ -133,7 +133,7 @@ export interface SubmitResult {
   message: string
 }
 
-export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: string, existingTaskId?: string): SubmitResult {
+export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: string, existingTaskId?: string, params?: Record<string, unknown>): SubmitResult {
   if (!existsSync(blueprintPath)) {
     throw new Error(`Blueprint file not found: ${blueprintPath}`)
   }
@@ -171,7 +171,7 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   const frozenBlueprint = compileBlueprint(parsed, {
     taskId,
     taskName: parsed.name || parsed.id || taskId,
-    params: {},
+    params: { ...((rawParsed as any).params || {}), ...(params || {}) },
     dependencies: preloadCompileDependencies(join(cwd, BOUNDARY_DIR))
   })
   const frozenDestPath = getFrozenBlueprintPath(cwd, taskId)

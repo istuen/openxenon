@@ -25,11 +25,10 @@ export const ProbeParamsSchema = z.union([
   ShellExecParamsSchema
 ])
 
-export const ParameterDefSchema = z.object({
+export const PropDefSchema = z.object({
   name: z.string(),
   type: z.enum(['string', 'number', 'boolean']),
   required: z.boolean().optional().default(false),
-  default: z.unknown().optional(),
   description: z.string()
 })
 
@@ -57,7 +56,7 @@ export function isValidProbeType(type: string): type is ProbeType {
 export const ProbeDefinitionSchema = z.object({
   type: ProbeTypeSchema,
   description: z.string(),
-  parameters: z.array(ParameterDefSchema),
+  props: z.array(PropDefSchema),
   semantics: SemanticsSchema.optional()
 })
 

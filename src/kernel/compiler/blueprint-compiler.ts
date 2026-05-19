@@ -46,16 +46,35 @@ function evaluateCondition(condition: string, params: Record<string, unknown>): 
   return operator === '==' ? value === expected : value !== expected
 }
 
-function validateParams(partContent: Record<string, unknown>, providedParams: Record<string, unknown> = {}): void {
-  const paramsSchema = partContent.params_schema as { required?: string[] } | undefined
-  if (!paramsSchema) return
+function resolveParams(partContent: Record<string, unknown>, providedParams: Record<string, unknown> = {}): Record<string, unknown> {
+  const propsSchema = partContent.props as {
+    type: string
+    properties?: Record<string, { type: string; default?: unknown; description?: string }>
+    required?: string[]
+    default?: Record<string, unknown>
+  } | undefined
 
-  const required = paramsSchema.required || []
-  for (const key of required) {
-    if (!(key in providedParams)) {
-      throw new Error(`Part 缺少必填参数 "${key}"`)
+  if (!propsSchema) return { ...providedParams }
+
+  const schemaDefaults = propsSchema.default || {}
+  const properties = propsSchema.properties || {}
+  const propDefaults: Record<string, unknown> = {}
+  for (const [key, prop] of Object.entries(properties)) {
+    if (prop.default !== undefined) {
+      propDefaults[key] = prop.default
     }
   }
+
+  const merged = { ...schemaDefaults, ...propDefaults, ...providedParams }
+
+  const required = propsSchema.required || []
+  for (const key of required) {
+    if (!(key in merged) || merged[key] === undefined || merged[key] === null) {
+      throw new Error(`Part "${partContent.id || partContent.name}" 缺少必填参数 "${key}"`)
+    }
+  }
+
+  return merged
 }
 
 function mergeProbes(
@@ -93,7 +112,37 @@ function renderString(str: string, ctx: CompileContext): string {
       if (key === 'name') return ctx.taskName
     }
     return `{{${trimmed}}}`
+  }).replace(/\$\{([^}]+)\}/g, (_match, expr) => {
+    const trimmed = expr.trim()
+    if (trimmed.startsWith('params.')) {
+      const key = trimmed.slice(7)
+      const value = ctx.params?.[key]
+      return value !== undefined ? String(value) : ''
+    }
+    if (trimmed.startsWith('task.')) {
+      const key = trimmed.slice(5)
+      if (key === 'id') return ctx.taskId
+      if (key === 'name') return ctx.taskName
+    }
+    return `\${${trimmed}}`
   })
+}
+
+function renderValue(value: unknown, ctx: CompileContext): unknown {
+  if (typeof value === 'string') {
+    return renderString(value, ctx)
+  }
+  if (Array.isArray(value)) {
+    return value.map(v => renderValue(v, ctx))
+  }
+  if (value !== null && typeof value === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      result[k] = renderValue(v, ctx)
+    }
+    return result
+  }
+  return value
 }
 
 function renderTemplates(part: Record<string, unknown>, ctx: CompileContext): Record<string, unknown> {
@@ -111,6 +160,23 @@ function renderTemplates(part: Record<string, unknown>, ctx: CompileContext): Re
 
   if (result.condition) {
     result.condition = renderString(result.condition as string, ctx)
+  }
+
+  const probes = result.probes as Array<Record<string, unknown>> | undefined
+  if (probes) {
+    result.probes = probes.map(probe => {
+      const rendered = { ...probe }
+      if (probe.command && typeof probe.command === 'string') {
+        rendered.command = renderString(probe.command, ctx)
+      }
+      if (probe.pattern && typeof probe.pattern === 'string') {
+        rendered.pattern = renderString(probe.pattern, ctx)
+      }
+      if (probe.params && typeof probe.params === 'object') {
+        rendered.params = renderValue(probe.params, ctx)
+      }
+      return rendered
+    })
   }
 
   return result
@@ -214,7 +280,7 @@ export class BlueprintCompiler {
           throw new Error(`Part ref "${resolvedRef}" 解析失败，未找到对应资产`)
         }
 
-        validateParams(partContent, part.params || {})
+        const resolvedPartParams = resolveParams(partContent, part.params || {})
 
         if ((part as any).min_version !== undefined) {
           const required = (part as any).min_version as number
@@ -236,7 +302,7 @@ export class BlueprintCompiler {
           id: part.id || (partContent.id as string),
           name: part.name || (partContent.name as string),
           deps: part.deps || (partContent.deps as string[] || []),
-          params: part.params || {},
+          params: resolvedPartParams,
           target: (part as any).target || (partContent as any).target,
           action: (part as any).action || (partContent as any).action,
           probes: mergedProbes

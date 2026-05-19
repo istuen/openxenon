@@ -85,6 +85,12 @@ export default defineCommand({
         '--yaml': {
           type: 'boolean',
           description: 'YAML 格式输出'
+        },
+        param: {
+          type: 'string',
+          alias: 'p',
+          required: false,
+          description: '参数注入 (key=value 格式，可多次指定)'
         }
       },
       run(ctx) {
@@ -102,7 +108,20 @@ export default defineCommand({
           const blueprintPath = ctx.args.blueprint as string
           const name = ctx.args.name as string | undefined
           const taskId = ctx.args['task-id'] as string | undefined
-          const result = taskSubmit(blueprintPath, getProjectRoot(), name, taskId) as SubmitResult
+          const rawParams = ctx.args.param as string | undefined
+          const params: Record<string, unknown> = {}
+          if (rawParams) {
+            const pairs = rawParams.split(',').map(p => p.trim())
+            for (const pair of pairs) {
+              const eqIndex = pair.indexOf('=')
+              if (eqIndex > 0) {
+                const key = pair.slice(0, eqIndex).trim()
+                const val = pair.slice(eqIndex + 1).trim()
+                params[key] = val
+              }
+            }
+          }
+          const result = taskSubmit(blueprintPath, getProjectRoot(), name, taskId, params) as SubmitResult
 
           output({ data: result }, format)
         } catch (err: unknown) {

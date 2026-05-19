@@ -108,7 +108,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
         const parsed = parseYaml(content) as Record<string, unknown>
         coverages.push({
           type: parsed.type as string,
-          pattern: (parsed.parameters as Array<{ name: string; value?: string }>)?.find(
+          pattern: (parsed.props as Array<{ name: string; value?: string }>)?.find(
             (p) => p.name === 'pattern'
           )?.value || '',
           source: 'canonical',
@@ -121,7 +121,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
         const parsed = parseYaml(content) as Record<string, unknown>
         coverages.push({
           type: parsed.type as string,
-          pattern: (parsed.parameters as Array<{ name: string; value?: string }>)?.find(
+          pattern: (parsed.props as Array<{ name: string; value?: string }>)?.find(
             (p) => p.name === 'pattern'
           )?.value || '',
           source: 'draft',

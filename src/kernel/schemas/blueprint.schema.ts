@@ -106,6 +106,13 @@ export const BlueprintSchema = z.object({
   name: z.string(),
   _version: z.number().int().positive().optional().default(1),
   status: z.enum(['DRAFT', 'CANONICAL', 'ABANDONED']).default('CANONICAL'),
+  props: z.record(z.string(), z.object({
+    type: z.string().default('string'),
+    required: z.boolean().default(false),
+    default: z.unknown().optional(),
+    description: z.string().optional()
+  })).optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
   slots: z.record(z.string(), z.union([z.string(), SlotInvocationSchema])).optional(),
   parts: z.array(PartInvocationSchema).optional(),
   topology: z.array(z.string()).optional(),

@@ -19,7 +19,7 @@ export function resolveBuiltinPart(name: string): PartDefinition | null {
     id: builtin.id || name,
     name: builtin.name || name,
     description: builtin.description || '',
-    params_schema: builtin.params_schema,
+    props: builtin.props,
     target: builtin.target,
     spec: builtin.spec,
     action: builtin.action,

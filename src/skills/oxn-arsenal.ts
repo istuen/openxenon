@@ -66,8 +66,8 @@ function yamlToMd(name: string, type: string, yaml: string): string {
     }
   }
 
-  if (parsed.parameters) {
-    const params = parsed.parameters as Array<Record<string, unknown>>
+  if (parsed.props) {
+    const params = parsed.props as Array<Record<string, unknown>>
     lines.push(`## 参数定义`)
     lines.push('')
     lines.push('| 名称 | 类型 | 必填 | 描述 |')
