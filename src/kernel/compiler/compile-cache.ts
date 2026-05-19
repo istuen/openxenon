@@ -3,6 +3,22 @@ import { join } from 'path'
 import { computeContentHash, type FrozenBlueprint } from '../schemas/frozen-schema'
 import { BOUNDARY_DIR } from '../constants'
 
+export function readCacheManifest(projectBoundary?: string): Record<string, Record<string, string>> {
+  const base = projectBoundary || join(process.cwd(), BOUNDARY_DIR)
+  const manifestPath = join(base, 'cache', 'manifest.json')
+  if (!existsSync(manifestPath)) return {}
+  try {
+    return JSON.parse(readFileSync(manifestPath, 'utf-8'))
+  } catch {
+    return {}
+  }
+}
+
+export function getCompiledHash(name: string, type: string, projectBoundary?: string): string | null {
+  const manifest = readCacheManifest(projectBoundary)
+  return manifest[type]?.[name] || null
+}
+
 export interface CacheEntry {
   hash: string
   frozenBlueprint: FrozenBlueprint

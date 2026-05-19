@@ -3,7 +3,7 @@ export type { Scope } from '../infra/loader'
 import type { AssetType } from './paths'
 
 import { getProjectBoundaryPath } from '../kernel'
-import { listStandards, loadStandardByName, promoteStandard, loadStandardByPath, loadArsenalsByState, loadArsenalsByTypeAndState, resolveAssetPath } from '../infra/loader'
+import { listStandards, loadStandardByName, promoteStandard, loadStandardByPath, loadArsenalsByState, loadArsenalsByTypeAndState, resolveAssetPath, generateCompiledArtifact } from '../infra/loader'
 
 const getProjectBoundary = (): string => getProjectBoundaryPath(process.cwd())
 
@@ -17,7 +17,8 @@ export const arsenalLoadStandardByName = (name: string, type: AssetType) => {
 
 export {
   promoteStandard,
-  loadStandardByPath
+  loadStandardByPath,
+  generateCompiledArtifact
 }
 
 export const arsenalLoadArsenalsByState = (state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {

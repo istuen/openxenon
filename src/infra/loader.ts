@@ -1,4 +1,5 @@
-import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync, writeFileSync } from 'fs'
+import { createHash } from 'crypto'
 import { join, dirname } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
@@ -315,6 +316,49 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
   }
 }
 
+export function generateCompiledArtifact(assetPath: string, boundary: string): string | null {
+  if (!existsSync(assetPath)) return null
+
+  const content = readFileSync(assetPath, 'utf-8')
+  const hash = createHash('sha256').update(content).digest('hex').slice(0, 12)
+  const type = getTypeFromPath(assetPath)
+  if (!type) return null
+
+  const parsed = parseYaml(content) as Record<string, unknown>
+  const compiled = {
+    ...parsed,
+    _compiled_hash: hash,
+    _compiled_at: new Date().toISOString(),
+    _source_path: assetPath
+  }
+
+  const cacheDir = join(boundary, 'cache', 'compiled', type)
+  if (!existsSync(cacheDir)) {
+    mkdirSync(cacheDir, { recursive: true })
+  }
+
+  const name = assetPath.split('/').pop()?.replace(/\.yaml$/, '') || 'unknown'
+  const compiledPath = join(cacheDir, `${name}.compiled.json`)
+  writeFileSync(compiledPath, JSON.stringify(compiled, null, 2), 'utf-8')
+
+  updateCacheManifest(boundary, type, name, hash)
+
+  return compiledPath
+}
+
+export function updateCacheManifest(boundary: string, type: string, name: string, hash: string): void {
+  const manifestPath = join(boundary, 'cache', 'manifest.json')
+  let manifest: Record<string, Record<string, string>> = {}
+  if (existsSync(manifestPath)) {
+    try {
+      manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+    } catch { /* use empty */ }
+  }
+  if (!manifest[type]) manifest[type] = {}
+  manifest[type][name] = hash
+  writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8')
+}
+
 export function loadStandardByName(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType): StandardAsset | null {
   const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
 
@@ -332,7 +376,9 @@ export function loadStandardByName(scope: Scope, projectBoundary: string | undef
     }
   }
 
-  const forgeDraftPath = join(boundary, 'forges', type, name, 'draft.yaml')
+  const forgeDraftPath = type === 'parts' || type === 'probes'
+    ? join(boundary, 'forges', type, `${name}.yaml`)
+    : join(boundary, 'forges', type, name, 'draft.yaml')
   if (existsSync(forgeDraftPath)) {
     const content = readFileSync(forgeDraftPath, 'utf-8')
     return { name, type, state: 'draft' as const, path: forgeDraftPath, content }
@@ -385,7 +431,10 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
   const projectProbes = loadArsenalsByTypeAndState('fallback', projectBoundary, 'probes', 'canonical')
   for (const asset of projectProbes) {
     try {
-      const content = parseYaml(asset.content) as Record<string, unknown>
+      const compiledPath = join(projectBoundary, 'cache', 'compiled', 'probes', `${asset.name}.compiled.json`)
+      const content = existsSync(compiledPath)
+        ? JSON.parse(readFileSync(compiledPath, 'utf-8')) as Record<string, unknown>
+        : parseYaml(asset.content) as Record<string, unknown>
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
       probes.set(ref, content)
       probes.set(`./${asset.name}`, content)
@@ -397,7 +446,10 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
   const projectParts = loadArsenalsByTypeAndState('fallback', projectBoundary, 'parts', 'canonical')
   for (const asset of projectParts) {
     try {
-      const content = parseYaml(asset.content) as Record<string, unknown>
+      const compiledPath = join(projectBoundary, 'cache', 'compiled', 'parts', `${asset.name}.compiled.json`)
+      const content = existsSync(compiledPath)
+        ? JSON.parse(readFileSync(compiledPath, 'utf-8')) as Record<string, unknown>
+        : parseYaml(asset.content) as Record<string, unknown>
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
       parts.set(ref, content)
       parts.set(`./${asset.name}`, content)

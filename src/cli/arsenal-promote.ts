@@ -1,10 +1,13 @@
 import { defineCommand } from 'citty'
-import { promoteStandard, arsenalLoadStandardByName as loadStandardByName } from '../arsenals/loader'
+import { promoteStandard, arsenalLoadStandardByName as loadStandardByName, generateCompiledArtifact } from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import { type AssetType } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
-import { readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { join, dirname } from 'path'
+import { getProjectBoundaryPath } from '../kernel'
+import { compileAssembly } from '../kernel/compiler/blueprint-compiler'
+import { preloadCompileDependencies } from '../infra/loader'
 import * as yaml from 'yaml'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
@@ -81,9 +84,8 @@ export default defineCommand({
       }, format)
     }
 
-    const isNewDraft = asset.path.includes('/draft.yaml')
-    const isOldDraft = asset.path.includes('/draft/')
-    if (!isNewDraft && !isOldDraft) {
+    const isDraft = asset.state === 'draft' || asset.path.includes('/forges/')
+    if (!isDraft) {
       return outputError({
         code: 'OXN_NOT_DRAFT',
         message: `Asset is not in draft state: ${input}`,
@@ -107,8 +109,28 @@ export default defineCommand({
         const currentVersion = (doc._version as number) || 1
         doc._version = currentVersion + 1
         writeFileSync(promoted.path, yaml.stringify(doc), 'utf-8')
+
+        if (promoted.type === 'parts' || promoted.type === 'probes') {
+          const boundary = getProjectBoundaryPath(process.cwd())
+          const compiledPath = generateCompiledArtifact(promoted.path, boundary)
+        }
+
+        if (promoted.type === 'blueprints') {
+          const boundary = getProjectBoundaryPath(process.cwd())
+          const blueprintDir = join(boundary, 'arsenals', 'blueprints', promoted.name)
+          const assemblyPath = join(blueprintDir, 'blueprint.assembly.yaml')
+          const assembly = compileAssembly(doc as any, {
+            taskId: '',
+            taskName: '',
+            params: {},
+            dependencies: preloadCompileDependencies(boundary)
+          })
+          const assemblyDir = dirname(assemblyPath)
+          if (!existsSync(assemblyDir)) mkdirSync(assemblyDir, { recursive: true })
+          writeFileSync(assemblyPath, yaml.stringify(assembly), 'utf-8')
+        }
       } catch (err) {
-        // version increment is best-effort
+        // version increment and compiled generation are best-effort
       }
 
       return output({

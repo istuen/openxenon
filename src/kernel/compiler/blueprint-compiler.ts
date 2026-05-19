@@ -293,6 +293,17 @@ export class BlueprintCompiler {
           }
         }
 
+        if ((part as any)._depHash !== undefined) {
+          const expected = (part as any)._depHash as string
+          const actual = (partContent._compiled_hash as string) || ''
+          if (actual && actual !== expected) {
+            throw new Error(
+              `Part "${part.id}" requires compiled hash "${expected}" of "${resolvedRef}", ` +
+              `but got "${actual}". The dependency has been updated - rebuild required.`
+            )
+          }
+        }
+
         const baseProbes = (partContent.probes as Array<Record<string, unknown>>) || []
         const partProbes = ((part as any).probes as Array<Record<string, unknown>>) || []
         const mergedProbes = mergeProbes(baseProbes, partProbes)
@@ -345,11 +356,60 @@ export class BlueprintCompiler {
       parts: parts as any
     }
   }
+
+  compileAssembly(raw: Blueprint, ctx: CompileContext): Record<string, unknown> {
+    const deps = ctx.dependencies
+    const parts: Array<Record<string, unknown>> = []
+
+    for (const part of raw.parts || []) {
+      const resolved: Record<string, unknown> = { ...part }
+
+      if (part.slot) {
+        resolved._assembly_slot = part.slot
+        parts.push(resolved)
+        continue
+      }
+
+      if (part.ref) {
+        const partContent = deps?.parts.get(part.ref) ||
+          deps?.parts.get(`project/${part.ref}`) ||
+          deps?.parts.get(`./${part.ref}`)
+        if (partContent) {
+          Object.assign(resolved, {
+            ...partContent,
+            id: part.id || partContent.id,
+            name: part.name || partContent.name,
+            deps: part.deps || partContent.deps || [],
+            params: part.params || {}
+          })
+          delete resolved.ref
+        }
+      }
+
+      parts.push(resolved)
+    }
+
+    return {
+      id: raw.id,
+      name: raw.name,
+      _version: raw._version,
+      assembly_at: new Date().toISOString(),
+      props: raw.props,
+      params: raw.params,
+      slots: raw.slots,
+      parts
+    }
+  }
 }
 
 export function compileBlueprint(raw: Blueprint, ctx: CompileContext): FrozenBlueprint {
   const compiler = new BlueprintCompiler()
   return compiler.compile(raw, ctx)
+}
+
+export function compileAssembly(raw: Blueprint, ctx: CompileContext): Record<string, unknown> {
+  const compiler = new BlueprintCompiler()
+  return compiler.compileAssembly(raw, ctx)
 }
 
 export function compileBlueprintWithCache(raw: Blueprint, ctx: CompileContext, dependencyHashes: Record<string, string> = {}): FrozenBlueprint {

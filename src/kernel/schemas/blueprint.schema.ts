@@ -65,6 +65,7 @@ export const PartInvocationSchema = z.object({
   name: z.string().optional(),
   _version: z.number().int().positive().optional().default(1),
   min_version: z.number().int().positive().optional(),
+  _depHash: z.string().optional(),
   deps: z.array(z.string()).default([]),
   ref: z.string().optional(),
   slot: z.string().optional(),
