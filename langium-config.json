@@ -1,0 +1,17 @@
+{
+  "projectName": "OXNDSL",
+  "languages": [{
+    "id": "oxn",
+    "grammar": "src/oxn-dsl/langium/oxn.langium",
+    "fileExtensions": [".oxn"],
+    "textMate": {
+      "out": "syntaxes/oxn.tmLanguage.json"
+    },
+    "chevrotainParserConfig": {
+      "recoveryEnabled": true,
+      "nodeLocationTracking": "full",
+      "maxLookahead": 4
+    }
+  }],
+  "out": "src/oxn-dsl/generated/"
+}

@@ -34,6 +34,8 @@
   },
   "devDependencies": {
     "bun-types": "^1.1.38",
+    "langium": "^4.2.4",
+    "langium-cli": "^4.2.1",
     "typescript": "^5.4.5"
   },
   "engines": {
