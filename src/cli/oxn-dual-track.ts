@@ -10,9 +10,9 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
-import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
+import { parse as parseYaml } from 'yaml'
 
-import { BOUNDARY_DIR, BLUEPRINT_FILE, FROZEN_BLUEPRINT_JSON, ASSEMBLY_JSON } from '../kernel/constants'
+import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, ASSEMBLY_JSON } from '../kernel/constants'
 import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
 import { preloadCompileDependencies } from '../infra/loader'
 import { adaptOxnToFrozen } from '../kernel/compiler/oxn-adapter'
@@ -26,6 +26,10 @@ import { validateDagTopology, type DagNode } from '../kernel/schemas/dag-validat
 import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
 import type { Blueprint } from '../kernel/schemas/blueprint.schema'
 import { ensureDirectory } from '../infra/fs'
+
+import { createOxnSharedServices, createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
+import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
+import { URI } from 'langium'
 
 // ========================
 // 路由函数
@@ -55,7 +59,7 @@ export function submitYamlPipeline(
   blueprintPath: string,
   cwd: string,
   taskId: string,
-  taskName: string,
+  _taskName: string,
   params?: Record<string, unknown>
 ): YamlSubmitResult {
   const content = readFileSync(blueprintPath, 'utf-8')
@@ -107,46 +111,69 @@ export function submitOxnPipeline(
   blueprintPath: string,
   cwd: string,
   taskId: string,
-  taskName: string,
+  _taskName: string,
   taskBinding?: OxnAssemblyTaskBinding
 ): OxnSubmitResult {
   const content = readFileSync(blueprintPath, 'utf-8')
 
-  // Phase 1: 从 JSON 格式加载 OxnAssemblyIR（Langium 解析器集成后将替换）
-  let assembly: OxnAssemblyIR
-  try {
-    const parsed = JSON.parse(content) as OxnAssemblyIR
-    assembly = validateOxnAssemblyIR(parsed)
-  } catch {
-    // 兼容：从 YAML 格式的 Blueprint 快速构造简化 IR
-    const yamlParsed = parseYaml(content) as Record<string, unknown>
-    assembly = createOxnAssemblyIR({
-      id: (yamlParsed.name || yamlParsed.id || taskId) as string,
-      name: (yamlParsed.name || yamlParsed.id || taskId) as string,
-      version: (yamlParsed._version || yamlParsed.version || 1) as number,
-    })
+  let assembly: OxnAssemblyIR | undefined
 
-    // 迁移 stages → concreteParts
-    const stages = yamlParsed.parts || yamlParsed.stages || []
-    for (const stage of stages as Array<Record<string, unknown>>) {
-      const stageName = (stage.id || stage.name || 'unknown') as string
-      assembly.stages.push({
-        name: stageName,
-        run: `part.${stageName}.run`,
-        deps: (stage.deps || []) as string[],
+  if (blueprintPath.endsWith('.oxn')) {
+    try {
+      const sharedServices = createOxnSharedServices()
+      createOxnServices(sharedServices)
+      const langiumDocuments = sharedServices.workspace.LangiumDocuments
+      const absPath = blueprintPath.startsWith('/') ? blueprintPath : join(cwd, blueprintPath)
+      const uri = URI.file(absPath)
+
+      const doc = langiumDocuments.createDocument(uri, content)
+
+      if (doc.parseResult && doc.parseResult.value) {
+        const bundle = generateOxnAssembly(doc.parseResult.value as never)
+        const blueprint = bundle.entities.find(
+          (e: { type: string }) => e.type === 'blueprint'
+        )
+        if (blueprint) {
+          assembly = validateOxnAssemblyIR((blueprint as { data: unknown }).data)
+        }
+      }
+    } catch {
+      resetOxnServices()
+    }
+  }
+
+  if (!assembly) {
+    try {
+      assembly = validateOxnAssemblyIR(JSON.parse(content) as OxnAssemblyIR)
+    } catch {
+      const yamlParsed = parseYaml(content) as Record<string, unknown>
+      assembly = createOxnAssemblyIR({
+        id: (yamlParsed.name || yamlParsed.id || taskId) as string,
+        name: (yamlParsed.name || yamlParsed.id || taskId) as string,
+        version: (yamlParsed._version || yamlParsed.version || 1) as number,
       })
 
-      assembly.concreteParts.push({
-        name: stageName,
-        isAbstract: false,
-        props: [],
-        probes: ((stage.probes || []) as Array<Record<string, unknown>>).map(p => ({
-          name: 'check',
-          ref: p.ref || `@oxn/probe/${p.type}`,
-          params: (p.params || {}) as Record<string, unknown>,
-        })),
-        execution: ['probe.check'],
-      })
+      const stages = yamlParsed.parts || yamlParsed.stages || []
+      for (const stage of stages as Array<Record<string, unknown>>) {
+        const stageName = (stage.id || stage.name || 'unknown') as string
+        assembly.stages.push({
+          name: stageName,
+          run: `part.${stageName}.run`,
+          deps: (stage.deps || []) as string[],
+        })
+
+        assembly.concreteParts.push({
+          name: stageName,
+          isAbstract: false,
+          props: [],
+          probes: ((stage.probes || []) as Array<Record<string, unknown>>).map(p => ({
+            name: 'check',
+            ref: p.ref ? String(p.ref) : `@oxn/probe/${p.type}`,
+            params: (p.params || {}) as Record<string, unknown>,
+          })),
+          execution: ['probe.check'],
+        })
+      }
     }
   }
 
