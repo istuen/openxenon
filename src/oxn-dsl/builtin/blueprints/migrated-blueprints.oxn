@@ -1,0 +1,17 @@
+// 迁移自 YAML Blueprint: verify-readme
+blueprint "verify-readme" {
+  version = 1
+  stage "check-readme" {
+    run = "part.check-readme.run"
+    deps = []
+  }
+}
+
+// 迁移自 YAML Blueprint: test-check-readme
+blueprint "test-check-readme" {
+  version = 1
+  stage "check-readme" {
+    run = "part.check-readme.run"
+    deps = []
+  }
+}
