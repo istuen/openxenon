@@ -193,8 +193,8 @@ oxn task new <task-id> --name <任务显示名称>
 ## 步骤 5：编写 Blueprint
 
 将 Blueprint 保存为文件：
-- **OXN Mode (推荐)**：保存为 `.oxn` 文件，使用 HCL-like 语法
-- **Legacy YAML Mode**：保存为 `.yaml` 文件
+- **OXN Mode (推荐)**：保存为 \`.oxn\` 文件，使用 HCL-like 语法
+- **Legacy YAML Mode**：保存为 \`.yaml\` 文件
 
 OXN 示例:
 \`\`\`hcl
