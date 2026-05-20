@@ -1,5 +1,5 @@
 # OXN DSL 设计与实现指南
-**版本**: 2.0.0 (架构修正版)
+**版本**: 2.1.0 (终版定稿)
 **适用项目**: OpenXenon
 ## 目录
 1. 引言与设计哲学
@@ -45,7 +45,7 @@ OXN (OpenXenon eXtensible Notation) 是一门面向 AI 对齐、基础设施约�
 - **约束类型**：`enum(val1, val2, ...)`, `any`
 - **属性修饰符**：`required = true`, `default = <value>`
 ## 2.4 表达式与运算符
-- **变量引用**：`param.xxx`, `prop.xxx`, `context` (仅在 Part execution 中可用)
+- **变量引用**：`param.xxx`, `prop.xxx`
 - **运算**：比较 (`==`, `!=`等)，逻辑 (`&&`, `||`, `!`)，算术 (`+`, `-`等)
 - **三元表达式**：`condition ? val_true : val_false` (严禁嵌套超过一层)
 - **模板字符串**：`"prefix_${prop.xxx}_suffix"`
@@ -65,12 +65,17 @@ OXN 采用基于字符串路径的统一寻址规范，完美映射文件系统�
 ---
 # 第 4 章：核心实体定义（结构层）
 ## 4.1 Probe（原子探针）
-最小执行动作，代表一次底层交互。**纯执行器，禁止携带默认值。**
+最小执行动作，代表一次底层交互。
+**参数约束规则**：
+- `required` 参数禁止默认值，必须由 Part 显式传入，确保关键动作无遗漏。
+- `optional` 参数允许安全默认值（如 `timeout`, `recursive`），消除样板代码噪音。
 ```hcl
 probe "fs-exists" {
   description = "验证文件是否存在"
-  // 对外声明所需参数，一律用 prop。只有 required，禁止 default
+  // required 参数：必须由外部注入
   prop "path" { type = string; required = true } 
+  // optional 参数：允许安全默认值
+  prop "recursive" { type = boolean; default = false }
   output { exists = boolean }
 }
 ```
@@ -79,7 +84,7 @@ probe "fs-exists" {
 ```hcl
 interface "test-runner" {
   method "run" { 
-    input { env = string } 
+    input { env = string; coverage = number } 
     output { passed = boolean } 
   }
 }
@@ -88,17 +93,18 @@ interface "test-runner" {
 对 Probe 的封装，提供具体业务能力。必须通过 `implements` 声明遵循的 Interface。
 ```hcl
 part "jest-runner" implements "test-runner" {
-  // 对外声明参数一律用 prop，允许 default
-  prop "coverage_threshold" { type = number; default = 80 }
+  // 对外声明参数一律用 prop
   prop "target_env" { type = string; default = "dev" }
+  prop "coverage_threshold" { type = number; default = 80 }
   probe "run_tests" {
     ref = "@oxn/probe/shell-exec"
     // 对内注入给 Probe 一律用 params
     params = { 
-      command = "npm test -- --coverageThreshold=${prop.coverage_threshold} --env=${prop.target_env}" 
+      command = "npm test -- --coverageThreshold=${prop.coverage_threshold} --env=${prop.target_env}",
+      timeout = 60000 // 覆盖 Probe 的 optional 默认值
     }
   }
-  // execution 改为数组声明，剥离命令式管道控制流
+  // execution 改为数组声明，剥离命令式管道控制流，编排权交予 DAG
   execution = [probe.run_tests] 
 }
 ```
@@ -129,6 +135,10 @@ blueprint "feature-pipeline" {
   }
 }
 ```
+**Abstract Part 编译期类型校验规则（强类型红利）：**
+1. **类型一致性**：`params` 赋值表达式的求值类型，必须与绑定目标 Concrete Part 中对应 `prop` 的类型兼容（如不能将 `enum` 强行传给只接受 `number` 的 prop）。
+2. **覆盖率完整性**：`params` 映射必须覆盖目标 Concrete Part 中所有 `required = true` 且无 `default` 的 `prop`，否则 Phase 1 编译报错。
+3. **强类型三元**：若在 `params` 映射中使用三元表达式，两个分支的返回类型必须一致。
 ---
 # 第 5 章：行为约束与验证（对齐层）
 ## 5.1 Expectation（期望断言）
@@ -207,7 +217,7 @@ blueprint "ci-pipeline" { /* ... */ }
 ---
 # 第 8 章：编译管线与运行时架构
 ## 8.1 模块职责划分
-- **`src/oxn-dsl/` (Langium 语法基石)**：解析 `.oxn` 生成 AST，执行静态校验（Rule, Part 二态校验），输出 OXN IR。
+- **`src/oxn-dsl/` (Langium 语法基石)**：解析 `.oxn` 生成 AST，执行静态校验（Rule, Part 二态校验，Abstract Part 类型校验），输出 OXN IR。
 - **`src/kernel/compiler/` (求值与冻结引擎)**：执行参数求值、依赖注入、DAG 拓扑排序，输出 `frozen.json`。
 - **Core / Daemon (纯 JSON 执行器)**：零 OXN 代码，仅读取 `frozen.json` 调度探针执行。
 ## 8.2 严格的三态生命周期
@@ -240,22 +250,22 @@ task "ai-task" {
 1. 引导 AI 调用工具将 Blueprint 复制到本地沙箱。
 2. 允许 AI 修改 `stage` 的 `deps` 或更换 `abstract part` 的绑定。
 3. **涌现底线**：AI 可改变组合方式，但**严禁篡改 `implements` 契约和 `expectation` 断言**。
-## 9.4 防御性设计：Zod Schema 拦截
-AI 幻觉式填参（如枚举越界、类型错误、遗漏 `abstract part` 绑定）将被 OXN 编译器结合 Zod Schema 严格拦截。
+## 9.4 防御性设计：编译期防线左移
+AI 幻觉式填参（如枚举越界、类型错误、遗漏 `abstract part` 绑定）或参数映射类型不匹配，将被 OXN 编译器在 Phase 1 结合 Zod Schema 严格拦截。IDE 红线即时提示，根本等不到 Task 创建时才报错。
 ---
 # 附录 A：设计与实现参考资料
 OXN DSL 的设计并非凭空创造，而是建立在成熟的工业级配置语言规范、现代编译器框架以及 OpenXenon 已有的架构体系之上。本附录旨在明确 OXN 的设计渊源与实现依赖，为编译器开发与系统迁移提供指引。
 ## A.1 语法结构参考：HashiCorp Configuration Language (HCL)
 OXN 的表层语法结构深度参考并遵循了 HCL 的设计哲学。HCL 作为 Terraform 等成功基础设施工具的基石，在“人类可读性”与“机器可解析性”之间取得了极佳的平衡。
 **核心借鉴点：**
-1. **块结构**：OXN 采用与 HCL 完全一致的 `type "label" { ... }` 语法拓扑。这种结构既具备 JSON 的层级表达能力，又通过换行和可选的分号提升了人类阅读体验。
-2. **属性赋值**：`key = value` 的键值对范式，支持字符串、数字、布尔值、列表等基本类型的直观表达。
-3. **强类型参数定义**：借鉴 Terraform 的 `variable` 块思路，OXN 在 `param` 和 `prop` 中强制声明 `type`，并在编译期进行严格类型检查。
+1. **块结构**：OXN 采用与 HCL 完全一致的 `type "label" { ... }` 语法拓扑。
+2. **属性赋值**：`key = value` 的键值对范式，支持基本类型的直观表达。
+3. **强类型参数定义**：借鉴 Terraform 的 `variable` 块思路，OXN 在 `prop` 中强制声明 `type`，并在编译期进行严格类型检查。
 4. **表达式与插值**：支持逻辑运算、比较运算以及 `${var}` 模板字符串插值。
 **OXN 的约束与差异化：**
 - OXN 剔除了 HCL 中用于动态生成资源的 `for` 表达式和 `dynamic` 块，坚决避免意外图灵完备。
-- OXN 强制要求所有标识符标签必须使用双引号（`blueprint "xxx"`），以彻底消灭短横线命名法带来的词法歧义，这比 HCL 的默认解析规则更为严苛。
-- OXN 引入了特有的 @scope/ 寻址前缀和 abstract 二态修饰符，以适配工作流编排与多态解耦的特殊需求；同时剔除了命令式管道，执行流完全交由 Stage DAG 声明。
+- OXN 强制要求所有标识符标签必须使用双引号，以彻底消灭短横线命名法带来的词法歧义。
+- OXN 引入了特有的 `@scope/` 寻址前缀和 `abstract` 二态修饰符，以适配工作流编排与多态解耦的特殊需求；同时剔除了命令式管道，转而采用声明式数组 `execution = [...]`，将执行流的编排权完全交给 DAG 拓扑，杜绝隐式数据流穿透。
 ## A.2 语法编译实现：Langium
 OXN DSL 的编译器前端将完全基于 **Langium** 框架构建。Langium 是一个基于 TypeScript 的现代语言工程框架，深度集成于 VS Code 生态，非常适合构建领域特定语言。
 **基于 Langium 的实现策略：**
@@ -332,4 +342,4 @@ part "jest-runner" implements "test-runner" {
 ### 3. 核心收益
 - **AST 降维**：Langium 直接解析为 `AbstractPart` 节点，无需后天校验推断，从源头杜绝 AI 随意添加 `execution` 导致的崩溃。
 - **概念归一**：系统只有 `Part` 一种组件实体，AI Prompt 无需解释 Slot 映射。
-- **参数闭环**：通过 `abstract part` 内的 `params` 强制显式映射，彻底消灭隐式魔法穿透，坚守架构底线。
+- **参数闭环**：通过 `abstract part` 内的 `params` 强制显式映射，配合编译期类型校验，彻底消灭隐式魔法穿透，将错误防线左移至 IDE 实时编写阶段。
