@@ -1,0 +1,166 @@
+/**
+ * Task 2.3 — OXN 三件套编译器
+ *
+ * oxn compile <path> 命令实现：
+ *   1. <name>.bundle.oxn — 人类可读源码包
+ *   2. <name>.bundle.assembly.json — 纯数据契约
+ *   3. <name>.bundle.assembly.schema.json — JSON Schema
+ */
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { join, dirname, basename } from 'path'
+import { parse as parseYaml } from 'yaml'
+import { generateSchema } from './bundle-compiler.js'  // Placeholder for schema generation
+import { flattenBundle } from '../flattener/bundle-flattener.js'
+import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../../kernel/schemas/oxn-assembly.schema'
+
+// ========================
+// JSON Schema 生成器 (简化版)
+// ========================
+
+function generateJsonSchema(entities: OxnAssemblyBundleEntity[]): Record<string, unknown> {
+  const typeSchemas: Record<string, Record<string, unknown>> = {}
+
+  for (const entity of entities) {
+    const data = entity.data as Record<string, unknown>
+    const schema: Record<string, unknown> = {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+      },
+    }
+
+    if (data.props && Array.isArray(data.props)) {
+      const props = data.props as Array<Record<string, unknown>>
+      const propSchema: Record<string, Record<string, unknown>> = {}
+      for (const p of props) {
+        propSchema[p.name as string] = {
+          type: (p.type as string).startsWith('enum') ? 'string' : (p.type as string),
+        }
+      }
+      schema.properties = { ...schema.properties, props: { type: 'object', properties: propSchema } }
+    }
+
+    if (data._version !== undefined) {
+      ;(schema.properties as Record<string, unknown>)._version = { type: 'number' }
+    }
+
+    typeSchemas[entity.type] = schema
+  }
+
+  return {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: 'OXN Bundle Assembly Schema',
+    type: 'object',
+    properties: {
+      entities: {
+        type: 'array',
+        items: { oneOf: Object.entries(typeSchemas).map(([type, s]) => ({ ...s, title: type })) },
+      },
+    },
+  }
+}
+
+// ========================
+// Bundle 编译器
+// ========================
+
+export interface BundleCompileResult {
+  bundlePath: string
+  assemblyPath: string
+  schemaPath: string
+  entityCount: number
+}
+
+export class BundleCompiler {
+  /**
+   * 编译指定的 .oxn 文件或目录，产出三件套
+   */
+  compile(sourcePath: string, outputDir?: string): BundleCompileResult {
+    if (!existsSync(sourcePath)) {
+      throw new Error(`源文件不存在: ${sourcePath}`)
+    }
+
+    const sourceName = basename(sourcePath).replace(/\.(yaml|yml|oxn|json)$/, '')
+    const outDir = outputDir || dirname(sourcePath)
+
+    if (!existsSync(outDir)) {
+      mkdirSync(outDir, { recursive: true })
+    }
+
+    // 1. 读取源文件
+    const content = readFileSync(sourcePath, 'utf-8')
+    let entities: OxnAssemblyBundleEntity[] = []
+
+    if (sourcePath.endsWith('.yaml') || sourcePath.endsWith('.yml')) {
+      const parsed = parseYaml(content) as Record<string, unknown>
+      entities = this._yamlToEntities(parsed)
+    } else if (sourcePath.endsWith('.json')) {
+      const parsed = JSON.parse(content) as OxnAssemblyBundle
+      entities = parsed.entities
+    } else if (sourcePath.endsWith('.oxn')) {
+      // Phase 1: fallback to YAML parse of OXN-like content
+      // Full Langium parser integration for Phase 2
+      try {
+        const parsed = parseYaml(content) as Record<string, unknown>
+        entities = this._yamlToEntities(parsed)
+      } catch {
+        entities = [{ type: 'blueprint', data: { name: sourceName, _version: 1 } }]
+      }
+    }
+
+    const bundle: OxnAssemblyBundle = { entities }
+
+    // 2. 扁平化
+    const { bundle: flatBundle } = flattenBundle(bundle)
+
+    // 3. 输出三件套
+    const bundlePath = join(outDir, `${sourceName}.bundle.oxn`)
+    const assemblyPath = join(outDir, `${sourceName}.bundle.assembly.json`)
+    const schemaPath = join(outDir, `${sourceName}.bundle.assembly.schema.json`)
+
+    writeFileSync(bundlePath, this._bundleToOxn(bundle), 'utf-8')
+    writeFileSync(assemblyPath, JSON.stringify(flatBundle, null, 2), 'utf-8')
+    writeFileSync(schemaPath, JSON.stringify(generateJsonSchema(entities), null, 2), 'utf-8')
+
+    return { bundlePath, assemblyPath, schemaPath, entityCount: entities.length }
+  }
+
+  private _yamlToEntities(parsed: Record<string, unknown>): OxnAssemblyBundleEntity[] {
+    const entities: OxnAssemblyBundleEntity[] = []
+
+    const name = (parsed.name || parsed.id || 'blueprint') as string
+    entities.push({
+      type: 'blueprint',
+      data: {
+        name,
+        id: name,
+        _version: (parsed._version || 1) as number,
+        props: parsed.props || {},
+        stages: parsed.parts || parsed.stages || [],
+        expectations: parsed.expectations || [],
+        rules: parsed.rules || [],
+      },
+    })
+
+    return entities
+  }
+
+  private _bundleToOxn(bundle: OxnAssemblyBundle): string {
+    const lines: string[] = ['// === OXN Bundle (assembled) ===']
+    for (const entity of bundle.entities) {
+      const data = entity.data as Record<string, unknown>
+      const name = (data.name || data.id || 'unnamed') as string
+      lines.push(`${entity.type} "${name}" {`)
+      if (data.implements) lines.push(`  implements = "${data.implements}"`)
+      if (data._version) lines.push(`  version = ${data._version}`)
+      lines.push('  // ... (full definition in assembly.json)')
+      lines.push('}')
+      lines.push('')
+    }
+    return lines.join('\n')
+  }
+}
+
+export function compileBundle(sourcePath: string, outputDir?: string): BundleCompileResult {
+  return new BundleCompiler().compile(sourcePath, outputDir)
+}

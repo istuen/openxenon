@@ -1,0 +1,39 @@
+part "git-commit" {
+  description = "提交代码到 Git 仓库，验证 commit message 引用当前 feature"
+  prop "feature_ref" { type = string; required = true }
+  prop "message" { type = string; required = false; default = "update" }
+  probe check_commit {
+    ref = "@oxn/probe/exec-exit-zero"
+    params = {
+      command = "git log -1 --pretty=%s | grep -q '${prop.feature_ref}'"
+    }
+  }
+  execution = [probe.check_commit]
+}
+
+part "create-branch" {
+  description = "从 main 分支创建新 feature 分支"
+  prop "branch_name" { type = string; required = true }
+  probe check_branch {
+    ref = "@oxn/probe/exec-exit-zero"
+    params = {
+      command = "git branch --show-current | grep -q '${prop.branch_name}'"
+    }
+  }
+  execution = [probe.check_branch]
+}
+
+part "develop-feature" {
+  description = "执行开发任务并通过测试验证"
+  prop "feature_desc" { type = string; required = true }
+  prop "cwd" { type = string; required = false; default = "." }
+  probe build {
+    ref = "@oxn/probe/exec-exit-zero"
+    params = { command = "pnpm build" }
+  }
+  probe test {
+    ref = "@oxn/probe/exec-exit-zero"
+    params = { command = "pnpm test" }
+  }
+  execution = [probe.build, probe.test]
+}
