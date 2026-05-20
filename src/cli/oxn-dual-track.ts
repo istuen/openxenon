@@ -12,7 +12,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 
-import { BOUNDARY_DIR, BLUEPRINT_FILE, FROZEN_BLUEPRINT_FILE } from '../kernel/constants'
+import { BOUNDARY_DIR, BLUEPRINT_FILE, FROZEN_BLUEPRINT_JSON, ASSEMBLY_JSON } from '../kernel/constants'
 import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
 import { preloadCompileDependencies } from '../infra/loader'
 import { adaptOxnToFrozen } from '../kernel/compiler/oxn-adapter'
@@ -218,17 +218,23 @@ export function writeFrozenToTaskDir(
   cwd: string,
   taskId: string,
   frozen: FrozenBlueprint,
-  assembly?: OxnAssemblyIR
+  assembly?: OxnAssemblyIR,
+  sourceFormat?: string
 ): { frozenPath: string; assemblyPath?: string } {
   const taskDir = join(cwd, BOUNDARY_DIR, 'tasks', taskId)
   ensureDirectory(taskDir)
 
-  const frozenPath = join(taskDir, FROZEN_BLUEPRINT_FILE)
-  writeFileSync(frozenPath, stringifyYaml(frozen), 'utf-8')
+  // Inject source_format metadata
+  if (sourceFormat && !('_source_format' in (frozen as Record<string, unknown>))) {
+    ;(frozen as Record<string, unknown>)._source_format = sourceFormat
+  }
+
+  const frozenPath = join(taskDir, FROZEN_BLUEPRINT_JSON)
+  writeFileSync(frozenPath, JSON.stringify(frozen, null, 2), 'utf-8')
 
   let assemblyPath: string | undefined
   if (assembly) {
-    assemblyPath = join(taskDir, 'blueprint.assembly.json')
+    assemblyPath = join(taskDir, ASSEMBLY_JSON)
     writeFileSync(assemblyPath, JSON.stringify(assembly, null, 2), 'utf-8')
   }
 

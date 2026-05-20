@@ -29,7 +29,7 @@ function getTypeFromContent(content: string): AssetType | null {
   return null
 }
 
-function getForgePath(type: AssetType, name: string, scope: Scope): string {
+function getForgePath(type: AssetType, name: string, scope: Scope, ext: string = 'yaml'): string {
   if (scope === 'global') {
     if (type === 'parts' || type === 'probes') {
       return join(FORGES_ROOT, type, `${name}.yaml`)
@@ -43,11 +43,11 @@ function getForgePath(type: AssetType, name: string, scope: Scope): string {
   return join(projectBoundary, 'forges', type, name, 'draft.yaml')
 }
 
-function saveDraftAsset(type: AssetType, name: string | undefined, content: string, scope: Scope = 'project'): DraftAssetResult {
+function saveDraftAsset(type: AssetType, name: string | undefined, content: string, scope: Scope = 'project', ext: string = 'yaml'): DraftAssetResult {
   ensureForgesDirectories(scope)
 
   const assetName = name || 'draft_' + randomUUID().slice(0, 8)
-  const filePath = getForgePath(type, assetName, scope)
+  const filePath = getForgePath(type, assetName, scope, ext)
 
   try {
     const dir = dirname(filePath)
@@ -69,7 +69,7 @@ function saveDraftAsset(type: AssetType, name: string | undefined, content: stri
   }
 }
 
-export function createDraftProbe(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
+export function createDraftProbe(content: string, name?: string, scope: Scope = 'project', ext: string = 'yaml'): DraftAssetResult {
   let parsed: unknown
 
   try {
@@ -88,10 +88,10 @@ export function createDraftProbe(content: string, name?: string, scope: Scope = 
     return { success: false, error: 'Invalid probe structure' }
   }
 
-  return saveDraftAsset('probes', name, content, scope)
+  return saveDraftAsset('probes', name, content, scope, ext)
 }
 
-export function createDraftPart(content: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
+export function createDraftPart(content: string, name?: string, scope: Scope = 'project', ext: string = 'yaml'): DraftAssetResult {
   try {
     const parsed = JSON.parse(content)
     validatePartAsset(parsed)
@@ -99,10 +99,10 @@ export function createDraftPart(content: string, name?: string, scope: Scope = '
     return { success: false, error: 'Invalid part structure' }
   }
 
-  return saveDraftAsset('parts', name, content, scope)
+  return saveDraftAsset('parts', name, content, scope, ext)
 }
 
-export function createDraftFromYaml(yamlContent: string, name?: string, scope: Scope = 'project'): DraftAssetResult {
+export function createDraftFromYaml(yamlContent: string, name?: string, scope: Scope = 'project', ext: string = 'yaml'): DraftAssetResult {
   const type = getTypeFromContent(yamlContent)
 
   if (!type) {
@@ -111,11 +111,11 @@ export function createDraftFromYaml(yamlContent: string, name?: string, scope: S
 
   switch (type) {
     case 'probes':
-      return createDraftProbe(yamlContent, name, scope)
+      return createDraftProbe(yamlContent, name, scope, ext)
     case 'parts':
-      return createDraftPart(yamlContent, name, scope)
+      return createDraftPart(yamlContent, name, scope, ext)
     case 'blueprints':
-      return saveDraftAsset('blueprints', name, yamlContent, scope)
+      return saveDraftAsset('blueprints', name, yamlContent, scope, ext)
     default:
       return { success: false, error: 'Unknown asset type' }
   }

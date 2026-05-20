@@ -130,12 +130,18 @@ export default defineCommand({
     save: {
       type: 'string',
       alias: 's',
-      description: '直接保存 YAML 内容（用于 AI 生成资产后保存）'
+      description: '直接保存资产内容（用于 AI 生成资产后保存）'
     },
     name: {
       type: 'string',
       alias: 'n',
       description: '资产名称'
+    },
+    format: {
+      type: 'string',
+      alias: 'f',
+      default: 'oxn',
+      description: '输出格式: oxn (默认) | yaml (Deprecated)'
     },
     '--json': {
       type: 'boolean',
@@ -167,6 +173,7 @@ export default defineCommand({
     const name = ctx.args.name as string | undefined
     const unpackPath = ctx.args.unpack as string | undefined
     const repackPath = ctx.args.repack as string | undefined
+    const outputFormat = (ctx.args.format as string) || 'oxn'
     const scope: Scope = 'project'
 
     if (unpackPath) {
@@ -200,9 +207,10 @@ export default defineCommand({
     }
 
     if (save) {
-      const result = createDraftFromYaml(save, name, scope)
+      const ext = outputFormat === 'yaml' ? 'yaml' : 'oxn'
+      const result = createDraftFromYaml(save, name, scope, ext)
       if (result.success) {
-        return output({ data: { path: result.path } }, format)
+        return output({ data: { path: result.path, format: ext } }, format)
       }
       return outputError({
         code: 'OXN_FORGE_SAVE_FAILED',

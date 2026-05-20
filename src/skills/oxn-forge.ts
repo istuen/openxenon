@@ -2,6 +2,17 @@ import type { OpenXenonSkill } from './types'
 
 const probeFormatMd = `# Probe 格式参考
 
+## OXN Mode（推荐，Phase 1+）
+
+\`\`\`hcl
+probe "fs-exists" {
+  description = "检查文件存在"
+  prop "pattern" { type = string; required = true }
+}
+\`\`\`
+
+## Legacy YAML Mode（双轨期兼容）
+
 ## Forge 格式 vs Blueprint 格式（⚠️ 最常见的混淆）
 
 Forge 定义的是"能力声明"（我需要什么参数）：
@@ -303,32 +314,34 @@ oxn forge <type>
 - type 可选值: probe, stage, blueprint
 - 例如: oxn forge probe
 
-## 步骤 3：生成 YAML
+## 步骤 3：生成资产
 
-根据约束生成符合规范的 YAML 内容。
+- **OXN Mode (默认)**：生成 HCL-like 语法资产
+- **Legacy YAML Mode**：添加 \`--format yaml\` (Deprecated)
 
 ## 步骤 4：保存 Draft
 
-执行以下命令保存为 Draft 资产：
 \`\`\`bash
-oxn forge <type> --save '<yaml内容>' --name <资产名称>
+# OXN Mode (默认)
+oxn forge <type> --save '<oxn内容>' --name <资产名称>
+
+# Legacy YAML Mode
+oxn forge <type> --save '<yaml内容>' --name <资产名称> --format yaml
 \`\`\`
-- 添加 \`--global\` 参数可保存到全局 Arsenal
 - 例如:
   \`\`\`bash
-  oxn forge probe --save 'type: fs_exists
-description: "检查 Redis 配置文件"
-props:
-  - name: pattern
-    type: string
-    required: true' --name redis-config-check
+  oxn forge probe --save 'probe "redis-config-check" {
+  description = "检查 Redis 配置文件"
+  prop "pattern" { type = string; required = true }
+}' --name redis-config-check
   \`\`\`
 
 ## 步骤 5：审查 Draft
 
-执行以下命令读取生成的 Draft 内容：
+读取内容：
 \`\`\`bash
-cat .openxenon/forges/<type>/<name>/draft.yaml
+cat .openxenon/forges/<type>/<name>/draft.oxn
+# 或 Legacy: cat .openxenon/forges/<type>/<name>/draft.yaml
 \`\`\`
 
 将 Draft 内容转化为人类可读的摘要，向工程师展示：

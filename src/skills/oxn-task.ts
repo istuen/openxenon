@@ -2,7 +2,19 @@ import type { OpenXenonSkill } from './types'
 
 const blueprintFormatMd = `# Blueprint 格式参考（oxn-task 用）
 
-## 基本结构
+## OXN Mode（推荐，Phase 1+）
+
+\`\`\`hcl
+blueprint "my-task" {
+  version = 1
+  stage "check" {
+    run = "part.check.run"
+    deps = []
+  }
+}
+\`\`\`
+
+## Legacy YAML Mode（双轨期兼容）
 
 \`\`\`yaml
 name: <blueprint名称>
@@ -22,11 +34,28 @@ stages:
 
 ## 完整示例
 
+### OXN
+\`\`\`hcl
+blueprint "deploy-mysql" {
+  version = 1
+  stage "prepare" {
+    run = "part.prepare.run"
+    deps = []
+  }
+  stage "deploy" {
+    run = "part.deploy.run"
+    deps = ["prepare"]
+  }
+}
+\`\`\`
+
+### YAML (Legacy)
 \`\`\`yaml
 name: deploy-mysql
 stages:
   - id: prepare
     name: 准备环境
+    deps: []
     target:
       description: Docker 环境就绪
     probes:
@@ -57,6 +86,10 @@ exec_exit_zero:   { command: "shell命令" }
 
 ### 提交任务
 \`\`\`bash
+# OXN Mode (推荐)
+oxn task submit --blueprint <path-to-blueprint.oxn>
+
+# Legacy YAML Mode
 oxn task submit --blueprint <path-to-blueprint.yaml>
 \`\`\`
 
@@ -159,10 +192,31 @@ oxn task new <task-id> --name <任务显示名称>
 
 ## 步骤 5：编写 Blueprint
 
-将 Blueprint 保存为 YAML 文件（如 my-task.yaml），包含：
-- 任务名称
-- 各个 Stage 的定义和依赖关系
-- 每个 Stage 对应的 Probe
+将 Blueprint 保存为文件：
+- **OXN Mode (推荐)**：保存为 `.oxn` 文件，使用 HCL-like 语法
+- **Legacy YAML Mode**：保存为 `.yaml` 文件
+
+OXN 示例:
+\`\`\`hcl
+blueprint "my-task" {
+  version = 1
+  prop "env" { type = enum("dev", "staging", "prod"); default = "dev" }
+  stage "build" { run = "part.build.run"; deps = [] }
+}
+\`\`\`
+
+YAML 示例:
+\`\`\`yaml
+name: my-task
+stages:
+  - id: build
+    name: 构建
+    deps: []
+    probes:
+      - type: exec_exit_zero
+        params:
+          command: "npm run build"
+\`\`\`
 
 ## 步骤 5.1：创建任务描述文档
 
