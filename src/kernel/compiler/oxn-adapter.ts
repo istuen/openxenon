@@ -197,6 +197,7 @@ const PROBE_TYPE_MAP: Record<string, string> = {
   'fs-exists': 'fs_exists',
   'fs-not-exists': 'fs_not_exists',
   'fs-match': 'fs_match',
+  'fs-content-match': 'fs_match',
   'exec-exit-zero': 'exec_exit_zero',
   'exec-output-match': 'exec_output_match',
 }

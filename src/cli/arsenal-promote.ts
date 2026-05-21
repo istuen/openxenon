@@ -37,8 +37,8 @@ function parseAssetName(input: string): { type: AssetType, name: string } | null
 
 export default defineCommand({
   meta: {
-    name: 'arsenal-promote',
-    description: '将 DRAFT 资产转正为 CANONICAL'
+    name: 'publish',
+    description: '将 DRAFT 资产发布为 CANONICAL [Design-Time]'
   },
   args: {
     name: {

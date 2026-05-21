@@ -8,7 +8,7 @@ export default defineCommand({
   subCommands: {
     list: () => import('./global-arsenal-list').then(m => m.default),
     inspect: () => import('./global-arsenal-inspect').then(m => m.default),
-    promote: () => import('./global-arsenal-promote').then(m => m.default),
+    publish: () => import('./global-arsenal-promote').then(m => m.default),
     search: () => import('./global-arsenal-search').then(m => m.default),
     export: () => import('./global-arsenal-export').then(m => m.default),
     import: () => import('./global-arsenal-import').then(m => m.default),

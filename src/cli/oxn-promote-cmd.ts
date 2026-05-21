@@ -7,7 +7,7 @@ import { output, outputError, getFormatFromArgs } from './output'
 export default defineCommand({
   meta: {
     name: 'promote',
-    description: '将沙箱 Blueprint 提升至全局 Arsenal (同名覆盖进化 / --as-new 涌现)'
+    description: '将沙箱 Blueprint 提升至全局 Arsenal (同名覆盖进化 / --as-new 涌现) [Runtime]'
   },
   args: {
     taskDir: {

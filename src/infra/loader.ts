@@ -78,8 +78,10 @@ function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolea
           })
         }
       } else {
-        const canonicalFile = join(typePath, assetName, 'canonical.yaml')
-        if (existsSync(canonicalFile)) {
+        const oxnFile = join(typePath, assetName, 'canonical.oxn')
+        const yamlFile = join(typePath, assetName, 'canonical.yaml')
+        const canonicalFile = existsSync(oxnFile) ? oxnFile : existsSync(yamlFile) ? yamlFile : null
+        if (canonicalFile) {
           const content = readFileSync(canonicalFile, 'utf-8')
           assets.push({
             name: assetName,
@@ -278,7 +280,7 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
 }
 
 export function promoteStandard(fromPath: string): StandardAsset | null {
-  const isForgeFormat = fromPath.includes('/forges/') && fromPath.endsWith('.yaml')
+  const isForgeFormat = fromPath.includes('/forges/')
   const isArsenalDraftFormat = fromPath.includes('/arsenals/') && fromPath.includes('/draft/')
 
   if (!isForgeFormat && !isArsenalDraftFormat) {
@@ -294,25 +296,41 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
     return null
   }
 
-  let newPath: string
+  const content = readFileSync(fromPath, 'utf-8')
+  const ext = fromPath.endsWith('.oxn') ? '.oxn' : '.yaml'
+  const canonicalName = `canonical${ext}`
 
+  let newDir: string
   if (isForgeFormat) {
-    newPath = fromPath.replace('/forges/', '/arsenals/')
+    newDir = fromPath.replace('/forges/', '/arsenals/')
   } else {
-    newPath = fromPath.replace('/draft/', '/')
+    newDir = fromPath.replace('/draft/', '/')
   }
 
-  const assetDir = dirname(newPath)
-  if (!existsSync(assetDir)) {
-    mkdirSync(assetDir, { recursive: true })
+  const parentDir = dirname(newDir)
+  const assetName = asset.name || newDir.replace(/\/$/, '').split('/').pop() || 'unknown'
+
+  const subDir = join(parentDir, assetName)
+  if (!existsSync(subDir)) {
+    mkdirSync(subDir, { recursive: true })
   }
 
-  renameSync(fromPath, newPath)
+  const destPath = join(subDir, canonicalName)
+  writeFileSync(destPath, content, 'utf-8')
+
+  try {
+    if (existsSync(fromPath)) {
+      const { unlinkSync } = require('fs')
+      unlinkSync(fromPath)
+    }
+  } catch {
+    // best-effort cleanup
+  }
 
   return {
     ...asset,
     state: 'canonical',
-    path: newPath
+    path: destPath
   }
 }
 
