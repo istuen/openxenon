@@ -189,6 +189,23 @@ function evaluateExpression(expr: string, props: Record<string, unknown>): unkno
 }
 
 // ========================
+// Probe type normalization
+// ========================
+
+const PROBE_TYPE_MAP: Record<string, string> = {
+  'shell-exec': 'shell_exec',
+  'fs-exists': 'fs_exists',
+  'fs-not-exists': 'fs_not_exists',
+  'fs-match': 'fs_match',
+  'exec-exit-zero': 'exec_exit_zero',
+  'exec-output-match': 'exec_output_match',
+}
+
+function normalizeProbeType(rawType: string): string {
+  return PROBE_TYPE_MAP[rawType] || rawType
+}
+
+// ========================
 // Assembly Part → Frozen Part
 // ========================
 
@@ -227,7 +244,7 @@ export function adaptConcretePart(
         }
       }
     }
-    const probeType = p.ref?.split('/').pop() || 'unknown'
+    const probeType = normalizeProbeType(p.ref?.split('/').pop() || 'unknown')
     const probeContent = JSON.stringify({ type: probeType, params: probeParams })
     return {
       _xenon_meta: createXenonMeta({

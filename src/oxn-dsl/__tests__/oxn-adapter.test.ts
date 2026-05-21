@@ -186,7 +186,7 @@ describe("adaptConcretePart", () => {
     expect(frozenPart.params.target_env).toBe("prod");
     expect(frozenPart.params.coverage_threshold).toBe(95);
     expect(frozenPart.probes).toHaveLength(1);
-    expect(frozenPart.probes[0].type).toBe("shell-exec");
+    expect(frozenPart.probes[0].type).toBe("shell_exec");
     expect(frozenPart.probes[0].params.command).toContain("coverage=95");
     expect(frozenPart.probes[0].params.timeout).toBe(60000);
   });

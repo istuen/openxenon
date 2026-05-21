@@ -65,6 +65,16 @@ function expressionToString(expr: Expression): string {
   if (typeof expr === 'string') return expr
   if (typeof expr === 'number') return String(expr)
   if (typeof expr === 'boolean') return String(expr)
+  if (typeof expr === 'object' && expr !== null) {
+    const e = expr as Record<string, unknown>
+    if (e.$type === 'LiteralExpr' && (e as any).$cstNode?.text) {
+      const text = (e as any).$cstNode.text as string
+      if (text.length >= 2 && text[0] === '"' && text[text.length - 1] === '"') {
+        return text.slice(1, -1)
+      }
+      return text
+    }
+  }
   if (isTemplateString(expr)) return expr.value
   if (isVariableRef(expr)) return varRefToString(expr)
   if (isBinaryExpr(expr)) {
@@ -131,12 +141,25 @@ import type * as langium from 'langium'
 // ========================
 
 function expressionToValue(expr: Expression): unknown {
-  // 保持基本类型的原始值
   if (typeof expr === 'number') return expr
   if (typeof expr === 'boolean') return expr
-  if (typeof expr === 'string') {
-    // Langium STRING token 包含引号，去掉外层引号
-    return expr
+  if (typeof expr === 'string') return expr
+  if (typeof expr === 'object' && expr !== null) {
+    const e = expr as Record<string, unknown>
+    if (e.$type === 'LiteralExpr' && (e as any).$cstNode?.text) {
+      const text = (e as any).$cstNode.text as string
+      if (text.length >= 2 && text[0] === '"' && text[text.length - 1] === '"') {
+        return text.slice(1, -1)
+      }
+      return text
+    }
+  }
+  if (isTemplateString(expr)) {
+    const raw = expr.value
+    if (raw.length >= 2 && raw[0] === '"' && raw[raw.length - 1] === '"') {
+      return raw.slice(1, -1)
+    }
+    return raw
   }
   return expressionToString(expr)
 }
@@ -239,21 +262,12 @@ export function convertPartDeclaration(decl: PartDeclaration): OxnAssemblyPart {
 }
 
 export function convertAbstractPartDeclaration(decl: AbstractPartDeclaration): OxnAssemblyPart {
-  return {
-    name: decl.name,
-    implements: resolveImplementsRef(decl),
-    isAbstract: true,
-    props: [],
-    probes: [],
-    execution: [],  // AST 层保证为空
+  const paramsMap: Record<string, unknown> = {}
+  if (decl.params) {
+    for (const pair of decl.params.pairs) {
+      paramsMap[pair.key] = expressionToString(pair.value)
+    }
   }
-}
-
-// ========================
-// Blueprint 转换
-// ========================
-
-function convertAbstractPartInBlueprint(decl: AbstractPartInBlueprint): OxnAssemblyPart {
   return {
     name: decl.name,
     implements: resolveImplementsRef(decl),
@@ -261,7 +275,30 @@ function convertAbstractPartInBlueprint(decl: AbstractPartInBlueprint): OxnAssem
     props: [],
     probes: [],
     execution: [],
+    params: paramsMap,
+  } as OxnAssemblyPart & { params: Record<string, unknown> }
+}
+
+// ========================
+// Blueprint 转换
+// ========================
+
+function convertAbstractPartInBlueprint(decl: AbstractPartInBlueprint): OxnAssemblyPart {
+  const paramsMap: Record<string, unknown> = {}
+  if (decl.params) {
+    for (const pair of decl.params.pairs) {
+      paramsMap[pair.key] = expressionToString(pair.value)
+    }
   }
+  return {
+    name: decl.name,
+    implements: resolveImplementsRef(decl),
+    isAbstract: true,
+    props: [],
+    probes: [],
+    execution: [],
+    params: paramsMap,
+  } as OxnAssemblyPart & { params: Record<string, unknown> }
 }
 
 function convertStage(decl: StageDeclaration): OxnAssemblyStage {

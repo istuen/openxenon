@@ -1,0 +1,40 @@
+part "my-runner" {
+  description = "Test runner"
+  prop "target_cmd" { type = string; default = "echo hello" }
+  probe run_echo {
+    ref = "@oxn/probe/shell-exec"
+    params = {
+      command = "${prop.target_cmd}"
+    }
+  }
+}
+
+abstract part "runner" {
+  params = {
+    target_cmd = prop.cmd
+  }
+}
+
+blueprint "e2e-flow" {
+  version = 1
+  prop "cmd" { type = string; default = "echo hello" }
+
+  abstract part "runner" {
+    params = {
+      target_cmd = prop.cmd
+    }
+  }
+
+  stage "execute" {
+    run = part.runner.run
+    deps = []
+  }
+}
+
+task "verify-e2e" {
+  use = "@prj/blueprint/e2e-flow"
+  binding {
+    runner = "@glo/part/my-runner"
+    props.cmd = "echo hello_from_e2e"
+  }
+}
