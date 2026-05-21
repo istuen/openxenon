@@ -1,0 +1,36 @@
+{
+  "name": "oxn-dsl",
+  "displayName": "OXN DSL",
+  "description": "OXN DSL syntax highlighting support",
+  "version": "0.1.0",
+  "publisher": "openxenon",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "oxn",
+        "extensions": [
+          ".oxn"
+        ],
+        "aliases": [
+          "OXN",
+          "oxn"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "oxn",
+        "scopeName": "source.oxn",
+        "path": "./syntaxes/oxn.tmLanguage.json"
+      }
+    ]
+  }
+}

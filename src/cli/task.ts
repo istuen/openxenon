@@ -64,7 +64,7 @@ export default defineCommand({
           type: 'string',
           alias: 'b',
           required: true,
-          description: 'Blueprint YAML 文件路径'
+          description: 'Blueprint 文件路径 (.yaml / .oxn)'
         },
         name: {
           type: 'string',

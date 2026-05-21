@@ -1,6 +1,6 @@
 import { join, dirname } from 'path'
 import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'fs'
-import { BOUNDARY_DIR, BLUEPRINT_FILE, TASKS_DIR, STEP_MANIFEST_FILE, FROZEN_BLUEPRINT_FILE } from '../kernel/constants'
+import { BOUNDARY_DIR, BLUEPRINT_FILE, BLUEPRINT_OXN_FILE, TASKS_DIR, STEP_MANIFEST_FILE, FROZEN_BLUEPRINT_FILE, FROZEN_BLUEPRINT_JSON, ASSEMBLY_JSON } from '../kernel/constants'
 import { ensureDirectory } from '../infra/fs'
 import { parse as parseYaml } from 'yaml'
 import { probeHandlers, type ProbeResult, type ProbeContext } from '../infra/probes'
@@ -12,6 +12,7 @@ import { preloadCompileDependencies } from '../infra/loader'
 import type { Blueprint } from '../kernel/schemas/blueprint.schema'
 import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
 import { stringify as stringifyYaml } from 'yaml'
+import { unifiedTaskSubmit } from './oxn-dual-track'
 
 const TASK_TRACE_FILE = 'task-trace.yaml'
 const STATE_FILE = 'state.json'
@@ -139,6 +140,78 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   }
 
   const content = readFileSync(blueprintPath, 'utf-8')
+
+  // === OXN DSL 管线 ===
+  if (blueprintPath.endsWith('.oxn')) {
+    const oxnNameMatch = content.match(/blueprint\s+"([^"]+)"/)
+    const bpName = nameOverride || oxnNameMatch?.[1]
+
+    if (!bpName && !existingTaskId) {
+      throw new Error('OXN Blueprint must have a name (blueprint "name" { ... }) or use --name')
+    }
+
+    const taskId = existingTaskId || bpName!
+
+    if (!existingTaskId && taskDirExists(cwd, taskId)) {
+      throw new Error(`Task "${taskId}" already exists. Choose a different name with --name.`)
+    }
+
+    if (!existingTaskId) {
+      const validation = validateTaskName(taskId)
+      if (!validation.valid) {
+        throw new Error(`Invalid task name: ${validation.error}`)
+      }
+    }
+
+    const taskName = nameOverride || bpName || taskId
+
+    const result = unifiedTaskSubmit(blueprintPath, cwd, taskId, taskName, { params })
+
+    const taskDir = getTaskDir(cwd, taskId)
+    ensureDirectory(taskDir)
+
+    writeFileSync(join(taskDir, BLUEPRINT_OXN_FILE), content, 'utf-8')
+
+    writeFileSync(join(taskDir, FROZEN_BLUEPRINT_FILE), stringifyYaml(result.frozen), 'utf-8')
+
+    writeFileSync(join(taskDir, FROZEN_BLUEPRINT_JSON), JSON.stringify(result.frozen, null, 2), 'utf-8')
+
+    if (result.assembly) {
+      writeFileSync(join(taskDir, ASSEMBLY_JSON), JSON.stringify(result.assembly, null, 2), 'utf-8')
+    }
+
+    const parts: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'> = {}
+    if (result.frozen.parts) {
+      for (const part of result.frozen.parts) {
+        parts[part.name] = 'PENDING'
+      }
+    }
+
+    const state: TaskState = {
+      taskId,
+      taskName: result.frozen.name || bpName || 'unnamed',
+      status: 'RUNNING',
+      currentPart: null,
+      parts
+    }
+    writeState(cwd, taskId, state)
+
+    const traceEvent = buildTraceEvent('TASK_START', taskId, {
+      taskName: state.taskName
+    })
+    appendTraceEvent(cwd, taskId, traceEvent)
+
+    return {
+      taskId,
+      blueprintId: result.frozen.id,
+      blueprintFile: `${TASKS_DIR}/${taskId}/${FROZEN_BLUEPRINT_FILE}`,
+      status: 'RUNNING',
+      partsCount: result.frozen.parts.length,
+      message: 'Task created successfully'
+    }
+  }
+
+  // === YAML 管线（保持不变） ===
   const rawParsed = parseYaml(content) as ParsedBlueprint
 
   if (!rawParsed.name && !rawParsed.id && !existingTaskId) {

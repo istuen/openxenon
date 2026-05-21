@@ -1,0 +1,16 @@
+{
+  "entities": [
+    {
+      "type": "blueprint",
+      "data": {
+        "name": "blueprint",
+        "id": "blueprint",
+        "_version": 1,
+        "props": {},
+        "stages": [],
+        "expectations": [],
+        "rules": []
+      }
+    }
+  ]
+}
