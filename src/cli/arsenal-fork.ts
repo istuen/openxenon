@@ -4,7 +4,6 @@ import { join } from 'path'
 import { getArsenalsPath, type AssetType } from '../arsenals/paths'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import { output, outputError, getFormatFromArgs } from './output'
-import * as yaml from 'yaml'
 
 export default defineCommand({
   meta: {
@@ -46,7 +45,7 @@ export default defineCommand({
 
     const type = 'parts' as AssetType
     const basePath = getArsenalsPath(type, 'project')
-    const sourcePath = join(basePath, `${sourceName}.yaml`)
+    const sourcePath = join(basePath, `${sourceName}.oxn`)
 
     if (!existsSync(sourcePath)) {
       return outputError({
@@ -57,16 +56,12 @@ export default defineCommand({
 
     try {
       const content = readFileSync(sourcePath, 'utf-8')
-      const parsed = yaml.parse(content) as Record<string, unknown>
-      parsed._version = 1
-      parsed._forked_from = sourceName
-      const newContent = yaml.stringify(parsed)
-      const newPath = join(basePath, `${newName}.yaml`)
-      writeFileSync(newPath, newContent, 'utf-8')
+      const newPath = join(basePath, `${newName}.oxn`)
+      writeFileSync(newPath, content, 'utf-8')
 
       output({
         data: { source: sourceName, forked: newName, path: newPath },
-        human: `Forked: ${sourceName} → ${newName}\n  Path: ${newPath}\n  _version: 1\n  _forked_from: ${sourceName}`
+        human: `Forked: ${sourceName} → ${newName}\n  Path: ${newPath}`
       }, format)
     } catch (err) {
       return outputError({

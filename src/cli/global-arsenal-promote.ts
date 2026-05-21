@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { compileAssembly } from '../kernel/compiler/blueprint-compiler'
 import { preloadCompileDependencies } from '../infra/loader'
-import * as yaml from 'yaml'
+import { writeFileSync, readFileSync } from 'fs'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
   'blueprint': 'blueprints',
@@ -99,10 +99,16 @@ export default defineCommand({
 
       try {
         const existingContent = readFileSync(promoted.path, 'utf-8')
-        const doc = yaml.parse(existingContent) as Record<string, unknown>
+        const isOxn = promoted.path.endsWith('.oxn')
+        let doc: Record<string, unknown> = {}
+        try {
+          doc = JSON.parse(existingContent)
+        } catch {
+          doc = { _version: 1 }
+        }
         const currentVersion = (doc._version as number) || 1
         doc._version = currentVersion + 1
-        writeFileSync(promoted.path, yaml.stringify(doc), 'utf-8')
+        writeFileSync(promoted.path, JSON.stringify(doc, null, 2), 'utf-8')
 
         const boundary = resolveBoundary('global')
         if (promoted.type === 'parts' || promoted.type === 'probes') {

@@ -1,7 +1,6 @@
-import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'fs'
 import { createHash } from 'crypto'
 import { join, dirname } from 'path'
-import { parse as parseYaml } from 'yaml'
 import { z } from 'zod'
 import { type AssetState, type AssetType } from '../arsenals/paths'
 import { BUILTIN_PROBES, BUILTIN_PARTS } from '../arsenals/builtin'
@@ -66,7 +65,7 @@ function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolea
     if (entry.isDirectory()) {
       const assetName = entry.name
       if (scanForges) {
-        const draftFile = join(typePath, assetName, 'draft.yaml')
+        const draftFile = join(typePath, assetName, 'draft.oxn')
         if (existsSync(draftFile)) {
           const content = readFileSync(draftFile, 'utf-8')
           assets.push({
@@ -78,10 +77,8 @@ function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolea
           })
         }
       } else {
-        const oxnFile = join(typePath, assetName, 'canonical.oxn')
-        const yamlFile = join(typePath, assetName, 'canonical.yaml')
-        const canonicalFile = existsSync(oxnFile) ? oxnFile : existsSync(yamlFile) ? yamlFile : null
-        if (canonicalFile) {
+        const canonicalFile = join(typePath, assetName, 'canonical.oxn')
+        if (existsSync(canonicalFile)) {
           const content = readFileSync(canonicalFile, 'utf-8')
           assets.push({
             name: assetName,
@@ -92,8 +89,8 @@ function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolea
           })
         }
       }
-    } else if (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml') || entry.name.endsWith('.json')) {
-      const name = entry.name.replace(/\.(yaml|yml|json)$/, '')
+    } else if (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml') || entry.name.endsWith('.json') || entry.name.endsWith('.oxn')) {
+      const name = entry.name.replace(/\.(yaml|yml|json|oxn)$/, '')
       const filePath = join(typePath, entry.name)
       const content = readFileSync(filePath, 'utf-8')
       const isCanonical = scanForges ? false : true
@@ -267,7 +264,7 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
     return null
   }
 
-  const isDraft = isForge || assetPath.endsWith('/draft.yaml')
+  const isDraft = isForge || assetPath.endsWith('/draft.oxn') || assetPath.endsWith('/draft.yaml')
   const state: AssetState = isDraft ? 'draft' : 'canonical'
 
   return {
@@ -297,7 +294,7 @@ export function promoteStandard(fromPath: string): StandardAsset | null {
   }
 
   const content = readFileSync(fromPath, 'utf-8')
-  const ext = fromPath.endsWith('.oxn') ? '.oxn' : '.yaml'
+  const ext = fromPath.endsWith('.oxn') ? '.oxn' : '.oxn'
   const canonicalName = `canonical${ext}`
 
   let newDir: string
@@ -342,7 +339,7 @@ export function generateCompiledArtifact(assetPath: string, boundary: string): s
   const type = getTypeFromPath(assetPath)
   if (!type) return null
 
-  const parsed = parseYaml(content) as Record<string, unknown>
+  const parsed = JSON.parse(content) as Record<string, unknown>
   const compiled = {
     ...parsed,
     _compiled_hash: hash,
@@ -355,7 +352,7 @@ export function generateCompiledArtifact(assetPath: string, boundary: string): s
     mkdirSync(cacheDir, { recursive: true })
   }
 
-  const name = assetPath.split('/').pop()?.replace(/\.yaml$/, '') || 'unknown'
+  const name = assetPath.split('/').pop()?.replace(/\.(yaml|oxn)$/, '') || 'unknown'
   const compiledPath = join(cacheDir, `${name}.compiled.json`)
   writeFileSync(compiledPath, JSON.stringify(compiled, null, 2), 'utf-8')
 
@@ -381,13 +378,13 @@ export function loadStandardByName(scope: Scope, projectBoundary: string | undef
   const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
 
   if (type === 'parts' || type === 'probes') {
-    const flatPath = join(boundary, 'arsenals', type, `${name}.yaml`)
+    const flatPath = join(boundary, 'arsenals', type, `${name}.oxn`)
     if (existsSync(flatPath)) {
       const content = readFileSync(flatPath, 'utf-8')
       return { name, type, state: 'canonical' as const, path: flatPath, content }
     }
   } else {
-    const canonicalPath = join(boundary, 'arsenals', type, name, 'canonical.yaml')
+    const canonicalPath = join(boundary, 'arsenals', type, name, 'canonical.oxn')
     if (existsSync(canonicalPath)) {
       const content = readFileSync(canonicalPath, 'utf-8')
       return { name, type, state: 'canonical' as const, path: canonicalPath, content }
@@ -395,8 +392,8 @@ export function loadStandardByName(scope: Scope, projectBoundary: string | undef
   }
 
   const forgeDraftPath = type === 'parts' || type === 'probes'
-    ? join(boundary, 'forges', type, `${name}.yaml`)
-    : join(boundary, 'forges', type, name, 'draft.yaml')
+    ? join(boundary, 'forges', type, `${name}.oxn`)
+    : join(boundary, 'forges', type, name, 'draft.oxn')
   if (existsSync(forgeDraftPath)) {
     const content = readFileSync(forgeDraftPath, 'utf-8')
     return { name, type, state: 'draft' as const, path: forgeDraftPath, content }
@@ -409,10 +406,10 @@ export function resolveAssetPath(scope: Scope, projectBoundary: string | undefin
   const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
 
   if (type === 'parts' || type === 'probes') {
-    const flatPath = join(boundary, 'arsenals', type, `${name}.yaml`)
+    const flatPath = join(boundary, 'arsenals', type, `${name}.oxn`)
     if (existsSync(flatPath)) return flatPath
   } else {
-    const assetPath = join(boundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+    const assetPath = join(boundary, 'arsenals', type, name, state === 'draft' ? 'draft.oxn' : 'canonical.oxn')
     if (existsSync(assetPath)) return assetPath
   }
 
@@ -452,12 +449,13 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
       const compiledPath = join(projectBoundary, 'cache', 'compiled', 'probes', `${asset.name}.compiled.json`)
       const content = existsSync(compiledPath)
         ? JSON.parse(readFileSync(compiledPath, 'utf-8')) as Record<string, unknown>
-        : parseYaml(asset.content) as Record<string, unknown>
+        : null
+      if (!content) continue
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
       probes.set(ref, content)
       probes.set(`./${asset.name}`, content)
     } catch {
-      // skip invalid YAML
+      // skip invalid asset
     }
   }
 
@@ -467,12 +465,13 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
       const compiledPath = join(projectBoundary, 'cache', 'compiled', 'parts', `${asset.name}.compiled.json`)
       const content = existsSync(compiledPath)
         ? JSON.parse(readFileSync(compiledPath, 'utf-8')) as Record<string, unknown>
-        : parseYaml(asset.content) as Record<string, unknown>
+        : null
+      if (!content) continue
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
       parts.set(ref, content)
       parts.set(`./${asset.name}`, content)
     } catch {
-      // skip invalid YAML
+      // skip invalid asset
     }
   }
 

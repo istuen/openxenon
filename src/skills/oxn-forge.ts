@@ -16,7 +16,7 @@ probe "fs-exists" {
 ## Forge 格式 vs Blueprint 格式（⚠️ 最常见的混淆）
 
 Forge 定义的是"能力声明"（我需要什么参数）：
-\`\`\`yaml
+\`\`\`hcl
 type: fs_exists
 description: "检查文件存在"
 props:           ← 注意：是数组
@@ -26,7 +26,7 @@ props:           ← 注意：是数组
 \`\`\`
 
 Blueprint 定义的是"调用方式"（我传什么值）：
-\`\`\`yaml
+\`\`\`hcl
 type: fs_exists
 params:               ← 注意：是对象
   pattern: "src/**/*.ts"
@@ -40,7 +40,7 @@ params:               ← 注意：是对象
 参数：pattern (string, required) — glob 模式
 
 示例：
-\`\`\`yaml
+\`\`\`hcl
 type: fs_exists
 description: "检查配置文件存在"
 props:
@@ -54,7 +54,7 @@ props:
 参数：pattern (string, required) — glob 模式
 
 示例：
-\`\`\`yaml
+\`\`\`hcl
 type: fs_not_exists
 description: "检查临时文件已清理"
 props:
@@ -68,7 +68,7 @@ props:
 参数：path (string, required) + contains (string, required)
 
 示例：
-\`\`\`yaml
+\`\`\`hcl
 type: fs_content_match
 description: "检查源码包含版权声明"
 props:
@@ -86,7 +86,7 @@ props:
 参数：command (string, required)
 
 示例：
-\`\`\`yaml
+\`\`\`hcl
 type: exec_exit_zero
 description: "执行 lint 检查"
 props:
@@ -99,7 +99,7 @@ props:
 ## ❌ 常见错误
 
 1. **Forge 格式写成 Blueprint 格式**
-   \`\`\`yaml
+   \`\`\`hcl
    # 错误
    type: fs_exists
    params: { pattern: "src" }
@@ -110,7 +110,7 @@ props:
    \`\`\`
 
 2. **props 里的 name 和 type 写反**
-   \`\`\`yaml
+   \`\`\`hcl
    # 错误
    props: [{ type: pattern, name: string }]
 
@@ -119,7 +119,7 @@ props:
    \`\`\`
 
 3. **使用了旧类型名**
-   \`\`\`yaml
+   \`\`\`hcl
    # 错误
    type: fs_match         # 旧名，应改为 fs_content_match
    type: shell_exec       # 旧名，应改为 exec_exit_zero
@@ -130,7 +130,7 @@ props:
    \`\`\`
 
 4. **fs_content_match 使用了错误的参数名**
-   \`\`\`yaml
+   \`\`\`hcl
    # 错误
    type: fs_content_match
    params:
@@ -149,7 +149,7 @@ const blueprintFormatMd = `# Blueprint 格式参考
 
 ## 基本结构
 
-\`\`\`yaml
+\`\`\`hcl
 name: <blueprint名称>
 stages:
   - id: <stage唯一标识>
@@ -167,7 +167,7 @@ stages:
 
 ## 完整示例
 
-\`\`\`yaml
+\`\`\`hcl
 name: check-project-structure
 stages:
   - id: check-package-json
@@ -199,7 +199,7 @@ stages:
 
 ## probes 参数格式
 
-\`\`\`yaml
+\`\`\`hcl
 fs_exists:        { pattern: "glob模式" }
 fs_not_exists:    { pattern: "glob模式" }
 fs_content_match: { path: "文件路径", contains: "正则" }
@@ -215,7 +215,7 @@ exec_exit_zero:   { command: "shell命令" }
 ## ❌ 常见错误
 
 1. **probes 里用了 props 数组**
-   \`\`\`yaml
+   \`\`\`hcl
    # 错误
    probes: [{ type: fs_exists, props: [{name: pattern, type: string}] }]
 
@@ -224,7 +224,7 @@ exec_exit_zero:   { command: "shell命令" }
    \`\`\`
 
 2. **使用了旧类型名**
-   \`\`\`yaml
+   \`\`\`hcl
    # 错误
    probes:
      - type: fs_match        # 旧名
@@ -251,7 +251,7 @@ const stageFormatMd = `# Stage 格式参考
 
 ## Forge 格式（定义 Stage 能力声明）
 
-\`\`\`yaml
+\`\`\`hcl
 name: <stage名称>
 description: "<stage描述>"
 target:
@@ -270,7 +270,7 @@ Blueprint 里直接定义 stage，不需要单独的 Stage 资产。
 
 ## 探针类型（必须使用正确名称）
 
-\`\`\`yaml
+\`\`\`hcl
 # 正确
 fs_exists
 fs_not_exists
@@ -326,7 +326,7 @@ oxn forge <type>
 oxn forge <type> --save '<oxn内容>' --name <资产名称>
 
 # Legacy YAML Mode
-oxn forge <type> --save '<yaml内容>' --name <资产名称> --format yaml
+oxn forge <type> --save '<oxn内容>' --name <资产名称> --format yaml
 \`\`\`
 - 例如:
   \`\`\`bash

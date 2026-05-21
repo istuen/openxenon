@@ -10,7 +10,6 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
-import { parse as parseYaml } from 'yaml'
 
 import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, ASSEMBLY_JSON } from '../kernel/constants'
 import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
@@ -146,34 +145,7 @@ export function submitOxnPipeline(
     try {
       assembly = validateOxnAssemblyIR(JSON.parse(content) as OxnAssemblyIR)
     } catch {
-      const yamlParsed = parseYaml(content) as Record<string, unknown>
-      assembly = createOxnAssemblyIR({
-        id: (yamlParsed.name || yamlParsed.id || taskId) as string,
-        name: (yamlParsed.name || yamlParsed.id || taskId) as string,
-        version: (yamlParsed._version || yamlParsed.version || 1) as number,
-      })
-
-      const stages = yamlParsed.parts || yamlParsed.stages || []
-      for (const stage of stages as Array<Record<string, unknown>>) {
-        const stageName = (stage.id || stage.name || 'unknown') as string
-        assembly.stages.push({
-          name: stageName,
-          run: `part.${stageName}.run`,
-          deps: (stage.deps || []) as string[],
-        })
-
-        assembly.concreteParts.push({
-          name: stageName,
-          isAbstract: false,
-          props: [],
-          probes: ((stage.probes || []) as Array<Record<string, unknown>>).map(p => ({
-            name: 'check',
-            ref: p.ref ? String(p.ref) : `@oxn/probe/${p.type}`,
-            params: (p.params || {}) as Record<string, unknown>,
-          })),
-          execution: ['probe.check'],
-        })
-      }
+      throw new Error('OXN 文件解析失败：无法解析为合法的 Assembly IR。请运行 oxn compile 检查语法。')
     }
   }
 

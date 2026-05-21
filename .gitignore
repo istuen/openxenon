@@ -54,6 +54,11 @@ coverage/
 .cache/
 docs_tmp/
 
+# OpenXenon compile artifacts (generated, not source of truth)
+*.bundle.oxn
+*.bundle.assembly.json
+*.bundle.assembly.schema.json
+
 # OpenXenon specific
 .openxenon/
 !src/

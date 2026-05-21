@@ -17,7 +17,7 @@ export type AssetState = 'draft' | 'canonical'
 export type AssetType = 'probes' | 'blueprints' | 'parts'
 
 export const FORGES_DIRECTORY_STRUCTURE = {
-  draft: '<type>/<name>/draft.yaml'
+  draft: '<type>/<name>/draft.oxn'
 } as const
 
 export function getForgesPath(type: AssetType, scope: Scope = 'project', cwd?: string): string {
@@ -34,9 +34,9 @@ export function getForgesPath(type: AssetType, scope: Scope = 'project', cwd?: s
 export function getForgeDraftPath(type: AssetType, name: string, scope: Scope = 'project', cwd?: string): string {
   const base = getForgesPath(type, scope, cwd)
   if (type === 'parts' || type === 'probes') {
-    return join(base, `${name}.yaml`)
+    return join(base, `${name}.oxn`)
   }
-  return join(base, name, 'draft.yaml')
+  return join(base, name, 'draft.oxn')
 }
 
 export function getArsenalsPath(type: AssetType, scope: Scope = 'project', cwd?: string): string {
@@ -58,20 +58,20 @@ export function getArsenalsStatePath(type: AssetType, state: AssetState, scope: 
 export function getForgesAssetPath(type: AssetType, name: string, scope: Scope = 'project', cwd?: string): string {
   const base = getForgesPath(type, scope, cwd)
   if (type === 'parts' || type === 'probes') {
-    return join(base, `${name}.yaml`)
+    return join(base, `${name}.oxn`)
   }
-  return join(base, name, 'draft.yaml')
+  return join(base, name, 'draft.oxn')
 }
 
 export function getArsenalsAssetPath(type: AssetType, name: string, scope: Scope = 'project', cwd?: string): string {
   const base = getArsenalsPath(type, scope, cwd)
   if (type === 'parts' || type === 'probes') {
-    return join(base, `${name}.yaml`)
+    return join(base, `${name}.oxn`)
   }
   if (type === 'blueprints') {
-    return join(base, name, 'blueprint.yaml')
+    return join(base, name, 'blueprint.oxn')
   }
-  return join(base, name, 'canonical.yaml')
+  return join(base, name, 'canonical.oxn')
 }
 
 export function getPathStructure(assetPath: string): 'forge' | 'arsenal' | 'unknown' {

@@ -93,9 +93,22 @@ class ProbeRegistry {
   private handlers: Map<string, ProbeHandler> = new Map()
   private builtinHandlers: Record<string, ProbeHandler> = probeHandlers
 
+  private aliases: Record<string, string> = {
+    'fs-exists': 'fs_exists',
+    'fs-not-exists': 'fs_not_exists',
+    'fs-content-match': 'fs_match',
+    'exec-exit-zero': 'shell_exec',
+  }
+
   constructor() {
     for (const [type, handler] of Object.entries(probeHandlers)) {
       this.handlers.set(type, handler)
+    }
+    for (const [alias, target] of Object.entries(this.aliases)) {
+      const handler = this.handlers.get(target)
+      if (handler) {
+        this.handlers.set(alias, handler)
+      }
     }
   }
 
@@ -113,6 +126,14 @@ class ProbeRegistry {
 
   getRegisteredTypes(): string[] {
     return Array.from(this.handlers.keys())
+  }
+
+  addAlias(alias: string, target: string): void {
+    this.aliases[alias] = target
+    const handler = this.handlers.get(target)
+    if (handler) {
+      this.handlers.set(alias, handler)
+    }
   }
 }
 

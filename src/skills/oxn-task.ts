@@ -16,7 +16,7 @@ blueprint "my-task" {
 
 ## Legacy YAML Mode（双轨期兼容）
 
-\`\`\`yaml
+\`\`\`hcl
 name: <blueprint名称>
 stages:
   - id: <stage唯一标识>
@@ -50,7 +50,7 @@ blueprint "deploy-mysql" {
 \`\`\`
 
 ### YAML (Legacy)
-\`\`\`yaml
+\`\`\`hcl
 name: deploy-mysql
 stages:
   - id: prepare
@@ -75,7 +75,7 @@ stages:
 
 ## probes 参数速查
 
-\`\`\`yaml
+\`\`\`hcl
 fs_exists:        { pattern: "glob模式" }
 fs_not_exists:    { pattern: "glob模式" }
 fs_content_match: { path: "文件路径", contains: "正则" }
@@ -90,7 +90,7 @@ exec_exit_zero:   { command: "shell命令" }
 oxn task submit --blueprint <path-to-blueprint.oxn>
 
 # Legacy YAML Mode
-oxn task submit --blueprint <path-to-blueprint.yaml>
+oxn task submit --blueprint <path-to-blueprint.oxn>
 \`\`\`
 
 ### 获取下一个 Stage
@@ -118,7 +118,7 @@ submit → next → execute → verify → (repeat until done)
 ## ❌ 常见错误
 
 1. **使用了旧类型名**
-   \`\`\`yaml
+   \`\`\`hcl
    # 错误
    type: fs_match        # 旧名，应改为 fs_content_match
    type: shell_exec      # 旧名，应改为 exec_exit_zero
@@ -129,7 +129,7 @@ submit → next → execute → verify → (repeat until done)
    \`\`\`
 
 2. **fs_content_match 使用了错误的参数名**
-   \`\`\`yaml
+   \`\`\`hcl
    # 错误
    type: fs_content_match
    params:
@@ -193,8 +193,8 @@ oxn task new <task-id> --name <任务显示名称>
 ## 步骤 5：编写 Blueprint
 
 将 Blueprint 保存为文件：
-- **OXN Mode (推荐)**：保存为 \`.oxn\` 文件，使用 HCL-like 语法
-- **Legacy YAML Mode**：保存为 \`.yaml\` 文件
+- **OXN Mode (推荐)**：保存为 `.oxn` 文件，使用 HCL-like 语法
+- **Legacy YAML Mode**：保存为 `.yaml` 文件（Deprecated）
 
 OXN 示例:
 \`\`\`hcl
@@ -206,7 +206,7 @@ blueprint "my-task" {
 \`\`\`
 
 YAML 示例:
-\`\`\`yaml
+\`\`\`hcl
 name: my-task
 stages:
   - id: build
@@ -243,7 +243,7 @@ stages:
 将填充好的 Blueprint 提交：
 
 \`\`\`bash
-oxn task submit --blueprint <path-to-blueprint.yaml> --task-id <task-id>
+oxn task submit --blueprint <path-to-blueprint.oxn> --task-id <task-id>
 \`\`\`
 
 该命令会创建任务并返回 taskId。

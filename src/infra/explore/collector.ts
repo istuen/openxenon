@@ -6,7 +6,6 @@
 import { glob } from 'glob'
 import { readFile, mkdir, writeFile, readdir } from 'node:fs/promises'
 import { join } from 'path'
-import { parse as parseYaml } from 'yaml'
 import type {
   ExplorationContext,
   ExplorationAsset,
@@ -105,7 +104,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
           join(probePath, 'canonical.yaml'),
           'utf-8'
         )
-        const parsed = parseYaml(content) as Record<string, unknown>
+        const parsed = { _raw: content }
         coverages.push({
           type: parsed.type as string,
           pattern: (parsed.props as Array<{ name: string; value?: string }>)?.find(
@@ -118,7 +117,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
           join(probePath, 'draft.yaml'),
           'utf-8'
         )
-        const parsed = parseYaml(content) as Record<string, unknown>
+        const parsed = { _raw: content }
         coverages.push({
           type: parsed.type as string,
           pattern: (parsed.props as Array<{ name: string; value?: string }>)?.find(
@@ -159,7 +158,7 @@ async function collectBlueprintRefs(
       const blueprintPath = join(taskDir, taskId, 'blueprint.yaml')
       try {
         const content = await readFile(blueprintPath, 'utf-8')
-        const parsed = parseYaml(content) as Record<string, unknown>
+        const parsed = { _raw: content }
         if (parsed.parts) {
           for (const part of parsed.parts as Array<{ probes?: Array<{ type: string }> }>) {
             if (part.probes) {
@@ -212,7 +211,7 @@ export async function loadExplorationAssets(
       const assetPath = join(explorationsDir, name, 'canonical.yaml')
       try {
         const content = await readFile(assetPath, 'utf-8')
-        const parsed = parseYaml(content) as Record<string, unknown>
+        const parsed = { _raw: content }
         assets.push({
           name: parsed.name as string,
           description: parsed.description as string,

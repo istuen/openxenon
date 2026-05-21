@@ -1,8 +1,6 @@
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
-import * as yaml from 'yaml'
-import { validateProbeDefinition, validatePartAsset } from '../kernel/schemas'
 import { type AssetType, FORGES_ROOT, type Scope } from '../arsenals/paths'
 import { ensureForgesDirectories } from '../arsenals/init'
 import { getProjectBoundaryPath } from '../kernel'
@@ -14,36 +12,28 @@ export interface DraftAssetResult {
 }
 
 function getTypeFromContent(content: string): AssetType | null {
-  const trimmed = content.trim()
-  try {
-    const parsed = JSON.parse(content)
-    if (parsed.type === 'fs_exists' || parsed.type === 'fs_match' || parsed.type === 'shell_exec') return 'probes'
-    if (parsed.probes && Array.isArray(parsed.probes)) return 'parts'
-    if (parsed.stages && Array.isArray(parsed.stages)) return 'blueprints'
-    if (parsed.target || parsed.spec) return 'parts'
-  } catch {
-    if (trimmed.startsWith('name:') && trimmed.includes('stages:')) return 'blueprints'
-    if (content.includes('type:') && (content.includes('fs_exists') || content.includes('fs_match') || content.includes('shell_exec'))) return 'probes'
-    if (content.includes('probes:') || content.includes('target:')) return 'parts'
-  }
+  if (content.includes('probe "') || content.startsWith('probe ')) return 'probes'
+  if (content.includes('part "') || content.startsWith('part ')) return 'parts'
+  if (content.includes('blueprint "') || content.startsWith('blueprint ')) return 'blueprints'
+  if (content.includes('task "') || content.startsWith('task ')) return 'blueprints'
   return null
 }
 
-function getForgePath(type: AssetType, name: string, scope: Scope, ext: string = 'yaml'): string {
+function getForgePath(type: AssetType, name: string, scope: Scope, ext: string = 'oxn'): string {
   if (scope === 'global') {
     if (type === 'parts' || type === 'probes') {
-      return join(FORGES_ROOT, type, `${name}.yaml`)
+      return join(FORGES_ROOT, type, `${name}.${ext}`)
     }
-    return join(FORGES_ROOT, type, name, 'draft.yaml')
+    return join(FORGES_ROOT, type, name, `draft.${ext}`)
   }
   const projectBoundary = getProjectBoundaryPath(process.cwd())
   if (type === 'parts' || type === 'probes') {
-    return join(projectBoundary, 'forges', type, `${name}.yaml`)
+    return join(projectBoundary, 'forges', type, `${name}.${ext}`)
   }
-  return join(projectBoundary, 'forges', type, name, 'draft.yaml')
+  return join(projectBoundary, 'forges', type, name, `draft.${ext}`)
 }
 
-function saveDraftAsset(type: AssetType, name: string | undefined, content: string, scope: Scope = 'project', ext: string = 'yaml'): DraftAssetResult {
+function saveDraftAsset(type: AssetType, name: string | undefined, content: string, scope: Scope = 'project', ext: string = 'oxn'): DraftAssetResult {
   ensureForgesDirectories(scope)
 
   const assetName = name || 'draft_' + randomUUID().slice(0, 8)
@@ -69,40 +59,15 @@ function saveDraftAsset(type: AssetType, name: string | undefined, content: stri
   }
 }
 
-export function createDraftProbe(content: string, name?: string, scope: Scope = 'project', ext: string = 'yaml'): DraftAssetResult {
-  let parsed: unknown
-
-  try {
-    parsed = JSON.parse(content)
-  } catch {
-    try {
-      parsed = yaml.parse(content)
-    } catch {
-      return { success: false, error: 'Invalid probe structure' }
-    }
-  }
-
-  try {
-    validateProbeDefinition(parsed)
-  } catch {
-    return { success: false, error: 'Invalid probe structure' }
-  }
-
+export function createDraftProbe(content: string, name?: string, scope: Scope = 'project', ext: string = 'oxn'): DraftAssetResult {
   return saveDraftAsset('probes', name, content, scope, ext)
 }
 
-export function createDraftPart(content: string, name?: string, scope: Scope = 'project', ext: string = 'yaml'): DraftAssetResult {
-  try {
-    const parsed = JSON.parse(content)
-    validatePartAsset(parsed)
-  } catch {
-    return { success: false, error: 'Invalid part structure' }
-  }
-
+export function createDraftPart(content: string, name?: string, scope: Scope = 'project', ext: string = 'oxn'): DraftAssetResult {
   return saveDraftAsset('parts', name, content, scope, ext)
 }
 
-export function createDraftFromYaml(yamlContent: string, name?: string, scope: Scope = 'project', ext: string = 'yaml'): DraftAssetResult {
+export function createDraftFromYaml(yamlContent: string, name?: string, scope: Scope = 'project', ext: string = 'oxn'): DraftAssetResult {
   const type = getTypeFromContent(yamlContent)
 
   if (!type) {

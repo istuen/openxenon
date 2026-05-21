@@ -1,7 +1,4 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
-import { parse as parseYaml } from 'yaml'
 import { createDraftFromYaml } from './draft'
 import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
 import { output, outputError, getFormatFromArgs } from './output'
@@ -14,29 +11,8 @@ const META_FORGE_NAMES: Record<ForgeType, BuiltinForgeName> = {
   blueprint: 'meta-blueprint'
 }
 
-function tryLoadForgeFile(path: string, fallbackName: string): { name: string, constraints: string[] } | null {
-  if (!existsSync(path)) return null
-  try {
-    const content = readFileSync(path, 'utf-8')
-    const parsed = parseYaml(content)
-    return {
-      name: parsed.name || fallbackName,
-      constraints: parsed.stages?.[0]?.spec?.constraints || []
-    }
-  } catch {
-    return null
-  }
-}
-
 function loadMetaForge(type: ForgeType): { name: string, constraints: string[] } | null {
   const builtinName = META_FORGE_NAMES[type]
-  const relPath = join('forges', builtinName, 'canonical.yaml')
-
-  const homeDir = process.env.HOME || process.env.USERPROFILE || '~'
-  const globalPath = join(homeDir, '.openxenon', 'arsenals', relPath)
-  const r = tryLoadForgeFile(globalPath, builtinName)
-  if (r) return r
-
   const builtin = BUILTIN_FORGES[builtinName]
   if (builtin) {
     return {
@@ -44,7 +20,6 @@ function loadMetaForge(type: ForgeType): { name: string, constraints: string[] }
       constraints: [...(builtin.stages?.[0]?.spec?.constraints || [])]
     }
   }
-
   return null
 }
 
