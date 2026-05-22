@@ -5,18 +5,22 @@ import {
   OxnAssemblyIRSchema,
   OxnAssemblyTaskIRSchema,
   OxnAssemblyBundleSchema,
-  OxnAssemblyInterfaceSchema,
   OxnAssemblyExpectationSchema,
   OxnAssemblyRuleSchema,
-  OxnAssemblyStageSchema,
   OxnAssemblyProbeSchema,
   OxnTypeReferenceSchema,
   createOxnAssemblyIR,
-  createAbstractPart,
-  createConcretePart,
+  type OxnAssemblySlotBinding,
   validateOxnAssemblyIR,
   type OxnAssemblyIR,
 } from '../../kernel/schemas/oxn-assembly.schema'
+
+function createAbstractPart(params: { name: string; implements?: string }): any {
+  return { name: params.name, description: undefined, props: [], probes: [], execution: [] }
+}
+function createConcretePart(params: { name: string; implements?: string; props?: { name: string; type: string; required?: boolean; default?: unknown }[]; probes?: { name: string; ref?: string; params?: Record<string, unknown> }[]; execution?: string[] }): any {
+  return { name: params.name, description: undefined, props: params.props || [], probes: params.probes || [], execution: params.execution || [] }
+}
 
 // ========================
 // 类型引用测试
@@ -80,40 +84,7 @@ describe('OxnAssemblyProp', () => {
 // Assembly Part 测试
 // ========================
 
-describe('OxnAssemblyPart — isAbstract 防御性标记', () => {
-  test('具象零件 (isAbstract=false) 含 execution', () => {
-    const part = OxnAssemblyPartSchema.parse({
-      name: 'jest-runner',
-      implements: 'test-runner',
-      isAbstract: false,
-      execution: ['probe.run_tests'],
-    })
-    expect(part.isAbstract).toBe(false)
-    expect(part.execution).toEqual(['probe.run_tests'])
-  })
-
-  test('抽象零件 (isAbstract=true) 含 execution 被 schema 拒绝', () => {
-    expect(() =>
-      OxnAssemblyPartSchema.parse({
-        name: 'tester',
-        implements: 'test-runner',
-        isAbstract: true,
-        execution: ['probe.run_tests'], // 违规
-      }),
-    ).toThrow('抽象零件')
-  })
-
-  test('抽象零件 (isAbstract=true) 不含 execution 通过', () => {
-    const part = OxnAssemblyPartSchema.parse({
-      name: 'tester',
-      implements: 'test-runner',
-      isAbstract: true,
-      execution: [],
-    })
-    expect(part.isAbstract).toBe(true)
-    expect(part.execution).toEqual([])
-  })
-})
+// OxnAssemblyPart isAbstract — removed in v3.0 (Slot paradigm has no abstract/concrete distinction)
 
 // ========================
 // Assembly IR 测试
@@ -129,51 +100,15 @@ describe('OxnAssemblyIR', () => {
 
   test('合法 Blueprint IR 通过校验', () => {
     const ir = makeBlueprint()
-    ir.abstractParts.push(createAbstractPart({ name: 'tester', implements: 'test-runner' }))
-    ir.concreteParts.push(
-      createConcretePart({
-        name: 'jest-runner',
-        implements: 'test-runner',
-        execution: ['probe.run_tests'],
-      }),
-    )
-    ir.stages.push({
-      name: 'unit_test',
-      run: 'part.tester.run',
-      deps: [],
-    })
+    ir.slots.push({ name: 'tester', deps: [] })
+    ir.blueprintParts.push({ name: 'jest-runner', props: [], probes: [], execution: ['run_tests'] })
 
     expect(() => validateOxnAssemblyIR(ir)).not.toThrow()
-    expect(ir.abstractParts[0].isAbstract).toBe(true)
-    expect(ir.concreteParts[0].isAbstract).toBe(false)
   })
 
-  test('抽象零件放入 concreteParts 被 IR 级拒绝', () => {
+  test('空 Blueprint IR 通过校验', () => {
     const ir = makeBlueprint()
-    ir.concreteParts.push({
-      name: 'tester',
-      implements: 'test-runner',
-      isAbstract: true,
-      props: [],
-      probes: [],
-      execution: [],
-    })
-
-    expect(() => validateOxnAssemblyIR(ir)).toThrow()
-  })
-
-  test('具象零件放入 abstractParts 被 IR 级拒绝', () => {
-    const ir = makeBlueprint()
-    ir.abstractParts.push({
-      name: 'jest-runner',
-      implements: 'test-runner',
-      isAbstract: false,
-      props: [],
-      probes: [],
-      execution: [],
-    })
-
-    expect(() => validateOxnAssemblyIR(ir)).toThrow()
+    expect(() => validateOxnAssemblyIR(ir)).not.toThrow()
   })
 
   test('IR 包含完整的 expectation 和 rule', () => {
@@ -211,19 +146,18 @@ describe('OxnAssemblyIR', () => {
 // ========================
 
 describe('OxnAssemblyTaskIR', () => {
-  test('合法 Task binding', () => {
+  test('合法 Task slot binding', () => {
     const task = OxnAssemblyTaskIRSchema.parse({
       name: 'validate-feature-auth',
-      use: '@prj/blueprint/feature-pipeline',
-      binding: {
-        partBindings: { tester: '@glo/part/jest-runner' },
-        propBindings: { env: 'prod', coverage: 90 },
-      },
+      use: '@prj/blueprints/feature-pipeline',
+      slotBindings: [
+        { slot: 'tester', ref: '@glo/parts/jest-runner', props: { env: 'prod' } },
+      ],
     })
     expect(task.name).toBe('validate-feature-auth')
-    expect(task.use).toBe('@prj/blueprint/feature-pipeline')
-    expect(task.binding.partBindings.tester).toBe('@glo/part/jest-runner')
-    expect(task.binding.propBindings.env).toBe('prod')
+    expect(task.use).toBe('@prj/blueprints/feature-pipeline')
+    expect(task.slotBindings).toHaveLength(1)
+    expect(task.slotBindings[0].slot).toBe('tester')
   })
 })
 
@@ -231,22 +165,8 @@ describe('OxnAssemblyTaskIR', () => {
 // Assembly Interface 测试
 // ========================
 
-describe('OxnAssemblyInterface', () => {
-  test('完整 interface 包含 method input/output', () => {
-    const iface = OxnAssemblyInterfaceSchema.parse({
-      name: 'test-runner',
-      methods: [
-        {
-          name: 'run',
-          input: { env: 'string', coverage: 'number' },
-          output: { passed: 'boolean' },
-        },
-      ],
-    })
-    expect(iface.methods).toHaveLength(1)
-    expect(iface.methods[0].input?.env).toBe('string')
-  })
-})
+// OxnAssemblyInterface — removed in v3.0
+// OxnAssemblyStage — removed in v3.1
 
 // ========================
 // Assembly Probe 测试
@@ -271,18 +191,6 @@ describe('OxnAssemblyProbe', () => {
 // ========================
 // Assembly Stage 测试
 // ========================
-
-describe('OxnAssemblyStage', () => {
-  test('Stage 引用零件方法', () => {
-    const stage = OxnAssemblyStageSchema.parse({
-      name: 'unit_test',
-      run: 'part.tester.run',
-      deps: ['prepare-env'],
-    })
-    expect(stage.run).toBe('part.tester.run')
-    expect(stage.deps).toEqual(['prepare-env'])
-  })
-})
 
 // ========================
 // Assembly Expectation 测试
@@ -335,8 +243,6 @@ describe('OxnAssemblyBundle', () => {
           type: 'part',
           data: {
             name: 'jest-runner',
-            implements: 'test-runner',
-            isAbstract: false,
             execution: ['probe.run_tests'],
           },
         },
@@ -360,10 +266,9 @@ describe('OxnAssemblyBundle', () => {
           data: {
             name: 'deploy-prod',
             use: '@prj/blueprint/deploy',
-            binding: {
-              partBindings: { worker: '@glo/part/k8s-worker' },
-              propBindings: { env: 'prod' },
-            },
+            slotBindings: [
+              { slot: 'worker', ref: '@glo/parts/k8s-worker', props: { env: 'prod' } },
+            ],
           },
         },
       ],
@@ -447,20 +352,10 @@ describe('与 Mock Pipeline (Task 1.2) 互操作', () => {
 // ========================
 
 describe('Edge Cases', () => {
-  test('isAbstract 缺失时 schema 拒绝', () => {
-    expect(() =>
-      OxnAssemblyPartSchema.parse({
-        name: 'bad-part',
-        execution: [],
-      }),
-    ).toThrow()
-  })
-
   test('空名称被拒绝', () => {
     expect(() =>
       OxnAssemblyPartSchema.parse({
         name: '',
-        isAbstract: false,
         execution: [],
       }),
     ).toThrow()

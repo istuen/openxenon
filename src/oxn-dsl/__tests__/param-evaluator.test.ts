@@ -12,10 +12,13 @@ import {
   type ParamEvalResult,
 } from '../evaluator/param-evaluator'
 import {
-  createConcretePart,
   type OxnAssemblyPart,
   type OxnAssemblyProp,
 } from '../../kernel/schemas/oxn-assembly.schema'
+
+function createConcretePart(params: { name: string; props?: OxnAssemblyProp[]; probes?: OxnAssemblyPart['probes']; execution?: string[] }): OxnAssemblyPart {
+  return { name: params.name, description: undefined, props: params.props || [], probes: params.probes || [], execution: params.execution || [] }
+}
 
 // ========================
 // 覆盖率校验

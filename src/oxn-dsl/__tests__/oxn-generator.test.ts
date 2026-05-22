@@ -1,9 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import {
   convertProbeDeclaration,
-  convertInterfaceDeclaration,
   convertPartDeclaration,
-  convertAbstractPartDeclaration,
   convertBlueprintDeclaration,
   convertTaskDeclaration,
   generateOxnAssembly,
@@ -14,9 +12,7 @@ import {
 import type {
   OXNDocument,
   ProbeDeclaration,
-  InterfaceDeclaration,
   PartDeclaration,
-  AbstractPartDeclaration,
   BlueprintDeclaration,
   TaskDeclaration,
   PropDeclaration,
@@ -139,71 +135,11 @@ describe('convertProbeDeclaration', () => {
   })
 })
 
-describe('convertInterfaceDeclaration', () => {
-  test('完整接口转换', () => {
-    const iface: InterfaceDeclaration = {
-      $type: 'InterfaceDeclaration',
-      $containerProperty: '',
-      $containerIndex: 0,
-      name: 'test-runner',
-      methods: [
-        {
-          $type: 'MethodDeclaration',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'run',
-          input: {
-            $type: 'MethodIO',
-            $containerProperty: '',
-            $containerIndex: 0,
-            role: 'input',
-            fields: [
-              {
-                $type: 'OutputField',
-                $containerProperty: '',
-                $containerIndex: 0,
-                name: 'env',
-                type: 'string',
-              } as OutputField,
-              {
-                $type: 'OutputField',
-                $containerProperty: '',
-                $containerIndex: 0,
-                name: 'coverage',
-                type: 'number',
-              } as OutputField,
-            ],
-          } as MethodIO,
-          output: {
-            $type: 'MethodIO',
-            $containerProperty: '',
-            $containerIndex: 0,
-            role: 'output',
-            fields: [
-              {
-                $type: 'OutputField',
-                $containerProperty: '',
-                $containerIndex: 0,
-                name: 'passed',
-                type: 'boolean',
-              } as OutputField,
-            ],
-          } as MethodIO,
-        } as MethodDeclaration,
-      ],
-    } as InterfaceDeclaration
-
-    const result = convertInterfaceDeclaration(iface)
-    expect(result.name).toBe('test-runner')
-    expect(result.methods).toHaveLength(1)
-    expect(result.methods[0].name).toBe('run')
-    expect(result.methods[0].input).toEqual({ env: 'string', coverage: 'number' })
-    expect(result.methods[0].output).toEqual({ passed: 'boolean' })
-  })
-})
+// convertInterfaceDeclaration — removed in v3.0 (Interface abolished)
+// convertAbstractPartDeclaration — removed in v3.0 (AbstractPart abolished)
 
 describe('convertPartDeclaration', () => {
-  test('具象零件 (isAbstract=false) 含 execution', () => {
+  test('具象零件含 execution', () => {
     const part: PartDeclaration = {
       $type: 'PartDeclaration',
       $containerProperty: '',
@@ -223,7 +159,6 @@ describe('convertPartDeclaration', () => {
 
     const result = convertPartDeclaration(part)
     expect(result.name).toBe('jest-runner')
-    expect(result.isAbstract).toBe(false)
     expect(result.description).toBe('Jest 测试执行器')
     expect(result.props).toHaveLength(2)
     expect(result.probes).toHaveLength(1)
@@ -232,26 +167,8 @@ describe('convertPartDeclaration', () => {
   })
 })
 
-describe('convertAbstractPartDeclaration', () => {
-  test('抽象零件 isAbstract=true 无 execution', () => {
-    const ap: AbstractPartDeclaration = {
-      $type: 'AbstractPartDeclaration',
-      $containerProperty: '',
-      $containerIndex: 0,
-      name: 'tester',
-      implements: { $refText: 'test-runner', ref: 'test-runner' } as any,
-    } as AbstractPartDeclaration
-
-    const result = convertAbstractPartDeclaration(ap)
-    expect(result.name).toBe('tester')
-    expect(result.isAbstract).toBe(true)
-    expect(result.execution).toEqual([])
-    expect(result.probes).toEqual([])
-  })
-})
-
 describe('convertBlueprintDeclaration', () => {
-  test('完整 Blueprint 转换 (含 abstractPart, stage, expectation, rule)', () => {
+  test('完整 Blueprint 转换 (含 slot, expectation, rule)', () => {
     const bp: BlueprintDeclaration = {
       $type: 'BlueprintDeclaration',
       $containerProperty: '',
@@ -260,25 +177,15 @@ describe('convertBlueprintDeclaration', () => {
       version: 1,
       descriptions: [],
       props: [mProp('env', 'enum("dev", "staging", "prod")', false, 'dev'), mProp('coverage', 'number', false, 80)],
-      abstractParts: [
-        {
-          $type: 'AbstractPartInBlueprint',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'tester',
-          implements: { $refText: 'test-runner', ref: 'test-runner' } as any,
-        },
-      ],
-      stages: [
-        {
-          $type: 'StageDeclaration',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'unit_test',
-          run: mExecRef('part', 'tester'),
-          deps: [],
-        } as StageDeclaration,
-      ],
+      parts: [{
+        $type: 'PartInBlueprint', $containerProperty: '', $containerIndex: 0,
+        name: 'jest-runner', ref: '@prj/parts/jest-runner', propBindings: [],
+        deps: [],
+      }],
+      partSlots: [{
+        $type: 'PartSlotDeclaration', $containerProperty: '', $containerIndex: 0,
+        name: 'lint', deps: ['jest-runner'],
+      }],
       expectations: [
         {
           $type: 'ExpectationDeclaration',
@@ -331,14 +238,14 @@ describe('convertBlueprintDeclaration', () => {
     expect(result.props).toHaveLength(2)
     expect(result.props[0].type).toContain('enum')
 
-    // Abstract parts
-    expect(result.abstractParts).toHaveLength(1)
-    expect(result.abstractParts[0].name).toBe('tester')
-    expect(result.abstractParts[0].isAbstract).toBe(true)
+    // Parts (A class)
+    expect(result.blueprintParts).toHaveLength(1)
+    expect(result.blueprintParts[0].name).toBe('jest-runner')
 
-    // Stages
-    expect(result.stages).toHaveLength(1)
-    expect(result.stages[0].name).toBe('unit_test')
+    // Slots (B class)
+    expect(result.slots).toHaveLength(1)
+    expect(result.slots[0].name).toBe('lint')
+    expect(result.slots[0].deps).toEqual(['jest-runner'])
 
     // Expectations
     expect(result.expectations).toHaveLength(1)
@@ -362,27 +269,11 @@ describe('convertTaskDeclaration', () => {
       $containerIndex: 0,
       name: 'validate-feature-auth',
       use: '@prj/blueprint/feature-pipeline',
-      bindings: [
+      slotBindings: [
         {
-          $type: 'PartBinding',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'tester',
-          ref: '@glo/part/jest-runner',
-        },
-        {
-          $type: 'PropBinding',
-          $containerProperty: '',
-          $containerIndex: 0,
-          prop: 'env',
-          value: 'prod',
-        },
-        {
-          $type: 'PropBinding',
-          $containerProperty: '',
-          $containerIndex: 0,
-          prop: 'coverage',
-          value: 90,
+          $type: 'SlotBinding', $containerProperty: '', $containerIndex: 0,
+          slot: 'tester', ref: '@glo/parts/jest-runner',
+          props: [{ $type: 'SlotPropBinding', $containerProperty: '', $containerIndex: 0, name: 'env', value: 'prod' }],
         },
       ],
     } as TaskDeclaration
@@ -390,9 +281,9 @@ describe('convertTaskDeclaration', () => {
     const result = convertTaskDeclaration(task)
     expect(result.name).toBe('validate-feature-auth')
     expect(result.use).toBe('@prj/blueprint/feature-pipeline')
-    expect(result.binding.partBindings.tester).toBe('@glo/part/jest-runner')
-    expect(result.binding.propBindings.env).toBe('prod')
-    expect(result.binding.propBindings.coverage).toBe(90)
+    expect(result.slotBindings).toHaveLength(1)
+    expect(result.slotBindings[0].slot).toBe('tester')
+    expect(result.slotBindings[0].ref).toBe('@glo/parts/jest-runner')
   })
 })
 
@@ -415,13 +306,6 @@ describe('generateOxnAssembly — 完整 Bundle', () => {
           output: [],
         } as ProbeDeclaration,
         {
-          $type: 'InterfaceDeclaration',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'test-runner',
-          methods: [],
-        } as InterfaceDeclaration,
-        {
           $type: 'PartDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
@@ -438,8 +322,8 @@ describe('generateOxnAssembly — 完整 Bundle', () => {
           name: 'ci-pipeline',
           descriptions: [],
           props: [],
-          abstractParts: [],
-          stages: [],
+          parts: [],
+          partSlots: [],
           expectations: [],
           rules: [],
         } as BlueprintDeclaration,
@@ -449,17 +333,16 @@ describe('generateOxnAssembly — 完整 Bundle', () => {
           $containerIndex: 0,
           name: 'deploy-prod',
           use: '@prj/blueprint/ci-pipeline',
-          bindings: [],
+          slotBindings: [],
         } as TaskDeclaration,
       ],
     } as OXNDocument
 
     const bundle = generateOxnAssembly(doc)
-    expect(bundle.entities).toHaveLength(5)
+    expect(bundle.entities).toHaveLength(4)
 
     const types = bundle.entities.map((e) => e.type)
     expect(types).toContain('probe')
-    expect(types).toContain('interface')
     expect(types).toContain('part')
     expect(types).toContain('blueprint')
     expect(types).toContain('task')
@@ -494,13 +377,6 @@ describe('categorizeEntities', () => {
           output: [],
         } as ProbeDeclaration,
         {
-          $type: 'InterfaceDeclaration',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'i1',
-          methods: [],
-        } as InterfaceDeclaration,
-        {
           $type: 'PartDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
@@ -511,11 +387,15 @@ describe('categorizeEntities', () => {
           refs: [],
         } as PartDeclaration,
         {
-          $type: 'AbstractPartDeclaration',
+          $type: 'PartDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
-          name: 'a1',
-        } as AbstractPartDeclaration,
+          name: 'part2',
+          descriptions: [],
+          props: [],
+          probes: [],
+          refs: [],
+        } as PartDeclaration,
         {
           $type: 'BlueprintDeclaration',
           $containerProperty: '',
@@ -523,8 +403,8 @@ describe('categorizeEntities', () => {
           name: 'bp1',
           descriptions: [],
           props: [],
-          abstractParts: [],
-          stages: [],
+          parts: [],
+          partSlots: [],
           expectations: [],
           rules: [],
         } as BlueprintDeclaration,
@@ -534,27 +414,16 @@ describe('categorizeEntities', () => {
           $containerIndex: 0,
           name: 't1',
           use: '',
-          bindings: [],
+          slotBindings: [],
         } as TaskDeclaration,
       ],
     } as OXNDocument
 
     const result = categorizeEntities(doc)
     expect(result.probes).toHaveLength(2)
-    expect(result.interfaces).toHaveLength(1)
-    expect(result.parts).toHaveLength(2) // 1 concrete + 1 abstract
+    expect(result.parts).toHaveLength(2)
     expect(result.blueprints).toHaveLength(1)
     expect(result.tasks).toHaveLength(1)
-
-    // Abstract part should have isAbstract=true
-    const abstractPart = result.parts.find((p) => p.name === 'a1')
-    expect(abstractPart).toBeDefined()
-    expect(abstractPart!.isAbstract).toBe(true)
-
-    // Concrete part should have isAbstract=false
-    const concretePart = result.parts.find((p) => p.name === 'part1')
-    expect(concretePart).toBeDefined()
-    expect(concretePart!.isAbstract).toBe(false)
   })
 })
 
@@ -571,8 +440,8 @@ describe('Edge Cases', () => {
       name: 'empty-bp',
       descriptions: [],
       props: [],
-      abstractParts: [],
-      stages: [],
+      parts: [],
+      partSlots: [],
       expectations: [],
       rules: [],
     } as BlueprintDeclaration
@@ -583,18 +452,7 @@ describe('Edge Cases', () => {
     expect(() => validateOxnAssemblyIR(result)).not.toThrow()
   })
 
-  test('抽象零件无 implements', () => {
-    const ap: AbstractPartDeclaration = {
-      $type: 'AbstractPartDeclaration',
-      $containerProperty: '',
-      $containerIndex: 0,
-      name: 'standalone',
-    } as AbstractPartDeclaration
-
-    const result = convertAbstractPartDeclaration(ap)
-    expect(result.isAbstract).toBe(true)
-    expect(result.implements).toBeUndefined()
-  })
+// 抽象零件测试 — removed in v3.0
 
   test('PartProbe 无 ref 和 params', () => {
     const part: PartDeclaration = {

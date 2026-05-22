@@ -6,7 +6,11 @@ import { join } from 'path'
 // Task 3.1: Sandbox Manager
 // ========================
 import { TaskSandbox, type SandboxState } from '../../kernel/task/sandbox-manager'
-import { createConcretePart, createOxnAssemblyIR, createAbstractPart } from '../../kernel/schemas/oxn-assembly.schema'
+import { createOxnAssemblyIR, type OxnAssemblyPart, type OxnAssemblyIR } from '../../kernel/schemas/oxn-assembly.schema'
+
+function createConcretePart(params: { name: string; execution?: string[] }): OxnAssemblyPart {
+  return { name: params.name, description: undefined, props: [], probes: [], execution: params.execution || [] }
+}
 
 describe('TaskSandbox (Task 3.1)', () => {
   const tmpDir = '/tmp/oxn-sandbox-test'

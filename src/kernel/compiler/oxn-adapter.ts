@@ -228,12 +228,9 @@ export class OxnKernelAdapter {
       })
     }
 
-    // Legacy: concreteParts (从 .oxn 文件内联的 Part)
+    // Legacy: concreteParts (从 .oxn 文件内联的 Part) — 与 slot 合并
     if (ir.concreteParts.length > 0) {
       for (const part of ir.concreteParts) {
-        if (partIdSet.has(part.name)) continue
-        partIdSet.add(part.name)
-
         const slotBinding = Array.from(Object.entries(boundSlots))
           .find(([, b]) => b.ref && b.ref.split('/').pop() === part.name)?.[1]
 
@@ -243,9 +240,32 @@ export class OxnKernelAdapter {
         }
 
         const frozenPart = adaptConcretePart(part, resolvedParams)
-        const slotDeps = slotDepsMap.get(part.name) || []
-        frozenPart.deps = slotDeps
-        frozenParts.push(frozenPart)
+
+        // 找到引用该 concrete part 的 slot，合并 deps + 使用 slot name
+        const matchingSlot = Array.from(Object.entries(boundSlots))
+          .find(([, b]) => b.ref && b.ref.split('/').pop() === part.name)
+        if (matchingSlot) {
+          const [slotName] = matchingSlot
+          const slotDeps = slotDepsMap.get(slotName) || []
+          frozenPart.deps = slotDeps
+          // 替换之前 slot 生成的空壳
+          const existingIdx = frozenParts.findIndex((p) => p.id === slotName)
+          if (existingIdx >= 0) {
+            frozenParts[existingIdx] = {
+              ...frozenPart,
+              id: slotName,
+              name: slotName,
+            }
+          } else {
+            partIdSet.add(part.name)
+            frozenParts.push(frozenPart)
+          }
+        } else {
+          if (partIdSet.has(part.name)) continue
+          partIdSet.add(part.name)
+          frozenPart.deps = slotDepsMap.get(part.name) || []
+          frozenParts.push(frozenPart)
+        }
       }
     }
 
