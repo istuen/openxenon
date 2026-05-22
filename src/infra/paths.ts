@@ -1,6 +1,7 @@
 import { homedir } from 'os'
 import { join } from 'path'
-import { BOUNDARY_DIR } from '../kernel/constants'
+
+export const BOUNDARY_DIR = '.openxenon'
 
 export const GLOBAL_BOUNDARY = join(homedir(), '.openxenon')
 
@@ -23,9 +24,7 @@ export function resolveForgeRoot(scope: Scope, cwd?: string): string {
 }
 
 export function resolveHallRoot(scope: Scope, cwd?: string): string {
-  return scope === 'global'
-    ? join(GLOBAL_BOUNDARY, 'hall')
-    : join(getProjectBoundary(cwd), 'hall')
+  return scope === 'global' ? join(GLOBAL_BOUNDARY, 'hall') : join(getProjectBoundary(cwd), 'hall')
 }
 
 export const GLOBAL_ARSENALS_ROOT = join(GLOBAL_BOUNDARY, 'arsenals')

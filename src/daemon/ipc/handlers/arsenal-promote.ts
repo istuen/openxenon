@@ -1,6 +1,6 @@
 import { registerRoute } from '../router'
 import { globalArsenalRegistry } from '../../registry'
-import { existsSync, renameSync } from 'fs'
+import { existsSync, renameSync } from '../../../infra/filesystem'
 import { join } from 'path'
 import type { AssetType } from '../../../arsenals/paths'
 
@@ -9,19 +9,16 @@ interface PromoteRequest {
   assetType: AssetType
 }
 
-async function handleArsenalPromote(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleArsenalPromote(request: Request, projectPath: string): Promise<Response> {
   try {
-    const body = await request.json() as PromoteRequest
+    const body = (await request.json()) as PromoteRequest
     const { asset, assetType } = body
 
     if (!asset || !assetType) {
-      return new Response(
-        JSON.stringify({ error: 'InvalidRequest', message: 'asset and assetType are required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'InvalidRequest', message: 'asset and assetType are required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     const projectBoundary = projectPath || process.cwd()
@@ -30,7 +27,7 @@ async function handleArsenalPromote(
     if (!existsSync(draftPath)) {
       return new Response(
         JSON.stringify({ error: 'NotFound', message: `Draft asset not found: ${asset}/${assetType}` }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
+        { status: 404, headers: { 'Content-Type': 'application/json' } },
       )
     }
 
@@ -39,7 +36,7 @@ async function handleArsenalPromote(
     if (existsSync(canonicalPath)) {
       return new Response(
         JSON.stringify({ error: 'Conflict', message: `Canonical asset already exists: ${asset}/${assetType}` }),
-        { status: 409, headers: { 'Content-Type': 'application/json' } }
+        { status: 409, headers: { 'Content-Type': 'application/json' } },
       )
     }
 
@@ -53,16 +50,16 @@ async function handleArsenalPromote(
         asset,
         assetType,
         fromPath: draftPath,
-        toPath: canonicalPath
+        toPath: canonicalPath,
       }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
+      { status: 200, headers: { 'Content-Type': 'application/json' } },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    return new Response(
-      JSON.stringify({ error: 'InternalError', message: errorMessage }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: 'InternalError', message: errorMessage }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 }
 

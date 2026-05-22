@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, statSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, statSync } from './filesystem'
 import { join } from 'path'
-import { computeContentHash, type FrozenBlueprint } from '../schemas/frozen-schema'
-import { BOUNDARY_DIR } from '../constants'
+// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): FrozenBlueprint type + computeContentHash are pure; move to shared or accept
+import { computeContentHash, type FrozenBlueprint } from '../kernel/schemas/frozen-schema'
+import { BOUNDARY_DIR } from './paths'
 
 export function readCacheManifest(projectBoundary?: string): Record<string, Record<string, string>> {
   const base = projectBoundary || join(process.cwd(), BOUNDARY_DIR)
@@ -73,13 +74,17 @@ export class CompileCache {
     }
   }
 
-  set(blueprintContent: string, frozenBlueprint: FrozenBlueprint, dependencyHashes: Record<string, string> = {}): CacheEntry {
+  set(
+    blueprintContent: string,
+    frozenBlueprint: FrozenBlueprint,
+    dependencyHashes: Record<string, string> = {},
+  ): CacheEntry {
     const hash = this.getCacheKey(blueprintContent)
     const entry: CacheEntry = {
       hash,
       frozenBlueprint,
       timestamp: Date.now(),
-      dependencyHashes
+      dependencyHashes,
     }
 
     this.memoryCache.set(hash, entry)
@@ -148,7 +153,7 @@ export class CompileCache {
 
     try {
       const files = readdirSync(this.cacheDir)
-      count = files.filter(f => f.endsWith('.json')).length
+      count = files.filter((f) => f.endsWith('.json')).length
 
       for (const file of files) {
         if (file.endsWith('.json')) {

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync } from '../../infra/filesystem'
 import { join } from 'path'
 import { missingProjectPath, projectNotFound } from './errors'
 import { BOUNDARY_DIR, CONFIG_FILE } from '../../kernel/constants'
@@ -42,7 +42,7 @@ export function loadProjectContext(projectPath: string | null): ProjectContext |
   return {
     projectPath,
     configPath,
-    mode
+    mode,
   }
 }
 

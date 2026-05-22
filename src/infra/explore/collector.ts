@@ -6,6 +6,7 @@
 import { glob } from 'glob'
 import { readFile, mkdir, writeFile, readdir } from 'node:fs/promises'
 import { join } from 'path'
+// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move shared types out of kernel, infra should not depend on kernel
 import type {
   ExplorationContext,
   ExplorationAsset,
@@ -18,9 +19,7 @@ import type {
 /**
  * 采集探索上下文
  */
-export async function collectContext(
-  projectRoot: string
-): Promise<ExplorationContext> {
+export async function collectContext(projectRoot: string): Promise<ExplorationContext> {
   const projectFiles = await scanProjectFiles(projectRoot)
   const projectDirs = aggregateDirs(projectFiles)
   const probes = await collectProbes(projectRoot)
@@ -52,10 +51,7 @@ async function scanProjectFiles(projectRoot: string): Promise<string[]> {
  * 聚合目录信息
  */
 function aggregateDirs(files: string[]): ProjectDir[] {
-  const dirMap = new Map<
-    string,
-    { files: string[]; hasTests: boolean }
-  >()
+  const dirMap = new Map<string, { files: string[]; hasTests: boolean }>()
 
   for (const file of files) {
     // 只取 src/ 下的一级子目录
@@ -100,29 +96,21 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
       const probePath = join(arsenalDir, 'probes', name)
       const stat = await readdir(probePath)
       if (stat.includes('canonical.yaml')) {
-        const content = await readFile(
-          join(probePath, 'canonical.yaml'),
-          'utf-8'
-        )
+        const content = await readFile(join(probePath, 'canonical.yaml'), 'utf-8')
         const parsed = { _raw: content }
         coverages.push({
           type: parsed.type as string,
-          pattern: (parsed.props as Array<{ name: string; value?: string }>)?.find(
-            (p) => p.name === 'pattern'
-          )?.value || '',
+          pattern:
+            (parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value || '',
           source: 'canonical',
         })
       } else if (stat.includes('draft.yaml')) {
-        const content = await readFile(
-          join(probePath, 'draft.yaml'),
-          'utf-8'
-        )
+        const content = await readFile(join(probePath, 'draft.yaml'), 'utf-8')
         const parsed = { _raw: content }
         coverages.push({
           type: parsed.type as string,
-          pattern: (parsed.props as Array<{ name: string; value?: string }>)?.find(
-            (p) => p.name === 'pattern'
-          )?.value || '',
+          pattern:
+            (parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value || '',
           source: 'draft',
         })
       }
@@ -146,9 +134,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
 /**
  * 解析 Blueprint 引用
  */
-async function collectBlueprintRefs(
-  projectRoot: string
-): Promise<BlueprintProbeRef[]> {
+async function collectBlueprintRefs(projectRoot: string): Promise<BlueprintProbeRef[]> {
   const refMap = new Map<string, number>()
   const taskDir = join(projectRoot, '.openxenon', 'tasks')
 
@@ -185,9 +171,7 @@ async function collectBlueprintRefs(
 /**
  * 采集 Trace 汇总
  */
-async function collectTraceSummary(
-  _projectRoot: string
-): Promise<TraceSummary | undefined> {
+async function collectTraceSummary(_projectRoot: string): Promise<TraceSummary | undefined> {
   // Phase 1 暂不实现 Trace 分析
   return undefined
 }
@@ -195,10 +179,7 @@ async function collectTraceSummary(
 /**
  * 加载探索器资产
  */
-export async function loadExplorationAssets(
-  projectRoot: string,
-  names?: string[]
-): Promise<ExplorationAsset[]> {
+export async function loadExplorationAssets(projectRoot: string, names?: string[]): Promise<ExplorationAsset[]> {
   const assets: ExplorationAsset[] = []
   const explorationsDir = join(projectRoot, 'src', 'arsenals', 'explorations')
 
@@ -233,11 +214,7 @@ export async function loadExplorationAssets(
 /**
  * 写入探索报告
  */
-export async function saveReport(
-  projectRoot: string,
-  filename: string,
-  markdown: string
-): Promise<string> {
+export async function saveReport(projectRoot: string, filename: string, markdown: string): Promise<string> {
   const dir = join(projectRoot, '.openxenon', 'explore')
   await mkdir(dir, { recursive: true })
   const filepath = join(dir, filename)

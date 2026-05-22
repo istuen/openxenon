@@ -1,4 +1,5 @@
 import { parse as parseYaml } from 'yaml'
+// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): pure functions to kernel, loadStandardByName via higher-order injection
 import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, loadStandardByName } from '../../infra/loader'
 import { BUILTIN_PARTS } from '../../arsenals/builtin'
 import type { PartDefinition } from '../schemas/part-asset'
@@ -24,14 +25,11 @@ export function resolveBuiltinPart(name: string): PartDefinition | null {
     spec: builtin.spec,
     action: builtin.action,
     probes: builtin.probes as PartDefinition['probes'],
-    deps: builtin.deps
+    deps: builtin.deps,
   }
 }
 
-export function resolvePartRef(
-  ref: string,
-  projectBoundary: string
-): PartResolution {
+export function resolvePartRef(ref: string, projectBoundary: string): PartResolution {
   if (isBareProbeRef(ref)) {
     throw new Error(`Part ref "${ref}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
   }
@@ -53,7 +51,7 @@ export function resolvePartRef(
       found: part !== null,
       part: part ?? undefined,
       namespace: 'oxn',
-      rawRef: ref
+      rawRef: ref,
     }
   }
 
@@ -68,7 +66,7 @@ export function resolvePartRef(
           namespace: 'scope',
           scopeName,
           originalPath: partData.path,
-          rawRef: ref
+          rawRef: ref,
         }
       } catch {
         return { found: false, namespace: 'scope', scopeName, rawRef: ref }
@@ -87,7 +85,7 @@ export function resolvePartRef(
           part,
           namespace: 'project',
           originalPath: partData.path,
-          rawRef: ref
+          rawRef: ref,
         }
       } catch {
         return { found: false, namespace: 'project', rawRef: ref }

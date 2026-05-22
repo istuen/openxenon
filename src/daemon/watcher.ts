@@ -1,4 +1,4 @@
-import { watch, type FSWatcher } from 'fs'
+import { watch, type FSWatcher } from '../infra/filesystem'
 import { daemonLogger } from './logger'
 
 export interface WatcherConfig {
@@ -20,7 +20,7 @@ const DEFAULT_CONFIG: WatcherConfig = {
   watchPaths: ['src', 'tests'],
   ignorePaths: ['node_modules', 'dist', '.git', '.openxenon'],
   extensions: ['.ts', '.js', '.yaml', '.yml', '.json'],
-  debounceMs: 500
+  debounceMs: 500,
 }
 
 export class FileWatcher {
@@ -108,7 +108,7 @@ export class FileWatcher {
       const event: WatchEvent = {
         path,
         type: type as WatchEvent['type'],
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }
 
       daemonLogger.info(`File ${type}: ${path}`)
@@ -117,7 +117,7 @@ export class FileWatcher {
         try {
           const result = callback(event)
           if (result instanceof Promise) {
-            result.catch(err => daemonLogger.error(`Callback error: ${err}`))
+            result.catch((err) => daemonLogger.error(`Callback error: ${err}`))
           }
         } catch (err) {
           daemonLogger.error(`Callback error: ${err}`)

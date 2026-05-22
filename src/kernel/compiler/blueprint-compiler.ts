@@ -2,7 +2,6 @@ import type { Blueprint } from '../schemas/blueprint.schema'
 import type { FrozenBlueprint } from '../schemas/frozen-schema'
 import { computeContentHash } from '../schemas/frozen-schema'
 import { validateDagTopology, type DagNode } from '../schemas/dag-validator'
-import { compileCache } from './compile-cache'
 
 export interface CompileContext {
   taskId: string
@@ -46,13 +45,18 @@ function evaluateCondition(condition: string, params: Record<string, unknown>): 
   return operator === '==' ? value === expected : value !== expected
 }
 
-function resolveParams(partContent: Record<string, unknown>, providedParams: Record<string, unknown> = {}): Record<string, unknown> {
-  const propsSchema = partContent.props as {
-    type: string
-    properties?: Record<string, { type: string; default?: unknown; description?: string }>
-    required?: string[]
-    default?: Record<string, unknown>
-  } | undefined
+function resolveParams(
+  partContent: Record<string, unknown>,
+  providedParams: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const propsSchema = partContent.props as
+    | {
+        type: string
+        properties?: Record<string, { type: string; default?: unknown; description?: string }>
+        required?: string[]
+        default?: Record<string, unknown>
+      }
+    | undefined
 
   if (!propsSchema) return { ...providedParams }
 
@@ -79,7 +83,7 @@ function resolveParams(partContent: Record<string, unknown>, providedParams: Rec
 
 function mergeProbes(
   baseProbes: Array<Record<string, unknown>>,
-  partProbes: Array<Record<string, unknown>>
+  partProbes: Array<Record<string, unknown>>,
 ): Array<Record<string, unknown>> {
   if (partProbes.length > 0) {
     return partProbes
@@ -89,9 +93,9 @@ function mergeProbes(
 
 function pruneParts(
   parts: Array<Record<string, unknown>>,
-  params: Record<string, unknown> = {}
+  params: Record<string, unknown> = {},
 ): Array<Record<string, unknown>> {
-  return parts.filter(part => {
+  return parts.filter((part) => {
     const condition = part.condition as string | undefined
     if (!condition) return true
     return evaluateCondition(condition, params)
@@ -99,33 +103,35 @@ function pruneParts(
 }
 
 function renderString(str: string, ctx: CompileContext): string {
-  return str.replace(/\{\{([^}]+)\}\}/g, (_match, expr) => {
-    const trimmed = expr.trim()
-    if (trimmed.startsWith('params.')) {
-      const key = trimmed.slice(7)
-      const value = ctx.params?.[key]
-      return value !== undefined ? String(value) : ''
-    }
-    if (trimmed.startsWith('task.')) {
-      const key = trimmed.slice(5)
-      if (key === 'id') return ctx.taskId
-      if (key === 'name') return ctx.taskName
-    }
-    return `{{${trimmed}}}`
-  }).replace(/\$\{([^}]+)\}/g, (_match, expr) => {
-    const trimmed = expr.trim()
-    if (trimmed.startsWith('params.')) {
-      const key = trimmed.slice(7)
-      const value = ctx.params?.[key]
-      return value !== undefined ? String(value) : ''
-    }
-    if (trimmed.startsWith('task.')) {
-      const key = trimmed.slice(5)
-      if (key === 'id') return ctx.taskId
-      if (key === 'name') return ctx.taskName
-    }
-    return `\${${trimmed}}`
-  })
+  return str
+    .replace(/\{\{([^}]+)\}\}/g, (_match, expr) => {
+      const trimmed = expr.trim()
+      if (trimmed.startsWith('params.')) {
+        const key = trimmed.slice(7)
+        const value = ctx.params?.[key]
+        return value !== undefined ? String(value) : ''
+      }
+      if (trimmed.startsWith('task.')) {
+        const key = trimmed.slice(5)
+        if (key === 'id') return ctx.taskId
+        if (key === 'name') return ctx.taskName
+      }
+      return `{{${trimmed}}}`
+    })
+    .replace(/\$\{([^}]+)\}/g, (_match, expr) => {
+      const trimmed = expr.trim()
+      if (trimmed.startsWith('params.')) {
+        const key = trimmed.slice(7)
+        const value = ctx.params?.[key]
+        return value !== undefined ? String(value) : ''
+      }
+      if (trimmed.startsWith('task.')) {
+        const key = trimmed.slice(5)
+        if (key === 'id') return ctx.taskId
+        if (key === 'name') return ctx.taskName
+      }
+      return `\${${trimmed}}`
+    })
 }
 
 function renderValue(value: unknown, ctx: CompileContext): unknown {
@@ -133,7 +139,7 @@ function renderValue(value: unknown, ctx: CompileContext): unknown {
     return renderString(value, ctx)
   }
   if (Array.isArray(value)) {
-    return value.map(v => renderValue(v, ctx))
+    return value.map((v) => renderValue(v, ctx))
   }
   if (value !== null && typeof value === 'object') {
     const result: Record<string, unknown> = {}
@@ -164,7 +170,7 @@ function renderTemplates(part: Record<string, unknown>, ctx: CompileContext): Re
 
   const probes = result.probes as Array<Record<string, unknown>> | undefined
   if (probes) {
-    result.probes = probes.map(probe => {
+    result.probes = probes.map((probe) => {
       const rendered = { ...probe }
       if (probe.command && typeof probe.command === 'string') {
         rendered.command = renderString(probe.command, ctx)
@@ -182,7 +188,12 @@ function renderTemplates(part: Record<string, unknown>, ctx: CompileContext): Re
   return result
 }
 
-function injectMeta(part: Record<string, unknown>, ref: string, namespace: 'kernel' | 'global' | 'project', originalPath?: string): Record<string, unknown> {
+function injectMeta(
+  part: Record<string, unknown>,
+  ref: string,
+  namespace: 'kernel' | 'global' | 'project',
+  originalPath?: string,
+): Record<string, unknown> {
   const frozenAt = new Date().toISOString()
   const content = JSON.stringify(part)
 
@@ -191,45 +202,32 @@ function injectMeta(part: Record<string, unknown>, ref: string, namespace: 'kern
     resolved_from: namespace,
     original_path: originalPath,
     frozen_at: frozenAt,
-    content_hash: computeContentHash(content)
+    content_hash: computeContentHash(content),
   }
 
-  const probes = (part.probes as Array<Record<string, unknown>> || []).map((probe, idx) => {
+  const probes = ((part.probes as Array<Record<string, unknown>>) || []).map((probe, idx) => {
     const probeRef = (probe.ref as string) || `inline-probe-${idx}`
     return {
       ...probe,
       _xenon_meta: {
         ...meta,
-        ref: probeRef
-      }
+        ref: probeRef,
+      },
     }
   })
 
   return {
     ...part,
     _xenon_meta: meta,
-    probes
+    probes,
   }
 }
 
 export class BlueprintCompiler {
-  compileWithCache(raw: Blueprint, ctx: CompileContext, dependencyHashes: Record<string, string> = {}): FrozenBlueprint {
-    const blueprintContent = JSON.stringify(raw)
-    const cached = compileCache.get(blueprintContent)
-
-    if (cached && compileCache.isValid(cached, dependencyHashes)) {
-      return cached.frozenBlueprint
-    }
-
-    const frozen = this.compile(raw, ctx)
-    compileCache.set(blueprintContent, frozen, dependencyHashes)
-    return frozen
-  }
-
   compile(raw: Blueprint, ctx: CompileContext): FrozenBlueprint {
-    const dagNodes: DagNode[] = (raw.parts || []).map(part => ({
+    const dagNodes: DagNode[] = (raw.parts || []).map((part) => ({
       id: part.id || (part as any).name,
-      deps: part.deps || []
+      deps: part.deps || [],
     }))
 
     const dagResult = validateDagTopology(dagNodes)
@@ -269,7 +267,7 @@ export class BlueprintCompiler {
             ...slotValue,
             id: part.id,
             name: part.name || slotValue.name,
-            deps: part.deps || slotValue.deps || []
+            deps: part.deps || slotValue.deps || [],
           }
         }
       }
@@ -287,8 +285,7 @@ export class BlueprintCompiler {
           const actual = (partContent._version as number) || 1
           if (actual < required) {
             throw new Error(
-              `Part "${part.id}" requires version >= ${required} of "${resolvedRef}", ` +
-              `but got version ${actual}`
+              `Part "${part.id}" requires version >= ${required} of "${resolvedRef}", ` + `but got version ${actual}`,
             )
           }
         }
@@ -301,11 +298,11 @@ export class BlueprintCompiler {
           ...partContent,
           id: part.id || (partContent.id as string),
           name: part.name || (partContent.name as string),
-          deps: part.deps || (partContent.deps as string[] || []),
+          deps: part.deps || (partContent.deps as string[]) || [],
           params: resolvedPartParams,
           target: (part as any).target || (partContent as any).target,
           action: (part as any).action || (partContent as any).action,
-          probes: mergedProbes
+          probes: mergedProbes,
         }
       } else {
         const inlineProbes = (part.probes as Array<Record<string, unknown>>) || []
@@ -318,7 +315,7 @@ export class BlueprintCompiler {
           params: part.params || {},
           target: (part as any).target,
           action: (part as any).action,
-          probes: mergedInlineProbes
+          probes: mergedInlineProbes,
         }
       }
 
@@ -332,7 +329,7 @@ export class BlueprintCompiler {
         rendered,
         resolvedRef || 'inline',
         resolvedRef ? 'project' : 'project',
-        resolvedRef ? `ref:${resolvedRef}` : undefined
+        resolvedRef ? `ref:${resolvedRef}` : undefined,
       )
 
       parts.push(metaPart)
@@ -342,7 +339,7 @@ export class BlueprintCompiler {
       id: raw.id,
       name: raw.name,
       frozen_at: new Date().toISOString(),
-      parts: parts as any
+      parts: parts as any,
     }
   }
 
@@ -360,9 +357,8 @@ export class BlueprintCompiler {
       }
 
       if (part.ref) {
-        const partContent = deps?.parts.get(part.ref) ||
-          deps?.parts.get(`project/${part.ref}`) ||
-          deps?.parts.get(`./${part.ref}`)
+        const partContent =
+          deps?.parts.get(part.ref) || deps?.parts.get(`project/${part.ref}`) || deps?.parts.get(`./${part.ref}`)
         if (partContent) {
           if ((part as any)._depHash && partContent._compiled_hash) {
             const expected = (part as any)._depHash as string
@@ -370,7 +366,7 @@ export class BlueprintCompiler {
             if (actual !== expected) {
               throw new Error(
                 `Part "${part.id}" requires compiled hash "${expected}", ` +
-                `got "${actual}". Dependency updated - re-promote required.`
+                  `got "${actual}". Dependency updated - re-promote required.`,
               )
             }
           }
@@ -380,7 +376,7 @@ export class BlueprintCompiler {
             id: part.id || partContent.id,
             name: part.name || partContent.name,
             deps: part.deps || partContent.deps || [],
-            params: part.params || {}
+            params: part.params || {},
           })
           delete resolved.ref
         }
@@ -396,7 +392,7 @@ export class BlueprintCompiler {
       assembly_at: new Date().toISOString(),
       props: raw.props,
       slots: raw.slots,
-      parts
+      parts,
     }
   }
 
@@ -411,9 +407,7 @@ export class BlueprintCompiler {
         const slotName = resolved._assembly_slot as string
         const slotValue = slots[slotName]
         if (slotValue) {
-          const slotDef = typeof slotValue === 'string'
-            ? { ref: slotValue }
-            : (slotValue as Record<string, unknown>)
+          const slotDef = typeof slotValue === 'string' ? { ref: slotValue } : (slotValue as Record<string, unknown>)
           Object.assign(resolved, slotDef)
         }
       }
@@ -429,9 +423,9 @@ export class BlueprintCompiler {
       parts.push(metaPart)
     }
 
-    const dagNodes: DagNode[] = parts.map(p => ({
+    const dagNodes: DagNode[] = parts.map((p) => ({
       id: (p.id || p.name) as string,
-      deps: (p.deps as string[]) || []
+      deps: (p.deps as string[]) || [],
     }))
     const dagResult = validateDagTopology(dagNodes)
     if (!dagResult.valid) {
@@ -442,7 +436,7 @@ export class BlueprintCompiler {
       id: (assembly.id || assembly.name) as string,
       name: (assembly.name || assembly.id) as string,
       frozen_at: new Date().toISOString(),
-      parts: parts as any
+      parts: parts as any,
     }
   }
 }
@@ -460,9 +454,4 @@ export function compileAssembly(raw: Blueprint, ctx: CompileContext): Record<str
 export function compileFrozen(assembly: Record<string, unknown>, ctx: CompileContext): FrozenBlueprint {
   const compiler = new BlueprintCompiler()
   return compiler.compileFrozen(assembly, ctx)
-}
-
-export function compileBlueprintWithCache(raw: Blueprint, ctx: CompileContext, dependencyHashes: Record<string, string> = {}): FrozenBlueprint {
-  const compiler = new BlueprintCompiler()
-  return compiler.compileWithCache(raw, ctx, dependencyHashes)
 }

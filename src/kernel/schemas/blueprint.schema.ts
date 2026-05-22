@@ -1,28 +1,31 @@
 import { z } from 'zod'
+// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move ProbeTypeSchema and validator fns to kernel/schemas/probe.ts
 import { isValidProbeRef, isBareProbeRef, ProbeTypeSchema } from '../../infra/loader'
 
-export const ProbeInvocationSchema = z.object({
-  type: ProbeTypeSchema,
-  ref: z.string().optional(),
-  params: z.record(z.string(), z.unknown()).optional(),
-  pattern: z.string().optional(),
-  patterns: z.array(z.string()).optional(),
-  command: z.string().optional(),
-  cwd: z.string().optional(),
-}).refine(
-  (data) => {
-    if (data.ref !== undefined) {
-      if (isBareProbeRef(data.ref)) {
-        throw new Error(`Probe ref "${data.ref}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
+export const ProbeInvocationSchema = z
+  .object({
+    type: ProbeTypeSchema,
+    ref: z.string().optional(),
+    params: z.record(z.string(), z.unknown()).optional(),
+    pattern: z.string().optional(),
+    patterns: z.array(z.string()).optional(),
+    command: z.string().optional(),
+    cwd: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.ref !== undefined) {
+        if (isBareProbeRef(data.ref)) {
+          throw new Error(`Probe ref "${data.ref}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
+        }
+        if (!isValidProbeRef(data.ref)) {
+          throw new Error(`Probe ref "${data.ref}" 格式无效`)
+        }
       }
-      if (!isValidProbeRef(data.ref)) {
-        throw new Error(`Probe ref "${data.ref}" 格式无效`)
-      }
-    }
-    return true
-  },
-  { message: 'Probe ref 必须带有命名空间前缀' }
-)
+      return true
+    },
+    { message: 'Probe ref 必须带有命名空间前缀' },
+  )
 
 export type Probe = z.infer<typeof ProbeInvocationSchema>
 
@@ -41,64 +44,74 @@ export const SlotInvocationSchema: z.ZodType<{
   action?: Record<string, unknown>
   spec?: Record<string, unknown>
   probes?: Array<Record<string, unknown>>
-}> = z.union([
-  z.string(),
-  z.object({
-    name: z.string(),
-    inline: z.boolean().optional(),
-    target: z.object({ description: z.string(), glob: z.string().optional() }).optional(),
-    action: z.object({ instruction: z.string().optional(), command: z.string().optional() }).optional(),
-    spec: z.object({ description: z.string(), constraints: z.array(z.string()).optional() }).optional(),
-    probes: z.array(ProbeInvocationSchema).optional(),
+}> = z
+  .union([
+    z.string(),
+    z.object({
+      name: z.string(),
+      inline: z.boolean().optional(),
+      target: z.object({ description: z.string(), glob: z.string().optional() }).optional(),
+      action: z.object({ instruction: z.string().optional(), command: z.string().optional() }).optional(),
+      spec: z.object({ description: z.string(), constraints: z.array(z.string()).optional() }).optional(),
+      probes: z.array(ProbeInvocationSchema).optional(),
+    }),
+  ])
+  .transform((val) => {
+    if (typeof val === 'string') {
+      return { name: val, inline: false }
+    }
+    return { name: val.name, inline: val.inline ?? false, ...val }
   })
-]).transform(val => {
-  if (typeof val === 'string') {
-    return { name: val, inline: false }
-  }
-  return { name: val.name, inline: val.inline ?? false, ...val }
-})
 
 export type SlotInvocation = z.infer<typeof SlotInvocationSchema>
 
-export const PartInvocationSchema = z.object({
-  id: z.string(),
-  name: z.string().optional(),
-  _version: z.number().int().positive().optional().default(1),
-  min_version: z.number().int().positive().optional(),
-  _depHash: z.string().optional(),
-  deps: z.array(z.string()).default([]),
-  ref: z.string().optional(),
-  slot: z.string().optional(),
-  condition: z.string().optional(),
-  params: z.record(z.string(), z.unknown()).optional(),
-  target: z.object({
-    description: z.string(),
-    glob: z.string().optional(),
-  }).optional(),
-  spec: z.object({
-    description: z.string(),
-    constraints: z.array(z.string()).optional(),
-  }).optional(),
-  action: z.object({
-    instruction: z.string().optional(),
-    command: z.string().optional(),
-  }).optional(),
-  probes: z.array(ProbeInvocationSchema).optional(),
-}).refine(
-  (data) => {
-    if (data.condition !== undefined) {
-      const hasRuntimeVar = /\?\s*['"]/.test(data.condition) || /\?\s*"/.test(data.condition)
-      if (hasRuntimeVar) {
-        throw new Error('condition 不允许包含三元表达式等运行时逻辑')
+export const PartInvocationSchema = z
+  .object({
+    id: z.string(),
+    name: z.string().optional(),
+    _version: z.number().int().positive().optional().default(1),
+    min_version: z.number().int().positive().optional(),
+    _depHash: z.string().optional(),
+    deps: z.array(z.string()).default([]),
+    ref: z.string().optional(),
+    slot: z.string().optional(),
+    condition: z.string().optional(),
+    params: z.record(z.string(), z.unknown()).optional(),
+    target: z
+      .object({
+        description: z.string(),
+        glob: z.string().optional(),
+      })
+      .optional(),
+    spec: z
+      .object({
+        description: z.string(),
+        constraints: z.array(z.string()).optional(),
+      })
+      .optional(),
+    action: z
+      .object({
+        instruction: z.string().optional(),
+        command: z.string().optional(),
+      })
+      .optional(),
+    probes: z.array(ProbeInvocationSchema).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.condition !== undefined) {
+        const hasRuntimeVar = /\?\s*['"]/.test(data.condition) || /\?\s*"/.test(data.condition)
+        if (hasRuntimeVar) {
+          throw new Error('condition 不允许包含三元表达式等运行时逻辑')
+        }
       }
-    }
-    if (data.ref !== undefined && data.slot !== undefined) {
-      throw new Error('Part 不能同时包含 ref 和 slot')
-    }
-    return true
-  },
-  { message: 'ref 和 slot 互斥' }
-)
+      if (data.ref !== undefined && data.slot !== undefined) {
+        throw new Error('Part 不能同时包含 ref 和 slot')
+      }
+      return true
+    },
+    { message: 'ref 和 slot 互斥' },
+  )
 
 export type Part = z.infer<typeof PartInvocationSchema>
 
@@ -107,12 +120,17 @@ export const BlueprintSchema = z.object({
   name: z.string(),
   _version: z.number().int().positive().optional().default(1),
   status: z.enum(['DRAFT', 'CANONICAL', 'ABANDONED']).default('CANONICAL'),
-  props: z.record(z.string(), z.object({
-    type: z.string().default('string'),
-    required: z.boolean().default(false),
-    default: z.unknown().optional(),
-    description: z.string().optional()
-  })).optional(),
+  props: z
+    .record(
+      z.string(),
+      z.object({
+        type: z.string().default('string'),
+        required: z.boolean().default(false),
+        default: z.unknown().optional(),
+        description: z.string().optional(),
+      }),
+    )
+    .optional(),
   slots: z.record(z.string(), z.union([z.string(), SlotInvocationSchema])).optional(),
   parts: z.array(PartInvocationSchema).optional(),
   topology: z.array(z.string()).optional(),
@@ -126,7 +144,9 @@ export function parseBlueprint(data: unknown): Blueprint {
   return BlueprintSchema.parse(data)
 }
 
-export function safeParseBlueprint(data: unknown): { success: true; data: Blueprint } | { success: false; error: z.ZodError } {
+export function safeParseBlueprint(
+  data: unknown,
+): { success: true; data: Blueprint } | { success: false; error: z.ZodError } {
   const result = BlueprintSchema.safeParse(data)
   if (result.success) {
     return { success: true, data: result.data }
@@ -135,17 +155,15 @@ export function safeParseBlueprint(data: unknown): { success: true; data: Bluepr
 }
 
 export function hasValidProbeRefs(part: Part): boolean {
-  const allProbes = [
-    ...(part.probes || [])
-  ]
-  return allProbes.every(p => !p.ref || isValidProbeRef(p.ref))
+  const allProbes = [...(part.probes || [])]
+  return allProbes.every((p) => !p.ref || isValidProbeRef(p.ref))
 }
 
 export function extractTemplateVariables(action: { instruction?: string; command?: string } | undefined): string[] {
   if (!action) return []
   const templatePattern = /\{\{([^}]+)\}\}/g
   const vars: string[] = []
-  const text = (action.instruction || action.command || '')
+  const text = action.instruction || action.command || ''
   let match
   while ((match = templatePattern.exec(text)) !== null) {
     if (match[1]) {
@@ -168,7 +186,7 @@ export function validatePartTemplates(part: Part): { valid: boolean; errors: str
     errors.push(`action 模板包含不允许的变量: ${validation.invalidVars.join(', ')}`)
   }
 
-  const hasEnvVar = vars.some(v => v.startsWith('env.'))
+  const hasEnvVar = vars.some((v) => v.startsWith('env.'))
   if (hasEnvVar) {
     errors.push('action 模板禁止使用 env.* 变量')
   }

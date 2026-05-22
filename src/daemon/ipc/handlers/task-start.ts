@@ -2,14 +2,11 @@ import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
 import { badRequest, notFound } from '../errors'
 import { readTaskTrace } from '../../trace/writer'
-import { existsSync } from 'fs'
+import { existsSync } from '../../../infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR } from '../../../kernel/constants'
 
-async function handleTaskStart(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleTaskStart(request: Request, projectPath: string): Promise<Response> {
   try {
     const body = await parseJSONBody<{ taskId?: string }>(request)
 
@@ -30,9 +27,13 @@ async function handleTaskStart(
       return notFound(`Task '${taskId}' not found`)
     }
 
-    const trace = readTaskTrace(
-      { root: taskDir, taskId, blueprintPath: join(taskDir, 'blueprint.oxn'), tracePath: join(taskDir, 'task-trace.jsonl'), manifestPath: join(taskDir, 'state.json') }
-    )
+    const trace = readTaskTrace({
+      root: taskDir,
+      taskId,
+      blueprintPath: join(taskDir, 'blueprint.oxn'),
+      tracePath: join(taskDir, 'task-trace.jsonl'),
+      manifestPath: join(taskDir, 'state.json'),
+    })
 
     if (!trace) {
       return notFound(`Task '${taskId}' not found`)
@@ -41,12 +42,12 @@ async function handleTaskStart(
     return new Response(
       JSON.stringify({
         taskId: taskId,
-        status: trace.status
+        status: trace.status,
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -55,12 +56,12 @@ async function handleTaskStart(
       JSON.stringify({
         error: 'TaskStartFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }

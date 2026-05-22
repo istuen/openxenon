@@ -1,4 +1,17 @@
-import { existsSync, readFileSync, appendFileSync, writeFileSync, renameSync, unlinkSync, statSync, mkdirSync } from 'fs'
+import {
+  existsSync,
+  readFileSync,
+  appendFileSync,
+  writeFileSync,
+  renameSync,
+  unlinkSync,
+  statSync,
+  mkdirSync,
+  rmSync,
+  readdirSync,
+  watch,
+} from 'fs'
+import type { FSWatcher } from 'fs'
 import { dirname } from 'path'
 
 function ensureDir(filePath: string): void {
@@ -115,5 +128,8 @@ export const fs = {
 
   appendOnly(filePath: string, line: string): void {
     appendFileSync(filePath, line + '\n', 'utf-8')
-  }
+  },
 }
+
+export { existsSync, readFileSync, writeFileSync, appendFileSync, renameSync, unlinkSync, statSync, mkdirSync, rmSync, readdirSync, watch }
+export type { FSWatcher }

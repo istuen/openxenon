@@ -7,25 +7,22 @@ import { recoveryManager } from '../../recovery'
 import type { Blueprint } from '../../../kernel/schemas/blueprint.schema'
 import { randomUUID } from 'crypto'
 import { join } from 'path'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, writeFileSync } from '../../../infra/filesystem'
 import { BOUNDARY_DIR, BLUEPRINT_FILE } from '../../../kernel/constants'
 
-async function handleTaskSubmit(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleTaskSubmit(request: Request, projectPath: string): Promise<Response> {
   try {
     if (taskCircuitBreaker.isOpen()) {
       return new Response(
         JSON.stringify({
           error: 'CircuitBreakerOpen',
           message: 'Cannot submit new task due to repeated failures. Please wait and retry.',
-          statusCode: 503
+          statusCode: 503,
         }),
         {
           status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        }
+          headers: { 'Content-Type': 'application/json' },
+        },
       )
     }
 
@@ -58,15 +55,21 @@ async function handleTaskSubmit(
     writeFileSync(blueprintPath, JSON.stringify(blueprintInput, null, 2), 'utf-8')
 
     writeTaskStart(
-      { root: taskDir, taskId, blueprintPath, tracePath: join(taskDir, 'task-trace.jsonl'), manifestPath: join(taskDir, 'state.json') },
+      {
+        root: taskDir,
+        taskId,
+        blueprintPath,
+        tracePath: join(taskDir, 'task-trace.jsonl'),
+        manifestPath: join(taskDir, 'state.json'),
+      },
       taskId,
-      taskName
+      taskName,
     )
 
     recoveryManager.createRecoveryPoint(taskId, 'init', {
       taskName,
       stagesCount: blueprintInput.stages?.length || 0,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     })
 
     return new Response(
@@ -77,12 +80,12 @@ async function handleTaskSubmit(
         status: 'RUNNING',
         stagesCount: blueprintInput.stages?.length || 0,
         circuitBreakerState: taskCircuitBreaker.getState(),
-        message: 'Task created successfully'
+        message: 'Task created successfully',
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -91,12 +94,12 @@ async function handleTaskSubmit(
       JSON.stringify({
         error: 'TaskSubmitFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }

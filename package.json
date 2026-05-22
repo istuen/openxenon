@@ -22,8 +22,14 @@
     "build:windows": "bun build ./src/cli/index.ts --compile --target=bun-windows-x64 --outfile dist/oxn.exe",
     "test": "bun test",
     "test:watch": "bun test --watch",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "biome format --write src/",
+    "format:check": "biome format src/",
+    "check": "biome check src/",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist node_modules",
+    "prepare": "lefthook install",
     "prepublishOnly": "bun run build"
   },
   "dependencies": {
@@ -33,9 +39,14 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@typescript-eslint/eslint-plugin": "^8.59.4",
+    "@typescript-eslint/parser": "^8.59.4",
     "bun-types": "^1.1.38",
+    "eslint": "^10.4.0",
     "langium": "^4.2.4",
     "langium-cli": "^4.2.1",
+    "lefthook": "^2.1.8",
     "typescript": "^5.4.5"
   },
   "engines": {

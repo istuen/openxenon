@@ -5,12 +5,9 @@ import { getTaskDirectory } from '../../../kernel/lib/task-dir'
 import { readTaskTrace, writeTaskStatus } from '../../trace/writer'
 import { processManager } from '../../process-manager'
 import { radarClock } from '../../radar/clock'
-import { existsSync } from 'fs'
+import { existsSync } from '../../../infra/filesystem'
 
-async function handleTaskStop(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleTaskStop(request: Request, projectPath: string): Promise<Response> {
   try {
     const body = await parseJSONBody<{ taskId?: string }>(request)
 
@@ -36,7 +33,7 @@ async function handleTaskStop(
       return notFound(`Task '${taskId}' not found`)
     }
 
-    const currentStage = trace.stages.find(s => s.status === 'RUNNING')
+    const currentStage = trace.stages.find((s) => s.status === 'RUNNING')
     if (currentStage) {
       processManager.killAll()
       radarClock.stopMonitor(taskId, currentStage.id)
@@ -49,12 +46,12 @@ async function handleTaskStop(
         status: 'stopped',
         taskId: taskId,
         taskStatus: 'FAILED',
-        killedProcesses: currentStage ? 1 : 0
+        killedProcesses: currentStage ? 1 : 0,
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -63,12 +60,12 @@ async function handleTaskStop(
       JSON.stringify({
         error: 'TaskStopFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }

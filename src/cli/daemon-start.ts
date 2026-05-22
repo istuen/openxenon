@@ -1,43 +1,50 @@
 import { defineCommand } from 'citty'
+// eslint-disable-next-line no-restricted-imports -- TODO(Phase-2): daemon-start is the daemon entry point, must fork process directly; switch to Bun.spawn via infra
 import { startDaemonWithHealthCheck, isDaemonRunning } from '../daemon/process'
 import { DAEMON_SOCK_PATH } from '../infra/global'
 
 export default defineCommand({
   meta: {
     name: 'daemon-start',
-    description: '启动全局 Core 守护进程'
+    description: '启动全局 Core 守护进程',
   },
   async run() {
     const { isRunning, pid } = isDaemonRunning()
 
     if (isRunning) {
-      console.log(JSON.stringify({
-        ok: true,
-        data: { message: `Daemon 已运行 (PID ${pid})`, pid }
-      }))
+      console.log(
+        JSON.stringify({
+          ok: true,
+          data: { message: `Daemon 已运行 (PID ${pid})`, pid },
+        }),
+      )
       return
     }
 
     const result = await startDaemonWithHealthCheck('./src/server.ts')
 
     if (result.success) {
-      console.log(JSON.stringify({
-        ok: true,
-        data: {
-          message: `Daemon 启动成功 (PID ${result.pid})`,
-          pid: result.pid,
-          healthCheckMs: result.healthCheckMs
-        }
-      }))
+      console.log(
+        JSON.stringify({
+          ok: true,
+          data: {
+            message: `Daemon 启动成功 (PID ${result.pid})`,
+            pid: result.pid,
+            healthCheckMs: result.healthCheckMs,
+          },
+        }),
+      )
     } else {
-      console.log(JSON.stringify({
-        ok: false,
-        error: {
-          code: 'OXN_DAEMON_START_FAILED',
-          message: result.error || '启动失败',
-          suggestion: `检查 ${DAEMON_SOCK_PATH} 是否可访问`
-        }
-      }))
+      console.log(
+        JSON.stringify({
+          ok: false,
+          error: {
+            code: 'OXN_DAEMON_START_FAILED',
+            message: result.error || '启动失败',
+            suggestion: `检查 ${DAEMON_SOCK_PATH} 是否可访问`,
+          },
+        }),
+      )
     }
-  }
+  },
 })

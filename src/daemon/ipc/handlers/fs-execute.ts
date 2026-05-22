@@ -2,19 +2,23 @@ import { registerRoute } from '../router'
 import { badRequest, notFound } from '../errors'
 import type { DaemonPayload } from '../../types/daemon-payload'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { ensureDirectory, directoryExists } from '../../../infra/fs'
-import { readTaskTrace, writeTaskStart, writeTaskStatus, writePartStart, writePartComplete, createProbeResult } from '../../trace/writer'
+import { ensureDirectory, directoryExists } from '../../../infra/filesystem'
+import {
+  readTaskTrace,
+  writeTaskStart,
+  writeTaskStatus,
+  writePartStart,
+  writePartComplete,
+  createProbeResult,
+} from '../../trace/writer'
 import { getProbeHandler, type ProbeResult as InfraProbeResult } from '../../../infra/probes'
 import { evaluateProbe, type ProbeDefinition } from '../../../kernel/probes/evaluator'
 
 const CURRENT_SCHEMA_VERSION = '1.0.0'
 
-async function handleFsExecute(
-  request: Request,
-  _projectPath: string
-): Promise<Response> {
+async function handleFsExecute(request: Request, _projectPath: string): Promise<Response> {
   try {
-    const body = await request.json() as DaemonPayload
+    const body = (await request.json()) as DaemonPayload
 
     if (!body.command || !body.task_id || !body.project_root || !body.policy) {
       return badRequest('Missing required fields: command, task_id, project_root, policy')
@@ -46,17 +50,20 @@ async function handleFsExecute(
       JSON.stringify({
         error: 'FsExecuteFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }
 
-async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typeof getTaskDirectory>): Promise<Response> {
+async function handleExecuteTask(
+  payload: DaemonPayload,
+  taskDir: ReturnType<typeof getTaskDirectory>,
+): Promise<Response> {
   if (!payload.blueprint) {
     return badRequest('EXECUTE_TASK requires blueprint in payload')
   }
@@ -73,12 +80,12 @@ async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typ
       JSON.stringify({
         taskId: payload.task_id,
         status: trace.status,
-        message: 'Task already completed or failed'
+        message: 'Task already completed or failed',
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 
@@ -100,12 +107,12 @@ async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typ
       partState.probes.push(probeResult)
     }
 
-    const allProbesPassed = partState.probes.every(p => p.result === 'PASSED')
+    const allProbesPassed = partState.probes.every((p) => p.result === 'PASSED')
     partState.status = allProbesPassed ? 'PASSED' : 'FAILED'
     writePartComplete(taskDir, payload.task_id, part.id, partState.status)
   }
 
-  const allPassed = Array.from(trace.parts.values()).every(s => s.status === 'PASSED')
+  const allPassed = Array.from(trace.parts.values()).every((s) => s.status === 'PASSED')
   writeTaskStatus(taskDir, payload.task_id, allPassed ? 'COMPLETED' : 'FAILED')
 
   return new Response(
@@ -113,16 +120,19 @@ async function handleExecuteTask(payload: DaemonPayload, taskDir: ReturnType<typ
       taskId: payload.task_id,
       status: allPassed ? 'COMPLETED' : 'FAILED',
       partsCount: payload.blueprint.parts.length,
-      message: allPassed ? 'Task completed successfully' : 'Task failed'
+      message: allPassed ? 'Task completed successfully' : 'Task failed',
     }),
     {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    }
+      headers: { 'Content-Type': 'application/json' },
+    },
   )
 }
 
-async function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typeof getTaskDirectory>): Promise<Response> {
+async function handleExecuteStep(
+  payload: DaemonPayload,
+  taskDir: ReturnType<typeof getTaskDirectory>,
+): Promise<Response> {
   if (!payload.step_id) {
     return badRequest('EXECUTE_STEP requires step_id in payload')
   }
@@ -136,7 +146,7 @@ async function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typ
     return notFound('Task trace not found')
   }
 
-  const part = payload.blueprint.parts.find(s => s.id === payload.step_id)
+  const part = payload.blueprint.parts.find((s) => s.id === payload.step_id)
   if (!part) {
     return notFound(`Part not found: ${payload.step_id}`)
   }
@@ -163,12 +173,12 @@ async function handleExecuteStep(payload: DaemonPayload, taskDir: ReturnType<typ
       taskId: payload.task_id,
       stepId: payload.step_id,
       status: 'PASSED',
-      message: 'Step executed successfully'
+      message: 'Step executed successfully',
     }),
     {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    }
+      headers: { 'Content-Type': 'application/json' },
+    },
   )
 }
 
@@ -187,7 +197,7 @@ function handleVerifyStep(payload: DaemonPayload, taskDir: ReturnType<typeof get
     return notFound(`Part not found: ${payload.step_id}`)
   }
 
-  const allProbesPassed = part.probes.every(p => p.result === 'PASSED')
+  const allProbesPassed = part.probes.every((p) => p.result === 'PASSED')
 
   return new Response(
     JSON.stringify({
@@ -195,12 +205,12 @@ function handleVerifyStep(payload: DaemonPayload, taskDir: ReturnType<typeof get
       stepId: payload.step_id,
       status: part.status,
       allProbesPassed,
-      probes: part.probes
+      probes: part.probes,
     }),
     {
       status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    }
+      headers: { 'Content-Type': 'application/json' },
+    },
   )
 }
 
@@ -213,7 +223,12 @@ async function executeProbe(probeType: string, pattern: string, projectRoot: str
       actualType = 'fs_match'
       const colonIndex = pattern.indexOf(':')
       if (colonIndex === -1) {
-        return { probeType, result: 'FAILED', error: 'fs_content_match requires file:regex format', executedAt: Date.now() }
+        return {
+          probeType,
+          result: 'FAILED',
+          error: 'fs_content_match requires file:regex format',
+          executedAt: Date.now(),
+        }
       }
       const file = pattern.substring(0, colonIndex)
       const regex = pattern.substring(colonIndex + 1)
@@ -237,21 +252,21 @@ async function executeProbe(probeType: string, pattern: string, projectRoot: str
   const context = { projectRoot }
 
   try {
-    const result = await handler(params, context) as InfraProbeResult
+    const result = (await handler(params, context)) as InfraProbeResult
     const definition: ProbeDefinition = { type: actualType, params }
     const verdict = evaluateProbe(definition, result)
 
     return {
       ...result,
       result: verdict.passed ? 'PASSED' : 'FAILED',
-      executedAt: Date.now()
+      executedAt: Date.now(),
     }
   } catch (error) {
     return {
       probeType,
       result: 'FAILED',
       error: error instanceof Error ? error.message : String(error),
-      executedAt: Date.now()
+      executedAt: Date.now(),
     }
   }
 }

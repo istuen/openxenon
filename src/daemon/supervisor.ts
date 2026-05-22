@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
 import { daemonLogger } from './logger'
 import { DAEMON_PID_PATH } from '../infra/global'
 
@@ -18,7 +18,7 @@ export interface SupervisorState {
 const DEFAULT_CONFIG: SupervisorConfig = {
   maxRestartAttempts: 5,
   restartDelayMs: 5000,
-  healthCheckIntervalMs: 30000
+  healthCheckIntervalMs: 30000,
 }
 
 export class DaemonSupervisor {
@@ -33,7 +33,7 @@ export class DaemonSupervisor {
       isRunning: false,
       pid: 0,
       restartCount: 0,
-      lastRestartTime: null
+      lastRestartTime: null,
     }
     this.loadState()
   }
@@ -54,10 +54,14 @@ export class DaemonSupervisor {
 
   private saveState(): void {
     const statePath = DAEMON_PID_PATH.replace('pid', 'supervisor-state')
-    writeFileSync(statePath, JSON.stringify({
-      restartCount: this.state.restartCount,
-      lastRestartTime: this.state.lastRestartTime
-    }), 'utf-8')
+    writeFileSync(
+      statePath,
+      JSON.stringify({
+        restartCount: this.state.restartCount,
+        lastRestartTime: this.state.lastRestartTime,
+      }),
+      'utf-8',
+    )
   }
 
   isProcessRunning(pid: number): boolean {
@@ -84,7 +88,7 @@ export class DaemonSupervisor {
       const { spawn } = require('child_process')
       const proc = spawn('bun', ['run', serverPath], {
         detached: true,
-        stdio: ['ignore', 'ignore', 'ignore']
+        stdio: ['ignore', 'ignore', 'ignore'],
       })
 
       proc.unref()

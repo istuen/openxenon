@@ -1,4 +1,4 @@
-import { fileExists, ensureDirectory, writeFile, deleteFile } from './infra/fs'
+import { fileExists, ensureDirectory, writeFile, deleteFile } from './infra/filesystem'
 import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from './infra/global'
 import { daemonLogger } from './daemon/logger'
 import { startApiServer, stopApiServer } from './daemon/ipc/server'
@@ -113,7 +113,7 @@ async function main(): Promise<void> {
   process.on('unhandledRejection', (reason) => handleFatalError('unhandledRejection', reason))
 
   startApiServer({
-    socketPath: DAEMON_SOCK_PATH
+    socketPath: DAEMON_SOCK_PATH,
   })
 
   daemonLogger.info('OpenXenon Daemon started successfully')

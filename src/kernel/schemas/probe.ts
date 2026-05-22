@@ -1,45 +1,46 @@
 import { z } from 'zod'
+// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move ProbeTypeSchema into this file (kernel source of truth)
 import { ProbeTypeSchema } from '../../infra/loader'
 
 export const FsExistsParamsSchema = z.object({
-  pattern: z.string()
+  pattern: z.string(),
 })
 
 export const FsNotExistsParamsSchema = z.object({
-  pattern: z.string()
+  pattern: z.string(),
 })
 
 export const FsMatchParamsSchema = z.object({
   pattern: z.string(),
-  contains: z.string().optional()
+  contains: z.string().optional(),
 })
 
 export const ShellExecParamsSchema = z.object({
-  command: z.string()
+  command: z.string(),
 })
 
 export const ProbeParamsSchema = z.union([
   FsExistsParamsSchema,
   FsNotExistsParamsSchema,
   FsMatchParamsSchema,
-  ShellExecParamsSchema
+  ShellExecParamsSchema,
 ])
 
 export const PropDefSchema = z.object({
   name: z.string(),
   type: z.enum(['string', 'number', 'boolean']),
   required: z.boolean().optional().default(false),
-  description: z.string()
+  description: z.string(),
 })
 
 export const SemanticsSchema = z.object({
   intent: z.string(),
-  useWhen: z.string().optional()
+  useWhen: z.string().optional(),
 })
 
 export const ProbeInvocationSchema = z.object({
   type: ProbeTypeSchema,
-  params: ProbeParamsSchema
+  params: ProbeParamsSchema,
 })
 
 export type ProbeInvocation = z.infer<typeof ProbeInvocationSchema>
@@ -57,7 +58,7 @@ export const ProbeDefinitionSchema = z.object({
   type: ProbeTypeSchema,
   description: z.string(),
   props: z.array(PropDefSchema),
-  semantics: SemanticsSchema.optional()
+  semantics: SemanticsSchema.optional(),
 })
 
 export type ProbeDefinition = z.infer<typeof ProbeDefinitionSchema>

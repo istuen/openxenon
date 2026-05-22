@@ -1,6 +1,7 @@
 import { createConnection } from 'net'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync } from '../infra/filesystem'
 import { DAEMON_PID_PATH, DAEMON_LOG_PATH, DAEMON_SOCK_PATH } from '../infra/global'
+import { isDaemonRunning } from '../infra/daemon-probe'
 
 export interface DaemonStatusInfo {
   isRunning: boolean
@@ -11,33 +12,8 @@ export interface DaemonStatusInfo {
   uptime?: number
 }
 
-function checkProcessRunning(pid: number): boolean {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch {
-    return false
-  }
-}
-
 export function getDaemonBasicStatus(): { isRunning: boolean; pid: number } {
-  if (!existsSync(DAEMON_PID_PATH)) {
-    return { isRunning: false, pid: 0 }
-  }
-
-  try {
-    const pidContent = readFileSync(DAEMON_PID_PATH, 'utf-8').trim()
-    const pid = parseInt(pidContent, 10)
-
-    if (isNaN(pid) || pid <= 0) {
-      return { isRunning: false, pid: 0 }
-    }
-
-    const running = checkProcessRunning(pid)
-    return { pid, isRunning: running }
-  } catch {
-    return { isRunning: false, pid: 0 }
-  }
+  return isDaemonRunning()
 }
 
 export function getRecentLogs(): string[] {
@@ -47,7 +23,7 @@ export function getRecentLogs(): string[] {
 
   try {
     const logContent = readFileSync(DAEMON_LOG_PATH, 'utf-8')
-    const lines = logContent.split('\n').filter(line => line.trim().length > 0)
+    const lines = logContent.split('\n').filter((line) => line.trim().length > 0)
     return lines.slice(-20)
   } catch {
     return []
@@ -62,7 +38,7 @@ export async function queryDaemonStatus(): Promise<DaemonStatusInfo> {
     pid,
     socketPath: DAEMON_SOCK_PATH,
     logPath: DAEMON_LOG_PATH,
-    recentLogs: getRecentLogs()
+    recentLogs: getRecentLogs(),
   }
 
   if (!isRunning || !existsSync(DAEMON_SOCK_PATH)) {
@@ -72,10 +48,11 @@ export async function queryDaemonStatus(): Promise<DaemonStatusInfo> {
   return new Promise((resolve) => {
     try {
       const socket = createConnection(DAEMON_SOCK_PATH, () => {
-        const request = JSON.stringify({
-          method: 'GET',
-          path: '/api/v1/health'
-        }) + '\n'
+        const request =
+          JSON.stringify({
+            method: 'GET',
+            path: '/api/v1/health',
+          }) + '\n'
 
         socket.write(request)
 

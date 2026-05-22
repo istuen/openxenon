@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, appendFileSync } from 'fs'
+import { existsSync, readFileSync, appendFileSync } from '../../infra/filesystem'
 import type { TaskDirectory } from '../../kernel/lib/task-dir'
 import type { TraceEvent, TaskTraceState, PartState } from '../../kernel/lib/types/task-state'
 import type { TaskStatus, StepStatus } from '../../kernel/enums'
@@ -25,11 +25,7 @@ export function readBlueprint(taskDir: TaskDirectory): ParsedBlueprint | null {
   return parseBlueprintYaml(content)
 }
 
-export function writeTaskStart(
-  taskDir: TaskDirectory,
-  taskId: string,
-  taskName: string
-): TaskTraceState {
+export function writeTaskStart(taskDir: TaskDirectory, taskId: string, taskName: string): TaskTraceState {
   const event = buildTraceEvent('TASK_START', taskId, { taskName })
   appendEventToFile(taskDir.tracePath, event)
 
@@ -38,35 +34,21 @@ export function writeTaskStart(
     taskName,
     status: 'RUNNING',
     startedAt: Date.now(),
-    stages: new Map()
+    stages: new Map(),
   }
 }
 
-export function writeTaskStatus(
-  taskDir: TaskDirectory,
-  taskId: string,
-  status: TaskStatus
-): void {
+export function writeTaskStatus(taskDir: TaskDirectory, taskId: string, status: TaskStatus): void {
   const event = buildTraceEvent('TASK_STATUS', taskId, { status })
   appendEventToFile(taskDir.tracePath, event)
 }
 
-export function writePartStart(
-  taskDir: TaskDirectory,
-  taskId: string,
-  partId: string,
-  partName: string
-): void {
+export function writePartStart(taskDir: TaskDirectory, taskId: string, partId: string, partName: string): void {
   const event = buildTraceEvent('PART_START', taskId, { partId, partName })
   appendEventToFile(taskDir.tracePath, event)
 }
 
-export function writePartComplete(
-  taskDir: TaskDirectory,
-  taskId: string,
-  partId: string,
-  status: StepStatus
-): void {
+export function writePartComplete(taskDir: TaskDirectory, taskId: string, partId: string, status: StepStatus): void {
   const event = buildTraceEvent('PART_COMPLETE', taskId, { partId, status })
   appendEventToFile(taskDir.tracePath, event)
 }
@@ -79,8 +61,18 @@ export function createProbeResult(
   params?: Record<string, unknown>,
   actual?: unknown,
   failureMessage?: string,
-  duration?: number
-): { probeType: string; params: Record<string, unknown>; result: 'PASSED' | 'FAILED'; actual?: unknown; failureMessage?: string; duration: number; output?: string; error?: string; executedAt: number } {
+  duration?: number,
+): {
+  probeType: string
+  params: Record<string, unknown>
+  result: 'PASSED' | 'FAILED'
+  actual?: unknown
+  failureMessage?: string
+  duration: number
+  output?: string
+  error?: string
+  executedAt: number
+} {
   return {
     probeType,
     params: params || {},
@@ -90,7 +82,7 @@ export function createProbeResult(
     duration: duration || 0,
     output,
     error,
-    executedAt: Date.now()
+    executedAt: Date.now(),
   }
 }
 
@@ -105,7 +97,7 @@ export function writeProbeResult(
   params?: Record<string, unknown>,
   actual?: unknown,
   failureMessage?: string,
-  duration?: number
+  duration?: number,
 ): void {
   const event = buildTraceEvent('PROBE_RESULT', taskId, {
     partId,
@@ -116,7 +108,7 @@ export function writeProbeResult(
     params,
     actual,
     failureMessage,
-    duration
+    duration,
   })
   appendEventToFile(taskDir.tracePath, event)
 }
@@ -161,7 +153,7 @@ function readTaskTraceFromContent(content: string): TaskTraceState | null {
 }
 
 function reduceTraceEventsFromString(content: string): TaskTraceState {
-  const lines = content.split('\n').filter(line => line.trim())
+  const lines = content.split('\n').filter((line) => line.trim())
   const events: TraceEvent[] = []
 
   for (const line of lines) {
