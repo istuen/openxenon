@@ -6,11 +6,7 @@
  *
  * Phase 1 先 Mock 内置数据，Phase 2 改由 .oxn 源文件加载。
  */
-import type {
-  OxnAssetType,
-  BuiltinAssetEntry,
-  IBuiltinRegistry,
-} from './oxn-scope'
+import type { OxnAssetType, BuiltinAssetEntry, IBuiltinRegistry } from './oxn-scope'
 
 // ========================
 // 内置探针定义
@@ -30,17 +26,13 @@ const BUILTIN_PROBE_DEFS = {
   'fs-exists': {
     type: 'fs_exists',
     description: '检查指定 glob 模式的文件是否存在',
-    props: [
-      { name: 'pattern', type: 'string', required: true },
-    ],
+    props: [{ name: 'pattern', type: 'string', required: true }],
     output: { exists: 'boolean', files: 'list<string>' },
   },
   'fs-not-exists': {
     type: 'fs_not_exists',
     description: '检查指定 glob 模式的文件是否不存在',
-    props: [
-      { name: 'pattern', type: 'string', required: true },
-    ],
+    props: [{ name: 'pattern', type: 'string', required: true }],
     output: { not_exists: 'boolean' },
   },
   'fs-content-match': {
@@ -73,9 +65,7 @@ const BUILTIN_PART_DEFS = {
       },
       required: ['feature_ref'],
     },
-    probes: [
-      { type: 'shell_exec', command: "git log -1 --pretty=%s | grep -q '${feature_ref}'" },
-    ],
+    probes: [{ type: 'shell_exec', command: "git log -1 --pretty=%s | grep -q '${feature_ref}'" }],
     execution: ['probe.shell_exec'],
   },
   'create-branch': {
@@ -91,9 +81,7 @@ const BUILTIN_PART_DEFS = {
       },
       required: ['branch_name'],
     },
-    probes: [
-      { type: 'shell_exec', command: "git branch --show-current | grep -q '${branch_name}'" },
-    ],
+    probes: [{ type: 'shell_exec', command: "git branch --show-current | grep -q '${branch_name}'" }],
     execution: ['probe.shell_exec'],
   },
   'develop-feature': {
@@ -163,11 +151,16 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
 
   has(name: string, type: OxnAssetType): boolean {
     switch (type) {
-      case 'probe': return this.probes.has(name)
-      case 'part': return this.parts.has(name)
-      case 'interface': return this.interfaces.has(name)
-      case 'blueprint': return false // builtin 暂无 blueprint
-      default: return false
+      case 'probe':
+        return this.probes.has(name)
+      case 'part':
+        return this.parts.has(name)
+      case 'interface':
+        return this.interfaces.has(name)
+      case 'blueprint':
+        return false // builtin 暂无 blueprint
+      default:
+        return false
     }
   }
 
@@ -175,15 +168,21 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
     switch (type) {
       case 'probe':
         return Array.from(this.probes.entries()).map(([name, data]) => ({
-          name, type: 'probe', data,
+          name,
+          type: 'probe',
+          data,
         }))
       case 'part':
         return Array.from(this.parts.entries()).map(([name, data]) => ({
-          name, type: 'part', data,
+          name,
+          type: 'part',
+          data,
         }))
       case 'interface':
         return Array.from(this.interfaces.entries()).map(([name, data]) => ({
-          name, type: 'interface', data,
+          name,
+          type: 'interface',
+          data,
         }))
       case 'blueprint':
         return []
@@ -212,11 +211,16 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
 
   private _getMap(type: OxnAssetType): Map<string, Record<string, unknown>> {
     switch (type) {
-      case 'probe': return this.probes
-      case 'part': return this.parts
-      case 'interface': return this.interfaces
-      case 'blueprint': return new Map() // blueprint 暂时无内置
-      default: return new Map()
+      case 'probe':
+        return this.probes
+      case 'part':
+        return this.parts
+      case 'interface':
+        return this.interfaces
+      case 'blueprint':
+        return new Map() // blueprint 暂时无内置
+      default:
+        return new Map()
     }
   }
 }

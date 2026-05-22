@@ -1,10 +1,10 @@
-import { join, dirname } from 'path'
+import { join } from 'path'
 import { existsSync, readFileSync, writeFileSync, appendFileSync, renameSync } from 'fs'
 import { BOUNDARY_DIR, BLUEPRINT_OXN_FILE, TASKS_DIR, FROZEN_BLUEPRINT_JSON } from '../kernel/constants'
-import { ensureDirectory } from '../infra/fs'
+import { ensureDirectory } from '../infra/filesystem'
 import { probeHandlers, type ProbeResult, type ProbeContext } from '../infra/probes'
 import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
-import { topologicalSort, validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
+import { topologicalSort, type DagNode } from '../kernel/schemas/dag-validator'
 import { buildTraceEvent, type TraceEvent } from '../kernel/lib/task-trace'
 import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
 import { unifiedTaskSubmit } from './oxn-dual-track'
@@ -109,7 +109,13 @@ export interface SubmitResult {
   message: string
 }
 
-export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: string, existingTaskId?: string, params?: Record<string, unknown>): SubmitResult {
+export function taskSubmit(
+  blueprintPath: string,
+  cwd: string,
+  nameOverride?: string,
+  existingTaskId?: string,
+  params?: Record<string, unknown>,
+): SubmitResult {
   if (!existsSync(blueprintPath)) {
     throw new Error(`Blueprint file not found: ${blueprintPath}`)
   }
@@ -117,7 +123,9 @@ export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: st
   const content = readFileSync(blueprintPath, 'utf-8')
 
   if (!blueprintPath.endsWith('.oxn')) {
-    throw new Error('Only .oxn Blueprints are supported. YAML has been deprecated. Use oxn forge to create a new .oxn Blueprint.')
+    throw new Error(
+      'Only .oxn Blueprints are supported. YAML has been deprecated. Use oxn forge to create a new .oxn Blueprint.',
+    )
   }
 
   const oxnNameMatch = content.match(/blueprint\s+"([^"]+)"/)
@@ -211,7 +219,7 @@ export function taskNew(taskId: string, taskName: string, cwd: string): NewResul
     parts: {},
   }
 
-  const traceEvent = buildTraceEvent('TASK_CREATED', taskId, { taskName: state.taskName })
+  const traceEvent = buildTraceEvent('TASK_START', taskId, { taskName: state.taskName })
   appendTraceEvent(cwd, taskId, traceEvent)
   writeState(cwd, taskId, state)
 
@@ -219,7 +227,8 @@ export function taskNew(taskId: string, taskName: string, cwd: string): NewResul
     taskId,
     taskName: state.taskName,
     status: 'PENDING',
-    message: 'Task created successfully. Use oxn task submit --blueprint <path> --task-id ' + taskId + ' to add a blueprint.',
+    message:
+      'Task created successfully. Use oxn task submit --blueprint <path> --task-id ' + taskId + ' to add a blueprint.',
   }
 }
 
@@ -253,7 +262,7 @@ export function taskNext(taskId: string, cwd: string): NextResult {
     throw new Error('No parts defined in frozen blueprint')
   }
 
-  const dagNodes: DagNode[] = frozenBlueprint.parts.map(p => ({
+  const dagNodes: DagNode[] = frozenBlueprint.parts.map((p) => ({
     id: p.id || p.name,
     deps: p.deps || [],
   }))
@@ -267,11 +276,11 @@ export function taskNext(taskId: string, cwd: string): NextResult {
       throw new Error(`Part "${partNode.name}" verification failed. Abort or retry.`)
     }
 
-    const frozenPart = frozenBlueprint.parts.find(p => (p.id || p.name) === partId)
+    const frozenPart = frozenBlueprint.parts.find((p) => (p.id || p.name) === partId)
     const deps = frozenPart?.deps || []
-    const depsSatisfied = deps.every(depId => state.parts[depId]?.status === 'PASSED')
+    const depsSatisfied = deps.every((depId) => state.parts[depId]?.status === 'PASSED')
 
-    if (depsSatisfied && (partNode.status === 'PENDING')) {
+    if (depsSatisfied && partNode.status === 'PENDING') {
       state.parts[partId] = { ...partNode, status: 'RUNNING' }
       state.currentPartId = partId
 
@@ -279,7 +288,9 @@ export function taskNext(taskId: string, cwd: string): NextResult {
       appendTraceEvent(cwd, taskId, traceEvent)
       writeState(cwd, taskId, state)
 
-      const target = (frozenPart?.target as { description?: string; glob?: string } | undefined) || { description: partNode.name }
+      const target = (frozenPart?.target as { description?: string; glob?: string } | undefined) || {
+        description: partNode.name,
+      }
       const action = (frozenPart?.action as { instruction?: string; command?: string } | undefined) || {}
 
       return {
@@ -321,7 +332,7 @@ export async function taskVerify(taskId: string, partId: string, cwd: string): P
     throw new Error('No frozen blueprint or parts found')
   }
 
-  const part = frozenBlueprint.parts.find(p => p.id === partId || p.name === partId)
+  const part = frozenBlueprint.parts.find((p) => p.id === partId || p.name === partId)
   if (!part) {
     throw new Error(`Part not found: ${partId}`)
   }
@@ -354,7 +365,12 @@ export async function taskVerify(taskId: string, partId: string, cwd: string): P
           executedAt: Date.now(),
         }
         probeResults.push(result)
-        const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, { partId, probeType, result: 'FAILED', error: result.error })
+        const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
+          partId,
+          probeType,
+          result: 'FAILED',
+          error: result.error,
+        })
         appendTraceEvent(cwd, taskId, traceEvent)
         continue
       }
@@ -378,27 +394,46 @@ export async function taskVerify(taskId: string, partId: string, cwd: string): P
         probeResults.push(fullResult)
 
         const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
-          partId, probeType, result: fullResult.result,
-          output: probeResult.output, error: verdict.message,
-          params: probe.params || {}, actual: verdict.actual,
-          failureMessage: verdict.failureMessage, duration: verdict.duration,
+          partId,
+          probeType,
+          result: fullResult.result,
+          output: probeResult.output,
+          error: verdict.message,
+          params: probe.params || {},
+          actual: verdict.actual,
+          failureMessage: verdict.failureMessage,
+          duration: verdict.duration,
         })
         appendTraceEvent(cwd, taskId, traceEvent)
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err)
         const failResult: ProbeResult = {
-          probeType, result: 'FAILED', error: errorMsg,
-          executedAt: Date.now(), params: probe.params || {}, duration: 0, failureMessage: errorMsg,
+          probeType,
+          result: 'FAILED',
+          error: errorMsg,
+          executedAt: Date.now(),
+          params: probe.params || {},
+          duration: 0,
+          failureMessage: errorMsg,
         }
         probeResults.push(failResult)
-        appendTraceEvent(cwd, taskId, buildTraceEvent('PROBE_RESULT', taskId, {
-          partId, probeType, result: 'FAILED', error: errorMsg, duration: 0, failureMessage: errorMsg,
-        }))
+        appendTraceEvent(
+          cwd,
+          taskId,
+          buildTraceEvent('PROBE_RESULT', taskId, {
+            partId,
+            probeType,
+            result: 'FAILED',
+            error: errorMsg,
+            duration: 0,
+            failureMessage: errorMsg,
+          }),
+        )
       }
     }
   }
 
-  const allPassed = probeResults.every(r => r.result === 'PASSED')
+  const allPassed = probeResults.every((r) => r.result === 'PASSED')
   const partStatus: 'PASSED' | 'FAILED' = allPassed ? 'PASSED' : 'FAILED'
   const duration = Date.now() - startTime
 
@@ -410,7 +445,7 @@ export async function taskVerify(taskId: string, partId: string, cwd: string): P
   }
   state.currentPartId = null
 
-  if (Object.values(state.parts).every(s => s.status === 'PASSED' || s.status === 'FAILED')) {
+  if (Object.values(state.parts).every((s) => s.status === 'PASSED' || s.status === 'FAILED')) {
     state.status = 'COMPLETED'
   }
 
@@ -422,7 +457,9 @@ export async function taskVerify(taskId: string, partId: string, cwd: string): P
     passed: allPassed,
     partId,
     results: probeResults,
-    message: allPassed ? 'All probes passed' : `${probeResults.filter(r => r.result === 'FAILED').length}/${probeResults.length} probes failed`,
+    message: allPassed
+      ? 'All probes passed'
+      : `${probeResults.filter((r) => r.result === 'FAILED').length}/${probeResults.length} probes failed`,
   }
 }
 

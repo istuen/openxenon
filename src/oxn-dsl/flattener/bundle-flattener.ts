@@ -5,12 +5,11 @@
  * 保留 prop 和 params 模板占位符（不求值），消除外部依赖。
  */
 import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
-import { getBuiltinRegistry } from '../scope/oxn-builtin-registry'
 import type { OxnAssetType } from '../scope/oxn-scope'
 import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../../kernel/schemas/oxn-assembly.schema'
 
 export interface FlattenOptions {
-  maxDepth?: number      // 最大递归深度，默认 3
+  maxDepth?: number // 最大递归深度，默认 3
   keepMetadata?: boolean // 是否保留元数据注释
 }
 
@@ -68,10 +67,7 @@ export class BundleFlattener {
     return this._bundleToOxnString(flatBundle)
   }
 
-  private _flattenEntity(
-    entity: OxnAssemblyBundleEntity,
-    result: OxnAssemblyBundleEntity[]
-  ): void {
+  private _flattenEntity(entity: OxnAssemblyBundleEntity, result: OxnAssemblyBundleEntity[]): void {
     // 防循环
     const entityKey = `${entity.type}:${(entity.data as { name?: string }).name || 'unnamed'}`
     if (this.visited.has(entityKey)) return
@@ -91,10 +87,7 @@ export class BundleFlattener {
     result.push(entity)
   }
 
-  private _resolvePartRefs(
-    entity: OxnAssemblyBundleEntity,
-    result: OxnAssemblyBundleEntity[]
-  ): void {
+  private _resolvePartRefs(entity: OxnAssemblyBundleEntity, result: OxnAssemblyBundleEntity[]): void {
     const data = entity.data as Record<string, unknown>
 
     // 解析 probes 中的 ref
@@ -116,11 +109,7 @@ export class BundleFlattener {
     }
   }
 
-  private _inlineRef(
-    ref: string,
-    type: OxnAssetType,
-    result: OxnAssemblyBundleEntity[]
-  ): void {
+  private _inlineRef(ref: string, type: OxnAssetType, result: OxnAssemblyBundleEntity[]): void {
     const resolved = this.workspace.resolve(ref, type)
     if (resolved.asset) {
       this.inlinedRefs.push(ref)
@@ -138,8 +127,10 @@ export class BundleFlattener {
           entity = {
             type: resolved.asset.type,
             data: parseYaml(resolved.asset.content),
-          } as OxnAssemblyBundleEntity
-        } catch { /* skip */ }
+          } as unknown as OxnAssemblyBundleEntity
+        } catch {
+          /* skip */
+        }
       }
 
       if (entity) {

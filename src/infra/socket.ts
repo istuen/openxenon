@@ -27,7 +27,7 @@ export const socket = {
           server.close()
           server = null
         }
-      }
+      },
     }
   },
 
@@ -39,5 +39,5 @@ export const socket = {
         // Ignore cleanup errors
       }
     }
-  }
+  },
 }

@@ -1,7 +1,17 @@
 import type { Part, Blueprint } from '../schemas/blueprint.schema'
+import type { Probe } from '../schemas/blueprint.schema'
 import { resolvePartRef, type PartResolution } from './part-resolver'
 import { createXenonMeta, type XenonMeta, computeContentHash } from '../schemas/frozen-schema'
 import { getProjectBoundaryPath } from './project'
+
+function mergePartProbes(base: Record<string, unknown>, override: Part): Probe[] {
+  const baseProbes = ((base.probes as Probe[]) || []) as Probe[]
+  const overrideProbes = (override.probes || [])
+  if (overrideProbes.length > 0) {
+    return overrideProbes
+  }
+  return baseProbes
+}
 
 export interface LineageReportEntry {
   partId: string
@@ -39,7 +49,7 @@ export function generateLineageReport(parts: Part[]): LineageReport {
         status: '✅',
         resolved: resolution.originalPath || (resolution.namespace === 'oxn' ? 'builtin' : resolution.namespace),
         source: resolution.namespace as 'kernel' | 'global' | 'project',
-        message: ''
+        message: '',
       })
     } else {
       entries.push({
@@ -47,7 +57,7 @@ export function generateLineageReport(parts: Part[]): LineageReport {
         status: '✅',
         resolved: 'inline',
         source: 'project',
-        message: 'inline part (no ref)'
+        message: 'inline part (no ref)',
       })
     }
   }
@@ -58,7 +68,7 @@ export function generateLineageReport(parts: Part[]): LineageReport {
 export function injectPartMeta(
   part: Part,
   resolution: PartResolution,
-  _appendedProbeRefs: string[] = []
+  _appendedProbeRefs: string[] = [],
 ): Part & { _xenon_meta: XenonMeta } {
   const frozenAt = new Date().toISOString()
   const content = JSON.stringify(part)
@@ -70,9 +80,9 @@ export function injectPartMeta(
       original_path: resolution.originalPath,
       frozen_at: frozenAt,
       content_hash: computeContentHash(content),
-      appended: false
+      appended: false,
     },
-    ...part
+    ...part,
   } as Part & { _xenon_meta: XenonMeta }
 }
 
@@ -80,7 +90,7 @@ export function injectProbeMeta(
   probe: { type?: string; ref?: string; params?: Record<string, unknown>; pattern?: string; command?: string },
   ref: string,
   resolvedFrom: 'kernel' | 'global' | 'project',
-  appended: boolean = false
+  appended: boolean = false,
 ): typeof probe & { _xenon_meta: XenonMeta } {
   const frozenAt = new Date().toISOString()
   const content = JSON.stringify(probe)
@@ -92,8 +102,8 @@ export function injectProbeMeta(
       resolved_from: resolvedFrom,
       frozen_at: frozenAt,
       content_hash: computeContentHash(content),
-      appended
-    }
+      appended,
+    },
   } as typeof probe & { _xenon_meta: XenonMeta }
 }
 
@@ -121,7 +131,7 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
         name: part.name || resolution.part.name,
         deps: part.deps || resolution.part.deps || [],
         params: part.params || {},
-        probes: mergePartProbes(resolution.part, part)
+        probes: mergePartProbes(resolution.part, part),
       }
 
       lineageEntries.push({
@@ -129,7 +139,7 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
         status: '✅',
         resolved: resolution.originalPath || (resolution.namespace === 'oxn' ? 'builtin' : resolution.namespace),
         source: resolution.namespace as 'kernel' | 'global' | 'project',
-        message: ''
+        message: '',
       })
     } else {
       resolvedPart = part
@@ -138,11 +148,11 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
         status: '✅',
         resolved: 'inline',
         source: 'project',
-        message: 'inline part (no ref)'
+        message: 'inline part (no ref)',
       })
     }
 
-    const injectedProbes = (resolvedPart.probes || []).map(p => {
+    const injectedProbes = (resolvedPart.probes || []).map((p) => {
       const ref = p.ref || p.type || ''
       return injectProbeMeta(p, ref, 'project', false)
     })
@@ -151,10 +161,10 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
       _xenon_meta: createXenonMeta({
         ref: part.ref || 'inline',
         resolvedFrom: part.ref ? 'project' : 'project',
-        content: JSON.stringify(resolvedPart)
+        content: JSON.stringify(resolvedPart),
       }),
       ...resolvedPart,
-      probes: injectedProbes
+      probes: injectedProbes,
     } as Part & { _xenon_meta: XenonMeta })
   }
 
@@ -162,8 +172,8 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
     frozenParts,
     lineageReport: {
       entries: lineageEntries,
-      totalParts: blueprint.parts?.length || 0
-    }
+      totalParts: blueprint.parts?.length || 0,
+    },
   }
 }
 
@@ -183,8 +193,8 @@ export function freezeBlueprint(blueprint: Blueprint): {
       id: blueprint.id,
       name: blueprint.name,
       frozen_at: new Date().toISOString(),
-      parts: frozenParts
+      parts: frozenParts,
     },
-    lineageReport
+    lineageReport,
   }
 }

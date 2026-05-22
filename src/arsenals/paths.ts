@@ -1,5 +1,17 @@
 import { join } from 'path'
-import { GLOBAL_ARSENALS_ROOT, GLOBAL_ARSENALS_PROBES, GLOBAL_ARSENALS_BLUEPRINTS, GLOBAL_ARSENALS_PARTS, GLOBAL_FORGES_ROOT, GLOBAL_FORGES_PROBES, GLOBAL_FORGES_BLUEPRINTS, GLOBAL_FORGES_PARTS, resolveArsenalRoot, resolveForgeRoot, type Scope } from '../infra/paths'
+import {
+  GLOBAL_ARSENALS_ROOT,
+  GLOBAL_ARSENALS_PROBES,
+  GLOBAL_ARSENALS_BLUEPRINTS,
+  GLOBAL_ARSENALS_PARTS,
+  GLOBAL_FORGES_ROOT,
+  GLOBAL_FORGES_PROBES,
+  GLOBAL_FORGES_BLUEPRINTS,
+  GLOBAL_FORGES_PARTS,
+  resolveArsenalRoot,
+  resolveForgeRoot,
+  type Scope,
+} from '../infra/paths'
 
 export { type Scope } from '../infra/paths'
 
@@ -17,15 +29,18 @@ export type AssetState = 'draft' | 'canonical'
 export type AssetType = 'probes' | 'blueprints' | 'parts'
 
 export const FORGES_DIRECTORY_STRUCTURE = {
-  draft: '<type>/<name>/draft.oxn'
+  draft: '<type>/<name>/draft.oxn',
 } as const
 
 export function getForgesPath(type: AssetType, scope: Scope = 'project', cwd?: string): string {
   if (scope === 'global') {
     switch (type) {
-      case 'probes': return GLOBAL_FORGES_PROBES
-      case 'blueprints': return GLOBAL_FORGES_BLUEPRINTS
-      case 'parts': return GLOBAL_FORGES_PARTS
+      case 'probes':
+        return GLOBAL_FORGES_PROBES
+      case 'blueprints':
+        return GLOBAL_FORGES_BLUEPRINTS
+      case 'parts':
+        return GLOBAL_FORGES_PARTS
     }
   }
   return resolveForgeRoot(scope, cwd)
@@ -42,15 +57,23 @@ export function getForgeDraftPath(type: AssetType, name: string, scope: Scope = 
 export function getArsenalsPath(type: AssetType, scope: Scope = 'project', cwd?: string): string {
   if (scope === 'global') {
     switch (type) {
-      case 'probes': return GLOBAL_ARSENALS_PROBES
-      case 'blueprints': return GLOBAL_ARSENALS_BLUEPRINTS
-      case 'parts': return GLOBAL_ARSENALS_PARTS
+      case 'probes':
+        return GLOBAL_ARSENALS_PROBES
+      case 'blueprints':
+        return GLOBAL_ARSENALS_BLUEPRINTS
+      case 'parts':
+        return GLOBAL_ARSENALS_PARTS
     }
   }
   return resolveArsenalRoot(scope, cwd)
 }
 
-export function getArsenalsStatePath(type: AssetType, state: AssetState, scope: Scope = 'project', cwd?: string): string {
+export function getArsenalsStatePath(
+  type: AssetType,
+  state: AssetState,
+  scope: Scope = 'project',
+  cwd?: string,
+): string {
   const base = getArsenalsPath(type, scope, cwd)
   return join(base, state)
 }

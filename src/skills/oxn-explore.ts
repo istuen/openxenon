@@ -119,8 +119,8 @@ oxn explore delete <name>
 - 禁止跳过扫描步骤直接进行问答
 - 禁止 AI 未阅读资料就提问`,
   examples: {
-    '新建探索': '/oxn-explore auth-system',
-    '继续探索': '/oxn-explore auth-system scan',
-    '问答模式': '/oxn-explore auth-system qa',
+    新建探索: '/oxn-explore auth-system',
+    继续探索: '/oxn-explore auth-system scan',
+    问答模式: '/oxn-explore auth-system qa',
   },
 }

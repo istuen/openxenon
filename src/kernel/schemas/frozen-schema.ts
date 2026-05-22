@@ -16,7 +16,7 @@ export const XenonMetaSchema: z.ZodType<XenonMeta> = z.object({
   original_path: z.string().optional(),
   frozen_at: z.string(),
   content_hash: z.string(),
-  appended: z.boolean().optional()
+  appended: z.boolean().optional(),
 })
 
 export function computeContentHash(content: string): string {
@@ -34,7 +34,7 @@ export function createXenonMeta(params: {
     resolved_from: params.resolvedFrom,
     original_path: params.originalPath,
     frozen_at: new Date().toISOString(),
-    content_hash: computeContentHash(params.content)
+    content_hash: computeContentHash(params.content),
   }
 }
 
@@ -44,7 +44,7 @@ export const FrozenProbeSchema = z.object({
   ref: z.string().optional(),
   params: z.record(z.string(), z.unknown()).optional(),
   pattern: z.string().optional(),
-  command: z.string().optional()
+  command: z.string().optional(),
 })
 
 export const FrozenPartSchema = z.object({
@@ -56,19 +56,25 @@ export const FrozenPartSchema = z.object({
   ref: z.string().optional(),
   condition: z.string().optional(),
   params: z.record(z.string(), z.unknown()).optional(),
-  target: z.object({
-    description: z.string(),
-    glob: z.string().optional()
-  }).optional(),
-  spec: z.object({
-    description: z.string(),
-    constraints: z.array(z.string()).optional()
-  }).optional(),
-  action: z.object({
-    instruction: z.string().optional(),
-    command: z.string().optional()
-  }).optional(),
-  probes: z.array(FrozenProbeSchema)
+  target: z
+    .object({
+      description: z.string(),
+      glob: z.string().optional(),
+    })
+    .optional(),
+  spec: z
+    .object({
+      description: z.string(),
+      constraints: z.array(z.string()).optional(),
+    })
+    .optional(),
+  action: z
+    .object({
+      instruction: z.string().optional(),
+      command: z.string().optional(),
+    })
+    .optional(),
+  probes: z.array(FrozenProbeSchema),
 })
 
 export const FrozenBlueprintSchema = z.object({
@@ -76,7 +82,7 @@ export const FrozenBlueprintSchema = z.object({
   name: z.string(),
   _version: z.number().int().positive().optional(),
   frozen_at: z.string(),
-  parts: z.array(FrozenPartSchema)
+  parts: z.array(FrozenPartSchema),
 })
 
 export type FrozenBlueprint = z.infer<typeof FrozenBlueprintSchema>

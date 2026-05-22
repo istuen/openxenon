@@ -94,7 +94,7 @@ function stageToOxn(stage: YamlStage, level: number): string {
 
   // deps
   if (stage.deps && stage.deps.length > 0) {
-    const depsStr = stage.deps.map(d => `"${escapeString(d)}"`).join(', ')
+    const depsStr = stage.deps.map((d) => `"${escapeString(d)}"`).join(', ')
     lines.push(`${i}  deps = [${depsStr}]`)
   } else {
     lines.push(`${i}  deps = []`)

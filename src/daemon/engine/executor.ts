@@ -24,11 +24,9 @@ export interface ExecutePartResult {
 
 const DEFAULT_TIMEOUT_MS = 300000
 
-export async function executePart(
-  part: Part,
-  options: ExecutorOptions
-): Promise<ExecutePartResult> {
-  const { id: partId, name, probes, action } = part
+export async function executePart(part: Part, options: ExecutorOptions): Promise<ExecutePartResult> {
+  const { id: partId, name: partName, probes, action } = part
+  const name = partName || partId
   const context: ProbeContext = { projectRoot: options.projectRoot }
   const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS
 
@@ -55,7 +53,7 @@ export async function executePart(
           partId,
           partName: name,
           probeResults,
-          timedOut: true
+          timedOut: true,
         }
       }
 
@@ -67,7 +65,7 @@ export async function executePart(
           probeType: probe.type,
           result: 'FAILED',
           error: `Unknown probe type: ${probe.type}`,
-          executedAt: Date.now()
+          executedAt: Date.now(),
         })
         hallEmitter.emitProbeResult(options.taskId, partId, probe.type, 'FAILED')
         continue
@@ -77,13 +75,13 @@ export async function executePart(
         const probeParams = {
           pattern: probe.pattern,
           command: probe.command,
-          cwd: probe.cwd
+          cwd: probe.cwd,
         }
-        const actualResult = await handler(probeParams, context) as ProbeResult
+        const actualResult = (await handler(probeParams, context)) as ProbeResult
 
         const definition: ProbeDefinition = {
           type: probe.type,
-          params: { pattern: probe.pattern, command: probe.command, cwd: probe.cwd }
+          params: { pattern: probe.pattern, command: probe.command, cwd: probe.cwd },
         }
         evaluateProbe(definition, actualResult)
 
@@ -94,7 +92,7 @@ export async function executePart(
           probeType: probe.type,
           result: 'FAILED',
           error: error instanceof Error ? error.message : String(error),
-          executedAt: Date.now()
+          executedAt: Date.now(),
         })
         hallEmitter.emitProbeResult(options.taskId, partId, probe.type, 'FAILED')
       }
@@ -116,7 +114,7 @@ export async function executePart(
     success: verdict.passed,
     partId,
     partName: name,
-    probeResults
+    probeResults,
   }
 }
 
@@ -165,7 +163,9 @@ export function buildDag(parts: Part[]): { order: string[] } {
   return { order }
 }
 
-export async function executeBlueprint(options: ExecutorOptions): Promise<{ success: boolean; results: ExecutePartResult[] }> {
+export async function executeBlueprint(
+  options: ExecutorOptions,
+): Promise<{ success: boolean; results: ExecutePartResult[] }> {
   const { blueprint, taskId, taskName } = options
   const parts = blueprint.parts || []
 
@@ -174,14 +174,14 @@ export async function executeBlueprint(options: ExecutorOptions): Promise<{ succ
   const { order } = buildDag(parts)
   const results: ExecutePartResult[] = []
 
-  const partMap = new Map<string, Part>(parts.map(p => [p.id, p]))
+  const partMap = new Map<string, Part>(parts.map((p) => [p.id, p]))
 
   for (const partId of order) {
     const part = partMap.get(partId)
     if (!part) continue
 
     if (radarClock.isTimeout(taskId, partId)) {
-      handleTimeout(partId, part.name || partId, taskId)
+      handleTimeout(partId, part.name ?? partId, taskId)
       break
     }
 
@@ -196,7 +196,7 @@ export async function executeBlueprint(options: ExecutorOptions): Promise<{ succ
     }
   }
 
-  const success = results.every(r => r.success)
+  const success = results.every((r) => r.success)
 
   if (success) {
     hallEmitter.emitTaskCompleted(taskId, taskName)

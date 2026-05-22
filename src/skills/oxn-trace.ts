@@ -3,7 +3,7 @@ import type { OpenXenonSkill } from './types'
 export const oxnTraceSkill: OpenXenonSkill = {
   id: 'oxn-trace',
   description: '轨迹取证，查看任务执行案卷',
-instruction: `# /oxn-trace — 查看任务轨迹
+  instruction: `# /oxn-trace — 查看任务轨迹
 
 ## 行为约束
 

@@ -1,17 +1,7 @@
-import type {
-  LangiumSharedCoreServices,
-  LangiumCoreServices,
-} from 'langium'
-import {
-  inject,
-  createDefaultSharedCoreModule,
-  createDefaultCoreModule,
-} from 'langium'
+import type { LangiumSharedCoreServices, LangiumCoreServices } from 'langium'
+import { inject, createDefaultSharedCoreModule, createDefaultCoreModule } from 'langium'
 import { NodeFileSystem } from 'langium/node'
-import {
-  OXNDSLGeneratedSharedModule,
-  OXNGeneratedModule,
-} from '../generated/module.js'
+import { OXNDSLGeneratedSharedModule, OXNGeneratedModule } from '../generated/module.js'
 
 let _sharedServices: LangiumSharedCoreServices | null = null
 let _oxnServices: LangiumCoreServices | null = null
@@ -23,22 +13,20 @@ export function createOxnSharedServices(): LangiumSharedCoreServices {
     createDefaultSharedCoreModule({
       fileSystemProvider: (_services: LangiumSharedCoreServices) => NodeFileSystem,
     } as Record<string, unknown> as any),
-    OXNDSLGeneratedSharedModule
+    OXNDSLGeneratedSharedModule,
   ) as unknown as LangiumSharedCoreServices
 
   return _sharedServices
 }
 
-export function createOxnServices(
-  shared?: LangiumSharedCoreServices
-): LangiumCoreServices {
+export function createOxnServices(shared?: LangiumSharedCoreServices): LangiumCoreServices {
   if (_oxnServices) return _oxnServices
 
   const sharedServices = shared || createOxnSharedServices()
 
   _oxnServices = inject(
     createDefaultCoreModule({ shared: sharedServices } as Record<string, unknown> as any),
-    OXNGeneratedModule
+    OXNGeneratedModule,
   ) as unknown as LangiumCoreServices
 
   return _oxnServices

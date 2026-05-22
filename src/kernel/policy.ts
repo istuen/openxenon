@@ -2,7 +2,7 @@ export enum Action {
   TERMINATE_AND_DELETE = 'TERMINATE_AND_DELETE',
   WARN_AND_PRESERVE = 'WARN_AND_PRESERVE',
   TERMINATE = 'TERMINATE',
-  SILENT = 'SILENT'
+  SILENT = 'SILENT',
 }
 
 export interface ExecutionPolicy {

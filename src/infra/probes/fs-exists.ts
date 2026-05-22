@@ -6,13 +6,8 @@ export interface ProbeContext {
   projectRoot: string
 }
 
-export async function executeFsExists(
-  pattern: string,
-  context: ProbeContext
-): Promise<string[]> {
-  const fullPattern = pattern.startsWith('/')
-    ? pattern
-    : join(context.projectRoot, pattern)
+export async function executeFsExists(pattern: string, context: ProbeContext): Promise<string[]> {
+  const fullPattern = pattern.startsWith('/') ? pattern : join(context.projectRoot, pattern)
 
   if (fullPattern.includes('*') || fullPattern.includes('?')) {
     const { baseDir, globPattern } = parseGlobPattern(fullPattern, context.projectRoot)

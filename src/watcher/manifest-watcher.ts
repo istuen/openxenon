@@ -55,7 +55,7 @@ export class ManifestWatcher {
       const trace = readTaskTrace(taskDir)
 
       if (trace) {
-        const stageState = trace.stages.get(manifest.stepId)
+        const stageState = trace.parts.get(manifest.stepId)
         if (stageState) {
           stageState.status = manifest.status as any
         }

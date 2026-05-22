@@ -380,11 +380,11 @@ cat .openxenon/forges/<type>/<name>/draft.oxn
     '生成 Probe': '/oxn-forge 帮我写一个检查文件存在的 Probe',
     '生成 Blueprint': '/oxn-forge 创建一个部署 MySQL 的 Blueprint',
     '生成全局 Probe': '/oxn-forge --global 帮我写一个检查文件存在的 Probe',
-    '生成 Stage': '/oxn-forge 创建一个安装 Laravel 的 Stage'
+    '生成 Stage': '/oxn-forge 创建一个安装 Laravel 的 Stage',
   },
   references: [
     { filename: 'probe-format.md', content: probeFormatMd },
     { filename: 'blueprint-format.md', content: blueprintFormatMd },
-    { filename: 'stage-format.md', content: stageFormatMd }
-  ]
+    { filename: 'stage-format.md', content: stageFormatMd },
+  ],
 }

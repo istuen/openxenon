@@ -43,7 +43,7 @@ class HallEmitter extends EventEmitter {
       partId,
       partName,
       status: 'STARTED',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     } satisfies PartEvent)
   }
 
@@ -54,7 +54,7 @@ class HallEmitter extends EventEmitter {
       partName,
       status: 'COMPLETED',
       timestamp: Date.now(),
-      details
+      details,
     } satisfies PartEvent)
   }
 
@@ -65,7 +65,7 @@ class HallEmitter extends EventEmitter {
       partName,
       status: 'FAILED',
       timestamp: Date.now(),
-      details
+      details,
     } satisfies PartEvent)
   }
 
@@ -75,7 +75,7 @@ class HallEmitter extends EventEmitter {
       partId,
       partName,
       status: 'TIMEOUT',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     } satisfies PartEvent)
   }
 
@@ -84,7 +84,7 @@ class HallEmitter extends EventEmitter {
       taskId,
       taskName,
       status: 'CREATED',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     } satisfies TaskEvent)
   }
 
@@ -94,7 +94,7 @@ class HallEmitter extends EventEmitter {
       taskName,
       status: 'RUNNING',
       timestamp: Date.now(),
-      currentPart
+      currentPart,
     } satisfies TaskEvent)
   }
 
@@ -103,7 +103,7 @@ class HallEmitter extends EventEmitter {
       taskId,
       taskName,
       status: 'COMPLETED',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     } satisfies TaskEvent)
   }
 
@@ -112,7 +112,7 @@ class HallEmitter extends EventEmitter {
       taskId,
       taskName,
       status: 'FAILED',
-      timestamp: Date.now()
+      timestamp: Date.now(),
     } satisfies TaskEvent)
   }
 
@@ -122,7 +122,7 @@ class HallEmitter extends EventEmitter {
       partId,
       probeType,
       result,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     } satisfies ProbeEvent)
   }
 }

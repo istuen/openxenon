@@ -86,34 +86,34 @@ function copyMetaToProject(projectRoot: string): void {
 export default defineCommand({
   meta: {
     name: 'init',
-    description: '初始化项目，在当前项目建立物理围栏'
+    description: '初始化项目，在当前项目建立物理围栏',
   },
   args: {
     name: {
       type: 'positional',
       description: '项目名称',
-      required: false
+      required: false,
     },
     sandbox: {
       alias: 's',
       type: 'boolean',
       description: '初始化为沙箱模式',
-      default: false
+      default: false,
     },
     force: {
       alias: 'f',
       type: 'boolean',
       description: '强制重新编译 Skills',
-      default: false
+      default: false,
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
-    }
+      description: 'YAML 格式输出',
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -142,7 +142,7 @@ export default defineCommand({
           version: 1,
           mode: sandbox ? 'SANDBOX' : 'PRODUCTION',
           name: projectName,
-          createdAt: Date.now()
+          createdAt: Date.now(),
         }
         writeProjectConfig(projectPath, config)
         message = `项目初始化成功: ${projectName}`
@@ -151,22 +151,28 @@ export default defineCommand({
       const report = compileAllSkills('opencode', projectPath, force)
       const reportStr = formatCompilationReport(report)
 
-      return output({
-        data: {
-          name: projectName,
-          path: projectPath,
-          mode: sandbox ? 'SANDBOX' : 'PRODUCTION',
-          skillsCompiled: report.total,
-          skillsReport: reportStr
+      return output(
+        {
+          data: {
+            name: projectName,
+            path: projectPath,
+            mode: sandbox ? 'SANDBOX' : 'PRODUCTION',
+            skillsCompiled: report.total,
+            skillsReport: reportStr,
+          },
+          human: `${message}\n\n正在编译 Skill (适配器: opencode)...\n\n${reportStr}\n\n✓ Skill 编译完成\n  输出目录: .opencode/skills/`,
         },
-        human: `${message}\n\n正在编译 Skill (适配器: opencode)...\n\n${reportStr}\n\n✓ Skill 编译完成\n  输出目录: .opencode/skills/`
-      }, format)
+        format,
+      )
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err)
-      return outputError({
-        code: 'OXN_INIT_FAILED',
-        message: errorMsg
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_INIT_FAILED',
+          message: errorMsg,
+        },
+        format,
+      )
     }
-  }
+  },
 })

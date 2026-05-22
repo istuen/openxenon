@@ -1,4 +1,4 @@
 export interface Action {
-  instructions: string[];
-  priority?: number;
+  instructions: string[]
+  priority?: number
 }

@@ -9,26 +9,26 @@ import * as yaml from 'yaml'
 export default defineCommand({
   meta: {
     name: 'arsenal-extract',
-    description: '从 Task 的 frozen.json 提取历史版本 Part'
+    description: '从 Task 的 frozen.json 提取历史版本 Part',
   },
   args: {
     '--from-task': {
       type: 'string',
       alias: 't',
       required: true,
-      description: 'Task ID'
+      description: 'Task ID',
     },
     '--part': {
       type: 'string',
       alias: 'p',
       required: true,
-      description: 'Part 名称'
+      description: 'Part 名称',
     },
     '--output': {
       type: 'string',
       alias: 'o',
-      description: '输出文件路径'
-    }
+      description: '输出文件路径',
+    },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -40,10 +40,13 @@ export default defineCommand({
     const frozenPath = join(projectBoundary, TASKS_DIR, taskId, 'blueprint.frozen.json')
 
     if (!existsSync(frozenPath)) {
-      return outputError({
-        code: 'OXN_NOT_FOUND',
-        message: `Task frozen not found: ${frozenPath}`
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_NOT_FOUND',
+          message: `Task frozen not found: ${frozenPath}`,
+        },
+        format,
+      )
     }
 
     try {
@@ -52,18 +55,24 @@ export default defineCommand({
       const parts = frozen.parts as Array<Record<string, unknown>> | undefined
 
       if (!parts) {
-        return outputError({
-          code: 'OXN_EXTRACT_FAILED',
-          message: 'Frozen blueprint has no parts'
-        }, format)
+        return outputError(
+          {
+            code: 'OXN_EXTRACT_FAILED',
+            message: 'Frozen blueprint has no parts',
+          },
+          format,
+        )
       }
 
-      const part = parts.find(p => (p.id === partName || p.name === partName))
+      const part = parts.find((p) => p.id === partName || p.name === partName)
       if (!part) {
-        return outputError({
-          code: 'OXN_PART_NOT_FOUND',
-          message: `Part not found in frozen: ${partName}`
-        }, format)
+        return outputError(
+          {
+            code: 'OXN_PART_NOT_FOUND',
+            message: `Part not found in frozen: ${partName}`,
+          },
+          format,
+        )
       }
 
       const extracted = {
@@ -74,23 +83,29 @@ export default defineCommand({
         target: part.target,
         spec: part.spec,
         action: part.action,
-        probes: (part.probes as Array<Record<string, unknown>> || []).map((p: Record<string, unknown>) => ({
+        probes: ((part.probes as Array<Record<string, unknown>>) || []).map((p: Record<string, unknown>) => ({
           type: p.type,
-          params: p.params
-        }))
+          params: p.params,
+        })),
       }
 
       writeFileSync(outputPath, yaml.stringify(extracted), 'utf-8')
 
-      output({
-        data: { part: partName, task: taskId, output: outputPath },
-        human: `Extracted part "${partName}" from task "${taskId}"\n  Output: ${outputPath}`
-      }, format)
+      output(
+        {
+          data: { part: partName, task: taskId, output: outputPath },
+          human: `Extracted part "${partName}" from task "${taskId}"\n  Output: ${outputPath}`,
+        },
+        format,
+      )
     } catch (err) {
-      return outputError({
-        code: 'OXN_EXTRACT_ERROR',
-        message: err instanceof Error ? err.message : 'Unknown error'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_EXTRACT_ERROR',
+          message: err instanceof Error ? err.message : 'Unknown error',
+        },
+        format,
+      )
     }
-  }
+  },
 })

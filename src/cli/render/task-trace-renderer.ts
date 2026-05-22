@@ -14,12 +14,10 @@ export function taskTraceToHtml(options: TaskTraceRendererOptions): string {
     return renderErrorHtml(`无法解析 task-trace: ${taskId}`)
   }
 
-  const taskDuration = state.completedAt
-    ? state.completedAt - state.startedAt
-    : Date.now() - state.startedAt
+  const taskDuration = state.completedAt ? state.completedAt - state.startedAt : Date.now() - state.startedAt
 
   const parts = Array.from(state.parts.values())
-  const failedProbes = parts.flatMap(s => s.probes.filter(p => p.result === 'FAILED'))
+  const failedProbes = parts.flatMap((s) => s.probes.filter((p) => p.result === 'FAILED'))
   const overallStatus = state.status === 'COMPLETED' && failedProbes.length === 0 ? 'PASSED' : 'FAILED'
 
   return renderHtmlDocument({
@@ -31,15 +29,15 @@ export function taskTraceToHtml(options: TaskTraceRendererOptions): string {
       status: overallStatus,
       duration: taskDuration,
       startedAt: state.startedAt,
-      parts
-    })
+      parts,
+    }),
   })
 }
 
 function reduceTraceEventsFromContent(content: string): TaskTraceState | null {
   if (!content.trim()) return null
 
-  const lines = content.split('\n').filter(line => line.trim())
+  const lines = content.split('\n').filter((line) => line.trim())
   const events: TraceEvent[] = []
 
   for (const line of lines) {
@@ -58,7 +56,7 @@ function reduceTraceEventsFromContent(content: string): TaskTraceState | null {
     taskName: '',
     status: 'NOT_FOUND',
     startedAt: 0,
-    parts: new Map()
+    parts: new Map(),
   }
 
   for (const event of events) {
@@ -90,7 +88,7 @@ function applyEvent(state: TaskTraceState, event: TraceEvent): void {
         partName: event.partName,
         status: 'PENDING',
         probes: [],
-        startedAt: event.timestamp
+        startedAt: event.timestamp,
       })
       break
 
@@ -108,10 +106,12 @@ function applyEvent(state: TaskTraceState, event: TraceEvent): void {
       if (part) {
         part.probes.push({
           probeType: event.probeType,
+          params: (event as any).params || {},
           result: event.result,
+          duration: (event as any).duration || 0,
           output: event.output,
           error: event.error,
-          executedAt: event.timestamp
+          executedAt: event.timestamp,
         })
       }
       break
@@ -123,7 +123,7 @@ function renderErrorHtml(message: string): string {
   return renderHtmlDocument({
     title: 'Error',
     head: '',
-    body: `<div class="error">${escapeHtml(message)}</div>`
+    body: `<div class="error">${escapeHtml(message)}</div>`,
   })
 }
 
@@ -314,7 +314,7 @@ function renderTaskTraceBody(opts: TaskTraceBodyOptions): string {
   const { taskId, taskName, status, duration, startedAt, parts } = opts
   const startDate = new Date(startedAt).toLocaleString()
 
-  const partCards = parts.map(part => renderPartCard(part)).join('\n')
+  const partCards = parts.map((part) => renderPartCard(part)).join('\n')
 
   return `
     <div class="container">
@@ -357,15 +357,19 @@ function renderTaskTraceBody(opts: TaskTraceBodyOptions): string {
 }
 
 function renderPartCard(part: PartState): string {
-  const duration = part.completedAt && part.startedAt
-    ? part.completedAt - part.startedAt
-    : part.startedAt ? Date.now() - part.startedAt : 0
+  const duration =
+    part.completedAt && part.startedAt
+      ? part.completedAt - part.startedAt
+      : part.startedAt
+        ? Date.now() - part.startedAt
+        : 0
 
   const statusClass = part.status === 'RUNNING' ? 'running' : part.status.toLowerCase()
 
-  const probeCards = part.probes.length > 0
-    ? part.probes.map((probe, idx) => renderProbeCard(probe, part.partId, idx)).join('\n')
-    : '<div class="skipped">No probes executed</div>'
+  const probeCards =
+    part.probes.length > 0
+      ? part.probes.map((probe, idx) => renderProbeCard(probe, part.partId, idx)).join('\n')
+      : '<div class="skipped">No probes executed</div>'
 
   return `
     <div class="part">

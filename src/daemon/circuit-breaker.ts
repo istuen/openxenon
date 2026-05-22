@@ -19,7 +19,7 @@ export interface CircuitBreakerStats {
 const DEFAULT_CONFIG: CircuitBreakerConfig = {
   failureThreshold: 3,
   resetTimeoutMs: 60000,
-  halfOpenMaxAttempts: 1
+  halfOpenMaxAttempts: 1,
 }
 
 export class CircuitBreaker {
@@ -46,7 +46,7 @@ export class CircuitBreaker {
       successCount: this.successCount,
       state: this.state,
       lastFailureTime: this.lastFailureTime,
-      lastSuccessTime: this.lastSuccessTime
+      lastSuccessTime: this.lastSuccessTime,
     }
   }
 

@@ -59,9 +59,9 @@ oxn arsenal inspect <type>/<name>
 - 如果资产不存在，提示工程师检查名称是否正确
 `,
   examples: {
-    '查看所有资产统计': '/oxn-arsenal 查看所有资产',
-    '读取特定探针': '/oxn-arsenal probes/fs_exists',
-    '读取特定工序': '/oxn-arsenal parts/run-build-and-test',
-    '读取特定蓝图': '/oxn-arsenal blueprints/verify-readme'
-  }
+    查看所有资产统计: '/oxn-arsenal 查看所有资产',
+    读取特定探针: '/oxn-arsenal probes/fs_exists',
+    读取特定工序: '/oxn-arsenal parts/run-build-and-test',
+    读取特定蓝图: '/oxn-arsenal blueprints/verify-readme',
+  },
 }

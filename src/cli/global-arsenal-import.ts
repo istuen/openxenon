@@ -29,7 +29,7 @@ function importArsenalType(
   targetArsenalsPath: string,
   type: string,
   filter: ImportFilter,
-  force: boolean
+  force: boolean,
 ): { imported: number; skipped: number; overwritten: number } {
   const srcDir = join(sourcePath, 'arsenals', type)
   const destDir = join(targetArsenalsPath, type)
@@ -124,36 +124,36 @@ function importArsenalType(
 export default defineCommand({
   meta: {
     name: 'arsenal-import',
-    description: '从外部目录导入 Arsenal 到全局'
+    description: '从外部目录导入 Arsenal 到全局',
   },
   args: {
     path: {
       type: 'positional',
       required: true,
-      description: '源目录路径'
+      description: '源目录路径',
     },
     draft: {
       type: 'boolean',
-      description: '只导入 draft 资产'
+      description: '只导入 draft 资产',
     },
     canonical: {
       type: 'boolean',
-      description: '只导入 canonical 资产（默认）'
+      description: '只导入 canonical 资产（默认）',
     },
     all: {
       type: 'boolean',
-      description: '导入所有资产（draft + canonical + archive）'
+      description: '导入所有资产（draft + canonical + archive）',
     },
     archive: {
       type: 'boolean',
-      description: '只导入 archive 资产'
+      description: '只导入 archive 资产',
     },
     force: {
       alias: 'f',
       type: 'boolean',
       description: '覆盖已存在的文件',
-      default: false
-    }
+      default: false,
+    },
   },
   async run(ctx) {
     const sourcePath = ctx.args.path as string
@@ -164,11 +164,13 @@ export default defineCommand({
       return
     }
 
-    const filter: ImportFilter =
-      ctx.args.all ? 'all' :
-      ctx.args.draft ? 'draft' :
-      ctx.args.archive ? 'archive' :
-      'canonical'
+    const filter: ImportFilter = ctx.args.all
+      ? 'all'
+      : ctx.args.draft
+        ? 'draft'
+        : ctx.args.archive
+          ? 'archive'
+          : 'canonical'
 
     console.log(`从 ${sourcePath} 导入 Arsenal 到全局`)
     console.log(`过滤条件: ${filter}`)
@@ -190,5 +192,5 @@ export default defineCommand({
     }
 
     console.log(`\n导入完成: ${totalImported} 文件导入, ${totalSkipped} 文件跳过, ${totalOverwritten} 文件覆盖`)
-  }
+  },
 })

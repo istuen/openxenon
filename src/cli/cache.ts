@@ -1,8 +1,5 @@
 import { defineCommand } from 'citty'
-import { resolve } from 'path'
-import { readdirSync, statSync, rmSync, existsSync } from 'fs'
-import { output, outputError, getFormatFromArgs } from './output'
-import { compileCache } from '../infra/compile-cache'
+import { output } from './output'
 
 export default defineCommand({
   meta: {
@@ -13,7 +10,7 @@ export default defineCommand({
     clear: () => import('./cache-clear').then((m) => m.default),
     stats: () => import('./cache-stats').then((m) => m.default),
   },
-  async run(ctx) {
+  async run(_ctx) {
     return output(
       {
         data: { message: '使用 oxn cache clear 或 oxn cache stats' },

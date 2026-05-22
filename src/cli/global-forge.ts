@@ -8,16 +8,16 @@ type ForgeType = 'probe' | 'part' | 'blueprint'
 const META_FORGE_NAMES: Record<ForgeType, BuiltinForgeName> = {
   probe: 'meta-probe',
   part: 'meta-part',
-  blueprint: 'meta-blueprint'
+  blueprint: 'meta-blueprint',
 }
 
-function loadMetaForge(type: ForgeType): { name: string, constraints: string[] } | null {
+function loadMetaForge(type: ForgeType): { name: string; constraints: string[] } | null {
   const builtinName = META_FORGE_NAMES[type]
   const builtin = BUILTIN_FORGES[builtinName]
   if (builtin) {
     return {
       name: builtin.name,
-      constraints: [...(builtin.stages?.[0]?.spec?.constraints || [])]
+      constraints: [...(builtin.stages?.[0]?.spec?.constraints || [])],
     }
   }
   return null
@@ -26,32 +26,32 @@ function loadMetaForge(type: ForgeType): { name: string, constraints: string[] }
 export default defineCommand({
   meta: {
     name: 'forge',
-    description: '锻造全局 Draft 标准资产'
+    description: '锻造全局 Draft 标准资产',
   },
   args: {
     type: {
       type: 'positional',
       required: false,
-      description: '元Forge类型: probe, part, blueprint, all'
+      description: '元Forge类型: probe, part, blueprint, all',
     },
     save: {
       type: 'string',
       alias: 's',
-      description: '直接保存 YAML 内容（用于 AI 生成资产后保存）'
+      description: '直接保存 YAML 内容（用于 AI 生成资产后保存）',
     },
     name: {
       type: 'string',
       alias: 'n',
-      description: '资产名称'
+      description: '资产名称',
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
-    }
+      description: 'YAML 格式输出',
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -64,17 +64,22 @@ export default defineCommand({
       if (result.success) {
         return output({ data: { path: result.path } }, format)
       }
-      return outputError({
-        code: 'OXN_FORGE_SAVE_FAILED',
-        message: result.error || 'Failed to save draft'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_FORGE_SAVE_FAILED',
+          message: result.error || 'Failed to save draft',
+        },
+        format,
+      )
     }
 
     if (!type || type === 'all') {
-      const forges = (['probe', 'part', 'blueprint'] as ForgeType[]).map(t => {
-        const forge = loadMetaForge(t)
-        return forge ? { type: t, name: forge.name, constraints: forge.constraints } : null
-      }).filter(Boolean)
+      const forges = (['probe', 'part', 'blueprint'] as ForgeType[])
+        .map((t) => {
+          const forge = loadMetaForge(t)
+          return forge ? { type: t, name: forge.name, constraints: forge.constraints } : null
+        })
+        .filter(Boolean)
 
       return output({ data: { forges } }, format)
     }
@@ -82,21 +87,30 @@ export default defineCommand({
     if (type === 'probe' || type === 'part' || type === 'blueprint') {
       const forge = loadMetaForge(type as ForgeType)
       if (!forge) {
-        return outputError({
-          code: 'OXN_FORGE_NOT_FOUND',
-          message: `元Forge '${type}' 不存在`
-        }, format)
+        return outputError(
+          {
+            code: 'OXN_FORGE_NOT_FOUND',
+            message: `元Forge '${type}' 不存在`,
+          },
+          format,
+        )
       }
-      return output({
-        data: { name: forge.name, constraints: forge.constraints },
-        human: `\n=== ${forge.name} ===\n\n约束 (Constraints):\n${forge.constraints.map(c => `  - ${c}`).join('\n')}\n`
-      }, format)
+      return output(
+        {
+          data: { name: forge.name, constraints: forge.constraints },
+          human: `\n=== ${forge.name} ===\n\n约束 (Constraints):\n${forge.constraints.map((c) => `  - ${c}`).join('\n')}\n`,
+        },
+        format,
+      )
     }
 
-    return outputError({
-      code: 'OXN_UNKNOWN_FORGE_TYPE',
-      message: `未知类型: ${type}`,
-      suggestion: `可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}, all`
-    }, format)
-  }
+    return outputError(
+      {
+        code: 'OXN_UNKNOWN_FORGE_TYPE',
+        message: `未知类型: ${type}`,
+        suggestion: `可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}, all`,
+      },
+      format,
+    )
+  },
 })

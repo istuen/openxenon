@@ -17,11 +17,11 @@ interface MigrationResult {
 
 const ASSET_TYPES: AssetType[] = ['probes', 'blueprints', 'parts']
 
-function scanOldStructureAssets(scope: 'project' | 'global'): { path: string, type: AssetType, name: string, state: AssetState }[] {
-  const assets: { path: string, type: AssetType, name: string, state: AssetState }[] = []
-  const basePath = scope === 'global'
-    ? GLOBAL_ARSENALS_ROOT
-    : join(getProjectBoundaryPath(process.cwd()), 'arsenals')
+function scanOldStructureAssets(
+  scope: 'project' | 'global',
+): { path: string; type: AssetType; name: string; state: AssetState }[] {
+  const assets: { path: string; type: AssetType; name: string; state: AssetState }[] = []
+  const basePath = scope === 'global' ? GLOBAL_ARSENALS_ROOT : join(getProjectBoundaryPath(process.cwd()), 'arsenals')
 
   for (const type of ASSET_TYPES) {
     for (const state of ['draft', 'canonical'] as AssetState[]) {
@@ -35,7 +35,7 @@ function scanOldStructureAssets(scope: 'project' | 'global'): { path: string, ty
             path: join(dirPath, file),
             type,
             name: basename(file, '.' + file.split('.').pop()),
-            state
+            state,
           })
         }
       }
@@ -46,13 +46,11 @@ function scanOldStructureAssets(scope: 'project' | 'global'): { path: string, ty
 }
 
 function migrateAsset(
-  asset: { path: string, type: AssetType, name: string, state: AssetState },
+  asset: { path: string; type: AssetType; name: string; state: AssetState },
   scope: 'project' | 'global',
-  keepOld: boolean
+  keepOld: boolean,
 ): MigrationResult {
-  const basePath = scope === 'global'
-    ? GLOBAL_ARSENALS_ROOT
-    : join(getProjectBoundaryPath(process.cwd()), 'arsenals')
+  const basePath = scope === 'global' ? GLOBAL_ARSENALS_ROOT : join(getProjectBoundaryPath(process.cwd()), 'arsenals')
 
   const newPath = join(basePath, asset.type, asset.name, asset.state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
 
@@ -64,7 +62,7 @@ function migrateAsset(
       oldPath: asset.path,
       newPath,
       status: 'skipped',
-      error: 'Asset already exists at new path'
+      error: 'Asset already exists at new path',
     }
   }
 
@@ -86,7 +84,7 @@ function migrateAsset(
       state: asset.state,
       oldPath: asset.path,
       newPath,
-      status: 'success'
+      status: 'success',
     }
   } catch (error) {
     return {
@@ -96,7 +94,7 @@ function migrateAsset(
       oldPath: asset.path,
       newPath,
       status: 'failed',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     }
   }
 }
@@ -114,14 +112,14 @@ function cleanupEmptyDirs(dirPath: string): void {
 export default defineCommand({
   meta: {
     name: 'arsenal-migrate',
-    description: '将旧结构（arsenals/<type>/draft/<name>.yaml）迁移到新结构（arsenals/<type>/<name>/draft.yaml）'
+    description: '将旧结构（arsenals/<type>/draft/<name>.yaml）迁移到新结构（arsenals/<type>/<name>/draft.yaml）',
   },
   args: {
     keepOld: {
       type: 'boolean',
       short: 'k',
-      description: '保留旧文件，不删除'
-    }
+      description: '保留旧文件，不删除',
+    },
   },
   async run(ctx) {
     if (ctx.args.global || ctx.args.g) {
@@ -152,9 +150,9 @@ export default defineCommand({
       results.push(result)
     }
 
-    const successCount = results.filter(r => r.status === 'success').length
-    const skippedCount = results.filter(r => r.status === 'skipped').length
-    const failedCount = results.filter(r => r.status === 'failed').length
+    const successCount = results.filter((r) => r.status === 'success').length
+    const skippedCount = results.filter((r) => r.status === 'skipped').length
+    const failedCount = results.filter((r) => r.status === 'failed').length
 
     console.log('--- 迁移结果 ---\n')
     for (const result of results) {
@@ -185,5 +183,5 @@ export default defineCommand({
     }
 
     console.log('\n✅ 迁移完成！')
-  }
+  },
 })

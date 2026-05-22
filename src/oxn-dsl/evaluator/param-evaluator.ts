@@ -71,7 +71,7 @@ function getOxnBaseType(typeStr: string): string {
 function getEnumValues(typeStr: string): string[] | null {
   const match = typeStr.match(/^enum\((.+)\)$/)
   if (!match) return null
-  return match[1]!.split(',').map(v => v.trim().replace(/^"|"$/g, ''))
+  return match[1]!.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
 }
 
 function typeIsCompatible(value: unknown, type: OxnAssemblyProp): { compatible: boolean; issue?: string } {
@@ -116,7 +116,7 @@ function typeIsCompatible(value: unknown, type: OxnAssemblyProp): { compatible: 
  */
 export function validateParamCoverage(
   props: OxnAssemblyProp[],
-  providedParams: Record<string, unknown>
+  providedParams: Record<string, unknown>,
 ): CoverageResult {
   const errors: ValidationError[] = []
   const covered: string[] = []
@@ -148,7 +148,7 @@ export function validateParamCoverage(
  */
 export function validateTypeConsistency(
   props: OxnAssemblyProp[],
-  providedParams: Record<string, unknown>
+  providedParams: Record<string, unknown>,
 ): TypeCheckResult {
   const errors: ValidationError[] = []
 
@@ -177,13 +177,10 @@ export function validateTypeConsistency(
  * 将模板字符串中的 ${prop.xxx} 占位符替换为实际参数值
  */
 export function resolveTemplateString(template: string, params: Record<string, unknown>): string {
-  return template.replace(
-    /\$\{prop\.(\w+)\}/g,
-    (_match: string, key: string) => {
-      const val = params[key]
-      return val !== undefined ? String(val) : `\${prop.${key}}`
-    }
-  )
+  return template.replace(/\$\{prop\.(\w+)\}/g, (_match: string, key: string) => {
+    const val = params[key]
+    return val !== undefined ? String(val) : `\${prop.${key}}`
+  })
 }
 
 /**
@@ -191,7 +188,7 @@ export function resolveTemplateString(template: string, params: Record<string, u
  */
 export function resolveProbeParams(
   probeParams: Record<string, unknown>,
-  partParams: Record<string, unknown>
+  partParams: Record<string, unknown>,
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {}
 
@@ -215,12 +212,9 @@ export function resolveProbeParams(
 /**
  * 验证 abstract part 的 params 引用的字段都存在于 concrete part 的 props 中
  */
-export function validateAbstractParamFields(
-  abstractParams: string[],
-  concretePart: OxnAssemblyPart
-): TypeCheckResult {
+export function validateAbstractParamFields(abstractParams: string[], concretePart: OxnAssemblyPart): TypeCheckResult {
   const errors: ValidationError[] = []
-  const concretePropNames = new Set(concretePart.props.map(p => p.name))
+  const concretePropNames = new Set(concretePart.props.map((p) => p.name))
 
   for (const field of abstractParams) {
     if (!concretePropNames.has(field)) {
@@ -307,16 +301,19 @@ export function evaluatePartParams(input: PartEvalInput): ParamEvalResult {
 export function evaluateAllParts(
   parts: OxnAssemblyPart[],
   taskProps: Record<string, unknown>,
-  abstractParams?: Record<string, unknown>
+  abstractParams?: Record<string, unknown>,
 ): Map<string, ParamEvalResult> {
   const results = new Map<string, ParamEvalResult>()
 
   for (const part of parts) {
-    results.set(part.name, evaluatePartParams({
-      part,
-      taskProps,
-      abstractParams,
-    }))
+    results.set(
+      part.name,
+      evaluatePartParams({
+        part,
+        taskProps,
+        abstractParams,
+      }),
+    )
   }
 
   return results

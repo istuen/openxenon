@@ -108,11 +108,7 @@ export function getScopeRoot(scope: OxnScope, projectRoot?: string): string | nu
 }
 
 /** 根据作用域和资产类型获取文件系统路径 */
-export function getScopeAssetDir(
-  scope: OxnScope,
-  type: OxnAssetType,
-  projectRoot?: string
-): string | null {
+export function getScopeAssetDir(scope: OxnScope, type: OxnAssetType, projectRoot?: string): string | null {
   const root = getScopeRoot(scope, projectRoot)
   if (!root) return null
 
@@ -167,8 +163,8 @@ export interface PropsComparisonResult {
  * 3. params 表达式的类型必须与 prop type 兼容（简化版检查）
  */
 export function compareProps(
-  abstractParams: Record<string, string>,  // key → 表达式字符串
-  concreteProps: OxnAssemblyProp[]
+  abstractParams: Record<string, string>, // key → 表达式字符串
+  concreteProps: OxnAssemblyProp[],
 ): PropsComparisonResult {
   const result: PropsComparisonResult = {
     missingRequired: [],
@@ -176,7 +172,7 @@ export function compareProps(
     unknownFields: [],
   }
 
-  const concretePropMap = new Map(concreteProps.map(p => [p.name, p]))
+  const concretePropMap = new Map(concreteProps.map((p) => [p.name, p]))
 
   // 检查 abstract params 是否引用了不存在的字段
   for (const key of Object.keys(abstractParams)) {

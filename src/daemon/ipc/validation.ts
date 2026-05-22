@@ -12,7 +12,7 @@ export async function parseJSONBody<T>(request: Request): Promise<T | null> {
 
 export function validateRequiredFields(
   obj: Record<string, unknown>,
-  fields: string[]
+  fields: string[],
 ): { valid: boolean; missingField?: string } {
   for (const field of fields) {
     if (obj[field] === undefined || obj[field] === null) {
@@ -31,10 +31,10 @@ export function getQueryParams(url: string): Record<string, string> {
   if (queryIndex === -1) {
     return {}
   }
-  
+
   const queryString = url.substring(queryIndex + 1)
   const params: Record<string, string> = {}
-  
+
   for (const pair of queryString.split('&')) {
     if (!pair) continue
     const eqIndex = pair.indexOf('=')
@@ -48,6 +48,6 @@ export function getQueryParams(url: string): Record<string, string> {
       params[decodeURIComponent(key)] = decodeURIComponent(value)
     }
   }
-  
+
   return params
 }

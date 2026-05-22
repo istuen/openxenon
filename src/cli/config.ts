@@ -31,20 +31,20 @@ function readProjectConfig(projectRoot: string): ProjectConfig | null {
 export default defineCommand({
   meta: {
     name: 'config',
-    description: '管理项目配置'
+    description: '管理项目配置',
   },
   subCommands: {
-    debug: () => import('./config-debug').then(m => m.default),
+    debug: () => import('./config-debug').then((m) => m.default),
   },
   args: {
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
-    }
+      description: 'YAML 格式输出',
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -52,15 +52,21 @@ export default defineCommand({
     const config = readProjectConfig(projectRoot)
 
     if (!config) {
-      return outputError({
-        code: 'OXN_CONFIG_NOT_FOUND',
-        message: '项目未初始化，请先执行 oxn init'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_CONFIG_NOT_FOUND',
+          message: '项目未初始化，请先执行 oxn init',
+        },
+        format,
+      )
     }
 
-    return output({
-      data: config,
-      human: `项目配置:\n  mode: ${config.mode}\n  debug: ${config.debug ? 'enabled' : 'disabled'}\n  name: ${config.name || 'unnamed'}\n`
-    }, format)
-  }
+    return output(
+      {
+        data: config,
+        human: `项目配置:\n  mode: ${config.mode}\n  debug: ${config.debug ? 'enabled' : 'disabled'}\n  name: ${config.name || 'unnamed'}\n`,
+      },
+      format,
+    )
+  },
 })

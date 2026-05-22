@@ -50,7 +50,7 @@ export function parseGlobPattern(fullPattern: string, projectRoot: string): { ba
 
   const firstGlobIndex = Math.min(
     normalizedPattern.indexOf('*') === -1 ? Infinity : normalizedPattern.indexOf('*'),
-    normalizedPattern.indexOf('?') === -1 ? Infinity : normalizedPattern.indexOf('?')
+    normalizedPattern.indexOf('?') === -1 ? Infinity : normalizedPattern.indexOf('?'),
   )
 
   let splitIndex: number

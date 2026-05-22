@@ -60,7 +60,8 @@ export const SlotInvocationSchema: z.ZodType<{
     if (typeof val === 'string') {
       return { name: val, inline: false }
     }
-    return { name: val.name, inline: val.inline ?? false, ...val }
+    const { inline, ...rest } = val
+    return { ...rest, name: val.name, inline: inline ?? false }
   })
 
 export type SlotInvocation = z.infer<typeof SlotInvocationSchema>
@@ -176,6 +177,17 @@ export function extractTemplateVariables(action: { instruction?: string; command
 export type TemplateVariableScope = 'params' | 'task' | 'part' | 'env'
 
 export const ALLOWED_VARIABLE_SCOPES: TemplateVariableScope[] = ['params', 'task', 'part']
+
+function validateTemplateVariables(
+  vars: string[],
+  allowedScopes: TemplateVariableScope[],
+): { valid: boolean; invalidVars: string[] } {
+  const invalidVars = vars.filter((v) => {
+    const scope = v.split('.')[0]
+    return scope && !allowedScopes.includes(scope as TemplateVariableScope)
+  })
+  return { valid: invalidVars.length === 0, invalidVars }
+}
 
 export function validatePartTemplates(part: Part): { valid: boolean; errors: string[] } {
   const errors: string[] = []

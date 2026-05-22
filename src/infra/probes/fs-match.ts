@@ -13,14 +13,12 @@ export interface FsMatchParams {
 
 export async function executeFsMatch(
   params: FsMatchParams,
-  context: ProbeContext
+  context: ProbeContext,
 ): Promise<{ matched: boolean; content?: string; error?: string }> {
   const filePath = params.path || params.pattern || ''
   const regexStr = params.contains || (params.pattern && params.path ? params.pattern : undefined)
 
-  const fullPath = filePath.startsWith('/')
-    ? filePath
-    : join(context.projectRoot, filePath)
+  const fullPath = filePath.startsWith('/') ? filePath : join(context.projectRoot, filePath)
 
   try {
     const content = readFileSync(fullPath, 'utf-8')
@@ -35,7 +33,7 @@ export async function executeFsMatch(
   } catch (error) {
     return {
       matched: false,
-      error: error instanceof Error ? error.message : 'Failed to read file'
+      error: error instanceof Error ? error.message : 'Failed to read file',
     }
   }
 }

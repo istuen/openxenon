@@ -5,13 +5,7 @@
  * 纯函数，无任何 I/O
  */
 
-import type {
-  Finding,
-  ExplorationResult,
-  ExplorationRule,
-  ExplorationContext,
-  ProjectDir,
-} from './types'
+import type { Finding, ExplorationResult, ExplorationRule, ExplorationContext, ProjectDir } from './types'
 
 /**
  * 通用探索评估器
@@ -19,7 +13,7 @@ import type {
 export function evaluateExploration(
   context: ExplorationContext,
   rules: ExplorationRule[],
-  meta: { name: string; title: string }
+  meta: { name: string; title: string },
 ): ExplorationResult {
   const findings: Finding[] = []
 
@@ -31,9 +25,7 @@ export function evaluateExploration(
         level: rule.level,
         message: renderTemplate(rule.message, match.vars),
         location: match.vars.location as string | undefined,
-        suggestion: rule.suggestion
-          ? renderTemplate(rule.suggestion, match.vars)
-          : undefined,
+        suggestion: rule.suggestion ? renderTemplate(rule.suggestion, match.vars) : undefined,
         evidence: match.vars,
       })
     }
@@ -56,10 +48,7 @@ interface DirMatch {
 /**
  * 遍历所有目录，寻找匹配的规则
  */
-function matchRuleForDirs(
-  context: ExplorationContext,
-  rule: ExplorationRule
-): DirMatch[] {
+function matchRuleForDirs(context: ExplorationContext, rule: ExplorationRule): DirMatch[] {
   const matches: DirMatch[] = []
 
   for (const dir of context.projectDirs) {
@@ -79,11 +68,7 @@ function matchRuleForDirs(
 /**
  * 评估条件表达式
  */
-function evaluateCondition(
-  condition: string,
-  vars: Record<string, unknown>,
-  context: ExplorationContext
-): boolean {
+function evaluateCondition(condition: string, vars: Record<string, unknown>, context: ExplorationContext): boolean {
   const trimmed = condition.trim()
 
   // 处理 NOT
@@ -95,17 +80,13 @@ function evaluateCondition(
   // 处理 AND
   const andParts = trimmed.split(' AND ')
   if (andParts.length > 1) {
-    return andParts.every((part) =>
-      evaluateCondition(part.trim(), vars, context)
-    )
+    return andParts.every((part) => evaluateCondition(part.trim(), vars, context))
   }
 
   // 处理 OR
   const orParts = trimmed.split(' OR ')
   if (orParts.length > 1) {
-    return orParts.some((part) =>
-      evaluateCondition(part.trim(), vars, context)
-    )
+    return orParts.some((part) => evaluateCondition(part.trim(), vars, context))
   }
 
   // 处理比较: dir.fileCount >= 3
@@ -124,9 +105,7 @@ function evaluateCondition(
   }
 
   // 处理 hasDirectProbe(dir, 'fs_exists')
-  const hasDirectMatch = trimmed.match(
-    /^hasDirectProbe\((\w+),\s*'(.+)'\)$/
-  )
+  const hasDirectMatch = trimmed.match(/^hasDirectProbe\((\w+),\s*'(.+)'\)$/)
   if (hasDirectMatch) {
     const targetObj = hasDirectMatch[1]
     const probeType = hasDirectMatch[2]
@@ -140,9 +119,7 @@ function evaluateCondition(
     if (fileCount < 3) return false
 
     const hasCover = context.probes.some(
-      (p) =>
-        p.type === 'fs_exists' &&
-        (p.pattern === path || path.startsWith(p.pattern + '/'))
+      (p) => p.type === 'fs_exists' && (p.pattern === path || path.startsWith(p.pattern + '/')),
     )
     return probeType === 'fs_exists' ? hasCover : !hasCover
   }
@@ -156,7 +133,7 @@ function evaluateCondition(
       (f) =>
         f === pattern ||
         f.endsWith(pattern.replace(/^\./, '')) ||
-        new RegExp('^' + pattern.replace(/\*/g, '.*') + '$').test(f)
+        new RegExp('^' + pattern.replace(/\*/g, '.*') + '$').test(f),
     )
   }
 
@@ -166,10 +143,7 @@ function evaluateCondition(
 /**
  * 模板渲染
  */
-export function renderTemplate(
-  template: string,
-  vars: Record<string, unknown>
-): string {
+export function renderTemplate(template: string, vars: Record<string, unknown>): string {
   return template.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (_, path) => {
     const parts = path.split('.')
     let value: unknown = vars

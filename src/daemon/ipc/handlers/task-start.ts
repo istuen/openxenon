@@ -32,7 +32,6 @@ async function handleTaskStart(request: Request, projectPath: string): Promise<R
       taskId,
       blueprintPath: join(taskDir, 'blueprint.oxn'),
       tracePath: join(taskDir, 'task-trace.jsonl'),
-      manifestPath: join(taskDir, 'state.json'),
     })
 
     if (!trace) {

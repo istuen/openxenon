@@ -40,7 +40,7 @@ function generateJsonSchema(entities: OxnAssemblyBundleEntity[]): Record<string,
           type: (p.type as string).startsWith('enum') ? 'string' : (p.type as string),
         }
       }
-      schema.properties = { ...schema.properties, props: { type: 'object', properties: propSchema } }
+      schema.properties = { ...(schema.properties as Record<string, unknown>), props: { type: 'object', properties: propSchema } } as Record<string, unknown>
     }
 
     if (data._version !== undefined) {
@@ -72,7 +72,7 @@ function generateJsonSchema(entities: OxnAssemblyBundleEntity[]): Record<string,
  */
 function parseOxnViaLangium(
   sourcePath: string,
-  content: string
+  content: string,
 ): { entities: OxnAssemblyBundleEntity[]; errors: string[] } {
   const errors: string[] = []
   try {
@@ -187,11 +187,11 @@ export class BundleCompiler {
         name,
         id: name,
         _version: (parsed._version || 1) as number,
-        props: parsed.props || {},
-        stages: parsed.parts || parsed.stages || [],
-        expectations: parsed.expectations || [],
-        rules: parsed.rules || [],
-      },
+        props: (parsed.props || []) as any[],
+        stages: (parsed.parts || parsed.stages || []) as any[],
+        expectations: (parsed.expectations as any[]) || [],
+        rules: (parsed.rules as any[]) || [],
+      } as any,
     })
 
     return entities

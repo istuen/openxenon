@@ -3,11 +3,13 @@
  * DO NOT EDIT MANUALLY!
  ******************************************************************************/
 
-import type { Grammar } from 'langium';
-import { loadGrammarFromJson } from 'langium';
+import type { Grammar } from 'langium'
+import { loadGrammarFromJson } from 'langium'
 
-let loadedOXNGrammar: Grammar | undefined;
-export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar = loadGrammarFromJson(`{
+let loadedOXNGrammar: Grammar | undefined
+export const OXNGrammar = (): Grammar =>
+  loadedOXNGrammar ??
+  (loadedOXNGrammar = loadGrammarFromJson(`{
   "$type": "Grammar",
   "isDeclared": true,
   "name": "OXN",
@@ -2443,4 +2445,4 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
   "imports": [],
   "interfaces": [],
   "types": []
-}`));
+}`))

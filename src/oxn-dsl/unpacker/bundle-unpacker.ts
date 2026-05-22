@@ -4,7 +4,7 @@
  * oxn unpack <bundle.oxn> 命令实现：
  *   安全解压至隔离目录，严禁自动覆盖本地同名资产。
  */
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join, basename, dirname } from 'path'
 
 export interface UnpackOptions {
@@ -38,7 +38,9 @@ export class BundleUnpacker {
     }
 
     const content = readFileSync(bundlePath, 'utf-8')
-    const bundleName = basename(bundlePath).replace(/\.bundle\.oxn$/, '').replace(/\.oxn$/, '')
+    const bundleName = basename(bundlePath)
+      .replace(/\.bundle\.oxn$/, '')
+      .replace(/\.oxn$/, '')
 
     const targetDir = options?.outputDir || join(dirname(bundlePath), `${bundleName}-unpacked`)
     if (!existsSync(targetDir)) {

@@ -25,7 +25,7 @@ import {
 import { validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
 import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
 import type { Blueprint } from '../kernel/schemas/blueprint.schema'
-import { ensureDirectory } from '../infra/fs'
+import { ensureDirectory } from '../infra/filesystem'
 
 import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
 import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
@@ -36,17 +36,13 @@ import type { LangiumDocument } from 'langium'
 function extractBlueprintAssembly(doc: LangiumDocument): OxnAssemblyIR | undefined {
   if (!doc.parseResult || !doc.parseResult.value) return undefined
   const bundle = generateOxnAssembly(doc.parseResult.value as OXNDocument)
-  const blueprint = bundle.entities.find(
-    (e: { type: string }) => e.type === 'blueprint'
-  )
+  const blueprint = bundle.entities.find((e: { type: string }) => e.type === 'blueprint')
   if (!blueprint) return undefined
   const assem = validateOxnAssemblyIR((blueprint as { data: unknown }).data)
 
-  const partEntities = bundle.entities.filter(
-    (e: { type: string }) => e.type === 'part'
-  )
+  const partEntities = bundle.entities.filter((e: { type: string }) => e.type === 'part')
   if (partEntities.length > 0) {
-    assem.concreteParts = partEntities.map(e => (e as { data: unknown }).data as OxnAssemblyPart)
+    assem.concreteParts = partEntities.map((e) => (e as { data: unknown }).data as OxnAssemblyPart)
   }
 
   return assem
@@ -81,7 +77,7 @@ export function submitYamlPipeline(
   cwd: string,
   taskId: string,
   _taskName: string,
-  params?: Record<string, unknown>
+  params?: Record<string, unknown>,
 ): YamlSubmitResult {
   const content = readFileSync(blueprintPath, 'utf-8')
   const parsed = parseYaml(content) as Blueprint
@@ -133,7 +129,7 @@ export function submitOxnPipeline(
   cwd: string,
   taskId: string,
   _taskName: string,
-  taskBinding?: OxnAssemblySlotBinding[]
+  taskBinding?: OxnAssemblySlotBinding[],
 ): OxnSubmitResult {
   const content = readFileSync(blueprintPath, 'utf-8')
 
@@ -157,9 +153,7 @@ export function submitOxnPipeline(
         const parseResult = parser.parse(content)
         if (parseResult.value && parseResult.parserErrors.length === 0 && parseResult.lexerErrors.length === 0) {
           const bundle = generateOxnAssembly(parseResult.value as OXNDocument)
-          const blueprint = bundle.entities.find(
-            (e: { type: string }) => e.type === 'blueprint'
-          )
+          const blueprint = bundle.entities.find((e: { type: string }) => e.type === 'blueprint')
           if (blueprint) {
             assembly = validateOxnAssemblyIR((blueprint as { data: unknown }).data)
           }
@@ -179,7 +173,7 @@ export function submitOxnPipeline(
   }
 
   // DAG 校验：始终以 stages 为拓扑标准（concreteParts 无 deps 结构）
-  const dagNodes: DagNode[] = (assembly.stages.length > 0 ? assembly.stages : assembly.concreteParts).map(p => ({
+  const dagNodes: DagNode[] = (assembly.stages.length > 0 ? assembly.stages : assembly.concreteParts).map((p) => ({
     id: p.name,
     deps: (p as any).deps || [],
   }))
@@ -222,7 +216,7 @@ export function unifiedTaskSubmit(
     params?: Record<string, unknown>
     /** OXN 专用：Task binding */
     taskBinding?: OxnAssemblySlotBinding[]
-  }
+  },
 ): UnifiedSubmitResult {
   const pipeline = detectPipeline(blueprintPath)
 
@@ -243,7 +237,7 @@ export function writeFrozenToTaskDir(
   taskId: string,
   frozen: FrozenBlueprint,
   assembly?: OxnAssemblyIR,
-  sourceFormat?: string
+  sourceFormat?: string,
 ): { frozenPath: string; assemblyPath?: string } {
   const taskDir = join(cwd, BOUNDARY_DIR, 'tasks', taskId)
   ensureDirectory(taskDir)

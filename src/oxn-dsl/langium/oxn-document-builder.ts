@@ -1,9 +1,4 @@
-import type {
-  LangiumSharedCoreServices,
-  LangiumCoreServices,
-  LangiumDocument,
-  AstNode,
-} from 'langium'
+import type { LangiumSharedCoreServices, LangiumCoreServices, LangiumDocument, AstNode } from 'langium'
 import { DocumentState, URI, Cancellation } from 'langium'
 import { existsSync, readFileSync } from 'fs'
 import { join, isAbsolute } from 'path'
@@ -23,9 +18,7 @@ export interface ExternalInjectionResult {
   errors: string[]
 }
 
-function collectBindingRefsFromDocument(
-  document: LangiumDocument
-): string[] {
+function collectBindingRefsFromDocument(document: LangiumDocument): string[] {
   const refs: string[] = []
 
   if (!document.parseResult || !document.parseResult.value) return refs
@@ -50,10 +43,7 @@ function collectBindingRefsFromDocument(
   return refs
 }
 
-function resolveRefsToPaths(
-  refs: string[],
-  workspaceManager: IOxnWorkspaceManager
-): Map<string, string> {
+function resolveRefsToPaths(refs: string[], workspaceManager: IOxnWorkspaceManager): Map<string, string> {
   const resolved = new Map<string, string>()
 
   for (const ref of refs) {
@@ -78,7 +68,7 @@ function resolveRefsToPaths(
 
 export function createOxnDocumentBuilder(
   sharedServices: LangiumSharedCoreServices,
-  workspaceManager: IOxnWorkspaceManager
+  workspaceManager: IOxnWorkspaceManager,
 ) {
   return new OxnDocumentBuilder(sharedServices, workspaceManager)
 }
@@ -88,18 +78,13 @@ export class OxnDocumentBuilder {
   private coreServices: LangiumCoreServices
   private workspaceManager: IOxnWorkspaceManager
 
-  constructor(
-    sharedServices: LangiumSharedCoreServices,
-    workspaceManager: IOxnWorkspaceManager
-  ) {
+  constructor(sharedServices: LangiumSharedCoreServices, workspaceManager: IOxnWorkspaceManager) {
     this.sharedServices = sharedServices
     this.coreServices = createOxnServices(sharedServices)
     this.workspaceManager = workspaceManager
   }
 
-  async buildWithInjection(
-    filePath: string,
-  ): Promise<ExternalInjectionResult> {
+  async buildWithInjection(filePath: string): Promise<ExternalInjectionResult> {
     const errors: string[] = []
     const token = CancellationToken.None
     const langiumDocuments = this.sharedServices.workspace.LangiumDocuments
@@ -127,7 +112,7 @@ export class OxnDocumentBuilder {
       return {
         documents: [mainDocument],
         injectedCount: 0,
-        errors: ['Failed to parse main document']
+        errors: ['Failed to parse main document'],
       }
     }
 
@@ -155,9 +140,7 @@ export class OxnDocumentBuilder {
         externalDocuments.push(extDoc)
         injectedCount++
       } catch (err) {
-        errors.push(
-          `Failed to inject external document for ref "${ref}" at ${physicalPath}: ${String(err)}`
-        )
+        errors.push(`Failed to inject external document for ref "${ref}" at ${physicalPath}: ${String(err)}`)
       }
     }
 

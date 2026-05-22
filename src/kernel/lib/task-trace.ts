@@ -1,10 +1,4 @@
-import type {
-  TaskTraceYaml,
-  ProbeResult,
-  TraceEvent,
-  TaskTraceState,
-  StageState
-} from './types/task-trace'
+import type { ProbeResult, TraceEvent, TaskTraceState, PartState, TaskTraceYaml } from './types/task-trace'
 import type { TaskStatus } from './types/core'
 
 function isOldFormat(content: string): boolean {
@@ -29,7 +23,7 @@ function parseEventsFromContent(content: string): TraceEvent[] {
     }
   }
 
-  const lines = content.split('\n').filter(line => line.trim())
+  const lines = content.split('\n').filter((line) => line.trim())
   const events: TraceEvent[] = []
 
   for (const line of lines) {
@@ -52,7 +46,7 @@ function migrateFromOldFormatToEvents(oldTrace: TaskTraceYaml): TraceEvent[] {
     type: 'TASK_START',
     taskId: oldTrace.taskId,
     taskName: oldTrace.taskName,
-    timestamp: new Date(oldTrace.startedAt).getTime()
+    timestamp: new Date(oldTrace.startedAt).getTime(),
   })
 
   if (oldTrace.status !== 'RUNNING') {
@@ -60,9 +54,7 @@ function migrateFromOldFormatToEvents(oldTrace: TaskTraceYaml): TraceEvent[] {
       type: 'TASK_STATUS',
       taskId: oldTrace.taskId,
       status: oldTrace.status,
-      timestamp: oldTrace.completedAt
-        ? new Date(oldTrace.completedAt).getTime()
-        : now
+      timestamp: oldTrace.completedAt ? new Date(oldTrace.completedAt).getTime() : now,
     })
   }
 
@@ -73,7 +65,7 @@ function migrateFromOldFormatToEvents(oldTrace: TaskTraceYaml): TraceEvent[] {
         taskId: oldTrace.taskId,
         partId: part.partId,
         partName: part.partName,
-        timestamp: new Date(part.executedAt).getTime()
+        timestamp: new Date(part.executedAt).getTime(),
       })
     }
 
@@ -83,9 +75,7 @@ function migrateFromOldFormatToEvents(oldTrace: TaskTraceYaml): TraceEvent[] {
         taskId: oldTrace.taskId,
         partId: part.partId,
         status: part.status,
-        timestamp: part.completedAt
-          ? new Date(part.completedAt).getTime()
-          : now
+        timestamp: part.completedAt ? new Date(part.completedAt).getTime() : now,
       })
     }
 
@@ -98,7 +88,7 @@ function migrateFromOldFormatToEvents(oldTrace: TaskTraceYaml): TraceEvent[] {
         result: probe.result,
         output: probe.output,
         error: probe.error,
-        timestamp: new Date(probe.executedAt).getTime()
+        timestamp: new Date(probe.executedAt).getTime(),
       })
     }
   }
@@ -128,7 +118,7 @@ function applyEvent(state: TaskTraceState, event: TraceEvent): void {
         partName: event.partName,
         status: 'PENDING',
         probes: [],
-        startedAt: event.timestamp
+        startedAt: event.timestamp,
       })
       break
 
@@ -146,10 +136,12 @@ function applyEvent(state: TaskTraceState, event: TraceEvent): void {
       if (part) {
         part.probes.push({
           probeType: event.probeType,
+          params: event.params || {},
           result: event.result,
+          duration: event.duration || 0,
           output: event.output,
           error: event.error,
-          executedAt: event.timestamp
+          executedAt: event.timestamp,
         })
       }
       break
@@ -163,7 +155,7 @@ export function reduceTraceEvents(events: TraceEvent[]): TaskTraceState {
     taskName: '',
     status: 'NOT_FOUND',
     startedAt: 0,
-    stages: new Map()
+    parts: new Map(),
   }
 
   for (const event of events) {
@@ -212,14 +204,16 @@ export function createProbeResult(
   probeType: string,
   result: 'PASSED' | 'FAILED',
   output?: string,
-  error?: string
+  error?: string,
 ): ProbeResult {
   return {
     probeType,
+    params: {},
     result,
+    duration: 0,
     output,
     error,
-    executedAt: Date.now()
+    executedAt: Date.now(),
   }
 }
 
@@ -229,20 +223,16 @@ export function createPartState(partId: string, partName: string): PartState {
     partName,
     status: 'PENDING',
     probes: [],
-    startedAt: Date.now()
+    startedAt: Date.now(),
   }
 }
 
-export function buildTraceEvent(
-  type: TraceEvent['type'],
-  taskId: string,
-  payload: Partial<TraceEvent>
-): TraceEvent {
+export function buildTraceEvent(type: TraceEvent['type'], taskId: string, payload: Record<string, unknown>): TraceEvent {
   return {
     type,
     taskId,
     timestamp: Date.now(),
-    ...payload
+    ...payload,
   } as TraceEvent
 }
 

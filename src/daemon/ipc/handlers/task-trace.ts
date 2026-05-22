@@ -4,10 +4,7 @@ import { notFound } from '../errors'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
 import { readTaskTrace } from '../../trace/writer'
 
-async function handleTaskTrace(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleTaskTrace(request: Request, projectPath: string): Promise<Response> {
   try {
     const url = new URL(request.url)
     const params = getQueryParams(url.toString())
@@ -18,12 +15,12 @@ async function handleTaskTrace(
         JSON.stringify({
           error: 'MissingTaskId',
           message: 'Query parameter taskId is required',
-          statusCode: 400
+          statusCode: 400,
         }),
         {
           status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
+          headers: { 'Content-Type': 'application/json' },
+        },
       )
     }
 
@@ -38,12 +35,12 @@ async function handleTaskTrace(
       JSON.stringify({
         taskId,
         tracePath: taskDir.tracePath,
-        trace
+        trace,
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -52,12 +49,12 @@ async function handleTaskTrace(
       JSON.stringify({
         error: 'TaskTraceFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }

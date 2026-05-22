@@ -1,44 +1,42 @@
-import { describe, test, expect } from "bun:test";
-import { detectPipeline } from "../../cli/oxn-dual-track";
+import { describe, test, expect } from 'bun:test'
+import { detectPipeline } from '../../cli/oxn-dual-track'
 
-describe("detectPipeline", () => {
-  test(".oxn 文件路由到新管线", () => {
-    expect(detectPipeline("task.oxn")).toBe("oxn");
-    expect(detectPipeline("/path/to/blueprint.oxn")).toBe("oxn");
-  });
+describe('detectPipeline', () => {
+  test('.oxn 文件路由到新管线', () => {
+    expect(detectPipeline('task.oxn')).toBe('oxn')
+    expect(detectPipeline('/path/to/blueprint.oxn')).toBe('oxn')
+  })
 
-  test(".yaml 文件路由到老管线", () => {
-    expect(detectPipeline("blueprint.yaml")).toBe("yaml");
-    expect(detectPipeline("blueprint.yml")).toBe("yaml");
-  });
+  test('.yaml 文件路由到老管线', () => {
+    expect(detectPipeline('blueprint.yaml')).toBe('yaml')
+    expect(detectPipeline('blueprint.yml')).toBe('yaml')
+  })
 
-  test(".json 文件路由到老管线", () => {
-    expect(detectPipeline("data.json")).toBe("yaml");
-  });
+  test('.json 文件路由到老管线', () => {
+    expect(detectPipeline('data.json')).toBe('yaml')
+  })
 
-  test("无后缀文件路由到老管线", () => {
-    expect(detectPipeline("blueprint")).toBe("yaml");
-  });
-});
+  test('无后缀文件路由到老管线', () => {
+    expect(detectPipeline('blueprint')).toBe('yaml')
+  })
+})
 
 // ========================
 // YAML → OXN 迁移测试
 // ========================
 
-import {
-  migrateSingleFile,
-  formatMigrationReport,
-  type MigrationStats,
-} from "../../cli/migrate-yaml";
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from "fs";
-import { join } from "path";
+import { migrateSingleFile, formatMigrationReport, type MigrationStats } from '../../cli/migrate-yaml'
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
+import { join } from 'path'
 
-describe("migrateSingleFile", () => {
-  const tmpDir = "/tmp/oxn-migrate-test";
+describe('migrateSingleFile', () => {
+  const tmpDir = '/tmp/oxn-migrate-test'
 
-  test("stage 无 slot 的 Blueprint 迁移", () => {
-    const yamlPath = join(tmpDir, "test-migrate.yaml");
-    writeFileSync(yamlPath, `
+  test('stage 无 slot 的 Blueprint 迁移', () => {
+    const yamlPath = join(tmpDir, 'test-migrate.yaml')
+    writeFileSync(
+      yamlPath,
+      `
 name: simple-check
 stages:
   - id: check-readme
@@ -49,28 +47,32 @@ stages:
       - type: fs_exists
         params:
           pattern: "README.md"
-`, 'utf-8');
+`,
+      'utf-8',
+    )
 
-    const result = migrateSingleFile(yamlPath);
-    expect(result.success).toBe(1);
-    expect(result.failures).toBe(0);
+    const result = migrateSingleFile(yamlPath)
+    expect(result.success).toBe(1)
+    expect(result.failures).toBe(0)
 
-    const oxnPath = yamlPath.replace('.yaml', '.oxn');
-    expect(existsSync(oxnPath)).toBe(true);
+    const oxnPath = yamlPath.replace('.yaml', '.oxn')
+    expect(existsSync(oxnPath)).toBe(true)
 
-    const content = readFileSync(oxnPath, 'utf-8');
-    expect(content).toContain('blueprint "simple-check"');
-    expect(content).toContain('stage "check-readme"');
-    expect(content).toContain('deps = []');
+    const content = readFileSync(oxnPath, 'utf-8')
+    expect(content).toContain('blueprint "simple-check"')
+    expect(content).toContain('stage "check-readme"')
+    expect(content).toContain('deps = []')
 
     // Cleanup
-    unlinkSync(yamlPath);
-    unlinkSync(oxnPath);
-  });
+    unlinkSync(yamlPath)
+    unlinkSync(oxnPath)
+  })
 
-  test("blueprint 含 slots → abstract part 翻译", () => {
-    const yamlPath = join(tmpDir, "test-slots.yaml");
-    writeFileSync(yamlPath, `
+  test('blueprint 含 slots → abstract part 翻译', () => {
+    const yamlPath = join(tmpDir, 'test-slots.yaml')
+    writeFileSync(
+      yamlPath,
+      `
 name: ci-pipeline
 slots:
   tester: test-runner
@@ -82,23 +84,27 @@ stages:
       - type: exec_exit_zero
         params:
           command: "npm test"
-`, 'utf-8');
+`,
+      'utf-8',
+    )
 
-    const result = migrateSingleFile(yamlPath);
-    expect(result.success).toBe(1);
+    const result = migrateSingleFile(yamlPath)
+    expect(result.success).toBe(1)
 
-    const oxnPath = yamlPath.replace('.yaml', '.oxn');
-    const content = readFileSync(oxnPath, 'utf-8');
-    expect(content).toContain('abstract part "tester"');
-    expect(content).toContain('stage "run-test"');
+    const oxnPath = yamlPath.replace('.yaml', '.oxn')
+    const content = readFileSync(oxnPath, 'utf-8')
+    expect(content).toContain('abstract part "tester"')
+    expect(content).toContain('stage "run-test"')
 
-    unlinkSync(yamlPath);
-    unlinkSync(oxnPath);
-  });
+    unlinkSync(yamlPath)
+    unlinkSync(oxnPath)
+  })
 
-  test("blueprint 含 props → prop 声明", () => {
-    const yamlPath = join(tmpDir, "test-props.yaml");
-    writeFileSync(yamlPath, `
+  test('blueprint 含 props → prop 声明', () => {
+    const yamlPath = join(tmpDir, 'test-props.yaml')
+    writeFileSync(
+      yamlPath,
+      `
 name: deploy
 props:
   env:
@@ -108,37 +114,39 @@ props:
     type: number
     default: 3
 stages: []
-`, 'utf-8');
+`,
+      'utf-8',
+    )
 
-    const result = migrateSingleFile(yamlPath);
-    expect(result.success).toBe(1);
+    const result = migrateSingleFile(yamlPath)
+    expect(result.success).toBe(1)
 
-    const oxnPath = yamlPath.replace('.yaml', '.oxn');
-    const content = readFileSync(oxnPath, 'utf-8');
-    expect(content).toContain('prop "env"');
-    expect(content).toContain('required = true');
-    expect(content).toContain('prop "replicas"');
-    expect(content).toContain('default = 3');
+    const oxnPath = yamlPath.replace('.yaml', '.oxn')
+    const content = readFileSync(oxnPath, 'utf-8')
+    expect(content).toContain('prop "env"')
+    expect(content).toContain('required = true')
+    expect(content).toContain('prop "replicas"')
+    expect(content).toContain('default = 3')
 
-    unlinkSync(yamlPath);
-    unlinkSync(oxnPath);
-  });
+    unlinkSync(yamlPath)
+    unlinkSync(oxnPath)
+  })
 
-  test("不存在的文件 → failure", () => {
-    const result = migrateSingleFile("/tmp/nonexistent.yaml");
-    expect(result.failures).toBe(1);
-  });
+  test('不存在的文件 → failure', () => {
+    const result = migrateSingleFile('/tmp/nonexistent.yaml')
+    expect(result.failures).toBe(1)
+  })
 
-  test("formatMigrationReport 格式化", () => {
+  test('formatMigrationReport 格式化', () => {
     const stats: MigrationStats = {
       total: 3,
       success: 2,
       failures: 1,
-      details: ["✅ a.yaml → a.oxn", "✅ b.yaml → b.oxn", "❌ c.yaml: parse error"],
-    };
-    const report = formatMigrationReport(stats);
-    expect(report).toContain("总计: 3");
-    expect(report).toContain("成功: 2");
-    expect(report).toContain("失败: 1");
-  });
-});
+      details: ['✅ a.yaml → a.oxn', '✅ b.yaml → b.oxn', '❌ c.yaml: parse error'],
+    }
+    const report = formatMigrationReport(stats)
+    expect(report).toContain('总计: 3')
+    expect(report).toContain('成功: 2')
+    expect(report).toContain('失败: 1')
+  })
+})

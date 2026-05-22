@@ -13,15 +13,15 @@ export function startServer(config: ServerConfig): any {
     daemonLogger.warn('Server already running, stopping previous instance')
     stopServer()
   }
-  
+
   server = Bun.serve({
     port: config.port,
     hostname: config.hostname,
-    fetch: config.fetch
+    fetch: config.fetch,
   })
-  
+
   daemonLogger.info(`Server started on ${config.hostname}:${config.port}`)
-  
+
   return server
 }
 

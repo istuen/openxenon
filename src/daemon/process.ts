@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from '../infra/filesystem'
+import { existsSync, unlinkSync, writeFileSync } from '../infra/filesystem'
 import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from '../infra/global'
 import { daemonLogger } from './logger'
 import { waitForHealth } from './health-check'

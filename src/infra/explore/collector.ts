@@ -6,6 +6,7 @@
 import { glob } from 'glob'
 import { readFile, mkdir, writeFile, readdir } from 'node:fs/promises'
 import { join } from 'path'
+import { parse as parseYaml } from 'yaml'
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move shared types out of kernel, infra should not depend on kernel
 import type {
   ExplorationContext,
@@ -97,20 +98,20 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
       const stat = await readdir(probePath)
       if (stat.includes('canonical.yaml')) {
         const content = await readFile(join(probePath, 'canonical.yaml'), 'utf-8')
-        const parsed = { _raw: content }
+        const parsed = parseYaml(content) as Record<string, unknown>
         coverages.push({
-          type: parsed.type as string,
+          type: (parsed.type as string) || '',
           pattern:
-            (parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value || '',
+            ((parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value) || '',
           source: 'canonical',
         })
       } else if (stat.includes('draft.yaml')) {
         const content = await readFile(join(probePath, 'draft.yaml'), 'utf-8')
-        const parsed = { _raw: content }
+        const parsed = parseYaml(content) as Record<string, unknown>
         coverages.push({
-          type: parsed.type as string,
+          type: (parsed.type as string) || '',
           pattern:
-            (parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value || '',
+            ((parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value) || '',
           source: 'draft',
         })
       }
@@ -144,7 +145,7 @@ async function collectBlueprintRefs(projectRoot: string): Promise<BlueprintProbe
       const blueprintPath = join(taskDir, taskId, 'blueprint.yaml')
       try {
         const content = await readFile(blueprintPath, 'utf-8')
-        const parsed = { _raw: content }
+        const parsed = parseYaml(content) as Record<string, unknown>
         if (parsed.parts) {
           for (const part of parsed.parts as Array<{ probes?: Array<{ type: string }> }>) {
             if (part.probes) {
@@ -192,13 +193,13 @@ export async function loadExplorationAssets(projectRoot: string, names?: string[
       const assetPath = join(explorationsDir, name, 'canonical.yaml')
       try {
         const content = await readFile(assetPath, 'utf-8')
-        const parsed = { _raw: content }
+        const parsed = parseYaml(content) as Record<string, unknown>
         assets.push({
-          name: parsed.name as string,
-          description: parsed.description as string,
-          scope: (parsed.scope as string[]) || [],
-          output: parsed.output as string,
-          rules: (parsed.rules as ExplorationAsset['rules']) || [],
+          name: (parsed.name as string) || '',
+          description: (parsed.description as string) || '',
+          scope: ((parsed.scope as string[]) || []),
+          output: (parsed.output as string) || '',
+          rules: ((parsed.rules as ExplorationAsset['rules']) || []),
         })
       } catch {
         // 资产不存在

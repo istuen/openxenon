@@ -6,11 +6,11 @@
  *
  * 将沙箱源态的资产提升至全局 Arsenal 源态。
  */
-import { existsSync, readFileSync, writeFileSync, mkdirSync, renameSync, copyFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join, basename } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { BOUNDARY_DIR } from '../kernel/constants'
-import type { OxnAssemblyIR } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyIR } from '../kernel/schemas/oxn-assembly.schema'
 
 export interface PromoteOptions {
   /** 强制覆盖已有资产 */
@@ -55,7 +55,7 @@ export class OxnPromoter {
       bpVersion = (ir._version || 1) + 1
     } else {
       const parsed = parseYaml(content) as Record<string, unknown>
-      bpName = options?.asNew || (parsed.name || parsed.id || basename(taskDir)) as string
+      bpName = options?.asNew || ((parsed.name || parsed.id || basename(taskDir)) as string)
       bpVersion = ((parsed._version || 1) as number) + 1
     }
 

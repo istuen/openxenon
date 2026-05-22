@@ -6,17 +6,17 @@ import { output, outputError, getFormatFromArgs } from './output'
 export default defineCommand({
   meta: {
     name: 'hall',
-    description: '打开全局研讨厅 (Hall)'
+    description: '打开全局研讨厅 (Hall)',
   },
   args: {
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--open': {
       type: 'boolean',
-      description: '在浏览器中打开'
-    }
+      description: '在浏览器中打开',
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -46,22 +46,31 @@ export default defineCommand({
           }
         })
 
-        return output({
-          data: { path: indexPath, url: hallUrl },
-          human: `全局 Hall 已打开: ${hallUrl}`
-        }, format)
+        return output(
+          {
+            data: { path: indexPath, url: hallUrl },
+            human: `全局 Hall 已打开: ${hallUrl}`,
+          },
+          format,
+        )
       }
 
-      return output({
-        data: { path: indexPath, url: hallUrl },
-        human: `全局 Hall 路径: ${indexPath}\n\n使用 --open 在浏览器中打开`
-      }, format)
+      return output(
+        {
+          data: { path: indexPath, url: hallUrl },
+          human: `全局 Hall 路径: ${indexPath}\n\n使用 --open 在浏览器中打开`,
+        },
+        format,
+      )
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err)
-      return outputError({
-        code: 'OXN_HALL_ERROR',
-        message: errorMsg
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_HALL_ERROR',
+          message: errorMsg,
+        },
+        format,
+      )
     }
-  }
+  },
 })

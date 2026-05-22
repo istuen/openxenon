@@ -5,12 +5,13 @@
  * 依赖 Task 1.4 的 OxnWorkspaceManager 进行文件系统解析。
  */
 import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
-import { getBuiltinRegistry } from '../scope/oxn-builtin-registry'
 import type { OxnScope, OxnAssetType, ResolvedOxnAsset } from '../scope/oxn-scope'
-import type { OxnAssemblyIR, OxnAssemblyTaskIR, OxnAssemblyBundleEntity } from '../../kernel/schemas/oxn-assembly.schema'
+import type {
+  OxnAssemblyIR,
+  OxnAssemblyTaskIR,
+} from '../../kernel/schemas/oxn-assembly.schema'
 
 export type { OxnScope, OxnAssetType }
 

@@ -33,10 +33,10 @@ async function handleTaskStop(request: Request, projectPath: string): Promise<Re
       return notFound(`Task '${taskId}' not found`)
     }
 
-    const currentStage = trace.stages.find((s) => s.status === 'RUNNING')
-    if (currentStage) {
+    const currentPart = Array.from(trace.parts.values()).find((s) => s.status === 'RUNNING')
+    if (currentPart) {
       processManager.killAll()
-      radarClock.stopMonitor(taskId, currentStage.id)
+      radarClock.stopMonitor(taskId, currentPart.partId)
     }
 
     writeTaskStatus(taskDir, taskId, 'FAILED')
@@ -46,7 +46,7 @@ async function handleTaskStop(request: Request, projectPath: string): Promise<Re
         status: 'stopped',
         taskId: taskId,
         taskStatus: 'FAILED',
-        killedProcesses: currentStage ? 1 : 0,
+        killedProcesses: currentPart ? 1 : 0,
       }),
       {
         status: 200,

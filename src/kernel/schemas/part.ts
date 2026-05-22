@@ -2,10 +2,7 @@ import { z } from 'zod'
 import { PartDefinitionSchema } from './part-asset'
 import { PartInvocationSchema } from './blueprint.schema'
 
-export {
-  PartDefinitionSchema,
-  PartInvocationSchema
-}
+export { PartDefinitionSchema, PartInvocationSchema }
 
 export type PartDefinition = z.infer<typeof PartDefinitionSchema>
 export type PartInvocation = z.infer<typeof PartInvocationSchema>

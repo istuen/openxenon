@@ -23,9 +23,9 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           probes: (s.probes || []).map((p: any) => ({
             type: p.type || '',
             ...(p.params?.path ? { pattern: p.params.path } : {}),
-            ...(p.params?.command ? { command: p.params.command } : {})
-          }))
-        }))
+            ...(p.params?.command ? { command: p.params.command } : {}),
+          })),
+        })),
       }
     } catch {
       // Fall through to YAML parser
@@ -77,7 +77,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           deps: [],
           target: { description: '' },
           spec: { description: '' },
-          probes: []
+          probes: [],
         })
       } else {
         parts[partIndex]!.id = partId
@@ -100,7 +100,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           deps: [],
           target: { description: '' },
           spec: { description: '' },
-          probes: []
+          probes: [],
         })
       } else {
         parts[partIndex]!.id = partId
@@ -165,8 +165,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
 
     if (trimmed.startsWith('pattern:') && currentSection === 'probes' && partIndex >= 0 && probeIndex >= 0) {
       let pattern = trimmed.slice(8).trim()
-      if ((pattern.startsWith('"') && pattern.endsWith('"')) ||
-          (pattern.startsWith("'") && pattern.endsWith("'"))) {
+      if ((pattern.startsWith('"') && pattern.endsWith('"')) || (pattern.startsWith("'") && pattern.endsWith("'"))) {
         pattern = pattern.slice(1, -1)
       }
       const part = parts[partIndex]
@@ -177,8 +176,7 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
 
     if (trimmed.startsWith('command:') && currentSection === 'probes' && partIndex >= 0 && probeIndex >= 0) {
       let command = trimmed.slice(8).trim()
-      if ((command.startsWith('"') && command.endsWith('"')) ||
-          (command.startsWith("'") && command.endsWith("'"))) {
+      if ((command.startsWith('"') && command.endsWith('"')) || (command.startsWith("'") && command.endsWith("'"))) {
         command = command.slice(1, -1)
       }
       const part = parts[partIndex]
@@ -217,6 +215,6 @@ export function blueprintToPayload(parsed: ParsedBlueprint): BlueprintPayload {
   return {
     id: parsed.id,
     name: parsed.name,
-    parts: parsed.parts
+    parts: parsed.parts,
   }
 }

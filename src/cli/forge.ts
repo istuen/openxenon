@@ -13,17 +13,17 @@ type ForgeType = 'probe' | 'part' | 'blueprint'
 const META_FORGE_NAMES: Record<ForgeType, BuiltinForgeName> = {
   probe: 'meta-probe',
   part: 'meta-part',
-  blueprint: 'meta-blueprint'
+  blueprint: 'meta-blueprint',
 }
 
-function tryLoadForgeFile(path: string, fallbackName: string): { name: string, constraints: string[] } | null {
+function tryLoadForgeFile(path: string, fallbackName: string): { name: string; constraints: string[] } | null {
   if (!existsSync(path)) return null
   try {
     const content = readFileSync(path, 'utf-8')
     const parsed = parseYaml(content)
     return {
       name: parsed.name || fallbackName,
-      constraints: parsed.stages?.[0]?.spec?.constraints || []
+      constraints: parsed.stages?.[0]?.spec?.constraints || [],
     }
   } catch {
     return null
@@ -77,7 +77,7 @@ function repackBlueprint(dir: string): { path: string; parts: number } {
 
   if (existsSync(partsDir)) {
     const files = readdirSync(partsDir, { withFileTypes: true })
-    const partFiles = files.filter(f => f.isFile() && (f.name.endsWith('.yaml') || f.name.endsWith('.yml')))
+    const partFiles = files.filter((f) => f.isFile() && (f.name.endsWith('.yaml') || f.name.endsWith('.yml')))
     const parts: Array<Record<string, unknown>> = []
     for (const f of partFiles) {
       const pContent = readFileSync(join(partsDir, f.name), 'utf-8')
@@ -92,7 +92,7 @@ function repackBlueprint(dir: string): { path: string; parts: number } {
   return { path: bpPath, parts: loadedParts }
 }
 
-function loadMetaForge(type: ForgeType): { name: string, constraints: string[] } | null {
+function loadMetaForge(type: ForgeType): { name: string; constraints: string[] } | null {
   const builtinName = META_FORGE_NAMES[type]
   const relPath = join('forges', builtinName, 'canonical.yaml')
 
@@ -109,7 +109,7 @@ function loadMetaForge(type: ForgeType): { name: string, constraints: string[] }
   if (builtin) {
     return {
       name: builtin.name,
-      constraints: [...(builtin.stages?.[0]?.spec?.constraints || [])]
+      constraints: [...(builtin.stages?.[0]?.spec?.constraints || [])],
     }
   }
 
@@ -160,46 +160,46 @@ function forgeOxnScaffold(type: ForgeType): string {
 export default defineCommand({
   meta: {
     name: 'forge',
-    description: '锻造 Draft 标准资产'
+    description: '锻造 Draft 标准资产',
   },
   args: {
     type: {
       type: 'positional',
       required: false,
-      description: '元Forge类型: probe, part, blueprint, all'
+      description: '元Forge类型: probe, part, blueprint, all',
     },
     save: {
       type: 'string',
       alias: 's',
-      description: '直接保存资产内容（用于 AI 生成资产后保存）'
+      description: '直接保存资产内容（用于 AI 生成资产后保存）',
     },
     name: {
       type: 'string',
       alias: 'n',
-      description: '资产名称'
+      description: '资产名称',
     },
     format: {
       type: 'string',
       alias: 'f',
       default: 'oxn',
-      description: '输出格式: oxn (默认) | yaml (Deprecated)'
+      description: '输出格式: oxn (默认) | yaml (Deprecated)',
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
+      description: 'YAML 格式输出',
     },
     unpack: {
       type: 'string',
-      description: '解包 Blueprint 到 forge 工作区目录'
+      description: '解包 Blueprint 到 forge 工作区目录',
     },
     repack: {
       type: 'string',
-      description: '重新打包 forge 工作区目录到 Blueprint'
-    }
+      description: '重新打包 forge 工作区目录到 Blueprint',
+    },
   },
   async run(ctx) {
     if (ctx.args.global || ctx.args.g) {
@@ -220,30 +220,42 @@ export default defineCommand({
     if (unpackPath) {
       try {
         const result = unpackBlueprint(unpackPath)
-        return output({
-          data: result,
-          human: `Unpacked ${result.parts} part(s), ${result.probes} probe(s) to ${result.dir}`
-        }, format)
+        return output(
+          {
+            data: result,
+            human: `Unpacked ${result.parts} part(s), ${result.probes} probe(s) to ${result.dir}`,
+          },
+          format,
+        )
       } catch (err) {
-        return outputError({
-          code: 'OXN_UNPACK_FAILED',
-          message: err instanceof Error ? err.message : 'Failed to unpack'
-        }, format)
+        return outputError(
+          {
+            code: 'OXN_UNPACK_FAILED',
+            message: err instanceof Error ? err.message : 'Failed to unpack',
+          },
+          format,
+        )
       }
     }
 
     if (repackPath) {
       try {
         const result = repackBlueprint(repackPath)
-        return output({
-          data: result,
-          human: `Repacked ${result.parts} part(s) into ${result.path}`
-        }, format)
+        return output(
+          {
+            data: result,
+            human: `Repacked ${result.parts} part(s) into ${result.path}`,
+          },
+          format,
+        )
       } catch (err) {
-        return outputError({
-          code: 'OXN_REPACK_FAILED',
-          message: err instanceof Error ? err.message : 'Failed to repack'
-        }, format)
+        return outputError(
+          {
+            code: 'OXN_REPACK_FAILED',
+            message: err instanceof Error ? err.message : 'Failed to repack',
+          },
+          format,
+        )
       }
     }
 
@@ -253,17 +265,22 @@ export default defineCommand({
       if (result.success) {
         return output({ data: { path: result.path, format: ext } }, format)
       }
-      return outputError({
-        code: 'OXN_FORGE_SAVE_FAILED',
-        message: result.error || 'Failed to save draft'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_FORGE_SAVE_FAILED',
+          message: result.error || 'Failed to save draft',
+        },
+        format,
+      )
     }
 
     if (!type || type === 'all') {
-      const forges = (['probe', 'part', 'blueprint'] as ForgeType[]).map(t => {
-        const forge = loadMetaForge(t)
-        return forge ? { type: t, name: forge.name, constraints: forge.constraints } : null
-      }).filter(Boolean)
+      const forges = (['probe', 'part', 'blueprint'] as ForgeType[])
+        .map((t) => {
+          const forge = loadMetaForge(t)
+          return forge ? { type: t, name: forge.name, constraints: forge.constraints } : null
+        })
+        .filter(Boolean)
 
       return output({ data: { forges } }, format)
     }
@@ -282,21 +299,30 @@ export default defineCommand({
 
       const forge = loadMetaForge(type as ForgeType)
       if (!forge) {
-        return outputError({
-          code: 'OXN_FORGE_NOT_FOUND',
-          message: `元Forge '${type}' 不存在`
-        }, format)
+        return outputError(
+          {
+            code: 'OXN_FORGE_NOT_FOUND',
+            message: `元Forge '${type}' 不存在`,
+          },
+          format,
+        )
       }
-      return output({
-        data: { name: forge.name, constraints: forge.constraints },
-        human: `\n=== ${forge.name} ===\n\n约束 (Constraints):\n${forge.constraints.map(c => `  - ${c}`).join('\n')}\n`
-      }, format)
+      return output(
+        {
+          data: { name: forge.name, constraints: forge.constraints },
+          human: `\n=== ${forge.name} ===\n\n约束 (Constraints):\n${forge.constraints.map((c) => `  - ${c}`).join('\n')}\n`,
+        },
+        format,
+      )
     }
 
-    return outputError({
-      code: 'OXN_UNKNOWN_FORGE_TYPE',
-      message: `未知类型: ${type}`,
-      suggestion: `可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}, all`
-    }, format)
-  }
+    return outputError(
+      {
+        code: 'OXN_UNKNOWN_FORGE_TYPE',
+        message: `未知类型: ${type}`,
+        suggestion: `可用的类型: ${Object.keys(META_FORGE_NAMES).join(', ')}, all`,
+      },
+      format,
+    )
+  },
 })

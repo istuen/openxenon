@@ -56,7 +56,10 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
-export function outputError(error: { code: string; message: string; suggestion?: string }, format: OutputFormat = 'human'): void {
+export function outputError(
+  error: { code: string; message: string; suggestion?: string },
+  format: OutputFormat = 'human',
+): void {
   const errorObj = { ok: false, error }
 
   switch (format) {
@@ -133,20 +136,20 @@ export function addFormatArgs(argsDef: Record<string, any>): Record<string, any>
   return {
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
+      description: 'YAML 格式输出',
     },
     '--html': {
       type: 'boolean',
-      description: 'HTML 格式输出'
+      description: 'HTML 格式输出',
     },
     '--md': {
       type: 'boolean',
-      description: 'Markdown 格式输出'
+      description: 'Markdown 格式输出',
     },
-    ...argsDef
+    ...argsDef,
   }
 }

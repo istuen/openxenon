@@ -98,81 +98,37 @@ function addQAEntry(path: string, question: string, answer: string | null = null
     id,
     question,
     answer,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   })
   saveQADocument(path, doc)
 }
 
 function updateQAAnswer(path: string, id: string, answer: string): boolean {
   const doc = loadQADocument(path)
-  const q = doc.questions.find(q => q.id === id)
+  const q = doc.questions.find((q) => q.id === id)
   if (!q) return false
   q.answer = answer
   saveQADocument(path, doc)
   return true
 }
 
-function generateReport(name: string, docsFiles: string[], qaPairs: QAPair[]): string {
-  const sections: string[] = []
-
-  sections.push(`# 探索报告: ${name}\n`)
-
-  sections.push('## 扫描资料\n')
-  if (docsFiles.length > 0) {
-    sections.push(docsFiles.map(f => `- ${f}`).join('\n'))
-  } else {
-    sections.push('_无_')
-  }
-  sections.push('\n')
-
-  sections.push('## AI-工程师问答\n')
-  if (qaPairs.length > 0) {
-    for (const pair of qaPairs) {
-      sections.push(`**Q:** ${pair.question}`)
-      sections.push(`\n**A:** ${pair.answer}\n`)
-    }
-  } else {
-    sections.push('_无问答记录_\n')
-  }
-
-  sections.push('## 关键发现\n')
-  sections.push('_基于问答提取_\n\n')
-
-  sections.push('## 待解决问题\n')
-  const openQuestions = qaPairs.filter(p =>
-    p.answer.includes('未解决') ||
-    p.answer.includes('不确定') ||
-    p.answer.includes('TODO')
-  )
-  if (openQuestions.length > 0) {
-    sections.push(openQuestions.map(p => `- ${p.question}`).join('\n'))
-  } else {
-    sections.push('_无_\n')
-  }
-
-  sections.push('\n## 总结\n')
-  sections.push('_基于以上信息综合_\n')
-
-  return sections.join('\n')
-}
-
 export default defineCommand({
   meta: {
     name: 'explore',
-    description: '探索项目与任务，采集资料、问答记录、总结归档'
+    description: '探索项目与任务，采集资料、问答记录、总结归档',
   },
   subCommands: {
     new: defineCommand({
       meta: {
         name: 'new',
-        description: '创建新探索'
+        description: '创建新探索',
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称 (kebab-case)'
-        }
+          description: '探索名称 (kebab-case)',
+        },
       },
       run(ctx) {
         const name = ctx.args.name as string
@@ -182,11 +138,14 @@ export default defineCommand({
 
         const explorePath = join(exploresRoot, name)
         if (existsSync(explorePath)) {
-          return outputError({
-            code: 'OXN_EXPLORE_EXISTS',
-            message: `探索已存在: ${name}`,
-            suggestion: '使用其他名称或先删除现有探索'
-          }, getFormatFromArgs(ctx.args))
+          return outputError(
+            {
+              code: 'OXN_EXPLORE_EXISTS',
+              message: `探索已存在: ${name}`,
+              suggestion: '使用其他名称或先删除现有探索',
+            },
+            getFormatFromArgs(ctx.args),
+          )
         }
 
         mkdirSync(join(explorePath, 'docs'), { recursive: true })
@@ -194,35 +153,38 @@ export default defineCommand({
         writeFileSync(getEngineerQAPath(explorePath), JSON.stringify(initQADocument(), null, 2), 'utf-8')
         writeFileSync(join(explorePath, 'report.md'), '# 探索报告\n\n', 'utf-8')
 
-        output({
-          data: { name, path: explorePath },
-          human: `探索已创建: ${explorePath}\n\n目录结构:\n  docs/\n  ai-qa.json\n  engineer-qa.json\n  report.md`
-        }, getFormatFromArgs(ctx.args))
-      }
+        output(
+          {
+            data: { name, path: explorePath },
+            human: `探索已创建: ${explorePath}\n\n目录结构:\n  docs/\n  ai-qa.json\n  engineer-qa.json\n  report.md`,
+          },
+          getFormatFromArgs(ctx.args),
+        )
+      },
     }),
     scan: defineCommand({
       meta: {
         name: 'scan',
-        description: '扫描资料到探索目录'
+        description: '扫描资料到探索目录',
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称'
+          description: '探索名称',
         },
         '--path': {
           type: 'string',
-          description: '文件或目录路径'
+          description: '文件或目录路径',
         },
         '--read': {
           type: 'string',
-          description: '读取现有文件内容'
+          description: '读取现有文件内容',
         },
         '--title': {
           type: 'string',
-          description: '文档标题（用于 --path 模式）'
-        }
+          description: '文档标题（用于 --path 模式）',
+        },
       },
       run(ctx) {
         const format = getFormatFromArgs(ctx.args)
@@ -230,11 +192,14 @@ export default defineCommand({
         const exploresRoot = getExploresRoot()
 
         if (!exploreExists(name)) {
-          return outputError({
-            code: 'OXN_EXPLORE_NOT_FOUND',
-            message: `探索不存在: ${name}`,
-            suggestion: '先执行 oxn explore new <name> 创建探索'
-          }, format)
+          return outputError(
+            {
+              code: 'OXN_EXPLORE_NOT_FOUND',
+              message: `探索不存在: ${name}`,
+              suggestion: '先执行 oxn explore new <name> 创建探索',
+            },
+            format,
+          )
         }
 
         const docsPath = join(exploresRoot, name, 'docs')
@@ -243,85 +208,102 @@ export default defineCommand({
           const sourcePath = ctx.args.path as string
 
           if (!existsSync(sourcePath)) {
-            return outputError({
-              code: 'OXN_FILE_NOT_FOUND',
-              message: `文件不存在: ${sourcePath}`
-            }, format)
+            return outputError(
+              {
+                code: 'OXN_FILE_NOT_FOUND',
+                message: `文件不存在: ${sourcePath}`,
+              },
+              format,
+            )
           }
 
           const stat = statSync(sourcePath)
           if (stat.isDirectory()) {
             const scanned = scanDirectory(sourcePath, docsPath)
-            return output({
-              data: { count: scanned.length, files: scanned },
-              human: scanned.length > 0
-                ? `已扫描 ${scanned.length} 个文件到 ${docsPath}`
-                : `目录为空，未扫描任何文件`
-            }, format)
+            return output(
+              {
+                data: { count: scanned.length, files: scanned },
+                human:
+                  scanned.length > 0 ? `已扫描 ${scanned.length} 个文件到 ${docsPath}` : `目录为空，未扫描任何文件`,
+              },
+              format,
+            )
           }
 
           const title = (ctx.args.title as string) || sourcePath.split('/').pop() || 'document'
           const destPath = join(docsPath, `${title}.md`)
           const content = readFileSync(sourcePath, 'utf-8')
           writeFileSync(destPath, content, 'utf-8')
-          output({
-            data: { path: destPath },
-            human: `已扫描: ${destPath}`
-          }, format)
+          output(
+            {
+              data: { path: destPath },
+              human: `已扫描: ${destPath}`,
+            },
+            format,
+          )
         } else if (ctx.args.read) {
           const filePath = ctx.args.read as string
           if (existsSync(filePath)) {
             const content = readFileSync(filePath, 'utf-8')
-            output({
-              data: { content },
-              human: content
-            }, format)
+            output(
+              {
+                data: { content },
+                human: content,
+              },
+              format,
+            )
           } else {
-            return outputError({
-              code: 'OXN_FILE_NOT_FOUND',
-              message: `文件不存在: ${filePath}`
-            }, format)
+            return outputError(
+              {
+                code: 'OXN_FILE_NOT_FOUND',
+                message: `文件不存在: ${filePath}`,
+              },
+              format,
+            )
           }
         } else {
           const files = existsSync(docsPath) ? readdirSync(docsPath) : []
-          output({
-            data: { files },
-            human: `已扫描文件:\n${files.map(f => `  - ${f}`).join('\n')}`
-          }, format)
+          output(
+            {
+              data: { files },
+              human: `已扫描文件:\n${files.map((f) => `  - ${f}`).join('\n')}`,
+            },
+            format,
+          )
         }
-      }
+      },
     }),
     qa: defineCommand({
       meta: {
         name: 'qa',
-        description: '问答记录管理 (AI问答 / 工程师问答)'
+        description: '问答记录管理 (AI问答 / 工程师问答)',
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称'
+          description: '探索名称',
         },
         '--type': {
           type: 'string',
-          description: '问答类型: ai | engineer'
+          description: '问答类型: ai | engineer',
         },
         '--ask': {
           type: 'string',
-          description: '添加问题（AI问答使用）'
+          description: '添加问题（AI问答使用）',
         },
         '--answer': {
           type: 'string',
-          description: '回答问题，格式: id|answer'
+          description: '回答问题，格式: id|answer',
         },
         '--list': {
           type: 'boolean',
-          description: '列出所有问答'
+          description: '列出所有问答',
         },
         '--pending': {
           type: 'boolean',
-          description: '列出待回答的问题'
-        }
+          description: '列出待回答的问题',
+        },
       },
       run(ctx) {
         const format = getFormatFromArgs(ctx.args)
@@ -329,11 +311,14 @@ export default defineCommand({
         const explorePath = join(getExploresRoot(), name)
 
         if (!exploreExists(name)) {
-          return outputError({
-            code: 'OXN_EXPLORE_NOT_FOUND',
-            message: `探索不存在: ${name}`,
-            suggestion: '先执行 oxn explore new <name> 创建探索'
-          }, format)
+          return outputError(
+            {
+              code: 'OXN_EXPLORE_NOT_FOUND',
+              message: `探索不存在: ${name}`,
+              suggestion: '先执行 oxn explore new <name> 创建探索',
+            },
+            format,
+          )
         }
 
         const qaType = (ctx.args.type as string) || 'ai'
@@ -344,84 +329,108 @@ export default defineCommand({
           addQAEntry(qaPath, question)
           const doc = loadQADocument(qaPath)
           const lastQ = doc.questions[doc.questions.length - 1]
-          output({
-            data: { id: lastQ.id, question: lastQ.question, answer: null },
-            human: `问题已添加 (ID: ${lastQ.id}):\nQ: ${question}\nA: _待回答_`
-          }, format)
+          if (!lastQ) {
+            return outputError({ code: 'OXN_INTERNAL_ERROR', message: '添加问题失败' }, format)
+          }
+          output(
+            {
+              data: { id: lastQ.id, question: lastQ.question, answer: null },
+              human: `问题已添加 (ID: ${lastQ.id}):\nQ: ${question}\nA: _待回答_`,
+            },
+            format,
+          )
         } else if (ctx.args.answer) {
           const [id, ...rest] = (ctx.args.answer as string).split('|')
           if (!id || rest.length === 0) {
-            return outputError({
-              code: 'OXN_INVALID_ANSWER_FORMAT',
-              message: '格式错误，使用: --answer id|回答内容'
-            }, format)
+            return outputError(
+              {
+                code: 'OXN_INVALID_ANSWER_FORMAT',
+                message: '格式错误，使用: --answer id|回答内容',
+              },
+              format,
+            )
           }
           const answer = rest.join('|')
           if (updateQAAnswer(qaPath, id, answer)) {
-            output({
-              data: { id, answer },
-              human: `已更新 (ID: ${id}):\nA: ${answer}`
-            }, format)
+            output(
+              {
+                data: { id, answer },
+                human: `已更新 (ID: ${id}):\nA: ${answer}`,
+              },
+              format,
+            )
           } else {
-            return outputError({
-              code: 'OXN_QA_NOT_FOUND',
-              message: `未找到问题 ID: ${id}`
-            }, format)
+            return outputError(
+              {
+                code: 'OXN_QA_NOT_FOUND',
+                message: `未找到问题 ID: ${id}`,
+              },
+              format,
+            )
           }
         } else if (ctx.args.pending) {
           const doc = loadQADocument(qaPath)
-          const pending = doc.questions.filter(q => q.answer === null)
+          const pending = doc.questions.filter((q) => q.answer === null)
           if (pending.length === 0) {
             output({ data: { pending: [] }, human: '无待回答问题' }, format)
           } else {
-            output({
-              data: { pending: pending.map(q => ({ id: q.id, question: q.question })) },
-              human: pending.map(q => `[${q.id}] ${q.question}`).join('\n')
-            }, format)
+            output(
+              {
+                data: { pending: pending.map((q) => ({ id: q.id, question: q.question })) },
+                human: pending.map((q) => `[${q.id}] ${q.question}`).join('\n'),
+              },
+              format,
+            )
           }
         } else if (ctx.args.list) {
           const doc = loadQADocument(qaPath)
           if (doc.questions.length === 0) {
             output({ data: { questions: [] }, human: '暂无问答记录' }, format)
           } else {
-            const lines = doc.questions.map(q =>
-              `[${q.id}] Q: ${q.question}\n    A: ${q.answer ?? '_待回答_'}`
-            ).join('\n\n')
-            output({
-              data: { questions: doc.questions },
-              human: lines
-            }, format)
+            const lines = doc.questions
+              .map((q) => `[${q.id}] Q: ${q.question}\n    A: ${q.answer ?? '_待回答_'}`)
+              .join('\n\n')
+            output(
+              {
+                data: { questions: doc.questions },
+                human: lines,
+              },
+              format,
+            )
           }
         } else {
           const aiPath = getAIQAPath(explorePath)
           const engPath = getEngineerQAPath(explorePath)
           const aiDoc = loadQADocument(aiPath)
           const engDoc = loadQADocument(engPath)
-          output({
-            data: {
-              ai: { path: aiPath, count: aiDoc.questions.length },
-              engineer: { path: engPath, count: engDoc.questions.length }
+          output(
+            {
+              data: {
+                ai: { path: aiPath, count: aiDoc.questions.length },
+                engineer: { path: engPath, count: engDoc.questions.length },
+              },
+              human: `AI 问答: ${aiPath} (${aiDoc.questions.length} 条)\n工程师问答: ${engPath} (${engDoc.questions.length} 条)`,
             },
-            human: `AI 问答: ${aiPath} (${aiDoc.questions.length} 条)\n工程师问答: ${engPath} (${engDoc.questions.length} 条)`
-          }, format)
+            format,
+          )
         }
-      }
+      },
     }),
     report: defineCommand({
       meta: {
         name: 'report',
-        description: '从问答生成报告'
+        description: '从问答生成报告',
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称'
+          description: '探索名称',
         },
         '--force': {
           type: 'boolean',
-          description: '覆盖现有总结'
-        }
+          description: '覆盖现有总结',
+        },
       },
       run(ctx) {
         const format = getFormatFromArgs(ctx.args)
@@ -429,11 +438,14 @@ export default defineCommand({
         const explorePath = join(getExploresRoot(), name)
 
         if (!exploreExists(name)) {
-          return outputError({
-            code: 'OXN_EXPLORE_NOT_FOUND',
-            message: `探索不存在: ${name}`,
-            suggestion: '先执行 oxn explore new <name> 创建探索'
-          }, format)
+          return outputError(
+            {
+              code: 'OXN_EXPLORE_NOT_FOUND',
+              message: `探索不存在: ${name}`,
+              suggestion: '先执行 oxn explore new <name> 创建探索',
+            },
+            format,
+          )
         }
 
         const aiQAPath = getAIQAPath(explorePath)
@@ -441,21 +453,27 @@ export default defineCommand({
         const reportPath = join(explorePath, 'report.md')
 
         if (!existsSync(aiQAPath) && !existsSync(engQAPath)) {
-          return outputError({
-            code: 'OXN_QA_NOT_FOUND',
-            message: '无问答记录，无法生成报告'
-          }, format)
+          return outputError(
+            {
+              code: 'OXN_QA_NOT_FOUND',
+              message: '无问答记录，无法生成报告',
+            },
+            format,
+          )
         }
 
         if (existsSync(reportPath) && !ctx.args.force) {
-          return outputError({
-            code: 'OXN_REPORT_EXISTS',
-            message: '报告已存在，使用 --force 覆盖'
-          }, format)
+          return outputError(
+            {
+              code: 'OXN_REPORT_EXISTS',
+              message: '报告已存在，使用 --force 覆盖',
+            },
+            format,
+          )
         }
 
         const docsPath = join(explorePath, 'docs')
-        const docsFiles = existsSync(docsPath) ? readdirSync(docsPath).filter(f => f.endsWith('.md')) : []
+        const docsFiles = existsSync(docsPath) ? readdirSync(docsPath).filter((f) => f.endsWith('.md')) : []
 
         const aiDoc = loadQADocument(aiQAPath)
         const engDoc = loadQADocument(engQAPath)
@@ -466,7 +484,7 @@ export default defineCommand({
 
         sections.push('## 扫描资料\n')
         if (docsFiles.length > 0) {
-          sections.push(docsFiles.map(f => `- ${f}`).join('\n'))
+          sections.push(docsFiles.map((f) => `- ${f}`).join('\n'))
         } else {
           sections.push('_无_')
         }
@@ -497,12 +515,13 @@ export default defineCommand({
 
         sections.push('## 待解决问题\n')
         const allQ = [...aiDoc.questions, ...engDoc.questions]
-        const openQuestions = allQ.filter(p =>
-          p.answer === null ||
-          (p.answer && (p.answer.includes('未解决') || p.answer.includes('不确定') || p.answer.includes('TODO')))
+        const openQuestions = allQ.filter(
+          (p) =>
+            p.answer === null ||
+            (p.answer && (p.answer.includes('未解决') || p.answer.includes('不确定') || p.answer.includes('TODO'))),
         )
         if (openQuestions.length > 0) {
-          sections.push(openQuestions.map(p => `- [ ] [Q${p.id}] ${p.question}`).join('\n'))
+          sections.push(openQuestions.map((p) => `- [ ] [Q${p.id}] ${p.question}`).join('\n'))
         } else {
           sections.push('_无_\n')
         }
@@ -511,16 +530,19 @@ export default defineCommand({
         sections.push('_基于以上信息综合_\n')
 
         writeFileSync(reportPath, sections.join('\n'), 'utf-8')
-        output({
-          data: { path: reportPath },
-          human: `报告已生成: ${reportPath}`
-        }, format)
-      }
+        output(
+          {
+            data: { path: reportPath },
+            human: `报告已生成: ${reportPath}`,
+          },
+          format,
+        )
+      },
     }),
     list: defineCommand({
       meta: {
         name: 'list',
-        description: '列出所有探索'
+        description: '列出所有探索',
       },
       run(ctx) {
         const format = getFormatFromArgs(ctx.args)
@@ -530,31 +552,32 @@ export default defineCommand({
           return output({ data: { explores: [] }, human: '暂无探索' }, format)
         }
 
-        const dirs = readdirSync(exploresRoot).filter(d =>
-          existsSync(join(exploresRoot, d, 'ai-qa.json'))
-        )
+        const dirs = readdirSync(exploresRoot).filter((d) => existsSync(join(exploresRoot, d, 'ai-qa.json')))
 
-        output({
-          data: { explores: dirs },
-          human: dirs.length > 0 ? `探索列表:\n${dirs.map(d => `  - ${d}`).join('\n')}` : '暂无探索'
-        }, format)
-      }
+        output(
+          {
+            data: { explores: dirs },
+            human: dirs.length > 0 ? `探索列表:\n${dirs.map((d) => `  - ${d}`).join('\n')}` : '暂无探索',
+          },
+          format,
+        )
+      },
     }),
     delete: defineCommand({
       meta: {
         name: 'delete',
-        description: '删除探索'
+        description: '删除探索',
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称'
+          description: '探索名称',
         },
         '--force': {
           type: 'boolean',
-          description: '跳过确认直接删除'
-        }
+          description: '跳过确认直接删除',
+        },
       },
       run(ctx) {
         const format = getFormatFromArgs(ctx.args)
@@ -562,32 +585,41 @@ export default defineCommand({
         const exploresRoot = getExploresRoot()
 
         if (!exploreExists(name)) {
-          return outputError({
-            code: 'OXN_EXPLORE_NOT_FOUND',
-            message: `探索不存在: ${name}`
-          }, format)
+          return outputError(
+            {
+              code: 'OXN_EXPLORE_NOT_FOUND',
+              message: `探索不存在: ${name}`,
+            },
+            format,
+          )
         }
 
         const explorePath = join(exploresRoot, name)
 
         if (!ctx.args.force) {
-          output({
-            data: { path: explorePath },
-            human: `确认删除探索 "${name}"？\n路径: ${explorePath}\n\n使用 --force 确认删除`
-          }, format)
+          output(
+            {
+              data: { path: explorePath },
+              human: `确认删除探索 "${name}"？\n路径: ${explorePath}\n\n使用 --force 确认删除`,
+            },
+            format,
+          )
           return
         }
 
         rmSync(explorePath, { recursive: true, force: true })
-        output({
-          data: { deleted: name },
-          human: `已删除探索: ${name}`
-        }, format)
-      }
-    })
+        output(
+          {
+            data: { deleted: name },
+            human: `已删除探索: ${name}`,
+          },
+          format,
+        )
+      },
+    }),
   },
   run() {
     console.log('使用 oxn explore <subcommand> 查看可用子命令')
     console.log('子命令: new, scan, qa, report, list, delete')
-  }
+  },
 })

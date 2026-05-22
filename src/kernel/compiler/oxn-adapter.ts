@@ -14,11 +14,10 @@ import type {
   OxnAssemblyIR,
   OxnAssemblyPart,
   OxnAssemblySlotBinding,
-  OxnAssemblyProp,
   OxnAssemblyPartProbe,
 } from '../schemas/oxn-assembly.schema'
 import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../schemas/frozen-schema'
-import { validateFrozenBlueprint, computeContentHash, createXenonMeta, type XenonMeta } from '../schemas/frozen-schema'
+import { validateFrozenBlueprint, createXenonMeta } from '../schemas/frozen-schema'
 import { validateDagTopology, type DagNode } from '../schemas/dag-validator'
 
 export interface AdapterContext {
@@ -37,7 +36,7 @@ export interface AdapterResult {
 
 const PROBE_TYPE_MAP: Record<string, string> = {
   'shell-exec': 'shell_exec',
-  'shell_exec': 'shell_exec',
+  shell_exec: 'shell_exec',
   'exec-exit-zero': 'exec_exit_zero',
   'fs-exists': 'fs_exists',
   'fs-not-exists': 'fs_not_exists',
@@ -54,10 +53,7 @@ function normalizeProbeType(rawType: string): string {
 // Part → Frozen Part
 // ========================
 
-export function adaptConcretePart(
-  part: OxnAssemblyPart,
-  resolvedParams: Record<string, unknown>
-): FrozenPart {
+export function adaptConcretePart(part: OxnAssemblyPart, resolvedParams: Record<string, unknown>): FrozenPart {
   const finalParams: Record<string, unknown> = { ...resolvedParams }
 
   for (const prop of part.props) {
@@ -114,13 +110,10 @@ export function adaptConcretePart(
 // ========================
 
 export function resolveTemplateString(template: string, props: Record<string, unknown>): string {
-  return template.replace(
-    /\$\{prop\.(\w+)\}/g,
-    (_match: string, key: string) => {
-      const val = props[key]
-      return val !== undefined ? String(val) : `\${prop.${key}}`
-    }
-  )
+  return template.replace(/\$\{prop\.(\w+)\}/g, (_match: string, key: string) => {
+    const val = props[key]
+    return val !== undefined ? String(val) : `\${prop.${key}}`
+  })
 }
 
 // ========================
@@ -133,16 +126,16 @@ export function evaluateExpression(expr: string, props: Record<string, unknown>)
 
   const ternaryMatch = expr.match(/^(.+?)\s*\?\s*(.+?)\s*:\s*(.+?)$/)
   if (ternaryMatch) {
-    const condResult = evaluateExpression(ternaryMatch[1].trim(), props)
+    const condResult = evaluateExpression(ternaryMatch[1]!.trim(), props)
     if (condResult) {
-      return evaluateExpression(ternaryMatch[2].trim(), props)
+      return evaluateExpression(ternaryMatch[2]!.trim(), props)
     }
-    return evaluateExpression(ternaryMatch[3].trim(), props)
+    return evaluateExpression(ternaryMatch[3]!.trim(), props)
   }
 
   const propMatch = expr.match(/^prop\.(.+)$/)
   if (propMatch) {
-    return props[propMatch[1]] ?? `prop.${propMatch[1]}`
+    return props[propMatch[1]!] ?? `prop.${propMatch[1]!}`
   }
 
   if (expr.startsWith('"') && expr.endsWith('"')) {
@@ -158,7 +151,7 @@ export function evaluateExpression(expr: string, props: Record<string, unknown>)
 
 function resolveSlotBindings(
   bindings: OxnAssemblySlotBinding[],
-  slots: Array<{ name: string; run?: string }>
+  _slots: Array<{ name: string; run?: string }>,
 ): Record<string, OxnAssemblySlotBinding> {
   const result: Record<string, OxnAssemblySlotBinding> = {}
   for (const b of bindings) {
@@ -172,11 +165,7 @@ function resolveSlotBindings(
 // ========================
 
 export class OxnKernelAdapter {
-  adapt(
-    ir: OxnAssemblyIR,
-    slotBindings: OxnAssemblySlotBinding[],
-    ctx?: AdapterContext
-  ): AdapterResult {
+  adapt(ir: OxnAssemblyIR, slotBindings: OxnAssemblySlotBinding[], _ctx?: AdapterContext): AdapterResult {
     const warnings: string[] = []
 
     const boundSlots = resolveSlotBindings(slotBindings, ir.slots)
@@ -197,8 +186,9 @@ export class OxnKernelAdapter {
         }
         partIdSet.add(part.name)
 
-        const slotBinding = Array.from(Object.entries(boundSlots))
-          .find(([, b]) => b.ref && b.ref.split('/').pop() === part.name)?.[1]
+        const slotBinding = Array.from(Object.entries(boundSlots)).find(
+          ([, b]) => b.ref && b.ref.split('/').pop() === part.name,
+        )?.[1]
 
         const resolvedParams: Record<string, unknown> = {}
         if (slotBinding?.props) {
@@ -219,7 +209,7 @@ export class OxnKernelAdapter {
         }
         partIdSet.add(partId)
 
-        const matchedSlot = ir.slots.find(s => s.name === stage.name)
+        const matchedSlot = ir.slots.find((s) => s.name === stage.name)
         const slotBinding = matchedSlot ? boundSlots[matchedSlot.name] : undefined
 
         const resolvedParams: Record<string, unknown> = {}
@@ -243,7 +233,7 @@ export class OxnKernelAdapter {
       }
     }
 
-    const dagNodes: DagNode[] = frozenParts.map(p => ({
+    const dagNodes: DagNode[] = frozenParts.map((p) => ({
       id: p.id,
       deps: p.deps || [],
     }))
@@ -264,10 +254,7 @@ export class OxnKernelAdapter {
     return { frozen, warnings }
   }
 
-  adaptStrict(
-    ir: OxnAssemblyIR,
-    slotBindings: OxnAssemblySlotBinding[]
-  ): FrozenBlueprint {
+  adaptStrict(ir: OxnAssemblyIR, slotBindings: OxnAssemblySlotBinding[]): FrozenBlueprint {
     const result = this.adapt(ir, slotBindings)
     if (result.warnings.length > 0) {
       throw new Error(`Adapter warnings: ${result.warnings.join('; ')}`)
@@ -280,9 +267,6 @@ export class OxnKernelAdapter {
 // 便捷导出
 // ========================
 
-export function adaptOxnToFrozen(
-  assembly: OxnAssemblyIR,
-  slotBindings?: OxnAssemblySlotBinding[]
-): AdapterResult {
+export function adaptOxnToFrozen(assembly: OxnAssemblyIR, slotBindings?: OxnAssemblySlotBinding[]): AdapterResult {
   return new OxnKernelAdapter().adapt(assembly, slotBindings || [])
 }

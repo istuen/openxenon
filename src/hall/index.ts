@@ -102,7 +102,7 @@ export function scanForgeDrafts(projectRoot: string): ForgeDraft[] {
             name: entry.name,
             type,
             path: draftPath,
-            updatedAt: stat.mtimeMs
+            updatedAt: stat.mtimeMs,
           })
         } catch {
           // ignore
@@ -139,7 +139,7 @@ export function scanArsenalAssets(projectRoot: string): ArsenalAsset[] {
             type,
             state: 'canonical',
             path: canonicalPath,
-            updatedAt: stat.mtimeMs
+            updatedAt: stat.mtimeMs,
           })
         } catch {
           // ignore
@@ -156,15 +156,19 @@ export function getHallStats(projectRoot: string): HallStats {
   const arsenalAssets = scanArsenalAssets(projectRoot)
   const forgeDrafts = scanForgeDrafts(projectRoot)
 
-  const completedTasks = tasks.filter(t => t.status === 'COMPLETED' && Object.values(t.stages).every(s => s === 'PASSED')).length
-  const failedTasks = tasks.filter(t => t.status === 'COMPLETED' && Object.values(t.stages).some(s => s === 'FAILED')).length
-  const runningTasks = tasks.filter(t => t.status === 'RUNNING').length
+  const completedTasks = tasks.filter(
+    (t) => t.status === 'COMPLETED' && Object.values(t.parts).every((s) => s.status === 'PASSED'),
+  ).length
+  const failedTasks = tasks.filter(
+    (t) => t.status === 'COMPLETED' && Object.values(t.parts).some((s) => s.status === 'FAILED'),
+  ).length
+  const runningTasks = tasks.filter((t) => t.status === 'RUNNING').length
 
-  const recentTasks = tasks.slice(0, 10).map(t => ({
+  const recentTasks = tasks.slice(0, 10).map((t) => ({
     taskId: t.taskId,
     taskName: t.taskName,
     status: t.status,
-    updatedAt: Date.now()
+    updatedAt: Date.now(),
   }))
 
   return {
@@ -172,13 +176,13 @@ export function getHallStats(projectRoot: string): HallStats {
     completedTasks,
     failedTasks,
     runningTasks,
-    pendingTasks: tasks.filter(t => t.status === 'PENDING').length,
+    pendingTasks: tasks.filter((t) => t.status === 'PENDING').length,
     draftAssets: forgeDrafts.length,
     canonicalAssets: arsenalAssets.length,
-    arsenalProbes: arsenalAssets.filter(a => a.type === 'probes').length,
-    arsenalParts: arsenalAssets.filter(a => a.type === 'parts').length,
-    arsenalBlueprints: arsenalAssets.filter(a => a.type === 'blueprints').length,
-    recentTasks
+    arsenalProbes: arsenalAssets.filter((a) => a.type === 'probes').length,
+    arsenalStages: arsenalAssets.filter((a) => a.type === 'parts').length,
+    arsenalBlueprints: arsenalAssets.filter((a) => a.type === 'blueprints').length,
+    recentTasks,
   }
 }
 
@@ -201,7 +205,7 @@ export interface TaskDetails {
   taskName: string
   status: string
   currentPart: string | null
-  parts: Record<string, string>
+  parts: Record<string, { name: string; status: string }>
   frozenPath: string | null
   tracePath: string | null
   partDetails?: PartDetail[]
@@ -211,12 +215,12 @@ function readTaskTrace(tracePath: string | null): Map<string, PartDetail> {
   const parts = new Map<string, PartDetail>()
 
   if (!tracePath || !existsSync(tracePath)) {
-    return stages
+    return parts
   }
 
   try {
     const content = readFileSync(tracePath, 'utf-8')
-    const lines = content.split('\n').filter(line => line.trim())
+    const lines = content.split('\n').filter((line) => line.trim())
 
     for (const line of lines) {
       try {
@@ -226,7 +230,7 @@ function readTaskTrace(tracePath: string | null): Map<string, PartDetail> {
             partId: event.partId,
             partName: event.partName,
             status: 'PENDING',
-            probes: []
+            probes: [],
           })
         } else if (event.type === 'PART_COMPLETE') {
           const part = parts.get(event.partId)
@@ -240,7 +244,7 @@ function readTaskTrace(tracePath: string | null): Map<string, PartDetail> {
               probeType: event.probeType,
               result: event.result,
               output: event.output,
-              error: event.error
+              error: event.error,
             })
           }
         }
@@ -281,11 +285,11 @@ export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
           taskId: state.taskId,
           taskName: state.taskName,
           status: state.status,
-          currentStage: state.currentStage,
-          stages: state.stages,
+          currentPart: state.currentPartId,
+          parts: state.parts,
           frozenPath: existsSync(frozenPath) ? frozenPath : null,
           tracePath: existsSync(tracePath) ? tracePath : null,
-          partDetails: Array.from(partDetails.values())
+          partDetails: Array.from(partDetails.values()),
         })
       } catch {
         // ignore invalid state files
@@ -302,21 +306,27 @@ export function generateHallIndexHtml(projectRoot: string): string {
   const arsenalAssets = scanArsenalAssets(projectRoot)
   const tasks = scanProjectTasksDetailed(projectRoot)
 
-  const tasksJson = JSON.stringify(tasks.map(t => ({
-    taskId: t.taskId,
-    taskName: t.taskName,
-    status: t.status,
-    currentStage: t.currentStage,
-    stages: t.stages,
-    partDetails: t.partDetails || []
-  })))
+  const tasksJson = JSON.stringify(
+    tasks.map((t) => ({
+      taskId: t.taskId,
+      taskName: t.taskName,
+      status: t.status,
+      currentPart: t.currentPart,
+      parts: Object.fromEntries(
+        Object.entries(t.parts).map(([k, v]) => [k, v.status]),
+      ),
+      partDetails: t.partDetails || [],
+    })),
+  )
 
-  const arsenalJson = JSON.stringify(arsenalAssets.map(a => ({
-    name: a.name,
-    type: a.type,
-    state: a.state,
-    path: a.path
-  })))
+  const arsenalJson = JSON.stringify(
+    arsenalAssets.map((a) => ({
+      name: a.name,
+      type: a.type,
+      state: a.state,
+      path: a.path,
+    })),
+  )
 
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -428,14 +438,19 @@ export function generateHallIndexHtml(projectRoot: string): string {
         <span class="section-title">📋 待审查 Draft</span>
         <span class="section-count">${drafts.length}</span>
       </div>
-      ${drafts.length === 0 ? `
+      ${
+        drafts.length === 0
+          ? `
         <div class="empty-state">
           <div class="empty-state-icon">📭</div>
           <p>暂无待审查的 Draft 资产</p>
         </div>
-      ` : `
+      `
+          : `
         <ul class="item-list">
-          ${drafts.map(d => `
+          ${drafts
+            .map(
+              (d) => `
             <li class="item">
               <div class="item-info">
                 <span class="item-name">${d.name}</span>
@@ -445,9 +460,12 @@ export function generateHallIndexHtml(projectRoot: string): string {
                 <button class="btn">审查</button>
               </div>
             </li>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </ul>
-      `}
+      `
+      }
     </div>
 
     <div class="section">
@@ -455,14 +473,19 @@ export function generateHallIndexHtml(projectRoot: string): string {
         <span class="section-title">🔧 Arsenal 资产</span>
         <span class="section-count">${arsenalAssets.length}</span>
       </div>
-      ${arsenalAssets.length === 0 ? `
+      ${
+        arsenalAssets.length === 0
+          ? `
         <div class="empty-state">
           <div class="empty-state-icon">📦</div>
           <p>暂无 Arsenal 资产</p>
         </div>
-      ` : `
+      `
+          : `
         <ul class="item-list">
-          ${arsenalAssets.map(a => `
+          ${arsenalAssets
+            .map(
+              (a) => `
             <li class="item">
               <div class="item-info">
                 <span class="item-name">${a.name}</span>
@@ -472,9 +495,12 @@ export function generateHallIndexHtml(projectRoot: string): string {
                 <button class="btn" onclick="showArsenalDetail('${a.name}')">查看</button>
               </div>
             </li>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </ul>
-      `}
+      `
+      }
     </div>
 
     <div class="section">
@@ -482,17 +508,28 @@ export function generateHallIndexHtml(projectRoot: string): string {
         <span class="section-title">📊 任务列表</span>
         <span class="section-count">${tasks.length}</span>
       </div>
-      ${tasks.length === 0 ? `
+      ${
+        tasks.length === 0
+          ? `
         <div class="empty-state">
           <div class="empty-state-icon">📭</div>
           <p>暂无任务</p>
           <p style="font-size: 0.875rem; margin-top: 0.5rem;">使用 /oxn-task 发起新任务</p>
         </div>
-      ` : `
+      `
+          : `
         <ul class="item-list">
-          ${tasks.map(t => {
-            const statusClass = t.status === 'RUNNING' ? 'status-running' : t.status === 'COMPLETED' ? (Object.values(t.stages).some(s => s === 'FAILED') ? 'status-failed' : 'status-completed') : 'status-pending'
-            return `
+          ${tasks
+            .map((t) => {
+              const statusClass =
+                t.status === 'RUNNING'
+                  ? 'status-running'
+                  : t.status === 'COMPLETED'
+                    ? Object.values(t.parts).some((s) => s.status === 'FAILED')
+                      ? 'status-failed'
+                      : 'status-completed'
+                    : 'status-pending'
+              return `
               <li class="item" onclick="showTaskDetail('${t.taskId}')" style="cursor: pointer;">
                 <div class="item-info">
                   <span class="item-name">${t.taskName}</span>
@@ -501,9 +538,11 @@ export function generateHallIndexHtml(projectRoot: string): string {
                 <div class="item-status ${statusClass}">${t.status}</div>
               </li>
             `
-          }).join('')}
+            })
+            .join('')}
         </ul>
-      `}
+      `
+      }
     </div>
   </div>
 

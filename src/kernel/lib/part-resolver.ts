@@ -19,6 +19,7 @@ export function resolveBuiltinPart(name: string): PartDefinition | null {
   return {
     id: builtin.id || name,
     name: builtin.name || name,
+    _version: builtin._version ?? 1,
     description: builtin.description || '',
     props: builtin.props,
     target: builtin.target,

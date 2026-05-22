@@ -7,7 +7,7 @@
  * - 允许修改 DAG、增删 Part
  * - expectation 依赖完整性校验（删除被依赖 Part 报错）
  */
-import { join, dirname, basename } from 'path'
+import { join, basename } from 'path'
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): I/O to Infra via injection; kernel should be pure
 import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'fs'
 import type { OxnAssemblyIR, OxnAssemblyPart } from '../schemas/oxn-assembly.schema'
@@ -64,6 +64,7 @@ export class TaskSandbox {
         _version: (raw._version || 1) as number,
         assembly_at: new Date().toISOString(),
         props: [],
+        slots: [] as OxnAssemblyIR['slots'],
         abstractParts: [],
         concreteParts: [],
         stages: (raw.stages || raw.parts || []) as OxnAssemblyIR['stages'],

@@ -96,15 +96,15 @@ export class ExpectationRunner {
    * 检查是否全部通过
    */
   static allPassed(results: ExpectationResult[]): boolean {
-    return results.length > 0 && results.every(r => r.passed)
+    return results.length > 0 && results.every((r) => r.passed)
   }
 
   /**
    * 获取失败原因摘要
    */
   static failureSummary(results: ExpectationResult[]): string {
-    const failures = results.filter(r => !r.passed)
+    const failures = results.filter((r) => !r.passed)
     if (failures.length === 0) return ''
-    return failures.map(f => `  [${f.name}] ${f.errMsg || f.error || 'unknown'}`).join('\n')
+    return failures.map((f) => `  [${f.name}] ${f.errMsg || f.error || 'unknown'}`).join('\n')
   }
 }

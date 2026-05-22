@@ -7,6 +7,7 @@ export function adaptFrozenToBlueprint(frozen: FrozenBlueprint): Blueprint {
   return {
     id: frozen.id,
     name: frozen.name,
+    _version: (frozen as any)._version,
     status: 'CANONICAL',
     parts,
   }
@@ -18,6 +19,7 @@ export function adaptFrozenPart(frozenPart: FrozenPart): Part {
   return {
     id: frozenPart.id,
     name: frozenPart.name,
+    _version: (frozenPart as any)._version,
     deps: frozenPart.deps || [],
     params: frozenPart.params,
     target: frozenPart.target,
@@ -26,7 +28,7 @@ export function adaptFrozenPart(frozenPart: FrozenPart): Part {
   }
 }
 
-export function adaptFrozenProbe(frozenProbe: FrozenProbe): Part['probes'][number] {
+export function adaptFrozenProbe(frozenProbe: FrozenProbe): NonNullable<Part['probes']>[number] {
   const probeParams = frozenProbe.params || {}
 
   return {
@@ -35,5 +37,5 @@ export function adaptFrozenProbe(frozenProbe: FrozenProbe): Part['probes'][numbe
     pattern: typeof probeParams.pattern === 'string' ? probeParams.pattern : undefined,
     cwd: typeof probeParams.cwd === 'string' ? probeParams.cwd : undefined,
     params: frozenProbe.params,
-  }
+  } as NonNullable<Part['probes']>[number]
 }

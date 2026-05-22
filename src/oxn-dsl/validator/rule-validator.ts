@@ -40,14 +40,14 @@ export class RuleValidator {
    * 批量求值所有 rules
    */
   static evaluateAll(rules: OxnAssemblyRule[], props: Record<string, unknown>): RuleEvalResult[] {
-    return rules.map(r => this.evaluate(r, props))
+    return rules.map((r) => this.evaluate(r, props))
   }
 
   /**
    * 检查是否所有 rules 都通过
    */
   static allPass(result: RuleEvalResult[]): boolean {
-    return result.every(r => r.passed)
+    return result.every((r) => r.passed)
   }
 
   private static _evaluateCondition(condition: string, props: Record<string, unknown>): boolean {

@@ -22,7 +22,7 @@ export const cliContext = {
 
   getVerbosity(): number {
     return this.verbosity
-  }
+  },
 }
 
 export function detectCliFormat(): OutputFormat {

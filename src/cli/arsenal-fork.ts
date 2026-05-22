@@ -8,25 +8,25 @@ import { output, outputError, getFormatFromArgs } from './output'
 export default defineCommand({
   meta: {
     name: 'arsenal-fork',
-    description: '从已有 Part 创建变体（Fork）'
+    description: '从已有 Part 创建变体（Fork）',
   },
   args: {
     type: {
       type: 'positional',
       required: true,
-      description: '资产类型 (e.g., part)'
+      description: '资产类型 (e.g., part)',
     },
     name: {
       type: 'positional',
       required: true,
-      description: '源资产名称'
+      description: '源资产名称',
     },
     '--name': {
       type: 'string',
       alias: 'n',
       required: true,
-      description: '新资产名称'
-    }
+      description: '新资产名称',
+    },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -37,10 +37,13 @@ export default defineCommand({
     const newName = ctx.args['name'] as string
 
     if (assetType !== 'part') {
-      return outputError({
-        code: 'OXN_FORK_UNSUPPORTED',
-        message: `Fork 仅支持 part 类型，不支持: ${assetType}`
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_FORK_UNSUPPORTED',
+          message: `Fork 仅支持 part 类型，不支持: ${assetType}`,
+        },
+        format,
+      )
     }
 
     const type = 'parts' as AssetType
@@ -48,10 +51,13 @@ export default defineCommand({
     const sourcePath = join(basePath, `${sourceName}.oxn`)
 
     if (!existsSync(sourcePath)) {
-      return outputError({
-        code: 'OXN_ASSET_NOT_FOUND',
-        message: `源资产不存在: ${sourcePath}`
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_ASSET_NOT_FOUND',
+          message: `源资产不存在: ${sourcePath}`,
+        },
+        format,
+      )
     }
 
     try {
@@ -59,15 +65,21 @@ export default defineCommand({
       const newPath = join(basePath, `${newName}.oxn`)
       writeFileSync(newPath, content, 'utf-8')
 
-      output({
-        data: { source: sourceName, forked: newName, path: newPath },
-        human: `Forked: ${sourceName} → ${newName}\n  Path: ${newPath}`
-      }, format)
+      output(
+        {
+          data: { source: sourceName, forked: newName, path: newPath },
+          human: `Forked: ${sourceName} → ${newName}\n  Path: ${newPath}`,
+        },
+        format,
+      )
     } catch (err) {
-      return outputError({
-        code: 'OXN_FORK_FAILED',
-        message: err instanceof Error ? err.message : 'Unknown error'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_FORK_FAILED',
+          message: err instanceof Error ? err.message : 'Unknown error',
+        },
+        format,
+      )
     }
-  }
+  },
 })

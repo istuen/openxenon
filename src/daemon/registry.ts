@@ -39,7 +39,7 @@ export class ArsenalRegistry {
         type: asset.type,
         state: asset.state,
         path: asset.path,
-        semantics
+        semantics,
       }
 
       this.entries.set(asset.path, entry)
@@ -53,9 +53,9 @@ export class ArsenalRegistry {
       const sem = parsed.semantics as Record<string, unknown>
       return {
         intent: typeof sem.intent === 'string' ? sem.intent : '',
-        tags: Array.isArray(sem.tags) ? sem.tags as string[] : [],
+        tags: Array.isArray(sem.tags) ? (sem.tags as string[]) : [],
         useWhen: typeof sem.useWhen === 'string' ? sem.useWhen : '',
-        relatedAssets: Array.isArray(sem.relatedAssets) ? sem.relatedAssets as string[] : []
+        relatedAssets: Array.isArray(sem.relatedAssets) ? (sem.relatedAssets as string[]) : [],
       }
     }
     return { intent: '', tags: [], useWhen: '', relatedAssets: [] }
@@ -63,7 +63,7 @@ export class ArsenalRegistry {
 
   search(query: string): ArsenalEntry[] {
     const normalizedQuery = query.toLowerCase()
-    const queryTerms = normalizedQuery.split(/\s+/).filter(t => t.length > 0)
+    const queryTerms = normalizedQuery.split(/\s+/).filter((t) => t.length > 0)
 
     const results: ArsenalEntry[] = []
     for (const entry of this.entries.values()) {
@@ -93,7 +93,7 @@ export class ArsenalRegistry {
       if (entry.semantics.useWhen.toLowerCase().includes(term)) {
         score += 3
       }
-      if (entry.semantics.tags.some(tag => tag.toLowerCase().includes(term))) {
+      if (entry.semantics.tags.some((tag) => tag.toLowerCase().includes(term))) {
         score += 8
       }
     }

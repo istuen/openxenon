@@ -3,11 +3,23 @@ export type { Scope } from '../infra/loader'
 import type { AssetType } from './paths'
 
 import { getProjectBoundaryPath } from '../kernel'
-import { listStandards, loadStandardByName, promoteStandard, loadStandardByPath, loadArsenalsByState, loadArsenalsByTypeAndState, resolveAssetPath, generateCompiledArtifact } from '../infra/loader'
+import {
+  listStandards,
+  loadStandardByName,
+  promoteStandard,
+  loadStandardByPath,
+  loadArsenalsByState,
+  loadArsenalsByTypeAndState,
+  resolveAssetPath,
+  generateCompiledArtifact,
+} from '../infra/loader'
 
 const getProjectBoundary = (): string => getProjectBoundaryPath(process.cwd())
 
-export const arsenalListStandards = (state?: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
+export const arsenalListStandards = (
+  state?: 'draft' | 'canonical',
+  scope?: 'project' | 'global' | 'fallback' | 'builtin',
+) => {
   return listStandards(scope || 'fallback', getProjectBoundary(), state)
 }
 
@@ -15,17 +27,20 @@ export const arsenalLoadStandardByName = (name: string, type: AssetType) => {
   return loadStandardByName('project', getProjectBoundary(), name, type)
 }
 
-export {
-  promoteStandard,
-  loadStandardByPath,
-  generateCompiledArtifact
-}
+export { promoteStandard, loadStandardByPath, generateCompiledArtifact }
 
-export const arsenalLoadArsenalsByState = (state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
+export const arsenalLoadArsenalsByState = (
+  state: 'draft' | 'canonical',
+  scope?: 'project' | 'global' | 'fallback' | 'builtin',
+) => {
   return loadArsenalsByState(scope || 'fallback', getProjectBoundary(), state)
 }
 
-export const arsenalLoadArsenalsByTypeAndState = (type: AssetType, state: 'draft' | 'canonical', scope?: 'project' | 'global' | 'fallback' | 'builtin') => {
+export const arsenalLoadArsenalsByTypeAndState = (
+  type: AssetType,
+  state: 'draft' | 'canonical',
+  scope?: 'project' | 'global' | 'fallback' | 'builtin',
+) => {
   return loadArsenalsByTypeAndState(scope || 'fallback', getProjectBoundary(), type, state)
 }
 

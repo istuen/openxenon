@@ -5,21 +5,19 @@ import { type AssetType } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
 import { resolveBoundary } from '../infra/paths'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { dirname, join } from 'path'
+import { join } from 'path'
 import { compileAssembly } from '../kernel/compiler/blueprint-compiler'
 import { preloadCompileDependencies } from '../infra/loader'
-import { writeFileSync, readFileSync } from 'fs'
-
 const TYPE_ALIASES: Record<string, AssetType> = {
-  'blueprint': 'blueprints',
-  'blueprints': 'blueprints',
-  'probe': 'probes',
-  'probes': 'probes',
-  'part': 'parts',
-  'parts': 'parts'
+  blueprint: 'blueprints',
+  blueprints: 'blueprints',
+  probe: 'probes',
+  probes: 'probes',
+  part: 'parts',
+  parts: 'parts',
 }
 
-function parseAssetName(input: string): { type: AssetType, name: string } | null {
+function parseAssetName(input: string): { type: AssetType; name: string } | null {
   const parts = input.split('/')
   if (parts.length !== 2) {
     return null
@@ -38,22 +36,22 @@ function parseAssetName(input: string): { type: AssetType, name: string } | null
 export default defineCommand({
   meta: {
     name: 'publish',
-    description: '将全局 DRAFT 资产发布为 CANONICAL [Design-Time]'
+    description: '将全局 DRAFT 资产发布为 CANONICAL [Design-Time]',
   },
   args: {
     name: {
       type: 'positional',
       required: true,
-      description: '资产名称 (格式: <type>/<name>, 如 blueprints/my-blueprint)'
+      description: '资产名称 (格式: <type>/<name>, 如 blueprints/my-blueprint)',
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
-    }
+      description: 'YAML 格式输出',
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -63,43 +61,54 @@ export default defineCommand({
     const parsed = parseAssetName(input)
 
     if (!parsed) {
-      return outputError({
-        code: 'OXN_INVALID_FORMAT',
-        message: `Invalid asset name format: ${input}`,
-        suggestion: 'Expected format: <type>/<name> (e.g., blueprints/my-blueprint)'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_INVALID_FORMAT',
+          message: `Invalid asset name format: ${input}`,
+          suggestion: 'Expected format: <type>/<name> (e.g., blueprints/my-blueprint)',
+        },
+        format,
+      )
     }
 
     const asset = loadStandardByName('global', undefined, parsed.name, parsed.type)
     if (!asset) {
-      return outputError({
-        code: 'OXN_ASSET_NOT_FOUND',
-        message: `Asset not found in global arsenal: ${input}`
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_ASSET_NOT_FOUND',
+          message: `Asset not found in global arsenal: ${input}`,
+        },
+        format,
+      )
     }
 
     const isDraft = asset.state === 'draft' || asset.path.includes('/forges/')
     if (!isDraft) {
-      return outputError({
-        code: 'OXN_NOT_DRAFT',
-        message: `Asset is not in draft state: ${input}`,
-        suggestion: 'Only draft assets can be promoted'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_NOT_DRAFT',
+          message: `Asset is not in draft state: ${input}`,
+          suggestion: 'Only draft assets can be promoted',
+        },
+        format,
+      )
     }
 
     try {
       const promoted = promoteStandard(asset.path)
 
       if (!promoted) {
-        return outputError({
-          code: 'OXN_PROMOTE_FAILED',
-          message: 'Failed to promote asset'
-        }, format)
+        return outputError(
+          {
+            code: 'OXN_PROMOTE_FAILED',
+            message: 'Failed to promote asset',
+          },
+          format,
+        )
       }
 
       try {
         const existingContent = readFileSync(promoted.path, 'utf-8')
-        const isOxn = promoted.path.endsWith('.oxn')
         let doc: Record<string, unknown> = {}
         try {
           doc = JSON.parse(existingContent)
@@ -118,8 +127,10 @@ export default defineCommand({
           const bpDir = join(boundary, 'arsenals', 'blueprints', promoted.name)
           const assemblyJsonPath = join(bpDir, 'blueprint.assembly.json')
           const assembly = compileAssembly(doc as any, {
-            taskId: '', taskName: '', params: {},
-            dependencies: preloadCompileDependencies(boundary)
+            taskId: '',
+            taskName: '',
+            params: {},
+            dependencies: preloadCompileDependencies(boundary),
           })
           if (!existsSync(bpDir)) mkdirSync(bpDir, { recursive: true })
           writeFileSync(assemblyJsonPath, JSON.stringify(assembly, null, 2), 'utf-8')
@@ -128,21 +139,27 @@ export default defineCommand({
         // best-effort
       }
 
-      return output({
-        data: {
-          name: promoted.name,
-          type: promoted.type,
-          state: promoted.state,
-          path: promoted.path
+      return output(
+        {
+          data: {
+            name: promoted.name,
+            type: promoted.type,
+            state: promoted.state,
+            path: promoted.path,
+          },
+          human: `Global asset promoted successfully!\n  Name: ${promoted.name}\n  Type: ${promoted.type}\n  New State: ${promoted.state}\n  New Path: ${promoted.path}`,
         },
-        human: `Global asset promoted successfully!\n  Name: ${promoted.name}\n  Type: ${promoted.type}\n  New State: ${promoted.state}\n  New Path: ${promoted.path}`
-      }, format)
+        format,
+      )
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-      return outputError({
-        code: 'OXN_PROMOTE_ERROR',
-        message: errorMsg
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_PROMOTE_ERROR',
+          message: errorMsg,
+        },
+        format,
+      )
     }
-  }
+  },
 })

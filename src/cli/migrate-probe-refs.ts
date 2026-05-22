@@ -13,18 +13,18 @@ interface ProbeMapping {
 }
 
 const BUILTIN_PROBES: ProbeMapping = {
-  'fs_exists': 'oxn/fs-exists',
-  'fs_not_exists': 'oxn/fs-not-exists',
-  'fs_match': 'oxn/fs-match',
-  'fs_content_match': 'oxn/fs-content-match',
-  'fs_parseable': 'oxn/fs-parseable',
-  'exec_exit_zero': 'oxn/exec-exit-zero',
-  'shell_exec': 'oxn/shell-exec',
+  fs_exists: 'oxn/fs-exists',
+  fs_not_exists: 'oxn/fs-not-exists',
+  fs_match: 'oxn/fs-match',
+  fs_content_match: 'oxn/fs-content-match',
+  fs_parseable: 'oxn/fs-parseable',
+  exec_exit_zero: 'oxn/exec-exit-zero',
+  shell_exec: 'oxn/shell-exec',
   'exec-exit-zero': 'oxn/exec-exit-zero',
-  'exec_exit_code': 'oxn/exec-exit-zero',
-  'file_exists': 'oxn/fs-exists',
-  'file_not_exists': 'oxn/fs-not-exists',
-  'content_match': 'oxn/fs-content-match',
+  exec_exit_code: 'oxn/exec-exit-zero',
+  file_exists: 'oxn/fs-exists',
+  file_not_exists: 'oxn/fs-not-exists',
+  content_match: 'oxn/fs-content-match',
 }
 
 function detectAndConvertRef(ref: string): string | null {
@@ -186,8 +186,8 @@ export const migrationCommands = {
       }
 
       return { migrated: results.length, results }
-    }
-  }
+    },
+  },
 }
 
 if (import.meta.main) {

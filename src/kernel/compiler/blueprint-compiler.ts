@@ -267,7 +267,7 @@ export class BlueprintCompiler {
             ...slotValue,
             id: part.id,
             name: part.name || slotValue.name,
-            deps: part.deps || slotValue.deps || [],
+            deps: part.deps || (slotValue as Record<string, unknown>).deps || [],
           }
         }
       }

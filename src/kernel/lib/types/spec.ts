@@ -1,5 +1,5 @@
 export interface Spec {
-  constraints: string[];
-  forbiddenPatterns?: string[];
-  description?: string;
+  constraints: string[]
+  forbiddenPatterns?: string[]
+  description?: string
 }

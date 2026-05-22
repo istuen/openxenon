@@ -69,12 +69,7 @@ export interface ProbeResultEvent {
   timestamp: number
 }
 
-export type TraceEvent =
-  | TaskStartEvent
-  | TaskStatusEvent
-  | PartStartEvent
-  | PartCompleteEvent
-  | ProbeResultEvent
+export type TraceEvent = TaskStartEvent | TaskStatusEvent | PartStartEvent | PartCompleteEvent | ProbeResultEvent
 
 export interface TaskTraceState {
   taskId: string

@@ -193,8 +193,8 @@ oxn task new <task-id> --name <任务显示名称>
 ## 步骤 5：编写 Blueprint
 
 将 Blueprint 保存为文件：
-- **OXN Mode (推荐)**：保存为 `.oxn` 文件，使用 HCL-like 语法
-- **Legacy YAML Mode**：保存为 `.yaml` 文件（Deprecated）
+- **OXN Mode (推荐)**：保存为 \`.oxn\` 文件，使用 HCL-like 语法
+- **Legacy YAML Mode**：保存为 \`.yaml\` 文件（Deprecated）
 
 OXN 示例:
 \`\`\`hcl
@@ -279,10 +279,8 @@ oxn task verify --task-id <taskId> --part-id <partId>
 - 禁止在未通过 Core 验证的情况下自行推进任务
 `,
   examples: {
-    '提交任务': '/oxn-task 部署 Laravel 应用',
-    '查看状态': '/oxn-task 查看部署进度',
+    提交任务: '/oxn-task 部署 Laravel 应用',
+    查看状态: '/oxn-task 查看部署进度',
   },
-  references: [
-    { filename: 'blueprint-format.md', content: blueprintFormatMd }
-  ]
+  references: [{ filename: 'blueprint-format.md', content: blueprintFormatMd }],
 }

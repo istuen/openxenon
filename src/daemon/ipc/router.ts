@@ -1,7 +1,4 @@
-export type RouteHandler = (
-  request: Request,
-  projectPath: string
-) => Response | Promise<Response>
+export type RouteHandler = (request: Request, projectPath: string) => Response | Promise<Response>
 
 export interface Route {
   method: string
@@ -26,7 +23,7 @@ export function handleRequest(
   pathname: string,
   request: Request,
   _db: unknown,
-  projectPath: string
+  projectPath: string,
 ): Response | Promise<Response> {
   const handler = getRoute(method, pathname)
 
@@ -35,12 +32,12 @@ export function handleRequest(
       JSON.stringify({
         error: 'NotFound',
         message: `No route found for ${method} ${pathname}`,
-        statusCode: 404
+        statusCode: 404,
       }),
       {
         status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 

@@ -7,14 +7,14 @@ import { GLOBAL_ARSENALS_ROOT } from '../infra/paths'
 export default defineCommand({
   meta: {
     name: 'render',
-    description: '将全局 Draft Blueprint 渲染为 DAG 拓扑 HTML'
+    description: '将全局 Draft Blueprint 渲染为 DAG 拓扑 HTML',
   },
   args: {
     name: {
       type: 'string',
       required: true,
-      description: 'Blueprint 名称'
-    }
+      description: 'Blueprint 名称',
+    },
   },
   run(ctx) {
     try {
@@ -45,5 +45,5 @@ export default defineCommand({
       const error = err as Error
       console.error(`错误: ${error.message || String(err)}`)
     }
-  }
+  },
 })

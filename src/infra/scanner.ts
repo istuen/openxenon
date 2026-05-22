@@ -27,7 +27,7 @@ export function scanDirectory(dirPath: string): ScannedFile[] {
         const fileStat = statSync(filePath)
         results.push({
           path: filePath,
-          isDirectory: fileStat.isDirectory()
+          isDirectory: fileStat.isDirectory(),
         })
       } catch {
         // Skip files we can't access
@@ -43,13 +43,14 @@ export function scanDirectory(dirPath: string): ScannedFile[] {
 export function scanDirectoryRecursive(
   dirPath: string,
   maxDepth: number = 10,
-  currentDepth: number = 0
+  currentDepth: number = 0,
 ): Array<{ path: string; isDirectory: boolean; children?: ReturnType<typeof scanDirectoryRecursive> }> {
   if (!existsSync(dirPath) || currentDepth >= maxDepth) {
     return []
   }
 
-  const results: Array<{ path: string; isDirectory: boolean; children?: ReturnType<typeof scanDirectoryRecursive> }> = []
+  const results: Array<{ path: string; isDirectory: boolean; children?: ReturnType<typeof scanDirectoryRecursive> }> =
+    []
 
   try {
     const stat = statSync(dirPath)
@@ -68,12 +69,12 @@ export function scanDirectoryRecursive(
           results.push({
             path: filePath,
             isDirectory: true,
-            children
+            children,
           })
         } else {
           results.push({
             path: filePath,
-            isDirectory: false
+            isDirectory: false,
           })
         }
       } catch {

@@ -60,7 +60,6 @@ async function handleTaskSubmit(request: Request, projectPath: string): Promise<
         taskId,
         blueprintPath,
         tracePath: join(taskDir, 'task-trace.jsonl'),
-        manifestPath: join(taskDir, 'state.json'),
       },
       taskId,
       taskName,
@@ -68,7 +67,7 @@ async function handleTaskSubmit(request: Request, projectPath: string): Promise<
 
     recoveryManager.createRecoveryPoint(taskId, 'init', {
       taskName,
-      stagesCount: blueprintInput.stages?.length || 0,
+      partsCount: blueprintInput.parts?.length || 0,
       timestamp: Date.now(),
     })
 
@@ -78,7 +77,7 @@ async function handleTaskSubmit(request: Request, projectPath: string): Promise<
         blueprintId: taskId,
         blueprintFile: `tasks/${taskId}/${BLUEPRINT_FILE}`,
         status: 'RUNNING',
-        stagesCount: blueprintInput.stages?.length || 0,
+        partsCount: blueprintInput.parts?.length || 0,
         circuitBreakerState: taskCircuitBreaker.getState(),
         message: 'Task created successfully',
       }),

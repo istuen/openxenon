@@ -1,6 +1,6 @@
 import { createConnection } from 'net'
 import { existsSync, readFileSync } from '../infra/filesystem'
-import { DAEMON_PID_PATH, DAEMON_LOG_PATH, DAEMON_SOCK_PATH } from '../infra/global'
+import { DAEMON_LOG_PATH, DAEMON_SOCK_PATH } from '../infra/global'
 import { isDaemonRunning } from '../infra/daemon-probe'
 
 export interface DaemonStatusInfo {

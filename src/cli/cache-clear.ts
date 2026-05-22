@@ -2,7 +2,6 @@ import { defineCommand } from 'citty'
 import { resolve } from 'path'
 import { readdirSync, rmSync, existsSync } from 'fs'
 import { output, outputError, getFormatFromArgs } from './output'
-import { compileCache } from '../infra/compile-cache'
 import { BOUNDARY_DIR } from '../kernel/constants'
 
 export default defineCommand({

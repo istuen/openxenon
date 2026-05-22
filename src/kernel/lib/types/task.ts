@@ -12,13 +12,13 @@ export interface Task {
 }
 
 export interface XnTask {
-  id: string;
-  name: string;
-  activeBlueprintId?: string;
-  xnTaskStatus: XnTaskStatus;
-  action?: Action;
-  createdAt: number;
-  updatedAt: number;
+  id: string
+  name: string
+  activeBlueprintId?: string
+  xnTaskStatus: XnTaskStatus
+  action?: Action
+  createdAt: number
+  updatedAt: number
 }
 
 export interface StepManifest {

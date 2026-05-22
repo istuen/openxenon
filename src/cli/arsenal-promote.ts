@@ -1,5 +1,9 @@
 import { defineCommand } from 'citty'
-import { promoteStandard, arsenalLoadStandardByName as loadStandardByName, generateCompiledArtifact } from '../arsenals/loader'
+import {
+  promoteStandard,
+  arsenalLoadStandardByName as loadStandardByName,
+  generateCompiledArtifact,
+} from '../arsenals/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import { type AssetType } from '../arsenals/paths'
 import { output, outputError, getFormatFromArgs } from './output'
@@ -11,15 +15,15 @@ import { preloadCompileDependencies } from '../infra/loader'
 import * as yaml from 'yaml'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
-  'blueprint': 'blueprints',
-  'blueprints': 'blueprints',
-  'probe': 'probes',
-  'probes': 'probes',
-  'part': 'parts',
-  'parts': 'parts'
+  blueprint: 'blueprints',
+  blueprints: 'blueprints',
+  probe: 'probes',
+  probes: 'probes',
+  part: 'parts',
+  parts: 'parts',
 }
 
-function parseAssetName(input: string): { type: AssetType, name: string } | null {
+function parseAssetName(input: string): { type: AssetType; name: string } | null {
   const parts = input.split('/')
   if (parts.length !== 2) {
     return null
@@ -38,22 +42,22 @@ function parseAssetName(input: string): { type: AssetType, name: string } | null
 export default defineCommand({
   meta: {
     name: 'publish',
-    description: '将 DRAFT 资产发布为 CANONICAL [Design-Time]'
+    description: '将 DRAFT 资产发布为 CANONICAL [Design-Time]',
   },
   args: {
     name: {
       type: 'positional',
       required: true,
-      description: '资产名称 (格式: <type>/<name>, 如 blueprints/my-blueprint)'
+      description: '资产名称 (格式: <type>/<name>, 如 blueprints/my-blueprint)',
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
-    }
+      description: 'YAML 格式输出',
+    },
   },
   async run(ctx) {
     if (ctx.args.global || ctx.args.g) {
@@ -69,38 +73,50 @@ export default defineCommand({
     const parsed = parseAssetName(input)
 
     if (!parsed) {
-      return outputError({
-        code: 'OXN_INVALID_FORMAT',
-        message: `Invalid asset name format: ${input}`,
-        suggestion: 'Expected format: <type>/<name> (e.g., blueprints/my-blueprint)'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_INVALID_FORMAT',
+          message: `Invalid asset name format: ${input}`,
+          suggestion: 'Expected format: <type>/<name> (e.g., blueprints/my-blueprint)',
+        },
+        format,
+      )
     }
 
     const asset = loadStandardByName(parsed.name, parsed.type)
     if (!asset) {
-      return outputError({
-        code: 'OXN_ASSET_NOT_FOUND',
-        message: `Asset not found: ${input}`
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_ASSET_NOT_FOUND',
+          message: `Asset not found: ${input}`,
+        },
+        format,
+      )
     }
 
     const isDraft = asset.state === 'draft' || asset.path.includes('/forges/')
     if (!isDraft) {
-      return outputError({
-        code: 'OXN_NOT_DRAFT',
-        message: `Asset is not in draft state: ${input}`,
-        suggestion: 'Only draft assets can be promoted'
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_NOT_DRAFT',
+          message: `Asset is not in draft state: ${input}`,
+          suggestion: 'Only draft assets can be promoted',
+        },
+        format,
+      )
     }
 
     try {
       const promoted = promoteStandard(asset.path)
 
       if (!promoted) {
-        return outputError({
-          code: 'OXN_PROMOTE_FAILED',
-          message: 'Failed to promote asset'
-        }, format)
+        return outputError(
+          {
+            code: 'OXN_PROMOTE_FAILED',
+            message: 'Failed to promote asset',
+          },
+          format,
+        )
       }
 
       try {
@@ -112,7 +128,7 @@ export default defineCommand({
 
         if (promoted.type === 'parts' || promoted.type === 'probes') {
           const boundary = getProjectBoundaryPath(process.cwd())
-          const compiledPath = generateCompiledArtifact(promoted.path, boundary)
+          generateCompiledArtifact(promoted.path, boundary)
         }
 
         if (promoted.type === 'blueprints') {
@@ -123,7 +139,7 @@ export default defineCommand({
             taskId: '',
             taskName: '',
             params: {},
-            dependencies: preloadCompileDependencies(boundary)
+            dependencies: preloadCompileDependencies(boundary),
           })
           const assemblyDir = dirname(assemblyPath)
           if (!existsSync(assemblyDir)) mkdirSync(assemblyDir, { recursive: true })
@@ -133,21 +149,27 @@ export default defineCommand({
         // version increment and compiled generation are best-effort
       }
 
-      return output({
-        data: {
-          name: promoted.name,
-          type: promoted.type,
-          state: promoted.state,
-          path: promoted.path
+      return output(
+        {
+          data: {
+            name: promoted.name,
+            type: promoted.type,
+            state: promoted.state,
+            path: promoted.path,
+          },
+          human: `Asset promoted successfully!\n  Name: ${promoted.name}\n  Type: ${promoted.type}\n  New State: ${promoted.state}\n  New Path: ${promoted.path}`,
         },
-        human: `Asset promoted successfully!\n  Name: ${promoted.name}\n  Type: ${promoted.type}\n  New State: ${promoted.state}\n  New Path: ${promoted.path}`
-      }, format)
+        format,
+      )
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-      return outputError({
-        code: 'OXN_PROMOTE_ERROR',
-        message: errorMsg
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_PROMOTE_ERROR',
+          message: errorMsg,
+        },
+        format,
+      )
     }
-  }
+  },
 })

@@ -13,7 +13,6 @@ import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { homedir } from 'os'
 
-import type { StandardAsset } from '../../infra/loader'
 import { getBuiltinRegistry, type OxnBuiltinRegistry } from './oxn-builtin-registry'
 import type {
   OxnScope,
@@ -23,7 +22,7 @@ import type {
   IOxnWorkspaceManager,
   BuiltinAssetEntry,
 } from './oxn-scope'
-import { parseOxnReference, getScopeRoot, getScopeAssetDir, isValidOxnReference } from './oxn-scope'
+import { parseOxnReference, getScopeAssetDir } from './oxn-scope'
 
 // ========================
 // 配置
@@ -171,9 +170,15 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
 
     let data: Record<string, unknown> | null = null
     switch (type) {
-      case 'probe': data = this.builtin.getProbe(name); break
-      case 'part': data = this.builtin.getPart(name); break
-      case 'interface': data = this.builtin.getInterface(name); break
+      case 'probe':
+        data = this.builtin.getProbe(name)
+        break
+      case 'part':
+        data = this.builtin.getPart(name)
+        break
+      case 'interface':
+        data = this.builtin.getInterface(name)
+        break
     }
 
     if (data) {
@@ -205,7 +210,7 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
     }
 
     const assets = this._scanType(ref.scope, ref.type ?? 'part')
-    const found = assets.find(a => a.name === ref.name)
+    const found = assets.find((a) => a.name === ref.name)
 
     if (found) {
       return {
@@ -217,7 +222,7 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
           state: 'canonical',
           path: found.path,
           content: found.content,
-        },
+        } as any,
         resolvedFrom: 'filesystem',
       }
     }
@@ -234,7 +239,7 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
 
   list(scope: OxnScope, type: OxnAssetType): ResolvedOxnAsset[] {
     if (scope === 'oxn') {
-      return this.builtin.listByType(type).map(entry => ({
+      return this.builtin.listByType(type).map((entry) => ({
         ref: `@oxn/${type}/${entry.name}`,
         reference: {
           raw: `@oxn/${type}/${entry.name}`,
@@ -248,7 +253,7 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
     }
 
     const assets = this._scanType(scope, type)
-    return assets.map(a => ({
+    return assets.map((a) => ({
       ref: `@${scope}/${a.type}/${a.name}`,
       reference: {
         raw: `@${scope}/${a.type}/${a.name}`,
@@ -262,9 +267,9 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
         state: 'canonical' as const,
         path: a.path,
         content: a.content,
-      },
+      } as any,
       resolvedFrom: 'filesystem' as const,
-    }))
+    })) as ResolvedOxnAsset[]
   }
 
   findImplementors(interfaceName: string, scope?: OxnScope): ResolvedOxnAsset[] {

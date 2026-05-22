@@ -20,20 +20,12 @@ import type {
   RuleDeclaration,
   SlotDeclaration,
   SlotBinding,
-  SlotPropBinding,
   PropDeclaration,
   PartProbeDeclaration,
   ExecutionRef,
-  ParamsBlock,
   Expression,
-  BinaryExpr,
-  TernaryExpr,
-  TemplateString,
   VariableRef,
   OutputField,
-  Description,
-  RequiredModifier,
-  DefaultValue,
 } from '../generated/ast.js'
 
 import type {
@@ -63,7 +55,7 @@ function expressionToString(expr: Expression): string {
   if (typeof expr === 'number') return String(expr)
   if (typeof expr === 'boolean') return String(expr)
   if (typeof expr === 'object' && expr !== null) {
-    const e = expr as Record<string, unknown>
+    const e = expr as unknown as Record<string, unknown>
     if (e.$type === 'LiteralExpr' && (e as any).$cstNode?.text) {
       const text = (e as any).$cstNode.text as string
       if (text.length >= 2 && text[0] === '"' && text[text.length - 1] === '"') {
@@ -122,7 +114,7 @@ function expressionToValue(expr: Expression): unknown {
   if (typeof expr === 'boolean') return expr
   if (typeof expr === 'string') return expr
   if (typeof expr === 'object' && expr !== null) {
-    const e = expr as Record<string, unknown>
+    const e = expr as unknown as Record<string, unknown>
     if (e.$type === 'LiteralExpr' && (e as any).$cstNode?.text) {
       const text = (e as any).$cstNode.text as string
       if (text.length >= 2 && text[0] === '"' && text[text.length - 1] === '"') {
@@ -185,10 +177,10 @@ function partProbeToAssemblyProbe(probe: PartProbeDeclaration): OxnAssemblyPartP
 
 function executionRefToString(ref: ExecutionRef): string {
   if (ref.ref && typeof ref.ref === 'object' && 'ref' in ref.ref) {
-    return String((ref.ref as { ref: string }).ref)
+    return String((ref.ref as unknown as { ref: string }).ref)
   }
-  if (ref.part && ref.probe) {
-    return `${ref.part}.${ref.probe}`
+  if ((ref as any).part && (ref as any).probe) {
+    return `${(ref as any).part}.${(ref as any).probe}`
   }
   return 'unknown'
 }
@@ -203,9 +195,7 @@ export function convertProbeDeclaration(decl: ProbeDeclaration): OxnAssemblyProb
     description: decl.descriptions?.[0]?.value,
     props: (decl.props || []).map(propDeclarationToAssemblyProp),
     output: decl.output?.[0]
-      ? Object.fromEntries(
-          decl.output[0].fields.map((f: OutputField) => [f.name, typeRefToString(f.type)])
-        )
+      ? Object.fromEntries(decl.output[0].fields.map((f: OutputField) => [f.name, typeRefToString(f.type)]))
       : undefined,
   }
 }

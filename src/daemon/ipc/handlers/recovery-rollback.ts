@@ -4,10 +4,7 @@ import { badRequest } from '../errors'
 import { taskCircuitBreaker } from '../../circuit-breaker'
 import { recoveryManager } from '../../recovery'
 
-async function handleRecoveryRollback(
-  request: Request,
-  _projectPath: string
-): Promise<Response> {
+async function handleRecoveryRollback(request: Request, _projectPath: string): Promise<Response> {
   try {
     const body = await parseJSONBody<{
       taskId?: string
@@ -32,12 +29,12 @@ async function handleRecoveryRollback(
         JSON.stringify({
           error: 'CircuitBreakerOpen',
           message: 'Cannot retry due to circuit breaker. Please wait.',
-          statusCode: 503
+          statusCode: 503,
         }),
         {
           status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        }
+          headers: { 'Content-Type': 'application/json' },
+        },
       )
     }
 
@@ -55,24 +52,24 @@ async function handleRecoveryRollback(
             success: true,
             taskId: body.taskId,
             recoveryPointId: body.recoveryPointId,
-            message: 'Rollback successful, circuit breaker reset'
+            message: 'Rollback successful, circuit breaker reset',
           }),
           {
             status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          }
+            headers: { 'Content-Type': 'application/json' },
+          },
         )
       } else {
         return new Response(
           JSON.stringify({
             error: 'RollbackFailed',
             message: 'Failed to rollback to recovery point',
-            statusCode: 500
+            statusCode: 500,
           }),
           {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          }
+            headers: { 'Content-Type': 'application/json' },
+          },
         )
       }
     }
@@ -85,24 +82,24 @@ async function handleRecoveryRollback(
           JSON.stringify({
             success: true,
             taskId: body.taskId,
-            message: 'Retry initiated'
+            message: 'Retry initiated',
           }),
           {
             status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          }
+            headers: { 'Content-Type': 'application/json' },
+          },
         )
       } else {
         return new Response(
           JSON.stringify({
             error: 'RetryFailed',
             message: 'Failed to retry task',
-            statusCode: 500
+            statusCode: 500,
           }),
           {
             status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          }
+            headers: { 'Content-Type': 'application/json' },
+          },
         )
       }
     }
@@ -115,12 +112,12 @@ async function handleRecoveryRollback(
       JSON.stringify({
         error: 'RecoveryFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }

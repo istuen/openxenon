@@ -34,7 +34,7 @@ export function writeTaskStart(taskDir: TaskDirectory, taskId: string, taskName:
     taskName,
     status: 'RUNNING',
     startedAt: Date.now(),
-    stages: new Map(),
+    parts: new Map(),
   }
 }
 

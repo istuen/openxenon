@@ -38,7 +38,7 @@ export function compileSkill(
   skill: OpenXenonSkill,
   _adapterId: string,
   projectPath: string,
-  force: boolean = false
+  force: boolean = false,
 ): CompilationResult {
   const content = defaultRender(skill)
   const outputPath = join(projectPath, '.opencode', 'skills', skill.id, 'SKILL.md')
@@ -82,15 +82,11 @@ export function compileSkill(
     skillId: skill.id,
     outputPath,
     action,
-    referencesWritten
+    referencesWritten,
   }
 }
 
-export function compileAllSkills(
-  adapterId: string,
-  projectPath: string,
-  force: boolean = false
-): CompilationReport {
+export function compileAllSkills(adapterId: string, projectPath: string, force: boolean = false): CompilationReport {
   const skills = loadSkills()
   const results: CompilationResult[] = []
 
@@ -103,9 +99,9 @@ export function compileAllSkills(
     }
   }
 
-  const created = results.filter(r => r.action === 'created').length
-  const updated = results.filter(r => r.action === 'updated').length
-  const skipped = results.filter(r => r.action === 'skipped').length
+  const created = results.filter((r) => r.action === 'created').length
+  const updated = results.filter((r) => r.action === 'updated').length
+  const skipped = results.filter((r) => r.action === 'skipped').length
   const referencesCreated = results.reduce((sum, r) => sum + (r.referencesWritten || 0), 0)
 
   return {
@@ -115,15 +111,11 @@ export function compileAllSkills(
     created,
     updated,
     skipped,
-    referencesCreated
+    referencesCreated,
   }
 }
 
-function determineAction(
-  outputPath: string,
-  newContent: string,
-  force: boolean
-): 'created' | 'updated' | 'skipped' {
+function determineAction(outputPath: string, newContent: string, force: boolean): 'created' | 'updated' | 'skipped' {
   if (!existsSync(outputPath)) {
     return 'created'
   }
@@ -147,7 +139,7 @@ function computeReferencesHash(references: { filename: string; content: string }
   if (!references || references.length === 0) {
     return ''
   }
-  const combined = references.map(r => `${r.filename}:${r.content}`).join('|')
+  const combined = references.map((r) => `${r.filename}:${r.content}`).join('|')
   return createHash('sha256').update(combined).digest('hex')
 }
 
@@ -161,24 +153,24 @@ export function formatCompilationReport(report: CompilationReport): string {
     `跳过: ${report.skipped}`,
     `References: ${report.referencesCreated}`,
     '',
-    '详细结果:'
+    '详细结果:',
   ]
-  
+
   for (const result of report.results) {
     const statusIcon = {
       created: '✓',
       updated: '↻',
-      skipped: '-'
+      skipped: '-',
     }[result.action]
-    
+
     const statusText = {
       created: '新建',
       updated: '更新',
-      skipped: '跳过'
+      skipped: '跳过',
     }[result.action]
-    
+
     lines.push(`  ${statusIcon} ${result.skillId} [${statusText}]`)
   }
-  
+
   return lines.join('\n')
 }

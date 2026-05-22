@@ -4,10 +4,7 @@ import { executeFsMatch, type FsMatchParams } from './fs-match'
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 import type { ProbeContext } from './fs-exists'
 
-export type ProbeHandler = (
-  params: Record<string, unknown>,
-  context: ProbeContext
-) => Promise<unknown>
+export type ProbeHandler = (params: Record<string, unknown>, context: ProbeContext) => Promise<unknown>
 
 export interface ProbeObservation {
   probeType: string
@@ -18,6 +15,10 @@ export interface ProbeObservation {
 
 export interface ProbeResult extends ProbeObservation {
   result: 'PASSED' | 'FAILED'
+  params?: Record<string, unknown>
+  actual?: unknown
+  failureMessage?: string
+  duration?: number
 }
 
 export const probeHandlers: Record<string, ProbeHandler> = {
@@ -27,7 +28,7 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     return {
       probeType: 'fs_exists',
       output: files.join('\n'),
-      executedAt: Date.now()
+      executedAt: Date.now(),
     } as ProbeObservation
   },
 
@@ -37,7 +38,7 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     return {
       probeType: 'fs_not_exists',
       output: files.join('\n'),
-      executedAt: Date.now()
+      executedAt: Date.now(),
     } as ProbeObservation
   },
 
@@ -48,7 +49,7 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       probeType: 'fs_match',
       output: result.content,
       error: result.error,
-      executedAt: Date.now()
+      executedAt: Date.now(),
     } as ProbeObservation
   },
 
@@ -60,7 +61,7 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       output: result.stdout || result.stderr,
       error: result.error,
       executedAt: Date.now(),
-      exitCode: result.exitCode
+      exitCode: result.exitCode,
     } as ProbeObservation & { exitCode: number | null }
   },
 
@@ -72,7 +73,7 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       output: result.stdout || result.stderr,
       error: result.error,
       executedAt: Date.now(),
-      exitCode: result.exitCode
+      exitCode: result.exitCode,
     } as ProbeObservation & { exitCode: number | null }
   },
 
@@ -84,14 +85,13 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       output: result.stdout || result.stderr,
       error: result.error,
       executedAt: Date.now(),
-      exitCode: result.exitCode
+      exitCode: result.exitCode,
     } as ProbeObservation & { exitCode: number | null }
-  }
+  },
 }
 
 class ProbeRegistry {
   private handlers: Map<string, ProbeHandler> = new Map()
-  private builtinHandlers: Record<string, ProbeHandler> = probeHandlers
 
   private aliases: Record<string, string> = {
     'fs-exists': 'fs_exists',

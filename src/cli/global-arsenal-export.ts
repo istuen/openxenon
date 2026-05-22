@@ -46,7 +46,7 @@ function exportArsenalType(
   sourceArsenalsPath: string,
   targetPath: string,
   type: string,
-  filter: ExportFilter
+  filter: ExportFilter,
 ): { exported: number; skipped: number } {
   const srcDir = join(sourceArsenalsPath, type)
   const destDir = join(targetPath, 'arsenals', type)
@@ -106,30 +106,30 @@ function exportArsenalType(
 export default defineCommand({
   meta: {
     name: 'arsenal-export',
-    description: '导出全局 Arsenal 到外部目录'
+    description: '导出全局 Arsenal 到外部目录',
   },
   args: {
     path: {
       type: 'positional',
       required: true,
-      description: '目标目录路径'
+      description: '目标目录路径',
     },
     draft: {
       type: 'boolean',
-      description: '只导出 draft 资产'
+      description: '只导出 draft 资产',
     },
     canonical: {
       type: 'boolean',
-      description: '只导出 canonical 资产（默认）'
+      description: '只导出 canonical 资产（默认）',
     },
     all: {
       type: 'boolean',
-      description: '导出所有资产（draft + canonical + archive）'
+      description: '导出所有资产（draft + canonical + archive）',
     },
     archive: {
       type: 'boolean',
-      description: '只导出 archive 资产'
-    }
+      description: '只导出 archive 资产',
+    },
   },
   async run(ctx) {
     const targetPath = ctx.args.path as string
@@ -140,11 +140,13 @@ export default defineCommand({
       return
     }
 
-    const filter: ExportFilter =
-      ctx.args.all ? 'all' :
-      ctx.args.draft ? 'draft' :
-      ctx.args.archive ? 'archive' :
-      'canonical'
+    const filter: ExportFilter = ctx.args.all
+      ? 'all'
+      : ctx.args.draft
+        ? 'draft'
+        : ctx.args.archive
+          ? 'archive'
+          : 'canonical'
 
     console.log(`导出全局 Arsenal 到: ${targetPath}`)
     console.log(`过滤条件: ${filter}`)
@@ -163,5 +165,5 @@ export default defineCommand({
     }
 
     console.log(`\n导出完成: ${totalExported} 文件导出, ${totalSkipped} 文件跳过`)
-  }
+  },
 })

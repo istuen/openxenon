@@ -12,7 +12,7 @@ export const OxnTypeReferenceSchema = z.string().refine(
     const enumType = /^enum\(.+\)$/
     return primitive.test(val) || generic.test(val) || enumType.test(val)
   },
-  { message: '类型必须是 string | number | boolean | any | list<T> | map<T> | enum(...)' }
+  { message: '类型必须是 string | number | boolean | any | list<T> | map<T> | enum(...)' },
 )
 export type OxnTypeReference = z.infer<typeof OxnTypeReferenceSchema>
 
@@ -166,11 +166,7 @@ export type OxnAssemblyBundle = z.infer<typeof OxnAssemblyBundleSchema>
 // Helper Factories
 // ========================
 
-export function createOxnAssemblyIR(params: {
-  id: string
-  name: string
-  version?: number
-}): OxnAssemblyIR {
+export function createOxnAssemblyIR(params: { id: string; name: string; version?: number }): OxnAssemblyIR {
   return {
     id: params.id,
     name: params.name,
@@ -194,7 +190,9 @@ export function validateOxnAssemblyIR(data: unknown): OxnAssemblyIR {
   return OxnAssemblyIRSchema.parse(data)
 }
 
-export function safeValidateOxnAssemblyIR(data: unknown): { success: true; data: OxnAssemblyIR } | { success: false; error: z.ZodError } {
+export function safeValidateOxnAssemblyIR(
+  data: unknown,
+): { success: true; data: OxnAssemblyIR } | { success: false; error: z.ZodError } {
   const result = OxnAssemblyIRSchema.safeParse(data)
   if (result.success) {
     return { success: true, data: result.data }

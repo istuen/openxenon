@@ -7,7 +7,7 @@
  * - expectation 不可篡改检查
  * - 结构约束边界校验
  */
-import type { OxnAssemblyIR, OxnAssemblyPart } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyIR } from '../../kernel/schemas/oxn-assembly.schema'
 import { validateDagTopology, type DagNode } from '../../kernel/schemas/dag-validator'
 
 export interface MutationCheckResult {
@@ -30,7 +30,7 @@ export class MutationValidator {
       for (const stage of mutated.stages) {
         stageDepsMap.set(stage.name, stage.deps || [])
       }
-      const dagNodes: DagNode[] = mutated.concreteParts.map(p => ({
+      const dagNodes: DagNode[] = mutated.concreteParts.map((p) => ({
         id: p.name,
         deps: stageDepsMap.get(p.name) || [],
       }))
@@ -44,15 +44,17 @@ export class MutationValidator {
 
     // 2. implements 契约不可篡改
     for (const originalPart of original.concreteParts) {
-      const mutatedPart = mutated.concreteParts.find(p => p.name === originalPart.name)
-      if (mutatedPart && originalPart.implements && mutatedPart.implements !== originalPart.implements) {
-        errors.push(`Part "${originalPart.name}" 的 implements 契约不可篡改: "${originalPart.implements}" → "${mutatedPart.implements}"`)
+      const mutatedPart = mutated.concreteParts.find((p) => p.name === originalPart.name)
+      if (mutatedPart && (originalPart as any).implements && (mutatedPart as any).implements !== (originalPart as any).implements) {
+        errors.push(
+          `Part "${originalPart.name}" 的 implements 契约不可篡改: "${(originalPart as any).implements}" → "${(mutatedPart as any).implements}"`,
+        )
       }
     }
 
     // 3. expectation 不可篡改检查
-    const originalExpNames = new Set(original.expectations.map(e => e.name))
-    const mutatedExpNames = new Set(mutated.expectations.map(e => e.name))
+    const originalExpNames = new Set(original.expectations.map((e) => e.name))
+    const mutatedExpNames = new Set(mutated.expectations.map((e) => e.name))
 
     for (const exp of original.expectations) {
       if (!mutatedExpNames.has(exp.name)) {
@@ -61,14 +63,14 @@ export class MutationValidator {
     }
 
     // 允许追加新 expectation
-    const addedExps = [...mutatedExpNames].filter(n => !originalExpNames.has(n))
+    const addedExps = [...mutatedExpNames].filter((n) => !originalExpNames.has(n))
     for (const name of addedExps) {
       warnings.push(`新增 expectation: "${name}"`)
     }
 
     // 4. abstract part 绑定检查
     for (const ap of mutated.abstractParts) {
-      if (ap.isAbstract && ap.execution && ap.execution.length > 0) {
+      if ((ap as any).isAbstract && ap.execution && ap.execution.length > 0) {
         errors.push(`抽象零件 "${ap.name}" 不可包含 execution 块`)
       }
     }
@@ -81,9 +83,9 @@ export class MutationValidator {
     }
 
     // 6. 被删除的 parts 不应被 stage 引用
-    const originalPartNames = new Set(original.concreteParts.map(p => p.name))
-    const mutatedPartNames = new Set(mutated.concreteParts.map(p => p.name))
-    const removedParts = [...originalPartNames].filter(n => !mutatedPartNames.has(n))
+    const originalPartNames = new Set(original.concreteParts.map((p) => p.name))
+    const mutatedPartNames = new Set(mutated.concreteParts.map((p) => p.name))
+    const removedParts = [...originalPartNames].filter((n) => !mutatedPartNames.has(n))
 
     for (const name of removedParts) {
       if (stageTargetPartNames.has(name)) {

@@ -33,7 +33,13 @@ function getForgePath(type: AssetType, name: string, scope: Scope, ext: string =
   return join(projectBoundary, 'forges', type, name, `draft.${ext}`)
 }
 
-function saveDraftAsset(type: AssetType, name: string | undefined, content: string, scope: Scope = 'project', ext: string = 'oxn'): DraftAssetResult {
+function saveDraftAsset(
+  type: AssetType,
+  name: string | undefined,
+  content: string,
+  scope: Scope = 'project',
+  ext: string = 'oxn',
+): DraftAssetResult {
   ensureForgesDirectories(scope)
 
   const assetName = name || 'draft_' + randomUUID().slice(0, 8)
@@ -49,25 +55,40 @@ function saveDraftAsset(type: AssetType, name: string | undefined, content: stri
 
     return {
       success: true,
-      path: filePath
+      path: filePath,
     }
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     }
   }
 }
 
-export function createDraftProbe(content: string, name?: string, scope: Scope = 'project', ext: string = 'oxn'): DraftAssetResult {
+export function createDraftProbe(
+  content: string,
+  name?: string,
+  scope: Scope = 'project',
+  ext: string = 'oxn',
+): DraftAssetResult {
   return saveDraftAsset('probes', name, content, scope, ext)
 }
 
-export function createDraftPart(content: string, name?: string, scope: Scope = 'project', ext: string = 'oxn'): DraftAssetResult {
+export function createDraftPart(
+  content: string,
+  name?: string,
+  scope: Scope = 'project',
+  ext: string = 'oxn',
+): DraftAssetResult {
   return saveDraftAsset('parts', name, content, scope, ext)
 }
 
-export function createDraftFromYaml(yamlContent: string, name?: string, scope: Scope = 'project', ext: string = 'oxn'): DraftAssetResult {
+export function createDraftFromYaml(
+  yamlContent: string,
+  name?: string,
+  scope: Scope = 'project',
+  ext: string = 'oxn',
+): DraftAssetResult {
   const type = getTypeFromContent(yamlContent)
 
   if (!type) {

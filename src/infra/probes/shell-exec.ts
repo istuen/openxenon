@@ -9,36 +9,31 @@ export interface ShellExecResult {
   stdout: string
   stderr: string
   exitCode: number | null
+  error?: string
 }
 
 function validateCommand(command: string): boolean {
   if (!command || command.trim().length === 0) return false
   if (command.length > 4096) return false
-  const dangerousPatterns = [
-    /\0/,
-    /\r?\n(?=[^])/,
-  ]
-  return !dangerousPatterns.some(pattern => pattern.test(command))
+  const dangerousPatterns = [/\0/, /\r?\n(?=[^])/]
+  return !dangerousPatterns.some((pattern) => pattern.test(command))
 }
 
-export function executeShellExec(
-  command: string,
-  context: ProbeContext
-): Promise<ShellExecResult> {
+export function executeShellExec(command: string, context: ProbeContext): Promise<ShellExecResult> {
   return new Promise((resolve) => {
     if (!validateCommand(command)) {
       resolve({
         success: false,
         stdout: '',
         stderr: 'Invalid command: empty, too long, or contains null bytes',
-        exitCode: null
+        exitCode: null,
       })
       return
     }
 
     const proc = spawn(command, [], {
       shell: true,
-      cwd: context.projectRoot
+      cwd: context.projectRoot,
     })
 
     const timeout = setTimeout(() => {
@@ -47,7 +42,7 @@ export function executeShellExec(
         success: false,
         stdout: '',
         stderr: 'Command timed out (30s)',
-        exitCode: null
+        exitCode: null,
       })
     }, 30000)
 
@@ -68,7 +63,7 @@ export function executeShellExec(
         success: code === 0,
         stdout,
         stderr,
-        exitCode: code
+        exitCode: code,
       })
     })
 
@@ -78,7 +73,7 @@ export function executeShellExec(
         success: false,
         stdout: '',
         stderr: err.message,
-        exitCode: null
+        exitCode: null,
       })
     })
   })
