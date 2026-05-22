@@ -1,0 +1,61 @@
+{
+  "name": "oxn",
+  "scopeName": "source.oxn",
+  "fileTypes": [
+    ".oxn"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.oxn",
+      "match": "\\b(any|blueprint|boolean|condition|default|deps|description|enum|err_msg|execution|expectation|false|list|map|null|number|output|param|params|part|probe|prop|ref|required|rule|run|slot|stage|string|task|true|type|use|version)\\b"
+    },
+    {
+      "name": "string.quoted.double.oxn",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.oxn",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.oxn"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.oxn"
+            }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.oxn"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.oxn"
+        }
+      ]
+    },
+    "string-character-escape": {
+      "name": "constant.character.escape.oxn",
+      "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+    }
+  }
+}

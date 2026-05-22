@@ -10,15 +10,16 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join, dirname } from 'path'
+import { parse as parseYaml } from 'yaml'
 
 import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, ASSEMBLY_JSON } from '../kernel/constants'
 import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
 import { preloadCompileDependencies } from '../infra/loader'
 import { adaptOxnToFrozen } from '../kernel/compiler/oxn-adapter'
 import {
-  createOxnAssemblyIR,
   type OxnAssemblyIR,
-  type OxnAssemblyTaskBinding,
+  type OxnAssemblyPart,
+  type OxnAssemblySlotBinding,
   validateOxnAssemblyIR,
 } from '../kernel/schemas/oxn-assembly.schema'
 import { validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
@@ -26,9 +27,30 @@ import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
 import type { Blueprint } from '../kernel/schemas/blueprint.schema'
 import { ensureDirectory } from '../infra/fs'
 
-import { createOxnSharedServices, createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
+import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
 import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
-import { URI } from 'langium'
+import { URI, DocumentState } from 'langium'
+import type { OXNDocument } from '../oxn-dsl/generated/ast.js'
+import type { LangiumDocument } from 'langium'
+
+function extractBlueprintAssembly(doc: LangiumDocument): OxnAssemblyIR | undefined {
+  if (!doc.parseResult || !doc.parseResult.value) return undefined
+  const bundle = generateOxnAssembly(doc.parseResult.value as OXNDocument)
+  const blueprint = bundle.entities.find(
+    (e: { type: string }) => e.type === 'blueprint'
+  )
+  if (!blueprint) return undefined
+  const assem = validateOxnAssemblyIR((blueprint as { data: unknown }).data)
+
+  const partEntities = bundle.entities.filter(
+    (e: { type: string }) => e.type === 'part'
+  )
+  if (partEntities.length > 0) {
+    assem.concreteParts = partEntities.map(e => (e as { data: unknown }).data as OxnAssemblyPart)
+  }
+
+  return assem
+}
 
 // ========================
 // 路由函数
@@ -111,7 +133,7 @@ export function submitOxnPipeline(
   cwd: string,
   taskId: string,
   _taskName: string,
-  taskBinding?: OxnAssemblyTaskBinding
+  taskBinding?: OxnAssemblySlotBinding[]
 ): OxnSubmitResult {
   const content = readFileSync(blueprintPath, 'utf-8')
 
@@ -123,24 +145,24 @@ export function submitOxnPipeline(
       const shared = services.shared
       shared.ServiceRegistry.register(services)
 
+      const factory = shared.workspace.LangiumDocumentFactory
       const uri = URI.file(blueprintPath.startsWith('/') ? blueprintPath : join(cwd, blueprintPath))
-      const doc = shared.workspace.LangiumDocuments.createDocument(uri, content)
 
-      if (!doc.parseResult || !doc.parseResult.value) {
+      const doc = factory.fromString(content, uri, undefined)
+
+      if (doc.state >= DocumentState.Parsed) {
+        assembly = extractBlueprintAssembly(doc)
+      } else {
         const parser = services.parser.LangiumParser
         const parseResult = parser.parse(content)
-        if (parseResult.value) {
-          doc.parseResult = parseResult
-        }
-      }
-
-      if (doc.parseResult && doc.parseResult.value) {
-        const bundle = generateOxnAssembly(doc.parseResult.value as never)
-        const blueprint = bundle.entities.find(
-          (e: { type: string }) => e.type === 'blueprint'
-        )
-        if (blueprint) {
-          assembly = validateOxnAssemblyIR((blueprint as { data: unknown }).data)
+        if (parseResult.value && parseResult.parserErrors.length === 0 && parseResult.lexerErrors.length === 0) {
+          const bundle = generateOxnAssembly(parseResult.value as OXNDocument)
+          const blueprint = bundle.entities.find(
+            (e: { type: string }) => e.type === 'blueprint'
+          )
+          if (blueprint) {
+            assembly = validateOxnAssemblyIR((blueprint as { data: unknown }).data)
+          }
         }
       }
     } catch {
@@ -156,8 +178,8 @@ export function submitOxnPipeline(
     }
   }
 
-  // DAG 校验
-  const dagNodes: DagNode[] = (assembly.concreteParts.length > 0 ? assembly.concreteParts : assembly.stages).map(p => ({
+  // DAG 校验：始终以 stages 为拓扑标准（concreteParts 无 deps 结构）
+  const dagNodes: DagNode[] = (assembly.stages.length > 0 ? assembly.stages : assembly.concreteParts).map(p => ({
     id: p.name,
     deps: (p as any).deps || [],
   }))
@@ -167,11 +189,7 @@ export function submitOxnPipeline(
   }
 
   // 适配器转换
-  const binding: OxnAssemblyTaskBinding = taskBinding || {
-    partBindings: {},
-    propBindings: {},
-  }
-
+  const binding: OxnAssemblySlotBinding[] = taskBinding || []
   const result = adaptOxnToFrozen(assembly, binding)
   if (!result.warnings.every(() => false)) {
     // 有 warnings 但不阻止提交
@@ -203,7 +221,7 @@ export function unifiedTaskSubmit(
   options?: {
     params?: Record<string, unknown>
     /** OXN 专用：Task binding */
-    taskBinding?: OxnAssemblyTaskBinding
+    taskBinding?: OxnAssemblySlotBinding[]
   }
 ): UnifiedSubmitResult {
   const pipeline = detectPipeline(blueprintPath)
@@ -213,7 +231,7 @@ export function unifiedTaskSubmit(
     return { ...result, pipeline }
   }
 
-  const result = submitOxnPipeline(blueprintPath, cwd, taskId, taskName, options?.taskBinding)
+  const result = submitOxnPipeline(blueprintPath, cwd, taskId, taskName, options?.taskBinding || [])
   return result
 }
 

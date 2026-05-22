@@ -6,9 +6,7 @@ entry OXNDocument:
 
 TopLevelEntity:
     ProbeDeclaration
-    | InterfaceDeclaration
     | PartDeclaration
-    | AbstractPartDeclaration
     | BlueprintDeclaration
     | TaskDeclaration;
 
@@ -105,24 +103,9 @@ ProbeOutputDeclaration:
 OutputField:
     name=ID '=' type=TypeReference;
 
-// ==================== Interface ====================
-InterfaceDeclaration:
-    'interface' name=STRING '{'
-        (methods+=MethodDeclaration)*
-    '}';
-
-MethodDeclaration:
-    'method' name=STRING '{'
-        (input=MethodIO)?
-        (output=MethodIO)?
-    '}';
-
-MethodIO:
-    role=('input' | 'output') '{' (fields+=OutputField (';' fields+=OutputField)* ';'?)? '}';
-
-// ==================== Part (Concrete) ====================
+// ==================== Part ====================
 PartDeclaration:
-    'part' name=STRING ('implements' implements=[InterfaceDeclaration:STRING])? '{'
+    'part' name=STRING '{'
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (probes+=PartProbeDeclaration)*
@@ -130,14 +113,12 @@ PartDeclaration:
     '}';
 
 PartProbeDeclaration:
-    'probe' name=ID '{'
-        ('ref' '=' ref=STRING)?
+    'probe' name=ID ('ref' ref=STRING)? '{'
         ('params' '=' params=ParamsBlock)?
     '}';
 
 ExecutionRef:
-    part=ID '.' probe=ID
-    | ref=[PartProbeDeclaration:ID];
+    ref=[PartProbeDeclaration:ID];
 
 // ==================== Params Block ====================
 ParamsBlock:
@@ -146,34 +127,26 @@ ParamsBlock:
 ParamPair:
     key=ID '=' value=Expression;
 
-// ==================== Abstract Part ====================
-AbstractPartDeclaration:
-    'abstract' 'part' name=STRING '{'
-        ('implements' '=' implements=[InterfaceDeclaration:STRING])?
-        ('params' '=' params=ParamsBlock)?
-    '}';
-
 // ==================== Blueprint ====================
 BlueprintDeclaration:
     'blueprint' name=STRING '{'
         ('version' '=' version=NUMBER)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*
-        (abstractParts+=AbstractPartInBlueprint)*
+        (slots+=SlotDeclaration)*
         (stages+=StageDeclaration)*
         (expectations+=ExpectationDeclaration)*
         (rules+=RuleDeclaration)*
     '}';
 
-AbstractPartInBlueprint:
-    'abstract' 'part' name=STRING '{'
-        ('implements' '=' implements=[InterfaceDeclaration:STRING])?
-        ('params' '=' params=ParamsBlock)?
+SlotDeclaration:
+    'slot' name=STRING '{'
+        ('run' '=' run=STRING)?
     '}';
 
 StageDeclaration:
     'stage' name=STRING '{'
-        ('run' '=' run=ExecutionRef)?
+        ('run' '=' run=STRING)?
         ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
     '}';
 
@@ -192,21 +165,17 @@ RuleDeclaration:
 
 // ==================== Task ====================
 TaskDeclaration:
-    'task' name=STRING '{'
-        ('use' '=' use=STRING)?
-        'binding' '{'
-            (bindings+=BindingEntry)*
-        '}'
+    'task' name=STRING ('use' use=STRING)? '{'
+        (slotBindings+=SlotBinding)*
     '}';
 
-BindingEntry:
-    PartBinding | PropBinding;
+SlotBinding:
+    'part' 'slot' slot=STRING ('ref' ref=STRING)? '{'
+        (props+=SlotPropBinding)*
+    '}';
 
-PartBinding:
-    name=ID '=' ref=STRING;
-
-PropBinding:
-    'props' '.' prop=ID '=' value=Expression;
+SlotPropBinding:
+    'prop' name=ID '=' value=Expression;
 
 // ==================== Terminals ====================
 terminal ID: /[_a-zA-Z][\w-]*/;

@@ -1,4 +1,3 @@
-// === 内置探针 ===
 probe "fs-exists" {
   description = "验证文件是否存在"
   prop "path" { type = string; required = true }
@@ -6,59 +5,34 @@ probe "fs-exists" {
   output { exists = boolean }
 }
 
-// === 行为契约 ===
-interface "test-runner" {
-  method "run" {
-    input { env = string; coverage = number }
-    output { passed = boolean }
-  }
-}
-
-// === 具象零件 ===
-part "jest-runner" implements "test-runner" {
+part "jest-runner" {
   description = "Jest 测试执行器"
   prop "target_env" { type = string; default = "dev" }
   prop "coverage_threshold" { type = number; default = 80 }
-  probe run_tests {
-    ref = "@oxn/probe/shell-exec"
+  probe run_tests ref "@oxn/probes/shell-exec" {
     params = {
       command = "npm test -- --coverageThreshold=${prop.coverage_threshold}",
       timeout = 60000
     }
   }
-  execution = [probe.run_tests]
+  execution = [run_tests]
 }
 
-// === 抽象零件（无 Slot） ===
-abstract part "tester" {
-  implements = "test-runner"
-  params = {
-    target_env = prop.env,
-    coverage_threshold = prop.env == "prod" ? 95 : prop.coverage
-  }
-}
-
-// === 蓝图 ===
 blueprint "feature-pipeline" {
   version = 1
   prop "env" { type = enum("dev", "staging", "prod"); default = "dev" }
   prop "coverage" { type = number; default = 80 }
 
-  abstract part "tester" {
-    implements = "test-runner"
-    params = {
-      target_env = prop.env,
-      coverage_threshold = prop.env == "prod" ? 95 : prop.coverage
-    }
+  slot "test" {
+    run = "slot.test.run"
   }
 
   stage "unit_test" {
-    run = part.tester.run
-    deps = []
+    run = "slot.test.run"
   }
 
   expectation "must_use_zod" {
-    probe = "@oxn/probe/ts-uses-import"
+    probe = "@oxn/probes/ts-uses-import"
     params = { file_pattern = "src/api/**/*.ts", module_name = "zod" }
     err_msg = "API 层代码违反规范"
   }
@@ -69,12 +43,8 @@ blueprint "feature-pipeline" {
   }
 }
 
-// === 任务实例化 ===
-task "validate-feature-auth" {
-  use = "@prj/blueprint/feature-pipeline"
-  binding {
-    tester = "@glo/part/jest-runner"
-    props.env = "prod"
-    props.coverage = 90
+task "validate-feature-auth" use "@prj/blueprints/feature-pipeline" {
+  part slot "test" ref "@prj/parts/jest-runner" {
+    prop target_env = "prod"
   }
 }

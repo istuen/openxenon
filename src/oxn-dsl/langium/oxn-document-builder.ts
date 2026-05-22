@@ -13,7 +13,7 @@ import type { IOxnWorkspaceManager } from '../scope/oxn-scope.js'
 import { parseOxnReference } from '../scope/oxn-scope.js'
 import type { StandardAsset } from '../../infra/loader.js'
 import type { TaskDeclaration } from '../generated/ast.js'
-import { isTaskDeclaration, isPartBinding } from '../generated/ast.js'
+import { isTaskDeclaration, isSlotBinding } from '../generated/ast.js'
 
 const { CancellationToken } = Cancellation
 
@@ -38,11 +38,11 @@ function collectBindingRefsFromDocument(
     if (!isTaskDeclaration(entity)) continue
 
     const task = entity as TaskDeclaration
-    if (!task.bindings) continue
+    if (!task.slotBindings) continue
 
-    for (const binding of task.bindings) {
-      if (isPartBinding(binding)) {
-        refs.push(binding.ref)
+    for (const binding of task.slotBindings) {
+      if (isSlotBinding(binding)) {
+        refs.push(binding.ref || '')
       }
     }
   }

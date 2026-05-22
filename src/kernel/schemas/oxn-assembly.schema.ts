@@ -41,64 +41,44 @@ export const OxnAssemblyProbeSchema = z.object({
 export type OxnAssemblyProbe = z.infer<typeof OxnAssemblyProbeSchema>
 
 // ========================
-// Assembly Interface (行为契约)
-// ========================
-
-export const OxnAssemblyMethodSchema = z.object({
-  name: z.string().min(1),
-  input: z.record(z.string(), z.string()).optional(),
-  output: z.record(z.string(), z.string()).optional(),
-})
-export type OxnAssemblyMethod = z.infer<typeof OxnAssemblyMethodSchema>
-
-export const OxnAssemblyInterfaceSchema = z.object({
-  name: z.string().min(1),
-  methods: z.array(OxnAssemblyMethodSchema).default([]),
-})
-export type OxnAssemblyInterface = z.infer<typeof OxnAssemblyInterfaceSchema>
-
-// ========================
-// Assembly Part (零件 — 具象/抽象)
+// Assembly Part (零件)
 // ========================
 
 /** Part 内嵌的 Probe 引用 */
 export const OxnAssemblyPartProbeSchema = z.object({
   name: z.string().min(1),
-  ref: z.string().optional(),         // @scope/probe/name — 保留占位符
-  params: z.record(z.string(), z.unknown()).optional(), // 可能包含模板表达式
+  ref: z.string().optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
 })
 export type OxnAssemblyPartProbe = z.infer<typeof OxnAssemblyPartProbeSchema>
 
-/**
- * ⚠️ OxnAssemblyPart 是 OXN DSL 的核心结构体
- *
- * isAbstract === true  → 抽象零件（占位符），存在于 Blueprint 中，由 Task binding 具象化
- * isAbstract === false → 具象零件（实现），包含 execution 和完整 probe 定义
- *
- * 防御性规则：
- * 1. abstract part 严禁包含 execution 块（AST 层拦截 + schema 校验）
- * 2. abstract part 的 params 是参数映射表达式，不是最终值
- * 3. concrete part 必须包含 execution 块
- */
 export const OxnAssemblyPartSchema = z.object({
   name: z.string().min(1),
-  implements: z.string().optional(),  // interface name
   description: z.string().optional(),
-  /** 防御性标记：true=抽象占位符 false=具象实现 */
-  isAbstract: z.boolean(),
   props: z.array(OxnAssemblyPropSchema).default([]),
   probes: z.array(OxnAssemblyPartProbeSchema).default([]),
   execution: z.array(z.string()).default([]),
-}).refine(
-  (part) => {
-    if (part.isAbstract && part.execution.length > 0) {
-      throw new Error(`抽象零件 "${part.name}" 不得包含 execution 块`)
-    }
-    return true
-  },
-  { message: '抽象零件禁止包含 execution 块' }
-)
+})
 export type OxnAssemblyPart = z.infer<typeof OxnAssemblyPartSchema>
+
+// ========================
+// Assembly Slot (插槽)
+// ========================
+
+/** Slot — Blueprint 层的纯粹占位符，无类型契约 */
+export const OxnAssemblySlotSchema = z.object({
+  name: z.string().min(1),
+  run: z.string().optional(),
+})
+export type OxnAssemblySlot = z.infer<typeof OxnAssemblySlotSchema>
+
+/** Slot Binding — Task 层对 Slot 的覆写 */
+export const OxnAssemblySlotBindingSchema = z.object({
+  slot: z.string().min(1),
+  ref: z.string().optional(),
+  props: z.record(z.string(), z.unknown()).default({}),
+})
+export type OxnAssemblySlotBinding = z.infer<typeof OxnAssemblySlotBindingSchema>
 
 // ========================
 // Assembly Stage (阶段)
@@ -106,7 +86,7 @@ export type OxnAssemblyPart = z.infer<typeof OxnAssemblyPartSchema>
 
 export const OxnAssemblyStageSchema = z.object({
   name: z.string().min(1),
-  run: z.string(),             // part.tester.run 表示法
+  run: z.string(),
   deps: z.array(z.string()).default([]),
 })
 export type OxnAssemblyStage = z.infer<typeof OxnAssemblyStageSchema>
@@ -117,7 +97,7 @@ export type OxnAssemblyStage = z.infer<typeof OxnAssemblyStageSchema>
 
 export const OxnAssemblyExpectationSchema = z.object({
   name: z.string().min(1),
-  probeRef: z.string(),        // @scope/probe/name — 保留占位符
+  probeRef: z.string(),
   params: z.record(z.string(), z.unknown()).default({}),
   errMsg: z.string(),
 })
@@ -129,7 +109,7 @@ export type OxnAssemblyExpectation = z.infer<typeof OxnAssemblyExpectationSchema
 
 export const OxnAssemblyRuleSchema = z.object({
   name: z.string().min(1),
-  condition: z.string(),       // 条件表达式，保留字符串形式
+  condition: z.string(),
   errMsg: z.string(),
 })
 export type OxnAssemblyRule = z.infer<typeof OxnAssemblyRuleSchema>
@@ -138,74 +118,30 @@ export type OxnAssemblyRule = z.infer<typeof OxnAssemblyRuleSchema>
 // Assembly IR (蓝图中间表示)
 // ========================
 
-/**
- * OxnAssemblyIR — OXN 资产态中间表示
- *
- * 定位：
- * - 上接 Langium AST 生成器 (Task 1.5)
- * - 下接 Kernel 适配器 (Task 1.6)
- * - 保留模板占位符（prop refs, @scope refs, 模板表达式）
- * - 不能直接执行（须经 Frozen 转换）
- *
- * 与 FrozenBlueprint 的区别：
- * - Frozen: 零引用、零占位符、纯数据 DAG
- * - Assembly: 保留 prop/params 占位符，保留 isAbstract 标记
- */
 export const OxnAssemblyIRSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   _version: z.number().int().positive().default(1),
-  assembly_at: z.string(),       // ISO timestamp
+  assembly_at: z.string(),
   props: z.array(OxnAssemblyPropSchema).default([]),
-  abstractParts: z.array(OxnAssemblyPartSchema).default([]),
-  concreteParts: z.array(OxnAssemblyPartSchema).default([]),
+  slots: z.array(OxnAssemblySlotSchema).default([]),
   stages: z.array(OxnAssemblyStageSchema).default([]),
   expectations: z.array(OxnAssemblyExpectationSchema).default([]),
   rules: z.array(OxnAssemblyRuleSchema).default([]),
-}).refine(
-  (ir) => {
-    for (const part of ir.abstractParts) {
-      if (!part.isAbstract) {
-        throw new Error(`抽象零件 "${part.name}" 必须设置 isAbstract = true`)
-      }
-    }
-    return true
-  },
-  { message: '抽象零件的 isAbstract 必须为 true' }
-).refine(
-  (ir) => {
-    for (const part of ir.concreteParts) {
-      if (part.isAbstract) {
-        throw new Error(`具象零件 "${part.name}" 不得设置 isAbstract = true`)
-      }
-    }
-    return true
-  },
-  { message: '具象零件的 isAbstract 必须为 false' }
-)
+  /** 兼容字段：已废弃，保留用于向后兼容 */
+  concreteParts: z.array(OxnAssemblyPartSchema).default([]),
+  abstractParts: z.array(OxnAssemblyPartSchema).default([]),
+})
 export type OxnAssemblyIR = z.infer<typeof OxnAssemblyIRSchema>
 
 // ========================
 // Assembly Task IR (任务绑定)
 // ========================
 
-/**
- * OxnAssemblyTaskIR — Task 绑定中间表示
- *
- * 包含：
- * - partBindings：将 Blueprint 中的 abstractPart 映射到具体 Part
- * - propBindings：注入 Blueprint props 的值
- */
-export const OxnAssemblyTaskBindingSchema = z.object({
-  partBindings: z.record(z.string(), z.string()).default({}),
-  propBindings: z.record(z.string(), z.unknown()).default({}),
-})
-export type OxnAssemblyTaskBinding = z.infer<typeof OxnAssemblyTaskBindingSchema>
-
 export const OxnAssemblyTaskIRSchema = z.object({
   name: z.string().min(1),
-  use: z.string(),                // @scope/blueprint/name — 保留占位符
-  binding: OxnAssemblyTaskBindingSchema,
+  use: z.string(),
+  slotBindings: z.array(OxnAssemblySlotBindingSchema).default([]),
 })
 export type OxnAssemblyTaskIR = z.infer<typeof OxnAssemblyTaskIRSchema>
 
@@ -215,7 +151,6 @@ export type OxnAssemblyTaskIR = z.infer<typeof OxnAssemblyTaskIRSchema>
 
 export const OxnAssemblyBundleEntitySchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('probe'), data: OxnAssemblyProbeSchema }),
-  z.object({ type: z.literal('interface'), data: OxnAssemblyInterfaceSchema }),
   z.object({ type: z.literal('part'), data: OxnAssemblyPartSchema }),
   z.object({ type: z.literal('blueprint'), data: OxnAssemblyIRSchema }),
   z.object({ type: z.literal('task'), data: OxnAssemblyTaskIRSchema }),
@@ -242,46 +177,12 @@ export function createOxnAssemblyIR(params: {
     _version: params.version ?? 1,
     assembly_at: new Date().toISOString(),
     props: [],
-    abstractParts: [],
-    concreteParts: [],
+    slots: [],
     stages: [],
     expectations: [],
     rules: [],
-  }
-}
-
-export function createAbstractPart(params: {
-  name: string
-  implements?: string
-  params?: Record<string, unknown>
-}): OxnAssemblyPart {
-  return {
-    name: params.name,
-    implements: params.implements,
-    description: undefined,
-    isAbstract: true,
-    props: [],
-    probes: [],
-    execution: [],
-  }
-}
-
-export function createConcretePart(params: {
-  name: string
-  implements?: string
-  description?: string
-  props?: OxnAssemblyProp[]
-  probes?: OxnAssemblyPartProbe[]
-  execution?: string[]
-}): OxnAssemblyPart {
-  return {
-    name: params.name,
-    implements: params.implements,
-    description: params.description,
-    isAbstract: false,
-    props: params.props ?? [],
-    probes: params.probes ?? [],
-    execution: params.execution ?? [],
+    concreteParts: [],
+    abstractParts: [],
   }
 }
 

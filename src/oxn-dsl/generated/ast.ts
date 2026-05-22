@@ -38,9 +38,7 @@ export type OXNDSLKeywordNames =
     | "?"
     | "["
     | "]"
-    | "abstract"
     | "any"
-    | "binding"
     | "blueprint"
     | "boolean"
     | "condition"
@@ -52,12 +50,8 @@ export type OXNDSLKeywordNames =
     | "execution"
     | "expectation"
     | "false"
-    | "implements"
-    | "input"
-    | "interface"
     | "list"
     | "map"
-    | "method"
     | "null"
     | "number"
     | "output"
@@ -66,11 +60,11 @@ export type OXNDSLKeywordNames =
     | "part"
     | "probe"
     | "prop"
-    | "props"
     | "ref"
     | "required"
     | "rule"
     | "run"
+    | "slot"
     | "stage"
     | "string"
     | "task"
@@ -83,44 +77,6 @@ export type OXNDSLKeywordNames =
     | "}";
 
 export type OXNDSLTokenNames = OXNDSLTerminalNames | OXNDSLKeywordNames;
-
-export interface AbstractPartDeclaration extends langium.AstNode {
-    readonly $container: OXNDocument;
-    readonly $type: 'AbstractPartDeclaration';
-    implements?: langium.Reference<InterfaceDeclaration>;
-    name: string;
-    params?: ParamsBlock;
-}
-
-export const AbstractPartDeclaration = {
-    $type: 'AbstractPartDeclaration',
-    implements: 'implements',
-    name: 'name',
-    params: 'params'
-} as const;
-
-export function isAbstractPartDeclaration(item: unknown): item is AbstractPartDeclaration {
-    return reflection.isInstance(item, AbstractPartDeclaration.$type);
-}
-
-export interface AbstractPartInBlueprint extends langium.AstNode {
-    readonly $container: BlueprintDeclaration;
-    readonly $type: 'AbstractPartInBlueprint';
-    implements?: langium.Reference<InterfaceDeclaration>;
-    name: string;
-    params?: ParamsBlock;
-}
-
-export const AbstractPartInBlueprint = {
-    $type: 'AbstractPartInBlueprint',
-    implements: 'implements',
-    name: 'name',
-    params: 'params'
-} as const;
-
-export function isAbstractPartInBlueprint(item: unknown): item is AbstractPartInBlueprint {
-    return reflection.isInstance(item, AbstractPartInBlueprint.$type);
-}
 
 export type AnyType = AnyTypeRef;
 
@@ -146,7 +102,7 @@ export function isAnyTypeRef(item: unknown): item is AnyTypeRef {
 }
 
 export interface BinaryExpr extends langium.AstNode {
-    readonly $container: BinaryExpr | DefaultValue | ParamPair | PropBinding | RuleDeclaration | TernaryExpr;
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | RuleDeclaration | SlotPropBinding | TernaryExpr;
     readonly $type: 'BinaryExpr';
     left: Expression;
     op: '!=' | '&&' | '+' | '-' | '<' | '<=' | '==' | '>' | '>=' | '||';
@@ -164,37 +120,27 @@ export function isBinaryExpr(item: unknown): item is BinaryExpr {
     return reflection.isInstance(item, BinaryExpr.$type);
 }
 
-export type BindingEntry = PartBinding | PropBinding;
-
-export const BindingEntry = {
-    $type: 'BindingEntry'
-} as const;
-
-export function isBindingEntry(item: unknown): item is BindingEntry {
-    return reflection.isInstance(item, BindingEntry.$type);
-}
-
 export interface BlueprintDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'BlueprintDeclaration';
-    abstractParts: Array<AbstractPartInBlueprint>;
     descriptions: Array<Description>;
     expectations: Array<ExpectationDeclaration>;
     name: string;
     props: Array<PropDeclaration>;
     rules: Array<RuleDeclaration>;
+    slots: Array<SlotDeclaration>;
     stages: Array<StageDeclaration>;
     version?: number;
 }
 
 export const BlueprintDeclaration = {
     $type: 'BlueprintDeclaration',
-    abstractParts: 'abstractParts',
     descriptions: 'descriptions',
     expectations: 'expectations',
     name: 'name',
     props: 'props',
     rules: 'rules',
+    slots: 'slots',
     stages: 'stages',
     version: 'version'
 } as const;
@@ -255,17 +201,13 @@ export function isEnumType(item: unknown): item is EnumType {
 }
 
 export interface ExecutionRef extends langium.AstNode {
-    readonly $container: PartDeclaration | StageDeclaration;
+    readonly $container: PartDeclaration;
     readonly $type: 'ExecutionRef';
-    part?: string;
-    probe?: string;
-    ref?: langium.Reference<PartProbeDeclaration>;
+    ref: langium.Reference<PartProbeDeclaration>;
 }
 
 export const ExecutionRef = {
     $type: 'ExecutionRef',
-    part: 'part',
-    probe: 'probe',
     ref: 'ref'
 } as const;
 
@@ -321,23 +263,6 @@ export function isGenericType(item: unknown): item is GenericType {
     return reflection.isInstance(item, GenericType.$type);
 }
 
-export interface InterfaceDeclaration extends langium.AstNode {
-    readonly $container: OXNDocument;
-    readonly $type: 'InterfaceDeclaration';
-    methods: Array<MethodDeclaration>;
-    name: string;
-}
-
-export const InterfaceDeclaration = {
-    $type: 'InterfaceDeclaration',
-    methods: 'methods',
-    name: 'name'
-} as const;
-
-export function isInterfaceDeclaration(item: unknown): item is InterfaceDeclaration {
-    return reflection.isInstance(item, InterfaceDeclaration.$type);
-}
-
 export type LiteralExpr = NullLiteral;
 
 export const LiteralExpr = {
@@ -348,44 +273,8 @@ export function isLiteralExpr(item: unknown): item is LiteralExpr {
     return reflection.isInstance(item, LiteralExpr.$type);
 }
 
-export interface MethodDeclaration extends langium.AstNode {
-    readonly $container: InterfaceDeclaration;
-    readonly $type: 'MethodDeclaration';
-    input?: MethodIO;
-    name: string;
-    output?: MethodIO;
-}
-
-export const MethodDeclaration = {
-    $type: 'MethodDeclaration',
-    input: 'input',
-    name: 'name',
-    output: 'output'
-} as const;
-
-export function isMethodDeclaration(item: unknown): item is MethodDeclaration {
-    return reflection.isInstance(item, MethodDeclaration.$type);
-}
-
-export interface MethodIO extends langium.AstNode {
-    readonly $container: MethodDeclaration;
-    readonly $type: 'MethodIO';
-    fields: Array<OutputField>;
-    role: 'input' | 'output';
-}
-
-export const MethodIO = {
-    $type: 'MethodIO',
-    fields: 'fields',
-    role: 'role'
-} as const;
-
-export function isMethodIO(item: unknown): item is MethodIO {
-    return reflection.isInstance(item, MethodIO.$type);
-}
-
 export interface NullLit extends langium.AstNode {
-    readonly $container: BinaryExpr | DefaultValue | ParamPair | PropBinding | RuleDeclaration | TernaryExpr;
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | RuleDeclaration | SlotPropBinding | TernaryExpr;
     readonly $type: 'NullLit';
 }
 
@@ -408,7 +297,7 @@ export function isNullLiteral(item: unknown): item is NullLiteral {
 }
 
 export interface OutputField extends langium.AstNode {
-    readonly $container: MethodIO | ProbeOutputDeclaration;
+    readonly $container: ProbeOutputDeclaration;
     readonly $type: 'OutputField';
     name: string;
     type: TypeReference;
@@ -456,7 +345,7 @@ export function isParamPair(item: unknown): item is ParamPair {
 }
 
 export interface ParamsBlock extends langium.AstNode {
-    readonly $container: AbstractPartDeclaration | AbstractPartInBlueprint | ExpectationDeclaration | PartProbeDeclaration;
+    readonly $container: ExpectationDeclaration | PartProbeDeclaration;
     readonly $type: 'ParamsBlock';
     pairs: Array<ParamPair>;
 }
@@ -470,28 +359,10 @@ export function isParamsBlock(item: unknown): item is ParamsBlock {
     return reflection.isInstance(item, ParamsBlock.$type);
 }
 
-export interface PartBinding extends langium.AstNode {
-    readonly $container: TaskDeclaration;
-    readonly $type: 'PartBinding';
-    name: string;
-    ref: string;
-}
-
-export const PartBinding = {
-    $type: 'PartBinding',
-    name: 'name',
-    ref: 'ref'
-} as const;
-
-export function isPartBinding(item: unknown): item is PartBinding {
-    return reflection.isInstance(item, PartBinding.$type);
-}
-
 export interface PartDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'PartDeclaration';
     descriptions: Array<Description>;
-    implements?: langium.Reference<InterfaceDeclaration>;
     name: string;
     probes: Array<PartProbeDeclaration>;
     props: Array<PropDeclaration>;
@@ -501,7 +372,6 @@ export interface PartDeclaration extends langium.AstNode {
 export const PartDeclaration = {
     $type: 'PartDeclaration',
     descriptions: 'descriptions',
-    implements: 'implements',
     name: 'name',
     probes: 'probes',
     props: 'props',
@@ -571,23 +441,6 @@ export const ProbeOutputDeclaration = {
 
 export function isProbeOutputDeclaration(item: unknown): item is ProbeOutputDeclaration {
     return reflection.isInstance(item, ProbeOutputDeclaration.$type);
-}
-
-export interface PropBinding extends langium.AstNode {
-    readonly $container: TaskDeclaration;
-    readonly $type: 'PropBinding';
-    prop: string;
-    value: Expression;
-}
-
-export const PropBinding = {
-    $type: 'PropBinding',
-    prop: 'prop',
-    value: 'value'
-} as const;
-
-export function isPropBinding(item: unknown): item is PropBinding {
-    return reflection.isInstance(item, PropBinding.$type);
 }
 
 export interface PropDeclaration extends langium.AstNode {
@@ -664,12 +517,65 @@ export function isRuleDeclaration(item: unknown): item is RuleDeclaration {
     return reflection.isInstance(item, RuleDeclaration.$type);
 }
 
+export interface SlotBinding extends langium.AstNode {
+    readonly $container: TaskDeclaration;
+    readonly $type: 'SlotBinding';
+    props: Array<SlotPropBinding>;
+    ref?: string;
+    slot: string;
+}
+
+export const SlotBinding = {
+    $type: 'SlotBinding',
+    props: 'props',
+    ref: 'ref',
+    slot: 'slot'
+} as const;
+
+export function isSlotBinding(item: unknown): item is SlotBinding {
+    return reflection.isInstance(item, SlotBinding.$type);
+}
+
+export interface SlotDeclaration extends langium.AstNode {
+    readonly $container: BlueprintDeclaration;
+    readonly $type: 'SlotDeclaration';
+    name: string;
+    run?: string;
+}
+
+export const SlotDeclaration = {
+    $type: 'SlotDeclaration',
+    name: 'name',
+    run: 'run'
+} as const;
+
+export function isSlotDeclaration(item: unknown): item is SlotDeclaration {
+    return reflection.isInstance(item, SlotDeclaration.$type);
+}
+
+export interface SlotPropBinding extends langium.AstNode {
+    readonly $container: SlotBinding;
+    readonly $type: 'SlotPropBinding';
+    name: string;
+    value: Expression;
+}
+
+export const SlotPropBinding = {
+    $type: 'SlotPropBinding',
+    name: 'name',
+    value: 'value'
+} as const;
+
+export function isSlotPropBinding(item: unknown): item is SlotPropBinding {
+    return reflection.isInstance(item, SlotPropBinding.$type);
+}
+
 export interface StageDeclaration extends langium.AstNode {
     readonly $container: BlueprintDeclaration;
     readonly $type: 'StageDeclaration';
     deps: Array<string>;
     name: string;
-    run?: ExecutionRef;
+    run?: string;
 }
 
 export const StageDeclaration = {
@@ -686,15 +592,15 @@ export function isStageDeclaration(item: unknown): item is StageDeclaration {
 export interface TaskDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'TaskDeclaration';
-    bindings: Array<BindingEntry>;
     name: string;
+    slotBindings: Array<SlotBinding>;
     use?: string;
 }
 
 export const TaskDeclaration = {
     $type: 'TaskDeclaration',
-    bindings: 'bindings',
     name: 'name',
+    slotBindings: 'slotBindings',
     use: 'use'
 } as const;
 
@@ -703,7 +609,7 @@ export function isTaskDeclaration(item: unknown): item is TaskDeclaration {
 }
 
 export interface TemplateString extends langium.AstNode {
-    readonly $container: BinaryExpr | DefaultValue | ParamPair | PropBinding | RuleDeclaration | TernaryExpr;
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | RuleDeclaration | SlotPropBinding | TernaryExpr;
     readonly $type: 'TemplateString';
     value: string;
 }
@@ -718,7 +624,7 @@ export function isTemplateString(item: unknown): item is TemplateString {
 }
 
 export interface TernaryExpr extends langium.AstNode {
-    readonly $container: BinaryExpr | DefaultValue | ParamPair | PropBinding | RuleDeclaration | TernaryExpr;
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | RuleDeclaration | SlotPropBinding | TernaryExpr;
     readonly $type: 'TernaryExpr';
     condition: Expression;
     else: Expression;
@@ -736,7 +642,7 @@ export function isTernaryExpr(item: unknown): item is TernaryExpr {
     return reflection.isInstance(item, TernaryExpr.$type);
 }
 
-export type TopLevelEntity = AbstractPartDeclaration | BlueprintDeclaration | InterfaceDeclaration | PartDeclaration | ProbeDeclaration | TaskDeclaration;
+export type TopLevelEntity = BlueprintDeclaration | PartDeclaration | ProbeDeclaration | TaskDeclaration;
 
 export const TopLevelEntity = {
     $type: 'TopLevelEntity'
@@ -757,7 +663,7 @@ export function isTypeReference(item: unknown): item is TypeReference {
 }
 
 export interface VariableRef extends langium.AstNode {
-    readonly $container: BinaryExpr | DefaultValue | ParamPair | PropBinding | RuleDeclaration | TernaryExpr;
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | RuleDeclaration | SlotPropBinding | TernaryExpr;
     readonly $type: 'VariableRef';
     path: QualifiedName;
 }
@@ -772,12 +678,9 @@ export function isVariableRef(item: unknown): item is VariableRef {
 }
 
 export type OXNDSLAstType = {
-    AbstractPartDeclaration: AbstractPartDeclaration
-    AbstractPartInBlueprint: AbstractPartInBlueprint
     AnyType: AnyType
     AnyTypeRef: AnyTypeRef
     BinaryExpr: BinaryExpr
-    BindingEntry: BindingEntry
     BlueprintDeclaration: BlueprintDeclaration
     DefaultValue: DefaultValue
     Description: Description
@@ -786,26 +689,24 @@ export type OXNDSLAstType = {
     ExpectationDeclaration: ExpectationDeclaration
     Expression: Expression
     GenericType: GenericType
-    InterfaceDeclaration: InterfaceDeclaration
     LiteralExpr: LiteralExpr
-    MethodDeclaration: MethodDeclaration
-    MethodIO: MethodIO
     NullLit: NullLit
     NullLiteral: NullLiteral
     OXNDocument: OXNDocument
     OutputField: OutputField
     ParamPair: ParamPair
     ParamsBlock: ParamsBlock
-    PartBinding: PartBinding
     PartDeclaration: PartDeclaration
     PartProbeDeclaration: PartProbeDeclaration
     ProbeDeclaration: ProbeDeclaration
     ProbeOutputDeclaration: ProbeOutputDeclaration
-    PropBinding: PropBinding
     PropDeclaration: PropDeclaration
     QualifiedName: QualifiedName
     RequiredModifier: RequiredModifier
     RuleDeclaration: RuleDeclaration
+    SlotBinding: SlotBinding
+    SlotDeclaration: SlotDeclaration
+    SlotPropBinding: SlotPropBinding
     StageDeclaration: StageDeclaration
     TaskDeclaration: TaskDeclaration
     TemplateString: TemplateString
@@ -817,38 +718,6 @@ export type OXNDSLAstType = {
 
 export class OXNDSLAstReflection extends langium.AbstractAstReflection {
     override readonly types = {
-        AbstractPartDeclaration: {
-            name: AbstractPartDeclaration.$type,
-            properties: {
-                implements: {
-                    name: AbstractPartDeclaration.implements,
-                    referenceType: InterfaceDeclaration.$type
-                },
-                name: {
-                    name: AbstractPartDeclaration.name
-                },
-                params: {
-                    name: AbstractPartDeclaration.params
-                }
-            },
-            superTypes: [TopLevelEntity.$type]
-        },
-        AbstractPartInBlueprint: {
-            name: AbstractPartInBlueprint.$type,
-            properties: {
-                implements: {
-                    name: AbstractPartInBlueprint.implements,
-                    referenceType: InterfaceDeclaration.$type
-                },
-                name: {
-                    name: AbstractPartInBlueprint.name
-                },
-                params: {
-                    name: AbstractPartInBlueprint.params
-                }
-            },
-            superTypes: []
-        },
         AnyType: {
             name: AnyType.$type,
             properties: {
@@ -876,19 +745,9 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: [Expression.$type]
         },
-        BindingEntry: {
-            name: BindingEntry.$type,
-            properties: {
-            },
-            superTypes: []
-        },
         BlueprintDeclaration: {
             name: BlueprintDeclaration.$type,
             properties: {
-                abstractParts: {
-                    name: BlueprintDeclaration.abstractParts,
-                    defaultValue: []
-                },
                 descriptions: {
                     name: BlueprintDeclaration.descriptions,
                     defaultValue: []
@@ -906,6 +765,10 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
                 },
                 rules: {
                     name: BlueprintDeclaration.rules,
+                    defaultValue: []
+                },
+                slots: {
+                    name: BlueprintDeclaration.slots,
                     defaultValue: []
                 },
                 stages: {
@@ -949,12 +812,6 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
         ExecutionRef: {
             name: ExecutionRef.$type,
             properties: {
-                part: {
-                    name: ExecutionRef.part
-                },
-                probe: {
-                    name: ExecutionRef.probe
-                },
                 ref: {
                     name: ExecutionRef.ref,
                     referenceType: PartProbeDeclaration.$type
@@ -998,52 +855,11 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: [TypeReference.$type]
         },
-        InterfaceDeclaration: {
-            name: InterfaceDeclaration.$type,
-            properties: {
-                methods: {
-                    name: InterfaceDeclaration.methods,
-                    defaultValue: []
-                },
-                name: {
-                    name: InterfaceDeclaration.name
-                }
-            },
-            superTypes: [TopLevelEntity.$type]
-        },
         LiteralExpr: {
             name: LiteralExpr.$type,
             properties: {
             },
             superTypes: [Expression.$type]
-        },
-        MethodDeclaration: {
-            name: MethodDeclaration.$type,
-            properties: {
-                input: {
-                    name: MethodDeclaration.input
-                },
-                name: {
-                    name: MethodDeclaration.name
-                },
-                output: {
-                    name: MethodDeclaration.output
-                }
-            },
-            superTypes: []
-        },
-        MethodIO: {
-            name: MethodIO.$type,
-            properties: {
-                fields: {
-                    name: MethodIO.fields,
-                    defaultValue: []
-                },
-                role: {
-                    name: MethodIO.role
-                }
-            },
-            superTypes: []
         },
         NullLit: {
             name: NullLit.$type,
@@ -1101,28 +917,12 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: []
         },
-        PartBinding: {
-            name: PartBinding.$type,
-            properties: {
-                name: {
-                    name: PartBinding.name
-                },
-                ref: {
-                    name: PartBinding.ref
-                }
-            },
-            superTypes: [BindingEntry.$type]
-        },
         PartDeclaration: {
             name: PartDeclaration.$type,
             properties: {
                 descriptions: {
                     name: PartDeclaration.descriptions,
                     defaultValue: []
-                },
-                implements: {
-                    name: PartDeclaration.implements,
-                    referenceType: InterfaceDeclaration.$type
                 },
                 name: {
                     name: PartDeclaration.name
@@ -1188,18 +988,6 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: []
         },
-        PropBinding: {
-            name: PropBinding.$type,
-            properties: {
-                prop: {
-                    name: PropBinding.prop
-                },
-                value: {
-                    name: PropBinding.value
-                }
-            },
-            superTypes: [BindingEntry.$type]
-        },
         PropDeclaration: {
             name: PropDeclaration.$type,
             properties: {
@@ -1258,6 +1046,46 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: []
         },
+        SlotBinding: {
+            name: SlotBinding.$type,
+            properties: {
+                props: {
+                    name: SlotBinding.props,
+                    defaultValue: []
+                },
+                ref: {
+                    name: SlotBinding.ref
+                },
+                slot: {
+                    name: SlotBinding.slot
+                }
+            },
+            superTypes: []
+        },
+        SlotDeclaration: {
+            name: SlotDeclaration.$type,
+            properties: {
+                name: {
+                    name: SlotDeclaration.name
+                },
+                run: {
+                    name: SlotDeclaration.run
+                }
+            },
+            superTypes: []
+        },
+        SlotPropBinding: {
+            name: SlotPropBinding.$type,
+            properties: {
+                name: {
+                    name: SlotPropBinding.name
+                },
+                value: {
+                    name: SlotPropBinding.value
+                }
+            },
+            superTypes: []
+        },
         StageDeclaration: {
             name: StageDeclaration.$type,
             properties: {
@@ -1277,12 +1105,12 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
         TaskDeclaration: {
             name: TaskDeclaration.$type,
             properties: {
-                bindings: {
-                    name: TaskDeclaration.bindings,
-                    defaultValue: []
-                },
                 name: {
                     name: TaskDeclaration.name
+                },
+                slotBindings: {
+                    name: TaskDeclaration.slotBindings,
+                    defaultValue: []
                 },
                 use: {
                     name: TaskDeclaration.use

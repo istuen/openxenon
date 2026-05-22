@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, readFileSync } from 'fs'
 import { compileBundle } from '../oxn-dsl/compiler/bundle-compiler'
 import { createOxnServices } from '../oxn-dsl/langium/oxn-services'
-import { URI, Cancellation, DocumentState } from 'langium'
+import { URI, DocumentState } from 'langium'
 import type { OXNDocument } from '../oxn-dsl/generated/ast'
 import { output, outputError, getFormatFromArgs } from './output'
 
@@ -32,8 +32,7 @@ function validateOxnSyntax(sourcePath: string, content: string): DiagnosticResul
     shared.ServiceRegistry.register(services)
     const uri = URI.file(sourcePath)
     const factory = shared.workspace.LangiumDocumentFactory
-    const docBuilder = shared.workspace.DocumentBuilder
-    const doc = factory.fromString(content, uri, Cancellation.CancellationToken.None)
+    const doc = factory.fromString(content, uri, undefined)
 
     if (doc.parseResult?.lexerErrors) {
       for (const err of doc.parseResult.lexerErrors) {

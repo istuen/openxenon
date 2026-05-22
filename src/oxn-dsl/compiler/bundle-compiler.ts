@@ -9,7 +9,10 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 import { join, dirname, basename } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { generateSchema } from './bundle-compiler.js'  // Placeholder for schema generation
+import { createOxnServices, resetOxnServices } from '../langium/oxn-services.js'
+import { generateOxnAssembly } from '../generator/oxn-generator.js'
+import { URI } from 'langium'
+import type { OXNDocument } from '../generated/ast.js'
 import { flattenBundle } from '../flattener/bundle-flattener.js'
 import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../../kernel/schemas/oxn-assembly.schema'
 
@@ -64,6 +67,50 @@ function generateJsonSchema(entities: OxnAssemblyBundleEntity[]): Record<string,
 // Bundle 编译器
 // ========================
 
+/**
+ * 通过 Langium 解析 .oxn 文件提取实体列表
+ */
+function parseOxnViaLangium(
+  sourcePath: string,
+  content: string
+): { entities: OxnAssemblyBundleEntity[]; errors: string[] } {
+  const errors: string[] = []
+  try {
+    resetOxnServices()
+    const services = createOxnServices()
+    const shared = services.shared
+    shared.ServiceRegistry.register(services)
+
+    const factory = shared.workspace.LangiumDocumentFactory
+    const uri = URI.file(sourcePath)
+    const doc = factory.fromString(content, uri, undefined)
+
+    if (!doc.parseResult || !doc.parseResult.value) {
+      return { entities: [], errors: ['Langium 文档解析失败: 无有效 parseResult'] }
+    }
+
+    if (doc.parseResult.parserErrors?.length > 0) {
+      for (const e of doc.parseResult.parserErrors) {
+        errors.push(`[P] ${e.message}`)
+      }
+    }
+    if (doc.parseResult.lexerErrors?.length > 0) {
+      for (const e of doc.parseResult.lexerErrors) {
+        errors.push(`[L] ${e.message}`)
+      }
+    }
+
+    if (errors.length > 0) {
+      return { entities: [], errors }
+    }
+
+    const bundle = generateOxnAssembly(doc.parseResult.value as OXNDocument)
+    return { entities: bundle.entities, errors: [] }
+  } catch (err) {
+    return { entities: [], errors: [String(err)] }
+  }
+}
+
 export interface BundleCompileResult {
   bundlePath: string
   assemblyPath: string
@@ -90,6 +137,7 @@ export class BundleCompiler {
     // 1. 读取源文件
     const content = readFileSync(sourcePath, 'utf-8')
     let entities: OxnAssemblyBundleEntity[] = []
+    const warnings: string[] = []
 
     if (sourcePath.endsWith('.yaml') || sourcePath.endsWith('.yml')) {
       const parsed = parseYaml(content) as Record<string, unknown>
@@ -98,13 +146,17 @@ export class BundleCompiler {
       const parsed = JSON.parse(content) as OxnAssemblyBundle
       entities = parsed.entities
     } else if (sourcePath.endsWith('.oxn')) {
-      // Phase 1: fallback to YAML parse of OXN-like content
-      // Full Langium parser integration for Phase 2
-      try {
-        const parsed = parseYaml(content) as Record<string, unknown>
-        entities = this._yamlToEntities(parsed)
-      } catch {
-        entities = [{ type: 'blueprint', data: { name: sourceName, _version: 1 } }]
+      const { entities: langiumEntities, errors } = parseOxnViaLangium(sourcePath, content)
+      if (langiumEntities.length > 0) {
+        entities = langiumEntities
+      } else {
+        warnings.push(`Langium 解析失败: ${errors.join('; ')}, 回退到 YAML 降级解析`)
+        try {
+          const parsed = parseYaml(content) as Record<string, unknown>
+          entities = this._yamlToEntities(parsed)
+        } catch {
+          entities = [{ type: 'blueprint', data: { name: sourceName, _version: 1 } } as OxnAssemblyBundleEntity]
+        }
       }
     }
 
