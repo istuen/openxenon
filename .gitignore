@@ -61,6 +61,7 @@ docs_tmp/
 
 # OpenXenon specific
 .openxenon/
+.openxenon2/
 !src/
 
 # OpenSpec 工作流
