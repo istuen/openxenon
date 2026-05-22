@@ -15,11 +15,13 @@ import type {
   PartDeclaration,
   BlueprintDeclaration,
   TaskDeclaration,
-  StageDeclaration,
+  PartInBlueprint,
+  PartSlotDeclaration,
+  PartPropBinding,
   ExpectationDeclaration,
   RuleDeclaration,
-  SlotDeclaration,
   SlotBinding,
+  SlotPropBinding,
   PropDeclaration,
   PartProbeDeclaration,
   ExecutionRef,
@@ -36,12 +38,11 @@ import type {
   OxnAssemblyBundleEntity,
   OxnAssemblyProp,
   OxnAssemblyProbe,
-  OxnAssemblyStage,
+  OxnAssemblySlotBinding,
+  OxnAssemblySlot,
   OxnAssemblyExpectation,
   OxnAssemblyRule,
   OxnAssemblyPartProbe,
-  OxnAssemblySlot,
-  OxnAssemblySlotBinding,
 } from '../../kernel/schemas/oxn-assembly.schema.js'
 
 import { isTemplateString, isVariableRef, isBinaryExpr, isTernaryExpr } from '../generated/ast.js'
@@ -211,13 +212,29 @@ export function convertPartDeclaration(decl: PartDeclaration): OxnAssemblyPart {
 }
 
 // ========================
-// Slot 转换
+// Blueprint Part 转换
 // ========================
 
-function convertSlot(decl: SlotDeclaration): OxnAssemblySlot {
+function convertPartInBlueprint(decl: PartInBlueprint): OxnAssemblyPart {
+  const propBindings: Record<string, unknown> = {}
+  if (decl.propBindings) {
+    for (const b of decl.propBindings) {
+      propBindings[b.name] = expressionToValue(b.value)
+    }
+  }
   return {
     name: decl.name,
-    run: decl.run,
+    description: undefined,
+    props: [],
+    probes: [],
+    execution: [],
+  }
+}
+
+function convertPartSlotDeclaration(decl: PartSlotDeclaration): OxnAssemblySlot {
+  return {
+    name: decl.name,
+    deps: decl.deps || [],
   }
 }
 
@@ -277,8 +294,9 @@ export function convertBlueprintDeclaration(decl: BlueprintDeclaration): OxnAsse
     _version: decl.version || 1,
     assembly_at: new Date().toISOString(),
     props: (decl.props || []).map(propDeclarationToAssemblyProp),
-    slots: (decl.slots || []).map(convertSlot),
-    stages: (decl.stages || []).map(convertStage),
+    slots: (decl.partSlots || []).map(convertPartSlotDeclaration),
+    blueprintParts: (decl.parts || []).map(convertPartInBlueprint),
+    stages: [],
     expectations: (decl.expectations || []).map(convertExpectation),
     rules: (decl.rules || []).map(convertRule),
     concreteParts: [],

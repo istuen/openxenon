@@ -133,20 +133,23 @@ BlueprintDeclaration:
         ('version' '=' version=NUMBER)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*
-        (slots+=SlotDeclaration)*
-        (stages+=StageDeclaration)*
+        (parts+=PartInBlueprint)*
+        (partSlots+=PartSlotDeclaration)*
         (expectations+=ExpectationDeclaration)*
         (rules+=RuleDeclaration)*
     '}';
 
-SlotDeclaration:
-    'slot' name=STRING '{'
-        ('run' '=' run=STRING)?
+PartInBlueprint:
+    'part' name=STRING 'ref' ref=STRING '{'
+        (propBindings+=PartPropBinding)*
+        ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
     '}';
 
-StageDeclaration:
-    'stage' name=STRING '{'
-        ('run' '=' run=STRING)?
+PartPropBinding:
+    'prop' name=ID '=' value=Expression;
+
+PartSlotDeclaration:
+    'part' 'slot' name=STRING '{'
         ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
     '}';
 

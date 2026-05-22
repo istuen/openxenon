@@ -65,10 +65,10 @@ export type OxnAssemblyPart = z.infer<typeof OxnAssemblyPartSchema>
 // Assembly Slot (插槽)
 // ========================
 
-/** Slot — Blueprint 层的纯粹占位符，无类型契约 */
+/** Slot — Blueprint 层的插槽占位 */
 export const OxnAssemblySlotSchema = z.object({
   name: z.string().min(1),
-  run: z.string().optional(),
+  deps: z.array(z.string()).default([]),
 })
 export type OxnAssemblySlot = z.infer<typeof OxnAssemblySlotSchema>
 
@@ -125,12 +125,12 @@ export const OxnAssemblyIRSchema = z.object({
   assembly_at: z.string(),
   props: z.array(OxnAssemblyPropSchema).default([]),
   slots: z.array(OxnAssemblySlotSchema).default([]),
-  stages: z.array(OxnAssemblyStageSchema).default([]),
+  blueprintParts: z.array(OxnAssemblyPartSchema).default([]),
+  stages: z.any().default([]),
   expectations: z.array(OxnAssemblyExpectationSchema).default([]),
   rules: z.array(OxnAssemblyRuleSchema).default([]),
-  /** 兼容字段：已废弃，保留用于向后兼容 */
   concreteParts: z.array(OxnAssemblyPartSchema).default([]),
-  abstractParts: z.array(OxnAssemblyPartSchema).default([]),
+  abstractParts: z.any().default([]),
 })
 export type OxnAssemblyIR = z.infer<typeof OxnAssemblyIRSchema>
 
@@ -174,6 +174,7 @@ export function createOxnAssemblyIR(params: { id: string; name: string; version?
     assembly_at: new Date().toISOString(),
     props: [],
     slots: [],
+    blueprintParts: [],
     stages: [],
     expectations: [],
     rules: [],

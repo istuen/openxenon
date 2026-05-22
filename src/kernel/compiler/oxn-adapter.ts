@@ -170,25 +170,72 @@ export class OxnKernelAdapter {
 
     const boundSlots = resolveSlotBindings(slotBindings, ir.slots)
 
-    const stageDepsMap = new Map<string, string[]>()
-    for (const stage of ir.stages) {
-      stageDepsMap.set(stage.name, stage.deps || [])
+    const slotDepsMap = new Map<string, string[]>()
+    for (const slot of ir.slots) {
+      slotDepsMap.set(slot.name, slot.deps || [])
     }
 
     const frozenParts: FrozenPart[] = []
     const partIdSet = new Set<string>()
 
-    if (ir.concreteParts.length > 0) {
-      for (const part of ir.concreteParts) {
+    // A 类: blueprintParts (具象声明)
+    if (ir.blueprintParts && ir.blueprintParts.length > 0) {
+      for (const part of ir.blueprintParts) {
         if (partIdSet.has(part.name)) {
-          warnings.push(`重复的 concrete part: "${part.name}"`)
+          warnings.push(`重复的 blueprintPart: "${part.name}"`)
           continue
         }
         partIdSet.add(part.name)
+        frozenParts.push({
+          _xenon_meta: createXenonMeta({
+            ref: part.name,
+            resolvedFrom: 'project',
+            content: JSON.stringify({ id: part.name, name: part.name }),
+          }),
+          id: part.name,
+          name: part.name,
+          deps: (part as any).deps || [],
+          params: {},
+          target: { description: part.description || part.name },
+          probes: [],
+        })
+      }
+    }
 
-        const slotBinding = Array.from(Object.entries(boundSlots)).find(
-          ([, b]) => b.ref && b.ref.split('/').pop() === part.name,
-        )?.[1]
+    // B 类: slots (插槽声明) — 需要 Task slotBinding 填充
+    for (const slot of ir.slots) {
+      const slotBinding = boundSlots[slot.name]
+      if (partIdSet.has(slot.name)) continue
+      partIdSet.add(slot.name)
+
+      const resolvedParams: Record<string, unknown> = {}
+      if (slotBinding?.props) {
+        Object.assign(resolvedParams, slotBinding.props)
+      }
+
+      frozenParts.push({
+        _xenon_meta: createXenonMeta({
+          ref: slotBinding?.ref || slot.name,
+          resolvedFrom: 'project',
+          content: JSON.stringify({ id: slot.name, name: slot.name }),
+        }),
+        id: slot.name,
+        name: slot.name,
+        deps: slot.deps || [],
+        params: resolvedParams,
+        target: { description: slotBinding?.ref || slot.name },
+        probes: [],
+      })
+    }
+
+    // Legacy: concreteParts (从 .oxn 文件内联的 Part)
+    if (ir.concreteParts.length > 0) {
+      for (const part of ir.concreteParts) {
+        if (partIdSet.has(part.name)) continue
+        partIdSet.add(part.name)
+
+        const slotBinding = Array.from(Object.entries(boundSlots))
+          .find(([, b]) => b.ref && b.ref.split('/').pop() === part.name)?.[1]
 
         const resolvedParams: Record<string, unknown> = {}
         if (slotBinding?.props) {
@@ -196,40 +243,9 @@ export class OxnKernelAdapter {
         }
 
         const frozenPart = adaptConcretePart(part, resolvedParams)
-        const stageDeps = stageDepsMap.get(part.name) || []
-        frozenPart.deps = stageDeps
+        const slotDeps = slotDepsMap.get(part.name) || []
+        frozenPart.deps = slotDeps
         frozenParts.push(frozenPart)
-      }
-    } else {
-      for (const stage of ir.stages) {
-        const partId = stage.name
-        if (partIdSet.has(partId)) {
-          warnings.push(`重复的 stage: "${partId}"`)
-          continue
-        }
-        partIdSet.add(partId)
-
-        const matchedSlot = ir.slots.find((s) => s.name === stage.name)
-        const slotBinding = matchedSlot ? boundSlots[matchedSlot.name] : undefined
-
-        const resolvedParams: Record<string, unknown> = {}
-        if (slotBinding?.props) {
-          Object.assign(resolvedParams, slotBinding.props)
-        }
-
-        frozenParts.push({
-          _xenon_meta: createXenonMeta({
-            ref: partId,
-            resolvedFrom: 'project',
-            content: JSON.stringify({ id: partId, name: stage.name }),
-          }),
-          id: partId,
-          name: stage.name,
-          deps: stage.deps || [],
-          params: resolvedParams,
-          target: { description: stage.run || stage.name },
-          probes: [],
-        })
       }
     }
 

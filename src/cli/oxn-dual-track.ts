@@ -41,7 +41,7 @@ function extractBlueprintAssembly(doc: LangiumDocument): OxnAssemblyIR | undefin
   const assem = validateOxnAssemblyIR((blueprint as { data: unknown }).data)
 
   const partEntities = bundle.entities.filter((e: { type: string }) => e.type === 'part')
-  if (partEntities.length > 0) {
+  if (partEntities.length > 0 && (!assem.blueprintParts || assem.blueprintParts.length === 0)) {
     assem.concreteParts = partEntities.map((e) => (e as { data: unknown }).data as OxnAssemblyPart)
   }
 
@@ -172,11 +172,22 @@ export function submitOxnPipeline(
     }
   }
 
-  // DAG 校验：始终以 stages 为拓扑标准（concreteParts 无 deps 结构）
-  const dagNodes: DagNode[] = (assembly.stages.length > 0 ? assembly.stages : assembly.concreteParts).map((p) => ({
-    id: p.name,
-    deps: (p as any).deps || [],
-  }))
+  // DAG 校验：以 slots + concreteParts 为拓扑节点，去重
+  const dagNodesMap = new Map<string, DagNode>()
+  for (const s of assembly.slots) {
+    dagNodesMap.set(s.name, { id: s.name, deps: (s as any).deps || [] })
+  }
+  for (const p of assembly.concreteParts) {
+    if (!dagNodesMap.has(p.name)) {
+      dagNodesMap.set(p.name, { id: p.name, deps: (p as any).deps || [] })
+    }
+  }
+  for (const p of (assembly as any).blueprintParts || []) {
+    if (!dagNodesMap.has(p.name)) {
+      dagNodesMap.set(p.name, { id: p.name, deps: (p as any).deps || [] })
+    }
+  }
+  const dagNodes: DagNode[] = Array.from(dagNodesMap.values())
   const dagResult = validateDagTopology(dagNodes)
   if (!dagResult.valid) {
     throw new Error(`OXN DAG 验证失败: ${dagResult.errors.join('; ')}`)
