@@ -4,51 +4,11 @@ import { existsSync, readFileSync } from 'fs'
 // ========================
 // Task 4.1: Interface Validator
 // ========================
-import { InterfaceValidator } from '../validator/interface-validator'
 
-describe('InterfaceValidator (Task 4.1)', () => {
-  test('方法签名完全匹配通过', () => {
-    const result = InterfaceValidator.compareMethodSignatures(
-      { name: 'run', input: { env: 'string', coverage: 'number' }, output: { passed: 'boolean' } },
-      { name: 'run', input: { env: 'string', coverage: 'number' }, output: { passed: 'boolean' } },
-    )
-    expect(result.valid).toBe(true)
-    expect(result.errors).toHaveLength(0)
-  })
-
-  test('input 字段类型不匹配', () => {
-    const result = InterfaceValidator.compareMethodSignatures(
-      { name: 'run', input: { env: 'string' } },
-      { name: 'run', input: { env: 'number' } },
-    )
-    expect(result.valid).toBe(false)
-    expect(result.errors[0]).toContain('类型不匹配')
-  })
-
-  test('缺少 input 字段', () => {
-    const result = InterfaceValidator.compareMethodSignatures(
-      { name: 'run', input: { env: 'string', region: 'string' } },
-      { name: 'run', input: { env: 'string' } },
-    )
-    expect(result.valid).toBe(false)
-    expect(result.errors[0]).toContain('缺少')
-  })
-
-  test('output 字段类型不匹配', () => {
-    const result = InterfaceValidator.compareMethodSignatures(
-      { name: 'run', output: { passed: 'boolean' } },
-      { name: 'run', output: { passed: 'string' } },
-    )
-    expect(result.valid).toBe(false)
-  })
-
-  test('validateImplements 基础检查', () => {
-    const iface = { name: 'test-runner', methods: [{ name: 'run', input: { env: 'string' } }] }
-    const part = { implements: 'test-runner', name: 'jest' }
-    const result = InterfaceValidator.validateImplements(iface, part)
-    expect(result.matchedMethods).toContain('run')
-  })
-})
+// ========================
+// Task 4.1: Interface Validator — 已移除 (Slot 范式不需要 Interface)
+// ========================
+// InterfaceValidator 随 v3.0 废除 Interface 机制一同删除
 
 // ========================
 // Task 4.2: Rule Validator

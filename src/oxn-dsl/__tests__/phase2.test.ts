@@ -225,6 +225,6 @@ describe('Builtin OXN Assets (Task 2.5)', () => {
 
   test('builtin parts 使用 @oxn/ 作用域引用探针', () => {
     const content = readFileSync('src/oxn-dsl/builtin/parts/builtin-parts.oxn', 'utf-8')
-    expect(content).toContain('@oxn/probe/exec-exit-zero')
+    expect(content).toContain('@oxn/probes/exec-exit-zero')
   })
 })

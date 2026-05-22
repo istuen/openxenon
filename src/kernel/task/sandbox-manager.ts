@@ -65,6 +65,7 @@ export class TaskSandbox {
         assembly_at: new Date().toISOString(),
         props: [],
         slots: [] as OxnAssemblyIR['slots'],
+        blueprintParts: [],
         abstractParts: [],
         concreteParts: [],
         stages: (raw.stages || raw.parts || []) as OxnAssemblyIR['stages'],
@@ -141,7 +142,7 @@ export class TaskSandbox {
     }
 
     // 更新 stage deps
-    const stage = state.currentIR.stages.find((s) => s.name === partName)
+    const stage = state.currentIR.stages.find((s: any) => s.name === partName)
     if (stage) {
       stage.deps = deps
     }
@@ -163,7 +164,7 @@ export class TaskSandbox {
     return {
       ...globalIR,
       concreteParts: mergedParts,
-      stages: [...globalIR.stages.filter((s) => !sandboxPartNames.has(s.name)), ...state.currentIR.stages],
+      stages: [...globalIR.stages.filter((s: any) => !sandboxPartNames.has(s.name)), ...state.currentIR.stages],
     }
   }
 }

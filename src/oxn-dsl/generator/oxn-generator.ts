@@ -17,11 +17,9 @@ import type {
   TaskDeclaration,
   PartInBlueprint,
   PartSlotDeclaration,
-  PartPropBinding,
   ExpectationDeclaration,
   RuleDeclaration,
   SlotBinding,
-  SlotPropBinding,
   PropDeclaration,
   PartProbeDeclaration,
   ExecutionRef,
@@ -255,14 +253,6 @@ function convertSlotBinding(decl: SlotBinding): OxnAssemblySlotBinding {
 // ========================
 // Blueprint 转换
 // ========================
-
-function convertStage(decl: StageDeclaration): OxnAssemblyStage {
-  return {
-    name: decl.name,
-    run: decl.run || '',
-    deps: decl.deps || [],
-  }
-}
 
 function convertExpectation(decl: ExpectationDeclaration): OxnAssemblyExpectation {
   const params: Record<string, unknown> = {}
