@@ -6,7 +6,7 @@ import { output, outputError, getFormatFromArgs } from './output'
 export default defineCommand({
   meta: {
     name: 'export',
-    description: '导出任务的 task-trace.yaml'
+    description: '导出任务的 task-trace.jsonl'
   },
   args: {
     taskId: {
@@ -34,7 +34,7 @@ export default defineCommand({
     const taskId = ctx.args.taskId as string
     const outputPath = ctx.args.output as string | undefined
 
-    const tracePath = resolve(process.cwd(), '.openxenon', 'tasks', taskId, 'task-trace.yaml')
+    const tracePath = resolve(process.cwd(), '.openxenon', 'tasks', taskId, 'task-trace.jsonl')
 
     if (!existsSync(tracePath)) {
       return outputError({

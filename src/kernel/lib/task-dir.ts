@@ -1,16 +1,14 @@
 import { join } from 'path'
 
 export const TASK_DIR_NAME = 'tasks'
-export const TASK_BLUEPRINT_FILE = 'blueprint.yaml'
-export const TASK_TRACE_FILE = 'task-trace.yaml'
-export const STEP_MANIFEST_FILE = 'step-manifest.json'
+export const TASK_BLUEPRINT_FILE = 'blueprint.oxn'
+export const TASK_TRACE_FILE = 'task-trace.jsonl'
 
 export interface TaskDirectory {
   root: string
   taskId: string
   blueprintPath: string
   tracePath: string
-  manifestPath: string
 }
 
 export function getTaskDirectory(projectRoot: string, taskId: string): TaskDirectory {
@@ -20,7 +18,6 @@ export function getTaskDirectory(projectRoot: string, taskId: string): TaskDirec
     taskId,
     blueprintPath: join(root, TASK_BLUEPRINT_FILE),
     tracePath: join(root, TASK_TRACE_FILE),
-    manifestPath: join(root, STEP_MANIFEST_FILE)
   }
 }
 

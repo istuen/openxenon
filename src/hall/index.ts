@@ -268,8 +268,8 @@ export function scanProjectTasksDetailed(projectRoot: string): TaskDetails[] {
     if (!entry.isDirectory()) continue
     const taskId = entry.name
     const statePath = join(tasksDir, taskId, 'state.json')
-    const frozenPath = join(tasksDir, taskId, 'blueprint.frozen.yaml')
-    const tracePath = join(tasksDir, taskId, 'task-trace.yaml')
+    const frozenPath = join(tasksDir, taskId, 'blueprint.frozen.json')
+    const tracePath = join(tasksDir, taskId, 'task-trace.jsonl')
 
     if (existsSync(statePath)) {
       try {

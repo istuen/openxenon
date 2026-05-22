@@ -58,7 +58,7 @@ async function handleTaskSubmit(
     writeFileSync(blueprintPath, JSON.stringify(blueprintInput, null, 2), 'utf-8')
 
     writeTaskStart(
-      { root: taskDir, taskId, blueprintPath, tracePath: join(taskDir, 'task-trace.yaml'), manifestPath: join(taskDir, 'step-manifest.json') },
+      { root: taskDir, taskId, blueprintPath, tracePath: join(taskDir, 'task-trace.jsonl'), manifestPath: join(taskDir, 'state.json') },
       taskId,
       taskName
     )

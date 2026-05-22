@@ -9,7 +9,7 @@ import * as yaml from 'yaml'
 export default defineCommand({
   meta: {
     name: 'arsenal-extract',
-    description: '从 Task 的 frozen.yaml 提取历史版本 Part'
+    description: '从 Task 的 frozen.json 提取历史版本 Part'
   },
   args: {
     '--from-task': {
@@ -37,7 +37,7 @@ export default defineCommand({
     const outputPath = (ctx.args['output'] as string) || `${partName}-extracted.yaml`
 
     const projectBoundary = getProjectBoundaryPath(process.cwd())
-    const frozenPath = join(projectBoundary, TASKS_DIR, taskId, 'blueprint.frozen.yaml')
+    const frozenPath = join(projectBoundary, TASKS_DIR, taskId, 'blueprint.frozen.json')
 
     if (!existsSync(frozenPath)) {
       return outputError({

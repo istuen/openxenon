@@ -58,7 +58,7 @@ function startFileWatcher(): void {
 function handleFileChange(event: WatchEvent): void {
   daemonLogger.info(`File changed: ${event.path} (${event.type})`)
 
-  if (event.type === 'update' && event.path.endsWith('.blueprint.frozen.yaml')) {
+  if (event.type === 'update' && event.path.endsWith('.blueprint.frozen.json')) {
     daemonLogger.info('Blueprint file changed, may trigger task revalidation')
   }
 }

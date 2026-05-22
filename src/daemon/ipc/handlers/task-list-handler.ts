@@ -24,12 +24,12 @@ async function handleTaskListHandler(
     }
 
     const taskIds = readdirSync(tasksDir).filter(f => {
-      const tracePath = join(tasksDir, f, 'task-trace.yaml')
+      const tracePath = join(tasksDir, f, 'task-trace.jsonl')
       return existsSync(tracePath)
     })
 
     const tasks = taskIds.map(taskId => {
-      const tracePath = join(tasksDir, taskId, 'task-trace.yaml')
+      const tracePath = join(tasksDir, taskId, 'task-trace.jsonl')
       try {
         const content = readFileSync(tracePath, 'utf-8')
         return JSON.parse(content)

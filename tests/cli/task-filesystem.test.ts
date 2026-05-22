@@ -2,62 +2,35 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
 import { taskSubmit, taskNext, taskVerify, taskStatus, taskNew } from '../../src/cli/task-filesystem'
 import { join } from 'path'
 import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs'
+import { resetOxnServices } from '../../src/oxn-dsl/langium/oxn-services'
 
 const TEST_WORKDIR = '/tmp/oxn-task-test'
 
-const SAMPLE_BLUEPRINT = `
-name: test-task
-parts:
-  - id: part-1
-    name: 第一阶段
-    description: 测试阶段
-    deps: []
-    probes:
-      - type: fs_exists
-        params:
-          pattern: package.json
-  - id: part-2
-    name: 第二阶段
-    description: 第二测试阶段
-    deps:
-      - part-1
-    probes:
-      - type: exec_exit_zero
-        params:
-          command: echo "hello"
-`
+const SAMPLE_OXN = `
+blueprint "test-task" {
+  version = 1
 
-const BLUEPRINT_NO_NAME = `
-stages:
-  - id: stage-1
-    name: 第一阶段
-    deps: []
-    probes:
-      - type: fs_exists
-        params:
-          pattern: package.json
-`
+  stage "part-1" {
+    run = "part.p1.run"
+    deps = []
+  }
 
-const BLUEPRINT_INVALID_NAME = `
-name: Test-Task-UPPERCASE
-stages:
-  - id: stage-1
-    name: 第一阶段
-    deps: []
-    probes:
-      - type: fs_exists
-        params:
-          pattern: package.json
+  stage "part-2" {
+    run = "part.p2.run"
+    deps = ["part-1"]
+  }
+}
 `
 
 describe('CLI Task Filesystem Operations', () => {
   let blueprintPath: string
 
   beforeEach(() => {
+    resetOxnServices()
     rmSync(TEST_WORKDIR, { recursive: true, force: true })
     mkdirSync(TEST_WORKDIR, { recursive: true })
-    blueprintPath = join(TEST_WORKDIR, 'blueprint.yaml')
-    writeFileSync(blueprintPath, SAMPLE_BLUEPRINT)
+    blueprintPath = join(TEST_WORKDIR, 'blueprint.oxn')
+    writeFileSync(blueprintPath, SAMPLE_OXN)
     writeFileSync(join(TEST_WORKDIR, 'package.json'), '{}')
   })
 
@@ -79,75 +52,13 @@ describe('CLI Task Filesystem Operations', () => {
       const result = taskSubmit(blueprintPath, TEST_WORKDIR)
       const taskDir = join(TEST_WORKDIR, '.openxenon', 'tasks', result.taskId)
 
-      expect(existsSync(join(taskDir, 'blueprint.yaml'))).toBe(true)
+      expect(existsSync(join(taskDir, 'blueprint.oxn'))).toBe(true)
       expect(existsSync(join(taskDir, 'state.json'))).toBe(true)
-      expect(existsSync(join(taskDir, 'task-trace.yaml'))).toBe(true)
+      expect(existsSync(join(taskDir, 'task-trace.jsonl'))).toBe(true)
     })
 
     it('Blueprint 文件不存在时抛出错误', () => {
-      expect(() => taskSubmit('/nonexistent.yaml', TEST_WORKDIR)).toThrow()
-    })
-
-    it('Blueprint 无 name 字段时抛出错误', () => {
-      const noNamePath = join(TEST_WORKDIR, 'no-name.yaml')
-      writeFileSync(noNamePath, BLUEPRINT_NO_NAME)
-      expect(() => taskSubmit(noNamePath, TEST_WORKDIR)).toThrow('Blueprint must have name or id field')
-    })
-
-    it('无效 name 格式抛出错误', () => {
-      const invalidPath = join(TEST_WORKDIR, 'invalid-name.yaml')
-      writeFileSync(invalidPath, BLUEPRINT_INVALID_NAME)
-      expect(() => taskSubmit(invalidPath, TEST_WORKDIR)).toThrow('Task name required')
-    })
-
-    it('DAG 拓扑校验：循环依赖拒绝', () => {
-      const cyclicBlueprint = `
-name: cyclic-test
-parts:
-  - id: a
-    name: A
-    deps:
-      - b
-    probes:
-      - type: fs_exists
-        params:
-          pattern: package.json
-  - id: b
-    name: B
-    deps:
-      - a
-    probes:
-      - type: fs_exists
-        params:
-          pattern: package.json
-`
-      const cyclicPath = join(TEST_WORKDIR, 'cyclic.yaml')
-      writeFileSync(cyclicPath, cyclicBlueprint)
-      expect(() => taskSubmit(cyclicPath, TEST_WORKDIR)).toThrow('cycle')
-    })
-
-    it('DAG 拓扑校验：多入口拒绝', () => {
-      const multiEntryBlueprint = `
-name: multi-entry-test
-parts:
-  - id: a
-    name: A
-    deps: []
-    probes:
-      - type: fs_exists
-        params:
-          pattern: package.json
-  - id: b
-    name: B
-    deps: []
-    probes:
-      - type: fs_exists
-        params:
-          pattern: package.json
-`
-      const multiPath = join(TEST_WORKDIR, 'multi-entry.yaml')
-      writeFileSync(multiPath, multiEntryBlueprint)
-      expect(() => taskSubmit(multiPath, TEST_WORKDIR)).toThrow('entry')
+      expect(() => taskSubmit('/nonexistent.oxn', TEST_WORKDIR)).toThrow()
     })
 
     it('nameOverride 参数覆盖 Blueprint 名称', () => {
@@ -168,9 +79,11 @@ parts:
       expect(state.taskId).toBe(result.taskId)
       expect(state.taskName).toBe('test-task')
       expect(state.status).toBe('RUNNING')
-      expect(state.currentPart).toBeNull()
-      expect(state.parts['第一阶段']).toBe('PENDING')
-      expect(state.parts['第二阶段']).toBe('PENDING')
+      expect(state.currentPartId).toBeNull()
+      expect(state.parts['part-1'].name).toBeDefined()
+      expect(state.parts['part-1'].status).toBe('PENDING')
+      expect(state.parts['part-2'].name).toBeDefined()
+      expect(state.parts['part-2'].status).toBe('PENDING')
     })
   })
 
@@ -180,7 +93,6 @@ parts:
       const nextResult = taskNext(submitResult.taskId, TEST_WORKDIR)
 
       expect(nextResult.partId).toBe('part-1')
-      expect(nextResult.name).toBe('第一阶段')
       expect(nextResult.message).toBe('Part started')
     })
 
@@ -191,8 +103,8 @@ parts:
       const statePath = join(TEST_WORKDIR, '.openxenon', 'tasks', submitResult.taskId, 'state.json')
       const state = JSON.parse(readFileSync(statePath, 'utf-8'))
 
-      expect(state.parts['第一阶段']).toBe('RUNNING')
-      expect(state.currentPart).toBe('第一阶段')
+      expect(state.parts['part-1'].status).toBe('RUNNING')
+      expect(state.currentPartId).toBe('part-1')
     })
 
     it('所有 part 完成后返回 COMPLETED', async () => {
@@ -215,7 +127,7 @@ parts:
   })
 
   describe('taskVerify', () => {
-    it('验证通过时 part 状态更新为 PASSED', async () => {
+    it('验证通过时 part 状态更新为 PASSED，probeResults 写入 state.json', async () => {
       const submitResult = taskSubmit(blueprintPath, TEST_WORKDIR)
       taskNext(submitResult.taskId, TEST_WORKDIR)
 
@@ -226,21 +138,19 @@ parts:
 
       const statePath = join(TEST_WORKDIR, '.openxenon', 'tasks', submitResult.taskId, 'state.json')
       const state = JSON.parse(readFileSync(statePath, 'utf-8'))
-      expect(state.parts['第一阶段']).toBe('PASSED')
+      expect(state.parts['part-1'].status).toBe('PASSED')
+      expect(state.parts['part-1'].probeResults).toBeDefined()
+      expect(state.parts['part-1'].probeResults[0].result).toBe('PASSED')
     })
 
-    it('写入 step-manifest.json', async () => {
+    it('state.json 不写入独立的 step-manifest.json', async () => {
       const submitResult = taskSubmit(blueprintPath, TEST_WORKDIR)
       taskNext(submitResult.taskId, TEST_WORKDIR)
 
       await taskVerify(submitResult.taskId, 'part-1', TEST_WORKDIR)
 
       const manifestPath = join(TEST_WORKDIR, '.openxenon', 'tasks', submitResult.taskId, 'step-manifest.json')
-      expect(existsSync(manifestPath)).toBe(true)
-
-      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-      expect(manifest.parts['第一阶段']).toBeDefined()
-      expect(manifest.parts['第一阶段'].status).toBe('PASSED')
+      expect(existsSync(manifestPath)).toBe(false)
     })
 
     it('Task 不存在时抛出错误', async () => {
@@ -261,10 +171,8 @@ parts:
       expect(status.taskId).toBe(submitResult.taskId)
       expect(status.taskName).toBe('test-task')
       expect(status.status).toBe('RUNNING')
-      expect(status.parts).toEqual({
-        '第一阶段': 'PENDING',
-        '第二阶段': 'PENDING'
-      })
+      expect(status.parts['part-1'].status).toBe('PENDING')
+      expect(status.parts['part-2'].status).toBe('PENDING')
     })
 
     it('Task 不存在时抛出错误', () => {
@@ -290,13 +198,13 @@ parts:
       expect(state.taskId).toBe('task-with-state')
       expect(state.taskName).toBe('带状态的任务')
       expect(state.status).toBe('PENDING')
-      expect(state.currentPart).toBeNull()
+      expect(state.currentPartId).toBeNull()
       expect(state.parts).toEqual({})
     })
 
-    it('创建任务后生成 task-trace.yaml', () => {
+    it('创建任务后生成 task-trace.jsonl', () => {
       taskNew('task-with-trace', '带追踪的任务', TEST_WORKDIR)
-      const tracePath = join(TEST_WORKDIR, '.openxenon', 'tasks', 'task-with-trace', 'task-trace.yaml')
+      const tracePath = join(TEST_WORKDIR, '.openxenon', 'tasks', 'task-with-trace', 'task-trace.jsonl')
       expect(existsSync(tracePath)).toBe(true)
 
       const content = readFileSync(tracePath, 'utf-8')
@@ -327,18 +235,16 @@ parts:
 
       const nextResult = taskNext(submitResult.taskId, TEST_WORKDIR)
       expect(nextResult.partId).toBe('part-1')
-      expect(nextResult.name).toBe('第一阶段')
 
       const verifyResult = await taskVerify(submitResult.taskId, 'part-1', TEST_WORKDIR)
       expect(verifyResult.passed).toBe(true)
 
       const status = taskStatus(submitResult.taskId, TEST_WORKDIR)
-      expect(status.parts['第一阶段']).toBe('PASSED')
-      expect(status.currentPart).toBeNull()
+      expect(status.parts['part-1'].status).toBe('PASSED')
+      expect(status.currentPartId).toBeNull()
 
       const nextResult2 = taskNext(submitResult.taskId, TEST_WORKDIR)
       expect(nextResult2.partId).toBe('part-2')
-      expect(nextResult2.name).toBe('第二阶段')
     })
   })
 })

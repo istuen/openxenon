@@ -16,7 +16,7 @@ instruction: `# /oxn-trace — 查看任务轨迹
 \`\`\`bash
 oxn export <任务ID>
 # 或指定输出文件
-oxn export <任务ID> -o task-trace.yaml
+oxn export <任务ID> -o task-trace.jsonl
 \`\`\`
 
 ## 步骤 2：解读轨迹并报告

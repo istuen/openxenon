@@ -50,7 +50,7 @@ export default defineCommand({
       const boundaryPath = join(projectRoot, '.openxenon')
       const taskDir = join(boundaryPath, 'tasks', taskId)
       const statePath = join(taskDir, 'state.json')
-      const frozenPath = join(taskDir, 'blueprint.frozen.yaml')
+      const frozenPath = join(taskDir, 'blueprint.frozen.json')
 
       if (!existsSync(taskDir)) {
         return outputError({

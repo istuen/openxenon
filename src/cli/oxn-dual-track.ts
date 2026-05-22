@@ -119,13 +119,20 @@ export function submitOxnPipeline(
 
   if (blueprintPath.endsWith('.oxn')) {
     try {
-      const sharedServices = createOxnSharedServices()
-      createOxnServices(sharedServices)
-      const langiumDocuments = sharedServices.workspace.LangiumDocuments
-      const absPath = blueprintPath.startsWith('/') ? blueprintPath : join(cwd, blueprintPath)
-      const uri = URI.file(absPath)
+      const services = createOxnServices()
+      const shared = services.shared
+      shared.ServiceRegistry.register(services)
 
-      const doc = langiumDocuments.createDocument(uri, content)
+      const uri = URI.file(blueprintPath.startsWith('/') ? blueprintPath : join(cwd, blueprintPath))
+      const doc = shared.workspace.LangiumDocuments.createDocument(uri, content)
+
+      if (!doc.parseResult || !doc.parseResult.value) {
+        const parser = services.parser.LangiumParser
+        const parseResult = parser.parse(content)
+        if (parseResult.value) {
+          doc.parseResult = parseResult
+        }
+      }
 
       if (doc.parseResult && doc.parseResult.value) {
         const bundle = generateOxnAssembly(doc.parseResult.value as never)
@@ -150,9 +157,9 @@ export function submitOxnPipeline(
   }
 
   // DAG 校验
-  const dagNodes: DagNode[] = assembly.concreteParts.map(p => ({
+  const dagNodes: DagNode[] = (assembly.concreteParts.length > 0 ? assembly.concreteParts : assembly.stages).map(p => ({
     id: p.name,
-    deps: [],
+    deps: (p as any).deps || [],
   }))
   const dagResult = validateDagTopology(dagNodes)
   if (!dagResult.valid) {

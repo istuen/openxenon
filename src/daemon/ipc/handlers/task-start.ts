@@ -31,7 +31,7 @@ async function handleTaskStart(
     }
 
     const trace = readTaskTrace(
-      { root: taskDir, taskId, blueprintPath: join(taskDir, 'blueprint.yaml'), tracePath: join(taskDir, 'task-trace.yaml'), manifestPath: join(taskDir, 'step-manifest.json') }
+      { root: taskDir, taskId, blueprintPath: join(taskDir, 'blueprint.oxn'), tracePath: join(taskDir, 'task-trace.jsonl'), manifestPath: join(taskDir, 'state.json') }
     )
 
     if (!trace) {

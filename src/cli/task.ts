@@ -334,7 +334,7 @@ export default defineCommand({
     render: defineCommand({
       meta: {
         name: 'render',
-        description: '将 task-trace.yaml 渲染为 HTML 报告'
+        description: '将 task-trace.jsonl 渲染为 HTML 报告'
       },
       args: {
         'task-id': {
