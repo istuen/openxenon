@@ -57,7 +57,13 @@ export function resolvePartRef(ref: string, projectBoundary: string): PartResolu
   }
 
   if (namespace === 'scope' && scopeName) {
-    const partData = loadStandardByName('global', projectBoundary, probeName, 'parts')
+    const isProjectScope = scopeName === 'prj' || scopeName === 'project'
+    let cleanProbeName = probeName
+    const typeMatch = probeName.match(/^(parts|probes|blueprints|stages)\/(.+)$/)
+    if (typeMatch) {
+      cleanProbeName = typeMatch[2]!
+    }
+    const partData = loadStandardByName(isProjectScope ? 'project' : 'global', projectBoundary, cleanProbeName, 'parts')
     if (partData) {
       try {
         const part = parseYaml(partData.content) as PartDefinition

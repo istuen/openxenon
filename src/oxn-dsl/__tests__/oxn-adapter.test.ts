@@ -5,7 +5,7 @@ import {
   adaptConcretePart,
   adaptOxnToFrozen,
   type AdapterResult,
-} from '../../kernel/compiler/oxn-adapter'
+} from '../../oxn-dsl/compiler/oxn-adapter'
 
 import {
   createOxnAssemblyIR,

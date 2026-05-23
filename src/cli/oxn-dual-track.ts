@@ -15,7 +15,7 @@ import { parse as parseYaml } from 'yaml'
 import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, ASSEMBLY_JSON } from '../kernel/constants'
 import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
 import { preloadCompileDependencies } from '../infra/loader'
-import { adaptOxnToFrozen } from '../kernel/compiler/oxn-adapter'
+import { adaptOxnToFrozen } from '../oxn-dsl/compiler/oxn-adapter'
 import {
   type OxnAssemblyIR,
   type OxnAssemblyPart,

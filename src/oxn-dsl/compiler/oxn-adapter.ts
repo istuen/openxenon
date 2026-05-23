@@ -15,10 +15,10 @@ import type {
   OxnAssemblyPart,
   OxnAssemblySlotBinding,
   OxnAssemblyPartProbe,
-} from '../schemas/oxn-assembly.schema'
-import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../schemas/frozen-schema'
-import { validateFrozenBlueprint, createXenonMeta } from '../schemas/frozen-schema'
-import { validateDagTopology, type DagNode } from '../schemas/dag-validator'
+} from '../../kernel/schemas/oxn-assembly.schema'
+import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/frozen-schema'
+import { validateFrozenBlueprint, createXenonMeta } from '../../kernel/schemas/frozen-schema'
+import { validateDagTopology, type DagNode } from '../../kernel/schemas/dag-validator'
 
 export interface AdapterContext {
   taskId: string

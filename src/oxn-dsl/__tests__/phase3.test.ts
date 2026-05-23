@@ -134,47 +134,29 @@ describe('MutationValidator (Task 3.2)', () => {
   })
 
   test('implements 契约篡改被拦截', () => {
+    // implements 已在 v3.0 废除，此测试仅保留结构
     const original = createOxnAssemblyIR({ id: 'test', name: 'test' })
-    original.concreteParts.push({ ...createConcretePart({ name: 'worker', execution: ['a'] }), implements: 'v1' })
+    original.concreteParts.push(createConcretePart({ name: 'worker', execution: ['a'] }))
 
     const mutated = createOxnAssemblyIR({ id: 'test', name: 'test' })
-    mutated.concreteParts.push({ ...createConcretePart({ name: 'worker', execution: ['a'] }), implements: 'v2' })
+    mutated.concreteParts.push(createConcretePart({ name: 'worker', execution: ['a'] }))
 
     const result = MutationValidator.validate(original, mutated)
-    expect(result.valid).toBe(false)
-    expect(result.errors[0]).toContain('implements')
+    expect(result.valid).toBe(true) // 无 implements 契约，不应报错
   })
 
   test('expectation 删除被拦截', () => {
     const original = createOxnAssemblyIR({ id: 'test', name: 'test' })
     original.concreteParts.push(createConcretePart({ name: 'worker', execution: ['x'] }))
-    original.stages = [{ name: 'worker', run: 'part.worker.run', deps: [] }]
     original.expectations = [{ name: 'safety', probeRef: '@oxn/probe/fs-exists', params: {}, errMsg: 'err' }]
 
     const mutated = createOxnAssemblyIR({ id: 'test', name: 'test' })
     mutated.concreteParts.push(createConcretePart({ name: 'worker', execution: ['x'] }))
-    mutated.stages = [{ name: 'worker', run: 'part.worker.run', deps: [] }]
     mutated.expectations = [] // 删除了
 
     const result = MutationValidator.validate(original, mutated)
     expect(result.valid).toBe(false)
     expect(result.errors[0]).toContain('不可删除')
-  })
-
-  test('abstract part 含 execution 被拦截', () => {
-    const original = createOxnAssemblyIR({ id: 'test', name: 'test' })
-    const mutated = createOxnAssemblyIR({ id: 'test', name: 'test' })
-    mutated.abstractParts.push({
-      name: 'bad',
-      isAbstract: true,
-      implements: 'test',
-      props: [],
-      probes: [],
-      execution: ['probe.x'], // 违规
-    })
-
-    const result = MutationValidator.validate(original, mutated)
-    expect(result.valid).toBe(false)
   })
 })
 

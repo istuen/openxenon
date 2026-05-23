@@ -206,6 +206,7 @@ export function convertPartDeclaration(decl: PartDeclaration): OxnAssemblyPart {
     props: (decl.props || []).map(propDeclarationToAssemblyProp),
     probes: (decl.probes || []).map(partProbeToAssemblyProbe),
     execution: (decl.refs || []).map(executionRefToString),
+    deps: [],
   }
 }
 
@@ -226,6 +227,7 @@ function convertPartInBlueprint(decl: PartInBlueprint): OxnAssemblyPart {
     props: [],
     probes: [],
     execution: [],
+    deps: decl.deps || [],
   }
 }
 
