@@ -206,9 +206,7 @@ exec_exit_zero:   { command: "shell命令" }
    \`\`\`
   `
 
-const stageFormatMd = `# Part 格式参考（原 Stage）
-
-> Stage 概念已在 OXN DSL v3.1 中废除，替换为 Part + Slot 机制
+const partFormatMd = `# Part 格式参考
 
 ## Part 独立定义
 
@@ -325,7 +323,7 @@ cat .openxenon/forges/<type>/<name>/draft.oxn
 需要详细格式说明时，读取 references/ 下的文件：
 - references/probe-format.md：Probe 格式说明 + 正误对比
 - references/blueprint-format.md：Blueprint 格式说明 + 正误对比
-- references/stage-format.md：Part 格式说明 + 正误对比
+- references/part-format.md：Part 格式说明 + 正误对比
 
 ## 示例
 
@@ -343,6 +341,6 @@ cat .openxenon/forges/<type>/<name>/draft.oxn
   references: [
     { filename: 'probe-format.md', content: probeFormatMd },
     { filename: 'blueprint-format.md', content: blueprintFormatMd },
-    { filename: 'stage-format.md', content: stageFormatMd },
+    { filename: 'part-format.md', content: partFormatMd },
   ],
 }
