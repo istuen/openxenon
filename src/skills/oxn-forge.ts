@@ -11,8 +11,6 @@ probe "fs-exists" {
 }
 \`\`\`
 
-## Legacy YAML Mode（双轨期兼容）
-
 ## Forge 格式 vs Blueprint 格式（⚠️ 最常见的混淆）
 
 Forge 定义的是"能力声明"（我需要什么参数）：
@@ -283,16 +281,11 @@ oxn forge <type>
 ## 步骤 3：生成资产
 
 - **OXN Mode (默认)**：生成 HCL-like 语法资产
-- **Legacy YAML Mode**：添加 \`--format yaml\` (Deprecated)
 
 ## 步骤 4：保存 Draft
 
 \`\`\`bash
-# OXN Mode (默认)
 oxn forge <type> --save '<oxn内容>' --name <资产名称>
-
-# Legacy YAML Mode
-oxn forge <type> --save '<oxn内容>' --name <资产名称> --format yaml
 \`\`\`
 - 例如:
   \`\`\`bash
@@ -307,7 +300,6 @@ oxn forge <type> --save '<oxn内容>' --name <资产名称> --format yaml
 读取内容：
 \`\`\`bash
 cat .openxenon/forges/<type>/<name>/draft.oxn
-# 或 Legacy: cat .openxenon/forges/<type>/<name>/draft.yaml
 \`\`\`
 
 将 Draft 内容转化为人类可读的摘要，向工程师展示：
@@ -325,7 +317,7 @@ cat .openxenon/forges/<type>/<name>/draft.oxn
 
 - 只生成 DRAFT 状态的资产（保存到 forges/ 目录）
 - 不执行任何探针逻辑
-- 确保 YAML/JSON 结构符合 Schema
+- 确保 OXN/JSON 结构符合 Schema
 - 审查阶段必须读取实际文件内容，不能假设
 
 ## 参考
@@ -346,7 +338,7 @@ cat .openxenon/forges/<type>/<name>/draft.oxn
     '生成 Probe': '/oxn-forge 帮我写一个检查文件存在的 Probe',
     '生成 Blueprint': '/oxn-forge 创建一个部署 MySQL 的 Blueprint',
     '生成全局 Probe': '/oxn-forge --global 帮我写一个检查文件存在的 Probe',
-    '生成 Stage': '/oxn-forge 创建一个安装 Laravel 的 Stage',
+    '生成 Part': '/oxn-forge 创建一个安装 Laravel 的 Part',
   },
   references: [
     { filename: 'probe-format.md', content: probeFormatMd },
