@@ -50,15 +50,16 @@ oxn task new <task-id> --name <任务显示名称> [--blueprint <blueprint-name>
 
 ## 步骤 5：编辑 task.oxn
 
-task.oxn 是任务的核心定义文件，格式如下：
+task.oxn 是任务的核心定义文件，使用 OXN DSL 语法：
 
 ```oxn
-task "my-task" {
-  blueprint "new-task-flow"  // 引用已有 Blueprint
+task "my-task" use "new-task-flow" {
+  part slot "develop" { }
 }
 ```
 
-如果创建时没有指定 `--blueprint`，需要手动编辑 task.oxn 添加 blueprint 引用。
+- `use "blueprint-name"` 引用已有 Blueprint
+- `part slot` 用于填充 Blueprint 中的 slot
 
 ## 步骤 5.1：创建任务描述文档
 
