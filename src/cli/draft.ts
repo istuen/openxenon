@@ -1,8 +1,8 @@
-import { writeFileSync, existsSync, mkdirSync } from 'fs'
-import { join, dirname } from 'path'
 import { randomUUID } from 'crypto'
-import { type AssetType, FORGES_ROOT, type Scope } from '../arsenals/paths'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
 import { ensureForgesDirectories } from '../arsenals/init'
+import { type AssetType, FORGES_ROOT, type Scope } from '../arsenals/paths'
 import { getProjectBoundaryPath } from '../kernel'
 
 export interface DraftAssetResult {
@@ -13,8 +13,8 @@ export interface DraftAssetResult {
 
 function getTypeFromContent(content: string): AssetType | null {
   if (content.includes('probe "') || content.startsWith('probe ')) return 'probes'
-  if (content.includes('part "') || content.startsWith('part ')) return 'parts'
   if (content.includes('blueprint "') || content.startsWith('blueprint ')) return 'blueprints'
+  if (content.includes('part "') || content.startsWith('part ')) return 'parts'
   if (content.includes('task "') || content.startsWith('task ')) return 'blueprints'
   return null
 }
@@ -42,7 +42,7 @@ function saveDraftAsset(
 ): DraftAssetResult {
   ensureForgesDirectories(scope)
 
-  const assetName = name || 'draft_' + randomUUID().slice(0, 8)
+  const assetName = name || `draft_${randomUUID().slice(0, 8)}`
   const filePath = getForgePath(type, assetName, scope, ext)
 
   try {
