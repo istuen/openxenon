@@ -2,7 +2,7 @@ grammar OXN
 
 // ==================== Entry Point ====================
 entry OXNDocument:
-    (entities+=TopLevelEntity)*;
+    entities+=TopLevelEntity;
 
 TopLevelEntity:
     ProbeDeclaration

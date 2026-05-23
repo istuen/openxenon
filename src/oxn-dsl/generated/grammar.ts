@@ -28,8 +28,7 @@ export const OXNGrammar = (): Grammar =>
             "$ref": "#/rules@1"
           },
           "arguments": []
-        },
-        "cardinality": "*"
+        }
       },
       "fragment": false,
       "parameters": []

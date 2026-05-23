@@ -4,13 +4,13 @@
  ******************************************************************************/
 
 import type {
-  IParserConfig,
+  LangiumSharedCoreServices,
   LangiumCoreServices,
   LangiumGeneratedCoreServices,
   LangiumGeneratedSharedCoreServices,
-  LangiumSharedCoreServices,
   LanguageMetaData,
   Module,
+  IParserConfig,
 } from 'langium'
 import { OXNDSLAstReflection } from './ast.js'
 import { OXNGrammar } from './grammar.js'

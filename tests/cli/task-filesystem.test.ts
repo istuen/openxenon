@@ -71,7 +71,7 @@ describe('CLI Task Filesystem Operations', () => {
       expect(existsSync(taskOxnPath)).toBe(true)
 
       const content = readFileSync(taskOxnPath, 'utf-8')
-      expect(content).toContain('blueprint "new-task-flow"')
+      expect(content).toContain('use "@prj/blueprints/new-task-flow"')
     })
   })
 
