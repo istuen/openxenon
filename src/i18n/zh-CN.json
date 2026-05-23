@@ -1,0 +1,41 @@
+{
+  "init": {
+    "projectExists": "项目已存在: {{name}}",
+    "modeUpdated": "模式已更新为: {{mode}}",
+    "localeUpdated": "语言已更新为: {{locale}}",
+    "projectInitialized": "项目初始化成功: {{name}} (locale: {{locale}})",
+    "compilingSkills": "正在编译 Skill (适配器: {{adapter}})...",
+    "skillsCompiled": "Skill 编译完成",
+    "skillsOutputDir": "输出目录: {{dir}}",
+    "invalidLocale": "不支持的语言: {{locale}}",
+    "supportedLocales": "支持的语言: {{locales}}",
+    "description": "初始化项目，在当前项目建立物理围栏"
+  },
+  "config": {
+    "notFound": "项目未初始化，请先执行 oxn init",
+    "title": "项目配置:",
+    "description": "管理项目配置"
+  },
+  "configDebug": {
+    "enabled": "调试模式已开启",
+    "logPath": "日志将写入: {{path}}",
+    "disabled": "调试模式已关闭",
+    "invalidAction": "无效操作: {{action}}",
+    "useStartOrStop": "使用 start 或 stop",
+    "description": "管理项目调试模式"
+  },
+  "daemon": {
+    "notRunning": "Daemon 未运行",
+    "startSuggestion": "请先执行 oxn global daemon start 启动 Daemon（socket: {{socket}}）",
+    "timeout": "Daemon 响应超时",
+    "timeoutSuggestion": "等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start"
+  },
+  "skillCompiler": {
+    "report": "Skill 编译报告 ({{adapter}})",
+    "total": "总计: {{count}} 个 Skill",
+    "created": "新建: {{count}}",
+    "updated": "更新: {{count}}",
+    "skipped": "跳过: {{count}}",
+    "references": "References: {{count}}"
+  }
+}

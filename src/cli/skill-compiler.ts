@@ -1,8 +1,11 @@
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
 import { createHash } from 'crypto'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
+import type { SupportedLocale } from '../kernel/lib/project-config'
+import { DEFAULT_LOCALE } from '../kernel/lib/project-config'
+import { getAllSkillsForLocale } from '../skills/loader'
 import type { OpenXenonSkill } from '../skills/types'
-import { allSkills } from '../skills'
+import { readProjectConfig } from './project-config-io'
 
 export interface CompilationResult {
   skillId: string
@@ -21,8 +24,8 @@ export interface CompilationReport {
   referencesCreated: number
 }
 
-export function loadSkills(): OpenXenonSkill[] {
-  return allSkills
+export function loadSkills(locale: SupportedLocale = DEFAULT_LOCALE): OpenXenonSkill[] {
+  return getAllSkillsForLocale(locale)
 }
 
 function defaultRender(skill: OpenXenonSkill): string {
@@ -87,7 +90,9 @@ export function compileSkill(
 }
 
 export function compileAllSkills(adapterId: string, projectPath: string, force: boolean = false): CompilationReport {
-  const skills = loadSkills()
+  const config = readProjectConfig(projectPath)
+  const locale = (config?.locale ?? DEFAULT_LOCALE) as SupportedLocale
+  const skills = loadSkills(locale)
   const results: CompilationResult[] = []
 
   for (const skill of skills) {

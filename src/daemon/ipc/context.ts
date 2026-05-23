@@ -1,12 +1,8 @@
-import { existsSync, readFileSync } from '../../infra/filesystem'
 import { join } from 'path'
-import { missingProjectPath, projectNotFound } from './errors'
+import { existsSync, readFileSync } from '../../infra/filesystem'
 import { BOUNDARY_DIR, CONFIG_FILE } from '../../kernel/constants'
-
-interface ProjectConfig {
-  version: 1
-  mode: 'PRODUCTION' | 'SANDBOX'
-}
+import type { ProjectConfig } from '../../kernel/lib/project-config'
+import { missingProjectPath, projectNotFound } from './errors'
 
 export interface ProjectContext {
   projectPath: string

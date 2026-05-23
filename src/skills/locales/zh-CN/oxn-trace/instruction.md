@@ -1,9 +1,4 @@
-import type { OpenXenonSkill } from './types'
-
-export const oxnTraceSkill: OpenXenonSkill = {
-  id: 'oxn-trace',
-  description: '轨迹取证，查看任务执行案卷',
-  instruction: `# /oxn-trace — 查看任务轨迹
+# /oxn-trace — 查看任务轨迹
 
 ## 行为约束
 
@@ -13,11 +8,11 @@ export const oxnTraceSkill: OpenXenonSkill = {
 
 使用 CLI 命令获取任务轨迹：
 
-\`\`\`bash
+```bash
 oxn export <任务ID>
 # 或指定输出文件
 oxn export <任务ID> -o task-trace.jsonl
-\`\`\`
+```
 
 ## 步骤 2：解读轨迹并报告
 
@@ -32,13 +27,13 @@ oxn export <任务ID> -o task-trace.jsonl
 
 向工程师提供简洁的执行总结：
 
-\`\`\`
+```
 任务: <任务名称>
 总耗时: <时长>
 步骤: <N> 步骤完成
 验证: <通过>/<总数> 通过
 产物: <生成的文件列表>
-\`\`\`
+```
 
 ## 验证记录解读
 
@@ -50,5 +45,3 @@ oxn export <任务ID> -o task-trace.jsonl
 
 - 如果任务未完成，提示工程师任务仍在进行中
 - 如果没有任务，提示工程师先发起任务
-`,
-}

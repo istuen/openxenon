@@ -1,23 +1,18 @@
-import type { OpenXenonSkill } from './types'
-
-export const oxnStatusSkill: OpenXenonSkill = {
-  id: 'oxn-status',
-  description: '状态体检，通过自然语言了解项目进度',
-  instruction: `# \`/oxn-status\` — 查看任务状态
+# `/oxn-status` — 查看任务状态
 
 ## 行为约束
 
-当你收到 \`/oxn-status\` 指令时，必须严格按以下步骤执行，禁止自由发挥。
+当你收到 `/oxn-status` 指令时，必须严格按以下步骤执行，禁止自由发挥。
 
 ## 步骤 1：查询任务状态
 
 使用 CLI 命令查询任务状态：
 
-\`\`\`bash
+```bash
 oxn task status --task-id <任务ID>
-\`\`\`
+```
 
-如果不知道任务 ID，先使用 \`oxn task list\` 获取。
+如果不知道任务 ID，先使用 `oxn task list` 获取。
 
 ## 步骤 2：解读状态并报告
 
@@ -32,16 +27,14 @@ oxn task status --task-id <任务ID>
 
 向工程师输出简洁的状态摘要：
 
-\`\`\`
+```
 任务: <任务名称>
 状态: <running|completed|failed>
 进度: <N>/<M> 步骤完成
 当前: <当前步骤名称>
-\`\`\`
+```
 
 ## 错误处理
 
 - 如果没有活跃任务，告知工程师当前无任务
 - 如果 Core 未运行，提示工程师启动 daemon
-`,
-}

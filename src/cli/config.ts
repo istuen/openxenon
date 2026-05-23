@@ -1,32 +1,8 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync } from 'fs'
-import { join } from 'path'
-import { BOUNDARY_DIR, CONFIG_FILE } from '../kernel/constants'
-import { output, outputError, getFormatFromArgs } from './output'
-
-interface ProjectConfig {
-  version: 1
-  mode: 'PRODUCTION' | 'SANDBOX'
-  name?: string
-  createdAt?: number
-  debug?: boolean
-}
-
-function getProjectConfigPath(projectRoot: string): string {
-  return join(projectRoot, BOUNDARY_DIR, CONFIG_FILE)
-}
-
-function readProjectConfig(projectRoot: string): ProjectConfig | null {
-  const configPath = getProjectConfigPath(projectRoot)
-  if (!existsSync(configPath)) {
-    return null
-  }
-  try {
-    return JSON.parse(readFileSync(configPath, 'utf-8')) as ProjectConfig
-  } catch {
-    return null
-  }
-}
+import { t } from '../i18n'
+import { DEFAULT_LOCALE } from '../kernel/lib/project-config'
+import { getFormatFromArgs, output, outputError } from './output'
+import { readProjectConfig } from './project-config-io'
 
 export default defineCommand({
   meta: {
@@ -55,7 +31,7 @@ export default defineCommand({
       return outputError(
         {
           code: 'OXN_CONFIG_NOT_FOUND',
-          message: '项目未初始化，请先执行 oxn init',
+          message: t('config.notFound'),
         },
         format,
       )
@@ -64,7 +40,7 @@ export default defineCommand({
     return output(
       {
         data: config,
-        human: `项目配置:\n  mode: ${config.mode}\n  debug: ${config.debug ? 'enabled' : 'disabled'}\n  name: ${config.name || 'unnamed'}\n`,
+        human: `项目配置:\n  mode: ${config.mode}\n  locale: ${config.locale || DEFAULT_LOCALE}\n  debug: ${config.debug ? 'enabled' : 'disabled'}\n  name: ${config.name || 'unnamed'}\n`,
       },
       format,
     )
