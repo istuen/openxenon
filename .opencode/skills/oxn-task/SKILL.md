@@ -1,3 +1,7 @@
+---
+name: oxn-task
+description: 发起 OpenXenon 任务，依据 Target State 拆解并提交 Blueprint
+---
 # /oxn-task — 发起 OpenXenon 任务
 
 ## 行为约束
