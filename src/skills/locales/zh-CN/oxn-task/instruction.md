@@ -27,14 +27,13 @@ oxn arsenal list
 使用 CLI 命令创建新任务：
 
 ```bash
-oxn task new <task-id> --name <任务显示名称> [--blueprint <blueprint-name>]
+oxn task new <task-id> --name <任务显示名称> --blueprint <blueprint-name>
 ```
 
 - `<task-id>` 必须是 kebab-case（如 my-task-001）
-- `--name` 可选，默认与 task-id 相同
-- `--blueprint` 可选，指定要引用的 Blueprint 名称
+- `--blueprint` 指定要引用的 Blueprint 名称（如 `new-task-flow`）
 
-创建后会在 `.openxenon/tasks/<task-id>/` 下生成 `task.oxn` 文件。
+CLI 会自动生成 `task.oxn` 文件。
 
 ## 步骤 4：拆解任务
 
@@ -44,19 +43,15 @@ oxn task new <task-id> --name <任务显示名称> [--blueprint <blueprint-name>
 2. 逆向推导所需的中间 Part slot
 3. 为每个 Part 选择合适的 Probe
 
-## 步骤 5：编辑 task.oxn
+## 步骤 5：编辑 task.oxn（可选）
 
-task.oxn 是任务的核心定义文件，使用 OXN DSL 语法：
+如果需要填充 Blueprint 中的 slot，编辑 `.openxenon/tasks/<task-id>/task.oxn`：
 
 ```oxn
 task "my-task" use "@prj/blueprints/new-task-flow" {
   part slot "develop" { }
 }
 ```
-
-- `use "@prj/blueprints/blueprint-name"` 引用项目内的 Blueprint
-- `use "@oxn/blueprints/blueprint-name"` 引用内置 Blueprint
-- `part slot` 用于填充 Blueprint 中的 slot
 
 ## 步骤 5.1：创建任务描述文档
 
@@ -85,8 +80,6 @@ task "my-task" use "@prj/blueprints/new-task-flow" {
 ```bash
 oxn task submit --task-id <task-id>
 ```
-
-该命令会读取 task.oxn，从 Arsenal 加载 Blueprint，生成 frozen.json。
 
 ## 步骤 7：获取下一个 Part
 
