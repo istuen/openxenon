@@ -147,59 +147,42 @@ props:
 
 const blueprintFormatMd = `# Blueprint 格式参考
 
-## 基本结构
+## OXN Mode (v3.1 Slot 范式)
 
-\`\`\`hcl
-name: <blueprint名称>
-stages:
-  - id: <stage唯一标识>
-    name: <显示名称>
-    deps: [<依赖的stage id>]   # 可选
-    target:
-      description: <目标描述>
-    spec:
-      description: <规格描述>
-    probes:
-      - type: <探针类型>
-        params:
-          <探针参数>
+\`\`\`oxn
+blueprint "deploy-mysql" {
+  version = 1
+  prop "env" { type = enum("dev", "prod"); default = "dev" }
+
+  part slot "prepare" {
+    deps = []
+  }
+
+  part slot "deploy" {
+    deps = ["prepare"]
+  }
+}
 \`\`\`
 
-## 完整示例
+## Part 独立定义
 
-\`\`\`hcl
-name: check-project-structure
-stages:
-  - id: check-package-json
-    name: 检查 package.json
-    target:
-      description: package.json 存在
-    probes:
-      - type: fs_exists
-        params:
-          pattern: package.json
-  - id: check-readme
-    name: 检查 README
-    target:
-      description: README 存在
-    probes:
-      - type: fs_exists
-        params:
-          pattern: README.md
-  - id: check-lint
-    name: 检查 lint 通过
-    deps: [check-package-json]
-    target:
-      description: lint 检查通过
-    probes:
-      - type: exec_exit_zero
-        params:
-          command: npm run lint
+Part 是 Arsenal 可复用资产：
+
+\`\`\`oxn
+part "docker-prepare" {
+  description = "确保 Docker 环境就绪"
+  prop "image" { type = string; default = "mysql:8" }
+
+  probe check_docker ref "@oxn/probes/exec-exit-zero" {
+    params = { command = "docker ps" }
+  }
+  execution = [check_docker]
+}
 \`\`\`
 
 ## probes 参数格式
 
-\`\`\`hcl
+\`\`\`
 fs_exists:        { pattern: "glob模式" }
 fs_not_exists:    { pattern: "glob模式" }
 fs_content_match: { path: "文件路径", contains: "正则" }
@@ -208,69 +191,60 @@ exec_exit_zero:   { command: "shell命令" }
 
 ## deps 规则
 
-- deps 是可选的，没有依赖的 stage 可以并行验证
-- deps 里只能引用同 blueprint 内的 stage id
+- deps 声明在 \`part slot\` 或 \`part\` 上
 - 不能循环依赖（A→B→A）
 
 ## ❌ 常见错误
 
-1. **probes 里用了 props 数组**
-   \`\`\`hcl
+1. **使用了旧类型名**
+   \`\`\`
    # 错误
-   probes: [{ type: fs_exists, props: [{name: pattern, type: string}] }]
+   type: fs_match        # 旧名
+   type: shell_exec      # 旧名
 
    # 正确
-   probes: [{ type: fs_exists, params: { pattern: "src" } }]
+   type: fs_content_match
+   type: exec_exit_zero
    \`\`\`
+  `
 
-2. **使用了旧类型名**
-   \`\`\`hcl
-   # 错误
-   probes:
-     - type: fs_match        # 旧名
-       params:
-         pattern: "*.ts"
-         contains: "export"
+const stageFormatMd = `# Part 格式参考（原 Stage）
 
-   # 正确
-   probes:
-     - type: fs_content_match
-       params:
-         path: "*.ts"
-         contains: "export"
-   \`\`\`
+> Stage 概念已在 OXN DSL v3.1 中废除，替换为 Part + Slot 机制
 
-3. **deps 引用了不存在的 stage id**
-   确保 deps 里的每个 id 都在 stages 里有定义
+## Part 独立定义
 
-4. **stage id 含空格或中文**
-   stage id 只用小写字母、数字和连字符：check-readme, deploy-mysql
- `
+\`\`\`oxn
+part "install-laravel" {
+  description = "安装 Laravel 项目"
+  prop "project_dir" { type = string; default = "." }
 
-const stageFormatMd = `# Stage 格式参考
-
-## Forge 格式（定义 Stage 能力声明）
-
-\`\`\`hcl
-name: <stage名称>
-description: "<stage描述>"
-target:
-  description: "<目标描述>"
-spec:
-  description: "<规格描述>"
-probes:
-  - type: <探针类型>
-    params: { <参数键值> }
+  probe install ref "@oxn/probes/exec-exit-zero" {
+    params = { command = "composer create-project laravel/laravel \${prop.project_dir}" }
+  }
+  execution = [install]
+}
 \`\`\`
 
-## Blueprint 格式（在 Blueprint 中引用 Stage）
+## Part 在 Blueprint 中的使用
 
-Blueprint 里直接定义 stage，不需要单独的 Stage 资产。
-详见 blueprint-format.md
+\`\`\`oxn
+blueprint "app-init" {
+  part slot "setup" { deps = [] }
+}
+\`\`\`
 
-## 探针类型（必须使用正确名称）
+\`\`\`oxn
+task "init-prod" use "@prj/blueprints/app-init" {
+  part slot "setup" ref "@prj/parts/install-laravel" {
+    prop project_dir = "/var/www/app"
+  }
+}
+\`\`\`
 
-\`\`\`hcl
+## 探针类型
+
+\`\`\`
 # 正确
 fs_exists
 fs_not_exists
@@ -278,22 +252,14 @@ fs_content_match
 exec_exit_zero
 
 # 错误（旧名）
-fs_match          # 应改为 fs_content_match
-shell_exec        # 应改为 exec_exit_zero
+fs_match          # → fs_content_match
+shell_exec        # → exec_exit_zero
 \`\`\`
-
-## ❌ 常见错误
-
-1. 在 Blueprint 里用了 Forge 的 props 格式
-   Blueprint 用的是 \`params\`，不是 \`props\`
-
-2. 使用了旧的探针类型名
-   确保使用 fs_content_match 和 exec_exit_zero，而不是旧名
- `
+  `
 
 export const oxnForgeSkill: OpenXenonSkill = {
   id: 'oxn-forge',
-  description: '通过自然语言生成 Draft 标准资产（Blueprint/Probe/Stage）',
+  description: '通过自然语言生成 Draft 标准资产（Blueprint/Probe/Part）',
   instruction: `# /oxn-forge — 锻造 Draft 标准资产
 
 你是 OpenXenon 的资产锻造专家。当你收到工程师的自然语言请求时：
@@ -301,9 +267,9 @@ export const oxnForgeSkill: OpenXenonSkill = {
 ## 步骤 1：解析意图
 
 解析工程师的意图，确定要生成什么类型的资产：
-- Blueprint（蓝图）：包含多个 Stage 的完整流程定义
+- Blueprint（蓝图）：包含多个 Part slot 的完整流程定义
 - Probe（探针）：单一检查，如"检查文件存在"、"检查命令执行成功"
-- Stage（工序节点）：包含 target/spec/probes 和执行顺序
+- Part（零件）：包含 probes/execution 的可复用执行单元
 
 ## 步骤 2：获取约束
 
@@ -311,7 +277,7 @@ export const oxnForgeSkill: OpenXenonSkill = {
 \`\`\`bash
 oxn forge <type>
 \`\`\`
-- type 可选值: probe, stage, blueprint
+- type 可选值: probe, part, blueprint
 - 例如: oxn forge probe
 
 ## 步骤 3：生成资产
@@ -367,14 +333,14 @@ cat .openxenon/forges/<type>/<name>/draft.oxn
 需要详细格式说明时，读取 references/ 下的文件：
 - references/probe-format.md：Probe 格式说明 + 正误对比
 - references/blueprint-format.md：Blueprint 格式说明 + 正误对比
-- references/stage-format.md：Stage 格式说明 + 正误对比
+- references/stage-format.md：Part 格式说明 + 正误对比
 
 ## 示例
 
 - 生成 Probe: \`/oxn-forge 帮我写一个检查文件存在的 Probe\`
 - 生成 Blueprint: \`/oxn-forge 创建一个部署 MySQL 的 Blueprint\`
 - 生成全局 Probe: \`/oxn-forge --global 帮我写一个检查文件存在的 Probe\`
-- 生成 Stage: \`/oxn-forge 创建一个安装 Laravel 的 Stage\`
+- 生成 Part: \`/oxn-forge 创建一个安装 Laravel 的 Part\`
 `,
   examples: {
     '生成 Probe': '/oxn-forge 帮我写一个检查文件存在的 Probe',
