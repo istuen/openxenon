@@ -227,7 +227,7 @@ export function taskNew(taskId: string, taskName: string, cwd: string, blueprint
   ensureDirectory(taskDir)
 
   const taskOxnContent = blueprintName
-    ? `task "${taskId}" use "${blueprintName}" {\n}\n`
+    ? `task "${taskId}" use "@prj/blueprints/${blueprintName}" {\n}\n`
     : `task "${taskId}" {\n  // Empty task, waiting for developer to fill in\n}\n`
 
   writeFileSync(join(taskDir, TASK_OXN_FILE), taskOxnContent, 'utf-8')

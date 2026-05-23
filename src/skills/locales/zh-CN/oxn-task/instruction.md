@@ -49,12 +49,13 @@ oxn task new <task-id> --name <任务显示名称> [--blueprint <blueprint-name>
 task.oxn 是任务的核心定义文件，使用 OXN DSL 语法：
 
 ```oxn
-task "my-task" use "new-task-flow" {
+task "my-task" use "@prj/blueprints/new-task-flow" {
   part slot "develop" { }
 }
 ```
 
-- `use "blueprint-name"` 引用已有 Blueprint
+- `use "@prj/blueprints/blueprint-name"` 引用项目内的 Blueprint
+- `use "@oxn/blueprints/blueprint-name"` 引用内置 Blueprint
 - `part slot` 用于填充 Blueprint 中的 slot
 
 ## 步骤 5.1：创建任务描述文档
