@@ -30,18 +30,22 @@ oxn explore new <name>
 
 ## 步骤 2：扫描资料
 
-根据探索目标，使用 CLI 命令扫描所需资料：
+根据探索目标，使用 CLI 命令索引所需资料（**不复制全文，仅记录路径**）：
 
 \`\`\`bash
-oxn explore scan <name> --path <文件或目录>
+oxn explore scan --name <name> --path <文件或目录>
 \`\`\`
 
-扫描的资料会保存到 \`.openxenon/explores/<name>/docs/\`
+索引保存在 \`.openxenon/explores/<name>/docs/index.md\`
 
-读取文档内容（仅展示，不保存）：
-
+查看已索引文件列表：
 \`\`\`bash
-oxn explore scan <name> --read <file-path>
+oxn explore scan --name <name>
+\`\`\`
+
+按需读取具体文件的完整内容：
+\`\`\`bash
+oxn explore scan --name <name> --read <file-path>
 \`\`\`
 
 ## 步骤 3：AI-工程师问答模式
@@ -50,10 +54,12 @@ oxn explore scan <name> --read <file-path>
 
 ### AI 行为
 
-1. **先阅读已扫描的资料**
+1. **先阅读索引，选择性深入**
    \`\`\`bash
-   cat .openxenon/explores/<name>/docs/*.md
+   oxn explore scan <name>
    \`\`\`
+   根据索引判断哪些文件相关，再逐个用 \`--read\` 读取关键文件。
+   **禁止**一次性读取所有文件以避免 Token 浪费。
 
 2. **基于资料提出探索性问题**
    - 开放式问题：关于背景、目标、约束
@@ -117,7 +123,8 @@ oxn explore delete <name>
 
 - 禁止在未创建探索目录前进行操作
 - 禁止跳过扫描步骤直接进行问答
-- 禁止 AI 未阅读资料就提问`,
+- 禁止 AI 未阅读资料就提问
+- 禁止一次性 cat/docs/* 读取所有文件 — 必须按需用 --read 逐个读取`,
   examples: {
     新建探索: '/oxn-explore auth-system',
     继续探索: '/oxn-explore auth-system scan',

@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
-import { mkdirSync, existsSync, readFileSync, writeFileSync, readdirSync, rmSync, statSync } from 'fs'
-import { join, extname } from 'path'
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
+import { extname, join } from 'path'
 import { BOUNDARY_DIR } from '../kernel/constants'
-import { output, outputError, getFormatFromArgs } from './output'
+import { getFormatFromArgs, output, outputError } from './output'
 
 function getProjectRoot(): string {
   return process.cwd()
@@ -23,34 +23,49 @@ function ensureExploresDir(): void {
   }
 }
 
-function scanDirectory(dirPath: string, docsPath: string): string[] {
+function scanDirectory(dirPath: string, docsPath: string, prefix = ''): string[] {
   const scanned: string[] = []
   const entries = readdirSync(dirPath, { withFileTypes: true })
 
   for (const entry of entries) {
     const fullPath = join(dirPath, entry.name)
+    const relPath = prefix ? `${prefix}/${entry.name}` : entry.name
 
     if (entry.isDirectory()) {
-      const subScanned = scanDirectory(fullPath, docsPath)
+      const subScanned = scanDirectory(fullPath, docsPath, relPath)
       scanned.push(...subScanned)
     } else if (entry.isFile()) {
       const ext = extname(entry.name).toLowerCase()
-      if (ext === '.ts' || ext === '.md' || ext === '.yaml' || ext === '.json') {
-        const title = entry.name.replace(ext, '')
-        const destPath = join(docsPath, `${title}.md`)
-
-        try {
-          const content = readFileSync(fullPath, 'utf-8')
-          writeFileSync(destPath, content, 'utf-8')
-          scanned.push(fullPath)
-        } catch {
-          // skip unreadable files
-        }
+      if (ext === '.ts' || ext === '.md' || ext === '.yaml' || ext === '.json' || ext === '.oxn') {
+        scanned.push(fullPath)
       }
     }
   }
 
   return scanned
+}
+
+function writeScanIndex(files: string[], docsPath: string): string {
+  const indexLines: string[] = ['# 扫描索引\n', `> 共 ${files.length} 个文件，按需用 \`--read\` 读取完整内容\n`]
+
+  for (const file of files) {
+    const shortPath = file.length > 60 ? `...${file.slice(-57)}` : file
+    indexLines.push(`- \`${shortPath}\``)
+  }
+
+  const indexPath = join(docsPath, 'index.md')
+  writeFileSync(indexPath, indexLines.join('\n'), 'utf-8')
+  return indexPath
+}
+
+function readFileSummary(filePath: string, maxLines = 3): string {
+  try {
+    const content = readFileSync(filePath, 'utf-8')
+    const lines = content.split('\n')
+    return lines.slice(0, maxLines).join('\n') + (lines.length > maxLines ? '\n...' : '')
+  } catch {
+    return '(无法读取)'
+  }
 }
 
 interface QAQuestion {
@@ -219,25 +234,27 @@ export default defineCommand({
 
           const stat = statSync(sourcePath)
           if (stat.isDirectory()) {
-            const scanned = scanDirectory(sourcePath, docsPath)
+            const files = scanDirectory(sourcePath, docsPath)
+            const indexPath = writeScanIndex(files, docsPath)
             return output(
               {
-                data: { count: scanned.length, files: scanned },
+                data: { count: files.length, index: indexPath },
                 human:
-                  scanned.length > 0 ? `已扫描 ${scanned.length} 个文件到 ${docsPath}` : `目录为空，未扫描任何文件`,
+                  files.length > 0
+                    ? `已索引 ${files.length} 个文件\n索引: ${indexPath}\n\n按需读取: oxn explore scan <name> --read <path>`
+                    : `目录为空，未扫描任何文件`,
               },
               format,
             )
           }
 
-          const title = (ctx.args.title as string) || sourcePath.split('/').pop() || 'document'
-          const destPath = join(docsPath, `${title}.md`)
-          const content = readFileSync(sourcePath, 'utf-8')
-          writeFileSync(destPath, content, 'utf-8')
+          const files = [sourcePath]
+          writeScanIndex(files, docsPath)
+          const summary = readFileSummary(sourcePath, 5)
           output(
             {
-              data: { path: destPath },
-              human: `已扫描: ${destPath}`,
+              data: { path: sourcePath, summary },
+              human: `已索引: ${sourcePath}\n\n摘要:\n${summary}\n\n读取全文: oxn explore scan <name> --read ${sourcePath}`,
             },
             format,
           )
@@ -262,14 +279,13 @@ export default defineCommand({
             )
           }
         } else {
-          const files = existsSync(docsPath) ? readdirSync(docsPath) : []
-          output(
-            {
-              data: { files },
-              human: `已扫描文件:\n${files.map((f) => `  - ${f}`).join('\n')}`,
-            },
-            format,
-          )
+          const indexPath = join(docsPath, 'index.md')
+          if (existsSync(indexPath)) {
+            const content = readFileSync(indexPath, 'utf-8')
+            output({ data: { files: content }, human: content }, format)
+          } else {
+            output({ data: { files: [] }, human: '无已索引文件' }, format)
+          }
         }
       },
     }),
