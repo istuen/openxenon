@@ -236,6 +236,38 @@ export class OxnKernelAdapter {
         Object.assign(resolvedParams, slotBinding.props)
       }
 
+      // If slotBinding has a ref, resolve the Part and get its probes
+      let probes: FrozenProbe[] = []
+      if (slotBinding?.ref) {
+        const partResolution = resolvePartRef(slotBinding.ref, getProjectBoundaryPath(process.cwd()))
+        if (partResolution.found && partResolution.part) {
+          const partProbes = partResolution.part.probes || []
+          probes = partProbes.map((p: any, idx: number) => {
+            const probeParams: Record<string, unknown> = {}
+            if (p.params) {
+              for (const [key, value] of Object.entries(p.params)) {
+                if (typeof value === 'string') {
+                  probeParams[key] = resolveTemplateString(value, resolvedParams)
+                } else {
+                  probeParams[key] = value
+                }
+              }
+            }
+            const probeType = normalizeProbeType(p.ref?.split('/').pop() || 'unknown')
+            const probeContent = JSON.stringify({ type: probeType, params: probeParams })
+            return {
+              _xenon_meta: createXenonMeta({
+                ref: p.ref || `slot-probe-${idx}`,
+                resolvedFrom: 'project',
+                content: probeContent,
+              }),
+              type: probeType,
+              params: probeParams,
+            }
+          })
+        }
+      }
+
       frozenParts.push({
         _xenon_meta: createXenonMeta({
           ref: slotBinding?.ref || slot.name,
@@ -247,7 +279,7 @@ export class OxnKernelAdapter {
         deps: slot.deps || [],
         params: resolvedParams,
         target: { description: slotBinding?.ref || slot.name },
-        probes: [],
+        probes,
       })
     }
 
