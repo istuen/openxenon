@@ -10,15 +10,17 @@
  *   4. → FrozenBlueprint（Core 零感知直接消费）
  */
 
+import { resolvePartRef } from '../../kernel/lib/part-resolver.js'
+import { getProjectBoundaryPath } from '../../kernel/lib/project.js'
+import { type DagNode, validateDagTopology } from '../../kernel/schemas/dag-validator'
+import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/frozen-schema'
+import { createXenonMeta, validateFrozenBlueprint } from '../../kernel/schemas/frozen-schema'
 import type {
   OxnAssemblyIR,
   OxnAssemblyPart,
-  OxnAssemblySlotBinding,
   OxnAssemblyPartProbe,
+  OxnAssemblySlotBinding,
 } from '../../kernel/schemas/oxn-assembly.schema'
-import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/frozen-schema'
-import { validateFrozenBlueprint, createXenonMeta } from '../../kernel/schemas/frozen-schema'
-import { validateDagTopology, type DagNode } from '../../kernel/schemas/dag-validator'
 
 export interface AdapterContext {
   taskId: string
@@ -65,40 +67,71 @@ export function adaptConcretePart(part: OxnAssemblyPart, resolvedParams: Record<
     }
   }
 
-  const probes: FrozenProbe[] = (part.probes || []).map((p: OxnAssemblyPartProbe, idx: number) => {
-    const probeParams: Record<string, unknown> = {}
-    if (p.params) {
-      for (const [key, value] of Object.entries(p.params)) {
-        if (typeof value === 'string') {
-          probeParams[key] = resolveTemplateString(value, finalParams)
-        } else {
-          probeParams[key] = value
+  let probes: FrozenProbe[] = []
+  if (part.probes && part.probes.length > 0) {
+    probes = (part.probes || []).map((p: OxnAssemblyPartProbe, idx: number) => {
+      const probeParams: Record<string, unknown> = {}
+      if (p.params) {
+        for (const [key, value] of Object.entries(p.params)) {
+          if (typeof value === 'string') {
+            probeParams[key] = resolveTemplateString(value, finalParams)
+          } else {
+            probeParams[key] = value
+          }
         }
       }
+      const probeType = normalizeProbeType(p.ref?.split('/').pop() || 'unknown')
+      const probeContent = JSON.stringify({ type: probeType, params: probeParams })
+      return {
+        _xenon_meta: createXenonMeta({
+          ref: p.ref || `inline-probe-${idx}`,
+          resolvedFrom: 'project',
+          content: probeContent,
+        }),
+        type: probeType,
+        params: probeParams,
+      }
+    })
+  } else if (part.ref) {
+    const projectBoundary = getProjectBoundaryPath(process.cwd())
+    const resolution = resolvePartRef(part.ref, projectBoundary)
+    if (resolution.found && resolution.part?.probes) {
+      probes = resolution.part.probes.map((p, idx) => {
+        const probeParams: Record<string, unknown> = {}
+        if (p.params) {
+          for (const [key, value] of Object.entries(p.params)) {
+            if (typeof value === 'string') {
+              probeParams[key] = resolveTemplateString(value, finalParams)
+            } else {
+              probeParams[key] = value
+            }
+          }
+        }
+        const probeType = normalizeProbeType(p.ref?.split('/').pop() || 'unknown')
+        const probeContent = JSON.stringify({ type: probeType, params: probeParams })
+        return {
+          _xenon_meta: createXenonMeta({
+            ref: p.ref || `resolved-probe-${idx}`,
+            resolvedFrom: 'project',
+            content: probeContent,
+          }),
+          type: probeType,
+          params: probeParams,
+        }
+      })
     }
-    const probeType = normalizeProbeType(p.ref?.split('/').pop() || 'unknown')
-    const probeContent = JSON.stringify({ type: probeType, params: probeParams })
-    return {
-      _xenon_meta: createXenonMeta({
-        ref: p.ref || `inline-probe-${idx}`,
-        resolvedFrom: 'project',
-        content: probeContent,
-      }),
-      type: probeType,
-      params: probeParams,
-    }
-  })
+  }
 
   const partContent = JSON.stringify({ id: part.name, name: part.name })
   return {
     _xenon_meta: createXenonMeta({
-      ref: part.name,
+      ref: part.ref || part.name,
       resolvedFrom: 'project',
       content: partContent,
     }),
     id: part.name,
     name: part.name,
-    deps: [],
+    deps: part.deps || [],
     params: finalParams,
     target: { description: part.description || part.name },
     probes,
@@ -186,19 +219,9 @@ export class OxnKernelAdapter {
           continue
         }
         partIdSet.add(part.name)
-        frozenParts.push({
-          _xenon_meta: createXenonMeta({
-            ref: part.name,
-            resolvedFrom: 'project',
-            content: JSON.stringify({ id: part.name, name: part.name }),
-          }),
-          id: part.name,
-          name: part.name,
-          deps: (part as any).deps || [],
-          params: {},
-          target: { description: part.description || part.name },
-          probes: [],
-        })
+
+        const frozenPart = adaptConcretePart(part, {})
+        frozenParts.push(frozenPart)
       }
     }
 
@@ -231,8 +254,9 @@ export class OxnKernelAdapter {
     // Legacy: concreteParts (从 .oxn 文件内联的 Part) — 与 slot 合并
     if (ir.concreteParts.length > 0) {
       for (const part of ir.concreteParts) {
-        const slotBinding = Array.from(Object.entries(boundSlots))
-          .find(([, b]) => b.ref && b.ref.split('/').pop() === part.name)?.[1]
+        const slotBinding = Array.from(Object.entries(boundSlots)).find(
+          ([, b]) => b.ref && b.ref.split('/').pop() === part.name,
+        )?.[1]
 
         const resolvedParams: Record<string, unknown> = {}
         if (slotBinding?.props) {
@@ -242,8 +266,9 @@ export class OxnKernelAdapter {
         const frozenPart = adaptConcretePart(part, resolvedParams)
 
         // 找到引用该 concrete part 的 slot，合并 deps + 使用 slot name
-        const matchingSlot = Array.from(Object.entries(boundSlots))
-          .find(([, b]) => b.ref && b.ref.split('/').pop() === part.name)
+        const matchingSlot = Array.from(Object.entries(boundSlots)).find(
+          ([, b]) => b.ref && b.ref.split('/').pop() === part.name,
+        )
         if (matchingSlot) {
           const [slotName] = matchingSlot
           const slotDeps = slotDepsMap.get(slotName) || []
@@ -269,13 +294,20 @@ export class OxnKernelAdapter {
       }
     }
 
-    const dagNodes: DagNode[] = frozenParts.map((p) => ({
-      id: p.id,
-      deps: p.deps || [],
-    }))
-    const dagResult = validateDagTopology(dagNodes)
-    if (!dagResult.valid) {
-      throw new Error(`DAG 验证失败: ${dagResult.errors.join('; ')}`)
+    const dagNodes: DagNode[] = frozenParts
+      .filter((p) => {
+        const meta = p._xenon_meta as { ref?: string } | undefined
+        return !meta?.ref?.startsWith('@')
+      })
+      .map((p) => ({
+        id: p.id,
+        deps: p.deps || [],
+      }))
+    if (dagNodes.length > 1) {
+      const dagResult = validateDagTopology(dagNodes)
+      if (!dagResult.valid) {
+        throw new Error(`DAG 验证失败: ${dagResult.errors.join('; ')}`)
+      }
     }
 
     const frozen: FrozenBlueprint = {
