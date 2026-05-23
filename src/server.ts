@@ -1,12 +1,12 @@
-import { fileExists, ensureDirectory, writeFile, deleteFile } from './infra/filesystem'
-import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from './infra/global'
-import { daemonLogger } from './daemon/logger'
-import { startApiServer, stopApiServer } from './daemon/ipc/server'
-import { setDaemonAddress, clearDaemonAddress } from './daemon/status'
-import { fileWatcher, type WatchEvent } from './daemon/watcher'
 import { taskCircuitBreaker } from './daemon/circuit-breaker'
+import { startApiServer, stopApiServer } from './daemon/ipc/server'
+import { daemonLogger } from './daemon/logger'
 import { recoveryManager } from './daemon/recovery'
+import { clearDaemonAddress, setDaemonAddress } from './daemon/status'
 import { daemonSupervisor } from './daemon/supervisor'
+import { fileWatcher, type WatchEvent } from './daemon/watcher'
+import { deleteFile, ensureDirectory, fileExists, writeFile } from './infra/filesystem'
+import { DAEMON_PID_PATH, DAEMON_SOCK_PATH, GLOBAL_BOUNDARY_PATH } from './infra/global'
 
 function ensureGlobalDirectory(): void {
   if (!fileExists(GLOBAL_BOUNDARY_PATH)) {
@@ -130,4 +130,4 @@ main().catch((error) => {
   process.exit(1)
 })
 
-export { taskCircuitBreaker, recoveryManager, fileWatcher }
+export { fileWatcher, recoveryManager, taskCircuitBreaker }

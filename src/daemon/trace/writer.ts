@@ -1,12 +1,12 @@
-import { existsSync, readFileSync, appendFileSync } from '../../infra/filesystem'
+import { appendFileSync, existsSync, readFileSync } from '../../infra/filesystem'
+import type { StepStatus, TaskStatus } from '../../kernel/enums'
+import { type ParsedBlueprint, parseBlueprintYaml } from '../../kernel/lib/blueprint-parser'
 import type { TaskDirectory } from '../../kernel/lib/task-dir'
-import type { TraceEvent, TaskTraceState, PartState } from '../../kernel/lib/types/task-state'
-import type { TaskStatus, StepStatus } from '../../kernel/enums'
 import { buildTraceEvent, reduceTraceEvents } from '../../kernel/lib/task-trace'
-import { parseBlueprintYaml, type ParsedBlueprint } from '../../kernel/lib/blueprint-parser'
+import type { PartState, TaskTraceState, TraceEvent } from '../../kernel/lib/types/task-state'
 
 function appendEventToFile(tracePath: string, event: TraceEvent): void {
-  const line = JSON.stringify(event) + '\n'
+  const line = `${JSON.stringify(event)}\n`
   appendFileSync(tracePath, line, 'utf-8')
 }
 

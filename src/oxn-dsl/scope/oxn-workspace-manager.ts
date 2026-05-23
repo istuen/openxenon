@@ -9,20 +9,20 @@
  * 同时适配现有 YAML 资产体系，为未来的 .oxn 文件体系预留接口。
  */
 import { existsSync, readdirSync, readFileSync } from 'fs'
+import { homedir } from 'os'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { homedir } from 'os'
 
 import { getBuiltinRegistry, type OxnBuiltinRegistry } from './oxn-builtin-registry'
 import type {
-  OxnScope,
+  BuiltinAssetEntry,
+  IOxnWorkspaceManager,
   OxnAssetType,
   OxnReference,
+  OxnScope,
   ResolvedOxnAsset,
-  IOxnWorkspaceManager,
-  BuiltinAssetEntry,
 } from './oxn-scope'
-import { parseOxnReference, getScopeAssetDir } from './oxn-scope'
+import { getScopeAssetDir, parseOxnReference } from './oxn-scope'
 
 // ========================
 // 配置

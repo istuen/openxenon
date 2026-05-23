@@ -1,7 +1,7 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, statSync } from './filesystem'
 import { join } from 'path'
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): FrozenBlueprint type + computeContentHash are pure; move to shared or accept
 import { computeContentHash, type FrozenBlueprint } from '../kernel/schemas/frozen-schema'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from './filesystem'
 import { BOUNDARY_DIR } from './paths'
 
 export function readCacheManifest(projectBoundary?: string): Record<string, Record<string, string>> {

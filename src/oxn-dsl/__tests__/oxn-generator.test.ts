@@ -1,35 +1,30 @@
-import { describe, test, expect } from 'bun:test'
-import {
-  convertProbeDeclaration,
-  convertPartDeclaration,
-  convertBlueprintDeclaration,
-  convertTaskDeclaration,
-  generateOxnAssembly,
-  categorizeEntities,
-  type CategorizedEntities,
-} from '../generator/oxn-generator'
+import { describe, expect, test } from 'bun:test'
+import { validateOxnAssemblyIR } from '../../kernel/schemas/oxn-assembly.schema'
 
 import type {
-  OXNDocument,
-  ProbeDeclaration,
-  PartDeclaration,
   BlueprintDeclaration,
-  TaskDeclaration,
-  PropDeclaration,
-  PartProbeDeclaration,
-  ExecutionRef,
-  ParamsBlock,
-  ParamPair,
-  StageDeclaration,
-  ExpectationDeclaration,
-  RuleDeclaration,
   Description,
-  MethodDeclaration,
-  MethodIO,
+  ExecutionRef,
+  ExpectationDeclaration,
   OutputField,
+  OXNDocument,
+  ParamPair,
+  ParamsBlock,
+  PartDeclaration,
+  PartProbeDeclaration,
+  ProbeDeclaration,
+  PropDeclaration,
+  RuleDeclaration,
+  TaskDeclaration,
 } from '../generated/ast'
-
-import { validateOxnAssemblyIR } from '../../kernel/schemas/oxn-assembly.schema'
+import {
+  categorizeEntities,
+  convertBlueprintDeclaration,
+  convertPartDeclaration,
+  convertProbeDeclaration,
+  convertTaskDeclaration,
+  generateOxnAssembly,
+} from '../generator/oxn-generator'
 
 // ========================
 // Mock AST factories
@@ -177,15 +172,26 @@ describe('convertBlueprintDeclaration', () => {
       version: 1,
       descriptions: [],
       props: [mProp('env', 'enum("dev", "staging", "prod")', false, 'dev'), mProp('coverage', 'number', false, 80)],
-      parts: [{
-        $type: 'PartInBlueprint', $containerProperty: '', $containerIndex: 0,
-        name: 'jest-runner', ref: '@prj/parts/jest-runner', propBindings: [],
-        deps: [],
-      }],
-      partSlots: [{
-        $type: 'PartSlotDeclaration', $containerProperty: '', $containerIndex: 0,
-        name: 'lint', deps: ['jest-runner'],
-      }],
+      parts: [
+        {
+          $type: 'PartInBlueprint',
+          $containerProperty: '',
+          $containerIndex: 0,
+          name: 'jest-runner',
+          ref: '@prj/parts/jest-runner',
+          propBindings: [],
+          deps: [],
+        },
+      ],
+      partSlots: [
+        {
+          $type: 'PartSlotDeclaration',
+          $containerProperty: '',
+          $containerIndex: 0,
+          name: 'lint',
+          deps: ['jest-runner'],
+        },
+      ],
       expectations: [
         {
           $type: 'ExpectationDeclaration',
@@ -271,8 +277,11 @@ describe('convertTaskDeclaration', () => {
       use: '@prj/blueprint/feature-pipeline',
       slotBindings: [
         {
-          $type: 'SlotBinding', $containerProperty: '', $containerIndex: 0,
-          slot: 'tester', ref: '@glo/parts/jest-runner',
+          $type: 'SlotBinding',
+          $containerProperty: '',
+          $containerIndex: 0,
+          slot: 'tester',
+          ref: '@glo/parts/jest-runner',
           props: [{ $type: 'SlotPropBinding', $containerProperty: '', $containerIndex: 0, name: 'env', value: 'prod' }],
         },
       ],
@@ -452,7 +461,7 @@ describe('Edge Cases', () => {
     expect(() => validateOxnAssemblyIR(result)).not.toThrow()
   })
 
-// 抽象零件测试 — removed in v3.0
+  // 抽象零件测试 — removed in v3.0
 
   test('PartProbe 无 ref 和 params', () => {
     const part: PartDeclaration = {

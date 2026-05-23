@@ -1,11 +1,11 @@
-import { describe, test, expect } from 'bun:test'
-import { existsSync, unlinkSync, rmdirSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { describe, expect, test } from 'bun:test'
+import { existsSync, mkdirSync, readFileSync, rmdirSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
 
 // ========================
 // Task 2.1: Asset Loader
 // ========================
-import { OxnAssetLoader, createAssetLoader } from '../loader/oxn-loader'
+import { createAssetLoader } from '../loader/oxn-loader'
 
 describe('OxnAssetLoader (Task 2.1)', () => {
   test('创建加载器并加载内置探针', () => {
@@ -37,11 +37,11 @@ describe('OxnAssetLoader (Task 2.1)', () => {
   })
 })
 
+import type { OxnAssemblyBundle } from '../../kernel/schemas/oxn-assembly.schema'
 // ========================
 // Task 2.2: Bundle Flattener
 // ========================
 import { BundleFlattener, flattenBundle } from '../flattener/bundle-flattener'
-import type { OxnAssemblyBundle } from '../../kernel/schemas/oxn-assembly.schema'
 
 describe('BundleFlattener (Task 2.2)', () => {
   function makeBundle(): OxnAssemblyBundle {
@@ -91,7 +91,7 @@ describe('BundleFlattener (Task 2.2)', () => {
 // ========================
 // Task 2.3: Bundle Compiler
 // ========================
-import { BundleCompiler, compileBundle } from '../compiler/bundle-compiler'
+import { compileBundle } from '../compiler/bundle-compiler'
 
 describe('BundleCompiler (Task 2.3)', () => {
   const tmpDir = '/tmp/oxn-compile-test'

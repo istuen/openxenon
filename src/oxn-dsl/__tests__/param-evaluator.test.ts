@@ -1,23 +1,30 @@
-import { describe, test, expect } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
+import type { OxnAssemblyPart, OxnAssemblyProp } from '../../kernel/schemas/oxn-assembly.schema'
 import {
+  collectAllErrors,
+  evaluateAllParts,
+  evaluatePartParams,
+  formatValidationErrors,
+  resolveProbeParams,
+  resolveTemplateString,
+  validateAbstractParamFields,
   validateParamCoverage,
   validateTypeConsistency,
-  validateAbstractParamFields,
-  resolveTemplateString,
-  resolveProbeParams,
-  evaluatePartParams,
-  evaluateAllParts,
-  collectAllErrors,
-  formatValidationErrors,
-  type ParamEvalResult,
 } from '../evaluator/param-evaluator'
-import {
-  type OxnAssemblyPart,
-  type OxnAssemblyProp,
-} from '../../kernel/schemas/oxn-assembly.schema'
 
-function createConcretePart(params: { name: string; props?: OxnAssemblyProp[]; probes?: OxnAssemblyPart['probes']; execution?: string[] }): OxnAssemblyPart {
-  return { name: params.name, description: undefined, props: params.props || [], probes: params.probes || [], execution: params.execution || [] }
+function createConcretePart(params: {
+  name: string
+  props?: OxnAssemblyProp[]
+  probes?: OxnAssemblyPart['probes']
+  execution?: string[]
+}): OxnAssemblyPart {
+  return {
+    name: params.name,
+    description: undefined,
+    props: params.props || [],
+    probes: params.probes || [],
+    execution: params.execution || [],
+  }
 }
 
 // ========================
@@ -221,8 +228,8 @@ describe('evaluateAllParts', () => {
 
     const results = evaluateAllParts(parts, { env: 'prod' })
     expect(results.size).toBe(2)
-    expect(results.get('build')!.valid).toBe(true)
-    expect(results.get('test')!.valid).toBe(true)
+    expect(results.get('build')?.valid).toBe(true)
+    expect(results.get('test')?.valid).toBe(true)
   })
 
   test('collectAllErrors 聚合错误', () => {

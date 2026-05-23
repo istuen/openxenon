@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty'
-import { readdirSync, existsSync, unlinkSync, cpSync } from 'fs'
-import { join, basename, dirname } from 'path'
-import { type AssetType, type AssetState } from '../arsenals/paths'
-import { getProjectBoundaryPath } from '../kernel'
+import { cpSync, existsSync, readdirSync, unlinkSync } from 'fs'
+import { basename, dirname, join } from 'path'
+import type { AssetState, AssetType } from '../arsenals/paths'
 import { GLOBAL_ARSENALS_ROOT } from '../infra/paths'
+import { getProjectBoundaryPath } from '../kernel'
 
 interface MigrationResult {
   name: string
@@ -34,7 +34,7 @@ function scanOldStructureAssets(
           assets.push({
             path: join(dirPath, file),
             type,
-            name: basename(file, '.' + file.split('.').pop()),
+            name: basename(file, `.${file.split('.').pop()}`),
             state,
           })
         }

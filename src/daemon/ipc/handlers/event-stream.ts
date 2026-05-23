@@ -1,6 +1,6 @@
-import { registerRoute } from '../router'
-import { hallEmitter, type HallEvent } from '../../hall'
+import { type HallEvent, hallEmitter } from '../../hall'
 import { daemonLogger } from '../../logger'
+import { registerRoute } from '../router'
 
 function formatSSE(event: HallEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`

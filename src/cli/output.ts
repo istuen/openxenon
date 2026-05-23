@@ -10,10 +10,10 @@ export interface OutputOptions {
 }
 
 function detectFormat(args: Record<string, unknown>): OutputFormat {
-  if (args['--json'] || args['json']) return 'json'
-  if (args['--yaml'] || args['yaml']) return 'yaml'
-  if (args['--html'] || args['html']) return 'html'
-  if (args['--md'] || args['md']) return 'md'
+  if (args['--json'] || args.json) return 'json'
+  if (args['--yaml'] || args.yaml) return 'yaml'
+  if (args['--html'] || args.html) return 'html'
+  if (args['--md'] || args.md) return 'md'
   return 'human'
 }
 
@@ -37,7 +37,6 @@ export function outputSuccess(data: unknown, format: OutputFormat = 'human'): vo
       console.log(JSON.stringify({ ok: true, data }, null, 2))
       console.log('```')
       break
-    case 'human':
     default:
       if (typeof data === 'object' && data !== null) {
         console.log(JSON.stringify({ ok: true, data }, null, 2))
@@ -77,7 +76,6 @@ export function outputError(
       console.log(JSON.stringify(errorObj, null, 2))
       console.log('```')
       break
-    case 'human':
     default:
       console.log(JSON.stringify(errorObj, null, 2))
   }

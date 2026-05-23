@@ -6,7 +6,7 @@
  *
  * Phase 1 先 Mock 内置数据，Phase 2 改由 .oxn 源文件加载。
  */
-import type { OxnAssetType, BuiltinAssetEntry, IBuiltinRegistry } from './oxn-scope'
+import type { BuiltinAssetEntry, IBuiltinRegistry, OxnAssetType } from './oxn-scope'
 
 // ========================
 // 内置探针定义

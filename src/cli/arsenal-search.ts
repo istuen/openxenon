@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
-import { sendToDaemon } from './socket-client'
 import { isDaemonRunning } from '../infra/daemon-probe'
 import { DAEMON_SOCK_PATH } from '../infra/global'
-import { OxnErrorCode, ErrorCategory } from '../kernel/enums'
+import { ErrorCategory, OxnErrorCode } from '../kernel/enums'
+import { sendToDaemon } from './socket-client'
 
 export default defineCommand({
   meta: {
@@ -70,7 +70,7 @@ export default defineCommand({
       const name = match.name.padEnd(12)
       const type = match.type.padEnd(9)
       const tags = JSON.stringify(match.semantics.tags).padEnd(18)
-      const useWhen = match.semantics.useWhen ? match.semantics.useWhen.substring(0, 30) + '...' : ''
+      const useWhen = match.semantics.useWhen ? `${match.semantics.useWhen.substring(0, 30)}...` : ''
       console.log(`${name} ${type} ${tags} ${useWhen}`)
     }
   },

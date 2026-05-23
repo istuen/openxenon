@@ -3,11 +3,13 @@
  * DO NOT EDIT MANUALLY!
  ******************************************************************************/
 
-import type { Grammar } from 'langium';
-import { loadGrammarFromJson } from 'langium';
+import type { Grammar } from 'langium'
+import { loadGrammarFromJson } from 'langium'
 
-let loadedOXNGrammar: Grammar | undefined;
-export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar = loadGrammarFromJson(`{
+let loadedOXNGrammar: Grammar | undefined
+export const OXNGrammar = (): Grammar =>
+  loadedOXNGrammar ??
+  (loadedOXNGrammar = loadGrammarFromJson(`{
   "$type": "Grammar",
   "isDeclared": true,
   "name": "OXN",
@@ -1844,24 +1846,8 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
                 "value": "["
               },
               {
-                "$type": "Assignment",
-                "feature": "deps",
-                "operator": "+=",
-                "terminal": {
-                  "$type": "RuleCall",
-                  "rule": {
-                    "$ref": "#/rules@42"
-                  },
-                  "arguments": []
-                }
-              },
-              {
                 "$type": "Group",
                 "elements": [
-                  {
-                    "$type": "Keyword",
-                    "value": ","
-                  },
                   {
                     "$type": "Assignment",
                     "feature": "deps",
@@ -1873,13 +1859,35 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
                       },
                       "arguments": []
                     }
+                  },
+                  {
+                    "$type": "Group",
+                    "elements": [
+                      {
+                        "$type": "Keyword",
+                        "value": ","
+                      },
+                      {
+                        "$type": "Assignment",
+                        "feature": "deps",
+                        "operator": "+=",
+                        "terminal": {
+                          "$type": "RuleCall",
+                          "rule": {
+                            "$ref": "#/rules@42"
+                          },
+                          "arguments": []
+                        }
+                      }
+                    ],
+                    "cardinality": "*"
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": ",",
+                    "cardinality": "?"
                   }
                 ],
-                "cardinality": "*"
-              },
-              {
-                "$type": "Keyword",
-                "value": ",",
                 "cardinality": "?"
               },
               {
@@ -2529,4 +2537,4 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
   "imports": [],
   "interfaces": [],
   "types": []
-}`));
+}`))

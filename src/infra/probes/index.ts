@@ -1,8 +1,8 @@
-import { executeFsExists } from './fs-exists'
-import { executeFsNotExists } from './fs-not-exists'
-import { executeFsMatch, type FsMatchParams } from './fs-match'
-import { executeShellExec, type ShellExecResult } from './shell-exec'
 import type { ProbeContext } from './fs-exists'
+import { executeFsExists } from './fs-exists'
+import { executeFsMatch, type FsMatchParams } from './fs-match'
+import { executeFsNotExists } from './fs-not-exists'
+import { executeShellExec, type ShellExecResult } from './shell-exec'
 
 export type ProbeHandler = (params: Record<string, unknown>, context: ProbeContext) => Promise<unknown>
 
@@ -151,5 +151,5 @@ export function registerProbeHandler(type: string, handler: ProbeHandler): void 
   probeRegistry.register(type, handler)
 }
 
-export { executeFsExists, executeFsNotExists, executeFsMatch, executeShellExec }
 export type { ProbeContext, ShellExecResult }
+export { executeFsExists, executeFsMatch, executeFsNotExists, executeShellExec }

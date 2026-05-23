@@ -1,9 +1,9 @@
+import { getTaskDirectory } from '../../../kernel/lib/task-dir'
+import { createPartState } from '../../../kernel/lib/task-trace'
+import { readBlueprint, readTaskTrace, writePartComplete, writePartStart } from '../../trace/writer'
+import { badRequest, notFound } from '../errors'
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
-import { badRequest, notFound } from '../errors'
-import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace, writePartStart, writePartComplete, readBlueprint } from '../../trace/writer'
-import { createPartState } from '../../../kernel/lib/task-trace'
 
 async function handleStepStart(request: Request, projectPath: string): Promise<Response> {
   try {
@@ -30,13 +30,13 @@ async function handleStepStart(request: Request, projectPath: string): Promise<R
       return notFound('Blueprint not found')
     }
 
-    let part = parsed.parts.find((s) => s.id === body.stepId || s.name === body.stepName)
+    const part = parsed.parts.find((s) => s.id === body.stepId || s.name === body.stepName)
 
     if (!part) {
       return notFound('Part not found')
     }
 
-    let partState = trace.parts.get(part!.id)
+    let partState = trace.parts.get(part?.id)
 
     if (!partState) {
       writePartStart(taskDir, taskId, part.id, part.name)

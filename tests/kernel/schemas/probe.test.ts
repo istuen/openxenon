@@ -1,8 +1,5 @@
-import { describe, it, expect } from 'bun:test'
-import {
-  ProbeDefinitionSchema,
-  ProbeInvocationSchema
-} from '../../../src/kernel/schemas/probe'
+import { describe, expect, it } from 'bun:test'
+import { ProbeDefinitionSchema, ProbeInvocationSchema } from '../../../src/kernel/schemas/probe'
 
 describe('ProbeDefinitionSchema', () => {
   describe('合法 Definition 通过校验', () => {
@@ -10,7 +7,7 @@ describe('ProbeDefinitionSchema', () => {
       const input = {
         type: 'fs_exists',
         description: '检查文件存在',
-        props: [{ name: 'path', type: 'string', description: '文件路径' }]
+        props: [{ name: 'path', type: 'string', description: '文件路径' }],
       }
       expect(() => ProbeDefinitionSchema.parse(input)).not.toThrow()
     })
@@ -21,8 +18,8 @@ describe('ProbeDefinitionSchema', () => {
         description: '检查文件内容',
         props: [
           { name: 'pattern', type: 'string', description: '文件路径' },
-          { name: 'contains', type: 'string', description: '正则模式' }
-        ]
+          { name: 'contains', type: 'string', description: '正则模式' },
+        ],
       }
       expect(() => ProbeDefinitionSchema.parse(input)).not.toThrow()
     })
@@ -31,7 +28,7 @@ describe('ProbeDefinitionSchema', () => {
       const input = {
         type: 'shell_exec',
         description: '检查命令成功',
-        props: [{ name: 'command', type: 'string', description: '命令' }]
+        props: [{ name: 'command', type: 'string', description: '命令' }],
       }
       expect(() => ProbeDefinitionSchema.parse(input)).not.toThrow()
     })
@@ -41,7 +38,7 @@ describe('ProbeDefinitionSchema', () => {
     it('缺少 description 时抛出异常', () => {
       const input = {
         type: 'fs_exists',
-        props: [{ name: 'path', type: 'string', description: '路径' }]
+        props: [{ name: 'path', type: 'string', description: '路径' }],
       }
       expect(() => ProbeDefinitionSchema.parse(input)).toThrow()
     })
@@ -50,7 +47,7 @@ describe('ProbeDefinitionSchema', () => {
       const input = {
         type: 'fs_exists',
         description: '检查',
-        props: [{ name: 'path', type: 'string' }]
+        props: [{ name: 'path', type: 'string' }],
       }
       expect(() => ProbeDefinitionSchema.parse(input)).toThrow()
     })
@@ -58,7 +55,7 @@ describe('ProbeDefinitionSchema', () => {
     it('使用 params 而非 props 时抛出异常（拒绝 Invocation 格式）', () => {
       const input = {
         type: 'fs_exists',
-        params: { path: '/foo' }
+        params: { path: '/foo' },
       }
       expect(() => ProbeDefinitionSchema.parse(input)).toThrow()
     })
@@ -67,7 +64,7 @@ describe('ProbeDefinitionSchema', () => {
       const input = {
         type: 'unknown_type',
         description: '测试',
-        props: []
+        props: [],
       }
       expect(() => ProbeDefinitionSchema.parse(input)).toThrow()
     })
@@ -79,7 +76,7 @@ describe('ProbeInvocationSchema', () => {
     it('合法 fs_exists Invocation 通过校验', () => {
       const input = {
         type: 'fs_exists',
-        params: { pattern: '/foo/bar' }
+        params: { pattern: '/foo/bar' },
       }
       expect(() => ProbeInvocationSchema.parse(input)).not.toThrow()
     })
@@ -87,7 +84,7 @@ describe('ProbeInvocationSchema', () => {
     it('合法 fs_match Invocation 通过校验', () => {
       const input = {
         type: 'fs_match',
-        params: { pattern: '/foo', contains: '*.js' }
+        params: { pattern: '/foo', contains: '*.js' },
       }
       expect(() => ProbeInvocationSchema.parse(input)).not.toThrow()
     })
@@ -95,7 +92,7 @@ describe('ProbeInvocationSchema', () => {
     it('合法 shell_exec Invocation 通过校验', () => {
       const input = {
         type: 'shell_exec',
-        params: { command: 'npm test' }
+        params: { command: 'npm test' },
       }
       expect(() => ProbeInvocationSchema.parse(input)).not.toThrow()
     })
@@ -106,7 +103,7 @@ describe('ProbeInvocationSchema', () => {
       const input = {
         type: 'fs_exists',
         description: '检查',
-        props: [{ name: 'path', type: 'string', description: '路径' }]
+        props: [{ name: 'path', type: 'string', description: '路径' }],
       }
       expect(() => ProbeInvocationSchema.parse(input)).toThrow()
     })
@@ -114,7 +111,7 @@ describe('ProbeInvocationSchema', () => {
     it('缺少 params.path 时抛出异常', () => {
       const input = {
         type: 'fs_exists',
-        params: {}
+        params: {},
       }
       expect(() => ProbeInvocationSchema.parse(input)).toThrow()
     })
@@ -125,7 +122,7 @@ describe('Definition 和 Invocation 格式互斥', () => {
   it('DefinitionSchema 拒绝 Invocation 格式', () => {
     const invocationInput = {
       type: 'fs_exists',
-      params: { path: '/foo/bar' }
+      params: { path: '/foo/bar' },
     }
     expect(() => ProbeDefinitionSchema.parse(invocationInput)).toThrow()
   })
@@ -134,7 +131,7 @@ describe('Definition 和 Invocation 格式互斥', () => {
     const definitionInput = {
       type: 'fs_exists',
       description: '检查文件存在',
-      props: [{ name: 'path', type: 'string', description: '文件路径' }]
+      props: [{ name: 'path', type: 'string', description: '文件路径' }],
     }
     expect(() => ProbeInvocationSchema.parse(definitionInput)).toThrow()
   })

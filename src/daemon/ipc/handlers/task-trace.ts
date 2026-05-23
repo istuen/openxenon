@@ -1,8 +1,8 @@
-import { registerRoute } from '../router'
-import { getQueryParams } from '../validation'
-import { notFound } from '../errors'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
 import { readTaskTrace } from '../../trace/writer'
+import { notFound } from '../errors'
+import { registerRoute } from '../router'
+import { getQueryParams } from '../validation'
 
 async function handleTaskTrace(request: Request, projectPath: string): Promise<Response> {
   try {

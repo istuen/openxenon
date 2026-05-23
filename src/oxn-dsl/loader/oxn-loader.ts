@@ -6,14 +6,11 @@
  */
 import { existsSync, readFileSync } from 'fs'
 import { parse as parseYaml } from 'yaml'
+import type { OxnAssemblyIR, OxnAssemblyTaskIR } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssetType, OxnScope, ResolvedOxnAsset } from '../scope/oxn-scope'
 import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
-import type { OxnScope, OxnAssetType, ResolvedOxnAsset } from '../scope/oxn-scope'
-import type {
-  OxnAssemblyIR,
-  OxnAssemblyTaskIR,
-} from '../../kernel/schemas/oxn-assembly.schema'
 
-export type { OxnScope, OxnAssetType }
+export type { OxnAssetType, OxnScope }
 
 export interface OxnLoadResult {
   /** 解析后的资产列表 */

@@ -1,7 +1,7 @@
 import { createServer, type Socket } from 'net'
-import { handleRequest } from './router'
-import { daemonLogger } from '../logger'
 import { existsSync, unlinkSync } from '../../infra/filesystem'
+import { daemonLogger } from '../logger'
+import { handleRequest } from './router'
 
 import './handlers'
 
@@ -139,7 +139,7 @@ function createMockRequest(method: string, path: string, body?: unknown): Reques
 
 function writeSocketResponse(socket: Socket, status: number, body: unknown): void {
   if (status >= 200 && status < 300) {
-    socket.write(JSON.stringify({ ok: true, data: body }) + '\n')
+    socket.write(`${JSON.stringify({ ok: true, data: body })}\n`)
   } else {
     const err = body as {
       error?: string
@@ -150,7 +150,7 @@ function writeSocketResponse(socket: Socket, status: number, body: unknown): voi
       suggestion?: string
     }
     socket.write(
-      JSON.stringify({
+      `${JSON.stringify({
         ok: false,
         error: {
           code: err.code || 'OXN_INTERNAL_ERROR',
@@ -159,7 +159,7 @@ function writeSocketResponse(socket: Socket, status: number, body: unknown): voi
           recoverable: err.recoverable ?? false,
           suggestion: err.suggestion || '',
         },
-      }) + '\n',
+      })}\n`,
     )
   }
 }

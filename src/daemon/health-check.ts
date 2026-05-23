@@ -1,6 +1,6 @@
 import { createConnection } from 'net'
-import { daemonLogger } from './logger'
 import { existsSync } from '../infra/filesystem'
+import { daemonLogger } from './logger'
 
 export interface HealthCheckResult {
   success: boolean
@@ -86,11 +86,10 @@ export async function waitForHealth(socketPath: string, timeout: number = 10000)
           }
         })
 
-        const request =
-          JSON.stringify({
-            method: 'GET',
-            path: '/api/v1/health',
-          }) + '\n'
+        const request = `${JSON.stringify({
+          method: 'GET',
+          path: '/api/v1/health',
+        })}\n`
 
         socket.write(request)
       } catch (error) {

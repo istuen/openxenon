@@ -1,5 +1,5 @@
-import type { LangiumSharedCoreServices, LangiumCoreServices } from 'langium'
-import { inject, createDefaultSharedCoreModule, createDefaultCoreModule } from 'langium'
+import type { LangiumCoreServices, LangiumSharedCoreServices } from 'langium'
+import { createDefaultCoreModule, createDefaultSharedCoreModule, inject } from 'langium'
 import { NodeFileSystem } from 'langium/node'
 import { OXNDSLGeneratedSharedModule, OXNGeneratedModule } from '../generated/module.js'
 

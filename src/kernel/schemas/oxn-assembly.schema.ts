@@ -59,6 +59,7 @@ export const OxnAssemblyPartSchema = z.object({
   probes: z.array(OxnAssemblyPartProbeSchema).default([]),
   execution: z.array(z.string()).default([]),
   deps: z.array(z.string()).default([]),
+  ref: z.string().optional(),
 })
 export type OxnAssemblyPart = z.infer<typeof OxnAssemblyPartSchema>
 

@@ -3,17 +3,17 @@
  * 触碰文件系统，是唯一的 I/O 层
  */
 
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { glob } from 'glob'
-import { readFile, mkdir, writeFile, readdir } from 'node:fs/promises'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move shared types out of kernel, infra should not depend on kernel
 import type {
-  ExplorationContext,
-  ExplorationAsset,
-  ProjectDir,
-  ProbeInfo,
   BlueprintProbeRef,
+  ExplorationAsset,
+  ExplorationContext,
+  ProbeInfo,
+  ProjectDir,
   TraceSummary,
 } from '../../kernel/explore/types'
 
@@ -102,7 +102,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
         coverages.push({
           type: (parsed.type as string) || '',
           pattern:
-            ((parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value) || '',
+            (parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value || '',
           source: 'canonical',
         })
       } else if (stat.includes('draft.yaml')) {
@@ -111,7 +111,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
         coverages.push({
           type: (parsed.type as string) || '',
           pattern:
-            ((parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value) || '',
+            (parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value || '',
           source: 'draft',
         })
       }
@@ -197,9 +197,9 @@ export async function loadExplorationAssets(projectRoot: string, names?: string[
         assets.push({
           name: (parsed.name as string) || '',
           description: (parsed.description as string) || '',
-          scope: ((parsed.scope as string[]) || []),
+          scope: (parsed.scope as string[]) || [],
           output: (parsed.output as string) || '',
-          rules: ((parsed.rules as ExplorationAsset['rules']) || []),
+          rules: (parsed.rules as ExplorationAsset['rules']) || [],
         })
       } catch {
         // 资产不存在

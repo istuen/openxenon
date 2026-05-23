@@ -1,13 +1,18 @@
 import { defineCommand } from 'citty'
-import { promoteStandard, loadStandardByName, generateCompiledArtifact } from '../infra/loader'
-import { ensureArsenalsDirectories } from '../arsenals/init'
-import { type AssetType } from '../arsenals/paths'
-import { output, outputError, getFormatFromArgs } from './output'
-import { resolveBoundary } from '../infra/paths'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { ensureArsenalsDirectories } from '../arsenals/init'
+import type { AssetType } from '../arsenals/paths'
+import {
+  generateCompiledArtifact,
+  loadStandardByName,
+  preloadCompileDependencies,
+  promoteStandard,
+} from '../infra/loader'
+import { resolveBoundary } from '../infra/paths'
 import { compileAssembly } from '../kernel/compiler/blueprint-compiler'
-import { preloadCompileDependencies } from '../infra/loader'
+import { getFormatFromArgs, output, outputError } from './output'
+
 const TYPE_ALIASES: Record<string, AssetType> = {
   blueprint: 'blueprints',
   blueprints: 'blueprints',

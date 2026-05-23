@@ -24,7 +24,7 @@ export function isDaemonRunning(): DaemonProcessInfo {
     const pidContent = readFileSync(DAEMON_PID_PATH, 'utf-8').trim()
     const pid = parseInt(pidContent, 10)
 
-    if (isNaN(pid) || pid <= 0) {
+    if (Number.isNaN(pid) || pid <= 0) {
       return { pid: 0, isRunning: false }
     }
 

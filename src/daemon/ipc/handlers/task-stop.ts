@@ -1,11 +1,11 @@
-import { registerRoute } from '../router'
-import { parseJSONBody, validateRequiredFields } from '../validation'
-import { badRequest, notFound } from '../errors'
+import { existsSync } from '../../../infra/filesystem'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace, writeTaskStatus } from '../../trace/writer'
 import { processManager } from '../../process-manager'
 import { radarClock } from '../../radar/clock'
-import { existsSync } from '../../../infra/filesystem'
+import { readTaskTrace, writeTaskStatus } from '../../trace/writer'
+import { badRequest, notFound } from '../errors'
+import { registerRoute } from '../router'
+import { parseJSONBody, validateRequiredFields } from '../validation'
 
 async function handleTaskStop(request: Request, projectPath: string): Promise<Response> {
   try {

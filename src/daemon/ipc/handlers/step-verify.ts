@@ -1,8 +1,8 @@
-import { registerRoute } from '../router'
-import { parseJSONBody } from '../validation'
-import { badRequest } from '../errors'
 import { taskCircuitBreaker } from '../../circuit-breaker'
 import { recoveryManager } from '../../recovery'
+import { badRequest } from '../errors'
+import { registerRoute } from '../router'
+import { parseJSONBody } from '../validation'
 
 async function handleStepVerify(request: Request, _projectPath: string): Promise<Response> {
   try {

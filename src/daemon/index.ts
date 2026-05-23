@@ -1,13 +1,13 @@
-export { log, createLogger, daemonLogger, type Logger, type LogLevel } from './logger'
+export { createLogger, daemonLogger, type Logger, type LogLevel, log } from './logger'
 export {
+  type DaemonProcessInfo,
+  isDaemonRunning,
+  type StartDaemonResult,
   startDaemon,
   startDaemonWithHealthCheck,
   stopDaemon,
-  isDaemonRunning,
-  type DaemonProcessInfo,
-  type StartDaemonResult,
 } from './process'
-export { getDaemonStatus, type DaemonStatus } from './status'
-export { startServer, stopServer, isServerRunning, getServer, type ServerConfig } from './server'
+export { getServer, isServerRunning, type ServerConfig, startServer, stopServer } from './server'
+export { type DaemonStatus, getDaemonStatus } from './status'
 
 import './ipc/handlers'

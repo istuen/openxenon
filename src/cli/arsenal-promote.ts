@@ -1,18 +1,18 @@
 import { defineCommand } from 'citty'
-import {
-  promoteStandard,
-  arsenalLoadStandardByName as loadStandardByName,
-  generateCompiledArtifact,
-} from '../arsenals/loader'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
+import * as yaml from 'yaml'
 import { ensureArsenalsDirectories } from '../arsenals/init'
-import { type AssetType } from '../arsenals/paths'
-import { output, outputError, getFormatFromArgs } from './output'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
-import { join, dirname } from 'path'
+import {
+  generateCompiledArtifact,
+  arsenalLoadStandardByName as loadStandardByName,
+  promoteStandard,
+} from '../arsenals/loader'
+import type { AssetType } from '../arsenals/paths'
+import { preloadCompileDependencies } from '../infra/loader'
 import { getProjectBoundaryPath } from '../kernel'
 import { compileAssembly } from '../kernel/compiler/blueprint-compiler'
-import { preloadCompileDependencies } from '../infra/loader'
-import * as yaml from 'yaml'
+import { getFormatFromArgs, output, outputError } from './output'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
   blueprint: 'blueprints',
@@ -145,7 +145,7 @@ export default defineCommand({
           if (!existsSync(assemblyDir)) mkdirSync(assemblyDir, { recursive: true })
           writeFileSync(assemblyPath, yaml.stringify(assembly), 'utf-8')
         }
-      } catch (err) {
+      } catch (_err) {
         // version increment and compiled generation are best-effort
       }
 

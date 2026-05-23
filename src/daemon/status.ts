@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from '../infra/filesystem'
-import { DAEMON_LOG_PATH, CORE_DAEMON_CONFIG_PATH } from '../infra/global'
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from '../infra/filesystem'
+import { CORE_DAEMON_CONFIG_PATH, DAEMON_LOG_PATH } from '../infra/global'
 import { isDaemonRunning } from './process'
 
 export interface DaemonStatus {

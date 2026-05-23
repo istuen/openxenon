@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
-import { ProcessManager } from '../../src/daemon/process-manager'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { spawn } from 'child_process'
+import { ProcessManager } from '../../src/daemon/process-manager'
 
 describe('ProcessManager', () => {
   let processManager: ProcessManager
@@ -38,7 +38,7 @@ describe('ProcessManager', () => {
       const killed = processManager.kill('task-1', 'stage-1')
       expect(killed).toBe(true)
 
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       const retrieved = processManager.get('task-1', 'stage-1')
       expect(retrieved?.status).toBe('stopped')
@@ -83,7 +83,7 @@ describe('ProcessManager', () => {
       const marked = processManager.markTimeout('task-1', 'stage-1')
       expect(marked).toBe(true)
 
-      await new Promise(resolve => setTimeout(resolve, 200))
+      await new Promise((resolve) => setTimeout(resolve, 200))
 
       const proc = processManager.get('task-1', 'stage-1')
       expect(proc?.status).toMatch(/stopped|timeout/)

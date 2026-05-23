@@ -6,8 +6,8 @@
  *
  * 将沙箱源态的资产提升至全局 Arsenal 源态。
  */
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
-import { join, basename } from 'path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { basename, join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import type { OxnAssemblyIR } from '../kernel/schemas/oxn-assembly.schema'

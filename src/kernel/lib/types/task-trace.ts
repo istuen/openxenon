@@ -1,4 +1,4 @@
-import type { TaskStatus, StepStatus } from './core'
+import type { StepStatus, TaskStatus } from './core'
 
 export interface TaskTraceYaml {
   taskId: string

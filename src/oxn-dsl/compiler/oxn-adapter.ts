@@ -159,11 +159,11 @@ export function evaluateExpression(expr: string, props: Record<string, unknown>)
 
   const ternaryMatch = expr.match(/^(.+?)\s*\?\s*(.+?)\s*:\s*(.+?)$/)
   if (ternaryMatch) {
-    const condResult = evaluateExpression(ternaryMatch[1]!.trim(), props)
+    const condResult = evaluateExpression(ternaryMatch[1]?.trim() ?? '', props)
     if (condResult) {
-      return evaluateExpression(ternaryMatch[2]!.trim(), props)
+      return evaluateExpression(ternaryMatch[2]?.trim() ?? '', props)
     }
-    return evaluateExpression(ternaryMatch[3]!.trim(), props)
+    return evaluateExpression(ternaryMatch[3]?.trim() ?? '', props)
   }
 
   const propMatch = expr.match(/^prop\.(.+)$/)

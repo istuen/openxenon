@@ -7,12 +7,13 @@
  * - 允许修改 DAG、增删 Part
  * - expectation 依赖完整性校验（删除被依赖 Part 报错）
  */
-import { join, basename } from 'path'
+
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): I/O to Infra via injection; kernel should be pure
-import { existsSync, readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'fs'
-import type { OxnAssemblyIR, OxnAssemblyPart } from '../schemas/oxn-assembly.schema'
-import { validateDagTopology, type DagNode } from '../schemas/dag-validator'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { basename, join } from 'path'
 import { BOUNDARY_DIR } from '../constants'
+import { type DagNode, validateDagTopology } from '../schemas/dag-validator'
+import type { OxnAssemblyIR, OxnAssemblyPart } from '../schemas/oxn-assembly.schema'
 
 export interface SandboxConfig {
   taskId: string

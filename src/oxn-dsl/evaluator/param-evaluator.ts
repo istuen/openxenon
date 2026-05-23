@@ -12,7 +12,7 @@
  * 针对 Langium Scope Provider 的对照物：所有 Props 比对逻辑在此集中实现。
  */
 
-import type { OxnAssemblyProp, OxnAssemblyPart } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyPart, OxnAssemblyProp } from '../../kernel/schemas/oxn-assembly.schema'
 
 // ========================
 // 类型定义
@@ -68,10 +68,10 @@ function getOxnBaseType(typeStr: string): string {
   return typeStr
 }
 
-function getEnumValues(typeStr: string): string[] | null {
+function getEnumValues(typeStr: string): string[] | null | undefined {
   const match = typeStr.match(/^enum\((.+)\)$/)
   if (!match) return null
-  return match[1]!.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
+  return match[1]?.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
 }
 
 function typeIsCompatible(value: unknown, type: OxnAssemblyProp): { compatible: boolean; issue?: string } {

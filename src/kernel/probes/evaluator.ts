@@ -62,7 +62,7 @@ const probeStrategies: Record<string, ProbeStrategy> = {
     return {
       passed: matched,
       message: matched ? 'Pattern matched' : obs.error || 'Pattern did not match',
-      actual: matched ? true : false,
+      actual: !!matched,
       params,
       duration: Date.now() - start,
       failureMessage: matched ? undefined : obs.error,

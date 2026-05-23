@@ -9,32 +9,30 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs'
-import { join, dirname } from 'path'
+import type { LangiumDocument } from 'langium'
+import { DocumentState, URI } from 'langium'
+import { dirname, join } from 'path'
 import { parse as parseYaml } from 'yaml'
-
-import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, ASSEMBLY_JSON } from '../kernel/constants'
-import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
+import { ensureDirectory } from '../infra/filesystem'
 import { preloadCompileDependencies } from '../infra/loader'
-import { adaptOxnToFrozen } from '../oxn-dsl/compiler/oxn-adapter'
+import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
+import { ASSEMBLY_JSON, BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON } from '../kernel/constants'
+import type { Blueprint } from '../kernel/schemas/blueprint.schema'
+import { type DagNode, validateDagTopology } from '../kernel/schemas/dag-validator'
+import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
 import {
   type OxnAssemblyIR,
   type OxnAssemblyPart,
   type OxnAssemblySlotBinding,
   validateOxnAssemblyIR,
 } from '../kernel/schemas/oxn-assembly.schema'
-import { validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
-import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
-import type { Blueprint } from '../kernel/schemas/blueprint.schema'
-import { ensureDirectory } from '../infra/filesystem'
-
-import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
-import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
-import { URI, DocumentState } from 'langium'
+import { adaptOxnToFrozen } from '../oxn-dsl/compiler/oxn-adapter'
 import type { OXNDocument } from '../oxn-dsl/generated/ast.js'
-import type { LangiumDocument } from 'langium'
+import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
+import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
 
 function extractBlueprintAssembly(doc: LangiumDocument): OxnAssemblyIR | undefined {
-  if (!doc.parseResult || !doc.parseResult.value) return undefined
+  if (!doc.parseResult?.value) return undefined
   const bundle = generateOxnAssembly(doc.parseResult.value as OXNDocument)
   const blueprint = bundle.entities.find((e: { type: string }) => e.type === 'blueprint')
   if (!blueprint) return undefined
@@ -172,7 +170,8 @@ export function submitOxnPipeline(
     }
   }
 
-  // DAG 校验：以 slots + concreteParts 为拓扑节点，去重
+  // DAG 校验：仅当 blueprintParts 为内联声明时需要
+  // 带 ref 的 blueprintParts 是引用声明，不需要在校验中参与 DAG 拓扑
   const dagNodesMap = new Map<string, DagNode>()
   for (const s of assembly.slots) {
     dagNodesMap.set(s.name, { id: s.name, deps: (s as any).deps || [] })
@@ -182,15 +181,18 @@ export function submitOxnPipeline(
       dagNodesMap.set(p.name, { id: p.name, deps: (p as any).deps || [] })
     }
   }
+  // Only add blueprintParts without ref (inline declarations) to DAG
   for (const p of (assembly as any).blueprintParts || []) {
-    if (!dagNodesMap.has(p.name)) {
+    if (!dagNodesMap.has(p.name) && !p.ref) {
       dagNodesMap.set(p.name, { id: p.name, deps: (p as any).deps || [] })
     }
   }
   const dagNodes: DagNode[] = Array.from(dagNodesMap.values())
-  const dagResult = validateDagTopology(dagNodes)
-  if (!dagResult.valid) {
-    throw new Error(`OXN DAG 验证失败: ${dagResult.errors.join('; ')}`)
+  if (dagNodes.length > 0) {
+    const dagResult = validateDagTopology(dagNodes)
+    if (!dagResult.valid) {
+      throw new Error(`OXN DAG 验证失败: ${dagResult.errors.join('; ')}`)
+    }
   }
 
   // 适配器转换

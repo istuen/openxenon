@@ -1,12 +1,12 @@
-import { parse as parseYaml } from 'yaml'
-// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): pure functions to kernel, loadStandardByName via higher-order injection
-import { parseProbeNamespace, isValidProbeRef, isBareProbeRef, loadStandardByName } from '../../infra/loader'
-import { BUILTIN_PARTS } from '../../arsenals/builtin'
-import type { PartDefinition } from '../schemas/part-asset'
-import { createOxnServices, resetOxnServices } from '../../oxn-dsl/langium/oxn-services.js'
-import { generateOxnAssembly } from '../../oxn-dsl/generator/oxn-generator.js'
 import { URI } from 'langium'
+import { parse as parseYaml } from 'yaml'
+import { BUILTIN_PARTS } from '../../arsenals/builtin'
+// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): pure functions to kernel, loadStandardByName via higher-order injection
+import { isBareProbeRef, isValidProbeRef, loadStandardByName, parseProbeNamespace } from '../../infra/loader'
 import type { OXNDocument } from '../../oxn-dsl/generated/ast.js'
+import { generateOxnAssembly } from '../../oxn-dsl/generator/oxn-generator.js'
+import { createOxnServices, resetOxnServices } from '../../oxn-dsl/langium/oxn-services.js'
+import type { PartDefinition } from '../schemas/part-asset'
 
 export interface PartResolution {
   found: boolean
@@ -72,7 +72,7 @@ export function resolvePartRef(ref: string, projectBoundary: string): PartResolu
       try {
         const part = partData.path.endsWith('.oxn')
           ? parseOxnPartFromContent(partData.content, partData.path)
-          : parseYaml(partData.content) as PartDefinition
+          : (parseYaml(partData.content) as PartDefinition)
         return {
           found: true,
           part,
@@ -94,7 +94,7 @@ export function resolvePartRef(ref: string, projectBoundary: string): PartResolu
       try {
         const part = partData.path.endsWith('.oxn')
           ? parseOxnPartFromContent(partData.content, partData.path)
-          : parseYaml(partData.content) as PartDefinition
+          : (parseYaml(partData.content) as PartDefinition)
         return {
           found: true,
           part,

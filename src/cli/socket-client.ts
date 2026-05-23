@@ -68,7 +68,7 @@ export async function sendToDaemon(message: SocketMessage): Promise<unknown> {
       reject(err)
     })
 
-    sock.write(JSON.stringify(message) + '\n')
+    sock.write(`${JSON.stringify(message)}\n`)
   })
 }
 

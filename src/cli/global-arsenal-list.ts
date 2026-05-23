@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
-import { listStandards } from '../infra/loader'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetState } from '../arsenals/paths'
-import { output, outputError, getFormatFromArgs } from './output'
+import { listStandards } from '../infra/loader'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {

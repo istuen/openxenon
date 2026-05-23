@@ -1,10 +1,10 @@
+import { getProbeHandler, type ProbeContext, type ProbeResult } from '../../infra/probes'
+import { evaluateProbe, type ProbeDefinition, reduceProbeResults } from '../../kernel/probes/evaluator'
 import type { Blueprint, Part } from '../../kernel/schemas/blueprint.schema'
-import { getProbeHandler, type ProbeResult, type ProbeContext } from '../../infra/probes'
-import { evaluateProbe, reduceProbeResults, type ProbeDefinition } from '../../kernel/probes/evaluator'
-import { radarClock } from '../radar/clock'
-import { processManager } from '../process-manager'
 import { hallEmitter } from '../hall'
 import { daemonLogger } from '../logger'
+import { processManager } from '../process-manager'
+import { radarClock } from '../radar/clock'
 
 export interface ExecutorOptions {
   projectRoot: string

@@ -1,17 +1,17 @@
-import {
-  existsSync,
-  readFileSync,
-  appendFileSync,
-  writeFileSync,
-  renameSync,
-  unlinkSync,
-  statSync,
-  mkdirSync,
-  rmSync,
-  readdirSync,
-  watch,
-} from 'fs'
 import type { FSWatcher } from 'fs'
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+  watch,
+  writeFileSync,
+} from 'fs'
 import { dirname } from 'path'
 
 function ensureDir(filePath: string): void {
@@ -22,7 +22,7 @@ function ensureDir(filePath: string): void {
 }
 
 function atomicWrite(filePath: string, data: string): void {
-  const tmpPath = filePath + '.tmp'
+  const tmpPath = `${filePath}.tmp`
   ensureDir(filePath)
   writeFileSync(tmpPath, data, 'utf-8')
   if (process.platform === 'win32') {
@@ -30,7 +30,7 @@ function atomicWrite(filePath: string, data: string): void {
       if (existsSync(filePath)) {
         unlinkSync(filePath)
       }
-    } catch (error) {
+    } catch (_error) {
       // File might not exist or be locked - proceed with rename
     }
   }
@@ -127,9 +127,21 @@ export const fs = {
   },
 
   appendOnly(filePath: string, line: string): void {
-    appendFileSync(filePath, line + '\n', 'utf-8')
+    appendFileSync(filePath, `${line}\n`, 'utf-8')
   },
 }
 
-export { existsSync, readFileSync, writeFileSync, appendFileSync, renameSync, unlinkSync, statSync, mkdirSync, rmSync, readdirSync, watch }
 export type { FSWatcher }
+export {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+  watch,
+  writeFileSync,
+}

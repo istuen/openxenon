@@ -1,6 +1,6 @@
-import { registerRoute } from '../router'
-import { globalArsenalRegistry } from '../../registry'
 import { getProjectBoundaryPath } from '../../../kernel'
+import { globalArsenalRegistry } from '../../registry'
+import { registerRoute } from '../router'
 
 async function handleArsenalSearch(_request: Request, projectPath: string): Promise<Response> {
   const projectBoundary = getProjectBoundaryPath(projectPath || process.cwd())

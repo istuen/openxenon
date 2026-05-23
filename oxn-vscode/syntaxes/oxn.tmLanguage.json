@@ -59,9 +59,7 @@
               "endCaptures": {
                 "0": { "name": "punctuation.definition.template.end.oxn" }
               },
-              "patterns": [
-                { "include": "#variable-refs" }
-              ]
+              "patterns": [{ "include": "#variable-refs" }]
             }
           ]
         }

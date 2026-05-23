@@ -1,27 +1,40 @@
-import { describe, test, expect, beforeEach } from 'bun:test'
-import {
-  OxnKernelAdapter,
-  resolveTemplateString,
-  adaptConcretePart,
-  adaptOxnToFrozen,
-  type AdapterResult,
-} from '../../oxn-dsl/compiler/oxn-adapter'
+import { beforeEach, describe, expect, test } from 'bun:test'
+import { validateFrozenBlueprint } from '../../kernel/schemas/frozen-schema'
 
 import {
   createOxnAssemblyIR,
-  validateOxnAssemblyIR,
   type OxnAssemblyIR,
   type OxnAssemblyPart,
   type OxnAssemblySlotBinding,
 } from '../../kernel/schemas/oxn-assembly.schema'
+import {
+  type AdapterResult,
+  adaptConcretePart,
+  adaptOxnToFrozen,
+  OxnKernelAdapter,
+  resolveTemplateString,
+} from '../../oxn-dsl/compiler/oxn-adapter'
 
-import { validateFrozenBlueprint, type FrozenBlueprint } from '../../kernel/schemas/frozen-schema'
-
-function createAbstractPart(params: { name: string; implements?: string; params?: Record<string, unknown> }): OxnAssemblyPart {
+function _createAbstractPart(params: {
+  name: string
+  implements?: string
+  params?: Record<string, unknown>
+}): OxnAssemblyPart {
   return { name: params.name, description: undefined, props: [], probes: [], execution: [] }
 }
-function createConcretePart(params: { name: string; props?: OxnAssemblyPart['props']; probes?: OxnAssemblyPart['probes']; execution?: string[] }): OxnAssemblyPart {
-  return { name: params.name, description: undefined, props: params.props || [], probes: params.probes || [], execution: params.execution || [] }
+function createConcretePart(params: {
+  name: string
+  props?: OxnAssemblyPart['props']
+  probes?: OxnAssemblyPart['probes']
+  execution?: string[]
+}): OxnAssemblyPart {
+  return {
+    name: params.name,
+    description: undefined,
+    props: params.props || [],
+    probes: params.probes || [],
+    execution: params.execution || [],
+  }
 }
 
 // ========================
@@ -138,11 +151,13 @@ describe('OxnKernelAdapter', () => {
           { name: 'target_env', type: 'string', required: false, default: 'dev' },
           { name: 'coverage_threshold', type: 'number', required: false, default: 80 },
         ],
-        probes: [{
-          name: 'run_test',
-          ref: '@oxn/probes/exec-exit-zero',
-          params: { command: 'npm test -- --coverage=${prop.coverage_threshold}', timeout: 60000 },
-        }],
+        probes: [
+          {
+            name: 'run_test',
+            ref: '@oxn/probes/exec-exit-zero',
+            params: { command: 'npm test -- --coverage=${prop.coverage_threshold}', timeout: 60000 },
+          },
+        ],
         execution: ['run_test'],
       }),
     )
@@ -152,7 +167,7 @@ describe('OxnKernelAdapter', () => {
     ir.rules = []
 
     const slotBindings: OxnAssemblySlotBinding[] = [
-      { slot: 'tester', ref: '@glo/parts/jest-runner', props: { target_env: 'prod', coverage_threshold: 90 } }
+      { slot: 'tester', ref: '@glo/parts/jest-runner', props: { target_env: 'prod', coverage_threshold: 90 } },
     ]
 
     return { ir, slotBindings }
@@ -189,7 +204,7 @@ describe('OxnKernelAdapter', () => {
     )
 
     const slotBindings: OxnAssemblySlotBinding[] = [
-      { slot: 'tester', ref: '@glo/parts/jest-runner', props: { target_env: 'prod' } }
+      { slot: 'tester', ref: '@glo/parts/jest-runner', props: { target_env: 'prod' } },
     ]
 
     const result = adapter.adapt(ir, slotBindings)
@@ -199,8 +214,10 @@ describe('OxnKernelAdapter', () => {
 
   test('adaptStrict 在有 warnings 时抛异常', () => {
     const ir = createOxnAssemblyIR({ id: 'test', name: 'test' })
-    // No slots or deps → DAG has no entry nodes
-    expect(() => adapter.adaptStrict(ir, [])).toThrow()
+    ir.blueprintParts.push(createConcretePart({ name: 'build', deps: [], execution: ['build'] }))
+    ir.blueprintParts.push(createConcretePart({ name: 'test', deps: ['build'], execution: ['test'] }))
+    // DAG has multiple entry nodes (no deps between build and test) → should throw
+    expect(() => adapter.adaptStrict(ir, [])).toThrow(/DAG/)
   })
 
   test('FrozenBlueprint 通过终态 schema 校验', () => {

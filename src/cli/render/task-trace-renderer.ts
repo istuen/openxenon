@@ -1,5 +1,4 @@
-import type { TraceEvent } from '../../kernel/lib/types/task-trace'
-import type { TaskTraceState, PartState } from '../../kernel/lib/types/task-trace'
+import type { PartState, TaskTraceState, TraceEvent } from '../../kernel/lib/types/task-trace'
 
 export interface TaskTraceRendererOptions {
   taskId: string

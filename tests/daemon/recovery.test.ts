@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
-import { createRecoveryManager } from '../../src/daemon/recovery'
-import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { createRecoveryManager } from '../../src/daemon/recovery'
 
 const TEST_WORKDIR = '/tmp/oxn-recovery-test'
 
@@ -12,14 +12,20 @@ describe('RecoveryManager', () => {
   beforeEach(() => {
     rmSync(TEST_WORKDIR, { recursive: true, force: true })
     mkdirSync(join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task'), { recursive: true })
-    writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task', 'state.json'), JSON.stringify({ status: 'RUNNING' }))
+    writeFileSync(
+      join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task', 'state.json'),
+      JSON.stringify({ status: 'RUNNING' }),
+    )
     writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', 'test-task', 'artifact.json'), JSON.stringify({}))
 
     taskId = 'test-task'
-    recoveryManager = createRecoveryManager({
-      maxRecoveryPoints: 5,
-      autoCheckpointIntervalMs: 1000
-    }, TEST_WORKDIR)
+    recoveryManager = createRecoveryManager(
+      {
+        maxRecoveryPoints: 5,
+        autoCheckpointIntervalMs: 1000,
+      },
+      TEST_WORKDIR,
+    )
   })
 
   afterEach(() => {
@@ -84,11 +90,16 @@ describe('RecoveryManager', () => {
       const points = recoveryManager.getRecoveryPoints(taskId)
       const targetId = points[0].id
 
-      writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), JSON.stringify({ status: 'MODIFIED' }))
+      writeFileSync(
+        join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'),
+        JSON.stringify({ status: 'MODIFIED' }),
+      )
 
       const success = recoveryManager.rollbackTo(taskId, targetId)
       expect(success).toBe(true)
-      const restoredContent = JSON.parse(readFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), 'utf-8'))
+      const restoredContent = JSON.parse(
+        readFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), 'utf-8'),
+      )
       expect(restoredContent.status).toBe('RUNNING')
     })
 
@@ -112,14 +123,20 @@ describe('RecoveryManager', () => {
 
     it('returns false when task is already completed', () => {
       recoveryManager.createRecoveryPoint(taskId, 'stage-1')
-      writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), JSON.stringify({ status: 'COMPLETED' }))
+      writeFileSync(
+        join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'),
+        JSON.stringify({ status: 'COMPLETED' }),
+      )
       const success = recoveryManager.retry(taskId)
       expect(success).toBe(false)
     })
 
     it('returns false when task has failed', () => {
       recoveryManager.createRecoveryPoint(taskId, 'stage-1')
-      writeFileSync(join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'), JSON.stringify({ status: 'FAILED' }))
+      writeFileSync(
+        join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'),
+        JSON.stringify({ status: 'FAILED' }),
+      )
       const success = recoveryManager.retry(taskId)
       expect(success).toBe(false)
     })

@@ -1,10 +1,10 @@
-import { existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'fs'
 import { createHash } from 'crypto'
-import { join, dirname } from 'path'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
 import { z } from 'zod'
-import { type AssetState, type AssetType } from '../arsenals/paths'
-import { BUILTIN_PROBES, BUILTIN_PARTS } from '../arsenals/builtin'
-import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT, resolveBoundary, type Scope as InfraScope } from '../infra/paths'
+import { BUILTIN_PARTS, BUILTIN_PROBES } from '../arsenals/builtin'
+import type { AssetState, AssetType } from '../arsenals/paths'
+import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT, type Scope as InfraScope, resolveBoundary } from '../infra/paths'
 
 export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
 
@@ -98,7 +98,7 @@ function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolea
       const name = entry.name.replace(/\.(yaml|yml|json|oxn)$/, '')
       const filePath = join(typePath, entry.name)
       const content = readFileSync(filePath, 'utf-8')
-      const isCanonical = scanForges ? false : true
+      const isCanonical = !scanForges
       assets.push({
         name,
         type,
@@ -408,6 +408,11 @@ export function loadStandardByName(
     if (existsSync(flatPath)) {
       const content = readFileSync(flatPath, 'utf-8')
       return { name, type, state: 'canonical' as const, path: flatPath, content }
+    }
+    const nestedPath = join(boundary, 'arsenals', type, name, 'canonical.oxn')
+    if (existsSync(nestedPath)) {
+      const content = readFileSync(nestedPath, 'utf-8')
+      return { name, type, state: 'canonical' as const, path: nestedPath, content }
     }
   } else {
     const canonicalPath = join(boundary, 'arsenals', type, name, 'canonical.oxn')

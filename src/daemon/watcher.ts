@@ -1,4 +1,4 @@
-import { watch, type FSWatcher } from '../infra/filesystem'
+import { type FSWatcher, watch } from '../infra/filesystem'
 import { daemonLogger } from './logger'
 
 export interface WatcherConfig {

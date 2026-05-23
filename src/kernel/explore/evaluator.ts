@@ -5,7 +5,7 @@
  * 纯函数，无任何 I/O
  */
 
-import type { Finding, ExplorationResult, ExplorationRule, ExplorationContext, ProjectDir } from './types'
+import type { ExplorationContext, ExplorationResult, ExplorationRule, Finding, ProjectDir } from './types'
 
 /**
  * 通用探索评估器
@@ -119,7 +119,7 @@ function evaluateCondition(condition: string, vars: Record<string, unknown>, con
     if (fileCount < 3) return false
 
     const hasCover = context.probes.some(
-      (p) => p.type === 'fs_exists' && (p.pattern === path || path.startsWith(p.pattern + '/')),
+      (p) => p.type === 'fs_exists' && (p.pattern === path || path.startsWith(`${p.pattern}/`)),
     )
     return probeType === 'fs_exists' ? hasCover : !hasCover
   }
@@ -133,7 +133,7 @@ function evaluateCondition(condition: string, vars: Record<string, unknown>, con
       (f) =>
         f === pattern ||
         f.endsWith(pattern.replace(/^\./, '')) ||
-        new RegExp('^' + pattern.replace(/\*/g, '.*') + '$').test(f),
+        new RegExp(`^${pattern.replace(/\*/g, '.*')}$`).test(f),
     )
   }
 

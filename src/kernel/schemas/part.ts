@@ -1,6 +1,6 @@
-import { z } from 'zod'
-import { PartDefinitionSchema } from './part-asset'
+import type { z } from 'zod'
 import { PartInvocationSchema } from './blueprint.schema'
+import { PartDefinitionSchema } from './part-asset'
 
 export { PartDefinitionSchema, PartInvocationSchema }
 

@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
-import { daemonLogger } from './logger'
 import { DAEMON_PID_PATH } from '../infra/global'
+import { daemonLogger } from './logger'
 
 export interface SupervisorConfig {
   maxRestartAttempts: number

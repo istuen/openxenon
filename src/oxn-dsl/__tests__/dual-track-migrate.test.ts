@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { detectPipeline } from '../../cli/oxn-dual-track'
 
 describe('detectPipeline', () => {
@@ -25,9 +25,9 @@ describe('detectPipeline', () => {
 // YAML → OXN 迁移测试
 // ========================
 
-import { migrateSingleFile, formatMigrationReport, type MigrationStats } from '../../cli/migrate-yaml'
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { formatMigrationReport, type MigrationStats, migrateSingleFile } from '../../cli/migrate-yaml'
 
 describe('migrateSingleFile', () => {
   const tmpDir = '/tmp/oxn-migrate-test'

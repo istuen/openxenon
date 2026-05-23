@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
-import { DaemonSupervisor } from '../../src/daemon/supervisor'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { rmSync, mkdirSync, writeFileSync, existsSync, unlinkSync } from 'fs'
+import { DaemonSupervisor } from '../../src/daemon/supervisor'
 import { DAEMON_PID_PATH } from '../../src/infra/global'
 
 const TEST_PID_PATH = '/tmp/oxn-supervisor-test.pid'

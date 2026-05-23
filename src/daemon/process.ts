@@ -1,8 +1,8 @@
+import { type DaemonProcessInfo, isDaemonRunning } from '../infra/daemon-probe'
 import { existsSync, unlinkSync, writeFileSync } from '../infra/filesystem'
-import { DAEMON_PID_PATH, GLOBAL_BOUNDARY_PATH, DAEMON_SOCK_PATH } from '../infra/global'
-import { daemonLogger } from './logger'
+import { DAEMON_PID_PATH, DAEMON_SOCK_PATH, GLOBAL_BOUNDARY_PATH } from '../infra/global'
 import { waitForHealth } from './health-check'
-import { isDaemonRunning, type DaemonProcessInfo } from '../infra/daemon-probe'
+import { daemonLogger } from './logger'
 
 export type { DaemonProcessInfo }
 

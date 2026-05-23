@@ -1,7 +1,7 @@
 import { createConnection } from 'net'
+import { isDaemonRunning } from '../infra/daemon-probe'
 import { existsSync, readFileSync } from '../infra/filesystem'
 import { DAEMON_LOG_PATH, DAEMON_SOCK_PATH } from '../infra/global'
-import { isDaemonRunning } from '../infra/daemon-probe'
 
 export interface DaemonStatusInfo {
   isRunning: boolean
@@ -48,11 +48,10 @@ export async function queryDaemonStatus(): Promise<DaemonStatusInfo> {
   return new Promise((resolve) => {
     try {
       const socket = createConnection(DAEMON_SOCK_PATH, () => {
-        const request =
-          JSON.stringify({
-            method: 'GET',
-            path: '/api/v1/health',
-          }) + '\n'
+        const request = `${JSON.stringify({
+          method: 'GET',
+          path: '/api/v1/health',
+        })}\n`
 
         socket.write(request)
 

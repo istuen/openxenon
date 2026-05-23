@@ -1,10 +1,10 @@
 import { defineCommand } from 'citty'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import * as yaml from 'yaml'
 import { getProjectBoundaryPath } from '../kernel'
 import { TASKS_DIR } from '../kernel/constants'
-import { output, outputError, getFormatFromArgs } from './output'
-import * as yaml from 'yaml'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {
@@ -33,8 +33,8 @@ export default defineCommand({
   run(ctx) {
     const format = getFormatFromArgs(ctx.args)
     const taskId = ctx.args['from-task'] as string
-    const partName = ctx.args['part'] as string
-    const outputPath = (ctx.args['output'] as string) || `${partName}-extracted.yaml`
+    const partName = ctx.args.part as string
+    const outputPath = (ctx.args.output as string) || `${partName}-extracted.yaml`
 
     const projectBoundary = getProjectBoundaryPath(process.cwd())
     const frozenPath = join(projectBoundary, TASKS_DIR, taskId, 'blueprint.frozen.json')

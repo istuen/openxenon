@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { getProjectBoundaryPath } from '../kernel'
-import { output, outputError, getFormatFromArgs } from './output'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {

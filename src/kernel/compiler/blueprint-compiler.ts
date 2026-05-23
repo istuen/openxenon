@@ -1,7 +1,7 @@
 import type { Blueprint } from '../schemas/blueprint.schema'
+import { type DagNode, validateDagTopology } from '../schemas/dag-validator'
 import type { FrozenBlueprint } from '../schemas/frozen-schema'
 import { computeContentHash } from '../schemas/frozen-schema'
-import { validateDagTopology, type DagNode } from '../schemas/dag-validator'
 
 export interface CompileContext {
   taskId: string

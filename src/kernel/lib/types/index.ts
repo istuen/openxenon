@@ -1,18 +1,18 @@
-export type { Task } from './task'
-export type { Stage } from './part'
-export type { Artifact } from './artifact'
-export type { Spec } from './spec'
-export type { Sample } from './sample'
+export type { ArtifactType, BlueprintStatus, ProbeType, ProjectStatus, StepStatus, TaskStatus } from '../../enums'
 export type { Action } from './action'
-export type { TaskStatus, StepStatus, BlueprintStatus, ArtifactType, ProjectStatus, ProbeType } from '../../enums'
-export type { TaskTraceState, PartState, TraceEvent, ProbeResult } from './task-trace'
+export type { Artifact } from './artifact'
+export type { Stage } from './part'
+export type { Sample } from './sample'
+export type { Spec } from './spec'
+export type { Task } from './task'
 export type {
-  TaskTraceYaml,
+  PartCompleteEvent,
+  PartStartEvent,
   PartTrace,
-  TraceEventType,
+  ProbeResultEvent,
   TaskStartEvent,
   TaskStatusEvent,
-  PartStartEvent,
-  PartCompleteEvent,
-  ProbeResultEvent,
+  TaskTraceYaml,
+  TraceEventType,
 } from './task-state'
+export type { PartState, ProbeResult, TaskTraceState, TraceEvent } from './task-trace'

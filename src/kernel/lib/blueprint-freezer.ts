@@ -1,12 +1,11 @@
-import type { Part, Blueprint } from '../schemas/blueprint.schema'
-import type { Probe } from '../schemas/blueprint.schema'
-import { resolvePartRef, type PartResolution } from './part-resolver'
-import { createXenonMeta, type XenonMeta, computeContentHash } from '../schemas/frozen-schema'
+import type { Blueprint, Part, Probe } from '../schemas/blueprint.schema'
+import { computeContentHash, createXenonMeta, type XenonMeta } from '../schemas/frozen-schema'
+import { type PartResolution, resolvePartRef } from './part-resolver'
 import { getProjectBoundaryPath } from './project'
 
 function mergePartProbes(base: Record<string, unknown>, override: Part): Probe[] {
   const baseProbes = ((base.probes as Probe[]) || []) as Probe[]
-  const overrideProbes = (override.probes || [])
+  const overrideProbes = override.probes || []
   if (overrideProbes.length > 0) {
     return overrideProbes
   }

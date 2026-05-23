@@ -21,7 +21,7 @@ export class RuleValidator {
    */
   static evaluate(rule: OxnAssemblyRule, props: Record<string, unknown>): RuleEvalResult {
     try {
-      const passed = this._evaluateCondition(rule.condition, props)
+      const passed = RuleValidator._evaluateCondition(rule.condition, props)
       return {
         valid: true,
         passed,
@@ -40,7 +40,7 @@ export class RuleValidator {
    * 批量求值所有 rules
    */
   static evaluateAll(rules: OxnAssemblyRule[], props: Record<string, unknown>): RuleEvalResult[] {
-    return rules.map((r) => this.evaluate(r, props))
+    return rules.map((r) => RuleValidator.evaluate(r, props))
   }
 
   /**
@@ -65,27 +65,31 @@ export class RuleValidator {
     // 比较：a != b, a == b
     const neMatch = trimmed.match(/^(.+?)\s*!=\s*(.+)$/)
     if (neMatch) {
-      const left = this._resolveValue(neMatch[1]!, props)
-      const right = this._resolveValue(neMatch[2]!, props)
+      const left = RuleValidator._resolveValue(neMatch[1]!, props)
+      const right = RuleValidator._resolveValue(neMatch[2]!, props)
       return left !== right
     }
     const eqMatch = trimmed.match(/^(.+?)\s*==\s*(.+)$/)
     if (eqMatch) {
-      const left = this._resolveValue(eqMatch[1]!, props)
-      const right = this._resolveValue(eqMatch[2]!, props)
+      const left = RuleValidator._resolveValue(eqMatch[1]!, props)
+      const right = RuleValidator._resolveValue(eqMatch[2]!, props)
       return left === right
     }
 
     // 逻辑或
     const orMatch = trimmed.match(/^(.+?)\s*\|\|\s*(.+)$/)
     if (orMatch) {
-      return this._evaluateCondition(orMatch[1]!, props) || this._evaluateCondition(orMatch[2]!, props)
+      return (
+        RuleValidator._evaluateCondition(orMatch[1]!, props) || RuleValidator._evaluateCondition(orMatch[2]!, props)
+      )
     }
 
     // 逻辑与
     const andMatch = trimmed.match(/^(.+?)\s*&&\s*(.+)$/)
     if (andMatch) {
-      return this._evaluateCondition(andMatch[1]!, props) && this._evaluateCondition(andMatch[2]!, props)
+      return (
+        RuleValidator._evaluateCondition(andMatch[1]!, props) && RuleValidator._evaluateCondition(andMatch[2]!, props)
+      )
     }
 
     return true

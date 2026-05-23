@@ -1,6 +1,6 @@
-import type { TaskStatus, XnTaskStatus, XnPartStatus } from './core'
-import type { Artifact } from './artifact'
 import type { Action } from './action'
+import type { Artifact } from './artifact'
+import type { TaskStatus, XnPartStatus, XnTaskStatus } from './core'
 
 export interface Task {
   id: string

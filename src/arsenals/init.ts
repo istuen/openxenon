@@ -1,15 +1,15 @@
 import { existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import {
-  type Scope,
-  resolveArsenalRoot,
-  resolveForgeRoot,
-  GLOBAL_ARSENALS_PROBES,
   GLOBAL_ARSENALS_BLUEPRINTS,
   GLOBAL_ARSENALS_PARTS,
-  GLOBAL_FORGES_PROBES,
+  GLOBAL_ARSENALS_PROBES,
   GLOBAL_FORGES_BLUEPRINTS,
   GLOBAL_FORGES_PARTS,
+  GLOBAL_FORGES_PROBES,
+  resolveArsenalRoot,
+  resolveForgeRoot,
+  type Scope,
 } from '../infra/paths'
 
 export function ensureArsenalsDirectories(scope: Scope, cwd?: string): void {

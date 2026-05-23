@@ -1,22 +1,22 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
-import {
-  taskSubmit,
-  taskNext,
-  taskVerify,
-  taskStatus,
-  taskNew,
-  type SubmitResult,
-  type NextResult,
-  type VerifyResult,
-  type StatusResult,
-  type NewResult,
-  type TaskState,
-} from './task-filesystem'
-import { BOUNDARY_DIR, TASKS_DIR, TASK_TRACE_FILE } from '../kernel/constants'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { BOUNDARY_DIR, TASK_TRACE_FILE, TASKS_DIR } from '../kernel/constants'
+import { getFormatFromArgs, output, outputError } from './output'
 import { taskTraceToHtml } from './render/task-trace-renderer'
-import { output, outputError, getFormatFromArgs } from './output'
+import {
+  type NewResult,
+  type NextResult,
+  type StatusResult,
+  type SubmitResult,
+  type TaskState,
+  taskNew,
+  taskNext,
+  taskStatus,
+  taskSubmit,
+  taskVerify,
+  type VerifyResult,
+} from './task-filesystem'
 
 const EXPLORES_DIR = 'explores'
 const TASK_MD_FILE = 'task.md'
@@ -69,26 +69,14 @@ export default defineCommand({
     submit: defineCommand({
       meta: {
         name: 'submit',
-        description: '提交 Blueprint 到任务',
+        description: '提交 Task（基于 task.oxn）',
       },
       args: {
-        blueprint: {
-          type: 'string',
-          alias: 'b',
-          required: true,
-          description: 'Blueprint 文件路径 (.yaml / .oxn)',
-        },
-        name: {
-          type: 'string',
-          alias: 'n',
-          required: false,
-          description: 'Task 名称（kebab-case），默认从 Blueprint name 字段读取',
-        },
         'task-id': {
           type: 'string',
           alias: 't',
-          required: false,
-          description: '指定已有 Task ID，将 Blueprint 提交到该任务',
+          required: true,
+          description: 'Task ID',
         },
         '--json': {
           type: 'boolean',
@@ -120,9 +108,7 @@ export default defineCommand({
         }
 
         try {
-          const blueprintPath = ctx.args.blueprint as string
-          const name = ctx.args.name as string | undefined
-          const taskId = ctx.args['task-id'] as string | undefined
+          const taskId = ctx.args['task-id'] as string
           const rawParams = ctx.args.param as string | undefined
           const params: Record<string, unknown> = {}
           if (rawParams) {
@@ -136,7 +122,7 @@ export default defineCommand({
               }
             }
           }
-          const result = taskSubmit(blueprintPath, getProjectRoot(), name, taskId, params) as SubmitResult
+          const result = taskSubmit(taskId, getProjectRoot(), params) as SubmitResult
 
           output({ data: result }, format)
         } catch (err: unknown) {
@@ -169,6 +155,12 @@ export default defineCommand({
           required: false,
           description: '任务显示名称（可选，默认与 task-id 相同）',
         },
+        blueprint: {
+          type: 'string',
+          alias: 'b',
+          required: false,
+          description: '引用的 Blueprint 名称（可选）',
+        },
         '--json': {
           type: 'boolean',
           description: 'JSON 格式输出',
@@ -195,7 +187,8 @@ export default defineCommand({
         try {
           const taskId = ctx.args['task-id'] as string
           const taskName = ctx.args['task-name'] as string | undefined
-          const result = taskNew(taskId, taskName || taskId, getProjectRoot()) as NewResult
+          const blueprintName = ctx.args.blueprint as string | undefined
+          const result = taskNew(taskId, taskName || taskId, getProjectRoot(), blueprintName) as NewResult
 
           output({ data: result }, format)
         } catch (err: unknown) {
@@ -614,9 +607,7 @@ export default defineCommand({
         }
 
         const entries = require('fs').readdirSync(tasksDir) as string[]
-        const dirs = entries.filter((d: string) =>
-          existsSync(join(tasksDir, d, 'state.json')),
-        )
+        const dirs = entries.filter((d: string) => existsSync(join(tasksDir, d, 'state.json')))
 
         const tasks = dirs.map((dir: string) => {
           const statePath = join(tasksDir, dir, 'state.json')
@@ -635,7 +626,9 @@ export default defineCommand({
         }
 
         const human = tasks
-           .map((t) => `[${t.status}] ${t.taskId} (${t.taskName})${t.currentPartId ? ` - 当前: ${t.currentPartId}` : ''}`)
+          .map(
+            (t) => `[${t.status}] ${t.taskId} (${t.taskName})${t.currentPartId ? ` - 当前: ${t.currentPartId}` : ''}`,
+          )
           .join('\n')
 
         output(

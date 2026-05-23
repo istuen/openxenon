@@ -1,5 +1,5 @@
-import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../schemas/frozen-schema'
 import type { Blueprint, Part } from '../schemas/blueprint.schema'
+import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../schemas/frozen-schema'
 
 export function adaptFrozenToBlueprint(frozen: FrozenBlueprint): Blueprint {
   const parts: Part[] = frozen.parts.map(adaptFrozenPart)

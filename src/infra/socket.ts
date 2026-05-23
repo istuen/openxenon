@@ -1,5 +1,5 @@
 import { existsSync, unlinkSync } from 'fs'
-import { createServer } from 'net'
+import type { createServer } from 'net'
 
 export interface SocketMessage {
   method: string

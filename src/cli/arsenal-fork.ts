@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { getArsenalsPath, type AssetType } from '../arsenals/paths'
 import { ensureArsenalsDirectories } from '../arsenals/init'
-import { output, outputError, getFormatFromArgs } from './output'
+import { type AssetType, getArsenalsPath } from '../arsenals/paths'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {
@@ -34,7 +34,7 @@ export default defineCommand({
 
     const assetType = ctx.args.type as string
     const sourceName = ctx.args.name as string
-    const newName = ctx.args['name'] as string
+    const newName = ctx.args.name as string
 
     if (assetType !== 'part') {
       return outputError(

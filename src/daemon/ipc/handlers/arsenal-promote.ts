@@ -1,8 +1,8 @@
-import { registerRoute } from '../router'
-import { globalArsenalRegistry } from '../../registry'
-import { existsSync, renameSync } from '../../../infra/filesystem'
 import { join } from 'path'
 import type { AssetType } from '../../../arsenals/paths'
+import { existsSync, renameSync } from '../../../infra/filesystem'
+import { globalArsenalRegistry } from '../../registry'
+import { registerRoute } from '../router'
 
 interface PromoteRequest {
   asset: string

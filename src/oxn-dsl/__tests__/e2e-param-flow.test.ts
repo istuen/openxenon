@@ -4,9 +4,9 @@ import { beforeAll, describe, expect, test } from 'bun:test'
 import { Cancellation, DocumentState, URI } from 'langium'
 import { getProbeHandler } from '../../infra/probes'
 import { adaptFrozenToBlueprint } from '../../kernel/compiler/frozen-to-blueprint-adapter'
-import { OxnKernelAdapter } from '../../oxn-dsl/compiler/oxn-adapter'
 import { evaluateProbe } from '../../kernel/probes/evaluator'
 import type { OxnAssemblyIR, OxnAssemblyPart, OxnAssemblySlotBinding } from '../../kernel/schemas/oxn-assembly.schema'
+import { OxnKernelAdapter } from '../../oxn-dsl/compiler/oxn-adapter'
 import type { OXNDocument } from '../generated/ast'
 import { categorizeEntities } from '../generator/oxn-generator'
 import { createOxnServices } from '../langium/oxn-services'
@@ -80,11 +80,11 @@ describe('E2E Param Flow — 端到端参数穿透验证', () => {
 
   test('1. Langium 解析 → OXN AST 成功', () => {
     expect(blueprintIR.props).toHaveLength(1)
-    expect(blueprintIR.props[0]!.name).toBe('cmd')
+    expect(blueprintIR.props[0]?.name).toBe('cmd')
     expect(blueprintIR.slots).toHaveLength(1)
-    expect(blueprintIR.slots[0]!.name).toBe('runner')
+    expect(blueprintIR.slots[0]?.name).toBe('runner')
     expect(blueprintIR.concreteParts).toHaveLength(1)
-    expect(blueprintIR.concreteParts[0]!.name).toBe('my-runner')
+    expect(blueprintIR.concreteParts[0]?.name).toBe('my-runner')
   })
 
   test('2. Task slot binding 属性注入正确', () => {
@@ -92,7 +92,7 @@ describe('E2E Param Flow — 端到端参数穿透验证', () => {
     const binding = slotBindings[0]!
     expect(binding.slot).toBe('runner')
     expect(binding.ref).toBe('@prj/parts/my-runner')
-    expect(binding.props['target_cmd']).toBe('echo hello_from_e2e')
+    expect(binding.props.target_cmd).toBe('echo hello_from_e2e')
   })
 
   test('3. OxnAssemblyIR → FrozenBlueprint 适配成功', () => {
@@ -112,7 +112,7 @@ describe('E2E Param Flow — 端到端参数穿透验证', () => {
 
     const runnerPart = frozen.parts.find((p) => p.id === 'runner')
     expect(runnerPart).toBeDefined()
-    const probe = runnerPart!.probes[0]!
+    const probe = runnerPart?.probes[0]!
     const command = probe.params?.command as string
     expect(command).toBe('echo hello_from_e2e')
   })
@@ -134,14 +134,14 @@ describe('E2E Param Flow — 端到端参数穿透验证', () => {
 
     const runnerPart = frozen.parts.find((p) => p.id === 'runner')
     expect(runnerPart).toBeDefined()
-    const frozenProbe = runnerPart!.probes[0]!
+    const frozenProbe = runnerPart?.probes[0]!
     const probeType = frozenProbe.type
     const probeParams = frozenProbe.params || {}
 
     const handler = getProbeHandler(probeType)
     expect(handler).not.toBeNull()
 
-    const observation = (await handler!(
+    const observation = (await handler?.(
       { command: probeParams.command, pattern: probeParams.pattern, cwd: probeParams.cwd },
       { projectRoot: process.cwd() },
     )) as any

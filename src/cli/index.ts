@@ -1,7 +1,7 @@
 import { defineCommand, runMain } from 'citty'
-import { cliContext, detectCliFormat, detectVerbosity } from './context'
-import { OxnErrorCode, ErrorCategory } from '../kernel/enums'
 import { DAEMON_SOCK_PATH } from '../infra/global'
+import { ErrorCategory, OxnErrorCode } from '../kernel/enums'
+import { cliContext, detectCliFormat, detectVerbosity } from './context'
 
 function formatError(err: unknown): string {
   if (err && typeof err === 'object' && 'code' in err) {

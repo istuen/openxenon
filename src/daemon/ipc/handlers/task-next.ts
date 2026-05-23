@@ -1,7 +1,7 @@
-import { registerRoute } from '../router'
-import { badRequest, notFound } from '../errors'
 import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace, readBlueprint } from '../../trace/writer'
+import { readBlueprint, readTaskTrace } from '../../trace/writer'
+import { badRequest, notFound } from '../errors'
+import { registerRoute } from '../router'
 
 async function handleTaskNext(request: Request, projectPath: string): Promise<Response> {
   try {

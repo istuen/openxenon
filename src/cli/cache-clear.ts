@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
+import { existsSync, readdirSync, rmSync } from 'fs'
 import { resolve } from 'path'
-import { readdirSync, rmSync, existsSync } from 'fs'
-import { output, outputError, getFormatFromArgs } from './output'
 import { BOUNDARY_DIR } from '../kernel/constants'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {

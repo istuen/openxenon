@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
-import { RadarClock } from '../../src/daemon/radar/clock'
-import { existsSync, mkdirSync, writeFileSync, rmSync } from 'fs'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { RadarClock } from '../../src/daemon/radar/clock'
 
 const TEST_WORKDIR = '/tmp/oxn-radar-test'
 
@@ -46,7 +46,7 @@ describe('RadarClock', () => {
 
     it('returns true after timeout expires', async () => {
       radarClock.startMonitor('task-1', 'stage-1', 50)
-      await new Promise(resolve => setTimeout(resolve, 60))
+      await new Promise((resolve) => setTimeout(resolve, 60))
       expect(radarClock.isTimeout('task-1', 'stage-1')).toBe(true)
     })
 
@@ -58,7 +58,7 @@ describe('RadarClock', () => {
   describe('getElapsed', () => {
     it('returns elapsed time in milliseconds', async () => {
       radarClock.startMonitor('task-1', 'stage-1', 10000)
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       const elapsed = radarClock.getElapsed('task-1', 'stage-1')
       expect(elapsed).toBeGreaterThanOrEqual(100)
     })
@@ -71,7 +71,7 @@ describe('RadarClock', () => {
   describe('getRemaining', () => {
     it('returns remaining time before timeout', async () => {
       radarClock.startMonitor('task-1', 'stage-1', 5000)
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
       const remaining = radarClock.getRemaining('task-1', 'stage-1')
       expect(remaining).toBeLessThanOrEqual(4900)
     })
@@ -82,7 +82,7 @@ describe('RadarClock', () => {
 
     it('returns 0 after timeout expired', async () => {
       radarClock.startMonitor('task-1', 'stage-1', 50)
-      await new Promise(resolve => setTimeout(resolve, 60))
+      await new Promise((resolve) => setTimeout(resolve, 60))
       expect(radarClock.getRemaining('task-1', 'stage-1')).toBe(0)
     })
   })

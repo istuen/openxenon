@@ -1,12 +1,13 @@
+import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { existsSync, readFileSync, writeFileSync, appendFileSync, renameSync } from 'fs'
-import { BOUNDARY_DIR, BLUEPRINT_OXN_FILE, TASKS_DIR, FROZEN_BLUEPRINT_JSON } from '../kernel/constants'
 import { ensureDirectory } from '../infra/filesystem'
-import { probeHandlers, type ProbeResult, type ProbeContext } from '../infra/probes'
-import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
-import { topologicalSort, type DagNode } from '../kernel/schemas/dag-validator'
+import { type ProbeContext, type ProbeResult, probeHandlers } from '../infra/probes'
+import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, TASKS_DIR, TASK_OXN_FILE } from '../kernel/constants'
 import { buildTraceEvent, type TraceEvent } from '../kernel/lib/task-trace'
-import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
+import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
+import { type DagNode, topologicalSort } from '../kernel/schemas/dag-validator'
+import { computeContentHash, type FrozenBlueprint } from '../kernel/schemas/frozen-schema'
+import { arsenalLoadStandardByName } from '../arsenals/loader'
 import { unifiedTaskSubmit } from './oxn-dual-track'
 
 const TASK_TRACE_FILE = 'task-trace.jsonl'
@@ -78,7 +79,7 @@ function writeState(cwd: string, taskId: string, state: TaskState): void {
   const dir = getTaskDir(cwd, taskId)
   ensureDirectory(dir)
   const path = getStatePath(cwd, taskId)
-  const tmpPath = path + '.tmp'
+  const tmpPath = `${path}.tmp`
   writeFileSync(tmpPath, JSON.stringify(state, null, 2), 'utf-8')
   renameSync(tmpPath, path)
 }
@@ -96,7 +97,7 @@ function readState(cwd: string, taskId: string): TaskState | null {
 function appendTraceEvent(cwd: string, taskId: string, event: TraceEvent): void {
   const dir = getTaskDir(cwd, taskId)
   ensureDirectory(dir)
-  const line = JSON.stringify(event) + '\n'
+  const line = `${JSON.stringify(event)}\n`
   appendFileSync(getTracePath(cwd, taskId), line, 'utf-8')
 }
 
@@ -109,54 +110,66 @@ export interface SubmitResult {
   message: string
 }
 
-export function taskSubmit(
-  blueprintPath: string,
-  cwd: string,
-  nameOverride?: string,
-  existingTaskId?: string,
-  params?: Record<string, unknown>,
-): SubmitResult {
-  if (!existsSync(blueprintPath)) {
-    throw new Error(`Blueprint file not found: ${blueprintPath}`)
+export function taskSubmit(taskId: string, cwd: string, params?: Record<string, unknown>): SubmitResult {
+  const taskDir = getTaskDir(cwd, taskId)
+  const taskOxnPath = join(taskDir, TASK_OXN_FILE)
+
+  if (!existsSync(taskOxnPath)) {
+    throw new Error(`Task file not found: ${taskOxnPath}. Use 'oxn task new' to create a task first.`)
   }
 
-  const content = readFileSync(blueprintPath, 'utf-8')
+  const taskOxnContent = readFileSync(taskOxnPath, 'utf-8')
 
-  if (!blueprintPath.endsWith('.oxn')) {
-    throw new Error(
-      'Only .oxn Blueprints are supported. YAML has been deprecated. Use oxn forge to create a new .oxn Blueprint.',
-    )
+  const taskNameMatch = taskOxnContent.match(/task\s+"([^"]+)"/)
+  const extractedTaskId = taskNameMatch?.[1]
+
+  if (!extractedTaskId) {
+    throw new Error('Invalid task.oxn: missing task name')
   }
 
-  const oxnNameMatch = content.match(/blueprint\s+"([^"]+)"/)
-  const bpName = nameOverride || oxnNameMatch?.[1]
+  const blueprintMatch = taskOxnContent.match(/blueprint\s+"([^"]+)"/)
+  const blueprintName = blueprintMatch?.[1]
 
-  if (!bpName && !existingTaskId) {
-    throw new Error('OXN Blueprint must have a name (blueprint "name" { ... }) or use --name')
+  let blueprintPath: string
+  let frozenFromTaskOxn: FrozenBlueprint
+
+  if (blueprintName) {
+    const blueprintAsset = arsenalLoadStandardByName(blueprintName, 'blueprints')
+    if (!blueprintAsset) {
+      throw new Error(`Blueprint "${blueprintName}" not found in arsenal`)
+    }
+    blueprintPath = blueprintAsset.path
+
+    const tempResult = unifiedTaskSubmit(blueprintPath, cwd, taskId, extractedTaskId, { params })
+    frozenFromTaskOxn = tempResult.frozen
+  } else {
+    throw new Error('task.oxn must reference a blueprint. Add: blueprint "<name>"')
   }
 
-  const taskId = existingTaskId || bpName!
+  const frozenPath = join(taskDir, FROZEN_BLUEPRINT_JSON)
+  const existingFrozen = existsSync(frozenPath)
 
-  if (!existingTaskId && taskDirExists(cwd, taskId)) {
-    throw new Error(`Task "${taskId}" already exists. Choose a different name with --name.`)
-  }
+  if (existingFrozen) {
+    const existingContent = readFileSync(frozenPath, 'utf-8')
+    const existingHash = computeContentHash(existingContent)
+    const newHash = computeContentHash(JSON.stringify(frozenFromTaskOxn, null, 2))
 
-  if (!existingTaskId) {
-    const validation = validateTaskName(taskId)
-    if (!validation.valid) {
-      throw new Error(`Invalid task name: ${validation.error}`)
+    if (existingHash !== newHash) {
+      const taskOxnHash = computeContentHash(taskOxnContent)
+      const existingMeta = JSON.parse(existingContent)
+      const frozenMetaHash = existingMeta._xenon_meta?.content_hash
+
+      if (taskOxnHash !== frozenMetaHash) {
+        throw new Error(
+          `Inconsistency detected: task.oxn has been modified since last submit. ` +
+            `Expected frozen.json to match task.oxn (hash: ${taskOxnHash}), ` +
+            `but it doesn't. Please resubmit with 'oxn task submit --task-id ${taskId}'.`,
+        )
+      }
     }
   }
 
-  const taskName = nameOverride || bpName || taskId
-
-  const result = unifiedTaskSubmit(blueprintPath, cwd, taskId, taskName, { params })
-
-  const taskDir = getTaskDir(cwd, taskId)
-  ensureDirectory(taskDir)
-
-  writeFileSync(join(taskDir, BLUEPRINT_OXN_FILE), content, 'utf-8')
-  writeFileSync(join(taskDir, FROZEN_BLUEPRINT_JSON), JSON.stringify(result.frozen, null, 2), 'utf-8')
+  const result = unifiedTaskSubmit(blueprintPath, cwd, taskId, extractedTaskId, { params })
 
   const parts: Record<string, PartStateNode> = {}
   if (result.frozen.parts) {
@@ -169,15 +182,17 @@ export function taskSubmit(
     }
   }
 
+  writeFileSync(frozenPath, JSON.stringify(result.frozen, null, 2), 'utf-8')
+
   const state: TaskState = {
     taskId,
-    taskName,
+    taskName: extractedTaskId,
     status: 'RUNNING',
     currentPartId: null,
     parts,
   }
 
-  const traceEvent = buildTraceEvent('TASK_START', taskId, { taskName })
+  const traceEvent = buildTraceEvent('TASK_START', taskId, { taskName: extractedTaskId })
   appendTraceEvent(cwd, taskId, traceEvent)
   writeState(cwd, taskId, state)
 
@@ -187,7 +202,7 @@ export function taskSubmit(
     blueprintFile: `${TASKS_DIR}/${taskId}/${FROZEN_BLUEPRINT_JSON}`,
     status: 'RUNNING',
     partsCount: result.frozen.parts.length,
-    message: 'Task created successfully',
+    message: 'Task submitted successfully',
   }
 }
 
@@ -198,7 +213,7 @@ export interface NewResult {
   message: string
 }
 
-export function taskNew(taskId: string, taskName: string, cwd: string): NewResult {
+export function taskNew(taskId: string, taskName: string, cwd: string, blueprintName?: string): NewResult {
   if (taskDirExists(cwd, taskId)) {
     throw new Error(`Task "${taskId}" already exists. Choose a different name.`)
   }
@@ -210,6 +225,12 @@ export function taskNew(taskId: string, taskName: string, cwd: string): NewResul
 
   const taskDir = getTaskDir(cwd, taskId)
   ensureDirectory(taskDir)
+
+  const taskOxnContent = blueprintName
+    ? `task "${taskId}" {\n  blueprint "${blueprintName}"\n}\n`
+    : `task "${taskId}" {\n  // Empty task, waiting for developer to fill in\n}\n`
+
+  writeFileSync(join(taskDir, TASK_OXN_FILE), taskOxnContent, 'utf-8')
 
   const state: TaskState = {
     taskId,
@@ -227,8 +248,7 @@ export function taskNew(taskId: string, taskName: string, cwd: string): NewResul
     taskId,
     taskName: state.taskName,
     status: 'PENDING',
-    message:
-      'Task created successfully. Use oxn task submit --blueprint <path> --task-id ' + taskId + ' to add a blueprint.',
+    message: `Task created successfully. Use oxn task submit --task-id ${taskId} to submit.`,
   }
 }
 
@@ -258,7 +278,7 @@ export function taskNext(taskId: string, cwd: string): NextResult {
   }
 
   const frozenBlueprint = readFrozenBlueprint(cwd, taskId)
-  if (!frozenBlueprint || !frozenBlueprint.parts || frozenBlueprint.parts.length === 0) {
+  if (!frozenBlueprint?.parts || frozenBlueprint.parts.length === 0) {
     throw new Error('No parts defined in frozen blueprint')
   }
 
@@ -328,7 +348,7 @@ export async function taskVerify(taskId: string, partId: string, cwd: string): P
   }
 
   const frozenBlueprint = readFrozenBlueprint(cwd, taskId)
-  if (!frozenBlueprint || !frozenBlueprint.parts) {
+  if (!frozenBlueprint?.parts) {
     throw new Error('No frozen blueprint or parts found')
   }
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { CircuitBreaker, type CircuitBreakerConfig } from '../../src/daemon/circuit-breaker'
 
 describe('CircuitBreaker', () => {
@@ -8,7 +8,7 @@ describe('CircuitBreaker', () => {
     circuitBreaker = new CircuitBreaker({
       failureThreshold: 3,
       resetTimeoutMs: 1000,
-      halfOpenMaxAttempts: 2
+      halfOpenMaxAttempts: 2,
     })
   })
 
@@ -73,7 +73,7 @@ describe('CircuitBreaker', () => {
 
       expect(circuitBreaker.getState()).toBe('OPEN')
 
-      await new Promise(resolve => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, 1100))
       expect(circuitBreaker.getState()).toBe('HALF_OPEN')
     })
 
@@ -82,7 +82,7 @@ describe('CircuitBreaker', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
 
-      await new Promise(resolve => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, 1100))
       expect(circuitBreaker.getState()).toBe('HALF_OPEN')
 
       circuitBreaker.recordSuccess()
@@ -95,7 +95,7 @@ describe('CircuitBreaker', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
 
-      await new Promise(resolve => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, 1100))
       circuitBreaker.recordFailure()
       expect(circuitBreaker.getState()).toBe('OPEN')
     })
@@ -111,7 +111,7 @@ describe('CircuitBreaker', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
 
-      await new Promise(resolve => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, 1100))
       expect(circuitBreaker.allowRequest()).toBe(true)
     })
 
@@ -166,7 +166,7 @@ describe('CircuitBreaker', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
 
-      await new Promise(resolve => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, 1100))
       expect(circuitBreaker.isOpen()).toBe(false)
     })
   })

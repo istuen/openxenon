@@ -1,12 +1,12 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync } from 'fs'
-import { join, dirname } from 'path'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
+import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
+import type { Scope } from '../arsenals/loader'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { createDraftFromYaml } from './draft'
-import type { Scope } from '../arsenals/loader'
-import { BUILTIN_FORGES, type BuiltinForgeName } from '../arsenals/builtin'
-import { output, outputError, getFormatFromArgs } from './output'
+import { getFormatFromArgs, output, outputError } from './output'
 
 type ForgeType = 'probe' | 'part' | 'blueprint'
 
@@ -293,7 +293,7 @@ export default defineCommand({
         if (format === 'json') {
           return output({ data: { type, scaffold } }, format)
         }
-        process.stdout.write(scaffold + '\n')
+        process.stdout.write(`${scaffold}\n`)
         return
       }
 

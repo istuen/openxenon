@@ -1,10 +1,10 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync } from 'fs'
+import { DocumentState, URI } from 'langium'
 import { compileBundle } from '../oxn-dsl/compiler/bundle-compiler'
-import { createOxnServices } from '../oxn-dsl/langium/oxn-services'
-import { URI, DocumentState } from 'langium'
 import type { OXNDocument } from '../oxn-dsl/generated/ast'
-import { output, outputError, getFormatFromArgs } from './output'
+import { createOxnServices } from '../oxn-dsl/langium/oxn-services'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export interface DiagnosticResult {
   ok: boolean
@@ -60,7 +60,7 @@ function validateOxnSyntax(sourcePath: string, content: string): DiagnosticResul
 
     if (doc.state >= DocumentState.Parsed) {
       const root = doc.parseResult?.value as OXNDocument | undefined
-      if (!root || !root.entities || root.entities.length === 0) {
+      if (!root?.entities || root.entities.length === 0) {
         diagnostics.push({
           severity: 'warning',
           line: 1,

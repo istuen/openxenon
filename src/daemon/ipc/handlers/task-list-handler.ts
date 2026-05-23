@@ -1,7 +1,7 @@
-import { registerRoute } from '../router'
-import { readdirSync, existsSync, readFileSync } from '../../../infra/filesystem'
 import { join } from 'path'
+import { existsSync, readdirSync, readFileSync } from '../../../infra/filesystem'
 import { daemonLogger } from '../../logger'
+import { registerRoute } from '../router'
 
 async function handleTaskListHandler(_request: Request, projectPath: string): Promise<Response> {
   try {

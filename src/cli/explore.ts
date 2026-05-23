@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
-import { collectContext, saveReport, loadExplorationAssets } from '../infra/explore/collector'
+import { collectContext, loadExplorationAssets, saveReport } from '../infra/explore/collector'
 import { evaluateExploration } from '../kernel/explore/evaluator'
 import { renderMarkdown } from '../kernel/explore/reporter'
-import { output, outputError, getFormatFromArgs } from './output'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {

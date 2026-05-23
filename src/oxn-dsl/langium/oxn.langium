@@ -142,7 +142,7 @@ BlueprintDeclaration:
 PartInBlueprint:
     'part' name=STRING 'ref' ref=STRING '{'
         (propBindings+=PartPropBinding)*
-        ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
+        ('deps' '=' '[' (deps+=STRING (',' deps+=STRING)* ','?)? ']')?
     '}';
 
 PartPropBinding:

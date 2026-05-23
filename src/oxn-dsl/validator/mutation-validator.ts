@@ -7,8 +7,9 @@
  * - expectation 不可篡改检查
  * - 结构约束边界校验
  */
+
+import { type DagNode, validateDagTopology } from '../../kernel/schemas/dag-validator'
 import type { OxnAssemblyIR } from '../../kernel/schemas/oxn-assembly.schema'
-import { validateDagTopology, type DagNode } from '../../kernel/schemas/dag-validator'
 
 export interface MutationCheckResult {
   valid: boolean
@@ -45,7 +46,11 @@ export class MutationValidator {
     // 2. implements 契约不可篡改
     for (const originalPart of original.concreteParts) {
       const mutatedPart = mutated.concreteParts.find((p) => p.name === originalPart.name)
-      if (mutatedPart && (originalPart as any).implements && (mutatedPart as any).implements !== (originalPart as any).implements) {
+      if (
+        mutatedPart &&
+        (originalPart as any).implements &&
+        (mutatedPart as any).implements !== (originalPart as any).implements
+      ) {
         errors.push(
           `Part "${originalPart.name}" 的 implements 契约不可篡改: "${(originalPart as any).implements}" → "${(mutatedPart as any).implements}"`,
         )

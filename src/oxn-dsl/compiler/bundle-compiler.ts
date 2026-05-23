@@ -6,15 +6,15 @@
  *   2. <name>.bundle.assembly.json — 纯数据契约
  *   3. <name>.bundle.assembly.schema.json — JSON Schema
  */
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
-import { join, dirname, basename } from 'path'
-import { parse as parseYaml } from 'yaml'
-import { createOxnServices, resetOxnServices } from '../langium/oxn-services.js'
-import { generateOxnAssembly } from '../generator/oxn-generator.js'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { URI } from 'langium'
-import type { OXNDocument } from '../generated/ast.js'
-import { flattenBundle } from '../flattener/bundle-flattener.js'
+import { basename, dirname, join } from 'path'
+import { parse as parseYaml } from 'yaml'
 import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../../kernel/schemas/oxn-assembly.schema'
+import { flattenBundle } from '../flattener/bundle-flattener.js'
+import type { OXNDocument } from '../generated/ast.js'
+import { generateOxnAssembly } from '../generator/oxn-generator.js'
+import { createOxnServices, resetOxnServices } from '../langium/oxn-services.js'
 
 // ========================
 // JSON Schema 生成器 (简化版)
@@ -40,7 +40,10 @@ function generateJsonSchema(entities: OxnAssemblyBundleEntity[]): Record<string,
           type: (p.type as string).startsWith('enum') ? 'string' : (p.type as string),
         }
       }
-      schema.properties = { ...(schema.properties as Record<string, unknown>), props: { type: 'object', properties: propSchema } } as Record<string, unknown>
+      schema.properties = {
+        ...(schema.properties as Record<string, unknown>),
+        props: { type: 'object', properties: propSchema },
+      } as Record<string, unknown>
     }
 
     if (data._version !== undefined) {
@@ -85,7 +88,7 @@ function parseOxnViaLangium(
     const uri = URI.file(sourcePath)
     const doc = factory.fromString(content, uri, undefined)
 
-    if (!doc.parseResult || !doc.parseResult.value) {
+    if (!doc.parseResult?.value) {
       return { entities: [], errors: ['Langium 文档解析失败: 无有效 parseResult'] }
     }
 

@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
-import { migrateSingleFile, migrateDirectory, migrateAllArsenals, formatMigrationReport } from './migrate-yaml'
-import { output, outputError, getFormatFromArgs } from './output'
+import { formatMigrationReport, migrateAllArsenals, migrateDirectory, migrateSingleFile } from './migrate-yaml'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {

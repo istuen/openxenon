@@ -1,13 +1,13 @@
 import { defineCommand } from 'citty'
+import { ensureArsenalsDirectories } from '../arsenals/init'
 import {
   arsenalListStandards as listStandards,
   arsenalLoadStandardByName as loadStandardByName,
-  type StandardAsset,
   type Scope,
+  type StandardAsset,
 } from '../arsenals/loader'
-import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetState, AssetType } from '../arsenals/paths'
-import { output, outputError, getFormatFromArgs } from './output'
+import { getFormatFromArgs, output, outputError } from './output'
 
 const TYPE_ALIASES: Record<string, AssetType> = {
   blueprint: 'blueprints',

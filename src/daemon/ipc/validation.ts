@@ -5,7 +5,7 @@ export async function parseJSONBody<T>(request: Request): Promise<T | null> {
       return null
     }
     return JSON.parse(text) as T
-  } catch (error) {
+  } catch (_error) {
     throw new Error('Invalid JSON body')
   }
 }

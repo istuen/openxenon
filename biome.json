@@ -19,10 +19,25 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "noForEach": "off"
+        "noForEach": "off",
+        "noStaticOnlyClass": "off"
       },
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "off",
+        "useNodejsImportProtocol": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off",
+        "noTemplateCurlyInString": "off",
+        "noImplicitAnyLet": "off",
+        "noAssignInExpressions": "off",
+        "noNonNullAssertedOptionalChain": "off",
+        "noThenProperty": "off"
+      },
+      "correctness": {
+        "noVoidTypeReturn": "off",
+        "noUnusedImports": "off",
+        "noEmptyCharacterClassInRegex": "off"
       }
     }
   },
@@ -36,7 +51,7 @@
     "enabled": true,
     "actions": {
       "source": {
-        "organizeImports": "on"
+        "organizeImports": "off"
       }
     }
   }

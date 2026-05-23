@@ -1,17 +1,15 @@
-import { describe, test, expect, beforeEach } from 'bun:test'
+import { beforeEach, describe, expect, test } from 'bun:test'
+import { getBuiltinRegistry, OxnBuiltinRegistry } from '../scope/oxn-builtin-registry'
 import {
-  parseOxnReference,
-  formatOxnReference,
-  isValidOxnReference,
-  getScopeRoot,
-  getScopeAssetDir,
   compareProps,
+  formatOxnReference,
+  getScopeAssetDir,
+  getScopeRoot,
+  isValidOxnReference,
   type OxnReference,
-  type OxnScope,
-  type OxnAssetType,
+  parseOxnReference,
 } from '../scope/oxn-scope'
-import { OxnBuiltinRegistry, getBuiltinRegistry } from '../scope/oxn-builtin-registry'
-import { OxnWorkspaceManager, createWorkspaceManager, getWorkspaceManager } from '../scope/oxn-workspace-manager'
+import { createWorkspaceManager, type OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
 
 // ========================
 // parseOxnReference 测试
@@ -21,45 +19,45 @@ describe('parseOxnReference — 引用解析', () => {
   test('三段式 @oxn/probe/shell-exec', () => {
     const ref = parseOxnReference('@oxn/probe/shell-exec')
     expect(ref).not.toBeNull()
-    expect(ref!.scope).toBe('oxn')
-    expect(ref!.type).toBe('probe')
-    expect(ref!.name).toBe('shell-exec')
-    expect(ref!.raw).toBe('@oxn/probe/shell-exec')
+    expect(ref?.scope).toBe('oxn')
+    expect(ref?.type).toBe('probe')
+    expect(ref?.name).toBe('shell-exec')
+    expect(ref?.raw).toBe('@oxn/probe/shell-exec')
   })
 
   test('三段式 @prj/part/jest-runner', () => {
     const ref = parseOxnReference('@prj/part/jest-runner')
-    expect(ref!.scope).toBe('prj')
-    expect(ref!.type).toBe('part')
-    expect(ref!.name).toBe('jest-runner')
+    expect(ref?.scope).toBe('prj')
+    expect(ref?.type).toBe('part')
+    expect(ref?.name).toBe('jest-runner')
   })
 
   test('三段式 @glo/blueprint/deploy', () => {
     const ref = parseOxnReference('@glo/blueprint/deploy')
-    expect(ref!.scope).toBe('glo')
-    expect(ref!.type).toBe('blueprint')
-    expect(ref!.name).toBe('deploy')
+    expect(ref?.scope).toBe('glo')
+    expect(ref?.type).toBe('blueprint')
+    expect(ref?.name).toBe('deploy')
   })
 
   test('三段式 @prj/interface/test-runner', () => {
     const ref = parseOxnReference('@prj/interface/test-runner')
-    expect(ref!.scope).toBe('prj')
-    expect(ref!.type).toBe('interface')
-    expect(ref!.name).toBe('test-runner')
+    expect(ref?.scope).toBe('prj')
+    expect(ref?.type).toBe('interface')
+    expect(ref?.name).toBe('test-runner')
   })
 
   test('两段式 @oxn/shell-exec', () => {
     const ref = parseOxnReference('@oxn/shell-exec')
-    expect(ref!.scope).toBe('oxn')
-    expect(ref!.type).toBeUndefined()
-    expect(ref!.name).toBe('shell-exec')
+    expect(ref?.scope).toBe('oxn')
+    expect(ref?.type).toBeUndefined()
+    expect(ref?.name).toBe('shell-exec')
   })
 
   test('两段式 @prj/my-part', () => {
     const ref = parseOxnReference('@prj/my-part')
-    expect(ref!.scope).toBe('prj')
-    expect(ref!.type).toBeUndefined()
-    expect(ref!.name).toBe('my-part')
+    expect(ref?.scope).toBe('prj')
+    expect(ref?.type).toBeUndefined()
+    expect(ref?.name).toBe('my-part')
   })
 
   test('非法引用：无 @ 前缀', () => {
@@ -184,7 +182,7 @@ describe('OxnBuiltinRegistry', () => {
   test('查询内置探针 shell-exec', () => {
     const probe = registry.getProbe('shell-exec')
     expect(probe).not.toBeNull()
-    expect(probe!.type).toBe('shell_exec')
+    expect(probe?.type).toBe('shell_exec')
   })
 
   test('查询不存在的探针返回 null', () => {
@@ -194,7 +192,7 @@ describe('OxnBuiltinRegistry', () => {
   test('查询内置零件 git-commit', () => {
     const part = registry.getPart('git-commit')
     expect(part).not.toBeNull()
-    expect(part!.name).toBe('Git Commit')
+    expect(part?.name).toBe('Git Commit')
   })
 
   test('has 检查', () => {

@@ -1,5 +1,5 @@
-import type { ProbeResult, TraceEvent, TaskTraceState, PartState, TaskTraceYaml } from './types/task-trace'
 import type { TaskStatus } from './types/core'
+import type { PartState, ProbeResult, TaskTraceState, TaskTraceYaml, TraceEvent } from './types/task-trace'
 
 function isOldFormat(content: string): boolean {
   const trimmed = content.trim()
@@ -227,7 +227,11 @@ export function createPartState(partId: string, partName: string): PartState {
   }
 }
 
-export function buildTraceEvent(type: TraceEvent['type'], taskId: string, payload: Record<string, unknown>): TraceEvent {
+export function buildTraceEvent(
+  type: TraceEvent['type'],
+  taskId: string,
+  payload: Record<string, unknown>,
+): TraceEvent {
   return {
     type,
     taskId,
@@ -236,4 +240,4 @@ export function buildTraceEvent(type: TraceEvent['type'], taskId: string, payloa
   } as TraceEvent
 }
 
-export type { TaskTraceState, PartState, TraceEvent, ProbeResult }
+export type { PartState, ProbeResult, TaskTraceState, TraceEvent }

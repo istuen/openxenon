@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { ensureHallDirectory, renderHall } from '../hall'
 import { getProjectBoundaryPath } from '../kernel'
-import { output, outputError, getFormatFromArgs } from './output'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {

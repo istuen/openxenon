@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { existsSync, readFileSync } from 'fs'
 
 // ========================
@@ -84,7 +84,7 @@ describe('ExpectationRunner (Task 4.3)', () => {
   test('执行期望通过', async () => {
     const runner = new ExpectationRunner({
       handlers: {
-        'fs-exists': async (params) => ({ passed: true, output: 'found' }),
+        'fs-exists': async (_params) => ({ passed: true, output: 'found' }),
       },
     })
 

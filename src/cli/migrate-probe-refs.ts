@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
 import { globSync } from 'glob'
+import { join } from 'path'
 
 interface MigrationResult {
   file: string
@@ -154,7 +154,7 @@ export function formatMigrationReport(results: MigrationResult[]): string {
     if (!byFile[r.file]) {
       byFile[r.file] = []
     }
-    byFile[r.file]!.push(r)
+    byFile[r.file]?.push(r)
   }
 
   for (const [file, itemResults] of Object.entries(byFile)) {

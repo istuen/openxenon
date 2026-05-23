@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
+import { existsSync, readdirSync, rmSync, statSync } from 'fs'
 import { resolve } from 'path'
-import { readdirSync, statSync, rmSync, existsSync } from 'fs'
-import { output, outputError, getFormatFromArgs } from './output'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {

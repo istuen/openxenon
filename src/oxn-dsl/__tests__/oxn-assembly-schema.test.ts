@@ -1,25 +1,35 @@
-import { describe, test, expect } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import {
-  OxnAssemblyPropSchema,
-  OxnAssemblyPartSchema,
-  OxnAssemblyIRSchema,
-  OxnAssemblyTaskIRSchema,
+  createOxnAssemblyIR,
   OxnAssemblyBundleSchema,
   OxnAssemblyExpectationSchema,
-  OxnAssemblyRuleSchema,
-  OxnAssemblyProbeSchema,
-  OxnTypeReferenceSchema,
-  createOxnAssemblyIR,
-  type OxnAssemblySlotBinding,
-  validateOxnAssemblyIR,
   type OxnAssemblyIR,
+  OxnAssemblyPartSchema,
+  OxnAssemblyProbeSchema,
+  OxnAssemblyPropSchema,
+  OxnAssemblyRuleSchema,
+  OxnAssemblyTaskIRSchema,
+  OxnTypeReferenceSchema,
+  validateOxnAssemblyIR,
 } from '../../kernel/schemas/oxn-assembly.schema'
 
-function createAbstractPart(params: { name: string; implements?: string }): any {
+function _createAbstractPart(params: { name: string; implements?: string }): any {
   return { name: params.name, description: undefined, props: [], probes: [], execution: [] }
 }
-function createConcretePart(params: { name: string; implements?: string; props?: { name: string; type: string; required?: boolean; default?: unknown }[]; probes?: { name: string; ref?: string; params?: Record<string, unknown> }[]; execution?: string[] }): any {
-  return { name: params.name, description: undefined, props: params.props || [], probes: params.probes || [], execution: params.execution || [] }
+function _createConcretePart(params: {
+  name: string
+  implements?: string
+  props?: { name: string; type: string; required?: boolean; default?: unknown }[]
+  probes?: { name: string; ref?: string; params?: Record<string, unknown> }[]
+  execution?: string[]
+}): any {
+  return {
+    name: params.name,
+    description: undefined,
+    props: params.props || [],
+    probes: params.probes || [],
+    execution: params.execution || [],
+  }
 }
 
 // ========================
@@ -150,9 +160,7 @@ describe('OxnAssemblyTaskIR', () => {
     const task = OxnAssemblyTaskIRSchema.parse({
       name: 'validate-feature-auth',
       use: '@prj/blueprints/feature-pipeline',
-      slotBindings: [
-        { slot: 'tester', ref: '@glo/parts/jest-runner', props: { env: 'prod' } },
-      ],
+      slotBindings: [{ slot: 'tester', ref: '@glo/parts/jest-runner', props: { env: 'prod' } }],
     })
     expect(task.name).toBe('validate-feature-auth')
     expect(task.use).toBe('@prj/blueprints/feature-pipeline')
@@ -266,9 +274,7 @@ describe('OxnAssemblyBundle', () => {
           data: {
             name: 'deploy-prod',
             use: '@prj/blueprint/deploy',
-            slotBindings: [
-              { slot: 'worker', ref: '@glo/parts/k8s-worker', props: { env: 'prod' } },
-            ],
+            slotBindings: [{ slot: 'worker', ref: '@glo/parts/k8s-worker', props: { env: 'prod' } }],
           },
         },
       ],

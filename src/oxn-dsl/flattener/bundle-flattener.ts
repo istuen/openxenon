@@ -4,9 +4,10 @@
  * 递归解析 ref 外部引用，扁平化拼接为单体 .bundle.oxn。
  * 保留 prop 和 params 模板占位符（不求值），消除外部依赖。
  */
-import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
-import type { OxnAssetType } from '../scope/oxn-scope'
+
 import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssetType } from '../scope/oxn-scope'
+import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
 
 export interface FlattenOptions {
   maxDepth?: number // 最大递归深度，默认 3
@@ -95,7 +96,7 @@ export class BundleFlattener {
     if (probes) {
       for (const probe of probes) {
         const ref = probe.ref as string | undefined
-        if (ref && ref.startsWith('@')) {
+        if (ref?.startsWith('@')) {
           this._inlineRef(ref, 'probe', result)
         }
       }

@@ -1,10 +1,10 @@
+import { join } from 'path'
+import { existsSync } from '../../../infra/filesystem'
+import { BOUNDARY_DIR } from '../../../kernel/constants'
+import { readTaskTrace } from '../../trace/writer'
+import { badRequest, notFound } from '../errors'
 import { registerRoute } from '../router'
 import { parseJSONBody, validateRequiredFields } from '../validation'
-import { badRequest, notFound } from '../errors'
-import { readTaskTrace } from '../../trace/writer'
-import { existsSync } from '../../../infra/filesystem'
-import { join } from 'path'
-import { BOUNDARY_DIR } from '../../../kernel/constants'
 
 async function handleTaskStart(request: Request, projectPath: string): Promise<Response> {
   try {

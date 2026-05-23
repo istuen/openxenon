@@ -8,42 +8,42 @@
  * - ref/use 提升至 header
  * - Task 使用 part slot 覆写
  */
-import type {
-  OXNDocument,
-  TopLevelEntity,
-  ProbeDeclaration,
-  PartDeclaration,
-  BlueprintDeclaration,
-  TaskDeclaration,
-  PartInBlueprint,
-  PartSlotDeclaration,
-  ExpectationDeclaration,
-  RuleDeclaration,
-  SlotBinding,
-  PropDeclaration,
-  PartProbeDeclaration,
-  ExecutionRef,
-  Expression,
-  VariableRef,
-  OutputField,
-} from '../generated/ast.js'
 
 import type {
-  OxnAssemblyIR,
-  OxnAssemblyPart,
-  OxnAssemblyTaskIR,
   OxnAssemblyBundle,
   OxnAssemblyBundleEntity,
-  OxnAssemblyProp,
-  OxnAssemblyProbe,
-  OxnAssemblySlotBinding,
-  OxnAssemblySlot,
   OxnAssemblyExpectation,
-  OxnAssemblyRule,
+  OxnAssemblyIR,
+  OxnAssemblyPart,
   OxnAssemblyPartProbe,
+  OxnAssemblyProbe,
+  OxnAssemblyProp,
+  OxnAssemblyRule,
+  OxnAssemblySlot,
+  OxnAssemblySlotBinding,
+  OxnAssemblyTaskIR,
 } from '../../kernel/schemas/oxn-assembly.schema.js'
+import type {
+  BlueprintDeclaration,
+  ExecutionRef,
+  ExpectationDeclaration,
+  Expression,
+  OutputField,
+  OXNDocument,
+  PartDeclaration,
+  PartInBlueprint,
+  PartProbeDeclaration,
+  PartSlotDeclaration,
+  ProbeDeclaration,
+  PropDeclaration,
+  RuleDeclaration,
+  SlotBinding,
+  TaskDeclaration,
+  TopLevelEntity,
+  VariableRef,
+} from '../generated/ast.js'
 
-import { isTemplateString, isVariableRef, isBinaryExpr, isTernaryExpr } from '../generated/ast.js'
+import { isBinaryExpr, isTemplateString, isTernaryExpr, isVariableRef } from '../generated/ast.js'
 
 // ========================
 // Expression → String
@@ -138,7 +138,7 @@ function propDeclarationToAssemblyProp(prop: PropDeclaration): OxnAssemblyProp {
     required = typeof prop.required.value === 'boolean' ? prop.required.value : prop.required.value === 'true'
   }
 
-  let defaultValue: unknown = undefined
+  let defaultValue: unknown
   if (prop.default) {
     defaultValue = expressionToValue(prop.default.value)
   }
@@ -228,6 +228,7 @@ function convertPartInBlueprint(decl: PartInBlueprint): OxnAssemblyPart {
     probes: [],
     execution: [],
     deps: decl.deps || [],
+    ref: decl.ref,
   }
 }
 

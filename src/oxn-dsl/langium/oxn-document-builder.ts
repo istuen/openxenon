@@ -1,14 +1,13 @@
-import type { LangiumSharedCoreServices, LangiumCoreServices, LangiumDocument, AstNode } from 'langium'
-import { DocumentState, URI, Cancellation } from 'langium'
 import { existsSync, readFileSync } from 'fs'
-import { join, isAbsolute } from 'path'
-
-import { createOxnServices } from './oxn-services.js'
-import type { IOxnWorkspaceManager } from '../scope/oxn-scope.js'
-import { parseOxnReference } from '../scope/oxn-scope.js'
+import type { AstNode, LangiumCoreServices, LangiumDocument, LangiumSharedCoreServices } from 'langium'
+import { Cancellation, DocumentState, URI } from 'langium'
+import { isAbsolute, join } from 'path'
 import type { StandardAsset } from '../../infra/loader.js'
 import type { TaskDeclaration } from '../generated/ast.js'
-import { isTaskDeclaration, isSlotBinding } from '../generated/ast.js'
+import { isSlotBinding, isTaskDeclaration } from '../generated/ast.js'
+import type { IOxnWorkspaceManager } from '../scope/oxn-scope.js'
+import { parseOxnReference } from '../scope/oxn-scope.js'
+import { createOxnServices } from './oxn-services.js'
 
 const { CancellationToken } = Cancellation
 
@@ -21,7 +20,7 @@ export interface ExternalInjectionResult {
 function collectBindingRefsFromDocument(document: LangiumDocument): string[] {
   const refs: string[] = []
 
-  if (!document.parseResult || !document.parseResult.value) return refs
+  if (!document.parseResult?.value) return refs
 
   const root = document.parseResult.value as { entities?: AstNode[] }
 
@@ -52,7 +51,7 @@ function resolveRefsToPaths(refs: string[], workspaceManager: IOxnWorkspaceManag
 
     try {
       const asset = workspaceManager.resolve(ref, parsed.type)
-      if (asset && asset.asset && 'path' in asset.asset) {
+      if (asset?.asset && 'path' in asset.asset) {
         const path = (asset.asset as StandardAsset).path
         if (path) {
           resolved.set(ref, path)

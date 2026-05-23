@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-2): daemon-status needs socket-based status; probe only covers PID check
-import { getDaemonBasicStatus, queryDaemonStatus, getRecentLogs } from '../daemon/status-client'
+import { getDaemonBasicStatus, getRecentLogs, queryDaemonStatus } from '../daemon/status-client'
 import { output } from './output'
 
 export default defineCommand({

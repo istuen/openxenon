@@ -1,19 +1,19 @@
 import { join } from 'path'
 import {
-  GLOBAL_ARSENALS_ROOT,
-  GLOBAL_ARSENALS_PROBES,
   GLOBAL_ARSENALS_BLUEPRINTS,
   GLOBAL_ARSENALS_PARTS,
-  GLOBAL_FORGES_ROOT,
-  GLOBAL_FORGES_PROBES,
+  GLOBAL_ARSENALS_PROBES,
+  GLOBAL_ARSENALS_ROOT,
   GLOBAL_FORGES_BLUEPRINTS,
   GLOBAL_FORGES_PARTS,
+  GLOBAL_FORGES_PROBES,
+  GLOBAL_FORGES_ROOT,
   resolveArsenalRoot,
   resolveForgeRoot,
   type Scope,
 } from '../infra/paths'
 
-export { type Scope } from '../infra/paths'
+export type { Scope } from '../infra/paths'
 
 export const ARSENALS_ROOT = GLOBAL_ARSENALS_ROOT
 export const ARSENALS_PROBES = GLOBAL_ARSENALS_PROBES

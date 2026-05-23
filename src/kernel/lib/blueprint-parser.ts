@@ -204,7 +204,6 @@ export function parseBlueprintYaml(yaml: string): ParsedBlueprint {
           part.spec.description = trimmed.slice(12).trim()
         }
       }
-      continue
     }
   }
 

@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
+import { getFormatFromArgs, output, outputError } from './output'
 import { promoteBlueprint } from './oxn-promote'
-import { output, outputError, getFormatFromArgs } from './output'
 
 export default defineCommand({
   meta: {

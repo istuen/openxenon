@@ -312,9 +312,7 @@ export function generateHallIndexHtml(projectRoot: string): string {
       taskName: t.taskName,
       status: t.status,
       currentPart: t.currentPart,
-      parts: Object.fromEntries(
-        Object.entries(t.parts).map(([k, v]) => [k, v.status]),
-      ),
+      parts: Object.fromEntries(Object.entries(t.parts).map(([k, v]) => [k, v.status])),
       partDetails: t.partDetails || [],
     })),
   )
