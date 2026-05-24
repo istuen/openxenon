@@ -3,13 +3,11 @@
  * DO NOT EDIT MANUALLY!
  ******************************************************************************/
 
-import type { Grammar } from 'langium'
-import { loadGrammarFromJson } from 'langium'
+import type { Grammar } from 'langium';
+import { loadGrammarFromJson } from 'langium';
 
-let loadedOXNGrammar: Grammar | undefined
-export const OXNGrammar = (): Grammar =>
-  loadedOXNGrammar ??
-  (loadedOXNGrammar = loadGrammarFromJson(`{
+let loadedOXNGrammar: Grammar | undefined;
+export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar = loadGrammarFromJson(`{
   "$type": "Grammar",
   "isDeclared": true,
   "name": "OXN",
@@ -1658,6 +1656,22 @@ export const OXNGrammar = (): Grammar =>
           },
           {
             "$type": "Keyword",
+            "value": "type"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "type",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@42"
+              },
+              "arguments": []
+            }
+          },
+          {
+            "$type": "Keyword",
             "value": "{"
           },
           {
@@ -1954,51 +1968,30 @@ export const OXNGrammar = (): Grammar =>
       "$type": "ParserRule",
       "name": "PartSlotDeclaration",
       "definition": {
-        "$type": "Group",
+        "$type": "Alternatives",
         "elements": [
-          {
-            "$type": "Keyword",
-            "value": "part"
-          },
-          {
-            "$type": "Keyword",
-            "value": "slot"
-          },
-          {
-            "$type": "Assignment",
-            "feature": "name",
-            "operator": "=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@42"
-              },
-              "arguments": []
-            }
-          },
-          {
-            "$type": "Keyword",
-            "value": "{"
-          },
           {
             "$type": "Group",
             "elements": [
               {
-                "$type": "Keyword",
-                "value": "deps"
+                "$type": "Action",
+                "inferredType": {
+                  "$type": "InferredType",
+                  "name": "SlotSingle"
+                }
               },
               {
                 "$type": "Keyword",
-                "value": "="
+                "value": "part"
               },
               {
                 "$type": "Keyword",
-                "value": "["
+                "value": "slot"
               },
               {
                 "$type": "Assignment",
-                "feature": "deps",
-                "operator": "+=",
+                "feature": "name",
+                "operator": "=",
                 "terminal": {
                   "$type": "RuleCall",
                   "rule": {
@@ -2008,11 +2001,23 @@ export const OXNGrammar = (): Grammar =>
                 }
               },
               {
+                "$type": "Keyword",
+                "value": "{"
+              },
+              {
                 "$type": "Group",
                 "elements": [
                   {
                     "$type": "Keyword",
-                    "value": ","
+                    "value": "deps"
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": "="
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": "["
                   },
                   {
                     "$type": "Assignment",
@@ -2025,25 +2030,155 @@ export const OXNGrammar = (): Grammar =>
                       },
                       "arguments": []
                     }
+                  },
+                  {
+                    "$type": "Group",
+                    "elements": [
+                      {
+                        "$type": "Keyword",
+                        "value": ","
+                      },
+                      {
+                        "$type": "Assignment",
+                        "feature": "deps",
+                        "operator": "+=",
+                        "terminal": {
+                          "$type": "RuleCall",
+                          "rule": {
+                            "$ref": "#/rules@42"
+                          },
+                          "arguments": []
+                        }
+                      }
+                    ],
+                    "cardinality": "*"
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": ",",
+                    "cardinality": "?"
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": "]"
                   }
                 ],
-                "cardinality": "*"
-              },
-              {
-                "$type": "Keyword",
-                "value": ",",
                 "cardinality": "?"
               },
               {
                 "$type": "Keyword",
-                "value": "]"
+                "value": "}"
               }
-            ],
-            "cardinality": "?"
+            ]
           },
           {
-            "$type": "Keyword",
-            "value": "}"
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Action",
+                "inferredType": {
+                  "$type": "InferredType",
+                  "name": "SlotMulti"
+                }
+              },
+              {
+                "$type": "Keyword",
+                "value": "part"
+              },
+              {
+                "$type": "Keyword",
+                "value": "slots"
+              },
+              {
+                "$type": "Keyword",
+                "value": "["
+              },
+              {
+                "$type": "Keyword",
+                "value": "]"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "name",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@42"
+                  },
+                  "arguments": []
+                }
+              },
+              {
+                "$type": "Keyword",
+                "value": "{"
+              },
+              {
+                "$type": "Group",
+                "elements": [
+                  {
+                    "$type": "Keyword",
+                    "value": "deps"
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": "="
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": "["
+                  },
+                  {
+                    "$type": "Assignment",
+                    "feature": "deps",
+                    "operator": "+=",
+                    "terminal": {
+                      "$type": "RuleCall",
+                      "rule": {
+                        "$ref": "#/rules@42"
+                      },
+                      "arguments": []
+                    }
+                  },
+                  {
+                    "$type": "Group",
+                    "elements": [
+                      {
+                        "$type": "Keyword",
+                        "value": ","
+                      },
+                      {
+                        "$type": "Assignment",
+                        "feature": "deps",
+                        "operator": "+=",
+                        "terminal": {
+                          "$type": "RuleCall",
+                          "rule": {
+                            "$ref": "#/rules@42"
+                          },
+                          "arguments": []
+                        }
+                      }
+                    ],
+                    "cardinality": "*"
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": ",",
+                    "cardinality": "?"
+                  },
+                  {
+                    "$type": "Keyword",
+                    "value": "]"
+                  }
+                ],
+                "cardinality": "?"
+              },
+              {
+                "$type": "Keyword",
+                "value": "}"
+              }
+            ]
           }
         ]
       },
@@ -2255,13 +2390,13 @@ export const OXNGrammar = (): Grammar =>
     },
     {
       "$type": "ParserRule",
-      "name": "TaskDeclaration",
+      "name": "WorkDeclaration",
       "definition": {
         "$type": "Group",
         "elements": [
           {
             "$type": "Keyword",
-            "value": "task"
+            "value": "work"
           },
           {
             "$type": "Assignment",
@@ -2276,26 +2411,36 @@ export const OXNGrammar = (): Grammar =>
             }
           },
           {
-            "$type": "Group",
-            "elements": [
-              {
-                "$type": "Keyword",
-                "value": "use"
+            "$type": "Keyword",
+            "value": "type"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "type",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@42"
               },
-              {
-                "$type": "Assignment",
-                "feature": "use",
-                "operator": "=",
-                "terminal": {
-                  "$type": "RuleCall",
-                  "rule": {
-                    "$ref": "#/rules@42"
-                  },
-                  "arguments": []
-                }
-              }
-            ],
-            "cardinality": "?"
+              "arguments": []
+            }
+          },
+          {
+            "$type": "Keyword",
+            "value": "ref"
+          },
+          {
+            "$type": "Assignment",
+            "feature": "ref",
+            "operator": "=",
+            "terminal": {
+              "$type": "RuleCall",
+              "rule": {
+                "$ref": "#/rules@42"
+              },
+              "arguments": []
+            }
           },
           {
             "$type": "Keyword",
@@ -2328,38 +2473,22 @@ export const OXNGrammar = (): Grammar =>
       "$type": "ParserRule",
       "name": "SlotBinding",
       "definition": {
-        "$type": "Group",
+        "$type": "Alternatives",
         "elements": [
-          {
-            "$type": "Keyword",
-            "value": "part"
-          },
-          {
-            "$type": "Keyword",
-            "value": "slot"
-          },
-          {
-            "$type": "Assignment",
-            "feature": "slot",
-            "operator": "=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@42"
-              },
-              "arguments": []
-            }
-          },
           {
             "$type": "Group",
             "elements": [
               {
                 "$type": "Keyword",
-                "value": "ref"
+                "value": "part"
+              },
+              {
+                "$type": "Keyword",
+                "value": "slot"
               },
               {
                 "$type": "Assignment",
-                "feature": "ref",
+                "feature": "slot",
                 "operator": "=",
                 "terminal": {
                   "$type": "RuleCall",
@@ -2368,30 +2497,131 @@ export const OXNGrammar = (): Grammar =>
                   },
                   "arguments": []
                 }
-              }
-            ],
-            "cardinality": "?"
-          },
-          {
-            "$type": "Keyword",
-            "value": "{"
-          },
-          {
-            "$type": "Assignment",
-            "feature": "props",
-            "operator": "+=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@40"
               },
-              "arguments": []
-            },
-            "cardinality": "*"
+              {
+                "$type": "Group",
+                "elements": [
+                  {
+                    "$type": "Keyword",
+                    "value": "ref"
+                  },
+                  {
+                    "$type": "Assignment",
+                    "feature": "ref",
+                    "operator": "=",
+                    "terminal": {
+                      "$type": "RuleCall",
+                      "rule": {
+                        "$ref": "#/rules@42"
+                      },
+                      "arguments": []
+                    }
+                  }
+                ],
+                "cardinality": "?"
+              },
+              {
+                "$type": "Keyword",
+                "value": "{"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "props",
+                "operator": "+=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@40"
+                  },
+                  "arguments": []
+                },
+                "cardinality": "*"
+              },
+              {
+                "$type": "Keyword",
+                "value": "}"
+              }
+            ]
           },
           {
-            "$type": "Keyword",
-            "value": "}"
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Keyword",
+                "value": "part"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "name",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@42"
+                  },
+                  "arguments": []
+                }
+              },
+              {
+                "$type": "Keyword",
+                "value": "slot"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "slot",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@42"
+                  },
+                  "arguments": []
+                }
+              },
+              {
+                "$type": "Group",
+                "elements": [
+                  {
+                    "$type": "Keyword",
+                    "value": "ref"
+                  },
+                  {
+                    "$type": "Assignment",
+                    "feature": "ref",
+                    "operator": "=",
+                    "terminal": {
+                      "$type": "RuleCall",
+                      "rule": {
+                        "$ref": "#/rules@42"
+                      },
+                      "arguments": []
+                    }
+                  }
+                ],
+                "cardinality": "?"
+              },
+              {
+                "$type": "Keyword",
+                "value": "{"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "props",
+                "operator": "+=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@40"
+                  },
+                  "arguments": []
+                },
+                "cardinality": "*"
+              },
+              {
+                "$type": "Keyword",
+                "value": "}"
+              }
+            ]
           }
         ]
       },
@@ -2536,4 +2766,4 @@ export const OXNGrammar = (): Grammar =>
   "imports": [],
   "interfaces": [],
   "types": []
-}`))
+}`));

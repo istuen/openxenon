@@ -62,6 +62,7 @@ const main = defineCommand({
   subCommands: {
     init: () => import('./init').then((m) => m.default),
     task: () => import('./task').then((m) => m.default),
+    work: () => import('./work').then((m) => m.default),
     arsenal: () => import('./arsenal').then((m) => m.default),
     export: () => import('./export').then((m) => m.default),
     gc: () => import('./gc').then((m) => m.default),

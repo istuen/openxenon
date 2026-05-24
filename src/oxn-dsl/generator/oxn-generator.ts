@@ -38,7 +38,7 @@ import type {
   PropDeclaration,
   RuleDeclaration,
   SlotBinding,
-  TaskDeclaration,
+  WorkDeclaration,
   TopLevelEntity,
   VariableRef,
 } from '../generated/ast.js'
@@ -233,9 +233,11 @@ function convertPartInBlueprint(decl: PartInBlueprint): OxnAssemblyPart {
 }
 
 function convertPartSlotDeclaration(decl: PartSlotDeclaration): OxnAssemblySlot {
+  const isMulti = decl.$type === 'SlotMulti'
   return {
     name: decl.name,
     deps: decl.deps || [],
+    isMulti,
   }
 }
 
@@ -298,13 +300,13 @@ export function convertBlueprintDeclaration(decl: BlueprintDeclaration): OxnAsse
 }
 
 // ========================
-// Task 转换
+// Work 转换
 // ========================
 
-export function convertTaskDeclaration(decl: TaskDeclaration): OxnAssemblyTaskIR {
+export function convertWorkDeclaration(decl: WorkDeclaration): OxnAssemblyTaskIR {
   return {
     name: decl.name,
-    use: decl.use || '',
+    use: decl.ref || '',
     slotBindings: (decl.slotBindings || []).map(convertSlotBinding),
   }
 }
@@ -323,8 +325,8 @@ function convertTopLevelEntity(entity: TopLevelEntity): OxnAssemblyBundleEntity 
       return { type: 'part', data: convertPartDeclaration(entity as PartDeclaration) }
     case 'BlueprintDeclaration':
       return { type: 'blueprint', data: convertBlueprintDeclaration(entity as BlueprintDeclaration) }
-    case 'TaskDeclaration':
-      return { type: 'task', data: convertTaskDeclaration(entity as TaskDeclaration) }
+    case 'WorkDeclaration':
+      return { type: 'work', data: convertWorkDeclaration(entity as WorkDeclaration) }
     default:
       throw new Error(`Unknown top-level entity type: ${$type}`)
   }
@@ -354,21 +356,21 @@ export function extractBlueprints(document: OXNDocument): OxnAssemblyIR[] {
   return blueprints
 }
 
-export function extractTasks(document: OXNDocument): OxnAssemblyTaskIR[] {
-  const tasks: OxnAssemblyTaskIR[] = []
+export function extractWorks(document: OXNDocument): OxnAssemblyTaskIR[] {
+  const works: OxnAssemblyTaskIR[] = []
   for (const entity of document.entities || []) {
-    if (entity.$type === 'TaskDeclaration') {
-      tasks.push(convertTaskDeclaration(entity as TaskDeclaration))
+    if (entity.$type === 'WorkDeclaration') {
+      works.push(convertWorkDeclaration(entity as WorkDeclaration))
     }
   }
-  return tasks
+  return works
 }
 
 export interface CategorizedEntities {
   probes: OxnAssemblyProbe[]
   parts: OxnAssemblyPart[]
   blueprints: OxnAssemblyIR[]
-  tasks: OxnAssemblyTaskIR[]
+  works: OxnAssemblyTaskIR[]
 }
 
 export function categorizeEntities(document: OXNDocument): CategorizedEntities {
@@ -376,7 +378,7 @@ export function categorizeEntities(document: OXNDocument): CategorizedEntities {
     probes: [],
     parts: [],
     blueprints: [],
-    tasks: [],
+    works: [],
   }
 
   for (const entity of document.entities || []) {
@@ -390,8 +392,8 @@ export function categorizeEntities(document: OXNDocument): CategorizedEntities {
       case 'BlueprintDeclaration':
         result.blueprints.push(convertBlueprintDeclaration(entity as BlueprintDeclaration))
         break
-      case 'TaskDeclaration':
-        result.tasks.push(convertTaskDeclaration(entity as TaskDeclaration))
+      case 'WorkDeclaration':
+        result.works.push(convertWorkDeclaration(entity as WorkDeclaration))
         break
     }
   }

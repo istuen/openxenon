@@ -2,8 +2,17 @@
 
 ## OXN Mode (v3.1 Slot 范式)
 
+Blueprint 必须包含 `type` 字段，支持两种 Slot 声明：
+
+### 单实例 Slot vs 多实例 Slot
+
+| 语法 | 含义 | 使用场景 |
+|------|------|----------|
+| `part slot "name"` | 单实例 Slot，只能被一个 Part 填充 | 顺序执行的流程 |
+| `part slots[] "name"` | 多实例 Slot，可被多个 Part 填充 | 并行/可扩展的工作 |
+
 ```oxn
-blueprint "deploy-mysql" {
+blueprint "deploy-mysql" type "task" {
   version = 1
   prop "env" { type = enum("dev", "prod"); default = "dev" }
 
@@ -11,8 +20,34 @@ blueprint "deploy-mysql" {
     deps = []
   }
 
-  part slot "deploy" {
+  part slots[] "worker" {
     deps = ["prepare"]
+  }
+}
+```
+
+### 单实例示例
+
+```oxn
+blueprint "ci-pipeline" type "task" {
+  part slot "build" {
+    deps = []
+  }
+  part slot "test" {
+    deps = ["build"]
+  }
+  part slot "deploy" {
+    deps = ["test"]
+  }
+}
+```
+
+### 多实例示例
+
+```oxn
+blueprint "scale-pipeline" type "task" {
+  part slots[] "worker" {
+    deps = []
   }
 }
 ```
@@ -49,7 +84,20 @@ exec_exit_zero:   { command: "shell命令" }
 
 ## ❌ 常见错误
 
-1. **使用了旧类型名**
+1. **Blueprint 缺少 type 字段**
+   ```oxn
+   # 错误
+   blueprint "my-bp" {
+     part slot "step" { }
+   }
+
+   # 正确
+   blueprint "my-bp" type "task" {
+     part slot "step" { }
+   }
+   ```
+
+2. **使用了旧类型名**
    ```
    # 错误
    type: fs_match        # 旧名

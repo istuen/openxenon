@@ -3,8 +3,8 @@ import type { AstNode, LangiumCoreServices, LangiumDocument, LangiumSharedCoreSe
 import { Cancellation, DocumentState, URI } from 'langium'
 import { isAbsolute, join } from 'path'
 import type { StandardAsset } from '../../infra/loader.js'
-import type { TaskDeclaration } from '../generated/ast.js'
-import { isSlotBinding, isTaskDeclaration } from '../generated/ast.js'
+import type { WorkDeclaration } from '../generated/ast.js'
+import { isSlotBinding, isWorkDeclaration } from '../generated/ast.js'
 import type { IOxnWorkspaceManager } from '../scope/oxn-scope.js'
 import { parseOxnReference } from '../scope/oxn-scope.js'
 import { createOxnServices } from './oxn-services.js'
@@ -19,6 +19,7 @@ export interface ExternalInjectionResult {
 
 function collectBindingRefsFromDocument(document: LangiumDocument): string[] {
   const refs: string[] = []
+  const visitedRefs = new Set<string>()
 
   if (!document.parseResult?.value) return refs
 
@@ -27,14 +28,21 @@ function collectBindingRefsFromDocument(document: LangiumDocument): string[] {
   if (!root.entities) return refs
 
   for (const entity of root.entities) {
-    if (!isTaskDeclaration(entity)) continue
+    if (!isWorkDeclaration(entity)) continue
 
-    const task = entity as TaskDeclaration
-    if (!task.slotBindings) continue
+    const work = entity as WorkDeclaration
 
-    for (const binding of task.slotBindings) {
-      if (isSlotBinding(binding)) {
-        refs.push(binding.ref || '')
+    if (work.ref && !visitedRefs.has(work.ref)) {
+      refs.push(work.ref)
+      visitedRefs.add(work.ref)
+    }
+
+    if (!work.slotBindings) continue
+
+    for (const binding of work.slotBindings) {
+      if (isSlotBinding(binding) && binding.ref && !visitedRefs.has(binding.ref)) {
+        refs.push(binding.ref)
+        visitedRefs.add(binding.ref)
       }
     }
   }

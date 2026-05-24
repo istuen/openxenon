@@ -8,11 +8,11 @@ import { categorizeEntities } from '../generator/oxn-generator'
 import { createOxnServices } from '../langium/oxn-services'
 
 const BLUEPRINT_OXN = `
-blueprint "e2e-flow" {
+blueprint "e2e-flow" type "task" {
   version = 1
   prop "cmd" { type = string; default = "echo hello" }
 
-  part slot "runner" {
+  part slots[] "runner" {
     deps = []
   }
 }

@@ -1,3 +1,7 @@
+/**
+ * @deprecated 此模块已废弃，请使用 oxn work init --type explore 替代
+ * 旧命令保持兼容以支持现有工作流，数据路径不变 (.openxenon/explores/)
+ */
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
 import { extname, join } from 'path'
@@ -130,7 +134,7 @@ function updateQAAnswer(path: string, id: string, answer: string): boolean {
 export default defineCommand({
   meta: {
     name: 'explore',
-    description: '探索项目与任务，采集资料、问答记录、总结归档',
+    description: 'DEPRECATED: 探索项目与任务，采集资料、问答记录、总结归档。请使用 oxn work init --type explore 替代。',
   },
   subCommands: {
     new: defineCommand({

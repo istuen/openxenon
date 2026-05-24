@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test'
+import { beforeAll, describe, expect, test } from 'bun:test'
 import { detectPipeline } from '../../cli/oxn-dual-track'
 
 describe('detectPipeline', () => {
@@ -25,12 +25,18 @@ describe('detectPipeline', () => {
 // YAML → OXN 迁移测试
 // ========================
 
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { formatMigrationReport, type MigrationStats, migrateSingleFile } from '../../cli/migrate-yaml'
 
 describe('migrateSingleFile', () => {
   const tmpDir = '/tmp/oxn-migrate-test'
+
+  beforeAll(() => {
+    if (!existsSync(tmpDir)) {
+      mkdirSync(tmpDir, { recursive: true })
+    }
+  })
 
   test('stage 无 slot 的 Blueprint 迁移', () => {
     const yamlPath = join(tmpDir, 'test-migrate.yaml')

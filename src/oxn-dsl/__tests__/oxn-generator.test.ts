@@ -15,14 +15,14 @@ import type {
   ProbeDeclaration,
   PropDeclaration,
   RuleDeclaration,
-  TaskDeclaration,
+  WorkDeclaration,
 } from '../generated/ast'
 import {
   categorizeEntities,
   convertBlueprintDeclaration,
   convertPartDeclaration,
   convertProbeDeclaration,
-  convertTaskDeclaration,
+  convertWorkDeclaration,
   generateOxnAssembly,
 } from '../generator/oxn-generator'
 
@@ -267,14 +267,15 @@ describe('convertBlueprintDeclaration', () => {
   })
 })
 
-describe('convertTaskDeclaration', () => {
-  test('Task 绑定转换', () => {
-    const task: TaskDeclaration = {
-      $type: 'TaskDeclaration',
+describe('convertWorkDeclaration', () => {
+  test('Work 绑定转换', () => {
+    const work: WorkDeclaration = {
+      $type: 'WorkDeclaration',
       $containerProperty: '',
       $containerIndex: 0,
       name: 'validate-feature-auth',
-      use: '@prj/blueprint/feature-pipeline',
+      type: 'task',
+      ref: '@prj/blueprint/feature-pipeline',
       slotBindings: [
         {
           $type: 'SlotBinding',
@@ -285,9 +286,9 @@ describe('convertTaskDeclaration', () => {
           props: [{ $type: 'SlotPropBinding', $containerProperty: '', $containerIndex: 0, name: 'env', value: 'prod' }],
         },
       ],
-    } as TaskDeclaration
+    } as WorkDeclaration
 
-    const result = convertTaskDeclaration(task)
+    const result = convertWorkDeclaration(work)
     expect(result.name).toBe('validate-feature-auth')
     expect(result.use).toBe('@prj/blueprint/feature-pipeline')
     expect(result.slotBindings).toHaveLength(1)
@@ -337,13 +338,14 @@ describe('generateOxnAssembly — 完整 Bundle', () => {
           rules: [],
         } as BlueprintDeclaration,
         {
-          $type: 'TaskDeclaration',
+          $type: 'WorkDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
           name: 'deploy-prod',
-          use: '@prj/blueprint/ci-pipeline',
+          type: 'task',
+          ref: '@prj/blueprint/ci-pipeline',
           slotBindings: [],
-        } as TaskDeclaration,
+        } as WorkDeclaration,
       ],
     } as OXNDocument
 
@@ -354,7 +356,7 @@ describe('generateOxnAssembly — 完整 Bundle', () => {
     expect(types).toContain('probe')
     expect(types).toContain('part')
     expect(types).toContain('blueprint')
-    expect(types).toContain('task')
+    expect(types).toContain('work')
   })
 })
 
@@ -418,13 +420,14 @@ describe('categorizeEntities', () => {
           rules: [],
         } as BlueprintDeclaration,
         {
-          $type: 'TaskDeclaration',
+          $type: 'WorkDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
-          name: 't1',
-          use: '',
+          name: 'w1',
+          type: 'task',
+          ref: '',
           slotBindings: [],
-        } as TaskDeclaration,
+        } as WorkDeclaration,
       ],
     } as OXNDocument
 
@@ -432,7 +435,7 @@ describe('categorizeEntities', () => {
     expect(result.probes).toHaveLength(2)
     expect(result.parts).toHaveLength(2)
     expect(result.blueprints).toHaveLength(1)
-    expect(result.tasks).toHaveLength(1)
+    expect(result.works).toHaveLength(1)
   })
 })
 

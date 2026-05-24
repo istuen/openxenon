@@ -83,6 +83,15 @@ export const FrozenBlueprintSchema = z.object({
   _version: z.number().int().positive().optional(),
   frozen_at: z.string(),
   parts: z.array(FrozenPartSchema),
+  slots: z
+    .array(
+      z.object({
+        name: z.string(),
+        deps: z.array(z.string()).default([]),
+        isMulti: z.boolean().default(false),
+      }),
+    )
+    .optional(),
 })
 
 export type FrozenBlueprint = z.infer<typeof FrozenBlueprintSchema>

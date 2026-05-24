@@ -8,7 +8,7 @@ TopLevelEntity:
     ProbeDeclaration
     | PartDeclaration
     | BlueprintDeclaration
-    | TaskDeclaration;
+    | WorkDeclaration;
 
 // ==================== Type System ====================
 TypeReference:
@@ -129,7 +129,7 @@ ParamPair:
 
 // ==================== Blueprint ====================
 BlueprintDeclaration:
-    'blueprint' name=STRING '{'
+    'blueprint' name=STRING 'type' type=STRING '{'
         ('version' '=' version=NUMBER)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*
@@ -149,7 +149,10 @@ PartPropBinding:
     'prop' name=ID '=' value=Expression;
 
 PartSlotDeclaration:
-    'part' 'slot' name=STRING '{'
+    {infer SlotSingle} 'part' 'slot' name=STRING '{'
+        ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
+    '}'
+  | {infer SlotMulti} 'part' 'slots' '[' ']' name=STRING '{'
         ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
     '}';
 
@@ -166,14 +169,17 @@ RuleDeclaration:
         ('err_msg' '=' err_msg=STRING)?
     '}';
 
-// ==================== Task ====================
-TaskDeclaration:
-    'task' name=STRING ('use' use=STRING)? '{'
+// ==================== Work ====================
+WorkDeclaration:
+    'work' name=STRING 'type' type=STRING 'ref' ref=STRING '{'
         (slotBindings+=SlotBinding)*
     '}';
 
 SlotBinding:
     'part' 'slot' slot=STRING ('ref' ref=STRING)? '{'
+        (props+=SlotPropBinding)*
+    '}'
+  | 'part' name=STRING 'slot' slot=STRING ('ref' ref=STRING)? '{'
         (props+=SlotPropBinding)*
     '}';
 

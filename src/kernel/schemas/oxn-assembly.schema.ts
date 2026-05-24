@@ -71,6 +71,7 @@ export type OxnAssemblyPart = z.infer<typeof OxnAssemblyPartSchema>
 export const OxnAssemblySlotSchema = z.object({
   name: z.string().min(1),
   deps: z.array(z.string()).default([]),
+  isMulti: z.boolean().default(false),
 })
 export type OxnAssemblySlot = z.infer<typeof OxnAssemblySlotSchema>
 
@@ -156,6 +157,7 @@ export const OxnAssemblyBundleEntitySchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('part'), data: OxnAssemblyPartSchema }),
   z.object({ type: z.literal('blueprint'), data: OxnAssemblyIRSchema }),
   z.object({ type: z.literal('task'), data: OxnAssemblyTaskIRSchema }),
+  z.object({ type: z.literal('work'), data: OxnAssemblyTaskIRSchema }),
 ])
 export type OxnAssemblyBundleEntity = z.infer<typeof OxnAssemblyBundleEntitySchema>
 

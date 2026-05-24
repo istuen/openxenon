@@ -163,7 +163,8 @@ describe('Core Migration (Task 4.4)', () => {
     expect(content).toContain('verify-readme')
     expect(content).toContain('test-check-readme')
     expect(content).toContain('blueprint')
-    expect(content).toContain('stage')
+    expect(content).toContain('type "task"')
+    expect(content).toContain('part slot')
   })
 
   test('builtin probes 使用 @oxn scope 引用', () => {

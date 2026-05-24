@@ -2,121 +2,134 @@
 
 ## 行为约束
 
-当你收到 `/oxn-explore <name>` 指令时，必须严格按以下步骤执行。
+当你收到 `/oxn-explore <name>` 指令时，使用 oxn work 命令执行探索流程。
 
 ## 流程
 
 ```
-new → scan → qa → report
+init → next → execute → verify → (repeat) → complete
 ```
 
-## 步骤 1：创建探索
+## 步骤 1：创建探索 Work
 
-在终端执行以下命令创建新探索：
+在终端执行以下命令创建新探索 Work：
 
 ```bash
-oxn explore new <name>
+oxn work init <name> --type explore --blueprint explore-flow
 ```
 
-这会在 `.openxenon/explores/<name>/` 下创建目录结构：
+这会在 `.openxenon/work/explore/<name>.oxn` 创建 work 文件：
+
+```oxn
+work "<name>" type "explore" ref "@prj/blueprints/explore-flow" {
+  part slot[] "scan" { }
+  part slot[] "qa" { }
+  part slot[] "report" { }
+}
+```
+
+数据存储在 `.openxenon/explores/<name>/`（保持与旧命令兼容）：
 - `docs/` - 扫描的资料文档
-- `qa.md` - 问答记录
-- `report.md` - 报告文档
+- `ai-qa.json` - AI 问答记录
+- `engineer-qa.json` - 工程师问答记录
+- `report.md` - 最终报告
 
-## 步骤 2：扫描资料
+## 步骤 2：获取下一个 Part
 
-根据探索目标，使用 CLI 命令索引所需资料（**不复制全文，仅记录路径**）：
+```bash
+oxn work next --work-id <name> --type explore
+```
+
+返回当前需要执行的 part（scan → qa → report）。
+
+## 步骤 3：执行 Part
+
+根据返回的 part 执行相应工作：
+
+### Scan Slot
+
+扫描资料到 `.openxenon/explores/<name>/docs/`：
 
 ```bash
 oxn explore scan --name <name> --path <文件或目录>
 ```
 
-索引保存在 `.openxenon/explores/<name>/docs/index.md`
+### QA Slot
 
-查看已索引文件列表：
+进行 AI-工程师问答：
+
 ```bash
-oxn explore scan --name <name>
+oxn explore qa <name> --type ai --ask "问题内容"
+oxn explore qa <name> --type engineer --ask "问题内容"
 ```
 
-按需读取具体文件的完整内容：
+查看待回答问题：
+
 ```bash
-oxn explore scan --name <name> --read <file-path>
+oxn explore qa <name> --type ai --pending
+oxn explore qa <name> --type engineer --pending
 ```
 
-## 步骤 3：AI-工程师问答模式
+记录回答：
 
-这是核心步骤。AI 提出问题，工程师回答，记录关键信息。
-
-### AI 行为
-
-1. **先阅读索引，选择性深入**
-   ```bash
-   oxn explore scan <name>
-   ```
-   根据索引判断哪些文件相关，再逐个用 `--read` 读取关键文件。
-   **禁止**一次性读取所有文件以避免 Token 浪费。
-
-2. **基于资料提出探索性问题**
-   - 开放式问题：关于背景、目标、约束
-   - 澄清性问题：确认理解、消除歧义
-   - 深入性问题：挖掘细节、风险、假设
-
-3. **记录问答**
-   ```bash
-   oxn explore qa <name> --add "Q:工程师的回答是什么|A:AI的理解"
-   ```
-
-4. **查看当前问答记录**
-   ```bash
-   oxn explore qa <name> --list
-   ```
-
-### 何时结束问答
-
-当工程师确认信息充足时，提示可以生成报告。
-
-### 问答格式
-
-```markdown
-## Q: [AI的问题]
-**A:** [工程师的回答]
-
-## Q: [AI的问题]
-**A:** [工程师的回答]
+```bash
+oxn explore qa <name> --type ai --answer id|回答内容
 ```
 
-## 步骤 4：报告
+### Report Slot
 
-在工程师确认问答完成后，生成报告：
+生成报告：
 
 ```bash
 oxn explore report <name>
 ```
 
+## 步骤 4：验证 Part
+
+```bash
+oxn work verify --work-id <name> --part-id <part-id>
+```
+
+## 步骤 5：循环直到完成
+
+重复步骤 2-4，直到所有 part 通过验证。
+
 ## 其他命令
 
-### 列出所有探索
+### 列出所有探索 Work
+
+```bash
+oxn work list
+```
+
+### 查看探索状态
+
 ```bash
 oxn explore list
 ```
 
 ### 删除探索
+
 ```bash
 oxn explore delete <name>
 ```
 
-## 探索目录结构
-
-```
-.openxenon/explores/<name>/
-├── docs/           # 扫描的资料
-├── qa.md          # AI-工程师问答
-└── report.md      # 最终报告
-```
-
 ## 绝对禁止
 
-- 禁止在未创建探索目录前进行操作
-- 禁止跳过扫描步骤直接进行问答
+- 禁止在未创建 work 前进行操作
+- 禁止跳过 scan 直接进行 qa
 - 禁止 AI 未阅读资料就提问
-- 禁止一次性 cat/docs/* 读取所有文件 — 必须按需用 --read 逐个读取
+- 禁止一次性读取所有 docs/* 文件
+
+## 旧命令兼容
+
+以下旧命令仍然可用（已标记为 DEPRECATED）：
+
+- `oxn explore new <name>` — 推荐使用 `oxn work init <name> --type explore`
+- `oxn explore scan --name <name> --path <path>`
+- `oxn explore qa <name> ...`
+- `oxn explore report <name>`
+- `oxn explore list`
+- `oxn explore delete <name>`
+
+数据路径保持不变，都在 `.openxenon/explores/<name>/` 下。

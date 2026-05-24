@@ -1,14 +1,16 @@
 {
   "name": "oxn",
   "scopeName": "source.oxn",
-  "fileTypes": [".oxn"],
+  "fileTypes": [
+    ".oxn"
+  ],
   "patterns": [
     {
       "include": "#comments"
     },
     {
       "name": "keyword.control.oxn",
-      "match": "\\b(any|blueprint|boolean|condition|default|deps|description|enum|err_msg|execution|expectation|false|list|map|null|number|output|param|params|part|probe|prop|ref|required|rule|slot|string|task|true|type|use|version)\\b"
+      "match": "\\b(any|blueprint|boolean|condition|default|deps|description|enum|err_msg|execution|expectation|false|list|map|null|number|output|param|params|part|probe|prop|ref|required|rule|slot|slots|string|task|true|type|version|work)\\b"
     },
     {
       "name": "string.quoted.double.oxn",

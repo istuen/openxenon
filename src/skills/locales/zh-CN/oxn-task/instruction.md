@@ -48,7 +48,7 @@ CLI 会自动生成 `task.oxn` 文件。
 如果需要填充 Blueprint 中的 slot，编辑 `.openxenon/tasks/<task-id>/task.oxn`：
 
 ```oxn
-task "my-task" use "@prj/blueprints/new-task-flow" {
+work "my-task" type "task" ref "@prj/blueprints/new-task-flow" {
   part slot "develop" { }
 }
 ```

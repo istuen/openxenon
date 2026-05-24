@@ -1,13 +1,13 @@
-blueprint "verify-readme" {
+blueprint "verify-readme" type "task" {
   version = 1
-  stage "check-readme" {
-    run = "slot.check-readme.run"
+  part slot "check-readme" {
+    deps = []
   }
 }
 
-blueprint "test-check-readme" {
+blueprint "test-check-readme" type "task" {
   version = 1
-  stage "check-readme" {
-    run = "slot.check-readme.run"
+  part slot "check-readme" {
+    deps = []
   }
 }
