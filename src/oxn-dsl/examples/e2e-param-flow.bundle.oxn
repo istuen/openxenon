@@ -1,5 +1,0 @@
-// === OXN Bundle (assembled) ===
-blueprint "blueprint" {
-  version = 1
-  // ... (full definition in assembly.json)
-}

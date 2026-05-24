@@ -1,0 +1,18 @@
+blueprint "oxn-example" task {
+  description = "示例 Blueprint，展示 Blueprint 声明语法"
+
+  part "test" ref "@oxn/parts/develop-feature" {
+    deps = []
+  }
+
+  part slot "develop" {
+  }
+
+  expectation "must-pass-tests" {
+    probe = "@oxn/probes/shell_exec"
+    params = {
+      command = "npm test"
+    }
+    err_msg = "测试必须通过才能提交"
+  }
+}

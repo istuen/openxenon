@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/dist", "!!**/.openxenon"]
+    "includes": ["**", "!!**/dist", "!!**/.openxenon", "!!**/src/oxn-dsl/generated", "!!**/syntaxes"]
   },
   "formatter": {
     "enabled": true,

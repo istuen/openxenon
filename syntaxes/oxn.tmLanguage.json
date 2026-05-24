@@ -1,7 +1,9 @@
 {
   "name": "oxn",
   "scopeName": "source.oxn",
-  "fileTypes": [".oxn"],
+  "fileTypes": [
+    ".oxn"
+  ],
   "patterns": [
     {
       "include": "#comments"

@@ -3,39 +3,31 @@
  * DO NOT EDIT MANUALLY!
  ******************************************************************************/
 
-import type {
-  LangiumSharedCoreServices,
-  LangiumCoreServices,
-  LangiumGeneratedCoreServices,
-  LangiumGeneratedSharedCoreServices,
-  LanguageMetaData,
-  Module,
-  IParserConfig,
-} from 'langium'
-import { OXNDSLAstReflection } from './ast.js'
-import { OXNGrammar } from './grammar.js'
+import type { LangiumSharedCoreServices, LangiumCoreServices, LangiumGeneratedCoreServices, LangiumGeneratedSharedCoreServices, LanguageMetaData, Module, IParserConfig } from 'langium';
+import { OXNDSLAstReflection } from './ast.js';
+import { OXNGrammar } from './grammar.js';
 
 export const OXNLanguageMetaData = {
-  languageId: 'oxn',
-  fileExtensions: ['.oxn'],
-  caseInsensitive: false,
-  mode: 'development',
-} as const satisfies LanguageMetaData
+    languageId: 'oxn',
+    fileExtensions: ['.oxn'],
+    caseInsensitive: false,
+    mode: 'development'
+} as const satisfies LanguageMetaData;
 
 export const OXNParserConfig: IParserConfig = {
-  recoveryEnabled: true,
-  nodeLocationTracking: 'full',
-  maxLookahead: 4,
-}
+    recoveryEnabled: true,
+    nodeLocationTracking: 'full',
+    maxLookahead: 4,
+};
 
 export const OXNDSLGeneratedSharedModule: Module<LangiumSharedCoreServices, LangiumGeneratedSharedCoreServices> = {
-  AstReflection: () => new OXNDSLAstReflection(),
-}
+    AstReflection: () => new OXNDSLAstReflection()
+};
 
 export const OXNGeneratedModule: Module<LangiumCoreServices, LangiumGeneratedCoreServices> = {
-  Grammar: () => OXNGrammar(),
-  LanguageMetaData: () => OXNLanguageMetaData,
-  parser: {
-    ParserConfig: () => OXNParserConfig,
-  },
-}
+    Grammar: () => OXNGrammar(),
+    LanguageMetaData: () => OXNLanguageMetaData,
+    parser: {
+        ParserConfig: () => OXNParserConfig
+    }
+};

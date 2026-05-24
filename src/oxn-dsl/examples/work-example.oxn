@@ -1,0 +1,5 @@
+work "example-task" type "task" ref "@oxn/blueprints/oxn-example" {
+  part slot "develop" ref "@oxn/parts/develop-feature" {
+    prop feature_desc = "示例开发任务"
+  }
+}

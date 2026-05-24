@@ -4,1299 +4,1273 @@
  ******************************************************************************/
 
 /* eslint-disable */
-import * as langium from 'langium'
+import * as langium from 'langium';
 
 export const OXNDSLTerminals = {
-  ID: /[_a-zA-Z][\w-]*/,
-  STRING: /"[^"]*"/,
-  NUMBER: /[0-9]+(\.[0-9]+)?/,
-  TEMPLATE_STRING: /"([^"\\]|\\"|\$\{[^}]*\})*"/,
-  WS: /\s+/,
-  ML_COMMENT: /\/\*[\s\S]*?\*\//,
-  SL_COMMENT: /\/\/[^\n\r]*/,
-}
+    ID: /[_a-zA-Z][\w-]*/,
+    STRING: /"[^"]*"/,
+    NUMBER: /[0-9]+(\.[0-9]+)?/,
+    TEMPLATE_STRING: /"([^"\\]|\\"|\$\{[^}]*\})*"/,
+    WS: /\s+/,
+    ML_COMMENT: /\/\*[\s\S]*?\*\//,
+    SL_COMMENT: /\/\/[^\n\r]*/,
+};
 
-export type OXNDSLTerminalNames = keyof typeof OXNDSLTerminals
+export type OXNDSLTerminalNames = keyof typeof OXNDSLTerminals;
 
 export type OXNDSLKeywordNames =
-  | '!='
-  | '&&'
-  | '('
-  | ')'
-  | '+'
-  | ','
-  | '-'
-  | '.'
-  | ':'
-  | ';'
-  | '<'
-  | '<='
-  | '='
-  | '=='
-  | '>'
-  | '>='
-  | '?'
-  | '['
-  | ']'
-  | 'any'
-  | 'blueprint'
-  | 'boolean'
-  | 'condition'
-  | 'default'
-  | 'deps'
-  | 'description'
-  | 'enum'
-  | 'err_msg'
-  | 'execution'
-  | 'expectation'
-  | 'explore'
-  | 'false'
-  | 'list'
-  | 'map'
-  | 'null'
-  | 'number'
-  | 'output'
-  | 'param'
-  | 'params'
-  | 'part'
-  | 'plan'
-  | 'probe'
-  | 'prop'
-  | 'ref'
-  | 'required'
-  | 'rule'
-  | 'slot'
-  | 'slots'
-  | 'string'
-  | 'task'
-  | 'true'
-  | 'type'
-  | 'version'
-  | 'work'
-  | '{'
-  | '||'
-  | '}'
+    | "!="
+    | "&&"
+    | "("
+    | ")"
+    | "+"
+    | ","
+    | "-"
+    | "."
+    | ":"
+    | ";"
+    | "<"
+    | "<="
+    | "="
+    | "=="
+    | ">"
+    | ">="
+    | "?"
+    | "["
+    | "]"
+    | "any"
+    | "blueprint"
+    | "boolean"
+    | "condition"
+    | "default"
+    | "deps"
+    | "description"
+    | "enum"
+    | "err_msg"
+    | "execution"
+    | "expectation"
+    | "explore"
+    | "false"
+    | "list"
+    | "map"
+    | "null"
+    | "number"
+    | "output"
+    | "param"
+    | "params"
+    | "part"
+    | "plan"
+    | "probe"
+    | "prop"
+    | "ref"
+    | "required"
+    | "rule"
+    | "slot"
+    | "slots"
+    | "string"
+    | "task"
+    | "true"
+    | "type"
+    | "version"
+    | "work"
+    | "{"
+    | "||"
+    | "}";
 
-export type OXNDSLTokenNames = OXNDSLTerminalNames | OXNDSLKeywordNames
+export type OXNDSLTokenNames = OXNDSLTerminalNames | OXNDSLKeywordNames;
 
-export type AnyType = AnyTypeRef
+export type AnyType = AnyTypeRef;
 
 export const AnyType = {
-  $type: 'AnyType',
-} as const
+    $type: 'AnyType'
+} as const;
 
 export function isAnyType(item: unknown): item is AnyType {
-  return reflection.isInstance(item, AnyType.$type)
+    return reflection.isInstance(item, AnyType.$type);
 }
 
 export interface AnyTypeRef extends langium.AstNode {
-  readonly $container: GenericType | OutputField | PropDeclaration
-  readonly $type: 'AnyTypeRef'
+    readonly $container: GenericType | OutputField | PropDeclaration;
+    readonly $type: 'AnyTypeRef';
 }
 
 export const AnyTypeRef = {
-  $type: 'AnyTypeRef',
-} as const
+    $type: 'AnyTypeRef'
+} as const;
 
 export function isAnyTypeRef(item: unknown): item is AnyTypeRef {
-  return reflection.isInstance(item, AnyTypeRef.$type)
+    return reflection.isInstance(item, AnyTypeRef.$type);
 }
 
 export interface BinaryExpr extends langium.AstNode {
-  readonly $container:
-    | BinaryExpr
-    | DefaultValue
-    | ParamPair
-    | PartPropBinding
-    | RuleDeclaration
-    | SlotPropBinding
-    | TernaryExpr
-  readonly $type: 'BinaryExpr'
-  left: Expression
-  op: '!=' | '&&' | '+' | '-' | '<' | '<=' | '==' | '>' | '>=' | '||'
-  right: Expression
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | PartPropBinding | RuleDeclaration | SlotPropBinding | TernaryExpr;
+    readonly $type: 'BinaryExpr';
+    left: Expression;
+    op: '!=' | '&&' | '+' | '-' | '<' | '<=' | '==' | '>' | '>=' | '||';
+    right: Expression;
 }
 
 export const BinaryExpr = {
-  $type: 'BinaryExpr',
-  left: 'left',
-  op: 'op',
-  right: 'right',
-} as const
+    $type: 'BinaryExpr',
+    left: 'left',
+    op: 'op',
+    right: 'right'
+} as const;
 
 export function isBinaryExpr(item: unknown): item is BinaryExpr {
-  return reflection.isInstance(item, BinaryExpr.$type)
+    return reflection.isInstance(item, BinaryExpr.$type);
 }
 
 export interface BlueprintDeclaration extends langium.AstNode {
-  readonly $container: OXNDocument
-  readonly $type: 'BlueprintDeclaration'
-  descriptions: Array<Description>
-  expectations: Array<ExpectationDeclaration>
-  name: string
-  parts: Array<PartInBlueprint>
-  partSlots: Array<PartSlotDeclaration>
-  props: Array<PropDeclaration>
-  rules: Array<RuleDeclaration>
-  type: BuiltInWorkType | string
-  version?: number
+    readonly $container: OXNDocument;
+    readonly $type: 'BlueprintDeclaration';
+    descriptions: Array<Description>;
+    expectations: Array<ExpectationDeclaration>;
+    name: string;
+    parts: Array<PartInBlueprint>;
+    partSlots: Array<PartSlotDeclaration>;
+    props: Array<PropDeclaration>;
+    rules: Array<RuleDeclaration>;
+    type: BuiltInWorkType | string;
+    version?: number;
 }
 
 export const BlueprintDeclaration = {
-  $type: 'BlueprintDeclaration',
-  descriptions: 'descriptions',
-  expectations: 'expectations',
-  name: 'name',
-  parts: 'parts',
-  partSlots: 'partSlots',
-  props: 'props',
-  rules: 'rules',
-  type: 'type',
-  version: 'version',
-} as const
+    $type: 'BlueprintDeclaration',
+    descriptions: 'descriptions',
+    expectations: 'expectations',
+    name: 'name',
+    parts: 'parts',
+    partSlots: 'partSlots',
+    props: 'props',
+    rules: 'rules',
+    type: 'type',
+    version: 'version'
+} as const;
 
 export function isBlueprintDeclaration(item: unknown): item is BlueprintDeclaration {
-  return reflection.isInstance(item, BlueprintDeclaration.$type)
+    return reflection.isInstance(item, BlueprintDeclaration.$type);
 }
 
-export type BooleanLiteral = boolean
+export type BooleanLiteral = boolean;
 
 export function isBooleanLiteral(item: unknown): item is BooleanLiteral {
-  return typeof item === 'boolean'
+    return typeof item === 'boolean';
 }
 
-export type BuiltInWorkType = 'explore' | 'plan' | 'task'
+export type BuiltInWorkType = 'explore' | 'plan' | 'task';
 
 export function isBuiltInWorkType(item: unknown): item is BuiltInWorkType {
-  return item === 'task' || item === 'plan' || item === 'explore'
+    return item === 'task' || item === 'plan' || item === 'explore';
 }
 
 export interface DefaultValue extends langium.AstNode {
-  readonly $container: PropDeclaration
-  readonly $type: 'DefaultValue'
-  value: Expression
+    readonly $container: PropDeclaration;
+    readonly $type: 'DefaultValue';
+    value: Expression;
 }
 
 export const DefaultValue = {
-  $type: 'DefaultValue',
-  value: 'value',
-} as const
+    $type: 'DefaultValue',
+    value: 'value'
+} as const;
 
 export function isDefaultValue(item: unknown): item is DefaultValue {
-  return reflection.isInstance(item, DefaultValue.$type)
+    return reflection.isInstance(item, DefaultValue.$type);
 }
 
 export interface Description extends langium.AstNode {
-  readonly $container: BlueprintDeclaration | PartDeclaration | ProbeDeclaration
-  readonly $type: 'Description'
-  value: string
+    readonly $container: BlueprintDeclaration | PartDeclaration | ProbeDeclaration;
+    readonly $type: 'Description';
+    value: string;
 }
 
 export const Description = {
-  $type: 'Description',
-  value: 'value',
-} as const
+    $type: 'Description',
+    value: 'value'
+} as const;
 
 export function isDescription(item: unknown): item is Description {
-  return reflection.isInstance(item, Description.$type)
+    return reflection.isInstance(item, Description.$type);
 }
 
 export interface EnumType extends langium.AstNode {
-  readonly $container: GenericType | OutputField | PropDeclaration
-  readonly $type: 'EnumType'
-  values: Array<string>
+    readonly $container: GenericType | OutputField | PropDeclaration;
+    readonly $type: 'EnumType';
+    values: Array<string>;
 }
 
 export const EnumType = {
-  $type: 'EnumType',
-  values: 'values',
-} as const
+    $type: 'EnumType',
+    values: 'values'
+} as const;
 
 export function isEnumType(item: unknown): item is EnumType {
-  return reflection.isInstance(item, EnumType.$type)
+    return reflection.isInstance(item, EnumType.$type);
 }
 
 export interface ExecutionRef extends langium.AstNode {
-  readonly $container: PartDeclaration
-  readonly $type: 'ExecutionRef'
-  ref: langium.Reference<PartProbeDeclaration>
+    readonly $container: PartDeclaration;
+    readonly $type: 'ExecutionRef';
+    ref: langium.Reference<PartProbeDeclaration>;
 }
 
 export const ExecutionRef = {
-  $type: 'ExecutionRef',
-  ref: 'ref',
-} as const
+    $type: 'ExecutionRef',
+    ref: 'ref'
+} as const;
 
 export function isExecutionRef(item: unknown): item is ExecutionRef {
-  return reflection.isInstance(item, ExecutionRef.$type)
+    return reflection.isInstance(item, ExecutionRef.$type);
 }
 
 export interface ExpectationDeclaration extends langium.AstNode {
-  readonly $container: BlueprintDeclaration
-  readonly $type: 'ExpectationDeclaration'
-  err_msg?: string
-  name: string
-  params?: ParamsBlock
-  probe_ref?: string
+    readonly $container: BlueprintDeclaration;
+    readonly $type: 'ExpectationDeclaration';
+    err_msg?: string;
+    name: string;
+    params?: ParamsBlock;
+    probe_ref?: string;
 }
 
 export const ExpectationDeclaration = {
-  $type: 'ExpectationDeclaration',
-  err_msg: 'err_msg',
-  name: 'name',
-  params: 'params',
-  probe_ref: 'probe_ref',
-} as const
+    $type: 'ExpectationDeclaration',
+    err_msg: 'err_msg',
+    name: 'name',
+    params: 'params',
+    probe_ref: 'probe_ref'
+} as const;
 
 export function isExpectationDeclaration(item: unknown): item is ExpectationDeclaration {
-  return reflection.isInstance(item, ExpectationDeclaration.$type)
+    return reflection.isInstance(item, ExpectationDeclaration.$type);
 }
 
-export type Expression = BinaryExpr | LiteralExpr | TemplateString | TernaryExpr | VariableRef
+export type Expression = BinaryExpr | LiteralExpr | TemplateString | TernaryExpr | VariableRef;
 
 export const Expression = {
-  $type: 'Expression',
-} as const
+    $type: 'Expression'
+} as const;
 
 export function isExpression(item: unknown): item is Expression {
-  return reflection.isInstance(item, Expression.$type)
+    return reflection.isInstance(item, Expression.$type);
 }
 
 export interface GenericType extends langium.AstNode {
-  readonly $container: GenericType | OutputField | PropDeclaration
-  readonly $type: 'GenericType'
-  container: 'list' | 'map'
-  inner: TypeReference
+    readonly $container: GenericType | OutputField | PropDeclaration;
+    readonly $type: 'GenericType';
+    container: 'list' | 'map';
+    inner: TypeReference;
 }
 
 export const GenericType = {
-  $type: 'GenericType',
-  container: 'container',
-  inner: 'inner',
-} as const
+    $type: 'GenericType',
+    container: 'container',
+    inner: 'inner'
+} as const;
 
 export function isGenericType(item: unknown): item is GenericType {
-  return reflection.isInstance(item, GenericType.$type)
+    return reflection.isInstance(item, GenericType.$type);
 }
 
-export type LiteralExpr = NullLiteral
+export type LiteralExpr = NullLiteral;
 
 export const LiteralExpr = {
-  $type: 'LiteralExpr',
-} as const
+    $type: 'LiteralExpr'
+} as const;
 
 export function isLiteralExpr(item: unknown): item is LiteralExpr {
-  return reflection.isInstance(item, LiteralExpr.$type)
+    return reflection.isInstance(item, LiteralExpr.$type);
 }
 
 export interface NullLit extends langium.AstNode {
-  readonly $container:
-    | BinaryExpr
-    | DefaultValue
-    | ParamPair
-    | PartPropBinding
-    | RuleDeclaration
-    | SlotPropBinding
-    | TernaryExpr
-  readonly $type: 'NullLit'
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | PartPropBinding | RuleDeclaration | SlotPropBinding | TernaryExpr;
+    readonly $type: 'NullLit';
 }
 
 export const NullLit = {
-  $type: 'NullLit',
-} as const
+    $type: 'NullLit'
+} as const;
 
 export function isNullLit(item: unknown): item is NullLit {
-  return reflection.isInstance(item, NullLit.$type)
+    return reflection.isInstance(item, NullLit.$type);
 }
 
-export type NullLiteral = NullLit
+export type NullLiteral = NullLit;
 
 export const NullLiteral = {
-  $type: 'NullLiteral',
-} as const
+    $type: 'NullLiteral'
+} as const;
 
 export function isNullLiteral(item: unknown): item is NullLiteral {
-  return reflection.isInstance(item, NullLiteral.$type)
+    return reflection.isInstance(item, NullLiteral.$type);
 }
 
 export interface OutputField extends langium.AstNode {
-  readonly $container: ProbeOutputDeclaration
-  readonly $type: 'OutputField'
-  name: string
-  type: TypeReference
+    readonly $container: ProbeOutputDeclaration;
+    readonly $type: 'OutputField';
+    name: string;
+    type: TypeReference;
 }
 
 export const OutputField = {
-  $type: 'OutputField',
-  name: 'name',
-  type: 'type',
-} as const
+    $type: 'OutputField',
+    name: 'name',
+    type: 'type'
+} as const;
 
 export function isOutputField(item: unknown): item is OutputField {
-  return reflection.isInstance(item, OutputField.$type)
+    return reflection.isInstance(item, OutputField.$type);
 }
 
 export interface OXNDocument extends langium.AstNode {
-  readonly $type: 'OXNDocument'
-  entities: Array<TopLevelEntity>
+    readonly $type: 'OXNDocument';
+    entities: Array<TopLevelEntity>;
 }
 
 export const OXNDocument = {
-  $type: 'OXNDocument',
-  entities: 'entities',
-} as const
+    $type: 'OXNDocument',
+    entities: 'entities'
+} as const;
 
 export function isOXNDocument(item: unknown): item is OXNDocument {
-  return reflection.isInstance(item, OXNDocument.$type)
+    return reflection.isInstance(item, OXNDocument.$type);
 }
 
 export interface ParamPair extends langium.AstNode {
-  readonly $container: ParamsBlock
-  readonly $type: 'ParamPair'
-  key: string
-  value: Expression
+    readonly $container: ParamsBlock;
+    readonly $type: 'ParamPair';
+    key: string;
+    value: Expression;
 }
 
 export const ParamPair = {
-  $type: 'ParamPair',
-  key: 'key',
-  value: 'value',
-} as const
+    $type: 'ParamPair',
+    key: 'key',
+    value: 'value'
+} as const;
 
 export function isParamPair(item: unknown): item is ParamPair {
-  return reflection.isInstance(item, ParamPair.$type)
+    return reflection.isInstance(item, ParamPair.$type);
 }
 
 export interface ParamsBlock extends langium.AstNode {
-  readonly $container: ExpectationDeclaration | PartProbeDeclaration
-  readonly $type: 'ParamsBlock'
-  pairs: Array<ParamPair>
+    readonly $container: ExpectationDeclaration | PartProbeDeclaration;
+    readonly $type: 'ParamsBlock';
+    pairs: Array<ParamPair>;
 }
 
 export const ParamsBlock = {
-  $type: 'ParamsBlock',
-  pairs: 'pairs',
-} as const
+    $type: 'ParamsBlock',
+    pairs: 'pairs'
+} as const;
 
 export function isParamsBlock(item: unknown): item is ParamsBlock {
-  return reflection.isInstance(item, ParamsBlock.$type)
+    return reflection.isInstance(item, ParamsBlock.$type);
 }
 
 export interface PartDeclaration extends langium.AstNode {
-  readonly $container: OXNDocument
-  readonly $type: 'PartDeclaration'
-  descriptions: Array<Description>
-  name: string
-  probes: Array<PartProbeDeclaration>
-  props: Array<PropDeclaration>
-  refs: Array<ExecutionRef>
+    readonly $container: OXNDocument;
+    readonly $type: 'PartDeclaration';
+    descriptions: Array<Description>;
+    name: string;
+    probes: Array<PartProbeDeclaration>;
+    props: Array<PropDeclaration>;
+    refs: Array<ExecutionRef>;
 }
 
 export const PartDeclaration = {
-  $type: 'PartDeclaration',
-  descriptions: 'descriptions',
-  name: 'name',
-  probes: 'probes',
-  props: 'props',
-  refs: 'refs',
-} as const
+    $type: 'PartDeclaration',
+    descriptions: 'descriptions',
+    name: 'name',
+    probes: 'probes',
+    props: 'props',
+    refs: 'refs'
+} as const;
 
 export function isPartDeclaration(item: unknown): item is PartDeclaration {
-  return reflection.isInstance(item, PartDeclaration.$type)
+    return reflection.isInstance(item, PartDeclaration.$type);
 }
 
 export interface PartInBlueprint extends langium.AstNode {
-  readonly $container: BlueprintDeclaration
-  readonly $type: 'PartInBlueprint'
-  deps: Array<string>
-  name: string
-  propBindings: Array<PartPropBinding>
-  ref: string
+    readonly $container: BlueprintDeclaration;
+    readonly $type: 'PartInBlueprint';
+    deps: Array<string>;
+    name: string;
+    propBindings: Array<PartPropBinding>;
+    ref: string;
 }
 
 export const PartInBlueprint = {
-  $type: 'PartInBlueprint',
-  deps: 'deps',
-  name: 'name',
-  propBindings: 'propBindings',
-  ref: 'ref',
-} as const
+    $type: 'PartInBlueprint',
+    deps: 'deps',
+    name: 'name',
+    propBindings: 'propBindings',
+    ref: 'ref'
+} as const;
 
 export function isPartInBlueprint(item: unknown): item is PartInBlueprint {
-  return reflection.isInstance(item, PartInBlueprint.$type)
+    return reflection.isInstance(item, PartInBlueprint.$type);
 }
 
 export interface PartProbeDeclaration extends langium.AstNode {
-  readonly $container: PartDeclaration
-  readonly $type: 'PartProbeDeclaration'
-  name: string
-  params?: ParamsBlock
-  ref?: string
+    readonly $container: PartDeclaration;
+    readonly $type: 'PartProbeDeclaration';
+    name: string;
+    params?: ParamsBlock;
+    ref?: string;
 }
 
 export const PartProbeDeclaration = {
-  $type: 'PartProbeDeclaration',
-  name: 'name',
-  params: 'params',
-  ref: 'ref',
-} as const
+    $type: 'PartProbeDeclaration',
+    name: 'name',
+    params: 'params',
+    ref: 'ref'
+} as const;
 
 export function isPartProbeDeclaration(item: unknown): item is PartProbeDeclaration {
-  return reflection.isInstance(item, PartProbeDeclaration.$type)
+    return reflection.isInstance(item, PartProbeDeclaration.$type);
 }
 
 export interface PartPropBinding extends langium.AstNode {
-  readonly $container: PartInBlueprint
-  readonly $type: 'PartPropBinding'
-  name: string
-  value: Expression
+    readonly $container: PartInBlueprint;
+    readonly $type: 'PartPropBinding';
+    name: string;
+    value: Expression;
 }
 
 export const PartPropBinding = {
-  $type: 'PartPropBinding',
-  name: 'name',
-  value: 'value',
-} as const
+    $type: 'PartPropBinding',
+    name: 'name',
+    value: 'value'
+} as const;
 
 export function isPartPropBinding(item: unknown): item is PartPropBinding {
-  return reflection.isInstance(item, PartPropBinding.$type)
+    return reflection.isInstance(item, PartPropBinding.$type);
 }
 
-export type PartSlotDeclaration = SlotMulti | SlotSingle
+export type PartSlotDeclaration = SlotMulti | SlotSingle;
 
 export const PartSlotDeclaration = {
-  $type: 'PartSlotDeclaration',
-} as const
+    $type: 'PartSlotDeclaration'
+} as const;
 
 export function isPartSlotDeclaration(item: unknown): item is PartSlotDeclaration {
-  return reflection.isInstance(item, PartSlotDeclaration.$type)
+    return reflection.isInstance(item, PartSlotDeclaration.$type);
 }
 
-export type PrimitiveType = 'boolean' | 'number' | 'string'
+export type PrimitiveType = 'boolean' | 'number' | 'string';
 
 export function isPrimitiveType(item: unknown): item is PrimitiveType {
-  return item === 'string' || item === 'number' || item === 'boolean'
+    return item === 'string' || item === 'number' || item === 'boolean';
 }
 
 export interface ProbeDeclaration extends langium.AstNode {
-  readonly $container: OXNDocument
-  readonly $type: 'ProbeDeclaration'
-  descriptions: Array<Description>
-  name: string
-  output: Array<ProbeOutputDeclaration>
-  props: Array<PropDeclaration>
+    readonly $container: OXNDocument;
+    readonly $type: 'ProbeDeclaration';
+    descriptions: Array<Description>;
+    name: string;
+    output: Array<ProbeOutputDeclaration>;
+    props: Array<PropDeclaration>;
 }
 
 export const ProbeDeclaration = {
-  $type: 'ProbeDeclaration',
-  descriptions: 'descriptions',
-  name: 'name',
-  output: 'output',
-  props: 'props',
-} as const
+    $type: 'ProbeDeclaration',
+    descriptions: 'descriptions',
+    name: 'name',
+    output: 'output',
+    props: 'props'
+} as const;
 
 export function isProbeDeclaration(item: unknown): item is ProbeDeclaration {
-  return reflection.isInstance(item, ProbeDeclaration.$type)
+    return reflection.isInstance(item, ProbeDeclaration.$type);
 }
 
 export interface ProbeOutputDeclaration extends langium.AstNode {
-  readonly $container: ProbeDeclaration
-  readonly $type: 'ProbeOutputDeclaration'
-  fields: Array<OutputField>
+    readonly $container: ProbeDeclaration;
+    readonly $type: 'ProbeOutputDeclaration';
+    fields: Array<OutputField>;
 }
 
 export const ProbeOutputDeclaration = {
-  $type: 'ProbeOutputDeclaration',
-  fields: 'fields',
-} as const
+    $type: 'ProbeOutputDeclaration',
+    fields: 'fields'
+} as const;
 
 export function isProbeOutputDeclaration(item: unknown): item is ProbeOutputDeclaration {
-  return reflection.isInstance(item, ProbeOutputDeclaration.$type)
+    return reflection.isInstance(item, ProbeOutputDeclaration.$type);
 }
 
 export interface PropDeclaration extends langium.AstNode {
-  readonly $container: BlueprintDeclaration | PartDeclaration | ProbeDeclaration
-  readonly $type: 'PropDeclaration'
-  default?: DefaultValue
-  name: string
-  required?: RequiredModifier
-  type: TypeReference
+    readonly $container: BlueprintDeclaration | PartDeclaration | ProbeDeclaration;
+    readonly $type: 'PropDeclaration';
+    default?: DefaultValue;
+    name: string;
+    required?: RequiredModifier;
+    type: TypeReference;
 }
 
 export const PropDeclaration = {
-  $type: 'PropDeclaration',
-  default: 'default',
-  name: 'name',
-  required: 'required',
-  type: 'type',
-} as const
+    $type: 'PropDeclaration',
+    default: 'default',
+    name: 'name',
+    required: 'required',
+    type: 'type'
+} as const;
 
 export function isPropDeclaration(item: unknown): item is PropDeclaration {
-  return reflection.isInstance(item, PropDeclaration.$type)
+    return reflection.isInstance(item, PropDeclaration.$type);
 }
 
 export interface QualifiedName extends langium.AstNode {
-  readonly $container: VariableRef
-  readonly $type: 'QualifiedName'
-  name: string
-  prefix?: 'param' | 'prop' | 'task'
-  segments: Array<string>
+    readonly $container: VariableRef;
+    readonly $type: 'QualifiedName';
+    name: string;
+    prefix?: 'param' | 'prop' | 'task';
+    segments: Array<string>;
 }
 
 export const QualifiedName = {
-  $type: 'QualifiedName',
-  name: 'name',
-  prefix: 'prefix',
-  segments: 'segments',
-} as const
+    $type: 'QualifiedName',
+    name: 'name',
+    prefix: 'prefix',
+    segments: 'segments'
+} as const;
 
 export function isQualifiedName(item: unknown): item is QualifiedName {
-  return reflection.isInstance(item, QualifiedName.$type)
+    return reflection.isInstance(item, QualifiedName.$type);
 }
 
 export interface RequiredModifier extends langium.AstNode {
-  readonly $container: PropDeclaration
-  readonly $type: 'RequiredModifier'
-  value: BooleanLiteral
+    readonly $container: PropDeclaration;
+    readonly $type: 'RequiredModifier';
+    value: BooleanLiteral;
 }
 
 export const RequiredModifier = {
-  $type: 'RequiredModifier',
-  value: 'value',
-} as const
+    $type: 'RequiredModifier',
+    value: 'value'
+} as const;
 
 export function isRequiredModifier(item: unknown): item is RequiredModifier {
-  return reflection.isInstance(item, RequiredModifier.$type)
+    return reflection.isInstance(item, RequiredModifier.$type);
 }
 
 export interface RuleDeclaration extends langium.AstNode {
-  readonly $container: BlueprintDeclaration
-  readonly $type: 'RuleDeclaration'
-  condition?: Expression
-  err_msg?: string
-  name: string
+    readonly $container: BlueprintDeclaration;
+    readonly $type: 'RuleDeclaration';
+    condition?: Expression;
+    err_msg?: string;
+    name: string;
 }
 
 export const RuleDeclaration = {
-  $type: 'RuleDeclaration',
-  condition: 'condition',
-  err_msg: 'err_msg',
-  name: 'name',
-} as const
+    $type: 'RuleDeclaration',
+    condition: 'condition',
+    err_msg: 'err_msg',
+    name: 'name'
+} as const;
 
 export function isRuleDeclaration(item: unknown): item is RuleDeclaration {
-  return reflection.isInstance(item, RuleDeclaration.$type)
+    return reflection.isInstance(item, RuleDeclaration.$type);
 }
 
 export interface SlotBinding extends langium.AstNode {
-  readonly $container: WorkDeclaration
-  readonly $type: 'SlotBinding'
-  name?: string
-  props: Array<SlotPropBinding>
-  ref?: string
-  slot: string
+    readonly $container: WorkDeclaration;
+    readonly $type: 'SlotBinding';
+    name?: string;
+    props: Array<SlotPropBinding>;
+    ref?: string;
+    slot: string;
 }
 
 export const SlotBinding = {
-  $type: 'SlotBinding',
-  name: 'name',
-  props: 'props',
-  ref: 'ref',
-  slot: 'slot',
-} as const
+    $type: 'SlotBinding',
+    name: 'name',
+    props: 'props',
+    ref: 'ref',
+    slot: 'slot'
+} as const;
 
 export function isSlotBinding(item: unknown): item is SlotBinding {
-  return reflection.isInstance(item, SlotBinding.$type)
+    return reflection.isInstance(item, SlotBinding.$type);
 }
 
 export interface SlotMulti extends langium.AstNode {
-  readonly $container: BlueprintDeclaration
-  readonly $type: 'SlotMulti'
-  deps: Array<string>
-  name: string
+    readonly $container: BlueprintDeclaration;
+    readonly $type: 'SlotMulti';
+    deps: Array<string>;
+    name: string;
 }
 
 export const SlotMulti = {
-  $type: 'SlotMulti',
-  deps: 'deps',
-  name: 'name',
-} as const
+    $type: 'SlotMulti',
+    deps: 'deps',
+    name: 'name'
+} as const;
 
 export function isSlotMulti(item: unknown): item is SlotMulti {
-  return reflection.isInstance(item, SlotMulti.$type)
+    return reflection.isInstance(item, SlotMulti.$type);
 }
 
 export interface SlotPropBinding extends langium.AstNode {
-  readonly $container: SlotBinding
-  readonly $type: 'SlotPropBinding'
-  name: string
-  value: Expression
+    readonly $container: SlotBinding;
+    readonly $type: 'SlotPropBinding';
+    name: string;
+    value: Expression;
 }
 
 export const SlotPropBinding = {
-  $type: 'SlotPropBinding',
-  name: 'name',
-  value: 'value',
-} as const
+    $type: 'SlotPropBinding',
+    name: 'name',
+    value: 'value'
+} as const;
 
 export function isSlotPropBinding(item: unknown): item is SlotPropBinding {
-  return reflection.isInstance(item, SlotPropBinding.$type)
+    return reflection.isInstance(item, SlotPropBinding.$type);
 }
 
 export interface SlotSingle extends langium.AstNode {
-  readonly $container: BlueprintDeclaration
-  readonly $type: 'SlotSingle'
-  deps: Array<string>
-  name: string
+    readonly $container: BlueprintDeclaration;
+    readonly $type: 'SlotSingle';
+    deps: Array<string>;
+    name: string;
 }
 
 export const SlotSingle = {
-  $type: 'SlotSingle',
-  deps: 'deps',
-  name: 'name',
-} as const
+    $type: 'SlotSingle',
+    deps: 'deps',
+    name: 'name'
+} as const;
 
 export function isSlotSingle(item: unknown): item is SlotSingle {
-  return reflection.isInstance(item, SlotSingle.$type)
+    return reflection.isInstance(item, SlotSingle.$type);
 }
 
 export interface TemplateString extends langium.AstNode {
-  readonly $container:
-    | BinaryExpr
-    | DefaultValue
-    | ParamPair
-    | PartPropBinding
-    | RuleDeclaration
-    | SlotPropBinding
-    | TernaryExpr
-  readonly $type: 'TemplateString'
-  value: string
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | PartPropBinding | RuleDeclaration | SlotPropBinding | TernaryExpr;
+    readonly $type: 'TemplateString';
+    value: string;
 }
 
 export const TemplateString = {
-  $type: 'TemplateString',
-  value: 'value',
-} as const
+    $type: 'TemplateString',
+    value: 'value'
+} as const;
 
 export function isTemplateString(item: unknown): item is TemplateString {
-  return reflection.isInstance(item, TemplateString.$type)
+    return reflection.isInstance(item, TemplateString.$type);
 }
 
 export interface TernaryExpr extends langium.AstNode {
-  readonly $container:
-    | BinaryExpr
-    | DefaultValue
-    | ParamPair
-    | PartPropBinding
-    | RuleDeclaration
-    | SlotPropBinding
-    | TernaryExpr
-  readonly $type: 'TernaryExpr'
-  condition: Expression
-  else: Expression
-  then: Expression
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | PartPropBinding | RuleDeclaration | SlotPropBinding | TernaryExpr;
+    readonly $type: 'TernaryExpr';
+    condition: Expression;
+    else: Expression;
+    then: Expression;
 }
 
 export const TernaryExpr = {
-  $type: 'TernaryExpr',
-  condition: 'condition',
-  else: 'else',
-  then: 'then',
-} as const
+    $type: 'TernaryExpr',
+    condition: 'condition',
+    else: 'else',
+    then: 'then'
+} as const;
 
 export function isTernaryExpr(item: unknown): item is TernaryExpr {
-  return reflection.isInstance(item, TernaryExpr.$type)
+    return reflection.isInstance(item, TernaryExpr.$type);
 }
 
-export type TopLevelEntity = BlueprintDeclaration | PartDeclaration | ProbeDeclaration | WorkDeclaration
+export type TopLevelEntity = BlueprintDeclaration | PartDeclaration | ProbeDeclaration | WorkDeclaration;
 
 export const TopLevelEntity = {
-  $type: 'TopLevelEntity',
-} as const
+    $type: 'TopLevelEntity'
+} as const;
 
 export function isTopLevelEntity(item: unknown): item is TopLevelEntity {
-  return reflection.isInstance(item, TopLevelEntity.$type)
+    return reflection.isInstance(item, TopLevelEntity.$type);
 }
 
-export type TypeReference = AnyType | EnumType | GenericType
+export type TypeReference = AnyType | EnumType | GenericType;
 
 export const TypeReference = {
-  $type: 'TypeReference',
-} as const
+    $type: 'TypeReference'
+} as const;
 
 export function isTypeReference(item: unknown): item is TypeReference {
-  return reflection.isInstance(item, TypeReference.$type)
+    return reflection.isInstance(item, TypeReference.$type);
 }
 
 export interface VariableRef extends langium.AstNode {
-  readonly $container:
-    | BinaryExpr
-    | DefaultValue
-    | ParamPair
-    | PartPropBinding
-    | RuleDeclaration
-    | SlotPropBinding
-    | TernaryExpr
-  readonly $type: 'VariableRef'
-  path: QualifiedName
+    readonly $container: BinaryExpr | DefaultValue | ParamPair | PartPropBinding | RuleDeclaration | SlotPropBinding | TernaryExpr;
+    readonly $type: 'VariableRef';
+    path: QualifiedName;
 }
 
 export const VariableRef = {
-  $type: 'VariableRef',
-  path: 'path',
-} as const
+    $type: 'VariableRef',
+    path: 'path'
+} as const;
 
 export function isVariableRef(item: unknown): item is VariableRef {
-  return reflection.isInstance(item, VariableRef.$type)
+    return reflection.isInstance(item, VariableRef.$type);
 }
 
 export interface WorkDeclaration extends langium.AstNode {
-  readonly $container: OXNDocument
-  readonly $type: 'WorkDeclaration'
-  name: string
-  ref: string
-  slotBindings: Array<SlotBinding>
-  type: string
+    readonly $container: OXNDocument;
+    readonly $type: 'WorkDeclaration';
+    name: string;
+    ref: string;
+    slotBindings: Array<SlotBinding>;
+    type: string;
 }
 
 export const WorkDeclaration = {
-  $type: 'WorkDeclaration',
-  name: 'name',
-  ref: 'ref',
-  slotBindings: 'slotBindings',
-  type: 'type',
-} as const
+    $type: 'WorkDeclaration',
+    name: 'name',
+    ref: 'ref',
+    slotBindings: 'slotBindings',
+    type: 'type'
+} as const;
 
 export function isWorkDeclaration(item: unknown): item is WorkDeclaration {
-  return reflection.isInstance(item, WorkDeclaration.$type)
+    return reflection.isInstance(item, WorkDeclaration.$type);
 }
 
 export type OXNDSLAstType = {
-  AnyType: AnyType
-  AnyTypeRef: AnyTypeRef
-  BinaryExpr: BinaryExpr
-  BlueprintDeclaration: BlueprintDeclaration
-  DefaultValue: DefaultValue
-  Description: Description
-  EnumType: EnumType
-  ExecutionRef: ExecutionRef
-  ExpectationDeclaration: ExpectationDeclaration
-  Expression: Expression
-  GenericType: GenericType
-  LiteralExpr: LiteralExpr
-  NullLit: NullLit
-  NullLiteral: NullLiteral
-  OXNDocument: OXNDocument
-  OutputField: OutputField
-  ParamPair: ParamPair
-  ParamsBlock: ParamsBlock
-  PartDeclaration: PartDeclaration
-  PartInBlueprint: PartInBlueprint
-  PartProbeDeclaration: PartProbeDeclaration
-  PartPropBinding: PartPropBinding
-  PartSlotDeclaration: PartSlotDeclaration
-  ProbeDeclaration: ProbeDeclaration
-  ProbeOutputDeclaration: ProbeOutputDeclaration
-  PropDeclaration: PropDeclaration
-  QualifiedName: QualifiedName
-  RequiredModifier: RequiredModifier
-  RuleDeclaration: RuleDeclaration
-  SlotBinding: SlotBinding
-  SlotMulti: SlotMulti
-  SlotPropBinding: SlotPropBinding
-  SlotSingle: SlotSingle
-  TemplateString: TemplateString
-  TernaryExpr: TernaryExpr
-  TopLevelEntity: TopLevelEntity
-  TypeReference: TypeReference
-  VariableRef: VariableRef
-  WorkDeclaration: WorkDeclaration
+    AnyType: AnyType
+    AnyTypeRef: AnyTypeRef
+    BinaryExpr: BinaryExpr
+    BlueprintDeclaration: BlueprintDeclaration
+    DefaultValue: DefaultValue
+    Description: Description
+    EnumType: EnumType
+    ExecutionRef: ExecutionRef
+    ExpectationDeclaration: ExpectationDeclaration
+    Expression: Expression
+    GenericType: GenericType
+    LiteralExpr: LiteralExpr
+    NullLit: NullLit
+    NullLiteral: NullLiteral
+    OXNDocument: OXNDocument
+    OutputField: OutputField
+    ParamPair: ParamPair
+    ParamsBlock: ParamsBlock
+    PartDeclaration: PartDeclaration
+    PartInBlueprint: PartInBlueprint
+    PartProbeDeclaration: PartProbeDeclaration
+    PartPropBinding: PartPropBinding
+    PartSlotDeclaration: PartSlotDeclaration
+    ProbeDeclaration: ProbeDeclaration
+    ProbeOutputDeclaration: ProbeOutputDeclaration
+    PropDeclaration: PropDeclaration
+    QualifiedName: QualifiedName
+    RequiredModifier: RequiredModifier
+    RuleDeclaration: RuleDeclaration
+    SlotBinding: SlotBinding
+    SlotMulti: SlotMulti
+    SlotPropBinding: SlotPropBinding
+    SlotSingle: SlotSingle
+    TemplateString: TemplateString
+    TernaryExpr: TernaryExpr
+    TopLevelEntity: TopLevelEntity
+    TypeReference: TypeReference
+    VariableRef: VariableRef
+    WorkDeclaration: WorkDeclaration
 }
 
 export class OXNDSLAstReflection extends langium.AbstractAstReflection {
-  override readonly types = {
-    AnyType: {
-      name: AnyType.$type,
-      properties: {},
-      superTypes: [TypeReference.$type],
-    },
-    AnyTypeRef: {
-      name: AnyTypeRef.$type,
-      properties: {},
-      superTypes: [AnyType.$type],
-    },
-    BinaryExpr: {
-      name: BinaryExpr.$type,
-      properties: {
-        left: {
-          name: BinaryExpr.left,
-        },
-        op: {
-          name: BinaryExpr.op,
-        },
-        right: {
-          name: BinaryExpr.right,
-        },
-      },
-      superTypes: [Expression.$type],
-    },
-    BlueprintDeclaration: {
-      name: BlueprintDeclaration.$type,
-      properties: {
-        descriptions: {
-          name: BlueprintDeclaration.descriptions,
-          defaultValue: [],
-        },
-        expectations: {
-          name: BlueprintDeclaration.expectations,
-          defaultValue: [],
-        },
-        name: {
-          name: BlueprintDeclaration.name,
-        },
-        parts: {
-          name: BlueprintDeclaration.parts,
-          defaultValue: [],
-        },
-        partSlots: {
-          name: BlueprintDeclaration.partSlots,
-          defaultValue: [],
-        },
-        props: {
-          name: BlueprintDeclaration.props,
-          defaultValue: [],
-        },
-        rules: {
-          name: BlueprintDeclaration.rules,
-          defaultValue: [],
-        },
-        type: {
-          name: BlueprintDeclaration.type,
-        },
-        version: {
-          name: BlueprintDeclaration.version,
-        },
-      },
-      superTypes: [TopLevelEntity.$type],
-    },
-    DefaultValue: {
-      name: DefaultValue.$type,
-      properties: {
-        value: {
-          name: DefaultValue.value,
-        },
-      },
-      superTypes: [],
-    },
-    Description: {
-      name: Description.$type,
-      properties: {
-        value: {
-          name: Description.value,
-        },
-      },
-      superTypes: [],
-    },
-    EnumType: {
-      name: EnumType.$type,
-      properties: {
-        values: {
-          name: EnumType.values,
-          defaultValue: [],
-        },
-      },
-      superTypes: [TypeReference.$type],
-    },
-    ExecutionRef: {
-      name: ExecutionRef.$type,
-      properties: {
-        ref: {
-          name: ExecutionRef.ref,
-          referenceType: PartProbeDeclaration.$type,
-        },
-      },
-      superTypes: [],
-    },
-    ExpectationDeclaration: {
-      name: ExpectationDeclaration.$type,
-      properties: {
-        err_msg: {
-          name: ExpectationDeclaration.err_msg,
-        },
-        name: {
-          name: ExpectationDeclaration.name,
-        },
-        params: {
-          name: ExpectationDeclaration.params,
-        },
-        probe_ref: {
-          name: ExpectationDeclaration.probe_ref,
-        },
-      },
-      superTypes: [],
-    },
-    Expression: {
-      name: Expression.$type,
-      properties: {},
-      superTypes: [],
-    },
-    GenericType: {
-      name: GenericType.$type,
-      properties: {
-        container: {
-          name: GenericType.container,
-        },
-        inner: {
-          name: GenericType.inner,
-        },
-      },
-      superTypes: [TypeReference.$type],
-    },
-    LiteralExpr: {
-      name: LiteralExpr.$type,
-      properties: {},
-      superTypes: [Expression.$type],
-    },
-    NullLit: {
-      name: NullLit.$type,
-      properties: {},
-      superTypes: [NullLiteral.$type],
-    },
-    NullLiteral: {
-      name: NullLiteral.$type,
-      properties: {},
-      superTypes: [LiteralExpr.$type],
-    },
-    OXNDocument: {
-      name: OXNDocument.$type,
-      properties: {
-        entities: {
-          name: OXNDocument.entities,
-          defaultValue: [],
-        },
-      },
-      superTypes: [],
-    },
-    OutputField: {
-      name: OutputField.$type,
-      properties: {
-        name: {
-          name: OutputField.name,
-        },
-        type: {
-          name: OutputField.type,
-        },
-      },
-      superTypes: [],
-    },
-    ParamPair: {
-      name: ParamPair.$type,
-      properties: {
-        key: {
-          name: ParamPair.key,
-        },
-        value: {
-          name: ParamPair.value,
-        },
-      },
-      superTypes: [],
-    },
-    ParamsBlock: {
-      name: ParamsBlock.$type,
-      properties: {
-        pairs: {
-          name: ParamsBlock.pairs,
-          defaultValue: [],
-        },
-      },
-      superTypes: [],
-    },
-    PartDeclaration: {
-      name: PartDeclaration.$type,
-      properties: {
-        descriptions: {
-          name: PartDeclaration.descriptions,
-          defaultValue: [],
-        },
-        name: {
-          name: PartDeclaration.name,
-        },
-        probes: {
-          name: PartDeclaration.probes,
-          defaultValue: [],
-        },
-        props: {
-          name: PartDeclaration.props,
-          defaultValue: [],
-        },
-        refs: {
-          name: PartDeclaration.refs,
-          defaultValue: [],
-        },
-      },
-      superTypes: [TopLevelEntity.$type],
-    },
-    PartInBlueprint: {
-      name: PartInBlueprint.$type,
-      properties: {
-        deps: {
-          name: PartInBlueprint.deps,
-          defaultValue: [],
-        },
-        name: {
-          name: PartInBlueprint.name,
-        },
-        propBindings: {
-          name: PartInBlueprint.propBindings,
-          defaultValue: [],
-        },
-        ref: {
-          name: PartInBlueprint.ref,
-        },
-      },
-      superTypes: [],
-    },
-    PartProbeDeclaration: {
-      name: PartProbeDeclaration.$type,
-      properties: {
-        name: {
-          name: PartProbeDeclaration.name,
-        },
-        params: {
-          name: PartProbeDeclaration.params,
-        },
-        ref: {
-          name: PartProbeDeclaration.ref,
-        },
-      },
-      superTypes: [],
-    },
-    PartPropBinding: {
-      name: PartPropBinding.$type,
-      properties: {
-        name: {
-          name: PartPropBinding.name,
-        },
-        value: {
-          name: PartPropBinding.value,
-        },
-      },
-      superTypes: [],
-    },
-    PartSlotDeclaration: {
-      name: PartSlotDeclaration.$type,
-      properties: {},
-      superTypes: [],
-    },
-    ProbeDeclaration: {
-      name: ProbeDeclaration.$type,
-      properties: {
-        descriptions: {
-          name: ProbeDeclaration.descriptions,
-          defaultValue: [],
-        },
-        name: {
-          name: ProbeDeclaration.name,
-        },
-        output: {
-          name: ProbeDeclaration.output,
-          defaultValue: [],
-        },
-        props: {
-          name: ProbeDeclaration.props,
-          defaultValue: [],
-        },
-      },
-      superTypes: [TopLevelEntity.$type],
-    },
-    ProbeOutputDeclaration: {
-      name: ProbeOutputDeclaration.$type,
-      properties: {
-        fields: {
-          name: ProbeOutputDeclaration.fields,
-          defaultValue: [],
-        },
-      },
-      superTypes: [],
-    },
-    PropDeclaration: {
-      name: PropDeclaration.$type,
-      properties: {
-        default: {
-          name: PropDeclaration.default,
-        },
-        name: {
-          name: PropDeclaration.name,
-        },
-        required: {
-          name: PropDeclaration.required,
-        },
-        type: {
-          name: PropDeclaration.type,
-        },
-      },
-      superTypes: [],
-    },
-    QualifiedName: {
-      name: QualifiedName.$type,
-      properties: {
-        name: {
-          name: QualifiedName.name,
-        },
-        prefix: {
-          name: QualifiedName.prefix,
-        },
-        segments: {
-          name: QualifiedName.segments,
-          defaultValue: [],
-        },
-      },
-      superTypes: [],
-    },
-    RequiredModifier: {
-      name: RequiredModifier.$type,
-      properties: {
-        value: {
-          name: RequiredModifier.value,
-        },
-      },
-      superTypes: [],
-    },
-    RuleDeclaration: {
-      name: RuleDeclaration.$type,
-      properties: {
-        condition: {
-          name: RuleDeclaration.condition,
-        },
-        err_msg: {
-          name: RuleDeclaration.err_msg,
-        },
-        name: {
-          name: RuleDeclaration.name,
-        },
-      },
-      superTypes: [],
-    },
-    SlotBinding: {
-      name: SlotBinding.$type,
-      properties: {
-        name: {
-          name: SlotBinding.name,
-        },
-        props: {
-          name: SlotBinding.props,
-          defaultValue: [],
-        },
-        ref: {
-          name: SlotBinding.ref,
-        },
-        slot: {
-          name: SlotBinding.slot,
-        },
-      },
-      superTypes: [],
-    },
-    SlotMulti: {
-      name: SlotMulti.$type,
-      properties: {
-        deps: {
-          name: SlotMulti.deps,
-          defaultValue: [],
-        },
-        name: {
-          name: SlotMulti.name,
-        },
-      },
-      superTypes: [PartSlotDeclaration.$type],
-    },
-    SlotPropBinding: {
-      name: SlotPropBinding.$type,
-      properties: {
-        name: {
-          name: SlotPropBinding.name,
-        },
-        value: {
-          name: SlotPropBinding.value,
-        },
-      },
-      superTypes: [],
-    },
-    SlotSingle: {
-      name: SlotSingle.$type,
-      properties: {
-        deps: {
-          name: SlotSingle.deps,
-          defaultValue: [],
-        },
-        name: {
-          name: SlotSingle.name,
-        },
-      },
-      superTypes: [PartSlotDeclaration.$type],
-    },
-    TemplateString: {
-      name: TemplateString.$type,
-      properties: {
-        value: {
-          name: TemplateString.value,
-        },
-      },
-      superTypes: [Expression.$type],
-    },
-    TernaryExpr: {
-      name: TernaryExpr.$type,
-      properties: {
-        condition: {
-          name: TernaryExpr.condition,
-        },
-        else: {
-          name: TernaryExpr.else,
-        },
-        then: {
-          name: TernaryExpr.then,
-        },
-      },
-      superTypes: [Expression.$type],
-    },
-    TopLevelEntity: {
-      name: TopLevelEntity.$type,
-      properties: {},
-      superTypes: [],
-    },
-    TypeReference: {
-      name: TypeReference.$type,
-      properties: {},
-      superTypes: [],
-    },
-    VariableRef: {
-      name: VariableRef.$type,
-      properties: {
-        path: {
-          name: VariableRef.path,
-        },
-      },
-      superTypes: [Expression.$type],
-    },
-    WorkDeclaration: {
-      name: WorkDeclaration.$type,
-      properties: {
-        name: {
-          name: WorkDeclaration.name,
-        },
-        ref: {
-          name: WorkDeclaration.ref,
-        },
-        slotBindings: {
-          name: WorkDeclaration.slotBindings,
-          defaultValue: [],
-        },
-        type: {
-          name: WorkDeclaration.type,
-        },
-      },
-      superTypes: [TopLevelEntity.$type],
-    },
-  } as const satisfies langium.AstMetaData
+    override readonly types = {
+        AnyType: {
+            name: AnyType.$type,
+            properties: {
+            },
+            superTypes: [TypeReference.$type]
+        },
+        AnyTypeRef: {
+            name: AnyTypeRef.$type,
+            properties: {
+            },
+            superTypes: [AnyType.$type]
+        },
+        BinaryExpr: {
+            name: BinaryExpr.$type,
+            properties: {
+                left: {
+                    name: BinaryExpr.left
+                },
+                op: {
+                    name: BinaryExpr.op
+                },
+                right: {
+                    name: BinaryExpr.right
+                }
+            },
+            superTypes: [Expression.$type]
+        },
+        BlueprintDeclaration: {
+            name: BlueprintDeclaration.$type,
+            properties: {
+                descriptions: {
+                    name: BlueprintDeclaration.descriptions,
+                    defaultValue: []
+                },
+                expectations: {
+                    name: BlueprintDeclaration.expectations,
+                    defaultValue: []
+                },
+                name: {
+                    name: BlueprintDeclaration.name
+                },
+                parts: {
+                    name: BlueprintDeclaration.parts,
+                    defaultValue: []
+                },
+                partSlots: {
+                    name: BlueprintDeclaration.partSlots,
+                    defaultValue: []
+                },
+                props: {
+                    name: BlueprintDeclaration.props,
+                    defaultValue: []
+                },
+                rules: {
+                    name: BlueprintDeclaration.rules,
+                    defaultValue: []
+                },
+                type: {
+                    name: BlueprintDeclaration.type
+                },
+                version: {
+                    name: BlueprintDeclaration.version
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        },
+        DefaultValue: {
+            name: DefaultValue.$type,
+            properties: {
+                value: {
+                    name: DefaultValue.value
+                }
+            },
+            superTypes: []
+        },
+        Description: {
+            name: Description.$type,
+            properties: {
+                value: {
+                    name: Description.value
+                }
+            },
+            superTypes: []
+        },
+        EnumType: {
+            name: EnumType.$type,
+            properties: {
+                values: {
+                    name: EnumType.values,
+                    defaultValue: []
+                }
+            },
+            superTypes: [TypeReference.$type]
+        },
+        ExecutionRef: {
+            name: ExecutionRef.$type,
+            properties: {
+                ref: {
+                    name: ExecutionRef.ref,
+                    referenceType: PartProbeDeclaration.$type
+                }
+            },
+            superTypes: []
+        },
+        ExpectationDeclaration: {
+            name: ExpectationDeclaration.$type,
+            properties: {
+                err_msg: {
+                    name: ExpectationDeclaration.err_msg
+                },
+                name: {
+                    name: ExpectationDeclaration.name
+                },
+                params: {
+                    name: ExpectationDeclaration.params
+                },
+                probe_ref: {
+                    name: ExpectationDeclaration.probe_ref
+                }
+            },
+            superTypes: []
+        },
+        Expression: {
+            name: Expression.$type,
+            properties: {
+            },
+            superTypes: []
+        },
+        GenericType: {
+            name: GenericType.$type,
+            properties: {
+                container: {
+                    name: GenericType.container
+                },
+                inner: {
+                    name: GenericType.inner
+                }
+            },
+            superTypes: [TypeReference.$type]
+        },
+        LiteralExpr: {
+            name: LiteralExpr.$type,
+            properties: {
+            },
+            superTypes: [Expression.$type]
+        },
+        NullLit: {
+            name: NullLit.$type,
+            properties: {
+            },
+            superTypes: [NullLiteral.$type]
+        },
+        NullLiteral: {
+            name: NullLiteral.$type,
+            properties: {
+            },
+            superTypes: [LiteralExpr.$type]
+        },
+        OXNDocument: {
+            name: OXNDocument.$type,
+            properties: {
+                entities: {
+                    name: OXNDocument.entities,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        OutputField: {
+            name: OutputField.$type,
+            properties: {
+                name: {
+                    name: OutputField.name
+                },
+                type: {
+                    name: OutputField.type
+                }
+            },
+            superTypes: []
+        },
+        ParamPair: {
+            name: ParamPair.$type,
+            properties: {
+                key: {
+                    name: ParamPair.key
+                },
+                value: {
+                    name: ParamPair.value
+                }
+            },
+            superTypes: []
+        },
+        ParamsBlock: {
+            name: ParamsBlock.$type,
+            properties: {
+                pairs: {
+                    name: ParamsBlock.pairs,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        PartDeclaration: {
+            name: PartDeclaration.$type,
+            properties: {
+                descriptions: {
+                    name: PartDeclaration.descriptions,
+                    defaultValue: []
+                },
+                name: {
+                    name: PartDeclaration.name
+                },
+                probes: {
+                    name: PartDeclaration.probes,
+                    defaultValue: []
+                },
+                props: {
+                    name: PartDeclaration.props,
+                    defaultValue: []
+                },
+                refs: {
+                    name: PartDeclaration.refs,
+                    defaultValue: []
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        },
+        PartInBlueprint: {
+            name: PartInBlueprint.$type,
+            properties: {
+                deps: {
+                    name: PartInBlueprint.deps,
+                    defaultValue: []
+                },
+                name: {
+                    name: PartInBlueprint.name
+                },
+                propBindings: {
+                    name: PartInBlueprint.propBindings,
+                    defaultValue: []
+                },
+                ref: {
+                    name: PartInBlueprint.ref
+                }
+            },
+            superTypes: []
+        },
+        PartProbeDeclaration: {
+            name: PartProbeDeclaration.$type,
+            properties: {
+                name: {
+                    name: PartProbeDeclaration.name
+                },
+                params: {
+                    name: PartProbeDeclaration.params
+                },
+                ref: {
+                    name: PartProbeDeclaration.ref
+                }
+            },
+            superTypes: []
+        },
+        PartPropBinding: {
+            name: PartPropBinding.$type,
+            properties: {
+                name: {
+                    name: PartPropBinding.name
+                },
+                value: {
+                    name: PartPropBinding.value
+                }
+            },
+            superTypes: []
+        },
+        PartSlotDeclaration: {
+            name: PartSlotDeclaration.$type,
+            properties: {
+            },
+            superTypes: []
+        },
+        ProbeDeclaration: {
+            name: ProbeDeclaration.$type,
+            properties: {
+                descriptions: {
+                    name: ProbeDeclaration.descriptions,
+                    defaultValue: []
+                },
+                name: {
+                    name: ProbeDeclaration.name
+                },
+                output: {
+                    name: ProbeDeclaration.output,
+                    defaultValue: []
+                },
+                props: {
+                    name: ProbeDeclaration.props,
+                    defaultValue: []
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        },
+        ProbeOutputDeclaration: {
+            name: ProbeOutputDeclaration.$type,
+            properties: {
+                fields: {
+                    name: ProbeOutputDeclaration.fields,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        PropDeclaration: {
+            name: PropDeclaration.$type,
+            properties: {
+                default: {
+                    name: PropDeclaration.default
+                },
+                name: {
+                    name: PropDeclaration.name
+                },
+                required: {
+                    name: PropDeclaration.required
+                },
+                type: {
+                    name: PropDeclaration.type
+                }
+            },
+            superTypes: []
+        },
+        QualifiedName: {
+            name: QualifiedName.$type,
+            properties: {
+                name: {
+                    name: QualifiedName.name
+                },
+                prefix: {
+                    name: QualifiedName.prefix
+                },
+                segments: {
+                    name: QualifiedName.segments,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        RequiredModifier: {
+            name: RequiredModifier.$type,
+            properties: {
+                value: {
+                    name: RequiredModifier.value
+                }
+            },
+            superTypes: []
+        },
+        RuleDeclaration: {
+            name: RuleDeclaration.$type,
+            properties: {
+                condition: {
+                    name: RuleDeclaration.condition
+                },
+                err_msg: {
+                    name: RuleDeclaration.err_msg
+                },
+                name: {
+                    name: RuleDeclaration.name
+                }
+            },
+            superTypes: []
+        },
+        SlotBinding: {
+            name: SlotBinding.$type,
+            properties: {
+                name: {
+                    name: SlotBinding.name
+                },
+                props: {
+                    name: SlotBinding.props,
+                    defaultValue: []
+                },
+                ref: {
+                    name: SlotBinding.ref
+                },
+                slot: {
+                    name: SlotBinding.slot
+                }
+            },
+            superTypes: []
+        },
+        SlotMulti: {
+            name: SlotMulti.$type,
+            properties: {
+                deps: {
+                    name: SlotMulti.deps,
+                    defaultValue: []
+                },
+                name: {
+                    name: SlotMulti.name
+                }
+            },
+            superTypes: [PartSlotDeclaration.$type]
+        },
+        SlotPropBinding: {
+            name: SlotPropBinding.$type,
+            properties: {
+                name: {
+                    name: SlotPropBinding.name
+                },
+                value: {
+                    name: SlotPropBinding.value
+                }
+            },
+            superTypes: []
+        },
+        SlotSingle: {
+            name: SlotSingle.$type,
+            properties: {
+                deps: {
+                    name: SlotSingle.deps,
+                    defaultValue: []
+                },
+                name: {
+                    name: SlotSingle.name
+                }
+            },
+            superTypes: [PartSlotDeclaration.$type]
+        },
+        TemplateString: {
+            name: TemplateString.$type,
+            properties: {
+                value: {
+                    name: TemplateString.value
+                }
+            },
+            superTypes: [Expression.$type]
+        },
+        TernaryExpr: {
+            name: TernaryExpr.$type,
+            properties: {
+                condition: {
+                    name: TernaryExpr.condition
+                },
+                else: {
+                    name: TernaryExpr.else
+                },
+                then: {
+                    name: TernaryExpr.then
+                }
+            },
+            superTypes: [Expression.$type]
+        },
+        TopLevelEntity: {
+            name: TopLevelEntity.$type,
+            properties: {
+            },
+            superTypes: []
+        },
+        TypeReference: {
+            name: TypeReference.$type,
+            properties: {
+            },
+            superTypes: []
+        },
+        VariableRef: {
+            name: VariableRef.$type,
+            properties: {
+                path: {
+                    name: VariableRef.path
+                }
+            },
+            superTypes: [Expression.$type]
+        },
+        WorkDeclaration: {
+            name: WorkDeclaration.$type,
+            properties: {
+                name: {
+                    name: WorkDeclaration.name
+                },
+                ref: {
+                    name: WorkDeclaration.ref
+                },
+                slotBindings: {
+                    name: WorkDeclaration.slotBindings,
+                    defaultValue: []
+                },
+                type: {
+                    name: WorkDeclaration.type
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        }
+    } as const satisfies langium.AstMetaData
 }
 
-export const reflection = new OXNDSLAstReflection()
+export const reflection = new OXNDSLAstReflection();

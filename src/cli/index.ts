@@ -74,6 +74,7 @@ const main = defineCommand({
     config: () => import('./config').then((m) => m.default),
     compile: () => import('./oxn-compile').then((m) => m.default),
     unpack: () => import('./oxn-unpack').then((m) => m.default),
+    validate: () => import('./oxn-validate').then((m) => m.default),
     promote: () => import('./oxn-promote-cmd').then((m) => m.default),
     'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
   },
