@@ -160,98 +160,111 @@ oxn arsenal promote probes/check-file
 oxn arsenal render <blueprint-name>
 ```
 
-## oxn task
+## oxn work
 
-任务管理命令。
+Work 管理命令（新，替代 task 命令）。
 
-### oxn task submit
+### oxn work new
 
-提交 Blueprint 创建任务。
+使用 Blueprint 创建新 Work。
+
+```bash
+oxn work new <work-id> --type task --blueprint <blueprint-name>
+```
+
+**参数**：
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `<work-id>` | 是 | Work ID（kebab-case） |
+| `--type <type>` | 是 | Work 类型：task、plan、explore 或自定义 |
+| `--blueprint <name>` | 否 | 引用的 Blueprint 名称 |
+| `--name <name>` | 否 | 显示名称 |
+
+**输出**：
+
+```
+Work created: my-work
+Type: task
+Path: .openxenon/work/task/my-work.oxn
+```
+
+### oxn work resume
+
+获取下一个待执行的 Part。
+
+```bash
+oxn work resume <work-id>
+```
+
+**输出**：
+
+```
+Part: develop
+Target: 在 src/ 目录下实现功能
+Action: 根据规范编写代码
+```
+
+### oxn work complete
+
+标记 Work 完成。
+
+```bash
+oxn work complete <work-id>
+```
+
+**输出**：
+
+```
+Work: my-work
+Status: COMPLETED
+Parts passed: 3/3
+```
+
+### oxn work list
+
+列出所有 Work。
+
+```bash
+oxn work list
+```
+
+### oxn work validate
+
+验证 Work 文件语法。
+
+```bash
+oxn work validate <path-to-work.oxn>
+```
+
+## oxn task (已废弃)
+
+任务管理命令（已废弃，请使用 `oxn work` 替代）。
+
+> 迁移：使用 `oxn work new ... --type task` 替代 `oxn task submit --blueprint`
+
+### oxn task submit (已废弃)
 
 ```bash
 oxn task submit --blueprint <file>
 ```
 
-**参数**：
-
-| 参数 | 必需 | 描述 |
-|------|------|------|
-| `--blueprint <file>` | 是 | Blueprint YAML 文件路径 |
-
-**输出**：
-
-```
-Task created: task_abc123
-Blueprint compiled to frozen.yaml
-```
-
-### oxn task next
-
-获取下一个待执行的 Stage。
+### oxn task next (已废弃)
 
 ```bash
 oxn task next --task-id <id>
 ```
 
-**输出**：
-
-```
-Stage: create-user-model
-Target: 在 src/models/ 目录下创建 User 模型
-Action: 使用 Prisma ORM 创建 User 模型，包含 id、name、email 字段
-```
-
-> 注意：返回内容仅包含 target + action，隐藏 spec + probes。
-
-### oxn task verify
-
-提交 Stage 验证。
+### oxn task verify (已废弃)
 
 ```bash
 oxn task verify --task-id <id> --stage-id <id>
 ```
 
-**参数**：
-
-| 参数 | 必需 | 描述 |
-|------|------|------|
-| `--task-id <id>` | 是 | 任务 ID |
-| `--stage-id <id>` | 是 | Stage ID |
-
-**输出**：
-
-```
-Stage: create-user-model
-Status: PASSED
-Probes:
-  ✓ fs_exists: src/models/user.ts
-  ✓ fs_match: @prisma/client
-```
-
-### oxn task status
-
-获取任务状态。
+### oxn task status (已废弃)
 
 ```bash
 oxn task status --task-id <id>
-```
-
-**输出**：
-
-```
-Task: task_abc123
-Status: IN_PROGRESS
-Stages:
-  ✓ create-user-model (PASSED)
-  ○ run-tests (PENDING)
-```
-
-### oxn task render
-
-生成任务执行 HTML 报告。
-
-```bash
-oxn task render --task-id <id>
 ```
 
 ## oxn export

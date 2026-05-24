@@ -74,33 +74,33 @@ stages:
           pattern: "test.txt"
 ```
 
-### 3. 提交任务
+### 3. 创建 Work
 
 ```bash
-# 提交 Blueprint，Core 编译生成 Frozen 快照
-./dist/oxn task submit --blueprint my-task.yaml
+# 使用 Blueprint 创建 Work，Core 编译生成 Frozen 快照
+./dist/oxn work new my-work --type task --blueprint new-task-flow
 
-# 记录返回的 task-id
+# 记录返回的 work-id
 ```
 
 ### 4. 模拟 AI 助手执行流程
 
 ```bash
-# 模拟 AI 助手获取指令（仅返回 target + action，体验信息隐藏）
-./dist/oxn task next --task-id <task-id>
+# 模拟 AI 助手获取下一个 Part
+./dist/oxn work resume my-work
 
 # 手动创建 test.txt 文件（模拟 AI 助手构建 Artifact）
 echo "Hello World" > test.txt
 
-# 模拟 AI 助手提交 Core 校验
-./dist/oxn task verify --task-id <task-id> --stage-id create-file
+# 完成 Work
+./dist/oxn work complete my-work
 ```
 
 ### 5. 查看结果
 
 ```bash
-# 查看任务状态
-./dist/oxn task status --task-id <task-id>
+# 查看 Work 状态
+./dist/oxn work list
 
 # 导出执行轨迹
 ./dist/oxn export

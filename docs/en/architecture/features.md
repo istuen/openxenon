@@ -69,41 +69,41 @@ oxn forge stage
 oxn forge <type> --save '<yaml>' --name <name>
 ```
 
-### 2.4 Task Management
+### 2.4 Work Management (NEW)
 
 ```bash
-# Create new task
-oxn task new <task-id> --name <display-name>
+# Create new Work
+oxn work new <work-id> --name <display-name> --type task --blueprint <blueprint-name>
 
-# Submit Blueprint
-oxn task submit --blueprint <path> --task-id <id>
+# Get next Part to execute
+oxn work resume <work-id>
 
-# Get next Stage to execute
-oxn task next --task-id <id>
+# Complete Work when all Parts pass
+oxn work complete <work-id>
 
-# Verify Stage
-oxn task verify --task-id <id> --stage-id <stage-id>
+# List all Works
+oxn work list
 
-# View task status
-oxn task status --task-id <id>
+# View Work details
+oxn work validate .openxenon/work/<type>/<work-id>.oxn
 ```
 
 ### 2.5 Explore Mode
 
 ```bash
-# Create new exploration
-oxn explore new --name <exploration-name>
+# Create new exploration (using Work flow)
+oxn work new <exploration-name> --type explore --blueprint explore-flow
 
-# Scan materials
+# Scan materials (DEPRECATED, use Work flow instead)
 oxn explore scan --name <exploration-name> --path <file-or-directory>
 
-# Add Q&A record
+# Add Q&A record (DEPRECATED)
 oxn explore qa --name <exploration-name> --add "Q:question|A:answer"
 
-# Generate report
+# Generate report (DEPRECATED)
 oxn explore report --name <exploration-name>
 
-# List all explorations
+# List all explorations (DEPRECATED)
 oxn explore list
 ```
 

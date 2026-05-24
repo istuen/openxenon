@@ -160,98 +160,111 @@ Preview Blueprint DAG topology.
 oxn arsenal render <blueprint-name>
 ```
 
-## oxn task
+## oxn work
 
-Task management commands.
+Work management commands (NEW, replaces task commands).
 
-### oxn task submit
+### oxn work new
 
-Submit Blueprint to create task.
+Create a new Work using a Blueprint.
+
+```bash
+oxn work new <work-id> --type task --blueprint <blueprint-name>
+```
+
+**Parameters**:
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `<work-id>` | Yes | Work ID (kebab-case) |
+| `--type <type>` | Yes | Work type: task, plan, explore, or custom |
+| `--blueprint <name>` | No | Blueprint name to reference |
+| `--name <name>` | No | Display name |
+
+**Output**:
+
+```
+Work created: my-work
+Type: task
+Path: .openxenon/work/task/my-work.oxn
+```
+
+### oxn work resume
+
+Get next Part to execute.
+
+```bash
+oxn work resume <work-id>
+```
+
+**Output**:
+
+```
+Part: develop
+Target: Implement feature in src/
+Action: Write code according to specification
+```
+
+### oxn work complete
+
+Mark Work as complete.
+
+```bash
+oxn work complete <work-id>
+```
+
+**Output**:
+
+```
+Work: my-work
+Status: COMPLETED
+Parts passed: 3/3
+```
+
+### oxn work list
+
+List all Works.
+
+```bash
+oxn work list
+```
+
+### oxn work validate
+
+Validate Work file syntax.
+
+```bash
+oxn work validate <path-to-work.oxn>
+```
+
+## oxn task (DEPRECATED)
+
+Task management commands (deprecated, use `oxn work` instead).
+
+> Migration: Use `oxn work new ... --type task` instead of `oxn task submit --blueprint`
+
+### oxn task submit (DEPRECATED)
 
 ```bash
 oxn task submit --blueprint <file>
 ```
 
-**Parameters**:
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `--blueprint <file>` | Yes | Blueprint YAML file path |
-
-**Output**:
-
-```
-Task created: task_abc123
-Blueprint compiled to frozen.yaml
-```
-
-### oxn task next
-
-Get next Stage to execute.
+### oxn task next (DEPRECATED)
 
 ```bash
 oxn task next --task-id <id>
 ```
 
-**Output**:
-
-```
-Stage: create-user-model
-Target: Create User model in src/models/ directory
-Action: Use Prisma ORM to create User model with id, name, email fields
-```
-
-> Note: Return content only includes target + action, hiding spec + probes.
-
-### oxn task verify
-
-Submit Stage verification.
+### oxn task verify (DEPRECATED)
 
 ```bash
 oxn task verify --task-id <id> --stage-id <id>
 ```
 
-**Parameters**:
-
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `--task-id <id>` | Yes | Task ID |
-| `--stage-id <id>` | Yes | Stage ID |
-
-**Output**:
-
-```
-Stage: create-user-model
-Status: PASSED
-Probes:
-  ✓ fs_exists: src/models/user.ts
-  ✓ fs_match: @prisma/client
-```
-
-### oxn task status
-
-Get task status.
+### oxn task status (DEPRECATED)
 
 ```bash
 oxn task status --task-id <id>
-```
-
-**Output**:
-
-```
-Task: task_abc123
-Status: IN_PROGRESS
-Stages:
-  ✓ create-user-model (PASSED)
-  ○ run-tests (PENDING)
-```
-
-### oxn task render
-
-Generate task execution HTML report.
-
-```bash
-oxn task render --task-id <id>
 ```
 
 ## oxn export

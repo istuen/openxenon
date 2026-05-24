@@ -74,33 +74,33 @@ stages:
           pattern: "test.txt"
 ```
 
-### 3. Submit Task
+### 3. Create Work
 
 ```bash
-# Submit Blueprint, Core compiles to generate Frozen snapshot
-./dist/oxn task submit --blueprint my-task.yaml
+# Create Work using Blueprint, Core compiles to generate Frozen snapshot
+./dist/oxn work new my-work --type task --blueprint new-task-flow
 
-# Record the returned task-id
+# Record the returned work-id
 ```
 
 ### 4. Simulate AI Assistant Execution Flow
 
 ```bash
-# Simulate AI Assistant getting instructions (only returns target + action, experience information hiding)
-./dist/oxn task next --task-id <task-id>
+# Simulate AI Assistant getting next Part
+./dist/oxn work resume my-work
 
 # Manually create test.txt file (simulate AI Assistant building Artifact)
 echo "Hello World" > test.txt
 
-# Simulate AI Assistant submitting Core verification
-./dist/oxn task verify --task-id <task-id> --stage-id create-file
+# Complete the Work when done
+./dist/oxn work complete my-work
 ```
 
 ### 5. View Results
 
 ```bash
-# View task status
-./dist/oxn task status --task-id <task-id>
+# View work status
+./dist/oxn work list
 
 # Export execution trace
 ./dist/oxn export

@@ -8,31 +8,19 @@
 1. oxn init              # Initialize project fence
        │
        ▼
-2. oxn forge probe      # Get meta Forge constraints
+2. oxn work new <work-id> --type task --blueprint <bp-name>  # Create Work
        │
        ▼
-3. AI generates Draft YAML    # Generate asset according to constraints
+3. oxn work resume <work-id>  # Get next Part
        │
        ▼
-4. oxn forge probe --save # Save Draft asset
+4. AI executes Part work    # Write code, run commands
        │
        ▼
-5. oxn arsenal promote   # Draft → CANONICAL
+5. oxn work complete <work-id>  # Complete when all Parts pass
        │
        ▼
-6. oxn task submit --blueprint <file>  # Submit task
-       │
-       ▼
-7. oxn task next --task-id <id>  # Get next Stage
-       │
-       ▼
-8. AI executes Stage work    # Write code, run commands
-       │
-       ▼
-9. oxn task verify --task-id <id> --stage-id <id>  # Verify
-       │
-       ▼
-10. Repeat 7-9 until all Stages pass
+6. Repeat 3-5 until all Parts pass
 ```
 
 ## Typical Command Sequence
@@ -54,13 +42,13 @@ parameters:
     type: string
     required: true' --name check-pkg-json
 
-# Submit task
-oxn task submit --blueprint my-task.yaml
-# Get task ID, assume abc123
-oxn task next --task-id abc123
+# Create Work using Blueprint
+oxn work new my-work --type task --blueprint new-task-flow
+# Get next part
+oxn work resume my-work
 # AI executes work...
-oxn task verify --task-id abc123 --stage-id build
-# Repeat next + verify until complete
+oxn work complete my-work
+# Repeat resume + complete until done
 ```
 
 ## 0.2 Goal: Daemon Long-Running Mode

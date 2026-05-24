@@ -8,31 +8,19 @@
 1. oxn init              # 初始化项目围栏
        │
        ▼
-2. oxn forge probe      # 获取元 Forge 约束
+2. oxn work new <work-id> --type task --blueprint <bp-name>  # 创建 Work
        │
        ▼
-3. AI 生成 Draft YAML    # 根据约束生成资产
+3. oxn work resume <work-id>  # 获取下一个 Part
        │
        ▼
-4. oxn forge probe --save # 保存 Draft 资产
+4. AI 执行 Part 工作    # 写代码、跑命令
        │
        ▼
-5. oxn arsenal promote   # Draft → CANONICAL
+5. oxn work complete <work-id>  # 完成后完成 Work
        │
        ▼
-6. oxn task submit --blueprint <file>  # 提交任务
-       │
-       ▼
-7. oxn task next --task-id <id>  # 获取下一个 Stage
-       │
-       ▼
-8. AI 执行 Stage 工作    # 写代码、跑命令
-       │
-       ▼
-9. oxn task verify --task-id <id> --stage-id <id>  # 验证
-       │
-       ▼
-10. 重复 7-9 直到所有 Stage 通过
+6. 重复 3-5 直到所有 Part 通过
 ```
 
 ## 典型命令序列
@@ -54,13 +42,13 @@ parameters:
     type: string
     required: true' --name check-pkg-json
 
-# 提交任务
-oxn task submit --blueprint my-task.yaml
-# 获取任务 ID，假设是 abc123
-oxn task next --task-id abc123
+# 使用 Blueprint 创建 Work
+oxn work new my-work --type task --blueprint new-task-flow
+# 获取下一个 part
+oxn work resume my-work
 # AI 执行工作...
-oxn task verify --task-id abc123 --stage-id build
-# 重复 next + verify 直到完成
+oxn work complete my-work
+# 重复 resume + complete 直到完成
 ```
 
 ## 0.2 目标：Daemon 长驻模式

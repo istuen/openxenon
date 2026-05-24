@@ -24,32 +24,37 @@ sudo chown -R $(whoami) ~/.openxenon
 
 ---
 
-### Q2: `oxn task submit` 失败
+### Q2: `oxn work new` 失败
 
 **症状**：
 
 ```
-Error: Blueprint not found for task: my-task
-请先使用 `oxn task submit --blueprint <file>` 提交 Blueprint。
+Error: Blueprint not found: new-task-flow
+请先确认 Blueprint 已存在于 Arsenal 中。
 ```
 
-**原因**：任务尚未创建或 Blueprint 文件不存在。
+**原因**：Work 引用了不存在的 Blueprint。
 
 **解决方案**：
 
-1. 确认任务目录存在：
+1. 确认 Blueprint 存在于 Arsenal：
 
 ```bash
-ls -la .openxenon/tasks/my-task/
+oxn arsenal list --type blueprint
 ```
 
-2. 确认 Blueprint 文件存在：
+2. 使用已存在的 Blueprint 创建 Work：
 
 ```bash
-cat .openxenon/tasks/my-task/blueprint.yaml
+oxn work new my-work --type task --blueprint new-task-flow
 ```
 
-3. 如果文件不存在，重新创建任务
+3. 如果 Blueprint 不存在，先创建并提升：
+
+```bash
+oxn forge probe --save '<probe-content>' --name my-probe
+oxn arsenal promote probes/my-probe
+```
 
 ---
 

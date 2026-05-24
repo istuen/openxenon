@@ -69,41 +69,41 @@ oxn forge stage
 oxn forge <type> --save '<yaml>' --name <name>
 ```
 
-### 2.4 Task 任务管理
+### 2.4 Work 工作管理 (新)
 
 ```bash
-# 创建新任务
-oxn task new <task-id> --name <显示名称>
+# 创建新 Work
+oxn work new <work-id> --name <显示名称> --type task --blueprint <blueprint-name>
 
-# 提交 Blueprint
-oxn task submit --blueprint <path> --task-id <id>
+# 获取下一个待执行 Part
+oxn work resume <work-id>
 
-# 获取下一个待执行 Stage
-oxn task next --task-id <id>
+# 所有 Part 通过后完成 Work
+oxn work complete <work-id>
 
-# 验证 Stage
-oxn task verify --task-id <id> --stage-id <stage-id>
+# 列出所有 Work
+oxn work list
 
-# 查看任务状态
-oxn task status --task-id <id>
+# 查看 Work 详情
+oxn work validate .openxenon/work/<type>/<work-id>.oxn
 ```
 
 ### 2.5 Explore 探索模式
 
 ```bash
-# 创建新探索
-oxn explore new --name <探索名称>
+# 创建新探索（使用 Work 流程）
+oxn work new <探索名称> --type explore --blueprint explore-flow
 
-# 扫描资料
+# 扫描资料（已废弃，请使用 Work 流程）
 oxn explore scan --name <探索名称> --path <文件或目录>
 
-# 添加问答记录
+# 添加问答记录（已废弃）
 oxn explore qa --name <探索名称> --add "Q:问题|A:回答"
 
-# 生成报告
+# 生成报告（已废弃）
 oxn explore report --name <探索名称>
 
-# 列出所有探索
+# 列出所有探索（已废弃）
 oxn explore list
 ```
 

@@ -137,18 +137,17 @@ pnpm install && pnpm build
 # 4. 创建 Part 变体（Fork）
 ./dist/oxn arsenal fork part git-commit --name git-commit-jira
 
-# 4. 提交 Blueprint（Core 编译并生成冻结快照）
-./dist/oxn task submit --blueprint my-blueprint.yaml
+# 4. 创建 Work（使用 Blueprint）
+./dist/oxn work new my-work --type task --blueprint new-task-flow
 
-# 5. 模拟 AI 助手获取指令（仅返回 target + action，体验信息隐藏）
-./dist/oxn task next --task-id <id>
+# 5. 获取下一个 Part 并执行
+./dist/oxn work resume my-work
 
-# 6. 模拟 AI 助手构建 Artifact 后，提交 Core 校验
-./dist/oxn task verify --task-id <id> --part-id <id>
+# 6. 模拟 AI 助手构建 Artifact 后，完成 Work
+./dist/oxn work complete my-work
 
 # 7. 查看研讨厅 (Hall)
 ./dist/oxn hall
-# 或使用 --open 在浏览器中打开
 ```
 
 ## 8. 架构概要
