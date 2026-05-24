@@ -2,6 +2,79 @@
 
 本文件记录项目所有重要变更。
 
+## [0.0.27] - 2026-05-24
+
+### 新增
+- oxn-validate CLI 命令
+- OXN DSL example files (blueprint/part/probe/work)
+- Work type 简写语法
+- Part refs 在 slotBindings 中注入 probes 到 frozen Blueprint
+
+### 修复
+- 使用正确的 blueprint ref path @prj/blueprints/<name>
+- 使用正确的 OXN DSL 语法 for task.oxn
+- resolvedFrom 应为 'project'
+
+## [0.0.26] - 2026-05-23
+
+### 新增
+- i18n Phase A — 多语言基座与 Skill 内容国际化
+- OxnKernelAdapter 迁移到 oxn-dsl 层
+- explore scan 索引模式
+
+### 修复
+- 更新 skills 源文件到 OXN DSL v3.1 语法
+- 清理 legacy forges 和 probes YAML 文件
+- 全部 typecheck + test 通过
+
+## [0.0.25] - 2026-05-22
+
+### 新增
+- OXN DSL Slot 范式重构 — 废除 Interface/AbstractPart，确立 slot 插槽机制
+
+### 修复
+- resolve 32 lint violations per architecture constitution
+- resolve typecheck errors in production code
+
+## [0.0.24] - 2026-05-21
+
+### 新增
+- YAML purge — paths .oxn, kill 6 parseYAML sources
+- Forge-Arsenal pipeline — publish rename, compile diagnostics, OXN scaffold, dir migration
+- E2E param flow — prove explicit parameter mapping closed loop
+- Langium services + DocumentBuilder + pipeline integration
+
+## [0.0.23] - 2026-05-20
+
+### 新增
+- OXN DSL 核心架构 v1.1~v1.6：Langium grammar、AST-to-IR、Scope Provider、OxnAssemblyIR schema、Kernel adapter、Param evaluator
+- CLI 子命令：compile/unpack/promote/migrate-yaml
+- Phase 2~4 完成：asset loader、flattener、bundle compiler、unpacker、builtin OXN、sandbox、mutation validator、promote
+- 接口/规则/期望验证器、迁移、弃用处理
+
+### 修复
+- escape backticks in oxn-task instruction string
+
+## [0.0.22] - 2026-05-19
+
+### 新增
+- 编译与缓存机制 — compiled 制品、_depHash、assembly、manifest
+- 统一 props/params 命名 + 参数注入链路打通
+
+### 修复
+- 代码对齐架构文档
+
+## [0.0.21] - 2026-05-18
+
+### 新增
+- Stage→Part 重构 across codebase
+- YAML parsing 和 slot 支持
+- 文档结构重组（en/zh-cn）
+- 架构报告 P0 改进项：Stage→Part 合并、Probe 单文件存储、BUILTIN_PARTS 填充、min_version 校验、Forge unpack/repack
+
+### 移除
+- remove proof concept from docs and code
+
 ## [0.0.20] - 2026-05-17
 
 ### 新增

@@ -60,6 +60,7 @@ docs_tmp/
 *.bundle.assembly.schema.json
 
 # OpenXenon specific
+.changes/
 .openxenon/
 .openxenon2/
 !src/

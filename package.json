@@ -1,6 +1,6 @@
 {
   "name": "openxenon",
-  "version": "1.0.0",
+  "version": "0.0.27",
   "description": "OpenXenon - 面向大语言模型的工程化控制引擎",
   "author": "OpenXenon Team",
   "license": "MIT",
@@ -30,7 +30,9 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist node_modules",
     "prepare": "lefthook install",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "version:check": "bun run scripts/version-check.ts",
+    "version:sync": "bun run scripts/version-sync.ts"
   },
   "dependencies": {
     "citty": "^0.1.6",

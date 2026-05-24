@@ -46,6 +46,12 @@ export default defineCommand({
       required: true,
       description: 'Work ID',
     },
+    '--type': {
+      type: 'string',
+      alias: 't',
+      description: 'Work 类型 (task/plan/flow/explore/fix)',
+      default: 'task',
+    },
     '--json': {
       type: 'boolean',
       description: 'JSON 格式输出',
@@ -59,6 +65,7 @@ export default defineCommand({
     const format = getFormatFromArgs(ctx.args)
     const cwd = getProjectRoot()
     const workId = ctx.args['work-id'] as string
+    const workType = (ctx.args['--type'] as string) || 'task'
 
     if (!projectBoundaryExists()) {
       return outputError(
@@ -71,7 +78,7 @@ export default defineCommand({
       )
     }
 
-    const workFilePath = getWorkFilePath(cwd, workId, 'task')
+    const workFilePath = getWorkFilePath(cwd, workId, workType)
     if (!existsSync(workFilePath)) {
       return outputError(
         {
@@ -82,7 +89,7 @@ export default defineCommand({
       )
     }
 
-    const stateFilePath = getStateFilePath(cwd, workId, 'task')
+    const stateFilePath = getStateFilePath(cwd, workId, workType)
     let state: WorkState
 
     if (existsSync(stateFilePath)) {
@@ -101,7 +108,7 @@ export default defineCommand({
     } else {
       state = {
         workId,
-        type: 'task',
+        type: workType,
         status: 'PENDING',
         parts: [],
         createdAt: new Date().toISOString(),

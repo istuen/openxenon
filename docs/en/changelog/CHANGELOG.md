@@ -2,6 +2,79 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.0.27] - 2026-05-24
+
+### Added
+- oxn-validate CLI command
+- OXN DSL example files (blueprint/part/probe/work)
+- Work type shorthand syntax
+- Part refs in slotBindings inject probes into frozen Blueprint
+
+### Fixed
+- Use correct blueprint ref path @prj/blueprints/<name>
+- Use correct OXN DSL syntax for task.oxn
+- resolvedFrom should be 'project'
+
+## [0.0.26] - 2026-05-23
+
+### Added
+- i18n Phase A — multi-language base and Skill content internationalization
+- OxnKernelAdapter migrated to oxn-dsl layer
+- explore scan index mode
+
+### Fixed
+- Update skills source files to OXN DSL v3.1 syntax
+- Remove legacy forges and probes YAML files
+- All typecheck + test pass
+
+## [0.0.25] - 2026-05-22
+
+### Added
+- OXN DSL Slot paradigm refactor — abolish Interface/AbstractPart, establish slot mechanism
+
+### Fixed
+- Resolve 32 lint violations per architecture constitution
+- Resolve typecheck errors in production code
+
+## [0.0.24] - 2026-05-21
+
+### Added
+- YAML purge — paths .oxn, kill 6 parseYAML sources
+- Forge-Arsenal pipeline — publish rename, compile diagnostics, OXN scaffold, dir migration
+- E2E param flow — prove explicit parameter mapping closed loop
+- Langium services + DocumentBuilder + pipeline integration
+
+## [0.0.23] - 2026-05-20
+
+### Added
+- OXN DSL core architecture v1.1~v1.6: Langium grammar, AST-to-IR, Scope Provider, OxnAssemblyIR schema, Kernel adapter, Param evaluator
+- CLI subcommands: compile/unpack/promote/migrate-yaml
+- Phase 2~4 complete: asset loader, flattener, bundle compiler, unpacker, builtin OXN, sandbox, mutation validator, promote
+- Interface/rule/expectation validators, migration, deprecation
+
+### Fixed
+- Escape backticks in oxn-task instruction string
+
+## [0.0.22] - 2026-05-19
+
+### Added
+- Compilation and cache mechanism — compiled artifacts, _depHash, assembly, manifest
+- Unified props/params naming + parameter injection chain
+
+### Fixed
+- Code aligns with architecture documentation
+
+## [0.0.21] - 2026-05-18
+
+### Added
+- Stage→Part refactor across codebase
+- YAML parsing and slot support
+- Docs structure reorganization (en/zh-cn)
+- Architecture report P0 improvements: Stage→Part merge, Probe single-file storage, BUILTIN_PARTS population, min_version validation, Forge unpack/repack
+
+### Removed
+- Remove proof concept from docs and code
+
 ## [0.0.20] - 2026-05-17
 
 ### Added
