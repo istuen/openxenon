@@ -62,6 +62,7 @@ export class TaskSandbox {
       currentIR = {
         id: (raw.name || raw.id || config.taskId) as string,
         name: (raw.name || raw.id || config.taskId) as string,
+        type: (raw.type || 'task') as string,
         _version: (raw._version || 1) as number,
         assembly_at: new Date().toISOString(),
         props: [],

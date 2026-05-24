@@ -127,9 +127,18 @@ ParamsBlock:
 ParamPair:
     key=ID '=' value=Expression;
 
+// ==================== Work Type (Built-in) ====================
+BuiltInWorkType returns string:
+    'task' | 'plan' | 'explore';
+
 // ==================== Blueprint ====================
 BlueprintDeclaration:
-    'blueprint' name=STRING 'type' type=STRING '{'
+    'blueprint' name=STRING
+    (
+        type=BuiltInWorkType        // 内置关键字 shorthand
+      | 'type' type=STRING          // 自定义类型
+    )
+    '{'
         ('version' '=' version=NUMBER)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*

@@ -286,6 +286,7 @@ export function convertBlueprintDeclaration(decl: BlueprintDeclaration): OxnAsse
   return {
     id: decl.name,
     name: decl.name,
+    type: decl.type || 'task',
     _version: decl.version || 1,
     assembly_at: new Date().toISOString(),
     props: (decl.props || []).map(propDeclarationToAssemblyProp),

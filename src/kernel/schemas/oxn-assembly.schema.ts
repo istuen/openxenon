@@ -124,6 +124,7 @@ export type OxnAssemblyRule = z.infer<typeof OxnAssemblyRuleSchema>
 export const OxnAssemblyIRSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  type: z.string().default('task'),
   _version: z.number().int().positive().default(1),
   assembly_at: z.string(),
   props: z.array(OxnAssemblyPropSchema).default([]),
@@ -170,10 +171,16 @@ export type OxnAssemblyBundle = z.infer<typeof OxnAssemblyBundleSchema>
 // Helper Factories
 // ========================
 
-export function createOxnAssemblyIR(params: { id: string; name: string; version?: number }): OxnAssemblyIR {
+export function createOxnAssemblyIR(params: {
+  id: string
+  name: string
+  version?: number
+  type?: string
+}): OxnAssemblyIR {
   return {
     id: params.id,
     name: params.name,
+    type: params.type || 'task',
     _version: params.version ?? 1,
     assembly_at: new Date().toISOString(),
     props: [],
