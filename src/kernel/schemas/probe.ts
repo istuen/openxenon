@@ -1,6 +1,8 @@
 import { z } from 'zod'
-// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move ProbeTypeSchema into this file (kernel source of truth)
-import { ProbeTypeSchema } from '../../infra/loader'
+
+export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
+
+export type ProbeType = z.infer<typeof ProbeTypeSchema>
 
 export const FsExistsParamsSchema = z.object({
   pattern: z.string(),
@@ -67,7 +69,6 @@ export function validateProbeDefinition(data: unknown): ProbeDefinition {
   return ProbeDefinitionSchema.parse(data)
 }
 
-export type ProbeType = z.infer<typeof ProbeTypeSchema>
 export type Probe = z.infer<typeof ProbeInvocationSchema>
 
 export function validateProbe(data: unknown): Probe {

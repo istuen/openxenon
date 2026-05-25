@@ -1,6 +1,6 @@
 import { z } from 'zod'
-// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move pure fns and ProbeTypeSchema to kernel
-import { isBareProbeRef, isValidProbeRef, ProbeTypeSchema, parseProbeNamespace } from '../../infra/loader'
+import { isBareProbeRef, isValidProbeRef, parseProbeNamespace } from '../probes/namespace'
+import { ProbeTypeSchema } from './probe'
 
 export const PartRefSchema = z.string().refine(
   (val) => {

@@ -1,6 +1,6 @@
 import { z } from 'zod'
-// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move ProbeTypeSchema and validator fns to kernel/schemas/probe.ts
-import { isBareProbeRef, isValidProbeRef, ProbeTypeSchema } from '../../infra/loader'
+import { isBareProbeRef, isValidProbeRef } from '../probes/namespace'
+import { ProbeTypeSchema } from './probe'
 
 export const ProbeInvocationSchema = z
   .object({
