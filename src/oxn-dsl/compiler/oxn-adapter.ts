@@ -10,8 +10,6 @@
  *   4. → FrozenBlueprint（Core 零感知直接消费）
  */
 
-import { resolvePartRef } from '../../work/part-resolver.js'
-import { getProjectBoundaryPath } from '../../kernel/lib/project.js'
 import { type DagNode, validateDagTopology } from '../../kernel/schemas/dag-validator'
 import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/frozen-schema'
 import { createXenonMeta, validateFrozenBlueprint } from '../../kernel/schemas/frozen-schema'
@@ -22,9 +20,22 @@ import type {
   OxnAssemblySlotBinding,
 } from '../schemas/oxn-assembly.schema'
 
+export interface PartResolution {
+  found: boolean
+  part?: {
+    probes?: Array<{ ref?: string; params?: Record<string, unknown> }>
+  }
+}
+
+export interface IPartResolver {
+  resolve(ref: string, boundary: string): PartResolution
+}
+
 export interface AdapterContext {
   taskId: string
   taskName: string
+  boundary: string
+  partResolver?: IPartResolver
 }
 
 export interface AdapterResult {
@@ -55,7 +66,11 @@ function normalizeProbeType(rawType: string): string {
 // Part → Frozen Part
 // ========================
 
-export function adaptConcretePart(part: OxnAssemblyPart, resolvedParams: Record<string, unknown>): FrozenPart {
+export function adaptConcretePart(
+  part: OxnAssemblyPart,
+  resolvedParams: Record<string, unknown>,
+  ctx: AdapterContext,
+): FrozenPart {
   const finalParams: Record<string, unknown> = { ...resolvedParams }
 
   for (const prop of part.props) {
@@ -93,8 +108,8 @@ export function adaptConcretePart(part: OxnAssemblyPart, resolvedParams: Record<
       }
     })
   } else if (part.ref) {
-    const projectBoundary = getProjectBoundaryPath(process.cwd())
-    const resolution = resolvePartRef(part.ref, projectBoundary)
+    const resolver = ctx.partResolver
+    const resolution = resolver ? resolver.resolve(part.ref, ctx.boundary) : { found: false }
     if (resolution.found && resolution.part?.probes) {
       probes = resolution.part.probes.map((p, idx) => {
         const probeParams: Record<string, unknown> = {}
@@ -198,8 +213,15 @@ function resolveSlotBindings(
 // ========================
 
 export class OxnKernelAdapter {
-  adapt(ir: OxnAssemblyIR, slotBindings: OxnAssemblySlotBinding[], _ctx?: AdapterContext): AdapterResult {
+  private defaultResolver?: IPartResolver
+
+  constructor(resolver?: IPartResolver) {
+    this.defaultResolver = resolver
+  }
+
+  adapt(ir: OxnAssemblyIR, slotBindings: OxnAssemblySlotBinding[], ctx?: AdapterContext): AdapterResult {
     const warnings: string[] = []
+    const resolver = ctx?.partResolver || this.defaultResolver
 
     const boundSlots = resolveSlotBindings(slotBindings, ir.slots)
 
@@ -220,7 +242,7 @@ export class OxnKernelAdapter {
         }
         partIdSet.add(part.name)
 
-        const frozenPart = adaptConcretePart(part, {})
+        const frozenPart = adaptConcretePart(part, {}, ctx!)
         frozenParts.push(frozenPart)
       }
     }
@@ -239,7 +261,8 @@ export class OxnKernelAdapter {
       // If slotBinding has a ref, resolve the Part and get its probes
       let probes: FrozenProbe[] = []
       if (slotBinding?.ref) {
-        const partResolution = resolvePartRef(slotBinding.ref, getProjectBoundaryPath(process.cwd()))
+        const boundary = ctx?.boundary || process.cwd()
+        const partResolution = resolver ? resolver.resolve(slotBinding.ref, boundary) : { found: false }
         if (partResolution.found && partResolution.part) {
           const partProbes = partResolution.part.probes || []
           probes = partProbes.map((p: any, idx: number) => {
@@ -295,7 +318,7 @@ export class OxnKernelAdapter {
           Object.assign(resolvedParams, slotBinding.props)
         }
 
-        const frozenPart = adaptConcretePart(part, resolvedParams)
+        const frozenPart = adaptConcretePart(part, resolvedParams, ctx!)
 
         // 找到引用该 concrete part 的 slot，合并 deps + 使用 slot name
         const matchingSlot = Array.from(Object.entries(boundSlots)).find(
