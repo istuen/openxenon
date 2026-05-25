@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { ensureForgesDirectories } from '../arsenals/init'
-import { type AssetType, FORGES_ROOT, type Scope } from '../arsenals/paths'
+import { type AssetType, GLOBAL_FORGES_ROOT, type Scope } from '../arsenals/paths'
 import { getProjectBoundaryPath } from '../kernel'
 
 export interface DraftAssetResult {
@@ -22,9 +22,9 @@ function getTypeFromContent(content: string): AssetType | null {
 function getForgePath(type: AssetType, name: string, scope: Scope, ext: string = 'oxn'): string {
   if (scope === 'global') {
     if (type === 'parts' || type === 'probes') {
-      return join(FORGES_ROOT, type, `${name}.${ext}`)
+      return join(GLOBAL_FORGES_ROOT, type, `${name}.${ext}`)
     }
-    return join(FORGES_ROOT, type, name, `draft.${ext}`)
+    return join(GLOBAL_FORGES_ROOT, type, name, `draft.${ext}`)
   }
   const projectBoundary = getProjectBoundaryPath(process.cwd())
   if (type === 'parts' || type === 'probes') {

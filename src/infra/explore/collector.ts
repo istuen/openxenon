@@ -7,20 +7,58 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { glob } from 'glob'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
-// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): move shared types out of kernel, infra should not depend on kernel
-import type {
-  BlueprintProbeRef,
-  ExplorationAsset,
-  ExplorationContext,
-  ProbeInfo,
-  ProjectDir,
-  TraceSummary,
-} from '../../kernel/explore/types'
+
+interface RawProjectDir {
+  path: string
+  fileCount: number
+  hasTests: boolean
+  depth: number
+}
+
+interface RawProbeInfo {
+  type: string
+  pattern: string
+  source: 'builtin' | 'canonical' | 'draft'
+}
+
+interface RawBlueprintProbeRef {
+  type: string
+  count: number
+}
+
+interface RawTraceSummary {
+  totalStages: number
+  passRate: number
+  probeStats: Record<string, { total: number; passed: number }>
+}
+
+interface RawExplorationAsset {
+  name: string
+  description: string
+  scope: string[]
+  output: string
+  rules: Array<{
+    name: string
+    description: string
+    level: 'info' | 'warning' | 'error'
+    condition: string
+    message: string
+    suggestion?: string
+  }>
+}
+
+interface RawExplorationContext {
+  projectFiles: string[]
+  projectDirs: RawProjectDir[]
+  probes: RawProbeInfo[]
+  blueprintProbeRefs: RawBlueprintProbeRef[]
+  traceSummary?: RawTraceSummary
+}
 
 /**
  * 采集探索上下文
  */
-export async function collectContext(projectRoot: string): Promise<ExplorationContext> {
+export async function collectRawContext(projectRoot: string): Promise<RawExplorationContext> {
   const projectFiles = await scanProjectFiles(projectRoot)
   const projectDirs = aggregateDirs(projectFiles)
   const probes = await collectProbes(projectRoot)
@@ -34,6 +72,10 @@ export async function collectContext(projectRoot: string): Promise<ExplorationCo
     blueprintProbeRefs,
     traceSummary,
   }
+}
+
+export async function collectContext(projectRoot: string) {
+  return collectRawContext(projectRoot) as Promise<import('../../kernel/explore/types').ExplorationContext>
 }
 
 /**
@@ -51,7 +93,7 @@ async function scanProjectFiles(projectRoot: string): Promise<string[]> {
 /**
  * 聚合目录信息
  */
-function aggregateDirs(files: string[]): ProjectDir[] {
+function aggregateDirs(files: string[]): RawProjectDir[] {
   const dirMap = new Map<string, { files: string[]; hasTests: boolean }>()
 
   for (const file of files) {
@@ -86,8 +128,8 @@ function aggregateDirs(files: string[]): ProjectDir[] {
 /**
  * 扫描 Arsenal 探针
  */
-async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
-  const coverages: ProbeInfo[] = []
+async function collectProbes(projectRoot: string): Promise<RawProbeInfo[]> {
+  const coverages: RawProbeInfo[] = []
 
   // 扫描项目 Arsenal
   const arsenalDir = join(projectRoot, '.openxenon', 'arsenals')
@@ -103,7 +145,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
           type: (parsed.type as string) || '',
           pattern:
             (parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value || '',
-          source: 'canonical',
+          source: 'canonical' as const,
         })
       } else if (stat.includes('draft.yaml')) {
         const content = await readFile(join(probePath, 'draft.yaml'), 'utf-8')
@@ -112,7 +154,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
           type: (parsed.type as string) || '',
           pattern:
             (parsed.props as Array<{ name: string; value?: string }>)?.find((p) => p.name === 'pattern')?.value || '',
-          source: 'draft',
+          source: 'draft' as const,
         })
       }
     }
@@ -121,7 +163,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
   }
 
   // 添加内置探针（hardcoded）
-  const builtinProbes: ProbeInfo[] = [
+  const builtinProbes: RawProbeInfo[] = [
     { type: 'fs_exists', pattern: 'src', source: 'builtin' },
     { type: 'fs_match', pattern: 'package.json', source: 'builtin' },
     { type: 'shell_exec', pattern: 'npm test', source: 'builtin' },
@@ -135,7 +177,7 @@ async function collectProbes(projectRoot: string): Promise<ProbeInfo[]> {
 /**
  * 解析 Blueprint 引用
  */
-async function collectBlueprintRefs(projectRoot: string): Promise<BlueprintProbeRef[]> {
+async function collectBlueprintRefs(projectRoot: string): Promise<RawBlueprintProbeRef[]> {
   const refMap = new Map<string, number>()
   const taskDir = join(projectRoot, '.openxenon', 'tasks')
 
@@ -172,7 +214,7 @@ async function collectBlueprintRefs(projectRoot: string): Promise<BlueprintProbe
 /**
  * 采集 Trace 汇总
  */
-async function collectTraceSummary(_projectRoot: string): Promise<TraceSummary | undefined> {
+async function collectTraceSummary(_projectRoot: string): Promise<RawTraceSummary | undefined> {
   // Phase 1 暂不实现 Trace 分析
   return undefined
 }
@@ -180,8 +222,8 @@ async function collectTraceSummary(_projectRoot: string): Promise<TraceSummary |
 /**
  * 加载探索器资产
  */
-export async function loadExplorationAssets(projectRoot: string, names?: string[]): Promise<ExplorationAsset[]> {
-  const assets: ExplorationAsset[] = []
+export async function loadExplorationAssets(projectRoot: string, names?: string[]): Promise<RawExplorationAsset[]> {
+  const assets: RawExplorationAsset[] = []
   const explorationsDir = join(projectRoot, 'src', 'arsenals', 'explorations')
 
   try {
@@ -199,7 +241,7 @@ export async function loadExplorationAssets(projectRoot: string, names?: string[
           description: (parsed.description as string) || '',
           scope: (parsed.scope as string[]) || [],
           output: (parsed.output as string) || '',
-          rules: (parsed.rules as ExplorationAsset['rules']) || [],
+          rules: (parsed.rules as RawExplorationAsset['rules']) || [],
         })
       } catch {
         // 资产不存在

@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { GLOBAL_ARSENALS_ROOT } from '../infra/paths'
+import { GLOBAL_ARSENALS_ROOT } from '../arsenals/paths'
 import { blueprintToDagHtml } from './render/blueprint-renderer'
 
 export default defineCommand({

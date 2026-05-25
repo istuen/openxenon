@@ -2,9 +2,10 @@ import { createHash } from 'crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { z } from 'zod'
-import { BUILTIN_PARTS, BUILTIN_PROBES } from '../arsenals/builtin'
-import type { AssetState, AssetType } from '../arsenals/paths'
-import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT, type Scope as InfraScope, resolveBoundary } from '../infra/paths'
+import type { AssetState, AssetType } from '../infra/paths'
+import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT } from '../infra/paths'
+import { resolveBoundary } from '../infra/paths'
+import type { Scope as InfraScope } from '../infra/paths'
 
 export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
 
@@ -51,7 +52,7 @@ export interface StandardAsset {
   content: string
 }
 
-function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolean = false): StandardAsset[] {
+export function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolean = false): StandardAsset[] {
   const typePath = join(boundary, type)
 
   if (!existsSync(typePath)) {
@@ -135,41 +136,8 @@ function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined
     return scanFlatStructure(GLOBAL_ARSENALS_ROOT, type)
   }
 
-  function scanBuiltin(type: AssetType, state: AssetState): StandardAsset[] {
-    if (state !== 'canonical') return []
-
-    const assets: StandardAsset[] = []
-
-    if (type === 'probes') {
-      for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
-        assets.push({
-          name,
-          type: 'probes' as AssetType,
-          state: 'canonical' as AssetState,
-          path: `builtin:${name}`,
-          content: JSON.stringify(def),
-        })
-      }
-    }
-
-    if (type === 'parts') {
-      for (const [name, def] of Object.entries(BUILTIN_PARTS)) {
-        assets.push({
-          name,
-          type: 'parts' as AssetType,
-          state: 'canonical' as AssetState,
-          path: `builtin:${name}`,
-          content: JSON.stringify(def),
-        })
-      }
-    }
-
-    return assets
-  }
-
   let projectAssets: StandardAsset[] = []
   let globalAssets: StandardAsset[] = []
-  let builtinAssets: StandardAsset[] = []
 
   if (scope === 'project' || scope === 'fallback') {
     projectAssets = scanProjectBoundary(type)
@@ -177,11 +145,8 @@ function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined
   if (scope === 'global' || (scope === 'fallback' && projectAssets.length === 0)) {
     globalAssets = scanGlobal(type)
   }
-  if (scope === 'builtin' || (scope === 'fallback' && globalAssets.length === 0)) {
-    builtinAssets = scanBuiltin(type, 'canonical')
-  }
 
-  const allAssets = [...projectAssets, ...globalAssets, ...builtinAssets]
+  const allAssets = [...projectAssets, ...globalAssets]
   const seen = new Set<string>()
   return allAssets.filter((asset) => {
     if (seen.has(asset.path)) return false
@@ -474,6 +439,7 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
   const parts = new Map<string, Record<string, unknown>>()
   const probes = new Map<string, Record<string, unknown>>()
 
+  const { BUILTIN_PROBES, BUILTIN_PARTS } = require('../arsenals/builtin')
   for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
     probes.set(`oxn/${name}`, def as Record<string, unknown>)
   }

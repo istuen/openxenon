@@ -1,13 +1,13 @@
 import { URI } from 'langium'
 import { parse as parseYaml } from 'yaml'
-import { BUILTIN_PARTS } from '../../arsenals/builtin'
+import { BUILTIN_PARTS } from '../arsenals/builtin'
 // eslint-disable-next-line no-restricted-imports -- loadStandardByName via higher-order injection
-import { loadStandardByName } from '../../infra/loader'
-import { isBareProbeRef, isValidProbeRef, parseProbeNamespace } from '../probes/namespace'
-import type { OXNDocument } from '../../oxn-dsl/generated/ast.js'
-import { generateOxnAssembly } from '../../oxn-dsl/generator/oxn-generator.js'
-import { createOxnServices, resetOxnServices } from '../../oxn-dsl/langium/oxn-services.js'
-import type { PartDefinition } from '../schemas/part-asset'
+import { loadStandardByName } from '../infra/loader'
+import { isBareProbeRef, isValidProbeRef, parseProbeNamespace } from '../kernel/probes/namespace'
+import type { OXNDocument } from '../oxn-dsl/generated/ast.js'
+import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
+import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
+import type { PartDefinition } from '../kernel/schemas/part-asset'
 
 export interface PartResolution {
   found: boolean

@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { cpSync, existsSync, readdirSync, unlinkSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import type { AssetState, AssetType } from '../arsenals/paths'
-import { GLOBAL_ARSENALS_ROOT } from '../infra/paths'
+import { GLOBAL_ARSENALS_ROOT } from '../arsenals/paths'
 import { getProjectBoundaryPath } from '../kernel'
 
 interface MigrationResult {

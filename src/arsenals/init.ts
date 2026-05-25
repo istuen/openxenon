@@ -10,7 +10,7 @@ import {
   resolveArsenalRoot,
   resolveForgeRoot,
   type Scope,
-} from '../infra/paths'
+} from './paths'
 
 export function ensureArsenalsDirectories(scope: Scope, cwd?: string): void {
   const dirs =

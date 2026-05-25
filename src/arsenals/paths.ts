@@ -1,32 +1,34 @@
 import { join } from 'path'
 import {
-  GLOBAL_ARSENALS_BLUEPRINTS,
-  GLOBAL_ARSENALS_PARTS,
-  GLOBAL_ARSENALS_PROBES,
   GLOBAL_ARSENALS_ROOT,
-  GLOBAL_FORGES_BLUEPRINTS,
-  GLOBAL_FORGES_PARTS,
-  GLOBAL_FORGES_PROBES,
   GLOBAL_FORGES_ROOT,
-  resolveArsenalRoot,
-  resolveForgeRoot,
+  resolveBoundary,
+  type Scope as InfraScope,
   type Scope,
+  type AssetState,
+  type AssetType,
 } from '../infra/paths'
 
-export type { Scope } from '../infra/paths'
+export { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT }
 
-export const ARSENALS_ROOT = GLOBAL_ARSENALS_ROOT
-export const ARSENALS_PROBES = GLOBAL_ARSENALS_PROBES
-export const ARSENALS_BLUEPRINTS = GLOBAL_ARSENALS_BLUEPRINTS
-export const ARSENALS_PARTS = GLOBAL_ARSENALS_PARTS
+export type { Scope, AssetState, AssetType }
 
-export const FORGES_ROOT = GLOBAL_FORGES_ROOT
-export const FORGES_PROBES = GLOBAL_FORGES_PROBES
-export const FORGES_BLUEPRINTS = GLOBAL_FORGES_BLUEPRINTS
-export const FORGES_PARTS = GLOBAL_FORGES_PARTS
+export const GLOBAL_ARSENALS_PROBES = join(GLOBAL_ARSENALS_ROOT, 'probes')
+export const GLOBAL_ARSENALS_STAGES = join(GLOBAL_ARSENALS_ROOT, 'stages')
+export const GLOBAL_ARSENALS_BLUEPRINTS = join(GLOBAL_ARSENALS_ROOT, 'blueprints')
+export const GLOBAL_ARSENALS_PARTS = join(GLOBAL_ARSENALS_ROOT, 'parts')
+export const GLOBAL_FORGES_PROBES = join(GLOBAL_FORGES_ROOT, 'probes')
+export const GLOBAL_FORGES_STAGES = join(GLOBAL_FORGES_ROOT, 'stages')
+export const GLOBAL_FORGES_BLUEPRINTS = join(GLOBAL_FORGES_ROOT, 'blueprints')
+export const GLOBAL_FORGES_PARTS = join(GLOBAL_FORGES_ROOT, 'parts')
 
-export type AssetState = 'draft' | 'canonical'
-export type AssetType = 'probes' | 'blueprints' | 'parts'
+export function resolveArsenalRoot(scope: InfraScope, cwd?: string): string {
+  return join(resolveBoundary(scope, cwd), 'arsenals')
+}
+
+export function resolveForgeRoot(scope: InfraScope, cwd?: string): string {
+  return join(resolveBoundary(scope, cwd), 'forges')
+}
 
 export const FORGES_DIRECTORY_STRUCTURE = {
   draft: '<type>/<name>/draft.oxn',

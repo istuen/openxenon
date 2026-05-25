@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs'
 import { basename, join } from 'path'
-import { GLOBAL_ARSENALS_ROOT } from '../infra/paths'
+import { GLOBAL_ARSENALS_ROOT } from '../arsenals/paths'
 
 type ImportFilter = 'draft' | 'canonical' | 'all' | 'archive'
 

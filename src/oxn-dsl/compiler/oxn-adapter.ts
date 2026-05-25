@@ -10,7 +10,7 @@
  *   4. → FrozenBlueprint（Core 零感知直接消费）
  */
 
-import { resolvePartRef } from '../../kernel/lib/part-resolver.js'
+import { resolvePartRef } from '../../work/part-resolver.js'
 import { getProjectBoundaryPath } from '../../kernel/lib/project.js'
 import { type DagNode, validateDagTopology } from '../../kernel/schemas/dag-validator'
 import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/frozen-schema'
