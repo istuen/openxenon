@@ -5,7 +5,7 @@
  * - 关联的 Probe 执行验证
  * - 失败时中断流水线，返回 err_msg
  */
-import type { OxnAssemblyExpectation } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyExpectation } from '../schemas/oxn-assembly.schema'
 
 export interface ExpectationResult {
   name: string

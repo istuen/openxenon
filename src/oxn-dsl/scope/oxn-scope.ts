@@ -128,7 +128,7 @@ export function getScopeAssetDir(scope: OxnScope, type: OxnAssetType, projectRoo
 // 跨文件 Props 提取
 // ========================
 
-import type { OxnAssemblyProp } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyProp } from '../schemas/oxn-assembly.schema'
 
 /** 从已解析的资产中提取 prop 定义 */
 export interface ResolvedAssetProps {

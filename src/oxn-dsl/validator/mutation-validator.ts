@@ -9,7 +9,7 @@
  */
 
 import { type DagNode, validateDagTopology } from '../../kernel/schemas/dag-validator'
-import type { OxnAssemblyIR } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyIR } from '../schemas/oxn-assembly.schema'
 
 export interface MutationCheckResult {
   valid: boolean

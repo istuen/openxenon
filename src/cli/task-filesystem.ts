@@ -10,7 +10,7 @@ import { buildTraceEvent, type TraceEvent } from '../kernel/lib/task-trace'
 import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
 import { type DagNode, topologicalSort } from '../kernel/schemas/dag-validator'
 import { computeContentHash, type FrozenBlueprint } from '../kernel/schemas/frozen-schema'
-import type { OxnAssemblySlotBinding } from '../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblySlotBinding } from '../oxn-dsl/schemas/oxn-assembly.schema'
 import { arsenalLoadStandardByName } from '../arsenals/loader'
 import { unifiedTaskSubmit } from './oxn-dual-track'
 

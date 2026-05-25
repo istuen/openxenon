@@ -22,7 +22,7 @@ import type {
   OxnAssemblySlot,
   OxnAssemblySlotBinding,
   OxnAssemblyTaskIR,
-} from '../../kernel/schemas/oxn-assembly.schema.js'
+} from '../schemas/oxn-assembly.schema.js'
 import type {
   BlueprintDeclaration,
   ExecutionRef,

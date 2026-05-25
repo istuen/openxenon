@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { validateOxnAssemblyIR } from '../../kernel/schemas/oxn-assembly.schema'
+import { validateOxnAssemblyIR } from '../schemas/oxn-assembly.schema'
 
 import type {
   BlueprintDeclaration,

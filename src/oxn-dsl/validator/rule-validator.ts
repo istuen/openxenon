@@ -6,7 +6,7 @@
  * - 比较运算 (==, !=, <, >, <=, >=)
  * - 求值结果为 false 时编译报错
  */
-import type { OxnAssemblyRule } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyRule } from '../schemas/oxn-assembly.schema'
 
 export interface RuleEvalResult {
   valid: boolean

@@ -2,7 +2,7 @@
 
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { Cancellation, DocumentState, URI } from 'langium'
-import type { OxnAssemblyTaskIR, OxnAssemblySlotBinding } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyTaskIR, OxnAssemblySlotBinding } from '../schemas/oxn-assembly.schema'
 import type { OXNDocument } from '../generated/ast'
 import { categorizeEntities } from '../generator/oxn-generator'
 import { createOxnServices } from '../langium/oxn-services'

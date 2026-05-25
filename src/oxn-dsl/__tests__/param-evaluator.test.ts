@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import type { OxnAssemblyPart, OxnAssemblyProp } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyPart, OxnAssemblyProp } from '../schemas/oxn-assembly.schema'
 import {
   collectAllErrors,
   evaluateAllParts,

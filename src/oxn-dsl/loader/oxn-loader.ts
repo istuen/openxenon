@@ -6,7 +6,7 @@
  */
 import { existsSync, readFileSync } from 'fs'
 import { parse as parseYaml } from 'yaml'
-import type { OxnAssemblyIR, OxnAssemblyTaskIR } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyIR, OxnAssemblyTaskIR } from '../schemas/oxn-assembly.schema'
 import type { OxnAssetType, OxnScope, ResolvedOxnAsset } from '../scope/oxn-scope'
 import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
 

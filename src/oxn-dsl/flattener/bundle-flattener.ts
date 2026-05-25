@@ -5,7 +5,7 @@
  * 保留 prop 和 params 模板占位符（不求值），消除外部依赖。
  */
 
-import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../schemas/oxn-assembly.schema'
 import type { OxnAssetType } from '../scope/oxn-scope'
 import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
 

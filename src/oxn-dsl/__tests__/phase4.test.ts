@@ -78,7 +78,7 @@ describe('RuleValidator (Task 4.2)', () => {
 // ========================
 // Task 4.3: Expectation Runner
 // ========================
-import { ExpectationRunner } from '../../kernel/executor/expectation-runner'
+import { ExpectationRunner } from '../executor/expectation-runner'
 
 describe('ExpectationRunner (Task 4.3)', () => {
   test('执行期望通过', async () => {

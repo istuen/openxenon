@@ -12,7 +12,7 @@
  * 针对 Langium Scope Provider 的对照物：所有 Props 比对逻辑在此集中实现。
  */
 
-import type { OxnAssemblyPart, OxnAssemblyProp } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyPart, OxnAssemblyProp } from '../schemas/oxn-assembly.schema'
 
 // ========================
 // 类型定义

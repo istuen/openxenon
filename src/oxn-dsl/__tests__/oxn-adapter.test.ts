@@ -6,7 +6,7 @@ import {
   type OxnAssemblyIR,
   type OxnAssemblyPart,
   type OxnAssemblySlotBinding,
-} from '../../kernel/schemas/oxn-assembly.schema'
+} from '../schemas/oxn-assembly.schema'
 import {
   type AdapterResult,
   adaptConcretePart,

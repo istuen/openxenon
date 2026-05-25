@@ -25,7 +25,7 @@ import {
   type OxnAssemblyPart,
   type OxnAssemblySlotBinding,
   validateOxnAssemblyIR,
-} from '../kernel/schemas/oxn-assembly.schema'
+} from '../oxn-dsl/schemas/oxn-assembly.schema'
 import { adaptOxnToFrozen } from '../oxn-dsl/compiler/oxn-adapter'
 import type { OXNDocument } from '../oxn-dsl/generated/ast.js'
 import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'

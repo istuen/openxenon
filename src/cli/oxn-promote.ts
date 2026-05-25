@@ -10,7 +10,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { BOUNDARY_DIR } from '../kernel/constants'
-import type { OxnAssemblyIR } from '../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyIR } from '../oxn-dsl/schemas/oxn-assembly.schema'
 
 export interface PromoteOptions {
   /** 强制覆盖已有资产 */

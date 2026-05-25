@@ -37,7 +37,7 @@ describe('OxnAssetLoader (Task 2.1)', () => {
   })
 })
 
-import type { OxnAssemblyBundle } from '../../kernel/schemas/oxn-assembly.schema'
+import type { OxnAssemblyBundle } from '../schemas/oxn-assembly.schema'
 // ========================
 // Task 2.2: Bundle Flattener
 // ========================

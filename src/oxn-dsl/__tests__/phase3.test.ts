@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { createOxnAssemblyIR, type OxnAssemblyPart } from '../../kernel/schemas/oxn-assembly.schema'
+import { createOxnAssemblyIR, type OxnAssemblyPart } from '../schemas/oxn-assembly.schema'
 // ========================
 // Task 3.1: Sandbox Manager
 // ========================

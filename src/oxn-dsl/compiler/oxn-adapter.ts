@@ -20,7 +20,7 @@ import type {
   OxnAssemblyPart,
   OxnAssemblyPartProbe,
   OxnAssemblySlotBinding,
-} from '../../kernel/schemas/oxn-assembly.schema'
+} from '../schemas/oxn-assembly.schema'
 
 export interface AdapterContext {
   taskId: string

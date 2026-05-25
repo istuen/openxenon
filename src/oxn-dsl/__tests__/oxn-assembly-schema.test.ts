@@ -11,7 +11,7 @@ import {
   OxnAssemblyTaskIRSchema,
   OxnTypeReferenceSchema,
   validateOxnAssemblyIR,
-} from '../../kernel/schemas/oxn-assembly.schema'
+} from '../schemas/oxn-assembly.schema'
 
 function _createAbstractPart(params: { name: string; implements?: string }): any {
   return { name: params.name, description: undefined, props: [], probes: [], execution: [] }
