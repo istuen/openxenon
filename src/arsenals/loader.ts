@@ -1,4 +1,8 @@
-export type { Scope, StandardAsset } from '../infra/loader'
+import type { Scope, StandardAsset } from '../infra/loader'
+export type { Scope, StandardAsset }
+
+import { BUILTIN_PARTS, BUILTIN_PROBES } from './builtin'
+import type { AssetState, AssetType } from './paths'
 
 import {
   generateCompiledArtifact,
@@ -7,14 +11,44 @@ import {
   loadArsenalsByTypeAndState,
   loadStandardByName,
   loadStandardByPath,
-  promoteStandard,
   resolveAssetPath,
 } from '../infra/loader'
 
+import { promoteToCanonical } from './promoter'
+
 import { getProjectBoundaryPath } from '../kernel'
-import type { AssetType } from './paths'
 
 const getProjectBoundary = (): string => getProjectBoundaryPath(process.cwd())
+
+export function loadBuiltinAssets(type: AssetType): StandardAsset[] {
+  const assets: StandardAsset[] = []
+
+  if (type === 'probes') {
+    for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
+      assets.push({
+        name,
+        type: 'probes' as AssetType,
+        state: 'canonical' as AssetState,
+        path: `builtin:${name}`,
+        content: JSON.stringify(def),
+      })
+    }
+  }
+
+  if (type === 'parts') {
+    for (const [name, def] of Object.entries(BUILTIN_PARTS)) {
+      assets.push({
+        name,
+        type: 'parts' as AssetType,
+        state: 'canonical' as AssetState,
+        path: `builtin:${name}`,
+        content: JSON.stringify(def),
+      })
+    }
+  }
+
+  return assets
+}
 
 export const arsenalListStandards = (
   state?: 'draft' | 'canonical',
@@ -27,7 +61,7 @@ export const arsenalLoadStandardByName = (name: string, type: AssetType) => {
   return loadStandardByName('project', getProjectBoundary(), name, type)
 }
 
-export { generateCompiledArtifact, loadStandardByPath, promoteStandard }
+export { generateCompiledArtifact, loadStandardByPath, promoteToCanonical }
 
 export const arsenalLoadArsenalsByState = (
   state: 'draft' | 'canonical',

@@ -3,12 +3,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { ensureArsenalsDirectories } from '../arsenals/init'
 import type { AssetType } from '../arsenals/paths'
-import {
-  generateCompiledArtifact,
-  loadStandardByName,
-  preloadCompileDependencies,
-  promoteStandard,
-} from '../infra/loader'
+import { generateCompiledArtifact, loadStandardByName, preloadCompileDependencies } from '../infra/loader'
+import { promoteToCanonical } from '../arsenals/promoter'
 import { resolveBoundary } from '../infra/paths'
 import { compileAssembly } from '../kernel/compiler/blueprint-compiler'
 import { getFormatFromArgs, output, outputError } from './output'
@@ -100,7 +96,7 @@ export default defineCommand({
     }
 
     try {
-      const promoted = promoteStandard(asset.path)
+      const promoted = promoteToCanonical(asset.path)
 
       if (!promoted) {
         return outputError(

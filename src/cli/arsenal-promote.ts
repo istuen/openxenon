@@ -6,7 +6,7 @@ import { ensureArsenalsDirectories } from '../arsenals/init'
 import {
   generateCompiledArtifact,
   arsenalLoadStandardByName as loadStandardByName,
-  promoteStandard,
+  promoteToCanonical,
 } from '../arsenals/loader'
 import type { AssetType } from '../arsenals/paths'
 import { preloadCompileDependencies } from '../infra/loader'
@@ -107,7 +107,7 @@ export default defineCommand({
     }
 
     try {
-      const promoted = promoteStandard(asset.path)
+      const promoted = promoteToCanonical(asset.path)
 
       if (!promoted) {
         return outputError(
