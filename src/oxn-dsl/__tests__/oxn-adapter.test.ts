@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
-import { validateFrozenBlueprint } from '../../kernel/schemas/frozen-schema'
+import { validateFrozenBlueprint } from '../../kernel/schemas/validators/frozen-schema'
 
 import {
   createOxnAssemblyIR,

@@ -5,7 +5,7 @@ import { createOxnAssemblyIR, type OxnAssemblyPart } from '../schemas/oxn-assemb
 // ========================
 // Task 3.1: Sandbox Manager
 // ========================
-import { type SandboxState, TaskSandbox } from '../../kernel/task/sandbox-manager'
+import { type SandboxState, TaskSandbox } from '../../kernel/processors/sandbox-manager'
 
 function createConcretePart(params: { name: string; execution?: string[] }): OxnAssemblyPart {
   return { name: params.name, description: undefined, props: [], probes: [], execution: params.execution || [] }

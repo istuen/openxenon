@@ -122,14 +122,14 @@ function scanImports(filePath: string): Array<{ path: string; line: number }> {
   const imports: Array<{ path: string; line: number }> = []
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    const importMatch = line.match(/^import\s+.*?\s+from\s+['"]([^'"]+)['"]/)
+    const currentLine = lines[i]!
+    const importMatch = currentLine.match(/^import\s+.*?\s+from\s+['"]([^'"]+)['"]/)
     if (importMatch) {
-      imports.push({ path: importMatch[1], line: i + 1 })
+      imports.push({ path: importMatch[1]!, line: i + 1 })
     }
-    const requireMatch = line.match(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/)
+    const requireMatch = currentLine.match(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/)
     if (requireMatch) {
-      imports.push({ path: requireMatch[1], line: i + 1 })
+      imports.push({ path: requireMatch[1]!, line: i + 1 })
     }
   }
 

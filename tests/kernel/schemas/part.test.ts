@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { PartDefinitionSchema, PartInvocationSchema } from '../../../src/kernel/schemas/part'
+import { PartDefinitionSchema, PartInvocationSchema } from '../../../src/kernel/schemas/validators/part'
 
 describe('PartDefinitionSchema', () => {
   describe('合法 Definition 通过校验', () => {

@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 
 const PKG_VERSION = JSON.parse(readFileSync('package.json', 'utf-8')).version
 
