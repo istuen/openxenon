@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import * as yaml from 'yaml'
 import { ensureArsenalsDirectories } from '../arsenals/init'
+import { BUILTIN_PARTS, BUILTIN_PROBES } from '../arsenals/builtin'
 import {
   generateCompiledArtifact,
   arsenalLoadStandardByName as loadStandardByName,
@@ -139,7 +140,7 @@ export default defineCommand({
             taskId: '',
             taskName: '',
             params: {},
-            dependencies: preloadCompileDependencies(boundary),
+            dependencies: preloadCompileDependencies(boundary, BUILTIN_PARTS, BUILTIN_PROBES),
           })
           const assemblyDir = dirname(assemblyPath)
           if (!existsSync(assemblyDir)) mkdirSync(assemblyDir, { recursive: true })

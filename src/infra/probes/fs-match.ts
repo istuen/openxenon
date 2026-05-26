@@ -1,9 +1,8 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import type { ProbeContextBase } from '../../kernel/contracts/probe'
 
-export interface ProbeContext {
-  projectRoot: string
-}
+export interface ProbeContext extends ProbeContextBase {}
 
 export interface FsMatchParams {
   pattern?: string

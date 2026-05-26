@@ -1,31 +1,7 @@
-export type ProbeVerdict = {
-  passed: boolean
-  message: string
-  actual?: unknown
-  params?: Record<string, unknown>
-  duration?: number
-  failureMessage?: string
-}
+import type { ProbeObservation, ProbeResult, ProbeStrategy, ProbeVerdict, ProbeDefinition } from '../contracts/probe'
 
-export interface ProbeDefinition {
-  type: string
-  params: Record<string, unknown>
-  expected?: unknown
-}
-
-export interface ProbeObservation {
-  probeType: string
-  output?: string
-  error?: string
-  executedAt: number
-  exitCode?: number | null
-}
-
-export interface ProbeResult extends ProbeObservation {
-  result: 'PASSED' | 'FAILED'
-}
-
-export type ProbeStrategy = (observation: ProbeObservation, params: Record<string, unknown>) => ProbeVerdict
+export type { ProbeObservation, ProbeResult, ProbeVerdict, ProbeDefinition }
+export type { ProbeStrategy }
 
 const defaultStrategies: Record<string, ProbeStrategy> = {
   fs_exists: (obs, params) => {
@@ -196,28 +172,28 @@ export class ProbeEvaluator {
   }
 }
 
-let globalEvaluator = new ProbeEvaluator()
+export const defaultEvaluator = new ProbeEvaluator()
 
-export function setGlobalProbeEvaluator(evaluator: ProbeEvaluator): void {
-  globalEvaluator = evaluator
+export function evaluateProbe(
+  definition: ProbeDefinition,
+  observation: ProbeObservation,
+  evaluator: ProbeEvaluator = defaultEvaluator,
+): ProbeVerdict {
+  return evaluator.evaluate(observation, definition.params)
 }
 
-export function getGlobalProbeEvaluator(): ProbeEvaluator {
-  return globalEvaluator
+export function reduceProbeResults(
+  observations: ProbeObservation[],
+  policy: 'AND' | 'OR',
+  evaluator: ProbeEvaluator = defaultEvaluator,
+): ProbeVerdict {
+  return evaluator.reduceResults(observations, policy)
 }
 
-export function registerProbeStrategy(type: string, strategy: ProbeStrategy): void {
-  globalEvaluator.strategies[type] = strategy
-}
-
-export function evaluateProbe(definition: ProbeDefinition, observation: ProbeObservation): ProbeVerdict {
-  return globalEvaluator.evaluate(observation, definition.params)
-}
-
-export function reduceProbeResults(observations: ProbeObservation[], policy: 'AND' | 'OR'): ProbeVerdict {
-  return globalEvaluator.reduceResults(observations, policy)
-}
-
-export function reduceStageVerdict(observations: ProbeObservation[], policy: 'AND' | 'OR'): 'PASSED' | 'FAILED' {
-  return globalEvaluator.reduceStageVerdict(observations, policy)
+export function reduceStageVerdict(
+  observations: ProbeObservation[],
+  policy: 'AND' | 'OR',
+  evaluator: ProbeEvaluator = defaultEvaluator,
+): 'PASSED' | 'FAILED' {
+  return evaluator.reduceStageVerdict(observations, policy)
 }

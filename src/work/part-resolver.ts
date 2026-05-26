@@ -1,7 +1,6 @@
 import { URI } from 'langium'
 import { parse as parseYaml } from 'yaml'
-import { BUILTIN_PARTS } from '../arsenals/builtin'
-// eslint-disable-next-line no-restricted-imports -- loadStandardByName via higher-order injection
+import type { StandardAsset } from '../infra/loader'
 import { loadStandardByName } from '../infra/loader'
 import { isBareProbeRef, isValidProbeRef, parseProbeNamespace } from '../kernel/probes/namespace'
 import type { OXNDocument } from '../oxn-dsl/generated/ast.js'
@@ -18,24 +17,29 @@ export interface PartResolution {
   rawRef: string
 }
 
-export function resolveBuiltinPart(name: string): PartDefinition | null {
-  const builtin = BUILTIN_PARTS[name]
+export function resolveBuiltinPart(name: string, builtinArsenal: StandardAsset[]): PartDefinition | null {
+  const builtin = builtinArsenal.find((a) => a.name === name && a.type === 'parts')
   if (!builtin) return null
-  return {
-    id: builtin.id || name,
-    name: builtin.name || name,
-    _version: builtin._version ?? 1,
-    description: builtin.description || '',
-    props: builtin.props,
-    target: builtin.target,
-    spec: builtin.spec,
-    action: builtin.action,
-    probes: builtin.probes as PartDefinition['probes'],
-    deps: builtin.deps,
+  try {
+    const def = JSON.parse(builtin.content)
+    return {
+      id: def.id || name,
+      name: def.name || name,
+      _version: def._version ?? 1,
+      description: def.description || '',
+      props: def.props,
+      target: def.target,
+      spec: def.spec,
+      action: def.action,
+      probes: def.probes as PartDefinition['probes'],
+      deps: def.deps,
+    }
+  } catch {
+    return null
   }
 }
 
-export function resolvePartRef(ref: string, projectBoundary: string): PartResolution {
+export function resolvePartRef(ref: string, projectBoundary: string, builtinArsenal?: StandardAsset[]): PartResolution {
   if (isBareProbeRef(ref)) {
     throw new Error(`Part ref "${ref}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
   }
@@ -52,7 +56,8 @@ export function resolvePartRef(ref: string, projectBoundary: string): PartResolu
   const { namespace, scopeName, probeName } = parsed
 
   if (namespace === 'oxn') {
-    const part = resolveBuiltinPart(probeName)
+    const builtinAssets = builtinArsenal ?? []
+    const part = resolveBuiltinPart(probeName, builtinAssets)
     return {
       found: part !== null,
       part: part ?? undefined,

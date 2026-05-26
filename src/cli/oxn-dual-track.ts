@@ -15,6 +15,7 @@ import { dirname, join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { ensureDirectory } from '../infra/filesystem'
 import { preloadCompileDependencies } from '../infra/loader'
+import { BUILTIN_PARTS, BUILTIN_PROBES } from '../arsenals/builtin'
 import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
 import { ASSEMBLY_JSON, BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON } from '../kernel/constants'
 import type { Blueprint } from '../kernel/schemas/blueprint.schema'
@@ -96,7 +97,7 @@ export function submitYamlPipeline(
   } else {
     frozenBlueprint = compileBlueprint(parsed, {
       ...compileCtx,
-      dependencies: preloadCompileDependencies(join(cwd, BOUNDARY_DIR)),
+      dependencies: preloadCompileDependencies(join(cwd, BOUNDARY_DIR), BUILTIN_PARTS, BUILTIN_PROBES),
     })
   }
 

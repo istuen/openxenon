@@ -1,8 +1,7 @@
 import { spawn } from 'child_process'
+import type { ProbeContextBase } from '../../kernel/contracts/probe'
 
-export interface ProbeContext {
-  projectRoot: string
-}
+export interface ProbeContext extends ProbeContextBase {}
 
 export interface ShellExecResult {
   success: boolean

@@ -2,6 +2,17 @@ import type { Blueprint, Part, Probe } from '../schemas/blueprint.schema'
 import { computeContentHash, createXenonMeta, type XenonMeta } from '../schemas/frozen-schema'
 import { type PartResolution, resolvePartRef } from '../../work/part-resolver'
 import { getProjectBoundaryPath } from './project'
+import { BUILTIN_PARTS } from '../../arsenals/builtin'
+
+function getBuiltinAssets() {
+  return Object.entries(BUILTIN_PARTS).map(([name, def]) => ({
+    name,
+    type: 'parts' as const,
+    state: 'canonical' as const,
+    path: `builtin:${name}`,
+    content: JSON.stringify(def),
+  }))
+}
 
 function mergePartProbes(base: Record<string, unknown>, override: Part): Probe[] {
   const baseProbes = ((base.probes as Probe[]) || []) as Probe[]
@@ -37,11 +48,12 @@ export function renderLineageReport(report: LineageReport): string {
 
 export function generateLineageReport(parts: Part[]): LineageReport {
   const projectBoundary = getProjectBoundaryPath(process.cwd())
+  const builtinAssets = getBuiltinAssets()
   const entries: LineageReportEntry[] = []
 
   for (const part of parts) {
     if (part.ref) {
-      const resolution = resolvePartRef(part.ref, projectBoundary)
+      const resolution = resolvePartRef(part.ref, projectBoundary, builtinAssets)
 
       entries.push({
         partId: part.id,
@@ -111,6 +123,7 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
   lineageReport: LineageReport
 } {
   const projectBoundary = getProjectBoundaryPath(process.cwd())
+  const builtinAssets = getBuiltinAssets()
   const frozenParts: Array<Part & { _xenon_meta: XenonMeta }> = []
   const lineageEntries: LineageReportEntry[] = []
 
@@ -118,7 +131,7 @@ export function resolveBlueprintRefs(blueprint: Blueprint): {
     let resolvedPart: Part
 
     if (part.ref) {
-      const resolution = resolvePartRef(part.ref, projectBoundary)
+      const resolution = resolvePartRef(part.ref, projectBoundary, builtinAssets)
 
       if (!resolution.found || !resolution.part) {
         throw new Error(`Part ref "${part.ref}" 解析失败，未找到对应资产`)

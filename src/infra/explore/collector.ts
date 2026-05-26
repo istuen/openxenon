@@ -7,6 +7,8 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { glob } from 'glob'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
+import { toExplorationContext } from '../../kernel/explore/converters'
+import type { ExplorationContext } from '../../kernel/explore/types'
 
 interface RawProjectDir {
   path: string
@@ -74,8 +76,9 @@ export async function collectRawContext(projectRoot: string): Promise<RawExplora
   }
 }
 
-export async function collectContext(projectRoot: string) {
-  return collectRawContext(projectRoot) as Promise<import('../../kernel/explore/types').ExplorationContext>
+export async function collectContext(projectRoot: string): Promise<ExplorationContext> {
+  const raw = await collectRawContext(projectRoot)
+  return toExplorationContext(raw)
 }
 
 /**

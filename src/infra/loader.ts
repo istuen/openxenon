@@ -6,43 +6,15 @@ import type { AssetState, AssetType } from '../infra/paths'
 import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT } from '../infra/paths'
 import { resolveBoundary } from '../infra/paths'
 import type { Scope as InfraScope } from '../infra/paths'
+import type { ProbeNamespace, ParsedProbeRef } from '../kernel/probes/namespace'
+import { parseProbeNamespace, isValidProbeRef, isBareProbeRef } from '../kernel/probes/namespace'
+
+export type { ProbeNamespace, ParsedProbeRef }
+export { parseProbeNamespace, isValidProbeRef, isBareProbeRef }
 
 export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
 
 export type Scope = InfraScope | 'fallback' | 'builtin'
-
-export type ProbeNamespace = 'oxn' | 'scope' | 'project'
-
-export interface ParsedProbeRef {
-  namespace: ProbeNamespace
-  scopeName?: string
-  probeName: string
-  raw: string
-}
-
-export function parseProbeNamespace(ref: string): ParsedProbeRef | null {
-  if (ref.startsWith('oxn/')) {
-    return { namespace: 'oxn', probeName: ref.slice(3), raw: ref }
-  }
-  if (ref.startsWith('@')) {
-    const slashIndex = ref.indexOf('/')
-    if (slashIndex === -1) return null
-    return { namespace: 'scope', scopeName: ref.slice(1, slashIndex), probeName: ref.slice(slashIndex + 1), raw: ref }
-  }
-  if (ref.startsWith('./') || ref.startsWith('project/')) {
-    const probeName = ref.startsWith('./') ? ref.slice(2) : ref.slice(8)
-    return { namespace: 'project', probeName, raw: ref }
-  }
-  return null
-}
-
-export function isValidProbeRef(ref: string): boolean {
-  return parseProbeNamespace(ref) !== null
-}
-
-export function isBareProbeRef(ref: string): boolean {
-  return parseProbeNamespace(ref) === null
-}
 
 export interface StandardAsset {
   name: string
@@ -380,16 +352,19 @@ export interface CompileDependencies {
   probes: Map<string, Record<string, unknown>>
 }
 
-export function preloadCompileDependencies(projectBoundary: string): CompileDependencies {
+export function preloadCompileDependencies(
+  projectBoundary: string,
+  builtinParts: Record<string, unknown>,
+  builtinProbes: Record<string, unknown>,
+): CompileDependencies {
   const parts = new Map<string, Record<string, unknown>>()
   const probes = new Map<string, Record<string, unknown>>()
 
-  const { BUILTIN_PROBES, BUILTIN_PARTS } = require('../arsenals/builtin')
-  for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
+  for (const [name, def] of Object.entries(builtinProbes)) {
     probes.set(`oxn/${name}`, def as Record<string, unknown>)
   }
 
-  for (const [name, def] of Object.entries(BUILTIN_PARTS)) {
+  for (const [name, def] of Object.entries(builtinParts)) {
     parts.set(`oxn/${name}`, def as Record<string, unknown>)
   }
 

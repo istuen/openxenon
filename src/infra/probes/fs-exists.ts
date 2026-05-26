@@ -1,10 +1,9 @@
 import { statSync } from 'fs'
 import { join } from 'path'
+import type { ProbeContextBase } from '../../kernel/contracts/probe'
 import { matchGlob, parseGlobPattern } from './glob-utils'
 
-export interface ProbeContext {
-  projectRoot: string
-}
+export interface ProbeContext extends ProbeContextBase {}
 
 export async function executeFsExists(pattern: string, context: ProbeContext): Promise<string[]> {
   const fullPattern = pattern.startsWith('/') ? pattern : join(context.projectRoot, pattern)

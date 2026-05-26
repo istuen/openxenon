@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { ensureArsenalsDirectories } from '../arsenals/init'
+import { BUILTIN_PARTS, BUILTIN_PROBES } from '../arsenals/builtin'
 import type { AssetType } from '../arsenals/paths'
 import { generateCompiledArtifact, loadStandardByName, preloadCompileDependencies } from '../infra/loader'
 import { promoteToCanonical } from '../arsenals/promoter'
@@ -131,7 +132,7 @@ export default defineCommand({
             taskId: '',
             taskName: '',
             params: {},
-            dependencies: preloadCompileDependencies(boundary),
+            dependencies: preloadCompileDependencies(boundary, BUILTIN_PARTS, BUILTIN_PROBES),
           })
           if (!existsSync(bpDir)) mkdirSync(bpDir, { recursive: true })
           writeFileSync(assemblyJsonPath, JSON.stringify(assembly, null, 2), 'utf-8')
