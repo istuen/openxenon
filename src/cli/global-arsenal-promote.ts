@@ -7,7 +7,7 @@ import type { AssetType } from '../arsenals/paths'
 import { generateCompiledArtifact, loadStandardByName, preloadCompileDependencies } from '../infra/loader'
 import { promoteToCanonical } from '../arsenals/promoter'
 import { resolveBoundary } from '../infra/paths'
-import { compileAssembly } from '../kernel/compiler/blueprint-compiler'
+import { compileAssembly } from '../kernel/processors/blueprint-compiler'
 import { getFormatFromArgs, output, outputError } from './output'
 
 const TYPE_ALIASES: Record<string, AssetType> = {

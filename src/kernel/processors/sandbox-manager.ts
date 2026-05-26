@@ -12,7 +12,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
 import { BOUNDARY_DIR } from '../constants'
-import { type DagNode, validateDagTopology } from '../schemas/dag-validator'
+import { type DagNode, validateDagTopology } from '../schemas/validators/dag-validator'
 import type { OxnAssemblyIR, OxnAssemblyPart } from '../../oxn-dsl/schemas/oxn-assembly.schema'
 
 export interface SandboxConfig {

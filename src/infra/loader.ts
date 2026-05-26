@@ -6,11 +6,8 @@ import type { AssetState, AssetType } from '../infra/paths'
 import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT } from '../infra/paths'
 import { resolveBoundary } from '../infra/paths'
 import type { Scope as InfraScope } from '../infra/paths'
-import type { ProbeNamespace, ParsedProbeRef } from '../kernel/probes/namespace'
-import { parseProbeNamespace, isValidProbeRef, isBareProbeRef } from '../kernel/probes/namespace'
 
-export type { ProbeNamespace, ParsedProbeRef }
-export { parseProbeNamespace, isValidProbeRef, isBareProbeRef }
+export type { ProbeNamespace, ParsedProbeRef } from '../kernel/processors/probes/namespace'
 
 export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
 

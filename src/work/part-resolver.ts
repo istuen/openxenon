@@ -2,11 +2,11 @@ import { URI } from 'langium'
 import { parse as parseYaml } from 'yaml'
 import type { StandardAsset } from '../infra/loader'
 import { loadStandardByName } from '../infra/loader'
-import { isBareProbeRef, isValidProbeRef, parseProbeNamespace } from '../kernel/probes/namespace'
+import { isBareProbeRef, isValidProbeRef, parseProbeNamespace } from '../kernel/processors/probes/namespace'
 import type { OXNDocument } from '../oxn-dsl/generated/ast.js'
 import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
 import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
-import type { PartDefinition } from '../kernel/schemas/part-asset'
+import type { PartDefinition } from '../kernel/schemas/validators/part-asset'
 
 export interface PartResolution {
   found: boolean

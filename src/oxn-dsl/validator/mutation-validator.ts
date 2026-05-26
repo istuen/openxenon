@@ -8,7 +8,7 @@
  * - 结构约束边界校验
  */
 
-import { type DagNode, validateDagTopology } from '../../kernel/schemas/dag-validator'
+import { type DagNode, validateDagTopology } from '../../kernel/schemas/validators/dag-validator'
 import type { OxnAssemblyIR } from '../schemas/oxn-assembly.schema'
 
 export interface MutationCheckResult {

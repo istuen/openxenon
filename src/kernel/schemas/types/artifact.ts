@@ -1,4 +1,4 @@
-import type { ArtifactType } from './core'
+import type { ArtifactType } from '../../enums'
 
 export interface Artifact {
   path: string

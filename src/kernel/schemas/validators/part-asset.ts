@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isBareProbeRef, isValidProbeRef, parseProbeNamespace } from '../probes/namespace'
+import { isBareProbeRef, isValidProbeRef } from '../../processors/probes/namespace'
 import { ProbeTypeSchema } from './probe'
 
 export const PartRefSchema = z.string().refine(
@@ -76,19 +76,4 @@ export type PartRef = z.infer<typeof PartRefSchema>
 
 export function validatePartAsset(data: unknown): PartDefinition {
   return PartDefinitionSchema.parse(data)
-}
-
-export function getNamespaceFromRef(ref: string): 'oxn' | 'scope' | 'project' | null {
-  const parsed = parseProbeNamespace(ref)
-  return parsed ? parsed.namespace : null
-}
-
-export function getScopeNameFromRef(ref: string): string | null {
-  const parsed = parseProbeNamespace(ref)
-  return parsed?.scopeName ?? null
-}
-
-export function getPartNameFromRef(ref: string): string | null {
-  const parsed = parseProbeNamespace(ref)
-  return parsed?.probeName ?? null
 }

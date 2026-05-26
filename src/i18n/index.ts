@@ -1,6 +1,6 @@
 import i18next from 'i18next'
-import type { SupportedLocale } from '../kernel/lib/project-config'
-import { DEFAULT_LOCALE } from '../kernel/lib/project-config'
+import type { SupportedLocale } from '../kernel/processors/project-config'
+import { DEFAULT_LOCALE } from '../kernel/processors/project-config'
 import zhCN from './zh-CN.json'
 
 i18next.init({

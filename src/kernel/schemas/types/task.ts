@@ -1,6 +1,6 @@
 import type { Action } from './action'
 import type { Artifact } from './artifact'
-import type { TaskStatus, XnPartStatus, XnTaskStatus } from './core'
+import type { TaskStatus, StepStatus } from '../../enums'
 
 export interface Task {
   id: string
@@ -15,7 +15,7 @@ export interface XnTask {
   id: string
   name: string
   activeBlueprintId?: string
-  xnTaskStatus: XnTaskStatus
+  xnTaskStatus: TaskStatus
   action?: Action
   createdAt: number
   updatedAt: number
@@ -24,6 +24,6 @@ export interface XnTask {
 export interface StepManifest {
   taskId: string
   stepId: string
-  status: XnPartStatus
+  status: StepStatus
   artifacts: Artifact[]
 }

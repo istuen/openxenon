@@ -1,5 +1,5 @@
-import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { createPartState } from '../../../kernel/lib/task-trace'
+import { getTaskDirectory } from '../../../kernel/processors/task-dir'
+import { createPartState } from '../../../kernel/processors/task-trace'
 import { readBlueprint, readTaskTrace, writePartComplete, writePartStart } from '../../trace/writer'
 import { badRequest, notFound } from '../errors'
 import { registerRoute } from '../router'

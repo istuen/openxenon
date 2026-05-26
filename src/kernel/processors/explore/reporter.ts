@@ -4,7 +4,7 @@
  * 纯函数，无任何 I/O
  */
 
-import type { ExplorationResult, Finding } from './types'
+import type { ExplorationResult, Finding } from '../../schemas/explore.types'
 
 /**
  * 将 ExplorationResult 渲染为 Markdown

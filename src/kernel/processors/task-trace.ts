@@ -1,5 +1,5 @@
-import type { TaskStatus } from './types/core'
-import type { PartState, ProbeResult, TaskTraceState, TaskTraceYaml, TraceEvent } from './types/task-trace'
+import type { TaskStatus } from '../enums'
+import type { PartState, ProbeResult, TaskTraceState, TaskTraceYaml, TraceEvent } from '../schemas/types/task-trace'
 
 function isOldFormat(content: string): boolean {
   const trimmed = content.trim()

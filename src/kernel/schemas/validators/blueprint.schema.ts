@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isBareProbeRef, isValidProbeRef } from '../probes/namespace'
+import { isBareProbeRef, isValidProbeRef } from '../../processors/probes/namespace'
 import { ProbeTypeSchema } from './probe'
 
 export const ProbeInvocationSchema = z

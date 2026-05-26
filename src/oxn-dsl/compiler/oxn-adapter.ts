@@ -10,9 +10,9 @@
  *   4. → FrozenBlueprint（Core 零感知直接消费）
  */
 
-import { type DagNode, validateDagTopology } from '../../kernel/schemas/dag-validator'
-import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/frozen-schema'
-import { createXenonMeta, validateFrozenBlueprint } from '../../kernel/schemas/frozen-schema'
+import { type DagNode, validateDagTopology } from '../../kernel/schemas/validators/dag-validator'
+import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/validators/frozen-schema'
+import { createXenonMeta, validateFrozenBlueprint } from '../../kernel/schemas/validators/frozen-schema'
 import type {
   OxnAssemblyIR,
   OxnAssemblyPart,

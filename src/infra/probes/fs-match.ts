@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import type { ProbeContextBase } from '../../kernel/contracts/probe'
+import type { ProbeContextBase } from '../../kernel/contracts/probe-port'
 
 export interface ProbeContext extends ProbeContextBase {}
 

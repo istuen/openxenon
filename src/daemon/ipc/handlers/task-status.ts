@@ -1,5 +1,5 @@
 import { existsSync } from '../../../infra/filesystem'
-import { getTaskDirectory } from '../../../kernel/lib/task-dir'
+import { getTaskDirectory } from '../../../kernel/processors/task-dir'
 import { taskCircuitBreaker } from '../../circuit-breaker'
 import { recoveryManager } from '../../recovery'
 import { readTaskTrace } from '../../trace/writer'

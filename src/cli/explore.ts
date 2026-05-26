@@ -1,7 +1,8 @@
 import { defineCommand } from 'citty'
-import { collectContext, loadExplorationAssets, saveReport } from '../infra/explore/collector'
-import { evaluateExploration } from '../kernel/explore/evaluator'
-import { renderMarkdown } from '../kernel/explore/reporter'
+import { collectRawContext, loadExplorationAssets, saveReport } from '../infra/explore/collector'
+import { toExplorationContext } from '../kernel/processors/explore/converters'
+import { evaluateExploration } from '../kernel/processors/explore/evaluator'
+import { renderMarkdown } from '../kernel/processors/explore/reporter'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
@@ -28,7 +29,8 @@ export default defineCommand({
     const format = getFormatFromArgs(ctx.args)
     const projectRoot = process.cwd()
 
-    const context = await collectContext(projectRoot)
+    const rawContext = await collectRawContext(projectRoot)
+    const context = toExplorationContext(rawContext)
 
     const names = ctx.args.name === 'all' ? undefined : [ctx.args.name as string]
     const explorations = await loadExplorationAssets(projectRoot, names)

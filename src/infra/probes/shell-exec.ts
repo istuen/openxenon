@@ -1,5 +1,5 @@
 import { spawn } from 'child_process'
-import type { ProbeContextBase } from '../../kernel/contracts/probe'
+import type { ProbeContextBase } from '../../kernel/contracts/probe-port'
 
 export interface ProbeContext extends ProbeContextBase {}
 

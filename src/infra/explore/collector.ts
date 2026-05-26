@@ -7,8 +7,6 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { glob } from 'glob'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { toExplorationContext } from '../../kernel/explore/converters'
-import type { ExplorationContext } from '../../kernel/explore/types'
 
 interface RawProjectDir {
   path: string
@@ -58,7 +56,7 @@ interface RawExplorationContext {
 }
 
 /**
- * 采集探索上下文
+ * 采集探索上下文 (返回原始数据, L1 仅做 I/O)
  */
 export async function collectRawContext(projectRoot: string): Promise<RawExplorationContext> {
   const projectFiles = await scanProjectFiles(projectRoot)
@@ -74,11 +72,6 @@ export async function collectRawContext(projectRoot: string): Promise<RawExplora
     blueprintProbeRefs,
     traceSummary,
   }
-}
-
-export async function collectContext(projectRoot: string): Promise<ExplorationContext> {
-  const raw = await collectRawContext(projectRoot)
-  return toExplorationContext(raw)
 }
 
 /**

@@ -12,7 +12,7 @@ import {
 import type { AssetType } from '../arsenals/paths'
 import { preloadCompileDependencies } from '../infra/loader'
 import { getProjectBoundaryPath } from '../kernel'
-import { compileAssembly } from '../kernel/compiler/blueprint-compiler'
+import { compileAssembly } from '../kernel/processors/blueprint-compiler'
 import { getFormatFromArgs, output, outputError } from './output'
 
 const TYPE_ALIASES: Record<string, AssetType> = {

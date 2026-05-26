@@ -1,5 +1,5 @@
-import type { Blueprint, Part, Probe } from '../schemas/blueprint.schema'
-import { computeContentHash, createXenonMeta, type XenonMeta } from '../schemas/frozen-schema'
+import type { Blueprint, Part, Probe } from '../schemas/validators/blueprint.schema'
+import { computeContentHash, createXenonMeta, type XenonMeta } from '../schemas/validators/frozen-schema'
 import { type PartResolution, resolvePartRef } from '../../work/part-resolver'
 import { getProjectBoundaryPath } from './project'
 import { BUILTIN_PARTS } from '../../arsenals/builtin'

@@ -26,35 +26,47 @@ interface LayerRules {
   forbiddenDeps: string[]
 }
 
-type LayerName = 'L0-Schema' | 'L0-Kernel' | 'L1-Infra' | 'L1-OXN-DSL' | 'L2-Arsenal' | 'L2-Work' | 'L3-CLI'
+type LayerName =
+  | 'L0-Schema'
+  | 'L0-Contract'
+  | 'L0-Processor'
+  | 'L1-Infra'
+  | 'L1-OXN-DSL'
+  | 'L2-Arsenal'
+  | 'L2-Work'
+  | 'L3-CLI'
 
 const LAYER_RULES: Record<LayerName, LayerRules> = {
   'L0-Schema': {
     allowedDeps: [],
-    forbiddenDeps: ['L0-Kernel', 'L1-Infra', 'L1-OXN-DSL', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
+    forbiddenDeps: ['L0-Contract', 'L0-Processor', 'L1-Infra', 'L1-OXN-DSL', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
   },
-  'L0-Kernel': {
+  'L0-Contract': {
     allowedDeps: ['L0-Schema'],
+    forbiddenDeps: ['L0-Processor', 'L1-Infra', 'L1-OXN-DSL', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
+  },
+  'L0-Processor': {
+    allowedDeps: ['L0-Schema', 'L0-Contract'],
     forbiddenDeps: ['L1-Infra', 'L1-OXN-DSL', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
   },
   'L1-Infra': {
-    allowedDeps: ['L0-Schema', 'L2-Arsenal'],
-    forbiddenDeps: ['L0-Kernel', 'L2-Work', 'L3-CLI'],
+    allowedDeps: ['L0-Schema', 'L0-Contract', 'L2-Arsenal'],
+    forbiddenDeps: ['L0-Processor', 'L2-Work', 'L3-CLI'],
   },
   'L1-OXN-DSL': {
-    allowedDeps: ['L0-Schema'],
-    forbiddenDeps: ['L0-Kernel', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
+    allowedDeps: ['L0-Schema', 'L0-Contract'],
+    forbiddenDeps: ['L0-Processor', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
   },
   'L2-Arsenal': {
-    allowedDeps: ['L1-Infra', 'L0-Schema'],
+    allowedDeps: ['L1-Infra', 'L0-Schema', 'L0-Contract'],
     forbiddenDeps: ['L2-Work', 'L3-CLI'],
   },
   'L2-Work': {
-    allowedDeps: ['L1-Infra', 'L1-OXN-DSL', 'L0-Schema', 'L0-Kernel'],
+    allowedDeps: ['L1-Infra', 'L1-OXN-DSL', 'L0-Schema', 'L0-Contract', 'L0-Processor'],
     forbiddenDeps: ['L3-CLI'],
   },
   'L3-CLI': {
-    allowedDeps: ['L2-Arsenal', 'L2-Work', 'L1-Infra', 'L1-OXN-DSL', 'L0-Schema', 'L0-Kernel'],
+    allowedDeps: ['L2-Arsenal', 'L2-Work', 'L1-Infra', 'L1-OXN-DSL', 'L0-Schema', 'L0-Contract', 'L0-Processor'],
     forbiddenDeps: [],
   },
 }
@@ -65,8 +77,11 @@ function getLayerFromPath(filePath: string): LayerName | null {
   if (relativePath.startsWith('src/kernel/schemas/')) {
     return 'L0-Schema'
   }
+  if (relativePath.startsWith('src/kernel/contracts/')) {
+    return 'L0-Contract'
+  }
   if (relativePath.startsWith('src/kernel/')) {
-    return 'L0-Kernel'
+    return 'L0-Processor'
   }
   if (relativePath.startsWith('src/infra/')) {
     return 'L1-Infra'

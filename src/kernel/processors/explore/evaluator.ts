@@ -5,7 +5,13 @@
  * 纯函数，无任何 I/O
  */
 
-import type { ExplorationContext, ExplorationResult, ExplorationRule, Finding, ProjectDir } from './types'
+import type {
+  ExplorationContext,
+  ExplorationResult,
+  ExplorationRule,
+  Finding,
+  ProjectDir,
+} from '../../schemas/explore.types'
 
 /**
  * 通用探索评估器
