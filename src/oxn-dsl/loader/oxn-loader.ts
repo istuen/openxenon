@@ -4,11 +4,11 @@
  * 从 .oxn 文件加载资产，支持三级作用域扫描 + 索引构建。
  * 依赖 Task 1.4 的 OxnWorkspaceManager 进行文件系统解析。
  */
-import { existsSync, readFileSync } from 'fs'
 import { parse as parseYaml } from 'yaml'
 import type { OxnAssemblyIR, OxnAssemblyTaskIR } from '../schemas/oxn-assembly.schema'
 import type { OxnAssetType, OxnScope, ResolvedOxnAsset } from '../scope/oxn-scope'
 import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
+import { fs } from '../../infra/filesystem'
 
 export type { OxnAssetType, OxnScope }
 
@@ -64,8 +64,7 @@ export class OxnAssetLoader {
 
   /** 路径加载：直接读取文件 */
   loadFromPath(filePath: string): string | null {
-    if (!existsSync(filePath)) return null
-    return readFileSync(filePath, 'utf-8')
+    return fs.read(filePath)
   }
 
   /** 构建资产索引（按作用域+类型） */

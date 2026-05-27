@@ -3,7 +3,7 @@
  * DO NOT EDIT MANUALLY!
  ******************************************************************************/
 
- 
+/* eslint-disable */
 import * as langium from 'langium';
 
 export const OXNDSLTerminals = {
@@ -368,6 +368,14 @@ export function isParamsBlock(item: unknown): item is ParamsBlock {
     return reflection.isInstance(item, ParamsBlock.$type);
 }
 
+/**
+ * @oxn-ai-tool
+ * {
+ *   "name": "add_probe_to_part",
+ *   "description": "给 Part 添加探针实例",
+ *   "example": { "blueprint_name": "WebServer", "part_name": "Nginx", "probe_config": { "name": "http", "type": "HttpProbe", "params": { "path": "/health" } } }
+ * }
+ */
 export interface PartDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'PartDeclaration';

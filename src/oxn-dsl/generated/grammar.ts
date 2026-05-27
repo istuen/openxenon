@@ -1414,7 +1414,8 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
       },
       "entry": false,
       "fragment": false,
-      "parameters": []
+      "parameters": [],
+      "$comment": "/**\\n * @oxn-ai-tool\\n * {\\n *   \\"name\\": \\"add_probe_to_part\\",\\n *   \\"description\\": \\"给 Part 添加探针实例\\",\\n *   \\"example\\": { \\"blueprint_name\\": \\"WebServer\\", \\"part_name\\": \\"Nginx\\", \\"probe_config\\": { \\"name\\": \\"http\\", \\"type\\": \\"HttpProbe\\", \\"params\\": { \\"path\\": \\"/health\\" } } }\\n * }\\n */"
     },
     {
       "$type": "ParserRule",

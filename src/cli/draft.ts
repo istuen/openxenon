@@ -1,68 +1,10 @@
-import { randomUUID } from 'crypto'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { ensureForgesDirectories } from '../arsenals/init'
-import { type AssetType, GLOBAL_FORGES_ROOT, type Scope } from '../arsenals/paths'
-import { getProjectBoundaryPath } from '../kernel'
+import { createDraftFromContent } from '../arsenals/forge'
+import type { Scope } from '../arsenals/paths'
 
 export interface DraftAssetResult {
   success: boolean
   path?: string
   error?: string
-}
-
-function getTypeFromContent(content: string): AssetType | null {
-  if (content.includes('probe "') || content.startsWith('probe ')) return 'probes'
-  if (content.includes('blueprint "') || content.startsWith('blueprint ')) return 'blueprints'
-  if (content.includes('part "') || content.startsWith('part ')) return 'parts'
-  if (content.includes('task "') || content.startsWith('task ')) return 'blueprints'
-  return null
-}
-
-function getForgePath(type: AssetType, name: string, scope: Scope, ext: string = 'oxn'): string {
-  if (scope === 'global') {
-    if (type === 'parts' || type === 'probes') {
-      return join(GLOBAL_FORGES_ROOT, type, `${name}.${ext}`)
-    }
-    return join(GLOBAL_FORGES_ROOT, type, name, `draft.${ext}`)
-  }
-  const projectBoundary = getProjectBoundaryPath(process.cwd())
-  if (type === 'parts' || type === 'probes') {
-    return join(projectBoundary, 'forges', type, `${name}.${ext}`)
-  }
-  return join(projectBoundary, 'forges', type, name, `draft.${ext}`)
-}
-
-function saveDraftAsset(
-  type: AssetType,
-  name: string | undefined,
-  content: string,
-  scope: Scope = 'project',
-  ext: string = 'oxn',
-): DraftAssetResult {
-  ensureForgesDirectories(scope)
-
-  const assetName = name || `draft_${randomUUID().slice(0, 8)}`
-  const filePath = getForgePath(type, assetName, scope, ext)
-
-  try {
-    const dir = dirname(filePath)
-    if (!existsSync(dir)) {
-      mkdirSync(dir, { recursive: true })
-    }
-
-    writeFileSync(filePath, content, 'utf-8')
-
-    return {
-      success: true,
-      path: filePath,
-    }
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    }
-  }
 }
 
 export function createDraftProbe(
@@ -71,7 +13,7 @@ export function createDraftProbe(
   scope: Scope = 'project',
   ext: string = 'oxn',
 ): DraftAssetResult {
-  return saveDraftAsset('probes', name, content, scope, ext)
+  return createDraftFromContent(content, name, scope, ext)
 }
 
 export function createDraftPart(
@@ -80,7 +22,7 @@ export function createDraftPart(
   scope: Scope = 'project',
   ext: string = 'oxn',
 ): DraftAssetResult {
-  return saveDraftAsset('parts', name, content, scope, ext)
+  return createDraftFromContent(content, name, scope, ext)
 }
 
 export function createDraftFromYaml(
@@ -89,20 +31,5 @@ export function createDraftFromYaml(
   scope: Scope = 'project',
   ext: string = 'oxn',
 ): DraftAssetResult {
-  const type = getTypeFromContent(yamlContent)
-
-  if (!type) {
-    return { success: false, error: 'Cannot determine asset type from content' }
-  }
-
-  switch (type) {
-    case 'probes':
-      return createDraftProbe(yamlContent, name, scope, ext)
-    case 'parts':
-      return createDraftPart(yamlContent, name, scope, ext)
-    case 'blueprints':
-      return saveDraftAsset('blueprints', name, yamlContent, scope, ext)
-    default:
-      return { success: false, error: 'Unknown asset type' }
-  }
+  return createDraftFromContent(yamlContent, name, scope, ext)
 }

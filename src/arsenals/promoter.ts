@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import type { StandardAsset } from '../infra/loader'
 import { loadStandardByPath } from '../infra/loader'
+import { fs, ensureDirectory, deleteFile } from '../infra/filesystem'
 
 export function promoteToCanonical(fromPath: string): StandardAsset | null {
   const isForgeFormat = fromPath.includes('/forges/')
@@ -11,7 +11,7 @@ export function promoteToCanonical(fromPath: string): StandardAsset | null {
     throw new Error(`Asset is not in draft state: ${fromPath}`)
   }
 
-  if (!existsSync(fromPath)) {
+  if (!fs.exists(fromPath)) {
     throw new Error(`Draft file not found: ${fromPath}`)
   }
 
@@ -20,7 +20,11 @@ export function promoteToCanonical(fromPath: string): StandardAsset | null {
     return null
   }
 
-  const content = readFileSync(fromPath, 'utf-8')
+  const content = fs.read(fromPath)
+  if (content === null) {
+    throw new Error(`Failed to read draft file: ${fromPath}`)
+  }
+
   const ext = fromPath.endsWith('.oxn') ? '.oxn' : '.oxn'
   const canonicalName = `canonical${ext}`
 
@@ -35,16 +39,16 @@ export function promoteToCanonical(fromPath: string): StandardAsset | null {
   const assetName = asset.name || newDir.replace(/\/$/, '').split('/').pop() || 'unknown'
 
   const subDir = join(parentDir, assetName)
-  if (!existsSync(subDir)) {
-    mkdirSync(subDir, { recursive: true })
+  if (!fs.exists(subDir)) {
+    ensureDirectory(subDir)
   }
 
   const destPath = join(subDir, canonicalName)
-  writeFileSync(destPath, content, 'utf-8')
+  fs.atomicWrite(destPath, content)
 
   try {
-    if (existsSync(fromPath)) {
-      unlinkSync(fromPath)
+    if (fs.exists(fromPath)) {
+      deleteFile(fromPath)
     }
   } catch {
     // best-effort cleanup

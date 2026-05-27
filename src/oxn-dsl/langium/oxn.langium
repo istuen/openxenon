@@ -104,6 +104,14 @@ OutputField:
     name=ID '=' type=TypeReference;
 
 // ==================== Part ====================
+/**
+ * @oxn-ai-tool
+ * {
+ *   "name": "add_probe_to_part",
+ *   "description": "给 Part 添加探针实例",
+ *   "example": { "blueprint_name": "WebServer", "part_name": "Nginx", "probe_config": { "name": "http", "type": "HttpProbe", "params": { "path": "/health" } } }
+ * }
+ */
 PartDeclaration:
     'part' name=STRING '{'
         (descriptions+=Description)?

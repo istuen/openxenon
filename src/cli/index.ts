@@ -77,6 +77,7 @@ const main = defineCommand({
     validate: () => import('./oxn-validate').then((m) => m.default),
     promote: () => import('./oxn-promote-cmd').then((m) => m.default),
     'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
+    'add-probe': () => import('./oxn-add-probe').then((m) => m.default),
   },
   args: {
     verbose: {
