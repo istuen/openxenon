@@ -1,0 +1,6 @@
+id: fix-fs-execute-evaluator
+title: "fix: connect fs-execute probe to kernel evaluator"
+status: in_progress
+created: 2026-05-09T12:00:00Z
+archived: null
+tasks: []

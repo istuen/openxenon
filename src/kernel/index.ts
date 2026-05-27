@@ -18,16 +18,6 @@ export {
 } from './processors/project-config'
 export type { TaskDirectory } from './processors/task-dir'
 export { getTaskDirectory, validateTaskId } from './processors/task-dir'
-export {
-  buildTraceEvent,
-  createPartState,
-  createProbeResult,
-  getNextPendingPart,
-  getPartState,
-  getTaskStatus,
-  readTaskTraceFromContent,
-  reduceTraceEvents,
-} from './processors/task-trace'
 
 export type {
   PartState,
@@ -44,12 +34,7 @@ export type { Sample } from './schemas/types/sample'
 export type { Spec } from './schemas/types/spec'
 export type { Task } from './schemas/types/task'
 export type { ExecutionContext, ExecutionPolicy } from './schemas/types/policy'
-export { getExecutionPolicy } from './processors/policies/execution-policy'
 export { Action } from './schemas/types/policy'
-export { ProductionPolicy, SandboxPolicy } from './processors/policies/execution-policy'
-
-export type { ProbeDefinition, ProbeResult as ProbeResultType, ProbeVerdict } from './processors/probes/evaluator'
-export { evaluateProbe, reduceProbeResults, reduceStageVerdict } from './processors/probes/evaluator'
 
 export type { Blueprint, Part, Probe as ProbeSchemaType } from './schemas/validators/blueprint.schema'
 export {
@@ -68,3 +53,10 @@ export { PartDefinitionSchema } from './schemas/validators/part-asset'
 
 export type { ProbeNamespace, ParsedProbeRef } from './processors/probes/namespace'
 export { parseProbeNamespace, isValidProbeRef, isBareProbeRef } from './processors/probes/namespace'
+
+export {
+  evaluatePredicate,
+  topologicalSortGeneric,
+  validateSchemaGeneric,
+  transformData,
+} from './processors/evaluate-predicate'
