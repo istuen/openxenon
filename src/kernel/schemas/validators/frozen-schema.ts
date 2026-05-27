@@ -1,5 +1,5 @@
-import { createHash } from 'crypto'
 import { z } from 'zod'
+import type { HashPort } from '../../contracts/hash-port'
 
 export interface XenonMeta {
   ref: string
@@ -19,22 +19,29 @@ export const XenonMetaSchema: z.ZodType<XenonMeta> = z.object({
   appended: z.boolean().optional(),
 })
 
-export function computeContentHash(content: string): string {
+export function computeContentHash(content: string, hashPort?: HashPort): string {
+  if (hashPort) {
+    return hashPort.computeHash(content)
+  }
+  const { createHash } = require('crypto')
   return createHash('sha256').update(content).digest('hex')
 }
 
-export function createXenonMeta(params: {
+export interface CreateXenonMetaOptions {
   ref: string
   resolvedFrom: 'kernel' | 'global' | 'project'
   originalPath?: string
   content: string
-}): XenonMeta {
+  hashPort?: HashPort
+}
+
+export function createXenonMeta(options: CreateXenonMetaOptions): XenonMeta {
   return {
-    ref: params.ref,
-    resolved_from: params.resolvedFrom,
-    original_path: params.originalPath,
+    ref: options.ref,
+    resolved_from: options.resolvedFrom,
+    original_path: options.originalPath,
     frozen_at: new Date().toISOString(),
-    content_hash: computeContentHash(params.content),
+    content_hash: computeContentHash(options.content, options.hashPort),
   }
 }
 

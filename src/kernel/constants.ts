@@ -1,6 +1,3 @@
-import { homedir } from 'os'
-import { join } from 'path'
-
 export const BOUNDARY_DIR = '.openxenon'
 export const TASKS_DIR = 'tasks'
 export const WORK_DIR = 'work'
@@ -17,7 +14,6 @@ export const CANONICAL_FILE = 'canonical.yaml'
 
 export const DEBUG_LOG_FILE = 'debug.log'
 
-export const GLOBAL_BOUNDARY_PATH = join(homedir(), BOUNDARY_DIR)
-export const DAEMON_SOCK_PATH = join(GLOBAL_BOUNDARY_PATH, 'daemon.sock')
-export const DAEMON_PID_PATH = join(GLOBAL_BOUNDARY_PATH, 'daemon.pid')
-export const DAEMON_LOG_PATH = join(GLOBAL_BOUNDARY_PATH, 'daemon.log')
+export const DAEMON_SOCK_FILENAME = 'daemon.sock'
+export const DAEMON_PID_FILENAME = 'daemon.pid'
+export const DAEMON_LOG_FILENAME = 'daemon.log'

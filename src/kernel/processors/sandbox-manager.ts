@@ -8,12 +8,11 @@
  * - expectation 依赖完整性校验（删除被依赖 Part 报错）
  */
 
-// eslint-disable-next-line no-restricted-imports -- TODO(Phase-3): I/O to Infra via injection; kernel should be pure
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
 import { BOUNDARY_DIR } from '../constants'
 import { type DagNode, validateDagTopology } from '../schemas/validators/dag-validator'
 import type { OxnAssemblyIR, OxnAssemblyPart } from '../../oxn-dsl/schemas/oxn-assembly.schema'
+import type { FileSystemPort } from '../contracts/file-system-port'
 
 export interface SandboxConfig {
   taskId: string
@@ -24,6 +23,8 @@ export interface SandboxConfig {
   allowAbstractMutation?: boolean
   /** 是否允许修改 expectations */
   allowExpectationMutation?: boolean
+  /** FileSystem port for I/O operations */
+  fs?: FileSystemPort
 }
 
 export interface SandboxState {
@@ -35,30 +36,36 @@ export interface SandboxState {
   originalBlueprintPath: string
   /** 当前沙箱内的 IR */
   currentIR: OxnAssemblyIR
+  /** FileSystem port for I/O operations */
+  fs?: FileSystemPort
 }
 
 export class TaskSandbox {
+  private static getFs(config: SandboxConfig): FileSystemPort {
+    return config.fs!
+  }
+
   /**
    * 创建沙箱：将 Blueprint 复制到 Task 本地目录
    */
   static create(config: SandboxConfig): SandboxState {
+    const fs = TaskSandbox.getFs(config)
     const sandboxDir = join(config.projectRoot, BOUNDARY_DIR, 'tasks', config.taskId, 'sandbox')
-    if (!existsSync(sandboxDir)) {
-      mkdirSync(sandboxDir, { recursive: true })
+    if (!fs.existsSync(sandboxDir)) {
+      fs.mkdirSync(sandboxDir, { recursive: true })
     }
 
     const sandboxBlueprintPath = join(sandboxDir, basename(config.blueprintPath))
-    if (!existsSync(sandboxBlueprintPath)) {
-      copyFileSync(config.blueprintPath, sandboxBlueprintPath)
+    if (!fs.existsSync(sandboxBlueprintPath)) {
+      fs.copyFileSync(config.blueprintPath, sandboxBlueprintPath)
     }
 
     let currentIR: OxnAssemblyIR
     if (config.blueprintPath.endsWith('.json')) {
-      currentIR = JSON.parse(readFileSync(config.blueprintPath, 'utf-8')) as OxnAssemblyIR
+      currentIR = JSON.parse(fs.readFileSync(config.blueprintPath, 'utf-8')) as OxnAssemblyIR
     } else {
-      // YAML → 构造简化 IR
       const { parse: parseYaml } = require('yaml')
-      const raw = parseYaml(readFileSync(config.blueprintPath, 'utf-8')) as Record<string, unknown>
+      const raw = parseYaml(fs.readFileSync(config.blueprintPath, 'utf-8')) as Record<string, unknown>
       currentIR = {
         id: (raw.name || raw.id || config.taskId) as string,
         name: (raw.name || raw.id || config.taskId) as string,
@@ -89,8 +96,9 @@ export class TaskSandbox {
    * 保存沙箱内的 Blueprint 修改
    */
   static save(state: SandboxState, ir?: OxnAssemblyIR): void {
+    const fs = state.fs!
     const toSave = ir || state.currentIR
-    writeFileSync(state.sandboxBlueprintPath, JSON.stringify(toSave, null, 2), 'utf-8')
+    fs.writeFileSync(state.sandboxBlueprintPath, JSON.stringify(toSave, null, 2), 'utf-8')
     if (ir) state.currentIR = ir
   }
 
