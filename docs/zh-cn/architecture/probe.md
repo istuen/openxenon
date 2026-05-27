@@ -56,60 +56,9 @@ parameters:
 Core 调用 taskVerify
     │
     ▼
-取出 Stage.probes
-    │
-    ▼
-对每个 Probe：
-    ├─ Infra 执行物理观测
-    ├─ Kernel 纯函数判定
-    └─ 记录 ProbeVerdict
-    │
-    ▼
-所有 Probe 通过 → Stage PASSED
-任一 Probe 失败 → Stage FAILED
-```
+取出 Part.probes
 
-## 设计原则
+所有 Probe 通过 → Part PASSED
+任一 Probe 失败 → Part FAILED
 
-### 单一职责
-
-每个 Probe 只执行单一类型的检查：
-
-```yaml
-# ✅ 正确：单一检查
-type: fs_exists
-parameters:
-  pattern: "dist/index.js"
-
-# ❌ 错误：混合检查
-type: fs_exists_and_match
-parameters:
-  pattern: "dist/index.js"
-  contains: "export"
-```
-
-### 组合使用
-
-复杂验证通过多个 Probe 组合实现：
-
-```yaml
-probes:
-  - ref: fs_exists
-    parameters:
-      pattern: "dist/index.js"
-  
-  - ref: fs_match
-    parameters:
-      pattern: "dist/index.js"
-      contains: "export default"
-  
-  - ref: shell_exec
-    parameters:
-      command: "node dist/index.js"
-```
-
-## 资产化价值
-
-- **判断沉淀**：工程师的验收经验可编码为 Probe
-- **可组合**：多个 Probe 组合形成复杂验证逻辑
-- **可复用**：Probe 可跨 Stage、跨 Blueprint 复用
+- **可复用**：Probe 可跨 Part、跨 Blueprint 复用

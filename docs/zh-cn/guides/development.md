@@ -74,10 +74,17 @@ openxenon/
 │   ├── infra/        # 基础设施层
 │   └── skills/       # Skill 源码（AI 读取）
 ├── docs/
-│   ├── manual/       # 用户文档
-│   └── architecture.md # 架构设计
-└── dist/             # 构建产物
+│   ├── en/           # 英文文档
+│   │   ├── architecture/
+│   │   └── guides/
+│   └── zh-cn/        # 中文文档
+│       ├── architecture/
+│       └── guides/
+├── dist/             # 构建产物
+└── openspec/         # OpenSpec 变更管理
 ```
+
+文档按语言分为 `en/` 和 `zh-cn/` 两个 locale 目录。
 
 ## 贡献指南
 

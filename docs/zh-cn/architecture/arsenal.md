@@ -68,10 +68,10 @@ flowchart TD
 
 | 阶段 | 命令 | 作用 |
 |------|------|------|
-| **Forge** | `oxn forge --save` / `oxn arsenal fork` / `/oxn-forge` | 创建 Draft 草稿到 `forges/` 目录 |
-| **Promote** | `oxn arsenal promote` | Draft → Canonical，`_version` 自增，生成编译制品 |
+| **Forge** | `oxn forge --save` / `oxn arsenal fork` / `/oxn-forge` | 创建 Draft 草稿到 `drafts/` 目录 |
+| **Promote** | `oxn arsenal promote` | Draft → Formal，`_version` 自增，生成编译制品 |
 | **Fork** | `oxn arsenal fork` | 复制已有 Part 为新变体，`_forked_from` 标注来源与版本（如 `git-commit@2`） |
-| **Extract** | `oxn arsenal extract` | 从已执行 Task 的 frozen.yaml 中提取历史版本 Part，`_extracted_from` 标注来源 Task |
+| **Extract** | `oxn arsenal extract` | 从已执行 Work 的 frozen.yaml 中提取历史版本 Part，`_extracted_from` 标注来源 Work |
 | **List** | `oxn arsenal list` | 查看可用资产 |
 | **Inspect** | `oxn arsenal inspect` | 查看单个资产内容 |
 
@@ -276,33 +276,30 @@ _depHash = SHA256( 所有依赖的 Part/Probe 的 compiled.json 内容拼接 )
 
 ## 7. 目录结构总览
 
+类型优先（Blueprint/Part/Probe），状态（drafts/formal）嵌套在类型内部：
+
 ```text
 .openxenon/
-├── arsenals/                              # 正式资产库
-│   ├── probes/                            # L1 Probe 定义（单文件）
-│   │   ├── fs-exists.yaml
-│   │   ├── fs-match.yaml
-│   │   └── shell-exec.yaml
-│   ├── parts/                             # L2 Part 定义（单文件）
-│   │   ├── git-commit.yaml
-│   │   ├── create-branch.yaml
-│   │   └── develop-feature.yaml
-│   └── blueprints/                        # L3 Blueprint 目录
-│       └── feature-pipeline/
-│           ├── blueprint.yaml             # 设计稿（含 ref/slot）
-│           ├── blueprint.assembly.yaml    # 预制品 YAML（本地查阅）
-│           ├── blueprint.assembly.json    # 预制品 JSON（分享契约）
-│           ├── blueprint.assembly.schema.json  # 预制品 Schema
-│           └── README.md
+├── arsenal/                              # 正式资产库（Promote 产物）
+│   ├── blueprints/
+│   │   └── <name>/                        # Blueprint 目录
+│   │       ├── blueprint.yaml             # 设计稿（含 ref/slot）
+│   │       ├── blueprint.assembly.yaml    # 预制品 YAML（本地查阅）
+│   │       ├── blueprint.assembly.json    # 预制品 JSON（分享契约）
+│   │       ├── blueprint.assembly.schema.json  # 预制品 Schema
+│   │       └── README.md
+│   ├── parts/
+│   │   └── <name>.oxn                     # Part 单文件
+│   └── probes/
+│       └── <name>.oxn                     # Probe 单文件
 │
-├── forges/                                # Forge 锻造区
-│   ├── probes/                            # 草稿 Probe
-│   ├── parts/                             # 草稿 Part
-│   └── blueprints/                        # 草稿 Blueprint
-│       └── my-blueprint/
-│           ├── blueprint.yaml
-│           ├── parts/                     # import unpack 产出（分享包解包后的 Part）
-│           └── probes/                    # import unpack 产出（分享包解包后的 Probe）
+├── drafts/                                # 草稿资产（Forge 产物）
+│   ├── blueprints/
+│   │   └── <name>/
+│   ├── parts/
+│   │   └── <name>.oxn
+│   └── probes/
+│       └── <name>.oxn
 │
 ├── cache/                                 # 编译缓存（可随时删除，promote 会重建）
 │   ├── compiled/                          # L1/L2 预编译 JSON
@@ -312,13 +309,17 @@ _depHash = SHA256( 所有依赖的 Part/Probe 的 compiled.json 内容拼接 )
 │   │   └── <l3-hash>.frozen.yaml
 │   └── manifest.json                      # 全局缓存清单
 │
-└── tasks/                                 # Task 执行记录
-    └── task-001/
-        ├── blueprint.yaml                 # 复制的设计稿（填充 Slot）
-        ├── blueprint.frozen.yaml          # 成品（全内联，执行真相源）
-        ├── state.json
-        └── task-trace.yaml
+└── work/                                  # Work 执行单元
+    └── <type>/                             # 按 type 分类（task/plan/explore）
+        └── <work-id>/
+            ├── blueprint.frozen.yaml      # 成品（全内联，执行真相源）
+            ├── state.json
+            └── task-trace.yaml
 ```
+
+**流转映射**：
+- `oxn forge` → 写入 `drafts/<type>/`
+- `oxn promote` → 从 `drafts/` 移动到 `arsenal/<type>/`
 
 ---
 

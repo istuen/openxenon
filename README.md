@@ -169,11 +169,11 @@ Blueprint ──▶ Frozen ──▶ [Part.target/action] ──▶ Artifact
 
 ## 9. 文档
 
-- [快速开始](docs/getting-started.md)
-- [核心概念](docs/concepts/)
-- [CLI 参考](docs/guides/cli-reference.md)
-- [架构设计](docs/architecture/)
-- [故障排查](docs/guides/troubleshooting.md)
+- [快速开始](docs/zh-cn/guides/getting-started.md)
+- [核心概念](docs/zh-cn/architecture/concepts.md)
+- [CLI 参考](docs/zh-cn/guides/cli-reference.md)
+- [架构设计](docs/zh-cn/architecture/)
+- [故障排查](docs/zh-cn/guides/troubleshooting.md)
 
 ## License
 

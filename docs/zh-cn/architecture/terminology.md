@@ -2,6 +2,15 @@
 
 本文档定义 OpenXenon 使用的核心术语。
 
+## L0-L3 架构
+
+| 层级 | 组件 | 职责 |
+|------|------|------|
+| **L0** | Schema / Contract / Processor | 数据契约 + 纯逻辑推演 |
+| **L1** | OXN DSL / Infra | 语义解析 + 宿主适配 |
+| **L2** | Arsenal / Work | 资产管理 + 执行调度 |
+| **L3** | CLI / Daemon / Skill / Hall | 外部交互 |
+
 ## 角色与职责
 
 | 术语 | 定义 |
@@ -14,13 +23,13 @@
 
 | 术语 | 定义 |
 |------|------|
-| **Blueprint** | 任务工程图，定义执行拓扑（DAG） |
-| **Stage** | 工序节点，包含 target/action/spec/probes 四字段 |
+| **Blueprint** | 任务工程图，定义执行拓扑（DAG），type 属性与 Work.type 强绑定 |
+| **Part** | 零件，包含 target/action/spec/probes 四字段，内置 _version 版本号 |
 | **Probe** | 原子检查，物理观测 + 纯函数判定 |
-| **Artifact** | AI 构建的产物，Core 验证的对象 |
-| **Arsenal** | 资产库，存储所有可复用工程资产 |
+| **Work** | 执行单元，Blueprint 的实例化运行时，与 Blueprint.type 强绑定 |
+| **Hall** | 研讨厅，项目状态可视化 |
 
-## Stage 字段
+## Part 字段
 
 | 术语 | 可见性 | 定义 |
 |------|--------|------|
@@ -34,17 +43,17 @@
 | 术语 | 定义 |
 |------|------|
 | **DRAFT** | 草稿状态，AI 通过 Forge 生成，待审查 |
-| **CANONICAL** | 正式状态，工程师审查通过，可被任务引用 |
+| **FORMAL** | 正式状态，工程师审查通过，可被 Work 引用 |
 | **Frozen** | 冻结快照，Blueprint 编译后的不可变执行计划 |
-| **Trace** | 执行轨迹，Core 对每个 Stage 执行 Probes 后的判定记录 |
+| **Trace** | 执行轨迹，Core 对每个 Part 执行 Probes 后的判定记录 |
 
-## 任务状态
+## Work 状态
 
 | 状态 | 定义 |
 |------|------|
-| **CREATED** | 任务已创建，Blueprint 已保存 |
-| **IN_PROGRESS** | 任务正在执行 |
-| **PASSED** | 所有 Stage 和 Probe 通过 |
+| **CREATED** | Work 已创建，Blueprint 已编译为 Frozen |
+| **IN_PROGRESS** | Work 正在执行 |
+| **PASSED** | 所有 Part 和 Probe 通过 |
 | **FAILED** | 某个 Probe 失败 |
 
 ## 系统组件
@@ -53,6 +62,7 @@
 |------|------|
 | **Kernel** | 纯函数层，零副作用，只做逻辑判定 |
 | **Infra** | I/O 层，唯一触碰文件系统和进程的组件 |
+| **OXN DSL** | 领域语言，Grammar/Parser/Validator 实现 |
 | **Forge** | 资产构建流程，将工程师经验转化为标准 Schema 约束的资产 |
 
 ## 信息隐藏

@@ -42,4 +42,4 @@ oxn CLI（命令入口）
 
 ## 下一章
 
-下一章将详细介绍 OpenXenon 的[核心概念](./02-concepts.md)。
+下一章将详细介绍 OpenXenon 的[核心概念](./concepts.md)。

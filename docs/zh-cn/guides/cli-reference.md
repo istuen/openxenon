@@ -54,8 +54,8 @@ oxn forge
 # 查看 Probe 元 Forge 约束
 oxn forge probe
 
-# 查看 Stage 元 Forge 约束
-oxn forge stage
+# 查看 Part 元 Forge 约束
+oxn forge part
 
 # 查看 Blueprint 元 Forge 约束
 oxn forge blueprint
@@ -71,7 +71,7 @@ oxn forge <type> --save '<yaml>' --name <name>
 
 | 参数 | 必需 | 描述 |
 |------|------|------|
-| `<type>` | 是 | 资产类型：probe、stage、blueprint |
+| `<type>` | 是 | 资产类型：probe、part、blueprint |
 | `--save <yaml>` | 是 | YAML 内容 |
 | `--name <name>` | 是 | 资产名称 |
 | `--global` | 否 | 保存到全局 Arsenal（0.2） |
@@ -105,12 +105,12 @@ oxn arsenal list [DRAFT|CANONICAL]
 
 ```
 ## PROBES
-  [CANONICAL] fs_exists
-  [CANONICAL] fs_match
+  [FORMAL] fs_exists
+  [FORMAL] fs_match
   [DRAFT] check-file
 
-## STAGES
-  [CANONICAL] build
+## PARTS
+  [FORMAL] build
 
 Total: 4 assets
 ```
@@ -131,7 +131,7 @@ oxn arsenal inspect probes/check-file
 
 ### oxn arsenal promote
 
-将 DRAFT 资产转正为 CANONICAL。
+将 DRAFT 资产转正为 FORMAL。
 
 ```bash
 oxn arsenal promote <type>/<name>
@@ -149,7 +149,7 @@ oxn arsenal promote probes/check-file
 ✓ Asset promoted
   Name: check-file
   Type: probes
-  New State: CANONICAL
+  New State: FORMAL
 ```
 
 ### oxn arsenal render
@@ -329,7 +329,7 @@ Hall 路径: /path/to/project/.openxenon/hall/index.html
 
 **详情弹窗显示**：
 
-- Stage DAG 拓扑图
-- 各 Stage 的执行状态
+- Part DAG 拓扑图
+- 各 Part 的执行状态
 - 探针执行结果（PASSED/FAILED）
 - probe 输出和错误信息

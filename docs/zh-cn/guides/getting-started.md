@@ -49,7 +49,7 @@ parameters:
     required: true
 ' --name check-file
 
-# 转正为 Canonical
+# 转正为 Formal
 ./dist/oxn arsenal promote probes/check-file
 ```
 
@@ -59,15 +59,14 @@ parameters:
 
 ```yaml
 name: 我的第一个任务
-stages:
+type: task
+parts:
   - id: create-file
     name: 创建文件
     target:
       description: "在项目根目录创建 test.txt"
     action:
       description: "创建一个包含 Hello World 的文本文件"
-    spec:
-      description: "文件必须存在且内容正确"
     probes:
       - ref: check-file
         parameters:
@@ -102,12 +101,12 @@ echo "Hello World" > test.txt
 # 查看 Work 状态
 ./dist/oxn work list
 
-# 导出执行轨迹
-./dist/oxn export
+# 打开研讨厅 (Hall)
+./dist/oxn hall
 ```
 
 ## 下一步
 
-- [核心概念](concepts/) - 深入理解 Blueprint/Stage/Probe/Artifact
-- [CLI 参考](guides/cli-reference.md) - 完整命令文档
-- [架构设计](architecture/) - 系统设计原理
+- [核心概念](../architecture/concepts.md) - 深入理解 Blueprint/Part/Probe/Work
+- [CLI 参考](./cli-reference.md) - 完整命令文档
+- [架构设计](../architecture/) - 系统设计原理

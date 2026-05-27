@@ -6,7 +6,7 @@
 
 **AI 助手无法感知验证标准。**
 
-## Stage 四字段可见性
+## Part 四字段可见性
 
 | 字段 | 可见性 | 含义 | 原因 |
 |------|--------|------|------|
@@ -74,7 +74,7 @@ oxn task next --task-id <id>
 **返回**：
 
 ```
-Stage: create-user-model
+Part: create-user-model
 Target: 在 src/models/ 目录下创建 User 模型
 Action: 使用 Prisma ORM 创建 User 模型，包含 id、name、email 字段
 ```
@@ -96,7 +96,7 @@ Probes:
 AI 调用 taskVerify
     │
     ▼
-Core 取出 Stage.probes（AI 不知道具体内容）
+Core 取出 Part.probes（AI 不知道具体内容）
     │
     ▼
 Core 调用 Infra 执行物理观测
@@ -124,7 +124,7 @@ Core 返回判定结果（PASSED / FAILED）
 │  工程师                                                      │
 │    │                                                         │
 │    ├── 定义 Blueprint                                        │
-│    ├── 定义 Stage (target/action/spec/probes)               │
+│    ├── 定义 Part (target/action/spec/probes)               │
 │    └── 验收结果                                              │
 │                                                              │
 │  Core                                                        │

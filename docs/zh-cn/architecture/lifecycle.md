@@ -60,7 +60,7 @@ oxn work complete my-work
 - 任务队列和并发控制
 - `oxn daemon start` 启动后可通过 `oxn arsenal search` 搜索全局资产
 
-0.1 阶段所有核心功能（forge、task submit/verify、arsenal）均通过 CLI 直连可用，不依赖 Daemon。
+0.1 阶段所有核心功能（forge、work new/resume/complete、arsenal）均通过 CLI 直连可用，不依赖 Daemon。
 
 ## 项目目录结构
 
@@ -68,19 +68,29 @@ oxn work complete my-work
 <project>/
 ├── .openxenon/           # 项目围栏
 │   ├── config.json       # 项目配置
-│   ├── arsenals/         # 项目级资产
-│   │   ├── probes/
-│   │   └── stages/
-│   └── tasks/
-│       └── <task_id>/
-│           ├── blueprint.yaml      # 任务蓝图
-│           ├── step-manifest.json # AI 舱单（AI 写入）
-│           └── task-trace.yaml   # 执行记录（追加写入）
+│   ├── arsenal/          # 正式资产库
+│   │   ├── blueprints/
+│   │   │   └── <name>/   # Blueprint 目录
+│   │   ├── parts/
+│   │   │   └── <name>.oxn
+│   │   └── probes/
+│   │       └── <name>.oxn
+│   ├── drafts/           # 草稿资产（Forge 产出）
+│   │   ├── blueprints/
+│   │   ├── parts/
+│   │   └── probes/
+│   └── work/             # Work 执行单元
+│       └── <type>/
+│           └── <work-id>/
+│               ├── blueprint.frozen.yaml  # 编译后的蓝图
+│               └── task-trace.yaml        # 执行记录
 └── src/                  # 业务代码
 ```
+
+类型优先（Blueprint/Part/Probe），状态（drafts/formal）嵌套在类型内部。
 
 全局目录 (`~/.openxenon/`) 在 0.1 仅用于 Daemon 相关文件，CLI 直连模式不依赖它。
 
 ## 下一章
 
-下一章将介绍 [CLI 命令参考](./04-cli-ref.md)。
+下一章将介绍 [CLI 命令参考](../guides/cli-reference.md)。
