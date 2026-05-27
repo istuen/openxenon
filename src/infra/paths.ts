@@ -5,8 +5,7 @@ export const BOUNDARY_DIR = '.openxenon'
 
 export const GLOBAL_BOUNDARY = join(homedir(), '.openxenon')
 
-export const GLOBAL_ARSENALS_ROOT = join(GLOBAL_BOUNDARY, 'arsenals')
-export const GLOBAL_FORGES_ROOT = join(GLOBAL_BOUNDARY, 'forges')
+export const GLOBAL_ARSENAL_ROOT = join(GLOBAL_BOUNDARY, 'arsenal')
 
 export type Scope = 'project' | 'global'
 
@@ -22,11 +21,11 @@ export function resolveBoundary(scope: Scope, cwd?: string): string {
 }
 
 export function resolveArsenalRoot(scope: Scope, cwd?: string): string {
-  return join(resolveBoundary(scope, cwd), 'arsenals')
+  return join(resolveBoundary(scope, cwd), 'arsenal')
 }
 
 export function resolveForgeRoot(scope: Scope, cwd?: string): string {
-  return join(resolveBoundary(scope, cwd), 'forges')
+  return join(resolveBoundary(scope, cwd), 'arsenal', 'drafts')
 }
 
 export function resolveHallRoot(scope: Scope, cwd?: string): string {

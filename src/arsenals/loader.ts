@@ -1,4 +1,4 @@
-import type { Scope, StandardAsset } from '../infra/loader'
+import type { Scope, StandardAsset, LoadStandardOptions } from '../infra/loader'
 export type { Scope, StandardAsset }
 
 import { BUILTIN_PARTS, BUILTIN_PROBES } from './builtin'
@@ -57,8 +57,8 @@ export const arsenalListStandards = (
   return listStandards(scope || 'fallback', getProjectBoundary(), state)
 }
 
-export const arsenalLoadStandardByName = (name: string, type: AssetType) => {
-  return loadStandardByName('project', getProjectBoundary(), name, type)
+export const arsenalLoadStandardByName = (name: string, type: AssetType, options?: LoadStandardOptions) => {
+  return loadStandardByName('project', getProjectBoundary(), name, type, options)
 }
 
 export { generateCompiledArtifact, loadStandardByPath, promoteToCanonical }

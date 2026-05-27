@@ -4,10 +4,9 @@ import { loadStandardByPath } from '../infra/loader'
 import { fs, ensureDirectory, deleteFile } from '../infra/filesystem'
 
 export function promoteToCanonical(fromPath: string): StandardAsset | null {
-  const isForgeFormat = fromPath.includes('/forges/')
-  const isArsenalDraftFormat = fromPath.includes('/arsenals/') && fromPath.includes('/draft/')
+  const isArsenalDraftFormat = fromPath.includes('/drafts/')
 
-  if (!isForgeFormat && !isArsenalDraftFormat) {
+  if (!isArsenalDraftFormat) {
     throw new Error(`Asset is not in draft state: ${fromPath}`)
   }
 
@@ -26,14 +25,9 @@ export function promoteToCanonical(fromPath: string): StandardAsset | null {
   }
 
   const ext = fromPath.endsWith('.oxn') ? '.oxn' : '.oxn'
-  const canonicalName = `canonical${ext}`
+  const canonicalName = `canonical.${ext}`
 
-  let newDir: string
-  if (isForgeFormat) {
-    newDir = fromPath.replace('/forges/', '/arsenals/')
-  } else {
-    newDir = fromPath.replace('/draft/', '/')
-  }
+  const newDir = fromPath.replace('/drafts/', '/')
 
   const parentDir = dirname(newDir)
   const assetName = asset.name || newDir.replace(/\/$/, '').split('/').pop() || 'unknown'

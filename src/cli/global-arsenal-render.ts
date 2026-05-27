@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { GLOBAL_ARSENALS_ROOT } from '../arsenals/paths'
+import { GLOBAL_ARSENAL_ROOT } from '../arsenals/paths'
 import { blueprintToDagHtml } from './render/blueprint-renderer'
 
 export default defineCommand({
@@ -19,7 +19,7 @@ export default defineCommand({
   run(ctx) {
     try {
       const blueprintName = ctx.args.name as string
-      const draftPath = join(GLOBAL_ARSENALS_ROOT, 'blueprints', blueprintName, 'draft.yaml')
+      const draftPath = join(GLOBAL_ARSENAL_ROOT, 'blueprints', blueprintName, 'draft.oxn')
 
       if (!existsSync(draftPath)) {
         console.error(`错误: 全局 Draft Blueprint 不存在: ${blueprintName}`)
@@ -29,7 +29,7 @@ export default defineCommand({
       const blueprintContent = readFileSync(draftPath, 'utf-8')
       const html = blueprintToDagHtml({ blueprintName, blueprintContent })
 
-      const htmlPath = join(GLOBAL_ARSENALS_ROOT, 'blueprints', blueprintName, `preview-${Date.now()}.html`)
+      const htmlPath = join(GLOBAL_ARSENAL_ROOT, 'blueprints', blueprintName, `preview-${Date.now()}.html`)
       writeFileSync(htmlPath, html, 'utf-8')
 
       console.log(`Global Blueprint DAG 预览已生成: ${htmlPath}`)

@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import * as yaml from 'yaml'
-import { ensureArsenalsDirectories } from '../arsenals/init'
+import { ensureArsenalDirectories } from '../arsenals/init'
 import { BUILTIN_PARTS, BUILTIN_PROBES } from '../arsenals/builtin'
 import {
   generateCompiledArtifact,
@@ -68,7 +68,7 @@ export default defineCommand({
     }
 
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('project')
+    ensureArsenalDirectories('project')
 
     const input = ctx.args.name as string
     const parsed = parseAssetName(input)
@@ -84,7 +84,7 @@ export default defineCommand({
       )
     }
 
-    const asset = loadStandardByName(parsed.name, parsed.type)
+    const asset = loadStandardByName(parsed.name, parsed.type, { state: 'draft' })
     if (!asset) {
       return outputError(
         {
@@ -95,7 +95,7 @@ export default defineCommand({
       )
     }
 
-    const isDraft = asset.state === 'draft' || asset.path.includes('/forges/')
+    const isDraft = asset.state === 'draft'
     if (!isDraft) {
       return outputError(
         {

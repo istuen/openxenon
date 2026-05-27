@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { cpSync, existsSync, readdirSync, unlinkSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import type { AssetState, AssetType } from '../arsenals/paths'
-import { GLOBAL_ARSENALS_ROOT } from '../arsenals/paths'
+import { GLOBAL_ARSENAL_ROOT } from '../arsenals/paths'
 
 interface MigrationResult {
   name: string
@@ -16,25 +16,72 @@ interface MigrationResult {
 
 const ASSET_TYPES: AssetType[] = ['probes', 'blueprints', 'parts']
 
-function scanOldStructureAssets(): { path: string; type: AssetType; name: string; state: AssetState }[] {
+function scanOldStructureAssets(): {
+  path: string
+  type: AssetType
+  name: string
+  state: AssetState
+}[] {
   const assets: { path: string; type: AssetType; name: string; state: AssetState }[] = []
-  const basePath = GLOBAL_ARSENALS_ROOT
+  const oldBasePath = join(dirname(GLOBAL_ARSENAL_ROOT), 'arsenals')
 
   for (const type of ASSET_TYPES) {
-    for (const state of ['draft', 'canonical'] as AssetState[]) {
-      const dirPath = join(basePath, type, state)
-      if (!existsSync(dirPath)) continue
+    const oldTypePath = join(oldBasePath, type)
+    if (!existsSync(oldTypePath)) continue
 
-      const files = readdirSync(dirPath)
-      for (const file of files) {
-        if (file.endsWith('.yaml') || file.endsWith('.yml') || file.endsWith('.json')) {
-          assets.push({
-            path: join(dirPath, file),
-            type,
-            name: basename(file, `.${file.split('.').pop()}`),
-            state,
-          })
+    const entries = readdirSync(oldTypePath, { withFileTypes: true })
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const dirName = entry.name
+        if (dirName === 'draft' || dirName === 'canonical') {
+          const dirPath = join(oldTypePath, dirName)
+          const state: AssetState = dirName as AssetState
+          const files = readdirSync(dirPath)
+          for (const file of files) {
+            if (file.endsWith('.yaml') || file.endsWith('.yml') || file.endsWith('.json') || file.endsWith('.oxn')) {
+              const name = basename(file, `.${file.split('.').pop()}`)
+              assets.push({
+                path: join(dirPath, file),
+                type,
+                name,
+                state,
+              })
+            }
+          }
+        } else {
+          const blueprintDir = join(oldTypePath, dirName)
+          const canonicalFile = join(blueprintDir, 'canonical.yaml')
+          if (existsSync(canonicalFile)) {
+            assets.push({
+              path: canonicalFile,
+              type,
+              name: dirName,
+              state: 'canonical',
+            })
+          }
+          const draftFile = join(blueprintDir, 'draft.yaml')
+          if (existsSync(draftFile)) {
+            assets.push({
+              path: draftFile,
+              type,
+              name: dirName,
+              state: 'draft',
+            })
+          }
         }
+      } else if (
+        entry.name.endsWith('.yaml') ||
+        entry.name.endsWith('.yml') ||
+        entry.name.endsWith('.json') ||
+        entry.name.endsWith('.oxn')
+      ) {
+        const name = basename(entry.name, `.${entry.name.split('.').pop()}`)
+        assets.push({
+          path: join(oldTypePath, entry.name),
+          type,
+          name,
+          state: 'canonical',
+        })
       }
     }
   }
@@ -46,8 +93,15 @@ function migrateAsset(
   asset: { path: string; type: AssetType; name: string; state: AssetState },
   keepOld: boolean,
 ): MigrationResult {
-  const basePath = GLOBAL_ARSENALS_ROOT
-  const newPath = join(basePath, asset.type, asset.name, asset.state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+  let newPath: string
+  if (asset.type === 'blueprints') {
+    newPath = join(GLOBAL_ARSENAL_ROOT, asset.type, asset.name, asset.state === 'draft' ? 'draft.oxn' : 'canonical.oxn')
+  } else {
+    newPath =
+      asset.state === 'draft'
+        ? join(GLOBAL_ARSENAL_ROOT, asset.type, 'drafts', `${asset.name}.oxn`)
+        : join(GLOBAL_ARSENAL_ROOT, asset.type, `${asset.name}.oxn`)
+  }
 
   if (existsSync(newPath)) {
     return {
@@ -94,20 +148,10 @@ function migrateAsset(
   }
 }
 
-function cleanupEmptyDirs(dirPath: string): void {
-  if (!existsSync(dirPath)) return
-
-  const files = readdirSync(dirPath)
-  if (files.length === 0) {
-    require('fs').rmdirSync(dirPath)
-    cleanupEmptyDirs(dirname(dirPath))
-  }
-}
-
 export default defineCommand({
   meta: {
     name: 'arsenal-migrate',
-    description: '将全局旧结构迁移到新结构',
+    description: '将全局旧结构（arsenals/）迁移到新结构（arsenal/）',
   },
   args: {
     keepOld: {
@@ -119,7 +163,7 @@ export default defineCommand({
   async run(ctx) {
     const keepOld = ctx.args.keepOld || false
 
-    console.log(`\n🔄 开始迁移全局 arsenals 目录结构...`)
+    console.log(`\n🔄 开始迁移全局 arsenals 目录结构到 arsenal...`)
     console.log(`保留旧文件: ${keepOld}\n`)
 
     const oldAssets = scanOldStructureAssets()
@@ -157,15 +201,6 @@ export default defineCommand({
     console.log(`✅ 成功: ${successCount}`)
     console.log(`⏭️ 跳过: ${skippedCount}`)
     console.log(`❌ 失败: ${failedCount}`)
-
-    if (!keepOld && successCount > 0) {
-      console.log('\n🧹 清理空目录...')
-      for (const type of ASSET_TYPES) {
-        cleanupEmptyDirs(join(GLOBAL_ARSENALS_ROOT, type, 'draft'))
-        cleanupEmptyDirs(join(GLOBAL_ARSENALS_ROOT, type, 'canonical'))
-      }
-      console.log('✅ 清理完成')
-    }
 
     console.log('\n✅ 迁移完成！')
   },

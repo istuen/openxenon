@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { ensureArsenalsDirectories } from '../arsenals/init'
+import { ensureArsenalDirectories } from '../arsenals/init'
 import { BUILTIN_PARTS, BUILTIN_PROBES } from '../arsenals/builtin'
 import type { AssetType } from '../arsenals/paths'
 import { generateCompiledArtifact, loadStandardByName, preloadCompileDependencies } from '../infra/loader'
@@ -57,7 +57,7 @@ export default defineCommand({
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('global')
+    ensureArsenalDirectories('global')
 
     const input = ctx.args.name as string
     const parsed = parseAssetName(input)
@@ -73,7 +73,7 @@ export default defineCommand({
       )
     }
 
-    const asset = loadStandardByName('global', undefined, parsed.name, parsed.type)
+    const asset = loadStandardByName('global', undefined, parsed.name, parsed.type, { state: 'draft' })
     if (!asset) {
       return outputError(
         {
@@ -84,7 +84,7 @@ export default defineCommand({
       )
     }
 
-    const isDraft = asset.state === 'draft' || asset.path.includes('/forges/')
+    const isDraft = asset.state === 'draft'
     if (!isDraft) {
       return outputError(
         {

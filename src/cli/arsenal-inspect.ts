@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { ensureArsenalsDirectories } from '../arsenals/init'
+import { ensureArsenalDirectories } from '../arsenals/init'
 import {
   arsenalListStandards as listStandards,
   arsenalLoadStandardByName as loadStandardByName,
@@ -70,7 +70,7 @@ export default defineCommand({
     }
 
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('project')
+    ensureArsenalDirectories('project')
 
     const scope: Scope = 'fallback'
     const state: AssetState | undefined = ctx.args.draft ? 'draft' : ctx.args.canonical ? 'canonical' : undefined

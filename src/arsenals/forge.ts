@@ -1,8 +1,7 @@
 import { randomUUID } from 'crypto'
-import { dirname, join } from 'path'
-import { ensureForgesDirectories } from './init'
-import { type AssetType, GLOBAL_FORGES_ROOT, type Scope } from './paths'
-import { getProjectBoundaryPath } from '../kernel'
+import { dirname } from 'path'
+import { ensureArsenalDirectories } from './init'
+import { type AssetType, getArsenalDraftPath, type Scope } from './paths'
 import { fs, ensureDirectory } from '../infra/filesystem'
 
 export interface ForgeAssetOptions {
@@ -28,27 +27,13 @@ export function applyTemplateVars(content: string, vars: Record<string, string>)
   return result
 }
 
-function getForgePath(type: AssetType, name: string, scope: Scope, ext: string = 'oxn'): string {
-  if (scope === 'global') {
-    if (type === 'parts' || type === 'probes') {
-      return join(GLOBAL_FORGES_ROOT, type, `${name}.${ext}`)
-    }
-    return join(GLOBAL_FORGES_ROOT, type, name, `draft.${ext}`)
-  }
-  const projectBoundary = getProjectBoundaryPath(process.cwd())
-  if (type === 'parts' || type === 'probes') {
-    return join(projectBoundary, 'forges', type, `${name}.${ext}`)
-  }
-  return join(projectBoundary, 'forges', type, name, `draft.${ext}`)
-}
-
 export function forgeAsset(options: ForgeAssetOptions): ForgeAssetResult {
-  const { type, name, content, scope = 'project', ext = 'oxn', templateVars = {} } = options
+  const { type, name, content, scope = 'project', templateVars = {} } = options
 
-  ensureForgesDirectories(scope)
+  ensureArsenalDirectories(scope)
 
   const assetName = name || `draft_${randomUUID().slice(0, 8)}`
-  const targetPath = getForgePath(type, assetName, scope, ext)
+  const targetPath = getArsenalDraftPath(type, assetName, scope)
 
   const finalContent =
     templateVars && Object.keys(templateVars).length > 0 ? applyTemplateVars(content, templateVars) : content

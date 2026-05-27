@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { ensureArsenalsDirectories } from '../arsenals/init'
+import { ensureArsenalDirectories } from '../arsenals/init'
 import type { AssetState } from '../arsenals/paths'
 import { listStandards } from '../infra/loader'
 import { getFormatFromArgs, output, outputError } from './output'
@@ -33,7 +33,7 @@ export default defineCommand({
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('global')
+    ensureArsenalDirectories('global')
 
     const scope = 'global'
     const state: AssetState | undefined = ctx.args.draft ? 'draft' : ctx.args.canonical ? 'canonical' : undefined

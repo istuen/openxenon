@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'fs'
 import { basename, join } from 'path'
-import { GLOBAL_ARSENALS_ROOT } from '../arsenals/paths'
+import { GLOBAL_ARSENAL_ROOT } from '../arsenals/paths'
 
 type ImportFilter = 'draft' | 'canonical' | 'all' | 'archive'
 
@@ -157,7 +157,7 @@ export default defineCommand({
   },
   async run(ctx) {
     const sourcePath = ctx.args.path as string
-    const targetArsenalsPath = GLOBAL_ARSENALS_ROOT
+    const targetArsenalsPath = GLOBAL_ARSENAL_ROOT
 
     if (!existsSync(sourcePath)) {
       console.error(`源目录不存在: ${sourcePath}`)

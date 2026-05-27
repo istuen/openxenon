@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { ensureArsenalsDirectories } from '../arsenals/init'
-import { type AssetType, getArsenalsPath } from '../arsenals/paths'
+import { ensureArsenalDirectories } from '../arsenals/init'
+import { type AssetType, getArsenalPath } from '../arsenals/paths'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
@@ -30,7 +30,7 @@ export default defineCommand({
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('project')
+    ensureArsenalDirectories('project')
 
     const assetType = ctx.args.type as string
     const sourceName = ctx.args.name as string
@@ -47,7 +47,7 @@ export default defineCommand({
     }
 
     const type = 'parts' as AssetType
-    const basePath = getArsenalsPath(type, 'project')
+    const basePath = getArsenalPath(type, 'project')
     const sourcePath = join(basePath, `${sourceName}.oxn`)
 
     if (!existsSync(sourcePath)) {

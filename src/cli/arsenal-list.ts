@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { ensureArsenalsDirectories } from '../arsenals/init'
+import { ensureArsenalDirectories } from '../arsenals/init'
 import { arsenalListStandards, type StandardAsset } from '../arsenals/loader'
 import type { AssetState } from '../arsenals/paths'
 import { getFormatFromArgs, output, outputError } from './output'
@@ -43,7 +43,7 @@ export default defineCommand({
     }
 
     const format = getFormatFromArgs(ctx.args)
-    ensureArsenalsDirectories('project')
+    ensureArsenalDirectories('project')
 
     const scopeArg = ctx.args.scope as string | undefined
     const scope = scopeArg || 'fallback'
