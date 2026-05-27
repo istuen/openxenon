@@ -26,29 +26,30 @@ OpenXenon 的架构建立在三个核心角色的职责分离之上：
 
 ### 3.1 概念层级表
 
-| 概念 | 定位 | 定义 | 物理归属 |
-|------|------|------|---------|
-| **Blueprint** | Class | 任务工程图，定义执行拓扑（DAG）与 Type | `arsenal/blueprints/<name>/` |
-| **Part** | Class | 零件，包含 target/spec/action/probes 四字段 | `arsenal/parts/` |
-| **Probe** | Class | 原子检查，物理观测 + 纯函数判定 | `arsenal/probes/` |
-| **Work** | Instance | Blueprint Type 的运行时实例，独立执行沙箱 | `work/<type>/<type-id>/` |
-| **Artifact** | Instance | Work 执行产生的物理产物，被 Probe 观测的对象 | `work/<type>/<type-id>/` |
-| **frozen.json** | Snapshot | 验证后生成的判决书，不可篡改的回溯锚点 | `work/<type>/<type-id>/` |
-| **Hall** | UI | 研讨厅，工程师查看任务状态的 Web 控制台 | Web UI |
+| 概念            | 定位    | 定义                                         | 物理归属                                |
+| --------------- | ------- | -------------------------------------------- | --------------------------------------- |
+| **Blueprint**   | Arsenal | 任务工程图，定义执行拓扑（DAG）与 Type       | `.openxenon/arsenal/blueprints/<name>/` |
+| **Part**        | Arsenal | 零件，包含 target/spec/action/probes 四字段  | `.openxenon/arsenal/parts/`             |
+| **Probe**       | Arsenal | 原子检查，物理观测 + 纯函数判定              | `.openxenon/arsenal/probes/`            |
+| **Work**        | Work    | Blueprint Type 的运行时实例，独立执行沙箱    | `.openxenon/work/<type>/<type-id>/`     |
+| **Artifact**    | Work    | Work 执行产生的物理产物，被 Probe 观测的对象 | **宿主项目目录 (如 `src/`)**            |
+| **frozen.json** | Work    | 验证后生成的判决书，不可篡改的回溯锚点       | `.openxenon/work/<type>/<type-id>/`     |
+| **Hall**        | UI      | 研讨厅，工程师查看任务状态的 Web 控制台      | Web UI                                  |
 
 ### 3.2 Part 四字段结构
 
-| 字段 | 可见性 | 含义 |
-|------|--------|------|
-| `target` | 对 AI 可见 | 约束执行的作用域 |
-| `action` | 对 AI 可见 | 下发给 AI 的执行指令 |
-| `spec` | 对 AI 不可见 | 工程师对意图的结构化约束 |
+| 字段     | 可见性       | 含义                         |
+| -------- | ------------ | ---------------------------- |
+| `target` | 对 AI 可见   | 约束执行的作用域             |
+| `action` | 对 AI 可见   | 下发给 AI 的执行指令         |
+| `spec`   | 对 AI 不可见 | 工程师对意图的结构化约束     |
 | `probes` | 对 AI 不可见 | 校验该工序是否完成的探针集合 |
 
 ### 3.3 关键约束
 
 - **资产层级关系**：`Probe → Part → Blueprint`
 - **Type 锁定铁律**：Work 的运行时类型与 Blueprint 的 type 属性强绑定。Task 类型的 Work 只能加载 Task 类型的 Blueprint。
+- **边界与留痕原则**：OpenXenon 固化边界以指导 AI 工作，而非杜绝逃逸。Main Agent 可通过 CLI CRUD 操作 Work 空间的 Blueprint 实例（包括 Probe 参数）。系统通过 `frozen.json`、`work-trace.json` 等不可篡改的快照记录全量证据，交由工程师最终判决。
 
 ## 4. 交互流程
 
@@ -70,34 +71,34 @@ Forge (drafts/) ──[审查]──▶ Promote (arsenal/)
 
 ### 4.2 任务执行流程
 
-**交互链路：工程师 → AI 助手 → Core CLI → AI 助手 → 工程师**
+**交互链路：工程师 → AI 助手 (内部分化为 Main/Sub Agent)  → Core CLI → Sub Agent → 工程师**
 
 1. **任务下达**：工程师通过 AI 助手软件里的 Skill（如 `/oxn-task`）下达任务目标
-2. **实例化**：AI 助手根据任务目标，自动选择匹配的 Blueprint（受 Work Type 强约束），通过 CLI 创建 Work 实例
-3. **循环执行**：AI 助手通过结构化指令与 Core CLI 交互，形成闭环：
-   - AI 助手调用 Core CLI 请求下一指令（`work next`）
-   - Core 返回 `target` + `action`，**隐藏 spec/probes 验证标准**
-   - AI 助手执行代码操作，构建 Artifact
-   - AI 助手调用 Core CLI 提交验证（`work verify`）
-   - L1 Infra 探测 Artifact，L0 Kernel 执行 Probes 校验并判定成败
-   - **若验证通过，生成 `frozen.json` 作为不可篡改的判决书快照**
-4. **动态修正**：若执行漂移，AI 可通过 CLI CRUD 调整 Blueprint，或基于 `frozen.json` 定位错误节点继续修正
-5. **结果交付**：AI 助手执行完成后，交由工程师审查最终产出
+2. **实例化**：Main Agent 根据任务目标，自动选择匹配的 Blueprint（受 Work Type 强约束），通过 CLI 创建 Work 实例
+3. **循环执行与动态绑定**：Main Agent 通过结构化指令与 Core CLI 交互，形成闭环：
+   - Main Agent 调用 Core CLI 请求下一指令（`work next`），获取 `target` + `action`
+   - Main Agent 将执行指令下发给 Sub Agent，Sub Agent 实施代码操作构建 Artifact
+   - Main Agent 根据执行结果，通过 CLI CRUD 将具体产物路径动态绑定到 Work 空间内 Blueprint 的 Probe 参数中，完成从"抽象模板"到"具体实例"的映射
+   - 提交验证（`work verify`），L1 Infra 探测，L0 Kernel 判决
+   - **若验证通过，生成 `frozen.json` 等快照证据链**
+4. **动态修正**：若执行漂移，Main Agent 可通过 CLI CRUD 调整 Blueprint，或基于 `frozen.json` 定位错误节点继续修正
+5. **结果交付**：Sub Agent 执行完成后，交由 Main Agent 整理，交工程师审查最终产出
 
 ```
-工程师 ──▶ AI 助手 ──▶ Core CLI ──▶ AI 助手 ──▶ 工程师
-  │          │           │          │           │
-  │          │           │          │           │
-  下达    实例化       返回指令     执行       验收
-  目标    Work        (隐藏标准)   构建       结果
-                                      │
-                              ┌───────┴───────┐
-                              │               │
-                        [L1 Infra探测]  [L0 Kernel判决]
-                              │               │
-                              └───────┬───────┘
-                                      │
-                              [验证通过] 生成 frozen.json
+工程师 ──▶ Main Agent ──▶ Core CLI ──▶ Sub Agent ──▶ Main Agent ──▶ 工程师
+  │          │              │            │            │            │
+  │          │              │            │            │            │
+  下达    实例化          返回指令      执行         汇总          验收
+  目标    Work           (target+     构建        证据链         结果
+                              action)   Artifact
+                                    │
+                            ┌───────┴───────┐
+                            │               │
+                      [L1 Infra探测]  [L0 Kernel判决]
+                            │               │
+                            └───────┬───────┘
+                                    │
+                      [验证通过] 生成证据链快照
 ```
 
 ## 5. 当前状态
@@ -168,7 +169,8 @@ pnpm install && pnpm build
 
 # 6. 执行 Work
 ./dist/oxn work next my-work      # 获取下一个 Part (target + action)
-# 模拟 AI 执行操作，构建 Artifact
+# Main Agent 将指令下发 Sub Agent，Sub Agent 在项目中构建 Artifact
+# Main Agent 通过 CLI CRUD 绑定产物路径到 Work 空间的 Blueprint
 ./dist/oxn work verify my-work    # 验证，生成 frozen.json 快照
 
 # 7. 查看研讨厅 (Hall)
@@ -218,15 +220,15 @@ OpenXenon 采用严格的 L0-L3 四层架构宪法，确保核心逻辑真空、
 
 ### 8.2 核心流转
 
-| 流转类型 | 路径 | 说明 |
-|---------|------|------|
-| **资产流** | `Drafts ─[Promote]─▶ Arsenal` | 资产生命周期管理 |
-| **执行流** | `Work ─[Type绑定]─▶ Blueprint → 获取 Part → 构建 Artifact` | 运行时任务执行 |
-| **验证流** | `Artifact ─[L1 Infra探测]─▶ L0 Kernel判决 ─[通过]─▶ frozen.json` | 验证快照生成 |
+| 流转类型   | 路径                                                                                                    | 说明             |
+| ---------- | ------------------------------------------------------------------------------------------------------- | ---------------- |
+| **资产流** | `Drafts ─[Promote]─▶ Arsenal`                                                                           | 资产生命周期管理 |
+| **执行流** | `Work ─[Type绑定]─▶ Blueprint → 获取 Part → 构建 Artifact`                                              | 运行时任务执行   |
+| **验证流** | `Main Agent CRUD 绑定实例 ─[SubAgent执行]─▶ Probe ─[L1 Infra探测]─▶ L0 Kernel判决 ─▶ L2 生成证据链快照` | 验证与留痕       |
 
 ### 8.3 层级职责说明
 
-- **L0 Kernel**：纯逻辑推演，零 IO。基于 Schema 校验事实，生成 `frozen.json` 快照
+- **L0 Kernel**：纯逻辑推演，零 IO。基于 Schema 校验事实，**输出 Verdict 纯数据**，不生成任何文件
 - **L1 Foundation**：
   - *OXN DSL*：提供语法解析与 CLI CRUD，确保 `.oxn` 文件合法性
   - *Infra*：收口文件系统与进程 IO，负责物理 Artifact 的观测
