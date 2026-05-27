@@ -1,107 +1,131 @@
 # /oxn-work — 发起 OpenXenon Work
 
-## 行为约束
+## 目标
+依据 Target State 拆解并执行 Work，逐步完成直到所有 Part 通过验证。
 
-当你收到 `/oxn-work <需求>` 指令时，必须严格按以下步骤执行，禁止自由发挥。
+## 前置条件
+- 必须在 OXN 项目根目录下执行
+- 必须已经完成了代码修改和本地验证
 
-## 步骤 1：初始化项目围栏（如需要）
+## 执行步骤
 
-在终端执行以下命令确保项目围栏存在：
+### 步骤 1: 初始化项目围栏
+执行命令: `oxn init --json`
+- **判断逻辑:**
+  - 如果返回 `status: "success"`: 进入步骤 2
+  - 其他或命令报错: 重试 (1/3)
+  - 重试 3 次仍失败: 进入【 熔断退出流程】
 
-```bash
-oxn init
-```
+### 步骤 2: 列出可用资产
+执行命令: `oxn arsenal list --json`
+- **判断逻辑:**
+  - 如果返回包含 `assets` 数组: 进入步骤 3
+  - 其他或命令报错: 重试 (1/3)
+  - 重试 3 次仍失败: 进入【 熔断退出流程】
 
-## 步骤 2：列出可用资产
+### 步骤 3: 创建 Work
+执行命令: `oxn work new "{{WORK_ID (kebab-case)}}" --name "{{WORK_NAME}}" --type "{{WORK_TYPE}}" --blueprint "{{BLUEPRINT_NAME}}" --json`
+- **判断逻辑:**
+  - 如果返回 `status: "created"`: 进入步骤 4
+  - 如果返回 `error_code: "ALREADY_EXISTS"`: 提示 Work 已存在
+  - 其他或命令报错: 重试 (1/3)
+  - 重试 3 次仍失败: 进入【 熔断退出流程】
 
-使用 CLI 命令列出可用的 Part/Probe 资产：
-
-```bash
-oxn arsenal list
-```
-
-该命令返回当前项目可用的 Arsenal 资产列表。
-
-## 步骤 3：创建 Work
-
-使用 CLI 命令创建新 Work：
-
-```bash
-oxn work new <work-id> --name <工作显示名称> --type <类型> --blueprint <blueprint-name>
-```
-
-- `<work-id>` 必须是 kebab-case（如 my-work-001）
-- `--type` 指定 Work 类型（如 `task`、`plan`、`flow`）
-- `--blueprint` 指定要引用的 Blueprint 名称（如 `new-work-flow`）
-
-CLI 会自动生成 `work.oxn` 文件到 `.openxenon/work/<type>/` 目录。
-
-## 步骤 4：拆解 Work
-
+### 步骤 4: 拆解 Work
 基于用户需求和可用资产列表，按照 Target State 理念拆解 Work：
-
 1. 确定最终目标状态（Target State）
 2. 逆向推导所需的中间 Part slot
 3. 为每个 Part 选择合适的 Probe
+- **判断逻辑:**
+  - 如果拆解成功: 进入步骤 5
+  - 如果无法拆解: 进入【 熔断退出流程】
 
-## 步骤 5：编辑 work.oxn（可选）
-
-如果需要填充 Blueprint 中的 slot，编辑 `.openxenon/work/<type>/<work-id>/work.oxn`：
-
+### 步骤 5: 编辑 work.oxn（如需要）
+如果需要填充 Blueprint 中的 slot，编辑 `.openxenon/work/{{WORK_TYPE}}/{{WORK_ID}}/work.oxn`：
 ```oxn
-work "my-work" type "task" ref "@prj/blueprints/new-work-flow" {
+work "{{WORK_NAME}}" type "{{WORK_TYPE}}" ref "@prj/blueprints/{{BLUEPRINT_NAME}}" {
   part slot "develop" { }
 }
 ```
+- **判断逻辑:**
+  - 如果文件编辑成功: 进入步骤 5.1
+  - 如果无法编辑: 进入【 熔断退出流程】
 
-## 步骤 5.1：创建工作描述文档
-
-在提交前，先创建工作描述文档 `.openxenon/work/<type>/<work-id>/work.md`：
-
+### 步骤 5.1: 创建工作描述文档
+在提交前，先创建工作描述文档 `.openxenon/work/{{WORK_TYPE}}/{{WORK_ID}}/work.md`：
 ```markdown
-# <工作名称>
+# {{WORK_NAME}}
 
 ## 目标
-<工程师期望达成的最终状态>
+[工程师期望达成的最终状态]
 
 ## 背景
-<为什么需要这个工作，有什么约束条件>
+[为什么需要这个工作，有什么约束条件]
 
 ## 执行计划
-<拆解的 Part slot 列表和各自目标>
+[拆解的 Part slot 列表和各自目标]
 
 ## 验收标准
-<工程师如何判断工作成功完成>
+[工程师如何判断工作成功完成]
 ```
+- **判断逻辑:**
+  - 如果文件创建成功: 进入步骤 6
+  - 如果无法创建: 进入【 熔断退出流程】
 
-## 步骤 6：恢复 Work
+### 步骤 6: 恢复 Work
+执行命令: `oxn work resume "{{WORK_ID}}" --json`
+- **判断逻辑:**
+  - 如果返回包含 `part_id`: 进入步骤 7
+  - 如果返回 `message: "No more parts"`: 告知用户 Work 已完成
+  - 其他或命令报错: 重试 (1/3)
+  - 重试 3 次仍失败: 进入【 熔断退出流程】
 
-使用 `work resume` 获取下一个待处理的 Part：
-
-```bash
-oxn work resume <work-id>
-```
-
-## 步骤 7：执行并验证
-
+### 步骤 7: 执行并验证
 1. AI 执行 Part 定义的工作
 2. 执行完成后，标记 Work 完成：
+执行命令: `oxn work complete "{{WORK_ID}}" --json`
+- **判断逻辑:**
+  - 如果返回 `status: "success"`: 进入步骤 8
+  - 其他或命令报错: 重试 (1/3)
+  - 重试 3 次仍失败: 进入【 熔断退出流程】
 
-```bash
-oxn work complete <work-id>
-```
-
-## 步骤 8：循环直到完成
-
+### 步骤 8: 循环直到完成
 重复步骤 6-7，直到所有 Part 通过验证。
+- **判断逻辑:**
+  - 如果还有更多 Part: 返回步骤 6
+  - 如果所有 Part 完成: 告知用户 Work 完成，结束 Skill
+
+## 熔断退出流程
+如果你在任何步骤被要求"熔断退出":
+1. 立即停止执行任何 `oxn` 命令
+2. 写入错误日志: `.openxenon/error/skills/<date>-oxn-work-<step>.md`
+3. 严格按照以下格式输出报告:
+
+## 🚨 OXN 执行异常报告
+**当前执行的 Skill**: oxn-work
+**失败的步骤**: [步骤编号及描述]
+**执行的命令**: `[实际执行的完整命令]`
+**CLI 返回的错误 JSON**:
+```json
+[原样粘贴 CLI 的 --json 输出]
+```
+**AI 的初步分析**: [1-2 句话客观描述]
+**建议工程师操作**: [具体建议]
+
+4. 询问工程师:"是否需要我尝试其他操作，还是您将手动介入?"
+
+## 变量定义
+- WORK_ID: 必须 kebab-case，如 my-work-001
+- WORK_NAME: 人类可读名称，建议用中文
+- WORK_TYPE: Work 类型，如 task、plan、flow
+- BLUEPRINT_NAME: Blueprint 名称，如 new-work-flow
+- PART_ID: 从步骤 6 获取的 Part ID
 
 ## 参考
-
 需要 Blueprint 详细格式说明时，读取：
 - references/blueprint-format.md：格式说明 + 命令用法 + 完整示例
 
 ## 绝对禁止
-
 - 禁止跳过任何步骤
 - 禁止使用 HTTP/curl 调用，必须使用 CLI 命令
 - 禁止在未通过 Core 验证的情况下自行推进 Work

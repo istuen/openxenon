@@ -38,6 +38,11 @@ function ensureProjectBoundary(projectRoot: string): void {
   if (!existsSync(arsenalsPath)) {
     mkdirSync(arsenalsPath, { recursive: true })
   }
+
+  const errorPath = join(boundaryPath, 'error', 'skills')
+  if (!existsSync(errorPath)) {
+    mkdirSync(errorPath, { recursive: true })
+  }
 }
 
 function copyMetaToProject(projectRoot: string): void {
