@@ -50,38 +50,37 @@ export const SlotInvocationSchema: z.ZodType<{
 
 export type SlotInvocation = z.infer<typeof SlotInvocationSchema>
 
-export const PartInvocationSchema = z
-  .object({
-    id: z.string(),
-    name: z.string().optional(),
-    _version: z.number().int().positive().optional().default(1),
-    min_version: z.number().int().positive().optional(),
-    _depHash: z.string().optional(),
-    deps: z.array(z.string()).default([]),
-    ref: z.string().optional(),
-    slot: z.string().optional(),
-    condition: z.string().optional(),
-    params: z.record(z.string(), z.unknown()).optional(),
-    target: z
-      .object({
-        description: z.string(),
-        glob: z.string().optional(),
-      })
-      .optional(),
-    spec: z
-      .object({
-        description: z.string(),
-        constraints: z.array(z.string()).optional(),
-      })
-      .optional(),
-    action: z
-      .object({
-        instruction: z.string().optional(),
-        command: z.string().optional(),
-      })
-      .optional(),
-    probes: z.array(ProbeInvocationSchema).optional(),
-  })
+export const PartInvocationSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  _version: z.number().int().positive().optional().default(1),
+  min_version: z.number().int().positive().optional(),
+  _depHash: z.string().optional(),
+  deps: z.array(z.string()).default([]),
+  ref: z.string().optional(),
+  slot: z.string().optional(),
+  condition: z.string().optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
+  target: z
+    .object({
+      description: z.string(),
+      glob: z.string().optional(),
+    })
+    .optional(),
+  spec: z
+    .object({
+      description: z.string(),
+      constraints: z.array(z.string()).optional(),
+    })
+    .optional(),
+  action: z
+    .object({
+      instruction: z.string().optional(),
+      command: z.string().optional(),
+    })
+    .optional(),
+  probes: z.array(ProbeInvocationSchema).optional(),
+})
 
 export type Part = z.infer<typeof PartInvocationSchema>
 
