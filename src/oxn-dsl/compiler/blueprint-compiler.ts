@@ -2,6 +2,7 @@ import type { Blueprint } from '../../kernel/schemas/validators/blueprint.schema
 import { type DagNode, validateDagTopology } from '../../oxn-dsl/validators/blueprint-dag'
 import type { FrozenBlueprint } from '../../kernel/schemas/validators/frozen-schema'
 import { computeContentHash } from '../../kernel/schemas/validators/frozen-schema'
+import { hashPort } from '../../infra/hash'
 
 export interface CompileContext {
   taskId: string
@@ -202,7 +203,7 @@ function injectMeta(
     resolved_from: namespace,
     original_path: originalPath,
     frozen_at: frozenAt,
-    content_hash: computeContentHash(content),
+    content_hash: computeContentHash(content, hashPort),
   }
 
   const probes = ((part.probes as Array<Record<string, unknown>>) || []).map((probe, idx) => {

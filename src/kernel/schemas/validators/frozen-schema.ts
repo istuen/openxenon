@@ -19,12 +19,8 @@ export const XenonMetaSchema: z.ZodType<XenonMeta> = z.object({
   appended: z.boolean().optional(),
 })
 
-export function computeContentHash(content: string, hashPort?: HashPort): string {
-  if (hashPort) {
-    return hashPort.computeHash(content)
-  }
-  const { createHash } = require('crypto')
-  return createHash('sha256').update(content).digest('hex')
+export function computeContentHash(content: string, hashPort: HashPort): string {
+  return hashPort.computeHash(content)
 }
 
 export interface CreateXenonMetaOptions {
@@ -32,7 +28,7 @@ export interface CreateXenonMetaOptions {
   resolvedFrom: 'kernel' | 'global' | 'project'
   originalPath?: string
   content: string
-  hashPort?: HashPort
+  hashPort: HashPort
 }
 
 export function createXenonMeta(options: CreateXenonMetaOptions): XenonMeta {

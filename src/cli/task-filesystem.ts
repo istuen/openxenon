@@ -10,6 +10,7 @@ import { buildTraceEvent, type TraceEvent } from '../work/task-trace'
 import { evaluateProbe, type ProbeDefinition } from '../work/probe-evaluator'
 import { type DagNode, topologicalSort } from '../oxn-dsl/validators/blueprint-dag'
 import { computeContentHash, type FrozenBlueprint } from '../kernel/schemas/validators/frozen-schema'
+import { hashPort } from '../infra/hash'
 import type { OxnAssemblySlotBinding } from '../oxn-dsl/schemas/oxn-assembly.schema'
 import { arsenalLoadStandardByName } from '../arsenals/loader'
 import { unifiedTaskSubmit } from './oxn-dual-track'
@@ -217,11 +218,11 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
 
   if (existingFrozen) {
     const existingContent = readFileSync(frozenPath, 'utf-8')
-    const existingHash = computeContentHash(existingContent)
-    const newHash = computeContentHash(JSON.stringify(frozenFromTaskOxn, null, 2))
+    const existingHash = computeContentHash(existingContent, hashPort)
+    const newHash = computeContentHash(JSON.stringify(frozenFromTaskOxn, null, 2), hashPort)
 
     if (existingHash !== newHash) {
-      const taskOxnHash = computeContentHash(taskOxnContent)
+      const taskOxnHash = computeContentHash(taskOxnContent, hashPort)
       const existingMeta = JSON.parse(existingContent)
       const frozenMetaHash = existingMeta._xenon_meta?.content_hash
 

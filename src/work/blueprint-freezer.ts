@@ -1,6 +1,7 @@
-import type { Blueprint, Part, Probe } from '../../kernel/schemas/validators/blueprint.schema'
-import { computeContentHash, createXenonMeta, type XenonMeta } from '../../kernel/schemas/validators/frozen-schema'
-import type { PartPort } from '../../kernel/contracts/part-port'
+import type { Blueprint, Part, Probe } from '../kernel/schemas/validators/blueprint.schema'
+import { computeContentHash, createXenonMeta, type XenonMeta } from '../kernel/schemas/validators/frozen-schema'
+import type { PartPort } from '../kernel/contracts/part-port'
+import { hashPort } from '../infra/hash'
 
 export interface LineageReportEntry {
   partId: string
@@ -106,6 +107,7 @@ export class BlueprintFreezer {
           ref: part.ref || 'inline',
           resolvedFrom: part.ref ? 'project' : 'project',
           content: JSON.stringify(resolvedPart),
+          hashPort,
         }),
         ...resolvedPart,
         probes: injectedProbes,
@@ -140,7 +142,7 @@ export function injectPartMeta(
       resolved_from: _resolution.namespace as 'kernel' | 'global' | 'project',
       original_path: _resolution.originalPath,
       frozen_at: frozenAt,
-      content_hash: computeContentHash(content),
+      content_hash: computeContentHash(content, hashPort),
       appended: false,
     },
     ...part,
@@ -162,7 +164,7 @@ export function injectProbeMeta(
       ref,
       resolved_from: resolvedFrom,
       frozen_at: frozenAt,
-      content_hash: computeContentHash(content),
+      content_hash: computeContentHash(content, hashPort),
       appended,
     },
   } as typeof probe & { _xenon_meta: XenonMeta }

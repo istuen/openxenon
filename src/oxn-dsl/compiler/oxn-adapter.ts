@@ -13,6 +13,7 @@
 import { type DagNode, validateDagTopology } from '../../oxn-dsl/validators/blueprint-dag'
 import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/validators/frozen-schema'
 import { createXenonMeta, validateFrozenBlueprint } from '../../kernel/schemas/validators/frozen-schema'
+import { hashPort } from '../../infra/hash'
 import type {
   OxnAssemblyIR,
   OxnAssemblyPart,
@@ -102,6 +103,7 @@ export function adaptConcretePart(
           ref: p.ref || `inline-probe-${idx}`,
           resolvedFrom: 'project',
           content: probeContent,
+          hashPort,
         }),
         type: probeType,
         params: probeParams,
@@ -129,6 +131,7 @@ export function adaptConcretePart(
             ref: p.ref || `resolved-probe-${idx}`,
             resolvedFrom: 'project',
             content: probeContent,
+            hashPort,
           }),
           type: probeType,
           params: probeParams,
@@ -143,6 +146,7 @@ export function adaptConcretePart(
       ref: part.ref || part.name,
       resolvedFrom: 'project',
       content: partContent,
+      hashPort,
     }),
     id: part.name,
     name: part.name,
@@ -283,6 +287,7 @@ export class OxnKernelAdapter {
                 ref: p.ref || `slot-probe-${idx}`,
                 resolvedFrom: 'project',
                 content: probeContent,
+                hashPort,
               }),
               type: probeType,
               params: probeParams,
@@ -296,6 +301,7 @@ export class OxnKernelAdapter {
           ref: slotBinding?.ref || slot.name,
           resolvedFrom: 'project',
           content: JSON.stringify({ id: slot.name, name: slot.name }),
+          hashPort,
         }),
         id: slot.name,
         name: slot.name,
