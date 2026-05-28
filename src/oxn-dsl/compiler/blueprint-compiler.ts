@@ -1,8 +1,10 @@
 import type { Blueprint } from '../../kernel/schemas/validators/blueprint.schema'
 import { type DagNode, validateDagTopology } from '../../oxn-dsl/validators/blueprint-dag'
-import type { FrozenBlueprint } from '../../kernel/schemas/validators/frozen-schema'
-import { computeContentHash } from '../../kernel/schemas/validators/frozen-schema'
-import { hashPort } from '../../infra/hash'
+import type { CompiledBlueprint } from '../../kernel/schemas/validators/compiled-schema'
+import { computeContentHash } from '../../kernel/schemas/validators/compiled-schema'
+import type { HashPort } from '../../kernel/contracts/hash-port'
+import type { IOxnCompiler } from '../contracts/oxn-compiler-port'
+import { createOxnServices } from '../langium/oxn-services'
 
 export interface CompileContext {
   taskId: string
@@ -189,43 +191,12 @@ function renderTemplates(part: Record<string, unknown>, ctx: CompileContext): Re
   return result
 }
 
-function injectMeta(
-  part: Record<string, unknown>,
-  ref: string,
-  namespace: 'kernel' | 'global' | 'project',
-  originalPath?: string,
-): Record<string, unknown> {
-  const frozenAt = new Date().toISOString()
-  const content = JSON.stringify(part)
-
-  const meta = {
-    ref,
-    resolved_from: namespace,
-    original_path: originalPath,
-    frozen_at: frozenAt,
-    content_hash: computeContentHash(content, hashPort),
+export class OxnCompiler implements IOxnCompiler {
+  constructor(private readonly hashPort: HashPort) {
+    createOxnServices()
   }
 
-  const probes = ((part.probes as Array<Record<string, unknown>>) || []).map((probe, idx) => {
-    const probeRef = (probe.ref as string) || `inline-probe-${idx}`
-    return {
-      ...probe,
-      _xenon_meta: {
-        ...meta,
-        ref: probeRef,
-      },
-    }
-  })
-
-  return {
-    ...part,
-    _xenon_meta: meta,
-    probes,
-  }
-}
-
-export class BlueprintCompiler {
-  compile(raw: Blueprint, ctx: CompileContext): FrozenBlueprint {
+  compile(raw: Blueprint, ctx: CompileContext): CompiledBlueprint {
     const dagNodes: DagNode[] = (raw.parts || []).map((part) => ({
       id: part.id || (part as any).name,
       deps: part.deps || [],
@@ -326,7 +297,7 @@ export class BlueprintCompiler {
       resolvedPart = pruned[0]!
       const rendered = renderTemplates(resolvedPart, ctx)
 
-      const metaPart = injectMeta(
+      const metaPart = this.injectMetaWithHash(
         rendered,
         resolvedRef || 'inline',
         resolvedRef ? 'project' : 'project',
@@ -397,7 +368,7 @@ export class BlueprintCompiler {
     }
   }
 
-  compileFrozen(assembly: Record<string, unknown>, ctx: CompileContext): FrozenBlueprint {
+  compileFrozen(assembly: Record<string, unknown>, ctx: CompileContext): CompiledBlueprint {
     const slots = (assembly.slots as Record<string, unknown>) || {}
     const parts: Array<Record<string, unknown>> = []
 
@@ -420,7 +391,11 @@ export class BlueprintCompiler {
 
       const partOut = { ...pruned[0], params: resolvedParams }
       const rendered = renderTemplates(partOut, ctx)
-      const metaPart = injectMeta(rendered, (part.ref as string) || (part.slot as string) || 'inline', 'project')
+      const metaPart = this.injectMetaWithHash(
+        rendered,
+        (part.ref as string) || (part.slot as string) || 'inline',
+        'project',
+      )
       parts.push(metaPart)
     }
 
@@ -440,19 +415,58 @@ export class BlueprintCompiler {
       parts: parts as any,
     }
   }
+
+  private injectMetaWithHash(
+    part: Record<string, unknown>,
+    ref: string,
+    namespace: 'kernel' | 'global' | 'project',
+    originalPath?: string,
+  ): Record<string, unknown> {
+    const frozenAt = new Date().toISOString()
+    const content = JSON.stringify(part)
+
+    const meta = {
+      ref,
+      resolved_from: namespace,
+      original_path: originalPath,
+      frozen_at: frozenAt,
+      content_hash: computeContentHash(content, this.hashPort),
+    }
+
+    const probes = ((part.probes as Array<Record<string, unknown>>) || []).map((probe, idx) => {
+      const probeRef = (probe.ref as string) || `inline-probe-${idx}`
+      return {
+        ...probe,
+        _xenon_meta: {
+          ...meta,
+          ref: probeRef,
+        },
+      }
+    })
+
+    return {
+      ...part,
+      _xenon_meta: meta,
+      probes,
+    }
+  }
 }
 
-export function compileBlueprint(raw: Blueprint, ctx: CompileContext): FrozenBlueprint {
-  const compiler = new BlueprintCompiler()
+export function createOxnCompiler(hashPort: HashPort): IOxnCompiler {
+  return new OxnCompiler(hashPort)
+}
+
+export function compileBlueprint(raw: Blueprint, ctx: CompileContext): CompiledBlueprint {
+  const compiler = new OxnCompiler(null as any)
   return compiler.compile(raw, ctx)
 }
 
 export function compileAssembly(raw: Blueprint, ctx: CompileContext): Record<string, unknown> {
-  const compiler = new BlueprintCompiler()
+  const compiler = new OxnCompiler(null as any)
   return compiler.compileAssembly(raw, ctx)
 }
 
-export function compileFrozen(assembly: Record<string, unknown>, ctx: CompileContext): FrozenBlueprint {
-  const compiler = new BlueprintCompiler()
+export function compileFrozen(assembly: Record<string, unknown>, ctx: CompileContext): CompiledBlueprint {
+  const compiler = new OxnCompiler(null as any)
   return compiler.compileFrozen(assembly, ctx)
 }

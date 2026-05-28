@@ -102,6 +102,6 @@ export class OxnAssetLoader {
 }
 
 /** 便捷工厂 */
-export function createAssetLoader(projectRoot?: string): OxnAssetLoader {
+export function createOxnAssetLoader(projectRoot?: string): OxnAssetLoader {
   return new OxnAssetLoader(projectRoot)
 }
