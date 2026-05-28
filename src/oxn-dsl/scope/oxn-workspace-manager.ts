@@ -363,3 +363,7 @@ export function getWorkspaceManager(config?: Partial<OxnWorkspaceConfig>): OxnWo
 export function createOxnWorkspaceManager(config: Partial<OxnWorkspaceConfig> = {}): IOxnWorkspaceManager {
   return new OxnWorkspaceManager(config)
 }
+
+export function createWorkspaceManager(config: Partial<OxnWorkspaceConfig> = {}): OxnWorkspaceManager {
+  return new OxnWorkspaceManager(config)
+}

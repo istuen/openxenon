@@ -456,6 +456,8 @@ export function createOxnCompiler(hashPort: HashPort): IOxnCompiler {
   return new OxnCompiler(hashPort)
 }
 
+export class BlueprintCompiler extends OxnCompiler {}
+
 export function compileBlueprint(raw: Blueprint, ctx: CompileContext): CompiledBlueprint {
   const compiler = new OxnCompiler(null as any)
   return compiler.compile(raw, ctx)

@@ -105,3 +105,7 @@ export class OxnAssetLoader {
 export function createOxnAssetLoader(projectRoot?: string): OxnAssetLoader {
   return new OxnAssetLoader(projectRoot)
 }
+
+export function createAssetLoader(projectRoot?: string): OxnAssetLoader {
+  return new OxnAssetLoader(projectRoot)
+}
