@@ -1,6 +1,6 @@
-import type { Blueprint, Part, Probe } from '../schemas/validators/blueprint.schema'
-import { computeContentHash, createXenonMeta, type XenonMeta } from '../schemas/validators/frozen-schema'
-import type { PartPort } from '../contracts/part-port'
+import type { Blueprint, Part, Probe } from '../../kernel/schemas/validators/blueprint.schema'
+import { computeContentHash, createXenonMeta, type XenonMeta } from '../../kernel/schemas/validators/frozen-schema'
+import type { PartPort } from '../../kernel/contracts/part-port'
 
 export interface LineageReportEntry {
   partId: string

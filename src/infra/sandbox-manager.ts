@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
 import type { OxnAssemblyIR, OxnAssemblyPart } from '../oxn-dsl/schemas/oxn-assembly.schema'
-import type { DagNode } from '../kernel/schemas/validators/dag-validator'
+import type { DagNode } from '../kernel/processors/graph'
 
 const BOUNDARY_DIR = '.openxenon'
 

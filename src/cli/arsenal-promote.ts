@@ -11,8 +11,8 @@ import {
 } from '../arsenals/loader'
 import type { AssetType } from '../arsenals/paths'
 import { preloadCompileDependencies } from '../infra/loader'
-import { getProjectBoundaryPath } from '../kernel'
-import { compileAssembly } from '../kernel/processors/blueprint-compiler'
+import { getProjectBoundaryPath } from './project'
+import { compileAssembly } from '../oxn-dsl/compiler/blueprint-compiler'
 import { getFormatFromArgs, output, outputError } from './output'
 
 const TYPE_ALIASES: Record<string, AssetType> = {

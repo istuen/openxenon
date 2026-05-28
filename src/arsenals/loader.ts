@@ -16,7 +16,7 @@ import {
 
 import { promoteToCanonical } from './promoter'
 
-import { getProjectBoundaryPath } from '../kernel'
+import { getProjectBoundaryPath } from '../cli/project'
 
 const getProjectBoundary = (): string => getProjectBoundaryPath(process.cwd())
 

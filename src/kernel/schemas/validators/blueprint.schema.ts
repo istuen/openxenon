@@ -1,31 +1,15 @@
 import { z } from 'zod'
-import { isBareProbeRef, isValidProbeRef } from '../../processors/probes/namespace'
 import { ProbeTypeSchema } from './probe'
 
-export const ProbeInvocationSchema = z
-  .object({
-    type: ProbeTypeSchema,
-    ref: z.string().optional(),
-    params: z.record(z.string(), z.unknown()).optional(),
-    pattern: z.string().optional(),
-    patterns: z.array(z.string()).optional(),
-    command: z.string().optional(),
-    cwd: z.string().optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.ref !== undefined) {
-        if (isBareProbeRef(data.ref)) {
-          throw new Error(`Probe ref "${data.ref}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
-        }
-        if (!isValidProbeRef(data.ref)) {
-          throw new Error(`Probe ref "${data.ref}" 格式无效`)
-        }
-      }
-      return true
-    },
-    { message: 'Probe ref 必须带有命名空间前缀' },
-  )
+export const ProbeInvocationSchema = z.object({
+  type: ProbeTypeSchema,
+  ref: z.string().optional(),
+  params: z.record(z.string(), z.unknown()).optional(),
+  pattern: z.string().optional(),
+  patterns: z.array(z.string()).optional(),
+  command: z.string().optional(),
+  cwd: z.string().optional(),
+})
 
 export type Probe = z.infer<typeof ProbeInvocationSchema>
 
@@ -98,21 +82,6 @@ export const PartInvocationSchema = z
       .optional(),
     probes: z.array(ProbeInvocationSchema).optional(),
   })
-  .refine(
-    (data) => {
-      if (data.condition !== undefined) {
-        const hasRuntimeVar = /\?\s*['"]/.test(data.condition) || /\?\s*"/.test(data.condition)
-        if (hasRuntimeVar) {
-          throw new Error('condition 不允许包含三元表达式等运行时逻辑')
-        }
-      }
-      if (data.ref !== undefined && data.slot !== undefined) {
-        throw new Error('Part 不能同时包含 ref 和 slot')
-      }
-      return true
-    },
-    { message: 'ref 和 slot 互斥' },
-  )
 
 export type Part = z.infer<typeof PartInvocationSchema>
 
@@ -153,11 +122,6 @@ export function safeParseBlueprint(
     return { success: true, data: result.data }
   }
   return { success: false, error: result.error }
-}
-
-export function hasValidProbeRefs(part: Part): boolean {
-  const allProbes = [...(part.probes || [])]
-  return allProbes.every((p) => !p.ref || isValidProbeRef(p.ref))
 }
 
 export function extractTemplateVariables(action: { instruction?: string; command?: string } | undefined): string[] {

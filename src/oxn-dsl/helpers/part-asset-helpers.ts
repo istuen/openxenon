@@ -1,4 +1,4 @@
-import { parseProbeNamespace } from './probes/namespace'
+import { parseProbeNamespace } from '../validators/probe-namespace'
 
 export function getNamespaceFromRef(ref: string): 'oxn' | 'scope' | 'project' | null {
   const parsed = parseProbeNamespace(ref)

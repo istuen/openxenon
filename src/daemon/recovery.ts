@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '../infra/filesystem'
-import { getProjectBoundaryPath } from '../kernel'
+import { getProjectBoundaryPath } from '../cli/project'
 import { daemonLogger } from './logger'
 
 export interface RecoveryPoint {

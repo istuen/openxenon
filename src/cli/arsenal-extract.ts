@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import * as yaml from 'yaml'
-import { getProjectBoundaryPath } from '../kernel'
+import { getProjectBoundaryPath } from './project'
 import { TASKS_DIR } from '../kernel/constants'
 import { getFormatFromArgs, output, outputError } from './output'
 

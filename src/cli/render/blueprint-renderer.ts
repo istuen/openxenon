@@ -1,6 +1,6 @@
 import { parse as parseYaml } from 'yaml'
 import type { Blueprint, Part } from '../../kernel/schemas/validators/blueprint.schema'
-import { type DagNode, topologicalSort } from '../../kernel/schemas/validators/dag-validator'
+import { type DagNode, topologicalSort } from '../../oxn-dsl/validators/blueprint-dag'
 
 export interface BlueprintRendererOptions {
   blueprintName: string

@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 import { GLOBAL_BOUNDARY } from '../infra/paths'
-import { getProjectBoundaryPath } from '../kernel'
+import { getProjectBoundaryPath } from './project'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

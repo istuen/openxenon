@@ -1,5 +1,5 @@
-import type { SupportedLocale } from '../kernel/processors/project-config'
-import { DEFAULT_LOCALE } from '../kernel/processors/project-config'
+import type { SupportedLocale } from '../cli/project-config'
+import { DEFAULT_LOCALE } from '../cli/project-config'
 import zhCnOxnCli from './locales/zh-CN/oxn-cli/instruction.md' with { type: 'text' }
 import zhCnExplore from './locales/zh-CN/oxn-explore/instruction.md' with { type: 'text' }
 import zhCnForge from './locales/zh-CN/oxn-forge/instruction.md' with { type: 'text' }

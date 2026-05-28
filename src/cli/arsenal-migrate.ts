@@ -3,7 +3,7 @@ import { cpSync, existsSync, readdirSync, unlinkSync } from 'fs'
 import { basename, dirname, join } from 'path'
 import type { AssetState, AssetType } from '../arsenals/paths'
 import { GLOBAL_ARSENAL_ROOT } from '../arsenals/paths'
-import { getProjectBoundaryPath } from '../kernel'
+import { getProjectBoundaryPath } from './project'
 
 interface MigrationResult {
   name: string

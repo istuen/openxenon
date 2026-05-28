@@ -1,16 +1,5 @@
 import { z } from 'zod'
-import { isBareProbeRef, isValidProbeRef } from '../../processors/probes/namespace'
 import { ProbeTypeSchema } from './probe'
-
-export const PartRefSchema = z.string().refine(
-  (val) => {
-    if (isBareProbeRef(val)) {
-      throw new Error(`Part ref "${val}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
-    }
-    return isValidProbeRef(val)
-  },
-  { message: 'Part ref 必须带有命名空间前缀 (oxn/、@scope/、./)' },
-)
 
 export const SemanticsSchema = z.object({
   intent: z.string(),
@@ -72,7 +61,6 @@ export const PartDefinitionSchema = z.object({
 
 export type PartDefinition = z.infer<typeof PartDefinitionSchema>
 export type PartAsset = PartDefinition
-export type PartRef = z.infer<typeof PartRefSchema>
 
 export function validatePartAsset(data: unknown): PartDefinition {
   return PartDefinitionSchema.parse(data)

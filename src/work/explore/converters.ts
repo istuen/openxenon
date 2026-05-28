@@ -6,7 +6,7 @@ import type {
   TraceSummary,
   ExplorationRule,
   ExplorationAsset,
-} from '../../schemas/explore.types'
+} from '../../kernel/schemas/explore.types'
 
 interface RawProjectDir {
   path: string

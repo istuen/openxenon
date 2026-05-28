@@ -1,7 +1,7 @@
 import { directoryExists, ensureDirectory } from '../../../infra/filesystem'
 import { getProbeHandler, type ProbeResult as InfraProbeResult } from '../../../infra/probes'
-import { getTaskDirectory } from '../../../kernel/processors/task-dir'
-import { evaluateProbe, type ProbeDefinition } from '../../../kernel/processors/probes/evaluator'
+import { getTaskDirectory } from '../../../work/task-directory'
+import { evaluateProbe, type ProbeDefinition } from '../../../work/probe-evaluator'
 import {
   createProbeResult,
   readTaskTrace,

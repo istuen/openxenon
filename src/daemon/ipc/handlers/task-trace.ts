@@ -1,4 +1,4 @@
-import { getTaskDirectory } from '../../../kernel/processors/task-dir'
+import { getTaskDirectory } from '../../../work/task-directory'
 import { readTaskTrace } from '../../trace/writer'
 import { notFound } from '../errors'
 import { registerRoute } from '../router'

@@ -16,10 +16,10 @@ import { parse as parseYaml } from 'yaml'
 import { ensureDirectory } from '../infra/filesystem'
 import { preloadCompileDependencies } from '../infra/loader'
 import { BUILTIN_PARTS, BUILTIN_PROBES } from '../arsenals/builtin'
-import { compileBlueprint, compileFrozen } from '../kernel/processors/blueprint-compiler'
+import { compileBlueprint, compileFrozen } from '../oxn-dsl/compiler/blueprint-compiler'
 import { ASSEMBLY_JSON, BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON } from '../kernel/constants'
 import type { Blueprint } from '../kernel/schemas/validators/blueprint.schema'
-import { type DagNode, validateDagTopology } from '../kernel/schemas/validators/dag-validator'
+import { type DagNode, validateDagTopology } from '../oxn-dsl/validators/blueprint-dag'
 import type { FrozenBlueprint } from '../kernel/schemas/validators/frozen-schema'
 import {
   type OxnAssemblyIR,

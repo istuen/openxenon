@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs'
-import { getProjectConfigPath } from '../kernel/processors/project'
-import type { ProjectConfig } from '../kernel/processors/project-config'
+import { getProjectConfigPath } from './project'
+import type { ProjectConfig } from './project-config'
 
 export function readProjectConfig(projectRoot: string): ProjectConfig | null {
   const configPath = getProjectConfigPath(projectRoot)

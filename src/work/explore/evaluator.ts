@@ -11,7 +11,7 @@ import type {
   ExplorationRule,
   Finding,
   ProjectDir,
-} from '../../schemas/explore.types'
+} from '../../kernel/schemas/explore.types'
 
 /**
  * 通用探索评估器

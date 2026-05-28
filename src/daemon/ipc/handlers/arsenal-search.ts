@@ -1,4 +1,4 @@
-import { getProjectBoundaryPath } from '../../../kernel'
+import { getProjectBoundaryPath } from '../../../cli/project'
 import { globalArsenalRegistry } from '../../registry'
 import { registerRoute } from '../router'
 

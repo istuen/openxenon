@@ -1,5 +1,5 @@
 import { join } from 'path'
-import { BOUNDARY_DIR } from '../constants'
+import { BOUNDARY_DIR } from '../kernel/constants'
 
 export interface Project {
   id: string

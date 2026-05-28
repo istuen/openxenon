@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
 import { collectRawContext, loadExplorationAssets, saveReport } from '../infra/explore/collector'
-import { toExplorationContext } from '../kernel/processors/explore/converters'
-import { evaluateExploration } from '../kernel/processors/explore/evaluator'
-import { renderMarkdown } from '../kernel/processors/explore/reporter'
+import { toExplorationContext } from '../work/explore/converters'
+import { evaluateExploration } from '../work/explore/evaluator'
+import { renderMarkdown } from '../work/explore/reporter'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

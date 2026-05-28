@@ -1,5 +1,5 @@
 import { existsSync } from '../../../infra/filesystem'
-import { getTaskDirectory } from '../../../kernel/processors/task-dir'
+import { getTaskDirectory } from '../../../work/task-directory'
 import { processManager } from '../../process-manager'
 import { radarClock } from '../../radar/clock'
 import { readTaskTrace, writeTaskStatus } from '../../trace/writer'

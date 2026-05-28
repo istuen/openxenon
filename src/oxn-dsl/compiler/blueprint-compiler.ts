@@ -1,5 +1,5 @@
 import type { Blueprint } from '../../kernel/schemas/validators/blueprint.schema'
-import { type DagNode, validateDagTopology } from '../../kernel/schemas/validators/dag-validator'
+import { type DagNode, validateDagTopology } from '../../oxn-dsl/validators/blueprint-dag'
 import type { FrozenBlueprint } from '../../kernel/schemas/validators/frozen-schema'
 import { computeContentHash } from '../../kernel/schemas/validators/frozen-schema'
 
