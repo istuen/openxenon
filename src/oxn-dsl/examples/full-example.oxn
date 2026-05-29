@@ -1,50 +1,76 @@
-probe "fs-exists" {
+probe "fs-exists" align "observe" ref "@oxn/probes/fs-exists" {
   description = "验证文件是否存在"
   prop "path" { type = string; required = true }
   prop "recursive" { type = boolean; default = false }
   output { exists = boolean }
 }
 
-part "jest-runner" {
+probe "shell-exec" align "execute" ref "@oxn/probes/shell-exec" {
+  description = "执行 Shell 命令"
+  prop "command" { type = string; required = true }
+  prop "timeout" { type = number; default = 30000 }
+  output { stdout = string; stderr = string; exitCode = number }
+}
+
+part "jest-runner" align "test" {
   description = "Jest 测试执行器"
   prop "target_env" { type = string; default = "dev" }
   prop "coverage_threshold" { type = number; default = 80 }
-  probe run_tests ref "@oxn/probes/shell-exec" {
-    params = {
-      command = "npm test -- --coverageThreshold=${prop.coverage_threshold}",
-      timeout = 60000
-    }
+
+  observe = ["execute", "coverage"]
+
+  probe run_tests align "execute" ref "@oxn/probes/shell-exec" {
+    params = { command = "npm test" }
   }
+
   execution = [run_tests]
 }
 
-blueprint "feature-pipeline" {
+blueprint "feature-pipeline" task {
+  description = "功能流水线 Blueprint"
+
   version = 1
   prop "env" { type = enum("dev", "staging", "prod"); default = "dev" }
   prop "coverage" { type = number; default = 80 }
 
+  slot "build" {
+    deps = []
+    observe = ["compile", "artifacts"]
+  }
+
   slot "test" {
-    run = "slot.test.run"
+    deps = ["build"]
+    observe = ["execute", "coverage", "result"]
   }
 
-  stage "unit_test" {
-    run = "slot.test.run"
+  slot "deploy" {
+    deps = ["test"]
+    observe = ["publish", "result"]
   }
 
-  expectation "must_use_zod" {
+  expectation "must-use-zod" {
     probe = "@oxn/probes/ts-uses-import"
     params = { file_pattern = "src/api/**/*.ts", module_name = "zod" }
     err_msg = "API 层代码违反规范"
   }
 
   rule "prod_requires_ha" {
-    condition = prop.env != "prod" || prop.coverage == 95
+    condition = prop.env != "prod"
     err_msg = "生产环境必须强制开启高可用"
   }
 }
 
-task "validate-feature-auth" use "@prj/blueprints/feature-pipeline" {
-  part slot "test" ref "@prj/parts/jest-runner" {
+work "validate-feature-auth" ref "@prj/blueprints/feature-pipeline" {
+  part "build" align "build" ref "@prj/parts/build-step" {
+    prop target = "dist"
+  }
+
+  part "test" align "test" ref "@prj/parts/jest-runner" {
     prop target_env = "prod"
+    prop coverage_threshold = 90
+
+    probe "coverage" align "coverage" ref "@prj/probes/coverage-check" {
+      params = { threshold = 80 }
+    }
   }
 }

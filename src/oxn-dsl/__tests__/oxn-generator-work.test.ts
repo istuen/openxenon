@@ -127,9 +127,11 @@ describe('convertWorkDeclaration', () => {
           $type: 'SlotBinding',
           $containerProperty: '',
           $containerIndex: 0,
-          slot: 'tester',
+          align: 'tester',
+          name: 'tester',
           ref: '@glo/parts/jest-runner',
           props: [{ $type: 'SlotPropBinding', $containerProperty: '', $containerIndex: 0, name: 'env', value: 'prod' }],
+          probeBindings: [],
         },
       ],
     } as WorkDeclaration

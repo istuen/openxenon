@@ -10,7 +10,7 @@
     },
     {
       "name": "keyword.control.oxn",
-      "match": "\\b(any|blueprint|boolean|condition|default|deps|description|enum|err_msg|execution|expectation|explore|false|list|map|null|number|output|param|params|part|plan|probe|prop|ref|required|rule|slot|slots|string|task|true|type|version|work)\\b"
+      "match": "\\b(align|any|blueprint|boolean|condition|default|deps|description|enum|err_msg|execution|expectation|false|list|map|null|number|observe|output|param|params|part|probe|prop|ref|required|rule|slot|string|task|true|type|version|work)\\b"
     },
     {
       "name": "string.quoted.double.oxn",

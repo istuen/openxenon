@@ -49,6 +49,7 @@ export const OxnAssemblyPartProbeSchema = z.object({
   name: z.string().min(1),
   ref: z.string().optional(),
   params: z.record(z.string(), z.unknown()).optional(),
+  align: z.string().optional(),
 })
 export type OxnAssemblyPartProbe = z.infer<typeof OxnAssemblyPartProbeSchema>
 
@@ -71,6 +72,8 @@ export type OxnAssemblyPart = z.infer<typeof OxnAssemblyPartSchema>
 export const OxnAssemblySlotSchema = z.object({
   name: z.string().min(1),
   deps: z.array(z.string()).default([]),
+  intent: z.string().optional(),
+  observe: z.array(z.string()).default([]),
   isMulti: z.boolean().default(false),
 })
 export type OxnAssemblySlot = z.infer<typeof OxnAssemblySlotSchema>
@@ -80,6 +83,8 @@ export const OxnAssemblySlotBindingSchema = z.object({
   slot: z.string().min(1),
   ref: z.string().optional(),
   props: z.record(z.string(), z.unknown()).default({}),
+  align: z.string().optional(),
+  probeBindings: z.array(OxnAssemblyPartProbeSchema).default([]),
 })
 export type OxnAssemblySlotBinding = z.infer<typeof OxnAssemblySlotBindingSchema>
 

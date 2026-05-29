@@ -75,7 +75,7 @@ TemplateString:
 
 // ==================== Probe ====================
 ProbeDeclaration:
-    'probe' name=STRING '{'
+    'probe' name=STRING 'align' align=STRING 'ref' ref=STRING '{'
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (output+=ProbeOutputDeclaration)?
@@ -113,17 +113,21 @@ OutputField:
  * }
  */
 PartDeclaration:
-    'part' name=STRING '{'
+    'part' name=STRING ('align' align=STRING)? ('ref' ref=STRING)? '{'
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (probes+=PartProbeDeclaration)*
+        (observe+=ObserveDeclaration)*
         ('execution' '=' '[' refs+=ExecutionRef (',' refs+=ExecutionRef)* ','? ']')?
     '}';
 
 PartProbeDeclaration:
-    'probe' name=ID ('ref' ref=STRING)? '{'
+    'probe' name=ID 'align' align=STRING 'ref' ref=STRING '{'
         ('params' '=' params=ParamsBlock)?
     '}';
+
+ObserveDeclaration:
+    'observe' '=' '[' observes+=STRING (',' observes+=STRING)* ']';
 
 ExecutionRef:
     ref=[PartProbeDeclaration:ID];
@@ -135,42 +139,22 @@ ParamsBlock:
 ParamPair:
     key=ID '=' value=Expression;
 
-// ==================== Work Type (Built-in) ====================
-BuiltInWorkType returns string:
-    'task' | 'plan' | 'explore';
-
 // ==================== Blueprint ====================
 BlueprintDeclaration:
     'blueprint' name=STRING
-    (
-        type=BuiltInWorkType        // 内置关键字 shorthand
-      | 'type' type=STRING          // 自定义类型
-    )
     '{'
         ('version' '=' version=NUMBER)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*
-        (parts+=PartInBlueprint)*
         (partSlots+=PartSlotDeclaration)*
         (expectations+=ExpectationDeclaration)*
         (rules+=RuleDeclaration)*
     '}';
 
-PartInBlueprint:
-    'part' name=STRING 'ref' ref=STRING '{'
-        (propBindings+=PartPropBinding)*
-        ('deps' '=' '[' (deps+=STRING (',' deps+=STRING)* ','?)? ']')?
-    '}';
-
-PartPropBinding:
-    'prop' name=ID '=' value=Expression;
-
 PartSlotDeclaration:
-    {infer SlotSingle} 'part' 'slot' name=STRING '{'
+    'slot' name=STRING '{'
         ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
-    '}'
-  | {infer SlotMulti} 'part' 'slots' '[' ']' name=STRING '{'
-        ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
+        (observe+=ObserveDeclaration)?
     '}';
 
 ExpectationDeclaration:
@@ -188,16 +172,18 @@ RuleDeclaration:
 
 // ==================== Work ====================
 WorkDeclaration:
-    'work' name=STRING 'type' type=STRING 'ref' ref=STRING '{'
+    'work' name=STRING 'ref' ref=STRING '{'
         (slotBindings+=SlotBinding)*
     '}';
 
 SlotBinding:
-    'part' 'slot' slot=STRING ('ref' ref=STRING)? '{'
+    'part' name=STRING 'align' align=STRING ('ref' ref=STRING)? '{'
         (props+=SlotPropBinding)*
-    '}'
-  | 'part' name=STRING 'slot' slot=STRING ('ref' ref=STRING)? '{'
-        (props+=SlotPropBinding)*
+        (probeBindings+=ProbeBinding)*
+    '}';
+
+ProbeBinding:
+    'probe' name=STRING 'align' align=STRING 'ref' ref=STRING '{'
     '}';
 
 SlotPropBinding:

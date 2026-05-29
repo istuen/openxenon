@@ -1,12 +1,15 @@
-part "example-check" {
+part "example-check" align "develop" {
   description = "示例 Part，展示 Part 声明语法"
-  prop "command" { type = string; required = true; }
-  prop "timeout" { type = number; default = 30000; }
-  probe run_check ref "@oxn/probes/shell_exec" {
+  prop "command" { type = string; required = true }
+  prop "timeout" { type = number; default = 30000 }
+
+  observe = ["execute", "result"]
+
+  probe run_check align "execute" ref "@oxn/probes/shell-exec" {
     params = {
-      command = "${prop.command}",
-      timeout = "${prop.timeout}"
+      command = "${prop.command}"
     }
   }
+
   execution = [run_check]
 }

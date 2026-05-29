@@ -31,9 +31,9 @@ import type {
   OutputField,
   OXNDocument,
   PartDeclaration,
-  PartInBlueprint,
   PartProbeDeclaration,
   PartSlotDeclaration,
+  ProbeBinding,
   ProbeDeclaration,
   PropDeclaration,
   RuleDeclaration,
@@ -214,30 +214,26 @@ export function convertPartDeclaration(decl: PartDeclaration): OxnAssemblyPart {
 // Blueprint Part 转换
 // ========================
 
-function convertPartInBlueprint(decl: PartInBlueprint): OxnAssemblyPart {
-  const propBindings: Record<string, unknown> = {}
-  if (decl.propBindings) {
-    for (const b of decl.propBindings) {
-      propBindings[b.name] = expressionToValue(b.value)
-    }
-  }
-  return {
-    name: decl.name,
-    description: undefined,
-    props: [],
-    probes: [],
-    execution: [],
-    deps: decl.deps || [],
-    ref: decl.ref,
-  }
+function convertObserveDeclaration(obs: { observes: Array<string> }): string[] {
+  return obs.observes || []
 }
 
 function convertPartSlotDeclaration(decl: PartSlotDeclaration): OxnAssemblySlot {
-  const isMulti = decl.$type === 'SlotMulti'
   return {
     name: decl.name,
     deps: decl.deps || [],
-    isMulti,
+    intent: decl.name,
+    observe: decl.observe ? decl.observe.flatMap(convertObserveDeclaration) : [],
+    isMulti: false,
+  }
+}
+
+function convertProbeBinding(binding: ProbeBinding): OxnAssemblyPartProbe {
+  return {
+    name: binding.name,
+    ref: binding.ref,
+    params: {},
+    align: binding.align,
   }
 }
 
@@ -249,9 +245,11 @@ function convertSlotBinding(decl: SlotBinding): OxnAssemblySlotBinding {
     }
   }
   return {
-    slot: decl.slot,
+    slot: decl.align,
     ref: decl.ref,
     props,
+    align: decl.align,
+    probeBindings: decl.probeBindings ? decl.probeBindings.map(convertProbeBinding) : [],
   }
 }
 
@@ -286,12 +284,12 @@ export function convertBlueprintDeclaration(decl: BlueprintDeclaration): OxnAsse
   return {
     id: decl.name,
     name: decl.name,
-    type: decl.type || 'task',
+    type: 'task',
     _version: decl.version || 1,
     assembly_at: new Date().toISOString(),
     props: (decl.props || []).map(propDeclarationToAssemblyProp),
     slots: (decl.partSlots || []).map(convertPartSlotDeclaration),
-    blueprintParts: (decl.parts || []).map(convertPartInBlueprint),
+    blueprintParts: [],
     stages: [],
     expectations: (decl.expectations || []).map(convertExpectation),
     rules: (decl.rules || []).map(convertRule),

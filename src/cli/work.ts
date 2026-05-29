@@ -395,7 +395,7 @@ export default defineCommand({
             for (const entity of root.entities || []) {
               if (isWorkDeclaration(entity)) {
                 const work = entity as WorkDeclaration
-                workType = work.type
+                workType = 'task'
                 blueprintRef = work.ref
               }
             }

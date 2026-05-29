@@ -172,17 +172,6 @@ describe('convertBlueprintDeclaration', () => {
       version: 1,
       descriptions: [],
       props: [mProp('env', 'enum("dev", "staging", "prod")', false, 'dev'), mProp('coverage', 'number', false, 80)],
-      parts: [
-        {
-          $type: 'PartInBlueprint',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'jest-runner',
-          ref: '@prj/parts/jest-runner',
-          propBindings: [],
-          deps: [],
-        },
-      ],
       partSlots: [
         {
           $type: 'PartSlotDeclaration',
@@ -244,9 +233,8 @@ describe('convertBlueprintDeclaration', () => {
     expect(result.props).toHaveLength(2)
     expect(result.props[0].type).toContain('enum')
 
-    // Parts (A class)
-    expect(result.blueprintParts).toHaveLength(1)
-    expect(result.blueprintParts[0].name).toBe('jest-runner')
+    // BlueprintParts is empty in new DSL (no parts in Blueprint)
+    expect(result.blueprintParts).toHaveLength(0)
 
     // Slots (B class)
     expect(result.slots).toHaveLength(1)
@@ -281,9 +269,11 @@ describe('convertWorkDeclaration', () => {
           $type: 'SlotBinding',
           $containerProperty: '',
           $containerIndex: 0,
-          slot: 'tester',
+          align: 'tester',
+          name: 'tester',
           ref: '@glo/parts/jest-runner',
           props: [{ $type: 'SlotPropBinding', $containerProperty: '', $containerIndex: 0, name: 'env', value: 'prod' }],
+          probeBindings: [],
         },
       ],
     } as WorkDeclaration

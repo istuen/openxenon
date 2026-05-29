@@ -186,6 +186,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
         slot: slotName,
         ref: ref ?? '',
         props,
+        probeBindings: [],
       })
     }
   }

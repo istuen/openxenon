@@ -56,12 +56,12 @@ export function validateSlotReference(node: WorkDeclaration, accept: ValidationA
 
   for (const binding of node.slotBindings) {
     if (!isSlotBinding(binding)) continue
-    if (!binding.slot) continue
+    if (!binding.align) continue
 
-    if (!validSlotNames.has(binding.slot)) {
-      accept('error', `Slot "${binding.slot}" 在 Blueprint "${blueprint.name}" 中未定义`, {
+    if (!validSlotNames.has(binding.align)) {
+      accept('error', `Slot "${binding.align}" 在 Blueprint "${blueprint.name}" 中未定义`, {
         node: binding,
-        property: 'slot',
+        property: 'align',
       })
     }
   }

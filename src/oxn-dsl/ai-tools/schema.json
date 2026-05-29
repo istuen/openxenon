@@ -20,7 +20,11 @@
             },
             "type": {
               "type": "string",
-              "enum": ["HttpProbe", "ShellProbe", "FsProbe"]
+              "enum": [
+                "HttpProbe",
+                "ShellProbe",
+                "FsProbe"
+              ]
             },
             "ref": {
               "type": "string",
@@ -34,10 +38,17 @@
               }
             }
           },
-          "required": ["name", "type"]
+          "required": [
+            "name",
+            "type"
+          ]
         }
       },
-      "required": ["blueprint_name", "part_name", "probe_config"]
+      "required": [
+        "blueprint_name",
+        "part_name",
+        "probe_config"
+      ]
     }
   }
 }

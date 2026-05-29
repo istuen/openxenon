@@ -11,11 +11,11 @@
 import type { LangiumCoreServices } from 'langium'
 import type { ValidationChecks } from 'langium'
 import type { OXNDSLAstType } from '../generated/ast.js'
-import { validateWorkBlueprintType } from './work-type-validator.js'
 import { validateSlotReference } from './slot-reference-validator.js'
+import { validateIntentAlign } from './intent-align-validator.js'
 
 export const OxnValidationChecks = {
-  WorkDeclaration: [validateWorkBlueprintType, validateSlotReference],
+  WorkDeclaration: [validateSlotReference, validateIntentAlign],
 } as const satisfies ValidationChecks<OXNDSLAstType>
 
 export function registerOxnValidators(services: LangiumCoreServices): void {

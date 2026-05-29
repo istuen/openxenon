@@ -11,7 +11,7 @@ const PART_OXN = `
 part "my-runner" {
   description = "Test runner"
   prop "target_cmd" { type = string; default = "echo hello" }
-  probe run_echo ref "@oxn/probes/exec-exit-zero" {
+  probe run_echo align "execute" ref "@oxn/probes/exec-exit-zero" {
     params = {
       command = "\${prop.target_cmd}"
     }

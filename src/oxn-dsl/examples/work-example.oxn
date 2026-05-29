@@ -1,5 +1,16 @@
-work "example-task" type "task" ref "@oxn/blueprints/oxn-example" {
-  part slot "develop" ref "@oxn/parts/develop-feature" {
+work "example-work" ref "@oxn/blueprints/oxn-example" {
+  description = "示例 Work，展示 Intent-Align 绑定语法"
+
+  part "develop" align "develop" ref "@oxn/parts/develop-feature" {
     prop feature_desc = "示例开发任务"
+    prop timeout = 60000
+
+    probe "test" align "execute" ref "@oxn/probes/jest-runner" {
+      params = { env = "test" }
+    }
+  }
+
+  part "build" align "build" ref "@oxn/parts/build-step" {
+    prop target = "dist"
   }
 }

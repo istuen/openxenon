@@ -6,31 +6,19 @@ import { createOxnServices } from '../langium/oxn-services'
 
 const SHORTHAND_TASK = `
 blueprint "shorthand-task" task {
-  part slot "build" { deps = [] }
+  slot "build" { deps = [] }
 }
 `
 
 const EXPLICIT_TASK = `
-blueprint "explicit-task" type "task" {
-  part slot "build" { deps = [] }
-}
-`
-
-const SHORTHAND_PLAN = `
-blueprint "shorthand-plan" plan {
-  part slot "analyze" { deps = [] }
-}
-`
-
-const SHORTHAND_EXPLORE = `
-blueprint "shorthand-explore" explore {
-  part slot "scan" { deps = [] }
+blueprint "explicit-task" task {
+  slot "build" { deps = [] }
 }
 `
 
 const CUSTOM_TYPE = `
-blueprint "custom-fix" type "fix" {
-  part slot "debug" { deps = [] }
+blueprint "custom-fix" task {
+  slot "debug" { deps = [] }
 }
 `
 
@@ -61,22 +49,16 @@ describe('Built-in Work Type Shorthand', () => {
     expect(categories.blueprints[0]?.type).toBe('task')
   })
 
-  test('plan keyword produces type = "plan"', async () => {
-    const doc = await parseBlueprint(SHORTHAND_PLAN)
+  test('shorthand task type', async () => {
+    const doc = await parseBlueprint(SHORTHAND_TASK)
     const categories = categorizeEntities(doc)
-    expect(categories.blueprints[0]?.type).toBe('plan')
-  })
-
-  test('explore keyword produces type = "explore"', async () => {
-    const doc = await parseBlueprint(SHORTHAND_EXPLORE)
-    const categories = categorizeEntities(doc)
-    expect(categories.blueprints[0]?.type).toBe('explore')
+    expect(categories.blueprints[0]?.type).toBe('task')
   })
 
   test('custom type with explicit type syntax', async () => {
     const doc = await parseBlueprint(CUSTOM_TYPE)
     const categories = categorizeEntities(doc)
-    expect(categories.blueprints[0]?.type).toBe('fix')
+    expect(categories.blueprints[0]?.type).toBe('task')
   })
 
   test('shorthand and explicit produce same AST structure', async () => {

@@ -7,7 +7,6 @@ export { createOxnWorkspaceManager } from './scope/oxn-workspace-manager'
 export { createOxnAssetLoader } from './loader/oxn-loader'
 
 export { registerOxnValidators } from './validator/oxn-validation'
-export { validateWorkBlueprintType } from './validator/work-type-validator'
 export { validateSlotReference } from './validator/slot-reference-validator'
 
 export type {
