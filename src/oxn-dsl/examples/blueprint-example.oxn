@@ -1,23 +1,25 @@
-blueprint "oxn-example" task {
+blueprint "oxn-example" kind task {
   description = "示例 Blueprint，展示 Intent-Align DSL 语法"
 
   version = 1
-  prop "env" { type = enum("dev", "staging", "prod"); default = "dev" }
+  prop "env" { type = string; default = "dev" }
 
-  slot "develop" {
-    deps = ["build"]
-    observe = ["execute", "result"]
-  }
-
-  slot "build" {
+  slot "build" intent "Build" {
     deps = []
-    observe = ["compile"]
   }
 
-  slot "test" {
-    deps = ["build"]
-    observe = ["execute", "coverage"]
+  slot "develop" intent "Code" {
+    deps = [slot.build]
   }
+
+  slot "test" intent "Test" {
+    deps = [slot.build]
+    observe "ShellExec"
+  }
+
+  stage "build-stage" run slot.build { deps = [] }
+  stage "dev-stage" run slot.develop { deps = [stage.build-stage] }
+  stage "test-stage" run slot.test { deps = [stage.build-stage] }
 
   expectation "must-pass-tests" {
     probe = "@oxn/probes/shell_exec"

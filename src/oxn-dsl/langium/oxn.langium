@@ -75,7 +75,7 @@ TemplateString:
 
 // ==================== Probe ====================
 ProbeDeclaration:
-    'probe' name=STRING 'align' align=STRING 'ref' ref=STRING '{'
+    'probe' name=STRING ('align' align=STRING 'ref' ref=STRING)? '{'
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (output+=ProbeOutputDeclaration)?

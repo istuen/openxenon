@@ -917,36 +917,42 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
             }
           },
           {
-            "$type": "Keyword",
-            "value": "align"
-          },
-          {
-            "$type": "Assignment",
-            "feature": "align",
-            "operator": "=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@42"
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Keyword",
+                "value": "align"
               },
-              "arguments": []
-            }
-          },
-          {
-            "$type": "Keyword",
-            "value": "ref"
-          },
-          {
-            "$type": "Assignment",
-            "feature": "ref",
-            "operator": "=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@42"
+              {
+                "$type": "Assignment",
+                "feature": "align",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@42"
+                  },
+                  "arguments": []
+                }
               },
-              "arguments": []
-            }
+              {
+                "$type": "Keyword",
+                "value": "ref"
+              },
+              {
+                "$type": "Assignment",
+                "feature": "ref",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@42"
+                  },
+                  "arguments": []
+                }
+              }
+            ],
+            "cardinality": "?"
           },
           {
             "$type": "Keyword",

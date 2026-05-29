@@ -477,12 +477,12 @@ export function isProbeBinding(item: unknown): item is ProbeBinding {
 export interface ProbeDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'ProbeDeclaration';
-    align: string;
+    align?: string;
     descriptions: Array<Description>;
     name: string;
     output: Array<ProbeOutputDeclaration>;
     props: Array<PropDeclaration>;
-    ref: string;
+    ref?: string;
 }
 
 export const ProbeDeclaration = {

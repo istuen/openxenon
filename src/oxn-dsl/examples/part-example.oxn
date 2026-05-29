@@ -1,15 +1,23 @@
-part "example-check" align "develop" {
-  description = "示例 Part，展示 Part 声明语法"
-  prop "command" { type = string; required = true }
-  prop "timeout" { type = number; default = 30000 }
+part "develop" align "Code" {
+  description = "示例 Part，展示 Intent-Align 语法"
+  prop "feature_desc" { type = string; required = true }
 
-  observe = ["execute", "result"]
+  observe "ShellExec"
 
-  probe run_check align "execute" ref "@oxn/probes/shell-exec" {
-    params = {
-      command = "${prop.command}"
-    }
-  }
+  target = "src/"
+  action = "根据 ${prop.feature_desc} 实现功能代码"
 
   execution = [run_check]
+}
+
+part "build" align "Build" {
+  description = "构建 Part"
+  prop "target" { type = string; default = "dist" }
+}
+
+part "test-runner" align "Test" {
+  description = "测试 Part"
+  prop "timeout" { type = number; default = 30000 }
+
+  observe "ShellExec"
 }
