@@ -2489,7 +2489,7 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
             "terminal": {
               "$type": "RuleCall",
               "rule": {
-                "$ref": "#/rules@41"
+                "$ref": "#/rules@42"
               },
               "arguments": []
             }

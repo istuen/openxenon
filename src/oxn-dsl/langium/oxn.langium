@@ -187,7 +187,7 @@ ProbeBinding:
     '}';
 
 SlotPropBinding:
-    'prop' name=ID '=' value=Expression;
+    'prop' name=STRING '=' value=Expression;
 
 // ==================== Terminals ====================
 terminal ID: /[_a-zA-Z][\w-]*/;

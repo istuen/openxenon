@@ -1,12 +1,10 @@
 work "example-work" ref "@oxn/blueprints/oxn-example" {
-  description = "示例 Work，展示 Intent-Align 绑定语法"
-
-  part "develop" "develop" {
-    prop feature_desc = "示例开发任务"
-    prop timeout = 60000
+  part "develop" align "Code" {
+    prop "feature_desc" = "示例开发任务"
+    prop "timeout" = 60000
   }
 
-  part "build" "build" {
-    prop target = "dist"
+  part "build" align "Build" {
+    prop "target" = "dist"
   }
 }

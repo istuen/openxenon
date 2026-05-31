@@ -1,0 +1,10 @@
+blueprint "verify-pipeline" {
+  version = 1
+
+  slot "Code" {
+  }
+
+  slot "Test" {
+    deps = ["Code"]
+  }
+}

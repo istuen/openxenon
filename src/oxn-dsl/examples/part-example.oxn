@@ -2,12 +2,7 @@ part "develop" align "Code" {
   description = "示例 Part，展示 Intent-Align 语法"
   prop "feature_desc" { type = string; required = true }
 
-  observe "ShellExec"
-
-  target = "src/"
-  action = "根据 ${prop.feature_desc} 实现功能代码"
-
-  execution = [run_check]
+  observe = ["ShellExec"]
 }
 
 part "build" align "Build" {
@@ -19,5 +14,5 @@ part "test-runner" align "Test" {
   description = "测试 Part"
   prop "timeout" { type = number; default = 30000 }
 
-  observe "ShellExec"
+  observe = ["ShellExec"]
 }

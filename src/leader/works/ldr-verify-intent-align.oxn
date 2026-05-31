@@ -1,0 +1,9 @@
+work "ldr-verify" ref "@oxn/blueprints/verify-pipeline" {
+  part "inline-coder" align "Code" {
+    prop "desc" = "inline coder part"
+  }
+
+  part "inline-tester" align "Test" {
+    prop "desc" = "inline tester part"
+  }
+}

@@ -10,7 +10,7 @@ import { createOxnServices } from '../langium/oxn-services'
 const WORK_OXN = `
 work "verify-e2e" ref "@prj/blueprints/e2e-flow" {
   part "runner" align "runner" ref "@prj/parts/my-runner" {
-    prop target_cmd = "echo hello_from_e2e"
+    prop "target_cmd" = "echo hello_from_e2e"
   }
 }
 `

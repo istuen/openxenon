@@ -1,0 +1,14 @@
+blueprint "leader-test-dsl" {
+  version = 1
+
+  slot "verify" {
+  }
+
+  slot "fix" {
+    deps = ["verify"]
+  }
+
+  slot "analysis" {
+    deps = ["fix"]
+  }
+}
