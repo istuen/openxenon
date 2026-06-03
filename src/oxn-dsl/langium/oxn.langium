@@ -1,8 +1,9 @@
 grammar OXN
 
 // ==================== Entry Point ====================
+// Unified: mvp's `*` (multi-entity per file) replaces reference's single entry.
 entry OXNDocument:
-    entities+=TopLevelEntity;
+    entities+=TopLevelEntity*;
 
 TopLevelEntity:
     ProbeDeclaration
@@ -112,13 +113,28 @@ OutputField:
  *   "example": { "blueprint_name": "WebServer", "part_name": "Nginx", "probe_config": { "name": "http", "type": "HttpProbe", "params": { "path": "/health" } } }
  * }
  */
+// Unified: Part now optionally carries a `skill` block (mvp extension) for AI
+// action context, while still supporting `description + observe + execution`
+// (reference semantics for human-aligned verification).
 PartDeclaration:
     'part' name=STRING ('align' align=STRING)? ('ref' ref=STRING)? '{'
         (descriptions+=Description)?
+        (skill=PartSkill)?
         (props+=PropDeclaration)*
         (probes+=PartProbeDeclaration)*
         (observe+=ObserveDeclaration)*
         ('execution' '=' '[' refs+=ExecutionRef (',' refs+=ExecutionRef)* ','? ']')?
+    '}';
+
+// ==================== Part Skill (AI Action Context) ====================
+// New in unified grammar: AI-visible block describing what an agent should
+// do for this part, how success is measured, and any extra guidance.
+PartSkill:
+    'skill' '{'
+        ('lifecycle' '=' lifecycle=STRING ';')?
+        ('objective' '=' objective=STRING ';')?
+        ('acceptance' '=' '[' acceptance+=STRING (',' acceptance+=STRING)* ','? ']' ';')?
+        ('guidance' '=' guidance=STRING ';')?
     '}';
 
 PartProbeDeclaration:
@@ -140,9 +156,12 @@ ParamPair:
     key=ID '=' value=Expression;
 
 // ==================== Blueprint ====================
+// Unified: Blueprint now optionally carries a `context` block (mvp
+// extension) for blueprint-level AI action context.
 BlueprintDeclaration:
     'blueprint' name=STRING
     '{'
+        (context=WorkContext)?
         ('version' '=' version=NUMBER)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*
@@ -171,15 +190,34 @@ RuleDeclaration:
     '}';
 
 // ==================== Work ====================
+// Unified: Work now optionally carries a `context` block (mvp extension) for
+// work-level AI global context (goal/constraints/loop policy).
 WorkDeclaration:
     'work' name=STRING 'ref' ref=STRING '{'
+        (context=WorkContext)?
         (slotBindings+=SlotBinding)*
     '}';
 
+// ==================== Work Context (AI Global Context) ====================
+WorkContext:
+    'context' '{'
+        ('goal' '=' goal=STRING ';')?
+        ('constraints' '=' '[' constraints+=STRING (',' constraints+=STRING)* ','? ']' ';')?
+        (loopPolicy=LoopPolicy)?
+    '}';
+
+LoopPolicy:
+    'loop_policy' '{'
+        ('max_iterations' '=' maxIterations=NUMBER ';')?
+    '}';
+
+// Unified: SlotBinding now optionally carries a `skill` block (mvp
+// extension) so work.oxn's part references can be self-describing.
 SlotBinding:
     'part' name=STRING 'align' align=STRING ('ref' ref=STRING)? '{'
         (props+=SlotPropBinding)*
         (probeBindings+=ProbeBinding)*
+        (skill=PartSkill)?
     '}';
 
 ProbeBinding:

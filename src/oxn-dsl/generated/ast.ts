@@ -38,11 +38,14 @@ export type OXNDSLKeywordNames =
     | "?"
     | "["
     | "]"
+    | "acceptance"
     | "align"
     | "any"
     | "blueprint"
     | "boolean"
     | "condition"
+    | "constraints"
+    | "context"
     | "default"
     | "deps"
     | "description"
@@ -51,10 +54,16 @@ export type OXNDSLKeywordNames =
     | "execution"
     | "expectation"
     | "false"
+    | "goal"
+    | "guidance"
+    | "lifecycle"
     | "list"
+    | "loop_policy"
     | "map"
+    | "max_iterations"
     | "null"
     | "number"
+    | "objective"
     | "observe"
     | "output"
     | "param"
@@ -65,6 +74,7 @@ export type OXNDSLKeywordNames =
     | "ref"
     | "required"
     | "rule"
+    | "skill"
     | "slot"
     | "string"
     | "task"
@@ -123,6 +133,7 @@ export function isBinaryExpr(item: unknown): item is BinaryExpr {
 export interface BlueprintDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'BlueprintDeclaration';
+    context?: WorkContext;
     descriptions: Array<Description>;
     expectations: Array<ExpectationDeclaration>;
     name: string;
@@ -134,6 +145,7 @@ export interface BlueprintDeclaration extends langium.AstNode {
 
 export const BlueprintDeclaration = {
     $type: 'BlueprintDeclaration',
+    context: 'context',
     descriptions: 'descriptions',
     expectations: 'expectations',
     name: 'name',
@@ -271,6 +283,21 @@ export function isLiteralExpr(item: unknown): item is LiteralExpr {
     return reflection.isInstance(item, LiteralExpr.$type);
 }
 
+export interface LoopPolicy extends langium.AstNode {
+    readonly $container: WorkContext;
+    readonly $type: 'LoopPolicy';
+    maxIterations?: number;
+}
+
+export const LoopPolicy = {
+    $type: 'LoopPolicy',
+    maxIterations: 'maxIterations'
+} as const;
+
+export function isLoopPolicy(item: unknown): item is LoopPolicy {
+    return reflection.isInstance(item, LoopPolicy.$type);
+}
+
 export interface NullLit extends langium.AstNode {
     readonly $container: BinaryExpr | DefaultValue | ParamPair | RuleDeclaration | SlotPropBinding | TernaryExpr;
     readonly $type: 'NullLit';
@@ -372,14 +399,6 @@ export function isParamsBlock(item: unknown): item is ParamsBlock {
     return reflection.isInstance(item, ParamsBlock.$type);
 }
 
-/**
- * @oxn-ai-tool
- * {
- *   "name": "add_probe_to_part",
- *   "description": "给 Part 添加探针实例",
- *   "example": { "blueprint_name": "WebServer", "part_name": "Nginx", "probe_config": { "name": "http", "type": "HttpProbe", "params": { "path": "/health" } } }
- * }
- */
 export interface PartDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'PartDeclaration';
@@ -391,6 +410,7 @@ export interface PartDeclaration extends langium.AstNode {
     props: Array<PropDeclaration>;
     ref?: string;
     refs: Array<ExecutionRef>;
+    skill?: PartSkill;
 }
 
 export const PartDeclaration = {
@@ -402,7 +422,8 @@ export const PartDeclaration = {
     probes: 'probes',
     props: 'props',
     ref: 'ref',
-    refs: 'refs'
+    refs: 'refs',
+    skill: 'skill'
 } as const;
 
 export function isPartDeclaration(item: unknown): item is PartDeclaration {
@@ -428,6 +449,27 @@ export const PartProbeDeclaration = {
 
 export function isPartProbeDeclaration(item: unknown): item is PartProbeDeclaration {
     return reflection.isInstance(item, PartProbeDeclaration.$type);
+}
+
+export interface PartSkill extends langium.AstNode {
+    readonly $container: PartDeclaration | SlotBinding;
+    readonly $type: 'PartSkill';
+    acceptance: Array<string>;
+    guidance?: string;
+    lifecycle?: string;
+    objective?: string;
+}
+
+export const PartSkill = {
+    $type: 'PartSkill',
+    acceptance: 'acceptance',
+    guidance: 'guidance',
+    lifecycle: 'lifecycle',
+    objective: 'objective'
+} as const;
+
+export function isPartSkill(item: unknown): item is PartSkill {
+    return reflection.isInstance(item, PartSkill.$type);
 }
 
 export interface PartSlotDeclaration extends langium.AstNode {
@@ -596,6 +638,7 @@ export interface SlotBinding extends langium.AstNode {
     probeBindings: Array<ProbeBinding>;
     props: Array<SlotPropBinding>;
     ref?: string;
+    skill?: PartSkill;
 }
 
 export const SlotBinding = {
@@ -604,7 +647,8 @@ export const SlotBinding = {
     name: 'name',
     probeBindings: 'probeBindings',
     props: 'props',
-    ref: 'ref'
+    ref: 'ref',
+    skill: 'skill'
 } as const;
 
 export function isSlotBinding(item: unknown): item is SlotBinding {
@@ -697,9 +741,29 @@ export function isVariableRef(item: unknown): item is VariableRef {
     return reflection.isInstance(item, VariableRef.$type);
 }
 
+export interface WorkContext extends langium.AstNode {
+    readonly $container: BlueprintDeclaration | WorkDeclaration;
+    readonly $type: 'WorkContext';
+    constraints: Array<string>;
+    goal?: string;
+    loopPolicy?: LoopPolicy;
+}
+
+export const WorkContext = {
+    $type: 'WorkContext',
+    constraints: 'constraints',
+    goal: 'goal',
+    loopPolicy: 'loopPolicy'
+} as const;
+
+export function isWorkContext(item: unknown): item is WorkContext {
+    return reflection.isInstance(item, WorkContext.$type);
+}
+
 export interface WorkDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'WorkDeclaration';
+    context?: WorkContext;
     name: string;
     ref: string;
     slotBindings: Array<SlotBinding>;
@@ -707,6 +771,7 @@ export interface WorkDeclaration extends langium.AstNode {
 
 export const WorkDeclaration = {
     $type: 'WorkDeclaration',
+    context: 'context',
     name: 'name',
     ref: 'ref',
     slotBindings: 'slotBindings'
@@ -729,6 +794,7 @@ export type OXNDSLAstType = {
     Expression: Expression
     GenericType: GenericType
     LiteralExpr: LiteralExpr
+    LoopPolicy: LoopPolicy
     NullLit: NullLit
     NullLiteral: NullLiteral
     OXNDocument: OXNDocument
@@ -738,6 +804,7 @@ export type OXNDSLAstType = {
     ParamsBlock: ParamsBlock
     PartDeclaration: PartDeclaration
     PartProbeDeclaration: PartProbeDeclaration
+    PartSkill: PartSkill
     PartSlotDeclaration: PartSlotDeclaration
     ProbeBinding: ProbeBinding
     ProbeDeclaration: ProbeDeclaration
@@ -753,6 +820,7 @@ export type OXNDSLAstType = {
     TopLevelEntity: TopLevelEntity
     TypeReference: TypeReference
     VariableRef: VariableRef
+    WorkContext: WorkContext
     WorkDeclaration: WorkDeclaration
 }
 
@@ -788,6 +856,9 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
         BlueprintDeclaration: {
             name: BlueprintDeclaration.$type,
             properties: {
+                context: {
+                    name: BlueprintDeclaration.context
+                },
                 descriptions: {
                     name: BlueprintDeclaration.descriptions,
                     defaultValue: []
@@ -897,6 +968,15 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: [Expression.$type]
         },
+        LoopPolicy: {
+            name: LoopPolicy.$type,
+            properties: {
+                maxIterations: {
+                    name: LoopPolicy.maxIterations
+                }
+            },
+            superTypes: []
+        },
         NullLit: {
             name: NullLit.$type,
             properties: {
@@ -994,6 +1074,9 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
                 refs: {
                     name: PartDeclaration.refs,
                     defaultValue: []
+                },
+                skill: {
+                    name: PartDeclaration.skill
                 }
             },
             superTypes: [TopLevelEntity.$type]
@@ -1012,6 +1095,25 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
                 },
                 ref: {
                     name: PartProbeDeclaration.ref
+                }
+            },
+            superTypes: []
+        },
+        PartSkill: {
+            name: PartSkill.$type,
+            properties: {
+                acceptance: {
+                    name: PartSkill.acceptance,
+                    defaultValue: []
+                },
+                guidance: {
+                    name: PartSkill.guidance
+                },
+                lifecycle: {
+                    name: PartSkill.lifecycle
+                },
+                objective: {
+                    name: PartSkill.objective
                 }
             },
             superTypes: []
@@ -1162,6 +1264,9 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
                 },
                 ref: {
                     name: SlotBinding.ref
+                },
+                skill: {
+                    name: SlotBinding.skill
                 }
             },
             superTypes: []
@@ -1223,9 +1328,28 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: [Expression.$type]
         },
+        WorkContext: {
+            name: WorkContext.$type,
+            properties: {
+                constraints: {
+                    name: WorkContext.constraints,
+                    defaultValue: []
+                },
+                goal: {
+                    name: WorkContext.goal
+                },
+                loopPolicy: {
+                    name: WorkContext.loopPolicy
+                }
+            },
+            superTypes: []
+        },
         WorkDeclaration: {
             name: WorkDeclaration.$type,
             properties: {
+                context: {
+                    name: WorkDeclaration.context
+                },
                 name: {
                     name: WorkDeclaration.name
                 },

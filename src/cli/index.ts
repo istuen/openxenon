@@ -79,13 +79,14 @@ const main = defineCommand({
     promote: () => import('./oxn-promote-cmd').then((m) => m.default),
     'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
     'add-probe': () => import('./oxn-add-probe').then((m) => m.default),
-    // Dual-track leader (see src/leader-canary/README.md):
-    //   default: reference — uses the reference-native leader
-    //            (subcommands: start | next | list)
-    //   mvp:               — uses the mvp canary leader (full new/run/submit/status)
-    //
-    // Resolution chain: --leader-mode CLI flag > OXN_LEADER_MODE env > .oxnrc > default
     leader: () => {
+      // Unified leader (single entry — see src/cli/leader.ts).
+      //   Subcommands: new | run | submit | status
+      //   Aliases (reference compatibility): start | next | list
+      // The --leader-mode / OXN_LEADER_MODE / .oxnrc flags are honored for
+      // backward compatibility but both modes now resolve to the same
+      // unified leader. A warning is printed if a non-default mode is set,
+      // so existing scripts keep working without surprises.
       const projectRoot = process.cwd()
       const { config, warning } = loadOxnRc(projectRoot)
       if (warning) console.error(`[config] ${warning}`)
@@ -96,9 +97,14 @@ const main = defineCommand({
         .join('=') as string | undefined
       const envValue = process.env.OXN_LEADER_MODE
       const resolved = resolveLeaderMode({ cliFlag, envValue, projectConfig: config })
-      return resolved.mode === 'mvp'
-        ? import('./leader-canary-cli').then((m) => m.default)
-        : import('./leader').then((m) => m.default)
+      if (resolved.source !== 'default' && resolved.mode === 'mvp') {
+        // Both modes now use the unified leader. We keep the flag for
+        // backward compat but emit a one-time deprecation hint.
+        console.error(
+          `[config] OXN_LEADER_MODE=mvp is now equivalent to the default; the dual-track canary has been merged into the unified leader.`,
+        )
+      }
+      return import('./leader').then((m) => m.default)
     },
   },
   args: {

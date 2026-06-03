@@ -69,14 +69,39 @@ surfaced by `oxn config show` in the `warning` field. This means a typo in
 
 ## Recommended setup
 
-For most projects:
+For most projects, no `.oxnrc` is needed — the unified leader is the
+default. The `leaderMode` field is preserved for backward compatibility
+with scripts that predate the unification.
 
 ```bash
 cd my-project
-oxn config set --key leaderMode --value mvp   # opt into the mvp canary
-git add .oxnrc
-git commit -m "chore: opt this repo into the mvp leader canary"
+# Nothing to do. Just run:
+oxn leader new --name my-work
+oxn leader run --work-file .openxenon/works/my-work/work.oxn
+oxn leader submit --work-name my-work
 ```
 
-Teams that prefer the stable reference track simply don't add `.oxnrc` (or
-set `leaderMode: "reference"` explicitly for clarity).
+If you previously had `leaderMode: mvp` in `.oxnrc` (from the dual-track
+era), you can leave it — both modes now resolve to the same unified
+leader. A one-time deprecation hint is logged to stderr on each
+invocation.
+
+For projects that want a project-pinned configuration:
+
+```bash
+cd my-project
+# Set per-project defaults (only `leaderMode` is currently supported)
+oxn config set --key leaderMode --value reference
+git add .oxnrc
+git commit -m "chore: pin this repo to the stable reference leader"
+```
+
+The `reference` and `mvp` values are now functionally equivalent (both
+route to the unified leader), but the explicit value still works as a
+hint to humans reading the file.
+
+## See also
+
+- [docs/architecture/unified.md](../architecture/unified.md) — full
+  description of the unified architecture
+- `oxn leader --help` — list of leader subcommands

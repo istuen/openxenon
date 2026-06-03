@@ -47,3 +47,57 @@ export function resetOxnServices(): void {
   _sharedServices = null
   _oxnServices = null
 }
+
+// ---------------------------------------------------------------------------
+// OxnParser — minimal async-style parser, ported from the mvp leader so the
+// CLI does not need to import Langium's full document builder. Builds a
+// Langium document from an in-memory string and reports parse/lexer errors.
+// ---------------------------------------------------------------------------
+
+import type { URI } from 'langium'
+
+export type OxnParseResult = {
+  uri: URI
+  content: string
+  ast: unknown
+  parseErrors: string[]
+  lexerErrors: string[]
+}
+
+export class OxnParser {
+  private services: LangiumCoreServices
+  private registered = false
+
+  constructor(services: LangiumCoreServices) {
+    this.services = services
+  }
+
+  private ensureRegistered(): void {
+    if (this.registered) return
+    // Langium requires each language's services to be registered with the
+    // shared ServiceRegistry before documents can be built. Idempotent.
+    this.services.shared.ServiceRegistry.register(this.services)
+    this.registered = true
+  }
+
+  async parse(content: string, uri: URI): Promise<OxnParseResult> {
+    this.ensureRegistered()
+    const factory = this.services.shared.workspace.LangiumDocumentFactory
+    const doc = factory.fromString(content, uri, undefined)
+    return {
+      uri,
+      content,
+      ast: doc.parseResult?.value,
+      parseErrors: (doc.parseResult?.parserErrors || []).map((e: { message: string }) => e.message),
+      lexerErrors: (doc.parseResult?.lexerErrors || []).map((e: { message: string }) => e.message),
+    }
+  }
+}
+
+/**
+ * Convenience: build an OxnParser over the singleton services.
+ * Mirrors `getOxnServices()` for the parser layer.
+ */
+export function createOxnParser(): OxnParser {
+  return new OxnParser(getOxnServices())
+}
