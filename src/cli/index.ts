@@ -78,7 +78,15 @@ const main = defineCommand({
     promote: () => import('./oxn-promote-cmd').then((m) => m.default),
     'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
     'add-probe': () => import('./oxn-add-probe').then((m) => m.default),
-    leader: () => import('./leader').then((m) => m.default),
+    // Dual-track leader (see src/leader-canary/README.md):
+    //   OXN_LEADER_MODE=reference  (default) — uses the reference-native
+    //     leader (subcommands: start | next | list)
+    //   OXN_LEADER_MODE=mvp          — uses the mvp canary leader
+    //     (subcommands: status <name> | trace <name>, read-only)
+    leader:
+      (process.env.OXN_LEADER_MODE ?? '').toLowerCase() === 'mvp'
+        ? () => import('./leader-canary-cli').then((m) => m.default)
+        : () => import('./leader').then((m) => m.default),
   },
   args: {
     verbose: {
