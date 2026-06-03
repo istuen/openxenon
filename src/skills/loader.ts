@@ -11,6 +11,8 @@ import zhCnTaskBlueprintRef from './locales/zh-CN/oxn-task/references/blueprint-
 import zhCnPlan from './locales/zh-CN/oxn-plan/instruction.md' with { type: 'text' }
 import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'text' }
 import zhCnWorkBlueprintRef from './locales/zh-CN/oxn-work/references/blueprint-format.md' with { type: 'text' }
+import zhCnLeader from './locales/zh-CN/oxn-leader/instruction.md' with { type: 'text' }
+import zhCnLeaderBlueprintRef from './locales/zh-CN/oxn-leader/references/blueprint-creation.md' with { type: 'text' }
 import type { OpenXenonSkill, ReferenceFile } from './types'
 
 export interface SkillContent {
@@ -28,6 +30,7 @@ const skillMeta: SkillMeta[] = [
   { id: 'oxn-task', description: '发起 OpenXenon 任务，依据 Target State 拆解并提交 Blueprint' },
   { id: 'oxn-work', description: '发起 OpenXenon Work，执行具体工作单元' },
   { id: 'oxn-forge', description: '通过自然语言生成 Draft 标准资产（Blueprint/Probe/Part）' },
+  { id: 'oxn-leader', description: '驱动 OpenXenon Work 状态机：生成 work、推进 part、提交证据、运行探针' },
   { id: 'oxn-explore', description: '探索项目与任务，扫描资料、AI-工程师问答、报告归档' },
   { id: 'oxn-plan', description: '规划模式，分析、设计、估算、评审' },
 ]
@@ -52,6 +55,10 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
     'oxn-work': {
       instruction: zhCnWork,
       references: [{ filename: 'blueprint-format.md', content: zhCnWorkBlueprintRef }],
+    },
+    'oxn-leader': {
+      instruction: zhCnLeader,
+      references: [{ filename: 'blueprint-creation.md', content: zhCnLeaderBlueprintRef }],
     },
   },
 }
