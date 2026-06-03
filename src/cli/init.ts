@@ -173,7 +173,7 @@ export default defineCommand({
             skillsCompiled: report.total,
             skillsReport: reportStr,
           },
-          human: `${message}\n\n${t('init.compilingSkills', { adapter: 'opencode' })}\n\n${reportStr}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: '.opencode/skills/' })}`,
+          human: `${message}\n\n${t('init.compilingSkills', { adapter: 'opencode' })}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: '.opencode/skills/' })}`,
         },
         format,
       )

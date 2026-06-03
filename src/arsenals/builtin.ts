@@ -200,6 +200,5 @@ export const BUILTIN_PARTS: Record<
   },
 }
 
-export type BuiltinForgeName = keyof typeof BUILTIN_FORGES
 export type BuiltinProbeName = keyof typeof BUILTIN_PROBES
 export type BuiltinPartName = keyof typeof BUILTIN_PARTS

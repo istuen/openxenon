@@ -1,8 +1,8 @@
 // src/cli/install-skill.ts
 //
 // `oxn install-skill` copies the canonical OpenCode Skill from
-// `.opencode/skills/oxn-leader/SKILL.md` (this repo) to a target directory.
-// By default the target is `~/.opencode/skills/oxn-leader/` (the user's
+// `.opencode/skills/oxn-work/SKILL.md` (this repo) to a target directory.
+// By default the target is `~/.opencode/skills/oxn-work/` (the user's
 // global OpenCode skills folder), so the AI agent can pick the skill up
 // without a per-project install.
 //
@@ -11,7 +11,7 @@
 // this resolves to the real on-disk path; in a `--compile`d binary, Bun
 // replaces it with an internal `$bunfs/...` path that always reads the
 // embedded content.
-import skillSource from '../../.opencode/skills/oxn-leader/SKILL.md' with { type: 'file' }
+import skillSource from '../../.opencode/skills/oxn-work/SKILL.md' with { type: 'file' }
 
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
@@ -21,11 +21,11 @@ import { getFormatFromArgs, output, outputError } from './output'
 
 // Fallback discovery used only when the embedded import cannot be read
 // (e.g. running on a non-Bun runtime). The dev path is
-// `src/cli/install-skill.ts -> ../../.opencode/skills/oxn-leader/SKILL.md`.
+// `src/cli/install-skill.ts -> ../../.opencode/skills/oxn-work/SKILL.md`.
 function findSkillSourceFallback(): string | null {
   const candidates = [
-    resolve(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '.opencode', 'skills', 'oxn-leader', 'SKILL.md')),
-    resolve(join(process.cwd(), '.opencode', 'skills', 'oxn-leader', 'SKILL.md')),
+    resolve(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '.opencode', 'skills', 'oxn-work', 'SKILL.md')),
+    resolve(join(process.cwd(), '.opencode', 'skills', 'oxn-work', 'SKILL.md')),
   ]
   for (const path of candidates) {
     if (existsSync(path)) return path
@@ -51,13 +51,13 @@ function getDefaultTargetDir(): string {
   // Install to the user's global OpenCode skills folder so the AI agent
   // can pick the skill up across all projects.
   const home = process.env.HOME ?? process.env.USERPROFILE ?? '.'
-  return join(home, '.opencode', 'skills', 'oxn-leader')
+  return join(home, '.opencode', 'skills', 'oxn-work')
 }
 
 export default defineCommand({
   meta: {
     name: 'install-skill',
-    description: '将 oxn-leader OpenCode Skill 安装到目标目录 (默认: ~/.opencode/skills/oxn-leader)',
+    description: '将 oxn-work OpenCode Skill 安装到目标目录 (默认: ~/.opencode/skills/oxn-work)',
   },
   args: {
     target: {

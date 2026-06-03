@@ -172,7 +172,7 @@ BlueprintDeclaration:
 
 PartSlotDeclaration:
     'slot' name=STRING '{'
-        ('deps' '=' '[' deps+=STRING (',' deps+=STRING)* ','? ']')?
+        ('deps' '=' '[' (deps+=STRING (',' deps+=STRING)*)? ']')?
         (observe+=ObserveDeclaration)?
     '}';
 
@@ -202,7 +202,7 @@ WorkDeclaration:
 WorkContext:
     'context' '{'
         ('goal' '=' goal=STRING ';')?
-        ('constraints' '=' '[' constraints+=STRING (',' constraints+=STRING)* ','? ']' ';')?
+        ('constraints' '=' '[' (constraints+=STRING (',' constraints+=STRING)*)? ']' ';')?
         (loopPolicy=LoopPolicy)?
     '}';
 

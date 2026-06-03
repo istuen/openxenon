@@ -68,7 +68,6 @@ const main = defineCommand({
     export: () => import('./export').then((m) => m.default),
     gc: () => import('./gc').then((m) => m.default),
     cache: () => import('./cache').then((m) => m.default),
-    forge: () => import('./forge').then((m) => m.default),
     hall: () => import('./hall').then((m) => m.default),
     explore: () => import('./explore-cmd').then((m) => m.default),
     global: () => import('./global').then((m) => m.default),
@@ -80,6 +79,7 @@ const main = defineCommand({
     'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
     'add-probe': () => import('./oxn-add-probe').then((m) => m.default),
     'install-skill': () => import('./install-skill').then((m) => m.default),
+    blueprint: () => import('./blueprint').then((m) => m.default),
     leader: () => {
       // Unified leader (single entry — see src/cli/leader.ts).
       //   Subcommands: new | run | submit | status

@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
 import type { SupportedLocale } from './project-config'
 import { DEFAULT_LOCALE } from './project-config'
@@ -22,6 +22,8 @@ export interface CompilationReport {
   updated: number
   skipped: number
   referencesCreated: number
+  /** Number of stale skill directories removed from .opencode/skills/. */
+  pruned: number
 }
 
 export function loadSkills(locale: SupportedLocale = DEFAULT_LOCALE): OpenXenonSkill[] {
@@ -104,6 +106,28 @@ export function compileAllSkills(adapterId: string, projectPath: string, force: 
     }
   }
 
+  // Prune stale skills: any .opencode/skills/<id>/ left on disk that
+  // is not in the current skill set is a removed/deprecated skill.
+  // This is important for `oxn init --force` to actually clean up the
+  // .opencode/skills/ tree after a Skill is dropped from skillMeta.
+  const skillsDir = join(projectPath, '.opencode', 'skills')
+  const currentIds = new Set(skills.map((s) => s.id))
+  let pruned = 0
+  if (existsSync(skillsDir)) {
+    const { readdirSync } = require('fs') as typeof import('fs')
+    for (const entry of readdirSync(skillsDir)) {
+      if (entry.startsWith('.')) continue
+      if (currentIds.has(entry)) continue
+      const dir = join(skillsDir, entry)
+      try {
+        rmSync(dir, { recursive: true, force: true })
+        pruned++
+      } catch {
+        // best-effort cleanup
+      }
+    }
+  }
+
   const created = results.filter((r) => r.action === 'created').length
   const updated = results.filter((r) => r.action === 'updated').length
   const skipped = results.filter((r) => r.action === 'skipped').length
@@ -117,6 +141,7 @@ export function compileAllSkills(adapterId: string, projectPath: string, force: 
     updated,
     skipped,
     referencesCreated,
+    pruned,
   }
 }
 

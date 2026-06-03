@@ -2174,24 +2174,8 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
                 "value": "["
               },
               {
-                "$type": "Assignment",
-                "feature": "deps",
-                "operator": "+=",
-                "terminal": {
-                  "$type": "RuleCall",
-                  "rule": {
-                    "$ref": "#/rules@45"
-                  },
-                  "arguments": []
-                }
-              },
-              {
                 "$type": "Group",
                 "elements": [
-                  {
-                    "$type": "Keyword",
-                    "value": ","
-                  },
                   {
                     "$type": "Assignment",
                     "feature": "deps",
@@ -2203,13 +2187,30 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
                       },
                       "arguments": []
                     }
+                  },
+                  {
+                    "$type": "Group",
+                    "elements": [
+                      {
+                        "$type": "Keyword",
+                        "value": ","
+                      },
+                      {
+                        "$type": "Assignment",
+                        "feature": "deps",
+                        "operator": "+=",
+                        "terminal": {
+                          "$type": "RuleCall",
+                          "rule": {
+                            "$ref": "#/rules@45"
+                          },
+                          "arguments": []
+                        }
+                      }
+                    ],
+                    "cardinality": "*"
                   }
                 ],
-                "cardinality": "*"
-              },
-              {
-                "$type": "Keyword",
-                "value": ",",
                 "cardinality": "?"
               },
               {
@@ -2582,24 +2583,8 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
                 "value": "["
               },
               {
-                "$type": "Assignment",
-                "feature": "constraints",
-                "operator": "+=",
-                "terminal": {
-                  "$type": "RuleCall",
-                  "rule": {
-                    "$ref": "#/rules@45"
-                  },
-                  "arguments": []
-                }
-              },
-              {
                 "$type": "Group",
                 "elements": [
-                  {
-                    "$type": "Keyword",
-                    "value": ","
-                  },
                   {
                     "$type": "Assignment",
                     "feature": "constraints",
@@ -2611,13 +2596,30 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
                       },
                       "arguments": []
                     }
+                  },
+                  {
+                    "$type": "Group",
+                    "elements": [
+                      {
+                        "$type": "Keyword",
+                        "value": ","
+                      },
+                      {
+                        "$type": "Assignment",
+                        "feature": "constraints",
+                        "operator": "+=",
+                        "terminal": {
+                          "$type": "RuleCall",
+                          "rule": {
+                            "$ref": "#/rules@45"
+                          },
+                          "arguments": []
+                        }
+                      }
+                    ],
+                    "cardinality": "*"
                   }
                 ],
-                "cardinality": "*"
-              },
-              {
-                "$type": "Keyword",
-                "value": ",",
                 "cardinality": "?"
               },
               {
