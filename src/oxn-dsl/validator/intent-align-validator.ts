@@ -98,10 +98,14 @@ export function validateIntentAlign(node: WorkDeclaration, accept: ValidationAcc
 
         if (!observeNames.has(probeBinding.align)) {
           const availableObserves = Array.from(observeNames).join(', ') || '无'
-          accept('error', `Probe align "${probeBinding.align}" 不在 Slot "${binding.align}" 的 observe 声明中 (可用: ${availableObserves})`, {
-            node: probeBinding,
-            property: 'align',
-          })
+          accept(
+            'error',
+            `Probe align "${probeBinding.align}" 不在 Slot "${binding.align}" 的 observe 声明中 (可用: ${availableObserves})`,
+            {
+              node: probeBinding,
+              property: 'align',
+            },
+          )
         }
       }
     }

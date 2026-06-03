@@ -2,6 +2,7 @@ import { defineCommand, runMain } from 'citty'
 import { DAEMON_SOCK_PATH } from '../infra/global'
 import { ErrorCategory, OxnErrorCode } from '../kernel/enums'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
+import { loadOxnRc, resolveLeaderMode } from './config-loader'
 
 function formatError(err: unknown): string {
   if (err && typeof err === 'object' && 'code' in err) {
@@ -71,7 +72,7 @@ const main = defineCommand({
     hall: () => import('./hall').then((m) => m.default),
     explore: () => import('./explore-cmd').then((m) => m.default),
     global: () => import('./global').then((m) => m.default),
-    config: () => import('./config').then((m) => m.default),
+    config: () => import('./config-cmd').then((m) => m.default),
     compile: () => import('./oxn-compile').then((m) => m.default),
     unpack: () => import('./oxn-unpack').then((m) => m.default),
     validate: () => import('./oxn-validate').then((m) => m.default),
@@ -79,14 +80,26 @@ const main = defineCommand({
     'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
     'add-probe': () => import('./oxn-add-probe').then((m) => m.default),
     // Dual-track leader (see src/leader-canary/README.md):
-    //   OXN_LEADER_MODE=reference  (default) — uses the reference-native
-    //     leader (subcommands: start | next | list)
-    //   OXN_LEADER_MODE=mvp          — uses the mvp canary leader
-    //     (subcommands: status <name> | trace <name>, read-only)
-    leader:
-      (process.env.OXN_LEADER_MODE ?? '').toLowerCase() === 'mvp'
-        ? () => import('./leader-canary-cli').then((m) => m.default)
-        : () => import('./leader').then((m) => m.default),
+    //   default: reference — uses the reference-native leader
+    //            (subcommands: start | next | list)
+    //   mvp:               — uses the mvp canary leader (full new/run/submit/status)
+    //
+    // Resolution chain: --leader-mode CLI flag > OXN_LEADER_MODE env > .oxnrc > default
+    leader: () => {
+      const projectRoot = process.cwd()
+      const { config, warning } = loadOxnRc(projectRoot)
+      if (warning) console.error(`[config] ${warning}`)
+      const cliFlag = process.argv
+        .find((a) => a === '--leader-mode' || a.startsWith('--leader-mode='))
+        ?.split('=')
+        .slice(1)
+        .join('=') as string | undefined
+      const envValue = process.env.OXN_LEADER_MODE
+      const resolved = resolveLeaderMode({ cliFlag, envValue, projectConfig: config })
+      return resolved.mode === 'mvp'
+        ? import('./leader-canary-cli').then((m) => m.default)
+        : import('./leader').then((m) => m.default)
+    },
   },
   args: {
     verbose: {
@@ -94,6 +107,10 @@ const main = defineCommand({
       type: 'boolean',
       description: 'Enable verbose output',
       default: false,
+    },
+    '--leader-mode': {
+      type: 'string',
+      description: 'Override leader track: "reference" or "mvp" (overrides env + .oxnrc)',
     },
     '--json': {
       type: 'boolean',

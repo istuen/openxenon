@@ -1,0 +1,152 @@
+// src/cli/config-cmd.ts
+//
+// `oxn config show` and `oxn config set <key> <value>`.
+//
+// These commands read/write .oxnrc in the project root (CWD). The set
+// command supports a small whitelist of keys (currently just `leaderMode`)
+// so we never silently persist arbitrary JSON.
+
+import { defineCommand } from 'citty'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
+import { getFormatFromArgs, output, outputError } from './output'
+import {
+  DEFAULT_LEADER_MODE,
+  OXN_RC_FILENAME,
+  VALID_LEADER_MODES,
+  loadOxnRc,
+  normalizeLeaderMode,
+  resolveLeaderMode,
+  type LeaderMode,
+  type OxnConfig,
+} from './config-loader'
+
+const SUPPORTED_SET_KEYS = ['leaderMode'] as const
+type SupportedSetKey = (typeof SUPPORTED_SET_KEYS)[number]
+
+function getProjectRoot(): string {
+  return process.cwd()
+}
+
+function readConfigFile(): OxnConfig {
+  const path = join(getProjectRoot(), OXN_RC_FILENAME)
+  if (!existsSync(path)) return { version: 1 }
+  const raw = readFileSync(path, 'utf-8')
+  const parsed = JSON.parse(raw) as OxnConfig
+  return parsed
+}
+
+function writeConfigFile(config: OxnConfig): string {
+  const projectRoot = getProjectRoot()
+  const path = join(projectRoot, OXN_RC_FILENAME)
+  if (!existsSync(projectRoot)) {
+    mkdirSync(projectRoot, { recursive: true })
+  }
+  if (!existsSync(dirname(path))) {
+    mkdirSync(dirname(path), { recursive: true })
+  }
+  writeFileSync(path, JSON.stringify(config, null, 2) + '\n', 'utf-8')
+  return path
+}
+
+const showSubcommand = defineCommand({
+  meta: { name: 'show', description: '显示当前生效的 oxn 配置（解析来源 + 实际值）' },
+  args: {
+    '--json': { type: 'boolean', description: 'JSON 格式输出' },
+    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const projectRoot = getProjectRoot()
+    const { config, warning } = loadOxnRc(projectRoot)
+    const cliFlag = process.argv
+      .find((a) => a.startsWith('--leader-mode'))
+      ?.split('=')
+      .slice(1)
+      .join('=')
+    const envValue = process.env.OXN_LEADER_MODE
+    const resolved = resolveLeaderMode({ cliFlag, envValue, projectConfig: config })
+    output(
+      {
+        ok: true,
+        data: {
+          leaderMode: resolved.mode,
+          source: resolved.source,
+          defaults: { leaderMode: DEFAULT_LEADER_MODE },
+          projectConfig: config,
+          projectConfigPath: join(projectRoot, OXN_RC_FILENAME),
+          ...(warning ? { warning } : {}),
+        },
+      },
+      format,
+    )
+  },
+})
+
+const setSubcommand = defineCommand({
+  meta: { name: 'set', description: '在 .oxnrc 中设置一个配置项' },
+  args: {
+    key: { type: 'string', required: true, description: '配置 key（当前支持: leaderMode）' },
+    value: { type: 'string', required: true, description: '配置 value' },
+    '--json': { type: 'boolean', description: 'JSON 格式输出' },
+    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const key = ctx.args.key as string
+    const value = ctx.args.value as string
+    if (!SUPPORTED_SET_KEYS.includes(key as SupportedSetKey)) {
+      return outputError(
+        {
+          code: 'OXN_CONFIG_KEY_UNSUPPORTED',
+          message: `unsupported config key: ${key}`,
+          suggestion: `supported keys: ${SUPPORTED_SET_KEYS.join(', ')}`,
+        },
+        format,
+      )
+    }
+    if (key === 'leaderMode') {
+      const normalized = normalizeLeaderMode(value)
+      if (!normalized) {
+        return outputError(
+          {
+            code: 'OXN_CONFIG_VALUE_INVALID',
+            message: `invalid leaderMode: ${JSON.stringify(value)}`,
+            suggestion: `valid values: ${VALID_LEADER_MODES.join(', ')}`,
+          },
+          format,
+        )
+      }
+      const next: OxnConfig = { ...readConfigFile(), version: 1, leaderMode: normalized as LeaderMode }
+      const path = writeConfigFile(next)
+      output(
+        {
+          ok: true,
+          data: {
+            key,
+            value: normalized,
+            path,
+            config: next,
+          },
+        },
+        format,
+      )
+      return
+    }
+    return outputError({ code: 'OXN_CONFIG_KEY_UNSUPPORTED', message: `unhandled key: ${key}` }, format)
+  },
+})
+
+const configCommand = defineCommand({
+  meta: { name: 'config', description: '管理 .oxnrc 项目配置' },
+  subCommands: {
+    show: showSubcommand,
+    set: setSubcommand,
+  },
+  run() {
+    // No-op: citty still invokes the parent run() after a subcommand
+    // completes. Suppressing output here keeps --json streams clean.
+  },
+})
+
+export default configCommand
