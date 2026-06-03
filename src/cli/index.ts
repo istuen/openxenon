@@ -79,6 +79,7 @@ const main = defineCommand({
     promote: () => import('./oxn-promote-cmd').then((m) => m.default),
     'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
     'add-probe': () => import('./oxn-add-probe').then((m) => m.default),
+    'install-skill': () => import('./install-skill').then((m) => m.default),
     leader: () => {
       // Unified leader (single entry — see src/cli/leader.ts).
       //   Subcommands: new | run | submit | status
