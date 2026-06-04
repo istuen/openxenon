@@ -41,14 +41,20 @@ export type OXNDSLKeywordNames =
     | "acceptance"
     | "align"
     | "any"
+    | "as"
+    | "ban"
     | "blueprint"
     | "boolean"
     | "condition"
     | "constraints"
     | "context"
+    | "context_map"
     | "default"
     | "deps"
+    | "desc"
     | "description"
+    | "domain"
+    | "domain_rules"
     | "enum"
     | "err_msg"
     | "execution"
@@ -56,11 +62,15 @@ export type OXNDSLKeywordNames =
     | "false"
     | "goal"
     | "guidance"
+    | "imports"
+    | "inject"
+    | "language"
     | "lifecycle"
     | "list"
     | "loop_policy"
     | "map"
     | "max_iterations"
+    | "noun"
     | "null"
     | "number"
     | "objective"
@@ -69,6 +79,7 @@ export type OXNDSLKeywordNames =
     | "param"
     | "params"
     | "part"
+    | "parts"
     | "probe"
     | "prop"
     | "ref"
@@ -80,6 +91,9 @@ export type OXNDSLKeywordNames =
     | "task"
     | "true"
     | "type"
+    | "use_blueprint"
+    | "use_domain"
+    | "verb"
     | "version"
     | "work"
     | "{"
@@ -165,6 +179,38 @@ export function isBooleanLiteral(item: unknown): item is BooleanLiteral {
     return typeof item === 'boolean';
 }
 
+export interface ContextMapBlock extends langium.AstNode {
+    readonly $container: DomainDeclaration;
+    readonly $type: 'ContextMapBlock';
+    imports: Array<ContextMapImport>;
+}
+
+export const ContextMapBlock = {
+    $type: 'ContextMapBlock',
+    imports: 'imports'
+} as const;
+
+export function isContextMapBlock(item: unknown): item is ContextMapBlock {
+    return reflection.isInstance(item, ContextMapBlock.$type);
+}
+
+export interface ContextMapImport extends langium.AstNode {
+    readonly $container: ContextMapBlock;
+    readonly $type: 'ContextMapImport';
+    alias: string;
+    target: string;
+}
+
+export const ContextMapImport = {
+    $type: 'ContextMapImport',
+    alias: 'alias',
+    target: 'target'
+} as const;
+
+export function isContextMapImport(item: unknown): item is ContextMapImport {
+    return reflection.isInstance(item, ContextMapImport.$type);
+}
+
 export interface DefaultValue extends langium.AstNode {
     readonly $container: PropDeclaration;
     readonly $type: 'DefaultValue';
@@ -181,7 +227,7 @@ export function isDefaultValue(item: unknown): item is DefaultValue {
 }
 
 export interface Description extends langium.AstNode {
-    readonly $container: BlueprintDeclaration | PartDeclaration | ProbeDeclaration;
+    readonly $container: BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration;
     readonly $type: 'Description';
     value: string;
 }
@@ -193,6 +239,97 @@ export const Description = {
 
 export function isDescription(item: unknown): item is Description {
     return reflection.isInstance(item, Description.$type);
+}
+
+export interface DomainDeclaration extends langium.AstNode {
+    readonly $container: OXNDocument;
+    readonly $type: 'DomainDeclaration';
+    contextMap?: ContextMapBlock;
+    descriptions: Array<Description>;
+    domainRules?: DomainRuleBlock;
+    language?: DomainLanguage;
+    name: string;
+}
+
+export const DomainDeclaration = {
+    $type: 'DomainDeclaration',
+    contextMap: 'contextMap',
+    descriptions: 'descriptions',
+    domainRules: 'domainRules',
+    language: 'language',
+    name: 'name'
+} as const;
+
+export function isDomainDeclaration(item: unknown): item is DomainDeclaration {
+    return reflection.isInstance(item, DomainDeclaration.$type);
+}
+
+export interface DomainInjectDecl extends langium.AstNode {
+    readonly $container: TaskDeclaration;
+    readonly $type: 'DomainInjectDecl';
+    alias?: string;
+    domain: string;
+}
+
+export const DomainInjectDecl = {
+    $type: 'DomainInjectDecl',
+    alias: 'alias',
+    domain: 'domain'
+} as const;
+
+export function isDomainInjectDecl(item: unknown): item is DomainInjectDecl {
+    return reflection.isInstance(item, DomainInjectDecl.$type);
+}
+
+export interface DomainLanguage extends langium.AstNode {
+    readonly $container: DomainDeclaration;
+    readonly $type: 'DomainLanguage';
+    bans: Array<string>;
+    nouns: Array<NounDecl>;
+    verbs: Array<VerbDecl>;
+}
+
+export const DomainLanguage = {
+    $type: 'DomainLanguage',
+    bans: 'bans',
+    nouns: 'nouns',
+    verbs: 'verbs'
+} as const;
+
+export function isDomainLanguage(item: unknown): item is DomainLanguage {
+    return reflection.isInstance(item, DomainLanguage.$type);
+}
+
+export interface DomainRuleBlock extends langium.AstNode {
+    readonly $container: DomainDeclaration;
+    readonly $type: 'DomainRuleBlock';
+    rules: Array<DomainRuleDecl>;
+}
+
+export const DomainRuleBlock = {
+    $type: 'DomainRuleBlock',
+    rules: 'rules'
+} as const;
+
+export function isDomainRuleBlock(item: unknown): item is DomainRuleBlock {
+    return reflection.isInstance(item, DomainRuleBlock.$type);
+}
+
+export interface DomainRuleDecl extends langium.AstNode {
+    readonly $container: DomainRuleBlock;
+    readonly $type: 'DomainRuleDecl';
+    desc: string;
+    name: string;
+}
+
+export const DomainRuleDecl = {
+    $type: 'DomainRuleDecl',
+    desc: 'desc',
+    name: 'name'
+} as const;
+
+export function isDomainRuleDecl(item: unknown): item is DomainRuleDecl {
+    return reflection.isInstance(item, DomainRuleDecl.$type);
 }
 
 export interface EnumType extends langium.AstNode {
@@ -296,6 +433,23 @@ export const LoopPolicy = {
 
 export function isLoopPolicy(item: unknown): item is LoopPolicy {
     return reflection.isInstance(item, LoopPolicy.$type);
+}
+
+export interface NounDecl extends langium.AstNode {
+    readonly $container: DomainLanguage;
+    readonly $type: 'NounDecl';
+    desc: string;
+    name: string;
+}
+
+export const NounDecl = {
+    $type: 'NounDecl',
+    desc: 'desc',
+    name: 'name'
+} as const;
+
+export function isNounDecl(item: unknown): item is NounDecl {
+    return reflection.isInstance(item, NounDecl.$type);
 }
 
 export interface NullLit extends langium.AstNode {
@@ -473,7 +627,7 @@ export function isPartSkill(item: unknown): item is PartSkill {
 }
 
 export interface PartSlotDeclaration extends langium.AstNode {
-    readonly $container: BlueprintDeclaration;
+    readonly $container: BlueprintDeclaration | TaskDeclaration;
     readonly $type: 'PartSlotDeclaration';
     deps: Array<string>;
     name: string;
@@ -557,7 +711,7 @@ export function isProbeOutputDeclaration(item: unknown): item is ProbeOutputDecl
 }
 
 export interface PropDeclaration extends langium.AstNode {
-    readonly $container: BlueprintDeclaration | PartDeclaration | ProbeDeclaration;
+    readonly $container: BlueprintDeclaration | PartDeclaration | ProbeDeclaration | TaskDeclaration;
     readonly $type: 'PropDeclaration';
     default?: DefaultValue;
     name: string;
@@ -581,7 +735,7 @@ export interface QualifiedName extends langium.AstNode {
     readonly $container: VariableRef;
     readonly $type: 'QualifiedName';
     name: string;
-    prefix?: 'param' | 'prop' | 'task';
+    prefix?: 'param' | 'parts' | 'prop' | 'task';
     segments: Array<string>;
 }
 
@@ -631,7 +785,6 @@ export function isRuleDeclaration(item: unknown): item is RuleDeclaration {
 }
 
 export interface SlotBinding extends langium.AstNode {
-    readonly $container: WorkDeclaration;
     readonly $type: 'SlotBinding';
     align: string;
     name: string;
@@ -656,7 +809,7 @@ export function isSlotBinding(item: unknown): item is SlotBinding {
 }
 
 export interface SlotPropBinding extends langium.AstNode {
-    readonly $container: SlotBinding;
+    readonly $container: SlotBinding | TaskRefDecl;
     readonly $type: 'SlotPropBinding';
     name: string;
     value: Expression;
@@ -670,6 +823,69 @@ export const SlotPropBinding = {
 
 export function isSlotPropBinding(item: unknown): item is SlotPropBinding {
     return reflection.isInstance(item, SlotPropBinding.$type);
+}
+
+export interface TaskContext extends langium.AstNode {
+    readonly $container: TaskDeclaration;
+    readonly $type: 'TaskContext';
+    constraints: Array<string>;
+    objective?: string;
+}
+
+export const TaskContext = {
+    $type: 'TaskContext',
+    constraints: 'constraints',
+    objective: 'objective'
+} as const;
+
+export function isTaskContext(item: unknown): item is TaskContext {
+    return reflection.isInstance(item, TaskContext.$type);
+}
+
+export interface TaskDeclaration extends langium.AstNode {
+    readonly $container: OXNDocument;
+    readonly $type: 'TaskDeclaration';
+    blueprint: string;
+    context?: TaskContext;
+    injects: Array<DomainInjectDecl>;
+    name: string;
+    partSlots: Array<PartSlotDeclaration>;
+    props: Array<PropDeclaration>;
+}
+
+export const TaskDeclaration = {
+    $type: 'TaskDeclaration',
+    blueprint: 'blueprint',
+    context: 'context',
+    injects: 'injects',
+    name: 'name',
+    partSlots: 'partSlots',
+    props: 'props'
+} as const;
+
+export function isTaskDeclaration(item: unknown): item is TaskDeclaration {
+    return reflection.isInstance(item, TaskDeclaration.$type);
+}
+
+export interface TaskRefDecl extends langium.AstNode {
+    readonly $container: WorkDeclaration;
+    readonly $type: 'TaskRefDecl';
+    align: string;
+    deps: Array<string>;
+    name: string;
+    props: Array<SlotPropBinding>;
+}
+
+export const TaskRefDecl = {
+    $type: 'TaskRefDecl',
+    align: 'align',
+    deps: 'deps',
+    name: 'name',
+    props: 'props'
+} as const;
+
+export function isTaskRefDecl(item: unknown): item is TaskRefDecl {
+    return reflection.isInstance(item, TaskRefDecl.$type);
 }
 
 export interface TemplateString extends langium.AstNode {
@@ -706,7 +922,7 @@ export function isTernaryExpr(item: unknown): item is TernaryExpr {
     return reflection.isInstance(item, TernaryExpr.$type);
 }
 
-export type TopLevelEntity = BlueprintDeclaration | PartDeclaration | ProbeDeclaration | WorkDeclaration;
+export type TopLevelEntity = BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration | TaskDeclaration | WorkDeclaration;
 
 export const TopLevelEntity = {
     $type: 'TopLevelEntity'
@@ -726,6 +942,40 @@ export function isTypeReference(item: unknown): item is TypeReference {
     return reflection.isInstance(item, TypeReference.$type);
 }
 
+export interface UseBlueprintDecl extends langium.AstNode {
+    readonly $container: WorkDeclaration;
+    readonly $type: 'UseBlueprintDecl';
+    alias?: string;
+    name: string;
+}
+
+export const UseBlueprintDecl = {
+    $type: 'UseBlueprintDecl',
+    alias: 'alias',
+    name: 'name'
+} as const;
+
+export function isUseBlueprintDecl(item: unknown): item is UseBlueprintDecl {
+    return reflection.isInstance(item, UseBlueprintDecl.$type);
+}
+
+export interface UseDomainDecl extends langium.AstNode {
+    readonly $container: WorkDeclaration;
+    readonly $type: 'UseDomainDecl';
+    alias?: string;
+    name: string;
+}
+
+export const UseDomainDecl = {
+    $type: 'UseDomainDecl',
+    alias: 'alias',
+    name: 'name'
+} as const;
+
+export function isUseDomainDecl(item: unknown): item is UseDomainDecl {
+    return reflection.isInstance(item, UseDomainDecl.$type);
+}
+
 export interface VariableRef extends langium.AstNode {
     readonly $container: BinaryExpr | DefaultValue | ParamPair | RuleDeclaration | SlotPropBinding | TernaryExpr;
     readonly $type: 'VariableRef';
@@ -739,6 +989,23 @@ export const VariableRef = {
 
 export function isVariableRef(item: unknown): item is VariableRef {
     return reflection.isInstance(item, VariableRef.$type);
+}
+
+export interface VerbDecl extends langium.AstNode {
+    readonly $container: DomainLanguage;
+    readonly $type: 'VerbDecl';
+    desc: string;
+    name: string;
+}
+
+export const VerbDecl = {
+    $type: 'VerbDecl',
+    desc: 'desc',
+    name: 'name'
+} as const;
+
+export function isVerbDecl(item: unknown): item is VerbDecl {
+    return reflection.isInstance(item, VerbDecl.$type);
 }
 
 export interface WorkContext extends langium.AstNode {
@@ -765,16 +1032,18 @@ export interface WorkDeclaration extends langium.AstNode {
     readonly $type: 'WorkDeclaration';
     context?: WorkContext;
     name: string;
-    ref: string;
-    slotBindings: Array<SlotBinding>;
+    tasks: Array<TaskRefDecl>;
+    useBlueprints: Array<UseBlueprintDecl>;
+    useDomains: Array<UseDomainDecl>;
 }
 
 export const WorkDeclaration = {
     $type: 'WorkDeclaration',
     context: 'context',
     name: 'name',
-    ref: 'ref',
-    slotBindings: 'slotBindings'
+    tasks: 'tasks',
+    useBlueprints: 'useBlueprints',
+    useDomains: 'useDomains'
 } as const;
 
 export function isWorkDeclaration(item: unknown): item is WorkDeclaration {
@@ -786,8 +1055,15 @@ export type OXNDSLAstType = {
     AnyTypeRef: AnyTypeRef
     BinaryExpr: BinaryExpr
     BlueprintDeclaration: BlueprintDeclaration
+    ContextMapBlock: ContextMapBlock
+    ContextMapImport: ContextMapImport
     DefaultValue: DefaultValue
     Description: Description
+    DomainDeclaration: DomainDeclaration
+    DomainInjectDecl: DomainInjectDecl
+    DomainLanguage: DomainLanguage
+    DomainRuleBlock: DomainRuleBlock
+    DomainRuleDecl: DomainRuleDecl
     EnumType: EnumType
     ExecutionRef: ExecutionRef
     ExpectationDeclaration: ExpectationDeclaration
@@ -795,6 +1071,7 @@ export type OXNDSLAstType = {
     GenericType: GenericType
     LiteralExpr: LiteralExpr
     LoopPolicy: LoopPolicy
+    NounDecl: NounDecl
     NullLit: NullLit
     NullLiteral: NullLiteral
     OXNDocument: OXNDocument
@@ -815,11 +1092,17 @@ export type OXNDSLAstType = {
     RuleDeclaration: RuleDeclaration
     SlotBinding: SlotBinding
     SlotPropBinding: SlotPropBinding
+    TaskContext: TaskContext
+    TaskDeclaration: TaskDeclaration
+    TaskRefDecl: TaskRefDecl
     TemplateString: TemplateString
     TernaryExpr: TernaryExpr
     TopLevelEntity: TopLevelEntity
     TypeReference: TypeReference
+    UseBlueprintDecl: UseBlueprintDecl
+    UseDomainDecl: UseDomainDecl
     VariableRef: VariableRef
+    VerbDecl: VerbDecl
     WorkContext: WorkContext
     WorkDeclaration: WorkDeclaration
 }
@@ -888,6 +1171,28 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: [TopLevelEntity.$type]
         },
+        ContextMapBlock: {
+            name: ContextMapBlock.$type,
+            properties: {
+                imports: {
+                    name: ContextMapBlock.imports,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        ContextMapImport: {
+            name: ContextMapImport.$type,
+            properties: {
+                alias: {
+                    name: ContextMapImport.alias
+                },
+                target: {
+                    name: ContextMapImport.target
+                }
+            },
+            superTypes: []
+        },
         DefaultValue: {
             name: DefaultValue.$type,
             properties: {
@@ -902,6 +1207,80 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             properties: {
                 value: {
                     name: Description.value
+                }
+            },
+            superTypes: []
+        },
+        DomainDeclaration: {
+            name: DomainDeclaration.$type,
+            properties: {
+                contextMap: {
+                    name: DomainDeclaration.contextMap
+                },
+                descriptions: {
+                    name: DomainDeclaration.descriptions,
+                    defaultValue: []
+                },
+                domainRules: {
+                    name: DomainDeclaration.domainRules
+                },
+                language: {
+                    name: DomainDeclaration.language
+                },
+                name: {
+                    name: DomainDeclaration.name
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        },
+        DomainInjectDecl: {
+            name: DomainInjectDecl.$type,
+            properties: {
+                alias: {
+                    name: DomainInjectDecl.alias
+                },
+                domain: {
+                    name: DomainInjectDecl.domain
+                }
+            },
+            superTypes: []
+        },
+        DomainLanguage: {
+            name: DomainLanguage.$type,
+            properties: {
+                bans: {
+                    name: DomainLanguage.bans,
+                    defaultValue: []
+                },
+                nouns: {
+                    name: DomainLanguage.nouns,
+                    defaultValue: []
+                },
+                verbs: {
+                    name: DomainLanguage.verbs,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        DomainRuleBlock: {
+            name: DomainRuleBlock.$type,
+            properties: {
+                rules: {
+                    name: DomainRuleBlock.rules,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
+        DomainRuleDecl: {
+            name: DomainRuleDecl.$type,
+            properties: {
+                desc: {
+                    name: DomainRuleDecl.desc
+                },
+                name: {
+                    name: DomainRuleDecl.name
                 }
             },
             superTypes: []
@@ -973,6 +1352,18 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             properties: {
                 maxIterations: {
                     name: LoopPolicy.maxIterations
+                }
+            },
+            superTypes: []
+        },
+        NounDecl: {
+            name: NounDecl.$type,
+            properties: {
+                desc: {
+                    name: NounDecl.desc
+                },
+                name: {
+                    name: NounDecl.name
                 }
             },
             superTypes: []
@@ -1283,6 +1674,66 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: []
         },
+        TaskContext: {
+            name: TaskContext.$type,
+            properties: {
+                constraints: {
+                    name: TaskContext.constraints,
+                    defaultValue: []
+                },
+                objective: {
+                    name: TaskContext.objective
+                }
+            },
+            superTypes: []
+        },
+        TaskDeclaration: {
+            name: TaskDeclaration.$type,
+            properties: {
+                blueprint: {
+                    name: TaskDeclaration.blueprint
+                },
+                context: {
+                    name: TaskDeclaration.context
+                },
+                injects: {
+                    name: TaskDeclaration.injects,
+                    defaultValue: []
+                },
+                name: {
+                    name: TaskDeclaration.name
+                },
+                partSlots: {
+                    name: TaskDeclaration.partSlots,
+                    defaultValue: []
+                },
+                props: {
+                    name: TaskDeclaration.props,
+                    defaultValue: []
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        },
+        TaskRefDecl: {
+            name: TaskRefDecl.$type,
+            properties: {
+                align: {
+                    name: TaskRefDecl.align
+                },
+                deps: {
+                    name: TaskRefDecl.deps,
+                    defaultValue: []
+                },
+                name: {
+                    name: TaskRefDecl.name
+                },
+                props: {
+                    name: TaskRefDecl.props,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
         TemplateString: {
             name: TemplateString.$type,
             properties: {
@@ -1319,6 +1770,30 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: []
         },
+        UseBlueprintDecl: {
+            name: UseBlueprintDecl.$type,
+            properties: {
+                alias: {
+                    name: UseBlueprintDecl.alias
+                },
+                name: {
+                    name: UseBlueprintDecl.name
+                }
+            },
+            superTypes: []
+        },
+        UseDomainDecl: {
+            name: UseDomainDecl.$type,
+            properties: {
+                alias: {
+                    name: UseDomainDecl.alias
+                },
+                name: {
+                    name: UseDomainDecl.name
+                }
+            },
+            superTypes: []
+        },
         VariableRef: {
             name: VariableRef.$type,
             properties: {
@@ -1327,6 +1802,18 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
                 }
             },
             superTypes: [Expression.$type]
+        },
+        VerbDecl: {
+            name: VerbDecl.$type,
+            properties: {
+                desc: {
+                    name: VerbDecl.desc
+                },
+                name: {
+                    name: VerbDecl.name
+                }
+            },
+            superTypes: []
         },
         WorkContext: {
             name: WorkContext.$type,
@@ -1353,11 +1840,16 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
                 name: {
                     name: WorkDeclaration.name
                 },
-                ref: {
-                    name: WorkDeclaration.ref
+                tasks: {
+                    name: WorkDeclaration.tasks,
+                    defaultValue: []
                 },
-                slotBindings: {
-                    name: WorkDeclaration.slotBindings,
+                useBlueprints: {
+                    name: WorkDeclaration.useBlueprints,
+                    defaultValue: []
+                },
+                useDomains: {
+                    name: WorkDeclaration.useDomains,
                     defaultValue: []
                 }
             },

@@ -1,0 +1,37 @@
+// Work: NewUserOnboarding
+// 新用户入职流程：注册会员 + 发放欢迎福利
+//
+// 跨域编排：MemberContext + MarketingContext
+// 拆为 2 个 task，每个 task 注入一个 domain（task 级别隔离）
+
+work "NewUserOnboarding" {
+  context {
+    goal = "完成新会员注册并发放欢迎福利";
+    constraints = [
+      "不能直接读订单库",
+      "必须调用订单上下文的能力"
+    ];
+    loop_policy {
+      max_iterations = 5;
+    }
+  }
+
+  // 声明本 work 用到的域
+  use_domain "MemberContext";
+  use_domain "OrderContext";
+  use_domain "MarketingContext";
+
+  // 声明本 work 用到的 Blueprint（技术流水线）
+  use_blueprint "dev-workflow";
+
+  // 任务编排（仅串行 deps，v0.1 限制）
+  task "RegisterMember" align "MemberContext.Register" {
+    deps = [];
+    prop "username" = "new_user_123";
+  }
+
+  task "GrantWelcomeBonus" align "MarketingContext.GrantWelcomeBonus" {
+    deps = ["RegisterMember"];
+    prop "targetMemberId" = "RegisterMember.outputs.memberId";
+  }
+}

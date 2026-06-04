@@ -1,0 +1,18 @@
+// Domain: OrderContext
+// 订单限界上下文
+
+domain "OrderContext" {
+  description = "订单限界上下文：管理订单创建、支付、履约"
+
+  language {
+    noun "Order" desc "用户提交的购买请求"
+    noun "LineItem" desc "订单中的单一商品项"
+    verb "PlaceOrder" desc "创建订单"
+    verb "FulfillOrder" desc "完成订单发货"
+    ban = ["Cart", "Basket", "Invoice"]
+  }
+
+  domain_rules {
+    rule "OrderMustHavePayment" desc "订单完成前必须有支付凭证"
+  }
+}

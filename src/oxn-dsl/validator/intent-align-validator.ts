@@ -1,113 +1,82 @@
 /**
- * IntentAlignValidator
+ * TaskAlignValidator (v0.1)
  *
- * 校验 Intent-Align 语义的正确性：
- * 1. Work 中 SlotBinding.align 必须匹配 Blueprint 中 PartSlot.name (即 Intent 类型)
- * 2. Work 中 ProbeBinding.align 必须匹配 Blueprint 中 PartSlot.observe 中声明的 observe 名
+ * 校验 Work 内的 task 编排：
+ *   1. task.deps 引用的 task 名必须存在
+ *   2. task.deps 不能形成环（DAG）
+ *   3. task.align 全限定名 Blueprint.SlotName 格式合法
  */
 
-import type { AstNode, ValidationAcceptor } from 'langium'
-import type { OXNDocument, WorkDeclaration, BlueprintDeclaration, PartSlotDeclaration } from '../generated/ast.js'
-import { isBlueprintDeclaration, isSlotBinding, isProbeBinding } from '../generated/ast.js'
+import type { ValidationAcceptor } from 'langium'
+import type { WorkDeclaration, TaskRefDecl } from '../generated/ast.js'
+import { isTaskRefDecl } from '../generated/ast.js'
 
-function findBlueprint(node: WorkDeclaration): BlueprintDeclaration | undefined {
-  let current: AstNode | undefined = node
-  while (current) {
-    const container = current.$container
-    if (!container) break
-
-    if (isBlueprintDeclaration(container)) {
-      return container
-    }
-
-    const doc = container as unknown as OXNDocument
-    if (doc?.entities) {
-      for (const entity of doc.entities) {
-        if (isBlueprintDeclaration(entity)) {
-          return entity
-        }
-      }
-    }
-
-    current = container as AstNode
+function validateDag(tasks: TaskRefDecl[]): { hasCycle: boolean; cycleHint?: string } {
+  const nameSet = new Set(tasks.map((t) => t.name))
+  const adj = new Map<string, string[]>()
+  for (const t of tasks) {
+    adj.set(
+      t.name,
+      (t.deps ?? []).filter((d) => nameSet.has(d)),
+    )
   }
-  return undefined
-}
 
-function getSlotMap(blueprint: BlueprintDeclaration): Map<string, PartSlotDeclaration> {
-  const map = new Map<string, PartSlotDeclaration>()
-  if (!blueprint.partSlots) return map
-
-  for (const slot of blueprint.partSlots) {
-    if (slot.name) {
-      map.set(slot.name, slot)
+  // Kahn's algorithm
+  const inDegree = new Map<string, number>()
+  for (const t of tasks) inDegree.set(t.name, 0)
+  for (const [u, vs] of adj) {
+    inDegree.set(u, inDegree.get(u) ?? 0)
+    for (const v of vs) {
+      inDegree.set(v, (inDegree.get(v) ?? 0) + 1)
     }
   }
-  return map
+
+  const queue: string[] = []
+  for (const [n, d] of inDegree) {
+    if (d === 0) queue.push(n)
+  }
+
+  let visited = 0
+  while (queue.length > 0) {
+    const n = queue.shift()!
+    visited++
+    for (const next of adj.get(n) ?? []) {
+      const d = (inDegree.get(next) ?? 0) - 1
+      inDegree.set(next, d)
+      if (d === 0) queue.push(next)
+    }
+  }
+
+  if (visited < tasks.length) {
+    const remaining = tasks.map((t) => t.name).filter((n) => (inDegree.get(n) ?? 0) > 0)
+    return { hasCycle: true, cycleHint: remaining.join(' -> ') }
+  }
+  return { hasCycle: false }
 }
 
-function getObserveNames(slot: PartSlotDeclaration): Set<string> {
-  const names = new Set<string>()
-  if (!slot.observe) return names
+export function validateTaskAlign(node: WorkDeclaration, accept: ValidationAcceptor, ..._args: unknown[]): void {
+  if (!node.tasks || node.tasks.length === 0) return
 
-  for (const obs of slot.observe) {
-    if (obs.observes) {
-      for (const name of obs.observes) {
-        names.add(name)
+  const nameSet = new Set<string>()
+  for (const t of node.tasks) {
+    if (!isTaskRefDecl(t)) continue
+    if (nameSet.has(t.name)) {
+      accept('error', `task "${t.name}" 重复声明`, { node: t, property: 'name' })
+    }
+    nameSet.add(t.name)
+  }
+
+  for (const t of node.tasks) {
+    if (!isTaskRefDecl(t)) continue
+    for (const dep of t.deps ?? []) {
+      if (!nameSet.has(dep)) {
+        accept('error', `task "${t.name}" 引用了未声明的 dep "${dep}"`, { node: t, property: 'deps' })
       }
     }
   }
-  return names
-}
 
-export function validateIntentAlign(node: WorkDeclaration, accept: ValidationAcceptor, ..._args: unknown[]): void {
-  const blueprint = findBlueprint(node)
-  if (!blueprint) return
-
-  const slotMap = getSlotMap(blueprint)
-  if (slotMap.size === 0) return
-
-  if (!node.slotBindings || node.slotBindings.length === 0) return
-
-  for (const binding of node.slotBindings) {
-    if (!isSlotBinding(binding)) continue
-    if (!binding.align) continue
-
-    const slot = slotMap.get(binding.align)
-    if (!slot) {
-      accept('error', `Slot "${binding.align}" 在 Blueprint "${blueprint.name}" 中未定义`, {
-        node: binding,
-        property: 'align',
-      })
-      continue
-    }
-
-    if (binding.probeBindings && binding.probeBindings.length > 0) {
-      const observeNames = getObserveNames(slot)
-
-      if (observeNames.size === 0) {
-        accept('warning', `Slot "${binding.align}" 没有声明 observe，但 Work 中绑定了 probe`, {
-          node: binding,
-          property: 'align',
-        })
-      }
-
-      for (const probeBinding of binding.probeBindings) {
-        if (!isProbeBinding(probeBinding)) continue
-        if (!probeBinding.align) continue
-
-        if (!observeNames.has(probeBinding.align)) {
-          const availableObserves = Array.from(observeNames).join(', ') || '无'
-          accept(
-            'error',
-            `Probe align "${probeBinding.align}" 不在 Slot "${binding.align}" 的 observe 声明中 (可用: ${availableObserves})`,
-            {
-              node: probeBinding,
-              property: 'align',
-            },
-          )
-        }
-      }
-    }
+  const dag = validateDag(node.tasks.filter(isTaskRefDecl))
+  if (dag.hasCycle) {
+    accept('error', `task DAG 存在环: ${dag.cycleHint}`, { node, property: 'tasks' })
   }
 }

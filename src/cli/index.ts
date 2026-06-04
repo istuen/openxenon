@@ -80,6 +80,8 @@ const main = defineCommand({
     'add-probe': () => import('./oxn-add-probe').then((m) => m.default),
     'install-skill': () => import('./install-skill').then((m) => m.default),
     blueprint: () => import('./blueprint').then((m) => m.default),
+    domain: () => import('./domain').then((m) => m.default),
+    'get-context': () => import('./get-context').then((m) => m.default),
     leader: () => {
       // Unified leader (single entry — see src/cli/leader.ts).
       //   Subcommands: new | run | submit | status

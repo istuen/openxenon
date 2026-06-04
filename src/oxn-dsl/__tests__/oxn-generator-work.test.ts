@@ -114,67 +114,73 @@ function mBP(
 // ========================
 
 describe('convertWorkDeclaration', () => {
-  test('Work 绑定转换', () => {
+  test('Work 编排转换 (v0.1 use_domain/use_blueprint/task)', () => {
     const work: WorkDeclaration = {
       $type: 'WorkDeclaration',
       $containerProperty: '',
       $containerIndex: 0,
       name: 'validate-feature-auth',
-      type: 'task',
-      ref: '@prj/blueprint/feature-pipeline',
-      slotBindings: [
+      context: undefined,
+      useDomains: [{ $type: 'UseDomainDecl', $containerProperty: '', $containerIndex: 0, name: 'MemberContext' }],
+      useBlueprints: [
+        { $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'feature-pipeline' },
+      ],
+      tasks: [
         {
-          $type: 'SlotBinding',
+          $type: 'TaskRefDecl',
           $containerProperty: '',
           $containerIndex: 0,
-          align: 'tester',
-          name: 'tester',
-          ref: '@glo/parts/jest-runner',
-          props: [{ $type: 'SlotPropBinding', $containerProperty: '', $containerIndex: 0, name: 'env', value: 'prod' }],
-          probeBindings: [],
+          name: 'TestIt',
+          align: 'feature-pipeline.test',
+          deps: [],
+          props: [],
         },
       ],
     } as WorkDeclaration
 
     const result = convertWorkDeclaration(work)
     expect(result.name).toBe('validate-feature-auth')
-    expect(result.use).toBe('@prj/blueprint/feature-pipeline')
-    expect(result.slotBindings).toHaveLength(1)
-    expect(result.slotBindings[0].slot).toBe('tester')
-    expect(result.slotBindings[0].ref).toBe('@glo/parts/jest-runner')
+    expect(result.useDomains).toHaveLength(1)
+    expect(result.useDomains[0].name).toBe('MemberContext')
+    expect(result.useBlueprints).toHaveLength(1)
+    expect(result.useBlueprints[0].name).toBe('feature-pipeline')
+    expect(result.tasks).toHaveLength(1)
+    expect(result.tasks[0].align).toBe('feature-pipeline.test')
   })
 
-  test('Work 无 slotBindings', () => {
+  test('Work 无 tasks', () => {
     const work: WorkDeclaration = {
       $type: 'WorkDeclaration',
       $containerProperty: '',
       $containerIndex: 0,
       name: 'simple-work',
-      type: 'plan',
-      ref: '@prj/blueprint/simple',
-      slotBindings: [],
+      context: undefined,
+      useDomains: [],
+      useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'simple' }],
+      tasks: [],
     } as WorkDeclaration
 
     const result = convertWorkDeclaration(work)
     expect(result.name).toBe('simple-work')
-    expect(result.use).toBe('@prj/blueprint/simple')
-    expect(result.slotBindings).toHaveLength(0)
+    expect(result.useBlueprints).toHaveLength(1)
+    expect(result.tasks).toHaveLength(0)
   })
 
-  test('Work 无 ref', () => {
+  test('Work 无 use_blueprint', () => {
     const work: WorkDeclaration = {
       $type: 'WorkDeclaration',
       $containerProperty: '',
       $containerIndex: 0,
-      name: 'work-no-ref',
-      type: 'flow',
-      ref: '',
-      slotBindings: [],
+      name: 'work-no-blueprint',
+      context: undefined,
+      useDomains: [],
+      useBlueprints: [],
+      tasks: [],
     } as WorkDeclaration
 
     const result = convertWorkDeclaration(work)
-    expect(result.name).toBe('work-no-ref')
-    expect(result.use).toBe('')
+    expect(result.name).toBe('work-no-blueprint')
+    expect(result.useBlueprints).toHaveLength(0)
   })
 })
 
@@ -224,9 +230,12 @@ describe('generateOxnAssembly — Work 集成', () => {
           $containerProperty: '',
           $containerIndex: 0,
           name: 'deploy-prod',
-          type: 'task',
-          ref: '@prj/blueprint/ci-pipeline',
-          slotBindings: [],
+          context: undefined,
+          useDomains: [],
+          useBlueprints: [
+            { $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'ci-pipeline' },
+          ],
+          tasks: [],
         } as WorkDeclaration,
       ],
     } as OXNDocument
@@ -259,9 +268,10 @@ describe('categorizeEntities (Work)', () => {
           $containerProperty: '',
           $containerIndex: 0,
           name: 'work-1',
-          type: 'task',
-          ref: '@prj/bp/bp1',
-          slotBindings: [],
+          context: undefined,
+          useDomains: [],
+          useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'bp1' }],
+          tasks: [],
         } as WorkDeclaration,
       ],
     } as OXNDocument
@@ -288,9 +298,10 @@ describe('categorizeEntities (Work)', () => {
           $containerProperty: '',
           $containerIndex: 0,
           name: 'only-work',
-          type: 'plan',
-          ref: '@prj/bp/plan-bp',
-          slotBindings: [],
+          context: undefined,
+          useDomains: [],
+          useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'plan-bp' }],
+          tasks: [],
         } as WorkDeclaration,
       ],
     } as OXNDocument
@@ -319,18 +330,20 @@ describe('extractWorks', () => {
           $containerProperty: '',
           $containerIndex: 0,
           name: 'work-a',
-          type: 'task',
-          ref: '@prj/bp/a',
-          slotBindings: [],
+          context: undefined,
+          useDomains: [],
+          useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'a' }],
+          tasks: [],
         } as WorkDeclaration,
         {
           $type: 'WorkDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
           name: 'work-b',
-          type: 'flow',
-          ref: '@prj/bp/b',
-          slotBindings: [],
+          context: undefined,
+          useDomains: [],
+          useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'b' }],
+          tasks: [],
         } as WorkDeclaration,
       ],
     } as OXNDocument

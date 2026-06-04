@@ -6,7 +6,7 @@ pre-commit:
       run: bunx biome check --staged --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
     eslint-arch:
       glob: "src/**/*.ts"
-      run: bunx eslint {staged_files}
+      run: bunx eslint --no-warn-ignored {staged_files}
     typecheck:
       run: bun run typecheck
 

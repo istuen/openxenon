@@ -266,20 +266,22 @@ describe('OxnAssemblyBundle', () => {
     expect(bundle.entities[2].type).toBe('blueprint')
   })
 
-  test('Bundle 支持 Task 实体', () => {
+  test('Bundle 支持 Task 实体 (v0.1)', () => {
     const bundle = OxnAssemblyBundleSchema.parse({
       entities: [
         {
           type: 'task',
           data: {
             name: 'deploy-prod',
-            use: '@prj/blueprint/deploy',
-            slotBindings: [{ slot: 'worker', ref: '@glo/parts/k8s-worker', props: { env: 'prod' } }],
+            blueprint: 'deploy',
+            injects: [{ domain: 'MemberContext' }],
+            slots: [{ name: 'worker', deps: [], observe: [] }],
           },
         },
       ],
     })
-    expect(bundle.entities[0].data.use).toBe('@prj/blueprint/deploy')
+    expect(bundle.entities[0].type).toBe('task')
+    expect((bundle.entities[0].data as { blueprint: string }).blueprint).toBe('deploy')
   })
 })
 

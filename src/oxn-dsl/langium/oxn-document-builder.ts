@@ -4,7 +4,7 @@ import { Cancellation, DocumentState, URI } from 'langium'
 import { isAbsolute, join } from 'path'
 import type { StandardAsset } from '../../infra/loader.js'
 import type { WorkDeclaration } from '../generated/ast.js'
-import { isSlotBinding, isWorkDeclaration } from '../generated/ast.js'
+import { isWorkDeclaration } from '../generated/ast.js'
 import type { IOxnWorkspaceManager } from '../scope/oxn-scope.js'
 import { parseOxnReference } from '../scope/oxn-scope.js'
 import { createOxnServices } from './oxn-services.js'
@@ -17,7 +17,7 @@ export interface ExternalInjectionResult {
   errors: string[]
 }
 
-function collectBindingRefsFromDocument(document: LangiumDocument): string[] {
+function collectRefsFromDocument(document: LangiumDocument): string[] {
   const refs: string[] = []
   const visitedRefs = new Set<string>()
 
@@ -32,17 +32,18 @@ function collectBindingRefsFromDocument(document: LangiumDocument): string[] {
 
     const work = entity as WorkDeclaration
 
-    if (work.ref && !visitedRefs.has(work.ref)) {
-      refs.push(work.ref)
-      visitedRefs.add(work.ref)
+    // v0.1: 收集 use_blueprint 引用，供 document-builder 注入对应 .oxn
+    for (const useBp of work.useBlueprints ?? []) {
+      if (useBp.name && !visitedRefs.has(useBp.name)) {
+        refs.push(useBp.name)
+        visitedRefs.add(useBp.name)
+      }
     }
-
-    if (!work.slotBindings) continue
-
-    for (const binding of work.slotBindings) {
-      if (isSlotBinding(binding) && binding.ref && !visitedRefs.has(binding.ref)) {
-        refs.push(binding.ref)
-        visitedRefs.add(binding.ref)
+    // v0.1: 收集 use_domain 引用
+    for (const useD of work.useDomains ?? []) {
+      if (useD.name && !visitedRefs.has(useD.name)) {
+        refs.push(useD.name)
+        visitedRefs.add(useD.name)
       }
     }
   }
@@ -123,7 +124,7 @@ export class OxnDocumentBuilder {
       }
     }
 
-    const bindingRefs = collectBindingRefsFromDocument(mainDocument)
+    const bindingRefs = collectRefsFromDocument(mainDocument)
     const resolvedPaths = resolveRefsToPaths(bindingRefs, this.workspaceManager)
 
     const externalDocuments: LangiumDocument[] = [mainDocument]

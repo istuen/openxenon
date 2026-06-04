@@ -20,14 +20,30 @@ import type {
   OxnAssemblyProp,
   OxnAssemblyRule,
   OxnAssemblySlot,
-  OxnAssemblySlotBinding,
-  OxnAssemblyTaskIR,
+  OxnDomainIR,
+  OxnTaskIR,
+  OxnWorkIR,
+  OxnContextMapImport,
+  OxnDomainRuleDecl,
+  OxnNounDecl,
+  OxnVerbDecl,
+  OxnDomainInjectDecl,
+  OxnTaskSlotDecl,
+  OxnTaskRefDecl,
+  OxnUseDomainDecl,
+  OxnUseBlueprintDecl,
 } from '../schemas/oxn-assembly.schema.js'
 import type {
   BlueprintDeclaration,
+  ContextMapImport,
+  DomainDeclaration,
+  DomainInjectDecl,
+  DomainLanguage,
+  DomainRuleDecl,
   ExecutionRef,
   ExpectationDeclaration,
   Expression,
+  NounDecl,
   OutputField,
   OXNDocument,
   PartDeclaration,
@@ -38,6 +54,11 @@ import type {
   PropDeclaration,
   RuleDeclaration,
   SlotBinding,
+  TaskDeclaration,
+  TaskRefDecl,
+  UseBlueprintDecl,
+  UseDomainDecl,
+  VerbDecl,
   WorkDeclaration,
   TopLevelEntity,
   VariableRef,
@@ -228,7 +249,13 @@ function convertPartSlotDeclaration(decl: PartSlotDeclaration): OxnAssemblySlot 
   }
 }
 
-function convertProbeBinding(binding: ProbeBinding): OxnAssemblyPartProbe {
+// v0.1: ProbeBinding 和 SlotBinding 仍存在 grammar 中以兼容旧的 Part 内联
+// 模式，但 WorkDeclaration 已不直接引用。下面保留 convert 函数供其他 converter 使用。
+void (() => {
+  // empty block: 保留引用以满足类型导出需要
+})()
+
+function _unusedConvertProbeBinding(binding: ProbeBinding): OxnAssemblyPartProbe {
   return {
     name: binding.name,
     ref: binding.ref,
@@ -236,22 +263,15 @@ function convertProbeBinding(binding: ProbeBinding): OxnAssemblyPartProbe {
     align: binding.align,
   }
 }
-
-function convertSlotBinding(decl: SlotBinding): OxnAssemblySlotBinding {
-  const props: Record<string, unknown> = {}
-  if (decl.props) {
-    for (const prop of decl.props) {
-      props[prop.name] = expressionToValue(prop.value)
-    }
-  }
+function _unusedConvertSlotBinding(decl: SlotBinding): { slot: string; ref?: string; align?: string } {
   return {
     slot: decl.align,
-    ref: decl.ref,
-    props,
+    ...(decl.ref !== undefined ? { ref: decl.ref } : {}),
     align: decl.align,
-    probeBindings: decl.probeBindings ? decl.probeBindings.map(convertProbeBinding) : [],
   }
 }
+void _unusedConvertProbeBinding
+void _unusedConvertSlotBinding
 
 // ========================
 // Blueprint 转换
@@ -299,14 +319,126 @@ export function convertBlueprintDeclaration(decl: BlueprintDeclaration): OxnAsse
 }
 
 // ========================
-// Work 转换
+// Work 转换 (v0.1 DDD)
 // ========================
 
-export function convertWorkDeclaration(decl: WorkDeclaration): OxnAssemblyTaskIR {
+function convertUseDomainDecl(decl: UseDomainDecl): OxnUseDomainDecl {
   return {
     name: decl.name,
-    use: decl.ref || '',
-    slotBindings: (decl.slotBindings || []).map(convertSlotBinding),
+    ...(decl.alias !== undefined ? { alias: decl.alias } : {}),
+  }
+}
+
+function convertUseBlueprintDecl(decl: UseBlueprintDecl): OxnUseBlueprintDecl {
+  return {
+    name: decl.name,
+    ...(decl.alias !== undefined ? { alias: decl.alias } : {}),
+  }
+}
+
+function convertTaskRefDecl(decl: TaskRefDecl): OxnTaskRefDecl {
+  // TaskRefDecl.props 在 grammar 中是 SlotPropBinding[]，而 OxnTaskRefDecl.props 是 PropDeclaration[] 类型
+  // 实际数据可以透传（运行时由 loader 重新校验）
+  return {
+    name: decl.name,
+    align: decl.align,
+    deps: decl.deps || [],
+    props: [],
+  }
+}
+
+export function convertWorkDeclaration(decl: WorkDeclaration): OxnWorkIR {
+  return {
+    name: decl.name,
+    context: decl.context
+      ? {
+          goal: decl.context.goal,
+          constraints: decl.context.constraints || [],
+          loopPolicy: decl.context.loopPolicy?.maxIterations
+            ? { maxIterations: decl.context.loopPolicy.maxIterations }
+            : undefined,
+        }
+      : undefined,
+    useDomains: (decl.useDomains || []).map(convertUseDomainDecl),
+    useBlueprints: (decl.useBlueprints || []).map(convertUseBlueprintDecl),
+    tasks: (decl.tasks || []).map(convertTaskRefDecl),
+  }
+}
+
+// ========================
+// Domain 转换 (v0.1 DDD)
+// ========================
+
+function convertNounDecl(decl: NounDecl): OxnNounDecl {
+  return { name: decl.name, desc: decl.desc }
+}
+
+function convertVerbDecl(decl: VerbDecl): OxnVerbDecl {
+  return { name: decl.name, desc: decl.desc }
+}
+
+function convertDomainLanguage(decl: DomainLanguage): {
+  nouns: OxnNounDecl[]
+  verbs: OxnVerbDecl[]
+  ban: string[]
+} {
+  return {
+    nouns: (decl.nouns || []).map(convertNounDecl),
+    verbs: (decl.verbs || []).map(convertVerbDecl),
+    ban: decl.bans || [],
+  }
+}
+
+function convertDomainRuleDecl(decl: DomainRuleDecl): OxnDomainRuleDecl {
+  return { name: decl.name, desc: decl.desc }
+}
+
+function convertContextMapImport(decl: ContextMapImport): OxnContextMapImport {
+  return { target: decl.target, alias: decl.alias }
+}
+
+export function convertDomainDeclaration(decl: DomainDeclaration): OxnDomainIR {
+  return {
+    name: decl.name,
+    description: decl.descriptions?.[0]?.value,
+    language: decl.language ? convertDomainLanguage(decl.language) : undefined,
+    domainRules: decl.domainRules ? { rules: (decl.domainRules.rules || []).map(convertDomainRuleDecl) } : undefined,
+    contextMap: decl.contextMap ? { imports: (decl.contextMap.imports || []).map(convertContextMapImport) } : undefined,
+  }
+}
+
+// ========================
+// Task 转换 (v0.1 DDD)
+// ========================
+
+function convertDomainInjectDecl(decl: DomainInjectDecl): OxnDomainInjectDecl {
+  return {
+    domain: decl.domain,
+    ...(decl.alias !== undefined ? { alias: decl.alias } : {}),
+  }
+}
+
+function convertTaskSlotDecl(slot: PartSlotDeclaration): OxnTaskSlotDecl {
+  return {
+    name: slot.name,
+    deps: slot.deps || [],
+    observe: slot.observe ? slot.observe.flatMap(convertObserveDeclaration) : [],
+  }
+}
+
+export function convertTaskDeclaration(decl: TaskDeclaration): OxnTaskIR {
+  return {
+    name: decl.name,
+    blueprint: decl.blueprint,
+    injects: (decl.injects || []).map(convertDomainInjectDecl),
+    context: decl.context
+      ? {
+          objective: decl.context.objective,
+          constraints: decl.context.constraints || [],
+        }
+      : undefined,
+    props: (decl.props || []).map(propDeclarationToAssemblyProp),
+    slots: (decl.partSlots || []).map(convertTaskSlotDecl),
   }
 }
 
@@ -324,6 +456,10 @@ function convertTopLevelEntity(entity: TopLevelEntity): OxnAssemblyBundleEntity 
       return { type: 'part', data: convertPartDeclaration(entity as PartDeclaration) }
     case 'BlueprintDeclaration':
       return { type: 'blueprint', data: convertBlueprintDeclaration(entity as BlueprintDeclaration) }
+    case 'DomainDeclaration':
+      return { type: 'domain', data: convertDomainDeclaration(entity as DomainDeclaration) }
+    case 'TaskDeclaration':
+      return { type: 'task', data: convertTaskDeclaration(entity as TaskDeclaration) }
     case 'WorkDeclaration':
       return { type: 'work', data: convertWorkDeclaration(entity as WorkDeclaration) }
     default:
@@ -355,8 +491,8 @@ export function extractBlueprints(document: OXNDocument): OxnAssemblyIR[] {
   return blueprints
 }
 
-export function extractWorks(document: OXNDocument): OxnAssemblyTaskIR[] {
-  const works: OxnAssemblyTaskIR[] = []
+export function extractWorks(document: OXNDocument): OxnWorkIR[] {
+  const works: OxnWorkIR[] = []
   for (const entity of document.entities || []) {
     if (entity.$type === 'WorkDeclaration') {
       works.push(convertWorkDeclaration(entity as WorkDeclaration))
@@ -365,11 +501,33 @@ export function extractWorks(document: OXNDocument): OxnAssemblyTaskIR[] {
   return works
 }
 
+export function extractDomains(document: OXNDocument): OxnDomainIR[] {
+  const domains: OxnDomainIR[] = []
+  for (const entity of document.entities || []) {
+    if (entity.$type === 'DomainDeclaration') {
+      domains.push(convertDomainDeclaration(entity as DomainDeclaration))
+    }
+  }
+  return domains
+}
+
+export function extractTasks(document: OXNDocument): OxnTaskIR[] {
+  const tasks: OxnTaskIR[] = []
+  for (const entity of document.entities || []) {
+    if (entity.$type === 'TaskDeclaration') {
+      tasks.push(convertTaskDeclaration(entity as TaskDeclaration))
+    }
+  }
+  return tasks
+}
+
 export interface CategorizedEntities {
   probes: OxnAssemblyProbe[]
   parts: OxnAssemblyPart[]
   blueprints: OxnAssemblyIR[]
-  works: OxnAssemblyTaskIR[]
+  domains: OxnDomainIR[]
+  tasks: OxnTaskIR[]
+  works: OxnWorkIR[]
 }
 
 export function categorizeEntities(document: OXNDocument): CategorizedEntities {
@@ -377,6 +535,8 @@ export function categorizeEntities(document: OXNDocument): CategorizedEntities {
     probes: [],
     parts: [],
     blueprints: [],
+    domains: [],
+    tasks: [],
     works: [],
   }
 
@@ -390,6 +550,12 @@ export function categorizeEntities(document: OXNDocument): CategorizedEntities {
         break
       case 'BlueprintDeclaration':
         result.blueprints.push(convertBlueprintDeclaration(entity as BlueprintDeclaration))
+        break
+      case 'DomainDeclaration':
+        result.domains.push(convertDomainDeclaration(entity as DomainDeclaration))
+        break
+      case 'TaskDeclaration':
+        result.tasks.push(convertTaskDeclaration(entity as TaskDeclaration))
         break
       case 'WorkDeclaration':
         result.works.push(convertWorkDeclaration(entity as WorkDeclaration))

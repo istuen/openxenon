@@ -1,3 +1,5 @@
 export * from './state'
 export * from './state-io'
 export * from './trace'
+export * from './dual-state'
+export * from './dual-state-io'

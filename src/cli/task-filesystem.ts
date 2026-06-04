@@ -126,7 +126,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
   const taskOxnContent = readFileSync(taskOxnPath, 'utf-8')
 
   // Parse task.oxn with Langium to extract slotBindings
-  let slotBindings: OxnAssemblySlotBinding[] = []
+  const slotBindings: OxnAssemblySlotBinding[] = []
   let extractedTaskId: string | undefined
   let blueprintName: string | undefined
 
@@ -142,10 +142,22 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
     if (doc.parseResult?.value && doc.state > 1) {
       const bundle = generateOxnAssembly(doc.parseResult.value as any)
       const taskEntity = bundle.entities.find((e) => e.type === 'task')
-      if (taskEntity?.data) {
-        extractedTaskId = taskEntity.data.name
-        slotBindings = taskEntity.data.slotBindings || []
-        blueprintName = taskEntity.data.use?.replace('@prj/blueprints/', '') || undefined
+      if (taskEntity?.data && taskEntity.type === 'task') {
+        const data = taskEntity.data as {
+          name: string
+          blueprint: string
+          slots: Array<{ name: string; deps: string[] }>
+        }
+        extractedTaskId = data.name
+        blueprintName = data.blueprint
+        // v0.1: 转换为统一的 slotBinding 形式以兼容下游 unifiedTaskSubmit
+        for (const slot of data.slots ?? []) {
+          slotBindings.push({
+            slot: slot.name,
+            props: {},
+            probeBindings: [],
+          })
+        }
       }
     } else {
       throw new Error(
@@ -158,34 +170,19 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
     // Fallback to regex parsing if Langium fails
     const taskNameMatch = taskOxnContent.match(/task\s+"([^"]+)"/)
     extractedTaskId = taskNameMatch?.[1]
-    // Support both 'blueprint "name"' and 'use "@prj/blueprints/name"' syntax
+    // v0.1: 只支持 blueprint "name" 语法（旧的 use "@prj/blueprints/name" 已废弃）
     const blueprintMatch = taskOxnContent.match(/blueprint\s+"([^"]+)"/)
-    const useMatch = taskOxnContent.match(/use\s+"@prj\/blueprints\/([^"]+)"/)
-    blueprintName = blueprintMatch?.[1] || useMatch?.[1]
+    blueprintName = blueprintMatch?.[1]
 
     // Extract slotBindings from task.oxn content using regex fallback
-    // Match: part slot "name" ref "..." { props }
-    const slotBindingRegex = /part\s+slot\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*\{([^}]*)\}/g
+    // Match: slot "name" { deps = [...] }
+    const slotBindingRegex = /slot\s+"([^"]+)"\s*\{([^}]*)\}/g
     let match
     while ((match = slotBindingRegex.exec(taskOxnContent)) !== null) {
       const slotName = match[1] ?? ''
-      const ref = match[2]
-      const propsContent = match[3] ?? ''
-
-      // Parse props from the slot binding body
-      const props: Record<string, unknown> = {}
-      const propRegex = /prop\s+(\w+)\s*=\s*([^;]+);?/g
-      let propMatch
-      while ((propMatch = propRegex.exec(propsContent)) !== null) {
-        const propName = propMatch[1] ?? ''
-        const propValue = propMatch[2]?.trim() ?? ''
-        props[propName] = propValue
-      }
-
       slotBindings.push({
         slot: slotName,
-        ref: ref ?? '',
-        props,
+        props: {},
         probeBindings: [],
       })
     }
@@ -295,7 +292,7 @@ export function taskNew(taskId: string, taskName: string, cwd: string, blueprint
   ensureDirectory(taskDir)
 
   const taskOxnContent = blueprintName
-    ? `task "${taskId}" use "@prj/blueprints/${blueprintName}" {\n}\n`
+    ? `task "${taskId}" blueprint "${blueprintName}" {\n}\n`
     : `task "${taskId}" {\n  // Empty task, waiting for developer to fill in\n}\n`
 
   writeFileSync(join(taskDir, TASK_OXN_FILE), taskOxnContent, 'utf-8')

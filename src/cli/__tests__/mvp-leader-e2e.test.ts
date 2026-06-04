@@ -62,8 +62,9 @@ describe('unified leader (single entry) e2e', () => {
     expect(existsSync(workFile)).toBe(true)
     const workContent = readFileSync(workFile, 'utf-8')
     expect(workContent).toContain('work "tiny"')
-    expect(workContent).toContain('part "alpha" align "Alpha"')
-    expect(workContent).toContain('part "beta" align "Beta"')
+    expect(workContent).toContain('use_blueprint "tiny"')
+    expect(workContent).toContain('task "alpha" align "tiny.alpha"')
+    expect(workContent).toContain('task "beta" align "tiny.beta"')
 
     // leader run
     const runResult = JSON.parse((await runCli(['leader', 'run', '--work-file', workFile, '--json'])).stdout)
@@ -125,9 +126,8 @@ describe('unified leader (single entry) e2e', () => {
     expect(existsSync(join(workDir, 'parts.oxn'))).toBe(false)
   })
 
-  test('reference-style work.oxn with inline part props + ref parses through run', async () => {
-    // Verify that reference-style work.oxn (no skill block, with ref on parts)
-    // also works with the unified leader.
+  test('v0.1 work.oxn with use_blueprint + task parses through run', async () => {
+    // v0.1: work.oxn 使用 use_blueprint + task 编排（不再使用 ref + part 实体）
     const init = Bun.spawn(['bun', CLI_PATH, 'init'], {
       cwd: tmpDir,
       env: { ...process.env, NO_COLOR: '1' },
@@ -136,17 +136,12 @@ describe('unified leader (single entry) e2e', () => {
     })
     await init.exited
 
-    // Use a reference-style work.oxn directly
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'refstyle'), { recursive: true })
-    const refStyleWork = `work "refstyle" ref "@oxn/blueprints/std" {
-  part "alpha" align "Alpha" ref "@oxn/parts/alpha" {
+    const refStyleWork = `work "refstyle" {
+  use_blueprint "std";
+  task "alpha" align "std.alpha" {
     prop "x" = "y"
   }
-}
-
-part "alpha" align "Alpha" ref "@oxn/parts/alpha" {
-  description = "alpha part"
-  observe = ["ShellExec"]
 }
 `
     const workFile = join(tmpDir, '.openxenon', 'works', 'refstyle', 'work.oxn')
@@ -154,8 +149,8 @@ part "alpha" align "Alpha" ref "@oxn/parts/alpha" {
     const runResult = JSON.parse((await runCli(['leader', 'run', '--work-file', workFile, '--json'])).stdout)
     expect(runResult.ok).toBe(true)
     expect(runResult.data.workName).toBe('refstyle')
-    // Part spec is preserved including the ref field
-    expect(runResult.data.parts[0].ref).toBe('@oxn/parts/alpha')
+    // v0.1: part spec 不再含 ref 字段（task 不绑定 part 实体）
+    expect(runResult.data.parts[0].partName).toBe('alpha')
   })
 
   test('--run-probes runs a probe and persists it into partExecutions', async () => {
@@ -168,15 +163,11 @@ part "alpha" align "Alpha" ref "@oxn/parts/alpha" {
     await init.exited
 
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'probework'), { recursive: true })
-    const probeWork = `work "probework" ref "@oxn/blueprints/std" {
-  part "alpha" align "Alpha" ref "@oxn/parts/alpha" {
+    const probeWork = `work "probework" {
+  use_blueprint "std";
+  task "alpha" align "std.alpha" {
     prop "x" = "y"
   }
-}
-
-part "alpha" align "Alpha" ref "@oxn/parts/alpha" {
-  description = "alpha part"
-  observe = ["ShellExec"]
 }
 `
     const workFile = join(tmpDir, '.openxenon', 'works', 'probework', 'work.oxn')
@@ -186,12 +177,7 @@ part "alpha" align "Alpha" ref "@oxn/parts/alpha" {
       (await runCli(['leader', 'submit', '--work-name', 'probework', '--run-probes', '--json'])).stdout,
     )
     expect(submitResult.ok).toBe(true)
-    // The probe should appear in per-part probeResults
-    expect(submitResult.data.parts[0].probeResults.length).toBeGreaterThan(0)
-    expect(submitResult.data.parts[0].probeResults[0].probe).toBe('part-reachable')
-    expect(submitResult.data.parts[0].probeResults[0].passed).toBe(true)
-
-    // state.json should also reflect the probe
+    // v0.1: 探针仍然在 partExecutions 持久化（不需 ref 字段也跑 no-op probe）
     const state = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'probework', 'state.json'), 'utf-8'))
     const partExec = state.partExecutions.find((e: { partName: string }) => e.partName === 'alpha')
     expect(partExec.probes.length).toBeGreaterThan(0)

@@ -29,7 +29,8 @@ export { createOxnWorkspaceManager } from './scope/oxn-workspace-manager'
 export { createOxnAssetLoader } from './loader/oxn-loader'
 
 export { registerOxnValidators } from './validator/oxn-validation'
-export { validateSlotReference } from './validator/slot-reference-validator'
+export { validateWorkTaskReference } from './validator/slot-reference-validator'
+export { validateTaskAlign } from './validator/intent-align-validator'
 
 export type {
   OxnAssemblyIR,
@@ -37,6 +38,31 @@ export type {
   OxnAssemblyProbe,
   OxnAssemblyProp,
   OxnAssemblySlot,
+  OxnDomainIR,
+  OxnDomainLanguage,
+  OxnDomainRuleBlock,
+  OxnContextMap,
+  OxnContextMapImport,
+  OxnTaskIR,
+  OxnTaskContext,
+  OxnTaskSlotDecl,
+  OxnWorkIR,
+  OxnWorkContext,
+  OxnTaskRefDecl,
+  OxnUseDomainDecl,
+  OxnUseBlueprintDecl,
+} from './schemas/oxn-assembly.schema'
+
+export {
+  createOxnDomainIR,
+  createOxnTaskIR,
+  createOxnWorkIR,
+  validateOxnDomainIR,
+  safeValidateOxnDomainIR,
+  validateOxnTaskIR,
+  safeValidateOxnTaskIR,
+  validateOxnWorkIR,
+  safeValidateOxnWorkIR,
 } from './schemas/oxn-assembly.schema'
 
 export type { CompileContext, CompileDependencies } from './compiler/blueprint-compiler'
@@ -72,6 +98,21 @@ export type {
   BlueprintDeclaration,
   PartSlotDeclaration,
   PartProbeDeclaration,
+  // v0.1 DDD
+  DomainDeclaration,
+  DomainLanguage,
+  DomainRuleBlock,
+  DomainRuleDecl,
+  DomainInjectDecl,
+  NounDecl,
+  VerbDecl,
+  ContextMapBlock,
+  ContextMapImport,
+  TaskDeclaration,
+  TaskContext,
+  TaskRefDecl,
+  UseDomainDecl,
+  UseBlueprintDecl,
 } from './generated/ast'
 
 // --- AST type guards (mvp) ---
@@ -82,4 +123,11 @@ export {
   isBlueprintDeclaration,
   isWorkContext,
   isPartSkill,
+  // v0.1 DDD
+  isDomainDeclaration,
+  isDomainLanguage,
+  isTaskDeclaration,
+  isUseDomainDecl,
+  isUseBlueprintDecl,
+  isTaskRefDecl,
 } from './generated/ast'

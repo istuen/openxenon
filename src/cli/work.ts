@@ -395,14 +395,15 @@ export default defineCommand({
             for (const entity of root.entities || []) {
               if (isWorkDeclaration(entity)) {
                 const work = entity as WorkDeclaration
-                workType = 'task'
-                blueprintRef = work.ref
+                workType = 'workspace'
+                // v0.1: 使用 use_blueprint 列表代替单 ref
+                blueprintRef = work.useBlueprints?.[0]?.name
               }
             }
 
             resetOxnServices()
 
-            if (workType && blueprintRef) {
+            if (workType) {
               output(
                 {
                   data: {
@@ -412,7 +413,9 @@ export default defineCommand({
                     errors: [],
                     warnings: [],
                   },
-                  human: `Work 语法正确\nType: ${workType}\nBlueprint Ref: ${blueprintRef}\n\n注意: type 1:1 校验需要在加载 Blueprint 后执行。`,
+                  human: blueprintRef
+                    ? `Work 语法正确\nType: ${workType}\nPrimary Blueprint: ${blueprintRef}\n\n注意: type 1:1 校验需要在加载 Blueprint 后执行。`
+                    : `Work 语法正确\nType: ${workType}\n(未声明 use_blueprint，仅靠 task 内 blueprint 字段)\n\n注意: type 1:1 校验需要在加载 Blueprint 后执行。`,
                 },
                 format,
               )
@@ -447,9 +450,13 @@ export default defineCommand({
     }),
     resume: workResume,
     complete: workComplete,
+    // v0.1: 在 work 下挂载 task 生命周期管理
+    task: () => import('./work-task').then((m) => m.default),
+    // v0.1 硬迁移
+    migrate: () => import('./work-migrate').then((m) => m.default),
   },
   run() {
     console.log('使用 oxn work <sub命令> 查看可用子命令')
-    console.log('子命令: init, list, validate')
+    console.log('子命令: init, list, validate, task (v0.1), migrate (v0.1)')
   },
 })

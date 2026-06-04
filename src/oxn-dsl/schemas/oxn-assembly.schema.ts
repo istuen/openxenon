@@ -144,7 +144,7 @@ export const OxnAssemblyIRSchema = z.object({
 export type OxnAssemblyIR = z.infer<typeof OxnAssemblyIRSchema>
 
 // ========================
-// Assembly Task IR (任务绑定)
+// Assembly Task IR (任务绑定) - LEGACY 单 Blueprint 形态
 // ========================
 
 export const OxnAssemblyTaskIRSchema = z.object({
@@ -155,6 +155,137 @@ export const OxnAssemblyTaskIRSchema = z.object({
 export type OxnAssemblyTaskIR = z.infer<typeof OxnAssemblyTaskIRSchema>
 
 // ========================
+// v0.1 DDD: Domain IR
+// ========================
+
+export const OxnNounDeclSchema = z.object({
+  name: z.string().min(1),
+  desc: z.string().default(''),
+})
+export type OxnNounDecl = z.infer<typeof OxnNounDeclSchema>
+
+export const OxnVerbDeclSchema = z.object({
+  name: z.string().min(1),
+  desc: z.string().default(''),
+})
+export type OxnVerbDecl = z.infer<typeof OxnVerbDeclSchema>
+
+export const OxnDomainLanguageSchema = z.object({
+  nouns: z.array(OxnNounDeclSchema).default([]),
+  verbs: z.array(OxnVerbDeclSchema).default([]),
+  ban: z.array(z.string()).default([]),
+})
+export type OxnDomainLanguage = z.infer<typeof OxnDomainLanguageSchema>
+
+export const OxnDomainRuleDeclSchema = z.object({
+  name: z.string().min(1),
+  desc: z.string().default(''),
+})
+export type OxnDomainRuleDecl = z.infer<typeof OxnDomainRuleDeclSchema>
+
+export const OxnDomainRuleBlockSchema = z.object({
+  rules: z.array(OxnDomainRuleDeclSchema).default([]),
+})
+export type OxnDomainRuleBlock = z.infer<typeof OxnDomainRuleBlockSchema>
+
+export const OxnContextMapImportSchema = z.object({
+  target: z.string().min(1),
+  alias: z.string().min(1),
+})
+export type OxnContextMapImport = z.infer<typeof OxnContextMapImportSchema>
+
+export const OxnContextMapSchema = z.object({
+  imports: z.array(OxnContextMapImportSchema).default([]),
+})
+export type OxnContextMap = z.infer<typeof OxnContextMapSchema>
+
+export const OxnDomainIRSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  language: OxnDomainLanguageSchema.optional(),
+  domainRules: OxnDomainRuleBlockSchema.optional(),
+  contextMap: OxnContextMapSchema.optional(),
+})
+export type OxnDomainIR = z.infer<typeof OxnDomainIRSchema>
+
+// ========================
+// v0.1 DDD: Task IR (task.oxn)
+// ========================
+
+export const OxnDomainInjectDeclSchema = z.object({
+  domain: z.string().min(1),
+  alias: z.string().optional(),
+})
+export type OxnDomainInjectDecl = z.infer<typeof OxnDomainInjectDeclSchema>
+
+export const OxnTaskContextSchema = z.object({
+  objective: z.string().optional(),
+  constraints: z.array(z.string()).default([]),
+})
+export type OxnTaskContext = z.infer<typeof OxnTaskContextSchema>
+
+export const OxnTaskSlotDeclSchema = z.object({
+  name: z.string().min(1),
+  deps: z.array(z.string()).default([]),
+  observe: z.array(z.string()).default([]),
+})
+export type OxnTaskSlotDecl = z.infer<typeof OxnTaskSlotDeclSchema>
+
+export const OxnTaskIRSchema = z.object({
+  name: z.string().min(1),
+  blueprint: z.string().min(1),
+  injects: z.array(OxnDomainInjectDeclSchema).default([]),
+  context: OxnTaskContextSchema.optional(),
+  props: z.array(OxnAssemblyPropSchema).default([]),
+  slots: z.array(OxnTaskSlotDeclSchema).default([]),
+})
+export type OxnTaskIR = z.infer<typeof OxnTaskIRSchema>
+
+// ========================
+// v0.1 DDD: Work IR (work.oxn) - workspace 编排器
+// ========================
+
+export const OxnUseDomainDeclSchema = z.object({
+  name: z.string().min(1),
+  alias: z.string().optional(),
+})
+export type OxnUseDomainDecl = z.infer<typeof OxnUseDomainDeclSchema>
+
+export const OxnUseBlueprintDeclSchema = z.object({
+  name: z.string().min(1),
+  alias: z.string().optional(),
+})
+export type OxnUseBlueprintDecl = z.infer<typeof OxnUseBlueprintDeclSchema>
+
+export const OxnTaskRefDeclSchema = z.object({
+  name: z.string().min(1),
+  align: z.string().min(1),
+  deps: z.array(z.string()).default([]),
+  props: z.array(OxnAssemblyPropSchema).default([]),
+})
+export type OxnTaskRefDecl = z.infer<typeof OxnTaskRefDeclSchema>
+
+export const OxnWorkContextSchema = z.object({
+  goal: z.string().optional(),
+  constraints: z.array(z.string()).default([]),
+  loopPolicy: z
+    .object({
+      maxIterations: z.number().int().min(1).default(3),
+    })
+    .optional(),
+})
+export type OxnWorkContext = z.infer<typeof OxnWorkContextSchema>
+
+export const OxnWorkIRSchema = z.object({
+  name: z.string().min(1),
+  context: OxnWorkContextSchema.optional(),
+  useDomains: z.array(OxnUseDomainDeclSchema).default([]),
+  useBlueprints: z.array(OxnUseBlueprintDeclSchema).default([]),
+  tasks: z.array(OxnTaskRefDeclSchema).default([]),
+})
+export type OxnWorkIR = z.infer<typeof OxnWorkIRSchema>
+
+// ========================
 // Assembly Bundle (资产包)
 // ========================
 
@@ -162,8 +293,9 @@ export const OxnAssemblyBundleEntitySchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('probe'), data: OxnAssemblyProbeSchema }),
   z.object({ type: z.literal('part'), data: OxnAssemblyPartSchema }),
   z.object({ type: z.literal('blueprint'), data: OxnAssemblyIRSchema }),
-  z.object({ type: z.literal('task'), data: OxnAssemblyTaskIRSchema }),
-  z.object({ type: z.literal('work'), data: OxnAssemblyTaskIRSchema }),
+  z.object({ type: z.literal('domain'), data: OxnDomainIRSchema }),
+  z.object({ type: z.literal('task'), data: OxnTaskIRSchema }),
+  z.object({ type: z.literal('work'), data: OxnWorkIRSchema }),
 ])
 export type OxnAssemblyBundleEntity = z.infer<typeof OxnAssemblyBundleEntitySchema>
 
@@ -199,6 +331,35 @@ export function createOxnAssemblyIR(params: {
   }
 }
 
+export function createOxnDomainIR(params: { name: string; description?: string }): OxnDomainIR {
+  return {
+    name: params.name,
+    ...(params.description !== undefined ? { description: params.description } : {}),
+    language: { nouns: [], verbs: [], ban: [] },
+    domainRules: { rules: [] },
+    contextMap: { imports: [] },
+  }
+}
+
+export function createOxnTaskIR(params: { name: string; blueprint: string }): OxnTaskIR {
+  return {
+    name: params.name,
+    blueprint: params.blueprint,
+    injects: [],
+    props: [],
+    slots: [],
+  }
+}
+
+export function createOxnWorkIR(params: { name: string }): OxnWorkIR {
+  return {
+    name: params.name,
+    useDomains: [],
+    useBlueprints: [],
+    tasks: [],
+  }
+}
+
 // ========================
 // Validation helpers
 // ========================
@@ -219,4 +380,46 @@ export function safeValidateOxnAssemblyIR(
 
 export function validateOxnAssemblyTaskIR(data: unknown): OxnAssemblyTaskIR {
   return OxnAssemblyTaskIRSchema.parse(data)
+}
+
+export function validateOxnDomainIR(data: unknown): OxnDomainIR {
+  return OxnDomainIRSchema.parse(data)
+}
+
+export function safeValidateOxnDomainIR(
+  data: unknown,
+): { success: true; data: OxnDomainIR } | { success: false; error: z.ZodError } {
+  const result = OxnDomainIRSchema.safeParse(data)
+  if (result.success) {
+    return { success: true, data: result.data }
+  }
+  return { success: false, error: result.error }
+}
+
+export function validateOxnTaskIR(data: unknown): OxnTaskIR {
+  return OxnTaskIRSchema.parse(data)
+}
+
+export function safeValidateOxnTaskIR(
+  data: unknown,
+): { success: true; data: OxnTaskIR } | { success: false; error: z.ZodError } {
+  const result = OxnTaskIRSchema.safeParse(data)
+  if (result.success) {
+    return { success: true, data: result.data }
+  }
+  return { success: false, error: result.error }
+}
+
+export function validateOxnWorkIR(data: unknown): OxnWorkIR {
+  return OxnWorkIRSchema.parse(data)
+}
+
+export function safeValidateOxnWorkIR(
+  data: unknown,
+): { success: true; data: OxnWorkIR } | { success: false; error: z.ZodError } {
+  const result = OxnWorkIRSchema.safeParse(data)
+  if (result.success) {
+    return { success: true, data: result.data }
+  }
+  return { success: false, error: result.error }
 }

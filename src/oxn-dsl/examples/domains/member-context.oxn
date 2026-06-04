@@ -1,0 +1,26 @@
+// Domain: MemberContext
+// 会员限界上下文：管理注册、认证、会员等级
+//
+// 在 work.oxn 通过 use_domain "MemberContext" 引用，
+// 在 task.oxn 通过 inject "MemberContext" 注入到 AI 上下文。
+
+domain "MemberContext" {
+  description = "会员限界上下文：管理注册、认证、会员等级"
+
+  language {
+    noun "Member" desc "注册会员实体"
+    noun "Account" desc "会员的登录凭证"
+    verb "Register" desc "提交注册表单创建 Member"
+    verb "Authenticate" desc "校验登录凭证"
+    ban = ["User", "Customer", "AccountHolder"]
+  }
+
+  domain_rules {
+    rule "PasswordNeverPlaintext" desc "密码任何时候都不能明文存储"
+    rule "EmailMustBeUnique" desc "同一邮箱在同一上下文内不可重复注册"
+  }
+
+  context_map {
+    imports "OrderContext" as "Order"
+  }
+}

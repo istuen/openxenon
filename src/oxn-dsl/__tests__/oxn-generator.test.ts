@@ -256,34 +256,36 @@ describe('convertBlueprintDeclaration', () => {
 })
 
 describe('convertWorkDeclaration', () => {
-  test('Work 绑定转换', () => {
+  test('Work 编排转换 (v0.1)', () => {
     const work: WorkDeclaration = {
       $type: 'WorkDeclaration',
       $containerProperty: '',
       $containerIndex: 0,
       name: 'validate-feature-auth',
-      type: 'task',
-      ref: '@prj/blueprint/feature-pipeline',
-      slotBindings: [
+      context: undefined,
+      useDomains: [],
+      useBlueprints: [
+        { $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'feature-pipeline' },
+      ],
+      tasks: [
         {
-          $type: 'SlotBinding',
+          $type: 'TaskRefDecl',
           $containerProperty: '',
           $containerIndex: 0,
-          align: 'tester',
-          name: 'tester',
-          ref: '@glo/parts/jest-runner',
-          props: [{ $type: 'SlotPropBinding', $containerProperty: '', $containerIndex: 0, name: 'env', value: 'prod' }],
-          probeBindings: [],
+          name: 'TestIt',
+          align: 'feature-pipeline.tester',
+          deps: [],
+          props: [],
         },
       ],
     } as WorkDeclaration
 
     const result = convertWorkDeclaration(work)
     expect(result.name).toBe('validate-feature-auth')
-    expect(result.use).toBe('@prj/blueprint/feature-pipeline')
-    expect(result.slotBindings).toHaveLength(1)
-    expect(result.slotBindings[0].slot).toBe('tester')
-    expect(result.slotBindings[0].ref).toBe('@glo/parts/jest-runner')
+    expect(result.useBlueprints).toHaveLength(1)
+    expect(result.useBlueprints[0]?.name).toBe('feature-pipeline')
+    expect(result.tasks).toHaveLength(1)
+    expect(result.tasks[0]?.align).toBe('feature-pipeline.tester')
   })
 })
 

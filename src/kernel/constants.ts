@@ -1,6 +1,7 @@
 export const BOUNDARY_DIR = '.openxenon'
 export const TASKS_DIR = 'tasks'
 export const WORK_DIR = 'work'
+export const DOMAINS_DIR = 'domains'
 
 export const BLUEPRINT_FILE = 'blueprint.yaml'
 export const BLUEPRINT_OXN_FILE = 'blueprint.oxn'
