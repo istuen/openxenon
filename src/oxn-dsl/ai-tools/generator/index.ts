@@ -94,15 +94,13 @@ export function buildJsonSchema(annotations: { annotation: AiToolAnnotation; rul
 }
 
 export function buildZodValidators(annotations: { annotation: AiToolAnnotation; ruleName: string }[]): string {
-  const lines: string[] = [
-    '/**',
-    ' * AI Tools Zod Validators',
-    ' * 由 ai-tools-generator 自动生成',
-    ' */',
-    '',
-    "import { z } from 'zod'",
-    '',
-  ]
+  const lines: string[] = ['/**', ' * AI Tools Zod Validators', ' * 由 ai-tools-generator 自动生成', ' */', '']
+
+  // 仅在有 annotation 时才导入 zod
+  if (annotations.length > 0) {
+    lines.push("import { z } from 'zod'")
+    lines.push('')
+  }
 
   for (const { annotation, ruleName: _ruleName } of annotations) {
     lines.push(`export const ${toUpperCamel(annotation.name)}Schema = z.object({`)
