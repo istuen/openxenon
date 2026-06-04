@@ -249,6 +249,123 @@ oxn work migrate             # 实际迁移
 - task 编排只支持串行 deps（v0.2 引入并行）
 - 跨 task prop 引用 `parts.X.outputs.field` 是占位（v0.2 实装）
 
+## 9. 3 类工作流端到端示例
+
+v0.1 内置 3 套工作流示例，覆盖 explore / develop / fix 3 类典型场景。每套示例都包含 work.oxn + tasks/，可直接 `oxn leader run` 跑通。
+
+### 9.1 explore-dsl（探索类）
+
+**目的**：探索 OXN DSL 语法结构，注入 `dsl-context` 约束 AI 使用 Grammar/Schema/Validator/Compiler 而非 ParserImpl/LexerImpl。
+
+**位置**：`src/oxn-dsl/examples/works/explore-dsl/`
+
+```oxn
+// work.oxn
+work "explore-dsl" {
+  context {
+    goal = "探索 OXN DSL 语法结构, 生成分析报告";
+    loop_policy { max_iterations = 3; }
+  }
+  use_domain "dsl-context";
+  use_blueprint "explore-analyze-report";
+  task "explore-dsl" align "explore-analyze-report.explore" { deps = [] }
+}
+```
+
+```oxn
+// tasks/explore-dsl/task.oxn
+task "explore-dsl" blueprint "explore-analyze-report" {
+  inject "dsl-context";
+  context {
+    objective = "探索 grammar/schema/validator/compiler 四个子模块, 生成结构化报告";
+    constraints = [
+      "必须使用 noun.Grammar / noun.Schema / noun.Validator / noun.Compiler",
+      "禁止使用 ban 列表中的 ParserImpl / LexerImpl / GrammarFile"
+    ];
+  }
+  slot "explore" { deps = [] }
+  slot "analyze" { deps = ["explore"] }
+  slot "report" { deps = ["analyze"] }
+}
+```
+
+跑通命令：
+```bash
+oxn leader run --work-file src/oxn-dsl/examples/works/explore-dsl/work.oxn --json
+oxn leader submit --work-name explore-dsl --task explore-dsl --json
+oxn get-context --work explore-dsl --task explore-dsl --json
+```
+
+### 9.2 develop-member（开发类）
+
+**目的**：实现新会员注册，注入 `member-context` 强制 AI 用 `Member` 而非 `User`/`Customer`。
+
+**位置**：`src/oxn-dsl/examples/works/develop-member/`
+
+```oxn
+// work.oxn
+work "develop-member" {
+  context {
+    goal = "实现新会员注册功能";
+    loop_policy { max_iterations = 5; }
+  }
+  use_domain "member-context";
+  use_blueprint "dev-workflow";
+  task "register-member" align "member-context.Register" { deps = [] }
+}
+```
+
+```oxn
+// tasks/register-member/task.oxn
+task "register-member" blueprint "dev-workflow" {
+  inject "member-context";
+  context {
+    objective = "实现 Member 注册: 接收 username/email/password, hash 密码后存储";
+    constraints = [
+      "类名必须是 Member (noun)",
+      "禁用 User/Customer/AccountHolder (ban 列表)"
+    ];
+  }
+  slot "develop" { deps = [] }
+  slot "test" { deps = ["develop"] }
+  slot "verify" { deps = ["test"] }
+}
+```
+
+### 9.3 fix-issue（修复类）
+
+**目的**：4 task 串行编排（diagnose → locate → fix → verify），每个 task 单独 inject `work-context`。
+
+**位置**：`src/oxn-dsl/examples/works/fix-issue/`
+
+```oxn
+// work.oxn
+work "fix-issue" {
+  context {
+    goal = "修复 work state 在 submit 后未及时持久化的 bug";
+    loop_policy { max_iterations = 5; }
+  }
+  use_domain "work-context";
+  use_blueprint "fix-issue";
+  task "diagnose" align "fix-issue.diagnose" { deps = [] }
+  task "locate" align "fix-issue.locate"   { deps = ["diagnose"] }
+  task "fix"     align "fix-issue.fix"      { deps = ["locate"] }
+  task "verify"  align "fix-issue.verify"   { deps = ["fix"] }
+}
+```
+
+每个 task.oxn 独立 inject `work-context`，约束不同阶段（只读 → 定位 → 修改 → 验证）的术语边界。
+
+### 9.4 3 类对比
+
+| 维度 | explore-dsl | develop-member | fix-issue |
+|------|-------------|----------------|-----------|
+| Blueprint slot 数 | 3 (explore/analyze/report) | 3 (develop/test/verify) | 4 (diagnose/locate/fix/verify) |
+| Task 数 | 1 | 1 | 4 |
+| 串行编排 | 否 | 否 | 是（locate→fix→verify 链） |
+| 注入的 Domain | dsl-context | member-context | work-context（4 task 同源） |
+| AI 关键约束 | 用 Grammar 不写 ParserImpl | 用 Member 不用 User | Artifact 路径不可改 |
+
 ## 9. 决策依据
 
 本文档的设计结论来源于与 AI 的多轮对话（见 `docs_tmp/oxn-ddd-1.md`）：

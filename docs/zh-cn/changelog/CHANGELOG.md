@@ -2,6 +2,49 @@
 
 本文件记录项目所有重要变更。
 
+## [Unreleased] - 2026-06-04
+
+### 重大变更：Leader 接入 v0.1 双层状态机
+
+将 leader run/submit/status 改为 task 粒度，承接 v0.1 DDD 双层架构。
+
+### 新增
+
+- **`src/work/dual-state-exec.ts`** — 双层状态机执行器
+  - `runWorkSpace` — 写 `works/<w>/workspace.json`（workspace 级 state）
+  - `runTask` — 写 `works/<w>/tasks/<t>/state.json`（task 级 state）+ 同步 workspace 索引
+  - `submitTaskPart` — 推进 task part，写 task 级 state + workspace 索引 + trace
+  - `validateTasksPresent` — leader run 时 fail-fast 校验 task.oxn 齐备
+  - `ExecError` 错误类（`OXN_TASK_OXN_MISSING` / `OXN_TASK_NOT_FOUND` / `OXN_WORKSPACE_NOT_FOUND`）
+- **`oxn work task` 新增子命令**：
+  - `oxn work task edit --work W --task T --objective ... --add-constraint ... --add-inject ...` — 改 objective / 加 constraint / 加 inject
+  - `oxn work task delete --work W --task T --force [--keep-state]` — 删 task（含 state/trace/frozen）
+  - `oxn work task submit --work W --task T [--run-probes]` — 薄壳包装，调 `oxn leader submit`
+- **3 套工作流端到端示例** (`src/oxn-dsl/examples/works/`)：
+  - `explore-dsl/` — explore 类（1 task，注入 dsl-context）
+  - `develop-member/` — develop 类（1 task，注入 member-context）
+  - `fix-issue/` — fix 类（4 task 串行：diagnose → locate → fix → verify，注入 work-context）
+
+### 变更
+
+- **`src/cli/leader.ts`**：run 改写双层 state；submit 必传 `--task`；status 报告 task 分解
+- **`src/work/dual-state-io.ts`**：workspace state 路径改为 `works/<w>/workspace.json`，与 legacy `state.json` 分离避免覆盖
+- **`src/work/blueprint-freezer.ts`**：frozen 落点从 work 级 `works/<w>/frozen.json` 改为 task 级 `works/<w>/tasks/<t>/frozen.json`
+- **`src/skills/locales/{zh-CN,en}/oxn-leader/instruction.md`**：4 阶段流程（prepare → run → act → submit），v0.1 错误码表
+- **`src/skills/locales/{zh-CN,en}/oxn-work/instruction.md`**：5 步创建流程，task 必创说明
+- **`docs/architecture/v01-ddd-dual-layer.md` §9**：新增 3 类工作流端到端示例
+- **`docs/zh-cn/guides/getting-started.md`**：补 "Run → Submit → Status" 完整 5 步演示
+
+### 标记 v0.2 TODO
+
+- `src/hall/index.ts` — Hall 扫旧 `.openxenon/tasks/<id>/` 布局，需改为扫 `works/<w>/tasks/<t>/`
+- `src/daemon/index.ts` — Daemon radar 监控单层 work，需改为 task 粒度 + workspace 聚合
+
+### 测试
+
+- `src/cli/__tests__/mvp-leader-e2e.test.ts` 改造：3 个 e2e 用例补 task.oxn + 走 task 粒度 submit 路径
+- 全量测试：417/417 通过
+
 ## [0.1] - 2026-06-04
 
 ### 🌟 重大变更：DDD 双层架构落地

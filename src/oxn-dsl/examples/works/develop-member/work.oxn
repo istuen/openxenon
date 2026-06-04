@@ -1,0 +1,25 @@
+// Work: develop-member
+// 开发类工作流：注入 member-context，约束 AI 实现会员功能时只使用本域术语
+//
+// 配套 blueprint：.openxenon/blueprints/dev-workflow.oxn
+// 配套 domain：.openxenon/domains/member-context.oxn
+
+work "develop-member" {
+  context {
+    goal = "实现新会员注册功能";
+    constraints = [
+      "必须使用 member-context 注入的 noun.Member, 不能用 User/Customer",
+      "密码必须 hash 后存储 (rule.PasswordNeverPlaintext)"
+    ];
+    loop_policy {
+      max_iterations = 5;
+    }
+  }
+
+  use_domain "member-context";
+  use_blueprint "dev-workflow";
+
+  task "register-member" align "member-context.Register" {
+    deps = [];
+  }
+}

@@ -14,17 +14,20 @@ import { type TaskState, TaskStateSchema, type WorkspaceState, WorkspaceStateSch
 // =============================================================================
 
 // ---------- Workspace ----------
+//
+// v0.1: workspace state 放在 `workspace.json`，与 legacy `state.json` 分离
+// legacy `state.json` 继续写以保证 v0.0.x 的 leader status 输出可读
 
 export function getWorkspaceDir(projectRoot: string, workName: string): string {
   return join(projectRoot, BOUNDARY_DIR, 'works', workName)
 }
 
 export function getWorkspaceStatePath(projectRoot: string, workName: string): string {
-  return join(getWorkspaceDir(projectRoot, workName), 'state.json')
+  return join(getWorkspaceDir(projectRoot, workName), 'workspace.json')
 }
 
 export function getWorkspaceTracePath(projectRoot: string, workName: string): string {
-  return join(getWorkspaceDir(projectRoot, workName), 'work-trace.jsonl')
+  return join(getWorkspaceDir(projectRoot, workName), 'workspace-trace.jsonl')
 }
 
 export function ensureWorkspaceDir(projectRoot: string, workName: string): string {

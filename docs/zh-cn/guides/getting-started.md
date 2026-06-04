@@ -119,6 +119,41 @@ EOF
 #   - 本 task 只能看到 inject 列表中的 domain，work 中其他 domain 一律不可见。
 ```
 
+### 6. 跑通 work + task 状态机（v0.1 双层）
+
+```bash
+# 启动 workspace + 每个 task 状态机（run 会校验 task.oxn 齐备）
+./dist/oxn leader run --work-file .openxenon/works/onboarding/work.oxn --json
+
+# 推进 register task 的当前 part（v0.1 --task 必填）
+./dist/oxn leader submit --work-name onboarding --task register --json
+
+# 看 workspace + task 分解
+./dist/oxn leader status --work-name onboarding --json
+# {
+#   "workspace": { "status": "running", "taskCount": 1 },
+#   "tasks": [
+#     { "taskName": "register", "status": "running", "currentPart": "develop" }
+#   ]
+# }
+
+# 完成后 frozen.json 落到 tasks/<task>/frozen.json
+./dist/oxn leader submit --work-name onboarding --task register --json
+# 再次 submit 后 taskStatus = "passed", frozen 字段含 tasks/register/frozen.json
+```
+
+### 7. 3 类工作流参考示例
+
+仓库自带 3 套端到端示例，可直接跑通：
+
+| 工作流 | 位置 | Blueprint | Domain |
+|---|---|---|---|
+| **explore-dsl** | `src/oxn-dsl/examples/works/explore-dsl/` | explore-analyze-report | dsl-context |
+| **develop-member** | `src/oxn-dsl/examples/works/develop-member/` | dev-workflow | member-context |
+| **fix-issue** | `src/oxn-dsl/examples/works/fix-issue/` | fix-issue | work-context |
+
+详见 [DDD 双层架构 §9 三类工作流端到端示例](../architecture/ddd-dual-layer.md#9-3-类工作流端到端示例)。
+
 ---
 
 ## 传统流程：资产 + Work 演示

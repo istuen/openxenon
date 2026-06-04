@@ -1,0 +1,26 @@
+// Work: explore-dsl
+// 探索类工作流：注入 dsl-context，约束 AI 探索 OpenXenon DSL 时只使用本域术语
+//
+// 配套 blueprint：.openxenon/blueprints/explore-analyze-report.oxn
+// 配套 domain：.openxenon/domains/dsl-context.oxn
+// 任务编排：1 个 task（explore-dsl）覆盖整个 explore-analyze-report 的 3 个 part
+
+work "explore-dsl" {
+  context {
+    goal = "探索 OXN DSL 语法结构，生成分析报告";
+    constraints = [
+      "使用 oxn 命令而非直接读源码",
+      "输出 markdown 报告到 .openxenon/works/explore-dsl/report.md"
+    ];
+    loop_policy {
+      max_iterations = 3;
+    }
+  }
+
+  use_domain "dsl-context";
+  use_blueprint "explore-analyze-report";
+
+  task "explore-dsl" align "explore-analyze-report.explore" {
+    deps = [];
+  }
+}

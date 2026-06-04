@@ -2,6 +2,11 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { join } from 'path'
 import type { TaskState } from '../cli/task-filesystem'
 
+// TODO(v0.2): Hall 当前扫旧 `.openxenon/tasks/<id>/` 布局（v0.0.x 时代 task 模型）。
+// v0.2 需改为扫 `.openxenon/works/<w>/tasks/<t>/` 双层布局，并按 workspace 聚合 HallStats。
+// 详见 docs/architecture/v01-ddd-dual-layer.md §6 文件布局
+//       docs/zh-cn/architecture/ddd-dual-layer.md §6 文件布局
+
 export interface HallStats {
   totalTasks: number
   completedTasks: number

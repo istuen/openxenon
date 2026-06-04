@@ -66,6 +66,32 @@ describe('unified leader (single entry) e2e', () => {
     expect(workContent).toContain('task "alpha" align "tiny.alpha"')
     expect(workContent).toContain('task "beta" align "tiny.beta"')
 
+    // v0.1: leader run 校验 task.oxn 存在 — 必须先创建
+    mkdirSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha'), { recursive: true })
+    writeFileSync(
+      join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'task.oxn'),
+      `task "alpha" blueprint "tiny" {
+  context {
+    objective = "alpha test"
+    constraints = []
+  }
+  slot "build" { deps = [] }
+}
+`,
+    )
+    mkdirSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'beta'), { recursive: true })
+    writeFileSync(
+      join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'beta', 'task.oxn'),
+      `task "beta" blueprint "tiny" {
+  context {
+    objective = "beta test"
+    constraints = []
+  }
+  slot "test" { deps = [] }
+}
+`,
+    )
+
     // leader run
     const runResult = JSON.parse((await runCli(['leader', 'run', '--work-file', workFile, '--json'])).stdout)
     expect(runResult.ok).toBe(true)
@@ -74,40 +100,55 @@ describe('unified leader (single entry) e2e', () => {
     expect(runResult.data.parts.length).toBe(2)
     expect(runResult.data.parts[0].partName).toBe('alpha')
     expect(runResult.data.parts[0].status).toBe('running')
+    expect(runResult.data.tasks.length).toBe(2)
+    expect(runResult.data.tasks[0].taskName).toBe('alpha')
+    expect(runResult.data.tasks[0].status).toBe('running')
     const statePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'state.json')
     expect(existsSync(statePath)).toBe(true)
     const tracePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'work-trace.jsonl')
     expect(existsSync(tracePath)).toBe(true)
+    // v0.1: workspace 级 + task 级 state（用 leader status 验证更直观）
+    const initialStatus = JSON.parse((await runCli(['leader', 'status', '--work-name', 'tiny', '--json'])).stdout)
+    expect(initialStatus.ok).toBe(true)
+    expect(initialStatus.data.workName).toBe('tiny')
+    expect(initialStatus.data.workspace.taskCount).toBe(2)
+    expect(initialStatus.data.tasks.length).toBe(2)
+    expect(initialStatus.data.tasks[0].taskName).toBe('alpha')
+    const taskStatePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'state.json')
+    expect(existsSync(taskStatePath)).toBe(true)
 
-    // leader submit (advances past alpha)
-    const submit1 = JSON.parse((await runCli(['leader', 'submit', '--work-name', 'tiny', '--json'])).stdout)
+    // leader submit (v0.1: --task 必填)
+    // alpha task 只有一个 part (build)，submit 一次就 passed
+    const submit1 = JSON.parse(
+      (await runCli(['leader', 'submit', '--work-name', 'tiny', '--task', 'alpha', '--json'])).stdout,
+    )
     expect(submit1.ok).toBe(true)
-    expect(submit1.data.overallStatus).toBe('running')
-    expect(submit1.data.parts.find((p: { partName: string }) => p.partName === 'alpha').status).toBe('passed')
-    expect(submit1.data.parts.find((p: { partName: string }) => p.partName === 'beta').status).toBe('running')
-    expect(submit1.data.skillContext.currentFocus).toBe('beta')
+    expect(submit1.data.taskStatus).toBe('passed')
+    expect(submit1.data.completedParts).toEqual(['build'])
+    expect(submit1.data.frozen).toContain('tasks/alpha/frozen.json')
 
-    // leader submit (advances past beta, work should pass)
-    const submit2 = JSON.parse((await runCli(['leader', 'submit', '--work-name', 'tiny', '--json'])).stdout)
-    expect(submit2.ok).toBe(true)
-    expect(submit2.data.overallStatus).toBe('passed')
-    expect(submit2.data.parts.every((p: { status: string }) => p.status === 'passed')).toBe(true)
-    expect(submit2.data.frozen).not.toBeNull()
-    const frozenPath = join(tmpDir, '.openxenon', 'works', 'tiny', 'frozen.json')
+    // 验证 alpha frozen.json
+    expect(submit1.data.frozen).toContain('tasks/alpha/frozen.json')
+    const frozenPath = join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'frozen.json')
     expect(existsSync(frozenPath)).toBe(true)
     const frozen = JSON.parse(readFileSync(frozenPath, 'utf-8'))
-    expect(frozen.workName).toBe('tiny')
-    expect(frozen.trace).toEqual(['alpha', 'beta'])
+    expect(frozen.taskName).toBe('alpha')
+    expect(frozen.trace).toEqual(['build'])
+
+    // 完成 beta
+    const submit2 = JSON.parse(
+      (await runCli(['leader', 'submit', '--work-name', 'tiny', '--task', 'beta', '--json'])).stdout,
+    )
+    expect(submit2.ok).toBe(true)
+    expect(submit2.data.taskStatus).toBe('passed')
 
     // leader status (after pass)
     const status = JSON.parse((await runCli(['leader', 'status', '--work-name', 'tiny', '--json'])).stdout)
     expect(status.ok).toBe(true)
     expect(status.data.workName).toBe('tiny')
-    expect(status.data.overallStatus).toBe('passed')
-    // SkillReport.parts[] — each part carries the status field
-    expect(status.data.parts.every((p: { status: string }) => p.status === 'passed')).toBe(true)
-    const partNames = status.data.parts.map((p: { partName: string }) => p.partName)
-    expect(partNames).toEqual(['alpha', 'beta'])
+    expect(status.data.workspace.status).toBe('passed')
+    expect(status.data.tasks.length).toBe(2)
+    expect(status.data.tasks.every((t: { status: string }) => t.status === 'passed')).toBe(true)
   })
 
   test('unified mode generates work.oxn with inline Part bodies (no parts.oxn file)', async () => {
@@ -146,6 +187,20 @@ describe('unified leader (single entry) e2e', () => {
 `
     const workFile = join(tmpDir, '.openxenon', 'works', 'refstyle', 'work.oxn')
     writeFileSync(workFile, refStyleWork)
+    // v0.1: 补充 task.oxn（leader run 现在会校验）
+    const taskDir = join(tmpDir, '.openxenon', 'works', 'refstyle', 'tasks', 'alpha')
+    mkdirSync(taskDir, { recursive: true })
+    writeFileSync(
+      join(taskDir, 'task.oxn'),
+      `task "alpha" blueprint "std" {
+  context {
+    objective = "alpha test"
+    constraints = []
+  }
+  slot "build" { deps = [] }
+}
+`,
+    )
     const runResult = JSON.parse((await runCli(['leader', 'run', '--work-file', workFile, '--json'])).stdout)
     expect(runResult.ok).toBe(true)
     expect(runResult.data.workName).toBe('refstyle')
@@ -172,15 +227,32 @@ describe('unified leader (single entry) e2e', () => {
 `
     const workFile = join(tmpDir, '.openxenon', 'works', 'probework', 'work.oxn')
     writeFileSync(workFile, probeWork)
+    // v0.1: 补充 task.oxn
+    const taskDir = join(tmpDir, '.openxenon', 'works', 'probework', 'tasks', 'alpha')
+    mkdirSync(taskDir, { recursive: true })
+    writeFileSync(
+      join(taskDir, 'task.oxn'),
+      `task "alpha" blueprint "std" {
+  context {
+    objective = "probe test"
+    constraints = []
+  }
+  slot "build" { deps = [] }
+}
+`,
+    )
     await runCli(['leader', 'run', '--work-file', workFile, '--json'])
     const submitResult = JSON.parse(
-      (await runCli(['leader', 'submit', '--work-name', 'probework', '--run-probes', '--json'])).stdout,
+      (await runCli(['leader', 'submit', '--work-name', 'probework', '--task', 'alpha', '--run-probes', '--json']))
+        .stdout,
     )
     expect(submitResult.ok).toBe(true)
-    // v0.1: 探针仍然在 partExecutions 持久化（不需 ref 字段也跑 no-op probe）
-    const state = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'probework', 'state.json'), 'utf-8'))
-    const partExec = state.partExecutions.find((e: { partName: string }) => e.partName === 'alpha')
-    expect(partExec.probes.length).toBeGreaterThan(0)
+    // v0.1: task 级 state 含 partExecutions
+    const taskState = JSON.parse(
+      readFileSync(join(tmpDir, '.openxenon', 'works', 'probework', 'tasks', 'alpha', 'state.json'), 'utf-8'),
+    )
+    const partExec = (taskState.partExecutions ?? []).find((e: { partName: string }) => e.partName === 'build')
+    expect(partExec).toBeDefined()
     expect(partExec.status).toBe('passed')
   })
 

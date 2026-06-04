@@ -18,10 +18,16 @@ import {
   appendTrace,
   createInitialState,
   ensureWorkDir,
-  getFrozenPath,
+  ExecError,
+  getTaskOxnPath,
   loadState,
+  loadTaskState,
+  loadWorkspaceState,
+  runTask,
+  runWorkSpace,
   saveState,
-  stateExists,
+  submitTaskPart,
+  validateTasksPresent,
   type PartExecution,
   type PartSkillSnapshot,
   type PartSpec,
@@ -31,7 +37,7 @@ import {
 import { output, outputError, getFormatFromArgs } from './output'
 
 // =============================================================================
-// Unified `oxn leader` command (Phase 2.3).
+// Unified `oxn leader` command (Phase 2.3 + v0.1 dual-layer).
 //
 // Primary subcommands (mvp-style, full state machine):
 //   new         — generate work.oxn from a blueprint
@@ -307,21 +313,13 @@ async function runProbesForPart(
   _projectRoot: string,
   partSpec: PartSpec | undefined,
 ): Promise<Array<{ probe: string; passed: boolean; output?: unknown; errorMessage?: string; durationMs?: number }>> {
-  // v0.1: Task 不绑定 part 实体（无 ref 字段），但仍需为 --run-probes 跑一个 no-op 探针，
-  // 以保持状态机可观察。后续可接入 task 级别的真实探针。
-  if (!partSpec) return []
-  return [
-    {
-      probe: 'part-reachable',
-      passed: true,
-      output: {
-        partName: partSpec.partName,
-        align: partSpec.align,
-        ...(partSpec.ref !== undefined ? { ref: partSpec.ref } : {}),
-      },
-    },
-  ]
+  // v0.1: Task 不绑定 part 实体（无 ref 字段）。v0.2 接入 task.oxn 的 observe 字段跑真实探针。
+  // 当前 leader submit 由 dual-state-exec 负责 no-op 探针，所以这里总是返回空。
+  void _projectRoot
+  void partSpec
+  return []
 }
+void runProbesForPart
 
 // ---------------------------------------------------------------------------
 // Subcommand: new
@@ -461,7 +459,10 @@ const newSubcommand = defineCommand({
 // Subcommand: run
 // ---------------------------------------------------------------------------
 const runSubcommand = defineCommand({
-  meta: { name: 'run', description: '启动 work 状态机，输出 skillContext JSON' },
+  meta: {
+    name: 'run',
+    description: '启动 work 状态机，初始化 workspace + 每个 task 状态',
+  },
   args: {
     'work-file': { type: 'string', required: true, description: '.oxn 文件路径' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
@@ -477,31 +478,130 @@ const runSubcommand = defineCommand({
       }
       const projectRoot = getProjectRoot()
       const workName = parsePartName(work.name) || 'unnamed'
-      if (stateExists(projectRoot, workName)) {
+      if (loadWorkspaceState(projectRoot, workName)) {
         return output(
           errorJson('OXN_WORK_ALREADY_EXISTS', `work "${workName}" already exists`, 'use oxn leader status to view'),
           format,
         )
       }
       ensureWorkDir(projectRoot, workName)
+
+      // v0.1: 提取 use_blueprint + use_domain + task 块
+      const blueprintNames = (work.useBlueprints ?? []).map((u) => u.name)
+      const domainNames = (work.useDomains ?? []).map((u) => u.name)
+      const taskEntries = work.tasks ?? []
+      const declaredTaskNames = taskEntries.map((t) => parsePartName(t.name))
+
+      // L2 阻塞：fail-fast 校验 task.oxn 是否齐备
+      const validation = validateTasksPresent(projectRoot, workName, declaredTaskNames)
+      if (!validation.ok) {
+        return output(
+          errorJson(
+            'OXN_TASK_OXN_MISSING',
+            `work "${workName}" declares ${declaredTaskNames.length} tasks but ${validation.missing.length} task.oxn missing: ${validation.missing.join(', ')}`,
+            `create them with: oxn work task new --work ${workName} --task <name> --blueprint <bp>`,
+          ),
+          format,
+        )
+      }
+
       const partSpecs = await buildPartSpecs(work, inlineParts)
-      const partNames = partSpecs.map((p) => p.partName)
       const maxIters = work.context?.loopPolicy?.maxIterations ?? 3
-      const state = createInitialState(workName, partNames, maxIters)
-      state.skillContext = snapshotContext(work.context, maxIters)
-      state.partSpecs = partSpecs
-      saveState(projectRoot, workName, state)
+
+      // 写 workspace 级 state
+      const workspace = runWorkSpace({
+        projectRoot,
+        workName,
+        blueprintNames,
+        domainNames,
+        tasks: taskEntries.map((t) => ({
+          taskName: parsePartName(t.name),
+          blueprint: parsePartName(t.align ?? '').split('.')[0] ?? blueprintNames[0] ?? '',
+          injects: [], // 实际 injects 由 task.oxn 决定
+        })),
+        goal: work.context?.goal,
+        constraints: work.context?.constraints,
+        maxIterations: maxIters,
+      })
+
+      // 为每个 task 启动 task 级 state
+      for (const taskName of declaredTaskNames) {
+        const taskOxnPath = getTaskOxnPath(projectRoot, workName, taskName)
+        const content = readFileSync(taskOxnPath, 'utf-8')
+        const blueprintMatch = content.match(/task\s+"[^"]+"\s+blueprint\s+"([^"]+)"/)
+        const blueprint = blueprintMatch?.[1] ?? blueprintNames[0] ?? ''
+        const injects = Array.from(content.matchAll(/inject\s+"([^"]+)"/g)).map((m) => m[1]!)
+        // 抽取 task.oxn 的 slot 名字作为 partNames
+        const slotNames = Array.from(content.matchAll(/slot\s+"([^"]+)"\s*\{/g)).map((m) => m[1]!)
+        const objectiveMatch = content.match(/objective\s*=\s*"((?:[^"\\]|\\.)*)"/)
+        const constraintsMatch = content.match(/constraints\s*=\s*\[([^\]]*)\]/)
+        const constraints = constraintsMatch
+          ? Array.from(constraintsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!)
+          : []
+
+        runTask({
+          projectRoot,
+          workName,
+          taskName,
+          blueprint,
+          injects,
+          partNames: slotNames,
+          objective: objectiveMatch?.[1]?.replace(/\\"/g, '"'),
+          constraints,
+        })
+      }
+
+      // 同时写旧 work 空间下的 state.json（向后兼容 v0.0.x leader status 查询）
+      const legacyState = createInitialState(
+        workName,
+        partSpecs.map((p) => p.partName),
+        maxIters,
+      )
+      legacyState.skillContext = snapshotContext(work.context, maxIters)
+      legacyState.partSpecs = partSpecs
+      saveState(projectRoot, workName, legacyState)
+
       appendTrace(projectRoot, workName, {
         event: 'work-started',
         workName,
-        // v0.1: 记录 use_blueprint 列表
-        blueprints: (work.useBlueprints ?? []).map((b) => b.name),
-        domains: (work.useDomains ?? []).map((d) => d.name),
+        blueprints: blueprintNames,
+        domains: domainNames,
+        tasks: declaredTaskNames,
         parts: partSpecs.map((p) => p.partName),
         at: new Date().toISOString(),
       })
-      output({ ok: true, data: makeReport(state) }, format)
+
+      output(
+        {
+          ok: true,
+          data: {
+            ...makeReport(legacyState),
+            // v0.1 增强：报告 task 分解
+            tasks: declaredTaskNames.map((name) => {
+              const ts = loadTaskState(projectRoot, workName, name)
+              return {
+                taskName: name,
+                status: ts?.status ?? 'pending',
+                currentPart: ts?.currentPart ?? null,
+                completedParts: ts?.completedParts ?? [],
+                partCount: ts?.partExecutions.length ?? 0,
+              }
+            }),
+            workspace,
+          },
+        },
+        format,
+      )
     } catch (err) {
+      if (err instanceof ExecError) {
+        return outputError(
+          {
+            code: err.code,
+            message: err.message,
+          },
+          format,
+        )
+      }
       const message = err instanceof Error ? err.message : String(err)
       output(errorJson('OXN_DSL_PARSE_FAILED', message), format)
     }
@@ -514,108 +614,87 @@ const runSubcommand = defineCommand({
 const submitSubcommand = defineCommand({
   meta: {
     name: 'submit',
-    description: '提交证据，调度 Probe（如指定 --run-probes），更新状态机',
+    description: 'v0.1: 提交 task 内的当前 part（--task 必填），调度 Probe（如 --run-probes）',
   },
   args: {
     'work-name': { type: 'string', required: true, description: 'Work 名称' },
+    task: { type: 'string', required: true, description: 'Task 名称（v0.1 必填）' },
     '--evidence': { type: 'string', description: 'AI 提交的证据 JSON' },
-    '--run-probes': { type: 'boolean', description: '执行对齐到当前 part 的探针（reference 行为）' },
+    '--run-probes': { type: 'boolean', description: '执行 task 级 no-op 探针（v0.1 占位）' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
     '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args['work-name'] as string
+    const taskName = ctx.args.task as string
     const runProbes = ctx.args['run-probes'] === true
     const projectRoot = getProjectRoot()
     try {
-      const state = loadState(projectRoot, workName)
-      if (!state) {
-        return output(errorJson('OXN_WORK_NOT_FOUND', `work "${workName}" not found`), format)
+      // v0.1: 走 dual-state-exec 路径
+      const result = submitTaskPart({
+        projectRoot,
+        workName,
+        taskName,
+        runProbes,
+      })
+
+      // 同步旧 v0.0.x state.json（向后兼容 leader status 查询）
+      const legacyState = loadState(projectRoot, workName)
+      if (legacyState) {
+        // 把 task 的 completedParts 合并到 legacy state（让旧 status 输出能看到进度）
+        const taskState = result.taskState
+        legacyState.completedParts = Array.from(new Set([...legacyState.completedParts, ...taskState.completedParts]))
+        if (result.nextPart === null) {
+          legacyState.status = result.status
+        }
+        saveState(projectRoot, workName, legacyState)
       }
+
+      // 收集探测结果
       const probeResults: Array<{
         probe: string
         passed: boolean
         output?: unknown
-        errorMessage?: string
         durationMs?: number
-      }> = []
-      if (state.currentPart) {
-        if (!state.completedParts.includes(state.currentPart)) {
-          state.completedParts.push(state.currentPart)
-        }
-        probeResults.push({ probe: 'state-machine', passed: true, output: { advanced: true } })
-      }
+      }> = result.probeResults.map((p) => ({
+        probe: p.probe,
+        passed: p.passed,
+        ...(p.output !== undefined ? { output: p.output } : {}),
+        ...(p.durationMs !== undefined ? { durationMs: p.durationMs } : {}),
+      }))
 
-      // Optionally run aligned probes for the just-completed part
-      if (runProbes && state.currentPart) {
-        const partSpec = state.partSpecs?.find((p) => p.partName === state.currentPart)
-        const startedAt = new Date()
-        const probeOuts = await runProbesForPart(projectRoot, partSpec)
-        for (const p of probeOuts) {
-          probeResults.push({ ...p, durationMs: Date.now() - startedAt.getTime() })
-        }
-        // Persist into partExecutions so future status/submit reports it
-        if (!state.partExecutions) state.partExecutions = []
-        const exec = state.partExecutions.find((e) => e.partName === state.currentPart)
-        if (exec) {
-          for (const p of probeOuts) {
-            exec.probes.push({
-              probeName: p.probe,
-              passed: p.passed,
-              output: p.output,
-              durationMs: p.durationMs,
-              executedAt: new Date().toISOString(),
-            })
-          }
-          exec.completedAt = new Date().toISOString()
-          exec.status = 'passed'
-        }
-        appendTrace(projectRoot, workName, {
-          event: 'probe-result',
-          partName: state.currentPart,
-          probes: probeOuts,
-          at: new Date().toISOString(),
-        })
-      }
+      // v0.1 frozen 路径：tasks/<task>/frozen.json
+      const frozenPath = result.frozen
+        ? join(projectRoot, BOUNDARY_DIR, 'works', workName, 'tasks', taskName, 'frozen.json')
+        : null
 
-      state.loopMeta.currentIteration += 1
-      const allPartNames = (state.partSpecs ?? []).map((p) => p.partName)
-      const nextIdx = state.completedParts.length
-      if (allPartNames.length > 0 && nextIdx >= allPartNames.length) {
-        state.status = 'passed'
-        state.currentPart = null
-        state.frozenPath = getFrozenPath(projectRoot, workName)
-        const frozen = {
-          workName,
-          generatedAt: new Date().toISOString(),
-          probes: probeResults,
-          trace: state.completedParts,
-        }
-        writeFileSync(state.frozenPath, JSON.stringify(frozen, null, 2), 'utf-8')
-      } else if (allPartNames.length > 0) {
-        state.currentPart = allPartNames[nextIdx] ?? null
-      } else {
-        state.status = 'passed'
-        state.currentPart = null
-        state.frozenPath = getFrozenPath(projectRoot, workName)
-        const frozen = {
-          workName,
-          generatedAt: new Date().toISOString(),
-          probes: probeResults,
-          trace: state.completedParts,
-        }
-        writeFileSync(state.frozenPath, JSON.stringify(frozen, null, 2), 'utf-8')
-      }
-      saveState(projectRoot, workName, state)
-      appendTrace(projectRoot, workName, {
-        event: 'submit',
-        iteration: state.loopMeta.currentIteration,
-        probeResults,
-        at: new Date().toISOString(),
-      })
-      output({ ok: true, data: makeReport(state) }, format)
+      output(
+        {
+          ok: true,
+          data: {
+            workName,
+            taskName,
+            taskStatus: result.status,
+            nextPart: result.nextPart,
+            completedParts: result.taskState.completedParts,
+            probeResults,
+            frozen: frozenPath,
+            workspaceStatus: loadWorkspaceState(projectRoot, workName)?.status ?? 'pending',
+          },
+        },
+        format,
+      )
     } catch (err) {
+      if (err instanceof ExecError) {
+        return outputError(
+          {
+            code: err.code,
+            message: err.message,
+          },
+          format,
+        )
+      }
       const message = err instanceof Error ? err.message : String(err)
       output(errorJson('OXN_LEADER_NEXT_FAILED', message), format)
     }
@@ -626,7 +705,7 @@ const submitSubcommand = defineCommand({
 // Subcommand: status
 // ---------------------------------------------------------------------------
 const statusSubcommand = defineCommand({
-  meta: { name: 'status', description: '查询 work 当前状态' },
+  meta: { name: 'status', description: '查询 work 当前状态（v0.1 含 task 分解）' },
   args: {
     'work-name': { type: 'string', required: true, description: 'Work 名称' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
@@ -637,11 +716,47 @@ const statusSubcommand = defineCommand({
     const workName = ctx.args['work-name'] as string
     const projectRoot = getProjectRoot()
     try {
-      const state = loadState(projectRoot, workName)
-      if (!state) {
+      // v0.1: 优先读 workspace 级 state
+      const workspace = loadWorkspaceState(projectRoot, workName)
+      if (!workspace) {
         return output(errorJson('OXN_WORK_NOT_FOUND', `work "${workName}" not found`), format)
       }
-      output({ ok: true, data: makeReport(state) }, format)
+      // task 分解
+      const taskBreakdown = workspace.tasks.map((idx) => {
+        const ts = loadTaskState(projectRoot, workName, idx.taskName)
+        return {
+          taskName: idx.taskName,
+          blueprint: idx.blueprint,
+          injects: idx.injects,
+          status: ts?.status ?? idx.status,
+          currentPart: ts?.currentPart ?? null,
+          completedParts: ts?.completedParts ?? [],
+          partCount: ts?.partExecutions.length ?? 0,
+          startedAt: ts?.createdAt ?? idx.startedAt,
+          completedAt: ts?.status === 'passed' ? ts.updatedAt : idx.completedAt,
+        }
+      })
+
+      // 兼容旧 report（用首个 task 的 partSpecs 兜底）
+      const legacyState = loadState(projectRoot, workName)
+      const report = legacyState ? makeReport(legacyState) : { workName, parts: [] }
+
+      output(
+        {
+          ok: true,
+          data: {
+            ...report,
+            workspace: {
+              status: workspace.status,
+              domains: workspace.domains,
+              blueprints: workspace.blueprints,
+              taskCount: workspace.tasks.length,
+            },
+            tasks: taskBreakdown,
+          },
+        },
+        format,
+      )
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       output(errorJson('OXN_STATUS_FAILED', message), format)

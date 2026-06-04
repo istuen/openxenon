@@ -1,0 +1,39 @@
+// Work: fix-issue
+// 修复类工作流：注入 work-context，约束 AI 修复问题时只使用本域术语
+//
+// 配套 blueprint：.openxenon/blueprints/fix-issue.oxn
+// 配套 domain：.openxenon/domains/work-context.oxn
+// 任务编排：4 个 task（diagnose → locate → fix → verify）按 deps 串行
+
+work "fix-issue" {
+  context {
+    goal = "修复 work state 在 submit 后未及时持久化的 bug";
+    constraints = [
+      "不破坏现有 leader 状态机",
+      "frozen.json 路径不能改",
+      "必须经 vitest 验证"
+    ];
+    loop_policy {
+      max_iterations = 5;
+    }
+  }
+
+  use_domain "work-context";
+  use_blueprint "fix-issue";
+
+  task "diagnose" align "fix-issue.diagnose" {
+    deps = [];
+  }
+
+  task "locate" align "fix-issue.locate" {
+    deps = ["diagnose"];
+  }
+
+  task "fix" align "fix-issue.fix" {
+    deps = ["locate"];
+  }
+
+  task "verify" align "fix-issue.verify" {
+    deps = ["fix"];
+  }
+}

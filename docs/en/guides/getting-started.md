@@ -1,98 +1,96 @@
-# Getting Started
+# 快速开始
 
-> Starting with v0.1, OpenXenon introduces a DDD dual-layer architecture.
-> This document covers both the **traditional asset workflow** and the **v0.1 Domain/Task workflow**.
+> v0.1 起，OpenXenon 引入 DDD 双层架构。本文档同时覆盖**传统资产流程**与 **v0.1 Domain/Task 流程**。
 
-This document helps you run through OpenXenon's core flow in 5 minutes.
+本文档帮助你在 5 分钟内跑通 OpenXenon 核心流程。
 
-## Requirements
+## 环境要求
 
 - **Bun**: >= 1.0.0
 - **pnpm**: >= 8.0.0
 
-## Install and Build
+## 安装与构建
 
 ```bash
-# Clone the repo
+# 克隆仓库
 git clone https://forgejo.isteed.dev/issac/openxenon.git
 cd openxenon
 
-# Install dependencies
+# 安装依赖
 pnpm install
 
-# Build
+# 构建
 pnpm build
 ```
 
-## Initialize the Project
+## 初始化项目
 
 ```bash
-# Initialize the project boundary
+# 初始化项目围栏
 ./dist/oxn init
 
-# View built-in assets
+# 查看内置资产
 ./dist/oxn arsenal list
 ```
 
-## v0.1 Flow: Domain + Task Demo
+## v0.1 流程：Domain + Task 演示
 
-> 5 steps to demonstrate the DDD dual-layer architecture's core capabilities —
-> Domain definition + Work orchestration + Task injection + Context isolation.
+> 5 步跑通 DDD 双层架构的核心能力——Domain 定义 + Work 编排 + Task 注入 + 上下文隔离。
 
-### 1. Define a DDD Domain
+### 1. 定义一个 DDD Domain
 
 ```bash
-# Generate Domain skeleton
+# 生成 Domain 骨架
 ./dist/oxn domain new --name MemberContext
-# Output: Created domain MemberContext at .openxenon/domains/member-context.oxn
+# 输出: Created domain MemberContext at .openxenon/domains/member-context.oxn
 
-# Edit .openxenon/domains/member-context.oxn, fill in the language
+# 编辑 .openxenon/domains/member-context.oxn，填写 language
 cat > .openxenon/domains/member-context.oxn <<'EOF'
 domain "MemberContext" {
-  description = "Member bounded context"
+  description = "会员限界上下文"
   language {
-    noun "Member" desc "Registered member entity"
-    verb "Register" desc "Submit registration form"
+    noun "Member" desc "注册会员实体"
+    verb "Register" desc "提交注册表单"
     ban = ["User", "Customer"]
   }
   domain_rules {
-    rule "PasswordNeverPlaintext" desc "Passwords must never be stored in plaintext"
+    rule "PasswordNeverPlaintext" desc "密码任何时候都不能明文存储"
   }
 }
 EOF
 
-# Validate
+# 校验
 ./dist/oxn domain validate --name MemberContext
 # Domain MemberContext ✓ valid
 ```
 
-### 2. Prepare a Blueprint
+### 2. 准备一份 Blueprint
 
 ```bash
 mkdir -p .openxenon/blueprints
 cat > .openxenon/blueprints/dev-workflow.oxn <<'EOF'
 blueprint "dev-workflow" {
   version = 1
-  description = "Development workflow"
+  description = "开发工作流"
   slot "develop" { }
   slot "test" { deps = ["develop"] }
 }
 EOF
 ```
 
-### 3. Author work.oxn (the orchestrator)
+### 3. 编写 work.oxn 编排
 
 ```bash
 mkdir -p .openxenon/works/onboarding
 cat > .openxenon/works/onboarding/work.oxn <<'EOF'
 work "Onboarding" {
   context {
-    goal = "Complete new-member registration"
-    constraints = []
+    goal = "完成新会员注册";
+    constraints = [];
     loop_policy { max_iterations = 3 }
   }
-  use_domain "MemberContext"
-  use_blueprint "dev-workflow"
+  use_domain "MemberContext";
+  use_blueprint "dev-workflow";
   task "Register" align "MemberContext.Register" {
     deps = []
   }
@@ -100,7 +98,7 @@ work "Onboarding" {
 EOF
 ```
 
-### 4. Create a Task (bound 1 Blueprint + inject 1 Domain)
+### 4. 创建 task（绑 1 Blueprint + 注入 1 Domain）
 
 ```bash
 ./dist/oxn work task new \
@@ -108,110 +106,145 @@ EOF
   --task register \
   --blueprint dev-workflow \
   --inject MemberContext
-# Output: Created task register in work Onboarding at .openxenon/works/onboarding/tasks/register/task.oxn
+# 输出: Created task register in work Onboarding at .openxenon/works/onboarding/tasks/register/task.oxn
 ```
 
-### 5. Get the AI Context (**full isolation**)
+### 5. 获取 AI 上下文（**全量隔离**）
 
 ```bash
 ./dist/oxn get-context --work onboarding --task register
-# Output includes:
+# 输出包含:
 #   - Injected Domains (isolated): MemberContext
 #   - Allowed Language: Nouns (must use): Member
-#   - This task can only see domains in its inject list; other domains in the work are invisible.
+#   - 本 task 只能看到 inject 列表中的 domain，work 中其他 domain 一律不可见。
 ```
+
+### 6. 跑通 work + task 状态机（v0.1 双层）
+
+```bash
+# 启动 workspace + 每个 task 状态机（run 会校验 task.oxn 齐备）
+./dist/oxn leader run --work-file .openxenon/works/onboarding/work.oxn --json
+
+# 推进 register task 的当前 part（v0.1 --task 必填）
+./dist/oxn leader submit --work-name onboarding --task register --json
+
+# 看 workspace + task 分解
+./dist/oxn leader status --work-name onboarding --json
+# {
+#   "workspace": { "status": "running", "taskCount": 1 },
+#   "tasks": [
+#     { "taskName": "register", "status": "running", "currentPart": "develop" }
+#   ]
+# }
+
+# 完成后 frozen.json 落到 tasks/<task>/frozen.json
+./dist/oxn leader submit --work-name onboarding --task register --json
+# 再次 submit 后 taskStatus = "passed", frozen 字段含 tasks/register/frozen.json
+```
+
+### 7. 3 类工作流参考示例
+
+仓库自带 3 套端到端示例，可直接跑通：
+
+| 工作流 | 位置 | Blueprint | Domain |
+|---|---|---|---|
+| **explore-dsl** | `src/oxn-dsl/examples/works/explore-dsl/` | explore-analyze-report | dsl-context |
+| **develop-member** | `src/oxn-dsl/examples/works/develop-member/` | dev-workflow | member-context |
+| **fix-issue** | `src/oxn-dsl/examples/works/fix-issue/` | fix-issue | work-context |
+
+详见 [DDD 双层架构 §9 三类工作流端到端示例](../architecture/ddd-dual-layer.md#9-3-类工作流端到端示例)。
 
 ---
 
-## Traditional Flow: Assets + Work Demo
+## 传统流程：资产 + Work 演示
 
-> v0.0.x compatible path. Continue using this if you don't need DDD isolation.
+> v0.0.x 兼容路径。如果不需要 DDD 隔离，可继续走这条路。
 
-### 1. Build a Probe asset
+### 1. 构建 Probe 资产
 
 ```bash
-# View Probe meta-Forge constraints
+# 查看 Probe 元 Forge 约束
 ./dist/oxn forge probe
 
-# Save a simple Probe
+# 保存一个简单的 Probe
 ./dist/oxn forge probe --save '
 type: fs_exists
-description: "Check if file exists"
+description: "检查文件是否存在"
 parameters:
   - name: pattern
     type: string
     required: true
 ' --name check-file
 
-# Promote to Formal
+# 转正为 Formal
 ./dist/oxn arsenal promote probes/check-file
 ```
 
-### 2. Author a Blueprint
+### 2. 编写 Blueprint
 
-Create `my-task.oxn`:
+创建 `my-task.oxn`：
 
 ```oxn
 blueprint "my-task" {
   version = 1
-  description = "My first task"
+  description = "我的第一个任务"
   slot "create-file" { }
   slot "verify-file" { deps = ["create-file"] }
 }
 ```
 
-### 3. Create a Work
+### 3. 创建 Work
 
 ```bash
-# v0.0.x path (type-locked)
+# v0.0.x 路径（type 锁定）
 ./dist/oxn work new my-work --type task --blueprint my-task
 
-# v0.1 path (if work.oxn already exists, directly run)
+# v0.1 路径（work.oxn 已存在则直接 run）
 ./dist/oxn leader new --name my-work --blueprint-file .openxenon/blueprints/my-task.oxn
 ```
 
-### 4. Simulate the AI assistant execution flow
+### 4. 模拟 AI 助手执行流程
 
 ```bash
-# Start work state machine
+# 启动 work 状态机
 ./dist/oxn leader run --work-file .openxenon/works/my-work/work.oxn
 
-# Advance part
+# 推进 part
 ./dist/oxn leader submit --work-name my-work
 ```
 
-### 5. View results
+### 5. 查看结果
 
 ```bash
-# View Work status
+# 查看 Work 状态
 ./dist/oxn leader status --work-name my-work
 
-# Open the Studio (Hall)
+# 打开研讨厅 (Hall)
 ./dist/oxn hall
 ```
 
 ---
 
-## v0.1 Migration Tool (Upgrade Existing Projects)
+## v0.1 迁移工具（升级既有项目）
 
-If your project already has legacy work spaces (`work/task/<name>.oxn` or single-layer state.json), run:
+如果你的项目里已经有旧版 work 空间（`work/task/<name>.oxn` 或单层 state.json），需要运行：
 
 ```bash
-# Preview
+# 预览
 ./dist/oxn work migrate --dry-run
 
-# Actual migration
+# 实际迁移
 ./dist/oxn work migrate
 ```
 
-The migration will:
-- Transform `work/task/<name>.oxn` into `works/<name>/work.oxn`
-- Rewrite `task "X" use "..."` to `task "X" blueprint "..."`
-- Split single-layer `state.json` into workspace-level + single-task-level
+迁移会：
+- 把 `work/task/<name>.oxn` 改造为 `works/<name>/work.oxn`
+- 把 `task "X" use "..."` 改写为 `task "X" blueprint "..."`
+- 把单层 `state.json` 拆为 workspace 级 + 单一 task 级
 
-## Next Steps
+## 下一步
 
-- [Core Concepts](../architecture/concepts.md) - Deep dive into Domain/Blueprint/Task/Work
-- [DDD Dual-Layer Architecture](../architecture/ddd-dual-layer.md) - v0.1 architecture details
-- [CLI Reference](./cli-reference.md) - Full command documentation
-- [Architecture Design](../architecture/) - System design rationale
+- [核心概念](../architecture/concepts.md) - 深入理解 Domain/Blueprint/Task/Work
+- [DDD 双层架构](../architecture/ddd-dual-layer.md) - v0.1 架构详解
+- [CLI 参考](./cli-reference.md) - 完整命令文档
+- [架构设计](../architecture/) - 系统设计原理
