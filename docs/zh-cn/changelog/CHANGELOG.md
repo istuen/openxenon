@@ -2,6 +2,79 @@
 
 本文件记录项目所有重要变更。
 
+## [0.1] - 2026-06-04
+
+### 🌟 重大变更：DDD 双层架构落地
+
+基于 QA 多轮对话的最终结论（Intent-Align 对偶），将 OpenXenon 从"单 Blueprint + 单 Work"模型升级为"Domain + Blueprint + Work + Task"四层领域模型。
+
+### 新增
+
+- **Domain 顶层实体**：承载 DDD 限界上下文（language: noun/verb/ban；domain_rules；context_map）
+- **Task 顶层实体**：work.oxn 内的执行单元，绑 1 Blueprint + 注入 N Domain
+- **OXN DSL 语法扩展**：
+  - `domain "X" { language { ... } domain_rules { ... } context_map { ... } }`
+  - `task "X" blueprint "Y" { inject "D"; slot "..." }`
+  - `work "X" { use_domain "D"; use_blueprint "B"; task "T" align "B.T" { deps = [...] } }`
+- **OXN DSL 语义重写**：Work 不再 `ref` 单 Blueprint，改为 `use_domain` / `use_blueprint` / `task` 三段
+- **Zod Schema 增量**：
+  - `OxnDomainIR` / `OxnTaskIR` / `OxnWorkIR` 三个新 schema
+  - `createOxnDomainIR` / `createOxnTaskIR` / `createOxnWorkIR` 工厂函数
+  - `validateOxnDomainIR` / `validateOxnTaskIR` / `validateOxnWorkIR` 校验函数
+- **CLI 新命令**：
+  - `oxn domain {new,validate,list}` — DDD 限界上下文管理
+  - `oxn work task {new,status,list}` — workspace 内 task 生命周期
+  - `oxn work migrate [--dry-run]` — 旧 work 硬迁移
+  - `oxn get-context` — AI 上下文获取（**全量隔离**）
+- **双层 State**：
+  - `WorkspaceState` (work.oxn 级) + `TaskState` (task.oxn 级)
+  - 独立读写，trace 也分层
+  - 路径：`works/<w>/state.json` + `works/<w>/tasks/<t>/state.json`
+- **Validators**：
+  - `validateWorkTaskReference` — Work 内 use_domain/use_blueprint/task.align 引用校验
+  - `validateTaskAlign` — task DAG 校验（重复名/未知 dep/环检测）
+- **示例**：
+  - `.openxenon/domains/{arsenal,work,dsl,cli}-context.oxn`（项目自身 4 个 DDD 域）
+  - `src/oxn-dsl/examples/domains/{member,order,marketing}-context.oxn`（教学示例）
+  - `src/oxn-dsl/examples/works/onboarding/{work.oxn, tasks/*/task.oxn}`（跨域编排示例）
+- **文档**：
+  - `docs/architecture/v01-ddd-dual-layer.md`（架构总览，英文）
+  - `docs/architecture/project-domains.md`（项目 Domain 索引）
+  - `docs/zh-cn/architecture/ddd-dual-layer.md`（中文版）
+
+### 变更
+
+- **`oxn leader new` 生成的 work.oxn**：从 `work "X" ref "Y" { part "..." align "..." }` 改为 `work "X" { use_blueprint "Y"; task "..." align "Y...." }`
+- **`oxn leader run` / `submit` / `status`**：work 解析路径从 `slotBindings` 切换到 `tasks` 编排块
+- **既有 5 份 builtin blueprint**（`dev-workflow` / `fix-issue` / `explore-analyze-report` / `add-summary-cmd` / `dual-track`）零改动
+- **`oxn task` CLI**：保留旧路径（指向 `.openxenon/tasks/<id>/`），新工作流用 `oxn work task`（指向 `works/<w>/tasks/<t>/`）
+- **测试**：
+  - DSL 单元测试：186/186 通过
+  - leader / task-filesystem e2e：全部通过
+  - 总计：417/417 通过，1527 expect calls
+- **预提交钩子**：
+  - `eslint.config.js`：新增 `src/oxn-dsl/generated/**` ignore（langium 自动生成文件）
+  - `lefthook.yml`：`eslint-arch` 加 `--no-warn-ignored` 标志
+
+### 修复
+
+- **Domain CLI 兼容性**：`oxn domain validate` 支持 PascalCase 名自动转 kebab-case 查找文件（如 `DSLContext` → `dsl-context.oxn`）
+- **Task 注入校验**：`oxn work task new` 强制 blueprint 名出现在 work.oxn 的 use_blueprint 列表中，inject 列表强制出现在 use_domain 列表中
+- **Probe 探针**：`--run-probes` 不再依赖 task 的 `ref` 字段，v0.1 task 也能跑 no-op 探针保持状态机可观察
+
+### 移除
+
+- 旧的 `part "X" align "Y" { ... }` 在 work.oxn 内联（被 `task` 块替代）
+- 单层 `WorkState`（被 `WorkspaceState` + `TaskState` 替代）
+- `task "X" use "@xxx/blueprints/Y"` 语法（被 `task "X" blueprint "Y"` 替代）
+
+### v0.1 限制（v0.2 解决）
+
+- Slot inputs/outputs 契约未实装
+- language 约束不接 Probe（v0.2 引入 `language-ban-checker`）
+- task 编排只支持串行 deps（v0.2 引入并行）
+- 跨 task prop 引用 `parts.X.outputs.field` 是占位（v0.2 实装）
+
 ## [0.0.27] - 2026-05-24
 
 ### 新增

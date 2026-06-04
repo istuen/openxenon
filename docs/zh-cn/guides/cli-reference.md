@@ -237,31 +237,199 @@ oxn work list
 oxn work validate <path-to-work.oxn>
 ```
 
-## oxn task (已废弃)
+## oxn domain 🌟 v0.1 新增
 
-任务管理命令（已废弃，请使用 `oxn work` 替代）。
+DDD 限界上下文管理命令。在 `.openxenon/domains/` 下创建、校验、列出 Domain 文件。
 
-> 迁移：使用 `oxn work new ... --type task` 替代 `oxn task submit --blueprint`
+### oxn domain new
 
-### oxn task submit (已废弃)
+生成一个新的 Domain 骨架。
+
+```bash
+oxn domain new --name <DomainName>
+```
+
+**参数**：
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `--name` | 是 | Domain 名称（PascalCase，如 `MemberContext`） |
+| `-f, --force` | 否 | 覆盖已存在的文件 |
+
+**示例**：
+
+```bash
+oxn domain new --name MemberContext
+# Created domain MemberContext at .openxenon/domains/member-context.oxn
+```
+
+### oxn domain validate
+
+解析并校验 Domain 文件。
+
+```bash
+oxn domain validate --name <DomainName>
+oxn domain validate --name X --file-path .openxenon/domains/x.oxn
+```
+
+**输出示例**：
+
+```
+Domain MemberContext ✓ valid
+  Language: 2 nouns, 2 verbs, 3 banned
+  Rules: 2
+  Context Map: 1 imports
+```
+
+### oxn domain list
+
+列出所有已注册的 Domain。
+
+```bash
+oxn domain list
+oxn domain list --json
+```
+
+**输出示例**：
+
+```
+Registered domains:
+  - MemberContext (member-context.oxn)
+      会员限界上下文：管理注册、认证、会员等级
+  - OrderContext (order-context.oxn)
+      订单限界上下文
+  - MarketingContext (marketing-context.oxn)
+      营销限界上下文
+```
+
+## oxn work task 🌟 v0.1 新增
+
+Workspace 内 Task 生命周期管理。在 `.openxenon/works/<work>/tasks/<task>/` 下创建 task.oxn。
+
+### oxn work task new
+
+在指定 work 下创建新的 task.oxn，绑定一份 Blueprint + 注入若干 Domain。
+
+```bash
+oxn work task new --work <W> --task <T> --blueprint <B> [--inject D1,D2]
+```
+
+**参数**：
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `--work` | 是 | Work 名称 |
+| `--task` | 是 | Task 名称 |
+| `--blueprint` | 是 | Blueprint 名（必须出现在 work.oxn 的 use_blueprint 列表中） |
+| `--inject` | 否 | 注入的 Domain 列表（必须出现在 work.oxn 的 use_domain 列表中） |
+| `-f, --force` | 否 | 覆盖已存在文件 |
+
+**示例**：
+
+```bash
+oxn work task new --work onboarding --task register-member \
+  --blueprint dev-workflow --inject MemberContext
+```
+
+### oxn work task list
+
+列出 work 下所有 task。
+
+```bash
+oxn work task list --work <W>
+```
+
+### oxn work task status
+
+查看 task 状态。
+
+```bash
+oxn work task status --work <W> --task <T>
+```
+
+## oxn work migrate 🌟 v0.1 新增
+
+v0.1 硬迁移工具。把旧的 `.openxenon/work/task/<name>.oxn` 改造为新的 `works/<name>/work.oxn` 格式，把单层 state.json 拆为双层。
+
+```bash
+oxn work migrate [--dry-run] [--work-name X] [-f]
+```
+
+**示例**：
+
+```bash
+# 预览
+oxn work migrate --dry-run
+# [DRY-RUN] Detected 1 potential actions:
+#   [pending] legacy-work: migrate work.oxn (dry-run)
+
+# 实际迁移
+oxn work migrate
+# Migration completed. 1 actions done, 0 skipped, 0 errors.
+```
+
+## oxn get-context 🌟 v0.1 新增
+
+返回 AI 可见的 task 工作上下文。**全量隔离**——只返回 task 自己 inject 的 domain。
+
+```bash
+oxn get-context --work <W> --task <T> [--emit-md <path>]
+oxn get-context --work <W>                       # work 级（无隔离）
+```
+
+**参数**：
+
+| 参数 | 必需 | 描述 |
+|------|------|------|
+| `--work` | 是 | Work 名称 |
+| `--task` | 否 | Task 名称（不传则返回 work 级上下文） |
+| `--state-path` | 否 | 可选，state.json 路径（用于 currentFocus） |
+| `--emit-md` | 否 | 把摘要写到指定 .md 路径 |
+
+**输出示例**：
+
+```
+# Context for onboarding / register-member
+
+Blueprint: dev-workflow
+Current part: develop
+Status: pending
+
+## Injected Domains (isolated)
+### MemberContext
+会员限界上下文：管理注册、认证、会员等级
+Nouns: Member, Account
+
+## Allowed Language
+Nouns (must use): Member, Account
+
+## 本 task 只能看到 inject 列表中的 domain，work 中其他 domain 一律不可见。
+```
+
+## oxn task (legacy)
+
+> **v0.1 状态**：保留旧 `oxn task` 命令以兼容既有工作流（指向 `.openxenon/tasks/<id>/`）。
+> 新工作流请使用 `oxn work task`（指向 `works/<work>/tasks/<task>/`）。
+
+### oxn task submit (legacy)
 
 ```bash
 oxn task submit --blueprint <file>
 ```
 
-### oxn task next (已废弃)
+### oxn task next (legacy)
 
 ```bash
 oxn task next --task-id <id>
 ```
 
-### oxn task verify (已废弃)
+### oxn task verify (legacy)
 
 ```bash
 oxn task verify --task-id <id> --stage-id <id>
 ```
 
-### oxn task status (已废弃)
+### oxn task status (legacy)
 
 ```bash
 oxn task status --task-id <id>

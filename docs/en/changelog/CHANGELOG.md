@@ -2,6 +2,79 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1] - 2026-06-04
+
+### 🌟 Major: DDD Dual-Layer Architecture
+
+Based on the final conclusion of multiple QA dialogues (Intent-Align duality), OpenXenon is upgraded from a "single Blueprint + single Work" model to a "Domain + Blueprint + Work + Task" four-layer domain model.
+
+### Added
+
+- **Domain top-level entity**: DDD bounded context (language: noun/verb/ban; domain_rules; context_map)
+- **Task top-level entity**: Execution unit inside work.oxn, binds 1 Blueprint + injects N Domain
+- **OXN DSL syntax extensions**:
+  - `domain "X" { language { ... } domain_rules { ... } context_map { ... } }`
+  - `task "X" blueprint "Y" { inject "D"; slot "..." }`
+  - `work "X" { use_domain "D"; use_blueprint "B"; task "T" align "B.T" { deps = [...] } }`
+- **OXN DSL semantic rewrite**: Work no longer `ref` a single Blueprint; replaced with `use_domain` / `use_blueprint` / `task` three-block pattern
+- **Zod Schema additions**:
+  - `OxnDomainIR` / `OxnTaskIR` / `OxnWorkIR` three new schemas
+  - `createOxnDomainIR` / `createOxnTaskIR` / `createOxnWorkIR` factory functions
+  - `validateOxnDomainIR` / `validateOxnTaskIR` / `validateOxnWorkIR` validators
+- **CLI new commands**:
+  - `oxn domain {new,validate,list}` — DDD bounded context management
+  - `oxn work task {new,status,list}` — workspace task lifecycle
+  - `oxn work migrate [--dry-run]` — legacy work hard migration
+  - `oxn get-context` — AI context fetch (**full isolation**)
+- **Two-layer State**:
+  - `WorkspaceState` (work.oxn level) + `TaskState` (task.oxn level)
+  - Independent R/W, traces also layered
+  - Paths: `works/<w>/state.json` + `works/<w>/tasks/<t>/state.json`
+- **Validators**:
+  - `validateWorkTaskReference` — references inside work.oxn
+  - `validateTaskAlign` — task DAG validation (duplicates/unknown deps/cycles)
+- **Examples**:
+  - `.openxenon/domains/{arsenal,work,dsl,cli}-context.oxn` (project's own 4 DDD domains)
+  - `src/oxn-dsl/examples/domains/{member,order,marketing}-context.oxn` (teaching examples)
+  - `src/oxn-dsl/examples/works/onboarding/{work.oxn, tasks/*/task.oxn}` (cross-domain orchestration)
+- **Documentation**:
+  - `docs/architecture/v01-ddd-dual-layer.md` (architecture overview)
+  - `docs/architecture/project-domains.md` (project domain index)
+  - `docs/zh-cn/architecture/ddd-dual-layer.md` (Chinese version)
+
+### Changed
+
+- **`oxn leader new` generated work.oxn**: From `work "X" ref "Y" { part "..." align "..." }` to `work "X" { use_blueprint "Y"; task "..." align "Y...." }`
+- **`oxn leader run` / `submit` / `status`**: work parse path switched from `slotBindings` to `tasks` block
+- **Existing 5 builtin blueprints** (`dev-workflow` / `fix-issue` / `explore-analyze-report` / `add-summary-cmd` / `dual-track`) — zero changes
+- **`oxn task` CLI**: Retained legacy path (pointing to `.openxenon/tasks/<id>/`); new workflow uses `oxn work task` (pointing to `works/<w>/tasks/<t>/`)
+- **Tests**:
+  - DSL unit tests: 186/186 pass
+  - leader / task-filesystem e2e: all pass
+  - Total: 417/417 pass, 1527 expect calls
+- **Pre-commit hooks**:
+  - `eslint.config.js`: added `src/oxn-dsl/generated/**` ignore
+  - `lefthook.yml`: `eslint-arch` adds `--no-warn-ignored` flag
+
+### Fixed
+
+- **Domain CLI compatibility**: `oxn domain validate` supports PascalCase name auto-converted to kebab-case (e.g. `DSLContext` → `dsl-context.oxn`)
+- **Task inject validation**: `oxn work task new` enforces blueprint name in work.oxn's use_blueprint list; inject list must be in use_domain list
+- **Probe runners**: `--run-probes` no longer depends on task's `ref` field; v0.1 task can also run no-op probe
+
+### Removed
+
+- Legacy `part "X" align "Y" { ... }` inline in work.oxn (replaced by `task` block)
+- Single-layer `WorkState` (replaced by `WorkspaceState` + `TaskState`)
+- `task "X" use "@xxx/blueprints/Y"` syntax (replaced by `task "X" blueprint "Y"`)
+
+### v0.1 Limitations (addressed in v0.2)
+
+- Slot inputs/outputs contracts not implemented
+- language constraints do not connect to Probe (v0.2 introduces `language-ban-checker`)
+- Task orchestration supports only serial deps (v0.2 introduces parallelism)
+- Cross-task prop reference `parts.X.outputs.field` is a placeholder (v0.2 implements)
+
 ## [0.0.27] - 2026-05-24
 
 ### Added

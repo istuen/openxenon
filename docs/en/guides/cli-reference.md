@@ -1,6 +1,8 @@
 # CLI Command Reference
 
-This document provides complete command reference for OpenXenon CLI.
+This document provides a complete reference for the OpenXenon CLI.
+
+> v0.1 introduces several new commands: `oxn domain`, `oxn work task`, `oxn work migrate`, `oxn get-context`.
 
 ## Global Options
 
@@ -8,33 +10,34 @@ This document provides complete command reference for OpenXenon CLI.
 |--------|-------------|
 | `-v, --verbose` | Enable verbose output |
 | `-j, --json` | Output in JSON format |
+| `--yaml` | Output in YAML format |
+| `--html` | Output in HTML format |
+| `--md` | Output in Markdown format |
 
 ## Command Scope
 
-CLI commands have two scopes: **project-level** and **global**:
+CLI commands are divided into **project-level** and **global**:
 
 | Scope | Prefix | Description |
 |-------|--------|-------------|
-| Project-level | `oxn <command>` | Operate assets under current project's `.openxenon/` |
-| Global | `oxn global <command>` | Operate global Arsenal (`~/.openxenon/`), shared across all projects |
+| Project-level | `oxn <command>` | Operates on assets in the current project's `.openxenon/` |
+| Global | `oxn global <command>` | Operates on the global Arsenal (`~/.openxenon/`) shared across projects |
 
-**Typical Scenarios**:
-
-- `oxn arsenal list` - View standard assets in current project
-- `oxn global arsenal list` - View globally reusable standard assets
+**Typical use cases**:
+- `oxn arsenal list` - list project standard assets
+- `oxn global arsenal list` - list global reusable assets
 
 > Global commands are for engineers only; AI agents should use project-level commands.
 
 ## oxn init
 
-Initialize project, create `.openxenon` fence in current directory.
+Initialize a project, creating the `.openxenon` boundary in the current directory.
 
 ```bash
 oxn init
 ```
 
 **Output**:
-
 ```
 ✓ Created .openxenon/
 ✓ Created .openxenon/config.json
@@ -45,23 +48,16 @@ oxn init
 
 Forge Draft standard assets.
 
-### View Meta Forge Constraints
+### View meta-Forge constraints
 
 ```bash
-# View all meta Forge constraints
 oxn forge
-
-# View Probe meta Forge constraints
 oxn forge probe
-
-# View Stage meta Forge constraints
-oxn forge stage
-
-# View Blueprint meta Forge constraints
+oxn forge part
 oxn forge blueprint
 ```
 
-### Save Draft Asset
+### Save a Draft asset
 
 ```bash
 oxn forge <type> --save '<yaml>' --name <name>
@@ -71,23 +67,10 @@ oxn forge <type> --save '<yaml>' --name <name>
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `<type>` | Yes | Asset type: probe, stage, blueprint |
-| `--save <yaml>` | Yes | YAML content |
-| `--name <name>` | Yes | Asset name |
-| `--global` | No | Save to global Arsenal (0.2) |
-
-**Example**:
-
-```bash
-oxn forge probe --save '
-type: fs_exists
-description: "Check if file exists"
-parameters:
-  - name: pattern
-    type: string
-    required: true
-' --name check-file
-```
+| `<type>` | yes | Asset type: probe, part, blueprint |
+| `--save` | yes | YAML content |
+| `--name` | yes | Asset name |
+| `--global` | no | Save to global Arsenal (0.2) |
 
 ## oxn arsenal
 
@@ -101,55 +84,20 @@ List standard assets.
 oxn arsenal list [DRAFT|CANONICAL]
 ```
 
-**Output Example**:
-
-```
-## PROBES
-  [CANONICAL] fs_exists
-  [CANONICAL] fs_match
-  [DRAFT] check-file
-
-## STAGES
-  [CANONICAL] build
-
-Total: 4 assets
-```
-
 ### oxn arsenal inspect
 
-View asset content.
+View asset contents.
 
 ```bash
 oxn arsenal inspect <type>/<name>
 ```
 
-**Example**:
-
-```bash
-oxn arsenal inspect probes/check-file
-```
-
 ### oxn arsenal promote
 
-Promote DRAFT asset to CANONICAL.
+Promote a DRAFT asset to FORMAL.
 
 ```bash
 oxn arsenal promote <type>/<name>
-```
-
-**Example**:
-
-```bash
-oxn arsenal promote probes/check-file
-```
-
-**Output**:
-
-```
-✓ Asset promoted
-  Name: check-file
-  Type: probes
-  New State: CANONICAL
 ```
 
 ### oxn arsenal render
@@ -160,49 +108,213 @@ Preview Blueprint DAG topology.
 oxn arsenal render <blueprint-name>
 ```
 
-## oxn work
+## oxn blueprint
 
-Work management commands (NEW, replaces task commands).
+Blueprint management (CLI generator).
 
-### oxn work new
+### oxn blueprint new
 
-Create a new Work using a Blueprint.
+Generate a new Blueprint skeleton.
 
 ```bash
-oxn work new <work-id> --type task --blueprint <blueprint-name>
+oxn blueprint new --name <name> [--slots slot1,slot2]
+```
+
+### oxn blueprint validate
+
+Validate a Blueprint file's syntax.
+
+```bash
+oxn blueprint validate <name>
+```
+
+## oxn domain 🌟 NEW in v0.1
+
+DDD bounded context management. Creates, validates, and lists Domain files in `.openxenon/domains/`.
+
+### oxn domain new
+
+Generate a new Domain skeleton.
+
+```bash
+oxn domain new --name <DomainName>
 ```
 
 **Parameters**:
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `<work-id>` | Yes | Work ID (kebab-case) |
-| `--type <type>` | Yes | Work type: task, plan, explore, or custom |
-| `--blueprint <name>` | No | Blueprint name to reference |
-| `--name <name>` | No | Display name |
+| `--name` | yes | Domain name (PascalCase, e.g. `MemberContext`) |
+| `-f, --force` | no | Overwrite existing file |
 
-**Output**:
+**Example**:
+
+```bash
+oxn domain new --name MemberContext
+# Created domain MemberContext at .openxenon/domains/member-context.oxn
+```
+
+### oxn domain validate
+
+Parse and validate a Domain file.
+
+```bash
+oxn domain validate --name <DomainName>
+oxn domain validate --name X --file-path .openxenon/domains/x.oxn
+```
+
+**Example output**:
 
 ```
-Work created: my-work
-Type: task
-Path: .openxenon/work/task/my-work.oxn
+Domain MemberContext ✓ valid
+  Language: 2 nouns, 2 verbs, 3 banned
+  Rules: 2
+  Context Map: 1 imports
+```
+
+### oxn domain list
+
+List all registered domains.
+
+```bash
+oxn domain list
+oxn domain list --json
+```
+
+**Example output**:
+
+```
+Registered domains:
+  - MemberContext (member-context.oxn)
+      Member bounded context: registration, auth, levels
+  - OrderContext (order-context.oxn)
+      Order bounded context
+  - MarketingContext (marketing-context.oxn)
+      Marketing bounded context
+```
+
+## oxn work task 🌟 NEW in v0.1
+
+Task lifecycle management within a workspace. Creates task.oxn under `.openxenon/works/<work>/tasks/<task>/`.
+
+### oxn work task new
+
+Create a new task.oxn in the given work, bound to a Blueprint + injecting N Domain.
+
+```bash
+oxn work task new --work <W> --task <T> --blueprint <B> [--inject D1,D2]
+```
+
+**Parameters**:
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--work` | yes | Work name |
+| `--task` | yes | Task name |
+| `--blueprint` | yes | Blueprint name (must be in work.oxn's use_blueprint list) |
+| `--inject` | no | Domain list to inject (must be in work.oxn's use_domain list) |
+| `-f, --force` | no | Overwrite existing file |
+
+**Example**:
+
+```bash
+oxn work task new --work onboarding --task register-member \
+  --blueprint dev-workflow --inject MemberContext
+```
+
+### oxn work task list
+
+List all tasks under a work.
+
+```bash
+oxn work task list --work <W>
+```
+
+### oxn work task status
+
+View a task's status.
+
+```bash
+oxn work task status --work <W> --task <T>
+```
+
+## oxn work migrate 🌟 NEW in v0.1
+
+v0.1 hard-migration tool. Converts legacy `.openxenon/work/task/<name>.oxn` to the new `works/<name>/work.oxn` format, and splits single-layer state.json into two-layer.
+
+```bash
+oxn work migrate [--dry-run] [--work-name X] [-f]
+```
+
+**Example**:
+
+```bash
+# Preview
+oxn work migrate --dry-run
+# [DRY-RUN] Detected 1 potential actions:
+#   [pending] legacy-work: migrate work.oxn (dry-run)
+
+# Actual migration
+oxn work migrate
+# Migration completed. 1 actions done, 0 skipped, 0 errors.
+```
+
+## oxn get-context 🌟 NEW in v0.1
+
+Returns the AI-visible task working context. **Full isolation** — only the task's own inject domains are returned.
+
+```bash
+oxn get-context --work <W> --task <T> [--emit-md <path>]
+oxn get-context --work <W>                       # work-level (no isolation)
+```
+
+**Parameters**:
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--work` | yes | Work name |
+| `--task` | no | Task name (omitted returns work-level context) |
+| `--state-path` | no | Optional state.json path (for currentFocus) |
+| `--emit-md` | no | Write summary to the given .md path |
+
+**Example output**:
+
+```
+# Context for onboarding / register-member
+
+Blueprint: dev-workflow
+Current part: develop
+Status: pending
+
+## Injected Domains (isolated)
+### MemberContext
+Member bounded context: registration, auth, levels
+Nouns: Member, Account
+
+## Allowed Language
+Nouns (must use): Member, Account
+
+## This task can only see domains in its inject list; other domains in the work are invisible.
+```
+
+## oxn work
+
+Work management commands (workspace-level).
+
+### oxn work new
+
+Create a new Work.
+
+```bash
+oxn work new <work-id> --type task --blueprint <blueprint-name>
 ```
 
 ### oxn work resume
 
-Get next Part to execute.
+Get the next Part to execute.
 
 ```bash
 oxn work resume <work-id>
-```
-
-**Output**:
-
-```
-Part: develop
-Target: Implement feature in src/
-Action: Write code according to specification
 ```
 
 ### oxn work complete
@@ -211,14 +323,6 @@ Mark Work as complete.
 
 ```bash
 oxn work complete <work-id>
-```
-
-**Output**:
-
-```
-Work: my-work
-Status: COMPLETED
-Parts passed: 3/3
 ```
 
 ### oxn work list
@@ -231,37 +335,72 @@ oxn work list
 
 ### oxn work validate
 
-Validate Work file syntax.
+Validate a work file's syntax.
 
 ```bash
 oxn work validate <path-to-work.oxn>
 ```
 
-## oxn task (DEPRECATED)
+## oxn leader (v0.1 compatible)
 
-Task management commands (deprecated, use `oxn work` instead).
+The leader subcommand drives the unified state machine. The work file format changed in v0.1, so legacy `ref` syntax is rejected.
 
-> Migration: Use `oxn work new ... --type task` instead of `oxn task submit --blueprint`
+### oxn leader new
 
-### oxn task submit (DEPRECATED)
+Generate work.oxn from a blueprint.
+
+```bash
+oxn leader new --name <work-name> --blueprint-file <path>
+```
+
+### oxn leader run
+
+Start the work state machine.
+
+```bash
+oxn leader run --work-file <path-to-work.oxn>
+```
+
+### oxn leader submit
+
+Advance one part (optionally run aligned probes).
+
+```bash
+oxn leader submit --work-name <name> [--run-probes]
+```
+
+### oxn leader status
+
+Read current state.
+
+```bash
+oxn leader status --work-name <name>
+```
+
+## oxn task (legacy)
+
+> **v0.1 status**: legacy `oxn task` is retained for compatibility (points to `.openxenon/tasks/<id>/`).
+> New workflow uses `oxn work task` (points to `works/<work>/tasks/<task>/`).
+
+### oxn task submit (legacy)
 
 ```bash
 oxn task submit --blueprint <file>
 ```
 
-### oxn task next (DEPRECATED)
+### oxn task next (legacy)
 
 ```bash
 oxn task next --task-id <id>
 ```
 
-### oxn task verify (DEPRECATED)
+### oxn task verify (legacy)
 
 ```bash
 oxn task verify --task-id <id> --stage-id <id>
 ```
 
-### oxn task status (DEPRECATED)
+### oxn task status (legacy)
 
 ```bash
 oxn task status --task-id <id>
@@ -285,7 +424,7 @@ oxn gc
 
 ## oxn daemon
 
-Manage Daemon process (0.2 goal).
+Manage the Daemon process (0.2 target).
 
 ```bash
 oxn daemon start   # Start daemon
@@ -293,11 +432,11 @@ oxn daemon stop    # Stop daemon
 oxn daemon status  # View status
 ```
 
-> 0.1 phase: all core commands available via CLI direct connection, not dependent on Daemon.
+> In v0.1 all core commands are available via direct CLI, no Daemon required.
 
 ## oxn hall
 
-Open Hall (研讨厅), view project status and todos.
+Open the Studio (Hall) to view project state and todos.
 
 ```bash
 oxn hall
@@ -308,28 +447,18 @@ oxn hall --open
 
 | Option | Description |
 |--------|-------------|
-| `--open` | Open Hall in browser |
-
-**Output**:
-
-```
-Hall path: /path/to/project/.openxenon/hall/index.html
-
-Use --open to open in browser
-```
+| `--open` | Open the Hall in the browser |
 
 **Features**:
-
-- Scans tasks and forges under project `.openxenon/`
-- Generates static HTML page displaying:
+- Scans `.openxenon/` directory for tasks and forges
+- Generates a static HTML page showing:
   - Task statistics (total, running, completed, failed)
-  - List of Draft assets pending review
+  - Draft assets pending review
   - Task list (clickable for details)
-- Each project has independent Hall view, physically isolated
+- Each project has an isolated Hall view
 
-**Detail Popup Displays**:
-
-- Stage DAG topology
-- Each Stage's execution status
-- Probe execution results (PASSED/FAILED)
+**Detail popup shows**:
+- Part DAG topology diagram
+- Per-part execution status
+- Probe results (PASSED/FAILED)
 - Probe output and error messages
