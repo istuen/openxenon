@@ -57,23 +57,7 @@ export class MutationValidator {
       }
     }
 
-    // 3. expectation 不可篡改检查
-    const originalExpNames = new Set(original.expectations.map((e) => e.name))
-    const mutatedExpNames = new Set(mutated.expectations.map((e) => e.name))
-
-    for (const exp of original.expectations) {
-      if (!mutatedExpNames.has(exp.name)) {
-        errors.push(`Expectation "${exp.name}" 不可删除（只能追加）`)
-      }
-    }
-
-    // 允许追加新 expectation
-    const addedExps = [...mutatedExpNames].filter((n) => !originalExpNames.has(n))
-    for (const name of addedExps) {
-      warnings.push(`新增 expectation: "${name}"`)
-    }
-
-    // 4. abstract part 绑定检查
+    // 3. 结构约束：变异不应引入无引用的 parts
     for (const ap of mutated.abstractParts) {
       if ((ap as any).isAbstract && ap.execution && ap.execution.length > 0) {
         errors.push(`抽象零件 "${ap.name}" 不可包含 execution 块`)
@@ -83,7 +67,9 @@ export class MutationValidator {
     // 5. 结构约束：变异不应引入无引用的 parts
     const stageTargetPartNames = new Set<string>()
     for (const stage of mutated.stages) {
-      const partName = stage.run.split('.')[0]?.replace('part.', '')
+      const parts = stage.run.split('.')
+      // Format: "part.<partName>.<action>" or just "<partName>"
+      const partName = parts.length >= 2 ? parts[1] : parts[0]
       if (partName) stageTargetPartNames.add(partName)
     }
 

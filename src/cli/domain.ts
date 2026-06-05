@@ -101,16 +101,12 @@ const newSubcommand = defineCommand({
       )
     }
 
-    // 生成 domain 骨架模板
-    const kebabName = name
-      .replace(/([a-z])([A-Z])/g, '$1-$2')
-      .replace(/_/g, '-')
-      .toLowerCase()
+    // 生成 domain 骨架模板 (v0.1-final)
     const template = `// Domain: ${name}
 // Created by: oxn domain new --name ${name}
 //
-// DDD 限界上下文骨架。填写 language / domain_rules / context_map 后
-// 在 work.oxn 通过 use_domain "${name}" 引用，task.oxn 通过 inject 注入。
+// DDD 限界上下文骨架。填写 term / ban / invariant 后
+// 在 work.oxn 通过 domain "${name}" ref "..." 引用。
 //
 // 校验：
 //   oxn domain validate ${name}
@@ -118,15 +114,13 @@ const newSubcommand = defineCommand({
 domain "${name}" {
   description = "TODO: 一句话描述这个限界上下文的业务边界"
 
-  language {
-    noun "TODO_Noun" desc "TODO: 领域名词，AI 必须使用的术语"
-    verb "TODO_Verb" desc "TODO: 领域动作，AI 必须使用的操作"
-    ban = ["TODO_BannedTerm1", "TODO_BannedTerm2"]
+  term {
+    "TODO_Term": "TODO: 领域术语定义"
   }
 
-  domain_rules {
-    rule "TODO_RuleName" desc "TODO: 业务不变量（v0.1 仅文档化，v0.2 接 Probe）"
-  }
+  ban { "TODO_BannedTerm1", "TODO_BannedTerm2" }
+
+  invariant { "TODO: 业务不变量规则" }
 
   context_map {
     imports "TODO_OtherDomain" as "TODOAlias"
@@ -140,7 +134,6 @@ domain "${name}" {
         ok: true,
         data: {
           name,
-          kebabName,
           path: outPath,
         },
         human: `Created domain ${name} at ${outPath}\n\nNext: edit ${outPath}, then run \`oxn domain validate ${name}\``,
@@ -194,8 +187,14 @@ const validateSubcommand = defineCommand({
     }
 
     const domain = result.domain!
-    const language = domain.language
-    const domainRules = domain.domainRules
+    const language =
+      domain.terms || domain.ban || domain.invariant
+        ? {
+            terms: (domain.terms?.terms ?? []).map((t) => ({ name: t.name, desc: t.desc })),
+            ban: domain.ban?.bans ?? [],
+            invariant: domain.invariant?.invariants ?? [],
+          }
+        : null
     const contextMap = domain.contextMap
 
     output(
@@ -207,18 +206,18 @@ const validateSubcommand = defineCommand({
           description: domain.descriptions?.[0]?.value,
           language: language
             ? {
-                nouns: (language.nouns ?? []).map((n) => ({ name: n.name, desc: n.desc })),
-                verbs: (language.verbs ?? []).map((v) => ({ name: v.name, desc: v.desc })),
-                ban: language.bans ?? [],
+                terms: language.terms,
+                ban: language.ban,
+                invariant: language.invariant,
               }
             : null,
-          domainRules: domainRules ? (domainRules.rules ?? []).map((r) => ({ name: r.name, desc: r.desc })) : [],
           contextMap: contextMap ? (contextMap.imports ?? []).map((i) => ({ target: i.target, alias: i.alias })) : [],
         },
         human: `Domain ${domain.name} ✓ valid
-  Language: ${language ? `${(language.nouns ?? []).length} nouns, ${(language.verbs ?? []).length} verbs, ${(language.bans ?? []).length} banned` : '(none)'}
-  Rules: ${domainRules ? (domainRules.rules ?? []).length : 0}
-  Context Map: ${contextMap ? (contextMap.imports ?? []).length + ' imports' : '(none)'}`,
+  Terms:     ${language ? language.terms.length : 0}
+  Ban:       ${language ? language.ban.length : 0}
+  Invariant: ${language ? language.invariant.length : 0}
+  Context Map: ${contextMap ? contextMap.imports.length : 0} imports`,
       },
       format,
     )

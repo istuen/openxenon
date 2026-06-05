@@ -5,14 +5,13 @@ import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/constants'
 import { getFormatFromArgs, output, outputError } from './output'
 
 // =============================================================================
-// `oxn get-context` — v0.1 AI 上下文获取
+// `oxn get-context` — v0.1-final AI 上下文获取
 //
-// 加载 task.oxn + work.oxn + 注入的 domain.oxn，返回给 AI 的最小工作上下文。
-// 关键约束（v0.1 决策）：
-//   - **全量隔离**：只返回 task 自己 inject 的 domain，不返回其他 task 的
-//   - language 约束作为 "allowedLanguage" 字段注入，AI 看到的提示中只能使用这些词
-//   - 自动生成 .openxenon/works/<name>/CONTEXT.md 人类可读摘要
-//   - 同时支持 --work (legacy 兼容) 和 --work + --task (v0.1)
+// 加载 work.oxn + task.oxn + 注入的 domain.oxn，返回给 AI 的最小工作上下文。
+// v0.1-final 变更：
+//   - Domain: noun/verb → term, domain_rules → invariant
+//   - Work: use_domain/use_blueprint → domain/blueprint/part/probe ref
+//   - Task: inject → domain/blueprint/part/probe 声明式对齐
 // =============================================================================
 
 function getProjectRoot(): string {
@@ -23,117 +22,148 @@ function readDomainFile(filePath: string): {
   name: string
   description?: string
   language?: {
-    nouns: Array<{ name: string; desc: string }>
-    verbs: Array<{ name: string; desc: string }>
+    terms: Array<{ name: string; desc: string }>
     ban: string[]
+    invariant: string[]
   }
-  rules?: Array<{ name: string; desc: string }>
   contextMap?: Array<{ target: string; alias: string }>
 } | null {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
 
-  // 简易同步 regex 抽取 domain 数据
   const nameMatch = content.match(/domain\s+"([^"]+)"/)
   if (!nameMatch) return null
 
   const descMatch = content.match(/description\s*=\s*"((?:[^"\\]|\\.)*)"/)
-  const langBlock = content.match(/language\s*\{([\s\S]*?)\}/)
-  const rulesBlock = content.match(/domain_rules\s*\{([\s\S]*?)\}/)
+
+  // v0.1-final: term { "Name": "desc" }
+  const termBlock = content.match(/term\s*\{([\s\S]*?)\}/)
+  const terms: Array<{ name: string; desc: string }> = []
+  if (termBlock) {
+    const termMatches = termBlock[1]!.matchAll(/"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)
+    for (const m of termMatches) {
+      terms.push({ name: m[1]!, desc: m[2]!.replace(/\\"/g, '"') })
+    }
+  }
+
+  // v0.1-final: ban { "term1", "term2" }
+  const banBlock = content.match(/ban\s*\{([\s\S]*?)\}/)
+  const ban: string[] = []
+  if (banBlock) {
+    const banMatches = banBlock[1]!.matchAll(/"([^"]+)"/g)
+    for (const m of banMatches) {
+      ban.push(m[1]!)
+    }
+  }
+
+  // v0.1-final: invariant { "rule1", "rule2" }
+  const invariantBlock = content.match(/invariant\s*\{([\s\S]*?)\}/)
+  const invariant: string[] = []
+  if (invariantBlock) {
+    const invMatches = invariantBlock[1]!.matchAll(/"([^"]+)"/g)
+    for (const m of invMatches) {
+      invariant.push(m[1]!)
+    }
+  }
+
+  // context_map (保留)
   const mapBlock = content.match(/context_map\s*\{([\s\S]*?)\}/)
-
-  function extractLang(block: string | undefined) {
-    if (!block) return undefined
-    const nouns = Array.from(block.matchAll(/noun\s+"([^"]+)"\s+desc\s+"((?:[^"\\]|\\.)*)"/g)).map((m) => ({
-      name: m[1]!,
-      desc: m[2]!.replace(/\\"/g, '"'),
-    }))
-    const verbs = Array.from(block.matchAll(/verb\s+"([^"]+)"\s+desc\s+"((?:[^"\\]|\\.)*)"/g)).map((m) => ({
-      name: m[1]!,
-      desc: m[2]!.replace(/\\"/g, '"'),
-    }))
-    const banMatch = block.match(/ban\s*=\s*\[([^\]]*)\]/)
-    const ban = banMatch ? Array.from(banMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!) : []
-    return { nouns, verbs, ban }
-  }
-
-  function extractRules(block: string | undefined) {
-    if (!block) return undefined
-    return Array.from(block.matchAll(/rule\s+"([^"]+)"\s+desc\s+"((?:[^"\\]|\\.)*)"/g)).map((m) => ({
-      name: m[1]!,
-      desc: m[2]!.replace(/\\"/g, '"'),
-    }))
-  }
-
-  function extractMap(block: string | undefined) {
-    if (!block) return undefined
-    return Array.from(block.matchAll(/imports\s+"([^"]+)"\s+as\s+"([^"]+)"/g)).map((m) => ({
-      target: m[1]!,
-      alias: m[2]!,
-    }))
+  const contextMap: Array<{ target: string; alias: string }> = []
+  if (mapBlock) {
+    const mapMatches = mapBlock[1]!.matchAll(/imports\s+"([^"]+)"\s+as\s+"([^"]+)"/g)
+    for (const m of mapMatches) {
+      contextMap.push({ target: m[1]!, alias: m[2]! })
+    }
   }
 
   return {
     name: nameMatch[1]!,
     ...(descMatch ? { description: descMatch[1]!.replace(/\\"/g, '"') } : {}),
-    ...(extractLang(langBlock?.[1]) ? { language: extractLang(langBlock![1])! } : {}),
-    ...(extractRules(rulesBlock?.[1]) ? { rules: extractRules(rulesBlock![1])! } : {}),
-    ...(extractMap(mapBlock?.[1]) ? { contextMap: extractMap(mapBlock![1])! } : {}),
+    ...(terms.length > 0 || ban.length > 0 || invariant.length > 0 ? { language: { terms, ban, invariant } } : {}),
+    ...(contextMap.length > 0 ? { contextMap } : {}),
   }
 }
 
 function readTaskFile(filePath: string): {
   name: string
-  blueprint: string
-  injects: string[]
-  objective?: string
-  constraints: string[]
-  slots: Array<{ name: string; deps: string[]; observe: string[] }>
+  domain?: string
+  blueprint?: string
+  parts: Array<{
+    name: string
+    skillContext?: string
+    probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
+  }>
+  deps: string[]
 } | null {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
 
-  const nameMatch = content.match(/task\s+"([^"]+)"\s+blueprint\s+"([^"]+)"/)
+  const nameMatch = content.match(/task\s+"([^"]+)"/)
   if (!nameMatch) return null
 
-  const injects = Array.from(content.matchAll(/inject\s+"([^"]+)"/g)).map((m) => m[1]!)
+  // v0.1-final: domain / blueprint 直接引用
+  const domainMatch = content.match(/domain\s+"([^"]+)"/)
+  const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
 
-  // 抽取 context
-  const ctxBlock = content.match(/context\s*\{([\s\S]*?)\}/)
-  let objective: string | undefined
-  let constraints: string[] = []
-  if (ctxBlock) {
-    const objMatch = ctxBlock[1]!.match(/objective\s*=\s*"((?:[^"\\]|\\.)*)"/)
-    if (objMatch) objective = objMatch[1]!.replace(/\\"/g, '"')
-    const conMatch = ctxBlock[1]!.match(/constraints\s*=\s*\[([^\]]*)\]/)
-    if (conMatch) {
-      constraints = Array.from(conMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!)
+  // v0.1-final: part "name" { skill_context = "..." probe "X" { ref "..." params = {...} } }
+  const parts: Array<{
+    name: string
+    skillContext?: string
+    probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
+  }> = []
+  const partBlocks = Array.from(content.matchAll(/part\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
+  for (const m of partBlocks) {
+    const partName = m[1]!
+    const partBody = m[2]!
+
+    const skillMatch = partBody.match(/skill_context\s*=\s*"((?:[^"\\]|\\.)*)"/)
+    const skillContext = skillMatch ? skillMatch[1]!.replace(/\\"/g, '"') : undefined
+
+    const probes: Array<{ name: string; ref: string; params?: Record<string, string> }> = []
+    const probeBlocks = Array.from(partBody.matchAll(/probe\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
+    for (const pm of probeBlocks) {
+      const probeName = pm[1]!
+      const probeBody = pm[2]!
+      const refMatch = probeBody.match(/ref\s+"([^"]+)"/)
+      const ref = refMatch?.[1] ?? ''
+
+      const params: Record<string, string> = {}
+      const paramsBlock = probeBody.match(/params\s*=\s*\{([\s\S]*?)\}/)
+      if (paramsBlock) {
+        const paramMatches = paramsBlock[1]!.matchAll(/(\w+)\s*=\s*"([^"]*)"/g)
+        for (const p of paramMatches) {
+          params[p[1]!] = p[2]!
+        }
+      }
+
+      probes.push({ name: probeName, ref, ...(Object.keys(params).length > 0 ? { params } : {}) })
     }
+
+    parts.push({ name: partName, skillContext, probes })
   }
 
-  // 抽取 slot 列表
-  const slots: Array<{ name: string; deps: string[]; observe: string[] }> = []
-  const slotBlocks = Array.from(content.matchAll(/slot\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
-  for (const m of slotBlocks) {
-    const name = m[1]!
-    const body = m[2]!
-    const depsMatch = body.match(/deps\s*=\s*\[([^\]]*)\]/)
-    const deps = depsMatch ? Array.from(depsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!) : []
-    const observeMatch = body.match(/observe\s*=\s*\[([^\]]*)\]/)
-    const observe = observeMatch ? Array.from(observeMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!) : []
-    slots.push({ name, deps, observe })
-  }
+  // deps
+  const depsMatch = content.match(/deps\s*=\s*\[([^\]]*)\]/)
+  const deps = depsMatch ? Array.from(depsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!) : []
 
-  return { name: nameMatch[1]!, blueprint: nameMatch[2]!, injects, objective, constraints, slots }
+  return {
+    name: nameMatch[1]!,
+    domain: domainMatch?.[1],
+    blueprint: blueprintMatch?.[1],
+    parts,
+    deps,
+  }
 }
 
 function readWorkFile(filePath: string): {
   name: string
   goal?: string
   constraints: string[]
-  domains: string[]
-  blueprints: string[]
-  tasks: Array<{ name: string; align: string; deps: string[] }>
+  domains: Array<{ name: string; ref?: string }>
+  blueprints: Array<{ name: string; ref?: string }>
+  parts: Array<{ name: string; ref?: string }>
+  probes: Array<{ name: string; ref?: string }>
+  tasks: Array<{ name: string; domain?: string; blueprint?: string; deps: string[] }>
 } | null {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
@@ -141,9 +171,35 @@ function readWorkFile(filePath: string): {
   const nameMatch = content.match(/work\s+"([^"]+)"/)
   if (!nameMatch) return null
 
-  const domains = Array.from(content.matchAll(/use_domain\s+"([^"]+)"/g)).map((m) => m[1]!)
-  const blueprints = Array.from(content.matchAll(/use_blueprint\s+"([^"]+)"/g)).map((m) => m[1]!)
+  // v0.1-final: domain "X" ref "..."
+  const domains: Array<{ name: string; ref?: string }> = []
+  const domainMatches = Array.from(content.matchAll(/domain\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g))
+  for (const m of domainMatches) {
+    domains.push({ name: m[1]!, ...(m[2] ? { ref: m[2] } : {}) })
+  }
 
+  // v0.1-final: blueprint "X" ref "..."
+  const blueprints: Array<{ name: string; ref?: string }> = []
+  const bpMatches = Array.from(content.matchAll(/blueprint\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g))
+  for (const m of bpMatches) {
+    blueprints.push({ name: m[1]!, ...(m[2] ? { ref: m[2] } : {}) })
+  }
+
+  // v0.1-final: part "X" ref "..."
+  const parts: Array<{ name: string; ref?: string }> = []
+  const partMatches = Array.from(content.matchAll(/part\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g))
+  for (const m of partMatches) {
+    parts.push({ name: m[1]!, ...(m[2] ? { ref: m[2] } : {}) })
+  }
+
+  // v0.1-final: probe "X" ref "..."
+  const probes: Array<{ name: string; ref?: string }> = []
+  const probeMatches = Array.from(content.matchAll(/probe\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g))
+  for (const m of probeMatches) {
+    probes.push({ name: m[1]!, ...(m[2] ? { ref: m[2] } : {}) })
+  }
+
+  // context
   const ctxBlock = content.match(/context\s*\{([\s\S]*?)\}/)
   let goal: string | undefined
   let constraints: string[] = []
@@ -156,18 +212,25 @@ function readWorkFile(filePath: string): {
     }
   }
 
-  const tasks: Array<{ name: string; align: string; deps: string[] }> = []
-  const taskBlocks = Array.from(content.matchAll(/task\s+"([^"]+)"\s+align\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
+  // v0.1-final: task 在 Work 内内联声明
+  const tasks: Array<{ name: string; domain?: string; blueprint?: string; deps: string[] }> = []
+  const taskBlocks = Array.from(content.matchAll(/task\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
   for (const m of taskBlocks) {
-    const name = m[1]!
-    const align = m[2]!
-    const body = m[3]!
-    const depsMatch = body.match(/deps\s*=\s*\[([^\]]*)\]/)
-    const deps = depsMatch ? Array.from(depsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!) : []
-    tasks.push({ name, align, deps })
+    const taskName = m[1]!
+    const taskBody = m[2]!
+    const taskDomainMatch = taskBody.match(/domain\s+"([^"]+)"/)
+    const taskBpMatch = taskBody.match(/blueprint\s+"([^"]+)"/)
+    const taskDepsMatch = taskBody.match(/deps\s*=\s*\[([^\]]*)\]/)
+    const taskDeps = taskDepsMatch ? Array.from(taskDepsMatch[1]!.matchAll(/"([^"]+)"/g)).map((dm) => dm[1]!) : []
+    tasks.push({
+      name: taskName,
+      domain: taskDomainMatch?.[1],
+      blueprint: taskBpMatch?.[1],
+      deps: taskDeps,
+    })
   }
 
-  return { name: nameMatch[1]!, goal, constraints, domains, blueprints, tasks }
+  return { name: nameMatch[1]!, goal, constraints, domains, blueprints, parts, probes, tasks }
 }
 
 // ---------------------------------------------------------------------------
@@ -180,7 +243,7 @@ export default defineCommand({
   },
   args: {
     work: { type: 'string', required: true, description: 'Work 名称' },
-    task: { type: 'string', description: 'Task 名称（v0.1 推荐；不传则返回 work 级上下文）' },
+    task: { type: 'string', description: 'Task 名称（v0.1-final 推荐；不传则返回 work 级上下文）' },
     'state-path': { type: 'string', description: '可选，state.json 路径（用于 currentFocus）' },
     'emit-md': {
       type: 'string',
@@ -212,45 +275,67 @@ export default defineCommand({
       return outputError({ code: 'OXN_DSL_PARSE_FAILED', message: `Failed to parse ${workFile}` }, format)
     }
 
-    // v0.1 上下文隔离核心：只加载 task 自己 inject 的 domain
-    const injectedDomains: Array<{ name: string; data: NonNullable<ReturnType<typeof readDomainFile>> }> = []
+    // v0.1-final: 加载 task 内引用的 domain
     if (taskName) {
+      // 在 Work 内联 task 中查找
+      const task = work.tasks.find((t) => t.name === taskName)
+
+      // 也尝试从 tasks/<taskName>/task.oxn 加载（兼容旧格式）
+      let taskDomain: string | undefined = task?.domain
+      let taskBlueprint: string | undefined = task?.blueprint
+      let taskParts: Array<{
+        name: string
+        skillContext?: string
+        probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
+      }> = []
+      let taskDeps: string[] = task?.deps ?? []
+
       const taskFile = join(root, BOUNDARY_DIR, 'works', workName, 'tasks', taskName, 'task.oxn')
-      if (!existsSync(taskFile)) {
-        return outputError(
-          { code: 'OXN_TASK_NOT_FOUND', message: `task "${taskName}" not found in work "${workName}"` },
-          format,
-        )
-      }
-      const task = readTaskFile(taskFile)
-      if (!task) {
-        return outputError({ code: 'OXN_DSL_PARSE_FAILED', message: `Failed to parse ${taskFile}` }, format)
+      if (existsSync(taskFile)) {
+        const taskFileData = readTaskFile(taskFile)
+        if (taskFileData) {
+          taskDomain = taskDomain ?? taskFileData.domain
+          taskBlueprint = taskBlueprint ?? taskFileData.blueprint
+          taskParts = taskFileData.parts
+          taskDeps = taskFileData.deps.length > 0 ? taskFileData.deps : taskDeps
+        }
       }
 
-      // 全量隔离：只加载 task.injects 中的 domain
-      // 文件名兼容：Domain 名是 PascalCase，但 .oxn 文件可能是 kebab-case
-      for (const dom of task.injects) {
-        const kebab = dom
+      // 加载引用的 domain
+      const injectedDomains: Array<{ name: string; data: NonNullable<ReturnType<typeof readDomainFile>> }> = []
+      if (taskDomain) {
+        const kebab = taskDomain
           .replace(/([a-z])([A-Z])/g, '$1-$2')
           .replace(/_/g, '-')
           .toLowerCase()
         const candidates = [
-          join(root, BOUNDARY_DIR, DOMAINS_DIR, `${dom}.oxn`),
+          join(root, BOUNDARY_DIR, DOMAINS_DIR, `${taskDomain}.oxn`),
           join(root, BOUNDARY_DIR, DOMAINS_DIR, `${kebab}.oxn`),
         ]
-        let domData: ReturnType<typeof readDomainFile> = null
         for (const path of candidates) {
-          domData = readDomainFile(path)
-          if (domData) break
+          const domData = readDomainFile(path)
+          if (domData) {
+            injectedDomains.push({ name: taskDomain, data: domData })
+            break
+          }
         }
-        if (domData) {
-          injectedDomains.push({ name: dom, data: domData })
+      }
+
+      // 汇总 allowedLanguage
+      const allowedTerms: Array<{ name: string; desc: string }> = []
+      const banned: string[] = []
+      const invariants: string[] = []
+      for (const { data } of injectedDomains) {
+        if (data.language) {
+          allowedTerms.push(...data.language.terms)
+          banned.push(...data.language.ban)
+          invariants.push(...data.language.invariant)
         }
       }
 
       // 加载 task state
       const statePath = statePathArg ?? join(root, BOUNDARY_DIR, 'works', workName, 'tasks', taskName, 'state.json')
-      let currentFocus: string | null = task.slots[0]?.name ?? null
+      let currentFocus: string | null = taskParts[0]?.name ?? null
       let taskStatus = 'pending'
       if (existsSync(statePath)) {
         try {
@@ -262,32 +347,10 @@ export default defineCommand({
         }
       }
 
-      // 汇总 allowedLanguage
-      const allowedNouns: string[] = []
-      const allowedVerbs: string[] = []
-      const banned: string[] = []
-      for (const { data } of injectedDomains) {
-        if (data.language) {
-          allowedNouns.push(...data.language.nouns.map((n) => n.name))
-          allowedVerbs.push(...data.language.verbs.map((v) => v.name))
-          banned.push(...data.language.ban)
-        }
-      }
-
-      // 汇总 domain rules（仅文档化）
-      const domainRules: Array<{ domain: string; name: string; desc: string }> = []
-      for (const { name, data } of injectedDomains) {
-        if (data.rules) {
-          for (const r of data.rules) {
-            domainRules.push({ domain: name, name: r.name, desc: r.desc })
-          }
-        }
-      }
-
       const context = {
         workspace: workName,
         task: taskName,
-        blueprint: task.blueprint,
+        blueprint: taskBlueprint,
         currentPart: currentFocus,
         taskStatus,
         workContext: {
@@ -295,34 +358,30 @@ export default defineCommand({
           constraints: work.constraints,
         },
         taskContext: {
-          objective: task.objective ?? '',
-          constraints: task.constraints,
+          deps: taskDeps,
         },
-        // v0.1 关键：只返回 task 自己 inject 的 domain（**全量隔离**）
+        // v0.1-final: 只返回 task 引用的 domain
         injectedDomains: injectedDomains.map(({ name, data }) => ({
           name,
           ...(data.description ? { description: data.description } : {}),
           ...(data.language
             ? {
                 language: {
-                  nouns: data.language.nouns,
-                  verbs: data.language.verbs,
+                  terms: data.language.terms,
                   ban: data.language.ban,
+                  invariant: data.language.invariant,
                 },
               }
             : {}),
-          rules: data.rules ?? [],
         })),
         // AI prompt 直接消费
         allowedLanguage: {
-          mustUseNouns: allowedNouns,
-          mustUseVerbs: allowedVerbs,
+          mustUseTerms: allowedTerms,
           banned,
+          invariants,
         },
-        domainRules,
-        taskSlots: task.slots,
-        // 提示给 AI：未列出的 domain 一律不知
-        isolationNotice: '本 task 只能看到 inject 列表中的 domain，work 中其他 domain 一律不可见。',
+        taskParts,
+        isolationNotice: '本 task 只能看到引用的 domain，work 中其他 domain 一律不可见。',
       }
 
       // 可选：生成 CONTEXT.md
@@ -342,14 +401,7 @@ export default defineCommand({
       )
     }
 
-    // 没传 task：返回 work 级上下文（不含 task 隔离）
-    const workInjectedDomains: Array<{ name: string; data: NonNullable<ReturnType<typeof readDomainFile>> }> = []
-    for (const dom of work.domains) {
-      const domFile = join(root, BOUNDARY_DIR, DOMAINS_DIR, `${dom}.oxn`)
-      const domData = readDomainFile(domFile)
-      if (domData) workInjectedDomains.push({ name: dom, data: domData })
-    }
-
+    // 没传 task：返回 work 级上下文
     return output(
       {
         ok: true,
@@ -360,18 +412,18 @@ export default defineCommand({
             overallGoal: work.goal ?? '',
             constraints: work.constraints,
           },
-          domains: workInjectedDomains.map(({ name, data }) => ({
-            name,
-            ...(data.description ? { description: data.description } : {}),
-            ...(data.language ? { hasLanguage: true } : {}),
-          })),
+          domains: work.domains,
           blueprints: work.blueprints,
+          parts: work.parts,
+          probes: work.probes,
           tasks: work.tasks,
         },
         human: `Work ${workName} (no --task specified, returning workspace-level context)
-  Domains:  ${work.domains.join(', ')}
-  Blueprints: ${work.blueprints.join(', ')}
-  Tasks:    ${work.tasks.length}
+  Domains:    ${work.domains.map((d) => d.name).join(', ')}
+  Blueprints: ${work.blueprints.map((b) => b.name).join(', ')}
+  Parts:      ${work.parts.map((p) => p.name).join(', ')}
+  Probes:     ${work.probes.map((p) => p.name).join(', ')}
+  Tasks:      ${work.tasks.length}
   (传 --task <name> 获取 task 级隔离上下文)`,
       },
       format,
@@ -382,21 +434,20 @@ export default defineCommand({
 function renderContextHuman(c: {
   workspace: string
   task: string
-  blueprint: string
+  blueprint?: string
   currentPart: string | null
   taskStatus: string
   workContext: { overallGoal: string; constraints: string[] }
-  taskContext: { objective: string; constraints: string[] }
-  injectedDomains: Array<{ name: string; description?: string; language?: unknown; rules: unknown[] }>
-  allowedLanguage: { mustUseNouns: string[]; mustUseVerbs: string[]; banned: string[] }
-  domainRules: Array<{ domain: string; name: string; desc: string }>
-  taskSlots: Array<{ name: string; deps: string[]; observe: string[] }>
+  taskContext: { deps: string[] }
+  injectedDomains: Array<{ name: string; description?: string; language?: unknown }>
+  allowedLanguage: { mustUseTerms: Array<{ name: string; desc: string }>; banned: string[]; invariants: string[] }
+  taskParts: Array<{ name: string; skillContext?: string; probes: Array<{ name: string; ref: string }> }>
   isolationNotice: string
 }): string {
   const lines: string[] = []
   lines.push(`# Context for ${c.workspace} / ${c.task}`)
   lines.push('')
-  lines.push(`Blueprint: ${c.blueprint}`)
+  lines.push(`Blueprint: ${c.blueprint ?? '(none)'}`)
   lines.push(`Current part: ${c.currentPart ?? '(none)'}`)
   lines.push(`Status: ${c.taskStatus}`)
   lines.push('')
@@ -408,35 +459,30 @@ function renderContextHuman(c: {
   }
   lines.push('')
   lines.push('## Task-level')
-  lines.push(`Objective: ${c.taskContext.objective}`)
-  if (c.taskContext.constraints.length > 0) {
-    lines.push('Constraints:')
-    for (const x of c.taskContext.constraints) lines.push(`  - ${x}`)
+  if (c.taskContext.deps.length > 0) {
+    lines.push(`Deps: ${c.taskContext.deps.join(', ')}`)
   }
   lines.push('')
   lines.push('## Injected Domains (isolated)')
   for (const d of c.injectedDomains) {
     lines.push(`### ${d.name}`)
     if (d.description) lines.push(d.description)
-    if (
-      Array.isArray((d.language as { nouns?: unknown[] })?.nouns) &&
-      (d.language as { nouns: unknown[] }).nouns.length > 0
-    ) {
-      lines.push('Nouns: ' + (d.language as { nouns: Array<{ name: string }> }).nouns.map((n) => n.name).join(', '))
+    const lang = d.language as { terms?: Array<{ name: string }> } | undefined
+    if (lang?.terms && lang.terms.length > 0) {
+      lines.push(`Terms: ${lang.terms.map((t) => t.name).join(', ')}`)
     }
   }
   lines.push('')
   lines.push('## Allowed Language')
-  lines.push(`Nouns (must use): ${c.allowedLanguage.mustUseNouns.join(', ') || '(none)'}`)
-  lines.push(`Verbs (must use): ${c.allowedLanguage.mustUseVerbs.join(', ') || '(none)'}`)
+  lines.push(`Terms (must use): ${c.allowedLanguage.mustUseTerms.map((t) => t.name).join(', ') || '(none)'}`)
   if (c.allowedLanguage.banned.length > 0) {
     lines.push(`Banned:          ${c.allowedLanguage.banned.join(', ')}`)
   }
-  if (c.domainRules.length > 0) {
+  if (c.allowedLanguage.invariants.length > 0) {
     lines.push('')
-    lines.push('## Domain Rules (documentation only in v0.1)')
-    for (const r of c.domainRules) {
-      lines.push(`- [${r.domain}] ${r.name}: ${r.desc}`)
+    lines.push('## Invariants')
+    for (const inv of c.allowedLanguage.invariants) {
+      lines.push(`- ${inv}`)
     }
   }
   lines.push('')

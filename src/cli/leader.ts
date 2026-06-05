@@ -157,6 +157,7 @@ function defaultLifecycleForSlot(slotName: string): string {
   }
   return 'code'
 }
+void defaultLifecycleForSlot
 
 function capitalize(s: string): string {
   return s.length === 0 ? s : s[0]!.toUpperCase() + s.slice(1)
@@ -173,16 +174,14 @@ function renderWorkSkeleton(
     `//   oxn leader run --work-file work.oxn`,
     '',
   ].join('\n')
-  // v0.1: work.oxn 改用 use_blueprint + task 编排块
-  const taskEntries = slots
+  // v0.1-final: work.oxn 改用 blueprint ref + task 声明
+  const partEntries = slots
     .map((s) => {
-      const lifecycle = defaultLifecycleForSlot(s.name)
-      return `  task "${s.name}" align "${blueprintName}.${s.name}" {
-    deps = [];
-    prop "lifecycle" = "${lifecycle}"
-    prop "objective" = "TODO: 描述 ${s.name} 阶段要做什么"
-    prop "acceptance" = "TODO: 列出可验收的产出"
-    prop "guidance" = "TODO: 提示给 AI 的额外指引"
+      return `  task "${s.name}" {
+    blueprint "${blueprintName}"
+    part "slot-name" {
+      skill_context = "TODO: 描述 ${s.name} 阶段要做什么"
+    }
   }`
     })
     .join('\n')
@@ -197,9 +196,9 @@ function renderWorkSkeleton(
     }
   }
 
-  use_blueprint "${blueprintName}";
+  blueprint "${blueprintName}" ref "@prj/blueprints/${blueprintName}";
 
-${taskEntries}
+${partEntries}
 }
 `
 }
@@ -283,15 +282,14 @@ async function buildPartSpecs(work: WorkDeclaration, inlineParts: PartDeclaratio
   const inlineByName = new Map<string, PartDeclaration>()
   for (const p of inlineParts) inlineByName.set(parsePartName(p.name), p)
 
-  // v0.1: 优先从 work.tasks 编排块收集（替代旧的 slotBindings）
+  // v0.1-final: 优先从 work.tasks 编排块收集
   const taskEntries = work.tasks ?? []
   const specs: PartSpec[] = []
   for (const task of taskEntries) {
     const partName = parsePartName(task.name)
-    const align = task.align
     specs.push({
       partName,
-      align,
+      align: task.blueprint ?? '',
       skill: snapshotSkill(undefined),
     })
   }
@@ -300,8 +298,7 @@ async function buildPartSpecs(work: WorkDeclaration, inlineParts: PartDeclaratio
   if (specs.length === 0 && inlineParts.length > 0) {
     return inlineParts.map((p) => ({
       partName: parsePartName(p.name),
-      align: p.align ?? '',
-      ...(p.ref !== undefined ? { ref: p.ref } : {}),
+      align: '',
       skill: snapshotSkill(p.skill),
     }))
   }
@@ -348,7 +345,7 @@ const newSubcommand = defineCommand({
     const customBlueprint = ctx.args['blueprint-file'] as string | undefined
     const workName = ctx.args.name as string
     const customOutputDir = ctx.args['output-dir'] as string | undefined
-    const force = ctx.args['force'] === true
+    const force = ctx.args.force === true
     const projectRoot = getProjectRoot()
     try {
       const defaultCandidates = [
@@ -486,9 +483,9 @@ const runSubcommand = defineCommand({
       }
       ensureWorkDir(projectRoot, workName)
 
-      // v0.1: 提取 use_blueprint + use_domain + task 块
-      const blueprintNames = (work.useBlueprints ?? []).map((u) => u.name)
-      const domainNames = (work.useDomains ?? []).map((u) => u.name)
+      // v0.1-final: 提取 blueprint + domain + task 块
+      const blueprintNames = (work.blueprints ?? []).map((u) => u.name)
+      const domainNames = (work.domains ?? []).map((u) => u.name)
       const taskEntries = work.tasks ?? []
       const declaredTaskNames = taskEntries.map((t) => parsePartName(t.name))
 
@@ -516,8 +513,8 @@ const runSubcommand = defineCommand({
         domainNames,
         tasks: taskEntries.map((t) => ({
           taskName: parsePartName(t.name),
-          blueprint: parsePartName(t.align ?? '').split('.')[0] ?? blueprintNames[0] ?? '',
-          injects: [], // 实际 injects 由 task.oxn 决定
+          blueprint: t.blueprint ?? blueprintNames[0] ?? '',
+          injects: [],
         })),
         goal: work.context?.goal,
         constraints: work.context?.constraints,
@@ -528,11 +525,11 @@ const runSubcommand = defineCommand({
       for (const taskName of declaredTaskNames) {
         const taskOxnPath = getTaskOxnPath(projectRoot, workName, taskName)
         const content = readFileSync(taskOxnPath, 'utf-8')
-        const blueprintMatch = content.match(/task\s+"[^"]+"\s+blueprint\s+"([^"]+)"/)
+        const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
         const blueprint = blueprintMatch?.[1] ?? blueprintNames[0] ?? ''
         const injects = Array.from(content.matchAll(/inject\s+"([^"]+)"/g)).map((m) => m[1]!)
-        // 抽取 task.oxn 的 slot 名字作为 partNames
-        const slotNames = Array.from(content.matchAll(/slot\s+"([^"]+)"\s*\{/g)).map((m) => m[1]!)
+        // 抽取 task.oxn 的 part 名字作为 partNames
+        const slotNames = Array.from(content.matchAll(/part\s+"([^"]+)"\s*\{/g)).map((m) => m[1]!)
         const objectiveMatch = content.match(/objective\s*=\s*"((?:[^"\\]|\\.)*)"/)
         const constraintsMatch = content.match(/constraints\s*=\s*\[([^\]]*)\]/)
         const constraints = constraintsMatch

@@ -1,23 +1,27 @@
 /**
- * TaskAlignValidator (v0.1)
+ * TaskAlignValidator (v0.1-final)
  *
- * 校验 Work 内的 task 编排：
+ * 校验 Work 内的 Task DAG 编排：
  *   1. task.deps 引用的 task 名必须存在
- *   2. task.deps 不能形成环（DAG）
- *   3. task.align 全限定名 Blueprint.SlotName 格式合法
+ *   2. task.deps 不能形成环（DAG 校验）
  */
 
 import type { ValidationAcceptor } from 'langium'
-import type { WorkDeclaration, TaskRefDecl } from '../generated/ast.js'
-import { isTaskRefDecl } from '../generated/ast.js'
+import type { WorkDeclaration, TaskDeclaration } from '../generated/ast.js'
+import { isTaskDeclaration } from '../generated/ast.js'
 
-function validateDag(tasks: TaskRefDecl[]): { hasCycle: boolean; cycleHint?: string } {
+function getTaskDeps(task: TaskDeclaration): string[] {
+  return task.deps?.deps ?? []
+}
+
+function validateDag(tasks: TaskDeclaration[]): { hasCycle: boolean; cycleHint?: string } {
   const nameSet = new Set(tasks.map((t) => t.name))
   const adj = new Map<string, string[]>()
+
   for (const t of tasks) {
     adj.set(
       t.name,
-      (t.deps ?? []).filter((d) => nameSet.has(d)),
+      getTaskDeps(t).filter((d) => nameSet.has(d)),
     )
   }
 
@@ -55,27 +59,29 @@ function validateDag(tasks: TaskRefDecl[]): { hasCycle: boolean; cycleHint?: str
 }
 
 export function validateTaskAlign(node: WorkDeclaration, accept: ValidationAcceptor, ..._args: unknown[]): void {
-  if (!node.tasks || node.tasks.length === 0) return
+  const tasks = (node.tasks || []).filter(isTaskDeclaration)
+  if (tasks.length === 0) return
 
+  // 校验 task name 唯一性
   const nameSet = new Set<string>()
-  for (const t of node.tasks) {
-    if (!isTaskRefDecl(t)) continue
+  for (const t of tasks) {
     if (nameSet.has(t.name)) {
       accept('error', `task "${t.name}" 重复声明`, { node: t, property: 'name' })
     }
     nameSet.add(t.name)
   }
 
-  for (const t of node.tasks) {
-    if (!isTaskRefDecl(t)) continue
-    for (const dep of t.deps ?? []) {
+  // 校验 task.deps 引用存在
+  for (const t of tasks) {
+    for (const dep of getTaskDeps(t)) {
       if (!nameSet.has(dep)) {
         accept('error', `task "${t.name}" 引用了未声明的 dep "${dep}"`, { node: t, property: 'deps' })
       }
     }
   }
 
-  const dag = validateDag(node.tasks.filter(isTaskRefDecl))
+  // 校验 DAG 无环
+  const dag = validateDag(tasks)
   if (dag.hasCycle) {
     accept('error', `task DAG 存在环: ${dag.cycleHint}`, { node, property: 'tasks' })
   }

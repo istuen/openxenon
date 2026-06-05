@@ -1,5 +1,5 @@
 blueprint "oxn-example" {
-  description = "示例 Blueprint，展示 Intent-Align DSL 语法"
+  description = "示例 Blueprint，展示 v0.1-final DSL 语法"
 
   version = 1
   prop "env" { type = string; default = "dev" }
@@ -15,16 +15,5 @@ blueprint "oxn-example" {
   slot "test" {
     deps = ["build"]
     observe = ["ShellExec"]
-  }
-
-  expectation "must-pass-tests" {
-    probe = "@oxn/probes/shell_exec"
-    params = { command = "npm test" }
-    err_msg = "测试必须通过才能提交"
-  }
-
-  rule "prod_requires_ha" {
-    condition = prop.env != "prod"
-    err_msg = "生产环境必须开启 HA"
   }
 }

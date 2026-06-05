@@ -4,14 +4,12 @@
 domain "MarketingContext" {
   description = "营销限界上下文：管理优惠券、积分、欢迎福利"
 
-  language {
-    noun "Coupon" desc "优惠券"
-    noun "Bonus" desc "新会员奖励"
-    verb "GrantBonus" desc "发放奖励"
-    ban = ["Discount", "Voucher"]
+  term {
+    "Coupon": "优惠券"
+    "Bonus": "新会员奖励"
   }
 
-  domain_rules {
-    rule "BonusRequiresAuthenticatedMember" desc "发奖必须基于已认证的 Member"
-  }
+  ban { "Discount", "Voucher" }
+
+  invariant { "发奖必须基于已认证的 Member" }
 }

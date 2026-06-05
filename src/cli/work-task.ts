@@ -5,11 +5,11 @@ import { BOUNDARY_DIR } from '../kernel/constants'
 import { getFormatFromArgs, output, outputError } from './output'
 
 // =============================================================================
-// `oxn work task` — v0.1 Task 生命周期管理
+// `oxn work task` — v0.1-final Task 生命周期管理
 //
-// 一个 task 归属于一个 work（在 .openxenon/works/<work-name>/tasks/<task-name>/task.oxn）
-// 一个 task 绑定一份 Blueprint（从 work.oxn 的 use_blueprint 列表中挑选）
-// 一个 task 注入若干 Domain（从 work.oxn 的 use_domain 列表中挑选）
+// 一个 task 归属于一个 work（在 .openxenon/works/<work-name>/work.oxn 内联）
+// 或独立文件（.openxenon/works/<work-name>/tasks/<task-name>/task.oxn）
+// 一个 task 绑定一个 domain 和一个 blueprint
 //
 // 子命令：
 //   new      — 在 work 下创建 task.oxn
@@ -60,12 +60,12 @@ function ensureDirectory(dir: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// Subcommand: new
+// Subcommand: new (v0.1-final)
 // ---------------------------------------------------------------------------
 const newSubcommand = defineCommand({
   meta: {
     name: 'new',
-    description: '在指定 work 下创建新的 task.oxn（绑定一份 Blueprint + 注入若干 Domain）',
+    description: '在指定 work 下创建新的 task.oxn（绑定 domain + blueprint）',
   },
   args: {
     'work-name': { type: 'string', required: true, description: 'Work 名称' },
@@ -73,11 +73,11 @@ const newSubcommand = defineCommand({
     blueprint: {
       type: 'string',
       required: true,
-      description: 'Blueprint 名（必须出现在 work.oxn 的 use_blueprint 列表中）',
+      description: 'Blueprint 名（必须出现在 work.oxn 的 blueprint 声明中）',
     },
-    inject: {
+    domain: {
       type: 'string',
-      description: '要注入的 Domain 名（逗号分隔），必须出现在 work.oxn 的 use_domain 列表中',
+      description: '要引用的 Domain 名（必须出现在 work.oxn 的 domain 声明中）',
     },
     force: { type: 'boolean', alias: 'f', description: '覆盖已存在的 task.oxn' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
@@ -88,7 +88,7 @@ const newSubcommand = defineCommand({
     const workName = ctx.args['work-name'] as string
     const taskName = ctx.args['task-name'] as string
     const blueprintName = ctx.args.blueprint as string
-    const injectArg = (ctx.args.inject as string | undefined) ?? ''
+    const domainName = (ctx.args.domain as string | undefined) ?? ''
     const force = ctx.args.force === true || ctx.args.f === true
 
     const workNameCheck = validateName(workName, 'work-name')
@@ -125,14 +125,13 @@ const newSubcommand = defineCommand({
       )
     }
 
-    // 解析 work.oxn 抽取 use_blueprint / use_domain 列表
-    // v0.1: 用同步 regex 抽取（work.oxn 文件结构简单）
+    // 解析 work.oxn 抽取 blueprint / domain 列表 (v0.1-final)
     let allowedBlueprints: string[] = []
     let allowedDomains: string[] = []
     try {
       const workContent = readFileSync(workFile, 'utf-8')
-      const bpMatches = Array.from(workContent.matchAll(/use_blueprint\s+"([^"]+)"/g))
-      const dMatches = Array.from(workContent.matchAll(/use_domain\s+"([^"]+)"/g))
+      const bpMatches = Array.from(workContent.matchAll(/blueprint\s+"([^"]+)"/g))
+      const dMatches = Array.from(workContent.matchAll(/domain\s+"([^"]+)"/g))
       allowedBlueprints = bpMatches.map((m) => m[1]!)
       allowedDomains = dMatches.map((m) => m[1]!)
     } catch {
@@ -144,55 +143,39 @@ const newSubcommand = defineCommand({
         {
           code: 'OXN_BLUEPRINT_NOT_IN_WORK',
           message: `blueprint "${blueprintName}" not declared in work "${workName}" (allowed: ${allowedBlueprints.join(', ')})`,
-          suggestion: `add 'use_blueprint "${blueprintName}";' to ${workFile}`,
+          suggestion: `add 'blueprint "${blueprintName}" ref "...";' to ${workFile}`,
         },
         format,
       )
     }
 
-    const injects = injectArg
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-    for (const inj of injects) {
-      if (allowedDomains.length > 0 && !allowedDomains.includes(inj)) {
-        return outputError(
-          {
-            code: 'OXN_DOMAIN_NOT_IN_WORK',
-            message: `domain "${inj}" not declared in work "${workName}" (allowed: ${allowedDomains.join(', ')})`,
-            suggestion: `add 'use_domain "${inj}";' to ${workFile}`,
-          },
-          format,
-        )
-      }
+    if (domainName && allowedDomains.length > 0 && !allowedDomains.includes(domainName)) {
+      return outputError(
+        {
+          code: 'OXN_DOMAIN_NOT_IN_WORK',
+          message: `domain "${domainName}" not declared in work "${workName}" (allowed: ${allowedDomains.join(', ')})`,
+          suggestion: `add 'domain "${domainName}" ref "...";' to ${workFile}`,
+        },
+        format,
+      )
     }
 
-    // 生成 task.oxn 骨架
-    const injectLines = injects.map((d) => `  inject "${d}";`).join('\n')
+    // 生成 task.oxn 骨架 (v0.1-final)
+    const domainLine = domainName ? `  domain "${domainName}"` : ''
     const template = `// Task: ${taskName} (work: ${workName}, blueprint: ${blueprintName})
-// Created by: oxn work task new --work-name ${workName} --task-name ${taskName} --blueprint ${blueprintName} ${injects.length > 0 ? `--inject ${injects.join(',')}` : ''}
+// Created by: oxn work task new --work-name ${workName} --task-name ${taskName} --blueprint ${blueprintName} ${domainName ? `--domain ${domainName}` : ''}
 //
 // 任务执行：
 //   oxn work task status --work-name ${workName} --task-name ${taskName}
 //
-// Skill 上下文获取（v0.1）：
+// Skill 上下文获取：
 //   oxn get-context --work ${workName} --task ${taskName}
 
-task "${taskName}" blueprint "${blueprintName}" {
-${injectLines}
-  context {
-    objective = "TODO: 描述这个 task 要达成的目标"
-    constraints = [
-      "TODO: 列出硬约束"
-    ]
-  }
-
-  // 引用 ${blueprintName} 的 slot，作为 task 的步骤
-  slot "develop" {
-    deps = []
-  }
-  slot "test" {
-    deps = ["develop"]
+task "${taskName}" {
+  blueprint "${blueprintName}"
+${domainLine}
+  part "slot-name" {
+    skill_context = "TODO: 描述 AI 执行指令"
   }
 }
 `
@@ -206,10 +189,10 @@ ${injectLines}
           workName,
           taskName,
           blueprint: blueprintName,
-          injects,
+          domain: domainName,
           path: taskFile,
         },
-        human: `Created task ${taskName} in work ${workName} at ${taskFile}\nBlueprint: ${blueprintName}\nInjects: ${injects.length > 0 ? injects.join(', ') : '(none)'}`,
+        human: `Created task ${taskName} in work ${workName} at ${taskFile}\nBlueprint: ${blueprintName}\nDomain: ${domainName || '(none)'}`,
       },
       format,
     )
@@ -240,11 +223,12 @@ const statusSubcommand = defineCommand({
       return outputError({ code: 'OXN_TASK_NOT_FOUND', message: `task.oxn not found at ${taskFile}` }, format)
     }
 
-    // 简易同步解析：直接用 regex 抽 blueprint 和 inject 字段
+    // 简易同步解析：v0.1-final 新语法
     const content = readFileSync(taskFile, 'utf-8')
-    const blueprintMatch = content.match(/task\s+"[^"]+"\s+blueprint\s+"([^"]+)"/)
+    const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
     const blueprint = blueprintMatch?.[1]
-    const injects = Array.from(content.matchAll(/inject\s+"([^"]+)"/g)).map((m) => m[1]!)
+    const domainMatch = content.match(/domain\s+"([^"]+)"/)
+    const domain = domainMatch?.[1]
     const taskNameMatch = content.match(/task\s+"([^"]+)"/)
     const parsedName = taskNameMatch?.[1]
 
@@ -255,12 +239,12 @@ const statusSubcommand = defineCommand({
           workName,
           taskName: parsedName ?? taskName,
           blueprint,
-          injects,
+          domain,
           file: taskFile,
         },
         human: `Task ${taskName} (work: ${workName})
   Blueprint: ${blueprint ?? '(none)'}
-  Injects:   ${injects.length > 0 ? injects.join(', ') : '(none)'}
+  Domain:    ${domain ?? '(none)'}
   File:      ${taskFile}`,
       },
       format,
@@ -307,12 +291,12 @@ const listSubcommand = defineCommand({
         const file = join(tasksDir, name, 'task.oxn')
         if (!existsSync(file)) return null
         const content = readFileSync(file, 'utf-8')
-        const blueprintMatch = content.match(/task\s+"[^"]+"\s+blueprint\s+"([^"]+)"/)
-        const injects = Array.from(content.matchAll(/inject\s+"([^"]+)"/g)).map((m) => m[1]!)
+        const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
+        const domainMatch = content.match(/domain\s+"([^"]+)"/)
         return {
           name,
           blueprint: blueprintMatch?.[1],
-          injects,
+          domain: domainMatch?.[1],
         }
       })
       .filter((t) => t !== null)
@@ -323,7 +307,7 @@ const listSubcommand = defineCommand({
         data: { tasks },
         human:
           tasks.length > 0
-            ? `Tasks in work "${workName}":\n${tasks.map((t) => `  - ${t.name} (blueprint: ${t.blueprint ?? '?'}, injects: ${t.injects.length > 0 ? t.injects.join(', ') : 'none'})`).join('\n')}`
+            ? `Tasks in work "${workName}":\n${tasks.map((t) => `  - ${t.name} (blueprint: ${t.blueprint ?? '?'}, domain: ${t.domain ?? 'none'})`).join('\n')}`
             : `No tasks in work "${workName}".`,
       },
       format,
@@ -344,7 +328,7 @@ const editSubcommand = defineCommand({
     'task-name': { type: 'string', required: true, description: 'Task 名称' },
     objective: { type: 'string', description: '新的 objective 文本' },
     'add-constraint': { type: 'string', description: '添加一条 constraint（可多次）' },
-    'add-inject': { type: 'string', description: '添加 inject（必须已在 work.oxn use_domain 中）' },
+    'add-domain': { type: 'string', description: '添加 domain 引用（必须已在 work.oxn domain 声明中）' },
     json: { type: 'boolean', description: 'JSON 格式输出' },
     yaml: { type: 'boolean', description: 'YAML 格式输出' },
   },
@@ -354,7 +338,7 @@ const editSubcommand = defineCommand({
     const taskName = ctx.args['task-name'] as string
     const newObjective = ctx.args.objective as string | undefined
     const addConstraint = (ctx.args['add-constraint'] as string | undefined) ?? ''
-    const addInject = (ctx.args['add-inject'] as string | undefined) ?? ''
+    const addDomain = (ctx.args['add-domain'] as string | undefined) ?? ''
 
     const taskFile = getWorkTaskFile(workName, taskName)
     if (!existsSync(taskFile)) {
@@ -405,29 +389,29 @@ const editSubcommand = defineCommand({
       }
     }
 
-    if (addInject) {
-      // 校验 addInject 出现在 work.oxn 的 use_domain
+    if (addDomain) {
+      // 校验 addDomain 出现在 work.oxn 的 domain 声明
       const workFile = join(getProjectRoot(), BOUNDARY_DIR, 'works', workName, 'work.oxn')
       if (existsSync(workFile)) {
         const workContent = readFileSync(workFile, 'utf-8')
-        const allowed = Array.from(workContent.matchAll(/use_domain\s+"([^"]+)"/g)).map((m) => m[1]!)
-        if (allowed.length > 0 && !allowed.includes(addInject)) {
+        const allowed = Array.from(workContent.matchAll(/domain\s+"([^"]+)"/g)).map((m) => m[1]!)
+        if (allowed.length > 0 && !allowed.includes(addDomain)) {
           return outputError(
             {
               code: 'OXN_DOMAIN_NOT_IN_WORK',
-              message: `domain "${addInject}" not declared in work "${workName}" (allowed: ${allowed.join(', ')})`,
-              suggestion: `add 'use_domain "${addInject}";' to ${workFile}`,
+              message: `domain "${addDomain}" not declared in work "${workName}" (allowed: ${allowed.join(', ')})`,
+              suggestion: `add 'domain "${addDomain}" ref "...";' to ${workFile}`,
             },
             format,
           )
         }
       }
-      // 在 inject 段末尾追加
-      if (/\binject\b/.test(content)) {
-        content = content.replace(/(\binject\s+"[^"]+";)/, `$1\n  inject "${addInject}";`)
+      // 在 task 块内追加 domain 声明
+      if (/\bblueprint\b/.test(content)) {
+        content = content.replace(/(blueprint\s+"[^"]+"\s*;)/, `$1\n  domain "${addDomain}";`)
       } else {
         // 在 task 块起始插入
-        content = content.replace(/(task\s+"[^"]+"\s+blueprint\s+"[^"]+"\s*\{)/, `$1\n  inject "${addInject}";`)
+        content = content.replace(/(task\s+"[^"]+"\s*\{)/, `$1\n  domain "${addDomain}";`)
       }
     }
 

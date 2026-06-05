@@ -100,29 +100,6 @@ export const OxnAssemblyStageSchema = z.object({
 export type OxnAssemblyStage = z.infer<typeof OxnAssemblyStageSchema>
 
 // ========================
-// Assembly Expectation (运行时断言)
-// ========================
-
-export const OxnAssemblyExpectationSchema = z.object({
-  name: z.string().min(1),
-  probeRef: z.string(),
-  params: z.record(z.string(), z.unknown()).default({}),
-  errMsg: z.string(),
-})
-export type OxnAssemblyExpectation = z.infer<typeof OxnAssemblyExpectationSchema>
-
-// ========================
-// Assembly Rule (编译期规则)
-// ========================
-
-export const OxnAssemblyRuleSchema = z.object({
-  name: z.string().min(1),
-  condition: z.string(),
-  errMsg: z.string(),
-})
-export type OxnAssemblyRule = z.infer<typeof OxnAssemblyRuleSchema>
-
-// ========================
 // Assembly IR (蓝图中间表示)
 // ========================
 
@@ -136,57 +113,35 @@ export const OxnAssemblyIRSchema = z.object({
   slots: z.array(OxnAssemblySlotSchema).default([]),
   blueprintParts: z.array(OxnAssemblyPartSchema).default([]),
   stages: z.any().default([]),
-  expectations: z.array(OxnAssemblyExpectationSchema).default([]),
-  rules: z.array(OxnAssemblyRuleSchema).default([]),
   concreteParts: z.array(OxnAssemblyPartSchema).default([]),
   abstractParts: z.any().default([]),
 })
 export type OxnAssemblyIR = z.infer<typeof OxnAssemblyIRSchema>
 
 // ========================
-// Assembly Task IR (任务绑定) - LEGACY 单 Blueprint 形态
+// v0.1-final DDD: Domain IR
 // ========================
 
-export const OxnAssemblyTaskIRSchema = z.object({
-  name: z.string().min(1),
-  use: z.string(),
-  slotBindings: z.array(OxnAssemblySlotBindingSchema).default([]),
-})
-export type OxnAssemblyTaskIR = z.infer<typeof OxnAssemblyTaskIRSchema>
-
-// ========================
-// v0.1 DDD: Domain IR
-// ========================
-
-export const OxnNounDeclSchema = z.object({
+/** Term — 领域术语（替代 noun/verb） */
+export const OxnTermDeclSchema = z.object({
   name: z.string().min(1),
   desc: z.string().default(''),
 })
-export type OxnNounDecl = z.infer<typeof OxnNounDeclSchema>
+export type OxnTermDecl = z.infer<typeof OxnTermDeclSchema>
 
-export const OxnVerbDeclSchema = z.object({
-  name: z.string().min(1),
-  desc: z.string().default(''),
+/** Invariant — 业务不变量（替代 domain_rules） */
+export const OxnInvariantDeclSchema = z.object({
+  value: z.string().min(1),
 })
-export type OxnVerbDecl = z.infer<typeof OxnVerbDeclSchema>
+export type OxnInvariantDecl = z.infer<typeof OxnInvariantDeclSchema>
 
+/** Domain Language — 统一语言（v0.1-final: term/ban/invariant） */
 export const OxnDomainLanguageSchema = z.object({
-  nouns: z.array(OxnNounDeclSchema).default([]),
-  verbs: z.array(OxnVerbDeclSchema).default([]),
+  terms: z.array(OxnTermDeclSchema).default([]),
   ban: z.array(z.string()).default([]),
+  invariant: z.array(OxnInvariantDeclSchema).default([]),
 })
 export type OxnDomainLanguage = z.infer<typeof OxnDomainLanguageSchema>
-
-export const OxnDomainRuleDeclSchema = z.object({
-  name: z.string().min(1),
-  desc: z.string().default(''),
-})
-export type OxnDomainRuleDecl = z.infer<typeof OxnDomainRuleDeclSchema>
-
-export const OxnDomainRuleBlockSchema = z.object({
-  rules: z.array(OxnDomainRuleDeclSchema).default([]),
-})
-export type OxnDomainRuleBlock = z.infer<typeof OxnDomainRuleBlockSchema>
 
 export const OxnContextMapImportSchema = z.object({
   target: z.string().min(1),
@@ -203,67 +158,21 @@ export const OxnDomainIRSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   language: OxnDomainLanguageSchema.optional(),
-  domainRules: OxnDomainRuleBlockSchema.optional(),
   contextMap: OxnContextMapSchema.optional(),
 })
 export type OxnDomainIR = z.infer<typeof OxnDomainIRSchema>
 
 // ========================
-// v0.1 DDD: Task IR (task.oxn)
+// v0.1-final DDD: Work IR (work.oxn) — 统一资源池
 // ========================
 
-export const OxnDomainInjectDeclSchema = z.object({
-  domain: z.string().min(1),
-  alias: z.string().optional(),
-})
-export type OxnDomainInjectDecl = z.infer<typeof OxnDomainInjectDeclSchema>
-
-export const OxnTaskContextSchema = z.object({
-  objective: z.string().optional(),
-  constraints: z.array(z.string()).default([]),
-})
-export type OxnTaskContext = z.infer<typeof OxnTaskContextSchema>
-
-export const OxnTaskSlotDeclSchema = z.object({
-  name: z.string().min(1),
-  deps: z.array(z.string()).default([]),
-  observe: z.array(z.string()).default([]),
-})
-export type OxnTaskSlotDecl = z.infer<typeof OxnTaskSlotDeclSchema>
-
-export const OxnTaskIRSchema = z.object({
-  name: z.string().min(1),
-  blueprint: z.string().min(1),
-  injects: z.array(OxnDomainInjectDeclSchema).default([]),
-  context: OxnTaskContextSchema.optional(),
-  props: z.array(OxnAssemblyPropSchema).default([]),
-  slots: z.array(OxnTaskSlotDeclSchema).default([]),
-})
-export type OxnTaskIR = z.infer<typeof OxnTaskIRSchema>
-
-// ========================
-// v0.1 DDD: Work IR (work.oxn) - workspace 编排器
-// ========================
-
-export const OxnUseDomainDeclSchema = z.object({
+/** Work 层资源引用 — domain/blueprint/part/probe 统一结构 */
+export const OxnWorkResourceRefSchema = z.object({
   name: z.string().min(1),
   alias: z.string().optional(),
+  ref: z.string().optional(),
 })
-export type OxnUseDomainDecl = z.infer<typeof OxnUseDomainDeclSchema>
-
-export const OxnUseBlueprintDeclSchema = z.object({
-  name: z.string().min(1),
-  alias: z.string().optional(),
-})
-export type OxnUseBlueprintDecl = z.infer<typeof OxnUseBlueprintDeclSchema>
-
-export const OxnTaskRefDeclSchema = z.object({
-  name: z.string().min(1),
-  align: z.string().min(1),
-  deps: z.array(z.string()).default([]),
-  props: z.array(OxnAssemblyPropSchema).default([]),
-})
-export type OxnTaskRefDecl = z.infer<typeof OxnTaskRefDeclSchema>
+export type OxnWorkResourceRef = z.infer<typeof OxnWorkResourceRefSchema>
 
 export const OxnWorkContextSchema = z.object({
   goal: z.string().optional(),
@@ -276,12 +185,33 @@ export const OxnWorkContextSchema = z.object({
 })
 export type OxnWorkContext = z.infer<typeof OxnWorkContextSchema>
 
+/** Task 内 Part 声明 */
+export const OxnTaskPartDeclSchema = z.object({
+  name: z.string().min(1),
+  skillContext: z.string().optional(),
+  probes: z.array(z.any()).default([]),
+})
+export type OxnTaskPartDecl = z.infer<typeof OxnTaskPartDeclSchema>
+
+/** Task IR (v0.1-final: 声明式对齐) */
+export const OxnTaskIRSchema = z.object({
+  name: z.string().min(1),
+  domain: z.string().optional(),
+  blueprint: z.string().optional(),
+  parts: z.array(OxnTaskPartDeclSchema).default([]),
+  deps: z.array(z.string()).default([]),
+})
+export type OxnTaskIR = z.infer<typeof OxnTaskIRSchema>
+
+/** Work IR (v0.1-final: 统一资源池 + Task 编排) */
 export const OxnWorkIRSchema = z.object({
   name: z.string().min(1),
   context: OxnWorkContextSchema.optional(),
-  useDomains: z.array(OxnUseDomainDeclSchema).default([]),
-  useBlueprints: z.array(OxnUseBlueprintDeclSchema).default([]),
-  tasks: z.array(OxnTaskRefDeclSchema).default([]),
+  domains: z.array(OxnWorkResourceRefSchema).default([]),
+  blueprints: z.array(OxnWorkResourceRefSchema).default([]),
+  parts: z.array(OxnWorkResourceRefSchema).default([]),
+  probes: z.array(OxnWorkResourceRefSchema).default([]),
+  tasks: z.array(OxnTaskIRSchema).default([]),
 })
 export type OxnWorkIR = z.infer<typeof OxnWorkIRSchema>
 
@@ -294,7 +224,6 @@ export const OxnAssemblyBundleEntitySchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('part'), data: OxnAssemblyPartSchema }),
   z.object({ type: z.literal('blueprint'), data: OxnAssemblyIRSchema }),
   z.object({ type: z.literal('domain'), data: OxnDomainIRSchema }),
-  z.object({ type: z.literal('task'), data: OxnTaskIRSchema }),
   z.object({ type: z.literal('work'), data: OxnWorkIRSchema }),
 ])
 export type OxnAssemblyBundleEntity = z.infer<typeof OxnAssemblyBundleEntitySchema>
@@ -324,8 +253,6 @@ export function createOxnAssemblyIR(params: {
     slots: [],
     blueprintParts: [],
     stages: [],
-    expectations: [],
-    rules: [],
     concreteParts: [],
     abstractParts: [],
   }
@@ -335,27 +262,26 @@ export function createOxnDomainIR(params: { name: string; description?: string }
   return {
     name: params.name,
     ...(params.description !== undefined ? { description: params.description } : {}),
-    language: { nouns: [], verbs: [], ban: [] },
-    domainRules: { rules: [] },
+    language: { terms: [], ban: [], invariant: [] },
     contextMap: { imports: [] },
   }
 }
 
-export function createOxnTaskIR(params: { name: string; blueprint: string }): OxnTaskIR {
+export function createOxnTaskIR(params: { name: string }): OxnTaskIR {
   return {
     name: params.name,
-    blueprint: params.blueprint,
-    injects: [],
-    props: [],
-    slots: [],
+    parts: [],
+    deps: [],
   }
 }
 
 export function createOxnWorkIR(params: { name: string }): OxnWorkIR {
   return {
     name: params.name,
-    useDomains: [],
-    useBlueprints: [],
+    domains: [],
+    blueprints: [],
+    parts: [],
+    probes: [],
     tasks: [],
   }
 }
@@ -376,10 +302,6 @@ export function safeValidateOxnAssemblyIR(
     return { success: true, data: result.data }
   }
   return { success: false, error: result.error }
-}
-
-export function validateOxnAssemblyTaskIR(data: unknown): OxnAssemblyTaskIR {
-  return OxnAssemblyTaskIRSchema.parse(data)
 }
 
 export function validateOxnDomainIR(data: unknown): OxnDomainIR {

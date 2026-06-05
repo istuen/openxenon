@@ -147,8 +147,8 @@ export default defineCommand({
           }
 
           const workOxnContent = blueprintName
-            ? `work "${workId}" type "${workType}" ref "@prj/blueprints/${blueprintName}" {\n  part slot "slot-name" { }\n}\n`
-            : `work "${workId}" type "${workType}" {\n  // Empty work, waiting for developer to fill in\n}\n`
+            ? `work "${workId}" {\n  context {\n    goal = "TODO: 描述工作目标"\n  }\n\n  blueprint "${blueprintName}" ref "@prj/blueprints/${blueprintName}";\n\n  task "main" {\n    blueprint "${blueprintName}"\n    part "slot-name" {\n      skill_context = "TODO: AI 执行指令"\n    }\n  }\n}\n`
+            : `work "${workId}" {\n  context {\n    goal = "TODO: 描述工作目标"\n  }\n\n  // 声明资源引用\n  // domain "DomainName" ref "@prj/domains/DomainName";\n  // blueprint "BlueprintName" ref "@prj/blueprints/BlueprintName";\n\n  // 任务编排\n  // task "TaskName" {\n  //   domain "DomainName"\n  //   blueprint "BlueprintName"\n  //   part "slot-name" {\n  //     skill_context = "AI 执行指令"\n  //   }\n  // }\n}\n`
 
           writeFileSync(workFilePath, workOxnContent, 'utf-8')
 
@@ -396,8 +396,8 @@ export default defineCommand({
               if (isWorkDeclaration(entity)) {
                 const work = entity as WorkDeclaration
                 workType = 'workspace'
-                // v0.1: 使用 use_blueprint 列表代替单 ref
-                blueprintRef = work.useBlueprints?.[0]?.name
+                // v0.1-final: 使用 blueprints 列表
+                blueprintRef = work.blueprints?.[0]?.name
               }
             }
 

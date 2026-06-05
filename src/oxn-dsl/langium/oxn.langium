@@ -1,8 +1,6 @@
 grammar OXN
 
 // ==================== Entry Point ====================
-// Unified: mvp's `*` (multi-entity per file) replaces reference's single entry.
-// v0.1 DDD extension: add Domain and Task top-level entities.
 entry OXNDocument:
     entities+=TopLevelEntity*;
 
@@ -11,7 +9,6 @@ TopLevelEntity:
     | PartDeclaration
     | BlueprintDeclaration
     | DomainDeclaration
-    | TaskDeclaration
     | WorkDeclaration;
 
 // ==================== Type System ====================
@@ -78,8 +75,9 @@ TemplateString:
     value=TEMPLATE_STRING;
 
 // ==================== Probe ====================
+// Probe 实体声明（资产定义，位于全局目录）
 ProbeDeclaration:
-    'probe' name=STRING ('align' align=STRING 'ref' ref=STRING)? '{'
+    'probe' name=STRING '{'
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (output+=ProbeOutputDeclaration)?
@@ -108,19 +106,9 @@ OutputField:
     name=ID '=' type=TypeReference;
 
 // ==================== Part ====================
-/**
- * @oxn-ai-tool
- * {
- *   "name": "add_probe_to_part",
- *   "description": "给 Part 添加探针实例",
- *   "example": { "blueprint_name": "WebServer", "part_name": "Nginx", "probe_config": { "name": "http", "type": "HttpProbe", "params": { "path": "/health" } } }
- * }
- */
-// Unified: Part now optionally carries a `skill` block (mvp extension) for AI
-// action context, while still supporting `description + observe + execution`
-// (reference semantics for human-aligned verification).
+// Part 实体声明（资产定义，位于全局目录）
 PartDeclaration:
-    'part' name=STRING ('align' align=STRING)? ('ref' ref=STRING)? '{'
+    'part' name=STRING '{'
         (descriptions+=Description)?
         (skill=PartSkill)?
         (props+=PropDeclaration)*
@@ -130,8 +118,6 @@ PartDeclaration:
     '}';
 
 // ==================== Part Skill (AI Action Context) ====================
-// New in unified grammar: AI-visible block describing what an agent should
-// do for this part, how success is measured, and any extra guidance.
 PartSkill:
     'skill' '{'
         ('lifecycle' '=' lifecycle=STRING ';')?
@@ -159,18 +145,14 @@ ParamPair:
     key=ID '=' value=Expression;
 
 // ==================== Blueprint ====================
-// Unified: Blueprint now optionally carries a `context` block (mvp
-// extension) for blueprint-level AI action context.
+// Blueprint 实体声明（技术流水线模板，位于全局目录）
+// v0.1-final: 移除 expectation 和 rule，保留 observe 数组形式
 BlueprintDeclaration:
-    'blueprint' name=STRING
-    '{'
-        (context=WorkContext)?
+    'blueprint' name=STRING '{'
         ('version' '=' version=NUMBER)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (partSlots+=PartSlotDeclaration)*
-        (expectations+=ExpectationDeclaration)*
-        (rules+=RuleDeclaration)*
     '}';
 
 PartSlotDeclaration:
@@ -179,52 +161,38 @@ PartSlotDeclaration:
         (observe+=ObserveDeclaration)?
     '}';
 
-ExpectationDeclaration:
-    'expectation' name=STRING '{'
-        ('probe' '=' probe_ref=STRING)?
-        ('params' '=' params=ParamsBlock)?
-        ('err_msg' '=' err_msg=STRING)?
-    '}';
-
-RuleDeclaration:
-    'rule' name=STRING '{'
-        ('condition' '=' condition=Expression)?
-        ('err_msg' '=' err_msg=STRING)?
-    '}';
-
-// ==================== Domain (NEW in v0.1 DDD) ====================
-// Domain is a DDD Bounded Context. It owns:
-//   - language { noun/verb/ban }   ubiquitous language of this context
-//   - domain_rules { rule }        business invariants (documentation only in v0.1)
-//   - context_map { imports }      explicit references to other domains (anti-corruption layer)
+// ==================== Domain (v0.1-final DDD) ====================
+// Domain 是绝对自治的业务契约，定义统一语言和不变量
+// v0.1-final: noun/verb → term (map格式), domain_rules → invariant
 DomainDeclaration:
     'domain' name=STRING '{'
         (descriptions+=Description)?
-        (language=DomainLanguage)?
-        (domainRules=DomainRuleBlock)?
+        (terms=TermBlock)?
+        (ban=BanBlock)?
+        (invariant=InvariantBlock)?
         (contextMap=ContextMapBlock)?
     '}';
 
-DomainLanguage:
-    'language' '{'
-        (nouns+=NounDecl)*
-        (verbs+=VerbDecl)*
-        ('ban' '=' '[' (bans+=STRING (',' bans+=STRING)*)? ']' ';'?)?
+TermBlock:
+    'term' '{'
+        (terms+=TermDecl)*
     '}';
 
-NounDecl:
-    'noun' name=STRING 'desc' desc=STRING ';'?;
+TermDecl:
+    name=STRING ':' desc=STRING ';'?;
 
-VerbDecl:
-    'verb' name=STRING 'desc' desc=STRING ';'?;
+BanBlock:
+    'ban' '{'
+        (bans+=STRING (',' bans+=STRING)*)?
+    '}' ';'?;
 
-DomainRuleBlock:
-    'domain_rules' '{'
-        (rules+=DomainRuleDecl)*
-    '}';
+InvariantBlock:
+    'invariant' '{'
+        (invariants+=InvariantDecl)*
+    '}' ';'?;
 
-DomainRuleDecl:
-    'rule' name=STRING 'desc' desc=STRING ';'?;
+InvariantDecl:
+    value=STRING ';'?;
 
 ContextMapBlock:
     'context_map' '{'
@@ -234,51 +202,55 @@ ContextMapBlock:
 ContextMapImport:
     'imports' target=STRING 'as' alias=STRING ';'?;
 
-
-// ==================== Task (NEW in v0.1) ====================
-// A Task is the executable unit bound to exactly one Blueprint, optionally
-// injecting one or more Domain language/rules into the AI context.
-// File location: .openxenon/works/<work-name>/tasks/<task-name>/task.oxn
-TaskDeclaration:
-    'task' name=STRING 'blueprint' blueprint=STRING '{'
-        (injects+=DomainInjectDecl)*
-        (context=TaskContext)?
-        (props+=PropDeclaration)*
-        (partSlots+=PartSlotDeclaration)*
-    '}';
-
-DomainInjectDecl:
-    'inject' domain=STRING ('as' alias=STRING)? ';';
-
-TaskContext:
-    'context' '{'
-        ('objective' '=' objective=STRING ';')?
-        ('constraints' '=' '[' (constraints+=STRING (',' constraints+=STRING)*)? ']' ';')?
-    '}';
-
-// ==================== Work (v0.1: workspace orchestrator) ====================
-// v0.1: Work no longer refs a single blueprint. It becomes a workspace-level
-// orchestrator that lists which Domain(s) and Blueprint(s) it uses, plus
-// the task DAG inside this workspace.
-// File location: .openxenon/works/<work-name>/work.oxn
+// ==================== Work (v0.1-final: workspace orchestrator) ====================
+// Work 是编排空间：资源池寻址 + Task 编排中心
+// v0.1-final: use_domain/use_blueprint → domain/blueprint/part/probe ref 语法
 WorkDeclaration:
     'work' name=STRING '{'
         (context=WorkContext)?
-        (useDomains+=UseDomainDecl)*
-        (useBlueprints+=UseBlueprintDecl)*
-        (tasks+=TaskRefDecl)*
+        (domains+=DomainRefDecl)*
+        (blueprints+=BlueprintRefDecl)*
+        (parts+=PartRefDecl)*
+        (probes+=ProbeRefDecl)*
+        (tasks+=TaskDeclaration)*
     '}';
 
-UseDomainDecl:
-    'use_domain' name=STRING ('as' alias=STRING)? ';';
+DomainRefDecl:
+    'domain' name=STRING ('as' alias=STRING)? ('ref' ref=STRING)? ';';
 
-UseBlueprintDecl:
-    'use_blueprint' name=STRING ('as' alias=STRING)? ';';
+BlueprintRefDecl:
+    'blueprint' name=STRING ('as' alias=STRING)? ('ref' ref=STRING)? ';';
 
-TaskRefDecl:
-    'task' name=STRING 'align' align=STRING '{'
-        ('deps' '=' '[' (deps+=STRING (',' deps+=STRING)*)? ']' ';')?
-        (props+=SlotPropBinding)*
+PartRefDecl:
+    'part' name=STRING ('as' alias=STRING)? ('ref' ref=STRING)? ';';
+
+ProbeRefDecl:
+    'probe' name=STRING ('as' alias=STRING)? ('ref' ref=STRING)? ';';
+
+// ==================== Task (v0.1-final: align 执行器) ====================
+// Task 将业务意图和技术意图插入留白的具体动作
+// v0.1-final: inject → domain/blueprint/part/probe 声明式对齐
+TaskDeclaration:
+    'task' name=STRING '{'
+        ('domain' domain=STRING)?
+        ('blueprint' blueprint=STRING)?
+        (parts+=TaskPartDecl)*
+        (deps=TaskDeps)?
+    '}';
+
+TaskDeps:
+    '[' (deps+=STRING (',' deps+=STRING)*)? ']';
+
+TaskPartDecl:
+    'part' name=STRING '{'
+        ('skill_context' '=' skill_context=STRING)?
+        (probes+=TaskProbeDecl)*
+    '}';
+
+TaskProbeDecl:
+    'probe' name=STRING '{'
+        'ref' ref=STRING
+        ('params' '=' params=ParamsBlock)?
     '}';
 
 // ==================== Work Context (AI Global Context) ====================
@@ -293,24 +265,6 @@ LoopPolicy:
     'loop_policy' '{'
         ('max_iterations' '=' maxIterations=NUMBER ';')?
     '}';
-
-// SlotBinding 仍然保留在 PartDeclaration 中以兼容旧 work 实体模式，
-// 但 v0.1 推荐使用 WorkDeclaration 内的 task 块。
-// Unified: SlotBinding now optionally carries a `skill` block (mvp
-// extension) so work.oxn's part references can be self-describing.
-SlotBinding:
-    'part' name=STRING 'align' align=STRING ('ref' ref=STRING)? '{'
-        (props+=SlotPropBinding)*
-        (probeBindings+=ProbeBinding)*
-        (skill=PartSkill)?
-    '}';
-
-ProbeBinding:
-    'probe' name=STRING 'align' align=STRING 'ref' ref=STRING '{'
-    '}';
-
-SlotPropBinding:
-    'prop' name=STRING '=' value=Expression;
 
 // ==================== Terminals ====================
 terminal ID: /[_a-zA-Z][\w-]*/;

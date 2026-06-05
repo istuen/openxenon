@@ -1,25 +1,14 @@
 // =============================================================================
-// Unified OXN DSL barrel.
+// Unified OXN DSL barrel (v0.1-final)
 //
-// The unified grammar (see src/oxn-dsl/langium/oxn.langium) is a strict
-// superset of the reference grammar and the mvp grammar: it carries both
-// reference's Port/Contract compiler stack and mvp's Langium-based skill
-// / work-context / loop-policy extensions. This barrel re-exports the
-// full surface so callers can pick the API that suits their concern:
-//
-//   - Port/Contract API (reference's runtime)
-//       createOxnCompiler(), createOxnWorkspaceManager(), createOxnAssetLoader()
-//   - Langium API (mvp's CLI parsing path)
-//       createOxnServices(), getOxnServices(), OxnParser, createOxnParser()
-//   - AST type guards and types
-//       isWorkDeclaration, isPartDeclaration, isPartSkill, isWorkContext,
-//       OXNDocument, WorkDeclaration, PartDeclaration, PartSkill,
-//       WorkContext, LoopPolicy, ProbeDeclaration, ...
-//   - Validators
-//       registerOxnValidators, validateSlotReference
+// The unified grammar (see src/oxn-dsl/langium/oxn.langium) defines:
+//   - Probe / Part / Blueprint — asset declarations (global directory)
+//   - Domain — DDD bounded context (term/ban/invariant)
+//   - Work — workspace orchestrator (resource pool + task DAG)
+//   - Task — align executor (domain/blueprint/part/probe declarations)
 // =============================================================================
 
-// --- Port/Contract API (reference) ---
+// --- Port/Contract API ---
 export type { IOxnCompiler } from './contracts/oxn-compiler-port'
 export type { IOxnAssetLoader } from './contracts/oxn-loader-port'
 export type { IOxnWorkspaceManager } from './contracts/oxn-workspace-port'
@@ -32,6 +21,7 @@ export { registerOxnValidators } from './validator/oxn-validation'
 export { validateWorkTaskReference } from './validator/slot-reference-validator'
 export { validateTaskAlign } from './validator/intent-align-validator'
 
+// --- Schema types ---
 export type {
   OxnAssemblyIR,
   OxnAssemblyPart,
@@ -40,17 +30,15 @@ export type {
   OxnAssemblySlot,
   OxnDomainIR,
   OxnDomainLanguage,
-  OxnDomainRuleBlock,
+  OxnTermDecl,
+  OxnInvariantDecl,
   OxnContextMap,
   OxnContextMapImport,
   OxnTaskIR,
-  OxnTaskContext,
-  OxnTaskSlotDecl,
+  OxnTaskPartDecl,
   OxnWorkIR,
   OxnWorkContext,
-  OxnTaskRefDecl,
-  OxnUseDomainDecl,
-  OxnUseBlueprintDecl,
+  OxnWorkResourceRef,
 } from './schemas/oxn-assembly.schema'
 
 export {
@@ -73,7 +61,7 @@ export type { ValidationError, CoverageResult, TypeCheckResult } from './evaluat
 export type { CompiledBlueprint } from '../kernel/schemas/validators/compiled-schema'
 export type { FrozenBlueprint } from '../kernel/schemas/validators/compiled-schema'
 
-// --- Langium API (mvp) ---
+// --- Langium API ---
 export {
   createOxnServices,
   createOxnSharedServices,
@@ -85,7 +73,7 @@ export {
   type OxnParseResult,
 } from './langium/oxn-services'
 
-// --- AST types (unified grammar superset) ---
+// --- AST types (v0.1-final grammar) ---
 export type {
   OXNDocument,
   WorkDeclaration,
@@ -93,29 +81,32 @@ export type {
   LoopPolicy,
   PartDeclaration,
   PartSkill,
-  SlotBinding,
   ProbeDeclaration,
   BlueprintDeclaration,
   PartSlotDeclaration,
   PartProbeDeclaration,
-  // v0.1 DDD
+  // v0.1-final DDD
   DomainDeclaration,
-  DomainLanguage,
-  DomainRuleBlock,
-  DomainRuleDecl,
-  DomainInjectDecl,
-  NounDecl,
-  VerbDecl,
+  TermBlock,
+  TermDecl,
+  BanBlock,
+  InvariantBlock,
+  InvariantDecl,
   ContextMapBlock,
   ContextMapImport,
+  // v0.1-final Work
+  DomainRefDecl,
+  BlueprintRefDecl,
+  PartRefDecl,
+  ProbeRefDecl,
+  // v0.1-final Task
   TaskDeclaration,
-  TaskContext,
-  TaskRefDecl,
-  UseDomainDecl,
-  UseBlueprintDecl,
+  TaskPartDecl,
+  TaskProbeDecl,
+  TaskDeps,
 } from './generated/ast'
 
-// --- AST type guards (mvp) ---
+// --- AST type guards ---
 export {
   isWorkDeclaration,
   isPartDeclaration,
@@ -123,11 +114,13 @@ export {
   isBlueprintDeclaration,
   isWorkContext,
   isPartSkill,
-  // v0.1 DDD
+  // v0.1-final DDD
   isDomainDeclaration,
-  isDomainLanguage,
   isTaskDeclaration,
-  isUseDomainDecl,
-  isUseBlueprintDecl,
-  isTaskRefDecl,
+  isDomainRefDecl,
+  isBlueprintRefDecl,
+  isPartRefDecl,
+  isProbeRefDecl,
+  isTaskPartDecl,
+  isTaskProbeDecl,
 } from './generated/ast'

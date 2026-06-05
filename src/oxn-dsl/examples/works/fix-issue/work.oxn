@@ -1,9 +1,5 @@
 // Work: fix-issue
-// 修复类工作流：注入 work-context，约束 AI 修复问题时只使用本域术语
-//
-// 配套 blueprint：.openxenon/blueprints/fix-issue.oxn
-// 配套 domain：.openxenon/domains/work-context.oxn
-// 任务编排：4 个 task（diagnose → locate → fix → verify）按 deps 串行
+// 修复类工作流：诊断问题现象、定位根本原因、实施修复方案、验证修复结果
 
 work "fix-issue" {
   context {
@@ -18,22 +14,42 @@ work "fix-issue" {
     }
   }
 
-  use_domain "work-context";
-  use_blueprint "fix-issue";
+  domain "WorkContext" ref "@prj/domains/work-context";
+  blueprint "fix-issue" ref "@prj/blueprints/fix-issue";
 
-  task "diagnose" align "fix-issue.diagnose" {
+  task "diagnose" {
+    domain "WorkContext";
+    blueprint "fix-issue";
+    part "diagnose" {
+      skill_context = "复现 bug，记录现场";
+    }
     deps = [];
   }
 
-  task "locate" align "fix-issue.locate" {
+  task "locate" {
+    domain "WorkContext";
+    blueprint "fix-issue";
+    part "locate" {
+      skill_context = "定位根本原因";
+    }
     deps = ["diagnose"];
   }
 
-  task "fix" align "fix-issue.fix" {
+  task "fix" {
+    domain "WorkContext";
+    blueprint "fix-issue";
+    part "fix" {
+      skill_context = "实施修复方案";
+    }
     deps = ["locate"];
   }
 
-  task "verify" align "fix-issue.verify" {
+  task "verify" {
+    domain "WorkContext";
+    blueprint "fix-issue";
+    part "verify" {
+      skill_context = "验证修复结果";
+    }
     deps = ["fix"];
   }
 }
