@@ -21,7 +21,7 @@ domain "CLIContext" {
   invariant { "所有 .skill.md 模板由 src/skills/locales/* 自动编译，AI 助手里的副本是只读镜像" }
 
   context_map {
-    imports "ArsenalContext" as "Arsenal"
+    imports "BuiltinContext" as "Builtin"
     imports "WorkContext" as "Work"
   }
 }

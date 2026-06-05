@@ -23,7 +23,7 @@ domain "DSLContext" {
   invariant { "新增 grammar 字段时必须保持向后兼容（旧 .oxn 文件仍能解析）" }
 
   context_map {
-    imports "ArsenalContext" as "Arsenal"
+    imports "BuiltinContext" as "Builtin"
     imports "WorkContext" as "Work"
   }
 }

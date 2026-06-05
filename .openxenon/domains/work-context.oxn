@@ -24,7 +24,7 @@ domain "WorkContext" {
   invariant { "Artifact 路径必须落在 Work 沙盒内或宿主项目目录" }
 
   context_map {
-    imports "ArsenalContext" as "Arsenal"
+    imports "BuiltinContext" as "Builtin"
     imports "DSLContext" as "DSL"
   }
 }
