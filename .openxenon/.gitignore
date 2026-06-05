@@ -1,0 +1,5 @@
+# Runtime state (not for Git; personal/sandbox data)
+works/
+**/*-state.json
+**/*-trace.jsonl
+**/*-frozen.json

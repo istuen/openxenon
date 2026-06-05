@@ -73,12 +73,13 @@ const createSubcommand = defineCommand({
     const force = ctx.args.force === true || ctx.args.f === true
     const blueprintsDir = getBlueprintsDir()
 
-    if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+    if (!/^[a-z][a-z0-9-]*(?:\/[a-z][a-z0-9-]*)*$/.test(name)) {
       return outputError(
         {
           code: 'OXN_INVALID_NAME',
           message: `invalid blueprint name: ${JSON.stringify(name)}`,
-          suggestion: 'use kebab-case: lowercase letters, digits, dashes (e.g. my-bp)',
+          suggestion:
+            'use kebab-case segments joined by / (e.g. "deploy-pipeline" or "infra/deploy-pipeline"); each segment: lowercase letters, digits, dashes; no leading/trailing/consecutive slashes',
         },
         format,
       )
@@ -108,6 +109,10 @@ const createSubcommand = defineCommand({
     }
 
     const outPath = join(blueprintsDir, `${name}.oxn`)
+    const outDir = join(blueprintsDir, name.split('/').slice(0, -1).join('/'))
+    if (outDir !== blueprintsDir && !existsSync(outDir)) {
+      mkdirSync(outDir, { recursive: true })
+    }
     if (existsSync(outPath) && !force) {
       return outputError(
         {
@@ -130,6 +135,22 @@ const createSubcommand = defineCommand({
     const template = `// Blueprint: ${name}
 // Created by: oxn blueprint create ${name} ${slotsArg ? `--slots ${slotsArg}` : ''}
 //
+// ──────────────────────────────────────────────────────────────────
+// HINTS — read before editing. \`oxn blueprint validate\` will reject
+// anything that violates these rules.
+// ──────────────────────────────────────────────────────────────────
+//  1. slot names: kebab-case (recommended), never PascalCase.
+//  2. slot deps: form a DAG. Cycles are rejected by the validator.
+//  3. The first slot MUST have deps = [] (entry point).
+//  4. prop type: string | number | boolean | any | list<T> | map<T> | enum(...)
+//  5. observe: reference builtin probes via @oxn/probes/{shell-exec|fs-exists|...}
+//     or describe the physical signal (e.g. ["ShellExec"]).
+//  6. Validate:  oxn blueprint validate ${name}
+//  7. Trial run: oxn work create --work-id trial-${name} --blueprint verify-pipeline
+//  8. Share via Git (this file IS the source of truth):
+//        git add .openxenon/blueprints/${name}.oxn && git commit
+// ──────────────────────────────────────────────────────────────────
+//
 // Edit goal/description/props/slots as needed. The mvp-style
 // \`context\` and per-part \`skill\` blocks are optional (unified grammar superset).
 // After editing, validate with:
@@ -139,7 +160,7 @@ const createSubcommand = defineCommand({
 
 blueprint "${name}" {
   version = 1
-  description = "TODO: 一句话描述这个 blueprint 做什么"
+  description = "TODO: one-line description of what this blueprint does"
 
 ${slotBlocks.join('\n\n')}
 }
@@ -178,6 +199,17 @@ const validateSubcommand = defineCommand({
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
+    if (!/^[a-z][a-z0-9-]*(?:\/[a-z][a-z0-9-]*)*$/.test(name)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_NAME',
+          message: `invalid blueprint name: ${JSON.stringify(name)}`,
+          suggestion:
+            'use kebab-case segments joined by / (e.g. "deploy-pipeline" or "infra/deploy-pipeline"); each segment: lowercase letters, digits, dashes; no leading/trailing/consecutive slashes',
+        },
+        format,
+      )
+    }
     const bpPath = join(getBlueprintsDir(), `${name}.oxn`)
     const result = await validateBlueprint(bpPath)
     if (!result.ok) {
@@ -251,8 +283,23 @@ const listSubcommand = defineCommand({
       return output({ ok: true, data: { blueprints: [] }, human: 'No blueprints directory yet.' }, format)
     }
     const fs = require('fs') as typeof import('fs')
-    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.oxn'))
-    const blueprints = files.map((f) => f.replace(/\.oxn$/, ''))
+    const { join } = require('path') as typeof import('path')
+
+    const blueprints: string[] = []
+    function walk(currentDir: string, prefix: string): void {
+      const entries = fs.readdirSync(currentDir, { withFileTypes: true })
+      for (const entry of entries) {
+        const fullPath = join(currentDir, entry.name)
+        if (entry.isDirectory()) {
+          walk(fullPath, prefix ? `${prefix}/${entry.name}` : entry.name)
+        } else if (entry.isFile() && entry.name.endsWith('.oxn')) {
+          const stem = entry.name.replace(/\.oxn$/, '')
+          blueprints.push(prefix ? `${prefix}/${stem}` : stem)
+        }
+      }
+    }
+    walk(dir, '')
+
     output(
       {
         ok: true,

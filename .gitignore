@@ -61,8 +61,19 @@ docs_tmp/
 
 # OpenXenon specific
 .changes/
-.openxenon/
 .openxenon2/
+
+# OpenXenon project boundary: track intent (.oxn) but ignore runtime
+.openxenon/works/
+.openxenon/**/*-state.json
+.openxenon/**/*-trace.jsonl
+.openxenon/**/*-frozen.json
+.openxenon/arsenals/
+.openxenon/forges/
+.openxenon/error/
+.openxenon/tasks/
+.openxenon/.cache/
+.openxenon/config.json
 !src/
 
 # OpenSpec 工作流

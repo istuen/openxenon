@@ -154,48 +154,6 @@ describe('MutationValidator (Task 3.2)', () => {
   })
 })
 
-// ========================
-// Task 3.3: Promote
-// ========================
-import { OxnPromoter, promoteBlueprint } from '../../cli/oxn-promote'
-
-describe('OxnPromoter (Task 3.3)', () => {
-  const tmpDir = '/tmp/oxn-promote-test'
-  const projectRoot = join(tmpDir, 'project')
-
-  test('promote 将沙箱 Blueprint 提升至 Arsenal', () => {
-    const taskDir = join(projectRoot, '.openxenon', 'tasks', 'promo-test')
-    const sandboxDir = join(taskDir, 'sandbox')
-    mkdirSync(sandboxDir, { recursive: true })
-
-    const bpPath = join(sandboxDir, 'blueprint.oxn')
-    const ir = createOxnAssemblyIR({ id: 'promo-bp', name: 'promo-bp' })
-    writeFileSync(bpPath, JSON.stringify(ir, null, 2), 'utf-8')
-
-    const result = promoteBlueprint(taskDir, projectRoot, { force: true })
-    expect(result.success).toBe(true)
-    expect(result.version).toBe(2) // 1+1
-    expect(result.emergent).toBe(false)
-
-    const destPath = join(projectRoot, '.openxenon', 'arsenals', 'blueprints', 'promo-bp', 'canonical.yaml')
-    expect(existsSync(destPath)).toBe(true)
-  })
-
-  test('promote --as-new 涌现', () => {
-    const taskDir = join(projectRoot, '.openxenon', 'tasks', 'emerge-test')
-    const sandboxDir = join(taskDir, 'sandbox')
-    mkdirSync(sandboxDir, { recursive: true })
-
-    const bpPath = join(sandboxDir, 'blueprint.oxn')
-    const ir = createOxnAssemblyIR({ id: 'original', name: 'original' })
-    writeFileSync(bpPath, JSON.stringify(ir, null, 2), 'utf-8')
-
-    const promoter = new OxnPromoter()
-    const result = promoter.promoteAsNew(taskDir, projectRoot, 'evolved-v2')
-    expect(result.emergent).toBe(true)
-    expect(result.success).toBe(true)
-
-    const destPath = join(projectRoot, '.openxenon', 'arsenals', 'blueprints', 'evolved-v2', 'canonical.yaml')
-    expect(existsSync(destPath)).toBe(true)
-  })
-})
+// v0.1: `oxn promote` command and OxnPromoter class were removed in
+// kill-arsenal-and-promote change. The corresponding tests are intentionally
+// deleted. See: openspec/changes/kill-arsenal-and-promote/proposal.md §"BREAKING"

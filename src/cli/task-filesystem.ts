@@ -14,7 +14,8 @@ import { type DagNode, topologicalSort } from '../oxn-dsl/validators/blueprint-d
 import { computeContentHash, type FrozenBlueprint } from '../kernel/schemas/validators/frozen-schema'
 import { hashPort } from '../infra/hash'
 import type { OxnAssemblySlotBinding } from '../oxn-dsl/schemas/oxn-assembly.schema'
-import { arsenalLoadStandardByName } from '../arsenals/loader'
+import { loadStandardByName } from '../infra/loader'
+import { getProjectBoundaryPath } from './project'
 import { unifiedTaskSubmit } from './oxn-dual-track'
 
 const TASK_TRACE_FILE = 'task-trace.jsonl'
@@ -192,7 +193,8 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
   let frozenFromTaskOxn: FrozenBlueprint
 
   if (blueprintName) {
-    const blueprintAsset = arsenalLoadStandardByName(blueprintName, 'blueprints')
+    const projectBoundary = getProjectBoundaryPath(cwd)
+    const blueprintAsset = loadStandardByName('project', projectBoundary, blueprintName, 'blueprints')
     if (!blueprintAsset) {
       throw new Error(`Blueprint "${blueprintName}" not found in arsenal`)
     }

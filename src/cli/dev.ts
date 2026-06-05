@@ -9,7 +9,6 @@
 //   unpack       — .bundle.oxn → 隔离目录
 //   validate     — 校验 .oxn 文件
 //   migrate-yaml — YAML Blueprint → OXN DSL
-//   promote      — 沙箱 Blueprint → 全局 Arsenal（runtime 级）
 // =============================================================================
 
 import { defineCommand } from 'citty'
@@ -17,14 +16,13 @@ import { defineCommand } from 'citty'
 export default defineCommand({
   meta: {
     name: 'dev',
-    description: 'DSL 开发工具 (compile/unpack/validate/migrate-yaml/promote) — 面向 OpenXenon 内部与 DSL 作者',
+    description: 'DSL 开发工具 (compile/unpack/validate/migrate-yaml) — 面向 OpenXenon 内部与 DSL 作者',
   },
   subCommands: {
     compile: () => import('./oxn-compile').then((m) => m.default),
     unpack: () => import('./oxn-unpack').then((m) => m.default),
     validate: () => import('./oxn-validate').then((m) => m.default),
     'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
-    promote: () => import('./oxn-promote-cmd').then((m) => m.default),
   },
   run() {
     // No-op: help text is provided by citty

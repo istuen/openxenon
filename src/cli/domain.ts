@@ -80,12 +80,13 @@ const createSubcommand = defineCommand({
     const force = ctx.args.force === true || ctx.args.f === true
     const domainsDir = getDomainsDir()
 
-    if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(name)) {
+    if (!/^[A-Za-z][A-Za-z0-9_-]*(?:\/[A-Za-z][A-Za-z0-9_-]*)*$/.test(name)) {
       return outputError(
         {
           code: 'OXN_INVALID_NAME',
           message: `invalid domain name: ${JSON.stringify(name)}`,
-          suggestion: 'use letters/digits/dashes/underscores, start with a letter (e.g. MemberContext)',
+          suggestion:
+            'use PascalCase segments joined by / (e.g. "MemberContext" or "member/MembershipContext"); each segment: letters, digits, underscores, dashes, starts with a letter; no leading/trailing/consecutive slashes',
         },
         format,
       )
@@ -96,6 +97,10 @@ const createSubcommand = defineCommand({
     }
 
     const outPath = join(domainsDir, `${name}.oxn`)
+    const outDir = join(domainsDir, name.split('/').slice(0, -1).join('/'))
+    if (outDir !== domainsDir && !existsSync(outDir)) {
+      mkdirSync(outDir, { recursive: true })
+    }
     if (existsSync(outPath) && !force) {
       return outputError(
         {
@@ -111,22 +116,41 @@ const createSubcommand = defineCommand({
     const template = `// Domain: ${name}
 // Created by: oxn domain create ${name}
 //
-// DDD 限界上下文骨架。填写 term / ban / invariant 后
-// 在 work.oxn 通过 domain "${name}" ref "..." 引用。
+// ──────────────────────────────────────────────────────────────────
+// HINTS — read before editing. \`oxn domain validate\` will reject
+// anything that violates these rules.
+// ──────────────────────────────────────────────────────────────────
+//  1. Domain name: PascalCase recommended (e.g. MemberContext).
+//  2. term: ≥3 core entities, key=word, value=definition. AI MUST use
+//     these words when writing code in this context.
+//  3. ban: ≥2 forbidden words. AI MUST NOT use these words (prevents
+//     cross-context terminology drift like User/Customer/Member mix).
+//  4. invariant: ≥1 business hard-rule. v0.1 documents; v0.2 enforces
+//     via language-ban-checker Probe.
+//  5. context_map.imports: declare cross-context dependencies explicitly.
+//     No transitive imports — only direct references.
+//  6. Validate: oxn domain validate ${name}
+//  7. Share via Git (this file IS the source of truth):
+//        git add .openxenon/domains/${name}.oxn && git commit
+// ──────────────────────────────────────────────────────────────────
 //
-// 校验：
+// DDD bounded context skeleton. After filling in term / ban / invariant,
+// reference it from work.oxn via:
+//   domain "${name}" ref "@prj/domains/${name}";
+//
+// Validation:
 //   oxn domain validate ${name}
 
 domain "${name}" {
-  description = "TODO: 一句话描述这个限界上下文的业务边界"
+  description = "TODO: one-line description of the bounded context's business boundary"
 
   term {
-    "TODO_Term": "TODO: 领域术语定义"
+    "TODO_Term": "TODO: domain term definition"
   }
 
   ban { "TODO_BannedTerm1", "TODO_BannedTerm2" }
 
-  invariant { "TODO: 业务不变量规则" }
+  invariant { "TODO: business invariant rule" }
 
   context_map {
     imports "TODO_OtherDomain" as "TODOAlias"
@@ -167,6 +191,17 @@ const validateSubcommand = defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
     const customPath = ctx.args['file-path'] as string | undefined
+    if (!/^[A-Za-z][A-Za-z0-9_-]*(?:\/[A-Za-z][A-Za-z0-9_-]*)*$/.test(name)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_NAME',
+          message: `invalid domain name: ${JSON.stringify(name)}`,
+          suggestion:
+            'use PascalCase segments joined by / (e.g. "MemberContext" or "member/MembershipContext"); each segment: letters, digits, underscores, dashes, starts with a letter; no leading/trailing/consecutive slashes',
+        },
+        format,
+      )
+    }
     // 文件名兼容：Domain 名是 PascalCase，但 .oxn 文件可能是 kebab-case
     // 处理 PascalCase 转 kebab-case：先在小写-大写边界插入 dash，再转小写
     const kebab = name
@@ -273,18 +308,34 @@ const listSubcommand = defineCommand({
         format,
       )
     }
-    const files = readdirSync(domainsDir).filter((f) => f.endsWith('.oxn'))
     const domains: Array<{ name: string; file: string; description?: string }> = []
-    for (const f of files) {
-      const result = await validateDomainFile(join(domainsDir, f))
+    const fileEntries: Array<{ fullPath: string; relPath: string }> = []
+
+    function walk(currentDir: string, prefix: string): void {
+      const entries = readdirSync(currentDir, { withFileTypes: true })
+      for (const entry of entries) {
+        const fullPath = join(currentDir, entry.name)
+        const relPath = prefix ? `${prefix}/${entry.name}` : entry.name
+        if (entry.isDirectory()) {
+          walk(fullPath, relPath)
+        } else if (entry.isFile() && entry.name.endsWith('.oxn')) {
+          fileEntries.push({ fullPath, relPath })
+        }
+      }
+    }
+    walk(domainsDir, '')
+
+    for (const { fullPath, relPath } of fileEntries) {
+      const result = await validateDomainFile(fullPath)
+      const nameFromFile = relPath.replace(/\.oxn$/, '')
       if (result.ok && result.domain) {
         domains.push({
           name: result.domain.name,
-          file: f,
+          file: relPath,
           description: result.domain.descriptions?.[0]?.value,
         })
       } else {
-        domains.push({ name: f.replace('.oxn', ''), file: f })
+        domains.push({ name: nameFromFile, file: relPath })
       }
     }
     output(
