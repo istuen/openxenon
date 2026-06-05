@@ -31,7 +31,7 @@
 | **Work** | 工程师的意图沙盒；声明 domain/blueprint ref + 编排 task DAG |
 | **Task** | 1 blueprint + N parts 的执行单元；align 到 blueprint 的具体 slot |
 | **Part** | Task 内的动态执行单元；align 到 Blueprint 的 slot；含 skill_context + probe |
-| **ref** | 资源引用（@oxn / @prj / @glo 三种作用域） |
+| **ref** | 资源引用（@oxn / @prj 两种作用域） |
 | **Align** | 实例化对齐（Part align Slot，Task align Blueprint，Work 编排 Tasks） |
 | **Prop Assignment** | 在 Align 端对 Intent Prop 的具体赋值 |
 
@@ -93,7 +93,7 @@
 | Task 名 | kebab-case | `register-member` |
 | Part 名 | kebab-case | `build` |
 | Slot 名 | kebab-case | `develop` |
-| ref 作用域 | `@oxn` / `@prj` / `@glo` | `@oxn/probe/shell-exec` |
+| ref 作用域 | `@oxn` / `@prj` | `@oxn/probe/shell-exec` |
 
 ## 9. 废弃术语（**不要使用**）
 

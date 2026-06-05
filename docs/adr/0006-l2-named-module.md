@@ -33,8 +33,8 @@ OpenXenon v0.1 引入四层架构（L0 Kernel / L1 Foundation / L2 / L3 Runtime�
 
 | 子模块 | 物理位置 | 范式 |
 |---|---|---|
-| **Arsenal** | `src/arsenals/` | v0.0.x 兼容（资产生命周期） |
 | **Domain** | `.openxenon/domains/` | Intent（业务限界上下文） |
+| **Blueprint** | `.openxenon/blueprints/` | Intent（技术流水线模板） |
 | **Work** | `.openxenon/works/` | Align（编排与执行） |
 
 ### 命名对照

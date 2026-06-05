@@ -28,7 +28,7 @@ OpenXenon v0.1 强制实施**严格的 L0-L3 四层架构宪法**：
 |---|---|
 | L0 Kernel | `src/kernel/`, `src/oxn-dsl/schemas/` |
 | L1 Foundation | `src/oxn-dsl/langium/`, `src/infra/` |
-| L2 Module | `src/arsenals/`, `.openxenon/domains/`, `.openxenon/blueprints/`, `.openxenon/works/` |
+| L2 Module | `.openxenon/domains/`, `.openxenon/blueprints/`, `.openxenon/works/` |
 | L3 Runtime | `src/cli/`, `src/daemon/`, `src/skills/`, `src/hall/`（待实现） |
 
 ## Consequences

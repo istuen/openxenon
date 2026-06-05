@@ -230,16 +230,15 @@ AnyType       = 'any'
 ## 9. Ref 作用域
 
 ```bnf
-ref = '@oxn' | '@prj' | '@glo'
+ref = '@oxn' | '@prj'
 ```
 
 | 作用域 | 路径 | 含义 |
 |---|---|---|
 | `@oxn` | `@oxn/<type>/<name>` | 内置资产（OpenXenon 自带） |
 | `@prj` | `@prj/<type>/<name>` | 项目内资产 |
-| `@glo` | `@glo/<type>/<name>` | 全局资产 |
 
-**查找优先级**：`@prj` > `@glo` > `@oxn`
+**查找优先级**：`@prj` > `@oxn`（跨项目共享走 Git 仓库级别）
 
 ## 10. 关键字
 

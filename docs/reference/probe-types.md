@@ -98,7 +98,7 @@ probe "tests-pass" {
 ## 6. 自定义 Probe（v0.1 手写路径）
 
 > v0.1 hard-switch：`oxn forge probe` / `oxn arsenal promote` 等已删除。
-> Probe 直接手写 `.oxn` 文件到 `.openxenon/arsenals/probes/<name>.oxn`：
+> Probe 内联写在 `task.oxn` 的 `part { probe {} }` 块内（不是独立文件）：
 
 ```oxn
 probe "my-check" align "MyCheck" {

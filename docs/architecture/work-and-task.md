@@ -62,9 +62,8 @@ task "<name>" {
 |---|---|---|---|
 | `@oxn` | `@oxn/<type>/<name>` | 内置资产（OpenXenon 自带） | `@oxn/probe/shell-exec` |
 | `@prj` | `@prj/<type>/<name>` | 项目内资产（`.openxenon/<type>/<name>.oxn`） | `@prj/domains/MemberContext` |
-| `@glo` | `@glo/<type>/<name>` | 全局资产（`~/.openxenon/arsenals/<type>/<name>`） | `@glo/blueprint/deploy` |
 
-**优先级**：`@prj` > `@glo` > `@oxn`（项目优先于全局，全局优先于内置）
+**优先级**：`@prj` > `@oxn`（项目优先于内置；跨项目共享走 Git 仓库级别）
 
 ## 5. 完整示例
 

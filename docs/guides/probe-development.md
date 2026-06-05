@@ -32,24 +32,23 @@
 ## 3. 自定义 Probe（v0.1 hard-switch 路径）
 
 > **v0.1 起，Probe 没有 CLI 入口**（`oxn forge probe` / `oxn arsenal promote` / `oxn arsenal inspect` 全部删除）。
-> Probe 是**手写**的 `.oxn` 文件，落在 `.openxenon/arsenals/probes/<name>.oxn`。
-
-```bash
-$EDITOR .openxenon/arsenals/probes/build-output-exists.oxn
-```
+> Probe 是**手写**的 `.oxn` 文件，落在 `task.oxn` 的 `part { probe {} }` 块内联（不是独立文件）。
 
 ```oxn
-probe "build-output-exists" align "FsExists" {
-  description = "Check build output exists"
-  prop "pattern" { type = string; required = true }
-  output { exists = boolean }
+// 在 task.oxn 里
+part "build" {
+  skill_context = "..."
+  probe "build-output-exists" align "FsExists" {
+    prop "pattern" { type = string; required = true }
+    output { exists = boolean }
+  }
 }
 ```
 
 校验语法：
 
 ```bash
-oxn dev validate .openxenon/arsenals/probes/build-output-exists.oxn
+oxn work validate --path .openxenon/works/<work>/work.oxn
 ```
 
 ## 4. 在 Blueprint / Task 中引用 Probe

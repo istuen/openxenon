@@ -28,7 +28,8 @@ pnpm build
 ./dist/oxn init
 
 # 查看内置资产
-./dist/oxn dev arsenal list
+./dist/oxn init
+./dist/oxn work --help
 ```
 
 输出示例：
@@ -217,7 +218,7 @@ cat .openxenon/works/onboarding/tasks/register-member/frozen.json
 
 - 跑完整示例：`src/oxn-dsl/examples/works/` 下的 onboarding / develop-member / fix-issue / explore-dsl
 - 旧 work.oxn 迁移：`./dist/oxn work migrate`
-- 自定义 Probe：手写 `.openxenon/arsenals/probes/<name>.oxn`，用 `./dist/oxn dev validate` 校验
+- 自定义 Probe：在 `task.oxn` 的 `part { probe {} }` 块内联写，用 `oxn work validate` 校验
 
 ## 7. 下一章
 

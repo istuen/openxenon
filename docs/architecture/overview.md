@@ -98,11 +98,10 @@
 |---|---|
 | L0 Kernel | `src/kernel/`, `src/oxn-dsl/schemas/` |
 | L1 Foundation | `src/oxn-dsl/langium/`, `src/infra/` |
-| L2 Module | `src/arsenals/`, `.openxenon/domains/`, `.openxenon/blueprints/`, `.openxenon/works/` |
+| L2 Module | `.openxenon/domains/`, `.openxenon/blueprints/`, `.openxenon/works/` |
 | L3 Runtime | `src/cli/`, `src/daemon/`, `src/skills/`, `src/hall/`（待实现） |
 
 > **L2 物理位置详细说明**：
-> - `src/arsenals/` — Arsenal 模块的代码（forge / promote / inspect）
 > - `.openxenon/domains/` — Domain 实体文件
 > - `.openxenon/blueprints/` — Blueprint 实体文件
 > - `.openxenon/works/` — Work 实体文件 + Task 实体文件

@@ -127,7 +127,7 @@ oxn install-skill --skill oxn-cli --force
 oxn global hall [--open]
 ```
 
-> 注：`oxn global arsenal *` 已并入 `oxn dev *`（probe/blueprint 资产由手写 .oxn 文件 + `oxn dev validate` 兜底）。
+> 注：`oxn global arsenal *` 已彻底删除（v0.1 hard-switch）；probe 在 `task.oxn` 的 `part { probe {} }` 块内联，blueprint/domain 用 `oxn blueprint/domain` 顶层命令管理。
 
 ## 4. 错误码速查
 

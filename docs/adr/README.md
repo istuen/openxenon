@@ -36,5 +36,5 @@ adr/
 
 - ADR-0006: Probe 信息隐藏原则
 - ADR-0007: 双层 state.json 设计
-- ADR-0008: ref 三作用域优先级（@prj > @glo > @oxn）
+- ADR-0008: ref 二作用域优先级（@prj > @oxn）
 - ADR-0009: 全量隔离（task 只看 align 的 domain）
