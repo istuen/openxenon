@@ -1,7 +1,9 @@
 import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
-import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator'
+// v0.1-final: task.oxn 直接通过 Langium AST 解析（不再走 bundle）
+// 保留 generateOxnAssembly 导入供未来 batch 验证使用
+// import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator'
 import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services'
 import { ensureDirectory } from '../infra/filesystem'
 import { type ProbeContext, type ProbeResult, probeHandlers } from '../infra/probes'
@@ -140,20 +142,14 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
     const doc = factory.fromString(taskOxnContent, uri, undefined)
 
     if (doc.parseResult?.value && doc.state > 1) {
-      const bundle = generateOxnAssembly(doc.parseResult.value as any)
-      const taskEntity = bundle.entities.find((e) => e.type === 'task')
-      if (taskEntity?.data && taskEntity.type === 'task') {
-        const data = taskEntity.data as {
-          name: string
-          blueprint: string
-          slots: Array<{ name: string; deps: string[] }>
-        }
-        extractedTaskId = data.name
-        blueprintName = data.blueprint
-        // v0.1: 转换为统一的 slotBinding 形式以兼容下游 unifiedTaskSubmit
-        for (const slot of data.slots ?? []) {
+      // v0.1-final: task.oxn 是一个独立 task 实体（含 blueprint + parts）
+      const taskNode = (doc.parseResult.value as any).entities?.find((e: any) => e.$type === 'TaskDeclaration')
+      if (taskNode) {
+        extractedTaskId = taskNode.name
+        blueprintName = taskNode.blueprint
+        for (const part of taskNode.parts ?? []) {
           slotBindings.push({
-            slot: slot.name,
+            slot: part.name,
             props: {},
             probeBindings: [],
           })

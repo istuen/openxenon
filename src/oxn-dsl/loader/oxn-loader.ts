@@ -5,7 +5,7 @@
  * 依赖 Task 1.4 的 OxnWorkspaceManager 进行文件系统解析。
  */
 import { parse as parseYaml } from 'yaml'
-import type { OxnAssemblyIR, OxnAssemblyTaskIR } from '../schemas/oxn-assembly.schema'
+import type { OxnAssemblyIR, OxnTaskIR as OxnAssemblyTaskIR } from '../schemas/oxn-assembly.schema'
 import type { OxnAssetType, OxnScope, ResolvedOxnAsset } from '../scope/oxn-scope'
 import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
 import { fs } from '../../infra/filesystem'

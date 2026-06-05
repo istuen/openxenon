@@ -5,8 +5,15 @@
  * - 逻辑运算 (&&, ||, !)
  * - 比较运算 (==, !=, <, >, <=, >=)
  * - 求值结果为 false 时编译报错
+ *
+ * v0.1-final: rule 已从 Blueprint 中移除，本求值器保留为基础设施
+ * 以便后续通过 invariant 表达式或条件任务重新接入拦截逻辑。
  */
-import type { OxnAssemblyRule } from '../schemas/oxn-assembly.schema'
+export interface OxnAssemblyRule {
+  name: string
+  condition: string
+  errMsg?: string
+}
 
 export interface RuleEvalResult {
   valid: boolean

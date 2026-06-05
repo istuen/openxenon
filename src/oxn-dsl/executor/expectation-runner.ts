@@ -4,8 +4,16 @@
  * 绑定在 Blueprint 上的 expectation 在运行时执行：
  * - 关联的 Probe 执行验证
  * - 失败时中断流水线，返回 err_msg
+ *
+ * v0.1-final: expectation 已从 Blueprint 中移除，本执行器保留为基础设施
+ * 以便后续通过 Task 的 part probe 重新接入验证逻辑。
  */
-import type { OxnAssemblyExpectation } from '../schemas/oxn-assembly.schema'
+export interface OxnAssemblyExpectation {
+  name: string
+  probeRef: string
+  params: Record<string, unknown>
+  errMsg?: string
+}
 
 export interface ExpectationResult {
   name: string

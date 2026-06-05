@@ -51,8 +51,6 @@ export class TaskSandbox {
         abstractParts: [],
         concreteParts: [],
         stages: (raw.stages || raw.parts || []) as OxnAssemblyIR['stages'],
-        expectations: [] as OxnAssemblyIR['expectations'],
-        rules: [] as OxnAssemblyIR['rules'],
       }
     }
 
@@ -84,12 +82,6 @@ export class TaskSandbox {
     const idx = state.currentIR.concreteParts.findIndex((p) => p.name === partName)
     if (idx === -1) {
       throw new Error(`Part "${partName}" 不存在于沙箱中`)
-    }
-
-    for (const exp of state.currentIR.expectations) {
-      if (exp.probeRef.includes(partName)) {
-        throw new Error(`无法删除 Part "${partName}"：被 expectation "${exp.name}" 依赖`)
-      }
     }
 
     state.currentIR.concreteParts.splice(idx, 1)

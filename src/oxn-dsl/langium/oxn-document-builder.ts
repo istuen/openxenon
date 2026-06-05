@@ -32,18 +32,18 @@ function collectRefsFromDocument(document: LangiumDocument): string[] {
 
     const work = entity as WorkDeclaration
 
-    // v0.1: 收集 use_blueprint 引用，供 document-builder 注入对应 .oxn
-    for (const useBp of work.useBlueprints ?? []) {
-      if (useBp.name && !visitedRefs.has(useBp.name)) {
-        refs.push(useBp.name)
-        visitedRefs.add(useBp.name)
+    // v0.1-final: 收集 blueprint ref 引用，供 document-builder 注入对应 .oxn
+    for (const bp of work.blueprints ?? []) {
+      if (bp.name && !visitedRefs.has(bp.name)) {
+        refs.push(bp.name)
+        visitedRefs.add(bp.name)
       }
     }
-    // v0.1: 收集 use_domain 引用
-    for (const useD of work.useDomains ?? []) {
-      if (useD.name && !visitedRefs.has(useD.name)) {
-        refs.push(useD.name)
-        visitedRefs.add(useD.name)
+    // v0.1-final: 收集 domain ref 引用
+    for (const d of work.domains ?? []) {
+      if (d.name && !visitedRefs.has(d.name)) {
+        refs.push(d.name)
+        visitedRefs.add(d.name)
       }
     }
   }
