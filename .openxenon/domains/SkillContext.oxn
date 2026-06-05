@@ -1,0 +1,43 @@
+// Domain: SkillContext
+// OpenCode Skills 限界上下文：管理 AI 助手的 SKILL.md 加载、安装、跨语言分发
+//
+// 物理边界：
+//   - 源端：.opencode/skills/oxn-<id>/SKILL.md（本项目 gitignored，由 install-skill 嵌入二进制）
+//   - 目标端：~/.opencode/skills/oxn-<id>/SKILL.md（用户侧，AI 实际加载）
+//   - Locale：src/skills/locales/<locale>/<id>/instruction.md（编译期渲染）
+
+domain "SkillContext" {
+  description = "OpenCode Skills 限界上下文：管理 AI 助手的 SKILL.md 加载、安装、跨语言分发"
+
+  term {
+    "Skill": "一份面向 AI 的结构化指令单元（id + description + instruction + references），落地为 .opencode/skills/<id>/SKILL.md";
+    "Instruction": "Skill 的主指令 markdown 正文（AI 第一句要读的内容）";
+    "ReferenceFile": "Skill 的次级 markdown 引用文件，存放在 .opencode/skills/<id>/references/，按需加载";
+    "SkillMeta": "Skill 的元信息（id + description），用于 OpenCode 的 skill 索引与自动选择";
+    "Locale": "Skill 的语言变体；当前唯一权威为 zh-CN，en 已废弃（沿用 zh-CN 内容）";
+    "EmbeddedSkill": "编译进 binary 的 Skill 内容（Bun 的 with { type: 'file' } 导入），保证 oxn install-skill 在任意 CWD 下都能工作";
+    "InstallTarget": "Skill 安装的目标目录，默认 ~/.opencode/skills/，可由 --target 覆盖";
+  }
+
+  ban {
+    "Plugin", "Extension", "Hook", "PromptTemplate",
+    "oxn-task", "oxn-explore", "oxn-plan", "oxn-leader",
+    "oxn-arsenal", "oxn-forge", "oxn-global", "oxn-add-probe",
+    "oxn-resume"
+  }
+
+  invariant { "Skill ID 必须以 'oxn-' 前缀开头（如 oxn-cli、oxn-work），避免与第三方 skill 冲突" }
+  invariant { "zh-CN 是唯一权威 Locale；en Locale 已废弃，必须与 zh-CN 内容保持一致（不允许独立维护）" }
+  invariant { "Skill 名 ↔ 目录 1:1 映射：.opencode/skills/<id>/ 必须存在且含 SKILL.md" }
+  invariant { "install-skill 写入路径必须为 ~/.opencode/skills/<id>/SKILL.md（或 --target 指定路径），不可写到其他位置" }
+  invariant { "SKILL.md 嵌入 binary 后必须经 install-skill 才能落到目标目录；不允许运行时从源端直接加载" }
+  invariant { "Skill 内的命令引用必须与 CLI 实际子命令一致；v0.0.x 已删除命令（oxn task *、oxn leader *、oxn arsenal *、oxn add-probe、oxn get-context、oxn work new）一律不能在 Skill 中出现" }
+  invariant { "Skill 内禁止使用 'new' 子命令；统一改为 'create'（oxn work create / oxn domain create / oxn blueprint create）" }
+  invariant { "Part / Probe 没有 CLI 入口；Skill 内禁止 'oxn part new' / 'oxn probe new' 等不存在的命令，必须教 AI 内联写" }
+
+  context_map {
+    imports "DSLContext"  as "DSL"
+    imports "WorkContext" as "Work"
+    imports "CLIContext"  as "CLI"
+  }
+}

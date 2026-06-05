@@ -1,0 +1,29 @@
+// Domain: DSLContext
+// OXN DSL 自身限界上下文：管理 Grammar / Schema / Validator / Compiler
+
+domain "DSLContext" {
+  description = "OXN DSL 限界上下文：管理语法、Schema、验证器、编译器"
+
+  term {
+    "Grammar": "Langium 语法定义（.langium 文件）"
+    "Schema": "Zod 校验 schema，对应语法的中间表示"
+    "Validator": "语法/语义校验器，编译期检查"
+    "Compiler": "把 .oxn 编译为 AssemblyIR 的编译器"
+    "AST": "抽象语法树，Langium 解析产物"
+    "IR": "AssemblyIR 中间表示，Zod 校验的强类型数据"
+    "Token": "词法单元，由 lexer 产生"
+    "Entity": "顶层声明（Probe/Part/Blueprint/Domain/Work）"
+  }
+
+  ban { "ParserImpl", "LexerImpl", "GrammarFile" }
+
+  invariant { "oxn.langium 是 DSL 的唯一权威来源，AST 由 langium generate 自动产出" }
+  invariant { "Zod schema 必须与 grammar 一一对应，缺一个就 broken" }
+  invariant { "所有 validator 必须通过 registerOxnValidators 注册，否则不生效" }
+  invariant { "新增 grammar 字段时必须保持向后兼容（旧 .oxn 文件仍能解析）" }
+
+  context_map {
+    imports "ArsenalContext" as "Arsenal"
+    imports "WorkContext" as "Work"
+  }
+}

@@ -1,0 +1,23 @@
+// .openxenon/blueprints/add-summary-cmd.oxn
+//
+// 为 oxn CLI 开发 oxn work summary 子命令的工作流
+// 4 个 slot 按依赖顺序：analyze → design → implement → test
+
+blueprint "add-summary-cmd" {
+  version = 1
+  description = "开发 oxn work summary <name> 子命令，从 work 空间 (state.json / work-trace.jsonl / frozen.json) 提取结构化总结"
+
+  prop "cmd_name" { type = string; default = "summary" }
+  prop "support_formats" { type = string; default = "human,json,yaml" }
+
+  slot "analyze-sources" { }
+  slot "design-summary" {
+    deps = ["analyze-sources"]
+  }
+  slot "implement-cmd" {
+    deps = ["design-summary"]
+  }
+  slot "verify-cmd" {
+    deps = ["implement-cmd"]
+  }
+}

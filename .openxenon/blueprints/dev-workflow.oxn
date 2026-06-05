@@ -1,0 +1,30 @@
+// Blueprint: dev-workflow
+// Created by: oxn blueprint new --name dev-workflow --slots build,develop,test,verify
+//
+// Edit goal/description/props/slots as needed. The mvp-style
+// `context` and per-part `skill` blocks are optional (unified grammar superset).
+// After editing, validate with:
+//   oxn blueprint validate dev-workflow
+// Then drive it with:
+//   oxn leader new --name <work-name> --blueprint-file .openxenon/blueprints/dev-workflow.oxn --json
+
+blueprint "dev-workflow" {
+  version = 1
+  description = "TODO: 一句话描述这个 blueprint 做什么"
+
+  slot "build" {
+    deps = []
+  }
+
+  slot "develop" {
+    deps = ["build"]
+  }
+
+  slot "test" {
+    deps = ["develop"]
+  }
+
+  slot "verify" {
+    deps = ["test"]
+  }
+}

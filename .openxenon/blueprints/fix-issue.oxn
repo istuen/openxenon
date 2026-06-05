@@ -1,0 +1,30 @@
+// Blueprint: fix-issue
+// Created by: oxn blueprint new --name fix-issue --slots diagnose,locate,fix,verify
+//
+// Edit goal/description/props/slots as needed. The mvp-style
+// `context` and per-part `skill` blocks are optional (unified grammar superset).
+// After editing, validate with:
+//   oxn blueprint validate fix-issue
+// Then drive it with:
+//   oxn leader new --name <work-name> --blueprint-file .openxenon/blueprints/fix-issue.oxn --json
+
+blueprint "fix-issue" {
+  version = 1
+  description = "问题修复流程：诊断问题现象、定位根本原因、实施修复方案、验证修复结果"
+
+  slot "diagnose" {
+    deps = []
+  }
+
+  slot "locate" {
+    deps = ["diagnose"]
+  }
+
+  slot "fix" {
+    deps = ["locate"]
+  }
+
+  slot "verify" {
+    deps = ["fix"]
+  }
+}

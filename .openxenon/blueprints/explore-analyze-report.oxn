@@ -1,0 +1,26 @@
+// Blueprint: explore-analyze-report
+// Created by: oxn blueprint new --name explore-analyze-report --slots explore,analyze,report
+//
+// Edit goal/description/props/slots as needed. The mvp-style
+// `context` and per-part `skill` blocks are optional (unified grammar superset).
+// After editing, validate with:
+//   oxn blueprint validate explore-analyze-report
+// Then drive it with:
+//   oxn leader new --name <work-name> --blueprint-file .openxenon/blueprints/explore-analyze-report.oxn --json
+
+blueprint "explore-analyze-report" {
+  version = 1
+  description = "项目开发改进探索与分析报告流程：先探索代码库现状，再分析问题与机会，最后生成改进报告"
+
+  slot "explore" {
+    deps = []
+  }
+
+  slot "analyze" {
+    deps = ["explore"]
+  }
+
+  slot "report" {
+    deps = ["analyze"]
+  }
+}

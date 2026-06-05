@@ -1,0 +1,30 @@
+// Domain: WorkContext
+// 任务执行（Work）限界上下文：管理 Work 沙盒、Artifact、Snapshot、Frozen
+
+domain "WorkContext" {
+  description = "任务执行限界上下文：管理 Work 沙盒与产物的全生命周期"
+
+  term {
+    "Work": "一次任务执行的沙盒，绑定一份 Blueprint"
+    "Task": "Work 内的具体步骤，对齐 Blueprint 的某个 slot"
+    "Artifact": "Work 执行产生的物理产物，被 Probe 观测的对象"
+    "Snapshot": "某一时刻 Work 状态的不可变快照"
+    "Frozen": "验证通过后生成的判决书（frozen.json）"
+    "Trace": "Work 执行轨迹，JSONL 追加式事件流"
+    "PartExecution": "单个 part 的执行记录（含 probe 结果）"
+    "SkillContext": "AI 可见的目标/约束/当前焦点"
+  }
+
+  ban { "Job", "TaskRun", "Execution", "Pipeline" }
+
+  invariant { "Work 的运行时类型必须与 Blueprint.type 强一致" }
+  invariant { "frozen.json 生成后不可修改（仅可读取作为判决书）" }
+  invariant { "work-trace.jsonl 只能追加写，不能重写" }
+  invariant { "同一 part 只能被提交一次，重复 submit 必须基于 freeze 重建" }
+  invariant { "Artifact 路径必须落在 Work 沙盒内或宿主项目目录" }
+
+  context_map {
+    imports "ArsenalContext" as "Arsenal"
+    imports "DSLContext" as "DSL"
+  }
+}

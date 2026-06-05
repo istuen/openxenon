@@ -1,0 +1,28 @@
+// Domain: ArsenalContext
+// 资产（Arsenal）限界上下文：管理 Probe / Part / Blueprint 的生命周期
+
+domain "ArsenalContext" {
+  description = "资产限界上下文：管理 Probe / Part / Blueprint 的全生命周期（DRAFT → CANONICAL）"
+
+  term {
+    "Blueprint": "任务工程图，定义执行拓扑（DAG）与 Type"
+    "Part": "零件，包含 target/spec/action/probes 四字段"
+    "Probe": "原子检查，物理观测 + 纯函数判定"
+    "Arsenal": "资产库，存放正式（canonical）资产"
+    "Draft": "草稿资产，位于 drafts/ 目录，尚未审查"
+    "Forge": "锻造流程，定义如何生成某类资产"
+    "Asset": "通用资产术语，可指 Blueprint/Part/Probe 中任意一种"
+  }
+
+  ban { "Resource", "Template", "Config", "Definition" }
+
+  invariant { "Blueprint 的 type 字段（task/plan/flow）不可变更" }
+  invariant { "资产必须先在 drafts/ 目录通过审查才能 promote" }
+  invariant { "资产依赖关系：Probe → Part → Blueprint" }
+  invariant { "提升为 canonical 的资产 _version 不可降级" }
+
+  context_map {
+    imports "WorkContext" as "Work"
+    imports "DSLContext" as "DSL"
+  }
+}
