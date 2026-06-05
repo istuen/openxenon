@@ -122,7 +122,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
   const taskOxnPath = join(taskDir, TASK_OXN_FILE)
 
   if (!existsSync(taskOxnPath)) {
-    throw new Error(`Task file not found: ${taskOxnPath}. Use 'oxn task new' to create a task first.`)
+    throw new Error(`Task file not found: ${taskOxnPath}. Use 'oxn work add-task' to create a task first.`)
   }
 
   const taskOxnContent = readFileSync(taskOxnPath, 'utf-8')
@@ -224,7 +224,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
         throw new Error(
           `Inconsistency detected: task.oxn has been modified since last submit. ` +
             `Expected frozen.json to match task.oxn (hash: ${taskOxnHash}), ` +
-            `but it doesn't. Please resubmit with 'oxn task submit --task-id ${taskId}'.`,
+            `but it doesn't. Please resubmit with 'oxn work submit --work <w> --task ${taskId}'.`,
         )
       }
     }
@@ -309,7 +309,7 @@ export function taskNew(taskId: string, taskName: string, cwd: string, blueprint
     taskId,
     taskName: state.taskName,
     status: 'PENDING',
-    message: `Task created successfully. Use oxn task submit --task-id ${taskId} to submit.`,
+    message: `Task created successfully. Use oxn work submit --work <w> --task ${taskId} to submit.`,
   }
 }
 

@@ -18,8 +18,8 @@ OpenXenon 的所有重要变更都会记录在此文件。
 - `work` 实体的资源池（domain/blueprint/part/probe ref）
 - `task` 实体的声明式 align（`domain "X"; blueprint "Y";`）
 - `part` 嵌套在 task 内，可包含 probe 块
-- `oxn get-context` 全量隔离（task 级只看 align 的 domain）
-- `oxn work task new/edit/status/list` 子命令
+- `oxn work context` 全量隔离（task 级只看 align 的 domain）
+- `oxn work add-task/edit/status/list` 子命令
 - 4 个端到端 work 示例（onboarding/develop-member/fix-issue/explore-dsl）
 - 4 个内部 domain（ArsenalContext/WorkContext/DSLContext/CLIContext）
 - 双层 state.json（workspace + task）

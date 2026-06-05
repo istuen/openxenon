@@ -169,7 +169,7 @@ pnpm install && pnpm build
 ./dist/oxn init
 
 # 2. 定义 Domain（业务 Intent）
-./dist/oxn domain new --name MemberContext
+./dist/oxn domain create --name MemberContext
 # 编辑 .openxenon/domains/member-context.oxn
 ./dist/oxn domain validate --name MemberContext
 
@@ -185,27 +185,27 @@ blueprint "dev-workflow" {
 EOF
 
 # 4. 创建 Work（编排 Align）
-./dist/oxn leader new --name onboarding
+./dist/oxn work create --name onboarding
 # 编辑 .openxenon/works/onboarding/work.oxn
 # 加 domain ref + task 编排块
 
 # 5. 创建 Task（执行 Align）
-./dist/oxn work task new \
+./dist/oxn work add-task \
   --work-name onboarding \
   --task-name register-member \
   --blueprint dev-workflow \
   --domain MemberContext
 
 # 6. 获取 AI 上下文（全量隔离：只看 align 到的 domain）
-./dist/oxn get-context --work onboarding --task register-member --json
+./dist/oxn work context --work onboarding --task register-member --json
 
 # 7. AI 执行（在 AI 助手软件中）
 # (按 taskParts 顺序写代码，遵守 allowedLanguage)
 
 # 8. 推进状态机
-./dist/oxn leader run    --work-file .openxenon/works/onboarding/work.oxn --json
-./dist/oxn leader submit --work-name onboarding --task register-member --json
-./dist/oxn leader status --work-name onboarding --json
+./dist/oxn work run    --work-file .openxenon/works/onboarding/work.oxn --json
+./dist/oxn work submit --work-name onboarding --task register-member --json
+./dist/oxn work status --work-name onboarding --json
 
 # 9. 审查 frozen.json
 cat .openxenon/works/onboarding/tasks/register-member/frozen.json

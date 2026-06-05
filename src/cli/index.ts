@@ -2,7 +2,6 @@ import { defineCommand, runMain } from 'citty'
 import { DAEMON_SOCK_PATH } from '../infra/global'
 import { ErrorCategory, OxnErrorCode } from '../kernel/enums'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
-import { loadOxnRc, resolveLeaderMode } from './config-loader'
 
 function formatError(err: unknown): string {
   if (err && typeof err === 'object' && 'code' in err) {
@@ -61,54 +60,20 @@ const main = defineCommand({
     description: 'OpenXenon CLI - 面向大语言模型的工程化控制引擎',
   },
   subCommands: {
+    // ---- Meta / project setup ----
     init: () => import('./init').then((m) => m.default),
-    task: () => import('./task').then((m) => m.default),
-    work: () => import('./work').then((m) => m.default),
-    arsenal: () => import('./arsenal').then((m) => m.default),
-    export: () => import('./export').then((m) => m.default),
-    gc: () => import('./gc').then((m) => m.default),
-    cache: () => import('./cache').then((m) => m.default),
-    hall: () => import('./hall').then((m) => m.default),
-    explore: () => import('./explore-cmd').then((m) => m.default),
-    global: () => import('./global').then((m) => m.default),
     config: () => import('./config-cmd').then((m) => m.default),
-    compile: () => import('./oxn-compile').then((m) => m.default),
-    unpack: () => import('./oxn-unpack').then((m) => m.default),
-    validate: () => import('./oxn-validate').then((m) => m.default),
-    promote: () => import('./oxn-promote-cmd').then((m) => m.default),
-    'migrate-yaml': () => import('./oxn-migrate-cmd').then((m) => m.default),
-    'add-probe': () => import('./oxn-add-probe').then((m) => m.default),
     'install-skill': () => import('./install-skill').then((m) => m.default),
-    blueprint: () => import('./blueprint').then((m) => m.default),
+
+    // ---- Intent entities ----
     domain: () => import('./domain').then((m) => m.default),
-    'get-context': () => import('./get-context').then((m) => m.default),
-    leader: () => {
-      // Unified leader (single entry — see src/cli/leader.ts).
-      //   Subcommands: new | run | submit | status
-      //   Aliases (reference compatibility): start | next | list
-      // The --leader-mode / OXN_LEADER_MODE / .oxnrc flags are honored for
-      // backward compatibility but both modes now resolve to the same
-      // unified leader. A warning is printed if a non-default mode is set,
-      // so existing scripts keep working without surprises.
-      const projectRoot = process.cwd()
-      const { config, warning } = loadOxnRc(projectRoot)
-      if (warning) console.error(`[config] ${warning}`)
-      const cliFlag = process.argv
-        .find((a) => a === '--leader-mode' || a.startsWith('--leader-mode='))
-        ?.split('=')
-        .slice(1)
-        .join('=') as string | undefined
-      const envValue = process.env.OXN_LEADER_MODE
-      const resolved = resolveLeaderMode({ cliFlag, envValue, projectConfig: config })
-      if (resolved.source !== 'default' && resolved.mode === 'mvp') {
-        // Both modes now use the unified leader. We keep the flag for
-        // backward compat but emit a one-time deprecation hint.
-        console.error(
-          `[config] OXN_LEADER_MODE=mvp is now equivalent to the default; the dual-track canary has been merged into the unified leader.`,
-        )
-      }
-      return import('./leader').then((m) => m.default)
-    },
+    blueprint: () => import('./blueprint').then((m) => m.default),
+
+    // ---- Align runtime (work + task + state machine) ----
+    work: () => import('./work').then((m) => m.default),
+
+    // ---- Dev namespace (DSL 内部工具) ----
+    dev: () => import('./dev').then((m) => m.default),
   },
   args: {
     verbose: {

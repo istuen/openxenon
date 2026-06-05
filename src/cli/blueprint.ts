@@ -44,11 +44,11 @@ async function validateBlueprint(blueprintPath: string): Promise<{
 }
 
 // ---------------------------------------------------------------------------
-// Subcommand: new
+// Subcommand: create
 // ---------------------------------------------------------------------------
-const newSubcommand = defineCommand({
+const createSubcommand = defineCommand({
   meta: {
-    name: 'new',
+    name: 'create',
     description: '在 .openxenon/blueprints/ 生成一个新的 blueprint 骨架（用统一 OXN DSL）',
   },
   args: {
@@ -123,14 +123,14 @@ const newSubcommand = defineCommand({
     }
 
     const template = `// Blueprint: ${name}
-// Created by: oxn blueprint new --name ${name} ${slotsArg ? `--slots ${slotsArg}` : ''}
+// Created by: oxn blueprint create --name ${name} ${slotsArg ? `--slots ${slotsArg}` : ''}
 //
 // Edit goal/description/props/slots as needed. The mvp-style
 // \`context\` and per-part \`skill\` blocks are optional (unified grammar superset).
 // After editing, validate with:
 //   oxn blueprint validate ${name}
 // Then drive it with:
-//   oxn leader new --name <work-name> --blueprint-file .openxenon/blueprints/${name}.oxn --json
+//   oxn work create --name <work-name> --blueprint ${name} --json
 
 blueprint "${name}" {
   version = 1
@@ -180,7 +180,7 @@ const validateSubcommand = defineCommand({
         {
           code: 'OXN_DSL_PARSE_FAILED',
           message: `blueprint ${name} failed validation:\n${result.errors.join('\n')}`,
-          suggestion: 'edit the file and re-run, or `oxn blueprint new --name X --force` to regenerate',
+            suggestion: 'edit the file and re-run, or `oxn blueprint create --name X --force` to regenerate',
         },
         format,
       )
@@ -239,15 +239,15 @@ const listSubcommand = defineCommand({
 const blueprintCommand = defineCommand({
   meta: {
     name: 'blueprint',
-    description: '管理 OXN DSL blueprint（用统一 grammar）',
+    description: '管理 OXN DSL blueprint（create/validate/list）',
   },
   subCommands: {
-    new: newSubcommand,
+    create: createSubcommand,
     validate: validateSubcommand,
     list: listSubcommand,
   },
   run() {
-    console.log('Use `oxn blueprint <new|validate|list>`.')
+    console.log('Use `oxn blueprint <create|validate|list>`.')
   },
 })
 

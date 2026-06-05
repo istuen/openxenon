@@ -8,7 +8,7 @@ const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
 let tmpDir: string
 
 beforeEach(() => {
-  tmpDir = mkdtempSync(join(tmpdir(), 'oxn-leader-'))
+  tmpDir = mkdtempSync(join(tmpdir(), 'oxn-work-'))
 })
 
 afterEach(() => {
@@ -38,8 +38,8 @@ blueprint "tiny" {
 }
 `
 
-describe('unified leader (single entry) e2e', () => {
-  test('full leader new -> run -> submit -> status -> frozen flow', async () => {
+describe('oxn work end-to-end (v0.1 hard-switch)', () => {
+  test('full work create -> add-task -> run -> submit -> status -> frozen flow', async () => {
     // init
     const init = Bun.spawn(['bun', CLI_PATH, 'init'], {
       cwd: tmpDir,
@@ -49,15 +49,17 @@ describe('unified leader (single entry) e2e', () => {
     })
     await init.exited
 
-    // Set up a blueprint for leader new to consume
+    // Set up a blueprint for work create to consume
     mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
     writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'tiny.oxn'), SIMPLE_BLUEPRINT)
 
-    // leader new
-    const newResult = JSON.parse((await runCli(['leader', 'new', '--name', 'tiny', '--json'])).stdout)
-    expect(newResult.ok).toBe(true)
-    expect(newResult.data.workName).toBe('tiny')
-    expect(newResult.data.files.work).toContain('tiny/work.oxn')
+    // work create (with --blueprint renders work.oxn with task blocks)
+    const createResult = JSON.parse(
+      (await runCli(['work', 'create', '--work-id', 'tiny', '--blueprint', 'tiny', '--json'])).stdout,
+    )
+    expect(createResult.ok).toBe(true)
+    expect(createResult.data.workName).toBe('tiny')
+    expect(createResult.data.files.work).toContain('tiny/work.oxn')
     const workFile = join(tmpDir, '.openxenon', 'works', 'tiny', 'work.oxn')
     expect(existsSync(workFile)).toBe(true)
     const workContent = readFileSync(workFile, 'utf-8')
@@ -65,7 +67,7 @@ describe('unified leader (single entry) e2e', () => {
     expect(workContent).toContain('blueprint "tiny"')
     expect(workContent).toContain('task "alpha"')
 
-    // v0.1-final: leader run 校验 task.oxn 存在 — 必须先创建
+    // v0.1-final: work run 校验 task.oxn 存在 — 必须先创建
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha'), { recursive: true })
     writeFileSync(
       join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'task.oxn'),
@@ -89,8 +91,8 @@ describe('unified leader (single entry) e2e', () => {
 `,
     )
 
-    // leader run
-    const runResult = JSON.parse((await runCli(['leader', 'run', '--work-file', workFile, '--json'])).stdout)
+    // work run
+    const runResult = JSON.parse((await runCli(['work', 'run', '--work-file', workFile, '--json'])).stdout)
     expect(runResult.ok).toBe(true)
     expect(runResult.data.workName).toBe('tiny')
     expect(runResult.data.overallStatus).toBe('running')
@@ -104,8 +106,9 @@ describe('unified leader (single entry) e2e', () => {
     expect(existsSync(statePath)).toBe(true)
     const tracePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'work-trace.jsonl')
     expect(existsSync(tracePath)).toBe(true)
-    // v0.1: workspace 级 + task 级 state（用 leader status 验证更直观）
-    const initialStatus = JSON.parse((await runCli(['leader', 'status', '--work-name', 'tiny', '--json'])).stdout)
+
+    // work status (initial)
+    const initialStatus = JSON.parse((await runCli(['work', 'status', '--work-name', 'tiny', '--json'])).stdout)
     expect(initialStatus.ok).toBe(true)
     expect(initialStatus.data.workName).toBe('tiny')
     expect(initialStatus.data.workspace.taskCount).toBe(2)
@@ -114,10 +117,9 @@ describe('unified leader (single entry) e2e', () => {
     const taskStatePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'state.json')
     expect(existsSync(taskStatePath)).toBe(true)
 
-    // leader submit (v0.1: --task 必填)
-    // alpha task 只有一个 part (build)，submit 一次就 passed
+    // work submit (v0.1: --task 必填)
     const submit1 = JSON.parse(
-      (await runCli(['leader', 'submit', '--work-name', 'tiny', '--task', 'alpha', '--json'])).stdout,
+      (await runCli(['work', 'submit', '--work-name', 'tiny', '--task', 'alpha', '--json'])).stdout,
     )
     expect(submit1.ok).toBe(true)
     expect(submit1.data.taskStatus).toBe('passed')
@@ -125,7 +127,6 @@ describe('unified leader (single entry) e2e', () => {
     expect(submit1.data.frozen).toContain('tasks/alpha/frozen.json')
 
     // 验证 alpha frozen.json
-    expect(submit1.data.frozen).toContain('tasks/alpha/frozen.json')
     const frozenPath = join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'frozen.json')
     expect(existsSync(frozenPath)).toBe(true)
     const frozen = JSON.parse(readFileSync(frozenPath, 'utf-8'))
@@ -134,13 +135,13 @@ describe('unified leader (single entry) e2e', () => {
 
     // 完成 beta
     const submit2 = JSON.parse(
-      (await runCli(['leader', 'submit', '--work-name', 'tiny', '--task', 'beta', '--json'])).stdout,
+      (await runCli(['work', 'submit', '--work-name', 'tiny', '--task', 'beta', '--json'])).stdout,
     )
     expect(submit2.ok).toBe(true)
     expect(submit2.data.taskStatus).toBe('passed')
 
-    // leader status (after pass)
-    const status = JSON.parse((await runCli(['leader', 'status', '--work-name', 'tiny', '--json'])).stdout)
+    // work status (after pass)
+    const status = JSON.parse((await runCli(['work', 'status', '--work-name', 'tiny', '--json'])).stdout)
     expect(status.ok).toBe(true)
     expect(status.data.workName).toBe('tiny')
     expect(status.data.workspace.status).toBe('passed')
@@ -148,7 +149,7 @@ describe('unified leader (single entry) e2e', () => {
     expect(status.data.tasks.every((t: { status: string }) => t.status === 'passed')).toBe(true)
   })
 
-  test('unified mode generates work.oxn with inline Part bodies (no parts.oxn file)', async () => {
+  test('work create with --blueprint generates work.oxn with inline task blocks', async () => {
     const init = Bun.spawn(['bun', CLI_PATH, 'init'], {
       cwd: tmpDir,
       env: { ...process.env, NO_COLOR: '1' },
@@ -158,14 +159,12 @@ describe('unified leader (single entry) e2e', () => {
     await init.exited
     mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
     writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'tiny.oxn'), SIMPLE_BLUEPRINT)
-    await runCli(['leader', 'new', '--name', 'tiny', '--json'])
+    await runCli(['work', 'create', '--work-id', 'tiny', '--blueprint', 'tiny', '--json'])
     const workDir = join(tmpDir, '.openxenon', 'works', 'tiny')
     expect(existsSync(join(workDir, 'work.oxn'))).toBe(true)
-    expect(existsSync(join(workDir, 'parts.oxn'))).toBe(false)
   })
 
   test('v0.1 work.oxn with use_blueprint + task parses through run', async () => {
-    // v0.1: work.oxn 使用 use_blueprint + task 编排（不再使用 ref + part 实体）
     const init = Bun.spawn(['bun', CLI_PATH, 'init'], {
       cwd: tmpDir,
       env: { ...process.env, NO_COLOR: '1' },
@@ -188,7 +187,6 @@ describe('unified leader (single entry) e2e', () => {
 `
     const workFile = join(tmpDir, '.openxenon', 'works', 'refstyle', 'work.oxn')
     writeFileSync(workFile, refStyleWork)
-    // v0.1-final: 补充 task.oxn（leader run 现在会校验）
     const taskDir = join(tmpDir, '.openxenon', 'works', 'refstyle', 'tasks', 'alpha')
     mkdirSync(taskDir, { recursive: true })
     writeFileSync(
@@ -201,10 +199,9 @@ describe('unified leader (single entry) e2e', () => {
 }
 `,
     )
-    const runResult = JSON.parse((await runCli(['leader', 'run', '--work-file', workFile, '--json'])).stdout)
+    const runResult = JSON.parse((await runCli(['work', 'run', '--work-file', workFile, '--json'])).stdout)
     expect(runResult.ok).toBe(true)
     expect(runResult.data.workName).toBe('refstyle')
-    // v0.1: part spec 不再含 ref 字段（task 不绑定 part 实体）
     expect(runResult.data.parts[0].partName).toBe('alpha')
   })
 
@@ -231,7 +228,6 @@ describe('unified leader (single entry) e2e', () => {
 `
     const workFile = join(tmpDir, '.openxenon', 'works', 'probework', 'work.oxn')
     writeFileSync(workFile, probeWork)
-    // v0.1-final: 补充 task.oxn
     const taskDir = join(tmpDir, '.openxenon', 'works', 'probework', 'tasks', 'alpha')
     mkdirSync(taskDir, { recursive: true })
     writeFileSync(
@@ -244,13 +240,12 @@ describe('unified leader (single entry) e2e', () => {
 }
 `,
     )
-    await runCli(['leader', 'run', '--work-file', workFile, '--json'])
+    await runCli(['work', 'run', '--work-file', workFile, '--json'])
     const submitResult = JSON.parse(
-      (await runCli(['leader', 'submit', '--work-name', 'probework', '--task', 'alpha', '--run-probes', '--json']))
+      (await runCli(['work', 'submit', '--work-name', 'probework', '--task', 'alpha', '--run-probes', '--json']))
         .stdout,
     )
     expect(submitResult.ok).toBe(true)
-    // v0.1: task 级 state 含 partExecutions
     const taskState = JSON.parse(
       readFileSync(join(tmpDir, '.openxenon', 'works', 'probework', 'tasks', 'alpha', 'state.json'), 'utf-8'),
     )
@@ -259,7 +254,39 @@ describe('unified leader (single entry) e2e', () => {
     expect(partExec.status).toBe('passed')
   })
 
-  test('reference start/next/list aliases route to the unified leader', async () => {
+  test('work add-task creates task.oxn under work tasks dir', async () => {
+    const init = Bun.spawn(['bun', CLI_PATH, 'init'], {
+      cwd: tmpDir,
+      env: { ...process.env, NO_COLOR: '1' },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    await init.exited
+    mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
+    writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'tiny.oxn'), SIMPLE_BLUEPRINT)
+    await runCli(['work', 'create', '--work-id', 'tiny', '--blueprint', 'tiny', '--json'])
+    const addTask = JSON.parse(
+      (
+        await runCli([
+          'work',
+          'add-task',
+          '--work',
+          'tiny',
+          '--task-name',
+          'gamma',
+          '--blueprint',
+          'tiny',
+          '--json',
+        ])
+      ).stdout,
+    )
+    expect(addTask.ok).toBe(true)
+    expect(addTask.data.taskName).toBe('gamma')
+    expect(addTask.data.path).toContain('tasks/gamma/task.oxn')
+    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'gamma', 'task.oxn'))).toBe(true)
+  })
+
+  test('work context returns task-isolated injected domains', async () => {
     const init = Bun.spawn(['bun', CLI_PATH, 'init'], {
       cwd: tmpDir,
       env: { ...process.env, NO_COLOR: '1' },
@@ -268,16 +295,65 @@ describe('unified leader (single entry) e2e', () => {
     })
     await init.exited
 
-    // leader list returns builtin templates (reference parity)
-    const listResult = JSON.parse((await runCli(['leader', 'list', '--json'])).stdout)
-    expect(listResult.ok).toBe(true)
-    expect(listResult.data.templates.length).toBeGreaterThan(0)
-
-    // leader start (alias) copies a builtin ldr-*.oxn template
-    const startResult = JSON.parse(
-      (await runCli(['leader', 'start', '--work-name', 'verify-intent-align', '--json'])).stdout,
+    // Domain
+    mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
+    writeFileSync(
+      join(tmpDir, '.openxenon', 'domains', 'dsl-context.oxn'),
+      `domain "DSLContext" {
+  description = "OXN DSL 限界上下文"
+  term { "Grammar": "Langium 语法定义" }
+  ban { "ParserImpl" }
+  invariant { "oxn.langium 是 DSL 的唯一权威来源" }
+}
+`,
     )
-    expect(startResult.ok).toBe(true)
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'verify-intent-align', 'work.oxn'))).toBe(true)
+
+    // Blueprint
+    mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
+    writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'tiny.oxn'), SIMPLE_BLUEPRINT)
+
+    // Work
+    mkdirSync(join(tmpDir, '.openxenon', 'works', 'explore-dsl'), { recursive: true })
+    const workFile = join(tmpDir, '.openxenon', 'works', 'explore-dsl', 'work.oxn')
+    writeFileSync(
+      workFile,
+      `work "explore-dsl" {
+  context {
+    goal = "探索 OXN DSL 语法";
+    loop_policy { max_iterations = 3 }
+  }
+  domain "DSLContext" ref "@prj/domains/dsl-context";
+  blueprint "tiny" ref "@prj/blueprints/tiny";
+  task "explore" {
+    domain "DSLContext"
+    blueprint "tiny"
+    deps = []
+    part "alpha" { skill_context = "explore" }
+  }
+}
+`,
+    )
+
+    // task.oxn with explicit domain
+    const taskDir = join(tmpDir, '.openxenon', 'works', 'explore-dsl', 'tasks', 'explore')
+    mkdirSync(taskDir, { recursive: true })
+    writeFileSync(
+      join(taskDir, 'task.oxn'),
+      `task "explore" {
+  blueprint "tiny"
+  domain "DSLContext"
+  part "alpha" { skill_context = "explore" }
+}
+`,
+    )
+
+    const ctx = JSON.parse(
+      (await runCli(['work', 'context', '--work', 'explore-dsl', '--task', 'explore', '--json'])).stdout,
+    )
+    expect(ctx.ok).toBe(true)
+    expect(ctx.data.injectedDomains.length).toBe(1)
+    expect(ctx.data.injectedDomains[0].name).toBe('DSLContext')
+    expect(ctx.data.allowedLanguage.banned).toContain('ParserImpl')
+    expect(ctx.data.isolationNotice).toContain('不可见')
   })
 })

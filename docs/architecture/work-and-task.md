@@ -121,7 +121,7 @@ task "register-member" {
 
 ## 6. 全量隔离（Full Isolation）
 
-**核心设计**：`oxn get-context --work X --task Y` 的输出**只包含该 task 显式 align 的 domain**。
+**核心设计**：`oxn work context --work X --task Y` 的输出**只包含该 task 显式 align 的 domain**。
 
 ```
 work.oxn 声明:    domain ref [A, B, C]

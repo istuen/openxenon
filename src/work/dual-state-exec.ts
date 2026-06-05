@@ -112,7 +112,7 @@ export function runTask(params: RunTaskParams): TaskState {
   if (!existsSync(taskOxnPath)) {
     throw new ExecError(
       'OXN_TASK_OXN_MISSING',
-      `task.oxn not found at ${taskOxnPath}. Run \`oxn work task new --work ${params.workName} --task ${params.taskName} --blueprint ${params.blueprint}\` first.`,
+      `task.oxn not found at ${taskOxnPath}. Run \`oxn work add-task --work ${params.workName} --task ${params.taskName} --blueprint ${params.blueprint}\` first.`,
     )
   }
 
@@ -121,7 +121,7 @@ export function runTask(params: RunTaskParams): TaskState {
   if (!workspace) {
     throw new ExecError(
       'OXN_WORKSPACE_NOT_FOUND',
-      `workspace state.json not found for "${params.workName}". Run \`oxn leader run --work-file <work.oxn>\` first.`,
+      `workspace state.json not found for "${params.workName}". Run \`oxn work run --work-file <work.oxn>\` first.`,
     )
   }
 
@@ -130,7 +130,7 @@ export function runTask(params: RunTaskParams): TaskState {
   if (!taskIndex) {
     throw new ExecError(
       'OXN_TASK_NOT_FOUND',
-      `task "${params.taskName}" is not declared in work "${params.workName}". add it via \`oxn work task new\`.`,
+      `task "${params.taskName}" is not declared in work "${params.workName}". add it via \`oxn work add-task\`.`,
     )
   }
 
@@ -202,7 +202,7 @@ export function submitTaskPart(params: SubmitTaskPartParams): SubmitTaskPartResu
   if (!taskState) {
     throw new ExecError(
       'OXN_TASK_NOT_FOUND',
-      `task "${params.taskName}" not started. Run \`oxn leader run --work-file <work.oxn>\` first.`,
+      `task "${params.taskName}" not started. Run \`oxn work run --work-file <work.oxn>\` first.`,
     )
   }
 

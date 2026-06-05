@@ -14,8 +14,8 @@
 
 | 层级 | 文件 | 内容 | 谁写 |
 |---|---|---|---|
-| **WorkspaceState** | `works/<w>/state.json` | work 全局状态：task 列表、blueprint 引用、context | `oxn leader run` |
-| **TaskState** | `works/<w>/tasks/<t>/state.json` | 单 task 状态：part 执行历史、probe 结果、当前 part | `oxn leader submit` |
+| **WorkspaceState** | `works/<w>/state.json` | work 全局状态：task 列表、blueprint 引用、context | `oxn work run` |
+| **TaskState** | `works/<w>/tasks/<t>/state.json` | 单 task 状态：part 执行历史、probe 结果、当前 part | `oxn work submit` |
 
 两层**独立**读写，故障时**可独立恢复**（v0.2 接入守护进程自动恢复）。
 
@@ -78,7 +78,7 @@
 ### Workspace 状态
 
 ```
-   oxn leader run
+   oxn work run
         │
         ▼
    ┌────────┐    所有 task pass     ┌────────┐
@@ -99,7 +99,7 @@
 ### Task 状态
 
 ```
-   task 创建（oxn work task new）
+   task 创建（oxn work add-task）
         │
         ▼
    ┌────────┐   首个 part 进入     ┌────────┐
@@ -167,10 +167,10 @@
 
 | 操作 | 影响文件 |
 |---|---|
-| `oxn leader run` | 写 `state.json` (workspace) + 每 task 的 `state.json` (task) |
-| `oxn leader submit` | 更新对应 task 的 `state.json` + 追加 trace + 完成时写 `frozen.json` |
-| `oxn leader status` | 读 workspace + 所有 task 的 state |
-| `oxn get-context` | 不写任何 state；只读 work/task 生成 CONTEXT |
+| `oxn work run` | 写 `state.json` (workspace) + 每 task 的 `state.json` (task) |
+| `oxn work submit` | 更新对应 task 的 `state.json` + 追加 trace + 完成时写 `frozen.json` |
+| `oxn work status` | 读 workspace + 所有 task 的 state |
+| `oxn work context` | 不写任何 state；只读 work/task 生成 CONTEXT |
 
 ## 8. v0.1 限制
 

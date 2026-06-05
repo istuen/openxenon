@@ -74,15 +74,15 @@ blueprint "X" {
 ## 5. Work / Task 错误
 
 ### `OXN_TASK_OXN_MISSING`
-**症状**：`oxn leader run` 报 work 声明的 task 缺 task.oxn
+**症状**：`oxn work run` 报 work 声明的 task 缺 task.oxn
 **修复**：
 ```bash
 # 为每个 work.oxn 中的 task 创建 task.oxn
-oxn work task new --work-name <w> --task-name <t> --blueprint <bp> [--domain <d>]
+oxn work add-task --work <w> --task <t> --blueprint <bp> [--domain <d>]
 ```
 
 ### `OXN_BLUEPRINT_NOT_IN_WORK`
-**症状**：`oxn work task new` 报 blueprint 没在 work.oxn 声明
+**症状**：`oxn work add-task` 报 blueprint 没在 work.oxn 声明
 **修复**：在 work.oxn 顶部加：
 ```oxn
 work "X" {
@@ -127,16 +127,16 @@ task "X" {
 ## 6. 状态机错误
 
 ### `OXN_WORK_ALREADY_EXISTS`
-**症状**：`oxn leader run` 报 work 已存在
+**症状**：`oxn work run` 报 work 已存在
 **修复**：
 ```bash
-oxn leader status --work-name <w>   # 查看现有
+oxn work status --work <w>   # 查看现有
 rm .openxenon/works/<w>/state.json  # 手工清理（不推荐）
 ```
 
 ### `OXN_WORK_NOT_FOUND`
-**症状**：`oxn leader submit/status` 找不到 work
-**修复**：先 `oxn leader run`
+**症状**：`oxn work submit/status` 找不到 work
+**修复**：先 `oxn work run`
 
 ## 7. 上下文错误
 
@@ -199,7 +199,7 @@ cat .openxenon/works/<w>/tasks/<t>/frozen.json | jq .
 
 ### 开启 verbose
 ```bash
-oxn leader run --work-file <path> --json -v
+oxn work run --work-file <path> --json -v
 ```
 
 ## 12. 仍未解决？

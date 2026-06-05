@@ -9,7 +9,7 @@
 ## 步骤 1：查询当前 work 状态
 
 ```bash
-oxn leader status --work-name <work-name> --json
+oxn work status --work-name <work-name> --json
 ```
 
 读取响应：
@@ -27,7 +27,7 @@ oxn leader status --work-name <work-name> --json
 ## 步骤 3：读取 task 上下文
 
 ```bash
-oxn get-context --work <w> --task <currentTask> --json
+oxn work context --work <w> --task <currentTask> --json
 ```
 
 确认要继续执行的 part 及其 `skill_context`。
@@ -40,10 +40,10 @@ oxn get-context --work <w> --task <currentTask> --json
 
 ```bash
 # 重新激活 work（如需要）
-oxn leader run --work-file .openxenon/works/<w>/work.oxn --json
+oxn work run --work-file .openxenon/works/<w>/work.oxn --json
 
 # 继续推进
-oxn leader submit --work-name <w> --task <t> --json
+oxn work submit --work-name <w> --task <t> --json
 ```
 
 ## 步骤 5：验证恢复
@@ -63,9 +63,9 @@ cat .openxenon/works/<w>/tasks/<t>/frozen.json
 
 - 如果 work 状态为 `PASSED` → 提示工程师查看 `frozen.json`
 - 如果找不到 work → 提示用 `/oxn-work` 发起新 work
-- 如果 task-trace 显示 probe 失败 → 修复后用 `oxn leader submit` 重试
+- 如果 task-trace 显示 probe 失败 → 修复后用 `oxn work submit` 重试
 
 ## 详细参考
 
 - [State 详解](../../../docs/architecture/state.md) — 双层 state.json 结构
-- [CLI 命令参考](../../../docs/reference/cli-reference.md) — leader 子命令
+- [CLI 命令参考](../../../docs/reference/cli-reference.md) — work 子命令

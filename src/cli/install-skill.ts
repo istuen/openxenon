@@ -3,7 +3,7 @@
 // `oxn install-skill` copies canonical OpenCode Skills from
 // `.opencode/skills/oxn-*/SKILL.md` (this repo) to a target directory.
 //
-// Default behaviour: install ALL oxn-* skills (oxn-cli, oxn-work, oxn-leader)
+// Default behaviour: install ALL oxn-* skills (oxn-cli, oxn-work)
 // to the user's global OpenCode skills folder (`~/.opencode/skills/`).
 // Use `--skill <id>` to install a single one.
 //
@@ -13,7 +13,6 @@
 // replaces it with an internal `$bunfs/...` path that always reads the
 // embedded content.
 import skillWork from '../../.opencode/skills/oxn-work/SKILL.md' with { type: 'file' }
-import skillLeader from '../../.opencode/skills/oxn-leader/SKILL.md' with { type: 'file' }
 import skillCli from '../../.opencode/skills/oxn-cli/SKILL.md' with { type: 'file' }
 
 import { defineCommand } from 'citty'
@@ -25,7 +24,6 @@ import { getFormatFromArgs, output } from './output'
 const EMBEDDED_SKILLS: Record<string, string> = {
   'oxn-cli': skillCli,
   'oxn-work': skillWork,
-  'oxn-leader': skillLeader,
 }
 
 function getDefaultSkillsRoot(): string {
@@ -61,7 +59,7 @@ export default defineCommand({
   meta: {
     name: 'install-skill',
     description:
-      '把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work/oxn-leader)',
+      '把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work)',
   },
   args: {
     target: {
@@ -70,7 +68,7 @@ export default defineCommand({
     },
     skill: {
       type: 'string',
-      description: '只装指定 skill (例: oxn-leader)。不传则装全部 oxn-* skills',
+      description: '只装指定 skill (例: oxn-work)。不传则装全部 oxn-* skills',
     },
     force: {
       type: 'boolean',

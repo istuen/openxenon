@@ -51,10 +51,10 @@ blueprint "<name>" {
 ### 1. 用 CLI 生成骨架（推荐）
 
 ```bash
-oxn blueprint new my-blueprint --slots build,test,deploy
+oxn blueprint create my-blueprint --slots build,test,deploy
 # 生成 .openxenon/blueprints/my-blueprint.oxn
 oxn blueprint validate my-blueprint
-oxn work new --work-id my-work --blueprint my-blueprint
+oxn work create --work-id my-work --blueprint my-blueprint
 ```
 
 ### 2. 手写
@@ -87,9 +87,9 @@ $EDITOR .openxenon/blueprints/mine.oxn
 
 ```bash
 oxn blueprint validate my-blueprint          # 语法检查
-oxn work new --work-id my-work --blueprint my-blueprint  # 启动状态机
-oxn leader submit --work-name my-work         # 推进
-oxn leader status --work-name my-work        # 读状态
+oxn work create --work-id my-work --blueprint my-blueprint  # 启动状态机
+oxn work submit --work-name my-work         # 推进
+oxn work status --work-name my-work        # 读状态
 ```
 
 ## ❌ 常见错误

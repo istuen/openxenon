@@ -6,8 +6,8 @@ import { getTracePath } from './state-io'
 // Unified work trace (decision C1: mvp-style JSONL + probe events).
 //
 // Each line is a JSON object with at least { event, at }. Supported events:
-//   work-started    — emitted by `oxn leader run`
-//   submit          — emitted by `oxn leader submit` (advances state machine)
+//   work-started    — emitted by `oxn work run`
+//   submit          — emitted by `oxn work submit` (advances state machine)
 //   part-started    — emitted when a part begins execution
 //   part-completed  — emitted when a part finishes
 //   probe-run       — emitted when a probe is launched (reference parity)

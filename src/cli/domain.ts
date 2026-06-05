@@ -55,11 +55,11 @@ async function validateDomainFile(filePath: string): Promise<{
 }
 
 // ---------------------------------------------------------------------------
-// Subcommand: new
+// Subcommand: create
 // ---------------------------------------------------------------------------
-const newSubcommand = defineCommand({
+const createSubcommand = defineCommand({
   meta: {
-    name: 'new',
+    name: 'create',
     description: '在 .openxenon/domains/ 生成一个新的 domain 骨架（DDD 限界上下文）',
   },
   args: {
@@ -103,7 +103,7 @@ const newSubcommand = defineCommand({
 
     // 生成 domain 骨架模板 (v0.1-final)
     const template = `// Domain: ${name}
-// Created by: oxn domain new --name ${name}
+// Created by: oxn domain create --name ${name}
 //
 // DDD 限界上下文骨架。填写 term / ban / invariant 后
 // 在 work.oxn 通过 domain "${name}" ref "..." 引用。
@@ -180,7 +180,7 @@ const validateSubcommand = defineCommand({
         {
           code: 'OXN_DOMAIN_INVALID',
           message: result.errors.join('; '),
-          suggestion: 'run `oxn domain new --name <name>` to generate a skeleton',
+            suggestion: 'run `oxn domain create --name <name>` to generate a skeleton',
         },
         format,
       )
@@ -244,7 +244,7 @@ const listSubcommand = defineCommand({
         {
           ok: true,
           data: { domains: [] },
-          human: 'No domains registered. Run `oxn domain new --name <name>` to create one.',
+            human: 'No domains registered. Run `oxn domain create --name <name>` to create one.',
         },
         format,
       )
@@ -280,10 +280,10 @@ const listSubcommand = defineCommand({
 export default defineCommand({
   meta: {
     name: 'domain',
-    description: 'Domain 模块 — DDD 限界上下文管理 (new/validate/list)',
+    description: 'Domain 模块 — DDD 限界上下文管理 (create/validate/list)',
   },
   subCommands: {
-    new: newSubcommand,
+    create: createSubcommand,
     validate: validateSubcommand,
     list: listSubcommand,
   },

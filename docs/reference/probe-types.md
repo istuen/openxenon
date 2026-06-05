@@ -95,18 +95,20 @@ probe "tests-pass" {
 - `exitCode === 0` → PASSED
 - 非 0 退出码 / 超时 → FAILED
 
-## 6. 自定义 Probe
+## 6. 自定义 Probe（v0.1 手写路径）
 
-通过 `oxn forge probe` 创建自定义 Probe（v0.0.x 兼容路径）。
+> v0.1 hard-switch：`oxn forge probe` / `oxn arsenal promote` 等已删除。
+> Probe 直接手写 `.oxn` 文件到 `.openxenon/arsenals/probes/<name>.oxn`：
 
-```bash
-oxn forge probe --save 'type: fs_exists
-description: "Custom check"
-parameters:
-  - name: pattern
-    type: string
-    required: true' --name my-check
+```oxn
+probe "my-check" align "MyCheck" {
+  description = "Custom check"
+  prop "pattern" { type = string; required = true }
+  output { ok = boolean }
+}
 ```
+
+校验：`oxn dev validate <file.oxn>`
 
 ## 7. Probe 三层模型
 

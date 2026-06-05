@@ -3,8 +3,6 @@ import { DEFAULT_LOCALE } from '../cli/project-config'
 import zhCnOxnCli from './locales/zh-CN/oxn-cli/instruction.md' with { type: 'text' }
 import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'text' }
 import zhCnWorkBlueprintRef from './locales/zh-CN/oxn-work/references/blueprint-format.md' with { type: 'text' }
-import zhCnLeader from './locales/zh-CN/oxn-leader/instruction.md' with { type: 'text' }
-import zhCnLeaderBlueprintRef from './locales/zh-CN/oxn-leader/references/blueprint-creation.md' with { type: 'text' }
 // v0.1: 英文版 Skill 已废弃（zh-CN 为唯一权威）
 import type { OpenXenonSkill, ReferenceFile } from './types'
 
@@ -23,11 +21,8 @@ const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
     { id: 'oxn-cli', description: '统一的 OpenXenon CLI 操作入口，把自然语言翻译成 oxn 命令并执行' },
     {
       id: 'oxn-work',
-      description: '发起 v0.1 双层 Work（创建 work.oxn + 至少一个 tasks/<name>/task.oxn，注入 domain）',
-    },
-    {
-      id: 'oxn-leader',
-      description: '驱动 v0.1 四阶段 task 粒度状态机（prepare→run→act→submit）',
+      description:
+        '发起 v0.1 双层 Work（创建 work.oxn + 至少一个 tasks/<name>/task.oxn，注入 domain；并驱动 work 状态机 run/submit/status）',
     },
   ],
   en: [
@@ -38,11 +33,7 @@ const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
     {
       id: 'oxn-work',
       description:
-        'Launch v0.1 dual-layer Work (create work.oxn + at least one tasks/<name>/task.oxn with domain inject)',
-    },
-    {
-      id: 'oxn-leader',
-      description: 'Drive v0.1 four-phase task-granular state machine (prepare→run→act→submit)',
+        'Launch and drive v0.1 dual-layer Work (create work.oxn + at least one tasks/<name>/task.oxn with domain inject, plus run/submit/status)',
     },
   ],
 }
@@ -54,20 +45,12 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
       instruction: zhCnWork,
       references: [{ filename: 'blueprint-format.md', content: zhCnWorkBlueprintRef }],
     },
-    'oxn-leader': {
-      instruction: zhCnLeader,
-      references: [{ filename: 'blueprint-creation.md', content: zhCnLeaderBlueprintRef }],
-    },
   },
   en: {
     'oxn-cli': { instruction: zhCnOxnCli, references: [] }, // en 沿用 zh-CN（v0.1 英文版废弃）
     'oxn-work': {
       instruction: zhCnWork,
       references: [{ filename: 'blueprint-format.md', content: zhCnWorkBlueprintRef }],
-    },
-    'oxn-leader': {
-      instruction: zhCnLeader,
-      references: [{ filename: 'blueprint-creation.md', content: zhCnLeaderBlueprintRef }],
     },
   },
 }

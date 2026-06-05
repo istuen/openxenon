@@ -28,7 +28,7 @@ pnpm build
 ./dist/oxn init
 
 # 查看内置资产
-./dist/oxn arsenal list
+./dist/oxn dev arsenal list
 ```
 
 输出示例：
@@ -44,7 +44,7 @@ pnpm build
 
 ```bash
 # 生成 Domain 骨架
-./dist/oxn domain new --name MemberContext
+./dist/oxn domain create --name MemberContext
 # Created domain MemberContext at .openxenon/domains/member-context.oxn
 
 # 编辑 .openxenon/domains/member-context.oxn
@@ -88,7 +88,7 @@ EOF
 
 ```bash
 # 从 blueprint 生成 work 骨架
-./dist/oxn leader new --name onboarding
+./dist/oxn work create --name onboarding
 
 # 编辑 .openxenon/works/onboarding/work.oxn
 cat > .openxenon/works/onboarding/work.oxn <<'EOF'
@@ -120,7 +120,7 @@ EOF
 
 ```bash
 # 每个 task 必须显式创建 task.oxn
-./dist/oxn work task new \
+./dist/oxn work add-task \
   --work-name onboarding \
   --task-name register-member \
   --blueprint dev-workflow \
@@ -135,7 +135,7 @@ EOF
 ### 步骤 5：获取 AI 上下文（全量隔离）
 
 ```bash
-./dist/oxn get-context --work onboarding --task register-member --json
+./dist/oxn work context --work onboarding --task register-member --json
 ```
 
 返回示例：
@@ -165,19 +165,19 @@ EOF
 1. 读取 `get-context` 输出
 2. 严格遵守 `allowedLanguage`（必须用 `Member`、禁用 `User`）
 3. 按 `taskParts` 顺序，写代码
-4. 每个 part 完成后调用 `oxn leader submit`
+4. 每个 part 完成后调用 `oxn work submit`
 
 ### 步骤 7：推进状态机
 
 ```bash
 # 启动 workspace 状态机
-./dist/oxn leader run --work-file .openxenon/works/onboarding/work.oxn --json
+./dist/oxn work run --work-file .openxenon/works/onboarding/work.oxn --json
 
 # 推进 task 的当前 part
-./dist/oxn leader submit --work-name onboarding --task register-member --json
+./dist/oxn work submit --work-name onboarding --task register-member --json
 
 # 查看进度
-./dist/oxn leader status --work-name onboarding --json
+./dist/oxn work status --work-name onboarding --json
 ```
 
 ### 步骤 8：审查 frozen.json
@@ -200,7 +200,7 @@ cat .openxenon/works/onboarding/tasks/register-member/frozen.json
 
 ```bash
 # 查看完整 work
-./dist/oxn leader status --work-name onboarding --json
+./dist/oxn work status --work-name onboarding --json
 ```
 
 ```json
@@ -217,7 +217,7 @@ cat .openxenon/works/onboarding/tasks/register-member/frozen.json
 
 - 跑完整示例：`src/oxn-dsl/examples/works/` 下的 onboarding / develop-member / fix-issue / explore-dsl
 - 旧 work.oxn 迁移：`./dist/oxn work migrate`
-- 自定义 Probe：`./dist/oxn forge probe`
+- 自定义 Probe：手写 `.openxenon/arsenals/probes/<name>.oxn`，用 `./dist/oxn dev validate` 校验
 
 ## 7. 下一章
 

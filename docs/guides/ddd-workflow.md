@@ -54,9 +54,9 @@ work "explore-dsl" {
 ```
 
 ```bash
-oxn leader run    --work-file src/oxn-dsl/examples/works/explore-dsl/work.oxn --json
-oxn leader submit --work-name explore-dsl --task explore-dsl --json
-oxn get-context   --work explore-dsl --task explore-dsl --json
+oxn work run    --work-file src/oxn-dsl/examples/works/explore-dsl/work.oxn --json
+oxn work submit --work-name explore-dsl --task explore-dsl --json
+oxn work context   --work explore-dsl --task explore-dsl --json
 ```
 
 **AI 关键约束**：用 `Grammar` 不写 `ParserImpl`。
@@ -101,9 +101,9 @@ work "develop-member" {
 ```
 
 ```bash
-oxn leader run    --work-file src/oxn-dsl/examples/works/develop-member/work.oxn --json
-oxn leader submit --work-name develop-member --task register-member --json
-oxn get-context   --work develop-member --task register-member --json
+oxn work run    --work-file src/oxn-dsl/examples/works/develop-member/work.oxn --json
+oxn work submit --work-name develop-member --task register-member --json
+oxn work context   --work develop-member --task register-member --json
 ```
 
 **AI 关键约束**：用 `Member` 不用 `User`。
@@ -164,13 +164,13 @@ work "fix-issue" {
 ```
 
 ```bash
-oxn leader run --work-file src/oxn-dsl/examples/works/fix-issue/work.oxn --json
+oxn work run --work-file src/oxn-dsl/examples/works/fix-issue/work.oxn --json
 # 依次 submit 四个 task
-oxn leader submit --work-name fix-issue --task diagnose --json
-oxn leader submit --work-name fix-issue --task locate   --json
-oxn leader submit --work-name fix-issue --task fix      --json
-oxn leader submit --work-name fix-issue --task verify   --json
-oxn leader status --work-name fix-issue --json
+oxn work submit --work-name fix-issue --task diagnose --json
+oxn work submit --work-name fix-issue --task locate   --json
+oxn work submit --work-name fix-issue --task fix      --json
+oxn work submit --work-name fix-issue --task verify   --json
+oxn work status --work-name fix-issue --json
 ```
 
 **AI 关键约束**：Artifact 路径不可改。
@@ -210,10 +210,10 @@ work "Onboarding" {
 ```
 
 ```bash
-oxn leader run --work-file src/oxn-dsl/examples/works/onboarding/work.oxn --json
-oxn leader submit --work-name onboarding --task RegisterMember --json
-oxn leader submit --work-name onboarding --task GrantWelcomeBonus --json
-oxn leader status --work-name onboarding --json
+oxn work run --work-file src/oxn-dsl/examples/works/onboarding/work.oxn --json
+oxn work submit --work-name onboarding --task RegisterMember --json
+oxn work submit --work-name onboarding --task GrantWelcomeBonus --json
+oxn work status --work-name onboarding --json
 ```
 
 **AI 关键约束**：
@@ -236,17 +236,17 @@ oxn leader status --work-name onboarding --json
 
 ```bash
 # 1. 跑 onboarding
-oxn leader run --work-file src/oxn-dsl/examples/works/onboarding/work.oxn --json
+oxn work run --work-file src/oxn-dsl/examples/works/onboarding/work.oxn --json
 
 # 2. 跑 develop-member
-oxn leader run --work-file src/oxn-dsl/examples/works/develop-member/work.oxn --json
+oxn work run --work-file src/oxn-dsl/examples/works/develop-member/work.oxn --json
 
 # 3. 跑 fix-issue（4 个 task 串行）
-oxn leader run --work-file src/oxn-dsl/examples/works/fix-issue/work.oxn --json
+oxn work run --work-file src/oxn-dsl/examples/works/fix-issue/work.oxn --json
 # 依次 submit 4 个 task
 
 # 4. 跑 explore-dsl
-oxn leader run --work-file src/oxn-dsl/examples/works/explore-dsl/work.oxn --json
+oxn work run --work-file src/oxn-dsl/examples/works/explore-dsl/work.oxn --json
 ```
 
 每个示例的 work.oxn + task.oxn 都已在仓库 `src/oxn-dsl/examples/works/` 中。
