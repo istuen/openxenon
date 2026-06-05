@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { t } from '../i18n'
 import { BOUNDARY_DIR } from '../kernel/constants'
@@ -10,7 +10,12 @@ import { getFormatFromArgs, output, outputError } from './output'
 import { readProjectConfig, writeProjectConfig } from './project-config-io'
 import { compileAllSkills, formatCompilationReport } from './skill-compiler'
 
-const META_SOURCE_PATH = join(__dirname, '..', 'arsenals', 'forges')
+const PROJECT_BOUNDARY_GITIGNORE = `# Runtime state (not for Git; personal/sandbox data)
+works/
+**/*-state.json
+**/*-trace.jsonl
+**/*-frozen.json
+`
 
 function ensureGlobalBoundary(): void {
   if (!existsSync(GLOBAL_BOUNDARY_PATH)) {
@@ -25,46 +30,11 @@ function ensureProjectBoundary(projectRoot: string): void {
     mkdirSync(boundaryPath, { recursive: true })
   }
 
-  const tasksPath = join(boundaryPath, 'tasks')
-  if (!existsSync(tasksPath)) {
-    mkdirSync(tasksPath, { recursive: true })
-  }
-
-  const forgesPath = join(boundaryPath, 'forges')
-  if (!existsSync(forgesPath)) {
-    mkdirSync(forgesPath, { recursive: true })
-  }
-
-  const arsenalsPath = join(boundaryPath, 'arsenals')
-  if (!existsSync(arsenalsPath)) {
-    mkdirSync(arsenalsPath, { recursive: true })
-  }
-
-  const errorPath = join(boundaryPath, 'error', 'skills')
-  if (!existsSync(errorPath)) {
-    mkdirSync(errorPath, { recursive: true })
-  }
-}
-
-function copyMetaToProject(projectRoot: string): void {
-  const metaDestPath = join(projectRoot, BOUNDARY_DIR, 'meta')
-
-  if (!existsSync(META_SOURCE_PATH)) {
-    return
-  }
-
-  mkdirSync(metaDestPath, { recursive: true })
-
-  const metaDirs = readdirSync(META_SOURCE_PATH)
-  for (const dir of metaDirs) {
-    const srcDir = join(META_SOURCE_PATH, dir)
-    const destDir = join(metaDestPath, dir)
-
-    if (existsSync(destDir)) {
-      rmSync(destDir, { recursive: true, force: true })
-    }
-
-    cpSync(srcDir, destDir, { recursive: true })
+  // Auto-write .gitignore to separate source (.oxn) from runtime (works/, state files).
+  // Only writes if missing — never overwrites user customizations.
+  const gitignorePath = join(boundaryPath, '.gitignore')
+  if (!existsSync(gitignorePath)) {
+    writeFileSync(gitignorePath, PROJECT_BOUNDARY_GITIGNORE, 'utf-8')
   }
 }
 
@@ -128,7 +98,6 @@ export default defineCommand({
     try {
       ensureGlobalBoundary()
       ensureProjectBoundary(projectPath)
-      copyMetaToProject(projectPath)
 
       const existingConfig = readProjectConfig(projectPath)
       let message = ''
