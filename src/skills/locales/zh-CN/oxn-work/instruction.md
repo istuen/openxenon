@@ -273,4 +273,3 @@ work "NewUserOnboarding" {
 - **不要写 `work "X" ref "@oxn/blueprints/Y"`** — 已废弃，改为 `blueprint "Y" ref "...";` 声明
 - **不要写 `oxn work new`** — 改用 `oxn work create`
 - **不要试图 `oxn part new` / `oxn probe new`** — Part / Probe **不是独立资产**，在 task 块内联写
-- **不要把 Probe 写到 `.openxenon/arsenals/probes/`**（v0.0.x 残留）— v0.1 起 probe 在 `part { probe {} }` 内联
