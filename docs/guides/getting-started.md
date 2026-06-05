@@ -44,7 +44,7 @@ pnpm build
 
 ```bash
 # 生成 Domain 骨架
-./dist/oxn domain create --name MemberContext
+./dist/oxn domain create MemberContext
 # Created domain MemberContext at .openxenon/domains/member-context.oxn
 
 # 编辑 .openxenon/domains/member-context.oxn
@@ -64,7 +64,7 @@ domain "MemberContext" {
 EOF
 
 # 校验
-./dist/oxn domain validate --name MemberContext
+./dist/oxn domain validate MemberContext
 # Domain MemberContext ✓ valid
 ```
 

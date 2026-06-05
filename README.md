@@ -169,9 +169,9 @@ pnpm install && pnpm build
 ./dist/oxn init
 
 # 2. 定义 Domain（业务 Intent）
-./dist/oxn domain create --name MemberContext
+./dist/oxn domain create MemberContext
 # 编辑 .openxenon/domains/member-context.oxn
-./dist/oxn domain validate --name MemberContext
+./dist/oxn domain validate MemberContext
 
 # 3. 准备 Blueprint（技术 Intent）
 mkdir -p .openxenon/blueprints

@@ -9,6 +9,7 @@
 - 校验 .oxn 文件
 - 获取 AI 工作上下文（`oxn work context`）
 - 查询项目状态
+- **创建 Intent（Domain / Blueprint 骨架）** — 详见本 skill 末尾的「Intent 创作最佳实践」
 
 ## 全局选项
 
@@ -29,8 +30,8 @@ oxn config show          # 查看项目配置
 ### Domain 管理
 
 ```bash
-oxn domain create --name <DomainName>          # 生成 Domain 骨架
-oxn domain validate --name <DomainName>        # 校验 Domain
+oxn domain create <DomainName>          # 生成 Domain 骨架
+oxn domain validate <DomainName>        # 校验 Domain
 oxn domain list                                 # 列出所有 Domain
 ```
 
@@ -45,7 +46,7 @@ oxn blueprint list                            # 列出所有 Blueprint
 ### Work / Task 生命周期
 
 ```bash
-oxn work create --work-id <w> --blueprint <bp> # 从 Blueprint 生成 work 骨架（含 task 块）
+oxn work create <w> --blueprint <bp> # 从 Blueprint 生成 work 骨架（含 task 块）
 oxn work add-task --work <w> --task-name <t> --blueprint <bp> [--domain <d>]
 oxn work list-tasks --work <w>
 oxn work task-status --work <w> --task <t>
@@ -81,9 +82,239 @@ oxn dev migrate-yaml <file>             # YAML → OXN DSL
 - 不要调用 `oxn task *` / `oxn arsenal *` / `oxn leader *` / `oxn get-context` / `oxn add-probe` — **已彻底删除**
 - 不要调用 `oxn work new` — 改用 `oxn work create`
 - 不要调用 `oxn work task *` — 改用 `oxn work add-task` / `list-tasks` / `task-status` / `task-edit` / `task-delete`
-- 不要试图 `oxn part new` / `oxn probe new` — Part / Probe 没有 CLI 入口，手写 `.oxn` 文件
+- **不要试图 `oxn part new` / `oxn probe new`** — Part / Probe **不是独立资产**（设计上如此），它们在 `work create` 之后**内联**在 `work.oxn` / `task.oxn` 的 `task { part { ... } }` / `part { probe { ... } }` 块里写
+- **不要用 `--name <X>` 命名参数** — 域/蓝图/work create 与 validate 都用 **positional `<name>`**（OXN DSL 与 CLI 1:1 映射）
+- **不要设计 `oxn domain append-term` / `oxn blueprint add-prop`** — Intent 资产用 `$EDITOR` 编辑，CLI 只提供脚手架（详见「Intent-Align CLI 哲学」）
+
+---
+
+## Intent 创作最佳实践
+
+> **CLI 只生成「空骨架」**，Intent 的实际内容（DDD 词汇、slot 拓扑、prop schema、skill_context 文案）由 AI 填写。本节是填写指南。
+
+### 1. Domain 创作（业务 Intent）
+
+骨架（`oxn domain create` 产出）只有 TODO 占位。**好的 Domain 写法**（参考 `.openxenon/domains/work-context.oxn`）：
+
+```oxn
+domain "MemberContext" {
+  description = "会员限界上下文：管理注册、认证、会员等级"
+
+  term {                              // ✅ 必填 ≥3 个核心实体
+    "Member":     "注册会员实体"
+    "Account":    "会员的登录凭证"
+    "Membership": "会员等级与权益记录"
+  }
+
+  ban { "User", "Customer", "AccountHolder" }  // ✅ 必填 ≥2 个禁词
+
+  invariant { "密码任何时候都不能明文存储" }     // ✅ 必填 ≥1 个不变量
+  invariant { "同一邮箱在同一上下文内不可重复注册" }
+
+  context_map {                                  // 推荐：跨域依赖显式声明
+    imports "OrderContext" as "Order"
+  }
+}
+```
+
+**反模式**：
+- ❌ term 只有 1 个词（粒度太粗）
+- ❌ ban 列表为空（没有约束力）
+- ❌ description 写「TODO: 描述业务边界」（CLI 占位，必须替换）
+- ❌ context_map 用了但没有跨域需求（过度设计）
+
+**口诀**：term 列实体，ban 列禁词，invariant 列硬规则，context_map 显式跨域。
+
+### 2. Blueprint 创作（技术 Intent）
+
+骨架（`oxn blueprint create --slots`）默认生成**线性 slot DAG**：`a → b → c`。
+
+**slot DAG 4 大模式**：
+
+| 模式 | 适用场景 | 写法 |
+|---|---|---|
+| **linear pipeline** | 顺序执行 | `a → b → c`（CLI 默认） |
+| **fan-out** | 一个起点并行 N | `split → { a, b }` |
+| **fan-in** | N 合一 | `{ a, b } → merge` |
+| **parallel + final** | 通用 | `build → { test, lint } → release` |
+
+fan-out 例子：
+```oxn
+slot "split" { deps = [] }
+slot "a"     { deps = ["split"] }
+slot "b"     { deps = ["split"] }
+slot "merge" { deps = ["a", "b"] }
+```
+
+**prop 设计模式**（蓝图级参数，注入到所有 part）：
+
+```oxn
+blueprint "dev-workflow" {
+  prop "env"      { type = string; default = "dev" }
+  prop "timeout"  { type = number; default = 30000 }
+  prop "branches" { type = list<string>; required = true }
+
+  slot "develop" { deps = []; observe = ["lint-check", "type-check"] }
+  slot "test"    { deps = ["develop"]; observe = ["test-runner"] }
+  slot "verify"  { deps = ["test"] }
+}
+```
+
+**observe 引用 builtin 探针**（`@oxn/...` 命名空间）：
+
+| builtin 名 | 用途 |
+|---|---|
+| `@oxn/probes/shell_exec` | 跑 shell 命令（返回 exit_code/stdout/stderr） |
+| `@oxn/probes/fs_exists` | 检查文件/目录是否存在 |
+| `@oxn/probes/lint-check` | 跑 linter |
+| `@oxn/probes/test-runner` | 跑测试套件 |
+| `@oxn/probes/type-check` | 跑类型检查 |
+
+**反模式**：
+- ❌ 永远线性 chain（哪怕分支更合理）— CLI 默认的诱惑
+- ❌ slot 名用 PascalCase — 必须 kebab-case
+- ❌ deps 里有 cycle — `oxn blueprint validate` 会拒绝
+
+### 3. Part 内联创作（在 task 块 / work 块内）
+
+> Part **没有独立文件**，**内联**在 `task "..." { part "..." { ... } }` 里。
+
+**Part 字段语义**：
+
+| 字段 | 必填 | AI 视角 |
+|---|---|---|
+| `lifecycle` | 可选 | `code` / `test` / `design` / `refactor`（默认 `code`） |
+| `objective` / `skill_context` | ✅ 必填 | **做什么**（AI 第一句要读） |
+| `acceptance` | ✅ 必填 | **可验收的产出**（AI 写完自检） |
+| `guidance` | 可选 | **额外提示**（坑 / 约束 / 参考资料） |
+
+**内联示例**：
+
+```oxn
+task "register-member" {
+  blueprint "dev-workflow"
+  domain "MemberContext"
+
+  part "develop" {                          // 名字与 blueprint slot 对齐
+    skill_context = "实现 Member 注册 API；密码必须 hash 存储"  // objective
+    acceptance = [
+      "POST /api/members 接收 {username, email, password}",
+      "密码用 bcrypt（cost≥12）hash 后入库",
+      "已写 OpenAPI schema"
+    ]
+    guidance = "参考 .openxenon/domains/member-context.oxn 的 ban 列表"
+  }
+
+  part "test" {
+    skill_context = "为 Member 注册写单测"
+    acceptance = ["≥80% 行覆盖", "边界用例：弱密码 / 重复邮箱 / 注入"]
+  }
+}
+```
+
+**反模式**：
+- ❌ skill_context 只写"实现"（太抽象，AI 不知道要什么）
+- ❌ acceptance 用模糊词（"好"/"完成"）— 必须可机器验证
+- ❌ part 名与 blueprint slot 不对齐
+
+### 4. Probe 内联创作（在 part 块内）
+
+> Probe **没有独立文件**，**内联**在 `part "..." { probe "..." { ... } }` 里。
+
+**场景 A：引用 builtin 探针**（推荐）：
+
+```oxn
+slot "verify" {
+  deps = ["test"]
+  observe = ["shell-exec", "fs-exists"]   // 引用 builtin 名
+}
+```
+
+**场景 B：内联自定义探针**（builtin 不够用时）：
+
+```oxn
+part "verify" {
+  skill_context = "校验密码强度"
+
+  probe "check-password-strength" {        // 内联在 part 块内
+    prop "password"   { type = string; required = true }
+    prop "min-length" { type = number; default = 8 }
+    output { ok = boolean; score = number }
+  }
+}
+```
+
+**Probe 字段语义**：
+
+| 字段 | 必填 | 含义 |
+|---|---|---|
+| `description` | 推荐 | 探针做什么 |
+| `prop "<name>"` | 按需 | 输入参数：`type` 必填；可加 `required` / `default` |
+| `output` | 必填 | 输出字段：`name = type` 形式 |
+
+**反模式**：
+- ❌ 用 builtin 能解决却自己造轮子
+- ❌ probe 没 output（kernel 不知道如何判定 pass/fail）
+- ❌ prop 缺 `type`（语法报错）
+
+### 5. work.oxn 完整填空示例
+
+`oxn work create my-feature --blueprint dev-workflow` 生成：
+
+```oxn
+work "my-feature" {
+  context { goal = "TODO"; constraints = ["TODO"]; loop_policy { max_iterations = 3 } }
+  blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow";
+  task "develop" {
+    blueprint "dev-workflow"
+    part "slot-name" { skill_context = "TODO" }
+  }
+}
+```
+
+**AI 填空**：
+
+```oxn
+work "my-feature" {
+  context {
+    goal = "实现新会员注册功能"
+    constraints = [
+      "必须用 MemberContext.term.Member，不能用 User/Customer",
+      "密码必须 hash 后存储"
+    ]
+    loop_policy { max_iterations = 5 }
+  }
+  blueprint "dev-workprint" ref "@prj/blueprints/dev-workflow";
+
+  task "develop" {
+    blueprint "dev-workflow"
+    domain "MemberContext"
+    part "develop" {                  // ← 改成与 blueprint slot 对齐
+      skill_context = "实现 Member 注册 API，密码用 bcrypt hash 存储"
+      acceptance = [
+        "POST /api/members 接口可用",
+        "密码 hash 存储，无明文"
+      ]
+    }
+  }
+}
+```
+
+### 6. 校验流程
+
+写完一个 Intent 后**永远跑这三步**：
+
+```bash
+oxn domain validate <name>
+oxn blueprint validate <name>
+oxn work validate --path <work.oxn>
+```
+
+**详细参考**：`src/oxn-dsl/examples/works/` 下有 4 个完整范例（explore-dsl / develop-member / fix-issue / onboarding），可作模板直接仿写。
 
 ## 详细参考
 
 - [CLI 命令参考](../../../docs/reference/cli-reference.md)
 - [OXN DSL 参考](../../../docs/reference/oxn-dsl.md)
+- [Blueprint 格式参考（含 slot DAG 4 模式）](../../../docs/reference/blueprint-format.md)
+- [work.oxn 4 大模式](../../../docs/architecture/work-and-task.md)

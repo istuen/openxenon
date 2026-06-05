@@ -57,8 +57,8 @@ v0.1 hard-switch 之后，唯一的工作流入口。吸收了原 `oxn leader *`
 
 ```bash
 # 创建（从 blueprint 生成含 task 块的 work.oxn）
-oxn work create --work-id <id> --blueprint <bp> [--blueprint-file F] [--name N]
-oxn work create --work-id <id>                                    # 简化骨架模式
+oxn work create <id> --blueprint <bp> [--blueprint-file F] [--name N]
+oxn work create <id>                                    # 简化骨架模式
 
 # 列出 / 校验
 oxn work list
@@ -95,8 +95,8 @@ oxn blueprint list
 Domain 资产管理（Intent 业务层，DDD 限界上下文）。
 
 ```bash
-oxn domain create --name <DomainName> [--force]
-oxn domain validate --name <DomainName> [--file-path F]
+oxn domain create <DomainName> [--force]
+oxn domain validate <DomainName> [--file-path F]
 oxn domain list
 ```
 
@@ -151,16 +151,16 @@ oxn global hall [--open]
 oxn init
 
 # 1. 定义业务上下文（可选）
-oxn domain create --name MemberContext
+oxn domain create MemberContext
 # 编辑 .openxenon/domains/member-context.oxn
-oxn domain validate --name MemberContext
+oxn domain validate MemberContext
 
 # 2. 准备蓝图
 oxn blueprint create dev-workflow --slots build,test
 # 编辑 .openxenon/blueprints/dev-workflow.oxn
 
 # 3. 创建 work
-oxn work create --work-id onboarding --blueprint dev-workflow
+oxn work create onboarding --blueprint dev-workflow
 # 编辑 .openxenon/works/onboarding/work.oxn，添加 domain ref
 
 # 4. 创建 task

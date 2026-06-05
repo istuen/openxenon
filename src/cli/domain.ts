@@ -9,10 +9,16 @@ import { getFormatFromArgs, output, outputError } from './output'
 // =============================================================================
 // `oxn domain` — DDD 限界上下文管理
 //
-// 子命令：
-//   new      — 在 .openxenon/domains/ 生成一个新的 domain 骨架
-//   validate — 解析并校验 domain 文件
+// v0.1: 全部子命令用 positional <name> 签名（与 work / blueprint 对齐）
+//   create   — 在 .openxenon/domains/ 生成一个新的 domain 骨架
+//   validate — 解析并校验 domain 文件（用 AST → IR 映射，规避 cyclic JSON）
 //   list     — 列出已注册的 domain
+//
+// Intent 资产（Domain / Blueprint）的设计原则：
+//   - CLI 只提供脚手架 (create) + 校验 (validate) + 列表 (list)
+//   - 不补 append-term / add-prop 等"累积式"命令 —— 那是设计选择
+//     （图纸需全局视野，CLI 累加易破坏 term/ban/invariant 的内部一致性）
+//   - 内容创作请用 $EDITOR 直填 .oxn
 // =============================================================================
 
 function getProjectRoot(): string {
@@ -63,7 +69,7 @@ const createSubcommand = defineCommand({
     description: '在 .openxenon/domains/ 生成一个新的 domain 骨架（DDD 限界上下文）',
   },
   args: {
-    name: { type: 'string', required: true, description: 'Domain 名称（PascalCase 推荐，如 MemberContext）' },
+    name: { type: 'positional', required: true, description: 'Domain 名称（PascalCase 推荐，如 MemberContext）' },
     force: { type: 'boolean', alias: 'f', description: '覆盖已存在的文件' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
     '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
@@ -103,7 +109,7 @@ const createSubcommand = defineCommand({
 
     // 生成 domain 骨架模板 (v0.1-final)
     const template = `// Domain: ${name}
-// Created by: oxn domain create --name ${name}
+// Created by: oxn domain create ${name}
 //
 // DDD 限界上下文骨架。填写 term / ban / invariant 后
 // 在 work.oxn 通过 domain "${name}" ref "..." 引用。
@@ -152,8 +158,8 @@ const validateSubcommand = defineCommand({
     description: '解析并校验 domain 文件',
   },
   args: {
-    name: { type: 'string', required: true, description: 'Domain 名称' },
-    'file-path': { type: 'string', description: '直接指定 .oxn 文件路径（可选）' },
+    name: { type: 'positional', required: true, description: 'Domain 名称' },
+    'file-path': { type: 'string', description: '直接指定 .oxn 文件路径（可选逃生舱）' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
     '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
   },
@@ -180,49 +186,67 @@ const validateSubcommand = defineCommand({
         {
           code: 'OXN_DOMAIN_INVALID',
           message: result.errors.join('; '),
-            suggestion: 'run `oxn domain create --name <name>` to generate a skeleton',
+          suggestion: 'run `oxn domain create <name>` to generate a skeleton',
         },
         format,
       )
     }
 
-    const domain = result.domain!
-    const language =
-      domain.terms || domain.ban || domain.invariant
-        ? {
-            terms: (domain.terms?.terms ?? []).map((t) => ({ name: t.name, desc: t.desc })),
-            ban: domain.ban?.bans ?? [],
-            invariant: domain.invariant?.invariants ?? [],
-          }
-        : null
-    const contextMap = domain.contextMap
+    // v0.1: AST → IR 映射（干掉 cyclic JSON）。langium AST 节点带 $container 父引用，
+    // 直接 JSON.stringify 会撞 cycle。映射为纯对象（只有 string/array）。
+    const ir = domainAstToIr(result.domain!)
 
     output(
       {
         ok: true,
         data: {
-          name: domain.name,
+          name: ir.name,
           file: filePath,
-          description: domain.descriptions?.[0]?.value,
-          language: language
-            ? {
-                terms: language.terms,
-                ban: language.ban,
-                invariant: language.invariant,
-              }
-            : null,
-          contextMap: contextMap ? (contextMap.imports ?? []).map((i) => ({ target: i.target, alias: i.alias })) : [],
+          description: ir.description,
+          language: ir.language,
+          contextMap: ir.contextMap,
         },
-        human: `Domain ${domain.name} ✓ valid
-  Terms:     ${language ? language.terms.length : 0}
-  Ban:       ${language ? language.ban.length : 0}
-  Invariant: ${language ? language.invariant.length : 0}
-  Context Map: ${contextMap ? contextMap.imports.length : 0} imports`,
+        human: `Domain ${ir.name} ✓ valid
+  Terms:     ${ir.language?.terms.length ?? 0}
+  Ban:       ${ir.language?.ban.length ?? 0}
+  Invariant: ${ir.language?.invariant.length ?? 0}
+  Context Map: ${ir.contextMap.length} imports`,
       },
       format,
     )
   },
 })
+
+/**
+ * v0.1: 把 langium AST 节点映射为可 JSON 序列化的纯对象 IR。
+ * 消除 `$container` 父引用导致的 cyclic structures 错误。
+ *
+ * 关键：不同 block 的元素类型不同：
+ *   - term:    TermDecl[]        → 每个有 { name, desc } 字段
+ *   - ban:     string[]          (cross-ref, 裸字符串数组)
+ *   - invariant: InvariantDecl[] → 每个有 .value 字段
+ *   - context_map.imports: ContextMapImport[] → 每个有 { target, alias } 字段
+ */
+function domainAstToIr(domain: DomainDeclaration): {
+  name: string
+  description?: string
+  language: { terms: Array<{ name: string; desc: string }>; ban: string[]; invariant: string[] } | null
+  contextMap: Array<{ target: string; alias: string }>
+} {
+  return {
+    name: domain.name,
+    description: domain.descriptions?.[0]?.value,
+    language:
+      domain.terms || domain.ban || domain.invariant
+        ? {
+            terms: (domain.terms?.terms ?? []).map((t) => ({ name: t.name, desc: t.desc })),
+            ban: domain.ban?.bans ?? [],
+            invariant: (domain.invariant?.invariants ?? []).map((inv) => inv.value),
+          }
+        : null,
+    contextMap: (domain.contextMap?.imports ?? []).map((i) => ({ target: i.target, alias: i.alias })),
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Subcommand: list
@@ -244,7 +268,7 @@ const listSubcommand = defineCommand({
         {
           ok: true,
           data: { domains: [] },
-            human: 'No domains registered. Run `oxn domain create --name <name>` to create one.',
+          human: 'No domains registered. Run `oxn domain create <name>` to create one.',
         },
         format,
       )

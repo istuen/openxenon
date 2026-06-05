@@ -2,17 +2,16 @@
 // dual-state-exec.ts — v0.1 双层状态机执行器
 //
 // 把 leader run/submit 拆为 workspace 级 + task 级双层操作：
-//   - runWorkSpace  → 写 works/<w>/state.json
-//   - runTask       → 校验 + 写 works/<w>/tasks/<t>/state.json
-//   - submitTask    → 推进 task part，写 task 级 state + 同步 workspace 索引
-//   - freezeTask    → 验证通过后生成 tasks/<t>/frozen.json
+//   - runWork        → 写 works/<w>/work-state.json
+//   - runTask        → 校验 + 写 works/<w>/tasks/<t>/task-state.json
+//   - submitTask     → 推进 task part，写 task 级 state + 同步 work 索引
+//   - writeTaskFrozen → task 终态时生成 tasks/<t>/task-frozen.json
+//   - writeWorkFrozen → work 终态时生成 works/<w>/work-frozen.json
 //
-// v0.1 限制：
-//   - 探针保持 no-op 状态机探针（v0.2 接入 task.oxn 的 observe 字段）
-//   - 单层 trace 写入 workspace 级 + task 级两条 JSONL
+// 命名范式: {entity}-{aspect}.{ext}（详见 kernel/constants.ts）
 // =============================================================================
 
-import { existsSync, writeFileSync, mkdirSync, renameSync } from 'fs'
+import { existsSync, mkdirSync, renameSync, writeFileSync } from 'fs'
 import {
   createInitialTaskState,
   createInitialWorkspaceState,
@@ -23,14 +22,15 @@ import {
 import {
   getTaskDir,
   getTaskFrozenPath,
-  getTaskOxnPath,
   getTaskTracePath,
-  getWorkspaceDir,
-  getWorkspaceTracePath,
+  getWorkDir,
+  getWorkFrozenPath,
+  getWorkStatePath,
+  getWorkTracePath,
   loadTaskState,
-  loadWorkspaceState,
+  loadWorkState,
   saveTaskState,
-  saveWorkspaceState,
+  saveWorkState,
 } from './dual-state-io'
 
 // =============================================================================
@@ -45,7 +45,8 @@ export class ExecError extends Error {
       | 'OXN_TASK_OXN_MISSING'
       | 'OXN_NO_NEXT_PART'
       | 'OXN_PART_ALREADY_DONE'
-      | 'OXN_WORKSPACE_ALREADY_RUNNING',
+      | 'OXN_WORKSPACE_ALREADY_RUNNING'
+      | 'OXN_WORK_NOT_STARTED',
     message: string,
   ) {
     super(message)
@@ -54,10 +55,10 @@ export class ExecError extends Error {
 }
 
 // =============================================================================
-// Workspace 初始化
+// Work 启动（启动 work 状态机，落 work-state.json）
 // =============================================================================
 
-export interface RunWorkspaceParams {
+export interface RunWorkParams {
   projectRoot: string
   workName: string
   blueprintNames: string[]
@@ -68,7 +69,7 @@ export interface RunWorkspaceParams {
   maxIterations?: number
 }
 
-export function runWorkSpace(params: RunWorkspaceParams): WorkspaceState {
+export function runWork(params: RunWorkParams): WorkspaceState {
   const state = createInitialWorkspaceState({
     workName: params.workName,
     domains: params.domainNames,
@@ -78,9 +79,9 @@ export function runWorkSpace(params: RunWorkspaceParams): WorkspaceState {
     constraints: params.constraints,
     maxIterations: params.maxIterations,
   })
-  saveWorkspaceState(params.projectRoot, params.workName, state)
-  appendWorkspaceTrace(params.projectRoot, params.workName, {
-    event: 'workspace-started',
+  saveWorkState(params.projectRoot, params.workName, state)
+  appendWorkTrace(params.projectRoot, params.workName, {
+    event: 'work-started',
     workName: params.workName,
     domains: params.domainNames,
     blueprints: params.blueprintNames,
@@ -91,7 +92,7 @@ export function runWorkSpace(params: RunWorkspaceParams): WorkspaceState {
 }
 
 // =============================================================================
-// Task 启动
+// Task 启动（落 tasks/<t>/task-state.json）
 // =============================================================================
 
 export interface RunTaskParams {
@@ -107,26 +108,15 @@ export interface RunTaskParams {
 }
 
 export function runTask(params: RunTaskParams): TaskState {
-  // 校验 task.oxn 存在
-  const taskOxnPath = getTaskOxnPath(params.projectRoot, params.workName, params.taskName)
-  if (!existsSync(taskOxnPath)) {
+  const workState = loadWorkState(params.projectRoot, params.workName)
+  if (!workState) {
     throw new ExecError(
-      'OXN_TASK_OXN_MISSING',
-      `task.oxn not found at ${taskOxnPath}. Run \`oxn work add-task --work ${params.workName} --task ${params.taskName} --blueprint ${params.blueprint}\` first.`,
+      'OXN_WORK_NOT_STARTED',
+      `work-state.json not found for "${params.workName}". Run \`oxn work run <name>\` first.`,
     )
   }
 
-  // 校验 workspace 存在
-  const workspace = loadWorkspaceState(params.projectRoot, params.workName)
-  if (!workspace) {
-    throw new ExecError(
-      'OXN_WORKSPACE_NOT_FOUND',
-      `workspace state.json not found for "${params.workName}". Run \`oxn work run --work-file <work.oxn>\` first.`,
-    )
-  }
-
-  // 校验 task 已在 workspace 索引里
-  const taskIndex = workspace.tasks.find((t) => t.taskName === params.taskName)
+  const taskIndex = workState.tasks.find((t) => t.taskName === params.taskName)
   if (!taskIndex) {
     throw new ExecError(
       'OXN_TASK_NOT_FOUND',
@@ -134,7 +124,6 @@ export function runTask(params: RunTaskParams): TaskState {
     )
   }
 
-  // 创建 task 级 state
   const taskState = createInitialTaskState({
     workName: params.workName,
     taskName: params.taskName,
@@ -147,13 +136,11 @@ export function runTask(params: RunTaskParams): TaskState {
   })
   saveTaskState(params.projectRoot, params.workName, params.taskName, taskState)
 
-  // 同步 workspace 索引
   taskIndex.status = 'running'
   taskIndex.startedAt = taskState.createdAt
-  saveWorkspaceState(params.projectRoot, params.workName, workspace)
+  saveWorkState(params.projectRoot, params.workName, workState)
 
-  // trace
-  appendWorkspaceTrace(params.projectRoot, params.workName, {
+  appendWorkTrace(params.projectRoot, params.workName, {
     event: 'task-started',
     workName: params.workName,
     taskName: params.taskName,
@@ -172,10 +159,10 @@ export function runTask(params: RunTaskParams): TaskState {
 }
 
 // =============================================================================
-// Task 推进 (submit one part)
+// Task 推进（submit one part）
 // =============================================================================
 
-export interface SubmitTaskPartParams {
+export interface SubmitTaskParams {
   projectRoot: string
   workName: string
   taskName: string
@@ -183,7 +170,7 @@ export interface SubmitTaskPartParams {
   evidence?: Record<string, unknown>
 }
 
-export interface SubmitTaskPartResult {
+export interface SubmitTaskResult {
   taskState: TaskState
   nextPart: string | null
   status: WorkspaceTaskStatus
@@ -197,18 +184,17 @@ export interface SubmitTaskPartResult {
   frozen: boolean
 }
 
-export function submitTaskPart(params: SubmitTaskPartParams): SubmitTaskPartResult {
+export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
   const taskState = loadTaskState(params.projectRoot, params.workName, params.taskName)
   if (!taskState) {
     throw new ExecError(
       'OXN_TASK_NOT_FOUND',
-      `task "${params.taskName}" not started. Run \`oxn work run --work-file <work.oxn>\` first.`,
+      `task "${params.taskName}" not started. Run \`oxn work run <name>\` first.`,
     )
   }
 
-  const probeResults: SubmitTaskPartResult['probeResults'] = []
+  const probeResults: SubmitTaskResult['probeResults'] = []
 
-  // 推进 currentPart
   if (taskState.currentPart) {
     if (!taskState.completedParts.includes(taskState.currentPart)) {
       taskState.completedParts.push(taskState.currentPart)
@@ -219,7 +205,6 @@ export function submitTaskPart(params: SubmitTaskPartParams): SubmitTaskPartResu
       output: { advanced: true, part: taskState.currentPart },
     })
 
-    // 标记对应 partExecution
     const exec = taskState.partExecutions.find((e) => e.partName === taskState.currentPart)
     if (exec) {
       exec.completedAt = new Date().toISOString()
@@ -227,23 +212,19 @@ export function submitTaskPart(params: SubmitTaskPartParams): SubmitTaskPartResu
     }
   }
 
-  // 选择下一 part
   const allParts = taskState.partExecutions.map((e) => e.partName)
   const nextIdx = taskState.completedParts.length
   const nextPart = nextIdx < allParts.length ? (allParts[nextIdx] ?? null) : null
   taskState.currentPart = nextPart
 
-  // iteration 递增
   taskState.loopMeta.currentIteration += 1
 
-  // 状态判定
   let status: WorkspaceTaskStatus = 'running'
   let frozen = false
   if (nextPart === null) {
     status = 'passed'
     frozen = true
     taskState.status = 'passed'
-    // 写 task 级 frozen.json
     writeTaskFrozen(params.projectRoot, params.workName, params.taskName, {
       taskName: params.taskName,
       workName: params.workName,
@@ -262,29 +243,41 @@ export function submitTaskPart(params: SubmitTaskPartParams): SubmitTaskPartResu
 
   saveTaskState(params.projectRoot, params.workName, params.taskName, taskState)
 
-  // 同步 workspace 索引
-  const workspace = loadWorkspaceState(params.projectRoot, params.workName)
-  if (workspace) {
-    const taskIndex = workspace.tasks.find((t) => t.taskName === params.taskName)
+  // 同步 work 索引 + 推算 work 整体状态
+  const workState = loadWorkState(params.projectRoot, params.workName)
+  if (workState) {
+    const taskIndex = workState.tasks.find((t) => t.taskName === params.taskName)
     if (taskIndex) {
       taskIndex.status = status
       if (frozen) {
         taskIndex.completedAt = new Date().toISOString()
       }
     }
-    // 判定 workspace 整体状态
-    const allTasksDone = workspace.tasks.every((t) => t.status === 'passed' || t.status === 'failed')
-    if (allTasksDone && workspace.tasks.every((t) => t.status === 'passed')) {
-      workspace.status = 'passed'
-    } else if (workspace.tasks.some((t) => t.status === 'failed')) {
-      workspace.status = 'failed'
+    const allTasksDone = workState.tasks.every((t) => t.status === 'passed' || t.status === 'failed')
+    let workFrozen = false
+    if (allTasksDone && workState.tasks.every((t) => t.status === 'passed')) {
+      workState.status = 'passed'
+      workFrozen = true
+    } else if (workState.tasks.some((t) => t.status === 'failed')) {
+      workState.status = 'failed'
     } else {
-      workspace.status = 'running'
+      workState.status = 'running'
     }
-    saveWorkspaceState(params.projectRoot, params.workName, workspace)
+    saveWorkState(params.projectRoot, params.workName, workState)
+
+    if (workFrozen) {
+      writeWorkFrozen(params.projectRoot, params.workName, {
+        workName: params.workName,
+        completedAt: new Date().toISOString(),
+        tasks: workState.tasks.map((t) => ({
+          taskName: t.taskName,
+          status: t.status,
+          completedAt: t.completedAt ?? null,
+        })),
+      })
+    }
   }
 
-  // trace
   appendTaskTrace(params.projectRoot, params.workName, params.taskName, {
     event: 'submit',
     iteration: taskState.loopMeta.currentIteration,
@@ -293,7 +286,7 @@ export function submitTaskPart(params: SubmitTaskPartParams): SubmitTaskPartResu
     status,
     at: new Date().toISOString(),
   })
-  appendWorkspaceTrace(params.projectRoot, params.workName, {
+  appendWorkTrace(params.projectRoot, params.workName, {
     event: 'task-submit',
     workName: params.workName,
     taskName: params.taskName,
@@ -312,7 +305,7 @@ export function submitTaskPart(params: SubmitTaskPartParams): SubmitTaskPartResu
 }
 
 // =============================================================================
-// Task 级 frozen.json
+// frozen.json writers
 // =============================================================================
 
 interface TaskFrozenSnapshot {
@@ -324,30 +317,45 @@ interface TaskFrozenSnapshot {
   probeResults: Array<{ probe: string; passed: boolean; output?: unknown }>
 }
 
+interface WorkFrozenSnapshot {
+  workName: string
+  completedAt: string
+  tasks: Array<{ taskName: string; status: WorkspaceTaskStatus; completedAt: string | null }>
+}
+
 function writeTaskFrozen(projectRoot: string, workName: string, taskName: string, snapshot: TaskFrozenSnapshot): void {
-  const dir = getTaskDir(projectRoot, workName, taskName)
+  const path = getTaskFrozenPath(projectRoot, workName, taskName)
+  writeFrozen(path, snapshot)
+}
+
+function writeWorkFrozen(projectRoot: string, workName: string, snapshot: WorkFrozenSnapshot): void {
+  const path = getWorkFrozenPath(projectRoot, workName)
+  writeFrozen(path, snapshot)
+}
+
+function writeFrozen(path: string, snapshot: unknown): void {
+  const dir = path.substring(0, path.lastIndexOf('/'))
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
   }
-  const path = getTaskFrozenPath(projectRoot, workName, taskName)
   const tmpPath = `${path}.tmp`
   writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), 'utf-8')
   renameSync(tmpPath, path)
 }
 
 // =============================================================================
-// Trace append (workspace + task 双层)
+// Trace append（work + task 双层）
 // =============================================================================
 
-function appendWorkspaceTrace(projectRoot: string, workName: string, event: Record<string, unknown>): void {
-  const dir = getWorkspaceDir(projectRoot, workName)
+function appendWorkTrace(projectRoot: string, workName: string, event: Record<string, unknown>): void {
+  const dir = getWorkDir(projectRoot, workName)
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-  const path = getWorkspaceTracePath(projectRoot, workName)
+  const path = getWorkTracePath(projectRoot, workName)
   const line = `${JSON.stringify({ ...event, at: event.at ?? new Date().toISOString() })}\n`
   try {
     writeFileSync(path, line, { flag: 'a', encoding: 'utf-8' })
   } catch {
-    // 首次写入可能路径不存在
+    // ignore
   }
 }
 
@@ -357,7 +365,7 @@ function appendTaskTrace(
   taskName: string,
   event: Record<string, unknown>,
 ): void {
-  const dir = getTaskDir(projectRoot, workName, taskName)
+  const dir = getWorkDir(projectRoot, workName) + `/tasks/${taskName}`
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   const path = getTaskTracePath(projectRoot, workName, taskName)
   const line = `${JSON.stringify({ ...event, at: event.at ?? new Date().toISOString() })}\n`
@@ -372,14 +380,14 @@ function appendTaskTrace(
 // 状态读取辅助
 // =============================================================================
 
-export function getTaskStatusSnapshot(
+export function getWorkStatusSnapshot(
   projectRoot: string,
   workName: string,
 ): {
   workspace: WorkspaceState | null
   tasks: Array<{ taskName: string; state: TaskState | null; indexStatus: WorkspaceTaskStatus }>
 } {
-  const workspace = loadWorkspaceState(projectRoot, workName)
+  const workspace = loadWorkState(projectRoot, workName)
   if (!workspace) return { workspace: null, tasks: [] }
   const tasks = workspace.tasks.map((idx) => ({
     taskName: idx.taskName,
@@ -406,16 +414,26 @@ export function validateTasksPresent(
   return { ok: missing.length === 0, missing }
 }
 
+function getTaskOxnPath(projectRoot: string, workName: string, taskName: string): string {
+  return getTaskDir(projectRoot, workName, taskName) + '/task.oxn'
+}
+
+// =============================================================================
+// 重复定义 Work 状态存在性（用于 NV-1 守卫）
+// =============================================================================
+
+export function isWorkStarted(projectRoot: string, workName: string): boolean {
+  return existsSync(getWorkStatePath(projectRoot, workName))
+}
+
 // =============================================================================
 // no-op probe (v0.1 保持状态机可观察，v0.2 接 task.oxn observe)
 // =============================================================================
 
 export function runNoopProbe(partName: string, partAlign: string): { probe: string; passed: boolean; output: unknown } {
-  // v0.1 占位 — 实际触发由调用方决定（leader --run-probes）
   return {
     probe: 'part-reachable',
     passed: true,
     output: { partName, align: partAlign, mode: 'v0.1-noop' },
   }
 }
-void runNoopProbe

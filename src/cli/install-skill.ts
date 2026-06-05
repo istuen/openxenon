@@ -58,8 +58,7 @@ function readSkillContent(skillId: string): { content: string; source: string } 
 export default defineCommand({
   meta: {
     name: 'install-skill',
-    description:
-      '把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work)',
+    description: '把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work)',
   },
   args: {
     target: {

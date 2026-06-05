@@ -3,7 +3,12 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR } from '../kernel/constants'
-import { createOxnParser, isBlueprintDeclaration, type OXNDocument } from '../oxn-dsl'
+import {
+  createOxnParser,
+  isBlueprintDeclaration,
+  type BlueprintDeclaration,
+  type OXNDocument,
+} from '../oxn-dsl'
 import { getFormatFromArgs, output, outputError } from './output'
 
 function getProjectRoot(): string {
@@ -52,7 +57,7 @@ const createSubcommand = defineCommand({
     description: '在 .openxenon/blueprints/ 生成一个新的 blueprint 骨架（用统一 OXN DSL）',
   },
   args: {
-    name: { type: 'string', required: true, description: 'Blueprint 名称（kebab-case）' },
+    name: { type: 'positional', required: true, description: 'Blueprint 名称（kebab-case）' },
     slots: {
       type: 'string',
       description: '逗号分隔的 slot 名称列表（默认 stage-1, stage-2）',
@@ -123,14 +128,14 @@ const createSubcommand = defineCommand({
     }
 
     const template = `// Blueprint: ${name}
-// Created by: oxn blueprint create --name ${name} ${slotsArg ? `--slots ${slotsArg}` : ''}
+// Created by: oxn blueprint create ${name} ${slotsArg ? `--slots ${slotsArg}` : ''}
 //
 // Edit goal/description/props/slots as needed. The mvp-style
 // \`context\` and per-part \`skill\` blocks are optional (unified grammar superset).
 // After editing, validate with:
 //   oxn blueprint validate ${name}
 // Then drive it with:
-//   oxn work create --name <work-name> --blueprint ${name} --json
+//   oxn work create <work-name> --blueprint ${name} --json
 
 blueprint "${name}" {
   version = 1
@@ -166,7 +171,7 @@ const validateSubcommand = defineCommand({
     description: '用统一 OXN DSL 解析器验证 .openxenon/blueprints/<name>.oxn',
   },
   args: {
-    name: { type: 'string', required: true, description: 'Blueprint 名称' },
+    name: { type: 'positional', required: true, description: 'Blueprint 名称' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
     '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
   },
@@ -180,28 +185,52 @@ const validateSubcommand = defineCommand({
         {
           code: 'OXN_DSL_PARSE_FAILED',
           message: `blueprint ${name} failed validation:\n${result.errors.join('\n')}`,
-            suggestion: 'edit the file and re-run, or `oxn blueprint create --name X --force` to regenerate',
+          suggestion: 'edit the file and re-run, or `oxn blueprint create <name> --force` to regenerate',
         },
         format,
       )
     }
+    // v0.1: AST → IR 映射（干掉 cyclic JSON）。langium AST 节点带 $container 父引用。
     const blueprint = result.ast?.entities.find(isBlueprintDeclaration)
+    const ir = blueprint ? blueprintAstToIr(blueprint) : null
     output(
       {
         ok: true,
         data: {
           name,
           path: bpPath,
-          slotCount: blueprint?.partSlots.length ?? 0,
-          slots: blueprint?.partSlots.map((s) => s.name) ?? [],
-          version: blueprint?.version ?? 1,
+          slotCount: ir?.slots.length ?? 0,
+          slots: ir?.slots ?? [],
+          props: ir?.props ?? [],
+          version: ir?.version ?? 1,
         },
-        human: `Blueprint ${name} is valid (${blueprint?.partSlots.length ?? 0} slots).`,
+        human: `Blueprint ${name} is valid (${ir?.slots.length ?? 0} slots, ${ir?.props.length ?? 0} props).`,
       },
       format,
     )
   },
 })
+
+/**
+ * v0.1: 把 langium AST 节点映射为可 JSON 序列化的纯对象 IR。
+ * 消除 `$container` 父引用导致的 cyclic structures 错误。
+ */
+function blueprintAstToIr(blueprint: BlueprintDeclaration): {
+  version?: number
+  slots: string[]
+  props: Array<{ name: string; type: string; required?: boolean; default?: unknown }>
+} {
+  return {
+    version: blueprint.version,
+    slots: blueprint.partSlots.map((s) => s.name),
+    props: blueprint.props.map((p) => ({
+      name: p.name,
+      type: typeof p.type === 'string' ? p.type : 'complex',
+      ...(p.required ? { required: p.required.value } : {}),
+      ...(p.default ? { default: p.default.value } : {}),
+    })),
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Subcommand: list
