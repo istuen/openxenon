@@ -32,11 +32,10 @@ describe('parseOxnReference — 引用解析', () => {
     expect(ref?.name).toBe('jest-runner')
   })
 
-  test('三段式 @glo/blueprint/deploy', () => {
+  test('@glo 已废弃 — 解析失败', () => {
+    // v0.1: @glo scope removed (no global assets; cross-project via Git)
     const ref = parseOxnReference('@glo/blueprint/deploy')
-    expect(ref?.scope).toBe('glo')
-    expect(ref?.type).toBe('blueprint')
-    expect(ref?.name).toBe('deploy')
+    expect(ref).toBeNull()
   })
 
   test('三段式 @prj/interface/test-runner', () => {
@@ -113,9 +112,10 @@ describe('getScopeRoot / getScopeAssetDir', () => {
     expect(getScopeRoot('prj')).toBeNull()
   })
 
-  test('@glo 映射到用户目录', () => {
-    const root = getScopeRoot('glo')
-    expect(root).toContain('.openxenon/arsenals')
+  test('@glo scope 已废弃 — getScopeRoot 不再支持', () => {
+    // v0.1: 'glo' is no longer in OxnScope union; this test asserts compile-time error
+    // (if you uncomment, TS will reject: 'glo' is not assignable to 'OxnScope')
+    // getScopeRoot('glo') — type error
   })
 
   test('getScopeAssetDir 正确映射类型目录', () => {

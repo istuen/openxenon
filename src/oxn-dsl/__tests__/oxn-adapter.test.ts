@@ -167,7 +167,7 @@ describe('OxnKernelAdapter', () => {
     ir.rules = []
 
     const slotBindings: OxnAssemblySlotBinding[] = [
-      { slot: 'tester', ref: '@glo/parts/jest-runner', props: { target_env: 'prod', coverage_threshold: 90 } },
+      { slot: 'tester', ref: '@prj/parts/jest-runner', props: { target_env: 'prod', coverage_threshold: 90 } },
     ]
 
     return { ir, slotBindings }
@@ -204,7 +204,7 @@ describe('OxnKernelAdapter', () => {
     )
 
     const slotBindings: OxnAssemblySlotBinding[] = [
-      { slot: 'tester', ref: '@glo/parts/jest-runner', props: { target_env: 'prod' } },
+      { slot: 'tester', ref: '@prj/parts/jest-runner', props: { target_env: 'prod' } },
     ]
 
     const result = adapter.adapt(ir, slotBindings)

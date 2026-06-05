@@ -1,12 +1,9 @@
 /**
- * Task 1.4 — OXN 工作空间管理器
+ * Task 1.4 — OXN Workspace Manager
  *
- * 实现三级寻址的跨文件资源解析：
- *   @oxn/ → OxnBuiltinRegistry (内存表)
- *   @prj/ → .openxenon/arsenals/ (项目文件系统)
- *   @glo/ → ~/.openxenon/arsenals/ (全局文件系统)
- *
- * 同时适配现有 YAML 资产体系，为未来的 .oxn 文件体系预留接口。
+ * 统一管理 OXN 二级作用域的资产解析与查询：
+ *   @oxn/ → 内置资产（OxnBuiltinRegistry）
+ *   @prj/ → 项目文件系统（.openxenon/blueprints/, .openxenon/domains/ 等）
  */
 import { existsSync, readdirSync, readFileSync } from 'fs'
 import { homedir } from 'os'
@@ -328,8 +325,6 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
     let dir: string | null = null
     if (scope === 'prj' && this.config.projectRoot) {
       dir = join(this.config.projectRoot, '.openxenon', 'arsenals')
-    } else if (scope === 'glo') {
-      dir = this.config.globalRoot ?? join(homedir(), '.openxenon', 'arsenals')
     }
 
     if (!dir) {

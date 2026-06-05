@@ -70,7 +70,7 @@ export class OxnAssetLoader {
   /** 构建资产索引（按作用域+类型） */
   buildIndex(): Map<string, ResolvedOxnAsset[]> {
     this.index.clear()
-    const scopes: OxnScope[] = ['oxn', 'prj', 'glo']
+    const scopes: OxnScope[] = ['oxn', 'prj']
     const types: OxnAssetType[] = ['probe', 'part', 'blueprint', 'interface']
 
     for (const scope of scopes) {

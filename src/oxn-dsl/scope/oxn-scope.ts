@@ -1,10 +1,9 @@
 /**
  * Task 1.4 — OXN Scope 核心类型与引用解析
  *
- * 定义 OXN 的三级寻址规范：
- *   @oxn/ → 内置资产（硬编码内存表）
- *   @prj/ → 项目级（.openxenon/arsenals/）
- *   @glo/ → 全局级（~/.openxenon/arsenals/）
+ * 定义 OXN 的二级寻址规范：
+ *   @oxn/ → 内置资产（硬编码内存表 / .oxn 文件）
+ *   @prj/ → 项目级（.openxenon/blueprints/、.openxenon/domains/）
  */
 import { z } from 'zod'
 
@@ -12,11 +11,11 @@ import { z } from 'zod'
 // Scope 枚举
 // ========================
 
-/** OXN 三级作用域 */
-export type OxnScope = 'oxn' | 'prj' | 'glo'
+/** OXN 二级作用域 */
+export type OxnScope = 'oxn' | 'prj'
 
-export const OxnScopeSchema = z.enum(['oxn', 'prj', 'glo'])
-export const OXNS_SCOPES: readonly OxnScope[] = ['oxn', 'prj', 'glo'] as const
+export const OxnScopeSchema = z.enum(['oxn', 'prj'])
+export const OXNS_SCOPES: readonly OxnScope[] = ['oxn', 'prj'] as const
 
 /** Asset 类型 */
 export type OxnAssetType = 'probe' | 'part' | 'blueprint' | 'interface'
@@ -47,7 +46,6 @@ export interface OxnReference {
  *   "@oxn/shell-exec"           → scope=oxn, name=shell-exec
  *   "@prj/blueprint/my-bp"      → scope=prj, type=blueprint, name=my-bp
  *   "@prj/part/jest-runner"     → scope=prj, type=part, name=jest-runner
- *   "@glo/part/common-util"     → scope=glo, type=part, name=common-util
  */
 export function parseOxnReference(ref: string): OxnReference | null {
   if (!ref.startsWith('@')) return null
@@ -92,7 +90,6 @@ export function isValidOxnReference(ref: string): boolean {
 // 作用域物理路径映射
 // ========================
 
-import { homedir } from 'os'
 import { join } from 'path'
 
 /** 获取指定作用域的 Arsenal 根目录 */
@@ -102,8 +99,6 @@ export function getScopeRoot(scope: OxnScope, projectRoot?: string): string | nu
       return null // builtin registry, 不经过文件系统
     case 'prj':
       return projectRoot ? join(projectRoot, '.openxenon', 'arsenals') : null
-    case 'glo':
-      return join(homedir(), '.openxenon', 'arsenals')
   }
 }
 
