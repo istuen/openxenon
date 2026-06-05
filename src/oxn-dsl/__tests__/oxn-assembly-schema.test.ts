@@ -2,13 +2,11 @@ import { describe, expect, test } from 'bun:test'
 import {
   createOxnAssemblyIR,
   OxnAssemblyBundleSchema,
-  OxnAssemblyExpectationSchema,
   type OxnAssemblyIR,
   OxnAssemblyPartSchema,
   OxnAssemblyProbeSchema,
   OxnAssemblyPropSchema,
-  OxnAssemblyRuleSchema,
-  OxnAssemblyTaskIRSchema,
+  OxnTaskIRSchema,
   OxnTypeReferenceSchema,
   validateOxnAssemblyIR,
 } from '../schemas/oxn-assembly.schema'
@@ -121,25 +119,6 @@ describe('OxnAssemblyIR', () => {
     expect(() => validateOxnAssemblyIR(ir)).not.toThrow()
   })
 
-  test('IR 包含完整的 expectation 和 rule', () => {
-    const ir = makeBlueprint()
-    ir.expectations.push({
-      name: 'must_use_zod',
-      probeRef: '@oxn/probe/ts-uses-import',
-      params: { file_pattern: 'src/api/**/*.ts' },
-      errMsg: '必须使用 Zod',
-    })
-    ir.rules.push({
-      name: 'prod_requires_ha',
-      condition: 'prop.env != "prod" || prop.ha_enabled == true',
-      errMsg: '生产环境必须开启 HA',
-    })
-
-    expect(() => validateOxnAssemblyIR(ir)).not.toThrow()
-    expect(ir.expectations).toHaveLength(1)
-    expect(ir.rules).toHaveLength(1)
-  })
-
   test('IR 空骨架结构有效', () => {
     const ir = makeBlueprint()
     expect(ir.id).toBe('feature-pipeline')
@@ -156,16 +135,19 @@ describe('OxnAssemblyIR', () => {
 // ========================
 
 describe('OxnAssemblyTaskIR', () => {
-  test('合法 Task slot binding', () => {
-    const task = OxnAssemblyTaskIRSchema.parse({
+  test('合法 Task 定义', () => {
+    const task = OxnTaskIRSchema.parse({
       name: 'validate-feature-auth',
-      use: '@prj/blueprints/feature-pipeline',
-      slotBindings: [{ slot: 'tester', ref: '@glo/parts/jest-runner', props: { env: 'prod' } }],
+      blueprint: 'feature-pipeline',
+      domain: 'MemberContext',
+      parts: [{ name: 'tester', skillContext: 'run tests', probes: [] }],
+      deps: [],
     })
     expect(task.name).toBe('validate-feature-auth')
-    expect(task.use).toBe('@prj/blueprints/feature-pipeline')
-    expect(task.slotBindings).toHaveLength(1)
-    expect(task.slotBindings[0].slot).toBe('tester')
+    expect(task.blueprint).toBe('feature-pipeline')
+    expect(task.domain).toBe('MemberContext')
+    expect(task.parts).toHaveLength(1)
+    expect(task.parts[0].name).toBe('tester')
   })
 })
 
@@ -193,42 +175,6 @@ describe('OxnAssemblyProbe', () => {
     })
     expect(probe.props).toHaveLength(2)
     expect(probe.output?.exists).toBe('boolean')
-  })
-})
-
-// ========================
-// Assembly Stage 测试
-// ========================
-
-// ========================
-// Assembly Expectation 测试
-// ========================
-
-describe('OxnAssemblyExpectation', () => {
-  test('Expectation 含 probe ref 和 params', () => {
-    const exp = OxnAssemblyExpectationSchema.parse({
-      name: 'must_use_zod',
-      probeRef: '@oxn/probe/ts-uses-import',
-      params: { file_pattern: 'src/api/**/*.ts' },
-      errMsg: 'API 层必须使用 Zod',
-    })
-    expect(exp.probeRef).toContain('@oxn')
-    expect(exp.params.file_pattern).toBe('src/api/**/*.ts')
-  })
-})
-
-// ========================
-// Assembly Rule 测试
-// ========================
-
-describe('OxnAssemblyRule', () => {
-  test('Rule 含条件表达式', () => {
-    const rule = OxnAssemblyRuleSchema.parse({
-      name: 'prod_requires_ha',
-      condition: 'prop.env != "prod" || prop.ha_enabled == true',
-      errMsg: '生产环境必须开启 HA',
-    })
-    expect(rule.condition).toContain('prop.env')
   })
 })
 
@@ -266,22 +212,24 @@ describe('OxnAssemblyBundle', () => {
     expect(bundle.entities[2].type).toBe('blueprint')
   })
 
-  test('Bundle 支持 Task 实体 (v0.1)', () => {
+  test('Bundle 支持 Work 实体 (v0.1-final)', () => {
     const bundle = OxnAssemblyBundleSchema.parse({
       entities: [
         {
-          type: 'task',
+          type: 'work',
           data: {
             name: 'deploy-prod',
-            blueprint: 'deploy',
-            injects: [{ domain: 'MemberContext' }],
-            slots: [{ name: 'worker', deps: [], observe: [] }],
+            domains: [{ name: 'MemberContext' }],
+            blueprints: [{ name: 'deploy' }],
+            parts: [],
+            probes: [],
+            tasks: [],
           },
         },
       ],
     })
-    expect(bundle.entities[0].type).toBe('task')
-    expect((bundle.entities[0].data as { blueprint: string }).blueprint).toBe('deploy')
+    expect(bundle.entities[0].type).toBe('work')
+    expect((bundle.entities[0].data as { name: string }).name).toBe('deploy-prod')
   })
 })
 

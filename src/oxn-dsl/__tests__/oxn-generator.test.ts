@@ -3,9 +3,9 @@ import { validateOxnAssemblyIR } from '../schemas/oxn-assembly.schema'
 
 import type {
   BlueprintDeclaration,
+  BlueprintRefDecl,
   Description,
   ExecutionRef,
-  ExpectationDeclaration,
   OutputField,
   OXNDocument,
   ParamPair,
@@ -14,7 +14,6 @@ import type {
   PartProbeDeclaration,
   ProbeDeclaration,
   PropDeclaration,
-  RuleDeclaration,
   WorkDeclaration,
 } from '../generated/ast'
 import {
@@ -163,7 +162,7 @@ describe('convertPartDeclaration', () => {
 })
 
 describe('convertBlueprintDeclaration', () => {
-  test('完整 Blueprint 转换 (含 slot, expectation, rule)', () => {
+  test('完整 Blueprint 转换 (含 slot, observe)', () => {
     const bp: BlueprintDeclaration = {
       $type: 'BlueprintDeclaration',
       $containerProperty: '',
@@ -180,47 +179,6 @@ describe('convertBlueprintDeclaration', () => {
           name: 'lint',
           deps: ['jest-runner'],
         },
-      ],
-      expectations: [
-        {
-          $type: 'ExpectationDeclaration',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'must_use_zod',
-          probe_ref: '@oxn/probe/ts-uses-import',
-          params: {
-            $type: 'ParamsBlock',
-            $containerProperty: '',
-            $containerIndex: 0,
-            pairs: [
-              {
-                $type: 'ParamPair',
-                $containerProperty: '',
-                $containerIndex: 0,
-                key: 'file_pattern',
-                value: 'src/api/**/*.ts',
-              } as ParamPair,
-              {
-                $type: 'ParamPair',
-                $containerProperty: '',
-                $containerIndex: 0,
-                key: 'module_name',
-                value: 'zod',
-              } as ParamPair,
-            ],
-          } as ParamsBlock,
-          err_msg: 'API 层必须使用 Zod',
-        } as ExpectationDeclaration,
-      ],
-      rules: [
-        {
-          $type: 'RuleDeclaration',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'prod_requires_ha',
-          condition: 'prop.env != prod || prop.ha_enabled == true',
-          err_msg: '生产环境必须开启 HA',
-        } as RuleDeclaration,
       ],
     } as BlueprintDeclaration
 
@@ -241,51 +199,50 @@ describe('convertBlueprintDeclaration', () => {
     expect(result.slots[0].name).toBe('lint')
     expect(result.slots[0].deps).toEqual(['jest-runner'])
 
-    // Expectations
-    expect(result.expectations).toHaveLength(1)
-    expect(result.expectations[0].name).toBe('must_use_zod')
-    expect(result.expectations[0].params.file_pattern).toBe('src/api/**/*.ts')
-
-    // Rules
-    expect(result.rules).toHaveLength(1)
-    expect(result.rules[0].name).toBe('prod_requires_ha')
-
     // Validate against Zod schema
     expect(() => validateOxnAssemblyIR(result)).not.toThrow()
   })
 })
 
 describe('convertWorkDeclaration', () => {
-  test('Work 编排转换 (v0.1)', () => {
+  test('Work 编排转换 (v0.1-final)', () => {
     const work: WorkDeclaration = {
       $type: 'WorkDeclaration',
       $containerProperty: '',
       $containerIndex: 0,
       name: 'validate-feature-auth',
       context: undefined,
-      useDomains: [],
-      useBlueprints: [
-        { $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'feature-pipeline' },
+      domains: [],
+      blueprints: [
+        {
+          $type: 'BlueprintRefDecl',
+          $containerProperty: '',
+          $containerIndex: 0,
+          name: 'feature-pipeline',
+          ref: '@prj/blueprints/feature-pipeline',
+        },
       ],
+      parts: [],
+      probes: [],
       tasks: [
         {
-          $type: 'TaskRefDecl',
+          $type: 'TaskDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
           name: 'TestIt',
-          align: 'feature-pipeline.tester',
-          deps: [],
-          props: [],
+          blueprint: 'feature-pipeline',
+          parts: [],
         },
       ],
     } as WorkDeclaration
 
     const result = convertWorkDeclaration(work)
     expect(result.name).toBe('validate-feature-auth')
-    expect(result.useBlueprints).toHaveLength(1)
-    expect(result.useBlueprints[0]?.name).toBe('feature-pipeline')
+    expect(result.blueprints).toHaveLength(1)
+    expect(result.blueprints[0]?.name).toBe('feature-pipeline')
     expect(result.tasks).toHaveLength(1)
-    expect(result.tasks[0]?.align).toBe('feature-pipeline.tester')
+    expect(result.tasks[0]?.name).toBe('TestIt')
+    expect(result.tasks[0]?.blueprint).toBe('feature-pipeline')
   })
 })
 
@@ -324,19 +281,27 @@ describe('generateOxnAssembly — 完整 Bundle', () => {
           name: 'ci-pipeline',
           descriptions: [],
           props: [],
-          parts: [],
           partSlots: [],
-          expectations: [],
-          rules: [],
         } as BlueprintDeclaration,
         {
           $type: 'WorkDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
           name: 'deploy-prod',
-          type: 'task',
-          ref: '@prj/blueprint/ci-pipeline',
-          slotBindings: [],
+          context: undefined,
+          domains: [],
+          blueprints: [
+            {
+              $type: 'BlueprintRefDecl',
+              $containerProperty: '',
+              $containerIndex: 0,
+              name: 'ci-pipeline',
+              ref: '@prj/blueprints/ci-pipeline',
+            },
+          ],
+          parts: [],
+          probes: [],
+          tasks: [],
         } as WorkDeclaration,
       ],
     } as OXNDocument
@@ -406,19 +371,27 @@ describe('categorizeEntities', () => {
           name: 'bp1',
           descriptions: [],
           props: [],
-          parts: [],
           partSlots: [],
-          expectations: [],
-          rules: [],
         } as BlueprintDeclaration,
         {
           $type: 'WorkDeclaration',
           $containerProperty: '',
           $containerIndex: 0,
           name: 'w1',
-          type: 'task',
-          ref: '',
-          slotBindings: [],
+          context: undefined,
+          domains: [],
+          blueprints: [
+            {
+              $type: 'BlueprintRefDecl',
+              $containerProperty: '',
+              $containerIndex: 0,
+              name: 'bp1',
+              ref: '@prj/blueprints/bp1',
+            },
+          ],
+          parts: [],
+          probes: [],
+          tasks: [],
         } as WorkDeclaration,
       ],
     } as OXNDocument
@@ -444,10 +417,7 @@ describe('Edge Cases', () => {
       name: 'empty-bp',
       descriptions: [],
       props: [],
-      parts: [],
       partSlots: [],
-      expectations: [],
-      rules: [],
     } as BlueprintDeclaration
 
     const result = convertBlueprintDeclaration(bp)

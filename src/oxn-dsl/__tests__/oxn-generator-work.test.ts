@@ -1,16 +1,19 @@
 import { describe, expect, test } from 'bun:test'
-import { validateOxnAssemblyIR } from '../schemas/oxn-assembly.schema'
 
 import type {
   BlueprintDeclaration,
   Description,
-  ExpectationDeclaration,
   OXNDocument,
   PartDeclaration,
   ProbeDeclaration,
   PropDeclaration,
-  RuleDeclaration,
   WorkDeclaration,
+  TaskDeclaration,
+  DomainRefDecl,
+  BlueprintRefDecl,
+  PartRefDecl,
+  ProbeRefDecl,
+  TaskPartDecl,
 } from '../generated/ast'
 import {
   categorizeEntities,
@@ -42,12 +45,7 @@ function mProp(name: string, type: string, required: boolean = false, defaultVal
   } as PropDeclaration
 }
 
-function mProbe(
-  name: string,
-  desc?: string,
-  props?: PropDeclaration[],
-  outputFields?: OutputField[],
-): ProbeDeclaration {
+function mProbe(name: string, desc?: string, props?: PropDeclaration[]): ProbeDeclaration {
   return {
     $type: 'ProbeDeclaration',
     $containerProperty: '',
@@ -55,19 +53,11 @@ function mProbe(
     name,
     descriptions: desc ? [mDesc(desc)] : [],
     props: props || [],
-    output: outputFields
-      ? [{ $type: 'ProbeOutputDeclaration', $containerProperty: '', $containerIndex: 0, fields: outputFields }]
-      : [],
+    output: [],
   } as ProbeDeclaration
 }
 
-function mPart(
-  name: string,
-  desc?: string,
-  props?: PropDeclaration[],
-  probes?: PartProbeDeclaration[],
-  execution?: ExecutionRef[],
-): PartDeclaration {
+function mPart(name: string, desc?: string, props?: PropDeclaration[]): PartDeclaration {
   return {
     $type: 'PartDeclaration',
     $containerProperty: '',
@@ -75,8 +65,8 @@ function mPart(
     name,
     descriptions: desc ? [mDesc(desc)] : [],
     props: props || [],
-    probes: probes || [],
-    refs: execution || [],
+    probes: [],
+    refs: [],
   } as PartDeclaration
 }
 
@@ -84,8 +74,6 @@ function mBP(
   name: string,
   props?: PropDeclaration[],
   partSlots?: { name: string; deps?: string[] }[],
-  expectations?: ExpectationDeclaration[],
-  rules?: RuleDeclaration[],
 ): BlueprintDeclaration {
   return {
     $type: 'BlueprintDeclaration',
@@ -95,7 +83,6 @@ function mBP(
     descriptions: [],
     version: 1,
     props: props || [],
-    parts: [],
     partSlots:
       partSlots?.map((s) => ({
         $type: 'PartSlotDeclaration',
@@ -104,9 +91,46 @@ function mBP(
         name: s.name,
         deps: s.deps || [],
       })) || [],
-    expectations: expectations || [],
-    rules: rules || [],
   } as BlueprintDeclaration
+}
+
+function mDomainRef(name: string, ref?: string): DomainRefDecl {
+  return {
+    $type: 'DomainRefDecl',
+    $containerProperty: '',
+    $containerIndex: 0,
+    name,
+    ref,
+  } as DomainRefDecl
+}
+
+function mBlueprintRef(name: string, ref?: string): BlueprintRefDecl {
+  return {
+    $type: 'BlueprintRefDecl',
+    $containerProperty: '',
+    $containerIndex: 0,
+    name,
+    ref,
+  } as BlueprintRefDecl
+}
+
+function mTask(
+  name: string,
+  domain?: string,
+  blueprint?: string,
+  parts?: TaskPartDecl[],
+  deps?: string[],
+): TaskDeclaration {
+  return {
+    $type: 'TaskDeclaration',
+    $containerProperty: '',
+    $containerIndex: 0,
+    name,
+    domain,
+    blueprint,
+    parts: parts || [],
+    deps: deps ? ({ $type: 'TaskDeps', $containerProperty: '', $containerIndex: 0, deps } as any) : undefined,
+  } as TaskDeclaration
 }
 
 // ========================
@@ -114,38 +138,28 @@ function mBP(
 // ========================
 
 describe('convertWorkDeclaration', () => {
-  test('Work 编排转换 (v0.1 use_domain/use_blueprint/task)', () => {
+  test('Work 编排转换 (v0.1-final domain/blueprint/task)', () => {
     const work: WorkDeclaration = {
       $type: 'WorkDeclaration',
       $containerProperty: '',
       $containerIndex: 0,
       name: 'validate-feature-auth',
       context: undefined,
-      useDomains: [{ $type: 'UseDomainDecl', $containerProperty: '', $containerIndex: 0, name: 'MemberContext' }],
-      useBlueprints: [
-        { $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'feature-pipeline' },
-      ],
-      tasks: [
-        {
-          $type: 'TaskRefDecl',
-          $containerProperty: '',
-          $containerIndex: 0,
-          name: 'TestIt',
-          align: 'feature-pipeline.test',
-          deps: [],
-          props: [],
-        },
-      ],
+      domains: [mDomainRef('MemberContext', '@prj/domains/MemberContext')],
+      blueprints: [mBlueprintRef('feature-pipeline', '@prj/blueprints/feature-pipeline')],
+      parts: [],
+      probes: [],
+      tasks: [mTask('TestIt', 'MemberContext', 'feature-pipeline', [], [])],
     } as WorkDeclaration
 
     const result = convertWorkDeclaration(work)
     expect(result.name).toBe('validate-feature-auth')
-    expect(result.useDomains).toHaveLength(1)
-    expect(result.useDomains[0].name).toBe('MemberContext')
-    expect(result.useBlueprints).toHaveLength(1)
-    expect(result.useBlueprints[0].name).toBe('feature-pipeline')
+    expect(result.domains).toHaveLength(1)
+    expect(result.domains[0].name).toBe('MemberContext')
+    expect(result.blueprints).toHaveLength(1)
+    expect(result.blueprints[0].name).toBe('feature-pipeline')
     expect(result.tasks).toHaveLength(1)
-    expect(result.tasks[0].align).toBe('feature-pipeline.test')
+    expect(result.tasks[0].name).toBe('TestIt')
   })
 
   test('Work 无 tasks', () => {
@@ -155,32 +169,36 @@ describe('convertWorkDeclaration', () => {
       $containerIndex: 0,
       name: 'simple-work',
       context: undefined,
-      useDomains: [],
-      useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'simple' }],
+      domains: [],
+      blueprints: [mBlueprintRef('simple')],
+      parts: [],
+      probes: [],
       tasks: [],
     } as WorkDeclaration
 
     const result = convertWorkDeclaration(work)
     expect(result.name).toBe('simple-work')
-    expect(result.useBlueprints).toHaveLength(1)
+    expect(result.blueprints).toHaveLength(1)
     expect(result.tasks).toHaveLength(0)
   })
 
-  test('Work 无 use_blueprint', () => {
+  test('Work 无 blueprint', () => {
     const work: WorkDeclaration = {
       $type: 'WorkDeclaration',
       $containerProperty: '',
       $containerIndex: 0,
       name: 'work-no-blueprint',
       context: undefined,
-      useDomains: [],
-      useBlueprints: [],
+      domains: [],
+      blueprints: [],
+      parts: [],
+      probes: [],
       tasks: [],
     } as WorkDeclaration
 
     const result = convertWorkDeclaration(work)
     expect(result.name).toBe('work-no-blueprint')
-    expect(result.useBlueprints).toHaveLength(0)
+    expect(result.blueprints).toHaveLength(0)
   })
 })
 
@@ -217,13 +235,9 @@ describe('generateOxnAssembly — Work 集成', () => {
           $containerProperty: '',
           $containerIndex: 0,
           name: 'ci-pipeline',
-          type: 'task',
           descriptions: [],
           props: [],
-          parts: [],
           partSlots: [],
-          expectations: [],
-          rules: [],
         } as BlueprintDeclaration,
         {
           $type: 'WorkDeclaration',
@@ -231,10 +245,10 @@ describe('generateOxnAssembly — Work 集成', () => {
           $containerIndex: 0,
           name: 'deploy-prod',
           context: undefined,
-          useDomains: [],
-          useBlueprints: [
-            { $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'ci-pipeline' },
-          ],
+          domains: [],
+          blueprints: [mBlueprintRef('ci-pipeline')],
+          parts: [],
+          probes: [],
           tasks: [],
         } as WorkDeclaration,
       ],
@@ -269,8 +283,10 @@ describe('categorizeEntities (Work)', () => {
           $containerIndex: 0,
           name: 'work-1',
           context: undefined,
-          useDomains: [],
-          useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'bp1' }],
+          domains: [],
+          blueprints: [mBlueprintRef('bp1')],
+          parts: [],
+          probes: [],
           tasks: [],
         } as WorkDeclaration,
       ],
@@ -299,8 +315,10 @@ describe('categorizeEntities (Work)', () => {
           $containerIndex: 0,
           name: 'only-work',
           context: undefined,
-          useDomains: [],
-          useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'plan-bp' }],
+          domains: [],
+          blueprints: [mBlueprintRef('plan-bp')],
+          parts: [],
+          probes: [],
           tasks: [],
         } as WorkDeclaration,
       ],
@@ -331,8 +349,10 @@ describe('extractWorks', () => {
           $containerIndex: 0,
           name: 'work-a',
           context: undefined,
-          useDomains: [],
-          useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'a' }],
+          domains: [],
+          blueprints: [mBlueprintRef('a')],
+          parts: [],
+          probes: [],
           tasks: [],
         } as WorkDeclaration,
         {
@@ -341,8 +361,10 @@ describe('extractWorks', () => {
           $containerIndex: 0,
           name: 'work-b',
           context: undefined,
-          useDomains: [],
-          useBlueprints: [{ $type: 'UseBlueprintDecl', $containerProperty: '', $containerIndex: 0, name: 'b' }],
+          domains: [],
+          blueprints: [mBlueprintRef('b')],
+          parts: [],
+          probes: [],
           tasks: [],
         } as WorkDeclaration,
       ],

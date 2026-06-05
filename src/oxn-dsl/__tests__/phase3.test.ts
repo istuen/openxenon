@@ -15,7 +15,6 @@ describe('TaskSandbox (Task 3.1)', () => {
   const tmpDir = '/tmp/oxn-sandbox-test'
   const projectRoot = join(tmpDir, 'project')
   const taskDir = join(projectRoot, '.openxenon', 'tasks', 'test-task')
-  const sandboxDir = join(taskDir, 'sandbox')
 
   // FIXME: 需要重构 - getFs 返回 undefined
   // test('创建沙箱复制 Blueprint', () => {
@@ -116,7 +115,6 @@ describe('MutationValidator (Task 3.2)', () => {
     const original = createOxnAssemblyIR({ id: 'test', name: 'test' })
     original.concreteParts.push(createConcretePart({ name: 'build', execution: ['a'] }))
     original.stages = [{ name: 'build', run: 'part.build.run', deps: [] }]
-    original.expectations = [{ name: 'check', probeRef: '@oxn/probe/fs-exists', params: {}, errMsg: 'err' }]
 
     const mutated = createOxnAssemblyIR({ id: 'test', name: 'test' })
     mutated.concreteParts.push(createConcretePart({ name: 'build', execution: ['a'] }))
@@ -125,14 +123,9 @@ describe('MutationValidator (Task 3.2)', () => {
       { name: 'build', run: 'part.build.run', deps: [] },
       { name: 'deploy', run: 'part.deploy.run', deps: ['build'] },
     ]
-    mutated.expectations = [
-      { name: 'check', probeRef: '@oxn/probe/fs-exists', params: {}, errMsg: 'err' },
-      { name: 'new_check', probeRef: '@oxn/probe/fs-exists', params: {}, errMsg: 'new' },
-    ]
 
     const result = MutationValidator.validate(original, mutated)
     expect(result.valid).toBe(true)
-    expect(result.warnings.length).toBeGreaterThan(0) // 新增 expectation warning
   })
 
   test('implements 契约篡改被拦截', () => {
@@ -147,14 +140,13 @@ describe('MutationValidator (Task 3.2)', () => {
     expect(result.valid).toBe(true) // 无 implements 契约，不应报错
   })
 
-  test('expectation 删除被拦截', () => {
+  test('part 删除被 stage 引用时拦截', () => {
     const original = createOxnAssemblyIR({ id: 'test', name: 'test' })
     original.concreteParts.push(createConcretePart({ name: 'worker', execution: ['x'] }))
-    original.expectations = [{ name: 'safety', probeRef: '@oxn/probe/fs-exists', params: {}, errMsg: 'err' }]
+    original.stages = [{ name: 'worker', run: 'part.worker.run', deps: [] }]
 
     const mutated = createOxnAssemblyIR({ id: 'test', name: 'test' })
-    mutated.concreteParts.push(createConcretePart({ name: 'worker', execution: ['x'] }))
-    mutated.expectations = [] // 删除了
+    mutated.stages = [{ name: 'worker', run: 'part.worker.run', deps: [] }]
 
     const result = MutationValidator.validate(original, mutated)
     expect(result.valid).toBe(false)

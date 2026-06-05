@@ -62,32 +62,29 @@ describe('unified leader (single entry) e2e', () => {
     expect(existsSync(workFile)).toBe(true)
     const workContent = readFileSync(workFile, 'utf-8')
     expect(workContent).toContain('work "tiny"')
-    expect(workContent).toContain('use_blueprint "tiny"')
-    expect(workContent).toContain('task "alpha" align "tiny.alpha"')
-    expect(workContent).toContain('task "beta" align "tiny.beta"')
+    expect(workContent).toContain('blueprint "tiny"')
+    expect(workContent).toContain('task "alpha"')
 
-    // v0.1: leader run 校验 task.oxn 存在 — 必须先创建
+    // v0.1-final: leader run 校验 task.oxn 存在 — 必须先创建
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha'), { recursive: true })
     writeFileSync(
       join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'task.oxn'),
-      `task "alpha" blueprint "tiny" {
-  context {
-    objective = "alpha test"
-    constraints = []
+      `task "alpha" {
+  blueprint "tiny"
+  part "build" {
+    skill_context = "alpha test"
   }
-  slot "build" { deps = [] }
 }
 `,
     )
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'beta'), { recursive: true })
     writeFileSync(
       join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'beta', 'task.oxn'),
-      `task "beta" blueprint "tiny" {
-  context {
-    objective = "beta test"
-    constraints = []
+      `task "beta" {
+  blueprint "tiny"
+  part "test" {
+    skill_context = "beta test"
   }
-  slot "test" { deps = [] }
 }
 `,
     )
@@ -179,25 +176,28 @@ describe('unified leader (single entry) e2e', () => {
 
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'refstyle'), { recursive: true })
     const refStyleWork = `work "refstyle" {
-  use_blueprint "std";
-  task "alpha" align "std.alpha" {
-    prop "x" = "y"
+  blueprint "std" ref "@prj/blueprints/std";
+
+  task "alpha" {
+    blueprint "std"
+    part "slot-name" {
+      skill_context = "TODO: AI 执行指令"
+    }
   }
 }
 `
     const workFile = join(tmpDir, '.openxenon', 'works', 'refstyle', 'work.oxn')
     writeFileSync(workFile, refStyleWork)
-    // v0.1: 补充 task.oxn（leader run 现在会校验）
+    // v0.1-final: 补充 task.oxn（leader run 现在会校验）
     const taskDir = join(tmpDir, '.openxenon', 'works', 'refstyle', 'tasks', 'alpha')
     mkdirSync(taskDir, { recursive: true })
     writeFileSync(
       join(taskDir, 'task.oxn'),
-      `task "alpha" blueprint "std" {
-  context {
-    objective = "alpha test"
-    constraints = []
+      `task "alpha" {
+  blueprint "std"
+  part "build" {
+    skill_context = "alpha test"
   }
-  slot "build" { deps = [] }
 }
 `,
     )
@@ -219,25 +219,28 @@ describe('unified leader (single entry) e2e', () => {
 
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'probework'), { recursive: true })
     const probeWork = `work "probework" {
-  use_blueprint "std";
-  task "alpha" align "std.alpha" {
-    prop "x" = "y"
+  blueprint "std" ref "@prj/blueprints/std";
+
+  task "alpha" {
+    blueprint "std"
+    part "slot-name" {
+      skill_context = "probe test"
+    }
   }
 }
 `
     const workFile = join(tmpDir, '.openxenon', 'works', 'probework', 'work.oxn')
     writeFileSync(workFile, probeWork)
-    // v0.1: 补充 task.oxn
+    // v0.1-final: 补充 task.oxn
     const taskDir = join(tmpDir, '.openxenon', 'works', 'probework', 'tasks', 'alpha')
     mkdirSync(taskDir, { recursive: true })
     writeFileSync(
       join(taskDir, 'task.oxn'),
-      `task "alpha" blueprint "std" {
-  context {
-    objective = "probe test"
-    constraints = []
+      `task "alpha" {
+  blueprint "std"
+  part "build" {
+    skill_context = "probe test"
   }
-  slot "build" { deps = [] }
 }
 `,
     )
