@@ -63,7 +63,7 @@
 |---|---|
 | **L0 Kernel** | 纯逻辑推演，零 IO（Schema / Contract / Processor） |
 | **L1 Foundation** | OXN DSL 解析 + Infra 适配（FsPort/PathPort/ProbePort） |
-| **L2 Domain** | 业务层（Arsenal + Domain + Work） |
+| **L2 Module** | 业务与工程模块层（Arsenal + Domain + Work 三个并列模块） |
 | **L3 Runtime** | 入口层（CLI / Daemon / Skill / Hall） |
 | **Intent-Align 范式** | Intent（声明）与 Align（实例）的二元对偶 — v0.1 架构灵魂 |
 

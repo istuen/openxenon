@@ -129,7 +129,7 @@ task "register-member" {
 ┌────────────────────────────────────────────────┐
 │ L3: Runtime（CLI / Daemon / Skill / Hall）     │
 ├────────────────────────────────────────────────┤
-│ L2: Domain（Arsenal + Domain + Work）          │
+│ L2: Module（Arsenal + Domain + Work）         │
 ├────────────────────────────────────────────────┤
 │ L1: Foundation（OXN DSL + Infra / Port）        │
 ├────────────────────────────────────────────────┤
@@ -141,8 +141,10 @@ task "register-member" {
 |---|---|
 | L0 Kernel | 纯函数、零 IO、零状态 |
 | L1 Foundation | DSL 解析 + 物理 IO 收口（FsPort/PathPort/ProbePort） |
-| L2 Domain | 业务语义自治（Domain 零外部依赖） |
+| L2 Module | 业务与工程模块自治（Arsenal + Domain + Work） |
 | L3 Runtime | 入口与外部交互（CLI / Daemon / Skill / Hall） |
+
+> **关于 L2 命名**：L2 命名为 **Module** 而非 "Domain"——避免与 OXN DSL 中的 `Domain` 实体产生歧义。详见 [ADR-0006](docs/adr/0006-l2-named-module.md)。
 
 **核心流转**：
 - **编排流**：`Domain + Blueprint (Intent) ─[Work 引用]─▶ Task DAG (Align)`

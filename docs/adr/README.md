@@ -30,6 +30,7 @@ adr/
 | 0003 | Domain 作为 DDD 限界上下文 | Accepted | 2026-06 |
 | 0004 | DSL 选择 Langium 语法 | Accepted | 2026-06 |
 | 0005 | YAML/JSON Blueprint 废弃 | Accepted | 2026-06 |
+| 0006 | L2 命名为 Module 避免与 Domain 实体混淆 | Accepted | 2026-06 |
 
 ## 下一阶段
 
