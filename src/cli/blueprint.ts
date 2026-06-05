@@ -3,11 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR } from '../kernel/constants'
-import {
-  createOxnParser,
-  isBlueprintDeclaration,
-  type OXNDocument,
-} from '../oxn-dsl'
+import { createOxnParser, isBlueprintDeclaration, type OXNDocument } from '../oxn-dsl'
 import { getFormatFromArgs, output, outputError } from './output'
 
 function getProjectRoot(): string {
@@ -32,10 +28,7 @@ async function validateBlueprint(blueprintPath: string): Promise<{
   if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
     return {
       ok: false,
-      errors: [
-        ...r.parseErrors.map((e) => `[Parser] ${e}`),
-        ...r.lexerErrors.map((e) => `[Lexer] ${e}`),
-      ],
+      errors: [...r.parseErrors.map((e) => `[Parser] ${e}`), ...r.lexerErrors.map((e) => `[Lexer] ${e}`)],
     }
   }
   const ast = r.ast as OXNDocument
@@ -226,10 +219,7 @@ const listSubcommand = defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const dir = getBlueprintsDir()
     if (!existsSync(dir)) {
-      return output(
-        { ok: true, data: { blueprints: [] }, human: 'No blueprints directory yet.' },
-        format,
-      )
+      return output({ ok: true, data: { blueprints: [] }, human: 'No blueprints directory yet.' }, format)
     }
     const fs = require('fs') as typeof import('fs')
     const files = fs.readdirSync(dir).filter((f) => f.endsWith('.oxn'))
@@ -239,9 +229,7 @@ const listSubcommand = defineCommand({
         ok: true,
         data: { blueprints },
         human:
-          blueprints.length > 0
-            ? `Blueprints:\n${blueprints.map((b) => `  ${b}`).join('\n')}`
-            : 'No blueprints yet.',
+          blueprints.length > 0 ? `Blueprints:\n${blueprints.map((b) => `  ${b}`).join('\n')}` : 'No blueprints yet.',
       },
       format,
     )

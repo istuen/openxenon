@@ -60,7 +60,8 @@ function readSkillContent(skillId: string): { content: string; source: string } 
 export default defineCommand({
   meta: {
     name: 'install-skill',
-    description: '把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work/oxn-leader)',
+    description:
+      '把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work/oxn-leader)',
   },
   args: {
     target: {
@@ -88,9 +89,9 @@ export default defineCommand({
 
     const skillIds = explicitSkill
       ? [explicitSkill]
-      : (existsSync(resolve(join(process.cwd(), '.opencode', 'skills')))
+      : existsSync(resolve(join(process.cwd(), '.opencode', 'skills')))
         ? listOxnSkillsFromDisk()
-        : Object.keys(EMBEDDED_SKILLS))
+        : Object.keys(EMBEDDED_SKILLS)
 
     const installed: { skill: string; path: string }[] = []
     const skipped: { skill: string; reason: string }[] = []

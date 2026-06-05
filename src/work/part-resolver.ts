@@ -1,5 +1,5 @@
 import type { PartDefinition } from '../kernel/schemas/validators/part-asset'
-import { type PartPort } from '../kernel/contracts/part-port'
+import type { PartPort } from '../kernel/contracts/part-port'
 import { createArsenalPartPort } from '../arsenals/part-port'
 
 export interface PartResolution {

@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, renameSync, unlinkSync } from 'fs'
 import { createOxnSharedServices } from '../oxn-dsl/langium/oxn-services'
 import { URI } from 'langium'
 import { createOxnCrudProcessor, type AddProbeIntent } from '../oxn-dsl/crud/oxn-crud-processor'
-import { type ProbeConfig } from '../oxn-dsl/crud/oxn-serializer'
+import type { ProbeConfig } from '../oxn-dsl/crud/oxn-serializer'
 import type { TextEdit } from 'vscode-languageserver-types'
 
 export default defineCommand({

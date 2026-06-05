@@ -1,6 +1,6 @@
 import { parse as parseYaml } from 'yaml'
 import type { PartDefinition } from '../kernel/schemas/validators/part-asset'
-import { type PartPort } from '../kernel/contracts/part-port'
+import type { PartPort } from '../kernel/contracts/part-port'
 import { parseProbeNamespace } from '../oxn-dsl/validators/probe-namespace'
 import { BUILTIN_PARTS } from './builtin'
 import { loadStandardByName } from '../infra/loader'
@@ -97,7 +97,7 @@ export class ArsenalPartPort implements PartPort {
     const parsed = parseProbeNamespace(logicalRef)
     if (!parsed) {
       if (logicalRef.startsWith('oxn://')) {
-        const match = logicalRef.match(/^oxn:\/\/([^\/]+)\/(.+)$/)
+        const match = logicalRef.match(/^oxn:\/\/([^/]+)\/(.+)$/)
         if (match) {
           const name = match[2]
           if (name) {
