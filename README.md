@@ -1,290 +1,253 @@
 # OpenXenon
 
-> OpenXenon 是一个人机对齐框架——沉淀工程师意图与验证标准，积累工程资产，约束 AI 边界并确定性构建软件。
+> **人机对齐框架** — 沉淀工程师意图与验证标准，积累工程资产，约束 AI 边界并确定性构建软件。
+
+## 0. 一句话总结
+
+OpenXenon 通过 **Intent-Align 范式** 把"业务/技术声明"和"动态编排/执行"严格区分：
+
+- **Intent**（声明/静态）：Domain（业务限界上下文）、Blueprint（技术流水线模板）
+- **Align**（实例/动态）：Work（编排器）、Task（执行单元）、Part（零件）、Probe（验证）
+
+工程师写 Intent，AI 在 Align 中执行，Core 物理观测 + 纯函数判决。
 
 ## 1. 探索目标
 
-0.X 阶段，我们在探索一个核心问题：
+0.X 阶段，OpenXenon 在探索一个核心问题：
 
-**工程师的经验，能否成为驾驭 AI 的能力？**
+> **工程师的经验，能否成为驾驭 AI 的能力？**
 
 将工程师的审查经验前置为结构化资产与验证标准，让 AI 在约束边界内执行，由 Core Engine 协助工程师判定 AI 执行符合工程师意图的产物。
 
-## 2. 核心角色与职责
+## 2. 核心角色
 
 OpenXenon 的架构建立在三个核心角色的职责分离之上：
 
-| 角色             | 定位           | 职责                                                           | 数据边界                                                  |
-| ---------------- | -------------- | -------------------------------------------------------------- | --------------------------------------------------------- |
-| **工程师**       | 决策者与验收者 | 定义意图、设定验证标准、审查最终结果、通过 Hall 可视化项目状态 | 拥有全局视野，定义系统资产，验收执行产出                  |
-| **AI 助手**      | 调度者与执行者 | 接收任务目标，选择执行策略，调度 Core CLI，实施代码操作        | 接收任务级目标与 target+action 指令，**无法感知验证标准** |
-| **Core  Engine** | 判决者与记录者 | 编译资产、下发指令、执行校验、记录状态                         | 独占验证标准与执行结果，提供 CLI 供 AI 调用，输出客观判定 |
+| 角色 | 定位 | 职责 | 数据边界 |
+|---|---|---|---|
+| **工程师** | 决策者与验收者 | 定义意图、设定验证标准、审查最终结果 | 拥有全局视野，定义系统资产，验收执行产出 |
+| **AI 助手** | 调度者与执行者 | 接收任务目标，选择执行策略，调度 Core CLI，实施代码操作 | 接收任务级目标与执行指令，**无法感知验证标准** |
+| **Core Engine** | 判决者与记录者 | 编译资产、执行校验、记录状态 | 独占验证标准与执行结果，提供 CLI 供 AI 调用，输出客观判定 |
 
-**交互原则**：工程师通过 AI 助手软件与 AI 模型交互，定义规则并验收；AI 助手驱动流程并执行操作；Core 比对规则与事实。AI 不了解标准，Core 不产生逻辑，工程师不介入实时审查。
+**交互原则**：
 
-## 3. 核心概念
+> 工程师通过 AI 助手软件与 AI 模型交互，定义规则并验收；AI 助手驱动流程并执行操作；Core 比对规则与事实。**AI 不了解标准，Core 不产生逻辑，工程师不介入实时审查。**
 
-> v0.1 起，OpenXenon 引入 **DDD 双层架构**（参见 [v0.1 架构说明](docs/architecture/v01-ddd-dual-layer.md)）。
-> 核心概念从 v0.0.x 的"三层资产"扩展为"四层领域"。
+## 3. Intent-Align 范式（架构灵魂）
 
-### 3.1 概念层级表（v0.1）
+> 详细：[docs/core/intent-align.md](docs/core/intent-align.md)
 
-| 概念         | 定位     | 定义                                                | 物理归属                                       |
-| ------------ | -------- | --------------------------------------------------- | ---------------------------------------------- |
-| **Domain**   | 业务     | DDD 限界上下文，承载语言 (noun/verb/ban) 与业务规则 | `.openxenon/domains/<kebab>.oxn`               |
-| **Blueprint**| 资产     | 技术流水线模板，定义 slot 拓扑（DAG）              | `.openxenon/blueprints/<name>.oxn`             |
-| **Probe**    | 资产     | 原子检查，物理观测 + 纯函数判定                     | `.oxn` 资产（builtin / arsenal）               |
-| **Work**     | 工作区   | 工程师的意图沙盒，编排 use_domain + use_blueprint + task DAG | `.openxenon/works/<work-name>/work.oxn` |
-| **Task**     | 工作区   | 绑定 1 份 Blueprint + 注入 1+ Domain 的执行单元    | `.openxenon/works/<work>/tasks/<task>/task.oxn`|
-| **Part**     | 资产     | 零件，target/action/spec/probes 四字段（Arsenal）   | Arsenal 资产                                   |
-| **State**    | 运行时   | 双层 state.json（workspace + task）                 | `.openxenon/works/<w>/state.json`              |
-| **CONTEXT**  | 运行时   | AI 可见的 task 工作上下文（**全量隔离**）           | `.openxenon/works/<w>/CONTEXT.md`              |
-| **frozen.json** | 运行时 | 验证后生成的判决书                                | task 目录内                                    |
-| **Hall**     | UI       | 研讨厅，工程师查看任务状态的 Web 控制台             | Web UI                                         |
+| 层级 | Intent（声明 / 静态） | Align（实例 / 动态） | 关系 |
+|---|---|---|---|
+| **业务** | **Domain**（DDD 限界上下文：term / ban / invariant） | — | Domain 是 Align 引用的业务词典 |
+| **技术** | **Blueprint**（slot 拓扑模板） | — | Blueprint 是 Align 引用的技术模板 |
+| **编排** | — | **Work**（资源池 + task DAG） | Work 可引用多个 Domain + Blueprint |
+| **执行** | Blueprint 内 **Slot** | **Part**（align 到 slot） | 1:N（一个 slot 可被多个 part align） |
+| **观测** | Blueprint slot 的 **Observe** 数组 | **Probe**（align 到 observe） | 1:N |
+| **数据** | **Prop Definition** | **Prop Assignment** | 1:1 |
 
-### 3.2 Intent-Align 对偶（v0.1 核心范式）
+**核心原则**：每一种实体要么是 Intent，要么是 Align，**不存在第三种状态**。
 
-| 层级 | Intent（静态/声明） | Align（动态/实例） | 关系 |
-| ---- | ------------------- | ------------------ | ---- |
-| 系统 | **Blueprint**（DDD 限界上下文 + slot 拓扑） | **Work**（工程意图沙盒） | 1:N（一个 Blueprint 可被多 work 用） |
-| 阶段 | **Slot**（业务阶段/能力插槽） | **Task**（执行步骤） | 1:N（一个 Blueprint slot 可被多 task align） |
-| 验证 | **Observe**（业务观测点） | **Probe**（技术探测） | 1:N（一个 observe 可由多 probe 验证） |
-| 数据 | **Prop Definition**（属性意图） | **Prop Assignment**（属性赋值） | 1:1 |
+## 4. 四个核心实体
 
-### 3.3 关键约束
+> 详细：[docs/core/concepts.md](docs/core/concepts.md)
 
-- **资产层级关系**：`Probe → Part → Blueprint`（v0.0.x 保留）
-- **Domain 隔离**：`oxn get-context` 只返回 task.inject 的 domain，**全量隔离**（v0.1）
-- **Type 锁定铁律**：Work 的运行时类型与 Blueprint 的 type 属性强绑定（v0.0.x 保留）
-- **边界与留痕原则**：OpenXenon 固化边界以指导 AI 工作，而非杜绝逃逸。系统通过 `frozen.json`、`work-trace.jsonl` 等不可篡改的快照记录全量证据，交由工程师最终判决。
+| 实体 | 范式 | 定义 | 物理位置 |
+|---|---|---|---|
+| **Domain** | Intent（业务） | DDD 限界上下文，承载 term / ban / invariant / context_map | `.openxenon/domains/<kebab>.oxn` |
+| **Blueprint** | Intent（技术） | 技术流水线模板，定义 slot 拓扑（DAG） | `.openxenon/blueprints/<name>.oxn` |
+| **Work** | Align（编排） | 工程师的意图沙盒，声明 ref 池，编排 task DAG | `.openxenon/works/<work>/work.oxn` |
+| **Task** | Align（执行） | 1 blueprint + N parts 的执行单元；align 到 blueprint 的具体 slot | `.openxenon/works/<w>/tasks/<t>/task.oxn` |
 
-## 4. 交互流程
+### 完整示例
 
-### 4.1 资产构建流程
+```oxn
+// .openxenon/domains/member-context.oxn （Intent：业务）
+domain "MemberContext" {
+  description = "会员限界上下文"
 
-**交互链路：工程师 → Arsenal**
+  term {
+    "Member":   "注册会员实体",
+    "Register": "提交注册表单"
+  }
 
-1. 工程师通过 `oxn forge` 定义 Probe、Part、Blueprint，产出存入 `drafts/` 目录
-2. 工程师审查 Draft 资产内容
-3. 工程师将审查通过的资产通过 `oxn arsenal promote` 提交为 Canonical，归入 `arsenal/` 目录
+  ban { "User", "Customer" }
 
-```
-Forge (drafts/) ──[审查]──▶ Promote (arsenal/)
-        ↓                          ↓
-  drafts/<type>/           →    arsenal/<type>/
+  invariant { "密码任何时候都不能明文存储" }
+}
 ```
 
-> 注：此阶段仅做 Schema 语法与结构校验，**不生成 frozen.json**。
+```oxn
+// .openxenon/blueprints/dev-workflow.oxn （Intent：技术）
+blueprint "dev-workflow" {
+  description = "开发工作流：构建 → 测试 → 验证"
+  version = 1
 
-### 4.2 任务执行流程
-
-**交互链路：工程师 → AI 助手 (内部分化为 Main/Sub Agent)  → Core CLI → Sub Agent → 工程师**
-
-1. **任务下达**：工程师通过 AI 助手软件里的 Skill（如 `/oxn-task`）下达任务目标
-2. **实例化**：Main Agent 根据任务目标，自动选择匹配的 Blueprint（受 Work Type 强约束），通过 CLI 创建 Work 实例
-3. **循环执行与动态绑定**：Main Agent 通过结构化指令与 Core CLI 交互，形成闭环：
-   - Main Agent 调用 Core CLI 请求下一指令（`work next`），获取 `target` + `action`
-   - Main Agent 将执行指令下发给 Sub Agent，Sub Agent 实施代码操作构建 Artifact
-   - Main Agent 根据执行结果，通过 CLI CRUD 将具体产物路径动态绑定到 Work 空间内 Blueprint 的 Probe 参数中，完成从"抽象模板"到"具体实例"的映射
-   - 提交验证（`work verify`），L1 Infra 探测，L0 Kernel 判决
-   - **若验证通过，生成 `frozen.json` 等快照证据链**
-4. **动态修正**：若执行漂移，Main Agent 可通过 CLI CRUD 调整 Blueprint，或基于 `frozen.json` 定位错误节点继续修正
-5. **结果交付**：Sub Agent 执行完成后，交由 Main Agent 整理，交工程师审查最终产出
-
-```
-工程师 ──▶ Main Agent ──▶ Core CLI ──▶ Sub Agent ──▶ Main Agent ──▶ 工程师
-  │          │              │            │            │            │
-  │          │              │            │            │            │
-  下达    实例化          返回指令      执行         汇总          验收
-  目标    Work           (target+     构建        证据链         结果
-                              action)   Artifact
-                                    │
-                            ┌───────┴───────┐
-                            │               │
-                      [L1 Infra探测]  [L0 Kernel判决]
-                            │               │
-                            └───────┬───────┘
-                                    │
-                      [验证通过] 生成证据链快照
+  slot "build" { deps = [] }
+  slot "test"  { deps = ["build"] }
+}
 ```
 
-## 5. 当前状态
+```oxn
+// .openxenon/works/onboarding/work.oxn （Align：编排）
+work "Onboarding" {
+  context {
+    goal = "完成新会员注册";
+    loop_policy { max_iterations = 3 }
+  }
 
-版本: **v0.1** — DDD 双层架构落地
+  domain "MemberContext"   ref "@prj/domains/MemberContext";
+  blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow";
 
-**自举验证**：
+  task "RegisterMember" {
+    domain "MemberContext";
+    blueprint "dev-workflow";
 
-| 级别        | 定义                                       | 状态       |
-| ----------- | ------------------------------------------ | ---------- |
-| L1 编译自举 | `pnpm build` → `oxn forge probe` 可执行   | ✅          |
-| L2 资产自举 | Forge→Task→Verify 全链路跑通              | ✅          |
-| L2+ DSL 自举 | Grammar → Schema → Validator → Compiler 联动 | ✅          |
-| L3 质量自举 | OpenXenon 自身开发过程通过 OpenXenon 管理 | 🔜 0.2 目标 |
+    part "build" { skill_context = "实现 Member 注册" }
+    part "test"  { skill_context = "写 Member 注册测试" }
+    deps = [];
+  }
+}
+```
 
-**v0.1 已实现**（基于 [DDD 双层架构](docs/architecture/v01-ddd-dual-layer.md)）：
+```oxn
+// .openxenon/works/onboarding/tasks/register-member/task.oxn （Align：执行）
+task "register-member" {
+  domain "MemberContext";
+  blueprint "dev-workflow";
 
-- **四层领域模型**：`Domain` / `Blueprint` / `Work` / `Task`（v0.1 新增 Domain 与 Task）
-- **统一 OXN DSL 语法**：Grammar 增量化（Domain/Task 顶层实体），Zod schema 同步（向后兼容既有 Blueprint）
-- **Intent-Align 对偶**：Blueprint/Work、Slot/Task、Observe/Probe、Prop 定义/赋值 一一对应
-- **CLI 命令**：
-  - `oxn domain {new,validate,list}` — DDD 限界上下文管理（v0.1 新增）
-  - `oxn work task {new,status,list}` — workspace 内 task 生命周期（v0.1 新增）
-  - `oxn get-context` — AI 上下文获取（v0.1 新增，**全量隔离**）
-  - `oxn work migrate` — 旧 work 硬迁移工具（v0.1 新增）
-- **双层 State**：`WorkspaceState`（work.oxn 级）+ `TaskState`（task.oxn 级）独立读写
-- **既有能力保留**：
-  - 5 份 builtin blueprint 零回归
-  - CLI 直连模式（不依赖 Daemon）
-  - Arsenal DRAFT→CANONICAL 生命周期
-  - frozen.json 验证后快照
-  - 内置资产编译进二进制
-  - BUILTIN_PARTS：git-commit / create-branch / develop-feature
-  - Part 是单文件（非目录），Probe 统一单文件存储
-  - oxn arsenal fork / extract / unpack / repack
-- **测试**：417/417 通过（33 个测试文件，1527 expect calls）
+  part "build" { skill_context = "实现 Member 注册，遵循 Member 命名，禁用 User/Customer" }
+  part "test"  { skill_context = "写 Member 注册测试" }
+}
+```
 
-**v0.1 限制**：
+## 5. L0-L3 四层架构
 
-- Slot inputs/outputs 契约未实装（v0.2 引入）
-- language 约束不接 Probe（v0.2 引入 `language-ban-checker`）
-- task 编排只支持串行 deps（v0.2 引入并行）
+> 详细：[docs/architecture/overview.md](docs/architecture/overview.md)
+
+```
+┌────────────────────────────────────────────────┐
+│ L3: Runtime（CLI / Daemon / Skill / Hall）     │
+├────────────────────────────────────────────────┤
+│ L2: Domain（Arsenal + Domain + Work）          │
+├────────────────────────────────────────────────┤
+│ L1: Foundation（OXN DSL + Infra / Port）        │
+├────────────────────────────────────────────────┤
+│ L0: Kernel（Schema / Contract / Processor）     │
+└────────────────────────────────────────────────┘
+```
+
+| 层级 | 核心约束 |
+|---|---|
+| L0 Kernel | 纯函数、零 IO、零状态 |
+| L1 Foundation | DSL 解析 + 物理 IO 收口（FsPort/PathPort/ProbePort） |
+| L2 Domain | 业务语义自治（Domain 零外部依赖） |
+| L3 Runtime | 入口与外部交互（CLI / Daemon / Skill / Hall） |
+
+**核心流转**：
+- **编排流**：`Domain + Blueprint (Intent) ─[Work 引用]─▶ Task DAG (Align)`
+- **执行流**：`Task.part ─[align Slot]─▶ AI 写代码 ─[Probe 验证]─▶ frozen.json`
 
 ## 6. 开发计划
 
-| 版本     | 目标             | 核心功能                                |
-| -------- | ---------------- | --------------------------------------- |
-| **v0.1** | **DDD 双层落地** | ✅ Domain/Task/Work 三层领域 + 上下文隔离 |
-| v0.2     | 运行时监控与容错 | 守护进程、文件监听、状态熔断、异常恢复；Slot 契约；language-ban-checker Probe |
-| v0.3     | 多 AI 助手适配   | 适配多种 AI 助手软件（当前仅 OpenCode） |
-| v0.4     | 多环境适配       | 支持 Node.js（当前仅 Bun）              |
+| 版本 | 目标 | 核心功能 | 状态 |
+|---|---|---|---|
+| **v0.1** | **Intent-Align 范式落地** | Domain / Blueprint / Work / Task 四类实体；term/ban/invariant；ref 池；声明式 align | ✅ |
+| v0.2 | 运行时监控与容错 | 守护进程、文件监听、状态熔断、异常恢复；Slot 契约；language-ban-checker Probe | 🔜 |
+| v0.3 | 多 AI 助手适配 | 适配多种 AI 助手软件 | 📋 |
+| v0.4 | 多运行时 | 支持 Node.js（当前仅 Bun） | 📋 |
 
 ## 7. 快速开始
+
+> 完整指南：[docs/guides/getting-started.md](docs/guides/getting-started.md)
 
 ```bash
 # 1. 构建与初始化
 pnpm install && pnpm build
 ./dist/oxn init
 
-# 2. v0.1 新增：定义一个 DDD 限界上下文
+# 2. 定义 Domain（业务 Intent）
 ./dist/oxn domain new --name MemberContext
-# 编辑 .openxenon/domains/member-context.oxn，填写 language/domain_rules/context_map
+# 编辑 .openxenon/domains/member-context.oxn
 ./dist/oxn domain validate --name MemberContext
 
-# 3. 资产库（v0.0.x 流程，仍可用）
-./dist/oxn arsenal list
-./dist/oxn forge probe --save '<yaml>' --name my-check
-./dist/oxn arsenal promote probes/my-check
-
-# 4. v0.1 新增：在 work 中引用 domain + blueprint
+# 3. 准备 Blueprint（技术 Intent）
 mkdir -p .openxenon/blueprints
-# 编辑 .openxenon/blueprints/dev-workflow.oxn
-mkdir -p .openxenon/works/onboarding
-cat > .openxenon/works/onboarding/work.oxn <<'EOF'
-work "Onboarding" {
-  context { goal = "test"; constraints = []; loop_policy { max_iterations = 3 } }
-  use_domain "MemberContext";
-  use_blueprint "dev-workflow";
-  task "register" align "MemberContext.Register" { deps = [] }
+cat > .openxenon/blueprints/dev-workflow.oxn <<'EOF'
+blueprint "dev-workflow" {
+  description = "开发工作流"
+  version = 1
+  slot "build" { deps = [] }
+  slot "test"  { deps = ["build"] }
 }
 EOF
 
-# 5. v0.1 新增：创建 task（绑 1 blueprint + 注入 1 domain）
-./dist/oxn work task new --work onboarding --task register \
-  --blueprint dev-workflow --inject MemberContext
+# 4. 创建 Work（编排 Align）
+./dist/oxn leader new --name onboarding
+# 编辑 .openxenon/works/onboarding/work.oxn
+# 加 domain ref + task 编排块
 
-# 6. v0.1 新增：获取 AI 上下文（全量隔离）
-./dist/oxn get-context --work onboarding --task register
+# 5. 创建 Task（执行 Align）
+./dist/oxn work task new \
+  --work-name onboarding \
+  --task-name register-member \
+  --blueprint dev-workflow \
+  --domain MemberContext
 
-# 7. 既有：执行 work（leader 流程，v0.1 也兼容）
-./dist/oxn leader new --name onboarding --blueprint-file .openxenon/blueprints/dev-workflow.oxn
-./dist/oxn leader run --work-file .openxenon/works/onboarding/work.oxn
-./dist/oxn leader submit --work-name onboarding
+# 6. 获取 AI 上下文（全量隔离：只看 align 到的 domain）
+./dist/oxn get-context --work onboarding --task register-member --json
 
-# 8. v0.1 迁移工具（旧 work.oxn 升级到新格式）
-./dist/oxn work migrate --dry-run
-./dist/oxn work migrate
+# 7. AI 执行（在 AI 助手软件中）
+# (按 taskParts 顺序写代码，遵守 allowedLanguage)
+
+# 8. 推进状态机
+./dist/oxn leader run    --work-file .openxenon/works/onboarding/work.oxn --json
+./dist/oxn leader submit --work-name onboarding --task register-member --json
+./dist/oxn leader status --work-name onboarding --json
+
+# 9. 审查 frozen.json
+cat .openxenon/works/onboarding/tasks/register-member/frozen.json
 ```
 
-## 8. 架构概要
+## 8. 自举验证
 
-OpenXenon 采用严格的 L0-L3 四层架构宪法，确保核心逻辑真空、物理副作用收口、领域职责分离。
+| 级别 | 定义 | 状态 |
+|---|---|---|
+| L1 编译自举 | `pnpm build` → `oxn` 可执行 | ✅ |
+| L2 资产自举 | Domain/Blueprint/Work/Task 全链路跑通 | ✅ |
+| L2+ DSL 自举 | Grammar → Schema → Validator → Generator 联动 | ✅ |
+| L3 质量自举 | OpenXenon 自身开发过程通过 OpenXenon 管理 | 🔜 0.2 目标 |
 
-### 8.1 分层架构图
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ L3: Runtime                                                      │
-│ ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐         │
-│ │    CLI    │ │  Daemon   │ │   Skill   │ │   Hall    │         │
-│ └───────────┘ └───────────┘ └───────────┘ └───────────┘         │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│ L2: Domain Service                                                │
-│ ┌──────────────────────────┐ ┌──────────────────────────────┐  │
-│ │        Arsenal           │ │            Work              │  │
-│ │ 管理 Blueprint/Part/Probe │ │   管理 Artifact / Snapshot    │  │
-│ │ - Forge                  │ │ - 执行动作构建 Artifact      │  │
-│ │ - Promote                │ │ - 提交验证生成 frozen.json    │  │
-│ └──────────────────────────┘ └──────────────────────────────┘  │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│ L1: Foundation                                                    │
-│ ┌──────────────────────┐ ┌──────────────────────────────────┐  │
-│ │       OXN DSL        │ │             Infra                │  │
-│ │ - Grammar/Parser     │ │ - FsPort/PathPort/ProbePort       │  │
-│ │ - CRUD               │ │ - 收口所有 IO                    │  │
-│ └──────────────────────┘ └──────────────────────────────────┘  │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-┌────────────────────────────▼────────────────────────────────────┐
-│ L0: Kernel                                                         │
-│ ┌──────────────┐ ┌──────────────┐ ┌────────────────────────┐    │
-│ │    Schema    │ │   Contract   │ │       Processor        │    │
-│ └──────────────┘ └──────────────┘ └────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 8.2 核心流转
-
-| 流转类型   | 路径                                                                                                    | 说明             |
-| ---------- | ------------------------------------------------------------------------------------------------------- | ---------------- |
-| **资产流** | `Drafts ─[Promote]─▶ Arsenal`                                                                           | 资产生命周期管理 |
-| **执行流** | `Work ─[Type绑定]─▶ Blueprint → 获取 Part → 构建 Artifact`                                              | 运行时任务执行   |
-| **验证流** | `Main Agent CRUD 绑定实例 ─[SubAgent执行]─▶ Probe ─[L1 Infra探测]─▶ L0 Kernel判决 ─▶ L2 生成证据链快照` | 验证与留痕       |
-
-### 8.3 层级职责说明
-
-- **L0 Kernel**：纯逻辑推演，零 IO。基于 Schema 校验事实，**输出 Verdict 纯数据**，不生成任何文件
-- **L1 Foundation**：
-  - *OXN DSL*：提供语法解析与 CLI CRUD，确保 `.oxn` 文件合法性
-  - *Infra*：收口文件系统与进程 IO，负责物理 Artifact 的观测
-- **L2 Domain**：
-  - *Arsenal*：围绕 Blueprint/Part/Probe 提供 Forge 与 Promote 能力
-  - *Work*：围绕 Blueprint Type 提供运行时调度与独立工作区间管理
-- **L3 Runtime**：CLI、Daemon、Skill、Hall 等系统入口，组装一切并驱动工作流
+**测试**：414/414 通过（33 个测试文件，1525 expect calls）
 
 ## 9. 文档
 
-### 中文
-
-- [快速开始](docs/zh-cn/guides/getting-started.md)
-- [核心概念](docs/zh-cn/architecture/concepts.md)
-- [CLI 参考](docs/zh-cn/guides/cli-reference.md)
-- [架构设计](docs/zh-cn/architecture/)
-  - [DDD 双层架构 (v0.1)](docs/zh-cn/architecture/ddd-dual-layer.md) — Domain/Task/Work 详解
-- [故障排查](docs/zh-cn/guides/troubleshooting.md)
-
-### 英文
-
-- [English docs](docs/en/)
-
-### 根级架构（最新 v0.1 文档）
-
-- [v0.1 DDD Dual-Layer Architecture](docs/architecture/v01-ddd-dual-layer.md)
-- [Project Domain Index](docs/architecture/project-domains.md)
-- [Unification Notes (v0.0.27)](docs/architecture/unified.md)
+- [docs/README.md](docs/README.md) — 文档入口
+- [docs/core/](docs/core/) — 核心理念与概念
+  - [philosophy.md](docs/core/philosophy.md) — 核心理念
+  - [intent-align.md](docs/core/intent-align.md) — Intent-Align 范式
+  - [concepts.md](docs/core/concepts.md) — 4 个核心实体
+  - [terminology.md](docs/core/terminology.md) — 术语表
+- [docs/architecture/](docs/architecture/) — 架构
+  - [overview.md](docs/architecture/overview.md) — L0-L3 四层
+  - [domain.md](docs/architecture/domain.md) — Domain 详解
+  - [blueprint.md](docs/architecture/blueprint.md) — Blueprint 详解
+  - [work-and-task.md](docs/architecture/work-and-task.md) — Work + Task 详解
+  - [state.md](docs/architecture/state.md) — 双层 state.json
+  - [information-hiding.md](docs/architecture/information-hiding.md) — 信息隐藏原则
+- [docs/reference/](docs/reference/) — 参考
+  - [oxn-dsl.md](docs/reference/oxn-dsl.md) — OXN DSL 完整语法
+  - [cli-reference.md](docs/reference/cli-reference.md) — CLI 命令
+  - [state-schema.md](docs/reference/state-schema.md) — state.json schema
+  - [probe-types.md](docs/reference/probe-types.md) — Probe 类型
+- [docs/guides/](docs/guides/) — 指南
+  - [getting-started.md](docs/guides/getting-started.md) — 5 分钟跑通
+  - [ddd-workflow.md](docs/guides/ddd-workflow.md) — 端到端示例
+  - [probe-development.md](docs/guides/probe-development.md) — 自定义 Probe
+  - [troubleshooting.md](docs/guides/troubleshooting.md) — 故障排查
+- [docs/adr/](docs/adr/) — 架构决策记录
+- [docs/blog/](docs/blog/) — 博文与随笔
+- [docs/changelog/CHANGELOG.md](docs/changelog/CHANGELOG.md) — 变更日志
 
 ## License
 
