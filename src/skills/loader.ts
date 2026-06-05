@@ -5,9 +5,7 @@ import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'tex
 import zhCnWorkBlueprintRef from './locales/zh-CN/oxn-work/references/blueprint-format.md' with { type: 'text' }
 import zhCnLeader from './locales/zh-CN/oxn-leader/instruction.md' with { type: 'text' }
 import zhCnLeaderBlueprintRef from './locales/zh-CN/oxn-leader/references/blueprint-creation.md' with { type: 'text' }
-// en 路径下暂无 oxn-cli/instruction.md (项目未翻译)，en 路径 oxn-cli 沿用 zh-CN
-import enWork from './locales/en/oxn-work/instruction.md' with { type: 'text' }
-import enLeader from './locales/en/oxn-leader/instruction.md' with { type: 'text' }
+// v0.1: 英文版 Skill 已废弃（zh-CN 为唯一权威）
 import type { OpenXenonSkill, ReferenceFile } from './types'
 
 export interface SkillContent {
@@ -62,9 +60,15 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
     },
   },
   en: {
-    'oxn-cli': { instruction: zhCnOxnCli, references: [] }, // 沿用 zh-CN 直到 en 版 oxn-cli 写就
-    'oxn-work': { instruction: enWork, references: [] },
-    'oxn-leader': { instruction: enLeader, references: [] },
+    'oxn-cli': { instruction: zhCnOxnCli, references: [] }, // en 沿用 zh-CN（v0.1 英文版废弃）
+    'oxn-work': {
+      instruction: zhCnWork,
+      references: [{ filename: 'blueprint-format.md', content: zhCnWorkBlueprintRef }],
+    },
+    'oxn-leader': {
+      instruction: zhCnLeader,
+      references: [{ filename: 'blueprint-creation.md', content: zhCnLeaderBlueprintRef }],
+    },
   },
 }
 
