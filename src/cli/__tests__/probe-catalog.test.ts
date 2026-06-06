@@ -16,10 +16,10 @@ import {
   assertCatalogConsistency,
   describeProbe,
   listProbesSummary,
-  ProbeValidationError,
   PROBE_CATALOG,
   translateProbeInputs,
 } from '../../kernel/probes/catalog'
+import { IAPError, IAPAction, isIAPError } from '../../core/errors'
 
 // -----------------------------------------------------------------------------
 // 封装边界：AI 看到的（listProbesSummary / describeProbe）不能泄漏内部
@@ -89,21 +89,49 @@ describe('Translation layer (AI inputs → Infra params)', () => {
     expect(r.internalParams).toEqual({ command: 'bun test', timeout: 60000 })
   })
 
-  test('fs-exists 缺 path → ProbeValidationError', () => {
-    expect(() => translateProbeInputs('fs-exists', {})).toThrow(ProbeValidationError)
+  test('fs-exists 缺 path → IAPError (PROOF/INFRA_FAIL)', () => {
+    try {
+      translateProbeInputs('fs-exists', {})
+      expect(true).toBe(false) // 不应到达
+    } catch (err) {
+      expect(isIAPError(err)).toBe(true)
+      const e = err as IAPError
+      expect(e.axis).toBe('PROOF')
+      expect(e.code).toBe('INFRA_FAIL')
+      expect(e.action).toBe(IAPAction.YIELD_TO_HUMAN)
+      expect(e.name).toBe('IAP_PROOF_INFRA_FAIL')
+      expect(e.context).toMatchObject({ probe: 'fs-exists', input: 'path', reason: 'input_missing' })
+    }
   })
 
-  test('fs-exists path 类型错（number）→ ProbeValidationError', () => {
-    expect(() => translateProbeInputs('fs-exists', { path: 42 })).toThrow(ProbeValidationError)
+  test('fs-exists path 类型错（number）→ IAPError (PROOF/INFRA_FAIL)', () => {
+    try {
+      translateProbeInputs('fs-exists', { path: 42 })
+      expect(true).toBe(false) // 不应到达
+    } catch (err) {
+      expect(isIAPError(err)).toBe(true)
+      const e = err as IAPError
+      expect(e.axis).toBe('PROOF')
+      expect(e.code).toBe('INFRA_FAIL')
+      expect(e.context).toMatchObject({
+        probe: 'fs-exists',
+        input: 'path',
+        actualType: 'number',
+        expectedType: 'string',
+        reason: 'input_type_mismatch',
+      })
+    }
   })
 
-  test('unknown probe → ProbeValidationError OXN_PROBE_UNKNOWN', () => {
+  test('unknown probe → IAPError (PROOF/INFRA_FAIL, reason: unknown_semantic_name)', () => {
     try {
       translateProbeInputs('does-not-exist', {})
       expect(true).toBe(false) // 不应到达
     } catch (err) {
-      expect(err).toBeInstanceOf(ProbeValidationError)
-      expect((err as ProbeValidationError).code).toBe('OXN_PROBE_UNKNOWN')
+      expect(isIAPError(err)).toBe(true)
+      const e = err as IAPError
+      expect(e.name).toBe('IAP_PROOF_INFRA_FAIL')
+      expect(e.context).toMatchObject({ probe: 'does-not-exist', reason: 'unknown_semantic_name' })
     }
   })
 

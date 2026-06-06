@@ -55,8 +55,19 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
+// v1.0 (Phase 2): outputError 接受扩展 error 形态（含 IAPError 字段：axis/action/context）
+//   普通用户输入错只填 code/message/suggestion；IAPError 多填 axis/action/context。
+//   JSON 输出契约：{ ok: false, error: { code, message, axis?, action?, context?, ... } }
 export function outputError(
-  error: { code: string; message: string; suggestion?: string },
+  error: {
+    code: string
+    message: string
+    suggestion?: string
+    axis?: string
+    action?: string
+    context?: Readonly<Record<string, unknown>>
+    [key: string]: unknown
+  },
   format: OutputFormat = 'human',
 ): void {
   const errorObj = { ok: false, error }

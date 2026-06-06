@@ -22,17 +22,7 @@ export type ProbeType = 'fs_exists' | 'fs_not_exists' | 'fs_match' | 'fs_parseab
 
 export type Action = 'TASK_NEW' | 'TASK_START' | 'TASK_STOP' | 'TASK_SUBMIT' | 'TASK_LIST' | 'TASK_TRACE'
 
-export enum OxnErrorCode {
-  SOCKET_REFUSED = 'OXN_SOCKET_REFUSED',
-  SOCKET_TIMEOUT = 'OXN_SOCKET_TIMEOUT',
-  BLUEPRINT_INVALID = 'OXN_BLUEPRINT_INVALID',
-  INTERNAL_ERROR = 'OXN_INTERNAL_ERROR',
-  UNKNOWN = 'OXN_UNKNOWN',
-}
-
-export enum ErrorCategory {
-  USER = 'USER',
-  CONTRACT = 'CONTRACT',
-  INFRA = 'INFRA',
-  SYSTEM = 'SYSTEM',
-}
+// v1.0 (Phase 2): OxnErrorCode + ErrorCategory 已删除。
+//   替代体系: src/core/errors/ 下的 IAPError / OXNCrash / 用户输入错 (走普通 outputError)。
+//   旧的 OXN_SOCKET_* 等 Daemon 错待 Phase 3 CLI catch 块重写时统一处理。
+//   本文件保留 8 个 type 枚举（与错误码无关）。

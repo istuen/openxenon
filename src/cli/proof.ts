@@ -30,7 +30,8 @@ import {
 import { getFormatFromArgs, output, outputError } from './output'
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
-import { describeProbe, listProbesSummary, ProbeValidationError, translateProbeInputs } from '../kernel/probes/catalog'
+import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/probes/catalog'
+import { IAPError } from '../core/errors'
 
 // ---------------------------------------------------------------------------
 // 路径工具
@@ -348,12 +349,15 @@ const probeAddSubcommand = defineCommand({
     try {
       translated = translateProbeInputs(probeSemantic, rawInputs)
     } catch (err) {
-      if (err instanceof ProbeValidationError) {
+      if (err instanceof IAPError) {
+        // catalog 抛 IAPError（业务流阻断）→ 输出 IAP 字段供 AI 决策
         return outputError(
           {
-            code: err.code,
+            code: err.name,
+            axis: err.axis,
+            action: err.action,
             message: err.message,
-            suggestion: `run \`oxn proof probe describe ${probeSemantic}\` to see required inputs`,
+            context: err.context,
           },
           format,
         )

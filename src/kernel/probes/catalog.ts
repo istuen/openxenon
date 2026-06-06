@@ -141,23 +141,11 @@ export function getCatalogEntry(name: string): ProbeCatalogEntry | null {
 // 翻译层
 // ---------------------------------------------------------------------------
 
+import { IAPError, IAPAction } from '../../core/errors'
+
 export interface TranslatedProbe {
   internalRef: string
   internalParams: Record<string, unknown>
-}
-
-export class ProbeValidationError extends Error {
-  constructor(
-    public readonly code:
-      | 'OXN_PROBE_UNKNOWN'
-      | 'OXN_PROBE_INPUT_MISSING'
-      | 'OXN_PROBE_INPUT_TYPE'
-      | 'OXN_PROBE_INPUT_UNKNOWN',
-    message: string,
-  ) {
-    super(message)
-    this.name = 'ProbeValidationError'
-  }
 }
 
 /**
@@ -168,13 +156,23 @@ export class ProbeValidationError extends Error {
  *   2. 校验必填 input 都齐
  *   3. 校验 input 类型
  *   4. 应用 inputMap 翻译 key 名
+ *
+ * 错误契约（v1.0 双轨制）：
+ *   抛 `IAPError('PROOF', 'INFRA_FAIL', YIELD_TO_HUMAN, ...)`，CLI 顶层 catch
+ *   转成 `{code: 'IAP_PROOF_INFRA_FAIL', axis, action, context, message}` 输出。
+ *   4 个老 OXN_PROBE_* 码（UNKNOWN / INPUT_MISSING / INPUT_TYPE / INPUT_UNKNOWN）
+ *   合并为 1 个 IAPError（语义统一为"Probe Infra 跑不到，AI 检查输入"）；
+ *   具体原因走 `context.reason` 字段。
  */
 export function translateProbeInputs(semanticName: string, inputs: Record<string, unknown>): TranslatedProbe {
   const entry = getCatalogEntry(semanticName)
   if (!entry) {
-    throw new ProbeValidationError(
-      'OXN_PROBE_UNKNOWN',
+    throw new IAPError(
+      'PROOF',
+      'INFRA_FAIL',
+      IAPAction.YIELD_TO_HUMAN,
       `unknown probe: ${semanticName}. Run \`oxn proof probe list\` to see available probes.`,
+      { probe: semanticName, reason: 'unknown_semantic_name' },
     )
   }
 
@@ -185,9 +183,16 @@ export function translateProbeInputs(semanticName: string, inputs: Record<string
 
     if (raw === undefined || raw === null) {
       if (inputDef.required) {
-        throw new ProbeValidationError(
-          'OXN_PROBE_INPUT_MISSING',
+        throw new IAPError(
+          'PROOF',
+          'INFRA_FAIL',
+          IAPAction.YIELD_TO_HUMAN,
           `probe "${semanticName}" requires input "${inputDef.name}" (${inputDef.description})`,
+          {
+            probe: semanticName,
+            input: inputDef.name,
+            reason: 'input_missing',
+          },
         )
       }
       continue
@@ -195,21 +200,48 @@ export function translateProbeInputs(semanticName: string, inputs: Record<string
 
     // 类型校验
     if (inputDef.type === 'string' && typeof raw !== 'string') {
-      throw new ProbeValidationError(
-        'OXN_PROBE_INPUT_TYPE',
+      throw new IAPError(
+        'PROOF',
+        'INFRA_FAIL',
+        IAPAction.YIELD_TO_HUMAN,
         `probe "${semanticName}" input "${inputDef.name}" must be string, got ${typeof raw}`,
+        {
+          probe: semanticName,
+          input: inputDef.name,
+          actualType: typeof raw,
+          expectedType: 'string',
+          reason: 'input_type_mismatch',
+        },
       )
     }
     if (inputDef.type === 'number' && typeof raw !== 'number') {
-      throw new ProbeValidationError(
-        'OXN_PROBE_INPUT_TYPE',
+      throw new IAPError(
+        'PROOF',
+        'INFRA_FAIL',
+        IAPAction.YIELD_TO_HUMAN,
         `probe "${semanticName}" input "${inputDef.name}" must be number, got ${typeof raw}`,
+        {
+          probe: semanticName,
+          input: inputDef.name,
+          actualType: typeof raw,
+          expectedType: 'number',
+          reason: 'input_type_mismatch',
+        },
       )
     }
     if (inputDef.type === 'boolean' && typeof raw !== 'boolean') {
-      throw new ProbeValidationError(
-        'OXN_PROBE_INPUT_TYPE',
+      throw new IAPError(
+        'PROOF',
+        'INFRA_FAIL',
+        IAPAction.YIELD_TO_HUMAN,
         `probe "${semanticName}" input "${inputDef.name}" must be boolean, got ${typeof raw}`,
+        {
+          probe: semanticName,
+          input: inputDef.name,
+          actualType: typeof raw,
+          expectedType: 'boolean',
+          reason: 'input_type_mismatch',
+        },
       )
     }
 

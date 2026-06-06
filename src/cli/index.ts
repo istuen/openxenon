@@ -1,8 +1,10 @@
 import { defineCommand, runMain } from 'citty'
 import { DAEMON_SOCK_PATH } from '../infra/global'
-import { ErrorCategory, OxnErrorCode } from '../kernel/enums'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
 
+// v1.0 (Phase 2): OxnErrorCode / ErrorCategory 已从 kernel/enums.ts 删除。
+//   本文件遗留的 3 个 Daemon 错误码（OXN_SOCKET_REFUSED/TIMEOUT/UNKNOWN）暂以
+//   inline 字符串保留，Phase 3 CLI catch 块重写时会替换为 IAPError/OXNCrash。
 function formatError(err: unknown): string {
   if (err && typeof err === 'object' && 'code' in err) {
     return JSON.stringify({ ok: false, error: err })
@@ -18,9 +20,9 @@ function formatError(err: unknown): string {
     return JSON.stringify({
       ok: false,
       error: {
-        code: OxnErrorCode.SOCKET_REFUSED,
+        code: 'OXN_SOCKET_REFUSED',
         message: 'Daemon 未运行',
-        category: ErrorCategory.INFRA,
+        category: 'INFRA',
         recoverable: true,
         suggestion: `请先执行 oxn global daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`,
       },
@@ -31,9 +33,9 @@ function formatError(err: unknown): string {
     return JSON.stringify({
       ok: false,
       error: {
-        code: OxnErrorCode.SOCKET_TIMEOUT,
+        code: 'OXN_SOCKET_TIMEOUT',
         message: 'Daemon 响应超时',
-        category: ErrorCategory.INFRA,
+        category: 'INFRA',
         recoverable: true,
         suggestion: '等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start',
       },
@@ -43,9 +45,9 @@ function formatError(err: unknown): string {
   return JSON.stringify({
     ok: false,
     error: {
-      code: OxnErrorCode.UNKNOWN,
+      code: 'OXN_UNKNOWN',
       message: errObj.message,
-      category: ErrorCategory.SYSTEM,
+      category: 'SYSTEM',
       recoverable: false,
       suggestion: '这是 OpenXenon 内部错误，请将 debug 信息报告给工程师',
       debug: process.env.OXN_DEBUG ? errObj.stack?.split('\n').slice(0, 5).join('\n') : undefined,
