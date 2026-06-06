@@ -233,8 +233,8 @@ describe('end-to-end: create → probe add → run → show', () => {
       `proof "${name}" {
   description = "happy path test"
   probe "p1" {
-    ref "@oxn/probe/fs-exists"
-    params { target = "./package.json" }
+    ref "@oxn/probes/fs-exists"
+    params { pattern = "./package.json" }
   }
 }`,
       'utf-8',
@@ -246,16 +246,16 @@ describe('end-to-end: create → probe add → run → show', () => {
     expect(parsed.ok).toBe(true)
     const probeIRs = proof.proofProbesToIR(parsed.proof!)
     expect(probeIRs).toHaveLength(1)
-    expect(probeIRs[0]!.ref).toBe('@oxn/probe/fs-exists')
+    expect(probeIRs[0]!.ref).toBe('@oxn/probes/fs-exists')
 
-    // 3. executeProbe (stub)
+    // 3. executeProbe (Kernel + Infra 分离)
     const result = await (await import('../proof-runner')).executeProbe(probeIRs[0]!)
     expect(result.passed).toBe(true)
 
     // 4. write frozen
     const frozenPath = proof.getProofFrozenPath(name)
-    const frozen = buildFrozenProof({ name, probes: [result] })
-    writeFrozenProof(frozenPath, frozen)
+    const body = buildFrozenProof({ name, probes: [result] })
+    writeFrozenProof(frozenPath, body)
 
     // 5. verify
     expect(existsSync(frozenPath)).toBe(true)
@@ -273,12 +273,12 @@ describe('end-to-end: create → probe add → run → show', () => {
 describe('Kernel + Infra separation (real execution)', () => {
   test('fs-exists with existing file → PASS', async () => {
     const { executeProbe, resolveProbeKind } = await import('../proof-runner')
-    expect(resolveProbeKind('@oxn/probe/fs-exists')).toBe('fs-exists')
+    expect(resolveProbeKind('@oxn/probes/fs-exists')).toBe('fs-exists')
     const r = await executeProbe(
       {
         probeName: 'p1',
-        ref: '@oxn/probe/fs-exists',
-        params: { target: './package.json' },
+        ref: '@oxn/probes/fs-exists',
+        params: { pattern: './package.json' },
       },
       { projectRoot: realpathSync(tmpDir) },
     )
@@ -291,8 +291,8 @@ describe('Kernel + Infra separation (real execution)', () => {
     const r = await executeProbe(
       {
         probeName: 'p1',
-        ref: '@oxn/probe/fs-exists',
-        params: { target: './non-existent-file.xyz' },
+        ref: '@oxn/probes/fs-exists',
+        params: { pattern: './non-existent-file.xyz' },
       },
       { projectRoot: realpathSync(tmpDir) },
     )
@@ -305,7 +305,7 @@ describe('Kernel + Infra separation (real execution)', () => {
     const r = await executeProbe(
       {
         probeName: 'p2',
-        ref: '@oxn/probe/shell-exec',
+        ref: '@oxn/probes/shell-exec',
         params: { command: 'true' },
       },
       { projectRoot: realpathSync(tmpDir) },
@@ -318,7 +318,7 @@ describe('Kernel + Infra separation (real execution)', () => {
     const r = await executeProbe(
       {
         probeName: 'p3',
-        ref: '@oxn/probe/shell-exec',
+        ref: '@oxn/probes/shell-exec',
         params: { command: 'false' },
       },
       { projectRoot: realpathSync(tmpDir) },

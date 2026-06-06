@@ -17,6 +17,7 @@ import type { OxnAssemblySlotBinding } from '../oxn-dsl/schemas/oxn-assembly.sch
 import { loadStandardByName } from '../infra/loader'
 import { getProjectBoundaryPath } from './project'
 import { unifiedTaskSubmit } from './oxn-dual-track'
+// import { writeFrozenImmutable } from '../kernel/schemas/frozen-immutable'
 
 const TASK_TRACE_FILE = 'task-trace.jsonl'
 const STATE_FILE = 'state.json'
@@ -245,6 +246,9 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
     }
   }
 
+  // v0.1.2: task-frozen.json 不带 top-level _xenon_meta（meta 在 parts/probes 层级）。
+  // 共享的 frozen-immutable writer 用于 proof-frozen.json（顶层带 _xenon_meta）。
+  // 此处保留旧 write 路径；统一签名/chmod 是 P+ 演进目标。
   writeFileSync(frozenPath, JSON.stringify(result.frozen, null, 2), 'utf-8')
 
   const state: TaskState = {

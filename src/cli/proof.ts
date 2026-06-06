@@ -1,15 +1,18 @@
 // =============================================================================
-// `oxn proof` — Proof-First 入口（v0.1.2）
+// `oxn proof` — Proof-First 入口（v0.1.2 重写：catalog 封装）
 //
-// 5 子命令（与 README §4 / iap-paradigm §9.3 / document §4.3 字面一致）：
-//   create     — 创 .openxenon/proofs/<name>/proof.oxn 骨架
-//   probe add  — 追加 probe 到 proof.oxn
-//   run        — 调 runner（Phase A: stub）→ 写 frozen.json（带签名 + chmod 0o444）
-//   list       — 列所有 proof
-//   show       — 读 frozen.json + 输出人话
+// 5 子命令（与 README §4 字面一致）：
+//   create           — 创 .openxenon/proofs/<name>/proof.oxn 骨架
+//   probe list       — 列所有 probe（语义名 + 描述）★ AI 入口
+//   probe describe   — 详述单个 probe 的输入契约 ★ AI 入口
+//   probe add        — 追加 probe（语义名 + --input-json）★ AI 主操作
+//   run              — 调 runner（Kernel + Infra）→ 写 frozen.json
+//   list             — 列所有 proof
+//   show             — 读 frozen.json + 验签 + 输出人话
 //
-// IAP 守护：frozen.json 写路径只在本 CLI（proof-frozen-writer）内，
-//   AI 不得绕过本 CLI 直接写 .openxenon/proofs/<name>/frozen.json。
+// IAP 封装边界：AI 通过 probe list/describe/add 看到的是**语义层**
+//   (semanticName + description + inputs[])。内部 ref / inputMap / verdict 逻辑
+//   在 catalog 内部，不出现在 CLI 输出 / 也不出现在 skill 文件里。
 // =============================================================================
 
 import { defineCommand } from 'citty'
@@ -27,6 +30,7 @@ import {
 import { getFormatFromArgs, output, outputError } from './output'
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
+import { describeProbe, listProbesSummary, ProbeValidationError, translateProbeInputs } from '../kernel/probes/catalog'
 
 // ---------------------------------------------------------------------------
 // 路径工具
@@ -53,7 +57,7 @@ function getProofFrozenPath(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// proof.oxn 解析（用 Langium parser）
+// proof.oxn 解析（Langium → IR）
 // ---------------------------------------------------------------------------
 
 async function parseProofFile(filePath: string): Promise<{
@@ -81,6 +85,7 @@ async function parseProofFile(filePath: string): Promise<{
   return { ok: true, proof, errors: [] }
 }
 
+/** proof.oxn 里的 ref/params → 内部 IR（用于 runner） */
 function proofProbesToIR(proof: ProofDeclaration): ProofProbeIR[] {
   return (proof.probes ?? []).map((p: ProofProbeDecl) => {
     const params: Record<string, unknown> = {}
@@ -135,7 +140,7 @@ const createSubcommand = defineCommand({
         {
           code: 'OXN_INVALID_NAME',
           message: `invalid proof name: ${JSON.stringify(name)}`,
-          suggestion: 'use kebab-case / snake_case starting with a letter (e.g. "check-deploy" or "build_artifact")',
+          suggestion: 'use kebab-case / snake_case starting with a letter (e.g. "check-deploy")',
         },
         format,
       )
@@ -166,27 +171,15 @@ const createSubcommand = defineCommand({
 //   - .openxenon/proofs/${name}/proof.oxn  — Probe 声明（你可编辑）
 //   - .openxenon/proofs/${name}/frozen.json — 判决书（不可手改，由 Core 独占）
 //
-// 校验：oxn proof show ${name}
-// 运行：oxn proof run ${name}
-// 列出全部 probe：oxn proof probe add --help
+// Workflow（语义化）：
+//   1. 查可用 probe：     oxn proof probe list
+//   2. 查 probe 详情：   oxn proof probe describe <name>
+//   3. 追加 probe：      oxn proof probe add ${name} <name> --input-json '{"key":"value"}'
+//   4. 跑证明：          oxn proof run ${name}
+//   5. 读 verdict：      oxn proof show ${name}
 
 proof "${name}" {
   description = "TODO: 一句话描述这个 proof 验收什么"
-
-  probe "p1" {
-    ref "@oxn/probe/fs-exists"
-    params {
-      target = "./package.json"
-    }
-  }
-
-  probe "p2" {
-    ref "@oxn/probe/shell-exec"
-    params {
-      command = "echo hello",
-      timeout = 10000
-    }
-  }
 }
 `
     writeFileSync(oxnPath, template, 'utf-8')
@@ -194,12 +187,8 @@ proof "${name}" {
     output(
       {
         ok: true,
-        data: {
-          name,
-          path: oxnPath,
-          frozenPath,
-        },
-        human: `Created proof "${name}" at ${oxnPath}\n\nNext:\n  1. Edit ${oxnPath} (or use \`oxn proof probe add\`)\n  2. Run: \`oxn proof run ${name}\`\n  3. Show verdict: \`oxn proof show ${name}\``,
+        data: { name, path: oxnPath, frozenPath },
+        human: `Created proof "${name}" at ${oxnPath}\n\nNext:\n  1. oxn proof probe list\n  2. oxn proof probe describe <name>\n  3. oxn proof probe add ${name} <name> --input-json '{"key":"value"}'\n  4. oxn proof run ${name}`,
       },
       format,
     )
@@ -207,20 +196,115 @@ proof "${name}" {
 })
 
 // ---------------------------------------------------------------------------
-// Subcommand: probe add
+// Subcommand: probe list  ★ AI 入口
+// ---------------------------------------------------------------------------
+
+const probeListSubcommand = defineCommand({
+  meta: {
+    name: 'list',
+    description: '列出所有可用 probe（语义名 + 描述 + 必需输入）',
+  },
+  args: {
+    '--json': { type: 'boolean', description: 'JSON 格式输出' },
+    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const probes = listProbesSummary()
+    output(
+      {
+        ok: true,
+        data: { probes },
+        human:
+          probes.length === 0
+            ? 'No probes available.'
+            : probes
+                .map((p) => `  ${p.name}\n    ${p.description}\n    requires: ${p.requiredInputs.join(', ')}`)
+                .join('\n'),
+      },
+      format,
+    )
+  },
+})
+
+// ---------------------------------------------------------------------------
+// Subcommand: probe describe <name>  ★ AI 入口
+// ---------------------------------------------------------------------------
+
+const probeDescribeSubcommand = defineCommand({
+  meta: {
+    name: 'describe',
+    description: '详述单个 probe 的输入契约 + 示例',
+  },
+  args: {
+    name: { type: 'positional', required: true, description: 'probe 语义名（如 fs-exists）' },
+    '--json': { type: 'boolean', description: 'JSON 格式输出' },
+    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const name = ctx.args.name as string
+    const info = describeProbe(name)
+    if (!info) {
+      return outputError(
+        {
+          code: 'OXN_PROBE_UNKNOWN',
+          message: `unknown probe: ${name}`,
+          suggestion: 'run `oxn proof probe list` to see available probes',
+        },
+        format,
+      )
+    }
+    output(
+      {
+        ok: true,
+        data: info,
+        human: renderProbeDescribeHuman(info),
+      },
+      format,
+    )
+  },
+})
+
+function renderProbeDescribeHuman(info: ReturnType<typeof describeProbe> & object): string {
+  const lines: string[] = []
+  lines.push(`# ${info.name}`)
+  lines.push(info.description)
+  lines.push('')
+  lines.push('Inputs:')
+  for (const inp of info.inputs) {
+    const req = inp.required ? '(required)' : '(optional)'
+    lines.push(`  - ${inp.name}: ${inp.type} ${req} — ${inp.description}`)
+  }
+  if (info.examples.length > 0) {
+    lines.push('')
+    lines.push('Examples:')
+    for (const ex of info.examples) {
+      const inputs = JSON.stringify(ex.inputs)
+      lines.push(`  - ${ex.name}:`)
+      lines.push(`      oxn proof probe add <proof> ${info.name} --input-json '${inputs}'`)
+    }
+  }
+  return lines.join('\n')
+}
+
+// ---------------------------------------------------------------------------
+// Subcommand: probe add <proof> <probe> --input-json '{...}'
 // ---------------------------------------------------------------------------
 
 const probeAddSubcommand = defineCommand({
   meta: {
     name: 'add',
-    description: '追加一个 probe 到已存在的 proof.oxn',
+    description: '追加一个 probe 到 proof（语义名 + --input-json）',
   },
   args: {
     name: { type: 'positional', required: true, description: 'Proof 名称（已存在）' },
-    ref: { type: 'string', required: true, description: 'Probe 引用（如 @oxn/probe/fs-exists）' },
-    target: { type: 'string', description: 'fs-exists 的 pattern 参数' },
-    command: { type: 'string', description: 'shell-exec 的 command 参数' },
-    timeout: { type: 'string', description: 'shell-exec 的 timeout 参数（ms）' },
+    probe: { type: 'positional', required: true, description: 'probe 语义名（如 fs-exists）' },
+    'input-json': {
+      type: 'string',
+      required: true,
+      description: 'probe 输入（JSON 字符串）',
+    },
     probeName: { type: 'string', description: '自定义 probe 名（默认 p1/p2/...）' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
     '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
@@ -228,7 +312,8 @@ const probeAddSubcommand = defineCommand({
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
-    const ref = ctx.args.ref as string
+    const probeSemantic = ctx.args.probe as string
+    const inputJson = ctx.args['input-json'] as string
     const oxnPath = getProofOxnPath(name)
 
     if (!existsSync(oxnPath)) {
@@ -242,59 +327,54 @@ const probeAddSubcommand = defineCommand({
       )
     }
 
-    // 根据 ref 类型决定 params schema
-    const params: Record<string, string> = {}
-    if (ref === '@oxn/probe/fs-exists' || ref.endsWith('/fs-exists')) {
-      if (!ctx.args.target) {
-        return outputError(
-          {
-            code: 'OXN_MISSING_PARAM',
-            message: 'fs-exists probe requires --target <pattern>',
-            suggestion: 'pass --target with a glob pattern (e.g. --target "./dist/index.js")',
-          },
-          format,
-        )
+    // 1. 解析 + 翻译（catalog 干这件事）
+    let rawInputs: Record<string, unknown>
+    try {
+      rawInputs = JSON.parse(inputJson)
+      if (typeof rawInputs !== 'object' || rawInputs === null || Array.isArray(rawInputs)) {
+        throw new Error('--input-json must be a JSON object (e.g. \'{"path":"./x"}\')')
       }
-      params.target = ctx.args.target as string
-    } else if (ref === '@oxn/probe/shell-exec' || ref.endsWith('/shell-exec')) {
-      if (!ctx.args.command) {
-        return outputError(
-          {
-            code: 'OXN_MISSING_PARAM',
-            message: 'shell-exec probe requires --command "<cmd>"',
-            suggestion: 'pass --command (e.g. --command "bun test")',
-          },
-          format,
-        )
-      }
-      params.command = ctx.args.command as string
-      if (ctx.args.timeout) params.timeout = ctx.args.timeout as string
-    } else {
+    } catch (err) {
       return outputError(
         {
-          code: 'OXN_UNKNOWN_PROBE',
-          message: `unknown probe ref: ${ref}`,
-          suggestion: 'supported: @oxn/probe/fs-exists | @oxn/probe/shell-exec',
+          code: 'OXN_INPUT_JSON_INVALID',
+          message: `failed to parse --input-json: ${err instanceof Error ? err.message : String(err)}`,
         },
         format,
       )
     }
 
-    // 计算下一个 probe 编号
+    let translated
+    try {
+      translated = translateProbeInputs(probeSemantic, rawInputs)
+    } catch (err) {
+      if (err instanceof ProbeValidationError) {
+        return outputError(
+          {
+            code: err.code,
+            message: err.message,
+            suggestion: `run \`oxn proof probe describe ${probeSemantic}\` to see required inputs`,
+          },
+          format,
+        )
+      }
+      throw err
+    }
+
+    // 2. 写 proof.oxn（CLI 翻译后写内部 ref + 内部 param 名 — 这就是封装边界）
     const existing = readFileSync(oxnPath, 'utf-8')
     const probeName = (ctx.args.probeName as string) ?? nextProbeName(existing)
-    const paramsBlock = Object.entries(params)
-      .map(([k, v]) => `      ${k} = "${escapeString(v)}"`)
+    const paramsEntries = Object.entries(translated.internalParams)
+      .map(([k, v]) => `      ${k} = "${escapeString(String(v))}"`)
       .join(',\n')
 
     const newBlock = `  probe "${probeName}" {
-    ref "${ref}"
+    ref "${translated.internalRef}"
     params {
-${paramsBlock}
+${paramsEntries}
     }
   }
 `
-    // 在最后一个 '}' 之前插入
     const lastBrace = existing.lastIndexOf('}')
     const updated = existing.slice(0, lastBrace) + newBlock + existing.slice(lastBrace)
     writeFileSync(oxnPath, updated, 'utf-8')
@@ -305,11 +385,12 @@ ${paramsBlock}
         data: {
           name,
           probeName,
-          ref,
-          params,
+          semanticProbe: probeSemantic,
+          internalRef: translated.internalRef,
+          internalParams: translated.internalParams,
           path: oxnPath,
         },
-        human: `Added probe "${probeName}" (${ref}) to proof "${name}"`,
+        human: `Added probe "${probeName}" (${probeSemantic}) to proof "${name}"`,
       },
       format,
     )
@@ -331,8 +412,10 @@ function escapeString(s: string): string {
 }
 
 const probeSubcommand = defineCommand({
-  meta: { name: 'probe', description: '操作 proof 内的 probe' },
+  meta: { name: 'probe', description: '操作 proof 内的 probe（list / describe / add）' },
   subCommands: {
+    list: probeListSubcommand,
+    describe: probeDescribeSubcommand,
     add: probeAddSubcommand,
   },
 })
@@ -374,37 +457,39 @@ const runSubcommand = defineCommand({
       )
     }
 
-    // 顺序执行所有 probe（真实 Kernel + Infra 分离）
     const results = []
     for (const probe of probeIRs) {
       const r = await executeProbe(probe, { projectRoot: getProjectRoot() })
       results.push(r)
     }
 
-    // 构造 + 写 frozen.json（带 SHA-256 签名 + chmod 0o444）
-    const frozen = buildFrozenProof({ name, probes: results })
-    writeFrozenProof(frozenPath, frozen)
+    const body = buildFrozenProof({ name, probes: results })
+    writeFrozenProof(frozenPath, body)
+
+    // 重新读取以拿到 _xenon_meta（writer 已注入）
+    const readBack = readFrozenProof(frozenPath)
+    const frozen = readBack.frozen
 
     output(
       {
         ok: true,
         data: {
           name,
-          verdict: frozen.verdict,
-          totalCount: frozen.totalCount,
-          passedCount: frozen.passedCount,
-          failedCount: frozen.failedCount,
+          verdict: frozen?.verdict ?? 'FAILED',
+          totalCount: frozen?.totalCount ?? 0,
+          passedCount: frozen?.passedCount ?? 0,
+          failedCount: frozen?.failedCount ?? 0,
           frozenPath,
           readOnly: isFrozenFileReadOnly(frozenPath),
         },
-        human: renderVerdictHuman(name, frozen),
+        human: frozen ? renderVerdictHuman(name, frozen) : 'frozen write failed',
       },
       format,
     )
   },
 })
 
-function renderVerdictHuman(name: string, frozen: ReturnType<typeof buildFrozenProof>): string {
+function renderVerdictHuman(name: string, frozen: NonNullable<ReturnType<typeof readFrozenProof>['frozen']>): string {
   const lines: string[] = []
   lines.push(`Proof "${name}" verdict: ${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount})`)
   for (const p of frozen.probes) {
@@ -504,7 +589,7 @@ const showSubcommand = defineCommand({
   },
 })
 
-function renderShowHuman(frozen: ReturnType<typeof buildFrozenProof>): string {
+function renderShowHuman(frozen: import('../kernel/schemas/proof-schema').FrozenProof): string {
   const lines: string[] = []
   lines.push(`Proof: ${frozen.name}`)
   lines.push(`Verdict: ${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount})`)

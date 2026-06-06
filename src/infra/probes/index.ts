@@ -85,6 +85,10 @@ class ProbeRegistry {
     'fs-content-match': 'fs_match',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
+    // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
+    'fs-exists:probes': 'fs_exists',
+    'fs-not-exists:probes': 'fs_not_exists',
+    'shell-exec:probes': 'shell_exec',
   }
 
   constructor() {
