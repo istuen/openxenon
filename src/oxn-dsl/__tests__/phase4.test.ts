@@ -176,18 +176,5 @@ describe('Core Migration (Task 4.4)', () => {
 })
 
 // ========================
-// Task 4.5: Deprecation
+// Task 4.5: Deprecation（已删除 — DEPRECATION.md 在 7c6720d 移除）
 // ========================
-
-describe('YAML Deprecation (Task 4.5)', () => {
-  test('DEPRECATION.md 存在', () => {
-    expect(existsSync('DEPRECATION.md')).toBe(true)
-  })
-
-  test('DEPRECATION.md 包含迁移指南', () => {
-    const content = readFileSync('DEPRECATION.md', 'utf-8')
-    expect(content).toContain('Deprecation')
-    expect(content).toContain('oxn migrate-yaml')
-    expect(content).toContain('OXN DSL')
-  })
-})
