@@ -1,0 +1,139 @@
+// Domain: IAPErrorContext
+// IAP 错误码体系限界上下文 — OXN 自举 Domain（用 OXN 表达 OXN 自身）
+//
+// v1.0.2 字典收敛（5 IAPError + 3 OXNCrash = 8 总数）：
+//   - 移除 3 个 v1.0.1 字典的废弃码：IAP_ALIGN_TIMEOUT / IAP_ALIGN_MISMATCH / IAP_INTENT_SLOT_CONFLICT
+//   - 新增 2 个结构性违规码：IAP_INTENT_NAME_FILE_MISMATCH / IAP_ALIGN_CHECKLIST_MISSING
+//
+// 双轨制（来源：docs/core/iap-error-codes.md §一）：
+//   - 轨道 1 IAPError: 业务流异常，AI 消费（exit 1 + stdout JSON）
+//   - 轨道 2 OXNCrash:  引擎崩溃，人类消费（exit 2 + stderr stack，AI 永远不看）
+//
+// 信息隐藏：AI 看到 IAPError 必读 action 字段 → 决定 AUTONOMOUS_RETRY（已废止） / YIELD_TO_HUMAN
+// 错误名格式：IAP_<AXIS>_<CODE> / OXN_CRASH_<CODE>
+
+domain "IAPErrorContext" {
+  description = "IAP 错误码体系限界上下文：定义 IAPError / OXNCrash / FrozenJson / Verdict 等核心实体；锁定 5 IAPError + 3 OXNCrash 字典边界；禁止 v0.0 残留错误码回归；规定 exit code 契约（1=业务流阻断、2=引擎崩溃）与 stdout/stderr 通道分离"
+
+  // ====================================================================
+  // 术语（term）：业务/技术核心实体
+  // ====================================================================
+
+  term {
+    // ───────── 双轨制错误类的根实体 ─────────
+    "IAPError":      "IAP 业务流转中的预期内阻断（轨道 1），AI 消费；字段：axis/code/action/context；name 格式 IAP_<AXIS>_<CODE>"
+    "OXNCrash":      "OXN 引擎自身 Bug / 底线被击穿（轨道 2），人类消费，AI 永远不看；字段：code/cause；name 格式 OXN_CRASH_<CODE>"
+    "IAPErrorCode":  "IAPError 的 code 字段（5 个）：INFRA_FAIL / CRASH / CHECKLIST_MISSING / UNDEFINED_TERM / NAME_FILE_MISMATCH"
+    "OXNCrashCode":  "OXNCrash 的 code 字段（3 个）：SIGNATURE_MISMATCH / STATE_CORRUPT / INTERNAL_ERROR"
+    "IAPAxis":       "IAP 三主权轴：INTENT / ALIGN / PROOF（无 X，X 是 OXNCrash 的领域）"
+    "IAPAction":     "AI 行动策略（v1.0.2 后仅 YIELD_TO_HUMAN 一种）：叫工程师来，不让 AI 自己改"
+    "Context":       "IAPError 的机器可读字段：path / systemError / slot / cycle / declared / file / normalized 等"
+
+    // ───────── Proof 轴核心实体 ─────────
+    "Probe":         "物理观测 + 纯函数判定：fs_exists / shell_exec / fs_match / fs_not_exists"
+    "Catalog":       "Probe 注册表（@oxn/probes/*），CLI 加载期 fail-fast 校验"
+    "Verdict":       "Proof 轴的结构化判定：PASSED / FAILED + reason + probe + expected + actual"
+    "FrozenJson":    "判决书：Core Engine 产出，生成后只读（frozen.json），AI 与工程师都只能读不能改"
+    "Signature":     "frozen.json 的签名机制：签名被外部篡改 → OXN_CRASH_SIGNATURE_MISMATCH（防线击穿）"
+
+    // ───────── Runtime 模块（纯洁性约束的核心） ─────────
+    "Kernel":        "纯逻辑验证模块：零 IO 约束（fs.existsSync 等永不出现）；只接受 Infra 的观测结果，输出 Verdict"
+    "Infra":         "副作用 / IO 执行模块：只回答事实，不做 PASS/FAIL 判定（Infra 不能给自己盖章）"
+    "Daemon":        "生命周期管理 + 逃逸机制：Probe FAIL 时阻止 Work 进入 done；不修改 Kernel 规则"
+    "EscapeAction":  "Daemon 在 Probe FAIL 时的响应：BLOCK_DONE（默认） / WARN_ONLY"
+
+    // ───────── 通道与进程契约 ─────────
+    "Channel":       "IAPError 走 stdout JSON 通道；OXNCrash 走 stderr stack 通道；二轨不混"
+    "ExitCode":      "进程退出码：0=成功 / 1=业务流阻断（IAPError 或 CliInput）/ 2=引擎崩溃（OXNCrash 或未知异常）"
+    "TopCatch":      "CLI 顶层 catch 块（src/cli/index.ts）：classifyError 4 档分流 + handleIAPError / handleOXNCrash / handleCliInput / handleCrash"
+    "CliInputError": "用户 CLI 输入错（commander.* / citty.* / OXN_PROOF_* / OXN_INVALID_* 等白名单前缀）：档 3，stdout + exit 1"
+
+    // ───────── IAP 错误码体系自身 ─────────
+    "ProofAxis":     "PROOF 轴错误：INFRA_FAIL（YIELD_TO_HUMAN，Probe 跑不到） / CRASH（YIELD_TO_HUMAN，verdict 逻辑崩了）"
+    "AlignAxis":     "ALIGN 轴错误：CHECKLIST_MISSING（YIELD_TO_HUMAN，part.intent_checklist 必填缺失）"
+    "IntentAxis":    "INTENT 轴错误：UNDEFINED_TERM（YIELD_TO_HUMAN，引用了不存在的 Domain 词汇） / NAME_FILE_MISMATCH（YIELD_TO_HUMAN，DSL 声明名 vs 文件名规范化不一致）"
+  }
+
+  // ====================================================================
+  // 禁令（ban）：防止概念漂移与历史残留回归
+  // ====================================================================
+
+  ban {
+    // ───────── v1.0.2 已删除的废弃码（防止 AI 重新引入） ─────────
+    "IAP_ALIGN_TIMEOUT", "IAP_ALIGN_MISMATCH", "IAP_INTENT_SLOT_CONFLICT",
+
+    // ───────── v1.0.2 已废止的 action（防止 AI 重新使用） ─────────
+    "AUTONOMOUS_RETRY",
+
+    // ───────── v0.0.x 时代错误码（已彻底删除，禁止回归） ─────────
+    "OXN_PROBE_NOT_FOUND", "OXN_PROBE_INVALID_INPUT", "OXN_PROBE_EXEC_FAILED", "OXN_PROBE_TIMEOUT",
+    "OXN_DOMAIN_INVALID", "OXN_BLUEPRINT_INVALID", "OXN_SOCKET_*",
+
+    // ───────── 错误概念漂移（v1.0.2 后严禁出现） ─────────
+    "VerdictAsException", "FailureAsCrash", "OXN_INTERNAL_ERROR_AS_IAP", "StackTraceToAI", "HARD_HALT_AS_IAP",
+
+    // ───────── 错误中混淆项 ─────────
+    "Evidence", "Plan", "Spec", "Recipe", "Job", "Runbook", "HARD_FAIL", "SOFT_FAIL"
+  }
+
+  // ====================================================================
+  // 不变量（invariant）：错误体系的硬规则
+  // ====================================================================
+
+  // ───────── 字典收敛硬约束 ─────────
+  invariant { "IAPError 字典 v1.0.2 收敛为 5 个：PROOF:2（INFRA_FAIL, CRASH）+ ALIGN:1（CHECKLIST_MISSING）+ INTENT:2（UNDEFINED_TERM, NAME_FILE_MISMATCH）" }
+  invariant { "OXNCrash 字典 v1.0.2 收敛为 3 个：SIGNATURE_MISMATCH + STATE_CORRUPT + INTERNAL_ERROR" }
+  invariant { "IAPError + OXNCrash 总数 = 8（5 + 3），任何字典变更必须遵循本 Domain 的 ban 列表" }
+  invariant { "字典收敛原则：抛异常 = 结构性违规 / 必须被看到；业务结果 = Verdict 通道，不抛异常" }
+
+  // ───────── 双轨制不交叉 ─────────
+  invariant { "IAPError 与 OXNCrash 互不耦合：互不引用、互不继承、各自独立的 Error 子类" }
+  invariant { "IAPError 仅在 INTENT / ALIGN / PROOF 三个 IAP 主权轴抛；OXNCrash 不属任何 IAP 轴" }
+  invariant { "IAPError 由 src/{intent,align,proof}/ 模块抛；OXNCrash 由 src/{core,proof,daemon}/ 引擎内部抛，业务模块严禁抛 OXNCrash" }
+
+  // ───────── 通道与进程契约 ─────────
+  invariant { "IAPError 走 stdout JSON 通道（AI 消费）；OXNCrash 走 stderr stack 通道（AI 永远不看）" }
+  invariant { "进程退出码：0=成功 / 1=IAPError 或 CliInputError / 2=OXNCrash 或未知异常" }
+  invariant { "IAPError 必含 4 字段：name（IAP_<AXIS>_<CODE>）/ axis / code / action + 可选 context" }
+  invariant { "OXNCrash 必含 3 字段：name（OXN_CRASH_<CODE>）/ code / message + 可选 cause" }
+  invariant { "CLI 顶层 catch 块（src/cli/index.ts）4 档分流：IAPError / OXNCrash / CliInput / Crash（兜底）" }
+  invariant { "档 4 兜底：任何不属于 IAPError / OXNCrash / CliInputError 的异常 = OXN 自身 Bug，绝不暴露给 AI" }
+
+  // ───────── 消费者分离 ─────────
+  invariant { "IAPError 消费者是 AI Agent（按 action 字段决策）；OXNCrash 消费者是人类工程师" }
+  invariant { "IAPError 的 action 字段 v1.0.2 后仅 YIELD_TO_HUMAN 一种（AI 不能自己改，必须叫人）" }
+  invariant { "OXNCrash 出现时 AI 绝不能尝试修复（AI 看不到、也不应看到 stderr 内容）；让进程挂，叫工程师修" }
+
+  // ───────── Action 哲学（v1.0.2 收敛） ─────────
+  invariant { "Align 轴业务结果（Task 超时、代码与 Blueprint 不齐）走 frozen.json.verdict: FAILED 通道，AI 自己改；不再抛 IAPError" }
+  invariant { "IAPError 不放业务结果：Verdict: PASS / FAIL 走 frozen.json.verdict 通道，绝不抛异常" }
+  invariant { "AUTONOMOUS_RETRY action 已在 v1.0.2 移除：所有 IAPError 都需要工程师介入" }
+
+  // ───────── NAME_FILE_MISMATCH 防御（macOS-safe） ─────────
+  invariant { "NAME_FILE_MISMATCH 必须在 validate 阶段（CLI 加载期）做字符串级规范化比对，不依赖 OS 文件系统" }
+  invariant { "规范化规则：toKebab() 把声明名与文件 stem 归一为 lowercase + 驼峰转 dash + underscore 转 dash" }
+  invariant { "规范化后不一致 → 抛 IAP_INTENT_NAME_FILE_MISMATCH（YIELD_TO_HUMAN），让工程师决定重命名文件还是改声明名" }
+  invariant { "OXN 不强制风格（PascalCase / kebab-case 都接受），只强制声明 vs 文件在规范化后一致" }
+  invariant { "此防御是 macOS APFS / Windows NTFS case-insensitive 文件系统的跨平台一致性保障" }
+
+  // ───────── CHECKLIST_MISSING 防御（part 必填对齐） ─────────
+  invariant { "task.part.intent_checklist 必填：AI 开工前必须做 IAP 三轴对齐宣誓（spec_ref / exec_plan_ref / layer / verify_commands）" }
+  invariant { "缺 intent_checklist → 抛 IAP_ALIGN_CHECKLIST_MISSING（YIELD_TO_HUMAN），不允许 AI 自己补（会破坏对齐宣誓的可信度）" }
+  invariant { "intent_checklist 的 spec_ref 引用 Intent 轴资产（Domain）；exec_plan_ref 引用 Align 轴自描述；verify_commands 预演 Proof 轴" }
+
+  // ───────── Frozen 防线不可破 ─────────
+  invariant { "FrozenJson（frozen.json）生成后只读：AI 与工程师都只能读，禁手改" }
+  invariant { "frozen.json 签名被外部篡改 → 抛 OXN_CRASH_SIGNATURE_MISMATCH（防线击穿），进程退出 2" }
+  invariant { "Trace（work-trace.jsonl）只能追加写、不能重写；append-only 约束" }
+
+  // ───────── Runtime 纯洁性（OXN 宪法） ─────────
+  invariant { "Kernel 永远不触碰物理世界：不调用 fs.existsSync / 任何 IO（fs.* / net.* / child_process 一律不出现）" }
+  invariant { "Infra 只回答事实，不做判定：Infra 不能宣布 PASS / FAIL（不能给自己盖章）" }
+  invariant { "Infra 不能绕过 Daemon 自己宣布 Work 完成（行政不能给自己盖章）" }
+  invariant { "Daemon 不能修改 Kernel 规则（司法不能立法）" }
+  invariant { "Kernel 不能直接执行 Task（立法不能行政）" }
+
+  // ───────── v0.0 残渣警戒线 ─────────
+  invariant { "v0.0.x 错误码（OXN_PROBE_* / OXN_SOCKET_* / OXN_DOMAIN_INVALID 等）一律不能出现在 v1.0+ 错误字典" }
+  invariant { "v0.0 Arsenal 时代残留（arsenals/builtin.ts、part-port、arsenal-promote）禁止回归；OXN Engine 僭越所有主导权的旧模式已被 IAP 修正" }
+}
