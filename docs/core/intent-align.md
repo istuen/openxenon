@@ -1,5 +1,7 @@
 # Intent-Align 子集视图（IAP 范式两轴详解）
 
+> ⚠️ **本文件已合并到 [docs/core/document.md](document.md)。** 新内容请访问统一权威文档；本文件保留作为历史归档。
+
 > **本文档定位**：IAP 范式（Intent-Align-Proof）的 **Intent/Align 两轴** 详细展开。
 > 完整 IAP 三轴范式（含 Proof 轴与逃逸机制）见 [iap-paradigm.md](iap-paradigm.md)。
 >
@@ -45,7 +47,7 @@ v0.0.x 时代，Blueprint 同时承担"业务蓝图"和"项目蓝图"两个角�
 
 如果 AI 看到了 `expectation/rule` 块，会"针对验证标准优化"（test-hacking），而不是真正解决问题。
 
-> **痛点 3 在 IAP 中的彻底解决**：验证标准由 Blueprint 定义（Intent 轴），但 AI 主导的 Align 轴**永远看不到 Probe 的 expected 值**——它只能拿到 Probe 引用与参数。判定权在 Core Engine 的 Proof 轴，由 Daemon 通过逃逸机制执行（详见 [iap-paradigm.md](iap-paradigm.md) 第三节）。
+> **痛点 3 在 IAP 中的彻底解决**：验证标准由 Blueprint 定义（Intent 轴），但 AI 主导的 Align 轴**永远看不到 Probe 的 expected 值**——它只能拿到 Probe 引用与参数。判定权在 OXN 的 Proof 轴，由 Daemon 通过逃逸机制执行（详见 [iap-paradigm.md](iap-paradigm.md) 第三节）。
 
 ## 4. Intent-Align 如何解决
 
@@ -53,7 +55,7 @@ v0.0.x 时代，Blueprint 同时承担"业务蓝图"和"项目蓝图"两个角�
 |---|---|
 | 双角色混淆 | **Domain = 业务 Intent**，**Blueprint = 技术 Intent**，Work 才负责组合 |
 | 上下文隔离 | Work 声明用到的 domain 池；Task 在 task.oxn 内**显式 align** 哪些 domain 参与本次执行 |
-| 验证标准绕过 | Blueprint 不再带 expectation/rule；验证逻辑完全在 Probe 内（Align 端），但 Probe 的 expected 值由 Core Engine 在 Proof 阶段从 Blueprint 注入，AI 上下文不可见 |
+| 验证标准绕过 | Blueprint 不再带 expectation/rule；验证逻辑完全在 Probe 内（Align 端），但 Probe 的 expected 值由 OXN 在 Proof 阶段从 Blueprint 注入，AI 上下文不可见 |
 
 ## 5. 对偶的物理映射
 
@@ -72,7 +74,7 @@ v0.0.x 时代，Blueprint 同时承担"业务蓝图"和"项目蓝图"两个角�
             └── register-member/
                 ├── task.oxn    align 1 个 blueprint + 显式声明参与的 domain
                 ├── state.json  运行时状态（Align 轴）
-                └── proof.json  Proof 轴产物（Core Engine 产出）
+                └── frozen.json  Proof 轴产物（OXN 产出）
 ```
 
 ## 6. 与 DDD 的关系

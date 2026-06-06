@@ -1,5 +1,7 @@
 # 核心概念
 
+> ⚠️ **本文件已合并到 [docs/core/document.md](document.md)。** 新内容请访问统一权威文档；本文件保留作为历史归档。
+
 > v0.1 起，OpenXenon 有 **5 个核心实体**：`Domain` / `Blueprint` / `Work` / `Task` / `Proof`。
 > 全部遵循 [IAP 范式（Intent-Align-Proof）](./iap-paradigm.md)；Intent/Align 两轴子集视图见 [intent-align.md](./intent-align.md)。
 

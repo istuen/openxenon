@@ -104,7 +104,7 @@ AI 只能看到 target + action
 │    ├── 审查 Task.frozen.json                       ──▶ 工程师独有
 │    └── 验收最终结果                                  ──▶ 工程师独有
 │                                                              │
-│  Core Engine                                                 │
+│  OXN                                                 │
 │    │                                                         │
 │    ├── 独占 frozen.json 写权限                          ──▶ AI 不可写
 │    ├── 独占 state.json 写权限                           ──▶ AI 不可写
