@@ -114,7 +114,8 @@ describe('oxn config CLI', () => {
 
   test('config set with invalid value returns OXN_CONFIG_VALUE_INVALID', async () => {
     const { stdout, exitCode } = await runCli(['config', 'set', '--key', 'leaderMode', '--value', 'banana', '--json'])
-    expect(exitCode).toBe(0)
+    // v1.0 (Phase 3): outputError 设置 process.exitCode = 1 (subcommand 报错正确退出码)
+    expect(exitCode).toBe(1)
     const r = JSON.parse(stdout)
     expect(r.ok).toBe(false)
     expect(r.error.code).toBe('OXN_CONFIG_VALUE_INVALID')
@@ -122,7 +123,8 @@ describe('oxn config CLI', () => {
 
   test('config set with unsupported key returns OXN_CONFIG_KEY_UNSUPPORTED', async () => {
     const { stdout, exitCode } = await runCli(['config', 'set', '--key', 'bogusKey', '--value', 'x', '--json'])
-    expect(exitCode).toBe(0)
+    // v1.0 (Phase 3): outputError 设置 process.exitCode = 1
+    expect(exitCode).toBe(1)
     const r = JSON.parse(stdout)
     expect(r.ok).toBe(false)
     expect(r.error.code).toBe('OXN_CONFIG_KEY_UNSUPPORTED')

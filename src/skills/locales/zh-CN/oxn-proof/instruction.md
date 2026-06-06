@@ -100,3 +100,94 @@ Proof-First 入口 = IAP 中 Proof 轴的独立运作
 - `oxn proof show` 返回完整 frozen.json（含签名）
 
 把 `frozenPath` 给工程师审核。**禁止**改 frozen.json。
+
+---
+
+## AI 错误处理：读 `error.action` 字段
+
+`oxn proof *` 命令出错时，CLI 输出 JSON 包含 `error.action` 字段。**AI 读这个字段决策下一步**，不要解析 `message` 字符串。
+
+### Verdict: FAIL 怎么读？
+
+```bash
+oxn proof show check-deploy
+```
+读 `frozen.json.verdict` 字段：
+- `verdict === 'PASSED'` → 任务通过，AI 可继续
+- `verdict === 'FAILED'` → 任务失败（**正常业务结果，不是异常**），AI 自己改代码重 run
+
+### 业务异常（IAPError）怎么读？
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "IAP_PROOF_INFRA_FAIL",
+    "axis": "PROOF",
+    "action": "YIELD_TO_HUMAN",
+    "message": "Probe 无法访问目标资源",
+    "context": { "path": "./dist", "systemError": "EACCES" }
+  }
+}
+```
+
+**AI 决策表**（按 `action` 字段）：
+
+| `action` 值 | AI 下一步动作 |
+|---|---|
+| `AUTONOMOUS_RETRY` | AI 自己改代码/参数重试（不改 proof） |
+| `YIELD_TO_HUMAN` | AI 停止当前任务，让人类修（环境/需求问题 AI 改不了） |
+
+**两个 `action` 值之外的字段**（AI 不需要关心，但要知道存在）：
+- `code` — 错误全名（`IAP_<AXIS>_<CODE>`）
+- `axis` — 哪个 IAP 轴（INTENT/ALIGN/PROOF）
+- `message` — 人类可读描述
+- `context` — 机器可读字段（test/debug 用）
+
+### 引擎崩溃（OXNCrash）AI 看不到
+
+`OXN_CRASH_*` 错误走 stderr 通道，AI Skill 收不到。**如果你的命令莫名其妙 exit 2 没输出，那是引擎崩了，AI 应停止工作，通知工程师**。
+
+### 实战示例
+
+```bash
+# 1. AI 跑 proof
+$ oxn proof run check-deploy
+{
+  "ok": false,
+  "error": {
+    "code": "IAP_PROOF_INFRA_FAIL",
+    "axis": "PROOF",
+    "action": "YIELD_TO_HUMAN",
+    "message": "无法访问 ./dist/index.js",
+    "context": { "path": "./dist/index.js", "systemError": "EACCES" }
+  }
+}
+
+# 2. AI 读 action = YIELD_TO_HUMAN → 知道不能自己改
+# 3. AI 通知用户："dist/index.js 没有读权限，请运行 chmod +r ./dist/index.js"
+# 4. 用户修后 AI 重新跑
+```
+
+```bash
+# 1. AI 跑 proof
+$ oxn proof run check-deploy
+{
+  "ok": false,
+  "error": {
+    "code": "IAP_ALIGN_TIMEOUT",
+    "axis": "ALIGN",
+    "action": "AUTONOMOUS_RETRY",
+    "message": "task 跑超时",
+    "context": { "taskId": "register-member", "duration": 60000 }
+  }
+}
+
+# 2. AI 读 action = AUTONOMOUS_RETRY → 知道可以自己改
+# 3. AI 增加 timeout 后重试
+```
+
+**不要**：
+- ❌ 用正则解析 `message` 字符串
+- ❌ 看到 `code: 'IAP_*'` 就 assume 是 YIELD_TO_HUMAN
+- ✅ 永远先读 `action` 字段

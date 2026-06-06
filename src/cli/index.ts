@@ -1,59 +1,193 @@
+// =============================================================================
+// `oxn` CLI 入口 (v1.0 — Phase 3 4 档分流)
+//
+// 4 档 CLI 错误出口（顶层 try/catch 分类）：
+//   档 1 (IAPError)         → stdout JSON + process.exit(1)   ← AI 消费
+//   档 2 (OXNCrash)         → stderr + process.exit(2)        ← 人类消费（AI 看不到）
+//   档 3 (isCliInputError) → stdout JSON + process.exit(1)   ← 用户输入错，AI/人都能消费
+//   档 4 (兜底)            → stderr + process.exit(2)        ← 未知异常 = 引擎崩溃
+//
+// 进程退出码语义（Unix 哲学）：
+//   0 = 成功
+//   1 = 业务流阻断（IAPError / 用户输入错）       — 可恢复
+//   2 = 引擎崩溃（OXNCrash / 未知异常）            — 不可恢复
+//
+// 注意事项：
+//   - citty 对自身 CLI 错（缺 positional / 未知子命令）不 throw，直接 process.exit(1)
+//   - 顶层 catch 主要兜住：subcommand 漏 catch 的 IAPError / OXNCrash / 其他 Error
+//   - subcommand 通过 `return outputError(...)` 报错时，outputError 内部已设 process.exitCode = 1
+//   - unhandledRejection 也走 4 档分类（防止 Bug 掩盖）
+// =============================================================================
+
 import { defineCommand, runMain } from 'citty'
 import { DAEMON_SOCK_PATH } from '../infra/global'
+import { IAPError, OXNCrash, isCliInputError } from '../core/errors'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
 
-// v1.0 (Phase 2): OxnErrorCode / ErrorCategory 已从 kernel/enums.ts 删除。
-//   本文件遗留的 3 个 Daemon 错误码（OXN_SOCKET_REFUSED/TIMEOUT/UNKNOWN）暂以
-//   inline 字符串保留，Phase 3 CLI catch 块重写时会替换为 IAPError/OXNCrash。
-function formatError(err: unknown): string {
-  if (err && typeof err === 'object' && 'code' in err) {
-    return JSON.stringify({ ok: false, error: err })
+// =============================================================================
+// 4 档分类器
+// =============================================================================
+
+/**
+ * 4 档分类器：把任意 thrown value 归到 4 档之一。
+ * 不会抛错，所有分支都返回结构化结果。
+ */
+type Tier =
+  | { kind: 'IAPError'; err: IAPError }
+  | { kind: 'OXNCrash'; err: OXNCrash }
+  | { kind: 'CliInput'; err: Error; code: string; message: string }
+  | { kind: 'Crash'; err: unknown }
+
+function classifyError(err: unknown): Tier {
+  if (err instanceof IAPError) return { kind: 'IAPError', err }
+  if (err instanceof OXNCrash) return { kind: 'OXNCrash', err }
+  if (isCliInputError(err)) {
+    const e = err as { code?: string; message?: string }
+    return {
+      kind: 'CliInput',
+      err: err instanceof Error ? err : new Error(String(err)),
+      code: e.code ?? 'OXN_INVALID_CLI_ARGS',
+      message: e.message ?? String(err),
+    }
   }
-
-  const errObj = err instanceof Error ? err : new Error(String(err))
-
-  if (
-    errObj.message.includes('ECONNREFUSED') ||
-    errObj.message.includes('ENOENT') ||
-    errObj.message.includes('connect')
-  ) {
-    return JSON.stringify({
-      ok: false,
-      error: {
-        code: 'OXN_SOCKET_REFUSED',
-        message: 'Daemon 未运行',
-        category: 'INFRA',
-        recoverable: true,
-        suggestion: `请先执行 oxn global daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`,
-      },
-    })
-  }
-
-  if (errObj.message.includes('timed out') || errObj.message.includes('ETIMEDOUT')) {
-    return JSON.stringify({
-      ok: false,
-      error: {
-        code: 'OXN_SOCKET_TIMEOUT',
-        message: 'Daemon 响应超时',
-        category: 'INFRA',
-        recoverable: true,
-        suggestion: '等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start',
-      },
-    })
-  }
-
-  return JSON.stringify({
-    ok: false,
-    error: {
-      code: 'OXN_UNKNOWN',
-      message: errObj.message,
-      category: 'SYSTEM',
-      recoverable: false,
-      suggestion: '这是 OpenXenon 内部错误，请将 debug 信息报告给工程师',
-      debug: process.env.OXN_DEBUG ? errObj.stack?.split('\n').slice(0, 5).join('\n') : undefined,
-    },
-  })
+  return { kind: 'Crash', err }
 }
+
+// =============================================================================
+// 4 档处理函数
+// =============================================================================
+
+/**
+ * 档 1：IAPError（业务流） → stdout JSON + exit 1
+ */
+function handleIAPError(tier: Extract<Tier, { kind: 'IAPError' }>): never {
+  const { err } = tier
+  const json = JSON.stringify(
+    {
+      ok: false,
+      error: {
+        code: err.name, // 'IAP_<AXIS>_<CODE>'
+        axis: err.axis,
+        action: err.action,
+        message: err.message,
+        context: err.context,
+      },
+    },
+    null,
+    2,
+  )
+  console.log(json)
+  process.exit(1)
+}
+
+/**
+ * 档 2：OXNCrash（引擎崩溃） → stderr stack + exit 2
+ */
+function handleOXNCrash(tier: Extract<Tier, { kind: 'OXNCrash' }>): never {
+  const { err } = tier
+  console.error(`\n=== OXN ENGINE CRASH: ${err.name} ===`)
+  console.error(err.message)
+  if (err.cause) {
+    console.error('Caused by:')
+    console.error(err.cause instanceof Error ? (err.cause.stack ?? err.cause) : String(err.cause))
+  }
+  process.exit(2)
+}
+
+/**
+ * 档 3：用户输入错 → stdout JSON + exit 1
+ */
+function handleCliInput(tier: Extract<Tier, { kind: 'CliInput' }>): never {
+  const json = JSON.stringify(
+    {
+      ok: false,
+      error: {
+        code: tier.code,
+        message: tier.message,
+      },
+    },
+    null,
+    2,
+  )
+  console.log(json)
+  process.exit(1)
+}
+
+/**
+ * 档 4：兜底（未知异常 = 引擎崩溃） → stderr stack + exit 2
+ *
+ * 哲学：任何不属于 IAPError / OXNCrash / CLI 输入错的异常，都是 OXN 自身 Bug。
+ * 严禁让 AI 看到这种 stack（AI 会试图 FIX_CODE 掩盖 Bug）。
+ */
+function handleCrash(tier: Extract<Tier, { kind: 'Crash' }>): never {
+  const { err } = tier
+  console.error('\n=== OXN UNEXPECTED CRASH ===')
+  if (err instanceof Error) {
+    console.error(err.stack ?? err.message)
+  } else {
+    console.error(err)
+  }
+  process.exit(2)
+}
+
+// =============================================================================
+// Daemon 错 (历史遗留，Phase 4 改写 catch 块时会替换为 IAPError/OXNCrash)
+// =============================================================================
+
+/**
+ * 历史遗留：3 个 Daemon 错码（OXN_SOCKET_REFUSED / SOCKET_TIMEOUT / UNKNOWN）
+ * 当前通过 process.exitCode 1 走 outputError 通道（exit 1 + stdout JSON）。
+ * Phase 4 整改：把 daemon 错改为 IAPError('PROOF', 'INFRA_FAIL', ...) throws。
+ */
+function handleLegacyDaemonError(err: Error): never {
+  const msg = err.message
+  if (msg.includes('ECONNREFUSED') || msg.includes('ENOENT') || msg.includes('connect')) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: false,
+          error: {
+            code: 'OXN_SOCKET_REFUSED',
+            message: 'Daemon 未运行',
+            category: 'INFRA',
+            recoverable: true,
+            suggestion: `请先执行 oxn global daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`,
+          },
+        },
+        null,
+        2,
+      ),
+    )
+    process.exit(1)
+  }
+  if (msg.includes('timed out') || msg.includes('ETIMEDOUT')) {
+    console.log(
+      JSON.stringify(
+        {
+          ok: false,
+          error: {
+            code: 'OXN_SOCKET_TIMEOUT',
+            message: 'Daemon 响应超时',
+            category: 'INFRA',
+            recoverable: true,
+            suggestion: '等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start',
+          },
+        },
+        null,
+        2,
+      ),
+    )
+    process.exit(1)
+  }
+  // 兜底 = 引擎崩溃（不应被 AI 看到）
+  console.error('\n=== OXN UNEXPECTED CRASH ===')
+  console.error(err.stack ?? err.message)
+  process.exit(2)
+}
+
+// =============================================================================
+// CLI 命令定义
+// =============================================================================
 
 const main = defineCommand({
   meta: {
@@ -127,14 +261,49 @@ const main = defineCommand({
   },
 })
 
+// =============================================================================
+// 顶层 try/catch + unhandledRejection 4 档分流
+// =============================================================================
+
 try {
   runMain(main)
 } catch (err) {
-  console.log(formatError(err))
-  process.exit(1)
+  const tier = classifyError(err)
+  switch (tier.kind) {
+    case 'IAPError':
+      handleIAPError(tier)
+      break
+    case 'OXNCrash':
+      handleOXNCrash(tier)
+      break
+    case 'CliInput':
+      handleCliInput(tier)
+      break
+    case 'Crash':
+      // 检查是否是历史遗留的 daemon 错（Phase 4 改写前兼容路径）
+      if (err instanceof Error) {
+        handleLegacyDaemonError(err)
+      } else {
+        handleCrash(tier)
+      }
+      break
+  }
 }
 
 process.on('unhandledRejection', (reason) => {
-  console.log(formatError(reason))
-  process.exit(1)
+  const tier = classifyError(reason)
+  switch (tier.kind) {
+    case 'IAPError':
+      handleIAPError(tier)
+      break
+    case 'OXNCrash':
+      handleOXNCrash(tier)
+      break
+    case 'CliInput':
+      handleCliInput(tier)
+      break
+    case 'Crash':
+      handleCrash(tier)
+      break
+  }
 })

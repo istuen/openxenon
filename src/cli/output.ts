@@ -55,9 +55,10 @@ function escapeHtml(text: string): string {
     .replace(/'/g, '&#039;')
 }
 
-// v1.0 (Phase 2): outputError 接受扩展 error 形态（含 IAPError 字段：axis/action/context）
-//   普通用户输入错只填 code/message/suggestion；IAPError 多填 axis/action/context。
-//   JSON 输出契约：{ ok: false, error: { code, message, axis?, action?, context?, ... } }
+// v1.0 (Phase 3): outputError 自动设 process.exitCode = 1
+//   解决历史问题：subcommand 通过 return outputError() 报错时，process 仍 exit 0
+//   现在任何 outputError() 调用都标记 exit 1，让 Node 在 runMain 完成后正确退出
+//   顶层 catch 块对 IAPError 仍显式 process.exit(1) (双重保险)
 export function outputError(
   error: {
     code: string
@@ -70,6 +71,8 @@ export function outputError(
   },
   format: OutputFormat = 'human',
 ): void {
+  // v1.0 Phase 3: 标记进程退出码为 1（不立即 exit，让 catch 块或 runMain 决定时机）
+  process.exitCode = 1
   const errorObj = { ok: false, error }
 
   switch (format) {

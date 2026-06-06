@@ -4,6 +4,7 @@
 // 跨 IAP 错误码 SSOT —— 任何模块都可以从这里 import：
 //   - IAPError / IAPAction / IAPAxis / IAPErrorCode   (业务流，AI 消费)
 //   - OXNCrash / OXNCrashCode                         (引擎崩溃，人类消费)
+//   - isCliInputError                                (用户输入错，第三种隐式类型)
 //
 // 设计原则（最终版）：
 //   - 不做"集中注册表"（简单 string 联合 + enum 足够）
@@ -17,3 +18,5 @@ export type { IAPAxis, IAPErrorCode, IAPErrorContext } from './iap-error'
 
 export { OXNCrash, isOXNCrash } from './oxn-crash'
 export type { OXNCrashCode } from './oxn-crash'
+
+export { isCliInputError } from './cli-input-error'
