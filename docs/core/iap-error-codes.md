@@ -1,4 +1,4 @@
-# OXN 错误码 SSOT (v1.0)
+# OXN 错误码 SSOT (v1.0.2)
 
 > **OXN 错误码的唯一目的**：告诉 **AI** 当前的 IAP 边界发生了什么，以及它下一步该做什么。
 > 不是给人类做报表 — 人类看 `frozen.json` 与 stack trace 就够了。
@@ -14,14 +14,14 @@ OXN 错误码分两条独立轨道，**互不耦合**：
 | 进程行为 | 继续运行 (exit 1 + stdout JSON) | 立即崩溃 (exit 2 + stderr stack) |
 | 是否进 Skill 输出 | ✅ 进 | ❌ 不进 |
 | AI 是否应处理 | ✅ 按 `action` 字段决策 | ❌ 绝不能（否则掩盖 Bug） |
-| Action 字段 | 2 选 1: `AUTONOMOUS_RETRY` / `YIELD_TO_HUMAN` | 无（动作已定：crash） |
-| 数量 | 6 个 | 3 个 |
+| Action 字段 | 1 选 1: `YIELD_TO_HUMAN`（v1.0.2 后无 `AUTONOMOUS_RETRY`） | 无（动作已定：crash） |
+| 数量 | 5 个 | 3 个 |
 
 > **附加第三种（隐式）**：用户 CLI 输入错（如缺参数、未知子命令）走普通 `outputError()` 通道，无专属错误类。
 
 ---
 
-## 二、IAPError 字典（6 个）
+## 二、IAPError 字典（5 个 — v1.0.2）
 
 > 命名格式: `IAP_<AXIS>_<CODE>`，例如 `IAP_PROOF_INFRA_FAIL`
 
@@ -29,12 +29,17 @@ OXN 错误码分两条独立轨道，**互不耦合**：
 |---|---|---|---|---|
 | `IAP_PROOF_INFRA_FAIL` | PROOF | INFRA_FAIL | `YIELD_TO_HUMAN` | Probe 跑不到（fs 没权限、shell spawn 失败、网络断） |
 | `IAP_PROOF_CRASH` | PROOF | CRASH | `YIELD_TO_HUMAN` | Kernel verdict 逻辑崩了（程序员 Bug） |
-| `IAP_ALIGN_TIMEOUT` | ALIGN | TIMEOUT | `AUTONOMOUS_RETRY` | Task 跑超时（AI 自己改 timeout 参数重试） |
-| `IAP_ALIGN_MISMATCH` | ALIGN | MISMATCH | `AUTONOMOUS_RETRY` | 产出与 Blueprint slot 对不齐（AI 修代码重试） |
+| `IAP_ALIGN_CHECKLIST_MISSING` | ALIGN | CHECKLIST_MISSING | `YIELD_TO_HUMAN` | `task.part.intent_checklist` 必填字段缺失（AI 漏了开工前对齐宣誓） |
 | `IAP_INTENT_UNDEFINED_TERM` | INTENT | UNDEFINED_TERM | `YIELD_TO_HUMAN` | Blueprint 引用了不存在的 Domain 词汇（叫工程师补） |
-| `IAP_INTENT_SLOT_CONFLICT` | INTENT | SLOT_CONFLICT | `YIELD_TO_HUMAN` | Blueprint slot DAG 冲突（叫工程师改） |
+| `IAP_INTENT_NAME_FILE_MISMATCH` | INTENT | NAME_FILE_MISMATCH | `YIELD_TO_HUMAN` | DSL 声明名（如 `MemberContext`）与文件名（如 `member-context.oxn`）规范化后不一致（macOS APFS case-insensitive 跨平台防御） |
 
-> **删除的码**：`OXN_PROBE_*`（4 个 catalog 错码）合并到 `IAP_PROOF_INFRA_FAIL`，具体原因走 `context.reason` 字段。
+> **v1.0.2 变更**：
+> - 移除 `IAP_ALIGN_TIMEOUT` / `IAP_ALIGN_MISMATCH`（Align 轴业务结果，走 `frozen.json.verdict: FAILED` 通道而非异常）
+> - 移除 `IAP_INTENT_SLOT_CONFLICT`（僵尸码，slot DAG 冲突在 `oxn blueprint validate` 阶段走档 3 用户输入错通道）
+> - 新增 `IAP_INTENT_NAME_FILE_MISMATCH`（macOS-safe 字符串级规范化，OS-agnostic 反馈闭环）
+> - 新增 `IAP_ALIGN_CHECKLIST_MISSING`（part.intent_checklist 必填的硬约束，结构性违规）
+>
+> **删除的码（历史）**：`OXN_PROBE_*`（4 个 catalog 错码）合并到 `IAP_PROOF_INFRA_FAIL`，具体原因走 `context.reason` 字段。
 > **绝不放进 IAPError**：`Verdict: FAIL`（正常的 Probe 业务结果）走 `frozen.json.verdict` 通道，不抛异常。
 
 ---
@@ -192,6 +197,8 @@ CLI 输入错通过以下规则识别（`src/core/errors/cli-input-error.ts`）�
 
 ## 八、演进路线
 
-- **v1.0 (Phase 1-3)**: 双轨制错误码体系（本文档）
+- **v1.0 (Phase 1-3)**: 双轨制错误码体系（本文档，6 IAPError + 3 OXNCrash）
 - **v1.0.1 (Phase 4)**: socket-client IAPError 包装 + 用户输入错 helper + 4 档 E2E 集成测试
+- **v1.0.2 (当前)**: 字典收敛 — 移除 3 个僵尸/伪异常码，新增 2 个结构性违规码（NAME_FILE_MISMATCH / CHECKLIST_MISSING）
 - **v1.1 (Phase 5+)**: 8 个 builtin Probe handler 全部实现 + 6 个 ProgramContext term + IAPError factory 方法（YAGNI 待定）
+- **v0.2+**: `part.intent_checklist` DSL 字段 + `oxn work lint` preflight + `CHECKLIST_MISSING` throw site 上线

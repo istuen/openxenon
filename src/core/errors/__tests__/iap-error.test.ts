@@ -50,22 +50,20 @@ describe('IAPError (轨道 1: 业务流)', () => {
     expect(err.action).toBe(IAPAction.YIELD_TO_HUMAN)
   })
 
-  test('ALIGN/TIMEOUT → AUTONOMOUS_RETRY (AI 自己改)', () => {
-    const err = new IAPError('ALIGN', 'TIMEOUT', IAPAction.AUTONOMOUS_RETRY, 'task 跑超时', {
-      taskId: 'register-member',
-      duration: 60000,
-    })
-    expect(err.name).toBe('IAP_ALIGN_TIMEOUT')
-    expect(err.action).toBe(IAPAction.AUTONOMOUS_RETRY)
-  })
-
-  test('ALIGN/MISMATCH → AUTONOMOUS_RETRY (产出与 Blueprint 不齐)', () => {
-    const err = new IAPError('ALIGN', 'MISMATCH', IAPAction.AUTONOMOUS_RETRY, 'slot develop 产出与 Blueprint 不齐', {
-      taskId: 'register-member',
-      slot: 'develop',
-    })
-    expect(err.name).toBe('IAP_ALIGN_MISMATCH')
-    expect(err.action).toBe(IAPAction.AUTONOMOUS_RETRY)
+  test('ALIGN/CHECKLIST_MISSING → YIELD_TO_HUMAN (part.intent_checklist 必填缺失)', () => {
+    const err = new IAPError(
+      'ALIGN',
+      'CHECKLIST_MISSING',
+      IAPAction.YIELD_TO_HUMAN,
+      "task 'scaffold' 的 part 'scaffold' 缺少必填的 intent_checklist 字段",
+      {
+        taskName: 'scaffold',
+        partName: 'scaffold',
+        missingField: 'intent_checklist',
+      },
+    )
+    expect(err.name).toBe('IAP_ALIGN_CHECKLIST_MISSING')
+    expect(err.action).toBe(IAPAction.YIELD_TO_HUMAN)
   })
 
   test('INTENT/UNDEFINED_TERM → YIELD_TO_HUMAN (Domain 缺词汇)', () => {
@@ -83,13 +81,21 @@ describe('IAPError (轨道 1: 业务流)', () => {
     expect(err.action).toBe(IAPAction.YIELD_TO_HUMAN)
   })
 
-  test('INTENT/SLOT_CONFLICT → YIELD_TO_HUMAN (Blueprint slot DAG 冲突)', () => {
-    const err = new IAPError('INTENT', 'SLOT_CONFLICT', IAPAction.YIELD_TO_HUMAN, 'slot DAG 自环', {
-      slot: 'a',
-      cycle: ['a', 'b', 'a'],
-    })
-    expect(err.name).toBe('IAP_INTENT_SLOT_CONFLICT')
-    expect(err.action).toBe(YIELD_TO_HUMAN_VALUE) // 跨字段名复用 enum 值
+  test('INTENT/NAME_FILE_MISMATCH → YIELD_TO_HUMAN (DSL 声明名 vs 文件名规范化不一致)', () => {
+    const err = new IAPError(
+      'INTENT',
+      'NAME_FILE_MISMATCH',
+      IAPAction.YIELD_TO_HUMAN,
+      "Declared name 'MemberContext' does not match file 'member-context.oxn'",
+      {
+        declared: 'MemberContext',
+        file: 'member-context.oxn',
+        normalized: 'member-context',
+        entityType: 'domain',
+      },
+    )
+    expect(err.name).toBe('IAP_INTENT_NAME_FILE_MISMATCH')
+    expect(err.action).toBe(IAPAction.YIELD_TO_HUMAN)
   })
 
   test('不带 context 时 context = undefined', () => {
@@ -104,8 +110,6 @@ describe('IAPError (轨道 1: 业务流)', () => {
     expect(err.context).toBe(ctx)
   })
 })
-
-const YIELD_TO_HUMAN_VALUE = IAPAction.YIELD_TO_HUMAN // 复用 enum 值
 
 // -----------------------------------------------------------------------------
 // OXNCrash — 3 个 code 各 1 个 throw
@@ -228,20 +232,21 @@ describe('Serialization (CLI output contract)', () => {
 // 完整字典 9 项：不应有 typo / 重复
 // -----------------------------------------------------------------------------
 
-describe('Dictionary coverage (6 IAP + 3 OXNCrash = 9 total)', () => {
+describe('Dictionary coverage (6 IAP + 3 OXNCrash = 9 total) — v1.0.2', () => {
   const iapCodes: Array<[IAPAxis, IAPErrorCode, IAPAction]> = [
     ['PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN],
     ['PROOF', 'CRASH', IAPAction.YIELD_TO_HUMAN],
-    ['ALIGN', 'TIMEOUT', IAPAction.AUTONOMOUS_RETRY],
-    ['ALIGN', 'MISMATCH', IAPAction.AUTONOMOUS_RETRY],
+    ['ALIGN', 'CHECKLIST_MISSING', IAPAction.YIELD_TO_HUMAN],
     ['INTENT', 'UNDEFINED_TERM', IAPAction.YIELD_TO_HUMAN],
-    ['INTENT', 'SLOT_CONFLICT', IAPAction.YIELD_TO_HUMAN],
+    ['INTENT', 'NAME_FILE_MISMATCH', IAPAction.YIELD_TO_HUMAN],
   ]
-  test('IAP 字典正好 6 项 (PROOF:2 + ALIGN:2 + INTENT:2)', () => {
-    expect(iapCodes).toHaveLength(6)
+  test('IAP 字典正好 5 项 (PROOF:2 + ALIGN:1 + INTENT:2)', () => {
+    // v1.0.2 收敛：6 → 5（移除 ALIGN_TIMEOUT + ALIGN_MISMATCH + INTENT_SLOT_CONFLICT，
+    // 新增 ALIGN_CHECKLIST_MISSING + INTENT_NAME_FILE_MISMATCH，净减 1）
+    expect(iapCodes).toHaveLength(5)
     const byAxis: Record<string, number> = {}
     for (const [axis] of iapCodes) byAxis[axis] = (byAxis[axis] ?? 0) + 1
-    expect(byAxis).toEqual({ PROOF: 2, ALIGN: 2, INTENT: 2 })
+    expect(byAxis).toEqual({ PROOF: 2, ALIGN: 1, INTENT: 2 })
   })
 
   const oxnCodes: OXNCrashCode[] = ['SIGNATURE_MISMATCH', 'STATE_CORRUPT', 'INTERNAL_ERROR']
@@ -249,7 +254,7 @@ describe('Dictionary coverage (6 IAP + 3 OXNCrash = 9 total)', () => {
     expect(oxnCodes).toHaveLength(3)
   })
 
-  test('总错误码数 = 9 (终极精修版)', () => {
-    expect(iapCodes.length + oxnCodes.length).toBe(9)
+  test('总错误码数 = 8 (v1.0.2 收敛：移除 3 伪异常，新增 2 真异常，净 -1)', () => {
+    expect(iapCodes.length + oxnCodes.length).toBe(8)
   })
 })

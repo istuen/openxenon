@@ -175,16 +175,17 @@ $ oxn proof run check-deploy
 {
   "ok": false,
   "error": {
-    "code": "IAP_ALIGN_TIMEOUT",
+    "code": "IAP_ALIGN_CHECKLIST_MISSING",
     "axis": "ALIGN",
-    "action": "AUTONOMOUS_RETRY",
-    "message": "task 跑超时",
-    "context": { "taskId": "register-member", "duration": 60000 }
+    "action": "YIELD_TO_HUMAN",
+    "message": "task 'scaffold' 的 part 'scaffold' 缺少必填的 intent_checklist 字段",
+    "context": { "taskName": "scaffold", "partName": "scaffold", "missingField": "intent_checklist" }
   }
 }
 
-# 2. AI 读 action = AUTONOMOUS_RETRY → 知道可以自己改
-# 3. AI 增加 timeout 后重试
+# 2. AI 读 action = YIELD_TO_HUMAN → 知道不能自己改
+# 3. AI 通知用户："part.scaffold 缺 intent_checklist，请在 task.oxn 补上开工前的 4 问对齐"
+# 4. 用户补后 AI 重新跑
 ```
 
 **不要**：

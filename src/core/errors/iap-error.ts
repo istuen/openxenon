@@ -1,5 +1,5 @@
 // =============================================================================
-// IAPError (v1.0 — 双轨制错误体系 轨道 1)
+// IAPError (v1.0.2 — 双轨制错误体系 轨道 1)
 //
 // 哲学契约：IAP 业务流转中的"预期内阻断"
 //   - 消费者：AI Agent（按 action 字段决策下一步）
@@ -31,12 +31,23 @@ export type IAPAxis = 'INTENT' | 'ALIGN' | 'PROOF'
  * 错误码字典 —— TypeScript 字符串字面量联合。
  * 编译器拒绝拼写错误 + IDE 自动补全合法值。
  *
- * 字典（9 项中的 6 项，剩余 3 项属 OXNCrash）：
+ * v1.0.2 字典（9 项中的 6 项，剩余 3 项属 OXNCrash）：
  *   PROOF (2):   INFRA_FAIL, CRASH
- *   ALIGN (2):   TIMEOUT, MISMATCH
- *   INTENT (2):  UNDEFINED_TERM, SLOT_CONFLICT
+ *   ALIGN (1):   CHECKLIST_MISSING              ← v0.1: 类型已就位，throw site 留 v0.2
+ *   INTENT (3):  UNDEFINED_TERM, NAME_FILE_MISMATCH  ← NAME_FILE_MISMATCH 是 macOS-safe
+ *
+ * 历史变更（v1.0.1 → v1.0.2）：
+ *   - 移除 'TIMEOUT' | 'MISMATCH'（ALIGN 轴业务结果，走 Verdict: FAIL 通道而非异常）
+ *   - 移除 'SLOT_CONFLICT'（僵尸码，validate 阶段走档 3 用户输入错通道）
+ *   - 新增 'CHECKLIST_MISSING'（part.intent_checklist 必填对齐机制）
+ *   - 新增 'NAME_FILE_MISMATCH'（macOS APFS case-insensitive 跨平台防御）
+ *
+ * 字典收敛原则（双轨制 IAPError + OXNCrash）：
+ *   - IAPError 6 个：只保留"必须被看到"的真异常（结构性违规）
+ *   - Verdict: FAIL 走 frozen.json.verdict 通道（业务结果，AI 自己改）
+ *   - OXNCrash 3 个：引擎崩溃，人类消费，AI 永远不看
  */
-export type IAPErrorCode = 'INFRA_FAIL' | 'CRASH' | 'TIMEOUT' | 'MISMATCH' | 'UNDEFINED_TERM' | 'SLOT_CONFLICT'
+export type IAPErrorCode = 'INFRA_FAIL' | 'CRASH' | 'CHECKLIST_MISSING' | 'UNDEFINED_TERM' | 'NAME_FILE_MISMATCH'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

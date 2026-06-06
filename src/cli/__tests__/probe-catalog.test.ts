@@ -19,7 +19,7 @@ import {
   PROBE_CATALOG,
   translateProbeInputs,
 } from '../../kernel/probes/catalog'
-import { IAPError, IAPAction, isIAPError } from '../../core/errors'
+import { type IAPError, IAPAction, isIAPError } from '../../core/errors'
 
 // -----------------------------------------------------------------------------
 // 封装边界：AI 看到的（listProbesSummary / describeProbe）不能泄漏内部

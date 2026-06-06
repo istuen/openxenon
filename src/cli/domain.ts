@@ -1,9 +1,10 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
-import { join, resolve } from 'path'
+import { basename, join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/constants'
 import { createOxnParser, isDomainDeclaration, type DomainDeclaration, type OXNDocument } from '../oxn-dsl'
+import { IAPAction, IAPError } from '../core/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 
 // =============================================================================
@@ -221,6 +222,27 @@ const validateSubcommand = defineCommand({
     // 直接 JSON.stringify 会撞 cycle。映射为纯对象（只有 string/array）。
     const ir = domainAstToIr(result.domain!)
 
+    // v1.0.2: 字符串级规范化校验（macOS-safe）
+    // 防止声明名 'MemberContext' 与文件 'member-context.oxn' 在 case-insensitive
+    // 文件系统（macOS APFS / Windows NTFS）上"假匹配"——Linux CI 才会暴露。
+    try {
+      assertNameFileConsistent(ir.name, filePath, 'domain')
+    } catch (err) {
+      if (err instanceof IAPError) {
+        return outputError(
+          {
+            code: err.name,
+            axis: err.axis,
+            action: err.action,
+            message: err.message,
+            context: err.context,
+          },
+          format,
+        )
+      }
+      throw err
+    }
+
     output(
       {
         ok: true,
@@ -270,6 +292,65 @@ function domainAstToIr(domain: DomainDeclaration): {
           invariant: invariants,
         }
       : null,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// v1.0.2: 字符串级规范化校验（macOS-safe）
+// ---------------------------------------------------------------------------
+
+/**
+ * 把任意 string 归一化为 kebab-case（lowercase + 驼峰转 - + _ 转 -）。
+ * 例: "MemberContext" → "member-context"; "wechat_minigame" → "wechat-minigame"
+ */
+export function toKebab(s: string): string {
+  return s
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+    .replace(/_/g, '-')
+    .toLowerCase()
+}
+
+/**
+ * v1.0.2 NAME_FILE_MISMATCH 防御：
+ *
+ * 物理文件匹配在 macOS APFS / Windows NTFS（默认 case-insensitive）上会"假命中"——
+ * `MemberContext.oxn` 和 `member-context.oxn` 在同一文件系统上指向同一 inode。
+ * AI 在 macOS 跑通、Linux CI 挂掉 = 信任杀手。
+ *
+ * 解决：解析器层做纯字符串规范化比对。
+ *   - declared: AST 内的 `domain "X"` 中的 X（如 "MemberContext"）
+ *   - file: 文件路径 basename 去后缀（如 "member-context"）
+ *   - 两者归一为 kebab-case 后比对
+ *   - 不一致 → 抛 IAP_INTENT_NAME_FILE_MISMATCH
+ *
+ * OXN 不强制风格（PascalCase / kebab-case 都接受），只强制"声明 vs 文件"在规范化后一致。
+ */
+export function assertNameFileConsistent(
+  declared: string,
+  filePath: string,
+  entityType: 'domain' | 'blueprint' | 'work',
+): void {
+  const fileStem = basename(filePath).replace(/\.oxn$/i, '')
+  const declaredNorm = toKebab(declared)
+  const fileNorm = toKebab(fileStem)
+  if (declaredNorm !== fileNorm) {
+    throw new IAPError(
+      'INTENT',
+      'NAME_FILE_MISMATCH',
+      IAPAction.YIELD_TO_HUMAN,
+      `Declared name '${declared}' does not match file '${fileStem}.oxn'`,
+      {
+        entityType,
+        declared,
+        file: `${fileStem}.oxn`,
+        normalized: declaredNorm,
+        suggestion:
+          `Either rename the file to '${declaredNorm}.oxn', ` +
+          `or change the declared name to match the file. ` +
+          `OXN does not enforce casing style, only canonicalization consistency.`,
+      },
+    )
   }
 }
 

@@ -1,5 +1,6 @@
 # Runtime state (not for Git; personal/sandbox data)
 works/
+proofs/
 **/*-state.json
 **/*-trace.jsonl
 **/*-frozen.json

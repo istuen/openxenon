@@ -266,12 +266,13 @@ describe('4-tier CLI catch block (process.exit/stdout/stderr)', () => {
     expect(stderrBuf).toBe('')
   })
 
-  test('档 1: IAPError action = AUTONOMOUS_RETRY 也走 stdout', () => {
-    const err = new IAPError('ALIGN', 'TIMEOUT', IAPAction.AUTONOMOUS_RETRY, 'task 跑超时')
+  test('档 1: IAPError (v1.0.2 后仅 YIELD_TO_HUMAN 一种 action)', () => {
+    // v1.0.2 字典收敛：移除 AUTONOMOUS_RETRY action（Align 轴业务结果走 Verdict 通道而非异常）
+    const err = new IAPError('ALIGN', 'CHECKLIST_MISSING', IAPAction.YIELD_TO_HUMAN, 'part 缺 intent_checklist')
     safeRunTieredCatch(err)
     expect(exitCode).toBe(1)
-    expect(stdoutBuf).toContain('IAP_ALIGN_TIMEOUT')
-    expect(stdoutBuf).toContain('"action": "AUTONOMOUS_RETRY"')
+    expect(stdoutBuf).toContain('IAP_ALIGN_CHECKLIST_MISSING')
+    expect(stdoutBuf).toContain('"action": "YIELD_TO_HUMAN"')
   })
 
   test('档 2: OXNCrash → stderr stack + exit 2', () => {
