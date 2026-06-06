@@ -4,7 +4,7 @@ import { join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/constants'
 import { createOxnParser, isDomainDeclaration, type DomainDeclaration, type OXNDocument } from '../oxn-dsl'
-import { getFormatFromArgs, output, outputError } from './output'
+import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 
 // =============================================================================
 // `oxn domain` — DDD 限界上下文管理
@@ -102,14 +102,10 @@ const createSubcommand = defineCommand({
       mkdirSync(outDir, { recursive: true })
     }
     if (existsSync(outPath) && !force) {
-      return outputError(
-        {
-          code: 'OXN_OUTPUT_FILE_EXISTS',
-          message: `domain file already exists: ${outPath}`,
-          suggestion: 'use --force / -f to overwrite',
-        },
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `domain file already exists: ${outPath}`, {
+        suggestion: 'use --force / -f to overwrite',
         format,
-      )
+      })
     }
 
     // 生成 domain 骨架模板 (v0.1-final)

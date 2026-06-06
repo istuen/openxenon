@@ -1,8 +1,11 @@
 // =============================================================================
-// CLI 4-Tier catch block tests (v1.0 — Phase 3)
+// CLI 4-Tier catch block tests (v1.0 — Phase 3/4)
 //
 // 验证：
-//   1. isCliInputError 正确识别各种 CLI 输入错（commander./citty./OXN_INVALID_CLI_*）
+//   1. isCliInputError 正确识别各种 CLI 输入错
+//      - 库层: commander./citty./cli.
+//      - 自定义: OXN_INVALID_CLI_*, OXN_INVALID_*, OXN_PROOF_*, OXN_PROBE_*,
+//                OXN_INPUT_*, OXN_OUTPUT_*
 //   2. 4 档分类器 classifyError 正确分流
 //   3. 档 1 (IAPError) → 输出 stdout JSON + exit 1
 //   4. 档 2 (OXNCrash) → 输出 stderr + exit 2
@@ -43,6 +46,33 @@ describe('isCliInputError', () => {
 
   test('code 以 OXN_INVALID_CLI_ 开头 → true', () => {
     expect(isCliInputError({ code: 'OXN_INVALID_CLI_FOO', message: 'foo' })).toBe(true)
+  })
+
+  // ---- Phase 4: 扩展子命令级 CLI 输入错前缀 ----
+
+  test('Phase 4: code 以 OXN_PROOF_ 开头 → true', () => {
+    expect(isCliInputError({ code: 'OXN_PROOF_NOT_FOUND', message: 'foo' })).toBe(true)
+    expect(isCliInputError({ code: 'OXN_PROOF_PARSE_FAILED', message: 'foo' })).toBe(true)
+    expect(isCliInputError({ code: 'OXN_PROOF_EMPTY', message: 'foo' })).toBe(true)
+    expect(isCliInputError({ code: 'OXN_PROOF_NOT_RUN', message: 'foo' })).toBe(true)
+  })
+
+  test('Phase 4: code 以 OXN_PROBE_ 开头 → true', () => {
+    expect(isCliInputError({ code: 'OXN_PROBE_UNKNOWN', message: 'foo' })).toBe(true)
+  })
+
+  test('Phase 4: code 以 OXN_INPUT_ 开头 → true', () => {
+    expect(isCliInputError({ code: 'OXN_INPUT_JSON_INVALID', message: 'foo' })).toBe(true)
+  })
+
+  test('Phase 4: code 以 OXN_OUTPUT_ 开头 → true', () => {
+    expect(isCliInputError({ code: 'OXN_OUTPUT_FILE_EXISTS', message: 'foo' })).toBe(true)
+    expect(isCliInputError({ code: 'OXN_OUTPUT_DIR_EXISTS', message: 'foo' })).toBe(true)
+  })
+
+  test('Phase 4: code 以 OXN_INVALID_ 开头（除 OXN_INVALID_CLI_*） → true', () => {
+    expect(isCliInputError({ code: 'OXN_INVALID_NAME', message: 'foo' })).toBe(true)
+    expect(isCliInputError({ code: 'OXN_INVALID_WORK_NAME', message: 'foo' })).toBe(true)
   })
 
   test('message 包含 "Missing required argument" → true', () => {

@@ -4,7 +4,7 @@ import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxn-dsl'
-import { getFormatFromArgs, output, outputError } from './output'
+import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 
 function getProjectRoot(): string {
   return process.cwd()
@@ -109,14 +109,10 @@ const createSubcommand = defineCommand({
       mkdirSync(outDir, { recursive: true })
     }
     if (existsSync(outPath) && !force) {
-      return outputError(
-        {
-          code: 'OXN_OUTPUT_FILE_EXISTS',
-          message: `blueprint file already exists: ${outPath}`,
-          suggestion: 'use --force / -f to overwrite',
-        },
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `blueprint file already exists: ${outPath}`, {
+        suggestion: 'use --force / -f to overwrite',
         format,
-      )
+      })
     }
 
     const slotBlocks: string[] = []

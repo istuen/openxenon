@@ -1,5 +1,5 @@
 // =============================================================================
-// `oxn` CLI 入口 (v1.0 — Phase 3 4 档分流)
+// `oxn` CLI 入口 (v1.0 — Phase 4 完成版)
 //
 // 4 档 CLI 错误出口（顶层 try/catch 分类）：
 //   档 1 (IAPError)         → stdout JSON + process.exit(1)   ← AI 消费
@@ -15,12 +15,18 @@
 // 注意事项：
 //   - citty 对自身 CLI 错（缺 positional / 未知子命令）不 throw，直接 process.exit(1)
 //   - 顶层 catch 主要兜住：subcommand 漏 catch 的 IAPError / OXNCrash / 其他 Error
-//   - subcommand 通过 `return outputError(...)` 报错时，outputError 内部已设 process.exitCode = 1
+//   - subcommand 通过 `return outputError(...)` / `outputUserInputError(...)` 报错时，
+//     outputError 内部已设 process.exitCode = 1
 //   - unhandledRejection 也走 4 档分类（防止 Bug 掩盖）
+//
+// Phase 4 完成：
+//   - socket-client.ts 已 throw IAPError('PROOF','INFRA_FAIL',...) 替代 OS 错透传
+//   - 7 个用户输入错（OXN_PROOF_*/OXN_PROBE_*/OXN_INPUT_*/OXN_OUTPUT_*/OXN_INVALID_*）
+//     已迁移至 outputUserInputError helper
+//   - handleLegacyDaemonError 已删除（IAPError catch 块天然处理）
 // =============================================================================
 
 import { defineCommand, runMain } from 'citty'
-import { DAEMON_SOCK_PATH } from '../infra/global'
 import { IAPError, OXNCrash, isCliInputError } from '../core/errors'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
 
@@ -131,61 +137,6 @@ function handleCrash(tier: Extract<Tier, { kind: 'Crash' }>): never {
 }
 
 // =============================================================================
-// Daemon 错 (历史遗留，Phase 4 改写 catch 块时会替换为 IAPError/OXNCrash)
-// =============================================================================
-
-/**
- * 历史遗留：3 个 Daemon 错码（OXN_SOCKET_REFUSED / SOCKET_TIMEOUT / UNKNOWN）
- * 当前通过 process.exitCode 1 走 outputError 通道（exit 1 + stdout JSON）。
- * Phase 4 整改：把 daemon 错改为 IAPError('PROOF', 'INFRA_FAIL', ...) throws。
- */
-function handleLegacyDaemonError(err: Error): never {
-  const msg = err.message
-  if (msg.includes('ECONNREFUSED') || msg.includes('ENOENT') || msg.includes('connect')) {
-    console.log(
-      JSON.stringify(
-        {
-          ok: false,
-          error: {
-            code: 'OXN_SOCKET_REFUSED',
-            message: 'Daemon 未运行',
-            category: 'INFRA',
-            recoverable: true,
-            suggestion: `请先执行 oxn global daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`,
-          },
-        },
-        null,
-        2,
-      ),
-    )
-    process.exit(1)
-  }
-  if (msg.includes('timed out') || msg.includes('ETIMEDOUT')) {
-    console.log(
-      JSON.stringify(
-        {
-          ok: false,
-          error: {
-            code: 'OXN_SOCKET_TIMEOUT',
-            message: 'Daemon 响应超时',
-            category: 'INFRA',
-            recoverable: true,
-            suggestion: '等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start',
-          },
-        },
-        null,
-        2,
-      ),
-    )
-    process.exit(1)
-  }
-  // 兜底 = 引擎崩溃（不应被 AI 看到）
-  console.error('\n=== OXN UNEXPECTED CRASH ===')
-  console.error(err.stack ?? err.message)
-  process.exit(2)
-}
-
-// =============================================================================
 // CLI 命令定义
 // =============================================================================
 
@@ -280,12 +231,7 @@ try {
       handleCliInput(tier)
       break
     case 'Crash':
-      // 检查是否是历史遗留的 daemon 错（Phase 4 改写前兼容路径）
-      if (err instanceof Error) {
-        handleLegacyDaemonError(err)
-      } else {
-        handleCrash(tier)
-      }
+      handleCrash(tier)
       break
   }
 }

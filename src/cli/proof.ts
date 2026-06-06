@@ -27,7 +27,7 @@ import {
   type ProofDeclaration,
   type ProofProbeDecl,
 } from '../oxn-dsl'
-import { getFormatFromArgs, output, outputError } from './output'
+import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
 import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/probes/catalog'
@@ -137,14 +137,10 @@ const createSubcommand = defineCommand({
     const force = ctx.args.force === true || ctx.args.f === true
 
     if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(name)) {
-      return outputError(
-        {
-          code: 'OXN_INVALID_NAME',
-          message: `invalid proof name: ${JSON.stringify(name)}`,
-          suggestion: 'use kebab-case / snake_case starting with a letter (e.g. "check-deploy")',
-        },
+      return outputUserInputError('OXN_INVALID_NAME', `invalid proof name: ${JSON.stringify(name)}`, {
+        suggestion: 'use kebab-case / snake_case starting with a letter (e.g. "check-deploy")',
         format,
-      )
+      })
     }
 
     const dir = getProofDir(name)
@@ -155,14 +151,10 @@ const createSubcommand = defineCommand({
       mkdirSync(dir, { recursive: true })
     }
     if (existsSync(oxnPath) && !force) {
-      return outputError(
-        {
-          code: 'OXN_OUTPUT_FILE_EXISTS',
-          message: `proof already exists: ${oxnPath}`,
-          suggestion: 'use --force / -f to overwrite',
-        },
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `proof already exists: ${oxnPath}`, {
+        suggestion: 'use --force / -f to overwrite',
         format,
-      )
+      })
     }
 
     const template = `// Proof: ${name}
@@ -247,14 +239,10 @@ const probeDescribeSubcommand = defineCommand({
     const name = ctx.args.name as string
     const info = describeProbe(name)
     if (!info) {
-      return outputError(
-        {
-          code: 'OXN_PROBE_UNKNOWN',
-          message: `unknown probe: ${name}`,
-          suggestion: 'run `oxn proof probe list` to see available probes',
-        },
+      return outputUserInputError('OXN_PROBE_UNKNOWN', `unknown probe: ${name}`, {
+        suggestion: 'run `oxn proof probe list` to see available probes',
         format,
-      )
+      })
     }
     output(
       {
@@ -318,14 +306,10 @@ const probeAddSubcommand = defineCommand({
     const oxnPath = getProofOxnPath(name)
 
     if (!existsSync(oxnPath)) {
-      return outputError(
-        {
-          code: 'OXN_PROOF_NOT_FOUND',
-          message: `proof "${name}" not found: ${oxnPath}`,
-          suggestion: `run \`oxn proof create ${name}\` first`,
-        },
+      return outputUserInputError('OXN_PROOF_NOT_FOUND', `proof "${name}" not found: ${oxnPath}`, {
+        suggestion: `run \`oxn proof create ${name}\` first`,
         format,
-      )
+      })
     }
 
     // 1. 解析 + 翻译（catalog 干这件事）
@@ -336,12 +320,10 @@ const probeAddSubcommand = defineCommand({
         throw new Error('--input-json must be a JSON object (e.g. \'{"path":"./x"}\')')
       }
     } catch (err) {
-      return outputError(
-        {
-          code: 'OXN_INPUT_JSON_INVALID',
-          message: `failed to parse --input-json: ${err instanceof Error ? err.message : String(err)}`,
-        },
-        format,
+      return outputUserInputError(
+        'OXN_INPUT_JSON_INVALID',
+        `failed to parse --input-json: ${err instanceof Error ? err.message : String(err)}`,
+        { format },
       )
     }
 
@@ -446,19 +428,15 @@ const runSubcommand = defineCommand({
 
     const parsed = await parseProofFile(oxnPath)
     if (!parsed.ok || !parsed.proof) {
-      return outputError({ code: 'OXN_PROOF_PARSE_FAILED', message: parsed.errors.join('; ') }, format)
+      return outputUserInputError('OXN_PROOF_PARSE_FAILED', parsed.errors.join('; '), { format })
     }
 
     const probeIRs = proofProbesToIR(parsed.proof)
     if (probeIRs.length === 0) {
-      return outputError(
-        {
-          code: 'OXN_PROOF_EMPTY',
-          message: `proof "${name}" has no probe declarations`,
-          suggestion: 'add at least one probe: `oxn proof probe add ...`',
-        },
+      return outputUserInputError('OXN_PROOF_EMPTY', `proof "${name}" has no probe declarations`, {
+        suggestion: 'add at least one probe: `oxn proof probe add ...`',
         format,
-      )
+      })
     }
 
     const results = []
@@ -572,14 +550,10 @@ const showSubcommand = defineCommand({
     const r = readFrozenProof(frozenPath)
 
     if (!r.ok || !r.frozen) {
-      return outputError(
-        {
-          code: 'OXN_PROOF_NOT_RUN',
-          message: r.reason ?? `frozen.json missing for proof "${name}"`,
-          suggestion: `run \`oxn proof run ${name}\` first`,
-        },
+      return outputUserInputError('OXN_PROOF_NOT_RUN', r.reason ?? `frozen.json missing for proof "${name}"`, {
+        suggestion: `run \`oxn proof run ${name}\` first`,
         format,
-      )
+      })
     }
 
     output(

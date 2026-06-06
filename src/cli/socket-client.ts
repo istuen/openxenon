@@ -1,5 +1,6 @@
 import { connect, type Socket } from 'net'
 import { DAEMON_SOCK_PATH } from '../infra/global'
+import { IAPError, IAPAction } from '../core/errors'
 
 export interface SocketMessage {
   method: string
@@ -9,6 +10,44 @@ export interface SocketMessage {
 }
 
 let socket: Socket | null = null
+
+/**
+ * 把底层 OS 套接字错误翻译为 IAPError（PROOF / INFRA_FAIL）。
+ *
+ * 翻译策略（按优先级）：
+ *   - ECONNREFUSED / ENOENT  → Daemon 没启动 / socket 文件不存在
+ *   - ETIMEDOUT / 'timed out' → Daemon 进程存在但没响应
+ *   - 其他 OS 错 → 仍归 INFRA_FAIL（YIELD_TO_HUMAN，让用户排查）
+ *
+ * 哲学契约：基础设施层错是"用户环境问题"（不是 OXN 引擎 Bug），
+ *   所以归 IAPError(action=YIELD_TO_HUMAN)，不是 OXNCrash。
+ */
+function wrapSocketError(err: NodeJS.ErrnoException, phase: 'connect' | 'send'): IAPError {
+  const code = err.code ?? 'UNKNOWN'
+  const message = err.message ?? String(err)
+
+  if (code === 'ECONNREFUSED' || code === 'ENOENT') {
+    return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Daemon 未运行（${code}: ${message}）`, {
+      phase,
+      systemError: code,
+      socketPath: DAEMON_SOCK_PATH,
+      suggestion: '请先执行 oxn global daemon start 启动 Daemon',
+    })
+  }
+  if (code === 'ETIMEDOUT' || message.includes('timed out')) {
+    return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Daemon 响应超时（${code}: ${message}）`, {
+      phase,
+      systemError: code,
+      socketPath: DAEMON_SOCK_PATH,
+      suggestion: '等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start',
+    })
+  }
+  return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Daemon 通信失败（${code}: ${message}）`, {
+    phase,
+    systemError: code,
+    socketPath: DAEMON_SOCK_PATH,
+  })
+}
 
 export async function connectSocket(): Promise<Socket> {
   return new Promise((resolve, reject) => {
@@ -23,7 +62,7 @@ export async function connectSocket(): Promise<Socket> {
 
     socket.on('error', (err) => {
       socket = null
-      reject(err)
+      reject(wrapSocketError(err, 'connect'))
     })
 
     socket.on('close', () => {
@@ -65,7 +104,7 @@ export async function sendToDaemon(message: SocketMessage): Promise<unknown> {
 
     sock.on('error', (err) => {
       sock.removeListener('data', onData)
-      reject(err)
+      reject(wrapSocketError(err, 'send'))
     })
 
     sock.write(`${JSON.stringify(message)}\n`)

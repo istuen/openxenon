@@ -34,7 +34,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, w
 import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, TASK_OXN_FILE, WORK_OXN_FILE } from '../kernel/constants'
-import { getFormatFromArgs, output, outputError } from './output'
+import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import {
   isWorkDeclaration,
   createOxnParser,
@@ -616,26 +616,18 @@ const createSubcommand = defineCommand({
           ? join(projectRoot, customOutputDir)
           : join(projectRoot, '.openxenon', 'works', workName)
         if (!force && existsSync(outputDir)) {
-          return outputError(
-            {
-              code: 'OXN_OUTPUT_DIR_EXISTS',
-              message: `output directory already exists: ${outputDir}`,
-              suggestion: 'use --force to overwrite, or --output-dir to pick a new location',
-            },
+          return outputUserInputError('OXN_OUTPUT_DIR_EXISTS', `output directory already exists: ${outputDir}`, {
+            suggestion: 'use --force to overwrite, or --output-dir to pick a new location',
             format,
-          )
+          })
         }
         ensureDirectory(outputDir)
         const workFile = join(outputDir, WORK_OXN_FILE)
         if (!force && existsSync(workFile)) {
-          return outputError(
-            {
-              code: 'OXN_OUTPUT_FILE_EXISTS',
-              message: `work.oxn already exists in ${outputDir}`,
-              suggestion: 'use --force to overwrite',
-            },
+          return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `work.oxn already exists in ${outputDir}`, {
+            suggestion: 'use --force to overwrite',
             format,
-          )
+          })
         }
         const workContent = renderWorkSkeleton(workName, resolvedBlueprintName, slots)
         writeFileSync(workFile, workContent, 'utf-8')
@@ -825,14 +817,10 @@ const addTaskSubcommand = defineCommand({
     const taskDir = getWorkTaskDir(workName, taskName)
     const taskFile = getWorkTaskFile(workName, taskName)
     if (existsSync(taskFile) && !force) {
-      return outputError(
-        {
-          code: 'OXN_OUTPUT_FILE_EXISTS',
-          message: `task.oxn already exists at ${taskFile}`,
-          suggestion: 'use --force to overwrite',
-        },
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.oxn already exists at ${taskFile}`, {
+        suggestion: 'use --force to overwrite',
         format,
-      )
+      })
     }
 
     let allowedBlueprints: string[] = []

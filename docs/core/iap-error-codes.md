@@ -82,8 +82,8 @@ OXN 错误码分两条独立轨道，**互不耦合**：
     "code": "IAP_PROOF_INFRA_FAIL",
     "axis": "PROOF",
     "action": "YIELD_TO_HUMAN",
-    "message": "fs.statSync 失败",
-    "context": { "path": "./dist", "systemError": "EACCES" }
+    "message": "Daemon 未运行（ENOENT: connect ENOENT ~/.openxenon/daemon.sock）",
+    "context": { "phase": "connect", "systemError": "ENOENT", "socketPath": "...", "suggestion": "..." }
   }
 }
 ```
@@ -121,11 +121,16 @@ TypeError: cannot read property x of undefined
 
 CLI 输入错通过以下规则识别（`src/core/errors/cli-input-error.ts`）：
 
-### 错误码前缀
+### 错误码前缀（白名单，按优先级）
 - `commander.*` (Commander.js 抛)
 - `citty.*` (citty 抛)
 - `cli.*` (项目自定义前缀)
-- `OXN_INVALID_CLI_*` (项目自定义码)
+- `OXN_INVALID_CLI_*` (项目自定义 CLI 码)
+- `OXN_PROOF_*` (子命令 Proof 用户输入错)
+- `OXN_PROBE_*` (子命令 Probe 用户输入错)
+- `OXN_INPUT_*` (子命令 输入参数 错)
+- `OXN_OUTPUT_*` (子命令 输出目标 错)
+- `OXN_INVALID_*` (子命令 通用校验错)
 
 ### 消息关键词
 - `Missing required argument`
@@ -166,14 +171,27 @@ CLI 输入错通过以下规则识别（`src/core/errors/cli-input-error.ts`）�
 |---|---|
 | `src/core/errors/iap-error.ts` | `IAPError` 类 + `IAPAction` enum + 类型 |
 | `src/core/errors/oxn-crash.ts` | `OXNCrash` 类 + 类型 |
-| `src/core/errors/cli-input-error.ts` | `isCliInputError` 守卫 |
+| `src/core/errors/cli-input-error.ts` | `isCliInputError` 守卫（8 个错误码前缀白名单 + 9 个 citty 关键词） |
 | `src/core/errors/index.ts` | Re-export barrel |
-| `src/core/errors/__tests__/` | 21 + 25 = 46 个测试 |
+| `src/core/errors/__tests__/` | 21 (IAP) + 25+11 = 57 个测试 |
+| `src/cli/index.ts` | 4 档 catch 块（`classifyError` + 4 个 `handleXxx`） |
+| `src/cli/output.ts` | `outputError` + `outputUserInputError` helper |
+| `src/cli/socket-client.ts` | OS 套接字错 → `IAPError('PROOF','INFRA_FAIL',...)` 包装 |
+| `src/cli/{proof,blueprint,work,domain}.ts` | 7+1 个用户输入错（`OXN_PROOF_*` / `OXN_PROBE_*` / `OXN_INPUT_*` / `OXN_OUTPUT_*` / `OXN_INVALID_*`）走 `outputUserInputError` |
+
+### Phase 4 完成项
+
+- ✅ `socket-client.ts` 把 OS 套接字错（ECONNREFUSED/ENOENT/ETIMEDOUT）翻译为 `IAPError('PROOF', 'INFRA_FAIL', YIELD_TO_HUMAN, ...)`
+- ✅ 删除 `src/cli/index.ts` 的 `handleLegacyDaemonError`（IAPError catch 块天然处理）
+- ✅ 7+1 个用户输入错（`OXN_PROOF_*` / `OXN_PROBE_*` / `OXN_INPUT_*` / `OXN_OUTPUT_*` / `OXN_INVALID_NAME`）已迁移至 `outputUserInputError(code, message, options)` helper
+- ✅ `isCliInputError` 白名单扩展到 8 个错误码前缀（4 个 + `OXN_PROOF_` / `OXN_PROBE_` / `OXN_INPUT_` / `OXN_OUTPUT_` / `OXN_INVALID_`）
+- ✅ E2E 集成测试 (`src/cli/__tests__/cli-e2e.test.ts`) 验证 4 档错误出口契约
+- ✅ `src/kernel/enums.ts` Phase 2 stale 注释已更新
 
 ---
 
 ## 八、演进路线
 
 - **v1.0 (Phase 1-3)**: 双轨制错误码体系（本文档）
-- **v1.1 (Phase 4)**: 删除 `src/kernel/enums.ts` 遗留的 `Action` / `Status` 等无关枚举（已完成 Phase 2 部分）
-- **v2.0 (Phase 5+)**: 把 8 个 builtin Probe handler 全部实现 + 6 个 ProgramContext term
+- **v1.0.1 (Phase 4)**: socket-client IAPError 包装 + 用户输入错 helper + 4 档 E2E 集成测试
+- **v1.1 (Phase 5+)**: 8 个 builtin Probe handler 全部实现 + 6 个 ProgramContext term + IAPError factory 方法（YAGNI 待定）

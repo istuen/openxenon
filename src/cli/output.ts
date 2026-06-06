@@ -95,6 +95,23 @@ export function outputError(
   }
 }
 
+// v1.0 (Phase 4): 用户输入错快捷输出器
+//   用途：subcommand 报告"用户输错东西"（既不是 IAPError 业务流，也不是 OXNCrash 引擎崩溃）
+//   错误码命名规范：OXN_PROOF_* / OXN_INPUT_* / OXN_OUTPUT_* / OXN_INVALID_*
+//   这些前缀会被 isCliInputError 识别（CLI 4 档 catch 块档 3）
+//
+//   行为契约：
+//     - exit code: 1（业务流阻断，可恢复）
+//     - 输出通道: stdout JSON / YAML / HTML / MD（与用户期望的输出格式一致）
+//     - 进程退出: 立即 return（subcommand handler return 即可，不需 process.exit）
+export function outputUserInputError(
+  code: string,
+  message: string,
+  options: { suggestion?: string; format?: OutputFormat } = {},
+): void {
+  outputError({ code, message, suggestion: options.suggestion }, options.format ?? 'human')
+}
+
 export function output(options: OutputOptions): void
 export function output(data: unknown, format?: OutputFormat): void
 export function output(optionsOrData: OutputOptions | unknown, format?: OutputFormat): void {
