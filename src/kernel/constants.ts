@@ -2,6 +2,7 @@ export const BOUNDARY_DIR = '.openxenon'
 export const TASKS_DIR = 'tasks'
 export const WORK_DIR = 'work'
 export const DOMAINS_DIR = 'domains'
+export const PROOFS_DIR = 'proofs'
 
 export const BLUEPRINT_FILE = 'blueprint.yaml'
 export const BLUEPRINT_OXN_FILE = 'blueprint.oxn'
@@ -12,6 +13,12 @@ export const WORK_OXN_FILE = 'work.oxn'
 export const TASK_TRACE_FILE = 'task-trace.jsonl'
 export const CONFIG_FILE = 'config.json'
 export const CANONICAL_FILE = 'canonical.yaml'
+
+// Proof 空间（v0.1.2 Proof-First 入口）
+//   .openxenon/proofs/<name>/proof.oxn   — Probe 声明
+//   .openxenon/proofs/<name>/frozen.json — 判决书（不可篡改）
+export const PROOF_OXN_FILE = 'proof.oxn'
+export const PROOF_FROZEN_JSON = 'frozen.json'
 
 // =============================================================================
 // Work 空间运行时文件命名范式

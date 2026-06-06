@@ -72,6 +72,7 @@ export type OXNDSLKeywordNames =
     | "part"
     | "parts"
     | "probe"
+    | "proof"
     | "prop"
     | "ref"
     | "required"
@@ -212,7 +213,7 @@ export function isDefaultValue(item: unknown): item is DefaultValue {
 }
 
 export interface Description extends langium.AstNode {
-    readonly $container: BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration;
+    readonly $container: BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration | ProofDeclaration;
     readonly $type: 'Description';
     value: string;
 }
@@ -467,7 +468,7 @@ export function isParamPair(item: unknown): item is ParamPair {
 }
 
 export interface ParamsBlock extends langium.AstNode {
-    readonly $container: PartProbeDeclaration | TaskProbeDecl;
+    readonly $container: PartProbeDeclaration | ProofProbeDecl | TaskProbeDecl;
     readonly $type: 'ParamsBlock';
     pairs: Array<ParamPair>;
 }
@@ -647,6 +648,44 @@ export const ProbeRefDecl = {
 
 export function isProbeRefDecl(item: unknown): item is ProbeRefDecl {
     return reflection.isInstance(item, ProbeRefDecl.$type);
+}
+
+export interface ProofDeclaration extends langium.AstNode {
+    readonly $container: OXNDocument;
+    readonly $type: 'ProofDeclaration';
+    descriptions: Array<Description>;
+    name: string;
+    probes: Array<ProofProbeDecl>;
+}
+
+export const ProofDeclaration = {
+    $type: 'ProofDeclaration',
+    descriptions: 'descriptions',
+    name: 'name',
+    probes: 'probes'
+} as const;
+
+export function isProofDeclaration(item: unknown): item is ProofDeclaration {
+    return reflection.isInstance(item, ProofDeclaration.$type);
+}
+
+export interface ProofProbeDecl extends langium.AstNode {
+    readonly $container: ProofDeclaration;
+    readonly $type: 'ProofProbeDecl';
+    name: string;
+    params?: ParamsBlock;
+    ref: string;
+}
+
+export const ProofProbeDecl = {
+    $type: 'ProofProbeDecl',
+    name: 'name',
+    params: 'params',
+    ref: 'ref'
+} as const;
+
+export function isProofProbeDecl(item: unknown): item is ProofProbeDecl {
+    return reflection.isInstance(item, ProofProbeDecl.$type);
 }
 
 export interface PropDeclaration extends langium.AstNode {
@@ -846,7 +885,7 @@ export function isTernaryExpr(item: unknown): item is TernaryExpr {
     return reflection.isInstance(item, TernaryExpr.$type);
 }
 
-export type TopLevelEntity = BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration | WorkDeclaration;
+export type TopLevelEntity = BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration | ProofDeclaration | WorkDeclaration;
 
 export const TopLevelEntity = {
     $type: 'TopLevelEntity'
@@ -961,6 +1000,8 @@ export type OXNDSLAstType = {
     ProbeDeclaration: ProbeDeclaration
     ProbeOutputDeclaration: ProbeOutputDeclaration
     ProbeRefDecl: ProbeRefDecl
+    ProofDeclaration: ProofDeclaration
+    ProofProbeDecl: ProofProbeDecl
     PropDeclaration: PropDeclaration
     QualifiedName: QualifiedName
     RequiredModifier: RequiredModifier
@@ -1394,6 +1435,38 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
                 },
                 ref: {
                     name: ProbeRefDecl.ref
+                }
+            },
+            superTypes: []
+        },
+        ProofDeclaration: {
+            name: ProofDeclaration.$type,
+            properties: {
+                descriptions: {
+                    name: ProofDeclaration.descriptions,
+                    defaultValue: []
+                },
+                name: {
+                    name: ProofDeclaration.name
+                },
+                probes: {
+                    name: ProofDeclaration.probes,
+                    defaultValue: []
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        },
+        ProofProbeDecl: {
+            name: ProofProbeDecl.$type,
+            properties: {
+                name: {
+                    name: ProofProbeDecl.name
+                },
+                params: {
+                    name: ProofProbeDecl.params
+                },
+                ref: {
+                    name: ProofProbeDecl.ref
                 }
             },
             superTypes: []

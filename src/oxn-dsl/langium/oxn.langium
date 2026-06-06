@@ -9,7 +9,8 @@ TopLevelEntity:
     | PartDeclaration
     | BlueprintDeclaration
     | DomainDeclaration
-    | WorkDeclaration;
+    | WorkDeclaration
+    | ProofDeclaration;
 
 // ==================== Type System ====================
 TypeReference:
@@ -218,6 +219,22 @@ PartRefDecl:
 
 ProbeRefDecl:
     'probe' name=STRING ('as' alias=STRING)? ('ref' ref=STRING)? ';';
+
+// ==================== Proof (v0.1.2: Proof-First 入口) ====================
+// Proof 是 IAP 中 Proof 轴的独立运作：工程师跳过 Domain/Blueprint 资产化，
+// 直接用 Probe 声明验收标准，由 Core 产出不可篡改的 frozen.json。
+// 物理边界：.openxenon/proofs/<name>/proof.oxn + frozen.json
+ProofDeclaration:
+    'proof' name=STRING '{'
+        (descriptions+=Description)?
+        (probes+=ProofProbeDecl)*
+    '}';
+
+ProofProbeDecl:
+    'probe' name=STRING '{'
+        'ref' ref=STRING
+        ('params' params=ParamsBlock)?
+    '}';
 
 // ==================== Task (v0.1-final: align 执行器) ====================
 // Task 将业务意图和技术意图插入留白的具体动作

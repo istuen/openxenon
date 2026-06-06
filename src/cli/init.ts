@@ -12,9 +12,11 @@ import { compileAllSkills, formatCompilationReport } from './skill-compiler'
 
 const PROJECT_BOUNDARY_GITIGNORE = `# Runtime state (not for Git; personal/sandbox data)
 works/
+proofs/
 **/*-state.json
 **/*-trace.jsonl
 **/*-frozen.json
+proofs/*/frozen.json
 `
 
 function ensureGlobalBoundary(): void {

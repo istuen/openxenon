@@ -100,6 +100,9 @@ export type {
   TaskPartDecl,
   TaskProbeDecl,
   TaskDeps,
+  // v0.1.2 Proof-First
+  ProofDeclaration,
+  ProofProbeDecl,
 } from './generated/ast'
 
 // --- AST type guards ---
@@ -119,4 +122,7 @@ export {
   isProbeRefDecl,
   isTaskPartDecl,
   isTaskProbeDecl,
+  // v0.1.2 Proof-First
+  isProofDeclaration,
+  isProofProbeDecl,
 } from './generated/ast'
