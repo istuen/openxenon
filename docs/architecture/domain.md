@@ -122,4 +122,4 @@ Domain 必须满足以下约束：
 ## 9. 下一章
 
 - [Blueprint 详解](./blueprint.md) — 与 Domain 正交的技术模板
-- [Intent-Align 范式](../core/intent-align.md) — 为什么 Domain 是 Intent
+- [document.md §2 IAP 三轴实体](../core/document.md#2-核心概念) — 为什么 Domain 是 Intent 轴的核心资产

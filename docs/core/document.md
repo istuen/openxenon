@@ -222,6 +222,51 @@ OXN Runtime 是工作台运行时层的执行核心：
 
 三模块的边界由其职责直接推导：每个模块只做自己的事，不僭越到其他模块的领域。
 
+### 2.7 信息隐藏原则
+
+> **AI 助手只看到"该做什么"，看不到"该满足什么"**——这是 OpenXenon 的对抗性设计，假设 AI 可能尝试绕过验证，通过信息隐藏阻止针对性优化。
+
+#### 显式可见 vs 隐式隐藏
+
+| 信息 | 谁能看 | 原因 |
+|---|---|---|
+| `domain.term` | ✅ AI 可见 | AI 写代码时需要使用统一语言 |
+| `domain.ban` | ✅ AI 可见 | AI 需要知道禁用词 |
+| `domain.invariant` | ⚠️ v0.1 文档化（v0.2 接 Probe） | v0.1 AI 可见；v0.2 转 Probe 隐藏 |
+| `blueprint.slot` | ✅ AI 可见 | AI 需要知道有哪些 slot 可 align |
+| `blueprint.observe` | ⚠️ v0.1 文档化（v0.2 接 Probe） | v0.1 AI 可见；v0.2 转 Probe 隐藏 |
+| `task.skill_context` | ✅ AI 可见 | AI 需要知道执行指令 |
+| `task.part` 内的 `probe` | ❌ AI **不可见** | 验证标准不可绕过 |
+| `frozen.json` | ❌ AI 不可写 | 判决书由 OXN 独占 |
+| `state.json` 内部 status | ❌ AI 不可写 | 状态由 OXN 独占维护 |
+
+#### 为什么需要信息隐藏
+
+**1. 防止针对性优化（Test-hacking）**：如果 AI 知道验证标准，会"针对 probe 优化"而不是真正解决问题。
+
+**2. 保持客观评价**：验证逻辑由 OXN 独占持有，AI 不可干扰；AI 无法预测将执行哪些检查，必须真正完成任务。
+
+**3. 工程师掌控验证**：验证标准是工程师的"底牌"，不应暴露给执行者。
+
+#### 三主体信息边界
+
+| 角色 | "不能感知"的内容 |
+|---|---|
+| AI | 验证标准（probe）、期望行为（expectation）、业务规则（rule） |
+| OXN | 业务语义（term/ban 怎么用）、技术策略（怎么写代码） |
+| 工程师 | 实时审查（不介入每次执行） |
+
+三者各守边界，互不越界。
+
+#### v0.1 信息隐藏实现现状
+
+| 机制 | 现状 |
+|---|---|
+| **Blueprint 不含 expectation/rule** | ✅ |
+| **Probe 块在 Part 内但 runtime 不可见** | ✅（AI 看到 part 时不读 probe 块） |
+| **`frozen.json` 由 OXN 写** | ✅（AI 不调用） |
+| **`state.json` 内部 status 由 OXN 维护** | ✅（AI 只通过 CLI 推进） |
+
 ---
 
 ## 3. IAP 范式详解

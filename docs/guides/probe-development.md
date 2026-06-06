@@ -76,7 +76,7 @@ task "verify-build" {
 > v0.1：probe 块在 Part 内仅作声明
 > v0.2：probe 块由 Kernel 在 work submit 时实际执行
 
-详见 [信息隐藏原则](../architecture/information-hiding.md) — AI 看不到 probe 内容的根本原因。
+详见 [document.md §2.7 信息隐藏原则](../core/document.md#27-信息隐藏原则) — AI 看不到 probe 内容的根本原因。
 
 ## 7. 下一章
 
