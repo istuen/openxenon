@@ -63,9 +63,10 @@
 |---|---|
 | **L0 Kernel** | 纯逻辑推演，零 IO（Schema / Contract / Processor） |
 | **L1 Foundation** | OXN DSL 解析 + Infra 适配（FsPort/PathPort/ProbePort） |
-| **L2 Module** | 业务与工程模块层（Arsenal + Domain + Work 三个并列模块） |
+| **L2 Module** | 业务与工程模块层（Builtin + Domain + Work 三个并列模块） |
 | **L3 Runtime** | 入口层（CLI / Daemon / Skill / Hall） |
-| **Intent-Align 范式** | Intent（声明）与 Align（实例）的二元对偶 — v0.1 架构灵魂 |
+| **IAP 范式** | Intent（声明轴）+ Align（编排轴）+ Proof（证明轴）三轴主导权 — v0.1+ 架构灵魂 |
+| **Intent-Align 子集视图** | IAP 范式的前两轴详解；详见 [iap-paradigm.md](./iap-paradigm.md) 与 [intent-align.md](./intent-align.md) |
 
 ## 7. 文件位置约定
 

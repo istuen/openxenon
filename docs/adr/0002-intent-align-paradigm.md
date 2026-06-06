@@ -1,7 +1,10 @@
 # 0002. Intent-Align 范式
 
-**Status**: Accepted
+> ⚠️ **本 ADR 已被 [ADR-0007 (IAP 范式升级)](./0007-iap-three-axes.md) 取代。** v0.1+ 范式从 Intent-Align 二轴升级为 **IAP（Intent-Align-Proof）三轴**。完整三轴范式与逃逸机制见 [docs/core/iap-paradigm.md](../core/iap-paradigm.md)；本 ADR 保留为历史决策记录，Intent/Align 两轴的子集视图见 [docs/core/intent-align.md](../core/intent-align.md)。
+
+**Status**: Superseded by ADR-0007
 **Date**: 2026-06-05
+**Superseded**: 2026-06-06
 
 ## Context
 

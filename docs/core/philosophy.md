@@ -12,23 +12,33 @@ AI 模型高效且擅长探索，但也会犯错与幻觉。工程师懂业务�
 
 **如何将工程师的审查经验前置为结构化资产与验证标准，让 AI 在约束边界内执行，由 Core Engine 协助工程师判定 AI 执行符合工程师意图的产物。**
 
-## 2. 三角角色
+## 2. 三轴主导权
 
-OpenXenon 的架构建立在三个核心角色的职责分离之上：
+OpenXenon 的架构灵魂是 **IAP 三轴主导权**——工程师、AI、Core Engine 分别在各自轴上**主导**，在其他轴上**协作**而不僭越：
 
-| 角色 | 定位 | 职责 | 数据边界 |
+| 主导轴 | 主导者 | 职责 | 协作方 | 对抗机制 |
+|---|---|---|---|---|
+| **Intent 轴** | **工程师** | 定义 Domain term / Blueprint slot / Probe 标准 | AI 补全意图细节 + Core 校验合法性 | Domain term 锁定边界 |
+| **Align 轴** | **AI** | 编排 Work / Task 序列、选择 Part、声明 Probe | 工程师审核 + Core 约束 | Blueprint slot 锁定路径 |
+| **Proof 轴** | **Core Engine** | 产出 Proof(Verdict)；Kernel 裁判 + Infra 法医 + Daemon 法警 | AI 诊断 + 工程师决策 | Daemon 逃逸机制阻止假完成 |
+
+**Core Engine 内部三模块**（证明轴的执行机制）：
+
+| 模块 | 定位 | 职责 | 约束 |
 |---|---|---|---|
-| **工程师** | 决策者与验收者 | 定义意图、设定验证标准、审查最终结果 | 拥有全局视野，定义系统资产，验收执行产出 |
-| **AI 助手** | 调度者与执行者 | 接收任务目标，选择执行策略，调度 Core CLI，实施代码操作 | 接收任务级目标与执行指令，**无法感知验证标准** |
-| **Core Engine** | 判决者与记录者 | 编译资产、执行校验、记录状态 | 独占验证标准与执行结果，提供 CLI 供 AI 调用，输出客观判定 |
+| **Kernel** | 裁判 | 纯逻辑验证，零 IO | 不允许 `fs.existsSync()` 等副作用 |
+| **Infra** | 法医 | 副作用 / IO，获取事实 | 只回答事实，不做判定 |
+| **Daemon** | 法警 | 运行时管理 + **逃逸机制** | Probe FAIL 时阻止 Work 进入 done |
 
-**交互原则**：
+**交互原则（三轴主导权）**：
 
-> 工程师通过 AI 助手软件与 AI 模型交互，定义规则并验收；
-> AI 助手驱动流程并执行操作；
-> Core 比对规则与事实。
+> **工程师**主定 Intent——Domain 与 Blueprint 的**唯一合法生产者**，持有业务语义与技术意图。
+> **AI** 主导 Align——把 Intent 展开为 Work / Task / Part 编排与选件。
+> **Core Engine** 主给 Proof——通过 Kernel 裁判 + Infra 法医 + Daemon 法警三模块，判定 AI 产物是否真的满足工程师意图。
 >
-> **AI 不了解标准，Core 不产生逻辑，工程师不介入实时审查。**
+> **主导权不交叉；证明不可被 `--force` 绕过。**
+
+> 完整 IAP 范式讨论见 [iap-paradigm.md](iap-paradigm.md)。
 
 ## 3. 三个核心价值
 
@@ -46,13 +56,14 @@ OpenXenon 的架构建立在三个核心角色的职责分离之上：
 
 ## 5. 当前阶段
 
-版本：**v0.1** — Intent-Align 范式落地
+版本：**v0.1** — IAP 范式（Intent-Align-Proof）落地
 
 - ✅ L0/L1/L2/L3 四层宪法实施
-- ✅ Domain / Blueprint / Work / Task 四类实体
-- ✅ Intent-Align 范式（Domain + Blueprint = Intent；Work + Task + Part = Align）
+- ✅ Domain / Blueprint / Work / Task / Proof 五类实体
+- ✅ IAP 三轴范式（Domain + Blueprint = Intent；Work + Task + Part = Align；Proof = Core Engine 主导的第三轴）
+- ✅ Core Engine 三模块（Kernel 裁判 / Infra 法医 / Daemon 法警）
 - ✅ OXN DSL v0.1 完整语法（term/ban/invariant + slot + part）
-- 🔜 v0.2：Slot 契约 / language-ban-checker Probe / 守护进程 / 异常恢复
+- 🔜 v0.2：Daemon 逃逸机制 / Slot 契约 / language-ban-checker Probe / 守护进程 / 异常恢复
 - 🔜 v0.3：多 AI 助手适配
 - 🔜 v0.4：多运行时（Bun → Node.js）
 

@@ -1,7 +1,7 @@
 # 核心概念
 
-> v0.1 起，OpenXenon 有 **4 个核心实体**：`Domain` / `Blueprint` / `Work` / `Task`。
-> 全部遵循 [Intent-Align 范式](./intent-align.md)。
+> v0.1 起，OpenXenon 有 **5 个核心实体**：`Domain` / `Blueprint` / `Work` / `Task` / `Proof`。
+> 全部遵循 [IAP 范式（Intent-Align-Proof）](./iap-paradigm.md)；Intent/Align 两轴子集视图见 [intent-align.md](./intent-align.md)。
 
 ## 1. 四个核心实体一览
 
@@ -179,7 +179,8 @@ Prop Def ─────────► Prop Assign             (1:1)
 
 ## 9. 下一章
 
-- 想理解 **Intent-Align 的设计动机** → [Intent-Align 范式](./intent-align.md)
+- 想理解 **IAP 三轴的设计动机** → [IAP 范式理念指南](./iap-paradigm.md)
+- 想理解 **Intent/Align 两轴的设计动机** → [Intent-Align 子集视图](./intent-align.md)
 - 想了解 **Domain 怎么写** → [Domain 详解](../architecture/domain.md)
 - 想了解 **Blueprint 怎么写** → [Blueprint 详解](../architecture/blueprint.md)
 - 想了解 **Work/Task 怎么编排** → [Work + Task 详解](../architecture/work-and-task.md)
