@@ -1,13 +1,22 @@
 // =============================================================================
-// Proof Runner (v0.1.2 Phase A: STUB)
+// Proof Runner (v0.1.2: 真运行时 — Kernel + Infra 分离)
 //
-// Phase A 职责：把 proof.oxn 解析为 IR 后，对每个 probe 调一次 executeProbe()
-//               并返回结构化结果供 frozen-writer 写判决书。
+// IAP 三轴分离兑现：
+//   - Infra (L1 src/infra/probes/): 物理观测 — fs-exists / shell-exec 等
+//   - Kernel (L0 src/kernel/probes/verdict.ts): 纯函数判定 — observation + params → ProbeVerdict
+//   - 本 runner: Align 编排层，把"probe 声明"分发到 Infra + Kernel，
+//     返回 FrozenProofProbeResult 给 frozen-writer 写判决书。
 //
-// Phase B 替换：executeProbe 会分发到 src/infra/probes/<ref>.ts（Kernel+Infra 分层）
-//               当前的 mock 会被替换为真实物理观测。
+// ref 解析规则：
+//   - "@oxn/probe/fs-exists"   → kind = "fs-exists"
+//   - "@oxn/probe/shell-exec"  → kind = "shell-exec"
+//   - "fs-exists" / "fs_exists"  → kind = "fs-exists"
+//   - "shell_exec" / "shell-exec" → kind = "shell-exec"
+//   解析失败 → 抛 ProbeNotFound，frozen.verdict = FAILED
 // =============================================================================
 
+import { getProbeHandler, hasProbeHandler, type ProbeContext } from '../infra/probes'
+import { judge } from '../kernel/probes/verdict'
 import type { FrozenProofProbeResult } from '../kernel/schemas/proof-schema'
 
 /** 内存中的 proof.oxn 解析结果（来自 Langium AST → IR 映射） */
@@ -18,26 +27,123 @@ export interface ProofProbeIR {
 }
 
 /**
- * Phase A stub：当前总是返回 PASS。
- * Phase B 会按 ref 路由：
- *   - @oxn/probe/fs-exists    → src/infra/probes/fs-exists.ts (Infra 物理观测)
- *   - @oxn/probe/shell-exec   → src/infra/probes/shell-exec.ts
- *   - ... 路由到对应真实实现
- * 然后由 Kernel (src/kernel/probes/verdict.ts) 给出 PASS/FAIL 判定。
+ * 把 proof.oxn 里的"工程友好"param 名翻译成 Infra handler 期望的"内核契约"param 名。
+ * 这是 IAP Align 轴的语义翻译：工程师说 `target`，Infra 收 `pattern`。
+ *
+ * Key 同时支持 kebab-case（ref 直名）和 snake_case（handler registry 名）。
  */
-export async function executeProbe(probe: ProofProbeIR): Promise<FrozenProofProbeResult> {
+const PARAM_TRANSLATIONS: Record<string, Record<string, string>> = {
+  fs_exists: { target: 'pattern', path: 'pattern' },
+  'fs-exists': { target: 'pattern', path: 'pattern' },
+  fs_not_exists: { target: 'pattern', path: 'pattern' },
+  'fs-not-exists': { target: 'pattern', path: 'pattern' },
+  fs_match: { target: 'path', file: 'path' },
+  'fs-match': { target: 'path', file: 'path' },
+  shell_exec: {}, // command / timeout 直通
+  'shell-exec': {},
+  exec_exit_zero: {},
+  'exec-exit-zero': {},
+  exec_output_match: {},
+  'exec-output-match': {},
+}
+
+function translateParams(kind: string, params: Record<string, unknown>): Record<string, unknown> {
+  const map = PARAM_TRANSLATIONS[kind]
+  if (!map) return params
+  const out: Record<string, unknown> = { ...params }
+  for (const [from, to] of Object.entries(map)) {
+    if (from in out && !(to in out)) {
+      out[to] = out[from]
+    }
+  }
+  return out
+}
+
+/** 把 "@oxn/probe/fs-exists" → "fs-exists"；"fs_exists" 不变；"shell-exec" → "shell-exec" */
+export function resolveProbeKind(ref: string): string | null {
+  // 1. 去掉 @oxn/probe/ 前缀
+  if (ref.startsWith('@oxn/probe/')) {
+    return ref.slice('@oxn/probe/'.length)
+  }
+  // 2. 已是裸 type
+  if (hasProbeHandler(ref)) return ref
+  // 3. 兼容别名（fs-exists / fs_exists 都行）
+  const aliases: Record<string, string> = {
+    'fs-exists': 'fs_exists',
+    'fs-not-exists': 'fs_not_exists',
+    'fs-content-match': 'fs_match',
+    'exec-exit-zero': 'shell_exec',
+    'shell-exec': 'shell_exec',
+  }
+  if (aliases[ref]) {
+    return aliases[ref]
+  }
+  return null
+}
+
+/**
+ * 真实执行一个 probe（Kernel + Infra 分离）
+ *   1. resolveProbeKind(ref) → kind（路由失败抛 ProbeNotFound）
+ *   2. getProbeHandler(kind) → Infra handler（物理观测）
+ *   3. Infra.execute(params, ctx) → ProbeObservation（事实）
+ *   4. Kernel.judge(observation, params) → ProbeVerdict（纯函数判定）
+ *   5. 转换为 FrozenProofProbeResult
+ */
+export async function executeProbe(
+  probe: ProofProbeIR,
+  context?: Partial<ProbeContext>,
+): Promise<FrozenProofProbeResult> {
   const start = Date.now()
-  // Phase A mock: 全部 PASS。Phase B 替换为真实 Kernel+Infra 分发。
+  const ctx: ProbeContext = {
+    projectRoot: context?.projectRoot ?? process.cwd(),
+  }
+
+  // 1. 路由
+  const kind = resolveProbeKind(probe.ref)
+  if (!kind) {
+    return {
+      probeName: probe.probeName,
+      ref: probe.ref,
+      passed: false,
+      errorMessage: `unknown probe ref: ${probe.ref} (no Infra handler)`,
+      durationMs: Date.now() - start,
+    }
+  }
+  const handler = getProbeHandler(kind)
+  if (!handler) {
+    return {
+      probeName: probe.probeName,
+      ref: probe.ref,
+      passed: false,
+      errorMessage: `no Infra handler for kind: ${kind}`,
+      durationMs: Date.now() - start,
+    }
+  }
+
+  // 2. Infra 物理观测
+  let observation
+  try {
+    const translatedParams = translateParams(kind, probe.params)
+    observation = await handler(translatedParams, ctx)
+  } catch (err) {
+    return {
+      probeName: probe.probeName,
+      ref: probe.ref,
+      passed: false,
+      errorMessage: `Infra exception: ${err instanceof Error ? err.message : String(err)}`,
+      durationMs: Date.now() - start,
+    }
+  }
+
+  // 3. Kernel 纯函数判定
+  const verdict = judge(observation, probe.params)
+
   return {
     probeName: probe.probeName,
     ref: probe.ref,
-    passed: true,
-    output: {
-      mock: true,
-      reason: 'Phase A stub: all probes return PASS. Real Kernel+Infra split ships in Phase B.',
-      ref: probe.ref,
-      params: probe.params,
-    },
+    passed: verdict.passed,
+    output: { observation, verdict },
+    errorMessage: verdict.passed ? undefined : (verdict.failureMessage ?? verdict.message),
     durationMs: Date.now() - start,
   }
 }

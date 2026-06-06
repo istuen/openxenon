@@ -84,6 +84,7 @@ class ProbeRegistry {
     'fs-not-exists': 'fs_not_exists',
     'fs-content-match': 'fs_match',
     'exec-exit-zero': 'shell_exec',
+    'shell-exec': 'shell_exec',
   }
 
   constructor() {

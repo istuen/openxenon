@@ -3,7 +3,7 @@
 // `oxn install-skill` copies canonical OpenCode Skills from
 // `.opencode/skills/oxn-*/SKILL.md` (this repo) to a target directory.
 //
-// Default behaviour: install ALL oxn-* skills (oxn-cli, oxn-work)
+// Default behaviour: install ALL oxn-* skills (oxn-cli, oxn-work, oxn-proof)
 // to the user's global OpenCode skills folder (`~/.opencode/skills/`).
 // Use `--skill <id>` to install a single one.
 //
@@ -14,6 +14,7 @@
 // embedded content.
 import skillWork from '../../.opencode/skills/oxn-work/SKILL.md' with { type: 'file' }
 import skillCli from '../../.opencode/skills/oxn-cli/SKILL.md' with { type: 'file' }
+import skillProof from '../../.opencode/skills/oxn-proof/SKILL.md' with { type: 'file' }
 
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
@@ -24,6 +25,7 @@ import { getFormatFromArgs, output } from './output'
 const EMBEDDED_SKILLS: Record<string, string> = {
   'oxn-cli': skillCli,
   'oxn-work': skillWork,
+  'oxn-proof': skillProof,
 }
 
 function getDefaultSkillsRoot(): string {

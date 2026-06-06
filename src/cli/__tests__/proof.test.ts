@@ -4,7 +4,7 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
 import { chmodSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
-import { join } from 'path'
+import { join, resolve } from 'path'
 
 // -----------------------------------------------------------------------------
 // Setup: chdir to a temp project so we don't pollute the real .openxenon/
@@ -12,9 +12,12 @@ import { join } from 'path'
 
 let tmpDir: string
 let origCwd: string
+let repoRoot: string
 
 beforeAll(() => {
   origCwd = process.cwd()
+  // __dirname = src/cli/__tests__/，向上 3 级才是 repo root
+  repoRoot = resolve(__dirname, '../../..')
   tmpDir = mkdtempSync(join(tmpdir(), 'oxn-proof-test-'))
   process.chdir(tmpDir)
   writeFileSync(join(tmpDir, 'package.json'), '{"name":"tmp","version":"0.0.1"}', 'utf-8')
@@ -264,7 +267,85 @@ describe('end-to-end: create → probe add → run → show', () => {
 })
 
 // -----------------------------------------------------------------------------
-// T7: 集成到 OXN DSL grammar — 确认 proof 顶层 entity 正确生成
+// T7: Kernel + Infra 分离验证（v0.1.2 真运行时）
+// -----------------------------------------------------------------------------
+
+describe('Kernel + Infra separation (real execution)', () => {
+  test('fs-exists with existing file → PASS', async () => {
+    const { executeProbe, resolveProbeKind } = await import('../proof-runner')
+    expect(resolveProbeKind('@oxn/probe/fs-exists')).toBe('fs-exists')
+    const r = await executeProbe(
+      {
+        probeName: 'p1',
+        ref: '@oxn/probe/fs-exists',
+        params: { target: './package.json' },
+      },
+      { projectRoot: realpathSync(tmpDir) },
+    )
+    expect(r.passed).toBe(true)
+    expect(r.errorMessage).toBeUndefined()
+  })
+
+  test('fs-exists with missing file → FAIL (Kernel verdict)', async () => {
+    const { executeProbe } = await import('../proof-runner')
+    const r = await executeProbe(
+      {
+        probeName: 'p1',
+        ref: '@oxn/probe/fs-exists',
+        params: { target: './non-existent-file.xyz' },
+      },
+      { projectRoot: realpathSync(tmpDir) },
+    )
+    expect(r.passed).toBe(false)
+    expect(r.errorMessage).toMatch(/got 0/)
+  })
+
+  test('shell-exec with exit 0 → PASS', async () => {
+    const { executeProbe } = await import('../proof-runner')
+    const r = await executeProbe(
+      {
+        probeName: 'p2',
+        ref: '@oxn/probe/shell-exec',
+        params: { command: 'true' },
+      },
+      { projectRoot: realpathSync(tmpDir) },
+    )
+    expect(r.passed).toBe(true)
+  })
+
+  test('shell-exec with non-zero exit → FAIL', async () => {
+    const { executeProbe } = await import('../proof-runner')
+    const r = await executeProbe(
+      {
+        probeName: 'p3',
+        ref: '@oxn/probe/shell-exec',
+        params: { command: 'false' },
+      },
+      { projectRoot: realpathSync(tmpDir) },
+    )
+    expect(r.passed).toBe(false)
+    expect(r.errorMessage).toMatch(/exit code 1/)
+  })
+
+  test('Kernel 纯函数：judge() 不碰 IO（无 fs.* / child_process）', async () => {
+    const { readFileSync } = await import('fs')
+    const verdictSrc = readFileSync(join(repoRoot, 'src/kernel/probes/verdict.ts'), 'utf-8')
+    // 去掉注释行（// ...）和块注释，再 grep
+    const codeOnly = verdictSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    expect(codeOnly).not.toMatch(/\bfs\.|require\(['"]fs|child_process|spawn\(/)
+  })
+
+  test('Infra 真实观测：fs-exists handler 在 src/infra/probes/ 里', async () => {
+    const { readFileSync, existsSync } = await import('fs')
+    expect(existsSync(join(repoRoot, 'src/infra/probes/fs-exists.ts'))).toBe(true)
+    expect(existsSync(join(repoRoot, 'src/infra/probes/shell-exec.ts'))).toBe(true)
+    const fsExists = readFileSync(join(repoRoot, 'src/infra/probes/fs-exists.ts'), 'utf-8')
+    expect(fsExists).toMatch(/statSync|readFileSync/)
+  })
+})
+
+// -----------------------------------------------------------------------------
+// T8: 集成到 OXN DSL grammar — 确认 proof 顶层 entity 正确生成
 // -----------------------------------------------------------------------------
 
 describe('OXN DSL grammar integration', () => {

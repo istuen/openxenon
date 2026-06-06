@@ -179,6 +179,14 @@ proof "${name}" {
       target = "./package.json"
     }
   }
+
+  probe "p2" {
+    ref "@oxn/probe/shell-exec"
+    params {
+      command = "echo hello",
+      timeout = 10000
+    }
+  }
 }
 `
     writeFileSync(oxnPath, template, 'utf-8')
@@ -266,7 +274,7 @@ const probeAddSubcommand = defineCommand({
         {
           code: 'OXN_UNKNOWN_PROBE',
           message: `unknown probe ref: ${ref}`,
-          suggestion: 'Phase A 支持：@oxn/probe/fs-exists / @oxn/probe/shell-exec',
+          suggestion: 'supported: @oxn/probe/fs-exists | @oxn/probe/shell-exec',
         },
         format,
       )
@@ -277,7 +285,7 @@ const probeAddSubcommand = defineCommand({
     const probeName = (ctx.args.probeName as string) ?? nextProbeName(existing)
     const paramsBlock = Object.entries(params)
       .map(([k, v]) => `      ${k} = "${escapeString(v)}"`)
-      .join('\n')
+      .join(',\n')
 
     const newBlock = `  probe "${probeName}" {
     ref "${ref}"
@@ -366,10 +374,10 @@ const runSubcommand = defineCommand({
       )
     }
 
-    // 顺序执行所有 probe（Phase A: stub；Phase B: 真实 Kernel+Infra）
+    // 顺序执行所有 probe（真实 Kernel + Infra 分离）
     const results = []
     for (const probe of probeIRs) {
-      const r = await executeProbe(probe)
+      const r = await executeProbe(probe, { projectRoot: getProjectRoot() })
       results.push(r)
     }
 
