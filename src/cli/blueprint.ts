@@ -3,12 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR } from '../kernel/constants'
-import {
-  createOxnParser,
-  isBlueprintDeclaration,
-  type BlueprintDeclaration,
-  type OXNDocument,
-} from '../oxn-dsl'
+import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxn-dsl'
 import { getFormatFromArgs, output, outputError } from './output'
 
 function getProjectRoot(): string {

@@ -19,9 +19,4 @@ domain "CLIContext" {
   invariant { "AI 调用必须传 --json，CLI 默认 human 模式" }
   invariant { "子命令名使用 kebab-case" }
   invariant { "所有 .skill.md 模板由 src/skills/locales/* 自动编译，AI 助手里的副本是只读镜像" }
-
-  context_map {
-    imports "BuiltinContext" as "Builtin"
-    imports "WorkContext" as "Work"
-  }
 }

@@ -32,8 +32,6 @@ export type {
   OxnDomainLanguage,
   OxnTermDecl,
   OxnInvariantDecl,
-  OxnContextMap,
-  OxnContextMapImport,
   OxnTaskIR,
   OxnTaskPartDecl,
   OxnWorkIR,
@@ -92,8 +90,6 @@ export type {
   BanBlock,
   InvariantBlock,
   InvariantDecl,
-  ContextMapBlock,
-  ContextMapImport,
   // v0.1-final Work
   DomainRefDecl,
   BlueprintRefDecl,

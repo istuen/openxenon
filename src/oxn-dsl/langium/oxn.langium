@@ -164,13 +164,13 @@ PartSlotDeclaration:
 // ==================== Domain (v0.1-final DDD) ====================
 // Domain 是绝对自治的业务契约，定义统一语言和不变量
 // v0.1-final: noun/verb → term (map格式), domain_rules → invariant
+// v0.1.1: 允许多个 invariant 块（domain 文件可写多段不变量）；context_map 已移除
 DomainDeclaration:
     'domain' name=STRING '{'
         (descriptions+=Description)?
         (terms=TermBlock)?
         (ban=BanBlock)?
-        (invariant=InvariantBlock)?
-        (contextMap=ContextMapBlock)?
+        (invariants+=InvariantBlock)*
     '}';
 
 TermBlock:
@@ -193,14 +193,6 @@ InvariantBlock:
 
 InvariantDecl:
     value=STRING ';'?;
-
-ContextMapBlock:
-    'context_map' '{'
-        (imports+=ContextMapImport)*
-    '}';
-
-ContextMapImport:
-    'imports' target=STRING 'as' alias=STRING ';'?;
 
 // ==================== Work (v0.1-final: workspace orchestrator) ====================
 // Work 是编排空间：资源池寻址 + Task 编排中心

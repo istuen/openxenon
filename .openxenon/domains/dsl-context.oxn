@@ -21,9 +21,4 @@ domain "DSLContext" {
   invariant { "Zod schema 必须与 grammar 一一对应，缺一个就 broken" }
   invariant { "所有 validator 必须通过 registerOxnValidators 注册，否则不生效" }
   invariant { "新增 grammar 字段时必须保持向后兼容（旧 .oxn 文件仍能解析）" }
-
-  context_map {
-    imports "BuiltinContext" as "Builtin"
-    imports "WorkContext" as "Work"
-  }
 }

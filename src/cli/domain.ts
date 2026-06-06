@@ -126,11 +126,9 @@ const createSubcommand = defineCommand({
 //  3. ban: ≥2 forbidden words. AI MUST NOT use these words (prevents
 //     cross-context terminology drift like User/Customer/Member mix).
 //  4. invariant: ≥1 business hard-rule. v0.1 documents; v0.2 enforces
-//     via language-ban-checker Probe.
-//  5. context_map.imports: declare cross-context dependencies explicitly.
-//     No transitive imports — only direct references.
-//  6. Validate: oxn domain validate ${name}
-//  7. Share via Git (this file IS the source of truth):
+//     via language-ban-checker Probe. 允许多段 invariant 块。
+//  5. Validate: oxn domain validate ${name}
+//  6. Share via Git (this file IS the source of truth):
 //        git add .openxenon/domains/${name}.oxn && git commit
 // ──────────────────────────────────────────────────────────────────
 //
@@ -151,10 +149,6 @@ domain "${name}" {
   ban { "TODO_BannedTerm1", "TODO_BannedTerm2" }
 
   invariant { "TODO: business invariant rule" }
-
-  context_map {
-    imports "TODO_OtherDomain" as "TODOAlias"
-  }
 }
 `
     writeFileSync(outPath, template, 'utf-8')
@@ -239,13 +233,11 @@ const validateSubcommand = defineCommand({
           file: filePath,
           description: ir.description,
           language: ir.language,
-          contextMap: ir.contextMap,
         },
         human: `Domain ${ir.name} ✓ valid
   Terms:     ${ir.language?.terms.length ?? 0}
   Ban:       ${ir.language?.ban.length ?? 0}
-  Invariant: ${ir.language?.invariant.length ?? 0}
-  Context Map: ${ir.contextMap.length} imports`,
+  Invariant: ${ir.language?.invariant.length ?? 0}`,
       },
       format,
     )
@@ -253,33 +245,35 @@ const validateSubcommand = defineCommand({
 })
 
 /**
- * v0.1: 把 langium AST 节点映射为可 JSON 序列化的纯对象 IR。
+ * v0.1.1: 把 langium AST 节点映射为可 JSON 序列化的纯对象 IR。
  * 消除 `$container` 父引用导致的 cyclic structures 错误。
  *
  * 关键：不同 block 的元素类型不同：
- *   - term:    TermDecl[]        → 每个有 { name, desc } 字段
- *   - ban:     string[]          (cross-ref, 裸字符串数组)
- *   - invariant: InvariantDecl[] → 每个有 .value 字段
- *   - context_map.imports: ContextMapImport[] → 每个有 { target, alias } 字段
+ *   - term:    TermDecl[]              → 每个有 { name, desc } 字段
+ *   - ban:     string[]                (cross-ref, 裸字符串数组)
+ *   - invariant: InvariantBlock[]      → 每块有 invariants: InvariantDecl[]
+ *     v0.1.1 起允许多个 invariant 块；这里把所有块里的 decl 展平为单一字符串数组
  */
 function domainAstToIr(domain: DomainDeclaration): {
   name: string
   description?: string
   language: { terms: Array<{ name: string; desc: string }>; ban: string[]; invariant: string[] } | null
-  contextMap: Array<{ target: string; alias: string }>
 } {
+  const invariants: string[] = []
+  for (const block of domain.invariants ?? []) {
+    for (const inv of block.invariants ?? []) invariants.push(inv.value)
+  }
+  const hasLanguage = !!(domain.terms || domain.ban || invariants.length > 0)
   return {
     name: domain.name,
     description: domain.descriptions?.[0]?.value,
-    language:
-      domain.terms || domain.ban || domain.invariant
-        ? {
-            terms: (domain.terms?.terms ?? []).map((t) => ({ name: t.name, desc: t.desc })),
-            ban: domain.ban?.bans ?? [],
-            invariant: (domain.invariant?.invariants ?? []).map((inv) => inv.value),
-          }
-        : null,
-    contextMap: (domain.contextMap?.imports ?? []).map((i) => ({ target: i.target, alias: i.alias })),
+    language: hasLanguage
+      ? {
+          terms: (domain.terms?.terms ?? []).map((t) => ({ name: t.name, desc: t.desc })),
+          ban: domain.ban?.bans ?? [],
+          invariant: invariants,
+        }
+      : null,
   }
 }
 

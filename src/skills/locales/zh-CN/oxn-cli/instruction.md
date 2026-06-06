@@ -110,10 +110,6 @@ domain "MemberContext" {
 
   invariant { "密码任何时候都不能明文存储" }     // ✅ 必填 ≥1 个不变量
   invariant { "同一邮箱在同一上下文内不可重复注册" }
-
-  context_map {                                  // 推荐：跨域依赖显式声明
-    imports "OrderContext" as "Order"
-  }
 }
 ```
 
@@ -121,9 +117,8 @@ domain "MemberContext" {
 - ❌ term 只有 1 个词（粒度太粗）
 - ❌ ban 列表为空（没有约束力）
 - ❌ description 写「TODO: 描述业务边界」（CLI 占位，必须替换）
-- ❌ context_map 用了但没有跨域需求（过度设计）
 
-**口诀**：term 列实体，ban 列禁词，invariant 列硬规则，context_map 显式跨域。
+**口诀**：term 列实体，ban 列禁词，invariant 列硬规则；多段不变量拆成多个 `invariant { ... }` 块。
 
 ### 2. Blueprint 创作（技术 Intent）
 

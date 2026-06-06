@@ -17,9 +17,4 @@ domain "BuiltinContext" {
   invariant { "Builtin 探针类型必须是 fs_exists / fs_not_exists / fs_match / shell_exec 之一" }
   invariant { "Builtin 资产版本 (_version) 单调递增，不可降级" }
   invariant { "Builtin 资产不依赖任何 @prj 资产（避免循环引用）" }
-
-  context_map {
-    imports "WorkContext" as "Work"
-    imports "DSLContext" as "DSL"
-  }
 }

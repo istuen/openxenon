@@ -15,8 +15,4 @@ domain "MemberContext" {
 
   invariant { "密码任何时候都不能明文存储" }
   invariant { "同一邮箱在同一上下文内不可重复注册" }
-
-  context_map {
-    imports "OrderContext" as "Order"
-  }
 }

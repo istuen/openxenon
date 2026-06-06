@@ -22,7 +22,6 @@ import type {
   OxnDomainIR,
   OxnTaskIR,
   OxnWorkIR,
-  OxnContextMapImport,
   OxnTermDecl,
   OxnInvariantDecl,
   OxnWorkResourceRef,
@@ -30,7 +29,6 @@ import type {
 } from '../schemas/oxn-assembly.schema.js'
 import type {
   BlueprintDeclaration,
-  ContextMapImport,
   DomainDeclaration,
   ExecutionRef,
   Expression,
@@ -261,7 +259,7 @@ export function convertBlueprintDeclaration(decl: BlueprintDeclaration): OxnAsse
 }
 
 // ========================
-// Domain 转换 (v0.1-final: term/ban/invariant)
+// Domain 转换 (v0.1-final: term/ban/invariant; v0.1.1: 多 invariant 块)
 // ========================
 
 function convertTermDecl(decl: TermDecl): OxnTermDecl {
@@ -275,29 +273,29 @@ function convertInvariantDecl(decl: InvariantDecl): OxnInvariantDecl {
 function convertDomainLanguage(decl: {
   terms?: { terms: TermDecl[] }
   ban?: { bans: string[] }
-  invariant?: { invariants: InvariantDecl[] }
+  invariants?: Array<{ invariants: InvariantDecl[] }>
 }): {
   terms: OxnTermDecl[]
   ban: string[]
   invariant: OxnInvariantDecl[]
 } {
+  const invariantList: InvariantDecl[] = []
+  for (const block of decl.invariants ?? []) {
+    for (const inv of block.invariants ?? []) invariantList.push(inv)
+  }
   return {
     terms: (decl.terms?.terms || []).map(convertTermDecl),
     ban: decl.ban?.bans || [],
-    invariant: (decl.invariant?.invariants || []).map(convertInvariantDecl),
+    invariant: invariantList.map(convertInvariantDecl),
   }
 }
 
-function convertContextMapImport(decl: ContextMapImport): OxnContextMapImport {
-  return { target: decl.target, alias: decl.alias }
-}
-
 export function convertDomainDeclaration(decl: DomainDeclaration): OxnDomainIR {
+  const hasLanguage = !!(decl.terms || decl.ban || (decl.invariants && decl.invariants.length > 0))
   return {
     name: decl.name,
     description: decl.descriptions?.[0]?.value,
-    language: decl.terms || decl.ban || decl.invariant ? convertDomainLanguage(decl as any) : undefined,
-    contextMap: decl.contextMap ? { imports: (decl.contextMap.imports || []).map(convertContextMapImport) } : undefined,
+    language: hasLanguage ? convertDomainLanguage(decl as any) : undefined,
   }
 }
 

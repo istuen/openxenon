@@ -143,22 +143,10 @@ export const OxnDomainLanguageSchema = z.object({
 })
 export type OxnDomainLanguage = z.infer<typeof OxnDomainLanguageSchema>
 
-export const OxnContextMapImportSchema = z.object({
-  target: z.string().min(1),
-  alias: z.string().min(1),
-})
-export type OxnContextMapImport = z.infer<typeof OxnContextMapImportSchema>
-
-export const OxnContextMapSchema = z.object({
-  imports: z.array(OxnContextMapImportSchema).default([]),
-})
-export type OxnContextMap = z.infer<typeof OxnContextMapSchema>
-
 export const OxnDomainIRSchema = z.object({
   name: z.string().min(1),
   description: z.string().optional(),
   language: OxnDomainLanguageSchema.optional(),
-  contextMap: OxnContextMapSchema.optional(),
 })
 export type OxnDomainIR = z.infer<typeof OxnDomainIRSchema>
 
@@ -263,7 +251,6 @@ export function createOxnDomainIR(params: { name: string; description?: string }
     name: params.name,
     ...(params.description !== undefined ? { description: params.description } : {}),
     language: { terms: [], ban: [], invariant: [] },
-    contextMap: { imports: [] },
   }
 }
 

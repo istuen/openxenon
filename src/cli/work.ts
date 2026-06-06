@@ -1526,7 +1526,6 @@ type DomainFileSummary = {
     ban: string[]
     invariant: string[]
   }
-  contextMap?: Array<{ target: string; alias: string }>
 } | null
 
 type TaskFileSummary = {
@@ -1568,21 +1567,12 @@ function readDomainFile(filePath: string): DomainFileSummary {
     }
   }
 
-  const invariantBlock = content.match(/invariant\s*\{([\s\S]*?)\}/)
+  // v0.1.1: 允许多个 invariant 块；遍历收集所有块
   const invariant: string[] = []
-  if (invariantBlock) {
-    const invMatches = invariantBlock[1]!.matchAll(/"([^"]+)"/g)
+  for (const invBlock of content.matchAll(/invariant\s*\{([\s\S]*?)\}/g)) {
+    const invMatches = invBlock[1]!.matchAll(/"([^"]+)"/g)
     for (const m of invMatches) {
       invariant.push(m[1]!)
-    }
-  }
-
-  const mapBlock = content.match(/context_map\s*\{([\s\S]*?)\}/)
-  const contextMap: Array<{ target: string; alias: string }> = []
-  if (mapBlock) {
-    const mapMatches = mapBlock[1]!.matchAll(/imports\s+"([^"]+)"\s+as\s+"([^"]+)"/g)
-    for (const m of mapMatches) {
-      contextMap.push({ target: m[1]!, alias: m[2]! })
     }
   }
 
@@ -1590,7 +1580,6 @@ function readDomainFile(filePath: string): DomainFileSummary {
     name: nameMatch[1]!,
     ...(descMatch ? { description: descMatch[1]!.replace(/\\"/g, '"') } : {}),
     ...(terms.length > 0 || ban.length > 0 || invariant.length > 0 ? { language: { terms, ban, invariant } } : {}),
-    ...(contextMap.length > 0 ? { contextMap } : {}),
   }
 }
 

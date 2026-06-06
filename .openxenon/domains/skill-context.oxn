@@ -34,10 +34,4 @@ domain "SkillContext" {
   invariant { "Skill 内的命令引用必须与 CLI 实际子命令一致；v0.0.x 已删除命令（oxn task *、oxn leader *、oxn arsenal *、oxn add-probe、oxn get-context、oxn work new）一律不能在 Skill 中出现" }
   invariant { "Skill 内禁止使用 'new' 子命令；统一改为 'create'（oxn work create / oxn domain create / oxn blueprint create）" }
   invariant { "Part / Probe 没有 CLI 入口；Skill 内禁止 'oxn part new' / 'oxn probe new' 等不存在的命令，必须教 AI 内联写" }
-
-  context_map {
-    imports "DSLContext"  as "DSL"
-    imports "WorkContext" as "Work"
-    imports "CLIContext"  as "CLI"
-  }
 }

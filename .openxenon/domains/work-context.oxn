@@ -22,9 +22,4 @@ domain "WorkContext" {
   invariant { "work-trace.jsonl 只能追加写，不能重写" }
   invariant { "同一 part 只能被提交一次，重复 submit 必须基于 freeze 重建" }
   invariant { "Artifact 路径必须落在 Work 沙盒内或宿主项目目录" }
-
-  context_map {
-    imports "BuiltinContext" as "Builtin"
-    imports "DSLContext" as "DSL"
-  }
 }

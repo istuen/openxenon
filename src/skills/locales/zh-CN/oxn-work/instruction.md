@@ -248,7 +248,7 @@ work "NewUserOnboarding" {
 }
 ```
 
-**口诀**：work 级声明 N 个 domain，每个 task 按需 inject 1 个。**context_map 用于显式声明跨域依赖**。
+**口诀**：work 级声明 N 个 domain，每个 task 按需 inject 1 个；domain 内部用 `term / ban / invariant` 三件套表达统一语言与硬规则（v0.1.1 起允许多段 `invariant` 块）。
 
 ### 模式选择速查
 

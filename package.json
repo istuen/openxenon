@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "dev": "bun run src/cli/index.ts",
-    "build": "bun run langium:generate && bun run ai-tools:generate && bun build ./src/cli/index.ts --compile --outfile dist/oxn && cp -r src/arsenals dist/arsenals",
+    "build": "bun run langium:generate && bun run ai-tools:generate && bun build ./src/cli/index.ts --compile --outfile dist/oxn",
     "langium:generate": "langium generate",
     "ai-tools:generate": "bun run src/oxn-dsl/ai-tools/generator/index.ts",
     "build:all": "bun run build:linux && bun run build:macos && bun run build:windows",

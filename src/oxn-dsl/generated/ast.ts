@@ -47,7 +47,6 @@ export type OXNDSLKeywordNames =
     | "boolean"
     | "constraints"
     | "context"
-    | "context_map"
     | "default"
     | "deps"
     | "description"
@@ -57,7 +56,6 @@ export type OXNDSLKeywordNames =
     | "false"
     | "goal"
     | "guidance"
-    | "imports"
     | "invariant"
     | "lifecycle"
     | "list"
@@ -198,38 +196,6 @@ export function isBooleanLiteral(item: unknown): item is BooleanLiteral {
     return typeof item === 'boolean';
 }
 
-export interface ContextMapBlock extends langium.AstNode {
-    readonly $container: DomainDeclaration;
-    readonly $type: 'ContextMapBlock';
-    imports: Array<ContextMapImport>;
-}
-
-export const ContextMapBlock = {
-    $type: 'ContextMapBlock',
-    imports: 'imports'
-} as const;
-
-export function isContextMapBlock(item: unknown): item is ContextMapBlock {
-    return reflection.isInstance(item, ContextMapBlock.$type);
-}
-
-export interface ContextMapImport extends langium.AstNode {
-    readonly $container: ContextMapBlock;
-    readonly $type: 'ContextMapImport';
-    alias: string;
-    target: string;
-}
-
-export const ContextMapImport = {
-    $type: 'ContextMapImport',
-    alias: 'alias',
-    target: 'target'
-} as const;
-
-export function isContextMapImport(item: unknown): item is ContextMapImport {
-    return reflection.isInstance(item, ContextMapImport.$type);
-}
-
 export interface DefaultValue extends langium.AstNode {
     readonly $container: PropDeclaration;
     readonly $type: 'DefaultValue';
@@ -264,9 +230,8 @@ export interface DomainDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'DomainDeclaration';
     ban?: BanBlock;
-    contextMap?: ContextMapBlock;
     descriptions: Array<Description>;
-    invariant?: InvariantBlock;
+    invariants: Array<InvariantBlock>;
     name: string;
     terms?: TermBlock;
 }
@@ -274,9 +239,8 @@ export interface DomainDeclaration extends langium.AstNode {
 export const DomainDeclaration = {
     $type: 'DomainDeclaration',
     ban: 'ban',
-    contextMap: 'contextMap',
     descriptions: 'descriptions',
-    invariant: 'invariant',
+    invariants: 'invariants',
     name: 'name',
     terms: 'terms'
 } as const;
@@ -970,8 +934,6 @@ export type OXNDSLAstType = {
     BinaryExpr: BinaryExpr
     BlueprintDeclaration: BlueprintDeclaration
     BlueprintRefDecl: BlueprintRefDecl
-    ContextMapBlock: ContextMapBlock
-    ContextMapImport: ContextMapImport
     DefaultValue: DefaultValue
     Description: Description
     DomainDeclaration: DomainDeclaration
@@ -1095,28 +1057,6 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
             },
             superTypes: []
         },
-        ContextMapBlock: {
-            name: ContextMapBlock.$type,
-            properties: {
-                imports: {
-                    name: ContextMapBlock.imports,
-                    defaultValue: []
-                }
-            },
-            superTypes: []
-        },
-        ContextMapImport: {
-            name: ContextMapImport.$type,
-            properties: {
-                alias: {
-                    name: ContextMapImport.alias
-                },
-                target: {
-                    name: ContextMapImport.target
-                }
-            },
-            superTypes: []
-        },
         DefaultValue: {
             name: DefaultValue.$type,
             properties: {
@@ -1141,15 +1081,13 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
                 ban: {
                     name: DomainDeclaration.ban
                 },
-                contextMap: {
-                    name: DomainDeclaration.contextMap
-                },
                 descriptions: {
                     name: DomainDeclaration.descriptions,
                     defaultValue: []
                 },
-                invariant: {
-                    name: DomainDeclaration.invariant
+                invariants: {
+                    name: DomainDeclaration.invariants,
+                    defaultValue: []
                 },
                 name: {
                     name: DomainDeclaration.name
