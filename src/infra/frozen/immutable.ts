@@ -59,8 +59,18 @@ export function writeFrozenImmutable<TBody extends FrozenBody, TMeta extends Fro
   const json = JSON.stringify(full, null, 2)
 
   // 4. 写文件 + 立即 chmod 0o444
-  writeFileSync(frozenPath, json, { mode: FROZEN_FILE_MODE })
-  chmodSync(frozenPath, FROZEN_FILE_MODE)
+  //    覆盖场景：若文件已存在且 mode=0o444（来自上一轮 frozen writer），
+  //    owner 先抬位到 0o644 才能 writeFileSync；写完用 try/finally 保证
+  //    必回锁 0o444（即使 writeFileSync 抛错也回锁，兑现 IAP 不变量）。
+  //    spec: "chmod 0o644 → 写 → chmod 0o444"
+  if (existsSync(frozenPath)) {
+    chmodSync(frozenPath, 0o644)
+  }
+  try {
+    writeFileSync(frozenPath, json, { mode: FROZEN_FILE_MODE })
+  } finally {
+    chmodSync(frozenPath, FROZEN_FILE_MODE)
+  }
 }
 
 /**

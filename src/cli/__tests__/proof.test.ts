@@ -176,6 +176,43 @@ describe('writeFrozenProof', () => {
     expect(r.ok).toBe(false)
     expect(r.reason).toMatch(/signature mismatch/)
   })
+
+  test('overwrite: 第二次写命中 0o444 文件，writer 自抬位不 EACCES（regression）', () => {
+    const path = join(tmpDir, 'overwrite-readonly.json')
+
+    // 第一轮：正常创 frozen.json
+    writeFrozenProof(
+      path,
+      buildFrozenProof({
+        name: 'overwrite',
+        probes: [{ probeName: 'p1', ref: '@oxn/probe/fs-exists', passed: true, durationMs: 1 }],
+      }),
+    )
+    expect(isFrozenFileReadOnly(path)).toBe(true)
+
+    // 显式确认第二轮写前是 0o444（让"自抬位"测试的 pre-condition 自证）
+    expect(statSync(path).mode & 0o777).toBe(0o444)
+
+    // 第二轮：不手动 chmod 0o644，直接覆盖
+    expect(() =>
+      writeFrozenProof(
+        path,
+        buildFrozenProof({
+          name: 'overwrite',
+          probes: [{ probeName: 'p1', ref: '@oxn/probe/fs-exists', passed: false, durationMs: 2 }],
+        }),
+      ),
+    ).not.toThrow()
+
+    // writer 写完自动回锁
+    expect(isFrozenFileReadOnly(path)).toBe(true)
+
+    // 读回来：新内容、新签名（readFrozenProof 内部已验签）
+    const r = readFrozenProof(path)
+    expect(r.ok).toBe(true)
+    expect(r.frozen!.verdict).toBe('FAILED')
+    expect(r.frozen!.probes[0].passed).toBe(false)
+  })
 })
 
 // -----------------------------------------------------------------------------

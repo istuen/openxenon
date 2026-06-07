@@ -73,7 +73,7 @@ Step 6: AI 读 verdict
 
 | 层 | 机制 | 绕过成本 |
 |---|---|---|
-| OS 层 | chmod 0o444 | 需要 owner 权限 |
+| OS 层 | chmod 0o444（覆盖前 owner 自动抬位 0o644 → 写 → try/finally 回锁 0o444） | writer 内部完成，AI / 工程师无感 |
 | 内容层 | `_xenon_meta.content_hash` = SHA-256 | 改内容 hash 对不上 |
 
 **AI 约束**（CLI 白名单）：
