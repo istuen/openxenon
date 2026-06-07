@@ -7,6 +7,7 @@ import { executeFsParseable, type FsParseableParams } from './fs-parseable'
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 import { executeTestPass, type TestPassParams } from './test-pass'
 import { executeDepsResolved, type DepsResolvedParams } from './deps-resolved'
+import { executeTsCompiles, type TsCompilesParams } from './ts-compiles'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -97,6 +98,18 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // v1.1 P1: ts-compiles — 跑 tsc --noEmit 验证类型
+  ts_compiles: async (params, context) => {
+    const tsParams = params as unknown as TsCompilesParams
+    const result = await executeTsCompiles(tsParams, context as ProbeContext)
+    return {
+      probeType: 'ts_compiles',
+      output: JSON.stringify({ passed: result.passed, exitCode: result.exitCode, errorCount: result.errorCount }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -109,6 +122,7 @@ class ProbeRegistry {
     'fs-parseable': 'fs_parseable',
     'test-pass': 'test_pass',
     'deps-resolved': 'deps_resolved',
+    'ts-compiles': 'ts_compiles',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
@@ -117,6 +131,7 @@ class ProbeRegistry {
     'fs-parseable:probes': 'fs_parseable',
     'test-pass:probes': 'test_pass',
     'deps-resolved:probes': 'deps_resolved',
+    'ts-compiles:probes': 'ts_compiles',
     'shell-exec:probes': 'shell_exec',
   }
 
@@ -180,4 +195,5 @@ export {
   executeShellExec,
   executeTestPass,
   executeDepsResolved,
+  executeTsCompiles,
 }

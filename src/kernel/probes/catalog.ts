@@ -230,6 +230,41 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     builtin: 'oxn',
     domainTerm: 'Package',
   },
+  {
+    // v1.1 P1: ts-compiles — 跑 tsc --noEmit
+    // 复 ProgramContext.SourceFile term（与 lint-check 共享）。
+    // Spawn: npx tsc --noEmit [--project tsconfig.json] [path]
+    semanticName: 'ts-compiles',
+    description: '跑 tsc --noEmit 验证类型检查通过（exit 0 → PASS）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: false,
+        description: '要编译的文件或目录（默认整个项目）',
+      },
+      {
+        name: 'tsconfig',
+        type: 'string',
+        required: false,
+        description: 'tsconfig.json 路径（默认 ./tsconfig.json 或 ./tsconfig.build.json）',
+      },
+      {
+        name: 'timeout',
+        type: 'number',
+        required: false,
+        description: '超时（毫秒，默认 120000）',
+      },
+    ],
+    examples: [
+      { name: 'whole-project', inputs: { timeout: 60000 } },
+      { name: 'specific-file', inputs: { path: './src/foo.ts' } },
+    ],
+    internalRef: '@oxn/probes/ts-compiles',
+    inputMap: { path: 'path', tsconfig: 'tsconfig', timeout: 'timeout' },
+    builtin: 'oxn',
+    domainTerm: 'SourceFile',
+  },
 ]
 
 // ---------------------------------------------------------------------------

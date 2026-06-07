@@ -194,7 +194,6 @@ const testPassStrategy: ProbeStrategy = (observation, params) => {
     failureMessage: ok ? undefined : (observation.error ?? `${summary?.failed ?? '?'} test(s) failed`),
   }
 }
-
 /** deps_resolved: 期望 output.missing.length === 0（v1.1 P1 probe）
  *
  * AI 经常幻觉依赖项——声称装了某个包但 package.json 没声明。
@@ -233,6 +232,36 @@ const depsResolvedStrategy: ProbeStrategy = (observation, params) => {
   }
 }
 
+/** ts_compiles: 期望 output.passed === true（v1.1 P1 probe） */
+const tsCompilesStrategy: ProbeStrategy = (observation, params) => {
+  let passed = false
+  let exitCode: number | null = null
+  let errorCount: number | undefined
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      exitCode?: number | null
+      errorCount?: number
+    }
+    passed = obj.passed === true
+    exitCode = obj.exitCode ?? null
+    errorCount = obj.errorCount
+  } catch {
+    passed = false
+  }
+
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    message: ok
+      ? `ts-compiles: type check passed`
+      : `ts-compiles: ${errorCount !== undefined ? `${errorCount} error(s)` : (observation.error ?? 'type check failed')}`,
+    actual: { exitCode, errorCount },
+    params,
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? `${errorCount ?? '?'} type error(s)`),
+  }
+}
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -242,6 +271,7 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   fs_parseable: fsParseableStrategy,
   test_pass: testPassStrategy,
   deps_resolved: depsResolvedStrategy,
+  ts_compiles: tsCompilesStrategy,
   shell_exec: shellExecStrategy,
   // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册

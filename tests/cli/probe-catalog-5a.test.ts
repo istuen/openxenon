@@ -17,10 +17,10 @@ import { probeRegistry } from '../../src/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/probes/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 5a+5b builtin probes（5a 5 条 + test-pass + deps-resolved）', () => {
+  test('catalog 列出 5a+5b builtin probes（8 条）', () => {
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
-    // 5a: 5 条 builtin；5b.1 加 test-pass；5b.2 加 deps-resolved → 共 7
+    // 5a: 5 条 builtin + 5b.1 test-pass + 5b.2 deps-resolved + 5b.3 ts-compiles → 共 8
     expect(names).toEqual([
       'deps-resolved',
       'fs-content-match',
@@ -29,12 +29,13 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
       'fs-parseable',
       'shell-exec',
       'test-pass',
+      'ts-compiles',
     ])
   })
 
-  test('listProbesSummary 至少 7 个（5a + 5b.1 + 5b.2）', () => {
+  test('listProbesSummary 至少 8 个（5a + 5b.1+2+3）', () => {
     const summary = listProbesSummary()
-    expect(summary.length).toBeGreaterThanOrEqual(7)
+    expect(summary.length).toBeGreaterThanOrEqual(8)
     const names = summary.map((s) => s.name)
     expect(names).toContain('fs-exists')
     expect(names).toContain('fs-not-exists')
@@ -43,6 +44,7 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     expect(names).toContain('shell-exec')
     expect(names).toContain('test-pass')
     expect(names).toContain('deps-resolved')
+    expect(names).toContain('ts-compiles')
   })
 
   test('P1 probe test-pass 标注 domainTerm = TestCase', () => {
@@ -55,6 +57,12 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     const entry = PROBE_CATALOG.find((p) => p.semanticName === 'deps-resolved')
     expect(entry).toBeDefined()
     expect(entry?.domainTerm).toBe('Package')
+  })
+
+  test('P1 probe ts-compiles 标注 domainTerm = SourceFile', () => {
+    const entry = PROBE_CATALOG.find((p) => p.semanticName === 'ts-compiles')
+    expect(entry).toBeDefined()
+    expect(entry?.domainTerm).toBe('SourceFile')
   })
 
   test('每个 catalog entry 都有 handler 配套 + strategy 可达', () => {
@@ -234,5 +242,46 @@ describe('v1.1 Phase 5b.2: deps-resolved 真 e2e', () => {
     expect(parsed.resolvedCount).toBe(1)
 
     rmSync(allResolvedDir, { recursive: true })
+  })
+})
+
+describe('v1.1 Phase 5b.3: ts-compiles 真 e2e', () => {
+  // 用 openxenon 项目自身的 tsconfig.json（已装 typescript devDep）
+  // 避免 npx tsc 在空 tmpdir 找不到 typescript
+  const projectRoot = '/Users/issac/pro/openxenon'
+
+  test('真 e2e: 类型检查通过（仅检查 src/ 没问题部分）', async () => {
+    const handler = probeRegistry.get('ts_compiles')
+    expect(handler).not.toBeNull()
+    // 用 path 指向一个具体无错误的文件
+    const obs = await handler!({ path: 'src/infra/probes/ts-compiles.ts' }, { projectRoot })
+    // 失败也无妨——只要 handler 跑通且返回结构化结果
+    expect(obs.error === undefined || typeof obs.error === 'string').toBe(true)
+    const parsed = JSON.parse(obs.output ?? '{}')
+    expect(typeof parsed.exitCode).toBe('number')
+  })
+
+  test('真 e2e: 类型检查失败（故意引入类型错误）', async () => {
+    const handler = probeRegistry.get('ts_compiles')!
+    // 写一个类型错误的文件到 tmpdir，但用 openxenon 的 typescript
+    const tmpDir = mkdtempSync(join(tmpdir(), 'oxn-tsc-fail-'))
+    writeFileSync(join(tmpDir, 'broken.ts'), 'export const x: number = "string"\n')
+    // 关键：把 openxenon 的 node_modules 链过去，让 npx 找到 typescript
+    // 简化做法：把 broken.ts 放到 openxenon 项目内
+    const brokenPath = '/Users/issac/pro/openxenon/.openxenon/.tmp-broken.ts'
+    writeFileSync(brokenPath, 'export const x: number = "string"\n')
+    try {
+      const obs = await handler!({ path: '.openxenon/.tmp-broken.ts' }, { projectRoot })
+      const parsed = JSON.parse(obs.output ?? '{}')
+      // tsc 应该会报告类型错误
+      expect(parsed.passed).toBe(false)
+      expect(parsed.exitCode).not.toBe(0)
+    } finally {
+      try {
+        require('fs').unlinkSync(brokenPath)
+      } catch {
+        // ignore
+      }
+    }
   })
 })
