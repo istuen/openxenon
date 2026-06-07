@@ -47,6 +47,7 @@ export const PROBE_STRATEGY_MAPPINGS: ProbeStrategyMapping[] = [
   { handler: 'fs_exists', strategy: 'fs_exists', observationType: 'fs_exists' },
   { handler: 'fs_not_exists', strategy: 'fs_not_exists', observationType: 'fs_not_exists' },
   { handler: 'fs_match', strategy: 'fs_match', observationType: 'fs_match' },
+  { handler: 'fs_parseable', strategy: 'fs_parseable', observationType: 'fs_parseable' },
   { handler: 'shell_exec', strategy: 'shell_exec', observationType: 'shell_exec' },
   { handler: 'exec_exit_zero', strategy: 'exec_exit_zero', observationType: 'exec_exit_zero' },
   { handler: 'exec_output_match', strategy: 'exec_output_match', observationType: 'exec_output_match' },

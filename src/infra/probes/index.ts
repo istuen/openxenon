@@ -3,6 +3,7 @@ import type { ProbeContext } from './fs-exists'
 import { executeFsExists } from './fs-exists'
 import { executeFsMatch, type FsMatchParams } from './fs-match'
 import { executeFsNotExists } from './fs-not-exists'
+import { executeFsParseable, type FsParseableParams } from './fs-parseable'
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
@@ -77,6 +78,18 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       exitCode: result.exitCode,
     } as ProbeObservation & { exitCode: number | null }
   },
+
+  // v1.1: fs-parseable — JSON 解析验证
+  fs_parseable: async (params, context) => {
+    const parseParams = params as unknown as FsParseableParams
+    const result = await executeFsParseable(parseParams, context as ProbeContext)
+    return {
+      probeType: 'fs_parseable',
+      output: JSON.stringify({ parsed: result.parsed, format: result.format, topLevelKeys: result.topLevelKeys }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -86,11 +99,13 @@ class ProbeRegistry {
     'fs-exists': 'fs_exists',
     'fs-not-exists': 'fs_not_exists',
     'fs-content-match': 'fs_match',
+    'fs-parseable': 'fs_parseable',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
     'fs-exists:probes': 'fs_exists',
     'fs-not-exists:probes': 'fs_not_exists',
+    'fs-parseable:probes': 'fs_parseable',
     'shell-exec:probes': 'shell_exec',
   }
 
@@ -146,4 +161,4 @@ export function registerProbeHandler(type: string, handler: ProbeHandler): void 
 }
 
 export type { ProbeContext, ShellExecResult }
-export { executeFsExists, executeFsMatch, executeFsNotExists, executeShellExec }
+export { executeFsExists, executeFsMatch, executeFsNotExists, executeFsParseable, executeShellExec }

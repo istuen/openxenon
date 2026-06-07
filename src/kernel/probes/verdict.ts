@@ -141,12 +141,44 @@ const execOutputMatchStrategy: ProbeStrategy = (observation, params) => {
   }
 }
 
+/** fs_parseable: 期望 output.parsed === true（v1.1） */
+const fsParseableStrategy: ProbeStrategy = (observation, params) => {
+  let parsed = false
+  let format: string | undefined
+  let topLevelKeys: string[] | undefined
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      parsed?: boolean
+      format?: string
+      topLevelKeys?: string[]
+    }
+    parsed = obj.parsed === true
+    format = obj.format
+    topLevelKeys = obj.topLevelKeys
+  } catch {
+    parsed = false
+  }
+
+  const passed = parsed && !observation.error
+  return {
+    passed,
+    message: passed
+      ? `fs-parseable: ${format ?? 'parsed'} valid${topLevelKeys ? ` (${topLevelKeys.length} keys)` : ''}`
+      : `fs-parseable: ${observation.error ?? 'parse failed'}`,
+    actual: { format, topLevelKeys },
+    params,
+    duration: observation.executedAt,
+    failureMessage: passed ? undefined : (observation.error ?? 'JSON parse failed'),
+  }
+}
+
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   fs_exists: fsExistsStrategy,
   fs_not_exists: fsNotExistsStrategy,
   fs_match: fsMatchStrategy,
+  fs_parseable: fsParseableStrategy,
   shell_exec: shellExecStrategy,
   exec_exit_zero: shellExecStrategy,
   exec_output_match: execOutputMatchStrategy,

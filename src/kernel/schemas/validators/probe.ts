@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
+export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'fs_parseable', 'shell_exec'])
 
 export type ProbeType = z.infer<typeof ProbeTypeSchema>
 
@@ -17,6 +17,10 @@ export const FsMatchParamsSchema = z.object({
   contains: z.string().optional(),
 })
 
+export const FsParseableParamsSchema = z.object({
+  path: z.string(),
+})
+
 export const ShellExecParamsSchema = z.object({
   command: z.string(),
 })
@@ -25,6 +29,7 @@ export const ProbeParamsSchema = z.union([
   FsExistsParamsSchema,
   FsNotExistsParamsSchema,
   FsMatchParamsSchema,
+  FsParseableParamsSchema,
   ShellExecParamsSchema,
 ])
 
