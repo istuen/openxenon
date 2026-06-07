@@ -17,7 +17,7 @@ describe('outputUserInputError (Phase 4)', () => {
   let stdoutBuf = ''
   const origExit = process.exit
   const origLog = console.log
-  const origCode = process.exitCode
+  const origCode = process.exitCode ?? 0
 
   beforeEach(() => {
     exitCode = null
