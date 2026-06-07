@@ -123,7 +123,8 @@ const createSubcommand = defineCommand({
 //  3. ban: ≥2 forbidden words. AI MUST NOT use these words (prevents
 //     cross-context terminology drift like User/Customer/Member mix).
 //  4. invariant: ≥1 business hard-rule. v0.1 documents; v0.2 enforces
-//     via language-ban-checker Probe. 允许多段 invariant 块。
+//     via language-ban-checker Probe. 写法决策见 oxn-cli skill
+//     「invariant 写法决策树」章节（1 条→单块单条 / 同主题→单块多条 / 异主题→多块按 // ── <主题> ── 分组，IR 等价）。
 //  5. Validate: oxn domain validate ${name}
 //  6. Share via Git (this file IS the source of truth):
 //        git add .openxenon/domains/${name}.oxn && git commit
@@ -145,7 +146,12 @@ domain "${name}" {
 
   ban { "TODO_BannedTerm1", "TODO_BannedTerm2" }
 
-  invariant { "TODO: business invariant rule" }
+  // invariant 写法决策：1 条→单块单条 / 同主题→单块多条 / 异主题→多块按 // ── <主题> ── 分组
+  // 默认示范「单块多条」（IR 等价；详见 oxn-cli skill「invariant 写法决策树」）
+  invariant {
+    "TODO: business invariant rule 1"
+    "TODO: business invariant rule 2"
+  }
 }
 `
     writeFileSync(outPath, template, 'utf-8')

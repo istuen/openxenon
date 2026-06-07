@@ -248,7 +248,7 @@ work "NewUserOnboarding" {
 }
 ```
 
-**口诀**：work 级声明 N 个 domain，每个 task 按需 inject 1 个；domain 内部用 `term / ban / invariant` 三件套表达统一语言与硬规则（v0.1.1 起允许多段 `invariant` 块）。
+**口诀**：work 级声明 N 个 domain，每个 task 按需 inject 1 个；domain 内部用 `term / ban / invariant` 三件套表达统一语言与硬规则；`invariant` 写法决策（1 条→单块单条 / 同主题→单块多条 / 异主题→多块按 `// ── <主题> ──` 分组）见 oxn-cli skill 的「invariant 写法决策树」章节，三者 IR 等价。
 
 ### 模式选择速查
 

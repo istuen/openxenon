@@ -108,8 +108,10 @@ domain "MemberContext" {
 
   ban { "User", "Customer", "AccountHolder" }  // ✅ 必填 ≥2 个禁词
 
-  invariant { "密码任何时候都不能明文存储" }     // ✅ 必填 ≥1 个不变量
-  invariant { "同一邮箱在同一上下文内不可重复注册" }
+  invariant {                              // ✅ 必填 ≥1 个不变量。写法决策见下方「invariant 写法决策树」
+    "密码任何时候都不能明文存储"
+    "同一邮箱在同一上下文内不可重复注册"
+  }
 }
 ```
 
@@ -118,7 +120,51 @@ domain "MemberContext" {
 - ❌ ban 列表为空（没有约束力）
 - ❌ description 写「TODO: 描述业务边界」（CLI 占位，必须替换）
 
-**口诀**：term 列实体，ban 列禁词，invariant 列硬规则；多段不变量拆成多个 `invariant { ... }` 块。
+**口诀**：term 列实体，ban 列禁词，invariant 列硬规则；写法按下方「invariant 写法决策树」3 步反问（1 条→单块单条 / 同主题→单块多条 / 异主题→多块），IR 等价。
+
+#### invariant 写法决策树
+
+> 三种写法 IR 压平后等价（`OxnDomainIR.invariant: OxnInvariantDecl[]`）。
+> AI 写新 Domain 时，**先问自己 3 步**，不要无脑拆多块。
+
+**反问自己（3 步）**：
+1. 只有 1 条不变量吗？→ 用**单块单条**：`invariant { "r1" }`
+2. 多条不变量需要 `// ── <主题> ──` 注释分组（≥2 个不同主题）吗？→ 用**多块**（案例 A）
+3. 否则？→ 用**单块多条**（案例 B，IR 等价、紧凑优先）
+
+**案例 A — 多块（按主题分组）**：
+
+```oxn
+// ───── 字典收敛硬约束 ─────
+invariant { "IAPError 字典 v1.0.2 收敛为 5 个" }
+invariant { "OXNCrash 字典 v1.0.2 收敛为 3 个" }
+
+// ───── 通道与进程契约 ─────
+invariant { "IAPError 走 stdout JSON 通道" }
+invariant { "OXNCrash 走 stderr stack 通道" }
+```
+
+**案例 B — 单块多条（同主题紧凑）**：
+
+```oxn
+invariant {
+  "Work 的运行时类型必须与 Blueprint.type 强一致"
+  "frozen.json 生成后不可修改"
+  "work-trace.jsonl 只能追加写"
+  "同一 part 只能被提交一次"
+  "Artifact 路径必须落在 Work 沙盒内"
+}
+```
+
+**边界情况**：
+- 1 条超长（>100 字）→ 单块单条独占，不混
+- >5 条无主题 → 单块多条（避免视觉噪声）
+- git diff 需要单条独立可见 → 多块
+
+**反模式**：
+- ❌ 只有 1 条还拆多块（`invariant {} invariant {}`）— 纯噪声
+- ❌ 5+ 条无主题硬塞多块（reader 找不到分组线索）
+- ❌ 同一文件混用单块多条/多块风格没有明显原因（破坏视觉一致性）
 
 ### 2. Blueprint 创作（技术 Intent）
 
