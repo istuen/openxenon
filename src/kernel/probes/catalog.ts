@@ -300,6 +300,69 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     builtin: 'oxn',
     domainTerm: 'SourceFile',
   },
+  {
+    // v1.1 P1: http-responds — HTTP 请求检查 status
+    // 复 ProgramContext.APIEndpoint term。用 Bun fetch（global），
+    // 无 spawn。安全：默认 timeout 5s + AbortSignal。
+    semanticName: 'http-responds',
+    description: 'HTTP 请求检查 status code（status === expectedStatus → PASS；默认 timeout 5s）',
+    inputs: [
+      {
+        name: 'url',
+        type: 'string',
+        required: true,
+        description: '要请求的 URL（http/https）',
+      },
+      {
+        name: 'method',
+        type: 'string',
+        required: false,
+        description: 'HTTP method（GET/POST/PUT/DELETE/HEAD，默认 GET）',
+      },
+      {
+        name: 'expectedStatus',
+        type: 'number',
+        required: false,
+        description: '期望 status code（默认 200）',
+      },
+      {
+        name: 'timeout',
+        type: 'number',
+        required: false,
+        description: '超时（毫秒，默认 5000）',
+      },
+      {
+        name: 'body',
+        type: 'string',
+        required: false,
+        description: '请求 body（POST/PUT 才有意义）',
+      },
+      {
+        name: 'headers',
+        type: 'string',
+        required: false,
+        description: '请求 headers（JSON 字符串，可选）',
+      },
+    ],
+    examples: [
+      { name: 'health-check', inputs: { url: 'https://api.example.com/health' } },
+      {
+        name: 'expect-201',
+        inputs: { url: 'https://api.example.com/users', method: 'POST', expectedStatus: 201, body: '{"name":"x"}' },
+      },
+    ],
+    internalRef: '@oxn/probes/http-responds',
+    inputMap: {
+      url: 'url',
+      method: 'method',
+      expectedStatus: 'expectedStatus',
+      timeout: 'timeout',
+      body: 'body',
+      headers: 'headers',
+    },
+    builtin: 'oxn',
+    domainTerm: 'APIEndpoint',
+  },
 ]
 
 // ---------------------------------------------------------------------------

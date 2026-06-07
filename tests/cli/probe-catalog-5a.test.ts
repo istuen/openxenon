@@ -17,16 +17,17 @@ import { probeRegistry } from '../../src/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/probes/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 5a+5b builtin probes（9 条）', () => {
+  test('catalog 列出 5a+5b builtin probes（10 条）', () => {
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
-    // 5a: 5 条 + 5b.1+2+3+4 → 共 9
+    // 5a: 5 条 + 5b.1+2+3+4+5 → 共 10
     expect(names).toEqual([
       'deps-resolved',
       'fs-content-match',
       'fs-exists',
       'fs-not-exists',
       'fs-parseable',
+      'http-responds',
       'lint-check',
       'shell-exec',
       'test-pass',
@@ -34,11 +35,11 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     ])
   })
 
-  test('listProbesSummary 至少 9 个（5a + 5b.1+2+3+4）', () => {
+  test('listProbesSummary 至少 10 个（5a + 5b.1+2+3+4+5）', () => {
     const summary = listProbesSummary()
-    expect(summary.length).toBeGreaterThanOrEqual(9)
+    expect(summary.length).toBeGreaterThanOrEqual(10)
     const names = summary.map((s) => s.name)
-    expect(names).toContain('lint-check')
+    expect(names).toContain('http-responds')
   })
 
   test('P1 probe test-pass 标注 domainTerm = TestCase', () => {
@@ -63,6 +64,12 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     const entry = PROBE_CATALOG.find((p) => p.semanticName === 'lint-check')
     expect(entry).toBeDefined()
     expect(entry?.domainTerm).toBe('SourceFile')
+  })
+
+  test('P1 probe http-responds 标注 domainTerm = APIEndpoint', () => {
+    const entry = PROBE_CATALOG.find((p) => p.semanticName === 'http-responds')
+    expect(entry).toBeDefined()
+    expect(entry?.domainTerm).toBe('APIEndpoint')
   })
 
   test('每个 catalog entry 都有 handler 配套 + strategy 可达', () => {
@@ -256,5 +263,23 @@ describe('v1.1 Phase 5b.4: lint-check 真 e2e', () => {
     expect(obs.error === undefined || typeof obs.error === 'string').toBe(true)
     const parsed = JSON.parse(obs.output ?? '{}')
     expect(typeof parsed.exitCode).toBe('number')
+  })
+})
+
+describe('v1.1 Phase 5b.5: http-responds 真 e2e (使用 httpbin.org 或本地 stub)', () => {
+  // 注：http-responds 不依赖 projectRoot（fetch 是 global）。
+  // 为避免 CI 依赖外部网络，用 fetch 到一个本地 invalid URL 测 timeout 路径。
+  test('真 e2e: invalid URL → passed: false + error', async () => {
+    const handler = probeRegistry.get('http_responds')
+    expect(handler).not.toBeNull()
+    const obs = await handler!({ url: 'http://localhost:1/nonexistent', timeout: 1000 })
+    const parsed = JSON.parse(obs.output ?? '{}')
+    expect(parsed.passed).toBe(false)
+    expect(parsed.status).toBeNull()
+  })
+
+  test('真 e2e: handler 注册 + 结构化 output', () => {
+    const handler = probeRegistry.get('http_responds')
+    expect(handler).not.toBeNull()
   })
 })

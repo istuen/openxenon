@@ -297,6 +297,41 @@ const lintCheckStrategy: ProbeStrategy = (observation, params) => {
     failureMessage: ok ? undefined : (observation.error ?? `${issueCount ?? '?'} lint issue(s)`),
   }
 }
+
+/** http_responds: 期望 output.status === output.expectedStatus（v1.1 P1 probe）
+ *
+ * 安全：默认 timeout 5s；不缓存；Bun fetch 内部做连接池管理。
+ */
+const httpRespondsStrategy: ProbeStrategy = (observation, params) => {
+  let passed = false
+  let status: number | null = null
+  let durationMs: number | undefined
+  const expectedStatus: number = Number(params.expectedStatus ?? 200)
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      status?: number | null
+      durationMs?: number
+    }
+    passed = obj.passed === true
+    status = obj.status ?? null
+    durationMs = obj.durationMs
+  } catch {
+    passed = false
+  }
+
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    message: ok
+      ? `http-responds: status ${status} === expected ${expectedStatus} (${durationMs ?? '?'}ms)`
+      : `http-responds: ${observation.error ?? `status ${status} !== expected ${expectedStatus}`}`,
+    actual: { status, expectedStatus, durationMs },
+    params,
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? `status ${status ?? 'null'} !== expected ${expectedStatus}`),
+  }
+}
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -308,6 +343,7 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   deps_resolved: depsResolvedStrategy,
   ts_compiles: tsCompilesStrategy,
   lint_check: lintCheckStrategy,
+  http_responds: httpRespondsStrategy,
   shell_exec: shellExecStrategy,
   // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册

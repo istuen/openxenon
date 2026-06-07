@@ -9,6 +9,7 @@ import { executeTestPass, type TestPassParams } from './test-pass'
 import { executeDepsResolved, type DepsResolvedParams } from './deps-resolved'
 import { executeTsCompiles, type TsCompilesParams } from './ts-compiles'
 import { executeLintCheck, type LintCheckParams } from './lint-check'
+import { executeHttpResponds, type HttpRespondsParams } from './http-responds'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -123,6 +124,24 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // v1.1 P1: http-responds — HTTP 请求检查 status（无 spawn，用 Bun fetch）
+  http_responds: async (params) => {
+    // 注意：http-responds 不需要 projectRoot（fetch 是 global）
+    const httpParams = params as unknown as HttpRespondsParams
+    const result = await executeHttpResponds(httpParams)
+    return {
+      probeType: 'http_responds',
+      output: JSON.stringify({
+        passed: result.passed,
+        status: result.status,
+        ok: result.ok,
+        durationMs: result.durationMs,
+      }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -137,6 +156,7 @@ class ProbeRegistry {
     'deps-resolved': 'deps_resolved',
     'ts-compiles': 'ts_compiles',
     'lint-check': 'lint_check',
+    'http-responds': 'http_responds',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
@@ -147,6 +167,7 @@ class ProbeRegistry {
     'deps-resolved:probes': 'deps_resolved',
     'ts-compiles:probes': 'ts_compiles',
     'lint-check:probes': 'lint_check',
+    'http-responds:probes': 'http_responds',
     'shell-exec:probes': 'shell_exec',
   }
 
@@ -212,4 +233,5 @@ export {
   executeDepsResolved,
   executeTsCompiles,
   executeLintCheck,
+  executeHttpResponds,
 }
