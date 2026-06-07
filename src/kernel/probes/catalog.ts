@@ -45,6 +45,10 @@ export interface ProbeCatalogEntry {
   inputMap: Record<string, string>
   /** 归属 builtin 类别 */
   builtin: 'oxn'
+  /** v1.1: 关联的 ProgramContext term 名（如 'SourceFile' / 'TestCase'）。
+   *  AI 可见——帮助 AI 理解 probe 服务的编程概念。
+   *  5a builtin probes 留空（无对应 P1 term）；5b P1 probes 必填。 */
+  domainTerm?: string
 }
 
 /**
