@@ -7,6 +7,7 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { glob } from 'glob'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
+import { PROBE_CATALOG } from '../../kernel/probes/catalog'
 
 interface RawProjectDir {
   path: string
@@ -158,13 +159,15 @@ async function collectProbes(projectRoot: string): Promise<RawProbeInfo[]> {
     // Arsenal 目录可能不存在
   }
 
-  // 添加内置探针（hardcoded）
-  const builtinProbes: RawProbeInfo[] = [
-    { type: 'fs_exists', pattern: 'src', source: 'builtin' },
-    { type: 'fs_match', pattern: 'package.json', source: 'builtin' },
-    { type: 'shell_exec', pattern: 'npm test', source: 'builtin' },
-    { type: 'shell_exec', pattern: 'npm run build', source: 'builtin' },
-  ]
+  // v1.1: 内置探针从 PROBE_CATALOG 单一真相源生成（之前 hardcoded 4 条会随 catalog 漂移）
+  const builtinProbes: RawProbeInfo[] = PROBE_CATALOG.filter((p) => p.builtin === 'oxn').map((p) => {
+    // 简易 pattern 推导：取 semanticName 第一个 example 的 path 或 command
+    const firstExample = p.examples[0]
+    const inputs = firstExample?.inputs ?? {}
+    const pattern =
+      (inputs['path'] as string) ?? (inputs['url'] as string) ?? (inputs['command'] as string) ?? p.semanticName
+    return { type: p.semanticName.replace(/-/g, '_'), pattern, source: 'builtin' }
+  })
   coverages.push(...builtinProbes)
 
   return coverages

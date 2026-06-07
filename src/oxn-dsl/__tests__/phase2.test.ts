@@ -199,17 +199,8 @@ describe('BundleUnpacker (Task 2.4)', () => {
 // ========================
 
 describe('Builtin OXN Assets (Task 2.5)', () => {
-  test('builtin probes .oxn 文件存在', () => {
-    expect(existsSync('src/oxn-dsl/builtin/probes/builtin-probes.oxn')).toBe(true)
-  })
-
-  test('builtin probes 包含 4 个探针', () => {
-    const content = readFileSync('src/oxn-dsl/builtin/probes/builtin-probes.oxn', 'utf-8')
-    const probeCount = (content.match(/probe "/g) || []).length
-    expect(probeCount).toBe(4)
-    expect(content).toContain('fs-exists')
-    expect(content).toContain('exec-exit-zero')
-  })
+  // v1.1: builtin-probes.oxn 已删除——探针现在通过 PROBE_CATALOG（src/kernel/probes/catalog.ts）
+  // 单一真相源管理。builtin parts 保留为 .oxn 文件作为 schema 样例。
 
   test('builtin parts .oxn 文件存在', () => {
     expect(existsSync('src/oxn-dsl/builtin/parts/builtin-parts.oxn')).toBe(true)

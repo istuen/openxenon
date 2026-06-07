@@ -199,6 +199,12 @@ CLI 输入错通过以下规则识别（`src/core/errors/cli-input-error.ts`）�
 
 - **v1.0 (Phase 1-3)**: 双轨制错误码体系（本文档，6 IAPError + 3 OXNCrash）
 - **v1.0.1 (Phase 4)**: socket-client IAPError 包装 + 用户输入错 helper + 4 档 E2E 集成测试
-- **v1.0.2 (当前)**: 字典收敛 — 移除 3 个僵尸/伪异常码，新增 2 个结构性违规码（NAME_FILE_MISMATCH / CHECKLIST_MISSING）
-- **v1.1 (Phase 5+)**: 8 个 builtin Probe handler 全部实现 + 6 个 ProgramContext term + IAPError factory 方法（YAGNI 待定）
+- **v1.0.2**: 字典收敛 — 移除 3 个僵尸/伪异常码，新增 2 个结构性违规码（NAME_FILE_MISMATCH / CHECKLIST_MISSING）
+- **v1.1 (Phase 5, 已完成 ✅)**: Probe 字典扩到 11 条
+  - 5a Catalog Gap: `fs-not-exists` / `fs-content-match` 注册 + `fs-parseable` 新增；清理 `exec_exit_zero` / `exec_output_match` 遗留
+  - 5a.0 P0 修复: `fs_match` 数据契约 bug（verdict 读 `output.matched`，不再假 PASS）
+  - 5b P1 Probes: `test-pass` / `deps-resolved` / `ts-compiles` / `lint-check` / `http-responds` / `file-exports`
+  - ProgramContext builtin Domain: 6 term（SourceFile / Module / TestCase / Package / BuildArtifact / APIEndpoint）
+  - catalog entry 新增 `domainTerm` 字段标记服务哪个 P1 term
+  - 清理: `builtin-probes.oxn` 删除（PROBE_CATALOG 单一管理）；`collector.ts` 从 catalog 读取
 - **v0.2+**: `part.intent_checklist` DSL 字段 + `oxn work lint` preflight + `CHECKLIST_MISSING` throw site 上线

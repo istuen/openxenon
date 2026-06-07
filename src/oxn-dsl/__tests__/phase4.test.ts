@@ -167,12 +167,7 @@ describe('Core Migration (Task 4.4)', () => {
     expect(content).toContain('part slot')
   })
 
-  test('builtin probes 使用 @oxn scope 引用', () => {
-    const content = readFileSync('src/oxn-dsl/builtin/probes/builtin-probes.oxn', 'utf-8')
-    expect(content).toContain('fs-exists')
-    expect(content).toContain('exec-exit-zero')
-    expect(content).toContain('fs-content-match')
-  })
+  // v1.1: builtin-probes.oxn 已删除——探针通过 PROBE_CATALOG 单一管理
 })
 
 // ========================
