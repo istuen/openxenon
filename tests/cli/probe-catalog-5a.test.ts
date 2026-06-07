@@ -17,16 +17,24 @@ import { probeRegistry } from '../../src/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/probes/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 5 条 builtin probes (5a) + 1 P1 (test-pass, 5b.1)', () => {
+  test('catalog 列出 5a+5b builtin probes（5a 5 条 + test-pass + deps-resolved）', () => {
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
-    // 5a: 5 条 builtin；5b.1 加 test-pass → 共 6
-    expect(names).toEqual(['fs-content-match', 'fs-exists', 'fs-not-exists', 'fs-parseable', 'shell-exec', 'test-pass'])
+    // 5a: 5 条 builtin；5b.1 加 test-pass；5b.2 加 deps-resolved → 共 7
+    expect(names).toEqual([
+      'deps-resolved',
+      'fs-content-match',
+      'fs-exists',
+      'fs-not-exists',
+      'fs-parseable',
+      'shell-exec',
+      'test-pass',
+    ])
   })
 
-  test('listProbesSummary 至少 6 个（5a + 5b.1）', () => {
+  test('listProbesSummary 至少 7 个（5a + 5b.1 + 5b.2）', () => {
     const summary = listProbesSummary()
-    expect(summary.length).toBeGreaterThanOrEqual(6)
+    expect(summary.length).toBeGreaterThanOrEqual(7)
     const names = summary.map((s) => s.name)
     expect(names).toContain('fs-exists')
     expect(names).toContain('fs-not-exists')
@@ -34,12 +42,19 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     expect(names).toContain('fs-parseable')
     expect(names).toContain('shell-exec')
     expect(names).toContain('test-pass')
+    expect(names).toContain('deps-resolved')
   })
 
   test('P1 probe test-pass 标注 domainTerm = TestCase', () => {
     const entry = PROBE_CATALOG.find((p) => p.semanticName === 'test-pass')
     expect(entry).toBeDefined()
     expect(entry?.domainTerm).toBe('TestCase')
+  })
+
+  test('P1 probe deps-resolved 标注 domainTerm = Package', () => {
+    const entry = PROBE_CATALOG.find((p) => p.semanticName === 'deps-resolved')
+    expect(entry).toBeDefined()
+    expect(entry?.domainTerm).toBe('Package')
   })
 
   test('每个 catalog entry 都有 handler 配套 + strategy 可达', () => {
@@ -152,5 +167,72 @@ test('this fails', () => { expect(1).toBe(2) })
     const parsed = JSON.parse(obs.output ?? '{}')
     expect(parsed.passed).toBe(false)
     expect(parsed.exitCode).not.toBe(0)
+  })
+})
+
+describe('v1.1 Phase 5b.2: deps-resolved 真 e2e', () => {
+  let tmpDir: string
+
+  beforeAll(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'oxn-deps-resolved-'))
+    // 写一个 package.json + 一个含依赖的 package-lock.json
+    writeFileSync(
+      join(tmpDir, 'package.json'),
+      JSON.stringify({
+        name: 'test-project',
+        version: '1.0.0',
+        dependencies: { lodash: '^4.0.0', react: '^18.0.0' },
+        devDependencies: { typescript: '^5.0.0' },
+      }),
+    )
+    // package-lock.json 包含 react 但不包含 lodash（missing 1 个）
+    writeFileSync(
+      join(tmpDir, 'package-lock.json'),
+      JSON.stringify({
+        lockfileVersion: 3,
+        packages: {
+          '': { name: 'test-project', version: '1.0.0' },
+          'node_modules/react': { version: '18.2.0' },
+          'node_modules/typescript': { version: '5.4.5' },
+        },
+      }),
+    )
+  })
+
+  afterAll(() => {
+    if (tmpDir && existsSync(tmpDir)) rmSync(tmpDir, { recursive: true })
+  })
+
+  test('真 e2e: 检测缺失依赖（lodash 声明但 lockfile 没解析）', async () => {
+    const handler = probeRegistry.get('deps_resolved')
+    expect(handler).not.toBeNull()
+    const obs = await handler!({}, { projectRoot: tmpDir })
+    const parsed = JSON.parse(obs.output ?? '{}')
+    expect(parsed.missing).toContain('lodash')
+    expect(parsed.missing).not.toContain('react')
+    expect(parsed.declaredCount).toBe(3)
+  })
+
+  test('真 e2e: 全部依赖都解析 → missing 为空', async () => {
+    const allResolvedDir = mkdtempSync(join(tmpdir(), 'oxn-deps-all-'))
+    writeFileSync(
+      join(allResolvedDir, 'package.json'),
+      JSON.stringify({ name: 'ok', dependencies: { react: '^18.0.0' } }),
+    )
+    writeFileSync(
+      join(allResolvedDir, 'package-lock.json'),
+      JSON.stringify({
+        lockfileVersion: 3,
+        packages: { 'node_modules/react': { version: '18.2.0' } },
+      }),
+    )
+
+    const handler = probeRegistry.get('deps_resolved')!
+    const obs = await handler!({}, { projectRoot: allResolvedDir })
+    const parsed = JSON.parse(obs.output ?? '{}')
+    expect(parsed.missing).toEqual([])
+    expect(parsed.resolvedCount).toBe(1)
+
+    rmSync(allResolvedDir, { recursive: true })
   })
 })

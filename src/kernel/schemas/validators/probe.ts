@@ -6,6 +6,7 @@ export const ProbeTypeSchema = z.enum([
   'fs_match',
   'fs_parseable',
   'test_pass',
+  'deps_resolved',
   'shell_exec',
 ])
 

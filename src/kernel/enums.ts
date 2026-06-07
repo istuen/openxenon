@@ -18,7 +18,7 @@ export type ProofType = 'validation' | 'lint' | 'test'
 
 export type ProjectStatus = 'active' | 'archived'
 
-export type ProbeType = 'fs_exists' | 'fs_not_exists' | 'fs_match' | 'fs_parseable' | 'test_pass' | 'shell_exec'
+export type ProbeType = 'fs_exists' | 'fs_not_exists' | 'fs_match' | 'fs_parseable' | 'test_pass' | 'deps_resolved' | 'shell_exec'
 
 export type Action = 'TASK_NEW' | 'TASK_START' | 'TASK_STOP' | 'TASK_SUBMIT' | 'TASK_LIST' | 'TASK_TRACE'
 

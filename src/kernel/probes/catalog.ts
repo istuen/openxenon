@@ -202,6 +202,34 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     builtin: 'oxn',
     domainTerm: 'TestCase',
   },
+  {
+    // v1.1 P1: deps-resolved — 验证 package.json 依赖都被 lockfile 解析
+    // 复 ProgramContext.Package term。纯 JS，无 spawn。
+    semanticName: 'deps-resolved',
+    description: '验证 package.json 声明的所有依赖都被 lockfile 解析（missing.length === 0 → PASS）',
+    inputs: [
+      {
+        name: 'packageJson',
+        type: 'string',
+        required: false,
+        description: 'package.json 路径（默认项目根）',
+      },
+      {
+        name: 'lockfile',
+        type: 'string',
+        required: false,
+        description: 'lockfile 路径（默认自动检测：bun.lock > package-lock.json > pnpm-lock.yaml > yarn.lock）',
+      },
+    ],
+    examples: [
+      { name: 'default-detect', inputs: {} },
+      { name: 'explicit-pkg', inputs: { packageJson: './packages/web/package.json' } },
+    ],
+    internalRef: '@oxn/probes/deps-resolved',
+    inputMap: { packageJson: 'packageJson', lockfile: 'lockfile' },
+    builtin: 'oxn',
+    domainTerm: 'Package',
+  },
 ]
 
 // ---------------------------------------------------------------------------

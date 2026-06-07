@@ -195,6 +195,44 @@ const testPassStrategy: ProbeStrategy = (observation, params) => {
   }
 }
 
+/** deps_resolved: 期望 output.missing.length === 0（v1.1 P1 probe）
+ *
+ * AI 经常幻觉依赖项——声称装了某个包但 package.json 没声明。
+ * 这个 probe 阻止"AI 假完成依赖安装"。
+ */
+const depsResolvedStrategy: ProbeStrategy = (observation, params) => {
+  let missing: string[] = []
+  let declaredCount = 0
+  let resolvedCount = 0
+  let lockfilePath: string | undefined
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      missing?: string[]
+      declaredCount?: number
+      resolvedCount?: number
+      lockfilePath?: string
+    }
+    missing = obj.missing ?? []
+    declaredCount = obj.declaredCount ?? 0
+    resolvedCount = obj.resolvedCount ?? 0
+    lockfilePath = obj.lockfilePath
+  } catch {
+    // ignore
+  }
+
+  const passed = missing.length === 0 && !observation.error
+  return {
+    passed,
+    message: passed
+      ? `deps-resolved: all ${declaredCount} deps resolved${lockfilePath ? ` via ${lockfilePath}` : ''}`
+      : `deps-resolved: ${missing.length} missing: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '...' : ''}`,
+    actual: { declaredCount, resolvedCount, missing, lockfilePath },
+    params,
+    duration: observation.executedAt,
+    failureMessage: passed ? undefined : `${missing.length} dep(s) declared but not resolved: ${missing.join(', ')}`,
+  }
+}
+
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -203,6 +241,7 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   fs_match: fsMatchStrategy,
   fs_parseable: fsParseableStrategy,
   test_pass: testPassStrategy,
+  deps_resolved: depsResolvedStrategy,
   shell_exec: shellExecStrategy,
   // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册

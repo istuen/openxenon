@@ -6,6 +6,7 @@ import { executeFsNotExists } from './fs-not-exists'
 import { executeFsParseable, type FsParseableParams } from './fs-parseable'
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 import { executeTestPass, type TestPassParams } from './test-pass'
+import { executeDepsResolved, type DepsResolvedParams } from './deps-resolved'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -79,6 +80,23 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // v1.1 P1: deps-resolved — 验证 package.json 依赖都被 lockfile 解析
+  deps_resolved: async (params, context) => {
+    const depsParams = params as unknown as DepsResolvedParams
+    const result = await executeDepsResolved(depsParams, context as ProbeContext)
+    return {
+      probeType: 'deps_resolved',
+      output: JSON.stringify({
+        missing: result.missing,
+        declaredCount: Object.keys(result.declared).length,
+        resolvedCount: result.resolved ? Object.keys(result.resolved).length : 0,
+        lockfilePath: result.lockfilePath,
+      }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -90,6 +108,7 @@ class ProbeRegistry {
     'fs-content-match': 'fs_match',
     'fs-parseable': 'fs_parseable',
     'test-pass': 'test_pass',
+    'deps-resolved': 'deps_resolved',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
@@ -97,6 +116,7 @@ class ProbeRegistry {
     'fs-not-exists:probes': 'fs_not_exists',
     'fs-parseable:probes': 'fs_parseable',
     'test-pass:probes': 'test_pass',
+    'deps-resolved:probes': 'deps_resolved',
     'shell-exec:probes': 'shell_exec',
   }
 
@@ -152,4 +172,12 @@ export function registerProbeHandler(type: string, handler: ProbeHandler): void 
 }
 
 export type { ProbeContext, ShellExecResult }
-export { executeFsExists, executeFsMatch, executeFsNotExists, executeFsParseable, executeShellExec, executeTestPass }
+export {
+  executeFsExists,
+  executeFsMatch,
+  executeFsNotExists,
+  executeFsParseable,
+  executeShellExec,
+  executeTestPass,
+  executeDepsResolved,
+}
