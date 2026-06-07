@@ -55,30 +55,6 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     } as ProbeObservation & { exitCode: number | null }
   },
 
-  exec_exit_zero: async (params, context) => {
-    const command = params.command as string
-    const result: ShellExecResult = await executeShellExec(command, context as ProbeContext)
-    return {
-      probeType: 'exec_exit_zero',
-      output: result.stdout || result.stderr,
-      error: result.error,
-      executedAt: Date.now(),
-      exitCode: result.exitCode,
-    } as ProbeObservation & { exitCode: number | null }
-  },
-
-  exec_output_match: async (params, context) => {
-    const command = params.command as string
-    const result: ShellExecResult = await executeShellExec(command, context as ProbeContext)
-    return {
-      probeType: 'exec_output_match',
-      output: result.stdout || result.stderr,
-      error: result.error,
-      executedAt: Date.now(),
-      exitCode: result.exitCode,
-    } as ProbeObservation & { exitCode: number | null }
-  },
-
   // v1.1: fs-parseable — JSON 解析验证
   fs_parseable: async (params, context) => {
     const parseParams = params as unknown as FsParseableParams

@@ -1,5 +1,5 @@
 // =============================================================================
-// Kernel Probe Verdict Strategies (v0.1.2)
+// Kernel Probe Verdict Strategies (v0.1.2 → v1.1 清理)
 //
 // 纯洁性约束（IAP 三轴分离）：
 //   - 本模块零 IO：fs.* / net.* / child_process / process.cwd() 都不允许
@@ -9,10 +9,13 @@
 // 设计：策略注册表。每个 probe 类型对应一个纯函数策略。
 //   fs_exists     → "命中文件数 >= expected (默认 1) → PASS"
 //   fs_not_exists → "命中文件数 == 0 → PASS"
-//   fs_match      → "observation.error 为空 → PASS（Infra 失败即 FAIL）"
+//   fs_match      → "output.matched === true → PASS" (v1.1 数据契约修复)
+//   fs_parseable  → "output.parsed === true → PASS" (v1.1 新增)
 //   shell_exec    → "exitCode === 0 → PASS"
-//   exec_exit_zero → 同 shell_exec
-//   exec_output_match → 同 fs_match（Infra 已 execute，错误即 FAIL）
+//
+// v1.1 清理：移除 exec_exit_zero / exec_output_match 遗留别名
+//   （这两个与 shell_exec / fs_match 完全重复，仅为旧 Infra 兼容）
+//   向后兼容：migrate-probe-refs.ts 保留映射表，标注 deprecated
 //
 // 新增策略只需往 STRATEGIES 加一条，无需改 infra。
 // =============================================================================
@@ -126,21 +129,6 @@ const shellExecStrategy: ProbeStrategy = (observation, params) => {
   }
 }
 
-/** exec_output_match: 期望 output 包含 expected 字符串 */
-const execOutputMatchStrategy: ProbeStrategy = (observation, params) => {
-  const expected = expectedAsString(params.expected ?? params.contains) ?? ''
-  const output = observation.output ?? ''
-  const passed = !observation.error && output.includes(expected)
-  return {
-    passed,
-    message: passed ? `exec-output-match: output contains "${expected}"` : `exec-output-match: no match`,
-    actual: output,
-    params: { ...params, expected },
-    duration: observation.executedAt,
-    failureMessage: passed ? undefined : `expected to contain "${expected}"`,
-  }
-}
-
 /** fs_parseable: 期望 output.parsed === true（v1.1） */
 const fsParseableStrategy: ProbeStrategy = (observation, params) => {
   let parsed = false
@@ -180,8 +168,8 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   fs_match: fsMatchStrategy,
   fs_parseable: fsParseableStrategy,
   shell_exec: shellExecStrategy,
-  exec_exit_zero: shellExecStrategy,
-  exec_output_match: execOutputMatchStrategy,
+  // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
+  // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册
 }
 
 export const PROBE_VERDICT_ALIASES: Record<string, string> = {

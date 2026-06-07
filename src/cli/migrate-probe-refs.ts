@@ -2,6 +2,14 @@ import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { globSync } from 'glob'
 import { join } from 'path'
 
+// =============================================================================
+// v1.1: 此模块专为向后兼容而保留——exec_exit_zero / exec_output_match 已在 v1.1
+// 内部清理（infra handlers / verdict strategies / contracts 均删除）。
+// 外部 Blueprint / proof 文件可能仍引用旧 ref，本模块把这些 ref 翻译为新 ref。
+//
+// Deprecated 入口保留至 v1.2；v1.3 之后建议彻底删除。
+// =============================================================================
+
 interface MigrationResult {
   file: string
   oldRef: string

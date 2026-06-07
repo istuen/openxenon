@@ -49,6 +49,6 @@ export const PROBE_STRATEGY_MAPPINGS: ProbeStrategyMapping[] = [
   { handler: 'fs_match', strategy: 'fs_match', observationType: 'fs_match' },
   { handler: 'fs_parseable', strategy: 'fs_parseable', observationType: 'fs_parseable' },
   { handler: 'shell_exec', strategy: 'shell_exec', observationType: 'shell_exec' },
-  { handler: 'exec_exit_zero', strategy: 'exec_exit_zero', observationType: 'exec_exit_zero' },
-  { handler: 'exec_output_match', strategy: 'exec_output_match', observationType: 'exec_output_match' },
+  // v1.1: exec_exit_zero / exec_output_match 移除
+  // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译到 shell_exec / fs-content-match
 ]
