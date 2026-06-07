@@ -96,6 +96,74 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     inputMap: { command: 'command', timeout: 'timeout' },
     builtin: 'oxn',
   },
+  {
+    // v1.1: catalog 注册（非新实现——infra + kernel 早已存在，仅 catalog 缺失）
+    semanticName: 'fs-not-exists',
+    description: '检查指定路径不存在（命中数 === 0 → PASS）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: true,
+        description: '要检查的文件路径或 glob 模式（不应存在）',
+      },
+    ],
+    examples: [
+      { name: 'no-stale-build', inputs: { path: './dist/index.js' } },
+      { name: 'no-debug-code', inputs: { path: 'src/console.log' } },
+    ],
+    internalRef: '@oxn/probes/fs-not-exists',
+    inputMap: { path: 'pattern' },
+    builtin: 'oxn',
+  },
+  {
+    // v1.1: catalog 注册（fs_match 的语义层 alias，kebab-case 命名）
+    // 实际仍是 fs_match 策略，但 AI 看到 'fs-content-match' 比 'fs_match' 更明确
+    semanticName: 'fs-content-match',
+    description: '检查文件内容是否匹配 regex 模式（matched: true → PASS）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: true,
+        description: '要读取的文件路径',
+      },
+      {
+        name: 'contains',
+        type: 'string',
+        required: true,
+        description: '要匹配的 regex 模式（如 "openxenon" / "^export const \\w+"）',
+      },
+    ],
+    examples: [
+      { name: 'package-declares-dep', inputs: { path: './package.json', contains: '"openxenon":' } },
+      { name: 'file-exports-default', inputs: { path: './dist/index.js', contains: 'export default' } },
+    ],
+    internalRef: '@oxn/probes/fs-content-match',
+    inputMap: { path: 'path', contains: 'contains' },
+    builtin: 'oxn',
+  },
+  {
+    // v1.1: 全新 Probe —— 文件可被 JSON 解析
+    // 实现见 src/infra/probes/fs-parseable.ts (5a.2)
+    semanticName: 'fs-parseable',
+    description: '检查文件可被解析（当前支持 JSON 格式，valid → PASS）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: true,
+        description: '要解析的文件路径（当前仅 *.json）',
+      },
+    ],
+    examples: [
+      { name: 'package-json-valid', inputs: { path: './package.json' } },
+      { name: 'tsconfig-valid', inputs: { path: './tsconfig.json' } },
+    ],
+    internalRef: '@oxn/probes/fs-parseable',
+    inputMap: { path: 'path' },
+    builtin: 'oxn',
+  },
 ]
 
 // ---------------------------------------------------------------------------
