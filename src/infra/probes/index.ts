@@ -5,6 +5,7 @@ import { executeFsMatch, type FsMatchParams } from './fs-match'
 import { executeFsNotExists } from './fs-not-exists'
 import { executeFsParseable, type FsParseableParams } from './fs-parseable'
 import { executeShellExec, type ShellExecResult } from './shell-exec'
+import { executeTestPass, type TestPassParams } from './test-pass'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -66,6 +67,18 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // v1.1 P1: test-pass — 跑 bun test
+  test_pass: async (params, context) => {
+    const testParams = params as unknown as TestPassParams
+    const result = await executeTestPass(testParams, context as ProbeContext)
+    return {
+      probeType: 'test_pass',
+      output: JSON.stringify({ passed: result.passed, exitCode: result.exitCode, summary: result.summary }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -76,12 +89,14 @@ class ProbeRegistry {
     'fs-not-exists': 'fs_not_exists',
     'fs-content-match': 'fs_match',
     'fs-parseable': 'fs_parseable',
+    'test-pass': 'test_pass',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
     'fs-exists:probes': 'fs_exists',
     'fs-not-exists:probes': 'fs_not_exists',
     'fs-parseable:probes': 'fs_parseable',
+    'test-pass:probes': 'test_pass',
     'shell-exec:probes': 'shell_exec',
   }
 
@@ -137,4 +152,4 @@ export function registerProbeHandler(type: string, handler: ProbeHandler): void 
 }
 
 export type { ProbeContext, ShellExecResult }
-export { executeFsExists, executeFsMatch, executeFsNotExists, executeFsParseable, executeShellExec }
+export { executeFsExists, executeFsMatch, executeFsNotExists, executeFsParseable, executeShellExec, executeTestPass }

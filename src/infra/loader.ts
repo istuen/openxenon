@@ -9,7 +9,14 @@ import type { Scope as InfraScope } from '../infra/paths'
 
 export type { ProbeNamespace, ParsedProbeRef } from '../oxn-dsl/validators/probe-namespace'
 
-export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'fs_parseable', 'shell_exec'])
+export const ProbeTypeSchema = z.enum([
+  'fs_exists',
+  'fs_not_exists',
+  'fs_match',
+  'fs_parseable',
+  'test_pass',
+  'shell_exec',
+])
 
 export type Scope = InfraScope | 'fallback' | 'builtin'
 

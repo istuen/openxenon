@@ -18,7 +18,7 @@ function validateCommand(command: string): boolean {
   return !dangerousPatterns.some((pattern) => pattern.test(command))
 }
 
-export function executeShellExec(command: string, context: ProbeContext): Promise<ShellExecResult> {
+export function executeShellExec(command: string, context: ProbeContext, timeoutMs?: number): Promise<ShellExecResult> {
   return new Promise((resolve) => {
     if (!validateCommand(command)) {
       resolve({
@@ -35,15 +35,16 @@ export function executeShellExec(command: string, context: ProbeContext): Promis
       cwd: context.projectRoot,
     })
 
+    const effectiveTimeout = timeoutMs ?? 30000
     const timeout = setTimeout(() => {
       proc.kill()
       resolve({
         success: false,
         stdout: '',
-        stderr: 'Command timed out (30s)',
+        stderr: `Command timed out (${effectiveTimeout}ms)`,
         exitCode: null,
       })
-    }, 30000)
+    }, effectiveTimeout)
 
     let stdout = ''
     let stderr = ''

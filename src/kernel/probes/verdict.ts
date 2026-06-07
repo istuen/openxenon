@@ -160,6 +160,41 @@ const fsParseableStrategy: ProbeStrategy = (observation, params) => {
   }
 }
 
+/** test_pass: 期望 output.passed === true（v1.1 P1 probe）
+ *
+ * 关键：AI 写的代码如果测试不通过，verdict 必须 FAIL——这是 Proof 轴
+ * 阻止"AI 假完成"的核心场景。
+ */
+const testPassStrategy: ProbeStrategy = (observation, params) => {
+  let passed = false
+  let exitCode: number | null = null
+  let summary: { passed: number; failed: number; total: number } | undefined
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      exitCode?: number | null
+      summary?: { passed: number; failed: number; total: number }
+    }
+    passed = obj.passed === true
+    exitCode = obj.exitCode ?? null
+    summary = obj.summary
+  } catch {
+    passed = false
+  }
+
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    message: ok
+      ? `test-pass: all tests passed${summary ? ` (${summary.passed}/${summary.total})` : ''}`
+      : `test-pass: ${observation.error ?? (summary ? `${summary.failed} failed` : 'tests failed')}`,
+    actual: { exitCode, summary },
+    params,
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? `${summary?.failed ?? '?'} test(s) failed`),
+  }
+}
+
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -167,6 +202,7 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   fs_not_exists: fsNotExistsStrategy,
   fs_match: fsMatchStrategy,
   fs_parseable: fsParseableStrategy,
+  test_pass: testPassStrategy,
   shell_exec: shellExecStrategy,
   // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册

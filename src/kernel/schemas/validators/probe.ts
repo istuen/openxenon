@@ -1,6 +1,13 @@
 import { z } from 'zod'
 
-export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'fs_parseable', 'shell_exec'])
+export const ProbeTypeSchema = z.enum([
+  'fs_exists',
+  'fs_not_exists',
+  'fs_match',
+  'fs_parseable',
+  'test_pass',
+  'shell_exec',
+])
 
 export type ProbeType = z.infer<typeof ProbeTypeSchema>
 

@@ -168,6 +168,40 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     inputMap: { path: 'path' },
     builtin: 'oxn',
   },
+  {
+    // v1.1 P1: test-pass — 跑 bun test + 解析退出码 + 简易 pass/fail 统计
+    // 复 ProgramContext.TestCase term
+    semanticName: 'test-pass',
+    description: '跑 bun test 并验证全部通过（exit 0 → PASS）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: false,
+        description: '测试文件路径或目录（默认项目根）',
+      },
+      {
+        name: 'pattern',
+        type: 'string',
+        required: false,
+        description: 'bun test 接受的过滤 pattern（如 "auth"）',
+      },
+      {
+        name: 'timeout',
+        type: 'number',
+        required: false,
+        description: '超时（毫秒，默认 120000）',
+      },
+    ],
+    examples: [
+      { name: 'all-tests-pass', inputs: { timeout: 60000 } },
+      { name: 'auth-tests-only', inputs: { path: './tests/auth', pattern: 'auth' } },
+    ],
+    internalRef: '@oxn/probes/test-pass',
+    inputMap: { path: 'path', pattern: 'pattern', timeout: 'timeout' },
+    builtin: 'oxn',
+    domainTerm: 'TestCase',
+  },
 ]
 
 // ---------------------------------------------------------------------------

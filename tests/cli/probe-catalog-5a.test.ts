@@ -17,21 +17,29 @@ import { probeRegistry } from '../../src/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/probes/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 5 条 builtin probes', () => {
+  test('catalog 列出 5 条 builtin probes (5a) + 1 P1 (test-pass, 5b.1)', () => {
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
-    expect(names).toEqual(['fs-content-match', 'fs-exists', 'fs-not-exists', 'fs-parseable', 'shell-exec'])
+    // 5a: 5 条 builtin；5b.1 加 test-pass → 共 6
+    expect(names).toEqual(['fs-content-match', 'fs-exists', 'fs-not-exists', 'fs-parseable', 'shell-exec', 'test-pass'])
   })
 
-  test('listProbesSummary 至少 5 个', () => {
+  test('listProbesSummary 至少 6 个（5a + 5b.1）', () => {
     const summary = listProbesSummary()
-    expect(summary.length).toBeGreaterThanOrEqual(5)
+    expect(summary.length).toBeGreaterThanOrEqual(6)
     const names = summary.map((s) => s.name)
     expect(names).toContain('fs-exists')
     expect(names).toContain('fs-not-exists')
     expect(names).toContain('fs-content-match')
     expect(names).toContain('fs-parseable')
     expect(names).toContain('shell-exec')
+    expect(names).toContain('test-pass')
+  })
+
+  test('P1 probe test-pass 标注 domainTerm = TestCase', () => {
+    const entry = PROBE_CATALOG.find((p) => p.semanticName === 'test-pass')
+    expect(entry).toBeDefined()
+    expect(entry?.domainTerm).toBe('TestCase')
   })
 
   test('每个 catalog entry 都有 handler 配套 + strategy 可达', () => {
@@ -101,5 +109,48 @@ describe('v1.1 Phase 5a: fs-parseable 真 e2e', () => {
 
     const parsed = JSON.parse(obs.output ?? '{}')
     expect(parsed.parsed).toBe(false)
+  })
+})
+
+describe('v1.1 Phase 5b.1: test-pass 真 e2e', () => {
+  let tmpDir: string
+
+  beforeAll(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'oxn-test-pass-'))
+    // 写 2 个 passing test + 1 个 failing test
+    writeFileSync(
+      join(tmpDir, 'passing.test.ts'),
+      `import { test, expect } from 'bun:test'
+test('add 1+1', () => { expect(1 + 1).toBe(2) })
+test('add 2+2', () => { expect(2 + 2).toBe(4) })
+`,
+    )
+    writeFileSync(
+      join(tmpDir, 'failing.test.ts'),
+      `import { test, expect } from 'bun:test'
+test('this fails', () => { expect(1).toBe(2) })
+`,
+    )
+  })
+
+  afterAll(() => {
+    if (tmpDir && existsSync(tmpDir)) rmSync(tmpDir, { recursive: true })
+  })
+
+  test('真 e2e: 全部测试通过 → passed: true, exit 0', async () => {
+    const handler = probeRegistry.get('test_pass')
+    expect(handler).not.toBeNull()
+    const obs = await handler!({ path: join(tmpDir, 'passing.test.ts') }, { projectRoot: tmpDir })
+    const parsed = JSON.parse(obs.output ?? '{}')
+    expect(parsed.passed).toBe(true)
+    expect(parsed.exitCode).toBe(0)
+  })
+
+  test('真 e2e: 有失败测试 → passed: false, exit 非 0', async () => {
+    const handler = probeRegistry.get('test_pass')!
+    const obs = await handler!({ path: join(tmpDir, 'failing.test.ts') }, { projectRoot: tmpDir })
+    const parsed = JSON.parse(obs.output ?? '{}')
+    expect(parsed.passed).toBe(false)
+    expect(parsed.exitCode).not.toBe(0)
   })
 })
