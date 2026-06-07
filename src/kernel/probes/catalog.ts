@@ -265,6 +265,41 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     builtin: 'oxn',
     domainTerm: 'SourceFile',
   },
+  {
+    // v1.1 P1: lint-check — 跑 biome check 验证代码风格
+    // 复 ProgramContext.SourceFile term（与 ts-compiles 共享）。
+    // 前置依赖：biome (devDep)
+    semanticName: 'lint-check',
+    description: '跑 biome check 验证代码风格（exit 0 → PASS；需项目装 biome）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: false,
+        description: '要 lint 的路径（默认项目根）',
+      },
+      {
+        name: 'apply',
+        type: 'boolean',
+        required: false,
+        description: '是否自动修复（--apply，默认 false）',
+      },
+      {
+        name: 'timeout',
+        type: 'number',
+        required: false,
+        description: '超时（毫秒，默认 60000）',
+      },
+    ],
+    examples: [
+      { name: 'check-only', inputs: { timeout: 60000 } },
+      { name: 'check-and-apply', inputs: { apply: true } },
+    ],
+    internalRef: '@oxn/probes/lint-check',
+    inputMap: { path: 'path', apply: 'apply', timeout: 'timeout' },
+    builtin: 'oxn',
+    domainTerm: 'SourceFile',
+  },
 ]
 
 // ---------------------------------------------------------------------------

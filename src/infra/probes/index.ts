@@ -8,6 +8,7 @@ import { executeShellExec, type ShellExecResult } from './shell-exec'
 import { executeTestPass, type TestPassParams } from './test-pass'
 import { executeDepsResolved, type DepsResolvedParams } from './deps-resolved'
 import { executeTsCompiles, type TsCompilesParams } from './ts-compiles'
+import { executeLintCheck, type LintCheckParams } from './lint-check'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -110,6 +111,18 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // v1.1 P1: lint-check — 跑 biome check 验证代码风格
+  lint_check: async (params, context) => {
+    const lintParams = params as unknown as LintCheckParams
+    const result = await executeLintCheck(lintParams, context as ProbeContext)
+    return {
+      probeType: 'lint_check',
+      output: JSON.stringify({ passed: result.passed, exitCode: result.exitCode, issueCount: result.issueCount }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -123,6 +136,7 @@ class ProbeRegistry {
     'test-pass': 'test_pass',
     'deps-resolved': 'deps_resolved',
     'ts-compiles': 'ts_compiles',
+    'lint-check': 'lint_check',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
@@ -132,6 +146,7 @@ class ProbeRegistry {
     'test-pass:probes': 'test_pass',
     'deps-resolved:probes': 'deps_resolved',
     'ts-compiles:probes': 'ts_compiles',
+    'lint-check:probes': 'lint_check',
     'shell-exec:probes': 'shell_exec',
   }
 
@@ -196,4 +211,5 @@ export {
   executeTestPass,
   executeDepsResolved,
   executeTsCompiles,
+  executeLintCheck,
 }

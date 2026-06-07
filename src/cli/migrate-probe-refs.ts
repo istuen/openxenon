@@ -29,6 +29,7 @@ const BUILTIN_PROBES: ProbeMapping = {
   test_pass: 'oxn/test-pass',
   deps_resolved: 'oxn/deps-resolved',
   ts_compiles: 'oxn/ts-compiles',
+  lint_check: 'oxn/lint-check',
   exec_exit_zero: 'oxn/exec-exit-zero',
   shell_exec: 'oxn/shell-exec',
   'exec-exit-zero': 'oxn/exec-exit-zero',

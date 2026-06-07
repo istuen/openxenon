@@ -262,6 +262,41 @@ const tsCompilesStrategy: ProbeStrategy = (observation, params) => {
     failureMessage: ok ? undefined : (observation.error ?? `${errorCount ?? '?'} type error(s)`),
   }
 }
+
+/** lint_check: 期望 output.passed === true（v1.1 P1 probe）
+ *
+ * 注意：biome 是 devDep——若用户项目没装 biome，verdict 走 'error' 兜底 FAIL。
+ * Catalog description 已明示"需要 biome"。
+ */
+const lintCheckStrategy: ProbeStrategy = (observation, params) => {
+  let passed = false
+  let exitCode: number | null = null
+  let issueCount: number | undefined
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      exitCode?: number | null
+      issueCount?: number
+    }
+    passed = obj.passed === true
+    exitCode = obj.exitCode ?? null
+    issueCount = obj.issueCount
+  } catch {
+    passed = false
+  }
+
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    message: ok
+      ? `lint-check: no issues`
+      : `lint-check: ${issueCount !== undefined ? `${issueCount} issue(s)` : (observation.error ?? 'lint failed')}`,
+    actual: { exitCode, issueCount },
+    params,
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? `${issueCount ?? '?'} lint issue(s)`),
+  }
+}
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -272,6 +307,7 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   test_pass: testPassStrategy,
   deps_resolved: depsResolvedStrategy,
   ts_compiles: tsCompilesStrategy,
+  lint_check: lintCheckStrategy,
   shell_exec: shellExecStrategy,
   // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册
