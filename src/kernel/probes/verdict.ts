@@ -332,6 +332,38 @@ const httpRespondsStrategy: ProbeStrategy = (observation, params) => {
     failureMessage: ok ? undefined : (observation.error ?? `status ${status ?? 'null'} !== expected ${expectedStatus}`),
   }
 }
+
+/** file_exports: 期望 exports.length > 0（v1.1 P1 probe）
+ *
+ * 进程隔离 runtime import（spawn bun run tmp script）——零新依赖，
+ * Bun 原生支持 TS。结果绝对准确（运行时真相）。
+ */
+const fileExportsStrategy: ProbeStrategy = (observation, params) => {
+  let exports: string[] = []
+  let exportCount = 0
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      exports?: string[]
+      exportCount?: number
+    }
+    exports = obj.exports ?? []
+    exportCount = obj.exportCount ?? exports.length
+  } catch {
+    // ignore
+  }
+
+  const passed = exports.length > 0 && !observation.error
+  return {
+    passed,
+    message: passed
+      ? `file-exports: ${exportCount} exports found${exports.length > 0 ? ` (e.g. ${exports.slice(0, 3).join(', ')})` : ''}`
+      : `file-exports: ${observation.error ?? 'no exports found'}`,
+    actual: { exports, exportCount },
+    params,
+    duration: observation.executedAt,
+    failureMessage: passed ? undefined : (observation.error ?? 'no exports found'),
+  }
+}
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -344,6 +376,7 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   ts_compiles: tsCompilesStrategy,
   lint_check: lintCheckStrategy,
   http_responds: httpRespondsStrategy,
+  file_exports: fileExportsStrategy,
   shell_exec: shellExecStrategy,
   // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册

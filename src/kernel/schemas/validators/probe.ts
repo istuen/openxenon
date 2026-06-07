@@ -10,6 +10,7 @@ export const ProbeTypeSchema = z.enum([
   'ts_compiles',
   'lint_check',
   'http_responds',
+  'file_exports',
   'shell_exec',
 ])
 

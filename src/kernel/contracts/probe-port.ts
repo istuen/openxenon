@@ -53,6 +53,7 @@ export const PROBE_STRATEGY_MAPPINGS: ProbeStrategyMapping[] = [
   { handler: 'ts_compiles', strategy: 'ts_compiles', observationType: 'ts_compiles' },
   { handler: 'lint_check', strategy: 'lint_check', observationType: 'lint_check' },
   { handler: 'http_responds', strategy: 'http_responds', observationType: 'http_responds' },
+  { handler: 'file_exports', strategy: 'file_exports', observationType: 'file_exports' },
   { handler: 'shell_exec', strategy: 'shell_exec', observationType: 'shell_exec' },
   // v1.1: exec_exit_zero / exec_output_match 移除
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译到 shell_exec / fs-content-match

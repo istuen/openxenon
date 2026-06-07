@@ -10,6 +10,7 @@ import { executeDepsResolved, type DepsResolvedParams } from './deps-resolved'
 import { executeTsCompiles, type TsCompilesParams } from './ts-compiles'
 import { executeLintCheck, type LintCheckParams } from './lint-check'
 import { executeHttpResponds, type HttpRespondsParams } from './http-responds'
+import { executeFileExports, type FileExportsParams } from './file-exports'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -142,6 +143,23 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // v1.1 P1: file-exports — 进程隔离 runtime import 提取 exports
+  file_exports: async (params, context) => {
+    const feParams = params as unknown as FileExportsParams
+    const result = await executeFileExports(feParams, context as ProbeContext)
+    return {
+      probeType: 'file_exports',
+      output: JSON.stringify({
+        exports: result.exports,
+        exportCount: result.exports.length,
+        isolated: result.isolated,
+        durationMs: result.durationMs,
+      }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -157,6 +175,7 @@ class ProbeRegistry {
     'ts-compiles': 'ts_compiles',
     'lint-check': 'lint_check',
     'http-responds': 'http_responds',
+    'file-exports': 'file_exports',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
@@ -168,6 +187,7 @@ class ProbeRegistry {
     'ts-compiles:probes': 'ts_compiles',
     'lint-check:probes': 'lint_check',
     'http-responds:probes': 'http_responds',
+    'file-exports:probes': 'file_exports',
     'shell-exec:probes': 'shell_exec',
   }
 
@@ -234,4 +254,5 @@ export {
   executeTsCompiles,
   executeLintCheck,
   executeHttpResponds,
+  executeFileExports,
 }

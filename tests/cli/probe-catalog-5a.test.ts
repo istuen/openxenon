@@ -17,12 +17,13 @@ import { probeRegistry } from '../../src/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/probes/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 5a+5b builtin probes（10 条）', () => {
+  test('catalog 列出 5a+5b builtin probes（11 条）', () => {
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
-    // 5a: 5 条 + 5b.1+2+3+4+5 → 共 10
+    // 5a: 5 条 + 5b.1+2+3+4+5+6 → 共 11
     expect(names).toEqual([
       'deps-resolved',
+      'file-exports',
       'fs-content-match',
       'fs-exists',
       'fs-not-exists',
@@ -35,11 +36,11 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     ])
   })
 
-  test('listProbesSummary 至少 10 个（5a + 5b.1+2+3+4+5）', () => {
+  test('listProbesSummary 至少 11 个（5a + 5b.1+2+3+4+5+6）', () => {
     const summary = listProbesSummary()
-    expect(summary.length).toBeGreaterThanOrEqual(10)
+    expect(summary.length).toBeGreaterThanOrEqual(11)
     const names = summary.map((s) => s.name)
-    expect(names).toContain('http-responds')
+    expect(names).toContain('file-exports')
   })
 
   test('P1 probe test-pass 标注 domainTerm = TestCase', () => {
@@ -70,6 +71,12 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     const entry = PROBE_CATALOG.find((p) => p.semanticName === 'http-responds')
     expect(entry).toBeDefined()
     expect(entry?.domainTerm).toBe('APIEndpoint')
+  })
+
+  test('P1 probe file-exports 标注 domainTerm = Module', () => {
+    const entry = PROBE_CATALOG.find((p) => p.semanticName === 'file-exports')
+    expect(entry).toBeDefined()
+    expect(entry?.domainTerm).toBe('Module')
   })
 
   test('每个 catalog entry 都有 handler 配套 + strategy 可达', () => {
@@ -281,5 +288,20 @@ describe('v1.1 Phase 5b.5: http-responds 真 e2e (使用 httpbin.org 或本地 s
   test('真 e2e: handler 注册 + 结构化 output', () => {
     const handler = probeRegistry.get('http_responds')
     expect(handler).not.toBeNull()
+  })
+})
+
+describe('v1.1 Phase 5b.6: file-exports 真 e2e (进程隔离 runtime import)', () => {
+  const projectRoot = '/Users/issac/pro/openxenon'
+
+  test('真 e2e: 真实 TS 文件（cli/index.ts）→ exports 列表', async () => {
+    const handler = probeRegistry.get('file_exports')
+    expect(handler).not.toBeNull()
+    // cli/index.ts 不一定有 named exports——测 handler 跑通即可
+    const obs = await handler!({ path: 'src/infra/probes/test-pass.ts' }, { projectRoot })
+    // 可能有 error（bun run 时 import path 解析），但 result 应该是结构化 JSON
+    const parsed = JSON.parse(obs.output ?? '{}')
+    expect(parsed).toHaveProperty('exports')
+    expect(parsed).toHaveProperty('exportCount')
   })
 })

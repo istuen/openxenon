@@ -363,6 +363,30 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     builtin: 'oxn',
     domainTerm: 'APIEndpoint',
   },
+  {
+    // v1.1 P1: file-exports — 进程隔离 runtime import 提取 exports
+    // 复 ProgramContext.Module term。
+    // 方案 A（你的审查建议）：await import(path) 运行时分析，零新依赖。
+    // 默认 spawn bun run tmp script 隔离副作用（防污染主 runner）。
+    semanticName: 'file-exports',
+    description: '进程隔离 runtime import 提取模块的 exports 列表（exports.length > 0 → PASS）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: true,
+        description: '要分析的 .ts / .js 文件路径',
+      },
+    ],
+    examples: [
+      { name: 'dist-exports', inputs: { path: './dist/index.js' } },
+      { name: 'src-exports', inputs: { path: './src/foo.ts' } },
+    ],
+    internalRef: '@oxn/probes/file-exports',
+    inputMap: { path: 'path' },
+    builtin: 'oxn',
+    domainTerm: 'Module',
+  },
 ]
 
 // ---------------------------------------------------------------------------

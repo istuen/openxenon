@@ -28,6 +28,7 @@ export type ProbeType =
   | 'ts_compiles'
   | 'lint_check'
   | 'http_responds'
+  | 'file_exports'
   | 'shell_exec'
 
 export type Action = 'TASK_NEW' | 'TASK_START' | 'TASK_STOP' | 'TASK_SUBMIT' | 'TASK_LIST' | 'TASK_TRACE'
