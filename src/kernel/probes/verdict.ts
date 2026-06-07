@@ -69,17 +69,45 @@ const fsNotExistsStrategy: ProbeStrategy = (observation, params) => {
   }
 }
 
-/** fs_match: 期望 output 非空且无 error */
+/** fs_match: 期望 output.matched === true（v1.1 数据契约修复）
+ *
+ * 修复前：verdict 只检查 `observation.output?.length > 0`——Infra 返回的 'Pattern
+ *          not found' 字符串长度 > 0，所以任何 file read 成功都 PASS。完全忽略
+ *          Infra 实际计算的 `matched` 布尔。
+ *
+ * 修复后：Infra JSON-stringify `{ matched, content, pattern }`，Kernel JSON.parse
+ *          并读 `matched` 字段作为唯一判定依据。`content` 进入 `actual` 供
+ *          frozen.json 审计。
+ */
 const fsMatchStrategy: ProbeStrategy = (observation, params) => {
-  const passed = !observation.error && (observation.output?.length ?? 0) > 0
-  const expectedStr = expectedAsString(params.expected ?? params.pattern)
+  let matched = false
+  let content: string | undefined
+  let pattern: string | undefined
+  try {
+    const parsed = JSON.parse(observation.output ?? '{}') as {
+      matched?: boolean
+      content?: string
+      pattern?: string
+    }
+    matched = parsed.matched === true
+    content = parsed.content
+    pattern = parsed.pattern
+  } catch {
+    // 旧格式 / 损坏数据 → 走兜底 FAIL（不再 'length > 0' 假 PASS）
+    matched = false
+  }
+
+  const passed = matched && !observation.error
+  const expectedStr = expectedAsString(params.expected ?? params.pattern ?? pattern)
   return {
     passed,
-    message: passed ? 'fs-match: matched' : 'fs-match: no match or read error',
-    actual: observation.output,
-    params: { ...params, expected: expectedStr },
+    message: passed
+      ? `fs-match: matched "${pattern ?? expectedStr ?? ''}"`
+      : `fs-match: ${observation.error ?? (pattern ? `pattern not found` : 'no match')}`,
+    actual: content,
+    params: { ...params, expected: expectedStr, pattern },
     duration: observation.executedAt,
-    failureMessage: passed ? undefined : (observation.error ?? 'no match'),
+    failureMessage: passed ? undefined : (observation.error ?? `pattern "${pattern ?? expectedStr ?? ''}" not found`),
   }
 }
 

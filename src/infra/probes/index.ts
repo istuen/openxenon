@@ -33,7 +33,10 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     const result = await executeFsMatch(matchParams, context as ProbeContext)
     return {
       probeType: 'fs_match',
-      output: result.content,
+      // v1.1: JSON-stringify so Kernel can read `matched` boolean (data contract fix)
+      // Previously, only `result.content` was passed → Kernel could not distinguish
+      // "matched" from "not matched but file read succeeded"
+      output: JSON.stringify({ matched: result.matched, content: result.content, pattern: result.pattern }),
       error: result.error,
       executedAt: Date.now(),
     } as ProbeObservation
