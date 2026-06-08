@@ -4,6 +4,12 @@ import { basename, join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/constants'
 import { createOxnParser, isDomainDeclaration, type DomainDeclaration, type OXNDocument } from '../oxn-dsl'
+import {
+  getDomainIndexPath,
+  loadDomainIndex,
+  writeDomainIndex,
+  type DomainIndex,
+} from '../oxn-dsl/compiler/domain-index-builder'
 import { IAPAction, IAPError } from '../core/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 
@@ -28,6 +34,10 @@ function getProjectRoot(): string {
 
 function getDomainsDir(): string {
   return join(getProjectRoot(), BOUNDARY_DIR, DOMAINS_DIR)
+}
+
+function projectBoundaryExists(): boolean {
+  return existsSync(join(getProjectRoot(), BOUNDARY_DIR))
 }
 
 // v0.1: parseDomainFile 暂未使用（OxnParser 是 async，留作 v0.2 演进 sync 包装）
@@ -167,6 +177,12 @@ domain "${name}" {
       },
       format,
     )
+
+    // PR-1: create 后静默重建全局索引（只把新增的 .oxn 文件纳入；TODO 占位也会被记录）
+    const rebuild = autoRebuildDomainIndex(getProjectRoot())
+    if (!rebuild.ok) {
+      console.error(`Warning: domain index rebuild failed: ${rebuild.error}`)
+    }
   },
 })
 
@@ -265,6 +281,12 @@ const validateSubcommand = defineCommand({
       },
       format,
     )
+
+    // PR-1: validate 成功后静默重建全局索引
+    const rebuild = autoRebuildDomainIndex(getProjectRoot())
+    if (!rebuild.ok) {
+      console.error(`Warning: domain index rebuild failed: ${rebuild.error}`)
+    }
   },
 })
 
@@ -429,15 +451,133 @@ const listSubcommand = defineCommand({
   },
 })
 
+// ---------------------------------------------------------------------------
+// Subcommand: index (PR-1)
+// ---------------------------------------------------------------------------
+//
+// 扫 `.openxenon/domains/*.oxn`（含子目录）→ 落 `.openxenon/.cache/domains.json`
+// slim 模式：name/file/desc/termNames + 计数；不展开 term 的 desc 与 ban/invariant 文本
+// （slim 是 AI 全局检索入口；展开版由 per-work domains.json 提供，PR-2/3 引入）。
+//
+// 设计语义：
+//   - 不传 --emit：默认落 `.openxenon/.cache/domains.json`（项目内 cache）
+//   --emit <path>：落到自定义路径（不常用，调试用）
+//   --check：仅校验索引是否新鲜（generatedAt + 与文件系统 mtime 比对），不写
+const indexSubcommand = defineCommand({
+  meta: {
+    name: 'index',
+    description: '重建全局 Domain slim 索引 → .openxenon/.cache/domains.json',
+  },
+  args: {
+    emit: {
+      type: 'string',
+      description: '自定义输出路径（默认 .openxenon/.cache/domains.json）',
+    },
+    check: {
+      type: 'boolean',
+      description: '仅校验索引是否新鲜（与 domains/ 目录 mtime 比对），不写',
+    },
+    '--json': { type: 'boolean', description: 'JSON 格式输出' },
+    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const projectRoot = getProjectRoot()
+    const domainsDir = getDomainsDir()
+    const customEmit = ctx.args.emit as string | undefined
+    const checkOnly = ctx.args.check === true
+    const outPath = customEmit ? resolve(customEmit) : getDomainIndexPath(projectRoot)
+
+    if (!projectBoundaryExists()) {
+      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+    }
+
+    if (checkOnly) {
+      const existing = loadDomainIndex(outPath)
+      if (!existing) {
+        return output(
+          {
+            ok: true,
+            data: { fresh: false, reason: 'index missing' },
+            human: `Index missing at ${outPath}\nRun \`oxn domain index\` to build.`,
+          },
+          format,
+        )
+      }
+      return output(
+        {
+          ok: true,
+          data: { fresh: true, generatedAt: existing.generatedAt, domainCount: existing.domainCount },
+          human: `Index fresh: ${existing.domainCount} domains, generated at ${existing.generatedAt}`,
+        },
+        format,
+      )
+    }
+
+    let index: DomainIndex
+    try {
+      index = writeDomainIndex({ projectRoot, domainsDir, outPath })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return outputError({ code: 'OXN_DOMAIN_INDEX_FAILED', message }, format)
+    }
+
+    const invalidCount = index.domains.filter((d) => d.status === 'invalid').length
+    output(
+      {
+        ok: true,
+        data: {
+          indexPath: outPath,
+          generatedAt: index.generatedAt,
+          domainCount: index.domainCount,
+          invalidCount,
+          domains: index.domains,
+        },
+        human:
+          `Domain index built: ${index.domainCount} domain(s) at ${outPath}\n` +
+          (invalidCount > 0 ? `  ⚠ ${invalidCount} domain(s) failed to parse — see domains[].errors\n` : '') +
+          index.domains
+            .map((d) => `  - ${d.name} (${d.status}, ${d.termNames.length} terms, ${d.invariantCount} invariants)`)
+            .join('\n'),
+      },
+      format,
+    )
+  },
+})
+
+// ---------------------------------------------------------------------------
+// Helper: 自动重建索引（被 create / validate 调）
+// ---------------------------------------------------------------------------
+//
+// 静默失败：索引写不出不应阻断主流程（domain 资产本身已正确）；
+// 失败时返回 { ok: false, error }，由调用方决定 stderr 打 warning。
+export function autoRebuildDomainIndex(projectRoot: string): {
+  ok: boolean
+  indexPath?: string
+  error?: string
+} {
+  try {
+    const domainsDir = join(projectRoot, BOUNDARY_DIR, DOMAINS_DIR)
+    if (!existsSync(domainsDir)) return { ok: true }
+    const outPath = getDomainIndexPath(projectRoot)
+    writeDomainIndex({ projectRoot, domainsDir, outPath })
+    return { ok: true, indexPath: outPath }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    return { ok: false, error: message }
+  }
+}
+
 export default defineCommand({
   meta: {
     name: 'domain',
-    description: 'Domain 模块 — DDD 限界上下文管理 (create/validate/list)',
+    description: 'Domain 模块 — DDD 限界上下文管理 (create/validate/list/index)',
   },
   subCommands: {
     create: createSubcommand,
     validate: validateSubcommand,
     list: listSubcommand,
+    index: indexSubcommand,
   },
   run() {
     // No-op

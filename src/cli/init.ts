@@ -4,6 +4,7 @@ import { join } from 'path'
 import { t } from '../i18n'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { GLOBAL_BOUNDARY_PATH } from '../infra/global'
+import { autoRebuildDomainIndex } from './domain'
 import type { ProjectConfig, SupportedLocale } from './project-config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './project-config'
 import { getFormatFromArgs, output, outputError } from './output'
@@ -17,6 +18,12 @@ proofs/
 **/*-trace.jsonl
 **/*-frozen.json
 proofs/*/frozen.json
+
+# PR-1: Global Domain slim 索引（AI 离线读；可由 oxn domain index 重建）
+.cache/
+
+# PR-2: Work 静态门禁卡（CLI 写；可由 oxn work validate 重建）
+.work
 `
 
 function ensureGlobalBoundary(): void {
@@ -135,6 +142,14 @@ export default defineCommand({
       const report = compileAllSkills('opencode', projectPath, force)
       const reportStr = formatCompilationReport(report)
 
+      // PR-1: init 后静默重建全局 Domain 索引（即便 .openxenon/domains/ 不存在也安全）
+      const domainIndexRebuild = autoRebuildDomainIndex(projectPath)
+      const domainIndexStatus = domainIndexRebuild.ok
+        ? domainIndexRebuild.indexPath
+          ? `built at ${domainIndexRebuild.indexPath}`
+          : 'no domains yet (index will be built on first `oxn domain create`)'
+        : `failed: ${domainIndexRebuild.error}`
+
       return output(
         {
           data: {
@@ -143,8 +158,9 @@ export default defineCommand({
             mode: sandbox ? 'SANDBOX' : 'PRODUCTION',
             skillsCompiled: report.total,
             skillsReport: reportStr,
+            domainIndex: domainIndexStatus,
           },
-          human: `${message}\n\n${t('init.compilingSkills', { adapter: 'opencode' })}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: '.opencode/skills/' })}`,
+          human: `${message}\n\n${t('init.compilingSkills', { adapter: 'opencode' })}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: '.opencode/skills/' })}\n\n✓ Domain index: ${domainIndexStatus}`,
         },
         format,
       )

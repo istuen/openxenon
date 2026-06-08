@@ -1,9 +1,13 @@
 // Domain: IAPErrorContext
 // IAP 错误码体系限界上下文 — OXN 自举 Domain（用 OXN 表达 OXN 自身）
 //
-// v1.0.2 字典收敛（5 IAPError + 3 OXNCrash = 8 总数）：
-//   - 移除 3 个 v1.0.1 字典的废弃码：IAP_ALIGN_TIMEOUT / IAP_ALIGN_MISMATCH / IAP_INTENT_SLOT_CONFLICT
-//   - 新增 2 个结构性违规码：IAP_INTENT_NAME_FILE_MISMATCH / IAP_ALIGN_CHECKLIST_MISSING
+// v1.1 字典收敛（8 IAPError + 3 OXNCrash = 11 总数）：
+//   - 保留 v1.0.2 的 5 个 IAPError（PROOF:2 + ALIGN:1 + INTENT:2）
+//   - 新增 3 个 v1.1 IAPError（PR-7/8/9 lock 边界守卫）：
+//       IAP_ALIGN_LOCK_NOT_FOUND  .work.planLock 缺失/未锁
+//       IAP_ALIGN_LOCK_HASH_MISMATCH  4 组件 hash 漂移
+//       IAP_ALIGN_WORK_REMOVED  work.oxn 被删（lock 后被破坏）
+//   - OXNCrash 字典不变（3 个）
 //
 // 双轨制（来源：docs/core/iap-error-codes.md §一）：
 //   - 轨道 1 IAPError: 业务流异常，AI 消费（exit 1 + stdout JSON）
@@ -13,7 +17,7 @@
 // 错误名格式：IAP_<AXIS>_<CODE> / OXN_CRASH_<CODE>
 
 domain "IAPErrorContext" {
-  description = "IAP 错误码体系限界上下文：定义 IAPError / OXNCrash / FrozenJson / Verdict 等核心实体；锁定 5 IAPError + 3 OXNCrash 字典边界；禁止 v0.0 残留错误码回归；规定 exit code 契约（1=业务流阻断、2=引擎崩溃）与 stdout/stderr 通道分离"
+  description = "IAP 错误码体系限界上下文 v1.1：定义 8 IAPError + 3 OXNCrash；锁定 ALIGN 轴 lock 边界守卫的 3 个新增错误码；禁止 v0.0 残留错误码回归；规定 exit code 契约（1=业务流阻断、2=引擎崩溃）与 stdout/stderr 通道分离"
 
   // ====================================================================
   // 术语（term）：业务/技术核心实体
@@ -23,7 +27,7 @@ domain "IAPErrorContext" {
     // ───────── 双轨制错误类的根实体 ─────────
     "IAPError":      "IAP 业务流转中的预期内阻断（轨道 1），AI 消费；字段：axis/code/action/context；name 格式 IAP_<AXIS>_<CODE>"
     "OXNCrash":      "OXN 引擎自身 Bug / 底线被击穿（轨道 2），人类消费，AI 永远不看；字段：code/cause；name 格式 OXN_CRASH_<CODE>"
-    "IAPErrorCode":  "IAPError 的 code 字段（5 个）：INFRA_FAIL / CRASH / CHECKLIST_MISSING / UNDEFINED_TERM / NAME_FILE_MISMATCH"
+    "IAPErrorCode":  "IAPError 的 code 字段（v1.1 共 8 个）：PROOF:2（INFRA_FAIL, CRASH）/ ALIGN:4（CHECKLIST_MISSING, LOCK_NOT_FOUND, LOCK_HASH_MISMATCH, WORK_REMOVED）/ INTENT:2（UNDEFINED_TERM, NAME_FILE_MISMATCH）"
     "OXNCrashCode":  "OXNCrash 的 code 字段（3 个）：SIGNATURE_MISMATCH / STATE_CORRUPT / INTERNAL_ERROR"
     "IAPAxis":       "IAP 三主权轴：INTENT / ALIGN / PROOF（无 X，X 是 OXNCrash 的领域）"
     "IAPAction":     "AI 行动策略（v1.0.2 后仅 YIELD_TO_HUMAN 一种）：叫工程师来，不让 AI 自己改"
@@ -50,8 +54,15 @@ domain "IAPErrorContext" {
 
     // ───────── IAP 错误码体系自身 ─────────
     "ProofAxis":     "PROOF 轴错误：INFRA_FAIL（YIELD_TO_HUMAN，Probe 跑不到） / CRASH（YIELD_TO_HUMAN，verdict 逻辑崩了）"
-    "AlignAxis":     "ALIGN 轴错误：CHECKLIST_MISSING（YIELD_TO_HUMAN，part.intent_checklist 必填缺失）"
+    "AlignAxis":     "ALIGN 轴错误（v1.1 共 4 个）：CHECKLIST_MISSING（part.intent_checklist 必填缺失）/ LOCK_NOT_FOUND（.work.planLock 缺失或未锁）/ LOCK_HASH_MISMATCH（4 组件 hash 漂移：workOxn / workDomains / blueprints / tasks）/ WORK_REMOVED（work.oxn 失踪但 .work 还在，锁后被破坏）"
     "IntentAxis":    "INTENT 轴错误：UNDEFINED_TERM（YIELD_TO_HUMAN，引用了不存在的 Domain 词汇） / NAME_FILE_MISMATCH（YIELD_TO_HUMAN，DSL 声明名 vs 文件名规范化不一致）"
+
+    // ───────── v1.1 Lock 边界守卫核心实体（PR-7/8/9/10） ─────────
+    "BirthCert":     "Work 的 .work 静态门禁卡：planLock（哈希快照）+ assets（域/蓝图清单 with fileHash）+ context（goal/constraints/maxIterations）"
+    "PlanLock":      "BirthCert 内的不可变快照：workOxnHash + workDomainsHash + blueprintsHash + tasksHash + allHash；锁后任何 hash 漂移 = LOCK_HASH_MISMATCH"
+    "AssetHash":     "域/蓝图文件的 SHA-256（64-hex）：OXN 启动期算并存入 BirthCert.assets；lock 时算并比；漂移 = LOCK_HASH_MISMATCH"
+    "WorkRemoved":   "v1.1 引入的删除语义错误：work.oxn 失踪但 .work 还在；区别于 WORK_NOT_FOUND（两个都没有）"
+    "V0ToV1Migrate": "v1.1 引入的布局迁移动作：oxn work migrate 复制 V0 文件到 .migrated-v0/ 备份，再写到 .run/ + 重生 .work + slim 索引"
   }
 
   // ====================================================================
@@ -80,10 +91,10 @@ domain "IAPErrorContext" {
   // 不变量（invariant）：错误体系的硬规则
   // ====================================================================
 
-  // ───────── 字典收敛硬约束 ─────────
-  invariant { "IAPError 字典 v1.0.2 收敛为 5 个：PROOF:2（INFRA_FAIL, CRASH）+ ALIGN:1（CHECKLIST_MISSING）+ INTENT:2（UNDEFINED_TERM, NAME_FILE_MISMATCH）" }
-  invariant { "OXNCrash 字典 v1.0.2 收敛为 3 个：SIGNATURE_MISMATCH + STATE_CORRUPT + INTERNAL_ERROR" }
-  invariant { "IAPError + OXNCrash 总数 = 8（5 + 3），任何字典变更必须遵循本 Domain 的 ban 列表" }
+  // ───────── 字典收敛硬约束（v1.1） ─────────
+  invariant { "IAPError 字典 v1.1 收敛为 8 个：PROOF:2（INFRA_FAIL, CRASH）+ ALIGN:4（CHECKLIST_MISSING, LOCK_NOT_FOUND, LOCK_HASH_MISMATCH, WORK_REMOVED）+ INTENT:2（UNDEFINED_TERM, NAME_FILE_MISMATCH）" }
+  invariant { "OXNCrash 字典 v1.1 收敛为 3 个：SIGNATURE_MISMATCH + STATE_CORRUPT + INTERNAL_ERROR" }
+  invariant { "IAPError + OXNCrash 总数 = 11（8 + 3），任何字典变更必须遵循本 Domain 的 ban 列表" }
   invariant { "字典收敛原则：抛异常 = 结构性违规 / 必须被看到；业务结果 = Verdict 通道，不抛异常" }
 
   // ───────── 双轨制不交叉 ─────────
@@ -120,6 +131,18 @@ domain "IAPErrorContext" {
   invariant { "task.part.intent_checklist 必填：AI 开工前必须做 IAP 三轴对齐宣誓（spec_ref / exec_plan_ref / layer / verify_commands）" }
   invariant { "缺 intent_checklist → 抛 IAP_ALIGN_CHECKLIST_MISSING（YIELD_TO_HUMAN），不允许 AI 自己补（会破坏对齐宣誓的可信度）" }
   invariant { "intent_checklist 的 spec_ref 引用 Intent 轴资产（Domain）；exec_plan_ref 引用 Align 轴自描述；verify_commands 预演 Proof 轴" }
+
+  // ───────── v1.1 Lock 边界守卫（PR-7/8/9/10） ─────────
+  invariant { "Lock 边界三剑客：planLock 必填 + 4 组件 hash 必一致 + work.oxn 不能失踪（与 .work 同时存在或同时缺失）" }
+  invariant { "PlanLock 缺位 → 抛 IAP_ALIGN_LOCK_NOT_FOUND（YIELD_TO_HUMAN）：缺少 .work / planLock=null / 未调 oxn work lock / init 缺失" }
+  invariant { "PlanLock hash 漂移（4 组件：workOxn / workDomains / blueprints / tasks 之一不一致）→ 抛 IAP_ALIGN_LOCK_HASH_MISMATCH，context.component 字段定位漂移源" }
+  invariant { "PlanLock 全过但 work.oxn 失踪（锁后被破坏）→ 抛 IAP_ALIGN_WORK_REMOVED（YIELD_TO_HUMAN），区别于 WORK_NOT_FOUND（两个都没）" }
+  invariant { "Lock 守卫次序：先校验 planLock 存在 → 再校验 4 组件 hash → 最后校验 work.oxn 存在；该次序保证错误码语义不重叠" }
+  invariant { "oxn work run / context 触发 lock 守卫；--no-lock-check 用于诊断模式（context 可读 stale 数据但显式标注）" }
+  invariant { "oxn work lock 子命令（PR-7）计算 4 组件 hash 写入 .work.planLock；unlock 清除 planLock（work 进入 unlocked 状态但保留 assets 快照）" }
+  invariant { "oxn work validate 成功后自动写 .work + .domains.json + .blueprints.json（PR-6）：planLock=null，assets 重新算 fileHash" }
+  invariant { "validate 后未锁的 work 可被 lock；锁后拒绝 validate 覆盖（保留 createdAt 时间戳，PR-6 守卫）" }
+  invariant { "oxn work migrate（PR-10）将 V0 布局（works/<w>/work-state.json 等）迁移到 V1 布局（.run/state.json 等），V0 备份到 .migrated-v0/ 供审计" }
 
   // ───────── Frozen 防线不可破 ─────────
   invariant { "FrozenJson（frozen.json）生成后只读：AI 与工程师都只能读，禁手改" }
