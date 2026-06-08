@@ -97,6 +97,11 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
 `,
     )
 
+    // PR-8: work run 硬要求 .work.planLock 存在
+    // 先 validate → lock → run
+    await runCli(['work', 'validate', 'tiny', '--json'])
+    await runCli(['work', 'lock', 'tiny', '--json'])
+
     // work run
     const runResult = JSON.parse((await runCli(['work', 'run', 'tiny', '--json'])).stdout)
     expect(runResult.ok).toBe(true)
@@ -108,12 +113,13 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
     expect(runResult.data.tasks.length).toBe(2)
     expect(runResult.data.tasks[0].taskName).toBe('alpha')
     expect(runResult.data.tasks[0].status).toBe('running')
-    // 新命名范式
-    const workStatePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'work-state.json')
+    // V1 命名范式（PR-4+5 切换后）
+    const workStatePath = join(tmpDir, '.openxenon', 'works', 'tiny', '.run', 'state.json')
     expect(existsSync(workStatePath)).toBe(true)
-    const workTracePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'work-trace.jsonl')
+    const workTracePath = join(tmpDir, '.openxenon', 'works', 'tiny', '.run', 'trace.jsonl')
     expect(existsSync(workTracePath)).toBe(true)
-    // 旧名应该不存在
+    // 旧 V0 名应该不存在
+    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'work-state.json'))).toBe(false)
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'state.json'))).toBe(false)
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'workspace.json'))).toBe(false)
 
@@ -124,36 +130,36 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
     expect(initialStatus.data.workspace.taskCount).toBe(2)
     expect(initialStatus.data.tasks.length).toBe(2)
     expect(initialStatus.data.tasks[0].taskName).toBe('alpha')
-    const taskStatePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'task-state.json')
+    const taskStatePath = join(tmpDir, '.openxenon', 'works', 'tiny', '.run', 'tasks', 'alpha', 'state.json')
     expect(existsSync(taskStatePath)).toBe(true)
-    // 旧名应该不存在
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'state.json'))).toBe(false)
+    // 旧 V0 名应该不存在
+    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'task-state.json'))).toBe(false)
 
     // work submit (v0.1: --task 必填，<name> positional)
     const submit1 = JSON.parse((await runCli(['work', 'submit', 'tiny', '--task', 'alpha', '--json'])).stdout)
     expect(submit1.ok).toBe(true)
     expect(submit1.data.taskStatus).toBe('passed')
     expect(submit1.data.completedParts).toEqual(['build'])
-    expect(submit1.data.taskFrozen).toContain('tasks/alpha/task-frozen.json')
+    expect(submit1.data.taskFrozen).toContain('.run/tasks/alpha/frozen.json')
 
-    // 验证 alpha task-frozen.json（新名）
-    const taskFrozenPath = join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'task-frozen.json')
+    // 验证 alpha task-frozen.json（V1 路径）
+    const taskFrozenPath = join(tmpDir, '.openxenon', 'works', 'tiny', '.run', 'tasks', 'alpha', 'frozen.json')
     expect(existsSync(taskFrozenPath)).toBe(true)
     const taskFrozen = JSON.parse(readFileSync(taskFrozenPath, 'utf-8'))
     expect(taskFrozen.taskName).toBe('alpha')
     expect(taskFrozen.trace).toEqual(['build'])
 
-    // task-trace.jsonl 验证
-    const taskTracePath = join(tmpDir, '.openxenon', 'works', 'tiny', 'tasks', 'alpha', 'task-trace.jsonl')
+    // task-trace.jsonl 验证（V1 路径）
+    const taskTracePath = join(tmpDir, '.openxenon', 'works', 'tiny', '.run', 'tasks', 'alpha', 'trace.jsonl')
     expect(existsSync(taskTracePath)).toBe(true)
 
     // 完成 beta
     const submit2 = JSON.parse((await runCli(['work', 'submit', 'tiny', '--task', 'beta', '--json'])).stdout)
     expect(submit2.ok).toBe(true)
     expect(submit2.data.taskStatus).toBe('passed')
-    // 整个 work 完成了 → work-frozen.json 也应该生成
-    expect(submit2.data.workFrozen).toContain('tiny/work-frozen.json')
-    const workFrozenPath = join(tmpDir, '.openxenon', 'works', 'tiny', 'work-frozen.json')
+    // 整个 work 完成了 → work-frozen.json 也应该生成（V1 路径）
+    expect(submit2.data.workFrozen).toContain('tiny/.run/frozen.json')
+    const workFrozenPath = join(tmpDir, '.openxenon', 'works', 'tiny', '.run', 'frozen.json')
     expect(existsSync(workFrozenPath)).toBe(true)
 
     // work status (after pass)
@@ -190,6 +196,16 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
     await init.exited
 
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'refstyle'), { recursive: true })
+    mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
+    writeFileSync(
+      join(tmpDir, '.openxenon', 'blueprints', 'std.oxn'),
+      `blueprint "std" {
+  version = 1
+  slot "build" { observe = ["fs-match"] }
+  slot "alpha" { deps = ["build"]; observe = ["fs-exists"] }
+}
+`,
+    )
     const refStyleWork = `work "refstyle" {
   blueprint "std" ref "@prj/blueprints/std";
 
@@ -215,7 +231,12 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
 }
 `,
     )
-    const runResult = JSON.parse((await runCli(['work', 'run', 'refstyle', '--json'])).stdout)
+    // PR-8: validate + lock before run
+    await runCli(['work', 'validate', 'refstyle', '--json'])
+    await runCli(['work', 'lock', 'refstyle', '--json'])
+
+    const runResultRaw = (await runCli(['work', 'run', 'refstyle', '--json'])).stdout
+    const runResult = JSON.parse(runResultRaw)
     expect(runResult.ok).toBe(true)
     expect(runResult.data.workName).toBe('refstyle')
     expect(runResult.data.parts[0].partName).toBe('alpha')
@@ -231,6 +252,16 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
     await init.exited
 
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'probework'), { recursive: true })
+    mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
+    writeFileSync(
+      join(tmpDir, '.openxenon', 'blueprints', 'std.oxn'),
+      `blueprint "std" {
+  version = 1
+  slot "build" { observe = ["fs-match"] }
+  slot "alpha" { deps = ["build"]; observe = ["fs-exists"] }
+}
+`,
+    )
     const probeWork = `work "probework" {
   blueprint "std" ref "@prj/blueprints/std";
 
@@ -256,14 +287,17 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
 }
 `,
     )
+    // PR-8: validate + lock before run
+    await runCli(['work', 'validate', 'probework', '--json'])
+    await runCli(['work', 'lock', 'probework', '--json'])
     await runCli(['work', 'run', 'probework', '--json'])
     const submitResult = JSON.parse(
       (await runCli(['work', 'submit', 'probework', '--task', 'alpha', '--run-probes', '--json'])).stdout,
     )
     expect(submitResult.ok).toBe(true)
-    // 新名 task-state.json
+    // V1 路径：.run/tasks/<t>/state.json
     const taskState = JSON.parse(
-      readFileSync(join(tmpDir, '.openxenon', 'works', 'probework', 'tasks', 'alpha', 'task-state.json'), 'utf-8'),
+      readFileSync(join(tmpDir, '.openxenon', 'works', 'probework', '.run', 'tasks', 'alpha', 'state.json'), 'utf-8'),
     )
     const partExec = (taskState.partExecutions ?? []).find((e: { partName: string }) => e.partName === 'build')
     expect(partExec).toBeDefined()
@@ -351,7 +385,9 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
 `,
     )
 
-    const ctx = JSON.parse((await runCli(['work', 'context', 'explore-dsl', '--task', 'explore', '--json'])).stdout)
+    const ctx = JSON.parse(
+      (await runCli(['work', 'context', 'explore-dsl', '--task', 'explore', '--noLockCheck', '--json'])).stdout,
+    )
     expect(ctx.ok).toBe(true)
     expect(ctx.data.injectedDomains.length).toBe(1)
     expect(ctx.data.injectedDomains[0].name).toBe('DSLContext')
@@ -384,6 +420,9 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
 }
 `,
     )
+    // PR-8: validate + lock before run
+    await runCli(['work', 'validate', 'single', '--json'])
+    await runCli(['work', 'lock', 'single', '--json'])
     await runCli(['work', 'run', 'single', '--json'])
 
     // 此时 work-state.json 已存在 → add-task 应被 NV-1 守卫拒绝
@@ -416,6 +455,9 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
 }
 `,
     )
+    // PR-8: validate + lock before run
+    await runCli(['work', 'validate', 'single', '--json'])
+    await runCli(['work', 'lock', 'single', '--json'])
     await runCli(['work', 'run', 'single', '--json'])
 
     const editTask = JSON.parse(
@@ -446,6 +488,9 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
 }
 `,
     )
+    // PR-8: validate + lock before run
+    await runCli(['work', 'validate', 'single', '--json'])
+    await runCli(['work', 'lock', 'single', '--json'])
     await runCli(['work', 'run', 'single', '--json'])
 
     const deleteTask = JSON.parse(

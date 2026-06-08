@@ -4,6 +4,11 @@ export const WORK_DIR = 'work'
 export const DOMAINS_DIR = 'domains'
 export const PROOFS_DIR = 'proofs'
 
+// PR-1: 全局 slim 索引（AI 离线读全局 DDD 词汇）
+//   .openxenon/.cache/domains.json  — slim 模式：仅 name/file/desc/termNames + 计数
+export const CACHE_DIR = '.cache'
+export const DOMAIN_INDEX_JSON = 'domains.json'
+
 export const BLUEPRINT_FILE = 'blueprint.yaml'
 export const BLUEPRINT_OXN_FILE = 'blueprint.oxn'
 export const FROZEN_BLUEPRINT_JSON = 'blueprint.frozen.json'
@@ -21,29 +26,47 @@ export const PROOF_OXN_FILE = 'proof.oxn'
 export const PROOF_FROZEN_JSON = 'frozen.json'
 
 // =============================================================================
-// Work 空间运行时文件命名范式
+// Work 空间运行时文件命名范式（V1 — PR-4 切换）
 //
-// 命名约定: {entity}-{aspect}.{ext}
-//   - {entity} ∈ {work, task}：实体名（work = work 级，task = task 子实体级）
-//   - {aspect} ∈ {state, trace, frozen}：运行时侧面
-//   - {ext}    ∈ {json, jsonl}：文件类型
+//   works/<w>/
+//     work.oxn                                    [Intent] 图纸
+//     .work                                       [CLI]    静态门禁卡（PR-2）
+//     .run/                                       [CLI]    动态运行时
+//       state.json                                [Align]  进度条
+//       trace.jsonl                               [Align]  日志流
+//       frozen.json                               [Align]  交付快照（终态）
+//       tasks/<t>/
+//         state.json
+//         trace.jsonl
+//         frozen.json
+//     domains.json / blueprints.json              [CLI]    per-work slim 索引（PR-3）
 //
-// 例外（图纸文件）:
-//   - work.oxn   （仅 Intent 图纸，命名上无 aspect 后缀）
-//   - task.oxn   （同上）
+// V0 → V1 迁移：M3 硬切。检测到 V0 旧布局（works/<w>/work-state.json 存在但 .run/ 不存在）
+//       → 抛 IAP_ALIGN_WORK_LAYOUT_LEGACY（PR-11）；用户跑 `oxn work migrate <name>`（PR-10）
 //
-// 所有运行时产物严格遵循此范式，使根目录与 tasks/<t>/ 子目录文件名前缀永不冲突。
+// 命名约定：路径含 scope（.run/）→ 文件名去 entity 前缀（state/trace/frozen）
+//           task.oxn / work.oxn 例外：图纸，无 aspect 后缀
 // =============================================================================
 
-// work 根目录（works/<w>/）
-export const WORK_STATE_JSON = 'work-state.json'
-export const WORK_TRACE_JSONL = 'work-trace.jsonl'
-export const WORK_FROZEN_JSON = 'work-frozen.json'
+// PR-2: Work 静态门禁卡（CLI 写、AI 读禁改；记录出生证明 + 资产锁 + planLock）
+//   .openxenon/works/<w>/.work  — 单 JSON 文件
+export const WORK_FILE = '.work'
 
-// task 子目录（works/<w>/tasks/<t>/）
-export const TASK_STATE_JSON = 'task-state.json'
-export const TASK_TRACE_JSONL = 'task-trace.jsonl'
-export const TASK_FROZEN_JSON = 'task-frozen.json'
+// PR-4+5: 动态运行时（CLI 独占；AI 读用 oxn work status/context）
+export const RUN_DIR = '.run'
+export const WORK_RUN_STATE_JSON = 'state.json'
+export const WORK_RUN_TRACE_JSONL = 'trace.jsonl'
+export const WORK_RUN_FROZEN_JSON = 'frozen.json'
+
+// PR-3: per-work slim 索引（AI 决策用；CLI 写）
+export const WORK_DOMAINS_JSON = 'domains.json'
+export const WORK_BLUEPRINTS_JSON = 'blueprints.json'
+
+// task 子运行时（works/<w>/.run/tasks/<t>/）
+export const RUN_TASKS_SUBDIR = 'tasks'
+export const TASK_RUN_STATE_JSON = 'state.json'
+export const TASK_RUN_TRACE_JSONL = 'trace.jsonl'
+export const TASK_RUN_FROZEN_JSON = 'frozen.json'
 
 export const DEBUG_LOG_FILE = 'debug.log'
 
