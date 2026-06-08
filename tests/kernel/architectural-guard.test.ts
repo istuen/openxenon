@@ -30,9 +30,64 @@ describe('Kernel Architectural Guard', () => {
       }
     })
 
-    it('L0 Kernel 不应导入 arsenals 模块', () => {
+    it('L0 Kernel 不应导入 builtin 模块', () => {
       const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
-      const forbidden = ['arsenals']
+      const forbidden = ['builtin']
+      for (const file of kernelFiles) {
+        const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
+        for (const mod of forbidden) {
+          expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
+        }
+      }
+    })
+
+    it('L0 Kernel 不应导入 hall 模块', () => {
+      const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
+      const forbidden = ['hall']
+      for (const file of kernelFiles) {
+        const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
+        for (const mod of forbidden) {
+          expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
+        }
+      }
+    })
+
+    it('L0 Kernel 不应导入 skills 模块', () => {
+      const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
+      const forbidden = ['skills']
+      for (const file of kernelFiles) {
+        const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
+        for (const mod of forbidden) {
+          expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
+        }
+      }
+    })
+
+    it('L0 Kernel 不应导入 watcher 模块', () => {
+      const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
+      const forbidden = ['watcher']
+      for (const file of kernelFiles) {
+        const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
+        for (const mod of forbidden) {
+          expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
+        }
+      }
+    })
+
+    it('L0 Kernel 不应导入 core 模块', () => {
+      const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
+      const forbidden = ['core']
+      for (const file of kernelFiles) {
+        const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
+        for (const mod of forbidden) {
+          expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
+        }
+      }
+    })
+
+    it('L0 Kernel 不应导入 i18n 模块', () => {
+      const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
+      const forbidden = ['i18n']
       for (const file of kernelFiles) {
         const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
@@ -67,7 +122,7 @@ describe('Kernel Architectural Guard', () => {
   describe('L0 Kernel 不应使用 require 导入外层模块', () => {
     it('L0 Kernel 不应使用 require 导入 L1/L2/L3 模块', () => {
       const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
-      const forbidden = ['oxn-dsl', 'infra', 'arsenals', 'work', 'cli']
+      const forbidden = ['oxn-dsl', 'infra', 'builtin', 'work', 'cli', 'hall', 'skills', 'watcher', 'core', 'i18n']
       for (const file of kernelFiles) {
         const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
@@ -154,11 +209,11 @@ describe('Kernel Architectural Guard', () => {
   })
 
   describe('L1 OXN DSL 不应导入 L2/L3 模块', () => {
-    it('L1 OXN DSL 不应导入 arsenals 模块', () => {
+    it('L1 OXN DSL 不应导入 builtin 模块', () => {
       const dslFiles = glob
         .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
-      const forbidden = ['arsenals']
+      const forbidden = ['builtin']
       for (const file of dslFiles) {
         const content = readFileSync(join(OXN_DSL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
@@ -187,6 +242,20 @@ describe('Kernel Architectural Guard', () => {
         .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
       const forbidden = ['cli']
+      for (const file of dslFiles) {
+        const content = readFileSync(join(OXN_DSL_ROOT, file), 'utf-8')
+        for (const mod of forbidden) {
+          expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
+          expect(content).not.toMatch(new RegExp(`require\\(['"]${mod}(\\/|['"])`))
+        }
+      }
+    })
+
+    it('L1 OXN DSL 不应导入 daemon/hall/skills/watcher/core/i18n 模块', () => {
+      const dslFiles = glob
+        .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
+        .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
+      const forbidden = ['daemon', 'hall', 'skills', 'watcher', 'core', 'i18n']
       for (const file of dslFiles) {
         const content = readFileSync(join(OXN_DSL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {

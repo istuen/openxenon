@@ -1,7 +1,7 @@
 {
   "name": "openxenon",
   "version": "0.0.27",
-  "description": "OpenXenon - 面向大语言模型的工程化控制引擎",
+  "description": "OpenXenon — 工程师与 AI 协作工作台（OXN Engine 实施 L0-L3 四层架构与 IAP 范式）",
   "author": "OpenXenon Team",
   "license": "MIT",
   "type": "module",

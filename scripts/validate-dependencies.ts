@@ -1,4 +1,17 @@
 #!/usr/bin/env bun
+// =============================================================================
+// L0-L3 Dependency Validator
+//
+// 实施 OpenXenon 元域的依赖宪法。完整分层定义见：
+//   docs/architecture/l0-l3-constitution.md
+//
+// 关键规则：
+//   - 内层不依赖外层（CPU 缓存类比）
+//   - type-only 导入 (`import type`) 不算真实依赖
+//   - test 文件 (`__tests__/`) 视为 relaxed boundary
+//   - CI 自动拦截 forbidden 跨层
+// =============================================================================
+
 import { readdirSync, readFileSync } from 'fs'
 import { join, relative } from 'path'
 
@@ -10,9 +23,11 @@ interface Violation {
 }
 
 interface Summary {
-  totalModules: number
+  totalFiles: number
   totalImports: number
   violationsCount: number
+  skippedTypeOnly: number
+  skippedTests: number
 }
 
 interface ValidationResult {
@@ -32,32 +47,32 @@ type LayerName =
   | 'L0-Processor'
   | 'L1-Infra'
   | 'L1-OXN-DSL'
-  | 'L2-Arsenal'
+  | 'L2-Builtin'
   | 'L2-Work'
   | 'L3-CLI'
 
 const LAYER_RULES: Record<LayerName, LayerRules> = {
   'L0-Schema': {
     allowedDeps: [],
-    forbiddenDeps: ['L0-Contract', 'L0-Processor', 'L1-Infra', 'L1-OXN-DSL', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
+    forbiddenDeps: ['L0-Contract', 'L0-Processor', 'L1-Infra', 'L1-OXN-DSL', 'L2-Builtin', 'L2-Work', 'L3-CLI'],
   },
   'L0-Contract': {
     allowedDeps: ['L0-Schema'],
-    forbiddenDeps: ['L0-Processor', 'L1-Infra', 'L1-OXN-DSL', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
+    forbiddenDeps: ['L0-Processor', 'L1-Infra', 'L1-OXN-DSL', 'L2-Builtin', 'L2-Work', 'L3-CLI'],
   },
   'L0-Processor': {
     allowedDeps: ['L0-Schema', 'L0-Contract'],
-    forbiddenDeps: ['L1-Infra', 'L1-OXN-DSL', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
+    forbiddenDeps: ['L1-Infra', 'L1-OXN-DSL', 'L2-Builtin', 'L2-Work', 'L3-CLI'],
   },
   'L1-Infra': {
-    allowedDeps: ['L0-Schema', 'L0-Contract', 'L2-Arsenal'],
+    allowedDeps: ['L0-Schema', 'L0-Contract', 'L2-Builtin'],
     forbiddenDeps: ['L0-Processor', 'L2-Work', 'L3-CLI'],
   },
   'L1-OXN-DSL': {
     allowedDeps: ['L0-Schema', 'L0-Contract'],
-    forbiddenDeps: ['L0-Processor', 'L2-Arsenal', 'L2-Work', 'L3-CLI'],
+    forbiddenDeps: ['L0-Processor', 'L2-Builtin', 'L2-Work', 'L3-CLI'],
   },
-  'L2-Arsenal': {
+  'L2-Builtin': {
     allowedDeps: ['L1-Infra', 'L0-Schema', 'L0-Contract'],
     forbiddenDeps: ['L2-Work', 'L3-CLI'],
   },
@@ -66,7 +81,7 @@ const LAYER_RULES: Record<LayerName, LayerRules> = {
     forbiddenDeps: ['L3-CLI'],
   },
   'L3-CLI': {
-    allowedDeps: ['L2-Arsenal', 'L2-Work', 'L1-Infra', 'L1-OXN-DSL', 'L0-Schema', 'L0-Contract', 'L0-Processor'],
+    allowedDeps: ['L2-Builtin', 'L2-Work', 'L1-Infra', 'L1-OXN-DSL', 'L0-Schema', 'L0-Contract', 'L0-Processor'],
     forbiddenDeps: [],
   },
 }
@@ -89,21 +104,26 @@ function getLayerFromPath(filePath: string): LayerName | null {
   if (relativePath.startsWith('src/oxn-dsl/')) {
     return 'L1-OXN-DSL'
   }
-  if (relativePath.startsWith('src/arsenals/')) {
-    return 'L2-Arsenal'
+  if (relativePath.startsWith('src/builtin/')) {
+    return 'L2-Builtin'
   }
   if (relativePath.startsWith('src/work/')) {
     return 'L2-Work'
   }
-  if (relativePath.startsWith('src/cli/') || relativePath.startsWith('src/daemon/')) {
+  // L3 Runtime: CLI + Daemon + Hall + Skill + Watcher + Core + i18n
+  if (
+    relativePath.startsWith('src/cli/') ||
+    relativePath.startsWith('src/daemon/') ||
+    relativePath.startsWith('src/hall/') ||
+    relativePath.startsWith('src/skills/') ||
+    relativePath.startsWith('src/watcher/') ||
+    relativePath.startsWith('src/core/') ||
+    relativePath.startsWith('src/i18n/')
+  ) {
     return 'L3-CLI'
   }
 
   return null
-}
-
-function getLayerName(layer: LayerName): string {
-  return layer
 }
 
 function normalizeImportPath(importPath: string): string {
@@ -116,20 +136,32 @@ function normalizeImportPath(importPath: string): string {
   return importPath
 }
 
-function scanImports(filePath: string): Array<{ path: string; line: number }> {
+function isTypeOnlyImport(line: string): boolean {
+  // `import type { ... } from '...'`
+  // `import type ... from '...'`
+  return /^import\s+type\s+/.test(line)
+}
+
+function isInTestsDirectory(filePath: string): boolean {
+  return filePath.includes('/__tests__/') || filePath.endsWith('.test.ts')
+}
+
+function scanImports(filePath: string): Array<{ path: string; line: number; typeOnly: boolean }> {
   const content = readFileSync(filePath, 'utf-8')
   const lines = content.split('\n')
-  const imports: Array<{ path: string; line: number }> = []
+  const imports: Array<{ path: string; line: number; typeOnly: boolean }> = []
 
   for (let i = 0; i < lines.length; i++) {
     const currentLine = lines[i]!
-    const importMatch = currentLine.match(/^import\s+.*?\s+from\s+['"]([^'"]+)['"]/)
+    const typeOnly = isTypeOnlyImport(currentLine)
+
+    const importMatch = currentLine.match(/^import\s+(?:type\s+)?.*?\s+from\s+['"]([^'"]+)['"]/)
     if (importMatch) {
-      imports.push({ path: importMatch[1]!, line: i + 1 })
+      imports.push({ path: importMatch[1]!, line: i + 1, typeOnly })
     }
     const requireMatch = currentLine.match(/require\s*\(\s*['"]([^'"]+)['"]\s*\)/)
     if (requireMatch) {
-      imports.push({ path: requireMatch[1]!, line: i + 1 })
+      imports.push({ path: requireMatch[1]!, line: i + 1, typeOnly: false })
     }
   }
 
@@ -161,6 +193,9 @@ function resolveImportToFile(importPath: string, currentFile: string): string | 
 function validateDependencies(srcDir: string): ValidationResult {
   const violations: Violation[] = []
   let totalImports = 0
+  let totalFiles = 0
+  let skippedTypeOnly = 0
+  let skippedTests = 0
 
   function processDirectory(dir: string): void {
     const entries = readdirSync(dir, { withFileTypes: true })
@@ -171,13 +206,26 @@ function validateDependencies(srcDir: string): ValidationResult {
       if (entry.isDirectory()) {
         processDirectory(fullPath)
       } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
-        const layer = getLayerFromPath(fullPath)
-        if (!layer) return
+        // Skip test files: relaxed boundary per L0-L3 宪法 §4.3
+        if (isInTestsDirectory(fullPath)) {
+          skippedTests++
+          continue
+        }
 
+        const layer = getLayerFromPath(fullPath)
+        if (!layer) continue
+
+        totalFiles++
         const imports = scanImports(fullPath)
         totalImports += imports.length
 
         for (const imp of imports) {
+          // Skip type-only imports: zero runtime coupling
+          if (imp.typeOnly) {
+            skippedTypeOnly++
+            continue
+          }
+
           const resolvedPath = resolveImportToFile(imp.path, fullPath)
           if (!resolvedPath) continue
 
@@ -192,7 +240,7 @@ function validateDependencies(srcDir: string): ValidationResult {
             violations.push({
               from: relative(process.cwd(), fullPath),
               to: resolvedPath,
-              rule: `${getLayerName(layer)} cannot depend on ${getLayerName(targetLayer)}`,
+              rule: `${layer} cannot depend on ${targetLayer}`,
               line: imp.line,
             })
           }
@@ -207,9 +255,11 @@ function validateDependencies(srcDir: string): ValidationResult {
     valid: violations.length === 0,
     violations,
     summary: {
-      totalModules: 0,
+      totalFiles,
       totalImports,
       violationsCount: violations.length,
+      skippedTypeOnly,
+      skippedTests,
     },
   }
 }

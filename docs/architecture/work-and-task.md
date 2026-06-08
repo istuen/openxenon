@@ -2,6 +2,8 @@
 
 > Work 与 Task 是 OpenXenon v0.1 的**编排与执行单元**（Align 端）。Work 负责"用什么 + 怎么连"，Task 负责"1 blueprint 的具体执行"。
 
+> **代码物理归属**：Work 运行时位于 L2 Module（`src/work/`）；完整 L0-L3 分层与依赖规则见 [L0-L3 宪法](./l0-l3-constitution.md)。
+
 ## 1. 定位
 
 | 实体 | 范式 | 职责 |
@@ -204,5 +206,5 @@ work "CrossDomainWork" {
 ## 12. 下一章
 
 - [State 详解](./state.md) — 双层 state.json
-- [信息隐藏原则](./information-hiding.md) — AI 看不到什么
+- [信息隐藏原则](../core/document.md#27-信息隐藏原则) — AI 看不到什么
 - [OXN DSL 参考](../reference/oxn-dsl.md) — 完整语法

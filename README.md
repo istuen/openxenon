@@ -204,6 +204,8 @@ OXN Runtime 由三个模块协同执行证明权，每个模块只做自己的�
 
 > **关于 L2 命名**：L2 命名为 **Module** 而非 "Domain"——避免与 OXN DSL 中的 `Domain` 实体产生歧义。
 
+完整分层定义、依赖规则与审计报告见 [L0-L3 宪法](docs/architecture/l0-l3-constitution.md)。
+
 ---
 
 ## 8. 开发路线

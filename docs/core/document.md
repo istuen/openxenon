@@ -212,6 +212,8 @@ OXN Runtime 是工作台运行时层的执行核心：
 | **Infra**  | 底座 | 副作用 / IO，获取事实    | 只回答事实，不做判定              |
 | **Daemon** | 守护进程 | 运行时管理 +**逃逸机制** | Probe FAIL 时阻止 Work 进入 done  |
 
+> **代码分层视角**：Runtime 三模块对应 OpenXenon 元域的 **L0-L3 四层架构**。完整定义见 [L0-L3 宪法](../architecture/l0-l3-constitution.md)。
+
 ### 2.6 Runtime 纯洁性约束
 
 > **Runtime 纯洁性第一法则**：

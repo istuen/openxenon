@@ -2,6 +2,18 @@
 
 > Domain 是 OpenXenon v0.1 的**业务限界上下文**（DDD Bounded Context），承载 term / ban / invariant / context_map 四类业务语义。
 
+> **DDD 上下文映射出口**
+>
+> 本文是"用户业务域"限界上下文的文档。Domain 实体的代码物理归属如下：
+>
+> | 资产 | 物理位置 | 阶段 |
+> |---|---|---|
+> | Domain `.oxn` 源码 | L1 `src/oxn-dsl/builtin/` | OXN DSL 解析 |
+> | Domain 编译后资产 | L2 `src/builtin/` | 二进制内置运行时 |
+> | 项目级 Domain | L2 `.openxenon/domains/` | 工程师创作 |
+>
+> 完整 L0-L3 物理归属表与依赖规则见 [L0-L3 宪法](./l0-l3-constitution.md)。
+
 ## 1. 定位
 
 **Domain = 业务 Intent**

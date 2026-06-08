@@ -2,6 +2,8 @@
 
 > Blueprint 是 OpenXenon v0.1 的**技术流水线模板**——只声明 slot 拓扑（DAG），不包含业务/验证语义。
 
+> **代码物理归属**：Blueprint 解析/校验位于 L1 OXN DSL（`src/oxn-dsl/`）；完整 L0-L3 分层与依赖规则见 [L0-L3 宪法](./l0-l3-constitution.md)。
+
 ## 1. 定位
 
 **Blueprint = 技术 Intent**

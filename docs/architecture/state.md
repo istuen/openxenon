@@ -2,6 +2,8 @@
 
 > OpenXenon v0.1 引入**双层 state.json** — WorkspaceState + TaskState 独立读写，通过 workName 关联。
 
+> **代码物理归属**：state.json 由 L2 Work（写入）与 L3 CLI（调用入口）共同维护；完整 L0-L3 分层与依赖规则见 [L0-L3 宪法](./l0-l3-constitution.md)。
+
 ## 1. 双层设计
 
 ```
@@ -180,5 +182,5 @@
 
 ## 9. 下一章
 
-- [信息隐藏原则](./information-hiding.md)
+- [信息隐藏原则](../core/document.md#27-信息隐藏原则)
 - [OXN DSL 参考](../reference/oxn-dsl.md)
