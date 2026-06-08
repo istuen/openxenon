@@ -331,24 +331,29 @@ describe('createBirthCert', () => {
 // ───────── applyPlanLock / clearPlanLock ─────────
 
 describe('applyPlanLock / clearPlanLock', () => {
-  test('applyPlanLock 设置 4 组件 hash + lockedAt', () => {
+  test('applyPlanLock 设置 4 组件 hash + allHash + lockedAt', () => {
     const base = createBirthCert({
       workName,
       mode: 'task',
       assets: { domains: [], blueprints: [] },
     })
+    const HASH_ALL = HASH_A
     const hash = {
       workOxnHash: HASH_A,
       workDomainsHash: HASH_B,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
-      allHash: 'placeholder',
+      allHash: HASH_ALL,
       missing: [],
     }
     const locked = applyPlanLock(base, hash, '2026-06-08T01:00:00.000Z')
     expect(locked.planLock).not.toBe(null)
     expect(locked.planLock?.lockedAt).toBe('2026-06-08T01:00:00.000Z')
     expect(locked.planLock?.workOxnHash).toBe(HASH_A)
+    expect(locked.planLock?.workDomainsHash).toBe(HASH_B)
+    expect(locked.planLock?.blueprintsHash).toBe(HASH_BP)
+    expect(locked.planLock?.tasksHash).toBe(HASH_A)
+    expect(locked.planLock?.allHash).toBe(HASH_ALL)
     expect(locked.updatedAt).toBe('2026-06-08T01:00:00.000Z')
   })
 
@@ -381,7 +386,7 @@ describe('applyPlanLock / clearPlanLock', () => {
       workDomainsHash: HASH_B,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
-      allHash: 'x',
+      allHash: HASH_A,
       missing: [],
     }
     const locked = applyPlanLock(base, hash)
@@ -401,7 +406,7 @@ describe('applyPlanLock / clearPlanLock', () => {
       workDomainsHash: HASH_B,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
-      allHash: 'x',
+      allHash: HASH_A,
       missing: [],
     }
     applyPlanLock(base, hash)

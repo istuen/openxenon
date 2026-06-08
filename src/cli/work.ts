@@ -2079,8 +2079,10 @@ const contextSubcommand = defineCommand({
 
     // PR-9: context 与 run 对称 —— 锁守卫优先于 work.oxn 缺失检查
     // 默认硬要求；--no-lock-check 用于诊断 stale 计划
+    let birthCertForHealth: { ok: boolean; cert?: BirthCert } | null = null
     if (!noLockCheck) {
       const birthCert = readBirthCert(root, workName)
+      birthCertForHealth = birthCert
       if (birthCert.ok && birthCert.cert.planLock !== null) {
         // 已有 planLock；先做 hash 校验（捕获 work.oxn 缺失 → work-removed）
         const lockVerify = verifyPlanLock(root, workName, birthCert.cert)
@@ -2245,6 +2247,21 @@ const contextSubcommand = defineCommand({
         },
         taskParts,
         isolationNotice: '本 task 只能看到引用的 domain，work 中其他 domain 一律不可见。',
+        lockHealth: noLockCheck
+          ? { status: 'bypassed', reason: 'no-lock-check flag set' }
+          : birthCertForHealth && birthCertForHealth.ok && birthCertForHealth.cert?.planLock
+            ? {
+                status: 'ok',
+                lockedAt: birthCertForHealth.cert.planLock.lockedAt,
+                allHash: birthCertForHealth.cert.planLock.allHash ?? null,
+                components: {
+                  workOxnHash: birthCertForHealth.cert.planLock.workOxnHash,
+                  workDomainsHash: birthCertForHealth.cert.planLock.workDomainsHash,
+                  blueprintsHash: birthCertForHealth.cert.planLock.blueprintsHash,
+                  tasksHash: birthCertForHealth.cert.planLock.tasksHash,
+                },
+              }
+            : { status: 'unknown' },
       }
 
       if (emitMdPath) {
@@ -2446,6 +2463,7 @@ const lockSubcommand = defineCommand({
             workDomainsHash: pl.workDomainsHash,
             blueprintsHash: pl.blueprintsHash,
             tasksHash: pl.tasksHash,
+            allHash: pl.allHash,
           },
           nextStep: `run \`oxn work run ${workName}\` to start execution`,
         },
@@ -2456,6 +2474,7 @@ const lockSubcommand = defineCommand({
     - domains.json: ${pl.workDomainsHash.slice(0, 16)}...
     - blueprints.json: ${pl.blueprintsHash.slice(0, 16)}...
     - tasks:        ${pl.tasksHash.slice(0, 16)}...
+    - all:          ${pl.allHash?.slice(0, 16) ?? '(legacy)'}...
 
   Next: run \`oxn work run ${workName}\` to start execution`,
       },

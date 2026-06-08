@@ -62,6 +62,11 @@ export const PlanLockSchema = z.object({
   workDomainsHash: z.string().regex(/^[0-9a-f]{64}$/),
   blueprintsHash: z.string().regex(/^[0-9a-f]{64}$/),
   tasksHash: z.string().regex(/^[0-9a-f]{64}$/),
+  // PR-13: allHash 必填（v1.1 锁时必含；旧 v1.0 .work 无此字段兼容为 optional）
+  allHash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
 })
 export type PlanLock = z.infer<typeof PlanLockSchema>
 
@@ -198,7 +203,8 @@ export function applyPlanLock(cert: BirthCert, hash: PlanHash, lockedAt?: string
     hash.workOxnHash === null ||
     hash.workDomainsHash === null ||
     hash.blueprintsHash === null ||
-    hash.tasksHash === null
+    hash.tasksHash === null ||
+    hash.allHash === null
   ) {
     throw new Error(`cannot apply planLock: incomplete plan hash (missing: ${hash.missing.join(', ')})`)
   }
@@ -211,6 +217,7 @@ export function applyPlanLock(cert: BirthCert, hash: PlanHash, lockedAt?: string
       workDomainsHash: hash.workDomainsHash,
       blueprintsHash: hash.blueprintsHash,
       tasksHash: hash.tasksHash,
+      allHash: hash.allHash,
     },
   }
 }
