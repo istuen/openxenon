@@ -1,14 +1,14 @@
 // =============================================================================
-// dual-state-exec.ts — v0.1 双层状态机执行器
+// dual-state-exec.ts — v0.1 双层状态机执行器（V1 布局：.run/ 目录）
 //
 // 把 leader run/submit 拆为 workspace 级 + task 级双层操作：
-//   - runWork        → 写 works/<w>/work-state.json
-//   - runTask        → 校验 + 写 works/<w>/tasks/<t>/task-state.json
-//   - submitTask     → 推进 task part，写 task 级 state + 同步 work 索引
-//   - writeTaskFrozen → task 终态时生成 tasks/<t>/task-frozen.json
-//   - writeWorkFrozen → work 终态时生成 works/<w>/work-frozen.json
+//   - runWork         → 写 works/<w>/.run/state.json
+//   - runTask         → 校验 + 写 works/<w>/.run/tasks/<t>/state.json
+//   - submitTask      → 推进 task part，写 task 级 state + 同步 work 索引
+//   - writeTaskFrozen → task 终态时生成 .run/tasks/<t>/frozen.json
+//   - writeWorkFrozen → work 终态时生成 .run/frozen.json
 //
-// 命名范式: {entity}-{aspect}.{ext}（详见 kernel/constants.ts）
+// 命名范式：详见 kernel/constants.ts V1 布局
 // =============================================================================
 
 import { existsSync, mkdirSync, renameSync, writeFileSync } from 'fs'
@@ -20,11 +20,12 @@ import {
   type WorkspaceTaskStatus,
 } from './dual-state'
 import {
-  getTaskDir,
+  ensureTaskDir,
   getTaskFrozenPath,
+  getTaskOxnPath,
   getTaskTracePath,
-  getWorkDir,
   getWorkFrozenPath,
+  getWorkRunDir,
   getWorkStatePath,
   getWorkTracePath,
   loadTaskState,
@@ -55,7 +56,7 @@ export class ExecError extends Error {
 }
 
 // =============================================================================
-// Work 启动（启动 work 状态机，落 work-state.json）
+// Work 启动（启动 work 状态机，落 .run/state.json）
 // =============================================================================
 
 export interface RunWorkParams {
@@ -92,7 +93,7 @@ export function runWork(params: RunWorkParams): WorkspaceState {
 }
 
 // =============================================================================
-// Task 启动（落 tasks/<t>/task-state.json）
+// Task 启动（落 .run/tasks/<t>/state.json）
 // =============================================================================
 
 export interface RunTaskParams {
@@ -112,7 +113,7 @@ export function runTask(params: RunTaskParams): TaskState {
   if (!workState) {
     throw new ExecError(
       'OXN_WORK_NOT_STARTED',
-      `work-state.json not found for "${params.workName}". Run \`oxn work run <name>\` first.`,
+      `work .run/state.json not found for "${params.workName}". Run \`oxn work run <name>\` first.`,
     )
   }
 
@@ -348,7 +349,7 @@ function writeFrozen(path: string, snapshot: unknown): void {
 // =============================================================================
 
 function appendWorkTrace(projectRoot: string, workName: string, event: Record<string, unknown>): void {
-  const dir = getWorkDir(projectRoot, workName)
+  const dir = getWorkRunDir(projectRoot, workName)
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   const path = getWorkTracePath(projectRoot, workName)
   const line = `${JSON.stringify({ ...event, at: event.at ?? new Date().toISOString() })}\n`
@@ -365,8 +366,8 @@ function appendTaskTrace(
   taskName: string,
   event: Record<string, unknown>,
 ): void {
-  const dir = getWorkDir(projectRoot, workName) + `/tasks/${taskName}`
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  // task trace 落到 .run/tasks/<t>/trace.jsonl（V1 布局）
+  ensureTaskDir(projectRoot, workName, taskName)
   const path = getTaskTracePath(projectRoot, workName, taskName)
   const line = `${JSON.stringify({ ...event, at: event.at ?? new Date().toISOString() })}\n`
   try {
@@ -412,10 +413,6 @@ export function validateTasksPresent(
     if (!existsSync(path)) missing.push(name)
   }
   return { ok: missing.length === 0, missing }
-}
-
-function getTaskOxnPath(projectRoot: string, workName: string, taskName: string): string {
-  return getTaskDir(projectRoot, workName, taskName) + '/task.oxn'
 }
 
 // =============================================================================
