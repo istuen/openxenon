@@ -1,0 +1,3 @@
+# 测试覆盖产物
+coverage/
+.nyc_output/
