@@ -289,22 +289,6 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
     }
   }
 
-  // 4.1 重新从备份读取 → 写到 V1 路径（避免 V0 路径被 unlink 后的 race）
-  for (const m of copied) {
-    const v1Abs = computeV1Path(projectRoot, workName, m.rel)
-    if (!v1Abs) continue
-    const v1Dir = join(v1Abs, '..')
-    if (!existsSync(v1Dir)) {
-      mkdirSync(v1Dir, { recursive: true })
-    }
-    try {
-      const content = readFileSync(m.backupAbs)
-      writeFileSync(v1Abs, content)
-    } catch (err) {
-      warnings.push(`failed to write V1 file for ${m.rel}: ${err instanceof Error ? err.message : String(err)}`)
-    }
-  }
-
   // ── 4. 在新位置重建 V1 文件 ──
   // 4.1 移动 V0 文件到 V1 路径（.run/state.json 等）
   // 4.2 重新生成 .work（PR-2/6）：读取 work.oxn 解析 → birth cert
@@ -356,8 +340,9 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
     for (const d of domainsIdx.domains) {
       if (d.status === 'invalid') {
         const ref = d.ref ?? d.name
-        const reason =
-          ref.startsWith('@oxn/') ? '@oxn/ scope has no builtin domain registry (V1)' : (d.errors[0] ?? 'domain file not found')
+        const reason = ref.startsWith('@oxn/')
+          ? '@oxn/ scope has no builtin domain registry (V1)'
+          : (d.errors[0] ?? 'domain file not found')
         invalidRefs.push({
           code: 'OXN_WORK_REFS_UNRESOLVED',
           severity: 'warn',
@@ -371,10 +356,9 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
     for (const b of blueprintsIdx.blueprints) {
       if (b.status === 'invalid') {
         const ref = b.ref ?? b.name
-        const reason =
-          ref.startsWith('@oxn/')
-            ? '@oxn/ scope has no builtin blueprint registry (V1)'
-            : (b.errors[0] ?? 'blueprint file not found')
+        const reason = ref.startsWith('@oxn/')
+          ? '@oxn/ scope has no builtin blueprint registry (V1)'
+          : (b.errors[0] ?? 'blueprint file not found')
         invalidRefs.push({
           code: 'OXN_WORK_REFS_UNRESOLVED',
           severity: 'warn',
