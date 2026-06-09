@@ -2738,6 +2738,7 @@ const migrateSubcommand = defineCommand({
             migrated: false,
             reason: 'already-v1',
             warnings: result.warnings,
+            diagnostics: result.invalidRefs ?? [],
           },
           human: `Work "${workName}" already migrated; nothing to do.\n${result.warnings.join('\n')}`,
         },
@@ -2755,6 +2756,7 @@ const migrateSubcommand = defineCommand({
           backupDir: result.backupDir,
           artifactsWritten: result.artifactsWritten,
           warnings: result.warnings,
+          diagnostics: result.invalidRefs ?? [],
         },
         human:
           `Work "${workName}" migrated to V1 ✓\n` +
@@ -2764,6 +2766,9 @@ const migrateSubcommand = defineCommand({
           result.artifactsWritten.map((a) => `    - ${a}`).join('\n') +
           (result.warnings.length > 0
             ? `\n\n  Warnings:\n${result.warnings.map((w) => `    ! ${w}`).join('\n')}`
+            : '') +
+          ((result.invalidRefs?.length ?? 0) > 0
+            ? `\n\n  Diagnostics (${result.invalidRefs!.length}):\n${result.invalidRefs!.map((d) => `    ! [${d.type}] ${d.ref}: ${d.message}`).join('\n')}`
             : '') +
           `\n\n  Next: \`oxn work lock ${workName}\` then \`oxn work run ${workName}\`\n` +
           `  (V0 备份目录 .migrated-v0/ 留待工程师手动清理)`,

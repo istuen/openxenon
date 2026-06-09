@@ -190,6 +190,15 @@ export type MigrateResult =
       artifactsWritten: string[]
       backupDir?: string
       warnings: string[]
+      /** PR-14d: 软警告（域/蓝图 ref 解析失败等）— 不入 IAPError 字典 */
+      invalidRefs?: Array<{
+        code: string
+        severity: 'warn'
+        ref: string
+        type: 'domain' | 'blueprint'
+        message: string
+        suggestion: string
+      }>
     }
   | {
       ok: false
@@ -201,6 +210,15 @@ export type MigrateResult =
 export function migrateWorkToV1(projectRoot: string, workName: string): MigrateResult {
   const workDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
   const workOxnPath = join(workDir, 'work.oxn')
+  // PR-14d: 提前声明，让 try/catch 失败时也可用
+  const invalidRefs: Array<{
+    code: string
+    severity: 'warn'
+    ref: string
+    type: 'domain' | 'blueprint'
+    message: string
+    suggestion: string
+  }> = []
 
   // ── 1. work.oxn 必须存在 ──
   if (!existsSync(workOxnPath)) {
@@ -333,6 +351,41 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
     const maxItersMatch = workContent.match(/max_iterations\s*=\s*(\d+)/)
     const maxIterations = maxItersMatch ? Number.parseInt(maxItersMatch[1]!, 10) : 3
 
+    // PR-14d: 收集无效的 ref（被 merger 排除但 work.oxn 仍声明的）
+    // 用 ref-diagnostic 工具构造软警告条目（PR-14 命名空间）
+    for (const d of domainsIdx.domains) {
+      if (d.status === 'invalid') {
+        const ref = d.ref ?? d.name
+        const reason =
+          ref.startsWith('@oxn/') ? '@oxn/ scope has no builtin domain registry (V1)' : (d.errors[0] ?? 'domain file not found')
+        invalidRefs.push({
+          code: 'OXN_WORK_REFS_UNRESOLVED',
+          severity: 'warn',
+          ref,
+          type: 'domain',
+          message: `Domain '${d.name}' declared but unresolved during migrate: ${reason}`,
+          suggestion: `Check domain name spelling, or run \`oxn domain create ${d.name}\``,
+        })
+      }
+    }
+    for (const b of blueprintsIdx.blueprints) {
+      if (b.status === 'invalid') {
+        const ref = b.ref ?? b.name
+        const reason =
+          ref.startsWith('@oxn/')
+            ? '@oxn/ scope has no builtin blueprint registry (V1)'
+            : (b.errors[0] ?? 'blueprint file not found')
+        invalidRefs.push({
+          code: 'OXN_WORK_REFS_UNRESOLVED',
+          severity: 'warn',
+          ref,
+          type: 'blueprint',
+          message: `Blueprint '${b.name}' declared but unresolved during migrate: ${reason}`,
+          suggestion: `Check blueprint name spelling, or run \`oxn blueprint create ${b.name}\``,
+        })
+      }
+    }
+
     const domainAssets = domainsIdx.domains
       .filter((d) => d.status === 'ok')
       .map((d) => ({
@@ -371,6 +424,7 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
     artifactsWritten,
     backupDir,
     warnings,
+    invalidRefs,
   }
 }
 

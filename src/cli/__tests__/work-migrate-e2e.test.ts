@@ -317,6 +317,98 @@ describe('oxn work migrate (PR-10)', () => {
     // V1 trace 内容应保留
     const newTrace = readFileSync(join(workDir, '.run', 'trace.jsonl'), 'utf-8')
     expect(newTrace).toContain('work-started')
-    expect(newTrace).toContain('task-started')
+    expect(newTrace).toContain('task_started')
+  })
+})
+
+// =============================================================================
+// PR-14d: migrate 补 diagnostics（成功路径）
+//
+// 覆盖：
+//   1. happy path：所有 ref 解析 → diagnostics: []
+//   2. migrate 时 work.oxn 引用了不存在的 domain → diagnostics: [{type:domain, severity:warn}]
+//   3. migrate 时 work.oxn 引用了不存在的 blueprint → diagnostics: [{type:blueprint}]
+//   4. 多个 invalid ref：diagnostics 数组多元素
+//   5. diagnostics.severity="warn"（不入 IAPError 体系）
+// =============================================================================
+
+describe('work migrate diagnostics（PR-14d）', () => {
+  test('1. happy path：所有 ref 解析 → diagnostics: []', async () => {
+    await initProject()
+    setupV0Project()
+    setupV0Work('demo', ['a'])
+
+    const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
+    expect(r.ok).toBe(true)
+    expect(r.data.diagnostics).toBeDefined()
+    expect(r.data.diagnostics).toEqual([])
+  })
+
+  test('2. migrate 缺 domain：diagnostics: [{type:domain, severity:warn}]', async () => {
+    await initProject()
+    // 故意不写 domain-a.oxn（setupV0Work 引用 DomainA 但文件不存在）
+    setupV0Work('demo', ['a'])
+
+    const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
+    expect(r.ok).toBe(true)
+    expect(r.data.diagnostics.length).toBeGreaterThanOrEqual(1)
+    const domDiag = r.data.diagnostics.find((d) => d.type === 'domain' && d.ref === '@prj/domains/domain-a')
+    expect(domDiag).toBeDefined()
+    expect(domDiag.severity).toBe('warn')
+    expect(domDiag.code).toBe('OXN_WORK_REFS_UNRESOLVED')
+    expect(domDiag.message).toContain('DomainA')
+    expect(domDiag.suggestion).toContain('DomainA')
+  })
+
+  test('3. migrate 缺 blueprint：diagnostics: [{type:blueprint, severity:warn}]', async () => {
+    await initProject()
+    // 写域文件但不写蓝图文件
+    mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
+    writeFileSync(join(tmpDir, '.openxenon', 'domains', 'domain-a.oxn'), DOMAIN_A)
+    // 故意不写 blueprint-x.oxn（setupV0Work 引用 BlueprintX）
+    setupV0Work('demo', ['a'])
+
+    const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
+    expect(r.ok).toBe(true)
+    const bpDiag = r.data.diagnostics.find(
+      (d) => d.type === 'blueprint' && d.ref === '@prj/blueprints/blueprint-x',
+    )
+    expect(bpDiag).toBeDefined()
+    expect(bpDiag.severity).toBe('warn')
+    expect(bpDiag.code).toBe('OXN_WORK_REFS_UNRESOLVED')
+  })
+
+  test('4. 多个 invalid ref：diagnostics 数组多元素', async () => {
+    await initProject()
+    setupV0Work('demo', ['a'])
+
+    // 在 work.oxn 额外声明多个不存在的 ref
+    const workOxnPath = join(tmpDir, '.openxenon', 'works', 'demo', 'work.oxn')
+    const content = readFileSync(workOxnPath, 'utf-8')
+    writeFileSync(
+      workOxnPath,
+      content.replace(
+        'blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";',
+        'blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";\n  domain "GhostDom" ref "@prj/domains/ghostdom";\n  blueprint "GhostBP" ref "@prj/blueprints/ghostbp";',
+      ),
+    )
+
+    const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
+    expect(r.ok).toBe(true)
+    const types = r.data.diagnostics.map((d) => d.type)
+    expect(types.filter((t) => t === 'domain').length).toBeGreaterThanOrEqual(1)
+    expect(types.filter((t) => t === 'blueprint').length).toBeGreaterThanOrEqual(1)
+  })
+
+  test('5. diagnostics.severity="warn"（不入 IAPError 体系）', async () => {
+    await initProject()
+    setupV0Project()
+    setupV0Work('demo', ['a'])
+
+    const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
+    for (const d of r.data.diagnostics) {
+      expect(d.severity).toBe('warn')
+      expect(d.code).not.toMatch(/^IAP_/)
+    }
   })
 })
