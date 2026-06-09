@@ -60,12 +60,19 @@ import {
   buildPerWorkDomainsIndex,
   writePerWorkDomainsIndex,
   getPerWorkDomainsJsonPath,
+  resolveDomainFile,
 } from '../oxn-dsl/compiler/work-domains-merger'
 import {
   buildPerWorkBlueprintsIndex,
   writePerWorkBlueprintsIndex,
   getPerWorkBlueprintsJsonPath,
+  resolveBlueprintFile,
 } from '../oxn-dsl/compiler/work-blueprints-merger'
+import {
+  buildDomainDiagnostic,
+  buildBlueprintDiagnostic,
+  type RefDiagnostic,
+} from '../oxn-dsl/compiler/ref-diagnostic'
 import {
   applyPlanLock,
   createBirthCert,
@@ -1576,6 +1583,27 @@ const runSubcommand = defineCommand({
       const partSpecs = await buildPartSpecs(work, inlineParts)
       const maxIters = work.context?.loopPolicy?.maxIterations ?? 3
 
+      // PR-14c: 收集未解析的 ref diagnostics，持久化到 .run/state.json
+      const runDiagnostics: RefDiagnostic[] = []
+      for (const d of work.domains ?? []) {
+        if (!resolveDomainFile(d.ref ?? null, d.name, projectRoot)) {
+          const reason = d.ref && d.ref.startsWith('@oxn/')
+            ? '@oxn/ scope has no builtin domain registry (V1)'
+            : `domain file not found for ref "${d.ref ?? d.name}"`
+          runDiagnostics.push(buildDomainDiagnostic(d.name, d.ref ?? null, reason))
+        }
+      }
+      for (const b of work.blueprints ?? []) {
+        if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
+          const reason = b.ref && b.ref.startsWith('@oxn/')
+            ? '@oxn/ scope has no builtin blueprint registry (V1)'
+            : `blueprint file not found for ref "${b.ref ?? b.name}"`
+          runDiagnostics.push(buildBlueprintDiagnostic(b.name, b.ref ?? null, reason))
+        }
+      }
+      // 持久化时只接受 'warn' severity（state.json schema 锁死；'error' 仅用于 in-flight）
+      const persistedDiagnostics = runDiagnostics.map((d) => ({ ...d, severity: 'warn' as const }))
+
       const workspace = runWork({
         projectRoot,
         workName,
@@ -1589,6 +1617,7 @@ const runSubcommand = defineCommand({
         goal: work.context?.goal,
         constraints: work.context?.constraints,
         maxIterations: maxIters,
+        ...(persistedDiagnostics.length > 0 ? { diagnostics: persistedDiagnostics } : {}),
       })
 
       for (const taskName of declaredTaskNames) {
@@ -1654,6 +1683,7 @@ const runSubcommand = defineCommand({
               }
             }),
             workspace,
+            diagnostics: runDiagnostics,
           },
         },
         format,
@@ -1766,9 +1796,39 @@ const statusSubcommand = defineCommand({
     const workName = ctx.args.name as string
     const projectRoot = getProjectRoot()
     try {
+      // PR-14a: status 是观察者；以 .work（birth cert）作为 work 是否存在的真源
+      const birthCert = readBirthCert(projectRoot, workName)
+      if (!birthCert.ok) {
+        const hint =
+          birthCert.reason === 'missing'
+            ? 'Work has no .work birth cert. Run `oxn work validate <name>` to generate it.'
+            : `.work birth cert has ${birthCert.reason}: ${birthCert.errors.join('; ')}`
+        return output(
+          errorJson('OXN_WORK_NOT_FOUND', `work "${workName}" not found (.work birth cert missing or invalid: ${birthCert.reason})`, hint),
+          format,
+        )
+      }
       const workspace = loadWorkState(projectRoot, workName)
       if (!workspace) {
-        return output(errorJson('OXN_WORK_NOT_FOUND', `work "${workName}" not found (.run/state.json missing)`), format)
+        // .work 存在但 .run/state.json 缺失：work 还没跑过
+        return output(
+          {
+            ok: true,
+            data: {
+              workName,
+              workspace: null,
+              planLock: birthCert.cert.planLock
+                ? {
+                    present: true as const,
+                    lockedAt: birthCert.cert.planLock.lockedAt,
+                    allHash: birthCert.cert.planLock.allHash ?? null,
+                  }
+                : { present: false as const, lockedAt: null, allHash: null },
+              note: 'work has been validated but not yet run; .run/state.json missing',
+            },
+          },
+          format,
+        )
       }
       const taskBreakdown = workspace.tasks.map((idx) => {
         const ts = loadTaskState(projectRoot, workName, idx.taskName)
@@ -1817,6 +1877,15 @@ const statusSubcommand = defineCommand({
 
       const report = makeReport(derivedState)
 
+      // PR-14a: planLock 字段已在前置 .work 读取中获取，复用
+      const planLockField = birthCert.cert.planLock
+        ? {
+            present: true as const,
+            lockedAt: birthCert.cert.planLock.lockedAt,
+            allHash: birthCert.cert.planLock.allHash ?? null,
+          }
+        : { present: false as const, lockedAt: null, allHash: null }
+
       output(
         {
           ok: true,
@@ -1829,6 +1898,7 @@ const statusSubcommand = defineCommand({
               taskCount: workspace.tasks.length,
             },
             tasks: taskBreakdown,
+            planLock: planLockField,
           },
         },
         format,
@@ -1983,6 +2053,32 @@ function camelToKebab(s: string): string {
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
     .toLowerCase()
+}
+
+// PR-14b: 扫描 work.oxn 中声明的 domain/blueprint ref，收集未解析的 diagnostics。
+// 用于 context / run / migrate 在 lock 守卫通过后显式报告"声明的资产不存在"软警告。
+function collectUnresolvedRefDiagnostics(
+  work: WorkFileSummary,
+  projectRoot: string,
+): RefDiagnostic[] {
+  const diagnostics: RefDiagnostic[] = []
+  for (const d of work.domains) {
+    if (!resolveDomainFile(d.ref ?? null, d.name, projectRoot)) {
+      const reason = d.ref && d.ref.startsWith('@oxn/')
+        ? '@oxn/ scope has no builtin domain registry (V1)'
+        : 'domain file not found for ref "' + (d.ref ?? d.name) + '"'
+      diagnostics.push(buildDomainDiagnostic(d.name, d.ref ?? null, reason))
+    }
+  }
+  for (const b of work.blueprints) {
+    if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
+      const reason = b.ref && b.ref.startsWith('@oxn/')
+        ? '@oxn/ scope has no builtin blueprint registry (V1)'
+        : 'blueprint file not found for ref "' + (b.ref ?? b.name) + '"'
+      diagnostics.push(buildBlueprintDiagnostic(b.name, b.ref ?? null, reason))
+    }
+  }
+  return diagnostics
 }
 
 function readWorkFile(filePath: string): WorkFileSummary | null {
@@ -2153,6 +2249,9 @@ const contextSubcommand = defineCommand({
       return outputError({ code: 'OXN_DSL_PARVE_FAILED', message: `Failed to parse ${workFile}` }, format)
     }
 
+    // PR-14b: 扫描未解析的 domain/blueprint ref，作为软警告返回
+    const diagnostics: RefDiagnostic[] = collectUnresolvedRefDiagnostics(work, root)
+
     if (taskName) {
       const task = work.tasks.find((t) => t.name === taskName)
       let taskDomain: string | undefined = task?.domain
@@ -2264,6 +2363,7 @@ const contextSubcommand = defineCommand({
                 },
               }
             : { status: 'unknown' },
+        diagnostics,
       }
 
       if (emitMdPath) {
@@ -2296,6 +2396,7 @@ const contextSubcommand = defineCommand({
           parts: work.parts,
           probes: work.probes,
           tasks: work.tasks,
+          diagnostics,
         },
         human: `Work ${workName} (no --task specified, returning workspace-level context)
   Domains:    ${work.domains.map((d) => d.name).join(', ')}
@@ -2303,7 +2404,7 @@ const contextSubcommand = defineCommand({
   Parts:      ${work.parts.map((p) => p.name).join(', ')}
   Probes:     ${work.probes.map((p) => p.name).join(', ')}
   Tasks:      ${work.tasks.length}
-  (传 --task <name> 获取 task 级隔离上下文)`,
+  (传 --task <name> 获取 task 级隔离上下文)${diagnostics.length > 0 ? `\n  ⚠ Diagnostics: ${diagnostics.length} unresolved ref(s)\n${diagnostics.map((d) => `    - [${d.type}] ${d.ref}: ${d.message}`).join('\n')}` : ''}`,
       },
       format,
     )

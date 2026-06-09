@@ -68,6 +68,15 @@ export interface RunWorkParams {
   goal?: string
   constraints?: string[]
   maxIterations?: number
+  /** PR-14c: 软警告（域/蓝图 ref 解析失败等），持久化到 .run/state.json */
+  diagnostics?: Array<{
+    code: string
+    severity: 'warn' | 'error'
+    ref: string
+    type: 'domain' | 'blueprint'
+    message: string
+    suggestion: string
+  }>
 }
 
 export function runWork(params: RunWorkParams): WorkspaceState {
@@ -79,6 +88,7 @@ export function runWork(params: RunWorkParams): WorkspaceState {
     overallGoal: params.goal,
     constraints: params.constraints,
     maxIterations: params.maxIterations,
+    ...(params.diagnostics && params.diagnostics.length > 0 ? { diagnostics: params.diagnostics } : {}),
   })
   saveWorkState(params.projectRoot, params.workName, state)
   appendWorkTrace(params.projectRoot, params.workName, {

@@ -45,6 +45,22 @@ export const WorkspaceStateSchema = z.object({
       maxIterations: z.number().int().min(1).default(3),
     })
     .optional(),
+  // PR-14c: diagnostics 软警告（域/蓝图文件 lock 后被删等场景）
+  //   不入 IAPError 体系，severity 必为 'warn'
+  //   当 lock 通过但 ref 解析失败时，run 把收集的 diagnostics 写入此处
+  //   供 status / future Daemon 读取判断是否在无约束下执行
+  diagnostics: z
+    .array(
+      z.object({
+        code: z.string(),
+        severity: z.enum(['warn', 'error']),
+        ref: z.string(),
+        type: z.enum(['domain', 'blueprint']),
+        message: z.string(),
+        suggestion: z.string(),
+      }),
+    )
+    .optional(),
 })
 
 export type WorkspaceTaskStatus = z.infer<typeof WorkspaceTaskStatusSchema>
@@ -59,6 +75,14 @@ export function createInitialWorkspaceState(params: {
   overallGoal?: string
   constraints?: string[]
   maxIterations?: number
+  diagnostics?: Array<{
+    code: string
+    severity: 'warn' | 'error'
+    ref: string
+    type: 'domain' | 'blueprint'
+    message: string
+    suggestion: string
+  }>
 }): WorkspaceState {
   const now = new Date().toISOString()
   return {
@@ -79,6 +103,7 @@ export function createInitialWorkspaceState(params: {
       constraints: params.constraints ?? [],
       maxIterations: params.maxIterations ?? 3,
     },
+    ...(params.diagnostics && params.diagnostics.length > 0 ? { diagnostics: params.diagnostics } : {}),
   }
 }
 
