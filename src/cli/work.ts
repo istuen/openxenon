@@ -2059,9 +2059,10 @@ const contextSubcommand = defineCommand({
     task: { type: 'string', description: 'Task 名称（推荐；不传则返回 work 级上下文）' },
     'state-path': { type: 'string', description: '可选，state.json 路径（用于 currentFocus）' },
     'emit-md': { type: 'string', description: '可选，把摘要写到指定 .md 路径' },
-    'no-lock-check': {
+    'unlock-check': {
       type: 'boolean',
-      description: '跳过 planLock hash 校验（不常用，仅用于诊断 stale 计划）',
+      default: false,
+      description: '跳过 planLock hash 校验（先 unlock 再用本 flag 诊断 stale 计划；默认 false）',
     },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
     '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
@@ -2072,13 +2073,14 @@ const contextSubcommand = defineCommand({
     const taskName = ctx.args.task as string | undefined
     const statePathArg = ctx.args['state-path'] as string | undefined
     const emitMdPath = ctx.args['emit-md'] as string | undefined
-    const noLockCheck = ctx.args.noLockCheck === true || ctx.args['no-lock-check'] === true
+    const lockCheck = ctx.args['unlock-check'] !== true
+    const noLockCheck = !lockCheck
     const root = getProjectRoot()
 
     const workFile = getWorkOxnPath(root, workName)
 
     // PR-9: context 与 run 对称 —— 锁守卫优先于 work.oxn 缺失检查
-    // 默认硬要求；--no-lock-check 用于诊断 stale 计划
+    // 默认硬要求；--unlock-check 用于诊断 stale 计划
     let birthCertForHealth: { ok: boolean; cert?: BirthCert } | null = null
     if (!noLockCheck) {
       const birthCert = readBirthCert(root, workName)
@@ -2100,7 +2102,7 @@ const contextSubcommand = defineCommand({
               suggestion:
                 'work.oxn / domains.json / blueprint.json / tasks/<t>/task.oxn 之一被改；' +
                 `oxn work unlock ${workName} → edit → oxn work validate ${workName} → oxn work lock ${workName}` +
-                '（诊断请用 --no-lock-check）',
+                '（诊断请用 --unlock-check）',
               context: {
                 reason: lockVerify.reason,
                 component: lockVerify.component,
@@ -2136,7 +2138,7 @@ const contextSubcommand = defineCommand({
           {
             code: 'OXN_ALIGN_LOCK_NOT_FOUND',
             message: `work "${workName}" has no planLock; context refuses stale read`,
-            suggestion: '先执行 `oxn work lock <name>` 锁住计划（诊断请用 --noLockCheck）',
+            suggestion: '先执行 `oxn work lock <name>` 锁住计划（诊断请用 --unlock-check）',
           },
           format,
         )
@@ -2248,7 +2250,7 @@ const contextSubcommand = defineCommand({
         taskParts,
         isolationNotice: '本 task 只能看到引用的 domain，work 中其他 domain 一律不可见。',
         lockHealth: noLockCheck
-          ? { status: 'bypassed', reason: 'no-lock-check flag set' }
+          ? { status: 'bypassed', reason: 'unlock-check flag set' }
           : birthCertForHealth && birthCertForHealth.ok && birthCertForHealth.cert?.planLock
             ? {
                 status: 'ok',

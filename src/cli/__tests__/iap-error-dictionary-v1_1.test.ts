@@ -82,7 +82,7 @@ describe('IAPError 字典 v1.1 收敛（PR-11）', () => {
     expect(content).toContain('PlanLock hash 漂移（4 组件')
     expect(content).toContain('PlanLock 全过但 work.oxn 失踪')
     expect(content).toContain('Lock 守卫次序：先校验 planLock 存在')
-    expect(content).toContain('--no-lock-check 用于诊断模式')
+    expect(content).toContain('--unlock-check 用于诊断模式')
     expect(content).toContain('oxn work lock 子命令（PR-7）')
     expect(content).toContain('oxn work migrate（PR-10）')
   })

@@ -138,7 +138,7 @@ domain "IAPErrorContext" {
   invariant { "PlanLock hash 漂移（4 组件：workOxn / workDomains / blueprints / tasks 之一不一致）→ 抛 IAP_ALIGN_LOCK_HASH_MISMATCH，context.component 字段定位漂移源" }
   invariant { "PlanLock 全过但 work.oxn 失踪（锁后被破坏）→ 抛 IAP_ALIGN_WORK_REMOVED（YIELD_TO_HUMAN），区别于 WORK_NOT_FOUND（两个都没）" }
   invariant { "Lock 守卫次序：先校验 planLock 存在 → 再校验 4 组件 hash → 最后校验 work.oxn 存在；该次序保证错误码语义不重叠" }
-  invariant { "oxn work run / context 触发 lock 守卫；--no-lock-check 用于诊断模式（context 可读 stale 数据但显式标注）" }
+  invariant { "oxn work run / context 触发 lock 守卫；--unlock-check 用于诊断模式（context 可读 stale 数据但显式标注）" }
   invariant { "oxn work lock 子命令（PR-7）计算 4 组件 hash 写入 .work.planLock；unlock 清除 planLock（work 进入 unlocked 状态但保留 assets 快照）" }
   invariant { "oxn work validate 成功后自动写 .work + .domains.json + .blueprints.json（PR-6）：planLock=null，assets 重新算 fileHash" }
   invariant { "validate 后未锁的 work 可被 lock；锁后拒绝 validate 覆盖（保留 createdAt 时间戳，PR-6 守卫）" }

@@ -386,7 +386,7 @@ describe('oxn work end-to-end (v0.1 hard-switch + naming alignment)', () => {
     )
 
     const ctx = JSON.parse(
-      (await runCli(['work', 'context', 'explore-dsl', '--task', 'explore', '--noLockCheck', '--json'])).stdout,
+      (await runCli(['work', 'context', 'explore-dsl', '--task', 'explore', '--unlock-check', '--json'])).stdout,
     )
     expect(ctx.ok).toBe(true)
     expect(ctx.data.injectedDomains.length).toBe(1)

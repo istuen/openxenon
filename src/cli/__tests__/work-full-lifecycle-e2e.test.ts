@@ -9,7 +9,7 @@
 //   5. 锁后漂移 work.oxn → 下次 lock/verify 报 LOCK_HASH_MISMATCH
 //   6. 锁后删 work.oxn → context/run 报 WORK_REMOVED
 //   7. unlock → context 报 LOCK_NOT_FOUND
-//   8. --no-lock-check 跳过守卫 + lockHealth.bypassed
+//   8. --unlock-check 跳过守卫 + lockHealth=bypassed
 //   9. allHash 联动：1 改 1 → allHash 也变
 // =============================================================================
 
@@ -258,21 +258,16 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     expect(ctx.error.code).toBe('OXN_ALIGN_LOCK_NOT_FOUND')
   })
 
-  test.skip('8. --no-lock-check 跳过守卫 + lockHealth=bypassed（PR-14 TODO：citty flag 解析隐藏 bug）', async () => {
-    // ───────── 已知 bug ─────────
-    // PR-9 引入 --no-lock-check flag，但本次 PR-13 端到端验证时发现
-    // flag 在 citty 解析后未生效（守卫仍报 LOCK_NOT_FOUND）。
-    // 推测原因：citty kebab-case → camelCase 转换在 nested subcommand 中失效。
-    // 影响：诊断模式失效（用户无法读 stale context）。
-    // 修复：定位后单独 PR 修。
-    // 验证：手动跑 `oxn work context <w> --task <t> --no-lock-check` 也复现。
-    // ─────────────────────────
+  test('8. --unlock-check 跳过守卫 + lockHealth=bypassed', async () => {
+    // PR-14 修复：citty 把 `no-` 前缀当特殊语法（否定），会剥掉。
+    // 改用正向 boolean flag `--unlock-check`（default false）；命名也更贴语义——
+    // 用前需先 `oxn work unlock`，让 lockHealth 走 bypassed 路径。
     await initProject()
     setupProject()
     setupWork('lifecycle', ['a'])
     await runCli(['work', 'validate', 'lifecycle', '--json'])
     // 故意不 lock
-    const ctxRaw = (await runCli(['work', 'context', 'lifecycle', '--task', 'a', '--no-lock-check', '--json'])).stdout
+    const ctxRaw = (await runCli(['work', 'context', 'lifecycle', '--task', 'a', '--unlock-check', '--json'])).stdout
     const ctx = JSON.parse(ctxRaw)
     expect(ctx.ok).toBe(true)
     expect(ctx.data.lockHealth.status).toBe('bypassed')

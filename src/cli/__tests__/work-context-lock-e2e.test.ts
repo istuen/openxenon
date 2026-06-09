@@ -7,7 +7,7 @@
 //   3. .work planLock 完好 → context 正常返回
 //   4. lock 后改 work.oxn → HASH_MISMATCH component=workOxn
 //   5. lock 后改 task.oxn → HASH_MISMATCH component=tasks
-//   6. --noLockCheck 跳过守卫（仍能读到 stale 计划）
+//   6. --unlock-check 跳过守卫（仍能读到 stale 计划）
 //   7. work 目录被删 → OXN_ALIGN_WORK_REMOVED
 //   8. .work schema 不合法 → 详细 errors
 //   9. 响应里含 lockHealth 元数据（可选 — PR-9 不加，避免破坏向后兼容）
@@ -165,7 +165,7 @@ describe('oxn work context lock 守卫 (PR-9)', () => {
     expect(r.error.context.component).toBe('tasks')
   })
 
-  test('--noLockCheck 跳过守卫 → context 正常返回（带 stale 计划数据）', async () => {
+  test('--unlock-check 跳过守卫 → context 正常返回（带 stale 计划数据）', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a'])
@@ -176,8 +176,8 @@ describe('oxn work context lock 守卫 (PR-9)', () => {
     const workOxnPath = join(tmpDir, '.openxenon', 'works', 'demo', 'work.oxn')
     writeFileSync(workOxnPath, readFileSync(workOxnPath, 'utf-8').replace('"test"', '"stale"'))
 
-    // 默认守卫会拒；--noLockCheck 跳过
-    const r = JSON.parse((await runCli(['work', 'context', 'demo', '--noLockCheck', '--json'])).stdout)
+    // 默认守卫会拒；--unlock-check 跳过
+    const r = JSON.parse((await runCli(['work', 'context', 'demo', '--unlock-check', '--json'])).stdout)
     expect(r.ok).toBe(true)
     expect(r.data.workspace).toBe('demo')
   })
