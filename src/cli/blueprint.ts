@@ -1,10 +1,35 @@
+// =============================================================================
+// `oxn blueprint` — Blueprint 资产管理（v0.1.3 重写：slim 索引对齐 Domain）
+//
+// 4 子命令：
+//   create         — 在 .openxenon/blueprints/ 生成新 blueprint 骨架
+//   validate       — 解析 .oxn + 验签 + 落 .cache/blueprints.json 索引
+//   list           — 读 .cache/blueprints.json 索引（AI 全局检索入口）
+//                    索引缺失时降级到 dir 扫描（向后兼容老项目）
+//   index          — 手动重建全局 slim 索引 → .openxenon/.cache/blueprints.json
+//
+// 与 oxn domain 对称设计（PR-X）：
+//   - 触发点：init / create / validate / index — 四档一致
+//   - 静默失败：autoRebuild 失败不阻断主流程（资产本身正确）
+//   - list 走索引而非 dir 扫描（性能 + 一致性）
+// =============================================================================
+
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxn-dsl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
+import {
+  autoRebuildBlueprintIndex,
+  getBlueprintIndexPath,
+  loadBlueprintIndex,
+  resolveBlueprintIndexPath,
+  writeBlueprintIndex,
+  type BlueprintIndex,
+  type BlueprintIndexEntry,
+} from '../oxn-dsl/compiler/blueprint-index-builder'
 
 function getProjectRoot(): string {
   return process.cwd()
@@ -12,6 +37,10 @@ function getProjectRoot(): string {
 
 function getBlueprintsDir(): string {
   return join(getProjectRoot(), BOUNDARY_DIR, 'blueprints')
+}
+
+function projectBoundaryExists(): boolean {
+  return existsSync(join(getProjectRoot(), BOUNDARY_DIR))
 }
 
 async function validateBlueprint(blueprintPath: string): Promise<{
@@ -158,6 +187,12 @@ ${slotBlocks.join('\n\n')}
 `
     writeFileSync(outPath, template, 'utf-8')
 
+    // PR-X: create 后静默重建全局 slim 索引（与 domain create 一致）
+    const rebuild = autoRebuildBlueprintIndex(getProjectRoot())
+    if (!rebuild.ok) {
+      process.stderr.write(`warning: blueprint index rebuild failed: ${rebuild.error}\n`)
+    }
+
     output(
       {
         ok: true,
@@ -216,6 +251,13 @@ const validateSubcommand = defineCommand({
     // v0.1: AST → IR 映射（干掉 cyclic JSON）。langium AST 节点带 $container 父引用。
     const blueprint = result.ast?.entities.find(isBlueprintDeclaration)
     const ir = blueprint ? blueprintAstToIr(blueprint) : null
+
+    // PR-X: validate 成功后静默重建全局 slim 索引（与 domain validate 一致）
+    const rebuild = autoRebuildBlueprintIndex(getProjectRoot())
+    if (!rebuild.ok) {
+      process.stderr.write(`warning: blueprint index rebuild failed: ${rebuild.error}\n`)
+    }
+
     output(
       {
         ok: true,
@@ -257,11 +299,15 @@ function blueprintAstToIr(blueprint: BlueprintDeclaration): {
 
 // ---------------------------------------------------------------------------
 // Subcommand: list
+//
+// PR-X: 优先读 .openxenon/.cache/blueprints.json（与 domain list 行为一致）。
+// 索引缺失时降级到 dir 扫描（向后兼容：旧项目没跑过 init / create）。
 // ---------------------------------------------------------------------------
 const listSubcommand = defineCommand({
   meta: {
     name: 'list',
-    description: '列出 .openxenon/blueprints/ 下所有 blueprint',
+    description:
+      '列出 .openxenon/blueprints/ 下所有 blueprint（从 .cache/blueprints.json 索引读，缺失时降级 dir 扫描）',
   },
   args: {
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
@@ -269,16 +315,56 @@ const listSubcommand = defineCommand({
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const projectRoot = getProjectRoot()
     const dir = getBlueprintsDir()
-    if (!existsSync(dir)) {
-      return output({ ok: true, data: { blueprints: [] }, human: 'No blueprints directory yet.' }, format)
-    }
-    const fs = require('fs') as typeof import('fs')
-    const { join } = require('path') as typeof import('path')
+    const indexPath = getBlueprintIndexPath(projectRoot)
 
+    // PR-X: 优先走索引
+    const index = loadBlueprintIndex(indexPath)
+    if (index) {
+      const blueprints = index.blueprints.map((e) => ({
+        name: e.name,
+        file: e.file,
+        version: e.version,
+        slotCount: e.slotNames.length,
+        propCount: e.propCount,
+        status: e.status,
+        description: e.description,
+        errors: e.errors,
+      }))
+      const invalidCount = blueprints.filter((b) => b.status === 'invalid').length
+      output(
+        {
+          ok: true,
+          data: { blueprints, indexPath, source: 'index' as const, invalidCount },
+          human:
+            blueprints.length > 0
+              ? `Blueprints (${blueprints.length} from index):\n${blueprints
+                  .map((b) => {
+                    const flag = b.status === 'invalid' ? ' ⚠' : ''
+                    const desc = b.description ? ` — ${b.description}` : ''
+                    return `  ${b.name} (v${b.version}, ${b.slotCount} slots, ${b.propCount} props)${flag}${desc}`
+                  })
+                  .join('\n')}` +
+                (invalidCount > 0 ? `\n  ⚠ ${invalidCount} blueprint(s) failed to parse — see data.errors` : '')
+              : 'No blueprints yet.',
+        },
+        format,
+      )
+      return
+    }
+
+    // 降级：dir 扫描（老项目 / 索引未生成）
+    if (!existsSync(dir)) {
+      output(
+        { ok: true, data: { blueprints: [], source: 'dir' as const }, human: 'No blueprints directory yet.' },
+        format,
+      )
+      return
+    }
     const blueprints: string[] = []
     function walk(currentDir: string, prefix: string): void {
-      const entries = fs.readdirSync(currentDir, { withFileTypes: true })
+      const entries = readdirSync(currentDir, { withFileTypes: true })
       for (const entry of entries) {
         const fullPath = join(currentDir, entry.name)
         if (entry.isDirectory()) {
@@ -290,13 +376,110 @@ const listSubcommand = defineCommand({
       }
     }
     walk(dir, '')
-
     output(
       {
         ok: true,
-        data: { blueprints },
+        data: { blueprints, source: 'dir' as const },
         human:
-          blueprints.length > 0 ? `Blueprints:\n${blueprints.map((b) => `  ${b}`).join('\n')}` : 'No blueprints yet.',
+          blueprints.length > 0
+            ? `Blueprints (${blueprints.length} from dir scan; no index found at ${indexPath}):\n${blueprints
+                .map((b) => `  ${b}`)
+                .join('\n')}\n\nTip: run \`oxn blueprint index\` to build the slim index.`
+            : 'No blueprints yet.',
+      },
+      format,
+    )
+  },
+})
+
+// ---------------------------------------------------------------------------
+// Subcommand: index (PR-X)
+//
+// 扫 `.openxenon/blueprints/*.oxn`（含子目录）→ 落 `.openxenon/.cache/blueprints.json`
+// slim 模式：name/file/description/version/slotNames/propCount；不展开 slot DAG 详情
+// （那是 per-work blueprints.json 的事，PR-3 引入）。
+//
+// 与 `oxn domain index` 对称设计：
+//   - 不传 --emit：默认落 `.openxenon/.cache/blueprints.json`
+//   - --emit <path>：落到自定义路径
+//   - --check：仅校验索引是否新鲜（与 mtime 比对，不写）
+// ---------------------------------------------------------------------------
+const indexSubcommand = defineCommand({
+  meta: {
+    name: 'index',
+    description: '重建全局 Blueprint slim 索引 → .openxenon/.cache/blueprints.json',
+  },
+  args: {
+    emit: {
+      type: 'string',
+      description: '自定义输出路径（默认 .openxenon/.cache/blueprints.json）',
+    },
+    check: {
+      type: 'boolean',
+      description: '仅校验索引是否新鲜（与 blueprints/ 目录 mtime 比对），不写',
+    },
+    '--json': { type: 'boolean', description: 'JSON 格式输出' },
+    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const projectRoot = getProjectRoot()
+    const blueprintsDir = getBlueprintsDir()
+    const customEmit = ctx.args.emit as string | undefined
+    const checkOnly = ctx.args.check === true
+    const outPath = resolveBlueprintIndexPath(projectRoot, customEmit)
+
+    if (!projectBoundaryExists()) {
+      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+    }
+
+    if (checkOnly) {
+      const existing = loadBlueprintIndex(outPath)
+      if (!existing) {
+        return output(
+          {
+            ok: true,
+            data: { fresh: false, reason: 'index missing' },
+            human: `Index missing at ${outPath}\nRun \`oxn blueprint index\` to build.`,
+          },
+          format,
+        )
+      }
+      return output(
+        {
+          ok: true,
+          data: { fresh: true, generatedAt: existing.generatedAt, blueprintCount: existing.blueprintCount },
+          human: `Index fresh: ${existing.blueprintCount} blueprints, generated at ${existing.generatedAt}`,
+        },
+        format,
+      )
+    }
+
+    let index: BlueprintIndex
+    try {
+      index = writeBlueprintIndex({ projectRoot, blueprintsDir, outPath })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return outputError({ code: 'OXN_BLUEPRINT_INDEX_FAILED', message }, format)
+    }
+
+    const invalidCount = index.blueprints.filter((b: BlueprintIndexEntry) => b.status === 'invalid').length
+    output(
+      {
+        ok: true,
+        data: {
+          indexPath: outPath,
+          generatedAt: index.generatedAt,
+          blueprintCount: index.blueprintCount,
+          invalidCount,
+          blueprints: index.blueprints,
+        },
+        human:
+          `Blueprint index built: ${index.blueprintCount} blueprint(s) at ${outPath}\n` +
+          (invalidCount > 0 ? `  ⚠ ${invalidCount} blueprint(s) failed to parse — see blueprints[].errors\n` : '') +
+          index.blueprints
+            .map((b) => `  - ${b.name} (v${b.version}, ${b.slotNames.length} slots, ${b.propCount} props, ${b.status})`)
+            .join('\n'),
       },
       format,
     )
@@ -306,15 +489,16 @@ const listSubcommand = defineCommand({
 const blueprintCommand = defineCommand({
   meta: {
     name: 'blueprint',
-    description: '管理 OXN DSL blueprint（create/validate/list）',
+    description: '管理 OXN DSL blueprint（create/validate/list/index）',
   },
   subCommands: {
     create: createSubcommand,
     validate: validateSubcommand,
     list: listSubcommand,
+    index: indexSubcommand,
   },
   run() {
-    console.log('Use `oxn blueprint <create|validate|list>`.')
+    // No-op（与 oxn domain 对齐）
   },
 })
 

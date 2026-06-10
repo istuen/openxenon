@@ -4,6 +4,7 @@ import { join } from 'path'
 import { t } from '../i18n'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { GLOBAL_BOUNDARY_PATH } from '../infra/global'
+import { autoRebuildBlueprintIndex } from '../oxn-dsl/compiler/blueprint-index-builder'
 import { autoRebuildDomainIndex } from './domain'
 import type { ProjectConfig, SupportedLocale } from './project-config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './project-config'
@@ -150,6 +151,14 @@ export default defineCommand({
           : 'no domains yet (index will be built on first `oxn domain create`)'
         : `failed: ${domainIndexRebuild.error}`
 
+      // PR-X: init 后静默重建全局 Blueprint slim 索引（与 Domain 对称）
+      const blueprintIndexRebuild = autoRebuildBlueprintIndex(projectPath)
+      const blueprintIndexStatus = blueprintIndexRebuild.ok
+        ? blueprintIndexRebuild.indexPath
+          ? `built at ${blueprintIndexRebuild.indexPath}`
+          : 'no blueprints yet (index will be built on first `oxn blueprint create`)'
+        : `failed: ${blueprintIndexRebuild.error}`
+
       return output(
         {
           data: {
@@ -159,8 +168,9 @@ export default defineCommand({
             skillsCompiled: report.total,
             skillsReport: reportStr,
             domainIndex: domainIndexStatus,
+            blueprintIndex: blueprintIndexStatus,
           },
-          human: `${message}\n\n${t('init.compilingSkills', { adapter: 'opencode' })}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: '.opencode/skills/' })}\n\n✓ Domain index: ${domainIndexStatus}`,
+          human: `${message}\n\n${t('init.compilingSkills', { adapter: 'opencode' })}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: '.opencode/skills/' })}\n\n✓ Domain index: ${domainIndexStatus}\n✓ Blueprint index: ${blueprintIndexStatus}`,
         },
         format,
       )
