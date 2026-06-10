@@ -540,7 +540,7 @@ export function getSemanticNameByInternalRef(internalRef: string): string | null
 // 翻译层
 // ---------------------------------------------------------------------------
 
-import { IAPError, IAPAction } from '../../core/errors'
+import { IAPError, IAPAction } from '../contracts/iap-error'
 
 export interface TranslatedProbe {
   internalRef: string

@@ -21,10 +21,10 @@ import {
   listProbesSummary,
   PROBE_CATALOG,
   translateProbeInputs,
-} from '../../src/kernel/probes/catalog'
+} from '../../src/kernel/verdicts/catalog'
 import { type IAPError, IAPAction, isIAPError } from '../../src/core/errors'
 import { probeRegistry } from '../../src/infra/probes'
-import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/probes/verdict'
+import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/verdicts/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
   test('catalog 列出 5a+5b builtin probes（15 条：11 + 4 git-*）', () => {
