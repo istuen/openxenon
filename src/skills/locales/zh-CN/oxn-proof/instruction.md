@@ -41,6 +41,13 @@ Step 1: AI 先用 probe list / describe 知道 OXN 能验收什么
    oxn proof probe list
    oxn proof probe describe fs-exists
 
+   当前 OXN 内置 11 个 probe（AI 应按 list 实时发现，不要硬编码）：
+   - fs-exists / fs-not-exists / fs-content-match / fs-parseable   ← 文件层
+   - shell-exec                                                       ← 通用 shell
+   - test-pass / deps-resolved / ts-compiles / lint-check           ← 工程质量
+   - http-responds                                                    ← HTTP
+   - file-exports                                                     ← runtime import
+
 Step 2: AI 创建 proof.oxn（验收规约）
    oxn proof create check-deploy
 
@@ -54,9 +61,13 @@ Step 4: AI 工作（写代码 / 跑命令）—— 不调 OXN
 Step 5: AI 调 proof run 让 OXN 验收
    oxn proof run check-deploy
    → Kernel 校验 + Infra 物理观测 + 写 frozen.json
+   ⚠️ **鸡生蛋警告**：frozen.json 在 probe 评估**之后**才写盘
+      → 自指 probe 必 FAIL（如断言 `verdict === "PASSED"`）
+      → 改测"verdict ∈ {PASSED, FAILED} + 字段存在"（见 `scripts/proof-helpers/proof-self-check.sh verdict-emitted`）
 
 Step 6: AI 读 verdict
    oxn proof show check-deploy
+   → 输出含 `Signature: <64-hex>` 行（frozen.json 顶层的 `_xenon_meta.content_hash`）
    → FAIL → AI 修复 → 再 run → PASS
 ```
 
@@ -74,11 +85,27 @@ Step 6: AI 读 verdict
 | 层 | 机制 | 绕过成本 |
 |---|---|---|
 | OS 层 | chmod 0o444（覆盖前 owner 自动抬位 0o644 → 写 → try/finally 回锁 0o444） | writer 内部完成，AI / 工程师无感 |
-| 内容层 | `_xenon_meta.content_hash` = SHA-256 | 改内容 hash 对不上 |
+| 内容层 | frozen.json 顶层 `_xenon_meta.content_hash` = SHA-256(body) | 改内容 hash 对不上；`oxn proof show` 输出 `Signature:` 行验签 |
+
+> `oxn proof show <name>` 的输出用 `Signature: <64-hex>` 行展示 content_hash —— 这是 AI 读签名的人类可读入口；机器读应直接解析 frozen.json 顶层 `_xenon_meta.content_hash` 字段。
 
 **AI 约束**（CLI 白名单）：
 - ✅ 允许：`oxn proof create / list / show / probe list / probe describe / probe add / run`
 - ❌ 禁止：直接 `vim .openxenon/proofs/*/frozen.json` / `echo ... > frozen.json` / 任何直写
+
+## ⚠️ 已知坑：OXN DSL STRING 限制 + 鸡生蛋时序
+
+**坑 1：STRING 不支持 `\"` 转义**
+- OXN Langium grammar：`terminal STRING: /"[^"]*"/`
+- 任何内嵌 `"` 立即关闭字符串，**反斜杠转义无效**
+- 影响：probe 内的 `shell-exec` command 字符串若含 `"..."` 会解析失败
+- 规避：把含 `"` 的 shell 命令搬到独立 .sh 文件，proof.oxn 只 `bash helper.sh <check>` 调用
+- 现成 helper：`scripts/proof-helpers/proof-self-check.sh <proof-name> <check>`（10 个 check 含鸡生蛋安全的 `verdict-emitted`）
+
+**坑 2：鸡生蛋时序**
+- `oxn proof run` 评估 probe **在先**、写 frozen.json **在后**
+- 自指 probe（如断言 `verdict === "PASSED"`）必 FAIL
+- 正确写法：测「verdict 字段存在 + ∈ {PASSED, FAILED}」，不假设本轮 PASSED
 
 ## IAP 范式对照
 
@@ -96,8 +123,11 @@ Proof-First 入口 = IAP 中 Proof 轴的独立运作
 - `oxn proof probe list` 返回可用 probe（语义名 + 描述 + 必填输入）
 - `oxn proof probe describe <name>` 返回输入契约 + 示例
 - `oxn proof probe add <proof> <name> --input-json '{...}'` 成功追加
-- `oxn proof run` 返回 verdict + readOnly: true
-- `oxn proof show` 返回完整 frozen.json（含签名）
+- `oxn proof run` 返回 `verdict` 字段（∈ {PASSED, FAILED}）+ frozen.json 路径
+- `oxn proof show` 输出含 `Signature:` 行（SHA-256 64-hex）+ 每 probe 详情
+- `frozen.json` 物理特征：mode = `0o444`（OS 锁）、`_xenon_meta.content_hash` 是 64-hex、`probes[]` 每条有 `passed` 字段
+
+> **重要：`oxn proof run` 返回的 JSON 没有 `readOnly` 字段**。`chmod 0o444` 由 OS 层实现，不在 frozen.json schema 内。要验证"不可篡改"用 `stat -f %Lp` 查文件 mode，或跑 `scripts/proof-helpers/proof-self-check.sh <name> frozen-readonly-444`。
 
 把 `frozenPath` 给工程师审核。**禁止**改 frozen.json。
 
