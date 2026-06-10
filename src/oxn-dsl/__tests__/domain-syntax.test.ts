@@ -145,18 +145,6 @@ describe('Domain syntax — happy path', () => {
     okParse(d)
     expect(d.domain!.invariants![0]!.invariants[0]!.value).toBe('密码必须 hash 存储')
   })
-
-  test('H12: STRING 含 \" 转义（v0.1.3+）', async () => {
-    const d = await parseDomain(String.raw`domain "x" { description = "echo \"hello\"" }`)
-    okParse(d)
-    expect(d.domain!.descriptions[0]?.value).toBe('echo "hello"')
-  })
-
-  test('H13: STRING 含 \\n 转义（v0.1.3+）', async () => {
-    const d = await parseDomain(String.raw`domain "x" { description = "line1\nline2" }`)
-    okParse(d)
-    expect(d.domain!.descriptions[0]?.value).toBe('line1\nline2')
-  })
 })
 
 // ---------------------------------------------------------------------------

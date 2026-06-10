@@ -3530,7 +3530,7 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
       },
       "definition": {
         "$type": "RegexToken",
-        "regex": "/\\"([^\\"\\\\\\\\]|\\\\\\\\.)*\\"/",
+        "regex": "/\\"[^\\"]*\\"/",
         "parenthesized": false
       },
       "fragment": false,

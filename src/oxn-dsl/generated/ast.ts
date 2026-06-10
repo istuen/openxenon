@@ -8,7 +8,7 @@ import * as langium from 'langium';
 
 export const OXNDSLTerminals = {
     ID: /[_a-zA-Z][\w-]*/,
-    STRING: /"([^"\\]|\\.)*"/,
+    STRING: /"[^"]*"/,
     NUMBER: /[0-9]+(\.[0-9]+)?/,
     TEMPLATE_STRING: /"([^"\\]|\\"|\$\{[^}]*\})*"/,
     WS: /\s+/,

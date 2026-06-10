@@ -279,7 +279,7 @@ LoopPolicy:
 terminal ID: /[_a-zA-Z][\w-]*/;
 
 terminal STRING returns string:
-    /"([^"\\]|\\.)*"/;
+    /"[^"]*"/;
 
 terminal NUMBER returns number:
     /[0-9]+(\.[0-9]+)?/;
