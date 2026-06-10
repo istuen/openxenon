@@ -44,7 +44,7 @@
 
 ```bash
 git clone https://github.com/anomalyco/openxenon.git && cd openxenon
-pnpm install && pnpm build
+bun install --frozen-lockfile && bun run build
 ```
 
 ### 第二步：初始化工作台
@@ -225,12 +225,12 @@ OpenXenon 用 OpenXenon 管理自己的开发过程——**自举**（self-boots
 
 | 级别 | 定义 | 状态 |
 |---|---|---|
-| L1 编译自举 | `pnpm build` → `oxn` 可执行 | ✅ |
+| L1 编译自举 | `bun run build` → `oxn` 可执行 | ✅ |
 | L2 资产自举 | Domain / Blueprint / Work / Task 全链路跑通 | ✅ |
 | L2+ DSL 自举 | Grammar → Schema → Validator → Generator 联动 | ✅ |
 | L3 质量自举 | OpenXenon 自身开发过程通过 OpenXenon 管理 | 🔜 第二阶段目标 |
 
-**测试**：414/414 通过（33 个测试文件，1525 expect calls）。
+**测试**：所有测试通过；运行 `bun test` 查看当前数据（具体数字随版本演进；权威源为 `bunfig.toml` + `lefthook.yml`）。
 
 ---
 

@@ -59,7 +59,9 @@ Thumbs.db
 .vscode/
 .idea/
 .kilocode/
+.agents/
 .opencode/
+.claude/
 *.swp
 *.swo
 *~
