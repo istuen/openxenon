@@ -49,10 +49,10 @@
 - **职责**：纯逻辑推演，零 IO。基于 Schema 校验事实，生成 `frozen.json` 快照
 - **核心约束**：纯函数、零 IO、零状态
 - **包含模块**：Schema / Contract / Processor / 判定策略
-- **子目录**：`src/kernel/schemas/` · `src/kernel/contracts/` · `src/kernel/processors/` · `src/kernel/probes/`
+- **子目录**：`src/kernel/schemas/` · `src/kernel/contracts/` · `src/kernel/processors/` · `src/kernel/verdicts/`
 - **禁止**：`fs.*` / `net.*` / `child_process` / `process.env` / `process.std*` / `EventEmitter` / `require('fs' | 'path' | 'crypto' | 'http' | 'child_process' | 'os')`
 
-> **注**：`src/kernel/probes/catalog.ts` 与 `src/kernel/probes/verdict.ts` 虽含 "probes" 字样，**不是 IO 探针**，而是 L0 内部的"判定策略注册表"（纯函数）与"探针元数据"（AI 可见语义）。IO 探针在 L1 `src/infra/probes/`。
+> **注**：`src/kernel/verdicts/catalog.ts` 与 `src/kernel/verdicts/verdict.ts` 虽位于 `verdicts/` 目录，**不是 IO 探针**，而是 L0 内部的"判定策略注册表"（纯函数）与"探针元数据"（AI 可见语义）。**物理 IO 探针**在 L1 `src/infra/probes/`，由 `src/kernel/verdicts/verdict.ts` 的 `PROBE_VERDICT_STRATEGIES` 纯函数判定。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 
 ### 2.2 L1 Foundation（基础设施层）
 
@@ -96,7 +96,7 @@
 |---|---|---|---|
 | **L0 Kernel** | L0-Schema | `src/kernel/schemas/` | 数据骨架（Zod / Type） |
 | **L0 Kernel** | L0-Contract | `src/kernel/contracts/` | 外部插座（Port 接口） |
-| **L0 Kernel** | L0-Processor | `src/kernel/processors/` `src/kernel/probes/` `src/kernel/enums.ts` | 纯逻辑推演机 |
+| **L0 Kernel** | L0-Processor | `src/kernel/processors/` `src/kernel/verdicts/` `src/kernel/enums.ts` | 纯逻辑推演机 |
 | **L1 Foundation** | L1-Infra | `src/infra/` | 物理 IO 与探针执行 |
 | **L1 Foundation** | L1-OXN-DSL | `src/oxn-dsl/` | 语言解析 + 编译生成 |
 | **L2 Module** | L2-Builtin | `src/builtin/` | 编译后内置资产（.oxn 资源） |
@@ -226,7 +226,7 @@ find src -maxdepth 2 -type d | sort
 | ID | 偏差 | 文档位置 |
 |---|---|---|
 | **C-9** | `src/oxn-dsl/builtin/` vs `src/builtin/` 命名重叠 | §3 末尾命名澄清 |
-| **C-10** | `src/kernel/probes/` 命名易与 L1 `src/infra/probes/` 混淆 | §2.1 末尾注 |
+| **C-10** | `src/kernel/probes/` 命名易与 L1 `src/infra/probes/` 混淆 | §2.1 末尾注（已重命名 `probes` → `verdicts`） |
 | **C-11** | `package.json` 描述为"面向大语言模型的工程化控制引擎"，未体现 L0-L3 / IAP 定位 | 待办（见 7.4） |
 
 ### 7.3 修复后基线
@@ -246,7 +246,7 @@ find src -maxdepth 2 -type d | sort
 
 #### 残留 1（新发现，🔴 High）：L0-Processor → L3-CLI (IAPError 反向依赖)
 
-- **位置**：`src/kernel/probes/catalog.ts:435` 从 `src/core/errors` 导入 `IAPError` / `IAPAction`
+- **位置**：`src/kernel/verdicts/catalog.ts:435` 从 `src/core/errors` 导入 `IAPError` / `IAPAction`
 - **根因**：`IAPError` / `IAPAction` 是 IAP 范式核心数据契约，**逻辑属于 L0**（IAP = Intent-Align-Proof = 引擎内核范式），但物理放在 `src/core/errors/`（L3-CLI）。导致 L0 反而依赖 L3（外层依赖内层颠倒）
 - **建议**：将 `IAPError` / `IAPAction` / `IAPErrorCode` / `IAPErrorContext` 从 `src/core/errors/iap-error.ts` 移到 `src/kernel/contracts/iap-error.ts`（L0-Contract）。`OXNCrash` / `cli-input-error` 留 L3
 - **决策方**：架构师确认 IAP 错误语义归属后 1 个文件移动 + 1 个 importer 更新

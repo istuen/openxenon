@@ -115,7 +115,7 @@ describe('writeProbeStatsToFile', () => {
 // updater 纯函数单测（顺便覆盖 schema 与 catalog 翻译）
 // =============================================================================
 
-import { updateProbeStats, initProbeStatsFromFrozen } from '../../kernel/probes/probe-stats-updater'
+import { updateProbeStats, initProbeStatsFromFrozen } from '../../kernel/verdicts/probe-stats-updater'
 import type { FrozenProof } from '../../kernel/schemas/proof-schema'
 
 function makeFrozen(

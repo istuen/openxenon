@@ -78,5 +78,5 @@ bun test                    # bun test，约 50 秒，414 个测试
 
 - 运行时数据 + IAP 资产：`.openxenon/{domains,blueprints,works,tasks,proofs,issues,forges,error}/`（目录内已 gitignore）。
 - AI 可见的权威文档：`docs/core/document.md`（概念）、`docs/reference/oxn-dsl.md`（DSL）、`docs/reference/probe-types.md`（Probes）、`docs/architecture/l0-l3-constitution.md`（分层）。
-- Probes 拆分：`src/kernel/probes/` = L0 判定/目录（纯函数）；`src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。
+- Probes 拆分：`src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
