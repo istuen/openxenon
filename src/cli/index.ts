@@ -161,6 +161,7 @@ const main = defineCommand({
 
     // ---- Proof axis (v0.1.2: Proof-First 入口，独立运作) ----
     proof: () => import('./proof').then((m) => m.default),
+    insight: () => import('./insight').then((m) => m.default),
 
     // ---- Dev namespace (DSL 内部工具) ----
     dev: () => import('./dev').then((m) => m.default),
