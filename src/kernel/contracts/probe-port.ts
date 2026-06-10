@@ -55,6 +55,11 @@ export const PROBE_STRATEGY_MAPPINGS: ProbeStrategyMapping[] = [
   { handler: 'http_responds', strategy: 'http_responds', observationType: 'http_responds' },
   { handler: 'file_exports', strategy: 'file_exports', observationType: 'file_exports' },
   { handler: 'shell_exec', strategy: 'shell_exec', observationType: 'shell_exec' },
+  // v1.2: git-* builtin probes（PoC: git-workflow Blueprint 用）
+  { handler: 'git_clean', strategy: 'git_clean', observationType: 'git_clean' },
+  { handler: 'git_branch_exists', strategy: 'git_branch_exists', observationType: 'git_branch_exists' },
+  { handler: 'git_status_clean', strategy: 'git_status_clean', observationType: 'git_status_clean' },
+  { handler: 'git_merge_feasible', strategy: 'git_merge_feasible', observationType: 'git_merge_feasible' },
   // v1.1: exec_exit_zero / exec_output_match 移除
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译到 shell_exec / fs-content-match
 ]

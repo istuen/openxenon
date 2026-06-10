@@ -60,6 +60,36 @@ export const SkillContextSnapshotSchema = z.object({
   maxIterations: z.number().int().min(1),
 })
 
+/**
+ * v1.2: Git Workspace 状态（PoC: git-workflow Blueprint 写入）
+ *
+ * 设计哲学：
+ *   - OXN **不替人 commit / merge**——只观察 git 物理世界，记录客观状态
+ *   - failedBranch 记录失败时保留的分支名（让工程师手动决定 cherry-pick / 删 / 重跑）
+ *   - mergeFeasibility 是 PoC 核心：让工程师在不实际 merge 的情况下看到冲突证据
+ *
+ * 与 frozen.json 的关系：frozen.json 记录 verdict（已 PASSED/FAILED），
+ * state.json 记录 git 物理状态（即使 work 失败也保留，可读）。
+ */
+export const MergeFeasibilitySchema = z.enum([
+  'unknown',
+  'can_ff_merge',
+  'can_merge_clean',
+  'has_conflicts',
+  'dirty_worktree',
+])
+
+export const GitWorkspaceSchema = z.object({
+  strategy: z.enum(['none', 'branch', 'worktree']),
+  baseBranch: z.string(),
+  workBranch: z.string().nullable(),
+  worktreePath: z.string().nullable(),
+  mergeFeasibility: MergeFeasibilitySchema.nullable(),
+  conflictFiles: z.array(z.string()).default([]),
+  finalizedAt: z.string().nullable(),
+  failedBranch: z.string().nullable(),
+})
+
 export const WorkStateSchema = z.object({
   workName: z.string().min(1),
   status: WorkStatusSchema,
@@ -74,6 +104,8 @@ export const WorkStateSchema = z.object({
   partSpecs: z.array(PartSpecSchema).optional(),
   // New: probe-driven execution rows
   partExecutions: z.array(PartExecutionSchema).optional(),
+  // v1.2: git workspace 状态（PoC: git-workflow Blueprint 用）
+  gitWorkspace: GitWorkspaceSchema.optional(),
 })
 
 export type WorkStatus = z.infer<typeof WorkStatusSchema>
@@ -83,6 +115,8 @@ export type PartSpec = z.infer<typeof PartSpecSchema>
 export type ProbeResult = z.infer<typeof ProbeResultSchema>
 export type PartExecution = z.infer<typeof PartExecutionSchema>
 export type SkillContextSnapshot = z.infer<typeof SkillContextSnapshotSchema>
+export type MergeFeasibility = z.infer<typeof MergeFeasibilitySchema>
+export type GitWorkspace = z.infer<typeof GitWorkspaceSchema>
 export type WorkState = z.infer<typeof WorkStateSchema>
 
 export function createInitialState(workName: string, parts: string[], maxIterations: number = 3): WorkState {

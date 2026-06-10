@@ -387,6 +387,108 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     builtin: 'oxn',
     domainTerm: 'Module',
   },
+  {
+    // v1.2: git-clean — working tree 干净（PoC: git-workflow Blueprint 入口守卫）
+    // 复 ProgramContext.WorkingTree term
+    semanticName: 'git-clean',
+    description: '检查当前 working tree 是否干净（无未提交改动；clean: true → PASS）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: false,
+        description: '要检查的 git 仓库路径（默认当前目录）',
+      },
+      {
+        name: 'includeUntracked',
+        type: 'boolean',
+        required: false,
+        description: '是否把 untracked 文件算作 dirty（默认 false）',
+      },
+    ],
+    examples: [
+      { name: 'default-strict', inputs: {} },
+      { name: 'include-untracked', inputs: { includeUntracked: true } },
+    ],
+    internalRef: '@oxn/probes/git-clean',
+    inputMap: { path: 'path', includeUntracked: 'includeUntracked' },
+    builtin: 'oxn',
+    domainTerm: 'WorkingTree',
+  },
+  {
+    // v1.2: git-branch-exists — 本地分支存在（PoC: git-workflow base 分支守卫）
+    semanticName: 'git-branch-exists',
+    description: '检查指定本地分支是否存在（exists: true → PASS）',
+    inputs: [
+      {
+        name: 'branch',
+        type: 'string',
+        required: true,
+        description: '要检查的本地分支名（如 "main" / "feat/saturn"）',
+      },
+    ],
+    examples: [
+      { name: 'main-exists', inputs: { branch: 'main' } },
+      { name: 'feature-exists', inputs: { branch: 'feat/saturn' } },
+    ],
+    internalRef: '@oxn/probes/git-branch-exists',
+    inputMap: { branch: 'branch' },
+    builtin: 'oxn',
+    domainTerm: 'Branch',
+  },
+  {
+    // v1.2: git-status-clean — git-clean 的 verbose alias（给工程师读 verdict 用）
+    semanticName: 'git-status-clean',
+    description: '检查 git status --porcelain 输出（与 git-clean 同义；clean: true → PASS）',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: false,
+        description: '要检查的 git 仓库路径（默认当前目录）',
+      },
+    ],
+    examples: [{ name: 'default', inputs: {} }],
+    internalRef: '@oxn/probes/git-status-clean',
+    inputMap: { path: 'path' },
+    builtin: 'oxn',
+    domainTerm: 'WorkingTree',
+  },
+  {
+    // v1.2: git-merge-feasible — 三路合并模拟（PoC 核心：不实际 merge，给可行性证据）
+    // 复 ProgramContext.MergeCommit term
+    semanticName: 'git-merge-feasible',
+    description:
+      '用 git merge-tree 算法判定 work 分支能否 merge 进 target_branch（不实际 merge；can_ff_merge / can_merge_clean → PASS）',
+    inputs: [
+      {
+        name: 'workBranch',
+        type: 'string',
+        required: true,
+        description: 'work 分支名（如 "feat/saturn" / "oxn/poc-1"）',
+      },
+      {
+        name: 'targetBranch',
+        type: 'string',
+        required: false,
+        description: '目标分支名（默认 "current" = 当前分支）',
+      },
+      {
+        name: 'cwd',
+        type: 'string',
+        required: false,
+        description: 'git 仓库路径（默认当前目录）',
+      },
+    ],
+    examples: [
+      { name: 'work-into-main', inputs: { workBranch: 'feat/saturn', targetBranch: 'main' } },
+      { name: 'work-into-current', inputs: { workBranch: 'feat/saturn' } },
+    ],
+    internalRef: '@oxn/probes/git-merge-feasible',
+    inputMap: { workBranch: 'workBranch', targetBranch: 'targetBranch', cwd: 'cwd' },
+    builtin: 'oxn',
+    domainTerm: 'MergeCommit',
+  },
 ]
 
 // ---------------------------------------------------------------------------

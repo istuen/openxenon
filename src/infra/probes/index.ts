@@ -11,6 +11,10 @@ import { executeTsCompiles, type TsCompilesParams } from './ts-compiles'
 import { executeLintCheck, type LintCheckParams } from './lint-check'
 import { executeHttpResponds, type HttpRespondsParams } from './http-responds'
 import { executeFileExports, type FileExportsParams } from './file-exports'
+import { executeGitClean, type GitCleanParams } from './git-clean'
+import { executeGitBranchExists, type GitBranchExistsParams } from './git-branch-exists'
+import { executeGitStatusClean, type GitStatusCleanParams } from './git-status-clean'
+import { executeGitMergeFeasible, type GitMergeFeasibleParams } from './git-merge-feasible'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -160,6 +164,60 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // v1.2: git-clean — working tree 干净
+  git_clean: async (params, context) => {
+    const gitParams = params as unknown as GitCleanParams
+    const result = await executeGitClean(gitParams, context as ProbeContext)
+    return {
+      probeType: 'git_clean',
+      output: JSON.stringify({ clean: result.clean, dirtyFiles: result.dirtyFiles }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // v1.2: git-branch-exists — 本地分支存在
+  git_branch_exists: async (params, context) => {
+    const gitParams = params as unknown as GitBranchExistsParams
+    const result = await executeGitBranchExists(gitParams, context as ProbeContext)
+    return {
+      probeType: 'git_branch_exists',
+      output: JSON.stringify({ exists: result.exists }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // v1.2: git-status-clean — git-clean 的语义别名（verbose 版）
+  git_status_clean: async (params, context) => {
+    const gitParams = params as unknown as GitStatusCleanParams
+    const result = await executeGitStatusClean(gitParams, context as ProbeContext)
+    return {
+      probeType: 'git_status_clean',
+      output: JSON.stringify({ clean: result.clean, dirtyFiles: result.dirtyFiles }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // v1.2: git-merge-feasible — 三路合并模拟（不实际 merge）
+  git_merge_feasible: async (params, context) => {
+    const gitParams = params as unknown as GitMergeFeasibleParams
+    const result = await executeGitMergeFeasible(gitParams, context as ProbeContext)
+    return {
+      probeType: 'git_merge_feasible',
+      output: JSON.stringify({
+        status: result.status,
+        conflictFiles: result.conflictFiles,
+        targetCommit: result.targetCommit,
+        workCommit: result.workCommit,
+        error: result.error,
+      }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -178,6 +236,11 @@ class ProbeRegistry {
     'file-exports': 'file_exports',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
+    // v1.2: git-* builtin probes
+    'git-clean': 'git_clean',
+    'git-branch-exists': 'git_branch_exists',
+    'git-status-clean': 'git_status_clean',
+    'git-merge-feasible': 'git_merge_feasible',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
     'fs-exists:probes': 'fs_exists',
     'fs-not-exists:probes': 'fs_not_exists',
@@ -189,6 +252,10 @@ class ProbeRegistry {
     'http-responds:probes': 'http_responds',
     'file-exports:probes': 'file_exports',
     'shell-exec:probes': 'shell_exec',
+    'git-clean:probes': 'git_clean',
+    'git-branch-exists:probes': 'git_branch_exists',
+    'git-status-clean:probes': 'git_status_clean',
+    'git-merge-feasible:probes': 'git_merge_feasible',
   }
 
   constructor() {
@@ -255,4 +322,8 @@ export {
   executeLintCheck,
   executeHttpResponds,
   executeFileExports,
+  executeGitClean,
+  executeGitBranchExists,
+  executeGitStatusClean,
+  executeGitMergeFeasible,
 }

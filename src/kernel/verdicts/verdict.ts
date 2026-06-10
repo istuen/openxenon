@@ -364,6 +364,139 @@ const fileExportsStrategy: ProbeStrategy = (observation, params) => {
     failureMessage: passed ? undefined : (observation.error ?? 'no exports found'),
   }
 }
+
+/** git_clean: 期望 output.clean === true（v1.2 probe，PoC: git-workflow）
+ *
+ * 不接受 includeUntracked=true 的宽容判定：ci 流水线不应漏检 untracked
+ */
+const gitCleanStrategy: ProbeStrategy = (observation, params) => {
+  let clean = false
+  let dirtyFiles: string[] = []
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      clean?: boolean
+      dirtyFiles?: string[]
+    }
+    clean = obj.clean === true
+    dirtyFiles = obj.dirtyFiles ?? []
+  } catch {
+    clean = false
+  }
+
+  const passed = clean && !observation.error
+  return {
+    passed,
+    message: passed
+      ? `git-clean: working tree clean`
+      : `git-clean: ${dirtyFiles.length} dirty file(s)${dirtyFiles.length > 0 ? ` (e.g. ${dirtyFiles.slice(0, 3).join(', ')})` : ''}`,
+    actual: { clean, dirtyFiles },
+    params,
+    duration: observation.executedAt,
+    failureMessage: passed ? undefined : `${dirtyFiles.length} dirty file(s) found`,
+  }
+}
+
+/** git_branch_exists: 期望 output.exists === true（v1.2 probe） */
+const gitBranchExistsStrategy: ProbeStrategy = (observation, params) => {
+  let exists = false
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as { exists?: boolean }
+    exists = obj.exists === true
+  } catch {
+    exists = false
+  }
+
+  const passed = exists && !observation.error
+  return {
+    passed,
+    message: passed
+      ? `git-branch-exists: branch "${params.branch ?? ''}" found`
+      : `git-branch-exists: branch "${params.branch ?? ''}" not found`,
+    actual: { exists, branch: params.branch },
+    params,
+    duration: observation.executedAt,
+    failureMessage: passed ? undefined : `branch "${params.branch ?? ''}" not found`,
+  }
+}
+
+/** git_status_clean: 与 git_clean 同义（v1.2 probe，verbose alias） */
+const gitStatusCleanStrategy: ProbeStrategy = (observation, params) => {
+  let clean = false
+  let dirtyFiles: string[] = []
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      clean?: boolean
+      dirtyFiles?: string[]
+    }
+    clean = obj.clean === true
+    dirtyFiles = obj.dirtyFiles ?? []
+  } catch {
+    clean = false
+  }
+
+  const passed = clean && !observation.error
+  return {
+    passed,
+    message: passed ? `git-status-clean: working tree clean` : `git-status-clean: ${dirtyFiles.length} dirty file(s)`,
+    actual: { clean, dirtyFiles },
+    params,
+    duration: observation.executedAt,
+    failureMessage: passed ? undefined : `${dirtyFiles.length} dirty file(s) found`,
+  }
+}
+
+/** git_merge_feasible: 期望 status ∈ {can_ff_merge, can_merge_clean}（v1.2 probe，PoC 核心）
+ *
+ * 关键：Kernel 不碰 git。Infra 跑 git merge-tree 算法（纯观察），
+ * Kernel 只看 Infra JSON-stringify 出的 status 字段做判定。
+ *
+ * 状态映射：
+ *   can_ff_merge       → PASS（fast-forward 可行）
+ *   can_merge_clean    → PASS（需 --no-ff 创 merge commit；OXN 不替人 merge，但方案可行）
+ *   has_conflicts      → FAIL（冲突文件列表非空，工程师需手动 resolve）
+ *   dirty_worktree     → FAIL（worktree 有未提交改动，应先 clean）
+ *   unknown            → FAIL（git 报错 / 分支不存在；YIELD_TO_HUMAN）
+ */
+const gitMergeFeasibleStrategy: ProbeStrategy = (observation, params) => {
+  let status: string = 'unknown'
+  let conflictFiles: string[] = []
+  let targetCommit: string | null = null
+  let workCommit: string | null = null
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      status?: string
+      conflictFiles?: string[]
+      targetCommit?: string | null
+      workCommit?: string | null
+    }
+    status = obj.status ?? 'unknown'
+    conflictFiles = obj.conflictFiles ?? []
+    targetCommit = obj.targetCommit ?? null
+    workCommit = obj.workCommit ?? null
+  } catch {
+    status = 'unknown'
+  }
+
+  const passed = (status === 'can_ff_merge' || status === 'can_merge_clean') && !observation.error
+  return {
+    passed,
+    message: passed
+      ? `git-merge-feasible: ${status}`
+      : `git-merge-feasible: ${status}${conflictFiles.length > 0 ? ` (${conflictFiles.length} conflict file(s))` : ''}`,
+    actual: { status, conflictFiles, targetCommit, workCommit },
+    params,
+    duration: observation.executedAt,
+    failureMessage: passed
+      ? undefined
+      : status === 'has_conflicts'
+        ? `${conflictFiles.length} conflict file(s): ${conflictFiles.slice(0, 3).join(', ')}`
+        : status === 'dirty_worktree'
+          ? 'working tree has uncommitted changes'
+          : status === 'unknown'
+            ? 'merge feasibility could not be determined (check branch names / git state)'
+            : `unexpected status: ${status}`,
+  }
+}
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -378,6 +511,11 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   http_responds: httpRespondsStrategy,
   file_exports: fileExportsStrategy,
   shell_exec: shellExecStrategy,
+  // v1.2: git-* builtin probes（PoC: git-workflow Blueprint）
+  git_clean: gitCleanStrategy,
+  git_branch_exists: gitBranchExistsStrategy,
+  git_status_clean: gitStatusCleanStrategy,
+  git_merge_feasible: gitMergeFeasibleStrategy,
   // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
   // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册
 }
@@ -388,6 +526,11 @@ export const PROBE_VERDICT_ALIASES: Record<string, string> = {
   'fs-content-match': 'fs_match',
   'exec-exit-zero': 'shell_exec',
   'shell-exec': 'shell_exec',
+  // v1.2: git-* aliases
+  'git-clean': 'git_clean',
+  'git-branch-exists': 'git_branch_exists',
+  'git-status-clean': 'git_status_clean',
+  'git-merge-feasible': 'git_merge_feasible',
 }
 
 export function getVerdictStrategy(observationType: string): ProbeStrategy | null {

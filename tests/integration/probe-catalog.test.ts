@@ -27,10 +27,11 @@ import { probeRegistry } from '../../src/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/verdicts/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 5a+5b builtin probes（11 条）', () => {
+  test('catalog 列出 5a+5b builtin probes（15 条：11 + 4 git-*）', () => {
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
-    // 5a: 5 条 + 5b.1+2+3+4+5+6 → 共 11
+    // 5a: 5 条 + 5b.1+2+3+4+5+6 → 11 条
+    // v1.2: + 4 条 git-*（git-clean / git-branch-exists / git-status-clean / git-merge-feasible）= 15
     expect(names).toEqual([
       'deps-resolved',
       'file-exports',
@@ -38,6 +39,10 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
       'fs-exists',
       'fs-not-exists',
       'fs-parseable',
+      'git-branch-exists',
+      'git-clean',
+      'git-merge-feasible',
+      'git-status-clean',
       'http-responds',
       'lint-check',
       'shell-exec',
@@ -46,11 +51,13 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     ])
   })
 
-  test('listProbesSummary 至少 11 个（5a + 5b.1+2+3+4+5+6）', () => {
+  test('listProbesSummary 至少 15 个（5a + 5b.1+2+3+4+5+6 + 4 git-*）', () => {
     const summary = listProbesSummary()
-    expect(summary.length).toBeGreaterThanOrEqual(11)
+    expect(summary.length).toBeGreaterThanOrEqual(15)
     const names = summary.map((s) => s.name)
     expect(names).toContain('file-exports')
+    expect(names).toContain('git-clean')
+    expect(names).toContain('git-merge-feasible')
   })
 
   test('P1 probe test-pass 标注 domainTerm = TestCase', () => {
