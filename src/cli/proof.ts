@@ -1,5 +1,5 @@
 // =============================================================================
-// `oxn proof` — Proof-First 入口（v0.1.2 重写：catalog 封装）
+// `oxn proof` — Proof-First 入口（v0.1.3 PR-2）
 //
 // 5 子命令（与 README §4 字面一致）：
 //   create           — 创 .openxenon/proofs/<name>/proof.oxn 骨架
@@ -13,6 +13,15 @@
 // IAP 封装边界：AI 通过 probe list/describe/add 看到的是**语义层**
 //   (semanticName + description + inputs[])。内部 ref / inputMap / verdict 逻辑
 //   在 catalog 内部，不出现在 CLI 输出 / 也不出现在 skill 文件里。
+//
+// v0.1.3 PR-2：.running.json 三阶段协议
+//   run 时序：
+//     Phase 1: 写 .running.json（name/totalCount/failedCount/probes[].errorMessage=pending）
+//              → 状态对 self-ref probe 可见
+//     Phase 2: 串行执行 probes
+//     Phase 3: 写 frozen.json → unlink .running.json
+//   dry-run：只跑 Phase 1（不跑 probe、不写 frozen.json），用于探测期
+//   list/show：检测 .running.json 残留 → 标 [in-progress] / ⚠️ 警告
 // =============================================================================
 
 import { defineCommand } from 'citty'
@@ -26,7 +35,6 @@ import {
   PROOFS_DIR,
   PROOF_FROZEN_JSON,
   PROOF_OXN_FILE,
-  PROOF_RUNNING_JSON,
 } from '../kernel/constants'
 import {
   createOxnParser,
@@ -38,11 +46,18 @@ import {
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
-import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/verdicts/catalog'
-import { updateProbeStats } from '../kernel/verdicts/probe-stats-updater'
+import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/probes/catalog'
+import { updateProbeStats } from '../kernel/probes/probe-stats-updater'
 import { emptyProbeStats } from '../kernel/schemas/probe-stats-schema'
 import { readProbeStatsFromFile, writeProbeStatsToFile } from '../infra/probes/probe-stats-store'
 import { IAPError } from '../core/errors'
+
+// v0.1.3 PR-2: 临时 .running.json（proof 运行中状态）
+//   物理位置: .openxenon/proofs/<name>/.running.json
+//   写入时点: run Phase 1（probe 执行前）
+//   删除时点: run Phase 3（frozen.json 写完后）
+//   残留检测: list / show 命令检测存在 → 标 [in-progress] / ⚠️
+const PROOF_RUNNING_JSON = '.running.json'
 
 // ---------------------------------------------------------------------------
 // 路径工具
@@ -432,7 +447,7 @@ const runSubcommand = defineCommand({
   },
   args: {
     name: { type: 'positional', required: true, description: 'Proof 名称' },
-    'dry-run': { type: 'boolean', description: '只写 .running.json 骨架，不执行 probe、不写 frozen.json（调试用）' },
+    'dry-run': { type: 'boolean', description: '只写 .running.json 不跑 probe 不写 frozen.json（用于探测期）' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
     '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
   },
@@ -457,18 +472,17 @@ const runSubcommand = defineCommand({
       })
     }
 
-    // -------------------------------------------------------------------------
-    // Phase 1：写 .running.json（v0.1.3+ 三阶段协议）
-    //
-    //   .running.json 是临时文件，专供自指 probe 读取"当前 proof 正在执行"。
-    //   - 0o644，可覆盖
-    //   - 不签名（SHA-256 是 frozen.json 的语义，不应混入临时文件）
-    //   - 终态：要么 Phase 3 删掉，要么崩在中间下次 run 覆盖
-    // -------------------------------------------------------------------------
-    const skeleton: import('./proof-frozen-writer').FrozenProofBody = {
+    // v0.1.3 PR-2: Phase 1 — 写 .running.json（self-ref probe 可见）
+    // 残留检测：若上一轮 run Phase 2/3 崩溃，.running.json 可能仍在
+    // → 直接覆盖（保证 idempotent 启动），让本次 run 拿到 fresh 状态
+    const proofDir = getProofDir(name)
+    if (!existsSync(proofDir)) {
+      mkdirSync(proofDir, { recursive: true })
+    }
+    const runningBody = {
       name,
       runAt: new Date().toISOString(),
-      verdict: 'FAILED',
+      verdict: 'FAILED' as 'FAILED' | 'PASSED',
       totalCount: probeIRs.length,
       passedCount: 0,
       failedCount: probeIRs.length,
@@ -480,46 +494,42 @@ const runSubcommand = defineCommand({
         errorMessage: 'pending',
       })),
     }
-    writeFileSync(runningPath, JSON.stringify(skeleton, null, 2), 'utf-8')
+    writeFileSync(runningPath, JSON.stringify(runningBody, null, 2), 'utf-8')
 
     if (dryRun) {
-      // 调试：仅写 .running.json，不跑 probe、不写 frozen.json
+      // --dry-run：写完 .running.json 立即退出（不跑 probe、不写 frozen.json）
       output(
         {
           ok: true,
-          data: { name, dryRun: true, runningPath, skeleton },
-          human: `Dry-run: wrote .running.json (${probeIRs.length} probe(s) pending) to ${runningPath}`,
+          data: {
+            name,
+            dryRun: true,
+            runningPath,
+            totalCount: runningBody.totalCount,
+            failedCount: runningBody.failedCount,
+            verdict: 'FAILED',
+          },
+          human: `Dry run: wrote ${runningPath} (${runningBody.totalCount} probes pending).\nProbes were NOT executed; no frozen.json written.`,
         },
         format,
       )
       return
     }
 
-    // -------------------------------------------------------------------------
-    // Phase 2：跑 probes（崩溃也不留 .running.json）
-    //   - 任何 probe 异常被 executeProbe 内部捕获（返回 failed result），不外抛
-    //   - try/finally 保证 Phase 3 一定执行
-    // -------------------------------------------------------------------------
-    const results: import('../kernel/schemas/proof-schema').FrozenProofProbeResult[] = []
-    try {
-      for (const probe of probeIRs) {
-        const r = await executeProbe(probe, { projectRoot: getProjectRoot() })
-        results.push(r)
-      }
+    // v0.1.3 PR-2: Phase 2 — 串行执行 probes
+    const results = []
+    for (const probe of probeIRs) {
+      const r = await executeProbe(probe, { projectRoot: getProjectRoot() })
+      results.push(r)
+    }
 
-      // -------------------------------------------------------------------------
-      // Phase 3：落锤 frozen.json + 删 .running.json
-      //   - 写 frozen 失败 → 不删 .running.json（下次 run 看到它是"上次崩了"信号）
-      //   - 删 .running.json 失败 → 不影响 verdict（frozen 已落）
-      // -------------------------------------------------------------------------
-      const body = buildFrozenProof({ name, probes: results })
-      writeFrozenProof(frozenPath, body)
-    } finally {
-      try {
-        unlinkSync(runningPath)
-      } catch {
-        /* already gone */
-      }
+    // v0.1.3 PR-2: Phase 3 — 写 frozen.json → 删 .running.json
+    const body = buildFrozenProof({ name, probes: results })
+    writeFrozenProof(frozenPath, body)
+    try {
+      unlinkSync(runningPath)
+    } catch {
+      // 删除失败：保留 .running.json 供 list/show 检测（不阻断主流程）
     }
 
     // 重新读取以拿到 _xenon_meta（writer 已注入）
@@ -612,12 +622,10 @@ const listSubcommand = defineCommand({
           proofs.length > 0
             ? `Registered proofs:\n${proofs
                 .map((p) => {
-                  const tag = p.inProgress
-                    ? ' [in-progress]'
-                    : p.frozenVerdict
-                      ? ` [${p.frozenVerdict}]`
-                      : ' [no run yet]'
-                  return `  - ${p.name}${tag}`
+                  // v0.1.3 PR-2: in-progress 优先于 frozen verdict 标记
+                  if (p.inProgress) return `  - ${p.name} [in-progress]`
+                  const verdict = p.frozenVerdict ? ` [${p.frozenVerdict}]` : ' [no run yet]'
+                  return `  - ${p.name}${verdict}`
                 })
                 .join('\n')}`
             : 'No proofs registered. Run `oxn proof create <name>` to create one.',
@@ -652,18 +660,31 @@ const showSubcommand = defineCommand({
       })
     }
 
+    // v0.1.3 PR-2: 检测 .running.json 残留 → 报告 in-progress
+    // 残留意味着上次 run Phase 3 删 .running.json 失败（崩溃/OS 错误/权限）
+    // 不阻断读 frozen.json，但显眼提示数据可能 stale
     const inProgress = existsSync(runningPath)
-    const data: Record<string, unknown> = { ...r.frozen, signatureValid: true, inProgress }
-    const human = inProgress
-      ? `${renderShowHuman(r.frozen)}\n\n⚠️  Warning: .running.json exists — last \`oxn proof run\` may have crashed. Re-run to recover.`
-      : renderShowHuman(r.frozen)
 
-    output({ ok: true, data, human }, format)
+    output(
+      {
+        ok: true,
+        data: { ...r.frozen, signatureValid: true, inProgress },
+        human: renderShowHuman(r.frozen, inProgress),
+      },
+      format,
+    )
   },
 })
 
-function renderShowHuman(frozen: import('../kernel/schemas/proof-schema').FrozenProof): string {
+function renderShowHuman(
+  frozen: import('../kernel/schemas/proof-schema').FrozenProof,
+  inProgress: boolean = false,
+): string {
   const lines: string[] = []
+  if (inProgress) {
+    lines.push(`⚠️ .running.json 残留：上次 run 可能中途崩溃，本次 verdict 来自上一次成功落盘的 frozen.json`)
+    lines.push('')
+  }
   lines.push(`Proof: ${frozen.name}`)
   lines.push(`Verdict: ${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount})`)
   lines.push(`Run at: ${frozen.runAt}`)
@@ -697,4 +718,4 @@ export default defineCommand({
 })
 
 // 导出辅助函数（供测试与外部调用）
-export { getProofDir, getProofFrozenPath, getProofOxnPath, getProofRunningPath, parseProofFile, proofProbesToIR }
+export { getProofDir, getProofFrozenPath, getProofOxnPath, parseProofFile, proofProbesToIR }

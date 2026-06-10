@@ -4,12 +4,14 @@
 // 覆盖 IAPError 字典 v1.1 收敛：
 //   1. IAPErrorContext 域的 IAPErrorCode term desc 描述 8 个错误码
 //   2. 字典 invariant 收敛为 8 IAPError + 3 OXNCrash = 11
-//   3. WorkContext 域含 v1.1 lock 守卫术语（BirthCert/PlanLock/AssetHash）
+//   3. v1.1 域含 lock 守卫术语（BirthCert/PlanLock/AssetHash/WorkRemoved）
 //   4. 3 个 v1.1 ALIGN 错误名（LOCK_NOT_FOUND/LOCK_HASH_MISMATCH/WORK_REMOVED）出现
 //   5. ban 列表禁了 v1.0.2 废弃码（ALIGN_TIMEOUT/ALIGN_MISMATCH/INTENT_SLOT_CONFLICT）
 //   6. oxn domain validate IAPErrorContext 解析通过（v1.1 语法）
-//   7. oxn domain validate WorkContext 解析通过
-//   8. v1.1 lock invariant 包含 "PlanLock" "LOCK_HASH_MISMATCH" "WORK_REMOVED" 关键词
+//   7. v1.1 lock invariant 包含 "PlanLock" "LOCK_HASH_MISMATCH" "WORK_REMOVED" 关键词
+//
+// 注：work-context.oxn 在 v0.1 重组中并入 AlignDomain（align-domain.oxn），
+//    本套件不再覆盖独立 work-context.oxn。Align 词汇统一见 align-domain.oxn。
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
@@ -21,9 +23,6 @@ const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
 const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..')
 const DOMAINS_DIR = join(PROJECT_ROOT, '.openxenon', 'domains')
 const IAP_DOMAIN = join(DOMAINS_DIR, 'iap-error-context.oxn')
-// v0.1 重构：work-context.oxn 已合并进 align-domain.oxn（保留全部 term/ban/invariant）
-// test 8/9/12 改测 align-domain.oxn
-const WORK_DOMAIN = join(DOMAINS_DIR, 'align-domain.oxn')
 
 describe('IAPError 字典 v1.1 收敛（PR-11）', () => {
   test('1. IAPErrorContext 域文件含 8 个 IAPError 错误码描述', () => {
@@ -89,27 +88,7 @@ describe('IAPError 字典 v1.1 收敛（PR-11）', () => {
     expect(content).toContain('oxn work migrate（PR-10）')
   })
 
-  test('8. WorkContext 域含 v1.1 lock 术语 + 迁移术语', () => {
-    const content = readFileSync(WORK_DOMAIN, 'utf-8')
-    expect(content).toMatch(/"BirthCert":/)
-    expect(content).toMatch(/"PlanLock":/)
-    expect(content).toMatch(/"AssetHash":/)
-    expect(content).toMatch(/"WorkLayoutV0":/)
-    expect(content).toMatch(/"WorkLayoutV1":/)
-    expect(content).toMatch(/"MigratedV0Dir":/)
-  })
-
-  test('9. WorkContext 域含 v1.1 lock invariant + migrate invariant', () => {
-    const content = readFileSync(WORK_DOMAIN, 'utf-8')
-    expect(content).toContain('Work 必须经过 validate → lock 才能 run/context')
-    expect(content).toContain('锁状态在 .work.planLock 静态卡中')
-    expect(content).toContain('lock 后任何 .oxn 资产漂移')
-    expect(content).toContain('LOCK_HASH_MISMATCH')
-    expect(content).toContain('Work 必须存在 .run/state.json（V1 布局）')
-    expect(content).toContain('MigratedV0Dir 保留 V0 备份供审计')
-  })
-
-  test('10. IAPError v1.1 与 v1.0.2 唯一差异：ALIGN 轴 +3（lock 守卫）', () => {
+  test('8. IAPError v1.1 与 v1.0.2 唯一差异：ALIGN 轴 +3（lock 守卫）', () => {
     const content = readFileSync(IAP_DOMAIN, 'utf-8')
     // v1.0.2: ALIGN:1（CHECKLIST_MISSING）
     // v1.1:   ALIGN:4（CHECKLIST_MISSING, LOCK_NOT_FOUND, LOCK_HASH_MISMATCH, WORK_REMOVED）
@@ -161,36 +140,7 @@ describe('IAPError 字典 v1.1 解析可执行性', () => {
     expect(json.data.description).toContain('v1.1')
   })
 
-  test('12. oxn init + domain validate WorkContext 解析通过', async () => {
-    const init = Bun.spawn(['bun', CLI_PATH, 'init'], {
-      cwd: tmpDir,
-      env: { ...process.env, NO_COLOR: '1' },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    await init.exited
-    expect(init.exitCode).toBe(0)
-
-    const content = readFileSync(WORK_DOMAIN, 'utf-8')
-    mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'domains', 'align-domain.oxn'), content)
-
-    const v = Bun.spawn(['bun', CLI_PATH, 'domain', 'validate', 'AlignDomain', '--json'], {
-      cwd: tmpDir,
-      env: { ...process.env, NO_COLOR: '1' },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const out = await new Response(v.stdout).text()
-    const json = JSON.parse(out)
-    expect(json.ok).toBe(true)
-    expect(json.data.name).toBe('AlignDomain')
-    // AlignDomain description 包含 v1.1 lock 边界守卫的描述关键字
-    expect(json.data.description).toContain('v1.1')
-    expect(json.data.description).toContain('lock 边界守卫')
-  })
-
-  test('13. 真实项目 oxn domain list 列出 v1.1 IAPErrorContext', async () => {
+  test('12. 真实项目 oxn domain list 列出 v1.1 IAPErrorContext', async () => {
     const v = Bun.spawn(['bun', CLI_PATH, 'domain', 'list', '--json'], {
       cwd: PROJECT_ROOT,
       env: { ...process.env, NO_COLOR: '1' },
@@ -204,22 +154,5 @@ describe('IAPError 字典 v1.1 解析可执行性', () => {
     expect(iap).toBeDefined()
     expect(iap.description).toContain('v1.1')
     expect(iap.description).toContain('8 IAPError + 3 OXNCrash')
-  })
-
-  test('14. 真实项目 oxn domain list 列出 v1.1 AlignDomain（含 lock 边界守卫术语）', async () => {
-    const v = Bun.spawn(['bun', CLI_PATH, 'domain', 'list', '--json'], {
-      cwd: PROJECT_ROOT,
-      env: { ...process.env, NO_COLOR: '1' },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    const out = await new Response(v.stdout).text()
-    const json = JSON.parse(out)
-    expect(json.ok).toBe(true)
-    // v0.1 重构：原 WorkContext term 已合并进 AlignDomain（v1.1 lock 守卫术语在 term 块内）
-    const align = json.data.domains.find((d) => d.name === 'AlignDomain')
-    expect(align).toBeDefined()
-    // filePath 指向新域（不是 archive）
-    expect(align.file).toBe('align-domain.oxn')
   })
 })
