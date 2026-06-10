@@ -14,7 +14,7 @@
 //   - intent-align-context.oxn Align 段 → AlignDomain "Align/Slot/Part/Probe/RefPool/SkillContext"
 
 domain "AlignDomain" {
-  description = "Align 轴统一词汇：Work 沙盒生命周期 + Skill 安装分发 + IAP Align 段（Slot/Part/Probe/RefPool）的合并域"
+  description = "Align 轴统一词汇 v1.1：Work 沙盒生命周期 + Skill 安装分发 + IAP Align 段（Slot/Part/Probe/RefPool）的合并域；含 v1.1 lock 边界守卫术语（BirthCert/PlanLock/AssetHash）"
 
   // ====================================================================
   // 术语（term 块单数：Work 17 + Skill 7 + Align 6 = 30 个）
