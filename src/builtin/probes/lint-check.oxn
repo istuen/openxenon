@@ -1,0 +1,7 @@
+probe "lint-check" align "LintCheck" {
+  description = "跑 biome check 验证代码风格（exit 0 → PASS；需项目装 biome）"
+  prop "path" { type = string; required = false }
+  prop "apply" { type = boolean; required = false; default = false }
+  prop "timeout" { type = number; required = false; default = 60000 }
+  output { passed = boolean; exitCode = number; issueCount = number }
+}

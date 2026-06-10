@@ -1,0 +1,6 @@
+probe "deps-resolved" align "DepsResolved" {
+  description = "验证 package.json 声明的所有依赖都被 lockfile 解析（missing.length === 0 → PASS）"
+  prop "packageJson" { type = string; required = false }
+  prop "lockfile" { type = string; required = false }
+  output { missing = list<string>; declaredCount = number; resolvedCount = number; lockfilePath = string }
+}
