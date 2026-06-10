@@ -1,0 +1,89 @@
+// Domain: IntentDomain
+// Intent 轴统一词汇（v0.1 重组版）— 由原 cli-context / dsl-context / program-context 合并而来
+//
+// 物理边界（IAP 范式）：
+//   - 本域是「工程师主导的 Intent 轴」在 .openxenon/ 下的统一入口
+//   - 与 align-domain.oxn / proof-domain.oxn 通过 context_map 显式连接（不互相 include）
+//   - 与 L0L3Context.oxn（OXN 元域投影）正交：L0L3 约束代码分层，IntentDomain 约束业务词汇
+//
+// 重组前（v0.0.x）→ 重组后（v0.1）：
+//   - cli-context.oxn   → IntentDomain "Command / SubCommand / Arg / OutputFormat / ErrorCode"
+//   - dsl-context.oxn   → IntentDomain "Grammar / Schema / Validator / Compiler / AST / IR"
+//   - program-context.oxn → IntentDomain "SourceFile / Module / TestCase / Package / APIEndpoint"
+
+domain "IntentDomain" {
+  description = "Intent 轴统一词汇：CLI 入口、OXN DSL 自身、Program 业务概念三件套的合并域；与 align-domain / proof-domain 通过 IAP 三轴分工隔离"
+
+  // ====================================================================
+  // 术语（term 块单数：CLI 入口 6 + OXN DSL 8 + Program 业务 6 = 20 个）
+  // ====================================================================
+
+  term {
+    // ───────── CLI 入口（6）─────────
+    "Command":      "CLI 顶级命令（init/work/leader/blueprint/domain/...）"
+    "SubCommand":   "命令的子命令（如 work task create）"
+    "Arg":          "命令参数（必填或可选）"
+    "OutputFormat": "输出格式（human/json/yaml/html/md）"
+    "ErrorCode":    "标准化错误码（OXN_ 前缀；具体字典见 iap-error-context.oxn）"
+    "Skill":        "嵌入到 AI 助手的命令手册（.opencode/skills/；详细见 align-domain）"
+
+    // ───────── OXN DSL（8）─────────
+    "Grammar":   "Langium 语法定义（.langium 文件）"
+    "Schema":    "Zod 校验 schema，对应语法的中间表示"
+    "Validator": "语法/语义校验器，编译期检查"
+    "Compiler":  "把 .oxn 编译为 AssemblyIR 的编译器"
+    "AST":       "抽象语法树，Langium 解析产物"
+    "IR":        "AssemblyIR 中间表示，Zod 校验的强类型数据"
+    "Token":     "词法单元，由 lexer 产生"
+    "Entity":    "顶层声明（Probe/Part/Blueprint/Domain/Work）"
+
+    // ───────── Program 业务概念（6，服务 6 P1 Probes）─────────
+    "SourceFile":    "项目里的 .ts/.js/.tsx/.jsx 源文件"
+    "Module":        "有具名 exports 的源文件（运行时真相 = 实际导出列表）"
+    "TestCase":      "*.test.ts 里的单个 test(name, fn) 调用"
+    "Package":       "package.json 里的 dependencies / devDependencies 项"
+    "BuildArtifact": "tsc / bun build 生成的 dist/ 产物（V2 future）"
+    "APIEndpoint":   "HTTP URL pattern + method（GET/POST/...）"
+  }
+
+  // ====================================================================
+  // 禁词（ban 块单数：CLI 3 + DSL 3 + Program 5 = 11 个）
+  // ====================================================================
+
+  ban {
+    // CLI 入口
+    "Flag", "Option", "Switch",
+    // DSL 自身
+    "ParserImpl", "LexerImpl", "GrammarFile",
+    // Program 业务
+    "image-only-asset", "absoluteFileURL", "var", "document.", "window."
+  }
+
+  // ====================================================================
+  // 不变量
+  // ====================================================================
+
+  // ───────── CLI 入口 ─────────
+  invariant { "所有错误码必须以 OXN_ 前缀（便于过滤）；完整字典见 iap-error-context.oxn 11 总数收敛" }
+  invariant { "AI 调用必须传 --json，CLI 默认 human 模式" }
+  invariant { "子命令名使用 kebab-case（与 align-domain 的 Skill ID 命名一致）" }
+
+  // ───────── OXN DSL ─────────
+  invariant { "oxn.langium 是 DSL 的唯一权威来源，AST 由 langium generate 自动产出" }
+  invariant { "Zod schema 必须与 grammar 一一对应，缺一个就 broken" }
+  invariant { "所有 validator 必须通过 registerOxnValidators 注册，否则不生效" }
+  invariant { "新增 grammar 字段时必须保持向后兼容（旧 .oxn 文件仍能解析）" }
+
+  // ───────── Program 业务 ─────────
+  invariant { "6 个 term 与 6 个 P1 Probes 一一对应（test-pass/TestCase 等）" }
+  invariant { "Probe 名以 kebab-case 暴露给 AI（如 test-pass），内部以 snake_case 注册（如 test_pass）" }
+  invariant { "test-pass 复用 shell-exec 内部 API（DRY：probe 不重复 spawn 逻辑）" }
+  invariant { "deps-resolved 优先解析 bun.lock，失败 fallback package.json 即可" }
+  invariant { "http-responds 默认 timeout 5s（防止 AI 触发真实网络挂起）" }
+  invariant { "file-exports 默认在子进程跑（防止顶层副作用污染主进程）" }
+
+  // ───────── 跨域分工（与 align / proof / L0L3 的边界）─────────
+  invariant { "CLI/DSL/Program 词汇归 Intent 轴；Align 轴专属词（Work/Task/Part/RefPool）见 align-domain.oxn" }
+  invariant { "Probe 注册表与 IAPError 双轨制见 proof-domain.oxn（Runtime 模块亦在彼处）" }
+  invariant { "本域与 L0L3Context.oxn 正交：本域约束业务 Intent 词汇，L0L3 约束代码分层" }
+}
