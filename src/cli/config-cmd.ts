@@ -20,6 +20,8 @@ import {
   type LeaderMode,
   type OxnConfig,
 } from './config-loader'
+import { readProjectConfig } from './project-config-io'
+import { DEFAULT_ADAPTERS, type SkillAdapterId } from '../skills/adapters'
 
 const SUPPORTED_SET_KEYS = ['leaderMode'] as const
 type SupportedSetKey = (typeof SUPPORTED_SET_KEYS)[number]
@@ -45,7 +47,7 @@ function writeConfigFile(config: OxnConfig): string {
   if (!existsSync(dirname(path))) {
     mkdirSync(dirname(path), { recursive: true })
   }
-  writeFileSync(path, JSON.stringify(config, null, 2) + '\n', 'utf-8')
+  writeFileSync(path, `${JSON.stringify(config, null, 2)}\n`, 'utf-8')
   return path
 }
 
@@ -66,6 +68,8 @@ const showSubcommand = defineCommand({
       .join('=')
     const envValue = process.env.OXN_LEADER_MODE
     const resolved = resolveLeaderMode({ cliFlag, envValue, projectConfig: config })
+    const projectConfig = readProjectConfig(projectRoot)
+    const tools = projectConfig?.tools
     output(
       {
         ok: true,
@@ -75,8 +79,14 @@ const showSubcommand = defineCommand({
           defaults: { leaderMode: DEFAULT_LEADER_MODE },
           projectConfig: config,
           projectConfigPath: join(projectRoot, OXN_RC_FILENAME),
+          openxenon: {
+            config: projectConfig,
+            path: join(projectRoot, '.openxenon', 'config.json'),
+          },
+          tools: formatToolsForShow(tools),
           ...(warning ? { warning } : {}),
         },
+        human: formatShowHuman(resolved.mode, resolved.source, projectConfig, tools),
       },
       format,
     )
@@ -150,3 +160,50 @@ const configCommand = defineCommand({
 })
 
 export default configCommand
+
+function formatToolsForShow(tools: { enabled?: SkillAdapterId[]; disabled?: SkillAdapterId[] } | undefined | null) {
+  if (!tools) {
+    return { active: [...DEFAULT_ADAPTERS], source: 'default' as const }
+  }
+  if (tools.enabled && tools.enabled.length > 0) {
+    return { active: [...tools.enabled], source: 'enabled' as const, enabled: [...tools.enabled] }
+  }
+  if (tools.disabled && tools.disabled.length > 0) {
+    const remaining = DEFAULT_ADAPTERS.filter((id) => !tools.disabled!.includes(id))
+    return { active: remaining, source: 'disabled' as const, disabled: [...tools.disabled] }
+  }
+  return { active: [...DEFAULT_ADAPTERS], source: 'default' as const }
+}
+
+function formatShowHuman(
+  leaderMode: string,
+  source: string,
+  projectConfig: ReturnType<typeof readProjectConfig>,
+  tools: { enabled?: SkillAdapterId[]; disabled?: SkillAdapterId[] } | undefined,
+): string {
+  const lines = [`项目配置 (.oxnrc):`, `  leaderMode: ${leaderMode} (source: ${source})`]
+  if (projectConfig) {
+    lines.push(`  mode: ${projectConfig.mode}`)
+    lines.push(`  locale: ${projectConfig.locale || 'zh-CN'}`)
+    if (projectConfig.name) lines.push(`  name: ${projectConfig.name}`)
+  }
+  lines.push(`Skill 工具 (tools):`)
+  if (!tools) {
+    lines.push(`  ${DEFAULT_ADAPTERS.join(', ')} (default)`)
+  } else if (tools.enabled && tools.enabled.length > 0) {
+    if (
+      tools.enabled.length === DEFAULT_ADAPTERS.length &&
+      DEFAULT_ADAPTERS.every((id) => tools.enabled!.includes(id))
+    ) {
+      lines.push(`  ${tools.enabled.join(', ')} (default)`)
+    } else {
+      lines.push(`  enabled: ${tools.enabled.join(', ')}`)
+    }
+  } else if (tools.disabled && tools.disabled.length > 0) {
+    const remaining = DEFAULT_ADAPTERS.filter((id) => !tools.disabled!.includes(id))
+    lines.push(`  disabled: ${tools.disabled.join(', ')} → active: ${remaining.join(', ') || '(none)'}`)
+  } else {
+    lines.push(`  ${DEFAULT_ADAPTERS.join(', ')} (default)`)
+  }
+  return `${lines.join('\n')}\n`
+}

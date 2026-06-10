@@ -1,3 +1,5 @@
+import type { SkillAdapterId } from '../skills/adapters'
+
 export type SupportedLocale = 'zh-CN' | 'en'
 
 export const DEFAULT_LOCALE: SupportedLocale = 'zh-CN'
@@ -11,4 +13,8 @@ export interface ProjectConfig {
   name?: string
   createdAt?: number
   debug?: boolean
+  tools?: {
+    enabled?: SkillAdapterId[]
+    disabled?: SkillAdapterId[]
+  }
 }

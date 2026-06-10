@@ -3,6 +3,7 @@ import { t } from '../i18n'
 import { DEFAULT_LOCALE } from './project-config'
 import { getFormatFromArgs, output, outputError } from './output'
 import { readProjectConfig } from './project-config-io'
+import { DEFAULT_ADAPTERS, type SkillAdapterId } from '../skills/adapters'
 
 export default defineCommand({
   meta: {
@@ -39,10 +40,30 @@ export default defineCommand({
 
     return output(
       {
-        data: config,
-        human: `项目配置:\n  mode: ${config.mode}\n  locale: ${config.locale || DEFAULT_LOCALE}\n  debug: ${config.debug ? 'enabled' : 'disabled'}\n  name: ${config.name || 'unnamed'}\n`,
+        data: { ...config, tools: formatToolsLine(config.tools) },
+        human: `项目配置:\n  mode: ${config.mode}\n  locale: ${config.locale || DEFAULT_LOCALE}\n  debug: ${config.debug ? 'enabled' : 'disabled'}\n  name: ${config.name || 'unnamed'}\n  tools: ${formatToolsLine(config.tools)}\n`,
       },
       format,
     )
   },
 })
+
+function formatToolsLine(tools: { enabled?: SkillAdapterId[]; disabled?: SkillAdapterId[] } | undefined): string {
+  if (!tools) {
+    return `${DEFAULT_ADAPTERS.join(', ')} (default)`
+  }
+  if (tools.enabled && tools.enabled.length > 0) {
+    if (
+      tools.enabled.length === DEFAULT_ADAPTERS.length &&
+      DEFAULT_ADAPTERS.every((id) => tools.enabled!.includes(id))
+    ) {
+      return `${tools.enabled.join(', ')} (default)`
+    }
+    return `enabled: ${tools.enabled.join(', ')}`
+  }
+  if (tools.disabled && tools.disabled.length > 0) {
+    const remaining = DEFAULT_ADAPTERS.filter((id) => !tools.disabled!.includes(id))
+    return `disabled: ${tools.disabled.join(', ')} → active: ${remaining.join(', ') || '(none)'}`
+  }
+  return `${DEFAULT_ADAPTERS.join(', ')} (default)`
+}

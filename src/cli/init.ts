@@ -4,13 +4,14 @@ import { join } from 'path'
 import { t } from '../i18n'
 import { BOUNDARY_DIR } from '../kernel/constants'
 import { GLOBAL_BOUNDARY_PATH } from '../infra/global'
-import { autoRebuildBlueprintIndex } from '../oxn-dsl/compiler/blueprint-index-builder'
 import { autoRebuildDomainIndex } from './domain'
+import { autoRebuildBlueprintIndex } from '../oxn-dsl/compiler/blueprint-index-builder'
 import type { ProjectConfig, SupportedLocale } from './project-config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './project-config'
 import { getFormatFromArgs, output, outputError } from './output'
 import { readProjectConfig, writeProjectConfig } from './project-config-io'
 import { compileAllSkills, formatCompilationReport } from './skill-compiler'
+import { DEFAULT_ADAPTERS, isSkillAdapterId, type SkillAdapterId } from '../skills/adapters'
 
 const PROJECT_BOUNDARY_GITIGNORE = `# Runtime state (not for Git; personal/sandbox data)
 works/
@@ -35,17 +36,77 @@ function ensureGlobalBoundary(): void {
 
 function ensureProjectBoundary(projectRoot: string): void {
   const boundaryPath = join(projectRoot, BOUNDARY_DIR)
-
   if (!existsSync(boundaryPath)) {
     mkdirSync(boundaryPath, { recursive: true })
   }
-
-  // Auto-write .gitignore to separate source (.oxn) from runtime (works/, state files).
-  // Only writes if missing — never overwrites user customizations.
   const gitignorePath = join(boundaryPath, '.gitignore')
   if (!existsSync(gitignorePath)) {
     writeFileSync(gitignorePath, PROJECT_BOUNDARY_GITIGNORE, 'utf-8')
   }
+}
+
+function uniqueTools(ids: SkillAdapterId[]): SkillAdapterId[] {
+  return Array.from(new Set(ids))
+}
+
+function resolveTools(
+  args: {
+    tools?: string[] | string
+    withoutTools?: string[] | string
+    resetTools?: boolean
+  },
+  existingTools: ProjectConfig['tools'] | undefined,
+): SkillAdapterId[] {
+  if (args.resetTools) {
+    return [...DEFAULT_ADAPTERS]
+  }
+
+  const cliWhitelist = normalizeList(args.tools)
+  if (cliWhitelist.length > 0) {
+    for (const id of cliWhitelist) {
+      if (!isSkillAdapterId(id)) {
+        throw new Error(`OXN_INVALID_TOOL: 未知 tool id "${id}"。合法值: ${DEFAULT_ADAPTERS.join(', ')}`)
+      }
+    }
+    return uniqueTools(cliWhitelist as SkillAdapterId[])
+  }
+
+  if (existingTools?.enabled && existingTools.enabled.length > 0) {
+    for (const id of existingTools.enabled) {
+      if (!isSkillAdapterId(id)) {
+        throw new Error(
+          `OXN_INVALID_TOOL: config.tools.enabled 含未知 id "${id}"。合法值: ${DEFAULT_ADAPTERS.join(', ')}`,
+        )
+      }
+    }
+    return uniqueTools(existingTools.enabled)
+  }
+
+  const cliBlacklist = normalizeList(args.withoutTools)
+  const configBlacklist = existingTools?.disabled ?? []
+  const allBlack = new Set([...cliBlacklist, ...configBlacklist])
+  for (const id of allBlack) {
+    if (!isSkillAdapterId(id)) {
+      throw new Error(`OXN_INVALID_TOOL: 黑名单含未知 id "${id}"。合法值: ${DEFAULT_ADAPTERS.join(', ')}`)
+    }
+  }
+  return DEFAULT_ADAPTERS.filter((id) => !allBlack.has(id))
+}
+
+function normalizeList(v: string[] | string | undefined): string[] {
+  if (!v) return []
+  if (Array.isArray(v))
+    return v
+      .flatMap((x) =>
+        String(x)
+          .split(',')
+          .map((s) => s.trim()),
+      )
+      .filter(Boolean)
+  return String(v)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
 }
 
 export default defineCommand({
@@ -76,6 +137,19 @@ export default defineCommand({
       type: 'string',
       description: `语言/Locale (${SUPPORTED_LOCALES.join(', ')})`,
       default: DEFAULT_LOCALE,
+    },
+    tools: {
+      type: 'string',
+      description: `Skill 分发的目标 AI 助手 (白名单，可重复/逗号分隔；合法: ${DEFAULT_ADAPTERS.join(', ')})`,
+    },
+    'without-tools': {
+      type: 'string',
+      description: '排除某个 AI 助手 (黑名单，可重复/逗号分隔)',
+    },
+    'reset-tools': {
+      type: 'boolean',
+      description: '忽略现有 config.tools，按 DEFAULTS 全部分发',
+      default: false,
     },
     '--json': {
       type: 'boolean',
@@ -125,6 +199,25 @@ export default defineCommand({
           updated = true
           message += `\n  ${t('init.localeUpdated', { locale: existingConfig.locale })}`
         }
+
+        const resetTools = ctx.args['reset-tools'] === true
+        if (resetTools) {
+          existingConfig.tools = undefined
+          updated = true
+          message += `\n  tools 配置已重置为 DEFAULTS`
+        } else {
+          const merged = mergeToolsConfig(existingConfig.tools, {
+            enabled: normalizeList(ctx.args.tools as string[] | string | undefined),
+            disabled: normalizeList(ctx.args['without-tools'] as string[] | string | undefined),
+          })
+          if (merged.changed) {
+            existingConfig.tools = merged.value
+            updated = true
+            const toolsList = (merged.value?.enabled ?? merged.value?.disabled ?? []).join(', ')
+            message += `\n  tools 配置已更新: ${toolsList}`
+          }
+        }
+
         if (updated) {
           writeProjectConfig(projectPath, existingConfig)
         }
@@ -136,14 +229,32 @@ export default defineCommand({
           name: projectName,
           createdAt: Date.now(),
         }
+        const resolved = resolveTools(
+          {
+            tools: ctx.args.tools as string[] | string | undefined,
+            withoutTools: ctx.args['without-tools'] as string[] | string | undefined,
+            resetTools: ctx.args['reset-tools'] === true,
+          },
+          undefined,
+        )
+        config.tools = { enabled: resolved }
         writeProjectConfig(projectPath, config)
         message = t('init.projectInitialized', { name: projectName, locale })
       }
 
-      const report = compileAllSkills('opencode', projectPath, force)
+      const toolIds = resolveTools(
+        {
+          tools: ctx.args.tools as string[] | string | undefined,
+          withoutTools: ctx.args['without-tools'] as string[] | string | undefined,
+          resetTools: ctx.args['reset-tools'] === true,
+        },
+        existingConfig?.tools,
+      )
+
+      const report = compileAllSkills(toolIds, projectPath, force)
       const reportStr = formatCompilationReport(report)
 
-      // PR-1: init 后静默重建全局 Domain 索引（即便 .openxenon/domains/ 不存在也安全）
+      // PR-1: init 后静默重建全局 Domain 索引
       const domainIndexRebuild = autoRebuildDomainIndex(projectPath)
       const domainIndexStatus = domainIndexRebuild.ok
         ? domainIndexRebuild.indexPath
@@ -151,7 +262,7 @@ export default defineCommand({
           : 'no domains yet (index will be built on first `oxn domain create`)'
         : `failed: ${domainIndexRebuild.error}`
 
-      // PR-X: init 后静默重建全局 Blueprint slim 索引（与 Domain 对称）
+      // PR-X: init 后静默重建全局 Blueprint 索引
       const blueprintIndexRebuild = autoRebuildBlueprintIndex(projectPath)
       const blueprintIndexStatus = blueprintIndexRebuild.ok
         ? blueprintIndexRebuild.indexPath
@@ -159,23 +270,36 @@ export default defineCommand({
           : 'no blueprints yet (index will be built on first `oxn blueprint create`)'
         : `failed: ${blueprintIndexRebuild.error}`
 
+      const toolsLine = `\n  Tools: ${toolIds.join(', ')}`
+
       return output(
         {
           data: {
             name: projectName,
             path: projectPath,
             mode: sandbox ? 'SANDBOX' : 'PRODUCTION',
+            tools: toolIds,
             skillsCompiled: report.total,
             skillsReport: reportStr,
             domainIndex: domainIndexStatus,
             blueprintIndex: blueprintIndexStatus,
           },
-          human: `${message}\n\n${t('init.compilingSkills', { adapter: 'opencode' })}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: '.opencode/skills/' })}\n\n✓ Domain index: ${domainIndexStatus}\n✓ Blueprint index: ${blueprintIndexStatus}`,
+          human: `${message}\n\n${t('init.compilingSkills')}${toolsLine}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: toolIds.map((id) => `./${idRootForHuman(id)}`).join(', ') })}\n\n✓ Domain index: ${domainIndexStatus}\n✓ Blueprint index: ${blueprintIndexStatus}`,
         },
         format,
       )
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err)
+      if (errorMsg.startsWith('OXN_INVALID_TOOL')) {
+        return outputError(
+          {
+            code: 'OXN_INVALID_TOOL',
+            message: errorMsg,
+            suggestion: `valid tools: ${DEFAULT_ADAPTERS.join(', ')}`,
+          },
+          format,
+        )
+      }
       return outputError(
         {
           code: 'OXN_INIT_FAILED',
@@ -186,3 +310,36 @@ export default defineCommand({
     }
   },
 })
+
+function idRootForHuman(id: SkillAdapterId): string {
+  if (id === 'opencode') return '.opencode/skills/'
+  if (id === 'claude') return '.claude/skills/'
+  return '.agents/skills/'
+}
+
+function mergeToolsConfig(
+  existing: ProjectConfig['tools'] | undefined,
+  incoming: { enabled: string[]; disabled: string[] },
+): { value: ProjectConfig['tools']; changed: boolean } {
+  if (incoming.enabled.length === 0 && incoming.disabled.length === 0) {
+    return { value: existing, changed: false }
+  }
+  const newEnabled = incoming.enabled.length > 0 ? (incoming.enabled as SkillAdapterId[]) : existing?.enabled
+  const newDisabled = incoming.disabled.length > 0 ? (incoming.disabled as SkillAdapterId[]) : existing?.disabled
+  const sameEnabled = arrayEqual(newEnabled, existing?.enabled)
+  const sameDisabled = arrayEqual(newDisabled, existing?.disabled)
+  if (sameEnabled && sameDisabled) {
+    return { value: existing, changed: false }
+  }
+  return { value: { enabled: newEnabled, disabled: newDisabled }, changed: true }
+}
+
+function arrayEqual<T>(a: T[] | undefined, b: T[] | undefined): boolean {
+  const aa = a ?? []
+  const bb = b ?? []
+  if (aa.length !== bb.length) return false
+  for (let i = 0; i < aa.length; i++) {
+    if (aa[i] !== bb[i]) return false
+  }
+  return true
+}
