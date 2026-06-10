@@ -19,7 +19,14 @@ import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
-import { BOUNDARY_DIR, PROOFS_DIR, PROOF_FROZEN_JSON, PROOF_OXN_FILE } from '../kernel/constants'
+import {
+  BOUNDARY_DIR,
+  CACHE_DIR,
+  PROBE_STATS_JSON,
+  PROOFS_DIR,
+  PROOF_FROZEN_JSON,
+  PROOF_OXN_FILE,
+} from '../kernel/constants'
 import {
   createOxnParser,
   isProofDeclaration,
@@ -31,6 +38,9 @@ import { getFormatFromArgs, output, outputError, outputUserInputError } from './
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
 import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/probes/catalog'
+import { updateProbeStats } from '../kernel/probes/probe-stats-updater'
+import { emptyProbeStats } from '../kernel/schemas/probe-stats-schema'
+import { readProbeStatsFromFile, writeProbeStatsToFile } from '../infra/probes/probe-stats-store'
 import { IAPError } from '../core/errors'
 
 // ---------------------------------------------------------------------------
@@ -451,6 +461,21 @@ const runSubcommand = defineCommand({
     // 重新读取以拿到 _xenon_meta（writer 已注入）
     const readBack = readFrozenProof(frozenPath)
     const frozen = readBack.frozen
+
+    // v0.1.2: 追加 probe 执行历史到全局 .cache/probe-stats.json
+    // 编排仅发生在 L3-CLI：L0-Processor 纯函数合并 + L1-Infra IO 写盘。
+    // 写失败不影响 verdict 返回（主流程已落 frozen.json）。
+    if (frozen) {
+      try {
+        const projectRoot = getProjectRoot()
+        const statsPath = join(projectRoot, BOUNDARY_DIR, CACHE_DIR, PROBE_STATS_JSON)
+        const existing = readProbeStatsFromFile(statsPath) ?? emptyProbeStats(projectRoot)
+        const updated = updateProbeStats(existing, frozen)
+        writeProbeStatsToFile(statsPath, updated)
+      } catch (e) {
+        process.stderr.write(`warning: probe-stats.json update failed: ${e instanceof Error ? e.message : String(e)}\n`)
+      }
+    }
 
     output(
       {

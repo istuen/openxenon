@@ -25,6 +25,13 @@ export const CANONICAL_FILE = 'canonical.yaml'
 export const PROOF_OXN_FILE = 'proof.oxn'
 export const PROOF_FROZEN_JSON = 'frozen.json'
 
+// v0.1.2: 全局 Probe 执行历史（Proof-First 闭环的"记忆"）
+//   .openxenon/.cache/probe-stats.json  — 派生数据，可重建；非 frozen，不签名
+//   每次 `oxn proof run` 完成后由 L3-CLI 编排：L0-Processor 纯函数合并 + L1-Infra 写盘
+export const PROBE_STATS_JSON = 'probe-stats.json'
+/** proofRuns 数组上限：FIFO 截断，防止无限增长 */
+export const MAX_PROOF_RUNS = 1000
+
 // =============================================================================
 // Work 空间运行时文件命名范式（V1 — PR-4 切换）
 //

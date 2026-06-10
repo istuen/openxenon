@@ -428,6 +428,12 @@ export function getCatalogEntry(name: string): ProbeCatalogEntry | null {
   return PROBE_CATALOG.find((p) => p.semanticName === name) ?? null
 }
 
+/** 内部用：从 internalRef 反查 semanticName（frozen.json 用） */
+export function getSemanticNameByInternalRef(internalRef: string): string | null {
+  const entry = PROBE_CATALOG.find((p) => p.internalRef === internalRef)
+  return entry?.semanticName ?? null
+}
+
 // ---------------------------------------------------------------------------
 // 翻译层
 // ---------------------------------------------------------------------------
