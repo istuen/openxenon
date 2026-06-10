@@ -1,30 +1,42 @@
-// Blueprint: dev-workflow
-// Created by: oxn blueprint new --name dev-workflow --slots build,develop,test,verify
+// .openxenon/blueprints/dev-workflow.oxn
 //
-// Edit goal/description/props/slots as needed. The mvp-style
-// `context` and per-part `skill` blocks are optional (unified grammar superset).
-// After editing, validate with:
-//   oxn blueprint validate dev-workflow
-// Then drive it with:
-//   oxn leader new --name <work-name> --blueprint-file .openxenon/blueprints/dev-workflow.oxn --json
+// 通用开发流水线（4 阶段，TypeScript 项目）
+// 拓扑：build → { develop, test } → verify
+//  - test 与 develop 并行，verify 在两者完成后 fan-in
+//
+// 用法：
+//   oxn work create <work-id> --blueprint dev-workflow
+//   在 work context.goal 写明要做的功能；task part 的 skill_context 写明该 slot 目标
 
 blueprint "dev-workflow" {
   version = 1
-  description = "TODO: 一句话描述这个 blueprint 做什么"
+  description = "TS 项目通用开发流程：构建（依赖图守卫）→ {开发（写代码）并行测试（写/补单测）} → 验证（lint+typecheck+test 全过）"
+
+  prop "timeout" { type = number; default = 60000 }
+  prop "strict" { type = boolean; default = true }
 
   slot "build" {
     deps = []
+    observe = ["deps-resolved"]
+    // 必跑：bun install --frozen-lockfile
+    // 目的：在动代码前先确认依赖图 + L0–L3 依赖守卫无新违规
   }
 
   slot "develop" {
     deps = ["build"]
+    observe = ["lint-check", "ts-compiles"]
+    // 写实际代码；阶段末尾必须 lint + typecheck 通过
   }
 
   slot "test" {
-    deps = ["develop"]
+    deps = ["build"]
+    observe = ["test-pass"]
+    // 写/补单测；可与 develop 并行（先有 develop 的接口，再补测试）
   }
 
   slot "verify" {
-    deps = ["test"]
+    deps = ["develop", "test"]
+    observe = ["lint-check", "ts-compiles", "test-pass"]
+    // fan-in 阶段：所有 observe 必须 PASS
   }
 }

@@ -1,0 +1,55 @@
+// .openxenon/blueprints/release-cut.oxn
+//
+// OpenXenon 自身发版流程
+// 拓扑：bump-version → gen-changelog → tag → verify-build → publish
+//
+// 关键约束：
+//   - 权威版本号在 package.json；.changes/<version>-<slug>.md 是 changelog 片段
+//   - bun run version:check / bun run version:sync 守护一致性
+//   - 跨平台编译产物（:macos / :linux / :windows）由 CI 生成，不在本地手跑
+//
+// 用法：
+//   oxn work create release-vX.Y.Z --blueprint release-cut
+//   在 work context.goal 写明要发的版本号 + 关联的 changes 片段列表
+
+blueprint "release-cut" {
+  version = 1
+  description = "OpenXenon 发版流程：bump 版本号 → 汇总 changelog → 打 tag → 验证 build 与 typecheck → 触发 CI 跨平台编译与发布"
+
+  prop "next_version" { type = string; required = true }
+  prop "release_branch" { type = string; default = "main" }
+
+  slot "bump-version" {
+    deps = []
+    observe = ["fs-parseable", "shell-exec"]
+    // 跑 bun run version:sync 同步 package.json 与所有源
+    // observe=fs-parseable 强制 package.json 是合法 JSON
+  }
+
+  slot "gen-changelog" {
+    deps = ["bump-version"]
+    observe = ["fs-exists", "fs-content-match"]
+    // 收集 .changes/ 下当版本的片段，合并到 CHANGELOG
+    // observe 强制 changelog 含新版本号
+  }
+
+  slot "tag" {
+    deps = ["gen-changelog"]
+    observe = ["shell-exec"]
+    // 打 git tag v<version>；push 由 CI 触发
+  }
+
+  slot "verify-build" {
+    deps = ["tag"]
+    observe = ["shell-exec", "ts-compiles", "test-pass"]
+    // 跑 bun run build + bun run typecheck + bun test
+    // 必产出：dist/oxn 单文件可执行
+  }
+
+  slot "publish" {
+    deps = ["verify-build"]
+    observe = ["shell-exec"]
+    // CI 阶段：跨平台编译 + 推送 release assets
+    // 本地 slot 仅校验 CI 配置存在（.github/workflows/）
+  }
+}

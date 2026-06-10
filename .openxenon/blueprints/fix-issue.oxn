@@ -1,30 +1,45 @@
-// Blueprint: fix-issue
-// Created by: oxn blueprint new --name fix-issue --slots diagnose,locate,fix,verify
+// .openxenon/blueprints/fix-issue.oxn
 //
-// Edit goal/description/props/slots as needed. The mvp-style
-// `context` and per-part `skill` blocks are optional (unified grammar superset).
-// After editing, validate with:
-//   oxn blueprint validate fix-issue
-// Then drive it with:
-//   oxn leader new --name <work-name> --blueprint-file .openxenon/blueprints/fix-issue.oxn --json
+// 问题修复标准工作流（4 阶段）
+// 拓扑：diagnose → locate → fix → verify
+//  - diagnose 必带源码取证 observe（不允许只"看着像"）
+//  - locate 必带证据落盘 observe
+//  - fix 必带类型/单测回归
+//  - verify fan-in 全跑一次
+//
+// 用法：
+//   oxn work create fix-<issue-id> --blueprint fix-issue
+//   在 work context.goal 写明 issue 链接 / 复现步骤 / 期望行为
 
 blueprint "fix-issue" {
   version = 1
-  description = "问题修复流程：诊断问题现象、定位根本原因、实施修复方案、验证修复结果"
+  description = "问题修复流程：诊断（带源码取证）→ 定位（带证据落盘）→ 修复（带回归）→ 验证（lint+typecheck+test 全过）"
+
+  prop "timeout" { type = number; default = 60000 }
+  prop "strict" { type = boolean; default = true }
 
   slot "diagnose" {
     deps = []
+    observe = ["fs-content-match"]
+    // 必产出：错误现象的最小复现 + 在源码中的字面证据
+    // observe=fs-content-match 强制 AI 给出"哪一行 / 哪个文件出问题"的具体文本
   }
 
   slot "locate" {
     deps = ["diagnose"]
+    observe = ["fs-exists"]
+    // 必产出：根因分析（设计缺陷 / 边界条件 / 副作用）落盘
   }
 
   slot "fix" {
     deps = ["locate"]
+    observe = ["ts-compiles", "test-pass"]
+    // 实施修复 + 补回归测试
   }
 
   slot "verify" {
     deps = ["fix"]
+    observe = ["lint-check", "ts-compiles", "test-pass"]
+    // 全量回归
   }
 }

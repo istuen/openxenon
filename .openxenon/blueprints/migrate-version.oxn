@@ -1,0 +1,56 @@
+// .openxenon/blueprints/migrate-version.oxn
+//
+// OpenXenon 数据资产（domain / blueprint / work / proof）跨大版本迁移
+// 拓扑：inspect-old → dry-run-migrate → manual-fixes → force-migrate → verify
+//
+// 关键约束：
+//   - 任何破坏性变更（v0.1 hard-switch）必须先 dry-run 看到差异
+//   - .changes/<version>-<slug>.md 是变更日志的权威载体
+//   - oxn work migrate 已有 dry-run / force / --work-name 子命令
+//
+// 用法：
+//   oxn work create migrate-v0x-to-v0y --blueprint migrate-version
+//   在 work context.goal 写明：from-version / to-version / 已知 breaking change 列表
+
+blueprint "migrate-version" {
+  version = 1
+  description = "跨大版本数据迁移：先盘点旧资产 → 预演迁移看到差异 → 手动修无法自动化的破坏 → 强制迁移 → 全量验证"
+
+  prop "from_version" { type = string; required = true }
+  prop "to_version" { type = string; required = true }
+  prop "backup_dir" { type = string; default = ".openxenon/_migration_backup" }
+
+  slot "inspect-old" {
+    deps = []
+    observe = ["fs-match", "fs-exists"]
+    // 盘点：哪些 domain / blueprint / work / proof 在新版会受影响
+    // 必产出：影响清单（路径 + 受影响的 breaking change 编号）
+  }
+
+  slot "dry-run-migrate" {
+    deps = ["inspect-old"]
+    observe = ["shell-exec"]
+    // 跑 oxn work migrate --dry-run --json
+    // 必产出：dry-run JSON（不写盘，仅诊断）
+  }
+
+  slot "manual-fixes" {
+    deps = ["dry-run-migrate"]
+    observe = ["fs-content-match", "fs-exists"]
+    // 修无法自动迁移的部分（旧 v0.0.x 语法 → v0.1 task 编排）
+    // observe 强制每个被改的资产都有新语法特征的字面证据
+  }
+
+  slot "force-migrate" {
+    deps = ["manual-fixes"]
+    observe = ["shell-exec"]
+    // 跑 oxn work migrate --force --json
+    // 写盘；自动备份到 backup_dir
+  }
+
+  slot "verify" {
+    deps = ["force-migrate"]
+    observe = ["lint-check", "ts-compiles", "test-pass"]
+    // 验证：lint + typecheck + bun test 全过
+  }
+}
