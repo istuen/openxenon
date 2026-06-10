@@ -22,8 +22,10 @@ export const CANONICAL_FILE = 'canonical.yaml'
 // Proof 空间（v0.1.2 Proof-First 入口）
 //   .openxenon/proofs/<name>/proof.oxn   — Probe 声明
 //   .openxenon/proofs/<name>/frozen.json — 判决书（不可篡改）
+//   .openxenon/proofs/<name>/.running.json — 临时文件（v0.1.3+ 三阶段 run；自指 probe 用）
 export const PROOF_OXN_FILE = 'proof.oxn'
 export const PROOF_FROZEN_JSON = 'frozen.json'
+export const PROOF_RUNNING_JSON = '.running.json'
 
 // v0.1.2: 全局 Probe 执行历史（Proof-First 闭环的"记忆"）
 //   .openxenon/.cache/probe-stats.json  — 派生数据，可重建；非 frozen，不签名

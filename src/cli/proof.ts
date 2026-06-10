@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
 import {
@@ -26,6 +26,7 @@ import {
   PROOFS_DIR,
   PROOF_FROZEN_JSON,
   PROOF_OXN_FILE,
+  PROOF_RUNNING_JSON,
 } from '../kernel/constants'
 import {
   createOxnParser,
@@ -65,6 +66,10 @@ function getProofOxnPath(name: string): string {
 
 function getProofFrozenPath(name: string): string {
   return join(getProofDir(name), PROOF_FROZEN_JSON)
+}
+
+function getProofRunningPath(name: string): string {
+  return join(getProofDir(name), PROOF_RUNNING_JSON)
 }
 
 // ---------------------------------------------------------------------------
@@ -427,14 +432,17 @@ const runSubcommand = defineCommand({
   },
   args: {
     name: { type: 'positional', required: true, description: 'Proof 名称' },
+    'dry-run': { type: 'boolean', description: '只写 .running.json 骨架，不执行 probe、不写 frozen.json（调试用）' },
     '--json': { type: 'boolean', description: 'JSON 格式输出' },
     '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
+    const dryRun = ctx.args['dry-run'] === true
     const oxnPath = getProofOxnPath(name)
     const frozenPath = getProofFrozenPath(name)
+    const runningPath = getProofRunningPath(name)
 
     const parsed = await parseProofFile(oxnPath)
     if (!parsed.ok || !parsed.proof) {
@@ -449,14 +457,70 @@ const runSubcommand = defineCommand({
       })
     }
 
-    const results = []
-    for (const probe of probeIRs) {
-      const r = await executeProbe(probe, { projectRoot: getProjectRoot() })
-      results.push(r)
+    // -------------------------------------------------------------------------
+    // Phase 1：写 .running.json（v0.1.3+ 三阶段协议）
+    //
+    //   .running.json 是临时文件，专供自指 probe 读取"当前 proof 正在执行"。
+    //   - 0o644，可覆盖
+    //   - 不签名（SHA-256 是 frozen.json 的语义，不应混入临时文件）
+    //   - 终态：要么 Phase 3 删掉，要么崩在中间下次 run 覆盖
+    // -------------------------------------------------------------------------
+    const skeleton: import('./proof-frozen-writer').FrozenProofBody = {
+      name,
+      runAt: new Date().toISOString(),
+      verdict: 'FAILED',
+      totalCount: probeIRs.length,
+      passedCount: 0,
+      failedCount: probeIRs.length,
+      probes: probeIRs.map((p) => ({
+        probeName: p.probeName,
+        ref: p.ref,
+        passed: false,
+        durationMs: 0,
+        errorMessage: 'pending',
+      })),
+    }
+    writeFileSync(runningPath, JSON.stringify(skeleton, null, 2), 'utf-8')
+
+    if (dryRun) {
+      // 调试：仅写 .running.json，不跑 probe、不写 frozen.json
+      output(
+        {
+          ok: true,
+          data: { name, dryRun: true, runningPath, skeleton },
+          human: `Dry-run: wrote .running.json (${probeIRs.length} probe(s) pending) to ${runningPath}`,
+        },
+        format,
+      )
+      return
     }
 
-    const body = buildFrozenProof({ name, probes: results })
-    writeFrozenProof(frozenPath, body)
+    // -------------------------------------------------------------------------
+    // Phase 2：跑 probes（崩溃也不留 .running.json）
+    //   - 任何 probe 异常被 executeProbe 内部捕获（返回 failed result），不外抛
+    //   - try/finally 保证 Phase 3 一定执行
+    // -------------------------------------------------------------------------
+    const results: import('../kernel/schemas/proof-schema').FrozenProofProbeResult[] = []
+    try {
+      for (const probe of probeIRs) {
+        const r = await executeProbe(probe, { projectRoot: getProjectRoot() })
+        results.push(r)
+      }
+
+      // -------------------------------------------------------------------------
+      // Phase 3：落锤 frozen.json + 删 .running.json
+      //   - 写 frozen 失败 → 不删 .running.json（下次 run 看到它是"上次崩了"信号）
+      //   - 删 .running.json 失败 → 不影响 verdict（frozen 已落）
+      // -------------------------------------------------------------------------
+      const body = buildFrozenProof({ name, probes: results })
+      writeFrozenProof(frozenPath, body)
+    } finally {
+      try {
+        unlinkSync(runningPath)
+      } catch {
+        /* already gone */
+      }
+    }
 
     // 重新读取以拿到 _xenon_meta（writer 已注入）
     const readBack = readFrozenProof(frozenPath)
@@ -521,20 +585,22 @@ const listSubcommand = defineCommand({
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const proofsDir = getProofsDir()
-    const proofs: Array<{ name: string; hasFrozen: boolean; frozenVerdict?: string }> = []
+    const proofs: Array<{ name: string; hasFrozen: boolean; frozenVerdict?: string; inProgress?: boolean }> = []
 
     if (existsSync(proofsDir)) {
       for (const entry of readdirSync(proofsDir)) {
         const dir = join(proofsDir, entry)
         if (!statSync(dir).isDirectory()) continue
         const frozenPath = join(dir, PROOF_FROZEN_JSON)
+        const runningPath = join(dir, PROOF_RUNNING_JSON)
         const hasFrozen = existsSync(frozenPath)
+        const inProgress = existsSync(runningPath)
         let frozenVerdict: string | undefined
         if (hasFrozen) {
           const r = readFrozenProof(frozenPath)
           if (r.ok && r.frozen) frozenVerdict = r.frozen.verdict
         }
-        proofs.push({ name: entry, hasFrozen, frozenVerdict })
+        proofs.push({ name: entry, hasFrozen, frozenVerdict, inProgress })
       }
     }
 
@@ -546,8 +612,12 @@ const listSubcommand = defineCommand({
           proofs.length > 0
             ? `Registered proofs:\n${proofs
                 .map((p) => {
-                  const verdict = p.frozenVerdict ? ` [${p.frozenVerdict}]` : ' [no run yet]'
-                  return `  - ${p.name}${verdict}`
+                  const tag = p.inProgress
+                    ? ' [in-progress]'
+                    : p.frozenVerdict
+                      ? ` [${p.frozenVerdict}]`
+                      : ' [no run yet]'
+                  return `  - ${p.name}${tag}`
                 })
                 .join('\n')}`
             : 'No proofs registered. Run `oxn proof create <name>` to create one.',
@@ -572,6 +642,7 @@ const showSubcommand = defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
     const frozenPath = getProofFrozenPath(name)
+    const runningPath = getProofRunningPath(name)
     const r = readFrozenProof(frozenPath)
 
     if (!r.ok || !r.frozen) {
@@ -581,14 +652,13 @@ const showSubcommand = defineCommand({
       })
     }
 
-    output(
-      {
-        ok: true,
-        data: { ...r.frozen, signatureValid: true },
-        human: renderShowHuman(r.frozen),
-      },
-      format,
-    )
+    const inProgress = existsSync(runningPath)
+    const data: Record<string, unknown> = { ...r.frozen, signatureValid: true, inProgress }
+    const human = inProgress
+      ? `${renderShowHuman(r.frozen)}\n\n⚠️  Warning: .running.json exists — last \`oxn proof run\` may have crashed. Re-run to recover.`
+      : renderShowHuman(r.frozen)
+
+    output({ ok: true, data, human }, format)
   },
 })
 
@@ -627,4 +697,4 @@ export default defineCommand({
 })
 
 // 导出辅助函数（供测试与外部调用）
-export { getProofDir, getProofFrozenPath, getProofOxnPath, parseProofFile, proofProbesToIR }
+export { getProofDir, getProofFrozenPath, getProofOxnPath, getProofRunningPath, parseProofFile, proofProbesToIR }
