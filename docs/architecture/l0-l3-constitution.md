@@ -117,7 +117,7 @@
 
 | 来源层 | 允许依赖 |
 |---|---|
-| **L0-Schema** | （无） |
+| **L0-Schema** | L0-Contract *(type-only，编译后消除)* |
 | **L0-Contract** | L0-Schema |
 | **L0-Processor** | L0-Schema, L0-Contract |
 | **L1-Infra** | L0-Schema, L0-Contract, L2-Builtin |
@@ -266,6 +266,17 @@ find src -maxdepth 2 -type d | sort
 - **建议 A**：把 `topologicalSortGeneric` 移到 L0-Schema 或 L0-Contract（保持纯函数）
 - **建议 B**：在 layer rules 中放开"L1-OXN-DSL 可调用 L0-Processor 的纯函数"特例
 - **决策方**：需在宪法层面讨论"纯函数工具"是否应有一个 L0-Utility 子层
+
+#### C-12（已文档化，🟢 Low）：L0-Schema → L0-Contract (type-only)
+
+- **位置**：`src/kernel/schemas/validators/compiled-schema.ts:2` `import type { HashPort } from '../../contracts/hash-port'`
+- **状态**：✅ **合法**，已写入 §4.1 表格（"type-only，编译后消除"）
+- **根因**：`compiled-schema.ts` 在 `createXenonMeta` 中需声明 `computeContentHash(content, hashPort: HashPort)` 的签名；`HashPort` 作为 Port 接口归 L0-Contract，但其**类型签名**（`computeHash: (content: string) => string`）在 L0-Schema 构造元数据时是必要依赖。
+- **为何 type-only 合法**：
+  1. `import type` 在 TypeScript 编译后**整行代码消失**（emit 阶段被擦除），零运行时耦合；
+  2. `validate-dependencies.ts` 的 `isTypeOnlyImport` 检测（§7.2.1 C-2 修复）已正确跳过；
+  3. DDD 视角：Schema 知道"元数据包含什么"是合理的——**类型签名是数据契约的一部分**。
+- **决策方**：架构师于 v0.1.4 审计批准
 
 ---
 
