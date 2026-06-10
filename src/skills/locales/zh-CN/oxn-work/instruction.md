@@ -1,14 +1,14 @@
-# /oxn-work — 发起 + 驱动 OpenXenon Work
+# /oxn-work — 发起 + 驱动 OpenXenon Work v1.1
 
 ## 目标
 
-依据 Blueprint 创建一个 **Work + 至少一个 Task** 的工作区：
+依据 Blueprint 创建一个 **Work + 至少一个 Task** 的工作区，并在 v1.1 hard-switch 之后强制走 8 阶段流程：
 - `work.oxn` — workspace 编排器（声明 ref 池 + task DAG）
 - `tasks/<name>/task.oxn` — 单 blueprint 执行 + 显式 align
 
-本 Skill 覆盖 work + task 的**完整生命周期**（创建 + 状态机驱动）。v0.1 hard-switch 之后，原 `oxn-leader` 已并入 `oxn work`，无独立 leader skill。
+v1.1 hard-switch 之后，原 `oxn-leader` 已并入 `oxn work`，无独立 leader skill。
 
-> **状态机驱动**：用 `oxn work run / submit / status / context` — 一站式。
+> **v1.1 升级要点**：所有 work 操作必须先 `work validate` 写 `.work` 静态门禁卡，再 `work lock` 锁住，然后才能 `work run`。Lock 后任何 `.oxn` 资产漂移 = `IAP_ALIGN_LOCK_HASH_MISMATCH`。
 
 ## 前置条件
 
@@ -25,17 +25,47 @@
 - **Task** = Align 执行单元（align 1 blueprint + N domains）
 - **Part / Probe** = **不是独立资产**，**内联**在 `task { part { probe {} } }` 块里
 
-## 创建 Work + Task（五步）
+## v1.1 8 阶段流程图
+
+```
+init → migrate → create → add-task → validate → lock → run → submit / status
+                                              │         │
+                                              ▼         ▼
+                                          .work      .work.planLock
+                                       静态门禁卡    4 组件 hash
+                                                  (workOxn/workDomains/
+                                                   blueprints/tasks +
+                                                   allHash)
+                                                  锁后任何漂移 →
+                                                  IAP_ALIGN_LOCK_HASH_MISMATCH
+```
+
+**8 阶段详解**：
+- **0**: `oxn work migrate`（V0→V1 布局迁移，PR-10；新建 work 可跳过）
+- **1**: `oxn work create`（建 work 骨架）
+- **2**: `oxn work add-task`（建至少 1 个 task.oxn）
+- **3**: `oxn work validate`（校验 work.oxn + 写 `.work`）
+- **4**: `oxn work lock`（锁住：写 planLock + 4 组件 hash）
+- **5**: `oxn work run`（启动状态机；要求 lock 完成）
+- **6**: `oxn work submit`（推进 task 内 part）
+- **7**: `oxn work status`（查询 work 状态）
+
+## 创建 Work + Task（v1.1 8 步）
+
+### 步骤 0（V0→V1 迁移，可选）：`oxn work migrate`
+
+```bash
+oxn work migrate <work-name>
+# 把 V0 布局 works/<w>/work-state.json 等迁移到 V1 布局 .run/
+# 原 V0 文件备份到 .migrated-v0/（不删，留审计）
+```
 
 ### 步骤 1：创建 Domain（可选）
 
 ```bash
 oxn domain create MemberContext
-# 编辑 .openxenon/domains/member-context.oxn 填写 term/ban/invariant
 oxn domain validate MemberContext
 ```
-
-> 内容创作指南见 `/oxn-cli` Skill 的「Intent 创作最佳实践」章节。
 
 ### 步骤 2：创建 Work 编排
 
@@ -49,14 +79,11 @@ oxn work create <work-name> --blueprint <bp>
 ```oxn
 work "MyFeature" {
   context { goal = "..."; constraints = []; loop_policy { max_iterations = 3 } }
-
   domain "MemberContext"   ref "@prj/domains/MemberContext";
   blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow";
-
   task "step1" {
     domain "MemberContext";
     blueprint "dev-workflow";
-
     part "build" { skill_context = "..." }
     deps = [];
   }
@@ -73,23 +100,32 @@ oxn work add-task \
   [--domain <DomainName>]
 ```
 
-会做：
-- 校验 `--blueprint` 必须出现在 work.oxn 的 blueprint ref 列表（fail-fast）
-- 校验 `--domain` 必须出现在 work.oxn 的 domain ref 列表（fail-fast）
-- 生成 `works/<w>/tasks/<t>/task.oxn` 骨架
+### 步骤 4：编辑 task 内容（手写 `task.oxn`）
 
-### 步骤 4：编辑 task 内容
+### 步骤 5：`work validate`
 
 ```bash
-oxn work task-edit \
-  --work <w> --task <t> \
-  --add-constraint "use_kebab_case" \
-  --add-constraint "no_plaintext_password"
+oxn work validate <work-name> --json
+# 校验 work.oxn + 写 .work 静态门禁卡（assets 快照：域/蓝图 fileHash）
+# planLock 此时为 null（未锁）
 ```
 
-> **Part / Probe 的实际内容**（skill_context / acceptance / probe { prop / output }）通过**手写** `task.oxn` 完成。详见 `/oxn-cli` Skill 的「Intent 创作最佳实践 — Part / Probe 内联创作」。
+### 步骤 6：`work lock`
 
-### 步骤 5：驱动状态机
+```bash
+oxn work lock <work-name> --json
+# 计算 4 组件 hash：
+#   workOxnHash      = SHA-256(work.oxn)
+#   workDomainsHash  = SHA-256(concatenated domain.oxn files)
+#   blueprintsHash   = SHA-256(concatenated blueprint.oxn files)
+#   tasksHash        = SHA-256(concatenated task.oxn files)
+# 写入 .work.planLock + allHash
+# 锁后任何 .oxn 资产漂移 = IAP_ALIGN_LOCK_HASH_MISMATCH
+```
+
+`oxn work unlock`（解锁，清 planLock 保留 assets）
+
+### 步骤 7：驱动状态机
 
 ```bash
 oxn work run --work-file <work>/work.oxn --json
@@ -106,13 +142,88 @@ oxn work status --work <w> --json
 | 创建一个 Domain 骨架 | `oxn domain create <Name>` |
 | 验证 Blueprint / Domain | `oxn {blueprint,domain} validate <name>` |
 | 列出所有 Domain | `oxn domain list` |
+| **v1.1 V0→V1 布局迁移** | `oxn work migrate <w>` |
 | 创建 work 骨架（含 task 块） | `oxn work create <w> --blueprint <bp>` |
 | 列出 work 下所有 task | `oxn work list-tasks --work <w>` |
 | 查看 task 状态 | `oxn work task-status --work <w> --task <t>` |
 | 获取 AI 上下文（**全量隔离**） | `oxn work context --work <w> --task <t>` |
+| **v1.1 校验 work.oxn + 写 .work** | `oxn work validate <w>` |
+| **v1.1 锁 work（planLock + 4 组件 hash）** | `oxn work lock <w>` |
+| **v1.1 解锁 work** | `oxn work unlock <w>` |
 | 启动 work 状态机 | `oxn work run --work-file <work.oxn>` |
 | 推进 task 内 part | `oxn work submit --work <w> --task <t>` |
 | 查询 work 状态 | `oxn work status --work <w>` |
+
+## V0→V1 路径映射
+
+v1.1 把 work 运行时状态从 work.oxn 同级目录搬到 `.run/` 子目录，方便 lock 守卫写静态卡：
+
+| V0 路径 | V1 路径 |
+|---|---|
+| `works/<w>/work-state.json` | `works/<w>/.run/state.json` |
+| `works/<w>/work-trace.jsonl` | `works/<w>/.run/trace.jsonl` |
+| `works/<w>/work-frozen.json` | `works/<w>/.run/frozen.json` |
+| `works/<w>/tasks/<t>/task-state.json` | `works/<w>/tasks/<t>/state.json` |
+| `works/<w>/tasks/<t>/task-trace.jsonl` | `works/<w>/tasks/<t>/trace.jsonl` |
+| `works/<w>/tasks/<t>/task-frozen.json` | `works/<w>/tasks/<t>/frozen.json` |
+| （无） | `works/<w>/.work`（静态门禁卡） |
+| （无） | `works/<w>/.migrated-v0/<rel>`（V0 备份） |
+
+更紧凑表达（grep 模式）：
+- V0: `works/<w>/work-{state,trace,frozen}.{json,jsonl}`
+- V1: `works/<w>/.run/{state,trace,frozen}.{json,jsonl}`
+
+迁移工具：`oxn work migrate <w>`（V0 备份到 `.migrated-v0/` 供审计，不删）。
+
+## v1.1 错误处理速查
+
+| 错误码 | 触发条件 | 行动 |
+|---|---|---|
+| `IAP_ALIGN_CHECKLIST_MISSING` | task.part.intent_checklist 必填缺失 | YIELD_TO_HUMAN |
+| `IAP_ALIGN_LOCK_NOT_FOUND` | .work.planLock 缺失/未锁 | YIELD_TO_HUMAN：未调 `oxn work lock` / init 缺失 |
+| `IAP_ALIGN_LOCK_HASH_MISMATCH` | 4 组件 hash 之一漂移（workOxn/workDomains/blueprints/tasks） | YIELD_TO_HUMAN：context.component 字段定位漂移源 |
+| `IAP_ALIGN_WORK_REMOVED` | work.oxn 失踪但 .work 还在（锁后被破坏） | YIELD_TO_HUMAN（区别于 WORK_NOT_FOUND：两个都无） |
+
+三剑客守卫次序：先校验 planLock 存在 → 再校验 4 组件 hash → 最后校验 work.oxn 存在。
+
+## 反模式
+
+- **不要跳过 validate+lock 直接 run** — 触发 `IAP_ALIGN_LOCK_NOT_FOUND`
+- **不要绕过 lock 守卫跑生产** — 无 `--force` 后门
+- **不要在锁后修改 .oxn** — 触发 `IAP_ALIGN_LOCK_HASH_MISMATCH`（planLock 已冻 4 组件 hash）
+- **不要删 .work 文件** — 丢失静态门禁卡 = LOCK_NOT_FOUND
+- **不要先 submit 后 run** — `work run` 是 setup，`submit` 是 advance
+- **不要跳过 task 创建** — `work run` 会 fail-fast 拦截（`OXN_TASK_OXN_MISSING`）
+- **不要在 work.oxn 引用 task.oxn 不存在的 task 名** — `work run` 校验失败
+- **不要把 ref 与 align 混为一谈** — `domain "X" ref "..."` 是 work 级声明，task 内 `domain "X"` 是 align
+- **不要在 task 块外加 `part` 字段** — part 必须嵌套在 task 块内
+- **不要写 `task "X" align "Y.Z"`** — 已废弃，改为 `task "X" { blueprint "Y"; part "Z" }`
+- **不要写 `inject "X"`** — 已废弃，改为 task 内 `domain "X"`
+- **不要在 Domain 用 `noun`/`verb`/`domain_rules`** — 改为 `term`/`ban`/`invariant`
+- **不要在 Blueprint 加 `expectation`/`rule` 块** — 已删除，验证由 Probe 承担
+- **不要写 `work "X" ref "@oxn/blueprints/Y"`** — 已废弃，改为 `blueprint "Y" ref "...";` 声明
+- **不要写 `oxn work new`** — 改用 `oxn work create`
+- **不要试图 `oxn part new` / `oxn probe new`** — Part / Probe **不是独立资产**，在 task 块内联写
+
+## .work 静态门禁卡（v1.1 新增）
+
+**v1.1 新增** `.work` 静态门禁卡：planLock（4 组件 hash）+ assets（域/蓝图 fileHash）+ context（goal/constraints/maxIterations）+ diagnostics（PR-14 软警告）。写一次后只读。
+
+```json
+{
+  "planLock": {
+    "workOxnHash":     "64-hex SHA-256",
+    "workDomainsHash": "64-hex SHA-256",
+    "blueprintsHash":  "64-hex SHA-256",
+    "tasksHash":        "64-hex SHA-256",
+    "allHash":          "64-hex SHA-256（4 组件综合）"
+  },
+  "assets": { "domains": [...], "blueprints": [...] },
+  "context": { "goal": "...", "constraints": [...], "maxIterations": 5 }
+}
+```
+
+`planLock` 内 `workOxnHash` / `workDomainsHash` / `blueprintsHash` / `tasksHash` / `allHash` 与 4 组件 hash 一起做 lock 守卫。
 
 ## work.oxn 4 大模式（AI 创作模板库）
 
@@ -156,8 +267,6 @@ work "explore-dsl" {
 
 **适用**：单域深度开发（一个限界上下文内的完整实现）。
 
-**骨架**（参考 `examples/works/develop-member/work.oxn`）：
-
 ```oxn
 work "develop-member" {
   context {
@@ -185,10 +294,6 @@ work "develop-member" {
 **口诀**：1 work + 1 task（带多 part，对齐 blueprint 的多个 slot）+ 1 domain。Part 数 = Blueprint slot 数。
 
 ### 模式 3：多 task 串行（fix 类）
-
-**适用**：修复类工作流（diagnose → locate → fix → verify），每个 task 单独 inject 同一 domain。
-
-**骨架**（参考 `examples/works/fix-issue/work.oxn`）：
 
 ```oxn
 work "fix-issue" {
@@ -219,10 +324,6 @@ work "fix-issue" {
 
 ### 模式 4：跨域编排（onboarding 类）
 
-**适用**：跨多个限界上下文的复合工作（注册 + 营销 + 订单）。
-
-**骨架**（参考 `examples/works/onboarding/work.oxn`）：
-
 ```oxn
 work "NewUserOnboarding" {
   context {
@@ -231,12 +332,10 @@ work "NewUserOnboarding" {
     loop_policy { max_iterations = 5 }
   }
 
-  // ✅ work 级声明多个 domain（资源池）
   domain "MemberContext"  ref "@prj/domains/MemberContext"
   domain "OrderContext"   ref "@prj/domains/OrderContext"
   blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow"
 
-  // ✅ task 按需 inject 1 个 domain（不是所有）
   task "RegisterMember" {
     domain "MemberContext"
     blueprint "dev-workflow"
@@ -258,18 +357,3 @@ work "NewUserOnboarding" {
 | 单域完整开发 | 模式 2（develop） | 1 task 多 part（= blueprint 多 slot） |
 | bug 修复、流程化诊断 | 模式 3（fix） | N task 串行 deps |
 | 跨多个限界上下文 | 模式 4（onboarding） | work 级 N domain + task 按需 inject |
-
-## 反模式
-
-- **不要先 submit 后 run** — `work run` 是 setup，`submit` 是 advance
-- **不要跳过 task 创建** — `work run` 会 fail-fast 拦截（`OXN_TASK_OXN_MISSING`）
-- **不要在 work.oxn 引用 task.oxn 不存在的 task 名** — `work run` 校验失败
-- **不要把 ref 与 align 混为一谈** — `domain "X" ref "..."` 是 work 级声明，task 内 `domain "X"` 是 align
-- **不要在 task 块外加 `part` 字段** — part 必须嵌套在 task 块内
-- **不要写 `task "X" align "Y.Z"`** — 已废弃，改为 `task "X" { blueprint "Y"; part "Z" }`
-- **不要写 `inject "X"`** — 已废弃，改为 task 内 `domain "X"`
-- **不要在 Domain 用 `noun`/`verb`/`domain_rules`** — 改为 `term`/`ban`/`invariant`
-- **不要在 Blueprint 加 `expectation`/`rule` 块** — 已删除，验证由 Probe 承担
-- **不要写 `work "X" ref "@oxn/blueprints/Y"`** — 已废弃，改为 `blueprint "Y" ref "...";` 声明
-- **不要写 `oxn work new`** — 改用 `oxn work create`
-- **不要试图 `oxn part new` / `oxn probe new`** — Part / Probe **不是独立资产**，在 task 块内联写
