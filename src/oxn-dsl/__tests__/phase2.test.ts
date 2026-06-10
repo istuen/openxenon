@@ -199,7 +199,7 @@ describe('BundleUnpacker (Task 2.4)', () => {
 // ========================
 
 describe('Builtin OXN Assets (Task 2.5)', () => {
-  // v1.1: builtin-probes.oxn 已删除——探针现在通过 PROBE_CATALOG（src/kernel/verdicts/catalog.ts）
+  // v1.1: builtin-probes.oxn 已删除——探针现在通过 PROBE_CATALOG（src/kernel/probes/catalog.ts）
   // 单一真相源管理。builtin parts 保留为 .oxn 文件作为 schema 样例。
 
   test('builtin parts .oxn 文件存在', () => {

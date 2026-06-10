@@ -15,7 +15,7 @@ import { defineCommand } from 'citty'
 import { join } from 'path'
 import { BOUNDARY_DIR, CACHE_DIR, PROBE_STATS_JSON } from '../kernel/constants'
 import { readInsightInputs } from '../infra/probes/insight-collector'
-import { computeInsightFromInputs } from '../kernel/verdicts/insight-compute'
+import { computeInsightFromInputs } from '../kernel/probes/insight-compute'
 import { getFormatFromArgs, output, outputUserInputError } from './output'
 import type { Insight } from '../kernel/schemas/insight-schema'
 

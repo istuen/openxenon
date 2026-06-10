@@ -3,8 +3,8 @@
 //
 // IAP 三轴分离兑现：
 //   - Infra (L1 src/infra/probes/): 物理观测 — fs-exists / shell-exec 等
-//   - Kernel (L0 src/kernel/verdicts/verdict.ts): 纯函数判定
-//   - catalog (L0.5 src/kernel/verdicts/catalog.ts): 语义层翻译（AI ↔ internal）
+//   - Kernel (L0 src/kernel/probes/verdict.ts): 纯函数判定
+//   - catalog (L0.5 src/kernel/probes/catalog.ts): 语义层翻译（AI ↔ internal）
 //   - proof-runner (Align 编排): 拿 internalRef → 调 Infra → 调 Kernel
 //
 // v0.1.2 命名约定（与文档对齐）：
@@ -13,7 +13,7 @@
 // =============================================================================
 
 import { getProbeHandler, hasProbeHandler, type ProbeContext } from '../infra/probes'
-import { judge } from '../kernel/verdicts/verdict'
+import { judge } from '../kernel/probes/verdict'
 import type { FrozenProofProbeResult } from '../kernel/schemas/proof-schema'
 
 /** 内存中的 proof.oxn 解析结果 */

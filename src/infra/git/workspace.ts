@@ -6,7 +6,7 @@
 //
 // 设计原则（与 IAP 三轴分离一致）：
 //   - 本模块只回答"git 物理观测的客观事实"，不判定 PASS/FAIL
-//   - 判定（verdict）走 src/kernel/verdicts/verdict.ts 的纯函数
+//   - 判定（verdict）走 src/kernel/probes/verdict.ts 的纯函数
 //   - 失败时不抛异常；返回 Result<{ ok, stdout, stderr, exitCode }>，调用方决定如何处理
 //
 // 不做的事（明确划线）：

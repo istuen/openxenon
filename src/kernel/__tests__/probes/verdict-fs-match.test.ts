@@ -9,7 +9,7 @@
 // =============================================================================
 
 import { describe, expect, test } from 'bun:test'
-import { PROBE_VERDICT_STRATEGIES } from '../../../../src/kernel/verdicts/verdict'
+import { PROBE_VERDICT_STRATEGIES } from '../../../../src/kernel/probes/verdict'
 
 const fsMatchStrategy = PROBE_VERDICT_STRATEGIES.fs_match
 if (!fsMatchStrategy) throw new Error('fs_match strategy missing')
