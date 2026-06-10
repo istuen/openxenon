@@ -150,6 +150,7 @@ const main = defineCommand({
     // ---- Meta / project setup ----
     init: () => import('./init').then((m) => m.default),
     config: () => import('./config-cmd').then((m) => m.default),
+    'install-skill': () => import('./install-skill').then((m) => m.default),
 
     // ---- Intent entities ----
     domain: () => import('./domain').then((m) => m.default),
