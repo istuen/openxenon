@@ -71,3 +71,6 @@ openspec/
 # 6. 业务运行时数据
 #    实际规则已下沉到 .openxenon/.gitignore（domain/works/proof 等）
 # ─────────────────────────────────────────────────────────────
+
+# ts-compiles probe 临时 tsconfig（运行时写盘，跑完即删）
+.tsconfig.oxn-*.json
