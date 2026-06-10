@@ -24,6 +24,13 @@ export interface CompilationReport {
   referencesCreated: number
   /** Number of stale skill directories removed from .opencode/skills/. */
   pruned: number
+  /**
+   * v0.1.3 — 双数据源防线：
+   * `.opencode/skills/oxn-*` 下存在但 src/skills/loader.ts:skillMeta 未注册的目录。
+   * 这些是工程师手写的「孤儿 skill」—— OpenCode 会发现但 oxn init 不会编译/清理。
+   * 作为软警告上报，CLI 在 init 输出中提示。
+   */
+  unregistered: string[]
 }
 
 export function loadSkills(locale: SupportedLocale = DEFAULT_LOCALE): OpenXenonSkill[] {
@@ -110,14 +117,23 @@ export function compileAllSkills(adapterId: string, projectPath: string, force: 
   // is not in the current skill set is a removed/deprecated skill.
   // This is important for `oxn init --force` to actually clean up the
   // .opencode/skills/ tree after a Skill is dropped from skillMeta.
+  //
+  // v0.1.3：分开两类「未注册」：
+  //   - 非 oxn- 前缀：第三方 skill（OpenCode 也扫描这些），保留 + 计数
+  //   - oxn- 前缀但未在 skillMeta：孤儿 skill（双数据源风险），保留 + 上报 unregistered
   const skillsDir = join(projectPath, '.opencode', 'skills')
   const currentIds = new Set(skills.map((s) => s.id))
+  const unregistered: string[] = []
   let pruned = 0
   if (existsSync(skillsDir)) {
     const { readdirSync } = require('fs') as typeof import('fs')
     for (const entry of readdirSync(skillsDir)) {
       if (entry.startsWith('.')) continue
       if (currentIds.has(entry)) continue
+      if (entry.startsWith('oxn-')) {
+        unregistered.push(entry)
+        continue
+      }
       const dir = join(skillsDir, entry)
       try {
         rmSync(dir, { recursive: true, force: true })
@@ -142,6 +158,7 @@ export function compileAllSkills(adapterId: string, projectPath: string, force: 
     skipped,
     referencesCreated,
     pruned,
+    unregistered,
   }
 }
 
@@ -200,6 +217,16 @@ export function formatCompilationReport(report: CompilationReport): string {
     }[result.action]
 
     lines.push(`  ${statusIcon} ${result.skillId} [${statusText}]`)
+  }
+
+  // v0.1.3：双数据源防线 — 报告 oxn- 前缀但未在 src/skills/ 注册的孤儿目录
+  if (report.unregistered.length > 0) {
+    lines.push('')
+    lines.push(`⚠️  ${report.unregistered.length} 个 oxn-* 目录未在 src/skills/loader.ts 注册：`)
+    for (const id of report.unregistered) {
+      lines.push(`  ⚠  ${id}（在 .opencode/skills/${id}/ 存在但 skillMeta 未声明；OXN 不会编译/清理）`)
+    }
+    lines.push('  → 修复：在 src/skills/loader.ts 的 skillMeta[locale] 中添加该 id，或从 .opencode/skills/ 删除该目录')
   }
 
   return lines.join('\n')

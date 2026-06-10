@@ -7,21 +7,18 @@
 //   3. 4 个 v1.1 新增阶段（validate/lock/unlock/migrate）有独立小节
 //   4. v1.1 错误处理速查表存在（含 3 个 IAPError ALIGN 新码）
 //   5. v0.1 引用全部替换为 v1.1
-//   6. install-skill 命令能成功传播到全局路径
-//   7. 项目源（`.opencode/skills/oxn-work/SKILL.md`）和全局（`~/.opencode/skills/oxn-work/SKILL.md`）内容一致
-//   8. 错误码描述含 LOCK_NOT_FOUND / LOCK_HASH_MISMATCH / WORK_REMOVED
+//   6. 错误码描述含 LOCK_NOT_FOUND / LOCK_HASH_MISMATCH / WORK_REMOVED
+//
+// 注：原 test 10（项目源 vs 全局源一致性）与 test 11（oxn install-skill --force 装到全局）
+// 已随 install-skill 命令移除（v0.1.3 — 用户主定：保持项目级，不写用户 home）。
 // =============================================================================
 
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs'
-import { tmpdir } from 'os'
+import { describe, expect, test } from 'bun:test'
+import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
-import { homedir } from 'os'
 
-const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
 const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..')
 const SKILL_PROJECT = join(PROJECT_ROOT, '.opencode', 'skills', 'oxn-work', 'SKILL.md')
-const SKILL_GLOBAL = join(homedir(), '.opencode', 'skills', 'oxn-work', 'SKILL.md')
 
 describe('oxn-work SKILL.md v1.1 内容收敛（PR-12）', () => {
   test('1. front matter description 含 v1.1 关键字', () => {
@@ -105,35 +102,12 @@ describe('oxn-work SKILL.md v1.1 内容收敛（PR-12）', () => {
   })
 })
 
-describe('oxn-work SKILL.md 一致性 + install-skill 传播（PR-12）', () => {
-  test('10. 项目源 SKILL.md 与全局 SKILL.md 一致', () => {
-    if (!existsSync(SKILL_GLOBAL)) {
-      // 跳过（全局未安装）
-      console.log('skip: global SKILL not installed')
-      return
-    }
-    const proj = readFileSync(SKILL_PROJECT, 'utf-8')
-    const glob = readFileSync(SKILL_GLOBAL, 'utf-8')
-    expect(proj).toBe(glob)
-  })
-
-  test('11. oxn install-skill --force 成功传播到全局', () => {
-    if (!existsSync(join(homedir(), '.opencode', 'skills'))) {
-      mkdirSync(join(homedir(), '.opencode', 'skills'), { recursive: true })
-    }
-    const proc = Bun.spawn(['bun', CLI_PATH, 'install-skill', '--skill', 'oxn-work', '--force', '--json'], {
-      cwd: PROJECT_ROOT,
-      env: { ...process.env, NO_COLOR: '1' },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-    return proc.exited.then(() => {
-      expect(proc.exitCode).toBe(0)
-      expect(existsSync(SKILL_GLOBAL)).toBe(true)
-      // 强制安装后内容应一致
-      const proj = readFileSync(SKILL_PROJECT, 'utf-8')
-      const glob = readFileSync(SKILL_GLOBAL, 'utf-8')
-      expect(proj).toBe(glob)
-    })
+describe('oxn-work SKILL.md 唯一权威源（v0.1.3 — install-skill 移除后）', () => {
+  test('10. 项目源 SKILL.md 存在（init 编译产物）', () => {
+    expect(existsSync(SKILL_PROJECT)).toBe(true)
+    const content = readFileSync(SKILL_PROJECT, 'utf-8')
+    // 纯结构断言：不卡 v1.1 字面（SKILL.md 内容漂移是 pre-existing 问题，
+    // 本测试只保证"项目内有 init 编译产物"这一不变量）
+    expect(content).toMatch(/^---\nname: oxn-work\ndescription: \S+/m)
   })
 })

@@ -22,7 +22,7 @@ const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..')
 const DOMAINS_DIR = join(PROJECT_ROOT, '.openxenon', 'domains')
 const IAP_DOMAIN = join(DOMAINS_DIR, 'iap-error-context.oxn')
 // v0.1 重构：work-context.oxn 已合并进 align-domain.oxn（保留全部 term/ban/invariant）
-// 原 work-context.oxn 在 .oxn-domain-archive/；test 8/9/12 改测 align-domain.oxn
+// test 8/9/12 改测 align-domain.oxn
 const WORK_DOMAIN = join(DOMAINS_DIR, 'align-domain.oxn')
 
 describe('IAPError 字典 v1.1 收敛（PR-11）', () => {

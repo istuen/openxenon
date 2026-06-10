@@ -8,7 +8,7 @@
 
 | 脚本 | 职责 | 何时用 |
 |---|---|---|
-| [`proof-helpers/domain-merge-check.py`](#proof-helpersdomain-merge-checkpy) | 域重组保真性证明：旧 6 域去重 term/ban 集 ⊆ 新 3 域去重集 | 任何"X 域合并/拆分为 Y 域" refactor 后 |
+| [`proof-helpers/domain-merge-check.py`](#proof-helpersdomain-merge-checkpy) | 域重组保真性证明：旧 N 域去重 term/ban 集 ⊆ 新 M 域去重集（通用工具，不依赖任何 archive 目录；old 一侧可指 git tree/branch/tag） | 任何"X 域合并/拆分为 Y 域" refactor 后 |
 | [`proof-helpers/proof-self-check.sh`](#proof-helpersproof-self-checksh) | proof 空间闭环自检：fs 存在 + chmod 0o444 + 签名 + verdict + show 可读 | OXN 升级或 CLI 改 proof 链路后 |
 
 > 详尽使用文档见 [scripts/proof-helpers/README.md](proof-helpers/README.md)（如不存在则读脚本顶部 docstring）

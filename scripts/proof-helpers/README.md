@@ -24,7 +24,7 @@ python3 domain-merge-check.py <new-files...> -- <old-files...>
 - `1` = 漂移（缺 term 或 ban，列出缺什么）
 - `2` = 用法错（缺 `--` 或某侧空）
 
-**典型嵌入 proof.oxn**（来自 `domain-restructure-equivalence`）：
+**典型嵌入 proof.oxn**（历史示例：9→6 域合并，已随 v0.1.3 撤销 — 现版本仅作示意）：
 ```oxn
 probe "p13-set-preserved" {
   ref "@oxn/probes/shell-exec"
@@ -34,13 +34,13 @@ probe "p13-set-preserved" {
       .openxenon/domains/align-domain.oxn \
       .openxenon/domains/proof-domain.oxn \
       -- \
-      .oxn-domain-archive/cli-context.oxn \
-      .oxn-domain-archive/dsl-context.oxn \
-      ...",
+      <old-domains...>",
     timeout = "15000"
   }
 }
 ```
+
+**v0.1.3 调整**：历史示例中的 `.oxn-domain-archive/` 已删除（archive 概念废弃 — 历史快照改用 `git log <a5ef69f>` 找回）。新场景下，old 一侧应指**当前 spec 要求的"合并前状态"**（如 git tree 中某次 commit、某 release tag、某分支），而不是仓库内隐式 archive 目录。
 
 **重要限制**：这是**语法层证明**，不是语义层。term 重命名（`"X"` → `"XRenamed"`）也判保真 —— 它检查"声明的 key 在不在"，不查"语义是否真的等价"。
 
@@ -110,6 +110,37 @@ OXN 升级/CLI 改动
   └─ 没动 proof 链路？
       └─ 不需要
 ```
+
+---
+
+## `.running.json` 协议（v0.1.3+）
+
+**问题**：自指 probe（"验证 frozen.json 存在 / 签名 / verdict 合法"）在首次 `oxn proof run` 时会读到**还没写**的 frozen.json → 鸡生蛋 → verdict 必 FAIL。
+
+**解决**：`oxn proof run` 拆三阶段：
+
+```
+Phase 1  写 .running.json（0o644，无 SHA-256；包含 probe 骨架，verdict=FAILED）
+Phase 2  跑 probe（自指 probe 读 .running.json → 视为 PASS 信号）
+Phase 3  落 frozen.json（0o444 + SHA-256） + 删 .running.json
+```
+
+**helper 行为**（`proof-self-check.sh`）：所有读 frozen 的 check（`frozen-readonly-444` / `signature-hex64` / `verdict-emitted` / `all-probes-passed` / `frozen-touch-allowed` / `echo-write-blocked` / `body-sha256-valid`）在 `.running.json` 存在时**早返回 `in-progress` + exit 0**。语义：
+
+- 自指 probe 首次 run → 看到 `.running.json` → PASS
+- `probes-added` / `show-exit-zero` / `show-probes-listed` 不走 early return（它们不读 frozen）
+
+**崩溃恢复**：
+
+| 留盘 | 含义 | 下次 `oxn proof run` |
+|---|---|---|
+| `.running.json` + 无 `frozen.json` | 上次 Phase 2/3 崩了 | Phase 1 覆盖 `.running.json`，继续 |
+| `.running.json` + 有 `frozen.json` | 上次 run 完成后删 `.running.json` 失败 | Phase 3 写新 `frozen.json` + 删 `.running.json` |
+| `frozen.json`（无 `.running.json`） | 正常终态 | 正常 |
+
+**oxn CLI 暴露**：
+- `oxn proof list` 输出 `[in-progress]` 标记
+- `oxn proof show <name>` 在 `.running.json` 残留时输出 ⚠️ 警告 + `data.inProgress: true`
 
 ## 添加新 helper
 

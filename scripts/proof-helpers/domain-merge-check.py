@@ -16,18 +16,13 @@ prove that no term/ban was lost. The .oxn DSL grammar (Langium-based) makes
 this a syntactic check, not a semantic one — but it catches the common
 case of copy-paste drop.
 
-Example (current restructure):
-    proof-domain-equiv.py \\
+Example (v0.1.3+: archive 概念废弃，old 一侧指 git tree / branch / tag 或本地临时文件):
+    domain-merge-check.py \\
         .openxenon/domains/intent-domain.oxn \\
         .openxenon/domains/align-domain.oxn \\
         .openxenon/domains/proof-domain.oxn \\
         -- \\
-        .oxn-domain-archive/cli-context.oxn \\
-        .oxn-domain-archive/dsl-context.oxn \\
-        .oxn-domain-archive/program-context.oxn \\
-        .oxn-domain-archive/builtin-context.oxn \\
-        .oxn-domain-archive/work-context.oxn \\
-        .oxn-domain-archive/skill-context.oxn
+        <old-domains-from-git-checkout-or-tmpdir...>
 """
 
 import re
