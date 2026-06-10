@@ -42,6 +42,15 @@ export default [
     },
   },
   {
+    // Test files in src/<layer>/__tests__/ legitimately need fs (to mock disk
+    // state). Production code under the same layer still respects the
+    // no-restricted-imports rules above.
+    files: ['src/**/__tests__/**/*.ts'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
     files: ['src/cli/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', {

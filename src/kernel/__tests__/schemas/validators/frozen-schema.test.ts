@@ -3,8 +3,8 @@ import {
   createXenonMeta,
   computeContentHash,
   validateFrozenBlueprint,
-} from '../../../../src/kernel/schemas/validators/frozen-schema'
-import type { HashPort } from '../../../../src/kernel/contracts/hash-port'
+} from '../../../../../src/kernel/schemas/validators/frozen-schema'
+import type { HashPort } from '../../../../../src/kernel/contracts/hash-port'
 
 const mockHashPort: HashPort = {
   computeHash: (content: string) => `mock_hash_${content.slice(0, 10)}`,

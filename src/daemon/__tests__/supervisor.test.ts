@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { DaemonSupervisor } from '../../src/daemon/supervisor'
-import { DAEMON_PID_PATH } from '../../src/infra/global'
+import { DaemonSupervisor } from '../../../src/daemon/supervisor'
+import { DAEMON_PID_PATH } from '../../../src/infra/global'
 
 const TEST_PID_PATH = '/tmp/oxn-supervisor-test.pid'
 const TEST_STATE_PATH = '/tmp/oxn-supervisor-state.json'

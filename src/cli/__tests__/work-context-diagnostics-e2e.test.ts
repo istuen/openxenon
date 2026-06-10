@@ -198,11 +198,7 @@ describe('work context 补 diagnostics 软警告（PR-14b）', () => {
     writeExtraDomain('MissingDom1')
     writeExtraDomain('MissingDom2')
     writeExtraBlueprint('MissingBP1')
-    setupWork(
-      'demo',
-      SIMPLE_WORK('demo', ['MissingDom1', 'MissingDom2'], ['MissingBP1']),
-      ['a'],
-    )
+    setupWork('demo', SIMPLE_WORK('demo', ['MissingDom1', 'MissingDom2'], ['MissingBP1']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])

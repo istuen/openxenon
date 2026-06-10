@@ -28,7 +28,7 @@ describe('ref-diagnostic (PR-14)', () => {
       ref: 'MemebrContext',
       type: 'domain',
       message: "Domain 'MemebrContext' declared but file not found",
-      suggestion: "Check domain name spelling",
+      suggestion: 'Check domain name spelling',
     }
     const r = RefDiagnosticSchema.safeParse(d)
     expect(r.success).toBe(true)
@@ -96,7 +96,7 @@ describe('ref-diagnostic (PR-14)', () => {
     expect(d.severity).toBe('warn')
     expect(d.type).toBe('domain')
     expect(d.ref).toBe('@prj/domains/memebr-context')
-    expect(d.message).toContain("MemebrContext")
+    expect(d.message).toContain('MemebrContext')
     expect(d.message).toContain('domain file not found')
     expect(d.suggestion).toContain('MemebrContext')
   })

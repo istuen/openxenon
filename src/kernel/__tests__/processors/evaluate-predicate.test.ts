@@ -3,7 +3,7 @@ import {
   evaluatePredicate,
   validateSchemaGeneric,
   transformData,
-} from '../../../src/kernel/processors/evaluate-predicate'
+} from '../../../../src/kernel/processors/evaluate-predicate'
 
 describe('evaluatePredicate', () => {
   describe('eq operator', () => {

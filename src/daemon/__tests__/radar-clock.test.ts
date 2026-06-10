@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { RadarClock } from '../../src/daemon/radar/clock'
+import { RadarClock } from '../../../src/daemon/radar/clock'
 
 const TEST_WORKDIR = '/tmp/oxn-radar-test'
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { ProbeDefinitionSchema, ProbeInvocationSchema } from '../../../src/kernel/schemas/validators/probe'
+import { ProbeDefinitionSchema, ProbeInvocationSchema } from '../../../../src/kernel/schemas/validators/probe'
 
 describe('ProbeDefinitionSchema', () => {
   describe('合法 Definition 通过校验', () => {

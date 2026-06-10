@@ -59,11 +59,7 @@ export const CODE_REFS_UNRESOLVED = 'OXN_WORK_REFS_UNRESOLVED' as const
  * @param ref        声明的 ref 字符串（`@prj/domains/X` 或裸名）
  * @param reason     失败原因（`domain file not found` / `@oxn/ scope has no builtin domain registry` / ...）
  */
-export function buildDomainDiagnostic(
-  name: string,
-  ref: string | null,
-  reason: string,
-): RefDiagnostic {
+export function buildDomainDiagnostic(name: string, ref: string | null, reason: string): RefDiagnostic {
   return {
     code: CODE_REFS_UNRESOLVED,
     severity: 'warn',
@@ -77,11 +73,7 @@ export function buildDomainDiagnostic(
 /**
  * 构造"蓝图文件缺失"的诊断条目。
  */
-export function buildBlueprintDiagnostic(
-  name: string,
-  ref: string | null,
-  reason: string,
-): RefDiagnostic {
+export function buildBlueprintDiagnostic(name: string, ref: string | null, reason: string): RefDiagnostic {
   return {
     code: CODE_REFS_UNRESOLVED,
     severity: 'warn',

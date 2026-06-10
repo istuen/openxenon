@@ -188,9 +188,7 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
     expect(r.data.diagnostics).toHaveLength(1)
     expect(r.data.diagnostics[0].type).toBe('blueprint')
 
-    const state = JSON.parse(
-      readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'),
-    )
+    const state = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'))
     expect(state.diagnostics[0].type).toBe('blueprint')
   })
 
@@ -200,11 +198,7 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
     writeExtraDomain('MissingDom1')
     writeExtraDomain('MissingDom2')
     writeExtraBlueprint('MissingBP1')
-    setupWork(
-      'demo',
-      SIMPLE_WORK('demo', ['MissingDom1', 'MissingDom2'], ['MissingBP1']),
-      ['a'],
-    )
+    setupWork('demo', SIMPLE_WORK('demo', ['MissingDom1', 'MissingDom2'], ['MissingBP1']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
@@ -216,9 +210,7 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
     const r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
     expect(r.data.diagnostics).toHaveLength(3)
 
-    const state = JSON.parse(
-      readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'),
-    )
+    const state = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'))
     expect(state.diagnostics).toHaveLength(3)
   })
 
@@ -238,9 +230,7 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
     // 状态已 passed，再 unlock 重新跑会报 already exists；用 status 读
     const r = JSON.parse((await runCli(['work', 'status', 'demo', '--json'])).stdout)
     // status 当前不读 .run/state.json 的 diagnostics（仅 planLock）；但 .run/state.json 已持久化
-    const state = JSON.parse(
-      readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'),
-    )
+    const state = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'))
     expect(state.diagnostics).toBeDefined()
     expect(state.diagnostics[0].ref).toBe('@prj/domains/missingdom')
   })
@@ -261,9 +251,7 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
       expect(d.code).not.toMatch(/^IAP_/)
     }
 
-    const state = JSON.parse(
-      readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'),
-    )
+    const state = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'))
     for (const d of state.diagnostics) {
       expect(d.severity).toBe('warn')
     }

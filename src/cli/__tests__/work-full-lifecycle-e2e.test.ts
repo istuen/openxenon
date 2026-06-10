@@ -1,5 +1,5 @@
 // =============================================================================
-// work-full-lifecycle-e2e.test.ts — PR-13
+// work-full-lifecycle-e2e.test.ts — PR-13 + NV-1/NV-2 守卫
 //
 // 覆盖完整 work 生命周期（V1 布局）：
 //   1. happy path：create → add-task → validate → lock → context → run → status
@@ -11,6 +11,7 @@
 //   7. unlock → context 报 LOCK_NOT_FOUND
 //   8. --unlock-check 跳过守卫 + lockHealth=bypassed
 //   9. allHash 联动：1 改 1 → allHash 也变
+//   10-13. NV-1 / NV-2 守卫（合并自原 work-e2e.test.ts）
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
@@ -282,5 +283,93 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     const r = JSON.parse((await runCli(['work', 'run', 'lifecycle', '--json'])).stdout)
     expect(r.ok).toBe(false)
     expect(r.error.code).toBe('OXN_ALIGN_LOCK_NOT_FOUND')
+  })
+})
+
+// ───────── NV-1 / NV-2 守卫（合并自原 work-e2e.test.ts）─────────
+//
+// NV-1：work run 之后不能再 add/edit/delete task
+// NV-2：work run 之前不能 submit
+//
+// 共享 single-slot blueprint + 单 task 'alpha' 的最小工程布局。
+// ─────────────────────────────────────────────────────────────
+
+const SINGLE_SLOT_BLUEPRINT = `blueprint "single" {
+  version = 1
+  description = "single slot"
+  slot "alpha" { }
+}
+`
+
+async function setupSingleWorkWithRun(workName: string): Promise<void> {
+  await initProject()
+  mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
+  writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'single.oxn'), SINGLE_SLOT_BLUEPRINT)
+  await runCli(['work', 'create', workName, '--blueprint', 'single', '--json'])
+  mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'alpha'), { recursive: true })
+  writeFileSync(
+    join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'alpha', 'task.oxn'),
+    `task "alpha" {
+  blueprint "single"
+  part "build" { skill_context = "test" }
+}
+`,
+  )
+  // PR-8: validate + lock before run
+  await runCli(['work', 'validate', workName, '--json'])
+  await runCli(['work', 'lock', workName, '--json'])
+  await runCli(['work', 'run', workName, '--json'])
+}
+
+describe('NV-1 / NV-2 守卫', () => {
+  test('NV-1: add-task is rejected after work run is called', async () => {
+    await setupSingleWorkWithRun('single')
+
+    const addTask = JSON.parse(
+      (await runCli(['work', 'add-task', 'single', '--task', 'gamma', '--blueprint', 'single', '--json'])).stdout,
+    )
+    expect(addTask.ok).toBe(false)
+    expect(addTask.error.code).toBe('OXN_WORK_ALREADY_RUNNING')
+  })
+
+  test('NV-1: edit-task is rejected after work run is called', async () => {
+    await setupSingleWorkWithRun('single')
+
+    const editTask = JSON.parse(
+      (await runCli(['work', 'edit-task', 'single', '--task', 'alpha', '--objective', 'changed', '--json'])).stdout,
+    )
+    expect(editTask.ok).toBe(false)
+    expect(editTask.error.code).toBe('OXN_WORK_ALREADY_RUNNING')
+  })
+
+  test('NV-1: delete-task is rejected after work run is called', async () => {
+    await setupSingleWorkWithRun('single')
+
+    const deleteTask = JSON.parse(
+      (await runCli(['work', 'delete-task', 'single', '--task', 'alpha', '--force', '--json'])).stdout,
+    )
+    expect(deleteTask.ok).toBe(false)
+    expect(deleteTask.error.code).toBe('OXN_WORK_ALREADY_RUNNING')
+  })
+
+  test('NV-2: submit is rejected before work run is called', async () => {
+    // 不调 setupSingleWorkWithRun — 故意只 create + write task.oxn，不 run
+    await initProject()
+    mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
+    writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'single.oxn'), SINGLE_SLOT_BLUEPRINT)
+    await runCli(['work', 'create', 'single', '--blueprint', 'single', '--json'])
+    mkdirSync(join(tmpDir, '.openxenon', 'works', 'single', 'tasks', 'alpha'), { recursive: true })
+    writeFileSync(
+      join(tmpDir, '.openxenon', 'works', 'single', 'tasks', 'alpha', 'task.oxn'),
+      `task "alpha" {
+  blueprint "single"
+  part "build" { skill_context = "test" }
+}
+`,
+    )
+
+    const submit = JSON.parse((await runCli(['work', 'submit', 'single', '--task', 'alpha', '--json'])).stdout)
+    expect(submit.ok).toBe(false)
+    expect(submit.error.code).toBe('OXN_WORK_NOT_STARTED')
   })
 })

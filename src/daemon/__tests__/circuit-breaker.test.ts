@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { CircuitBreaker, type CircuitBreakerConfig } from '../../src/daemon/circuit-breaker'
+import { CircuitBreaker, type CircuitBreakerConfig } from '../../../src/daemon/circuit-breaker'
+
+// 5ms reset window keeps wall-time low while still exercising the actual
+// setTimeout in trip().  1100ms (the prior value) was spending 4×~1.1s = 4.4s
+// of real time across the trip-recovery suite.
+const FAST_RESET_MS = 5
 
 describe('CircuitBreaker', () => {
   let circuitBreaker: CircuitBreaker
@@ -7,7 +12,7 @@ describe('CircuitBreaker', () => {
   beforeEach(() => {
     circuitBreaker = new CircuitBreaker({
       failureThreshold: 3,
-      resetTimeoutMs: 1000,
+      resetTimeoutMs: FAST_RESET_MS,
       halfOpenMaxAttempts: 2,
     })
   })
@@ -73,7 +78,7 @@ describe('CircuitBreaker', () => {
 
       expect(circuitBreaker.getState()).toBe('OPEN')
 
-      await new Promise((resolve) => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, FAST_RESET_MS + 5))
       expect(circuitBreaker.getState()).toBe('HALF_OPEN')
     })
 
@@ -82,7 +87,7 @@ describe('CircuitBreaker', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
 
-      await new Promise((resolve) => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, FAST_RESET_MS + 5))
       expect(circuitBreaker.getState()).toBe('HALF_OPEN')
 
       circuitBreaker.recordSuccess()
@@ -95,7 +100,7 @@ describe('CircuitBreaker', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
 
-      await new Promise((resolve) => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, FAST_RESET_MS + 5))
       circuitBreaker.recordFailure()
       expect(circuitBreaker.getState()).toBe('OPEN')
     })
@@ -111,7 +116,7 @@ describe('CircuitBreaker', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
 
-      await new Promise((resolve) => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, FAST_RESET_MS + 5))
       expect(circuitBreaker.allowRequest()).toBe(true)
     })
 
@@ -166,7 +171,7 @@ describe('CircuitBreaker', () => {
       circuitBreaker.recordFailure()
       circuitBreaker.recordFailure()
 
-      await new Promise((resolve) => setTimeout(resolve, 1100))
+      await new Promise((resolve) => setTimeout(resolve, FAST_RESET_MS + 5))
       expect(circuitBreaker.isOpen()).toBe(false)
     })
   })

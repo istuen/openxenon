@@ -278,7 +278,7 @@ describe('oxn work migrate (PR-10)', () => {
     expect(v.ok).toBe(true)
     const l = JSON.parse((await runCli(['work', 'lock', 'demo', '--json'])).stdout)
     expect(l.ok).toBe(true)
-    const r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
+    const _r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
     // V0 work-frozen.json 表明 work 是 passed；migrate 后 .run/state.json 标记 passed
     // 因此 "work run" 应该报 "already exists"（work 已结束，不能 re-run）
     // 验证：state.json.status 应该是 "passed"，证明迁移保留了 V0 终态
@@ -317,7 +317,7 @@ describe('oxn work migrate (PR-10)', () => {
     // V1 trace 内容应保留
     const newTrace = readFileSync(join(workDir, '.run', 'trace.jsonl'), 'utf-8')
     expect(newTrace).toContain('work-started')
-    expect(newTrace).toContain('task_started')
+    expect(newTrace).toContain('task-started')
   })
 })
 
@@ -370,9 +370,7 @@ describe('work migrate diagnostics（PR-14d）', () => {
 
     const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
-    const bpDiag = r.data.diagnostics.find(
-      (d) => d.type === 'blueprint' && d.ref === '@prj/blueprints/blueprint-x',
-    )
+    const bpDiag = r.data.diagnostics.find((d) => d.type === 'blueprint' && d.ref === '@prj/blueprints/blueprint-x')
     expect(bpDiag).toBeDefined()
     expect(bpDiag.severity).toBe('warn')
     expect(bpDiag.code).toBe('OXN_WORK_REFS_UNRESOLVED')

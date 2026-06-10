@@ -5,6 +5,9 @@
 //   fs-exists, fs-not-exists, fs-content-match, fs-parseable, shell-exec
 //
 // v0.1.2 时只有 2 条；v1.1 扩到 5 条。
+//
+// + Phase C 封装边界（合并自 src/cli/__tests__/probe-catalog.test.ts）
+// + Catalog invariants + Translation layer（merge: 避免重复 listProbesSummary / PROBE_CATALOG 断言）
 // =============================================================================
 
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
@@ -12,7 +15,14 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
-import { PROBE_CATALOG, listProbesSummary } from '../../src/kernel/probes/catalog'
+import {
+  assertCatalogConsistency,
+  describeProbe,
+  listProbesSummary,
+  PROBE_CATALOG,
+  translateProbeInputs,
+} from '../../src/kernel/probes/catalog'
+import { type IAPError, IAPAction, isIAPError } from '../../src/core/errors'
 import { probeRegistry } from '../../src/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '../../src/kernel/probes/verdict'
 
@@ -94,7 +104,7 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
       const hasHandler =
         probeRegistry.has(snakeName) ||
         probeRegistry.has(entry.semanticName) ||
-        probeRegistry.has(entry.semanticName + ':probes')
+        probeRegistry.has(`${entry.semanticName}:probes`)
       expect(hasHandler).toBe(true)
 
       // 2. strategy 必须可达（直接 key 或 alias）
@@ -303,5 +313,160 @@ describe('v1.1 Phase 5b.6: file-exports 真 e2e (进程隔离 runtime import)', 
     const parsed = JSON.parse(obs.output ?? '{}')
     expect(parsed).toHaveProperty('exports')
     expect(parsed).toHaveProperty('exportCount')
+  })
+})
+
+// =============================================================================
+// Phase C 封装边界：AI 看到的（listProbesSummary / describeProbe）不能泄漏内部
+// 翻译层：semanticName → internalRef, inputs → inputMap
+// Catalog 不变量：inputMap keys ⊆ inputs[].names 等
+//
+// 合并自 src/cli/__tests__/probe-catalog.test.ts（2025-12 合并）
+// =============================================================================
+
+describe('AI-visible layer: no implementation leak', () => {
+  test('listProbesSummary 不含 @oxn/probe(s) ref', () => {
+    const summary = listProbesSummary()
+    const json = JSON.stringify(summary)
+    expect(json).not.toMatch(/@oxn\/probe/)
+    expect(json).not.toMatch(/@oxn\/probes/)
+  })
+
+  test('listProbesSummary 不含实现细节（exitCode / statSync / spawn）', () => {
+    const summary = listProbesSummary()
+    const json = JSON.stringify(summary)
+    expect(json).not.toMatch(/exitCode|statSync|spawn|child_process/)
+  })
+
+  test('listProbesSummary 至少 2 个 probe', () => {
+    const summary = listProbesSummary()
+    expect(summary.length).toBeGreaterThanOrEqual(2)
+    for (const p of summary) {
+      expect(p.name).toBeTruthy()
+      expect(p.description).toBeTruthy()
+      expect(Array.isArray(p.requiredInputs)).toBe(true)
+    }
+  })
+
+  test('describeProbe fs-exists 返回 inputs 但不含 verdict 逻辑', () => {
+    const info = describeProbe('fs-exists')
+    expect(info).not.toBeNull()
+    const json = JSON.stringify(info)
+    expect(json).not.toMatch(/exitCode|statSync|spawn|child_process/)
+    // 不暴露 verdict 规则的精确数（hit >= 1）
+    expect(json).not.toMatch(/>=\s*\d/)
+  })
+
+  test('describeProbe shell-exec 返回 inputs 但不含 verdict 逻辑', () => {
+    const info = describeProbe('shell-exec')
+    expect(info).not.toBeNull()
+    const json = JSON.stringify(info)
+    expect(json).not.toMatch(/exitCode|statSync|spawn|child_process/)
+  })
+
+  test('describeProbe unknown 返回 null', () => {
+    expect(describeProbe('does-not-exist')).toBeNull()
+  })
+})
+
+describe('Translation layer (AI inputs → Infra params)', () => {
+  test('fs-exists + {path} → {pattern}', () => {
+    const r = translateProbeInputs('fs-exists', { path: './dist/index.js' })
+    expect(r.internalRef).toBe('@oxn/probes/fs-exists')
+    expect(r.internalParams).toEqual({ pattern: './dist/index.js' })
+  })
+
+  test('shell-exec + {command, timeout} → {command, timeout}', () => {
+    const r = translateProbeInputs('shell-exec', { command: 'bun test', timeout: 60000 })
+    expect(r.internalRef).toBe('@oxn/probes/shell-exec')
+    expect(r.internalParams).toEqual({ command: 'bun test', timeout: 60000 })
+  })
+
+  test('fs-exists 缺 path → IAPError (PROOF/INFRA_FAIL)', () => {
+    try {
+      translateProbeInputs('fs-exists', {})
+      expect(true).toBe(false) // 不应到达
+    } catch (err) {
+      expect(isIAPError(err)).toBe(true)
+      const e = err as IAPError
+      expect(e.axis).toBe('PROOF')
+      expect(e.code).toBe('INFRA_FAIL')
+      expect(e.action).toBe(IAPAction.YIELD_TO_HUMAN)
+      expect(e.name).toBe('IAP_PROOF_INFRA_FAIL')
+      expect(e.context).toMatchObject({ probe: 'fs-exists', input: 'path', reason: 'input_missing' })
+    }
+  })
+
+  test('fs-exists path 类型错（number）→ IAPError (PROOF/INFRA_FAIL)', () => {
+    try {
+      translateProbeInputs('fs-exists', { path: 42 })
+      expect(true).toBe(false) // 不应到达
+    } catch (err) {
+      expect(isIAPError(err)).toBe(true)
+      const e = err as IAPError
+      expect(e.axis).toBe('PROOF')
+      expect(e.code).toBe('INFRA_FAIL')
+      expect(e.context).toMatchObject({
+        probe: 'fs-exists',
+        input: 'path',
+        actualType: 'number',
+        expectedType: 'string',
+        reason: 'input_type_mismatch',
+      })
+    }
+  })
+
+  test('unknown probe → IAPError (PROOF/INFRA_FAIL, reason: unknown_semantic_name)', () => {
+    try {
+      translateProbeInputs('does-not-exist', {})
+      expect(true).toBe(false) // 不应到达
+    } catch (err) {
+      expect(isIAPError(err)).toBe(true)
+      const e = err as IAPError
+      expect(e.name).toBe('IAP_PROOF_INFRA_FAIL')
+      expect(e.context).toMatchObject({ probe: 'does-not-exist', reason: 'unknown_semantic_name' })
+    }
+  })
+
+  test('shell-exec timeout 是 optional，缺它不报错', () => {
+    const r = translateProbeInputs('shell-exec', { command: 'ls' })
+    expect(r.internalParams).toEqual({ command: 'ls' })
+  })
+})
+
+describe('Catalog invariants', () => {
+  test('assertCatalogConsistency 通过', () => {
+    const r = assertCatalogConsistency()
+    expect(r.ok).toBe(true)
+  })
+
+  test('每个 entry 的 inputMap keys ⊆ inputs[].names', () => {
+    for (const entry of PROBE_CATALOG) {
+      const inputNames = new Set(entry.inputs.map((i) => i.name))
+      for (const k of Object.keys(entry.inputMap)) {
+        expect(inputNames.has(k)).toBe(true)
+      }
+    }
+  })
+
+  test('每个 entry 的 inputs[].name 唯一', () => {
+    for (const entry of PROBE_CATALOG) {
+      const seen = new Set<string>()
+      for (const inp of entry.inputs) {
+        expect(seen.has(inp.name)).toBe(false)
+        seen.add(inp.name)
+      }
+    }
+  })
+
+  test('每个 entry 有 required 字段', () => {
+    for (const entry of PROBE_CATALOG) {
+      expect(entry.semanticName).toBeTruthy()
+      expect(entry.internalRef).toBeTruthy()
+      expect(entry.description).toBeTruthy()
+      expect(Array.isArray(entry.inputs)).toBe(true)
+      expect(Array.isArray(entry.examples)).toBe(true)
+      expect(entry.builtin).toBe('oxn')
+    }
   })
 })

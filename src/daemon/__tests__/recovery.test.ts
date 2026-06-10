@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { createRecoveryManager } from '../../src/daemon/recovery'
+import { createRecoveryManager } from '../../../src/daemon/recovery'
 
 const TEST_WORKDIR = '/tmp/oxn-recovery-test'
 

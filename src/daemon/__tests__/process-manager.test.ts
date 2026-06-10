@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { spawn } from 'child_process'
-import { ProcessManager } from '../../src/daemon/process-manager'
+import { ProcessManager } from '../../../src/daemon/process-manager'
 
 describe('ProcessManager', () => {
   let processManager: ProcessManager
