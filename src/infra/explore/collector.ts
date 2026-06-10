@@ -7,7 +7,7 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { glob } from 'glob'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { PROBE_CATALOG } from '../../kernel/probes/catalog'
+import { PROBE_CATALOG } from '../../kernel/verdicts/catalog'
 
 interface RawProjectDir {
   path: string

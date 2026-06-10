@@ -366,7 +366,7 @@ describe('Kernel + Infra separation (real execution)', () => {
 
   test('Kernel 纯函数：judge() 不碰 IO（无 fs.* / child_process）', async () => {
     const { readFileSync } = await import('fs')
-    const verdictSrc = readFileSync(join(repoRoot, 'src/kernel/probes/verdict.ts'), 'utf-8')
+    const verdictSrc = readFileSync(join(repoRoot, 'src/kernel/verdicts/verdict.ts'), 'utf-8')
     // 去掉注释行（// ...）和块注释，再 grep
     const codeOnly = verdictSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
     expect(codeOnly).not.toMatch(/\bfs\.|require\(['"]fs|child_process|spawn\(/)
