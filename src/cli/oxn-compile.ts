@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync } from 'fs'
 import { DocumentState, URI } from 'langium'
-import { compileBundle } from '../oxn-dsl/compiler/bundle-compiler'
-import type { OXNDocument } from '../oxn-dsl/generated/ast'
-import { createOxnServices } from '../oxn-dsl/langium/oxn-services'
+import { compileBundle } from '../oxl/compiler/bundle-compiler'
+import type { OXNDocument } from '../oxl/generated/ast'
+import { createOxnServices } from '../oxl/langium/oxn-services'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export interface DiagnosticResult {

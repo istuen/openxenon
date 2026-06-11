@@ -30,8 +30,8 @@
 # these are isolated and safe to run concurrently within a file.
 concurrentTestGlob = [
   "src/core/errors/__tests__/**",
-  "src/oxn-dsl/__tests__/**",
-  "src/oxn-dsl/compiler/__tests__/**",
+  "src/oxl/__tests__/**",
+  "src/oxl/compiler/__tests__/**",
   "src/work/__tests__/**",
   "src/skills/**",
   "src/cli/__tests__/task-filesystem.test.ts",

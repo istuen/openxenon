@@ -15,21 +15,21 @@ import { dirname, join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import { ensureDirectory } from '../infra/filesystem'
 import { preloadCompileDependencies } from '../infra/loader'
-import { compileBlueprint, compileFrozen } from '../oxn-dsl/compiler/blueprint-compiler'
+import { compileBlueprint, compileFrozen } from '../oxl/compiler/blueprint-compiler'
 import { ASSEMBLY_JSON, BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON } from '../kernel/index'
 import type { Blueprint } from '../kernel/index'
-import { type DagNode, validateDagTopology } from '../oxn-dsl/validators/blueprint-dag'
+import { type DagNode, validateDagTopology } from '../oxl/validators/blueprint-dag'
 import type { FrozenBlueprint } from '../kernel/index'
 import {
   type OxnAssemblyIR,
   type OxnAssemblyPart,
   type OxnAssemblySlotBinding,
   validateOxnAssemblyIR,
-} from '../oxn-dsl/schemas/oxn-assembly.schema'
-import { adaptOxnToFrozen } from '../oxn-dsl/compiler/oxn-adapter'
-import type { OXNDocument } from '../oxn-dsl/generated/ast.js'
-import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
-import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
+} from '../oxl/schemas/oxn-assembly.schema'
+import { adaptOxnToFrozen } from '../oxl/compiler/oxn-adapter'
+import type { OXNDocument } from '../oxl/generated/ast.js'
+import { generateOxnAssembly } from '../oxl/generator/oxn-generator.js'
+import { createOxnServices, resetOxnServices } from '../oxl/langium/oxn-services.js'
 
 function extractBlueprintAssembly(doc: LangiumDocument): OxnAssemblyIR | undefined {
   if (!doc.parseResult?.value) return undefined

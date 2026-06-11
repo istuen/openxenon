@@ -81,4 +81,4 @@ task "verify-build" {
 ## 7. 下一章
 
 - [Probe 类型参考](../reference/probe-types.md)
-- [OXN DSL 参考](../reference/oxn-dsl.md)
+- [OXN DSL 参考](../reference/oxl.md)

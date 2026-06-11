@@ -42,7 +42,7 @@ import {
   type OXNDocument,
   type ProofDeclaration,
   type ProofProbeDecl,
-} from '../oxn-dsl'
+} from '../oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'

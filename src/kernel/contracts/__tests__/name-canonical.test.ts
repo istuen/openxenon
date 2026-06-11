@@ -7,7 +7,7 @@
 //   3. assertDirNameConsistent — 目录式布局（work / proof）
 //
 // 设计动机（v1.1）：原本 toKebab/assertNameFileConsistent 在 src/cli/domain.ts (L3)，
-// 上移到 L0-Contract 后允许 L1-OXN-DSL 的 parseDomainSlim 也调用，软检测 NAME_FILE_MISMATCH。
+// 上移到 L0-Contract 后允许 L1-OXL 的 parseDomainSlim 也调用，软检测 NAME_FILE_MISMATCH。
 // =============================================================================
 
 import { describe, expect, test } from 'bun:test'
@@ -181,6 +181,6 @@ describe('L0-Contract 物理归位约束', () => {
     expect(src).toMatch(/from\s+['"]path['"]/)
     // 不能 import L0-Processor / L1+ / L2 / L3
     expect(src).not.toMatch(/from\s+['"]\.\.\/\.\.\/kernel\/(processors|probes)/)
-    expect(src).not.toMatch(/from\s+['"]\.\.\/\.\.\/(oxn-dsl|infra|work|cli|daemon|builtin)/)
+    expect(src).not.toMatch(/from\s+['"]\.\.\/\.\.\/(oxl|infra|work|cli|daemon|builtin)/)
   })
 })

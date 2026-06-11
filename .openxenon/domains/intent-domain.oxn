@@ -12,10 +12,10 @@
 //   - program-context.oxn → IntentDomain "SourceFile / Module / TestCase / Package / APIEndpoint"
 
 domain "IntentDomain" {
-  description = "Intent 轴统一词汇：CLI 入口、OXN DSL 自身、Program 业务概念三件套的合并域；与 align-domain / proof-domain 通过 IAP 三轴分工隔离"
+  description = "Intent 轴统一词汇：CLI 入口、OXL 自身、Program 业务概念三件套的合并域；与 align-domain / proof-domain 通过 IAP 三轴分工隔离"
 
   // ====================================================================
-  // 术语（term 块单数：CLI 入口 6 + OXN DSL 8 + Program 业务 6 = 20 个）
+  // 术语（term 块单数：CLI 入口 6 + OXL 8 + Program 业务 6 = 20 个）
   // ====================================================================
 
   term {
@@ -27,7 +27,7 @@ domain "IntentDomain" {
     "ErrorCode":    "标准化错误码（OXN_ 前缀；具体字典见 iap-error-context.oxn）"
     "Skill":        "嵌入到 AI 助手的命令手册（.opencode/skills/；详细见 align-domain）"
 
-    // ───────── OXN DSL（8）─────────
+    // ───────── OXL（8）─────────
     "Grammar":   "Langium 语法定义（.langium 文件）"
     "Schema":    "Zod 校验 schema，对应语法的中间表示"
     "Validator": "语法/语义校验器，编译期检查"
@@ -68,7 +68,7 @@ domain "IntentDomain" {
   invariant { "AI 调用必须传 --json，CLI 默认 human 模式" }
   invariant { "子命令名使用 kebab-case（与 align-domain 的 Skill ID 命名一致）" }
 
-  // ───────── OXN DSL ─────────
+  // ───────── OXL ─────────
   invariant { "oxn.langium 是 DSL 的唯一权威来源，AST 由 langium generate 自动产出" }
   invariant { "Zod schema 必须与 grammar 一一对应，缺一个就 broken" }
   invariant { "所有 validator 必须通过 registerOxnValidators 注册，否则不生效" }

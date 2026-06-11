@@ -183,4 +183,4 @@
 ## 9. 下一章
 
 - [信息隐藏原则](../core/document.md#27-信息隐藏原则)
-- [OXN DSL 参考](../reference/oxn-dsl.md)
+- [OXN DSL 参考](../reference/oxl.md)

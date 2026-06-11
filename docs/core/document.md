@@ -181,8 +181,8 @@ OpenXenon 由以下模块组成，每个模块都有明确的职责与所属轴�
 
 | 术语        | 中文             | 定义                                                              |
 | ----------- | ---------------- | ----------------------------------------------------------------- |
-| **OXN DSL** | OXN 领域特定语言 | 定义 Domain、Blueprint、Work 等资产的语法与解析规则               |
-| **Langium** | Langium          | OXN DSL 的实现框架（TypeScript 生态的 DSL 工具链）                |
+| **OXL** | OpenXenon Language | 定义 Domain、Blueprint、Work 等资产的语法与解析规则               |
+| **Langium** | Langium          | OXL 的实现框架（TypeScript 生态的 DSL 工具链）                |
 | **Scope**   | 作用域           | 资产引用的寻址空间：`@oxn`（内置）、`@prj`（项目）。`@glo` 已废弃 |
 
 #### 2.4.2 Runtime（运行引擎）

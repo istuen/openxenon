@@ -4,7 +4,7 @@ import tsPlugin from '@typescript-eslint/eslint-plugin'
 export default [
   {
     // 全局：跳过自动生成文件（langium generate 产物），其内部 eslint-disable 提示可能 stale
-    ignores: ['src/oxn-dsl/generated/**'],
+    ignores: ['src/oxl/generated/**'],
   },
   {
     files: ['src/**/*.ts'],

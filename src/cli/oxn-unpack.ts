@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { unpackBundle } from '../oxn-dsl/unpacker/bundle-unpacker'
+import { unpackBundle } from '../oxl/unpacker/bundle-unpacker'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

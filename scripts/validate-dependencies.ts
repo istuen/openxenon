@@ -16,7 +16,7 @@
 //     （即 kernel/ 后还有子目录的形式全部黑名单）
 //   - L0 内部 4 子层（contracts/ schemas/ processors/ verdicts/）的互引
 //     自由——它们是"内部职责分工"，对外透明（宪法 §3 修订后）。
-//   - L1+ 子层（infra/ oxn-dsl/ builtin/ work/ cli/daemon/...）互相之间：
+//   - L1+ 子层（infra/ oxl/ builtin/ work/ cli/daemon/...）互相之间：
 //     仍按旧的 8 子层白名单 + 跨层禁止矩阵（外层不能调内层 algorithm
 //     等等）。本文件保留这部分规则——它们与 Kernel 公开面正交。
 //
@@ -50,13 +50,13 @@ interface ValidationResult {
   summary: Summary
 }
 
-type LayerName = 'L0-Kernel' | 'L1-Infra' | 'L1-OXN-DSL' | 'L2-Builtin' | 'L2-Work' | 'L3-CLI'
+type LayerName = 'L0-Kernel' | 'L1-Infra' | 'L1-OXL' | 'L2-Builtin' | 'L2-Work' | 'L3-CLI'
 
 /**
  * 8 子层 → 4 大类的归类（PR-K 简化后）：
  *   - L0-Kernel:  src/kernel/ 整体对外是一个 L0 实体（公开面 = index.ts）
  *   - L1-Infra:   src/infra/
- *   - L1-OXN-DSL: src/oxn-dsl/
+ *   - L1-OXL:      src/oxl/
  *   - L2-Builtin: src/builtin/
  *   - L2-Work:    src/work/
  *   - L3-CLI:     src/cli/ + src/daemon/ + src/hall/ + src/skills/ +
@@ -71,8 +71,8 @@ function getLayerFromPath(filePath: string): LayerName | null {
   if (relativePath.startsWith('src/infra/')) {
     return 'L1-Infra'
   }
-  if (relativePath.startsWith('src/oxn-dsl/')) {
-    return 'L1-OXN-DSL'
+  if (relativePath.startsWith('src/oxl/')) {
+    return 'L1-OXL'
   }
   if (relativePath.startsWith('src/builtin/')) {
     return 'L2-Builtin'
@@ -131,13 +131,13 @@ function isForbiddenKernelDeepPath(importPath: string): boolean {
 const LAYER_RULES: Record<LayerName, { canCall: LayerName[]; cannotCall: LayerName[] }> = {
   'L0-Kernel': {
     canCall: [],
-    cannotCall: ['L1-Infra', 'L1-OXN-DSL', 'L2-Builtin', 'L2-Work', 'L3-CLI'],
+    cannotCall: ['L1-Infra', 'L1-OXL', 'L2-Builtin', 'L2-Work', 'L3-CLI'],
   },
   'L1-Infra': {
     canCall: ['L0-Kernel'],
     cannotCall: ['L2-Work', 'L3-CLI'],
   },
-  'L1-OXN-DSL': {
+  'L1-OXL': {
     canCall: ['L0-Kernel'],
     cannotCall: ['L2-Builtin', 'L2-Work', 'L3-CLI'],
   },
@@ -146,11 +146,11 @@ const LAYER_RULES: Record<LayerName, { canCall: LayerName[]; cannotCall: LayerNa
     cannotCall: ['L2-Work', 'L3-CLI'],
   },
   'L2-Work': {
-    canCall: ['L1-Infra', 'L1-OXN-DSL', 'L0-Kernel'],
+    canCall: ['L1-Infra', 'L1-OXL', 'L0-Kernel'],
     cannotCall: ['L3-CLI'],
   },
   'L3-CLI': {
-    canCall: ['L2-Builtin', 'L2-Work', 'L1-Infra', 'L1-OXN-DSL', 'L0-Kernel'],
+    canCall: ['L2-Builtin', 'L2-Work', 'L1-Infra', 'L1-OXL', 'L0-Kernel'],
     cannotCall: [],
   },
 }

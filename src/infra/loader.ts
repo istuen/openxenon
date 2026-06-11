@@ -7,7 +7,7 @@ import { GLOBAL_ARSENAL_ROOT } from '../infra/paths'
 import { resolveBoundary } from '../infra/paths'
 import type { Scope as InfraScope } from '../infra/paths'
 
-export type { ProbeNamespace, ParsedProbeRef } from '../oxn-dsl/validators/probe-namespace'
+export type { ProbeNamespace, ParsedProbeRef } from '../oxl/validators/probe-namespace'
 
 export const ProbeTypeSchema = z.enum([
   'fs_exists',

@@ -227,7 +227,7 @@ v1.1 把 work 运行时状态从 work.oxn 同级目录搬到 `.run/` 子目录�
 
 ## work.oxn 4 大模式（AI 创作模板库）
 
-> 下面 4 个模式对应 `src/oxn-dsl/examples/works/` 下的真实范例，可直接 fork 改写。
+> 下面 4 个模式对应 `src/oxl/examples/works/` 下的真实范例，可直接 fork 改写。
 
 ### 模式 1：单域单 task（explore 类）
 
@@ -238,7 +238,7 @@ v1.1 把 work 运行时状态从 work.oxn 同级目录搬到 `.run/` 子目录�
 ```oxn
 work "explore-dsl" {
   context {
-    goal = "探索 OXN DSL 语法结构，生成分析报告"
+    goal = "探索 OXL 语法结构，生成分析报告"
     constraints = ["使用 oxn 命令而非直接读源码"]
     loop_policy { max_iterations = 3 }
   }
@@ -252,7 +252,7 @@ work "explore-dsl" {
     part "explore" {
       skill_context = "探索 grammar/schema/validator/compiler 四个子模块"
       acceptance = [
-        "已读 src/oxn-dsl/langium/oxn.langium",
+        "已读 src/oxl/langium/oxn.langium",
         "已用 oxn dev compile 跑通一个范例",
         "输出 .openxenon/works/<w>/report.md"
       ]

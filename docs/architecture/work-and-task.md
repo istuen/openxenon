@@ -207,4 +207,4 @@ work "CrossDomainWork" {
 
 - [State 详解](./state.md) — 双层 state.json
 - [信息隐藏原则](../core/document.md#27-信息隐藏原则) — AI 看不到什么
-- [OXN DSL 参考](../reference/oxn-dsl.md) — 完整语法
+- [OXN DSL 参考](../reference/oxl.md) — 完整语法

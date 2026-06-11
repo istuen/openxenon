@@ -1,9 +1,9 @@
 {
-  "projectName": "OXNDSL",
+  "projectName": "OpenXenonLanguage",
   "languages": [
     {
-      "id": "oxn",
-      "grammar": "src/oxn-dsl/langium/oxn.langium",
+      "id": "oxl",
+      "grammar": "src/oxl/langium/oxn.langium",
       "fileExtensions": [".oxn"],
       "textMate": {
         "out": "syntaxes/oxn.tmLanguage.json"
@@ -15,5 +15,5 @@
       }
     }
   ],
-  "out": "src/oxn-dsl/generated/"
+  "out": "src/oxl/generated/"
 }

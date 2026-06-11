@@ -1,7 +1,7 @@
 {
-  "name": "oxn-dsl",
-  "displayName": "OXN DSL",
-  "description": "OXN DSL syntax highlighting support",
+  "name": "oxn",
+  "displayName": "OpenXenon Language",
+  "description": "OXL (OpenXenon Language) syntax highlighting support for .oxn files",
   "version": "0.1.0",
   "publisher": "openxenon",
   "license": "MIT",
@@ -14,11 +14,13 @@
   "contributes": {
     "languages": [
       {
-        "id": "oxn",
+        "id": "oxl",
         "extensions": [
           ".oxn"
         ],
         "aliases": [
+          "OXL",
+          "oxl",
           "OXN",
           "oxn"
         ],
@@ -27,7 +29,7 @@
     ],
     "grammars": [
       {
-        "language": "oxn",
+        "language": "oxl",
         "scopeName": "source.oxn",
         "path": "./syntaxes/oxn.tmLanguage.json"
       }

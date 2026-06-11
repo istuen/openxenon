@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { basename, join } from 'path'
-import type { OxnAssemblyIR, OxnAssemblyPart } from '../oxn-dsl/schemas/oxn-assembly.schema'
+import type { OxnAssemblyIR, OxnAssemblyPart } from '../oxl/schemas/oxn-assembly.schema'
 import type { DagNode } from '../kernel/index'
 
 const BOUNDARY_DIR = '.openxenon'
@@ -96,7 +96,7 @@ export class TaskSandbox {
       id: p.name,
       deps: p.name === partName ? deps : [],
     }))
-    const { validateDagTopology } = require('../oxn-dsl/validators/blueprint-dag')
+    const { validateDagTopology } = require('../oxl/validators/blueprint-dag')
     const result = validateDagTopology(dagNodes)
     if (!result.valid) {
       throw new Error(`DAG 拓扑更新失败: ${result.errors.join('; ')}`)

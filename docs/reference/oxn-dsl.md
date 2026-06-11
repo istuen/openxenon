@@ -275,7 +275,7 @@ ref = '@oxn' | '@prj'
 完整 grammar 见仓库根目录：
 
 ```
-src/oxn-dsl/langium/oxn.langium
+src/oxl/langium/oxn.langium
 ```
 
 每次 grammar 变更后运行 `pnpm build` 重新生成 AST。

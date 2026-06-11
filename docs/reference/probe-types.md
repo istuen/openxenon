@@ -412,4 +412,4 @@ task "verify-build" {
 ## 17. 下一章
 
 - [State Schema 参考](./state-schema.md)
-- [OXN DSL 参考](./oxn-dsl.md)
+- [OXN DSL 参考](./oxl.md)

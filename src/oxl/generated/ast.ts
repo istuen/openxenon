@@ -6,7 +6,7 @@
 /* eslint-disable */
 import * as langium from 'langium';
 
-export const OXNDSLTerminals = {
+export const OpenXenonLanguageTerminals = {
     ID: /[_a-zA-Z][\w-]*/,
     STRING: /"[^"]*"/,
     NUMBER: /[0-9]+(\.[0-9]+)?/,
@@ -16,9 +16,9 @@ export const OXNDSLTerminals = {
     SL_COMMENT: /\/\/[^\n\r]*/,
 };
 
-export type OXNDSLTerminalNames = keyof typeof OXNDSLTerminals;
+export type OpenXenonLanguageTerminalNames = keyof typeof OpenXenonLanguageTerminals;
 
-export type OXNDSLKeywordNames =
+export type OpenXenonLanguageKeywordNames =
     | "!="
     | "&&"
     | "("
@@ -90,7 +90,7 @@ export type OXNDSLKeywordNames =
     | "||"
     | "}";
 
-export type OXNDSLTokenNames = OXNDSLTerminalNames | OXNDSLKeywordNames;
+export type OpenXenonLanguageTokenNames = OpenXenonLanguageTerminalNames | OpenXenonLanguageKeywordNames;
 
 export type AnyType = AnyTypeRef;
 
@@ -966,7 +966,7 @@ export function isWorkDeclaration(item: unknown): item is WorkDeclaration {
     return reflection.isInstance(item, WorkDeclaration.$type);
 }
 
-export type OXNDSLAstType = {
+export type OpenXenonLanguageAstType = {
     AnyType: AnyType
     AnyTypeRef: AnyTypeRef
     BanBlock: BanBlock
@@ -1020,7 +1020,7 @@ export type OXNDSLAstType = {
     WorkDeclaration: WorkDeclaration
 }
 
-export class OXNDSLAstReflection extends langium.AbstractAstReflection {
+export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflection {
     override readonly types = {
         AnyType: {
             name: AnyType.$type,
@@ -1695,4 +1695,4 @@ export class OXNDSLAstReflection extends langium.AbstractAstReflection {
     } as const satisfies langium.AstMetaData
 }
 
-export const reflection = new OXNDSLAstReflection();
+export const reflection = new OpenXenonLanguageAstReflection();

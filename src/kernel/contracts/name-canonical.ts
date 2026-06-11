@@ -5,15 +5,15 @@
 // "AST 声明的 entity name" vs "磁盘上的文件/目录 stem" 的一致性比对。
 //
 // 物理边界：
-//   - L0-Contract：可被 L0-Processor / L1-OXN-DSL / L1-Infra / L2 / L3 任意层 import
+//   - L0-Contract：可被 L0-Processor / L1-OXL / L1-Infra / L2 / L3 任意层 import
 //   - 仅依赖同层 iap-error（IAPError / IAPAction），不依赖任何 fs / net / child_process
 //
 // 设计动机（v1.0.2 → v1.1）：
 //   - 原 assertNameFileConsistent 在 src/cli/domain.ts（L3），导致
-//     parseDomainSlim（L1-OXN-DSL）无法调用 —— 触发 ESLint 架构守卫 +
+//     parseDomainSlim（L1-OXL）无法调用 —— 触发 ESLint 架构守卫 +
 //     bun scripts/validate-dependencies.ts 双向依赖。
 //   - 上移到 L0-Contract 后，所有层可自由 import。
-//   - toKebab 的 3 处副本（src/cli/domain.ts / src/oxn-dsl/compiler/blueprint-index-builder.ts
+//   - toKebab 的 3 处副本（src/cli/domain.ts / src/oxl/compiler/blueprint-index-builder.ts
 //     / 测试文件）统一收敛到本模块。
 //
 // 历史：

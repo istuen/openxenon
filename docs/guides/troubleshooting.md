@@ -8,7 +8,7 @@
 **原因**：未构建
 **修复**：`pnpm build`
 
-### `Cannot find module '@oxn-dsl'`
+### `Cannot find module '@oxl'`
 **原因**：依赖未装或构建顺序错
 **修复**：
 ```bash
@@ -205,5 +205,5 @@ oxn work run --work-file <path> --json -v
 ## 12. 仍未解决？
 
 - 查看 [CLI 命令参考](../reference/cli-reference.md) 错误码表
-- 查看 [OXN DSL 参考](../reference/oxn-dsl.md) 完整语法
+- 查看 [OXN DSL 参考](../reference/oxl.md) 完整语法
 - 在 GitHub Issues 搜索：https://github.com/istuen/openxenon/issues

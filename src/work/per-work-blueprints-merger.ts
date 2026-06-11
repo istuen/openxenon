@@ -14,7 +14,7 @@
 import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from 'fs'
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
-import { parseOxnReference } from '../oxn-dsl/scope/oxn-scope'
+import { parseOxnReference } from '../oxl/scope/oxn-scope'
 import { BOUNDARY_DIR, WORK_BLUEPRINTS_JSON } from '../kernel/index'
 import { hashText } from './plan-hash'
 

@@ -4,11 +4,11 @@
  ******************************************************************************/
 
 import type { LangiumSharedCoreServices, LangiumCoreServices, LangiumGeneratedCoreServices, LangiumGeneratedSharedCoreServices, LanguageMetaData, Module, IParserConfig } from 'langium';
-import { OXNDSLAstReflection } from './ast.js';
+import { OpenXenonLanguageAstReflection } from './ast.js';
 import { OXNGrammar } from './grammar.js';
 
 export const OXNLanguageMetaData = {
-    languageId: 'oxn',
+    languageId: 'oxl',
     fileExtensions: ['.oxn'],
     caseInsensitive: false,
     mode: 'development'
@@ -20,8 +20,8 @@ export const OXNParserConfig: IParserConfig = {
     maxLookahead: 4,
 };
 
-export const OXNDSLGeneratedSharedModule: Module<LangiumSharedCoreServices, LangiumGeneratedSharedCoreServices> = {
-    AstReflection: () => new OXNDSLAstReflection()
+export const OpenXenonLanguageGeneratedSharedModule: Module<LangiumSharedCoreServices, LangiumGeneratedSharedCoreServices> = {
+    AstReflection: () => new OpenXenonLanguageAstReflection()
 };
 
 export const OXNGeneratedModule: Module<LangiumCoreServices, LangiumGeneratedCoreServices> = {

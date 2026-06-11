@@ -10,7 +10,7 @@
  *   4. → FrozenBlueprint（Core 零感知直接消费）
  */
 
-import { type DagNode, validateDagTopology } from '../../oxn-dsl/validators/blueprint-dag'
+import { type DagNode, validateDagTopology } from '../../oxl/validators/blueprint-dag'
 import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/index'
 import { createXenonMeta, validateFrozenBlueprint } from '../../kernel/index'
 import { hashPort } from '../../infra/hash'

@@ -1,7 +1,7 @@
 // =============================================================================
 // Unified OXN DSL barrel (v0.1-final)
 //
-// The unified grammar (see src/oxn-dsl/langium/oxn.langium) defines:
+// The unified grammar (see src/oxl/langium/oxn.langium) defines:
 //   - Probe / Part / Blueprint — asset declarations (global directory)
 //   - Domain — DDD bounded context (term/ban/invariant)
 //   - Work — workspace orchestrator (resource pool + task DAG)
@@ -126,3 +126,30 @@ export {
   isProofDeclaration,
   isProofProbeDecl,
 } from './generated/ast'
+
+// =============================================================================
+// v0.0.28 兼容层：OpenXenon Language (OXL) 品牌升级
+// 历史 API 仍以 `Oxn*` 名字导出（@deprecated）；新代码请用 `Oxl*`
+// 计划下个版本（v0.1.x）批量移除
+// =============================================================================
+
+/** @deprecated brand upgrade: use OxlParser */
+export { createOxnParser as createOxlParser } from './langium/oxn-services'
+/** @deprecated brand upgrade: use OxlAssetLoader */
+export { createOxnAssetLoader as createOxlAssetLoader } from './loader/oxn-loader'
+/** @deprecated brand upgrade: use OxlCompiler */
+export { createOxnCompiler as createOxlCompiler } from './compiler/blueprint-compiler'
+/** @deprecated brand upgrade: use OxlWorkspaceManager */
+export { createOxnWorkspaceManager as createOxlWorkspaceManager } from './scope/oxn-workspace-manager'
+/** @deprecated brand upgrade: use OxlValidatorRegistry */
+export { registerOxnValidators as registerOxlValidators } from './validator/oxn-validation'
+/** @deprecated brand upgrade: use OxlIR */
+export type { OxnAssemblyIR as OxlAssemblyIR } from './schemas/oxn-assembly.schema'
+/** @deprecated brand upgrade: use OxlAssetType */
+export type {
+  OxnAssetType as OxlAssetType,
+  OxnScope as OxlScope,
+  ResolvedOxnAsset as ResolvedOxlAsset,
+} from './scope/oxn-scope'
+/** @deprecated brand upgrade: use OxlLoadResult */
+export type { OxnLoadResult as OxlLoadResult } from './loader/oxn-loader'

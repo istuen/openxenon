@@ -4,13 +4,13 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 
 const KERNEL_ROOT = join(import.meta.dir, '../../src/kernel')
-const OXN_DSL_ROOT = join(import.meta.dir, '../../src/oxn-dsl')
+const OXN_DSL_ROOT = join(import.meta.dir, '../../src/oxl')
 
 describe('Kernel Architectural Guard', () => {
   describe('L0 Kernel 不应导入 L1/L2/L3 模块', () => {
-    it('L0 Kernel 不应导入 oxn-dsl 模块', () => {
+    it('L0 Kernel 不应导入 oxl 模块', () => {
       const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
-      const forbidden = ['oxn-dsl']
+      const forbidden = ['oxl']
       for (const file of kernelFiles) {
         const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
@@ -122,7 +122,7 @@ describe('Kernel Architectural Guard', () => {
   describe('L0 Kernel 不应使用 require 导入外层模块', () => {
     it('L0 Kernel 不应使用 require 导入 L1/L2/L3 模块', () => {
       const kernelFiles = glob.sync('**/*.ts', { cwd: KERNEL_ROOT })
-      const forbidden = ['oxn-dsl', 'infra', 'builtin', 'work', 'cli', 'hall', 'skills', 'watcher', 'core', 'i18n']
+      const forbidden = ['oxl', 'infra', 'builtin', 'work', 'cli', 'hall', 'skills', 'watcher', 'core', 'i18n']
       for (const file of kernelFiles) {
         const content = readFileSync(join(KERNEL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
@@ -208,8 +208,8 @@ describe('Kernel Architectural Guard', () => {
     })
   })
 
-  describe('L1 OXN DSL 不应导入 L2/L3 模块', () => {
-    it('L1 OXN DSL 不应导入 builtin 模块', () => {
+  describe('L1 OXL 不应导入 L2/L3 模块', () => {
+    it('L1 OXL 不应导入 builtin 模块', () => {
       const dslFiles = glob
         .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
@@ -223,7 +223,7 @@ describe('Kernel Architectural Guard', () => {
       }
     })
 
-    it('L1 OXN DSL 不应导入 work 模块', () => {
+    it('L1 OXL 不应导入 work 模块', () => {
       const dslFiles = glob
         .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
@@ -237,7 +237,7 @@ describe('Kernel Architectural Guard', () => {
       }
     })
 
-    it('L1 OXN DSL 不应导入 cli 模块', () => {
+    it('L1 OXL 不应导入 cli 模块', () => {
       const dslFiles = glob
         .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
@@ -251,7 +251,7 @@ describe('Kernel Architectural Guard', () => {
       }
     })
 
-    it('L1 OXN DSL 不应导入 daemon/hall/skills/watcher/core/i18n 模块', () => {
+    it('L1 OXL 不应导入 daemon/hall/skills/watcher/core/i18n 模块', () => {
       const dslFiles = glob
         .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))

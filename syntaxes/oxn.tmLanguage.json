@@ -1,6 +1,6 @@
 {
-  "name": "oxn",
-  "scopeName": "source.oxn",
+  "name": "oxl",
+  "scopeName": "source.oxl",
   "fileTypes": [
     ".oxn"
   ],
@@ -9,11 +9,11 @@
       "include": "#comments"
     },
     {
-      "name": "keyword.control.oxn",
+      "name": "keyword.control.oxl",
       "match": "\\b(acceptance|align|any|as|ban|blueprint|boolean|constraints|context|default|deps|description|domain|enum|execution|false|goal|guidance|invariant|lifecycle|list|loop_policy|map|max_iterations|null|number|objective|observe|output|param|params|part|parts|probe|proof|prop|ref|required|skill|skill_context|slot|string|task|term|true|type|version|work)\\b"
     },
     {
-      "name": "string.quoted.double.oxn",
+      "name": "string.quoted.double.oxl",
       "begin": "\"",
       "end": "\"",
       "patterns": [
@@ -27,17 +27,17 @@
     "comments": {
       "patterns": [
         {
-          "name": "comment.block.oxn",
+          "name": "comment.block.oxl",
           "begin": "/\\*",
           "beginCaptures": {
             "0": {
-              "name": "punctuation.definition.comment.oxn"
+              "name": "punctuation.definition.comment.oxl"
             }
           },
           "end": "\\*/",
           "endCaptures": {
             "0": {
-              "name": "punctuation.definition.comment.oxn"
+              "name": "punctuation.definition.comment.oxl"
             }
           }
         },
@@ -45,16 +45,16 @@
           "begin": "//",
           "beginCaptures": {
             "1": {
-              "name": "punctuation.whitespace.comment.leading.oxn"
+              "name": "punctuation.whitespace.comment.leading.oxl"
             }
           },
           "end": "(?=$)",
-          "name": "comment.line.oxn"
+          "name": "comment.line.oxl"
         }
       ]
     },
     "string-character-escape": {
-      "name": "constant.character.escape.oxn",
+      "name": "constant.character.escape.oxl",
       "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
     }
   }

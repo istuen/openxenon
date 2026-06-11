@@ -13,7 +13,7 @@ import {
   adaptOxnToFrozen,
   OxnKernelAdapter,
   resolveTemplateString,
-} from '../../oxn-dsl/compiler/oxn-adapter'
+} from '../../oxl/compiler/oxn-adapter'
 
 function _createAbstractPart(params: {
   name: string

@@ -17,7 +17,7 @@ OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemo
 | L0-Contract | `src/kernel/contracts/` | L0-Processor、L1、L2、L3 |
 | L0-Processor | `src/kernel/{processors,probes,enums.ts}` | L1+（Kernel 是"兰姆达真空"：禁止 `fs` / `net` / `child_process` / `process.env` / `process.std*` / `EventEmitter`） |
 | L1-Infra | `src/infra/` | L0-Processor、L2-Work、L3 |
-| L1-OXN-DSL | `src/oxn-dsl/`（排除 `generated/`） | L0-Processor、L2、L3 |
+| L1-OXL | `src/oxl/`（排除 `generated/`） | L0-Processor、L2、L3 |
 | L2-Builtin | `src/builtin/` | L2-Work、L3 |
 | L2-Work | `src/work/` | L3 |
 | L3 | `src/{cli,daemon,hall,skills,watcher,core,i18n}/` | — |
@@ -28,7 +28,7 @@ ESLint 还阻止的相邻关系：`kernel↔infra`、`daemon↔cli`（仅 socket
 
 ```bash
 bun install --frozen-lockfile
-bun run langium:generate   # 重新生成 src/oxn-dsl/generated/ — 不要手动编辑
+bun run langium:generate   # 重新生成 src/oxl/generated/ — 不要手动编辑
 bun run build               # = langium:generate + bun build --compile → dist/oxn
 bun run build:macos         # 交叉编译到 dist/oxn-macos（还有 :linux、:windows）
 bun run typecheck           # tsc --noEmit；tsconfig 启用了 noUncheckedIndexedAccess + verbatimModuleSyntax
@@ -59,11 +59,11 @@ bun test                    # bun test，约 50 秒，414 个测试
 
 ## OXN DSL
 
-- 语法定义：`src/oxn-dsl/langium/oxn.langium`
-- 配置：`langium-config.json` → 输出到 `src/oxn-dsl/generated/` 与 `syntaxes/oxn.tmLanguage.json`
+- 语法定义：`src/oxl/langium/oxn.langium`
+- 配置：`langium-config.json` → 输出到 `src/oxl/generated/` 与 `syntaxes/oxn.tmLanguage.json`
 - VSCode 扩展：`oxn-vscode/`（自带 `oxn-dsl-0.1.0.vsix`；其内部的 `pnpm-lock.yaml` 仅用于该扩展）
-- `src/oxn-dsl/builtin/` 存放 **.oxn 源**资产；`src/builtin/` 存放运行时加载的 **已编译二进制** 资产——它们是源与产物的关系，并非重复。
-- 语法修改后必须运行 `bun run langium:generate`；不要手动编辑 `src/oxn-dsl/generated/*`（该目录在 `biome.json` `files.ignores` 中也已忽略）。
+- `src/oxl/builtin/` 存放 **.oxn 源**资产；`src/builtin/` 存放运行时加载的 **已编译二进制** 资产——它们是源与产物的关系，并非重复。
+- 语法修改后必须运行 `bun run langium:generate`；不要手动编辑 `src/oxl/generated/*`（该目录在 `biome.json` `files.ignores` 中也已忽略）。
 
 ## 仓库约定
 

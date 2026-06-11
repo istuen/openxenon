@@ -1,7 +1,7 @@
 import type { LangiumCoreServices, LangiumSharedCoreServices } from 'langium'
 import { createDefaultCoreModule, createDefaultSharedCoreModule, inject } from 'langium'
 import { NodeFileSystem } from 'langium/node'
-import { OXNDSLGeneratedSharedModule, OXNGeneratedModule } from '../generated/module.js'
+import { OpenXenonLanguageGeneratedSharedModule, OXNGeneratedModule } from '../generated/module.js'
 import { registerOxnValidators } from '../validator/oxn-validation.js'
 
 let _sharedServices: LangiumSharedCoreServices | null = null
@@ -14,7 +14,7 @@ export function createOxnSharedServices(): LangiumSharedCoreServices {
     createDefaultSharedCoreModule({
       fileSystemProvider: (_services: LangiumSharedCoreServices) => NodeFileSystem,
     } as Record<string, unknown> as any),
-    OXNDSLGeneratedSharedModule,
+    OpenXenonLanguageGeneratedSharedModule,
   ) as unknown as LangiumSharedCoreServices
 
   return _sharedServices

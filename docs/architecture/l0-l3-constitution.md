@@ -6,7 +6,7 @@
 >
 > | 限界上下文 | 文档 | 受众 | 治理对象 |
 > |---|---|---|---|
-> | **用户业务域** | [`domain.md`](./domain.md) | 使用 OXN DSL 定义业务的工程师 | 用户写什么 `.oxn` 约束 AI |
+> | **用户业务域** | [`domain.md`](./domain.md) | 使用 OXL 定义业务的工程师 | 用户写什么 `.oxn` 约束 AI |
 > | **OXN 元域** | 本文档 | 开发/维护 OXN 的架构师 | OXN 引擎自身的代码组织 |
 >
 > 二者通过**上下文映射**（Context Mapping）连接（见 §8），不可互相包含。
@@ -59,9 +59,9 @@
 - **职责**：DSL 解析 + 物理 IO 收口
 - **核心约束**：所有物理 IO 必须通过 Port 接口（`FsPort` / `PathPort` / `ProbePort` / `HashPort` / `OsPort` / `PartPort`）；可被 mock 替换
 - **包含模块**：
-  - **OXN DSL**（Langium grammar / Parser / Validator / Generator / Contracts / Schemas / Scope）
+  - **OXL / OpenXenon Language**（Langium grammar / Parser / Validator / Generator / Contracts / Schemas / Scope）
   - **Infra**（Probes 物理执行 / Frozen IO / Explore 采集 / Sandbox / Loader / Hash / Process / Socket / FileSystem）
-- **子目录**：`src/oxn-dsl/`（L1-OXN-DSL）+ `src/infra/`（L1-Infra）
+- **子目录**：`src/oxl/`（L1-OXL）+ `src/infra/`（L1-Infra）
 
 ### 2.3 L2 Module（业务 / 工程模块层）
 
@@ -72,7 +72,7 @@
   - **Work**（Adapters / Policies / Sandbox / Explore）
 - **子目录**：`src/builtin/` · `src/work/`
 
-> **命名决策**：L2 原名 "Domain"（与 OXN DSL 的 `Domain` 实体同名产生歧义），按 ADR-0006 改名为 **Module**。详见 §6.1。
+> **命名决策**：L2 原名 "Domain"（与 OXL 的 `Domain` 实体同名产生歧义），按 ADR-0006 改名为 **Module**。详见 §6.1。
 
 ### 2.4 L3 Runtime（入口 / 外部交互层）
 
@@ -98,7 +98,7 @@
 | **L0 Kernel** | L0-Contract | `src/kernel/contracts/` | 外部插座（Port 接口） |
 | **L0 Kernel** | L0-Processor | `src/kernel/processors/` `src/kernel/verdicts/` | 纯逻辑推演机 |
 | **L1 Foundation** | L1-Infra | `src/infra/` | 物理 IO 与探针执行 |
-| **L1 Foundation** | L1-OXN-DSL | `src/oxn-dsl/` *(compiler/ 仅含语法解析与全局索引)* | 语言解析 + 编译生成 |
+| **L1 Foundation** | L1-OXL | `src/oxl/` *(compiler/ 仅含语法解析与全局索引)* | 语言解析 + 编译生成 |
 | **L2 Module** | L2-Builtin | `src/builtin/` | 编译后内置资产（.oxn 资源） |
 | **L2 Module** | L2-Work | `src/work/` | 编排与执行（adapters / policies / sandbox / explore） |
 | **L3 Runtime** | L3-CLI | `src/cli/` `src/daemon/` `src/hall/` `src/skills/` `src/watcher/` `src/core/` `src/i18n/` | 入口与外部交互 |
@@ -121,9 +121,9 @@
 > L0 内部 4 子层之间互相 import **自由**——它们是包内组织，外部不可见（类比 npm `exports` 字段：决定公开面，`src/` 内怎么分目录是包自己的事）。
 
 > **Oxl 命名澄清**：
-> - `src/oxn-dsl/builtin/` 装 **OXN DSL 格式的资产源**（`.oxn` 文件 + Schema 定义）
+> - `src/oxl/builtin/` 装 **OXL 格式的资产源**（`.oxn` 文件 + Schema 定义）
 > - `src/builtin/` 装 **二进制内置资产**（运行时通过 Loader 加载）
-> - 二者关系：`oxn-dsl/builtin` 是 Builtin 的"源"，`builtin/` 是"产物"
+> - 二者关系：`oxl/builtin` 是 Builtin 的"源"，`builtin/` 是"产物"
 > - 旧 Arsenal v0.0.x 时代 `src/arsenals/` 已废弃（commit `7cdadb9` / `bad4a12`）
 
 ---
@@ -147,12 +147,12 @@ L1/L2/L3 互相之间的依赖仍按"内层不依赖外层"原则：
 
 | 来源层（调用方） | 可以依赖 | 禁止依赖 |
 |---|---|---|
-| **L0-Kernel** | （无；L0 只能 import 同子层） | L1-Infra, L1-OXN-DSL, L2-Builtin, L2-Work, L3-CLI |
+| **L0-Kernel** | （无；L0 只能 import 同子层） | L1-Infra, L1-OXL, L2-Builtin, L2-Work, L3-CLI |
 | **L1-Infra** | L0-Kernel | L2-Work, L3-CLI |
-| **L1-OXN-DSL** | L0-Kernel | L2-Builtin, L2-Work, L3-CLI |
+| **L1-OXL** | L0-Kernel | L2-Builtin, L2-Work, L3-CLI |
 | **L2-Builtin** | L1-Infra, L0-Kernel | L2-Work, L3-CLI |
-| **L2-Work** | L1-Infra, L1-OXN-DSL, L0-Kernel | L3-CLI |
-| **L3-CLI** | L2-Builtin, L2-Work, L1-Infra, L1-OXN-DSL, L0-Kernel | （无） |
+| **L2-Work** | L1-Infra, L1-OXL, L0-Kernel | L3-CLI |
+| **L3-CLI** | L2-Builtin, L2-Work, L1-Infra, L1-OXL, L0-Kernel | （无） |
 
 ### 4.3 强制执行
 
@@ -169,7 +169,7 @@ L1/L2/L3 互相之间的依赖仍按"内层不依赖外层"原则：
 | [`docs/core/document.md`](../core/document.md) §2.4-§2.5 | OXN Engine 三模块（Kernel/Infra/Daemon） | 等价互补：本文 = 代码分层视角；document.md = Runtime 视角 |
 | [`README.md` §7](../../README.md) | 用户视角的 L0-L3 | 入门指引；完整定义见本文 |
 | [`domain.md`](./domain.md) | 用户业务域（DDD Bounded Context） | 上下文映射（见 §8） |
-| [`blueprint.md`](./blueprint.md) | Blueprint 实体深读 | Blueprint 位于 L1 OXN DSL |
+| [`blueprint.md`](./blueprint.md) | Blueprint 实体深读 | Blueprint 位于 L1 OXL |
 | [`work-and-task.md`](./work-and-task.md) | Work + Task 实体深读 | 位于 L2 Module |
 | [`state.md`](./state.md) | 双层 state.json | 物理位置在 L2 Work 与 L3 CLI 共同维护 |
 
@@ -189,7 +189,7 @@ L1/L2/L3 互相之间的依赖仍按"内层不依赖外层"原则：
 
 ### 6.1 L2 Domain → L2 Module（ADR-0006 摘要）
 
-**动机**：OXN DSL 有 `Domain` 实体（DDD 限界上下文），位于 L2 层；"L2 Domain" 命名既可指层也可指实体，产生歧义。
+**动机**：OXL 有 `Domain` 实体（DDD 限界上下文），位于 L2 层；"L2 Domain" 命名既可指层也可指实体，产生歧义。
 
 **决策**：L2 改名为 **Module**，包含三个并列子模块：**Arsenal**（v0.0.x 兼容） + **Domain**（DDD） + **Work**。当前 v0.0.x Arsenal 已废弃（`src/arsenals/` 已删除），L2 Module 实际为 **Builtin + Work** 两个子模块。
 
@@ -200,7 +200,7 @@ L1/L2/L3 互相之间的依赖仍按"内层不依赖外层"原则：
 | Stage | Slot（Blueprint）/ Part（Task） | v0.1 DDD dual-layer |
 | Task | Work | v0.1-final |
 | Arsenal | Builtin / Work | `7cdadb9` |
-| YAML / JSON Blueprint | OXN DSL | v0.1 |
+| YAML / JSON Blueprint | OXL | v0.1 |
 
 ### 6.3 L0-L3 vs P0-P3 区分
 
@@ -250,7 +250,7 @@ find src -maxdepth 2 -type d | sort
 
 | ID | 偏差 | 文档位置 |
 |---|---|---|
-| **C-9** | `src/oxn-dsl/builtin/` vs `src/builtin/` 命名重叠 | §3 末尾命名澄清 |
+| **C-9** | `src/oxl/builtin/` vs `src/builtin/` 命名重叠 | §3 末尾命名澄清 |
 | **C-10** | `src/kernel/probes/` 命名易与 L1 `src/infra/probes/` 混淆 | §2.1 末尾注（已重命名 `probes` → `verdicts`） |
 | **C-11** | `package.json` 描述为"面向大语言模型的工程化控制引擎"，未体现 L0-L3 / IAP 定位 | 待办（见 7.4） |
 
@@ -269,7 +269,7 @@ find src -maxdepth 2 -type d | sort
 
 v0.1.4 PR-K（Kernel 公开面收敛）落地后：
 - **4 条违规已消除**（R-1 / R-2 / R-3 / R-5）：全部通过改 import 路径走 `kernel/index` 解决，零物理文件移动。
-- **2 条违规仍存**（R-4 / R-6）：L1-OXN-DSL → L2-Work 越界，与 Kernel 公开面正交，留待后续 PR 决策。
+- **2 条违规仍存**（R-4 / R-6）：L1-OXL → L2-Work 越界，与 Kernel 公开面正交，留待后续 PR 决策。
 
 #### 残留 1（已解决，PR-B）：L0-Processor → L3-CLI (IAPError 反向依赖)
 
@@ -285,23 +285,23 @@ v0.1.4 PR-K（Kernel 公开面收敛）落地后：
 - **修复**：无需物理文件移动——`PROBE_CATALOG` 仍在 `verdicts/catalog.ts`，但 `kernel/index.ts` 把它 re-export 出去了。`collector.ts` 改 `from '../../kernel/index'`。
 - **结果**：消除 1 条违规，且未来任何 L1+ 文件调 PROBE_CATALOG 都不再需要走子层路径。
 
-#### 残留 3（已解决，PR-K）：L1-OXN-DSL → L0-Processor (topologicalSortGeneric)
+#### 残留 3（已解决，PR-K）：L1-OXL → L0-Processor (topologicalSortGeneric)
 
 - **状态**：✅ **已解决**（PR-K 公开面收敛）
-- **原位置**：`src/oxn-dsl/validators/blueprint-dag.ts:2` value import `topologicalSortGeneric`
+- **原位置**：`src/oxl/validators/blueprint-dag.ts:2` value import `topologicalSortGeneric`
 - **修复**：零物理移动。`topologicalSortGeneric` 仍在 `processors/dag.ts`，`kernel/index.ts` 把它 re-export。`blueprint-dag.ts` 改 `from '../../kernel/index'`。
 - **哲学确认**：「纯函数本身就是计算契约」（与 Port 接口对消费者无差别）—— 验证了你的"4 子层 = 内部职责分工"理解。
 
-#### 残留 4（已解决，PR-M · 方向 A）：L1-OXN-DSL → L2-Work (work/plan-hash) × 2
+#### 残留 4（已解决，PR-M · 方向 A）：L1-OXL → L2-Work (work/plan-hash) × 2
 
 - **状态**：✅ **已解决**（PR-M · 方向 A · 整体迁位）
 - **原位置**：
-  - `src/oxn-dsl/compiler/work-domains-merger.ts:26` `import { hashText } from '../../work/plan-hash'`
-  - `src/oxn-dsl/compiler/work-blueprints-merger.ts:19` `import { hashText } from '../../work/plan-hash'`
-- **根因**（更深层）：**merger 物理位置错位**——`work-{domains,blueprints}-merger` 真实职责是"work 运行时索引构建器"（处理 `works/<w>/{domains,blueprints}.json`），与"解析 .oxn 语法"无关。物理错位到 L1-OXN-DSL 才引发 L1→L2 越界。
+  - `src/oxl/compiler/work-domains-merger.ts:26` `import { hashText } from '../../work/plan-hash'`
+  - `src/oxl/compiler/work-blueprints-merger.ts:19` `import { hashText } from '../../work/plan-hash'`
+- **根因**（更深层）：**merger 物理位置错位**——`work-{domains,blueprints}-merger` 真实职责是"work 运行时索引构建器"（处理 `works/<w>/{domains,blueprints}.json`），与"解析 .oxn 语法"无关。物理错位到 L1-OXL 才引发 L1→L2 越界。
 - **修复**：整体迁位 + 重命名
-  - `src/oxn-dsl/compiler/work-domains-merger.ts` → `src/work/per-work-domains-merger.ts`
-  - `src/oxn-dsl/compiler/work-blueprints-merger.ts` → `src/work/per-work-blueprints-merger.ts`
+  - `src/oxl/compiler/work-domains-merger.ts` → `src/work/per-work-domains-merger.ts`
+  - `src/oxl/compiler/work-blueprints-merger.ts` → `src/work/per-work-blueprints-merger.ts`
   - 2 个测试同步迁到 `src/work/__tests__/`
   - merger 自身 `from './plan-hash'`（同子层合法）
   - 4 个 importer 改路径（`cli/work.ts` 改 `'../work/per-work-*'`，`work-migrator.ts` 改 `'./per-work-*'`）
@@ -336,14 +336,14 @@ v0.1.4 PR-K（Kernel 公开面收敛）落地后：
 - **位置**：`src/work/per-work-domains-merger.ts` + `src/work/per-work-blueprints-merger.ts`（PR-M 创建）
 - **状态**：✅ **已落地**
 - **设计哲学**：
-  1. **物理归属与真实职责一致**——merger 处理 `works/<w>/{domains,blueprints}.json` 运行时索引，是 L2-Work 的事；与"解析 .oxn 语法"无关。L1-OXN-DSL `compiler/` 应当只含"语法解析 + 全局索引"。
+  1. **物理归属与真实职责一致**——merger 处理 `works/<w>/{domains,blueprints}.json` 运行时索引，是 L2-Work 的事；与"解析 .oxn 语法"无关。L1-OXL `compiler/` 应当只含"语法解析 + 全局索引"。
   2. **命名一致性**——`domain-index-builder` / `blueprint-index-builder` 是**全局**索引（扫 `.openxenon/{domains,blueprints}/` 全部）；per-work 索引应叫 `per-work-*-merger` 以显式区分。
   3. **错位归位解决越界**——R-4 / R-6 根因是 merger 错位；迁位后 L2-Work 同子层互引（`from './plan-hash'`）天然合法，无需特例。
 - **修复成果**：
   - 2 个 merger + 2 个测试 git mv 保留历史
   - 4 个 importer 改路径（`cli/work.ts` + `work-migrator.ts`）
-  - merger 自身 import 调路径（`scope` 改 `../oxn-dsl/scope/`，`domain-index-builder` 改 `../oxn-dsl/compiler/`，`plan-hash` 改 `./plan-hash`）
-  - 宪法 §3 表格 L1-OXN-DSL 行加注"compiler/ 仅含语法解析与全局索引"
+  - merger 自身 import 调路径（`scope` 改 `../oxl/scope/`，`domain-index-builder` 改 `../oxl/compiler/`，`plan-hash` 改 `./plan-hash`）
+  - 宪法 §3 表格 L1-OXL 行加注"compiler/ 仅含语法解析与全局索引"
 - **验证**：`bun scripts/validate-dependencies.ts` 2 → **0**。`bun test` 1008/1008 pass。
 - **决策方**：架构师于 v0.1.4 审计批准
 
@@ -365,11 +365,11 @@ v0.1.4 PR-K（Kernel 公开面收敛）落地后：
 
 | 用户域资产 | OXN 元域物理位置 | 阶段 |
 |---|---|---|
-| Domain（`.oxn` 源） | L1 `src/oxn-dsl/builtin/` | OXN DSL 解析 |
-| Blueprint（`.oxn` 源） | L1 `src/oxn-dsl/builtin/` | OXN DSL 解析 |
+| Domain（`.oxn` 源） | L1 `src/oxl/builtin/` | OXL 解析 |
+| Blueprint（`.oxn` 源） | L1 `src/oxl/builtin/` | OXL 解析 |
 | 编译后 Builtin 资产 | L2 `src/builtin/` | 二进制内置运行时 |
 | 用户项目资产 | L2 `.openxenon/domains/`, `.openxenon/blueprints/` | 项目运行时实例 |
-| Work / Task（`.oxn` 源） | L1 `src/oxn-dsl/` | 解析 + 校验 |
+| Work / Task（`.oxn` 源） | L1 `src/oxl/` | 解析 + 校验 |
 | Task 运行时实例 | L2 `src/work/` + `.openxenon/works/` | 编排与执行 |
 
 ### 8.3 反向映射（OXN 元域 → 用户域）
@@ -378,7 +378,7 @@ v0.1.4 PR-K（Kernel 公开面收敛）落地后：
 |---|---|---|
 | L0 Kernel | `frozen.json` 判决 | ✅ 看到 verdict（PASS/FAIL） |
 | L1 Infra | Probe 类型（如 `fs-exists`, `shell-exec`） | ✅ 引用探针名 |
-| L1 OXN DSL | `.oxn` 语法 | ✅ 写文件 |
+| L1 OXL | `.oxn` 语法 | ✅ 写文件 |
 | L2 Builtin/Work | `oxn` CLI 子命令 | ✅ 调用 CLI |
 | L3 Runtime | `frozen.json` 路径 + Hall Web UI | ✅ 读路径 / 访问 UI |
 | 内部实现（Probes/Verdict 策略） | 无 | ❌ 不可见（信息隐藏） |

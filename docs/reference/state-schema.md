@@ -170,5 +170,5 @@ import {
 
 ## 10. 下一章
 
-- [OXN DSL 参考](./oxn-dsl.md) — DSL 语法
+- [OXN DSL 参考](./oxl.md) — DSL 语法
 - [CLI 命令参考](./cli-reference.md)

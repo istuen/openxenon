@@ -11,16 +11,16 @@
 | `fix-issue` | 修复类 | work-context | fix-issue | 4 | ✅ |
 | `onboarding` | 综合 | member-context + order-context | dev-workflow | 2 | ❌ |
 
-所有示例位于：`src/oxn-dsl/examples/works/`
+所有示例位于：`src/oxl/examples/works/`
 
 ## 2. explore-dsl：探索类
 
-**目的**：探索 OXN DSL 语法结构。注入 `dsl-context` 约束 AI 使用 `Grammar/Schema/Validator/Compiler` 而非 `ParserImpl/LexerImpl`。
+**目的**：探索 OXL 语法结构。注入 `dsl-context` 约束 AI 使用 `Grammar/Schema/Validator/Compiler` 而非 `ParserImpl/LexerImpl`。
 
 ```oxn
 // .openxenon/domains/dsl-context.oxn（Intent）
 domain "DSLContext" {
-  description = "OXN DSL 自身限界上下文"
+  description = "OXL 自身限界上下文"
   term {
     "Grammar":   "Langium 语法定义",
     "Schema":    "Zod 校验 schema",
@@ -32,10 +32,10 @@ domain "DSLContext" {
 ```
 
 ```oxn
-// src/oxn-dsl/examples/works/explore-dsl/work.oxn（Align）
+// src/oxl/examples/works/explore-dsl/work.oxn（Align）
 work "explore-dsl" {
   context {
-    goal = "探索 OXN DSL 语法结构, 生成分析报告";
+    goal = "探索 OXL 语法结构, 生成分析报告";
     loop_policy { max_iterations = 3; }
   }
   domain "DSLContext"                ref "@prj/domains/dsl-context";
@@ -54,7 +54,7 @@ work "explore-dsl" {
 ```
 
 ```bash
-oxn work run    --work-file src/oxn-dsl/examples/works/explore-dsl/work.oxn --json
+oxn work run    --work-file src/oxl/examples/works/explore-dsl/work.oxn --json
 oxn work submit --work-name explore-dsl --task explore-dsl --json
 oxn work context   --work explore-dsl --task explore-dsl --json
 ```
@@ -79,7 +79,7 @@ domain "MemberContext" {
 ```
 
 ```oxn
-// src/oxn-dsl/examples/works/develop-member/work.oxn（Align）
+// src/oxl/examples/works/develop-member/work.oxn（Align）
 work "develop-member" {
   context {
     goal = "实现新会员注册功能";
@@ -101,7 +101,7 @@ work "develop-member" {
 ```
 
 ```bash
-oxn work run    --work-file src/oxn-dsl/examples/works/develop-member/work.oxn --json
+oxn work run    --work-file src/oxl/examples/works/develop-member/work.oxn --json
 oxn work submit --work-name develop-member --task register-member --json
 oxn work context   --work develop-member --task register-member --json
 ```
@@ -127,7 +127,7 @@ domain "WorkContext" {
 ```
 
 ```oxn
-// src/oxn-dsl/examples/works/fix-issue/work.oxn（Align）
+// src/oxl/examples/works/fix-issue/work.oxn（Align）
 work "fix-issue" {
   context {
     goal = "修复 work state 在 submit 后未及时持久化的 bug";
@@ -164,7 +164,7 @@ work "fix-issue" {
 ```
 
 ```bash
-oxn work run --work-file src/oxn-dsl/examples/works/fix-issue/work.oxn --json
+oxn work run --work-file src/oxl/examples/works/fix-issue/work.oxn --json
 # 依次 submit 四个 task
 oxn work submit --work-name fix-issue --task diagnose --json
 oxn work submit --work-name fix-issue --task locate   --json
@@ -180,7 +180,7 @@ oxn work status --work-name fix-issue --json
 **目的**：跨域编排（MemberContext + OrderContext），2 task 并行。
 
 ```oxn
-// src/oxn-dsl/examples/works/onboarding/work.oxn（Align）
+// src/oxl/examples/works/onboarding/work.oxn（Align）
 work "Onboarding" {
   context {
     goal = "完成新会员注册并发放欢迎福利";
@@ -210,7 +210,7 @@ work "Onboarding" {
 ```
 
 ```bash
-oxn work run --work-file src/oxn-dsl/examples/works/onboarding/work.oxn --json
+oxn work run --work-file src/oxl/examples/works/onboarding/work.oxn --json
 oxn work submit --work-name onboarding --task RegisterMember --json
 oxn work submit --work-name onboarding --task GrantWelcomeBonus --json
 oxn work status --work-name onboarding --json
@@ -236,20 +236,20 @@ oxn work status --work-name onboarding --json
 
 ```bash
 # 1. 跑 onboarding
-oxn work run --work-file src/oxn-dsl/examples/works/onboarding/work.oxn --json
+oxn work run --work-file src/oxl/examples/works/onboarding/work.oxn --json
 
 # 2. 跑 develop-member
-oxn work run --work-file src/oxn-dsl/examples/works/develop-member/work.oxn --json
+oxn work run --work-file src/oxl/examples/works/develop-member/work.oxn --json
 
 # 3. 跑 fix-issue（4 个 task 串行）
-oxn work run --work-file src/oxn-dsl/examples/works/fix-issue/work.oxn --json
+oxn work run --work-file src/oxl/examples/works/fix-issue/work.oxn --json
 # 依次 submit 4 个 task
 
 # 4. 跑 explore-dsl
-oxn work run --work-file src/oxn-dsl/examples/works/explore-dsl/work.oxn --json
+oxn work run --work-file src/oxl/examples/works/explore-dsl/work.oxn --json
 ```
 
-每个示例的 work.oxn + task.oxn 都已在仓库 `src/oxn-dsl/examples/works/` 中。
+每个示例的 work.oxn + task.oxn 都已在仓库 `src/oxl/examples/works/` 中。
 
 ## 8. 下一章
 

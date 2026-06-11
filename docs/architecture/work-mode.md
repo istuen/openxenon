@@ -529,7 +529,7 @@ async function activateTask(workName: string, taskName: string) {
 ### 6.1 语义 Diff 接口
 
 ```ts
-// 纯函数，零 IO（理想归宿 L0-Processor / 当前暂存 L1-OXN-DSL/validators/）
+// 纯函数，零 IO（理想归宿 L0-Processor / 当前暂存 L1-OXL/validators/）
 export interface SemanticDiff {
   added: { path: string; node: AstNode }[]
   removed: { path: string; node: AstNode; critical: boolean }[]   // critical = 需 --force
@@ -574,11 +574,11 @@ await fsPort.rename(tmp, filePath)
 - §6.1 `computeSemanticDiff` 纯函数应属 **L0-Processor**
 
 **当前现状**（v0）：
-- AST 类型在 L1-OXN-DSL/generated/（Langium 生成）
-- §6.1 暂存 L1-OXN-DSL/validators/（与 AST 类型同层，无跨层违规）
+- AST 类型在 L1-OXL/generated/（Langium 生成）
+- §6.1 暂存 L1-OXL/validators/（与 AST 类型同层，无跨层违规）
 
 **后续清理**（v1+）：
-- AST 类型从 L1-OXN-DSL 提升到 L0-Schema（新建 `src/kernel/schemas/oxn-ast.ts`）
+- AST 类型从 L1-OXL 提升到 L0-Schema（新建 `src/kernel/schemas/oxn-ast.ts`）
 - §6.1 跟随回迁 L0-Processor
 - 详见 `l0-l3-constitution.md §7.4 残留问题`
 
@@ -665,9 +665,9 @@ await fsPort.rename(tmp, filePath)
 | Work Mode | 驱动层（L3-CLI） | 数据/逻辑层 | 物理 IO 层（L1-Infra） |
 |---|---|---|---|
 | `normal` | `src/cli/work.ts` | L2-Work（`src/work/`） | `FsPort` / `PathPort` / `Process` / `PartPort` |
-| `domain-edit` | `src/cli/work.ts` | L1-OXN-DSL（parse） + 语义 Diff（§6.1） | `FsPort`（沙盒复制 + atomic write） + `HashPort` |
-| `blueprint-edit` | `src/cli/work.ts` | L1-OXN-DSL（parse） + 语义 Diff（§6.1） | `FsPort` + `HashPort` |
-| `proof-first` | `src/cli/work.ts` | L0-Kernel（verdict） + L1-OXN-DSL（parse） | `ProbePort`（探针执行）+ `FsPort`（frozen.json 写入） |
+| `domain-edit` | `src/cli/work.ts` | L1-OXL（parse） + 语义 Diff（§6.1） | `FsPort`（沙盒复制 + atomic write） + `HashPort` |
+| `blueprint-edit` | `src/cli/work.ts` | L1-OXL（parse） + 语义 Diff（§6.1） | `FsPort` + `HashPort` |
+| `proof-first` | `src/cli/work.ts` | L0-Kernel（verdict） + L1-OXL（parse） | `ProbePort`（探针执行）+ `FsPort`（frozen.json 写入） |
 
 **L0L3 校准**：
 - 所有模式驱动都在 L3-CLI（入口层，符合 L3 依赖特权）
@@ -679,9 +679,9 @@ await fsPort.rename(tmp, filePath)
 
 | 实现细节 | 物理位置 | 依赖 | L0L3 校准 |
 |---|---|---|---|
-| **§6.1 语义 Diff** | **理想 L0-Processor** / 当前 L1-OXN-DSL/validators/ | L0-Schema（AST 类型） | ⚠️ 暂存 L1，待 AST 类型提升后回迁 |
+| **§6.1 语义 Diff** | **理想 L0-Processor** / 当前 L1-OXL/validators/ | L0-Schema（AST 类型） | ⚠️ 暂存 L1，待 AST 类型提升后回迁 |
 | **§6.2 Atomic Write** | L1-Infra（`FsPort` 抽象） | 无 | ✅ 严守 L1-Infra Port 边界 |
-| **Commit 4 步管线整体** | L3-CLI 驱动 + L1-OXN-DSL（parse） + L1-Infra（write） + L0-Schema（AST 类型） | L0 + L1 | ✅ 各子层职责清晰 |
+| **Commit 4 步管线整体** | L3-CLI 驱动 + L1-OXL（parse） + L1-Infra（write） + L0-Schema（AST 类型） | L0 + L1 | ✅ 各子层职责清晰 |
 
 ### 9.4 架构债：AST 类型与 Diff 的 L-layer 归属
 
@@ -690,11 +690,11 @@ await fsPort.rename(tmp, filePath)
 - §6.1 `computeSemanticDiff` 纯函数应属 **L0-Processor**
 
 **当前现状**（v0）：
-- AST 类型在 L1-OXN-DSL/generated/（Langium 生成）
-- §6.1 暂存 L1-OXN-DSL/validators/（与 AST 类型同层，无跨层违规）
+- AST 类型在 L1-OXL/generated/（Langium 生成）
+- §6.1 暂存 L1-OXL/validators/（与 AST 类型同层，无跨层违规）
 
 **后续清理**（v1+）：
-- AST 类型从 L1-OXN-DSL 提升到 L0-Schema（新建 `src/kernel/schemas/oxn-ast.ts`）
+- AST 类型从 L1-OXL 提升到 L0-Schema（新建 `src/kernel/schemas/oxn-ast.ts`）
 - §6.1 跟随回迁 L0-Processor（新建 `src/kernel/processors/semantic-diff/`）
 - 详见 `l0-l3-constitution.md §7.4 残留问题`
 
@@ -708,7 +708,7 @@ await fsPort.rename(tmp, filePath)
 | Work Mode / .work JSON | （新概念，无直接对应） | L2-Work（运行时状态） |
 | §6.1 语义 Diff | L0-Processor 纯函数（待回迁） | L0 |
 | §6.2 Atomic Write | L1-Infra FsPort | L1 |
-| Langium parse | L1-OXN-DSL Parser | L1 |
+| Langium parse | L1-OXL Parser | L1 |
 | hash 校验（base_hash / planLock.hash） | L1-Infra HashPort | L1 |
 | CLI 子命令 | L3-CLI | L3 |
 | 用户项目资产（`.openxenon/domains/` 等） | L2-Module 项目运行时实例 | L2 |
@@ -723,7 +723,7 @@ await fsPort.rename(tmp, filePath)
 | "L0 Kernel 不得使用 fs/path/crypto/..." | §6.1 语义 Diff 是纯函数，无 IO 依赖（`computeSemanticDiff(oldAst, newAst, rules)`） |
 | "L1 Foundation 不得 import L2/L3" | §6.2 Atomic Write 走 L1-Infra FsPort；Commit 4 步管线在 L3-CLI 驱动 |
 | "L2 Module 不得 import L3" | Normal 模式的 `work.oxn` 编排数据走 L2-Work；CLI 入口在 L3-CLI 编排调用 |
-| "L3 Runtime 允许 import 所有下层" | `src/cli/work.ts` 是 L3-CLI，可 import L2-Work + L1-OXN-DSL + L1-Infra + L0-Schema |
+| "L3 Runtime 允许 import 所有下层" | `src/cli/work.ts` 是 L3-CLI，可 import L2-Work + L1-OXL + L1-Infra + L0-Schema |
 
 ---
 
@@ -768,7 +768,7 @@ await fsPort.rename(tmp, filePath)
 | AI 直接绕过沙盒用 `cp` 覆盖主干 | 中 | 事后审计能发现；不阻塞语义正确性 |
 | `oxn work task add` / `activate` 命名与现有 `src/cli/work.ts:11 add-task` 不一致 | 高 | M4 实施时对齐重构 |
 | Locked 阶段 AI 改 work.oxn 后被检测 → abort → 重新 lock 的 Token 浪费 | 中 | 文档说明"lock 后勿改 work.oxn"；v1 可提供 `work rebase`（git rebase 类似）减少浪费 |
-| §6.1 语义 Diff 暂存 L1-OXN-DSL，与 AST 类型同层；按 L0L3 宪法理想应在 L0-Processor | 中 | v0 接受暂存方案；v1 跟随 AST 类型提升到 L0-Schema 后回迁（见 §9.4） |
+| §6.1 语义 Diff 暂存 L1-OXL，与 AST 类型同层；按 L0L3 宪法理想应在 L0-Processor | 中 | v0 接受暂存方案；v1 跟随 AST 类型提升到 L0-Schema 后回迁（见 §9.4） |
 | Atomic Write 不严守 FsPort 接口 → 触碰 L0L3 黑名单 | 低 | 实施时强制 `FsPort` 抽象；CI validate-deps 拦截 |
 
 ---
@@ -797,5 +797,5 @@ await fsPort.rename(tmp, filePath)
 | D18 | Plan 锁定机制 | **`work lock` 写 hash 到 `.work.planLock` + 工程师专属** | 自动 lock / AI 可触发（绕过审批） |
 | D19 | 范围 | **当前不含 MCP** | 包含 MCP（推迟到 LLM 宿主集成阶段） |
 | D20 | L0-L3 SSOT | **本设计遵循 [`l0-l3-constitution.md`](./l0-l3-constitution.md) 与 `L0L3Context.oxn` 上下文映射** | 自创术语（违反 L0L3 ContextMap 原则） |
-| D21 | 语义 Diff 物理层 | **v0 暂存 L1-OXN-DSL/validators/（与 AST 类型同层）；v1+ 回迁 L0-Processor** | 强行 v0 即迁 L0（需先 AST 提升到 L0-Schema） |
+| D21 | 语义 Diff 物理层 | **v0 暂存 L1-OXL/validators/（与 AST 类型同层）；v1+ 回迁 L0-Processor** | 强行 v0 即迁 L0（需先 AST 提升到 L0-Schema） |
 | D22 | 驱动层 | **3 大模式驱动统一在 L3-CLI（`src/cli/work.ts`）** | 各模式独立 driver（破坏 Work 唯一入口） |

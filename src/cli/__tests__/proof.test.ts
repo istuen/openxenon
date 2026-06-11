@@ -387,7 +387,7 @@ describe('Kernel + Infra separation (real execution)', () => {
 
 describe('OXN DSL grammar integration', () => {
   test('proof 出现在 TopLevelEntity', async () => {
-    const { createOxnParser, isProofDeclaration } = await import('../../oxn-dsl')
+    const { createOxnParser, isProofDeclaration } = await import('../../oxl')
     const { URI } = await import('langium')
     const parser = createOxnParser()
     const r = await parser.parse('proof "x" { probe "p1" { ref "r" } }', URI.file('/tmp/proof-grammar-test.oxn'))

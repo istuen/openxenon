@@ -21,7 +21,7 @@ import { URI } from 'langium'
 import { BOUNDARY_DIR } from '../kernel/index'
 import { IAPError } from '../core/errors'
 import { assertNameFileConsistent } from '../kernel/index'
-import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxn-dsl'
+import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import {
   autoRebuildBlueprintIndex,
@@ -31,7 +31,7 @@ import {
   writeBlueprintIndex,
   type BlueprintIndex,
   type BlueprintIndexEntry,
-} from '../oxn-dsl/compiler/blueprint-index-builder'
+} from '../oxl/compiler/blueprint-index-builder'
 
 function getProjectRoot(): string {
   return process.cwd()

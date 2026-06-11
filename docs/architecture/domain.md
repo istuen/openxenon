@@ -8,7 +8,7 @@
 >
 > | 资产 | 物理位置 | 阶段 |
 > |---|---|---|
-> | Domain `.oxn` 源码 | L1 `src/oxn-dsl/builtin/` | OXN DSL 解析 |
+> | Domain `.oxn` 源码 | L1 `src/oxl/builtin/` | OXL 解析 |
 > | Domain 编译后资产 | L2 `src/builtin/` | 二进制内置运行时 |
 > | 项目级 Domain | L2 `.openxenon/domains/` | 工程师创作 |
 >

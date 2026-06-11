@@ -158,7 +158,7 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
   }
 
   // v1.1 NAME_FILE_MISMATCH 防御（macOS-safe 字符串比对）
-  // 与 src/oxn-dsl/compiler/blueprint-index-builder.ts:194-199 模式一致：软检测
+  // 与 src/oxl/compiler/blueprint-index-builder.ts:194-199 模式一致：软检测
   // 累积到 errors[],status='invalid',不阻断索引构建。
   const fileStem = basename(filePath).replace(/\.oxn$/i, '')
   if (toKebab(nameMatch[1]!) !== toKebab(fileStem)) {

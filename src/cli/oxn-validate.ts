@@ -3,12 +3,12 @@ import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
 import { validateFrozenBlueprint } from '../kernel/index'
-import type { OxnAssemblyIR, OxnAssemblySlotBinding } from '../oxn-dsl/schemas/oxn-assembly.schema'
-import { validateOxnAssemblyIR } from '../oxn-dsl/schemas/oxn-assembly.schema'
-import { adaptOxnToFrozen } from '../oxn-dsl/compiler/oxn-adapter'
-import type { OXNDocument } from '../oxn-dsl/generated/ast.js'
-import { generateOxnAssembly } from '../oxn-dsl/generator/oxn-generator.js'
-import { createOxnServices, resetOxnServices } from '../oxn-dsl/langium/oxn-services.js'
+import type { OxnAssemblyIR, OxnAssemblySlotBinding } from '../oxl/schemas/oxn-assembly.schema'
+import { validateOxnAssemblyIR } from '../oxl/schemas/oxn-assembly.schema'
+import { adaptOxnToFrozen } from '../oxl/compiler/oxn-adapter'
+import type { OXNDocument } from '../oxl/generated/ast.js'
+import { generateOxnAssembly } from '../oxl/generator/oxn-generator.js'
+import { createOxnServices, resetOxnServices } from '../oxl/langium/oxn-services.js'
 import { output, outputError } from './output'
 
 export interface ValidationResult {
@@ -90,7 +90,7 @@ export default defineCommand({
     '--standard': { type: 'boolean', description: '验证 examples 目录下的所有标准 example 文件' },
   },
   async run(_ctx) {
-    const examplesDir = join(__dirname, '..', 'oxn-dsl', 'examples')
+    const examplesDir = join(__dirname, '..', 'oxl', 'examples')
 
     if (!existsSync(examplesDir)) {
       return outputError({

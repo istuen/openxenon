@@ -48,7 +48,7 @@ import {
   type WorkContext,
   type WorkDeclaration,
   type OXNDocument as OxnAstDocument,
-} from '../oxn-dsl'
+} from '../oxl'
 import { ExecError, runTask, runWork, submitTask } from '../work'
 import {
   ensureWorkDir,
@@ -70,7 +70,7 @@ import {
   getPerWorkBlueprintsJsonPath,
   resolveBlueprintFile,
 } from '../work/per-work-blueprints-merger'
-import { buildDomainDiagnostic, buildBlueprintDiagnostic, type RefDiagnostic } from '../oxn-dsl/compiler/ref-diagnostic'
+import { buildDomainDiagnostic, buildBlueprintDiagnostic, type RefDiagnostic } from '../oxl/compiler/ref-diagnostic'
 import {
   applyPlanLock,
   createBirthCert,

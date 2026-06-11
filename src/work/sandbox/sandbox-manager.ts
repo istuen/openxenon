@@ -10,8 +10,8 @@
 
 import { basename, join } from 'path'
 import { BOUNDARY_DIR } from '../../kernel/index'
-import { type DagNode, validateDagTopology } from '../../oxn-dsl/validators/blueprint-dag'
-import type { OxnAssemblyIR, OxnAssemblyPart } from '../../oxn-dsl/schemas/oxn-assembly.schema'
+import { type DagNode, validateDagTopology } from '../../oxl/validators/blueprint-dag'
+import type { OxnAssemblyIR, OxnAssemblyPart } from '../../oxl/schemas/oxn-assembly.schema'
 import type { FileSystemPort } from '../../kernel/index'
 
 export interface SandboxConfig {

@@ -68,9 +68,9 @@ oxn work context --work <w> --json
 ### Dev 工具（DSL 内部）
 
 ```bash
-oxn dev compile <file.oxn>             # OXN DSL → AssemblyIR
+oxn dev compile <file.oxn>             # OXL → AssemblyIR
 oxn dev validate                        # 校验 .oxn 语法
-oxn dev migrate-yaml <file>             # YAML → OXN DSL
+oxn dev migrate-yaml <file>             # YAML → OXL
 ```
 
 ## 反模式
@@ -78,12 +78,12 @@ oxn dev migrate-yaml <file>             # YAML → OXN DSL
 - 不要在 AI 助手软件中跑 `oxn init`（已 init 过）
 - 不要直接编辑 `.openxenon/works/<w>/state.json`（Core 独占）
 - 不要在 Domain 内引用 asset（破坏 Asset Independence）
-- 不要用 YAML/JSON 写 Blueprint（v0.1 起 OXN DSL 单一权威）
+- 不要用 YAML/JSON 写 Blueprint（v0.1 起 OXL 单一权威）
 - 不要调用 `oxn task *` / `oxn arsenal *` / `oxn leader *` / `oxn get-context` / `oxn add-probe` — **已彻底删除**
 - 不要调用 `oxn work new` — 改用 `oxn work create`
 - 不要调用 `oxn work task *` — 改用 `oxn work add-task` / `list-tasks` / `task-status` / `task-edit` / `task-delete`
 - **不要试图 `oxn part new` / `oxn probe new`** — Part / Probe **不是独立资产**（设计上如此），它们在 `work create` 之后**内联**在 `work.oxn` / `task.oxn` 的 `task { part { ... } }` / `part { probe { ... } }` 块里写
-- **不要用 `--name <X>` 命名参数** — 域/蓝图/work create 与 validate 都用 **positional `<name>`**（OXN DSL 与 CLI 1:1 映射）
+- **不要用 `--name <X>` 命名参数** — 域/蓝图/work create 与 validate 都用 **positional `<name>`**（OXL 与 CLI 1:1 映射）
 - **不要设计 `oxn domain append-term` / `oxn blueprint add-prop`** — Intent 资产用 `$EDITOR` 编辑，CLI 只提供脚手架（详见「Intent-Align CLI 哲学」）
 
 ---
@@ -351,11 +351,11 @@ oxn blueprint validate <name>
 oxn work validate --path <work.oxn>
 ```
 
-**详细参考**：`src/oxn-dsl/examples/works/` 下有 4 个完整范例（explore-dsl / develop-member / fix-issue / onboarding），可作模板直接仿写。
+**详细参考**：`src/oxl/examples/works/` 下有 4 个完整范例（explore-dsl / develop-member / fix-issue / onboarding），可作模板直接仿写。
 
 ## 详细参考
 
 - [CLI 命令参考](../../../docs/reference/cli-reference.md)
-- [OXN DSL 参考](../../../docs/reference/oxn-dsl.md)
+- [OXL 参考](../../../docs/reference/oxl.md)
 - [Blueprint 格式参考（含 slot DAG 4 模式）](../../../docs/reference/blueprint-format.md)
 - [work.oxn 4 大模式](../../../docs/architecture/work-and-task.md)

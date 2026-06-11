@@ -185,6 +185,6 @@ cat .openxenon/works/onboarding/tasks/register-member/frozen.json
 
 ## 6. 下一章
 
-- [OXN DSL 参考](./oxn-dsl.md) — 完整语法
+- [OXN DSL 参考](./oxl.md) — 完整语法
 - [Probe 类型参考](./probe-types.md)
 - [State Schema 参考](./state-schema.md)

@@ -216,7 +216,7 @@ cat .openxenon/works/onboarding/tasks/register-member/frozen.json
 
 ## 6. 后续
 
-- 跑完整示例：`src/oxn-dsl/examples/works/` 下的 onboarding / develop-member / fix-issue / explore-dsl
+- 跑完整示例：`src/oxl/examples/works/` 下的 onboarding / develop-member / fix-issue / explore-dsl
 - 旧 work.oxn 迁移：`./dist/oxn work migrate`
 - 自定义 Probe：在 `task.oxn` 的 `part { probe {} }` 块内联写，用 `oxn work validate` 校验
 

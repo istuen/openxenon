@@ -32,7 +32,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync,
 import { basename, join, relative } from 'path'
 import { z } from 'zod'
 
-// L1-OXN-DSL 不可依赖 L0-Processor（含 src/kernel/constants.ts，被分类器归到 L0-Processor）；
+// L1-OXL 不可依赖 L0-Processor（含 src/kernel/constants.ts，被分类器归到 L0-Processor）；
 // 此处与 domain-index-builder 保持一致：硬编码路径字符串常量。
 // AGENTS.md 标注 kernel/constants.ts 为 L0-Schema，但 scripts/validate-dependencies.ts
 // 的 getLayerFromPath 将整个 src/kernel/ 归为 L0-Processor（pre-existing 分层不一致）。

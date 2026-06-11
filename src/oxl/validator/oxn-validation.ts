@@ -10,13 +10,13 @@
 
 import type { LangiumCoreServices } from 'langium'
 import type { ValidationChecks } from 'langium'
-import type { OXNDSLAstType } from '../generated/ast.js'
+import type { OpenXenonLanguageAstType } from '../generated/ast.js'
 import { validateWorkTaskReference } from './slot-reference-validator.js'
 import { validateTaskAlign } from './intent-align-validator.js'
 
 export const OxnValidationChecks = {
   WorkDeclaration: [validateWorkTaskReference, validateTaskAlign],
-} as const satisfies ValidationChecks<OXNDSLAstType>
+} as const satisfies ValidationChecks<OpenXenonLanguageAstType>
 
 export function registerOxnValidators(services: LangiumCoreServices): void {
   const registry = services.validation.ValidationRegistry
