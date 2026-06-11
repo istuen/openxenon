@@ -94,9 +94,9 @@
 
 | 层级 | 子层 | 物理位置 | 角色 |
 |---|---|---|---|
-| **L0 Kernel** | L0-Schema | `src/kernel/schemas/` | 数据骨架（Zod / Type） |
+| **L0 Kernel** | L0-Schema | `src/kernel/schemas/` *(含 `enums.ts` 类型枚举与 `types/` 子目录)* | 数据骨架（Zod / Type） |
 | **L0 Kernel** | L0-Contract | `src/kernel/contracts/` | 外部插座（Port 接口） |
-| **L0 Kernel** | L0-Processor | `src/kernel/processors/` `src/kernel/verdicts/` `src/kernel/enums.ts` | 纯逻辑推演机 |
+| **L0 Kernel** | L0-Processor | `src/kernel/processors/` `src/kernel/verdicts/` | 纯逻辑推演机 |
 | **L1 Foundation** | L1-Infra | `src/infra/` | 物理 IO 与探针执行 |
 | **L1 Foundation** | L1-OXN-DSL | `src/oxn-dsl/` | 语言解析 + 编译生成 |
 | **L2 Module** | L2-Builtin | `src/builtin/` | 编译后内置资产（.oxn 资源） |

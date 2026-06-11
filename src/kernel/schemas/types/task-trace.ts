@@ -1,4 +1,4 @@
-import type { StepStatus, TaskStatus } from '../../enums'
+import type { StepStatus, TaskStatus } from '../enums'
 
 export interface TaskTraceYaml {
   taskId: string

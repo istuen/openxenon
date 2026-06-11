@@ -1,5 +1,5 @@
 import { appendFileSync, existsSync, readFileSync } from '../../infra/filesystem'
-import type { StepStatus, TaskStatus } from '../../kernel/enums'
+import type { StepStatus, TaskStatus } from '../../kernel/schemas/enums'
 import { type ParsedBlueprint, parseBlueprintYaml } from './blueprint-parser'
 import type { TaskDirectory } from '../../work/task-directory'
 import { buildTraceEvent, reduceTraceEvents } from '../../work/task-trace'

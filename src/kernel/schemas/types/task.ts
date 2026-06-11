@@ -1,6 +1,6 @@
 import type { Action } from './action'
 import type { Artifact } from './artifact'
-import type { TaskStatus, StepStatus } from '../../enums'
+import type { TaskStatus, StepStatus } from '../enums'
 
 export interface Task {
   id: string

@@ -1,4 +1,4 @@
-import type { StepStatus } from '../../enums'
+import type { StepStatus } from '../enums'
 
 /**
  * @deprecated MVP 0.1 后被 Blueprint YAML 中的 Stage 替代。

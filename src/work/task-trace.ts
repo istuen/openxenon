@@ -1,4 +1,4 @@
-import type { TaskStatus } from '../kernel/enums'
+import type { TaskStatus } from '../kernel/schemas/enums'
 import type {
   PartState,
   ProbeResult,
