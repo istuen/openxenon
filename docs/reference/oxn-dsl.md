@@ -155,7 +155,7 @@ TaskDeclaration = 'task' name=STRING '{'
     ('domain' domain=STRING)?
     ('blueprint' blueprint=STRING)?
     (parts+=TaskPartDecl)*
-    (deps=TaskDeps)?
+    ('deps' '=' deps=TaskDeps)?     // v0.0.28+: 必带 'deps' '=' 关键字
 '}'
 
 TaskDeps = '[' (deps+=STRING (',' deps+=STRING)*)? ']'
