@@ -19,6 +19,8 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR } from '../kernel/constants'
+import { IAPError } from '../core/errors'
+import { assertNameFileConsistent } from '../kernel/contracts/name-canonical'
 import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxn-dsl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import {
@@ -252,6 +254,27 @@ const validateSubcommand = defineCommand({
     const blueprint = result.ast?.entities.find(isBlueprintDeclaration)
     const ir = blueprint ? blueprintAstToIr(blueprint) : null
 
+    // v1.1: 字符串级规范化校验（macOS-safe NAME_FILE_MISMATCH）
+    // 与 oxn domain validate 对称：parseBlueprintSlim 索引层软检测是兜底,
+    // CLI validate 是硬阻断层,两道防御必须都过。
+    if (ir) {
+      try {
+        assertNameFileConsistent(ir.name, bpPath, 'blueprint')
+      } catch (err) {
+        if (err instanceof IAPError) {
+          return outputError(
+            {
+              code: err.name,
+              message: err.message,
+              ...(err.context?.suggestion !== undefined ? { suggestion: String(err.context.suggestion) } : {}),
+            },
+            format,
+          )
+        }
+        throw err
+      }
+    }
+
     // PR-X: validate 成功后静默重建全局 slim 索引（与 domain validate 一致）
     const rebuild = autoRebuildBlueprintIndex(getProjectRoot())
     if (!rebuild.ok) {
@@ -281,11 +304,13 @@ const validateSubcommand = defineCommand({
  * 消除 `$container` 父引用导致的 cyclic structures 错误。
  */
 function blueprintAstToIr(blueprint: BlueprintDeclaration): {
+  name: string
   version?: number
   slots: string[]
   props: Array<{ name: string; type: string; required?: boolean; default?: unknown }>
 } {
   return {
+    name: blueprint.name,
     version: blueprint.version,
     slots: blueprint.partSlots.map((s) => s.name),
     props: blueprint.props.map((p) => ({

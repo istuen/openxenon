@@ -35,6 +35,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, w
 import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '../kernel/constants'
+import { assertDirNameConsistent } from '../kernel/contracts/name-canonical'
+import { IAPError } from '../core/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import {
   isWorkDeclaration,
@@ -961,6 +963,25 @@ const validateSubcommand = defineCommand({
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       return outputError({ code: 'OXN_WORK_VALIDATE_FAILED', message }, format)
+    }
+
+    // ── 1.5 v1.1: work.oxn 内 `work "X"` 与目录名 <w> 一致性校验（macOS-safe）
+    // 与 oxn domain/blueprint validate 对称：CLI 硬阻断,目录式布局下用 assertDirNameConsistent。
+    const workDir = join(projectRoot, '.openxenon', 'works', workName)
+    try {
+      assertDirNameConsistent(work.name, workDir, 'work')
+    } catch (err) {
+      if (err instanceof IAPError) {
+        return outputError(
+          {
+            code: err.name,
+            message: err.message,
+            ...(err.context?.suggestion !== undefined ? { suggestion: String(err.context.suggestion) } : {}),
+          },
+          format,
+        )
+      }
+      throw err
     }
 
     // ── 2. 检查 task.oxn 是否都已建（沿用现有逻辑） ──

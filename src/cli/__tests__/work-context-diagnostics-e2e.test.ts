@@ -81,15 +81,18 @@ function setupProjectWith(): void {
 
 // 写一个"被外部删除"的域/蓝图文件 —— 用于在 lock 后删除模拟"声明还在但文件不在"
 function writeExtraDomain(name: string): void {
+  // v1.1 PR-fix-domain-name-consistency: caller 必须传 kebab-case name (或与 file stem 一致的 name)。
+  // 文件名严格等于 name,保证 parseDomainSlim NAME_FILE_MISMATCH 软检测通过。
   writeFileSync(
-    join(tmpDir, '.openxenon', 'domains', `${name.toLowerCase()}.oxn`),
+    join(tmpDir, '.openxenon', 'domains', `${name}.oxn`),
     `domain "${name}" { description = "tmp"; term { "T": "t" }; invariant { "i" } }\n`,
   )
 }
 
 function writeExtraBlueprint(name: string): void {
+  // v1.1 PR-fix-domain-name-consistency: 同 writeExtraDomain, caller 传 kebab-case
   writeFileSync(
-    join(tmpDir, '.openxenon', 'blueprints', `${name.toLowerCase()}.oxn`),
+    join(tmpDir, '.openxenon', 'blueprints', `${name}.oxn`),
     `blueprint "${name}" { version = 1; slot "x" { deps = []; observe = ["fs-exists"] } }\n`,
   )
 }
@@ -149,15 +152,15 @@ describe('work context 补 diagnostics 软警告（PR-14b）', () => {
   test('2. lock 后删 domain 文件：context 仍 ok + diagnostics: [{type:domain, severity:warn}]', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraDomain('MemebrContext') // 先建文件让 validate 通过
-    setupWork('demo', SIMPLE_WORK('demo', ['MemebrContext']), ['a'])
+    writeExtraDomain('missing-dom') // v1.1: 用 kebab-case 保证 name↔file 一致 (PR-fix-domain-name-consistency)
+    setupWork('demo', SIMPLE_WORK('demo', ['missing-dom']), ['a'])
 
     const v = JSON.parse((await runCli(['work', 'validate', 'demo', '--json'])).stdout)
     expect(v.ok).toBe(true)
     await runCli(['work', 'lock', 'demo', '--json'])
 
     // 模拟"锁后文件被删"
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'memebrcontext.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'context', 'demo', '--task', 'a', '--json'])).stdout)
     expect(r.ok).toBe(true) // 软警告，不硬失败
@@ -166,47 +169,47 @@ describe('work context 补 diagnostics 软警告（PR-14b）', () => {
     expect(d.code).toBe('OXN_WORK_REFS_UNRESOLVED')
     expect(d.severity).toBe('warn')
     expect(d.type).toBe('domain')
-    expect(d.ref).toBe('@prj/domains/memebrcontext')
-    expect(d.message).toContain('MemebrContext')
-    expect(d.suggestion).toContain('MemebrContext')
+    expect(d.ref).toBe('@prj/domains/missing-dom')
+    expect(d.message).toContain('missing-dom')
+    expect(d.suggestion).toContain('missing-dom')
   })
 
   test('3. lock 后删 blueprint 文件：diagnostics: [{type:blueprint, severity:warn}]', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraBlueprint('GhostBP') // 先建文件让 validate 通过
-    setupWork('demo', SIMPLE_WORK('demo', [], ['GhostBP']), ['a'])
+    writeExtraBlueprint('ghost-bp') // v1.1: kebab-case 保证 name↔file 一致
+    setupWork('demo', SIMPLE_WORK('demo', [], ['ghost-bp']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
 
     // 锁后删文件
-    unlinkSync(join(tmpDir, '.openxenon', 'blueprints', 'ghostbp.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'blueprints', 'ghost-bp.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'context', 'demo', '--task', 'a', '--json'])).stdout)
     expect(r.ok).toBe(true)
     expect(r.data.diagnostics).toHaveLength(1)
     const d = r.data.diagnostics[0]
     expect(d.type).toBe('blueprint')
-    expect(d.ref).toBe('@prj/blueprints/ghostbp')
-    expect(d.message).toContain('GhostBP')
+    expect(d.ref).toBe('@prj/blueprints/ghost-bp')
+    expect(d.message).toContain('ghost-bp')
   })
 
   test('4. lock 后删多个 ref：diagnostics 数组多元素', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraDomain('MissingDom1')
-    writeExtraDomain('MissingDom2')
-    writeExtraBlueprint('MissingBP1')
-    setupWork('demo', SIMPLE_WORK('demo', ['MissingDom1', 'MissingDom2'], ['MissingBP1']), ['a'])
+    writeExtraDomain('missing-dom1')
+    writeExtraDomain('missing-dom2')
+    writeExtraBlueprint('missing-bp1')
+    setupWork('demo', SIMPLE_WORK('demo', ['missing-dom1', 'missing-dom2'], ['missing-bp1']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
 
     // 删 3 个文件
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missingdom1.oxn'))
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missingdom2.oxn'))
-    unlinkSync(join(tmpDir, '.openxenon', 'blueprints', 'missingbp1.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom1.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom2.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'blueprints', 'missing-bp1.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'context', 'demo', '--task', 'a', '--json'])).stdout)
     expect(r.ok).toBe(true)
@@ -235,13 +238,13 @@ describe('work context 补 diagnostics 软警告（PR-14b）', () => {
   test('6. work-level context（不带 --task）也含 diagnostics', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraDomain('MissingDom')
-    setupWork('demo', SIMPLE_WORK('demo', ['MissingDom']), ['a'])
+    writeExtraDomain('missing-dom')
+    setupWork('demo', SIMPLE_WORK('demo', ['missing-dom']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
 
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missingdom.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'context', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
@@ -253,13 +256,13 @@ describe('work context 补 diagnostics 软警告（PR-14b）', () => {
   test('7. diagnostics.severity="warn" 不是 "error"（不属 IAPError 体系）', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraDomain('MissingDom')
-    setupWork('demo', SIMPLE_WORK('demo', ['MissingDom']), ['a'])
+    writeExtraDomain('missing-dom')
+    setupWork('demo', SIMPLE_WORK('demo', ['missing-dom']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
 
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missingdom.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'context', 'demo', '--task', 'a', '--json'])).stdout)
     const d = r.data.diagnostics[0]

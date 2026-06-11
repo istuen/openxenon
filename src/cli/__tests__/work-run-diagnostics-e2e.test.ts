@@ -72,15 +72,17 @@ function setupProjectWith(): void {
 }
 
 function writeExtraDomain(name: string): void {
+  // v1.1 PR-fix-domain-name-consistency: caller 必须传 kebab-case name (与 file stem 一致)
   writeFileSync(
-    join(tmpDir, '.openxenon', 'domains', `${name.toLowerCase()}.oxn`),
+    join(tmpDir, '.openxenon', 'domains', `${name}.oxn`),
     `domain "${name}" { description = "tmp"; term { "T": "t" }; invariant { "i" } }\n`,
   )
 }
 
 function writeExtraBlueprint(name: string): void {
+  // v1.1 PR-fix-domain-name-consistency: 同上
   writeFileSync(
-    join(tmpDir, '.openxenon', 'blueprints', `${name.toLowerCase()}.oxn`),
+    join(tmpDir, '.openxenon', 'blueprints', `${name}.oxn`),
     `blueprint "${name}" { version = 1; slot "x" { deps = []; observe = ["fs-exists"] } }\n`,
   )
 }
@@ -145,14 +147,14 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
   test('2. lock 后删 domain 文件：run 仍 ok + diagnostics 写入 .run/state.json', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraDomain('MemebrContext')
-    setupWork('demo', SIMPLE_WORK('demo', ['MemebrContext']), ['a'])
+    writeExtraDomain('missing-dom')
+    setupWork('demo', SIMPLE_WORK('demo', ['missing-dom']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
 
     // 锁后删文件
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'memebrcontext.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true) // 软警告，不硬失败
@@ -161,7 +163,7 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
     expect(d.code).toBe('OXN_WORK_REFS_UNRESOLVED')
     expect(d.severity).toBe('warn')
     expect(d.type).toBe('domain')
-    expect(d.ref).toBe('@prj/domains/memebrcontext')
+    expect(d.ref).toBe('@prj/domains/missing-dom')
 
     // .run/state.json 持久化 diagnostics
     const stateRaw = readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8')
@@ -175,13 +177,13 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
   test('3. lock 后删 blueprint 文件：diagnostics: [{type:blueprint}]', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraBlueprint('GhostBP')
-    setupWork('demo', SIMPLE_WORK('demo', [], ['GhostBP']), ['a'])
+    writeExtraBlueprint('ghost-bp')
+    setupWork('demo', SIMPLE_WORK('demo', [], ['ghost-bp']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
 
-    unlinkSync(join(tmpDir, '.openxenon', 'blueprints', 'ghostbp.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'blueprints', 'ghost-bp.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
@@ -195,17 +197,17 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
   test('4. 删多个：diagnostics 数组多元素 + 持久化', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraDomain('MissingDom1')
-    writeExtraDomain('MissingDom2')
-    writeExtraBlueprint('MissingBP1')
-    setupWork('demo', SIMPLE_WORK('demo', ['MissingDom1', 'MissingDom2'], ['MissingBP1']), ['a'])
+    writeExtraDomain('missing-dom1')
+    writeExtraDomain('missing-dom2')
+    writeExtraBlueprint('missing-bp1')
+    setupWork('demo', SIMPLE_WORK('demo', ['missing-dom1', 'missing-dom2'], ['missing-bp1']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
 
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missingdom1.oxn'))
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missingdom2.oxn'))
-    unlinkSync(join(tmpDir, '.openxenon', 'blueprints', 'missingbp1.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom1.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom2.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'blueprints', 'missing-bp1.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
     expect(r.data.diagnostics).toHaveLength(3)
@@ -217,13 +219,13 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
   test('5. status 反射回 .run/state.json 的 diagnostics', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraDomain('MissingDom')
-    setupWork('demo', SIMPLE_WORK('demo', ['MissingDom']), ['a'])
+    writeExtraDomain('missing-dom')
+    setupWork('demo', SIMPLE_WORK('demo', ['missing-dom']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
 
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missingdom.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom.oxn'))
 
     await runCli(['work', 'run', 'demo', '--json'])
 
@@ -232,18 +234,18 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
     // status 当前不读 .run/state.json 的 diagnostics（仅 planLock）；但 .run/state.json 已持久化
     const state = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'))
     expect(state.diagnostics).toBeDefined()
-    expect(state.diagnostics[0].ref).toBe('@prj/domains/missingdom')
+    expect(state.diagnostics[0].ref).toBe('@prj/domains/missing-dom')
   })
 
   test('6. severity 必为 "warn"（不进 IAPError 体系）', async () => {
     await initProject()
     setupProjectWith()
-    writeExtraDomain('MissingDom')
-    setupWork('demo', SIMPLE_WORK('demo', ['MissingDom']), ['a'])
+    writeExtraDomain('missing-dom')
+    setupWork('demo', SIMPLE_WORK('demo', ['missing-dom']), ['a'])
 
     await runCli(['work', 'validate', 'demo', '--json'])
     await runCli(['work', 'lock', 'demo', '--json'])
-    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missingdom.oxn'))
+    unlinkSync(join(tmpDir, '.openxenon', 'domains', 'missing-dom.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
     for (const d of r.data.diagnostics) {

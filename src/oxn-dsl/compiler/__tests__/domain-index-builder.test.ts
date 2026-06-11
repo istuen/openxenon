@@ -161,6 +161,35 @@ describe('parseDomainSlim', () => {
     expect(result.errors).toContain('no `domain "X" { ... }` declaration found')
   })
 
+  // v1.1 PR-fix-domain-name-consistency: NAME_FILE_MISMATCH 软检测
+  test('NAME_FILE_MISMATCH 防御: declared "DevWorkflow" vs file "dev-workflow.oxn"（PascalCase 文件名，规范化后一致）→ status=ok', () => {
+    const file = join(domainsDir, 'dev-workflow.oxn')
+    writeFileSync(file, `domain "DevWorkflow" { description = "test" }\n`)
+    const result = parseDomainSlim(file, tmpDir)
+    expect(result.status).toBe('ok')
+    expect(result.name).toBe('DevWorkflow')
+    expect(result.errors).toEqual([])
+  })
+
+  test('NAME_FILE_MISMATCH 触发: declared "Foo" vs file "bar.oxn"（规范化后不一致）→ status=invalid + errors 含 NAME_FILE_MISMATCH', () => {
+    const file = join(domainsDir, 'bar.oxn')
+    writeFileSync(file, `domain "Foo" { description = "test" }\n`)
+    const result = parseDomainSlim(file, tmpDir)
+    expect(result.status).toBe('invalid')
+    expect(result.errors.some((e) => e.includes('NAME_FILE_MISMATCH'))).toBe(true)
+    expect(result.errors.some((e) => e.includes("declared 'Foo'"))).toBe(true)
+    expect(result.errors.some((e) => e.includes("does not match file 'bar'"))).toBe(true)
+  })
+
+  test('NAME_FILE_MISMATCH 一致: snake_case 声明 "wechat_minigame" vs kebab 文件 "wechat-minigame.oxn" → status=ok', () => {
+    const file = join(domainsDir, 'wechat-minigame.oxn')
+    writeFileSync(file, `domain "wechat_minigame" { description = "test" }\n`)
+    const result = parseDomainSlim(file, tmpDir)
+    expect(result.status).toBe('ok')
+    expect(result.name).toBe('wechat_minigame')
+    expect(result.errors).toEqual([])
+  })
+
   test('文件不存在 → status=invalid + file 路径仍记录', () => {
     const file = join(domainsDir, 'Missing.oxn')
     const result = parseDomainSlim(file, tmpDir)

@@ -22,6 +22,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'fs'
 import { basename, join, relative } from 'path'
 import { z } from 'zod'
+import { toKebab } from '../../kernel/contracts/name-canonical'
 
 // ───────── Zod schema（与落盘 JSON 一一对应）─────────
 
@@ -154,6 +155,17 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
       banCount: 0,
       invariantCount: 0,
     }
+  }
+
+  // v1.1 NAME_FILE_MISMATCH 防御（macOS-safe 字符串比对）
+  // 与 src/oxn-dsl/compiler/blueprint-index-builder.ts:194-199 模式一致：软检测
+  // 累积到 errors[],status='invalid',不阻断索引构建。
+  const fileStem = basename(filePath).replace(/\.oxn$/i, '')
+  if (toKebab(nameMatch[1]!) !== toKebab(fileStem)) {
+    errors.push(
+      `NAME_FILE_MISMATCH: declared '${nameMatch[1]!}' (normalized: '${toKebab(nameMatch[1]!)}') ` +
+        `does not match file '${fileStem}' (normalized: '${toKebab(fileStem)}')`,
+    )
   }
 
   const descMatch = content.match(/description\s*=\s*"((?:[^"\\]|\\.)*)"/)

@@ -51,6 +51,7 @@ import { updateProbeStats } from '../kernel/verdicts/probe-stats-updater'
 import { emptyProbeStats } from '../kernel/schemas/probe-stats-schema'
 import { readProbeStatsFromFile, writeProbeStatsToFile } from '../infra/probes/probe-stats-store'
 import { IAPError } from '../core/errors'
+import { assertDirNameConsistent } from '../kernel/contracts/name-canonical'
 
 // v0.1.3 PR-2: 临时 .running.json（proof 运行中状态）
 //   物理位置: .openxenon/proofs/<name>/.running.json
@@ -206,6 +207,24 @@ proof "${name}" {
 }
 `
     writeFileSync(oxnPath, template, 'utf-8')
+
+    // v1.1: 写入后回查 proof.oxn name ↔ 目录名 一致性（macOS-safe）
+    // Proof 没有独立 validate 子命令,在 create 阶段硬阻断。
+    try {
+      assertDirNameConsistent(name, dir, 'proof')
+    } catch (err) {
+      if (err instanceof IAPError) {
+        return outputError(
+          {
+            code: err.name,
+            message: err.message,
+            ...(err.context?.suggestion !== undefined ? { suggestion: String(err.context.suggestion) } : {}),
+          },
+          format,
+        )
+      }
+      throw err
+    }
 
     output(
       {
