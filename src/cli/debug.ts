@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync } from 'fs'
+import { appendFileSync, existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { BOUNDARY_DIR, DEBUG_LOG_FILE } from '../kernel/index'
 
@@ -10,7 +10,7 @@ export function isDebugEnabled(projectRoot: string): boolean {
   const configPath = join(projectRoot, BOUNDARY_DIR, 'config.json')
   try {
     if (!existsSync(configPath)) return false
-    const content = require('fs').readFileSync(configPath, 'utf-8')
+    const content = readFileSync(configPath, 'utf-8')
     const config = JSON.parse(content)
     return config.debug === true
   } catch {

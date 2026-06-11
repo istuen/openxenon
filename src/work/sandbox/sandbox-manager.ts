@@ -9,6 +9,7 @@
  */
 
 import { basename, join } from 'path'
+import { parse as parseYaml } from 'yaml'
 import { BOUNDARY_DIR } from '../../kernel/index'
 import { type DagNode, validateDagTopology } from '../../oxl/validators/blueprint-dag'
 import type { OxnAssemblyIR, OxnAssemblyPart } from '../../oxl/schemas/oxn-assembly.schema'
@@ -55,7 +56,6 @@ export class TaskSandbox {
     if (config.blueprintPath.endsWith('.json')) {
       currentIR = JSON.parse(fs.readFileSync(config.blueprintPath, 'utf-8')) as OxnAssemblyIR
     } else {
-      const { parse: parseYaml } = require('yaml')
       const raw = parseYaml(fs.readFileSync(config.blueprintPath, 'utf-8')) as Record<string, unknown>
       currentIR = {
         id: (raw.name || raw.id || config.taskId) as string,

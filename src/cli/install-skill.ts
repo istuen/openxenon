@@ -19,7 +19,7 @@ import skillCli from '../../.opencode/skills/oxn-cli/SKILL.md' with { type: 'fil
 import skillProof from '../../.opencode/skills/oxn-proof/SKILL.md' with { type: 'file' }
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { getFormatFromArgs, output } from './output'
@@ -130,7 +130,6 @@ export default defineCommand({
 })
 
 function listOxnSkillsFromDisk(): string[] {
-  const { readdirSync } = require('fs') as typeof import('fs')
   const dir = resolve(join(process.cwd(), '.opencode', 'skills'))
   if (!existsSync(dir)) return Object.keys(EMBEDDED_SKILLS)
   return readdirSync(dir, { withFileTypes: true })

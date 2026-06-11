@@ -1,5 +1,5 @@
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from '../infra/filesystem'
 import { type DaemonProcessInfo, isDaemonRunning } from '../infra/daemon-probe'
-import { existsSync, unlinkSync, writeFileSync } from '../infra/filesystem'
 import { DAEMON_PID_PATH, DAEMON_SOCK_PATH, GLOBAL_BOUNDARY_PATH } from '../infra/global'
 import { waitForHealth } from './health-check'
 import { daemonLogger } from './logger'
@@ -38,7 +38,6 @@ export function startDaemon(serverPath: string): StartDaemonResult {
 
   try {
     if (!existsSync(GLOBAL_BOUNDARY_PATH)) {
-      const { mkdirSync } = require('fs')
       mkdirSync(GLOBAL_BOUNDARY_PATH, { recursive: true })
     }
 

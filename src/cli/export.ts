@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { resolve } from 'path'
 import { t } from '../infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
@@ -52,7 +52,7 @@ export default defineCommand({
 
       if (outputPath) {
         const fullOutputPath = resolve(process.cwd(), outputPath)
-        require('fs').writeFileSync(fullOutputPath, content, 'utf-8')
+        writeFileSync(fullOutputPath, content, 'utf-8')
         return output(
           {
             data: { path: fullOutputPath },

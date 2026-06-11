@@ -27,8 +27,7 @@ describe('OXL Examples - 存在性 smoke test', () => {
 
   test('所有 examples 文件存在（不 parse）', () => {
     if (!examplesExist()) return
-    const fs = require('fs')
-    const files = fs.readdirSync(EXAMPLES_DIR).filter((f: string) => f.endsWith('.oxn'))
+    const files = readdirSync(EXAMPLES_DIR).filter((f: string) => f.endsWith('.oxn'))
     expect(files.length).toBeGreaterThan(0)
     // 注：examples/ 目前使用 v0.0.x 旧规（align / version / slot / ref 等），
     // 与当前 grammar (v0.1-final) 不兼容 —— 这是已知的 IAP 软缺口 #5，

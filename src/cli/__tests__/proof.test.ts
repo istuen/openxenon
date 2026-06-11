@@ -2,7 +2,17 @@
 // 覆盖：proof 命名规范 / create / list / probe add / run / show / 签名 / chmod 0o444
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:test'
-import { chmodSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'fs'
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'fs'
 import { tmpdir } from 'os'
 import { join, resolve } from 'path'
 
@@ -90,7 +100,7 @@ describe('parseProofFile', () => {
   test('parses minimal proof.oxn', async () => {
     const oxnPath = proof.getProofOxnPath('parse-test')
     const dir = proof.getProofDir('parse-test')
-    require('fs').mkdirSync(dir, { recursive: true })
+    mkdirSync(dir, { recursive: true })
     writeFileSync(
       oxnPath,
       `proof "parse-test" {
@@ -112,7 +122,7 @@ describe('parseProofFile', () => {
   test('rejects malformed proof.oxn', async () => {
     const oxnPath = proof.getProofOxnPath('bad-test')
     const dir = proof.getProofDir('bad-test')
-    require('fs').mkdirSync(dir, { recursive: true })
+    mkdirSync(dir, { recursive: true })
     writeFileSync(oxnPath, `proof "bad-test" { junk }`, 'utf-8')
     const r = await proof.parseProofFile(oxnPath)
     expect(r.ok).toBe(false)
@@ -264,7 +274,7 @@ describe('end-to-end: create → probe add → run → show', () => {
     // 1. create
     const oxnPath = proof.getProofOxnPath(name)
     const dir = proof.getProofDir(name)
-    require('fs').mkdirSync(dir, { recursive: true })
+    mkdirSync(dir, { recursive: true })
     writeFileSync(
       oxnPath,
       `proof "${name}" {

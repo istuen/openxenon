@@ -8,6 +8,7 @@
 import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../schemas/oxn-assembly.schema'
 import type { OxnAssetType } from '../scope/oxn-scope'
 import { OxnWorkspaceManager } from '../scope/oxn-workspace-manager'
+import { parse as parseYaml } from 'yaml'
 
 export interface FlattenOptions {
   maxDepth?: number // 最大递归深度，默认 3
@@ -123,7 +124,6 @@ export class BundleFlattener {
           data: resolved.asset.data as Record<string, unknown>,
         } as OxnAssemblyBundleEntity
       } else if ('content' in resolved.asset) {
-        const { parse: parseYaml } = require('yaml')
         try {
           entity = {
             type: resolved.asset.type,

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type { TaskState } from '../cli/task-filesystem'
 
@@ -102,7 +102,7 @@ export function scanForgeDrafts(projectRoot: string): ForgeDraft[] {
       const draftPath = join(typePath, entry.name, 'draft.yaml')
       if (existsSync(draftPath)) {
         try {
-          const stat = require('fs').statSync(draftPath)
+          const stat = statSync(draftPath)
           drafts.push({
             name: entry.name,
             type,
@@ -138,7 +138,7 @@ export function scanArsenalAssets(projectRoot: string): ArsenalAsset[] {
       const canonicalPath = join(typePath, entry.name, 'canonical.yaml')
       if (existsSync(canonicalPath)) {
         try {
-          const stat = require('fs').statSync(canonicalPath)
+          const stat = statSync(canonicalPath)
           assets.push({
             name: entry.name,
             type,

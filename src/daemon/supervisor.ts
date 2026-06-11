@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
 import { DAEMON_PID_PATH } from '../infra/global'
 import { daemonLogger } from './logger'
@@ -85,7 +86,6 @@ export class DaemonSupervisor {
     }
 
     try {
-      const { spawn } = require('child_process')
       const proc = spawn('bun', ['run', serverPath], {
         detached: true,
         stdio: ['ignore', 'ignore', 'ignore'],
@@ -93,6 +93,9 @@ export class DaemonSupervisor {
 
       proc.unref()
 
+      if (proc.pid === undefined) {
+        throw new Error('spawn returned a child process without a pid')
+      }
       this.state.pid = proc.pid
       this.state.isRunning = true
       this.state.lastRestartTime = Date.now()

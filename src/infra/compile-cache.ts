@@ -1,9 +1,9 @@
+import { createHash } from 'node:crypto'
 import { join } from 'path'
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from './filesystem'
 import { BOUNDARY_DIR } from './paths'
 
 function computeContentHash(content: string): string {
-  const { createHash } = require('crypto')
   return createHash('sha256').update(content).digest('hex')
 }
 
