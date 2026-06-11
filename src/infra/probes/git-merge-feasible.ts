@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { checkMergeFeasibility, type MergeFeasibilityResult } from '../git/workspace'
-import type { ProbeContextBase } from '../../kernel/contracts/probe-port'
+import type { ProbeContextBase } from '../../kernel/index'
 
 export interface GitMergeFeasibleParams {
   workBranch: string

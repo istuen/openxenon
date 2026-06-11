@@ -15,7 +15,7 @@ import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
 import { parseOxnReference } from '../scope/oxn-scope'
-import { BOUNDARY_DIR, WORK_BLUEPRINTS_JSON } from '../../kernel/constants'
+import { BOUNDARY_DIR, WORK_BLUEPRINTS_JSON } from '../../kernel/index'
 import { hashText } from '../../work/plan-hash'
 
 // ───────── Zod schema ─────────

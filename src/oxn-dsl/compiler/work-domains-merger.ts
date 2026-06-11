@@ -22,7 +22,7 @@ import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
 import { parseOxnReference } from '../scope/oxn-scope'
-import { BOUNDARY_DIR, DOMAINS_DIR, WORK_DOMAINS_JSON } from '../../kernel/constants'
+import { BOUNDARY_DIR, DOMAINS_DIR, WORK_DOMAINS_JSON } from '../../kernel/index'
 import { hashText } from '../../work/plan-hash'
 import { parseDomainSlim, type DomainIndexEntry } from './domain-index-builder'
 

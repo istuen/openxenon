@@ -1,6 +1,6 @@
 import { statSync } from 'fs'
 import { join } from 'path'
-import type { ProbeContextBase } from '../../kernel/contracts/probe-port'
+import type { ProbeContextBase } from '../../kernel/index'
 import { matchGlob, parseGlobPattern } from './glob-utils'
 
 export interface ProbeContext extends ProbeContextBase {}

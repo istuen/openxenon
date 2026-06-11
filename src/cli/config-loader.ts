@@ -21,7 +21,7 @@
 
 import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
-import { BOUNDARY_DIR } from '../kernel/constants'
+import { BOUNDARY_DIR } from '../kernel/index'
 
 export type LeaderMode = 'reference' | 'mvp'
 

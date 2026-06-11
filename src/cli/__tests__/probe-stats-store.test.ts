@@ -16,7 +16,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 
 import { readProbeStatsFromFile, writeProbeStatsToFile } from '../../infra/probes/probe-stats-store'
-import { emptyProbeStats } from '../../kernel/schemas/probe-stats-schema'
+import { emptyProbeStats } from '../../kernel/index'
 
 let tmpDir: string
 
@@ -115,8 +115,7 @@ describe('writeProbeStatsToFile', () => {
 // updater 纯函数单测（顺便覆盖 schema 与 catalog 翻译）
 // =============================================================================
 
-import { updateProbeStats, initProbeStatsFromFrozen } from '../../kernel/verdicts/probe-stats-updater'
-import type { FrozenProof } from '../../kernel/schemas/proof-schema'
+import { updateProbeStats, initProbeStatsFromFrozen, type FrozenProof } from '../../kernel/index'
 
 function makeFrozen(
   name: string,

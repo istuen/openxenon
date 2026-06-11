@@ -1,5 +1,5 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import type { FileSystemPort } from '../kernel/contracts/file-system-port'
+import type { FileSystemPort } from '../kernel/index'
 
 export const fileSystemPort: FileSystemPort = {
   existsSync,

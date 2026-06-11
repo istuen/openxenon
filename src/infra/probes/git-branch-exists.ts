@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { branchExists, type GitResult } from '../git/workspace'
-import type { ProbeContextBase } from '../../kernel/contracts/probe-port'
+import type { ProbeContextBase } from '../../kernel/index'
 
 export interface GitBranchExistsParams {
   branch: string

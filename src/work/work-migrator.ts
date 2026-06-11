@@ -45,7 +45,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { BOUNDARY_DIR, RUN_DIR, RUN_TASKS_SUBDIR, WORK_FILE } from '../kernel/constants'
+import { BOUNDARY_DIR, RUN_DIR, RUN_TASKS_SUBDIR, WORK_FILE } from '../kernel/index'
 import {
   buildPerWorkDomainsIndex,
   writePerWorkDomainsIndex,

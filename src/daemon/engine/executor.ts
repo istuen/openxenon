@@ -1,6 +1,6 @@
 import { getProbeHandler, type ProbeContext, type ProbeResult } from '../../infra/probes'
 import { evaluateProbe, type ProbeDefinition, reduceProbeResults } from '../../work/probe-evaluator'
-import type { Blueprint, Part } from '../../kernel/schemas/validators/blueprint.schema'
+import type { Blueprint, Part } from '../../kernel/index'
 import { hallEmitter } from '../hall'
 import { daemonLogger } from '../logger'
 import { processManager } from '../process-manager'

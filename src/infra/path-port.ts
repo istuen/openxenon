@@ -1,5 +1,5 @@
 import { join, resolve as pathResolve } from 'node:path'
-import type { PathPort } from '../kernel/contracts/path-port'
+import type { PathPort } from '../kernel/index'
 
 export const pathPort: PathPort = {
   join(...segments: string[]): string {

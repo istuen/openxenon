@@ -11,8 +11,7 @@
 
 import { join } from 'path'
 import { existsSync, readFileSync } from 'fs'
-import { safeValidateProbeStats, type ProbeStats } from '../../kernel/schemas/probe-stats-schema'
-import { safeValidateFrozenProof, type FrozenProof } from '../../kernel/schemas/proof-schema'
+import { safeValidateProbeStats, type ProbeStats, safeValidateFrozenProof, type FrozenProof } from '../../kernel/index'
 
 /**
  * 读 frozen.json（带签名校验） + probe-stats.json，返回 Insight 计算所需的两份数据。

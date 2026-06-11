@@ -13,8 +13,8 @@
 // =============================================================================
 
 import { getProbeHandler, hasProbeHandler, type ProbeContext } from '../infra/probes'
-import { judge } from '../kernel/verdicts/verdict'
-import type { FrozenProofProbeResult } from '../kernel/schemas/proof-schema'
+import { judge } from '../kernel/index'
+import type { FrozenProofProbeResult } from '../kernel/index'
 
 /** 内存中的 proof.oxn 解析结果 */
 export interface ProofProbeIR {

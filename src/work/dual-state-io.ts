@@ -12,7 +12,7 @@ import {
   WORK_RUN_FROZEN_JSON,
   WORK_RUN_STATE_JSON,
   WORK_RUN_TRACE_JSONL,
-} from '../kernel/constants'
+} from '../kernel/index'
 import { type TaskState, TaskStateSchema, type WorkspaceState, WorkspaceStateSchema } from './dual-state'
 
 // =============================================================================

@@ -1,4 +1,4 @@
-import { Action, type ExecutionContext, type ExecutionPolicy } from '../../kernel/schemas/types/policy'
+import { Action, type ExecutionContext, type ExecutionPolicy } from '../../kernel/index'
 
 export class ProductionPolicy implements ExecutionPolicy {
   onProbeFailed(probeId: string, error: string, context: ExecutionContext): Action {

@@ -26,6 +26,8 @@ export default [
         patterns: [
           { group: ['../infra/*', '../../infra/*', 'src/infra/*'], message: '🚨 宪法违规：Kernel 是兰姆达真空，不能知道 Infra 的存在！' },
           { group: ['node:fs', 'node:net', 'node:child_process', 'fs', 'net', 'child_process'], message: '🚨 宪法违规：Kernel 是兰姆达真空，绝对禁止 I/O 操作！' },
+          // PR-K 内部组织约束：L0 内部文件不能自我 import（kernel/index 是对外门面）
+          { group: ['./index', './index.ts', '../index', '../index.ts', '../../index', '../../index.ts', '../../../index', '../../../index.ts'], message: '🚨 宪法违规：L0 内部文件不应通过 index.ts 互引——index.ts 是对外门面，内部用相对路径直连！' },
         ],
       }],
     },

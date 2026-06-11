@@ -13,7 +13,7 @@
 
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
 import { dirname } from 'path'
-import { safeValidateProbeStats, type ProbeStats } from '../../kernel/schemas/probe-stats-schema'
+import { safeValidateProbeStats, type ProbeStats } from '../../kernel/index'
 
 /**
  * 读 probe-stats.json。

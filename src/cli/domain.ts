@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 import { join, resolve } from 'path'
 import { URI } from 'langium'
-import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/constants'
+import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/index'
 import { createOxnParser, isDomainDeclaration, type DomainDeclaration, type OXNDocument } from '../oxn-dsl'
 import {
   getDomainIndexPath,
@@ -12,7 +12,7 @@ import {
   type DomainIndex,
 } from '../oxn-dsl/compiler/domain-index-builder'
 import { IAPError } from '../core/errors'
-import { assertNameFileConsistent } from '../kernel/contracts/name-canonical'
+import { assertNameFileConsistent } from '../kernel/index'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 
 // =============================================================================

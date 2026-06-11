@@ -5,7 +5,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
 import { extname, join } from 'path'
-import { BOUNDARY_DIR } from '../kernel/constants'
+import { BOUNDARY_DIR } from '../kernel/index'
 import { getFormatFromArgs, output, outputError } from './output'
 
 function getProjectRoot(): string {

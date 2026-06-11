@@ -1,4 +1,4 @@
-import type { ProbeObservation, ProbeResult, ProbeHandler } from '../../kernel/contracts/probe-port'
+import type { ProbeObservation, ProbeResult, ProbeHandler } from '../../kernel/index'
 import type { ProbeContext } from './fs-exists'
 import { executeFsExists } from './fs-exists'
 import { executeFsMatch, type FsMatchParams } from './fs-match'

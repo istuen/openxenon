@@ -56,8 +56,8 @@ export type { OxnScope, OxnAssetType, ResolvedOxnAsset } from './scope/oxn-scope
 export type { OxnLoadResult } from './loader/oxn-loader'
 export type { ValidationError, CoverageResult, TypeCheckResult } from './evaluator/param-evaluator'
 
-export type { CompiledBlueprint } from '../kernel/schemas/validators/compiled-schema'
-export type { FrozenBlueprint } from '../kernel/schemas/validators/compiled-schema'
+export type { CompiledBlueprint } from '../kernel/index'
+export type { FrozenBlueprint } from '../kernel/index'
 
 // --- Langium API ---
 export {

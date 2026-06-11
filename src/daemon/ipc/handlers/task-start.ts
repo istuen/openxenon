@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { existsSync } from '../../../infra/filesystem'
-import { BOUNDARY_DIR } from '../../../kernel/constants'
+import { BOUNDARY_DIR } from '../../../kernel/index'
 import { readTaskTrace } from '../../trace/writer'
 import { badRequest, notFound } from '../errors'
 import { registerRoute } from '../router'

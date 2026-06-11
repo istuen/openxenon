@@ -35,7 +35,7 @@ import {
   PROOFS_DIR,
   PROOF_FROZEN_JSON,
   PROOF_OXN_FILE,
-} from '../kernel/constants'
+} from '../kernel/index'
 import {
   createOxnParser,
   isProofDeclaration,
@@ -46,12 +46,12 @@ import {
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
-import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/verdicts/catalog'
-import { updateProbeStats } from '../kernel/verdicts/probe-stats-updater'
-import { emptyProbeStats } from '../kernel/schemas/probe-stats-schema'
+import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/index'
+import { updateProbeStats } from '../kernel/index'
+import { emptyProbeStats } from '../kernel/index'
 import { readProbeStatsFromFile, writeProbeStatsToFile } from '../infra/probes/probe-stats-store'
 import { IAPError } from '../core/errors'
-import { assertDirNameConsistent } from '../kernel/contracts/name-canonical'
+import { assertDirNameConsistent } from '../kernel/index'
 
 // v0.1.3 PR-2: 临时 .running.json（proof 运行中状态）
 //   物理位置: .openxenon/proofs/<name>/.running.json

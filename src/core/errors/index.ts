@@ -20,8 +20,8 @@
 //   - IAPError 与 OXNCrash 消费者不同（AI vs 人类），进程行为不同（exit 1 vs 2）
 // =============================================================================
 
-export { IAPError, IAPAction, isIAPError } from '../../kernel/contracts/iap-error'
-export type { IAPAxis, IAPErrorCode, IAPErrorContext } from '../../kernel/contracts/iap-error'
+export { IAPError, IAPAction, isIAPError } from '../../kernel/index'
+export type { IAPAxis, IAPErrorCode, IAPErrorContext } from '../../kernel/index'
 
 export { OXNCrash, isOXNCrash } from './oxn-crash'
 export type { OXNCrashCode } from './oxn-crash'

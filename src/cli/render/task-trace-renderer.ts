@@ -1,4 +1,4 @@
-import type { PartState, TaskTraceState, TraceEvent } from '../../kernel/schemas/types/task-trace'
+import type { PartState, TaskTraceState, TraceEvent } from '../../kernel/index'
 
 export interface TaskTraceRendererOptions {
   taskId: string

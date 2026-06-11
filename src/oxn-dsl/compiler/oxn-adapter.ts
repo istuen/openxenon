@@ -11,8 +11,8 @@
  */
 
 import { type DagNode, validateDagTopology } from '../../oxn-dsl/validators/blueprint-dag'
-import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/schemas/validators/frozen-schema'
-import { createXenonMeta, validateFrozenBlueprint } from '../../kernel/schemas/validators/frozen-schema'
+import type { FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/index'
+import { createXenonMeta, validateFrozenBlueprint } from '../../kernel/index'
 import { hashPort } from '../../infra/hash'
 import type {
   OxnAssemblyIR,

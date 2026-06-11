@@ -22,7 +22,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'fs'
 import { basename, join, relative } from 'path'
 import { z } from 'zod'
-import { toKebab } from '../../kernel/contracts/name-canonical'
+import { toKebab } from '../../kernel/index'
 
 // ───────── Zod schema（与落盘 JSON 一一对应）─────────
 

@@ -1,5 +1,5 @@
-import type { DagNode, DagValidationResult } from '../../kernel/processors/graph'
-import { topologicalSortGeneric } from '../../kernel/processors/dag'
+import type { DagNode, DagValidationResult } from '../../kernel/index'
+import { topologicalSortGeneric } from '../../kernel/index'
 
 export type { DagNode, DagValidationResult }
 

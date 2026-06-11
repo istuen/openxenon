@@ -1,8 +1,6 @@
-import type { Blueprint } from '../../kernel/schemas/validators/blueprint.schema'
+import type { Blueprint, CompiledBlueprint, HashPort } from '../../kernel/index'
+import { computeContentHash } from '../../kernel/index'
 import { type DagNode, validateDagTopology } from '../../oxn-dsl/validators/blueprint-dag'
-import type { CompiledBlueprint } from '../../kernel/schemas/validators/compiled-schema'
-import { computeContentHash } from '../../kernel/schemas/validators/compiled-schema'
-import type { HashPort } from '../../kernel/contracts/hash-port'
 import type { IOxnCompiler } from '../contracts/oxn-compiler-port'
 import { createOxnServices } from '../langium/oxn-services'
 

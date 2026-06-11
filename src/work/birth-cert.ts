@@ -19,7 +19,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileS
 import { dirname, join } from 'path'
 import { z } from 'zod'
 import { hashPort } from '../infra/hash'
-import { WORK_FILE } from '../kernel/constants'
+import { WORK_FILE } from '../kernel/index'
 import { getWorkDir } from './dual-state-io'
 import { hashWorkPlan, type PlanHash } from './plan-hash'
 

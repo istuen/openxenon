@@ -103,6 +103,23 @@
 | **L2 Module** | L2-Work | `src/work/` | 编排与执行（adapters / policies / sandbox / explore） |
 | **L3 Runtime** | L3-CLI | `src/cli/` `src/daemon/` `src/hall/` `src/skills/` `src/watcher/` `src/core/` `src/i18n/` | 入口与外部交互 |
 
+> **L0 Kernel 公开面（v0.1.4 PR-K 修订）**：
+>
+> L0 Kernel 的 4 子层（`contracts/` `schemas/` `processors/` `verdicts/`）是**内部职责分工**，**对外透明**。
+> L1/L2/L3 调 Kernel 时，**唯一合法入口**是 `src/kernel/index.ts`（或简写 `src/kernel`）：
+> ```ts
+> // ✅ 合法
+> import { FrozenProofSchema, topologicalSortGeneric, IAPError } from '../kernel/index'
+> import { judge } from '../kernel'
+>
+> // ❌ 黑名单（已被 validate-deps 拦截）
+> import { FrozenProofSchema } from '../kernel/schemas/proof-schema'
+> import { topologicalSortGeneric } from '../kernel/processors/dag'
+> import { IAPError } from '../kernel/contracts/iap-error'
+> ```
+>
+> L0 内部 4 子层之间互相 import **自由**——它们是包内组织，外部不可见（类比 npm `exports` 字段：决定公开面，`src/` 内怎么分目录是包自己的事）。
+
 > **Oxl 命名澄清**：
 > - `src/oxn-dsl/builtin/` 装 **OXN DSL 格式的资产源**（`.oxn` 文件 + Schema 定义）
 > - `src/builtin/` 装 **二进制内置资产**（运行时通过 Loader 加载）
@@ -113,27 +130,35 @@
 
 ## 4. 依赖规则
 
-### 4.1 八子层 allowedDeps 白名单
+### 4.1 简化规则（v0.1.4 PR-K 修订）
 
-| 来源层 | 允许依赖 |
-|---|---|
-| **L0-Schema** | L0-Contract *(type-only，编译后消除)* |
-| **L0-Contract** | L0-Schema |
-| **L0-Processor** | L0-Schema, L0-Contract |
-| **L1-Infra** | L0-Schema, L0-Contract, L2-Builtin |
-| **L1-OXN-DSL** | L0-Schema, L0-Contract |
-| **L2-Builtin** | L1-Infra, L0-Schema, L0-Contract |
-| **L2-Work** | L1-Infra, L1-OXN-DSL, L0-Schema, L0-Contract, L0-Processor |
-| **L3-CLI** | 全部下层 |
+PR-K 把 8 子层白名单矩阵**简化为 1 条规则**：
 
-### 4.2 forbiddenDeps 黑名单
+> **L1/L2/L3 调 Kernel 时，只能走 `src/kernel/index.ts`（或简写 `src/kernel`）。**
+> 走子层路径（`src/kernel/contracts/xxx` / `src/kernel/schemas/xxx` / `src/kernel/processors/xxx` / `src/kernel/verdicts/xxx` / `src/kernel/enums.ts` / `src/kernel/constants.ts`）**全部黑名单**。
 
-任何上层 → 下层的非法方向，CI `validate-deps.yml` workflow 自动拦截。
+**核心理念**：Kernel 的 4 子层是**内部职责分工**，不是外部访问控制。L1/L2/L3 看 Kernel 是一个**单一 L0 黑盒**，只通过 `index.ts` 暴露的 export 列表与之交互。
+
+L0 内部 4 子层（`contracts/` `schemas/` `processors/` `verdicts/`）互相 import **自由**——它们是包内组织，外部不可见。L0 内部禁止自我 import `index.ts`（避免循环依赖）——由 `eslint.config.js` 拦截。
+
+### 4.2 L1-L2-L3 跨层规则（旧 8 子层矩阵压缩为 6 大类）
+
+L1/L2/L3 互相之间的依赖仍按"内层不依赖外层"原则：
+
+| 来源层（调用方） | 可以依赖 | 禁止依赖 |
+|---|---|---|
+| **L0-Kernel** | （无；L0 只能 import 同子层） | L1-Infra, L1-OXN-DSL, L2-Builtin, L2-Work, L3-CLI |
+| **L1-Infra** | L0-Kernel | L2-Work, L3-CLI |
+| **L1-OXN-DSL** | L0-Kernel | L2-Builtin, L2-Work, L3-CLI |
+| **L2-Builtin** | L1-Infra, L0-Kernel | L2-Work, L3-CLI |
+| **L2-Work** | L1-Infra, L1-OXN-DSL, L0-Kernel | L3-CLI |
+| **L3-CLI** | L2-Builtin, L2-Work, L1-Infra, L1-OXN-DSL, L0-Kernel | （无） |
 
 ### 4.3 强制执行
 
 - **CI 验证**：[`.github/workflows/validate-deps.yml`](../../.github/workflows/validate-deps.yml) 在 push/PR 时跑 `bun scripts/validate-dependencies.ts`
 - **测试护栏**：`tests/kernel/architectural-guard.test.ts` 守护 L0 Kernel 零 IO 与零外层依赖
+- **ESLint**：`eslint.config.js` 对 L0 内部禁止 fs/net/child_process/Infra + 禁止自我 import `index.ts`
 
 ---
 
@@ -242,40 +267,62 @@ find src -maxdepth 2 -type d | sort
 
 ### 7.4 残留问题与待跟进（架构决策待办）
 
-修复后剩 **3 个真实违规**（其中 1 个为本次审计新发现），需后续 PR 决策：
+v0.1.4 PR-K（Kernel 公开面收敛）落地后：
+- **4 条违规已消除**（R-1 / R-2 / R-3 / R-5）：全部通过改 import 路径走 `kernel/index` 解决，零物理文件移动。
+- **2 条违规仍存**（R-4 / R-6）：L1-OXN-DSL → L2-Work 越界，与 Kernel 公开面正交，留待后续 PR 决策。
 
-#### 残留 1（新发现，🔴 High）：L0-Processor → L3-CLI (IAPError 反向依赖)
+#### 残留 1（已解决，PR-B）：L0-Processor → L3-CLI (IAPError 反向依赖)
 
-- **位置**：`src/kernel/verdicts/catalog.ts:435` 从 `src/core/errors` 导入 `IAPError` / `IAPAction`
-- **根因**：`IAPError` / `IAPAction` 是 IAP 范式核心数据契约，**逻辑属于 L0**（IAP = Intent-Align-Proof = 引擎内核范式），但物理放在 `src/core/errors/`（L3-CLI）。导致 L0 反而依赖 L3（外层依赖内层颠倒）
-- **建议**：将 `IAPError` / `IAPAction` / `IAPErrorCode` / `IAPErrorContext` 从 `src/core/errors/iap-error.ts` 移到 `src/kernel/contracts/iap-error.ts`（L0-Contract）。`OXNCrash` / `cli-input-error` 留 L3
-- **决策方**：架构师确认 IAP 错误语义归属后 1 个文件移动 + 1 个 importer 更新
+- **状态**：✅ **已解决**（PR-B `140f9f5`）
+- **原位置**：`src/kernel/verdicts/catalog.ts:435` 从 `src/core/errors` 导入 `IAPError` / `IAPAction`
+- **修复**：`src/core/errors/iap-error.ts` → `src/kernel/contracts/iap-error.ts`（L0-Contract）。`src/core/errors/index.ts` 加 re-export 保持 L3 现有 5 个 importer 兼容。`catalog.ts` 改 `from '../contracts/iap-error'`。
+- **结果**：消除 1 条 validate-deps 违规，984 → 985 测试全绿。
 
-#### 残留 2：L1-Infra → L0-Processor (PROBE_CATALOG)
+#### 残留 2（已解决，PR-K）：L1-Infra → L0-Processor (PROBE_CATALOG)
 
-- **位置**：`src/infra/explore/collector.ts:10` value import `PROBE_CATALOG`
-- **根因**：L1 Explore collector 用 `PROBE_CATALOG` 生成"内置探针"列表做展示（display 关注点），但 L1 不应依赖 L0-Processor
-- **建议 A**：将 `PROBE_CATALOG` 移到 `src/oxn-dsl/builtin/` 或新建 `src/oxn-dsl/catalog/probes.ts`（L1-OXN-DSL 持有"探针元数据"）
-- **建议 B**：把 collector 移到 L2 Work（display 关注点本就不属于 L1 Infra）
-- **决策方**：catalog 归属与 L1/L2 边界，需架构师评审
+- **状态**：✅ **已解决**（PR-K 公开面收敛）
+- **原位置**：`src/infra/explore/collector.ts:10` value import `PROBE_CATALOG`
+- **修复**：无需物理文件移动——`PROBE_CATALOG` 仍在 `verdicts/catalog.ts`，但 `kernel/index.ts` 把它 re-export 出去了。`collector.ts` 改 `from '../../kernel/index'`。
+- **结果**：消除 1 条违规，且未来任何 L1+ 文件调 PROBE_CATALOG 都不再需要走子层路径。
 
-#### 残留 3：L1-OXN-DSL → L0-Processor (topologicalSortGeneric)
+#### 残留 3（已解决，PR-K）：L1-OXN-DSL → L0-Processor (topologicalSortGeneric)
 
-- **位置**：`src/oxn-dsl/validators/blueprint-dag.ts:2` value import `topologicalSortGeneric`
-- **根因**：L1 validator 需要 L0 纯函数（不破纯逻辑约束），但 L1→L0-Processor 跨层
-- **建议 A**：把 `topologicalSortGeneric` 移到 L0-Schema 或 L0-Contract（保持纯函数）
-- **建议 B**：在 layer rules 中放开"L1-OXN-DSL 可调用 L0-Processor 的纯函数"特例
-- **决策方**：需在宪法层面讨论"纯函数工具"是否应有一个 L0-Utility 子层
+- **状态**：✅ **已解决**（PR-K 公开面收敛）
+- **原位置**：`src/oxn-dsl/validators/blueprint-dag.ts:2` value import `topologicalSortGeneric`
+- **修复**：零物理移动。`topologicalSortGeneric` 仍在 `processors/dag.ts`，`kernel/index.ts` 把它 re-export。`blueprint-dag.ts` 改 `from '../../kernel/index'`。
+- **哲学确认**：「纯函数本身就是计算契约」（与 Port 接口对消费者无差别）—— 验证了你的"4 子层 = 内部职责分工"理解。
+
+#### 残留 4（仍待决策，🟡 Med）：L1-OXN-DSL → L2-Work (work/plan-hash) × 2
+
+- **位置**：
+  - `src/oxn-dsl/compiler/work-domains-merger.ts:26` `import { hashText } from '../../work/plan-hash'`
+  - `src/oxn-dsl/compiler/work-blueprints-merger.ts:19` `import { hashText } from '../../work/plan-hash'`
+- **根因**：`hashText` 是 L2-Work `plan-hash.ts` 导出的纯函数文本归一化工具。L1-OXN-DSL 的 merger 想用它算 per-work slim index 的 source hash——业务上合理，但 L1→L2 越界。
+- **建议 A**：在 `src/oxn-dsl/compiler/text-hash.ts` 暴露 `hashText`/`normalizeText`（从 L1 `infra/hash` 包的 hashPort 包一层），merger 改引此模块；`plan-hash.ts` 内部仍用原 `hashText`（不破坏 L2-Work 现有调用方）。
+- **建议 B**：放开宪法的"L1-OXN-DSL 可调 L2-Work 纯函数工具"特例。
+- **决策方**：架构师在 v0.1.5+ 评审。
 
 #### C-12（已文档化，🟢 Low）：L0-Schema → L0-Contract (type-only)
 
 - **位置**：`src/kernel/schemas/validators/compiled-schema.ts:2` `import type { HashPort } from '../../contracts/hash-port'`
-- **状态**：✅ **合法**，已写入 §4.1 表格（"type-only，编译后消除"）
-- **根因**：`compiled-schema.ts` 在 `createXenonMeta` 中需声明 `computeContentHash(content, hashPort: HashPort)` 的签名；`HashPort` 作为 Port 接口归 L0-Contract，但其**类型签名**（`computeHash: (content: string) => string`）在 L0-Schema 构造元数据时是必要依赖。
-- **为何 type-only 合法**：
-  1. `import type` 在 TypeScript 编译后**整行代码消失**（emit 阶段被擦除），零运行时耦合；
-  2. `validate-dependencies.ts` 的 `isTypeOnlyImport` 检测（§7.2.1 C-2 修复）已正确跳过；
-  3. DDD 视角：Schema 知道"元数据包含什么"是合理的——**类型签名是数据契约的一部分**。
+- **状态**：✅ **合法**（PR-A 已文档化）
+- **PR-K 修订**：随着 L0 4 子层对外透明（`kernel/index.ts` 唯一公开面），L0 内部 `import type { HashPort }` 形式保留——它是 L0 内部跨子层 type-only 互引，**外部不可见**。
+- **决策方**：架构师于 v0.1.4 审计批准
+
+#### C-13（v0.1.4 文档化，🟢 Low）：Kernel 公开面收敛 by index.ts
+
+- **位置**：`src/kernel/index.ts`（新文件，PR-K 创建）
+- **状态**：✅ **已落地**
+- **设计哲学**：
+  1. **纯函数本身就是契约**——`topologicalSortGeneric` / `judge` / `evaluatePredicate` 等纯函数是 Kernel 自带的"计算契约"，与 Port 接口（外层实现）对消费者无差别。
+  2. **4 子层是内部职责分工**——`contracts/` `schemas/` `processors/` `verdicts/` 是 Kernel 包内 `src/` 目录组织，对外透明（类比 npm `exports` 字段）。
+  3. **公开面 = index.ts**——L1/L2/L3 调 Kernel 只能 `import '.../kernel/index'`，禁止走子层路径。
+- **修复成果**：
+  - 旧 8 子层白名单矩阵（`LAYER_RULES`，4×4 表）→ 单条规则（L1+ 不能 `kernel/<sub>/<file>`）
+  - 4 条 validate-deps 违规消除（R-1/R-2/R-3/R-5）
+  - ESLint 加 L0 内部禁自我 `import './index'`（防循环）
+  - 宪法 §3/§4.1/§7.4 同步重写
+- **验证**：`bun scripts/validate-dependencies.ts` 6 → **2**（仅 R-4/R-6 与 Kernel 公开面正交，保留）
 - **决策方**：架构师于 v0.1.4 审计批准
 
 ---

@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { executeShellExec, type ShellExecResult } from './shell-exec'
-import type { ProbeContextBase } from '../../kernel/contracts/probe-port'
+import type { ProbeContextBase } from '../../kernel/index'
 
 export interface ProbeContext extends ProbeContextBase {}
 

@@ -1,6 +1,6 @@
 import { homedir } from 'os'
 import { join } from 'path'
-import type { OsPort } from '../kernel/contracts/os-port'
+import type { OsPort } from '../kernel/index'
 
 export const BOUNDARY_DIR = '.openxenon'
 

@@ -21,7 +21,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join, relative } from 'path'
 import { hashPort } from '../infra/hash'
-import { WORK_DOMAINS_JSON, WORK_BLUEPRINTS_JSON } from '../kernel/constants'
+import { WORK_DOMAINS_JSON, WORK_BLUEPRINTS_JSON } from '../kernel/index'
 import { getWorkDir, getWorkOxnPath } from './dual-state-io'
 
 // ───────── 文本 hash（归一化）─────────

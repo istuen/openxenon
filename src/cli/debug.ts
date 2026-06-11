@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync } from 'fs'
 import { join } from 'path'
-import { BOUNDARY_DIR, DEBUG_LOG_FILE } from '../kernel/constants'
+import { BOUNDARY_DIR, DEBUG_LOG_FILE } from '../kernel/index'
 
 export function getDebugLogPath(projectRoot: string): string {
   return join(projectRoot, BOUNDARY_DIR, DEBUG_LOG_FILE)

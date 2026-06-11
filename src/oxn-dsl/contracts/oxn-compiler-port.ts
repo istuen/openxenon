@@ -1,6 +1,5 @@
-import type { Blueprint } from '../../kernel/schemas/validators/blueprint.schema'
+import type { Blueprint, CompiledBlueprint } from '../../kernel/index'
 import type { CompileContext } from '../compiler/blueprint-compiler'
-import type { CompiledBlueprint } from '../../kernel/schemas/validators/compiled-schema'
 
 export interface IOxnCompiler {
   compile(assembly: Blueprint, ctx: CompileContext): CompiledBlueprint

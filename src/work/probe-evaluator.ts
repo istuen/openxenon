@@ -1,10 +1,4 @@
-import type {
-  ProbeObservation,
-  ProbeResult,
-  ProbeStrategy,
-  ProbeVerdict,
-  ProbeDefinition,
-} from '../kernel/contracts/probe-port'
+import type { ProbeObservation, ProbeResult, ProbeStrategy, ProbeVerdict, ProbeDefinition } from '../kernel/index'
 
 export type { ProbeObservation, ProbeResult, ProbeVerdict, ProbeDefinition }
 export type { ProbeStrategy }

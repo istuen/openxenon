@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { executeGitClean, type GitCleanParams, type GitCleanResult } from './git-clean'
-import type { ProbeContextBase } from '../../kernel/contracts/probe-port'
+import type { ProbeContextBase } from '../../kernel/index'
 
 export type GitStatusCleanParams = GitCleanParams
 export type GitStatusCleanResult = GitCleanResult

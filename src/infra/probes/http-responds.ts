@@ -8,7 +8,7 @@
 // 安全：默认 timeout 5s，不缓存，避免 AI 触发真实网络挂起或 SSRF。
 // =============================================================================
 
-import type { ProbeContextBase } from '../../kernel/contracts/probe-port'
+import type { ProbeContextBase } from '../../kernel/index'
 
 export interface ProbeContext extends ProbeContextBase {}
 
