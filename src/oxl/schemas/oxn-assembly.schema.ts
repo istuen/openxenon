@@ -12,7 +12,7 @@ export const OxnTypeReferenceSchema = z.string().refine(
     const enumType = /^enum\(.+\)$/
     return primitive.test(val) || generic.test(val) || enumType.test(val)
   },
-  { message: '类型必须是 string | number | boolean | any | list<T> | map<T> | enum(...)' },
+  { message: 'Type must be string | number | boolean | any | list<T> | map<T> | enum(...)' },
 )
 export type OxnTypeReference = z.infer<typeof OxnTypeReferenceSchema>
 

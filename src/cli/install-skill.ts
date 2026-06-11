@@ -7,6 +7,8 @@
 // to the user's global OpenCode skills folder (`~/.opencode/skills/`).
 // Use `--skill <id>` to install a single one.
 //
+import { t } from '../infra/i18n'
+
 // Embed SKILL.md files into the compiled binary so the command works
 // regardless of the user's current working directory. In dev (`bun run`),
 // this resolves to the real on-disk path; in a `--compile`d binary, Bun
@@ -60,24 +62,24 @@ function readSkillContent(skillId: string): { content: string; source: string } 
 export default defineCommand({
   meta: {
     name: 'install-skill',
-    description: '把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work)',
+    description: t('installSkill.description'),
   },
   args: {
     target: {
       type: 'string',
-      description: '目标根目录 (默认: ~/.opencode/skills/)',
+      description: t('installSkill.target'),
     },
     skill: {
       type: 'string',
-      description: '只装指定 skill (例: oxn-work)。不传则装全部 oxn-* skills',
+      description: t('installSkill.skill'),
     },
     force: {
       type: 'boolean',
       alias: 'f',
-      description: '覆盖已存在的 Skill',
+      description: t('installSkill.force'),
     },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)

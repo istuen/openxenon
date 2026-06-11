@@ -79,7 +79,7 @@ export function adaptConcretePart(
       finalParams[prop.name] = prop.default
     }
     if (finalParams[prop.name] === undefined && prop.required) {
-      throw new Error(`Part "${part.name}" 缺少必填参数 "${prop.name}"`)
+      throw new Error(`Part "${part.name}" missing required parameter "${prop.name}"`)
     }
   }
 
@@ -367,7 +367,7 @@ export class OxnKernelAdapter {
     if (dagNodes.length > 1) {
       const dagResult = validateDagTopology(dagNodes)
       if (!dagResult.valid) {
-        throw new Error(`DAG 验证失败: ${dagResult.errors.join('; ')}`)
+        throw new Error(`DAG validation failed: ${dagResult.errors.join('; ')}`)
       }
     }
 

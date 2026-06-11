@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 import { output } from './output'
 
 export default defineCommand({

@@ -15,7 +15,7 @@ import type { BuiltinAssetEntry, IBuiltinRegistry, OxnAssetType } from './oxn-sc
 const BUILTIN_PROBE_DEFS = {
   'shell-exec': {
     type: 'shell_exec',
-    description: '执行 Shell 命令并验证退出码为 0',
+    description: 'Execute a shell command and verify exit code is 0',
     props: [
       { name: 'command', type: 'string', required: true },
       { name: 'cwd', type: 'string', required: false, default: '.' },
@@ -25,19 +25,19 @@ const BUILTIN_PROBE_DEFS = {
   },
   'fs-exists': {
     type: 'fs_exists',
-    description: '检查指定 glob 模式的文件是否存在',
+    description: 'Check if files matching a glob pattern exist',
     props: [{ name: 'pattern', type: 'string', required: true }],
     output: { exists: 'boolean', files: 'list<string>' },
   },
   'fs-not-exists': {
     type: 'fs_not_exists',
-    description: '检查指定 glob 模式的文件是否不存在',
+    description: 'Check that no files match a glob pattern',
     props: [{ name: 'pattern', type: 'string', required: true }],
     output: { not_exists: 'boolean' },
   },
   'fs-content-match': {
     type: 'fs_content_match',
-    description: '检查文件内容是否匹配指定模式',
+    description: 'Check file content matches a specified pattern',
     props: [
       { name: 'path', type: 'string', required: true },
       { name: 'contains', type: 'string', required: true },
@@ -54,7 +54,7 @@ const BUILTIN_PART_DEFS = {
   'git-commit': {
     id: 'git-commit',
     name: 'Git Commit',
-    description: '提交代码到 Git 仓库',
+    description: 'Commit code to Git repository',
     implements: null,
     isAbstract: false,
     props: {
@@ -71,7 +71,7 @@ const BUILTIN_PART_DEFS = {
   'create-branch': {
     id: 'create-branch',
     name: 'Create Branch',
-    description: '创建新 feature 分支',
+    description: 'Create a new feature branch',
     implements: null,
     isAbstract: false,
     props: {
@@ -87,7 +87,7 @@ const BUILTIN_PART_DEFS = {
   'develop-feature': {
     id: 'develop-feature',
     name: 'Develop Feature',
-    description: '执行开发任务并通过测试验证',
+    description: 'Execute development tasks and verify with tests',
     implements: null,
     isAbstract: false,
     props: {

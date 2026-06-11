@@ -75,7 +75,7 @@ function resolveParams(
   const required = propsSchema.required || []
   for (const key of required) {
     if (!(key in merged) || merged[key] === undefined || merged[key] === null) {
-      throw new Error(`Part "${partContent.id || partContent.name}" 缺少必填参数 "${key}"`)
+      throw new Error(`Part "${partContent.id || partContent.name}" missing required parameter "${key}"`)
     }
   }
 
@@ -202,7 +202,7 @@ export class OxnCompiler implements IOxnCompiler {
 
     const dagResult = validateDagTopology(dagNodes)
     if (!dagResult.valid) {
-      throw new Error(`DAG 验证失败: ${dagResult.errors.join('; ')}`)
+      throw new Error(`DAG validation failed: ${dagResult.errors.join('; ')}`)
     }
 
     const deps = ctx.dependencies
@@ -245,7 +245,7 @@ export class OxnCompiler implements IOxnCompiler {
       if (resolvedRef) {
         const partContent = partToResolve
         if (!partContent || typeof partContent !== 'object') {
-          throw new Error(`Part ref "${resolvedRef}" 解析失败，未找到对应资产`)
+          throw new Error(`Part ref "${resolvedRef}" resolution failed, no matching asset found`)
         }
 
         const resolvedPartParams = resolveParams(partContent, part.params || {})

@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { setLocale, t } from '../i18n'
+import { setLocale, t } from '../infra/i18n'
 import { BOUNDARY_DIR } from '../kernel/index'
 import { GLOBAL_BOUNDARY_PATH } from '../infra/global'
 import { autoRebuildDomainIndex } from './domain'
@@ -112,52 +112,52 @@ function normalizeList(v: string[] | string | undefined): string[] {
 export default defineCommand({
   meta: {
     name: 'init',
-    description: '初始化项目，在当前项目建立物理围栏',
+    description: t('init.description'),
   },
   args: {
     name: {
       type: 'positional',
-      description: '项目名称',
+      description: t('init.name'),
       required: false,
     },
     sandbox: {
       alias: 's',
       type: 'boolean',
-      description: '初始化为沙箱模式',
+      description: t('init.sandbox'),
       default: false,
     },
     force: {
       alias: 'f',
       type: 'boolean',
-      description: '强制重新编译 Skills',
+      description: t('init.forceCompile'),
       default: false,
     },
     locale: {
       alias: 'l',
       type: 'string',
-      description: `语言/Locale (${SUPPORTED_LOCALES.join(', ')})`,
+      description: t('init.locale', { locales: SUPPORTED_LOCALES.join(', ') }),
       default: DEFAULT_LOCALE,
     },
     tools: {
       type: 'string',
-      description: `Skill 分发的目标 AI 助手 (白名单，可重复/逗号分隔；合法: ${DEFAULT_ADAPTERS.join(', ')})`,
+      description: t('init.tools', { adapters: DEFAULT_ADAPTERS.join(', ') }),
     },
     'without-tools': {
       type: 'string',
-      description: '排除某个 AI 助手 (黑名单，可重复/逗号分隔)',
+      description: t('init.withoutTools'),
     },
     'reset-tools': {
       type: 'boolean',
-      description: '忽略现有 config.tools，按 DEFAULTS 全部分发',
+      description: t('init.resetTools'),
       default: false,
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出',
+      description: t('format.json'),
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出',
+      description: t('format.yaml'),
     },
   },
   async run(ctx) {

@@ -1,6 +1,6 @@
 import { connect, type Socket } from 'net'
 import { DAEMON_SOCK_PATH } from '../infra/global'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 import { IAPError, IAPAction } from '../core/errors'
 
 export interface SocketMessage {

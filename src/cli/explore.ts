@@ -1,4 +1,5 @@
 import { defineCommand } from 'citty'
+import { t } from '../infra/i18n'
 import { collectRawContext, loadExplorationAssets, saveReport } from '../infra/explore/collector'
 import { toExplorationContext } from '../work/explore/converters'
 import { evaluateExploration } from '../work/explore/evaluator'
@@ -8,21 +9,21 @@ import { getFormatFromArgs, output, outputError } from './output'
 export default defineCommand({
   meta: {
     name: 'explore',
-    description: '探索项目状态，生成改进报告',
+    description: t('explore.status.description'),
   },
   args: {
     name: {
       type: 'positional',
-      description: '探索器名称 (coverage/quality/automation/all)',
+      description: t('explore.status.explorerName'),
       default: 'all',
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出',
+      description: t('format.json'),
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出',
+      description: t('format.yaml'),
     },
   },
   async run(ctx) {
@@ -39,7 +40,7 @@ export default defineCommand({
       return outputError(
         {
           code: 'OXN_EXPLORE_NO_ASSET',
-          message: `未找到探索器: ${ctx.args.name}`,
+          message: t('explore.status.notFound', { name: ctx.args.name }),
         },
         format,
       )

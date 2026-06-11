@@ -1,0 +1,434 @@
+{
+  "blueprint": {
+    "create": {
+      "description": "Generate a new blueprint skeleton in .openxenon/blueprints/ (using unified OXL)",
+      "name": "Blueprint name (kebab-case)",
+      "slots": "Comma-separated slot names (default stage-1, stage-2)",
+      "force": "Overwrite existing file"
+    },
+    "validate": {
+      "description": "Validate .openxenon/blueprints/<name>.oxn using unified OXL parser",
+      "name": "Blueprint name"
+    },
+    "list": {
+      "description": "List all blueprints in .openxenon/blueprints/"
+    },
+    "index": {
+      "description": "Rebuild global Blueprint slim index",
+      "output": "Custom output path",
+      "freshness": "Only check if index is fresh"
+    },
+    "description": "Manage OXL blueprints (create/validate/list/index)"
+  },
+  "cache": {
+    "notFound": "Cache directory not found",
+    "empty": "Cache directory not found, nothing to clean",
+    "usage": "Use `oxn cache clear` or `oxn cache stats`",
+    "cleared": "Cleared {{count}} cache files",
+    "statsLine": "Cache files: {{count}}, total size: {{size}}KB, oldest: {{ageDays}} days",
+    "oldestAgeFormat": "{{ageDays}} days"
+  },
+  "cli": {
+    "description": "OpenXenon CLI - Engineering control engine for Large Language Models"
+  },
+  "config": {
+    "notFound": "Project not initialized, run `oxn init` first",
+    "title": "Project Configuration:",
+    "description": "Manage project configuration",
+    "command": {
+      "description": "Manage project configuration"
+    },
+    "set": {
+      "description": "Set a configuration value",
+      "key": "Configuration key",
+      "value": "Configuration value"
+    },
+    "show": {
+      "description": "Show current configuration"
+    },
+    "showTitle": "Project Configuration:",
+    "showLineMode": "  mode: {{mode}}",
+    "showLineLocale": "  locale: {{locale}}",
+    "showLineDebug": "  debug: {{debug}}",
+    "showLineName": "  name: {{name}}",
+    "showLineTools": "  tools: {{tools}}"
+  },
+  "configDebug": {
+    "enabled": "Debug mode enabled",
+    "logPath": "Logs will be written to: {{path}}",
+    "disabled": "Debug mode disabled",
+    "invalidAction": "Invalid action: {{action}}",
+    "useStartOrStop": "Use start or stop",
+    "description": "Manage project debug mode"
+  },
+  "daemon": {
+    "notRunning": "Daemon is not running",
+    "startSuggestion": "Run `oxn global daemon start` to start the Daemon (socket: {{socket}})",
+    "timeout": "Daemon response timeout",
+    "timeoutSuggestion": "Wait 5 seconds and retry, or run `oxn global daemon stop && oxn global daemon start`",
+    "errorRunning": "Daemon not running ({{code}}: {{message}})",
+    "errorTimeout": "Daemon response timeout ({{code}}: {{message}})",
+    "errorComm": "Daemon communication failed ({{code}}: {{message}})",
+    "suggestionStart": "Run `oxn global daemon start` to start the Daemon",
+    "suggestionTimeout": "Wait 5 seconds and retry, or run `oxn global daemon stop && oxn global daemon start`",
+    "statusNotRunning": "Daemon is not running",
+    "statusNotRunningHint": "Daemon status: not running\nUse `oxn daemon start` to start the Daemon",
+    "statusRunning": "Daemon status: running",
+    "statusRunningLine1": "PID: {{pid}}",
+    "statusRunningLine2": "Socket: {{socketPath}}",
+    "statusRunningLine3": "Recent log: {{lastLog}}",
+    "startAlreadyRunning": "Daemon already running (PID {{pid}})",
+    "startSuccess": "Daemon started successfully (PID {{pid}})",
+    "startFailed": "Start failed",
+    "startCheckSocket": "Check if {{socketPath}} is accessible"
+  },
+  "dev": {
+    "description": "DSL development tools (compile/unpack/validate/migrate-yaml) — for OpenXenon internal & DSL authors"
+  },
+  "domain": {
+    "create": {
+      "description": "Generate a new domain skeleton in .openxenon/domains/ (DDD bounded context)",
+      "name": "Domain name (PascalCase recommended, e.g. MemberContext)",
+      "force": "Overwrite existing file"
+    },
+    "validate": {
+      "description": "Parse and validate domain file",
+      "name": "Domain name",
+      "filePath": "Specify .oxn file path directly (optional escape hatch)"
+    },
+    "list": {
+      "description": "List all registered domains in .openxenon/domains/"
+    },
+    "index": {
+      "description": "Rebuild global Domain slim index",
+      "output": "Custom output path",
+      "freshness": "Only check if index is fresh"
+    },
+    "description": "Domain module — DDD bounded context management (create/validate/list/index)"
+  },
+  "errors": {
+    "projectNotInit": "Project not initialized, run `oxn init` first",
+    "initHint": "Run `oxn init` in the project root directory"
+  },
+  "export": {
+    "description": "Export task-trace.jsonl",
+    "taskId": "Task ID",
+    "output": "Output path (defaults to stdout)",
+    "notFound": "Task not found: {{taskId}}",
+    "exported": "Exported task trace to: {{path}}"
+  },
+  "explore": {
+    "description": "Explore project & tasks, collect assets, Q&A records, generate reports (DEPRECATED: use `oxn work init --type explore`)",
+    "addFailed": "Failed to add question",
+    "invalidAnswer": "Invalid format, use: --answer id|content",
+    "noQaRecords": "No QA records, cannot generate report",
+    "reportExists": "Report already exists, use --force to overwrite",
+    "exists": "Explore already exists: {{name}}",
+    "existsHint": "Use a different name or delete the existing explore first",
+    "notFound": "Explore not found: {{name}}",
+    "notFoundHint": "Run `oxn explore new <name>` to create an explore first",
+    "fileNotFound": "File not found: {{path}}",
+    "created": "Explore created: {{path}}\n\nDirectory structure:\n  docs/\n  ai-qa.json\n  engineer-qa.json\n  report.md",
+    "scanIndexed": "Indexed: {{path}}\n\nSummary:\n{{summary}}\n\nRead full content: oxn explore scan <name> --read {{path}}",
+    "scanNoFiles": "No indexed files",
+    "qaAdded": "Question added (ID: {{id}}):\nQ: {{question}}\nA: _pending_",
+    "qaAnswered": "Updated (ID: {{id}}):\nA: {{answer}}",
+    "qaNotFound": "Question ID not found: {{id}}",
+    "qaNoPending": "No pending questions",
+    "qaNoRecords": "No QA records yet",
+    "qaListed": "AI QA: {{aiPath}} ({{aiCount}} entries)\nEngineer QA: {{engPath}} ({{engCount}} entries)",
+    "reportGenerated": "Report generated: {{path}}",
+    "noExplores": "No explores yet",
+    "deleteConfirm": "Confirm deletion of explore \"{{name}}\"?\nPath: {{path}}\n\nUse --force to confirm deletion",
+    "deleted": "Explore deleted: {{name}}",
+    "new": {
+      "description": "Create a new explore",
+      "name": "Explore name (kebab-case)"
+    },
+    "scan": {
+      "description": "Scan assets into explore directory",
+      "name": "Explore name",
+      "path": "File or directory path",
+      "read": "Read existing file content",
+      "title": "Document title (for --path mode)"
+    },
+    "qa": {
+      "description": "Q&A record management (AI / Engineer questions)",
+      "name": "Explore name",
+      "type": "QA type: ai | engineer",
+      "question": "Add question (for AI usage)",
+      "answer": "Answer question, format: id|answer",
+      "list": "List all Q&A records",
+      "pending": "List pending questions"
+    },
+    "report": {
+      "description": "Generate report from Q&A",
+      "name": "Explore name",
+      "force": "Overwrite existing summary"
+    },
+    "list": {
+      "description": "List all explores"
+    },
+    "delete": {
+      "description": "Delete an explore",
+      "name": "Explore name",
+      "force": "Skip confirmation, delete directly"
+    },
+    "status": {
+      "description": "Explore project status, generate improvement report",
+      "explorerName": "Explorer name (coverage/quality/automation/all)",
+      "notFound": "Explorer not found: {{name}}"
+    }
+  },
+  "format": {
+    "json": "JSON format output",
+    "yaml": "YAML format output",
+    "html": "HTML format output",
+    "markdown": "Markdown format output",
+    "jsonWithDiag": "JSON format output (with structured diagnostics)"
+  },
+  "gc": {
+    "noTaskDirs": "No task directories to clean",
+    "noTasks": "No tasks to clean",
+    "dryRunResult": "{{count}} tasks to delete ({{size}}KB)\nUse --dry-run to preview, or omit -d to actually delete",
+    "clearedResult": "Cleaned {{count}} tasks ({{size}}KB)"
+  },
+  "globalHall": {
+    "description": "Open the global Hall",
+    "open": "Open in browser",
+    "opened": "Global Hall opened: {{url}}",
+    "pathHint": "Global Hall path: {{path}}\n\nUse --open to open in browser"
+  },
+  "hall": {
+    "description": "Open Hall to view global status and todos",
+    "open": "Open in browser",
+    "opened": "Hall opened: {{url}}",
+    "pathHint": "Hall path: {{path}}\n\nUse --open to open in browser"
+  },
+  "init": {
+    "description": "Initialize a project, establish physical fence in the current directory",
+    "name": "Project name",
+    "projectExists": "Project already exists: {{name}}",
+    "modeUpdated": "Mode updated to: {{mode}}",
+    "sandbox": "Initialize in sandbox mode",
+    "forceCompile": "Force recompile Skills",
+    "locale": "Language/Locale ({{locales}})",
+    "tools": "Target AI assistant(s) for Skill distribution",
+    "withoutTools": "Exclude specific AI assistant",
+    "resetTools": "Ignore existing config.tools",
+    "localeUpdated": "Locale updated to: {{locale}}",
+    "projectInitialized": "Project initialized: {{name}} (locale: {{locale}})",
+    "compilingSkills": "Compiling Skills (adapter: {{adapter}})...",
+    "skillsCompiled": "Skills compiled successfully",
+    "skillsOutputDir": "Output directory: {{dir}}",
+    "invalidLocale": "Unsupported locale: {{locale}}",
+    "supportedLocales": "Supported locales: {{locales}}",
+    "toolsReset": "tools config reset to DEFAULTS",
+    "toolsUpdated": "tools config updated: {{tools}}"
+  },
+  "insight": {
+    "description": "Read frozen.json + probe-stats.json, produce structured Insight",
+    "proof": "Proof name (required)"
+  },
+  "installSkill": {
+    "description": "Install oxn-* OpenCode Skills to target directory (default: ~/.opencode/skills/, all oxn-* skills)",
+    "target": "Target root directory (default: ~/.opencode/skills/)",
+    "skill": "Install only specified skill (e.g. oxn-work). Default: all oxn-* skills",
+    "force": "Overwrite existing Skill"
+  },
+  "migrate": {
+    "invalidArgs": "Specify a file path, --dir directory, or --all",
+    "failed": "Migration failed"
+  },
+  "oxnCompile": {
+    "description": "Compile .oxn/.yaml to bundle (.bundle.oxn + assembly.json + schema.json)",
+    "sourcePath": "Source file path (.oxn or .yaml)",
+    "output": "Output directory (defaults to source file directory)",
+    "notFound": "Source file not found: {{path}}",
+    "syntaxError": "Syntax validation failed:\n{{lines}}",
+    "complete": "Compilation complete:\n  Bundle:   {{bundle}}\n  Assembly: {{assembly}}\n  Schema:   {{schema}}\n  Entities: {{entities}}",
+    "failed": "Compilation failed"
+  },
+  "oxnUnpack": {
+    "description": "Unpack .bundle.oxn to isolated directory (safe mode, no overwrite by default)",
+    "path": ".bundle.oxn file path",
+    "output": "Output directory (defaults to bundle directory/<name>-unpacked)",
+    "force": "Force overwrite existing files",
+    "complete": "Unpack complete:\n  Target: {{target}}\n  Written: {{written}} files\n  Skipped: {{skipped}} files{{hint}}",
+    "forceHint": "\n  (already exists, use --force to overwrite)",
+    "failed": "Unpack failed"
+  },
+  "oxnValidate": {
+    "description": "Validate OXN example files against syntax standards",
+    "standard": "Validate all standard example files in examples directory",
+    "dirNotFound": "Examples directory not found: {{dir}}"
+  },
+  "proof": {
+    "description": "Proof-First entry (v0.1.2): probe + frozen.json closed loop, skips Domain/Blueprint",
+    "create": {
+      "description": "Generate proof.oxn skeleton in .openxenon/proofs/<name>/",
+      "name": "Proof name (kebab-case recommended)",
+      "force": "Overwrite existing proof.oxn",
+      "created": "Created proof \"{{name}}\" at {{path}}\n\nNext:\n  1. oxn proof probe list\n  2. oxn proof probe describe <name>\n  3. oxn proof probe add {{name}} <name> --input-json '{\"key\":\"value\"}'\n  4. oxn proof run {{name}}"
+    },
+    "probeList": {
+      "description": "List all available probes (semantic name + description + required inputs)"
+    },
+    "probeDescribe": {
+      "description": "Describe single probe input contract + examples",
+      "name": "Probe semantic name (e.g. fs-exists)"
+    },
+    "probeAdd": {
+      "description": "Add a probe to a proof (semantic name + --input-json)",
+      "name": "Proof name (existing)",
+      "probe": "Probe semantic name (e.g. fs-exists)",
+      "inputJson": "Probe input (JSON string)",
+      "probeName": "Custom probe name (default p1/p2/...)"
+    },
+    "probe": {
+      "description": "Manipulate probes in a proof (list / describe / add)"
+    },
+    "run": {
+      "description": "Execute all probes in a proof, write frozen.json (tamper-proof)",
+      "name": "Proof name",
+      "dryRun": "Write only .running.json without executing probes or writing frozen.json (for discovery)"
+    },
+    "list": {
+      "description": "List all proofs in .openxenon/proofs/"
+    },
+    "show": {
+      "description": "Read frozen.json and output verdict + details",
+      "name": "Proof name"
+    }
+  },
+  "skillCompiler": {
+    "report": "Skill compile report ({{adapter}})",
+    "total": "Total: {{count}} Skills",
+    "created": "Created: {{count}}",
+    "updated": "Updated: {{count}}",
+    "skipped": "Skipped: {{count}}",
+    "references": "References: {{count}}"
+  },
+  "work": {
+    "lockRequired": "Run `oxn work lock <name>` to lock the plan first",
+    "validateRequired": "Run `oxn work validate <name>` to generate .work first",
+    "lockHint": "Run `oxn work lock <name>` to lock the plan first (use --unlock-check for diagnostics)",
+    "unlockRequired": "Only a locked work can be unlocked; current planLock === null",
+    "unlockHint": "Run `oxn work validate <name>` before lock",
+    "unlockSuggestion": "Run `oxn work unlock {{workName}}` then lock",
+    "modifyForbidden": "work \"{{workName}}\" has entered execution phase, modification is forbidden",
+    "modifyHint": "To adjust task orchestration, delete .openxenon/works/<name>/ and recreate.",
+    "notStarted": "work \"{{workName}}\" state machine not started",
+    "notStartedHint": "Run `oxn work run <name>` to enter execution phase",
+    "emptyList": "No works yet",
+    "created": "Work created: {{workName}}\nType: {{workType}}\nPath: {{workFilePath}}\n\nEdit work.oxn to fill task orchestration, or rerun `oxn work create <name> --blueprint <bp>` to generate from blueprint.",
+    "workExists": "Work already exists: {{workName}} (type: {{workType}})",
+    "invalidId": "Invalid Work ID: {{error}}",
+    "invalidTaskName": "Invalid task name: {{error}}",
+    "birthCertInvalid": "Fix .work schema errors first: {{errors}}",
+    "migrateRequired": "migrate only applies to V0 layout works that have runtime artifacts; this work has never been run",
+    "description": "Work orchestration & runtime (create/validate/lock/run/submit/status/migrate)",
+    "alreadyRunning": "work \"{{workName}}\" has already entered execution phase",
+    "hashChangedSuggestion": "work.oxn hash changed since lock! Use `oxn work unlock {{workName}}` then re-lock, or --skip-lock-check to ignore",
+    "invalidTaskFile": "Expected file named {{taskOxnFile}}, got {{basename}}",
+    "pathNotInWork": "Path is not inside work \"{{workName}}\" tasks directory. Expected: {{expectedDir}}, got: {{parentDir}}",
+    "lockFailed": "Lock failed: {{reason}}",
+    "unlockCheckHint": "Use --unlock-check for diagnostics",
+    "isolationNotice": "AI context working directory: {{sandboxDir}} (project root: {{projectRoot}})",
+    "list": {
+      "description": "List all works"
+    },
+    "create": {
+      "description": "Create Work skeleton (render work.oxn from blueprint)",
+      "args": {
+        "blueprint": "Generate work.oxn from this blueprint",
+        "blueprintPath": "Specify blueprint.oxn path directly",
+        "outputDir": "Output directory (default .openxenon/works/<name>/)",
+        "workType": "Work type (default task)",
+        "force": "Overwrite existing files"
+      }
+    },
+    "validate": {
+      "description": "Validate work.oxn syntax + ref resolution",
+      "args": {
+        "type": "Work type"
+      }
+    },
+    "addTask": {
+      "description": "Create task.oxn under the specified work",
+      "args": {
+        "taskName": "Task name (kebab-case recommended)",
+        "blueprint": "Blueprint name",
+        "domain": "Domain name to reference",
+        "force": "Overwrite existing task.oxn"
+      }
+    },
+    "listTask": {
+      "description": "List all tasks under a work"
+    },
+    "taskStatus": {
+      "description": "View task.oxn meta information"
+    },
+    "verifyTaskPath": {
+      "description": "Verify that a task.oxn path belongs to the specified work",
+      "args": {
+        "filePath": "Absolute path of the task.oxn to verify"
+      },
+      "passed": "Task path verified: work={{workName}}, task={{taskName}}, dir={{taskDirName}}.\n  Blueprint: {{blueprint}}\n  Domain: {{domain}}\n  Parts: {{partCount}}\n  File: {{filePath}}"
+    },
+    "editTask": {
+      "description": "Edit task.oxn (objective / constraints / domain)",
+      "args": {
+        "objective": "New objective text",
+        "constraint": "Add a constraint (can be repeated)",
+        "domain": "Add domain reference"
+      }
+    },
+    "deleteTask": {
+      "description": "Delete task directory",
+      "args": {
+        "force": "Force delete (no prompt)",
+        "keepTraces": "Keep task state.json and trace.jsonl"
+      }
+    },
+    "run": {
+      "description": "Start the work state machine"
+    },
+    "submit": {
+      "description": "Advance the current part within a task",
+      "args": {
+        "evidence": "AI-submitted evidence JSON",
+        "runProbes": "Execute task-level probes"
+      }
+    },
+    "status": {
+      "description": "Query the current work state",
+      "args": {
+        "statePath": "Optional, path to state.json",
+        "reportPath": "Optional, write summary to specified .md path",
+        "skipLockCheck": "Skip planLock hash validation"
+      }
+    },
+    "lock": {
+      "description": "Lock the work plan"
+    },
+    "unlock": {
+      "description": "Unlock the work plan"
+    },
+    "migrate": {
+      "description": "Migrate V0 layout work to V1 (one-time)",
+      "cleanupHint": "V0 layout work migrated; old files backed up in .migrated-v0/ (can be deleted after verification)"
+    },
+    "context": {
+      "description": "Generate AI context for a task (full isolation)",
+      "args": {
+        "task": "Task name (recommended)"
+      },
+      "taskLevelHint": "Consider using --task <name> to get per-task context instead of full work scope"
+    },
+    "args": {
+      "workName": "Work name",
+      "taskName": "Task name"
+    }
+  }
+}

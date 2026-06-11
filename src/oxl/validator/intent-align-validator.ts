@@ -66,7 +66,7 @@ export function validateTaskAlign(node: WorkDeclaration, accept: ValidationAccep
   const nameSet = new Set<string>()
   for (const t of tasks) {
     if (nameSet.has(t.name)) {
-      accept('error', `task "${t.name}" 重复声明`, { node: t, property: 'name' })
+      accept('error', `task "${t.name}" declared twice`, { node: t, property: 'name' })
     }
     nameSet.add(t.name)
   }
@@ -75,7 +75,7 @@ export function validateTaskAlign(node: WorkDeclaration, accept: ValidationAccep
   for (const t of tasks) {
     for (const dep of getTaskDeps(t)) {
       if (!nameSet.has(dep)) {
-        accept('error', `task "${t.name}" 引用了未声明的 dep "${dep}"`, { node: t, property: 'deps' })
+        accept('error', `task "${t.name}" references undeclared dep "${dep}"`, { node: t, property: 'deps' })
       }
     }
   }
@@ -83,6 +83,6 @@ export function validateTaskAlign(node: WorkDeclaration, accept: ValidationAccep
   // 校验 DAG 无环
   const dag = validateDag(tasks)
   if (dag.hasCycle) {
-    accept('error', `task DAG 存在环: ${dag.cycleHint}`, { node, property: 'tasks' })
+    accept('error', `task DAG has cycle: ${dag.cycleHint}`, { node, property: 'tasks' })
   }
 }

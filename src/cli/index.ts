@@ -28,6 +28,7 @@
 
 import { defineCommand, runMain } from 'citty'
 import pkg from '../../package.json' with { type: 'json' }
+import { t } from '../infra/i18n'
 import { IAPError, OXNCrash, isCliInputError } from '../core/errors'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
 
@@ -145,7 +146,7 @@ const main = defineCommand({
   meta: {
     name: 'oxn',
     version: pkg.version,
-    description: 'OpenXenon CLI - 面向大语言模型的工程化控制引擎',
+    description: t('cli.description'),
   },
   subCommands: {
     // ---- Meta / project setup ----
@@ -180,22 +181,22 @@ const main = defineCommand({
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出',
+      description: t('format.json'),
       default: false,
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出',
+      description: t('format.yaml'),
       default: false,
     },
     '--html': {
       type: 'boolean',
-      description: 'HTML 格式输出',
+      description: t('format.html'),
       default: false,
     },
     '--md': {
       type: 'boolean',
-      description: 'Markdown 格式输出',
+      description: t('format.markdown'),
       default: false,
     },
   },

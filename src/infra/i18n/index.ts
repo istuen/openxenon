@@ -1,6 +1,6 @@
 import i18next from 'i18next'
-import type { SupportedLocale } from '../cli/project-config'
-import { DEFAULT_LOCALE } from '../cli/project-config'
+import type { SupportedLocale } from './locale'
+import { DEFAULT_LOCALE } from './locale'
 import zhCN from './zh-CN.json'
 import en from './en.json'
 

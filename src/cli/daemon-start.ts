@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-2): daemon-start is the daemon entry point, must fork process directly; switch to Bun.spawn via infra
 import { isDaemonRunning, startDaemonWithHealthCheck } from '../daemon/process'
 import { DAEMON_SOCK_PATH } from '../infra/global'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 
 export default defineCommand({
   meta: {

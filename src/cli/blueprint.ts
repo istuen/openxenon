@@ -15,7 +15,7 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
@@ -81,17 +81,17 @@ async function validateBlueprint(blueprintPath: string): Promise<{
 const createSubcommand = defineCommand({
   meta: {
     name: 'create',
-    description: '在 .openxenon/blueprints/ 生成一个新的 blueprint 骨架（用统一 OXL）',
+    description: t('blueprint.create.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Blueprint 名称（kebab-case）' },
+    name: { type: 'positional', required: true, description: t('blueprint.create.name') },
     slots: {
       type: 'string',
-      description: '逗号分隔的 slot 名称列表（默认 stage-1, stage-2）',
+      description: t('blueprint.create.slots'),
     },
-    force: { type: 'boolean', alias: 'f', description: '覆盖已存在的文件' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    force: { type: 'boolean', alias: 'f', description: t('blueprint.create.force') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -218,12 +218,12 @@ ${slotBlocks.join('\n\n')}
 const validateSubcommand = defineCommand({
   meta: {
     name: 'validate',
-    description: '用统一 OXL 解析器验证 .openxenon/blueprints/<name>.oxn',
+    description: t('blueprint.validate.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Blueprint 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('blueprint.validate.name') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -332,12 +332,11 @@ function blueprintAstToIr(blueprint: BlueprintDeclaration): {
 const listSubcommand = defineCommand({
   meta: {
     name: 'list',
-    description:
-      '列出 .openxenon/blueprints/ 下所有 blueprint（从 .cache/blueprints.json 索引读，缺失时降级 dir 扫描）',
+    description: t('blueprint.list.description'),
   },
   args: {
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -433,19 +432,19 @@ const listSubcommand = defineCommand({
 const indexSubcommand = defineCommand({
   meta: {
     name: 'index',
-    description: '重建全局 Blueprint slim 索引 → .openxenon/.cache/blueprints.json',
+    description: t('blueprint.index.description'),
   },
   args: {
     emit: {
       type: 'string',
-      description: '自定义输出路径（默认 .openxenon/.cache/blueprints.json）',
+      description: t('blueprint.index.output'),
     },
     check: {
       type: 'boolean',
-      description: '仅校验索引是否新鲜（与 blueprints/ 目录 mtime 比对），不写',
+      description: t('blueprint.index.freshness'),
     },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -515,7 +514,7 @@ const indexSubcommand = defineCommand({
 const blueprintCommand = defineCommand({
   meta: {
     name: 'blueprint',
-    description: '管理 OXL blueprint（create/validate/list/index）',
+    description: t('blueprint.description'),
   },
   subCommands: {
     create: createSubcommand,

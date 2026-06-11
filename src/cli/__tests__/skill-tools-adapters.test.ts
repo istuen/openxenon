@@ -145,7 +145,7 @@ describe('oxn config show (v0.1.3 tools 行)', () => {
     const r = await runCli(['config', 'show'])
     expect(r.exitCode).toBe(0)
     expect(r.stdout).toContain('opencode, claude, agents (default)')
-    expect(r.stdout).toContain('Skill 工具')
+    expect(r.stdout).toContain('Skill tools:')
   })
 
   test('9b. config show 输出含 tools 行（显式白名单）', async () => {
@@ -153,7 +153,7 @@ describe('oxn config show (v0.1.3 tools 行)', () => {
     const r = await runCli(['config', 'show'])
     expect(r.exitCode).toBe(0)
     expect(r.stdout).toContain('enabled: opencode')
-    expect(r.stdout).toContain('Skill 工具')
+    expect(r.stdout).toContain('Skill tools:')
   })
 })
 

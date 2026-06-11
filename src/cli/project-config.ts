@@ -1,10 +1,7 @@
 import type { SkillAdapterId } from '../skills/adapters'
-
-export type SupportedLocale = 'zh-CN' | 'en'
-
-export const DEFAULT_LOCALE: SupportedLocale = 'zh-CN'
-
-export const SUPPORTED_LOCALES: SupportedLocale[] = ['zh-CN', 'en']
+import type { SupportedLocale } from '../infra/i18n/locale'
+export { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../infra/i18n/locale'
+export type { SupportedLocale }
 
 export interface ProjectConfig {
   version: 1

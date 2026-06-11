@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync } from 'fs'
 import { DocumentState, URI } from 'langium'
+import { t } from '../infra/i18n'
 import { compileBundle } from '../oxl/compiler/bundle-compiler'
 import type { OXNDocument } from '../oxl/generated/ast'
 import { createOxnServices } from '../oxl/langium/oxn-services'
@@ -97,21 +98,21 @@ function validateOxnSyntax(sourcePath: string, content: string): DiagnosticResul
 export default defineCommand({
   meta: {
     name: 'compile',
-    description: '编译 .oxn/.yaml 为三件套 (.bundle.oxn + assembly.json + schema.json)',
+    description: t('oxnCompile.description'),
   },
   args: {
     path: {
       type: 'positional',
       required: true,
-      description: '源文件路径 (.oxn 或 .yaml)',
+      description: t('oxnCompile.sourcePath'),
     },
     output: {
       type: 'string',
       alias: 'o',
-      description: '输出目录（默认为源文件同目录）',
+      description: t('oxnCompile.output'),
     },
-    '--json': { type: 'boolean', description: 'JSON 格式输出 (含结构化诊断)' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.jsonWithDiag') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -122,7 +123,7 @@ export default defineCommand({
       return outputError(
         {
           code: 'OXN_COMPILE_FAILED',
-          message: `源文件不存在: ${sourcePath}`,
+          message: t('oxnCompile.notFound', { path: sourcePath }),
         },
         format,
       )
@@ -150,7 +151,7 @@ export default defineCommand({
         return outputError(
           {
             code: 'OXN_COMPILE_FAILED',
-            message: `语法校验失败:\n${lines}`,
+            message: t('oxnCompile.syntaxError', { lines }),
           },
           format,
         )
@@ -166,11 +167,12 @@ export default defineCommand({
             diagnostics: [],
             ...result,
           },
-          human: `编译完成:
-  Bundle:   ${result.bundlePath}
-  Assembly: ${result.assemblyPath}
-  Schema:   ${result.schemaPath}
-  实体数:   ${result.entityCount}`,
+          human: t('oxnCompile.complete', {
+            bundle: result.bundlePath,
+            assembly: result.assemblyPath,
+            schema: result.schemaPath,
+            entities: result.entityCount,
+          }),
         },
         format,
       )
@@ -185,7 +187,7 @@ export default defineCommand({
                   severity: 'error' as const,
                   line: 0,
                   column: 0,
-                  message: err instanceof Error ? err.message : '编译失败',
+                  message: err instanceof Error ? err.message : t('oxnCompile.failed'),
                   code: 'OXN_COMPILE_ERR',
                 },
               ],

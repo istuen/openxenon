@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { t } from '../infra/i18n'
 import { URI } from 'langium'
 import { validateFrozenBlueprint } from '../kernel/index'
 import type { OxnAssemblyIR, OxnAssemblySlotBinding } from '../oxl/schemas/oxn-assembly.schema'
@@ -84,10 +85,10 @@ function validateOxnFile(filePath: string, content: string, examplesDir: string)
 export default defineCommand({
   meta: {
     name: 'validate',
-    description: '验证 OXN example 文件是否符合语法标准',
+    description: t('oxnValidate.description'),
   },
   args: {
-    '--standard': { type: 'boolean', description: '验证 examples 目录下的所有标准 example 文件' },
+    '--standard': { type: 'boolean', description: t('oxnValidate.standard') },
   },
   async run(_ctx) {
     const examplesDir = join(__dirname, '..', 'oxl', 'examples')
@@ -95,7 +96,7 @@ export default defineCommand({
     if (!existsSync(examplesDir)) {
       return outputError({
         code: 'OXN_VALIDATE_NOT_FOUND',
-        message: `Examples 目录不存在: ${examplesDir}`,
+        message: t('oxnValidate.dirNotFound', { dir: examplesDir }),
       })
     }
 

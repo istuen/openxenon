@@ -1,0 +1,434 @@
+{
+  "blueprint": {
+    "create": {
+      "description": "在 .openxenon/blueprints/ 生成一个新的 blueprint 骨架（用统一 OXL）",
+      "name": "Blueprint 名称（kebab-case）",
+      "slots": "逗号分隔的 slot 名称列表（默认 stage-1, stage-2）",
+      "force": "覆盖已存在的文件"
+    },
+    "validate": {
+      "description": "用统一 OXL 解析器验证 .openxenon/blueprints/<name>.oxn",
+      "name": "Blueprint 名称"
+    },
+    "list": {
+      "description": "列出 .openxenon/blueprints/ 下所有 blueprint"
+    },
+    "index": {
+      "description": "重建全局 Blueprint slim 索引",
+      "output": "自定义输出路径",
+      "freshness": "仅校验索引是否新鲜"
+    },
+    "description": "管理 OXL blueprint（create/validate/list/index）"
+  },
+  "cache": {
+    "notFound": "缓存目录不存在",
+    "empty": "缓存目录不存在，无需清理",
+    "usage": "使用 oxn cache clear 或 oxn cache stats",
+    "cleared": "已清空 {{count}} 个缓存文件",
+    "statsLine": "缓存文件: {{count}} 个, 总大小: {{size}}KB, 最老缓存: {{ageDays}}天",
+    "oldestAgeFormat": "{{ageDays}}天"
+  },
+  "cli": {
+    "description": "OpenXenon CLI - 面向大语言模型的工程化控制引擎"
+  },
+  "config": {
+    "notFound": "项目未初始化，请先执行 oxn init",
+    "title": "项目配置:",
+    "description": "管理项目配置",
+    "command": {
+      "description": "管理项目配置"
+    },
+    "set": {
+      "description": "设置配置值",
+      "key": "配置键",
+      "value": "配置值"
+    },
+    "show": {
+      "description": "查看当前配置"
+    },
+    "showTitle": "项目配置:",
+    "showLineMode": "  mode: {{mode}}",
+    "showLineLocale": "  locale: {{locale}}",
+    "showLineDebug": "  debug: {{debug}}",
+    "showLineName": "  name: {{name}}",
+    "showLineTools": "  tools: {{tools}}"
+  },
+  "configDebug": {
+    "enabled": "调试模式已开启",
+    "logPath": "日志将写入: {{path}}",
+    "disabled": "调试模式已关闭",
+    "invalidAction": "无效操作: {{action}}",
+    "useStartOrStop": "使用 start 或 stop",
+    "description": "管理项目调试模式"
+  },
+  "daemon": {
+    "notRunning": "Daemon 未运行",
+    "startSuggestion": "请先执行 oxn global daemon start 启动 Daemon（socket: {{socket}}）",
+    "timeout": "Daemon 响应超时",
+    "timeoutSuggestion": "等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start",
+    "errorRunning": "Daemon 未运行（{{code}}: {{message}}）",
+    "errorTimeout": "Daemon 响应超时（{{code}}: {{message}}）",
+    "errorComm": "Daemon 通信失败（{{code}}: {{message}}）",
+    "suggestionStart": "请先执行 oxn global daemon start 启动 Daemon",
+    "suggestionTimeout": "等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start",
+    "statusNotRunning": "Daemon 未运行",
+    "statusNotRunningHint": "Daemon 状态: 未运行\n使用 `oxn daemon start` 启动 Daemon",
+    "statusRunning": "Daemon 状态: 运行中",
+    "statusRunningLine1": "PID: {{pid}}",
+    "statusRunningLine2": "Socket: {{socketPath}}",
+    "statusRunningLine3": "最近日志: {{lastLog}}",
+    "startAlreadyRunning": "Daemon 已运行 (PID {{pid}})",
+    "startSuccess": "Daemon 启动成功 (PID {{pid}})",
+    "startFailed": "启动失败",
+    "startCheckSocket": "检查 {{socketPath}} 是否可访问"
+  },
+  "dev": {
+    "description": "DSL 开发工具 (compile/unpack/validate/migrate-yaml) — 面向 OpenXenon 内部与 DSL 作者"
+  },
+  "domain": {
+    "create": {
+      "description": "在 .openxenon/domains/ 生成一个新的 domain 骨架（DDD 限界上下文）",
+      "name": "Domain 名称（PascalCase 推荐，如 MemberContext）",
+      "force": "覆盖已存在的文件"
+    },
+    "validate": {
+      "description": "解析并校验 domain 文件",
+      "name": "Domain 名称",
+      "filePath": "直接指定 .oxn 文件路径（可选逃生舱）"
+    },
+    "list": {
+      "description": "列出 .openxenon/domains/ 下所有已注册的 domain"
+    },
+    "index": {
+      "description": "重建全局 Domain slim 索引",
+      "output": "自定义输出路径",
+      "freshness": "仅校验索引是否新鲜"
+    },
+    "description": "Domain 模块 — DDD 限界上下文管理 (create/validate/list/index)"
+  },
+  "errors": {
+    "projectNotInit": "项目未初始化，请先执行 oxn init",
+    "initHint": "在项目根目录执行 oxn init"
+  },
+  "export": {
+    "description": "导出任务的 task-trace.jsonl",
+    "taskId": "任务 ID",
+    "output": "输出路径（默认输出到 stdout）",
+    "notFound": "任务不存在: {{taskId}}",
+    "exported": "已导出任务轨迹到: {{path}}"
+  },
+  "explore": {
+    "description": "DEPRECATED: 探索项目与任务，采集资料、问答记录、总结归档。请使用 oxn work init --type explore 替代。",
+    "addFailed": "添加问题失败",
+    "invalidAnswer": "格式错误，使用: --answer id|回答内容",
+    "noQaRecords": "无问答记录，无法生成报告",
+    "reportExists": "报告已存在，使用 --force 覆盖",
+    "exists": "探索已存在: {{name}}",
+    "existsHint": "使用其他名称或先删除现有探索",
+    "notFound": "探索不存在: {{name}}",
+    "notFoundHint": "先执行 oxn explore new <name> 创建探索",
+    "fileNotFound": "文件不存在: {{path}}",
+    "created": "探索已创建: {{path}}\n\n目录结构:\n  docs/\n  ai-qa.json\n  engineer-qa.json\n  report.md",
+    "scanIndexed": "已索引: {{path}}\n\n摘要:\n{{summary}}\n\n读取全文: oxn explore scan <name> --read {{path}}",
+    "scanNoFiles": "无已索引文件",
+    "qaAdded": "问题已添加 (ID: {{id}}):\nQ: {{question}}\nA: _待回答_",
+    "qaAnswered": "已更新 (ID: {{id}}):\nA: {{answer}}",
+    "qaNotFound": "未找到问题 ID: {{id}}",
+    "qaNoPending": "无待回答问题",
+    "qaNoRecords": "暂无问答记录",
+    "qaListed": "AI 问答: {{aiPath}} ({{aiCount}} 条)\n工程师问答: {{engPath}} ({{engCount}} 条)",
+    "reportGenerated": "报告已生成: {{path}}",
+    "noExplores": "暂无探索",
+    "deleteConfirm": "确认删除探索 \"{{name}}\"？\n路径: {{path}}\n\n使用 --force 确认删除",
+    "deleted": "已删除探索: {{name}}",
+    "new": {
+      "description": "创建新探索",
+      "name": "探索名称 (kebab-case)"
+    },
+    "scan": {
+      "description": "扫描资料到探索目录",
+      "name": "探索名称",
+      "path": "文件或目录路径",
+      "read": "读取现有文件内容",
+      "title": "文档标题（用于 --path 模式）"
+    },
+    "qa": {
+      "description": "问答记录管理 (AI问答 / 工程师问答)",
+      "name": "探索名称",
+      "type": "问答类型: ai | engineer",
+      "question": "添加问题（AI问答使用）",
+      "answer": "回答问题，格式: id|answer",
+      "list": "列出所有问答",
+      "pending": "列出待回答的问题"
+    },
+    "report": {
+      "description": "从问答生成报告",
+      "name": "探索名称",
+      "force": "覆盖现有总结"
+    },
+    "list": {
+      "description": "列出所有探索"
+    },
+    "delete": {
+      "description": "删除探索",
+      "name": "探索名称",
+      "force": "跳过确认直接删除"
+    },
+    "status": {
+      "description": "探索项目状态，生成改进报告",
+      "explorerName": "探索器名称 (coverage/quality/automation/all)",
+      "notFound": "未找到探索器: {{name}}"
+    }
+  },
+  "format": {
+    "json": "JSON 格式输出",
+    "yaml": "YAML 格式输出",
+    "html": "HTML 格式输出",
+    "markdown": "Markdown 格式输出",
+    "jsonWithDiag": "JSON 格式输出 (含结构化诊断)"
+  },
+  "gc": {
+    "noTaskDirs": "没有任务目录需要清理",
+    "noTasks": "没有需要清理的任务",
+    "dryRunResult": "共 {{count}} 个任务待删除 ({{size}}KB)\n使用 --dry-run 预览，或不使用 -d 参数实际删除",
+    "clearedResult": "已清理 {{count}} 个任务 ({{size}}KB)"
+  },
+  "globalHall": {
+    "description": "打开全局研讨厅 (Hall)",
+    "open": "在浏览器中打开",
+    "opened": "全局 Hall 已打开: {{url}}",
+    "pathHint": "全局 Hall 路径: {{path}}\n\n使用 --open 在浏览器中打开"
+  },
+  "hall": {
+    "description": "打开研讨厅 (Hall)，查看全局状态和待办",
+    "open": "在浏览器中打开",
+    "opened": "Hall 已打开: {{url}}",
+    "pathHint": "Hall 路径: {{path}}\n\n使用 --open 在浏览器中打开"
+  },
+  "init": {
+    "description": "初始化项目，在当前项目建立物理围栏",
+    "name": "项目名称",
+    "projectExists": "项目已存在: {{name}}",
+    "modeUpdated": "模式已更新为: {{mode}}",
+    "sandbox": "初始化为沙箱模式",
+    "forceCompile": "强制重新编译 Skills",
+    "locale": "语言/Locale ({{locales}})",
+    "tools": "Skill 分发的目标 AI 助手",
+    "withoutTools": "排除某个 AI 助手",
+    "resetTools": "忽略现有 config.tools",
+    "localeUpdated": "语言已更新为: {{locale}}",
+    "projectInitialized": "项目初始化成功: {{name}} (locale: {{locale}})",
+    "compilingSkills": "正在编译 Skill (适配器: {{adapter}})...",
+    "skillsCompiled": "Skill 编译完成",
+    "skillsOutputDir": "输出目录: {{dir}}",
+    "invalidLocale": "不支持的语言: {{locale}}",
+    "supportedLocales": "支持的语言: {{locales}}",
+    "toolsReset": "tools 配置已重置为 DEFAULTS",
+    "toolsUpdated": "tools 配置已更新: {{tools}}"
+  },
+  "insight": {
+    "description": "读取 frozen.json + probe-stats.json，产出结构化 Insight（v0.1.2 P→I 反馈；不混入策略）",
+    "proof": "Proof 名称（必填）"
+  },
+  "installSkill": {
+    "description": "把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work)",
+    "target": "目标根目录 (默认: ~/.opencode/skills/)",
+    "skill": "只装指定 skill (例: oxn-work)。不传则装全部 oxn-* skills",
+    "force": "覆盖已存在的 Skill"
+  },
+  "migrate": {
+    "invalidArgs": "请指定文件路径、--dir 目录或 --all",
+    "failed": "迁移失败"
+  },
+  "oxnCompile": {
+    "description": "编译 .oxn/.yaml 为三件套 (.bundle.oxn + assembly.json + schema.json)",
+    "sourcePath": "源文件路径 (.oxn 或 .yaml)",
+    "output": "输出目录（默认为源文件同目录）",
+    "notFound": "源文件不存在: {{path}}",
+    "syntaxError": "语法校验失败:\n{{lines}}",
+    "complete": "编译完成:\n  Bundle:   {{bundle}}\n  Assembly: {{assembly}}\n  Schema:   {{schema}}\n  实体数:   {{entities}}",
+    "failed": "编译失败"
+  },
+  "oxnUnpack": {
+    "description": "解包 .bundle.oxn 到隔离目录（安全模式，默认不覆盖）",
+    "path": ".bundle.oxn 文件路径",
+    "output": "输出目录（默认为 bundle 同目录下的 <name>-unpacked）",
+    "force": "强制覆盖已有文件",
+    "complete": "解包完成:\n  目标目录: {{target}}\n  写入文件: {{written}} 个\n  跳过文件: {{skipped}} 个{{hint}}",
+    "forceHint": "\n  (已存在，使用 --force 覆盖)",
+    "failed": "解包失败"
+  },
+  "oxnValidate": {
+    "description": "验证 OXN example 文件是否符合语法标准",
+    "standard": "验证 examples 目录下的所有标准 example 文件",
+    "dirNotFound": "Examples 目录不存在: {{dir}}"
+  },
+  "proof": {
+    "description": "Proof-First 入口（v0.1.2）：probe + frozen.json 闭环，跳过 Domain/Blueprint",
+    "create": {
+      "description": "在 .openxenon/proofs/<name>/ 生成 proof.oxn 骨架",
+      "name": "Proof 名称（kebab-case 推荐）",
+      "force": "覆盖已存在的 proof.oxn",
+      "created": "Created proof \"{{name}}\" at {{path}}\n\nNext:\n  1. oxn proof probe list\n  2. oxn proof probe describe <name>\n  3. oxn proof probe add {{name}} <name> --input-json '{\"key\":\"value\"}'\n  4. oxn proof run {{name}}"
+    },
+    "probeList": {
+      "description": "列出所有可用 probe（语义名 + 描述 + 必需输入）"
+    },
+    "probeDescribe": {
+      "description": "详述单个 probe 的输入契约 + 示例",
+      "name": "probe 语义名（如 fs-exists）"
+    },
+    "probeAdd": {
+      "description": "追加一个 probe 到 proof（语义名 + --input-json）",
+      "name": "Proof 名称（已存在）",
+      "probe": "probe 语义名（如 fs-exists）",
+      "inputJson": "probe 输入（JSON 字符串）",
+      "probeName": "自定义 probe 名（默认 p1/p2/...）"
+    },
+    "probe": {
+      "description": "操作 proof 内的 probe（list / describe / add）"
+    },
+    "run": {
+      "description": "执行 proof 内所有 probe，写 frozen.json（不可篡改）",
+      "name": "Proof 名称",
+      "dryRun": "只写 .running.json 不跑 probe 不写 frozen.json（用于探测期）"
+    },
+    "list": {
+      "description": "列出 .openxenon/proofs/ 下所有 proof"
+    },
+    "show": {
+      "description": "读 frozen.json 并输出 verdict + 详情",
+      "name": "Proof 名称"
+    }
+  },
+  "skillCompiler": {
+    "report": "Skill 编译报告 ({{adapter}})",
+    "total": "总计: {{count}} 个 Skill",
+    "created": "新建: {{count}}",
+    "updated": "更新: {{count}}",
+    "skipped": "跳过: {{count}}",
+    "references": "References: {{count}}"
+  },
+  "work": {
+    "lockRequired": "先执行 `oxn work lock <name>` 锁住计划",
+    "validateRequired": "先执行 `oxn work validate <name>` 生成 .work",
+    "lockHint": "先执行 `oxn work lock <name>` 锁住计划（诊断请用 --unlock-check）",
+    "unlockRequired": "只有已 lock 的 work 才能 unlock；当前 planLock === null",
+    "unlockHint": "lock 之前必须先 `oxn work validate <name>`",
+    "unlockSuggestion": "先执行 `oxn work unlock {{workName}}` 再 lock",
+    "modifyForbidden": "work \"{{workName}}\" 已进入执行阶段，禁止修改图纸",
+    "modifyHint": "如需调整 task 编排，请删除 .openxenon/works/<name>/ 目录后重新 create。",
+    "notStarted": "work \"{{workName}}\" 状态机未启动",
+    "notStartedHint": "先执行 `oxn work run <name>` 进入执行阶段",
+    "emptyList": "暂无 Work",
+    "created": "Work 已创建: {{workName}}\n类型: {{workType}}\n路径: {{workFilePath}}\n\n请编辑 work.oxn 填充 task 编排；或重新跑 `oxn work create <name> --blueprint <bp>` 从 blueprint 生成。",
+    "workExists": "Work 已存在: {{workName}} (type: {{workType}})",
+    "invalidId": "Work ID 无效: {{error}}",
+    "invalidTaskName": "Task 名称无效: {{error}}",
+    "birthCertInvalid": "先修复 .work schema 错误：{{errors}}",
+    "migrateRequired": "migrate 仅对 V0 旧布局的 work 有用；该 work 还没运行过（无运行时产物）",
+    "description": "Work 编排与运行时 (create/validate/lock/run/submit/status/migrate)",
+    "alreadyRunning": "work \"{{workName}}\" 已进入执行阶段",
+    "hashChangedSuggestion": "work.oxn hash 在 lock 后已变化！请先 `oxn work unlock {{workName}}` 再重新 lock，或使用 --skip-lock-check 忽略",
+    "invalidTaskFile": "预期文件名为 {{taskOxnFile}}，实际为 {{basename}}",
+    "pathNotInWork": "路径不在 work \"{{workName}}\" 的 tasks 目录内。预期目录: {{expectedDir}}，实际目录: {{parentDir}}",
+    "lockFailed": "锁定失败: {{reason}}",
+    "unlockCheckHint": "诊断请用 --unlock-check",
+    "isolationNotice": "AI 上下文工作目录: {{sandboxDir}}（项目根: {{projectRoot}}）",
+    "list": {
+      "description": "列出所有 Work"
+    },
+    "create": {
+      "description": "创建 Work 骨架（从 blueprint 渲染 work.oxn）",
+      "args": {
+        "blueprint": "从该 blueprint 生成 work.oxn",
+        "blueprintPath": "直接指定 blueprint.oxn 路径",
+        "outputDir": "输出目录（默认 .openxenon/works/<name>/）",
+        "workType": "Work 类型（默认 task）",
+        "force": "覆盖已存在的文件"
+      }
+    },
+    "validate": {
+      "description": "校验 work.oxn 语法 + ref 解析",
+      "args": {
+        "type": "Work 类型"
+      }
+    },
+    "addTask": {
+      "description": "在指定 work 下创建 task.oxn",
+      "args": {
+        "taskName": "Task 名称（kebab-case 推荐）",
+        "blueprint": "Blueprint 名",
+        "domain": "要引用的 Domain 名",
+        "force": "覆盖已存在的 task.oxn"
+      }
+    },
+    "listTask": {
+      "description": "列出 work 下所有 task"
+    },
+    "taskStatus": {
+      "description": "查看 task.oxn 元信息"
+    },
+    "verifyTaskPath": {
+      "description": "验证手写 task.oxn 路径是否属于指定 work",
+      "args": {
+        "filePath": "待验证的 task.oxn 绝对路径"
+      },
+      "passed": "Task 路径验证通过: work={{workName}}, task={{taskName}}, dir={{taskDirName}}。\n  Blueprint: {{blueprint}}\n  Domain: {{domain}}\n  Parts: {{partCount}}\n  文件: {{filePath}}"
+    },
+    "editTask": {
+      "description": "编辑 task.oxn（objective / constraints / domain）",
+      "args": {
+        "objective": "新的 objective 文本",
+        "constraint": "添加一条 constraint（可多次）",
+        "domain": "添加 domain 引用"
+      }
+    },
+    "deleteTask": {
+      "description": "删除 task 目录",
+      "args": {
+        "force": "强制删除（不提示）",
+        "keepTraces": "保留 task ... state.json 和 trace.jsonl"
+      }
+    },
+    "run": {
+      "description": "启动 work 状态机"
+    },
+    "submit": {
+      "description": "推进 task 内的当前 part",
+      "args": {
+        "evidence": "AI 提交的证据 JSON",
+        "runProbes": "执行 task 级探针"
+      }
+    },
+    "status": {
+      "description": "查询 work 当前状态",
+      "args": {
+        "statePath": "可选，state.json 路径",
+        "reportPath": "可选，把摘要写到指定 .md 路径",
+        "skipLockCheck": "跳过 planLock hash 校验"
+      }
+    },
+    "lock": {
+      "description": "锁住 work 计划"
+    },
+    "unlock": {
+      "description": "解锁 work 计划"
+    },
+    "migrate": {
+      "description": "把 V0 旧布局 work 一次性迁到 V1",
+      "cleanupHint": "V0 布局 work 已迁移；旧文件备份在 .migrated-v0/ 中（确认无误后可删除）"
+    },
+    "context": {
+      "description": "生成 AI 上下文（全量隔离）",
+      "args": {
+        "task": "Task 名称（推荐）"
+      },
+      "taskLevelHint": "建议使用 --task <name> 获取 per-task context，而非全 work 范围"
+    },
+    "args": {
+      "workName": "Work 名称",
+      "taskName": "Task 名称"
+    }
+  }
+}

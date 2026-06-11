@@ -13,6 +13,7 @@
 
 import { defineCommand } from 'citty'
 import { join } from 'path'
+import { t } from '../infra/i18n'
 import { BOUNDARY_DIR, CACHE_DIR, PROBE_STATS_JSON } from '../kernel/index'
 import { readInsightInputs } from '../infra/probes/insight-collector'
 import { computeInsightFromInputs } from '../kernel/index'
@@ -30,16 +31,16 @@ function getProbeStatsPath(): string {
 export default defineCommand({
   meta: {
     name: 'insight',
-    description: '读取 frozen.json + probe-stats.json，产出结构化 Insight（v0.1.2 P→I 反馈；不混入策略）',
+    description: t('insight.description'),
   },
   args: {
     proof: {
       type: 'string',
       required: true,
-      description: 'Proof 名称（必填）',
+      description: t('insight.proof'),
     },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)

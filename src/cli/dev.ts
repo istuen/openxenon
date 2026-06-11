@@ -12,11 +12,12 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
+import { t } from '../infra/i18n'
 
 export default defineCommand({
   meta: {
     name: 'dev',
-    description: 'DSL 开发工具 (compile/unpack/validate/migrate-yaml) — 面向 OpenXenon 内部与 DSL 作者',
+    description: t('dev.description'),
   },
   subCommands: {
     compile: () => import('./oxn-compile').then((m) => m.default),

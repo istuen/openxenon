@@ -34,7 +34,7 @@ export class BundleUnpacker {
    */
   unpack(bundlePath: string, options?: UnpackOptions): UnpackResult {
     if (!existsSync(bundlePath)) {
-      throw new Error(`Bundle 文件不存在: ${bundlePath}`)
+      throw new Error(`Bundle file not found: ${bundlePath}`)
     }
 
     const content = readFileSync(bundlePath, 'utf-8')

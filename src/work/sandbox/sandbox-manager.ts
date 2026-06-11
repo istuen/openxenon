@@ -92,7 +92,7 @@ export class TaskSandbox {
   static addPart(state: SandboxState, part: OxnAssemblyPart): SandboxState {
     const existing = state.currentIR.concreteParts.find((p) => p.name === part.name)
     if (existing) {
-      throw new Error(`Part "${part.name}" 已存在于沙箱中`)
+      throw new Error(`Part "${part.name}" already exists in sandbox`)
     }
     state.currentIR.concreteParts.push(part)
     return state
@@ -101,7 +101,7 @@ export class TaskSandbox {
   static removePart(state: SandboxState, partName: string): SandboxState {
     const idx = state.currentIR.concreteParts.findIndex((p) => p.name === partName)
     if (idx === -1) {
-      throw new Error(`Part "${partName}" 不存在于沙箱中`)
+      throw new Error(`Part "${partName}" not found in sandbox`)
     }
 
     state.currentIR.concreteParts.splice(idx, 1)
@@ -110,7 +110,7 @@ export class TaskSandbox {
 
   static updateDeps(state: SandboxState, partName: string, deps: string[]): SandboxState {
     const part = state.currentIR.concreteParts.find((p) => p.name === partName)
-    if (!part) throw new Error(`Part "${partName}" 不存在`)
+    if (!part) throw new Error(`Part "${partName}" not found`)
 
     const dagNodes: DagNode[] = state.currentIR.concreteParts.map((p) => ({
       id: p.name,
@@ -118,7 +118,7 @@ export class TaskSandbox {
     }))
     const result = validateDagTopology(dagNodes)
     if (!result.valid) {
-      throw new Error(`DAG 拓扑更新失败: ${result.errors.join('; ')}`)
+      throw new Error(`DAG topology update failed: ${result.errors.join('; ')}`)
     }
 
     const stage = state.currentIR.stages.find((s: any) => s.name === partName)

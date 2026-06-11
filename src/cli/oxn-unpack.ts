@@ -1,30 +1,31 @@
 import { defineCommand } from 'citty'
+import { t } from '../infra/i18n'
 import { unpackBundle } from '../oxl/unpacker/bundle-unpacker'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {
     name: 'unpack',
-    description: '解包 .bundle.oxn 到隔离目录（安全模式，默认不覆盖）',
+    description: t('oxnUnpack.description'),
   },
   args: {
     path: {
       type: 'positional',
       required: true,
-      description: '.bundle.oxn 文件路径',
+      description: t('oxnUnpack.path'),
     },
     output: {
       type: 'string',
       alias: 'o',
-      description: '输出目录（默认为 bundle 同目录下的 <name>-unpacked）',
+      description: t('oxnUnpack.output'),
     },
     force: {
       type: 'boolean',
       alias: 'f',
-      description: '强制覆盖已有文件',
+      description: t('oxnUnpack.force'),
     },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -37,10 +38,12 @@ export default defineCommand({
       return output(
         {
           data: result,
-          human: `解包完成:
-  目标目录: ${result.targetDir}
-  写入文件: ${result.files.length}
-  跳过文件: ${result.skipped.length}${result.skipped.length > 0 ? '\n  (已存在，使用 --force 覆盖)' : ''}`,
+          human: t('oxnUnpack.complete', {
+            target: result.targetDir,
+            written: result.files.length,
+            skipped: result.skipped.length,
+            hint: result.skipped.length > 0 ? t('oxnUnpack.forceHint') : '',
+          }),
         },
         format,
       )
@@ -48,7 +51,7 @@ export default defineCommand({
       return outputError(
         {
           code: 'OXN_UNPACK_FAILED',
-          message: err instanceof Error ? err.message : '解包失败',
+          message: err instanceof Error ? err.message : t('oxnUnpack.failed'),
         },
         format,
       )

@@ -127,7 +127,7 @@ export class BundleCompiler {
    */
   compile(sourcePath: string, outputDir?: string): BundleCompileResult {
     if (!existsSync(sourcePath)) {
-      throw new Error(`源文件不存在: ${sourcePath}`)
+      throw new Error(`Source file not found: ${sourcePath}`)
     }
 
     const sourceName = basename(sourcePath).replace(/\.(yaml|yml|oxn|json)$/, '')

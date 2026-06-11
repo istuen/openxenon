@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 import { DEFAULT_LOCALE } from './project-config'
 import { getFormatFromArgs, output, outputError } from './output'
 import { readProjectConfig } from './project-config-io'
@@ -8,7 +8,7 @@ import { DEFAULT_ADAPTERS, type SkillAdapterId } from '../skills/adapters'
 export default defineCommand({
   meta: {
     name: 'config',
-    description: '管理项目配置',
+    description: t('config.description'),
   },
   subCommands: {
     debug: () => import('./config-debug').then((m) => m.default),
@@ -16,11 +16,11 @@ export default defineCommand({
   args: {
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出',
+      description: t('format.json'),
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出',
+      description: t('format.yaml'),
     },
   },
   async run(ctx) {

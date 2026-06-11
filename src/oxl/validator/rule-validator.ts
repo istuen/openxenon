@@ -32,13 +32,13 @@ export class RuleValidator {
       return {
         valid: true,
         passed,
-        message: passed ? undefined : `Rule "${rule.name}" 未通过: ${rule.errMsg || rule.condition}`,
+        message: passed ? undefined : `Rule "${rule.name}" failed: ${rule.errMsg || rule.condition}`,
       }
     } catch (err) {
       return {
         valid: false,
         passed: false,
-        message: `Rule "${rule.name}" 求值错误: ${err instanceof Error ? err.message : String(err)}`,
+        message: `Rule "${rule.name}" evaluation error: ${err instanceof Error ? err.message : String(err)}`,
       }
     }
   }

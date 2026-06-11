@@ -94,7 +94,7 @@ export class BlueprintFreezer {
       }
 
       if (!resolvedPart) {
-        throw new Error(`Part ref "${part.ref}" 解析失败，未找到对应资产`)
+        throw new Error(`Part ref "${part.ref}" resolution failed, no matching asset found`)
       }
 
       const injectedProbes = (resolvedPart.probes || []).map((p) => {

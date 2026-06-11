@@ -58,13 +58,13 @@ export interface ProbeCatalogEntry {
 export const PROBE_CATALOG: ProbeCatalogEntry[] = [
   {
     semanticName: 'fs-exists',
-    description: '检查指定路径的文件或 glob 模式是否存在',
+    description: 'Check if a file or glob pattern exists at the given path',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: true,
-        description: '要检查的文件路径或 glob 模式（如 "./dist/index.js"）',
+        description: 'File path or glob pattern to check (e.g. "./dist/index.js")',
       },
     ],
     examples: [
@@ -77,19 +77,19 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
   },
   {
     semanticName: 'shell-exec',
-    description: '执行 shell 命令并检查退出码（exit 0 → PASS）',
+    description: 'Execute a shell command and verify exit code (exit 0 → PASS)',
     inputs: [
       {
         name: 'command',
         type: 'string',
         required: true,
-        description: '要执行的 shell 命令（如 "bun test"）',
+        description: 'Shell command to execute (e.g. "bun test")',
       },
       {
         name: 'timeout',
         type: 'number',
         required: false,
-        description: '超时时间（毫秒），默认 30000',
+        description: 'Timeout in milliseconds, default 30000',
       },
     ],
     examples: [
@@ -103,13 +103,13 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
   {
     // v1.1: catalog 注册（非新实现——infra + kernel 早已存在，仅 catalog 缺失）
     semanticName: 'fs-not-exists',
-    description: '检查指定路径不存在（命中数 === 0 → PASS）',
+    description: 'Check that no files match the given path or glob pattern (hits === 0 → PASS)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: true,
-        description: '要检查的文件路径或 glob 模式（不应存在）',
+        description: 'File path or glob pattern to check (should not exist)',
       },
     ],
     examples: [
@@ -124,19 +124,19 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // v1.1: catalog 注册（fs_match 的语义层 alias，kebab-case 命名）
     // 实际仍是 fs_match 策略，但 AI 看到 'fs-content-match' 比 'fs_match' 更明确
     semanticName: 'fs-content-match',
-    description: '检查文件内容是否匹配 regex 模式（matched: true → PASS）',
+    description: 'Check file content matches a regex pattern (matched: true → PASS)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: true,
-        description: '要读取的文件路径',
+        description: 'File path to read',
       },
       {
         name: 'contains',
         type: 'string',
         required: true,
-        description: '要匹配的 regex 模式（如 "openxenon" / "^export const \\w+"）',
+        description: 'Regex pattern to match (e.g. "openxenon" / "^export const \\w+")',
       },
     ],
     examples: [
@@ -151,13 +151,13 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // v1.1: 全新 Probe —— 文件可被 JSON 解析
     // 实现见 src/infra/probes/fs-parseable.ts (5a.2)
     semanticName: 'fs-parseable',
-    description: '检查文件可被解析（当前支持 JSON 格式，valid → PASS）',
+    description: 'Check file is parseable (currently supports JSON; valid → PASS)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: true,
-        description: '要解析的文件路径（当前仅 *.json）',
+        description: 'File path to parse (currently only *.json)',
       },
     ],
     examples: [
@@ -172,25 +172,25 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // v1.1 P1: test-pass — 跑 bun test + 解析退出码 + 简易 pass/fail 统计
     // 复 ProgramContext.TestCase term
     semanticName: 'test-pass',
-    description: '跑 bun test 并验证全部通过（exit 0 → PASS）',
+    description: 'Run bun test and verify all pass (exit 0 → PASS)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: false,
-        description: '测试文件路径或目录（默认项目根）',
+        description: 'Test file path or directory (defaults to project root)',
       },
       {
         name: 'pattern',
         type: 'string',
         required: false,
-        description: 'bun test 接受的过滤 pattern（如 "auth"）',
+        description: 'Filter pattern for bun test (e.g. "auth")',
       },
       {
         name: 'timeout',
         type: 'number',
         required: false,
-        description: '超时（毫秒，默认 120000）',
+        description: 'Timeout in milliseconds, default 120000',
       },
     ],
     examples: [
@@ -206,19 +206,20 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // v1.1 P1: deps-resolved — 验证 package.json 依赖都被 lockfile 解析
     // 复 ProgramContext.Package term。纯 JS，无 spawn。
     semanticName: 'deps-resolved',
-    description: '验证 package.json 声明的所有依赖都被 lockfile 解析（missing.length === 0 → PASS）',
+    description:
+      'Verify all dependencies declared in package.json are resolved by lockfile (missing.length === 0 → PASS)',
     inputs: [
       {
         name: 'packageJson',
         type: 'string',
         required: false,
-        description: 'package.json 路径（默认项目根）',
+        description: 'package.json path (defaults to project root)',
       },
       {
         name: 'lockfile',
         type: 'string',
         required: false,
-        description: 'lockfile 路径（默认自动检测：bun.lock > package-lock.json > pnpm-lock.yaml > yarn.lock）',
+        description: 'Lockfile path (auto-detected: bun.lock > package-lock.json > pnpm-lock.yaml > yarn.lock)',
       },
     ],
     examples: [
@@ -235,25 +236,25 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // 复 ProgramContext.SourceFile term（与 lint-check 共享）。
     // Spawn: npx tsc --noEmit [--project tsconfig.json] [path]
     semanticName: 'ts-compiles',
-    description: '跑 tsc --noEmit 验证类型检查通过（exit 0 → PASS）',
+    description: 'Run tsc --noEmit to verify type checking passes (exit 0 → PASS)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: false,
-        description: '要编译的文件或目录（默认整个项目）',
+        description: 'File or directory to compile (defaults to entire project)',
       },
       {
         name: 'tsconfig',
         type: 'string',
         required: false,
-        description: 'tsconfig.json 路径（默认 ./tsconfig.json 或 ./tsconfig.build.json）',
+        description: 'tsconfig.json path (defaults to ./tsconfig.json or ./tsconfig.build.json)',
       },
       {
         name: 'timeout',
         type: 'number',
         required: false,
-        description: '超时（毫秒，默认 120000）',
+        description: 'Timeout in milliseconds, default 120000',
       },
     ],
     examples: [
@@ -270,25 +271,25 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // 复 ProgramContext.SourceFile term（与 ts-compiles 共享）。
     // 前置依赖：biome (devDep)
     semanticName: 'lint-check',
-    description: '跑 biome check 验证代码风格（exit 0 → PASS；需项目装 biome）',
+    description: 'Run biome check to verify code style (exit 0 → PASS; requires biome in project)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: false,
-        description: '要 lint 的路径（默认项目根）',
+        description: 'Path to lint (defaults to project root)',
       },
       {
         name: 'apply',
         type: 'boolean',
         required: false,
-        description: '是否自动修复（--apply，默认 false）',
+        description: 'Whether to auto-apply fixes (--apply, default false)',
       },
       {
         name: 'timeout',
         type: 'number',
         required: false,
-        description: '超时（毫秒，默认 60000）',
+        description: 'Timeout in milliseconds, default 60000',
       },
     ],
     examples: [
@@ -305,43 +306,43 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // 复 ProgramContext.APIEndpoint term。用 Bun fetch（global），
     // 无 spawn。安全：默认 timeout 5s + AbortSignal。
     semanticName: 'http-responds',
-    description: 'HTTP 请求检查 status code（status === expectedStatus → PASS；默认 timeout 5s）',
+    description: 'HTTP request checking status code (status === expectedStatus → PASS; default timeout 5s)',
     inputs: [
       {
         name: 'url',
         type: 'string',
         required: true,
-        description: '要请求的 URL（http/https）',
+        description: 'URL to request (http/https)',
       },
       {
         name: 'method',
         type: 'string',
         required: false,
-        description: 'HTTP method（GET/POST/PUT/DELETE/HEAD，默认 GET）',
+        description: 'HTTP method (GET/POST/PUT/DELETE/HEAD, default GET)',
       },
       {
         name: 'expectedStatus',
         type: 'number',
         required: false,
-        description: '期望 status code（默认 200）',
+        description: 'Expected status code (default 200)',
       },
       {
         name: 'timeout',
         type: 'number',
         required: false,
-        description: '超时（毫秒，默认 5000）',
+        description: 'Timeout in milliseconds, default 5000',
       },
       {
         name: 'body',
         type: 'string',
         required: false,
-        description: '请求 body（POST/PUT 才有意义）',
+        description: 'Request body (only meaningful for POST/PUT)',
       },
       {
         name: 'headers',
         type: 'string',
         required: false,
-        description: '请求 headers（JSON 字符串，可选）',
+        description: 'Request headers (JSON string, optional)',
       },
     ],
     examples: [
@@ -369,13 +370,13 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // 方案 A（你的审查建议）：await import(path) 运行时分析，零新依赖。
     // 默认 spawn bun run tmp script 隔离副作用（防污染主 runner）。
     semanticName: 'file-exports',
-    description: '进程隔离 runtime import 提取模块的 exports 列表（exports.length > 0 → PASS）',
+    description: 'Process-isolated runtime import extracting module exports (exports.length > 0 → PASS)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: true,
-        description: '要分析的 .ts / .js 文件路径',
+        description: '.ts / .js file path to analyze',
       },
     ],
     examples: [
@@ -391,19 +392,19 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // v1.2: git-clean — working tree 干净（PoC: git-workflow Blueprint 入口守卫）
     // 复 ProgramContext.WorkingTree term
     semanticName: 'git-clean',
-    description: '检查当前 working tree 是否干净（无未提交改动；clean: true → PASS）',
+    description: 'Check working tree is clean (no uncommitted changes; clean: true → PASS)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: false,
-        description: '要检查的 git 仓库路径（默认当前目录）',
+        description: 'Git repository path to check (defaults to current directory)',
       },
       {
         name: 'includeUntracked',
         type: 'boolean',
         required: false,
-        description: '是否把 untracked 文件算作 dirty（默认 false）',
+        description: 'Whether to count untracked files as dirty (default false)',
       },
     ],
     examples: [
@@ -418,13 +419,13 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
   {
     // v1.2: git-branch-exists — 本地分支存在（PoC: git-workflow base 分支守卫）
     semanticName: 'git-branch-exists',
-    description: '检查指定本地分支是否存在（exists: true → PASS）',
+    description: 'Check if a local branch exists (exists: true → PASS)',
     inputs: [
       {
         name: 'branch',
         type: 'string',
         required: true,
-        description: '要检查的本地分支名（如 "main" / "feat/saturn"）',
+        description: 'Local branch name to check (e.g. "main" / "feat/saturn")',
       },
     ],
     examples: [
@@ -439,13 +440,13 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
   {
     // v1.2: git-status-clean — git-clean 的 verbose alias（给工程师读 verdict 用）
     semanticName: 'git-status-clean',
-    description: '检查 git status --porcelain 输出（与 git-clean 同义；clean: true → PASS）',
+    description: 'Check git status --porcelain output (same as git-clean; clean: true → PASS)',
     inputs: [
       {
         name: 'path',
         type: 'string',
         required: false,
-        description: '要检查的 git 仓库路径（默认当前目录）',
+        description: 'Git repository path to check (defaults to current directory)',
       },
     ],
     examples: [{ name: 'default', inputs: {} }],
@@ -459,25 +460,25 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     // 复 ProgramContext.MergeCommit term
     semanticName: 'git-merge-feasible',
     description:
-      '用 git merge-tree 算法判定 work 分支能否 merge 进 target_branch（不实际 merge；can_ff_merge / can_merge_clean → PASS）',
+      'Use git merge-tree to determine if work branch can merge into target_branch (no actual merge; can_ff_merge / can_merge_clean → PASS)',
     inputs: [
       {
         name: 'workBranch',
         type: 'string',
         required: true,
-        description: 'work 分支名（如 "feat/saturn" / "oxn/poc-1"）',
+        description: 'Work branch name (e.g. "feat/saturn" / "oxn/poc-1")',
       },
       {
         name: 'targetBranch',
         type: 'string',
         required: false,
-        description: '目标分支名（默认 "current" = 当前分支）',
+        description: 'Target branch name (default "current" = current branch)',
       },
       {
         name: 'cwd',
         type: 'string',
         required: false,
-        description: 'git 仓库路径（默认当前目录）',
+        description: 'Git repository path (defaults to current directory)',
       },
     ],
     examples: [

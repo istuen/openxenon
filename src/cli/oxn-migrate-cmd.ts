@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 import { formatMigrationReport, migrateAllArsenals, migrateDirectory, migrateSingleFile } from './migrate-yaml'
 import { getFormatFromArgs, output, outputError } from './output'
 

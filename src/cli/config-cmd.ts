@@ -9,6 +9,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { dirname, join } from 'path'
+import { t } from '../infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 import {
   DEFAULT_LEADER_MODE,
@@ -52,10 +53,10 @@ function writeConfigFile(config: OxnConfig): string {
 }
 
 const showSubcommand = defineCommand({
-  meta: { name: 'show', description: '显示当前生效的 oxn 配置（解析来源 + 实际值）' },
+  meta: { name: 'show', description: t('config.show.description') },
   args: {
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -94,12 +95,12 @@ const showSubcommand = defineCommand({
 })
 
 const setSubcommand = defineCommand({
-  meta: { name: 'set', description: '在 .oxnrc 中设置一个配置项' },
+  meta: { name: 'set', description: t('config.set.description') },
   args: {
-    key: { type: 'string', required: true, description: '配置 key（当前支持: leaderMode）' },
-    value: { type: 'string', required: true, description: '配置 value' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    key: { type: 'string', required: true, description: t('config.set.key') },
+    value: { type: 'string', required: true, description: t('config.set.value') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -148,7 +149,7 @@ const setSubcommand = defineCommand({
 })
 
 const configCommand = defineCommand({
-  meta: { name: 'config', description: '管理 .oxnrc 项目配置' },
+  meta: { name: 'config', description: t('config.command.description') },
   subCommands: {
     show: showSubcommand,
     set: setSubcommand,
@@ -181,13 +182,13 @@ function formatShowHuman(
   projectConfig: ReturnType<typeof readProjectConfig>,
   tools: { enabled?: SkillAdapterId[]; disabled?: SkillAdapterId[] } | undefined,
 ): string {
-  const lines = [`项目配置 (.oxnrc):`, `  leaderMode: ${leaderMode} (source: ${source})`]
+  const lines = [`Config (.oxnrc):`, `  leaderMode: ${leaderMode} (source: ${source})`]
   if (projectConfig) {
     lines.push(`  mode: ${projectConfig.mode}`)
     lines.push(`  locale: ${projectConfig.locale || 'zh-CN'}`)
     if (projectConfig.name) lines.push(`  name: ${projectConfig.name}`)
   }
-  lines.push(`Skill 工具 (tools):`)
+  lines.push(`Skill tools:`)
   if (!tools) {
     lines.push(`  ${DEFAULT_ADAPTERS.join(', ')} (default)`)
   } else if (tools.enabled && tools.enabled.length > 0) {

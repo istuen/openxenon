@@ -1,4 +1,5 @@
 import { defineCommand } from 'citty'
+import { t } from '../infra/i18n'
 import { ensureHallDirectory, renderHall } from '../hall'
 import { getProjectBoundaryPath } from './project'
 import { getFormatFromArgs, output, outputError } from './output'
@@ -6,16 +7,16 @@ import { getFormatFromArgs, output, outputError } from './output'
 export default defineCommand({
   meta: {
     name: 'hall',
-    description: '打开研讨厅 (Hall)，查看全局状态和待办',
+    description: t('hall.description'),
   },
   args: {
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出',
+      description: t('format.json'),
     },
     '--open': {
       type: 'boolean',
-      description: '在浏览器中打开',
+      description: t('hall.open'),
     },
   },
   async run(ctx) {
@@ -51,7 +52,7 @@ export default defineCommand({
         return output(
           {
             data: { path: indexPath, url: hallUrl },
-            human: `Hall 已打开: ${hallUrl}`,
+            human: t('hall.opened', { url: hallUrl }),
           },
           format,
         )
@@ -60,7 +61,7 @@ export default defineCommand({
       return output(
         {
           data: { path: indexPath, url: hallUrl },
-          human: `Hall 路径: ${indexPath}\n\n使用 --open 在浏览器中打开`,
+          human: t('hall.pathHint', { path: indexPath }),
         },
         format,
       )

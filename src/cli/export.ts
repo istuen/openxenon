@@ -1,32 +1,33 @@
 import { defineCommand } from 'citty'
 import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
+import { t } from '../infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {
     name: 'export',
-    description: '导出任务的 task-trace.jsonl',
+    description: t('export.description'),
   },
   args: {
     taskId: {
       type: 'positional',
-      description: '任务 ID',
+      description: t('export.taskId'),
       required: true,
     },
     output: {
       alias: 'o',
       type: 'string',
-      description: '输出路径（默认输出到 stdout）',
+      description: t('export.output'),
       required: false,
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出',
+      description: t('format.json'),
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出',
+      description: t('format.yaml'),
     },
   },
   async run(ctx) {
@@ -40,7 +41,7 @@ export default defineCommand({
       return outputError(
         {
           code: 'OXN_TASK_NOT_FOUND',
-          message: `任务不存在: ${taskId}`,
+          message: t('export.notFound', { taskId }),
         },
         format,
       )
@@ -55,7 +56,7 @@ export default defineCommand({
         return output(
           {
             data: { path: fullOutputPath },
-            human: `已导出任务轨迹到: ${fullOutputPath}`,
+            human: t('export.exported', { path: fullOutputPath }),
           },
           format,
         )

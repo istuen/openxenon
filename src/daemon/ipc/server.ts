@@ -86,7 +86,7 @@ export function startSocketServer(socketPath: string): void {
               code: 'OXN_INVALID_PARAMS',
               category: 'USER',
               recoverable: false,
-              suggestion: '请检查 projectPath 是否有效',
+              suggestion: 'Check if projectPath is valid',
             })
             continue
           }
@@ -105,7 +105,7 @@ export function startSocketServer(socketPath: string): void {
             code: 'OXN_INTERNAL_ERROR',
             category: 'SYSTEM',
             recoverable: false,
-            suggestion: 'Daemon 内部错误，请查看 daemon.log',
+            suggestion: 'Daemon internal error, check daemon.log',
           })
         }
       }

@@ -44,10 +44,14 @@ export function validateWorkTaskReference(
   // 校验 Work 层 domain 引用
   for (const domainRef of node.domains ?? []) {
     if (domainNames.size > 0 && !domainNames.has(domainRef.name)) {
-      accept('warning', `domain "${domainRef.name}" 在当前文档中未找到 Domain 声明 (跨文件引用需在执行时校验)`, {
-        node: domainRef,
-        property: 'name',
-      })
+      accept(
+        'warning',
+        `domain "${domainRef.name}" has no Domain declaration in current document (cross-file refs validated at runtime)`,
+        {
+          node: domainRef,
+          property: 'name',
+        },
+      )
     }
   }
 
@@ -59,7 +63,7 @@ export function validateWorkTaskReference(
   for (const task of (node.tasks ?? []).filter(isTaskDeclaration)) {
     // 校验 task.domain 是否在 Work 域列表中
     if (task.domain && workDomainNames.size > 0 && !workDomainNames.has(task.domain)) {
-      accept('warning', `task "${task.name}" 引用的 domain "${task.domain}" 未在 Work 中声明`, {
+      accept('warning', `task "${task.name}" references domain "${task.domain}" not declared in Work`, {
         node: task,
         property: 'domain',
       })
@@ -67,7 +71,7 @@ export function validateWorkTaskReference(
 
     // 校验 task.blueprint 是否在 Work blueprint 列表中
     if (task.blueprint && workBlueprintNames.size > 0 && !workBlueprintNames.has(task.blueprint)) {
-      accept('warning', `task "${task.name}" 引用的 blueprint "${task.blueprint}" 未在 Work 中声明`, {
+      accept('warning', `task "${task.name}" references blueprint "${task.blueprint}" not declared in Work`, {
         node: task,
         property: 'blueprint',
       })
@@ -76,7 +80,7 @@ export function validateWorkTaskReference(
     // 校验 task.part 名是否在 Work part 列表中
     for (const part of task.parts ?? []) {
       if (workPartNames.size > 0 && !workPartNames.has(part.name)) {
-        accept('warning', `task "${task.name}" 的 part "${part.name}" 未在 Work 中声明`, {
+        accept('warning', `task "${task.name}" part "${part.name}" not declared in Work`, {
           node: part,
           property: 'name',
         })

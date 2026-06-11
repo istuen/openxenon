@@ -1,3 +1,4 @@
+import { t } from '../infra/i18n'
 import { stringify as yamlStringify } from 'yaml'
 
 export type OutputFormat = 'human' | 'json' | 'yaml' | 'html' | 'md'
@@ -165,19 +166,19 @@ export function addFormatArgs(argsDef: Record<string, any>): Record<string, any>
   return {
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出',
+      description: t('format.json'),
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出',
+      description: t('format.yaml'),
     },
     '--html': {
       type: 'boolean',
-      description: 'HTML 格式输出',
+      description: t('format.html'),
     },
     '--md': {
       type: 'boolean',
-      description: 'Markdown 格式输出',
+      description: t('format.markdown'),
     },
     ...argsDef,
   }

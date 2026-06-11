@@ -6,7 +6,7 @@ import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
 import { extname, join } from 'path'
 import { BOUNDARY_DIR } from '../kernel/index'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 function getProjectRoot(): string {
@@ -135,19 +135,19 @@ function updateQAAnswer(path: string, id: string, answer: string): boolean {
 export default defineCommand({
   meta: {
     name: 'explore',
-    description: 'DEPRECATED: 探索项目与任务，采集资料、问答记录、总结归档。请使用 oxn work init --type explore 替代。',
+    description: t('explore.description'),
   },
   subCommands: {
     new: defineCommand({
       meta: {
         name: 'new',
-        description: '创建新探索',
+        description: t('explore.new.description'),
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称 (kebab-case)',
+          description: t('explore.new.name'),
         },
       },
       run(ctx) {
@@ -185,25 +185,25 @@ export default defineCommand({
     scan: defineCommand({
       meta: {
         name: 'scan',
-        description: '扫描资料到探索目录',
+        description: t('explore.scan.description'),
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称',
+          description: t('explore.scan.name'),
         },
         '--path': {
           type: 'string',
-          description: '文件或目录路径',
+          description: t('explore.scan.path'),
         },
         '--read': {
           type: 'string',
-          description: '读取现有文件内容',
+          description: t('explore.scan.read'),
         },
         '--title': {
           type: 'string',
-          description: '文档标题（用于 --path 模式）',
+          description: t('explore.scan.title'),
         },
       },
       run(ctx) {
@@ -297,33 +297,33 @@ export default defineCommand({
     qa: defineCommand({
       meta: {
         name: 'qa',
-        description: '问答记录管理 (AI问答 / 工程师问答)',
+        description: t('explore.qa.description'),
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称',
+          description: t('explore.qa.name'),
         },
         '--type': {
           type: 'string',
-          description: '问答类型: ai | engineer',
+          description: t('explore.qa.type'),
         },
         '--ask': {
           type: 'string',
-          description: '添加问题（AI问答使用）',
+          description: t('explore.qa.question'),
         },
         '--answer': {
           type: 'string',
-          description: '回答问题，格式: id|answer',
+          description: t('explore.qa.answer'),
         },
         '--list': {
           type: 'boolean',
-          description: '列出所有问答',
+          description: t('explore.qa.list'),
         },
         '--pending': {
           type: 'boolean',
-          description: '列出待回答的问题',
+          description: t('explore.qa.pending'),
         },
       },
       run(ctx) {
@@ -445,17 +445,17 @@ export default defineCommand({
     report: defineCommand({
       meta: {
         name: 'report',
-        description: '从问答生成报告',
+        description: t('explore.report.description'),
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称',
+          description: t('explore.report.name'),
         },
         '--force': {
           type: 'boolean',
-          description: '覆盖现有总结',
+          description: t('explore.report.force'),
         },
       },
       run(ctx) {
@@ -568,7 +568,7 @@ export default defineCommand({
     list: defineCommand({
       meta: {
         name: 'list',
-        description: '列出所有探索',
+        description: t('explore.list.description'),
       },
       run(ctx) {
         const format = getFormatFromArgs(ctx.args)
@@ -583,7 +583,7 @@ export default defineCommand({
         output(
           {
             data: { explores: dirs },
-            human: dirs.length > 0 ? `探索列表:\n${dirs.map((d) => `  - ${d}`).join('\n')}` : '暂无探索',
+            human: dirs.length > 0 ? `Explores:\n${dirs.map((d) => `  - ${d}`).join('\n')}` : t('explore.noExplores'),
           },
           format,
         )
@@ -592,17 +592,17 @@ export default defineCommand({
     delete: defineCommand({
       meta: {
         name: 'delete',
-        description: '删除探索',
+        description: t('explore.delete.description'),
       },
       args: {
         name: {
           type: 'string',
           required: true,
-          description: '探索名称',
+          description: t('explore.delete.name'),
         },
         '--force': {
           type: 'boolean',
-          description: '跳过确认直接删除',
+          description: t('explore.delete.force'),
         },
       },
       run(ctx) {
@@ -645,7 +645,7 @@ export default defineCommand({
     }),
   },
   run() {
-    console.log('使用 oxn explore <subcommand> 查看可用子命令')
+    console.log('Run oxn explore <subcommand> to see available subcommands')
     console.log('子命令: new, scan, qa, report, list, delete')
   },
 })

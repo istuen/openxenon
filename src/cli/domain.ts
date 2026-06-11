@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 import { join, resolve } from 'path'
 import { URI } from 'langium'
@@ -80,13 +80,13 @@ async function validateDomainFile(filePath: string): Promise<{
 const createSubcommand = defineCommand({
   meta: {
     name: 'create',
-    description: '在 .openxenon/domains/ 生成一个新的 domain 骨架（DDD 限界上下文）',
+    description: t('domain.create.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Domain 名称（PascalCase 推荐，如 MemberContext）' },
-    force: { type: 'boolean', alias: 'f', description: '覆盖已存在的文件' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('domain.create.name') },
+    force: { type: 'boolean', alias: 'f', description: t('domain.create.force') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -200,13 +200,13 @@ domain "${name}" {
 const validateSubcommand = defineCommand({
   meta: {
     name: 'validate',
-    description: '解析并校验 domain 文件',
+    description: t('domain.validate.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Domain 名称' },
-    'file-path': { type: 'string', description: '直接指定 .oxn 文件路径（可选逃生舱）' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('domain.validate.name') },
+    'file-path': { type: 'string', description: t('domain.validate.filePath') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -337,11 +337,11 @@ function domainAstToIr(domain: DomainDeclaration): {
 const listSubcommand = defineCommand({
   meta: {
     name: 'list',
-    description: '列出 .openxenon/domains/ 下所有已注册的 domain',
+    description: t('domain.list.description'),
   },
   args: {
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -448,19 +448,19 @@ const listSubcommand = defineCommand({
 const indexSubcommand = defineCommand({
   meta: {
     name: 'index',
-    description: '重建全局 Domain slim 索引 → .openxenon/.cache/domains.json',
+    description: t('domain.index.description'),
   },
   args: {
     emit: {
       type: 'string',
-      description: '自定义输出路径（默认 .openxenon/.cache/domains.json）',
+      description: t('domain.index.output'),
     },
     check: {
       type: 'boolean',
-      description: '仅校验索引是否新鲜（与 domains/ 目录 mtime 比对），不写',
+      description: t('domain.index.freshness'),
     },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -553,7 +553,7 @@ export function autoRebuildDomainIndex(projectRoot: string): {
 export default defineCommand({
   meta: {
     name: 'domain',
-    description: 'Domain 模块 — DDD 限界上下文管理 (create/validate/list/index)',
+    description: t('domain.description'),
   },
   subCommands: {
     create: createSubcommand,

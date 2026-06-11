@@ -2,7 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, readdirSync, rmSync } from 'fs'
 import { resolve } from 'path'
 import { BOUNDARY_DIR } from '../kernel/index'
-import { t } from '../i18n'
+import { t } from '../infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

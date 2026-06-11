@@ -27,6 +27,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { t } from '../infra/i18n'
 import { URI } from 'langium'
 import {
   BOUNDARY_DIR,
@@ -154,13 +155,13 @@ function literalToString(value: unknown): string {
 const createSubcommand = defineCommand({
   meta: {
     name: 'create',
-    description: '在 .openxenon/proofs/<name>/ 生成 proof.oxn 骨架',
+    description: t('proof.create.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Proof 名称（kebab-case 推荐）' },
-    force: { type: 'boolean', alias: 'f', description: '覆盖已存在的 proof.oxn' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('proof.create.name') },
+    force: { type: 'boolean', alias: 'f', description: t('proof.create.force') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -230,7 +231,7 @@ proof "${name}" {
       {
         ok: true,
         data: { name, path: oxnPath, frozenPath },
-        human: `Created proof "${name}" at ${oxnPath}\n\nNext:\n  1. oxn proof probe list\n  2. oxn proof probe describe <name>\n  3. oxn proof probe add ${name} <name> --input-json '{"key":"value"}'\n  4. oxn proof run ${name}`,
+        human: t('proof.create.created', { name, path: oxnPath }),
       },
       format,
     )
@@ -244,11 +245,11 @@ proof "${name}" {
 const probeListSubcommand = defineCommand({
   meta: {
     name: 'list',
-    description: '列出所有可用 probe（语义名 + 描述 + 必需输入）',
+    description: t('proof.probeList.description'),
   },
   args: {
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -276,12 +277,12 @@ const probeListSubcommand = defineCommand({
 const probeDescribeSubcommand = defineCommand({
   meta: {
     name: 'describe',
-    description: '详述单个 probe 的输入契约 + 示例',
+    description: t('proof.probeDescribe.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'probe 语义名（如 fs-exists）' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('proof.probeDescribe.name') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -333,19 +334,19 @@ function renderProbeDescribeHuman(info: ReturnType<typeof describeProbe> & objec
 const probeAddSubcommand = defineCommand({
   meta: {
     name: 'add',
-    description: '追加一个 probe 到 proof（语义名 + --input-json）',
+    description: t('proof.probeAdd.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Proof 名称（已存在）' },
-    probe: { type: 'positional', required: true, description: 'probe 语义名（如 fs-exists）' },
+    name: { type: 'positional', required: true, description: t('proof.probeAdd.name') },
+    probe: { type: 'positional', required: true, description: t('proof.probeAdd.probe') },
     'input-json': {
       type: 'string',
       required: true,
-      description: 'probe 输入（JSON 字符串）',
+      description: t('proof.probeAdd.inputJson'),
     },
-    probeName: { type: 'string', description: '自定义 probe 名（默认 p1/p2/...）' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    probeName: { type: 'string', description: t('proof.probeAdd.probeName') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -447,7 +448,7 @@ function escapeString(s: string): string {
 }
 
 const probeSubcommand = defineCommand({
-  meta: { name: 'probe', description: '操作 proof 内的 probe（list / describe / add）' },
+  meta: { name: 'probe', description: t('proof.probe.description') },
   subCommands: {
     list: probeListSubcommand,
     describe: probeDescribeSubcommand,
@@ -462,13 +463,13 @@ const probeSubcommand = defineCommand({
 const runSubcommand = defineCommand({
   meta: {
     name: 'run',
-    description: '执行 proof 内所有 probe，写 frozen.json（不可篡改）',
+    description: t('proof.run.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Proof 名称' },
-    'dry-run': { type: 'boolean', description: '只写 .running.json 不跑 probe 不写 frozen.json（用于探测期）' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('proof.run.name') },
+    'dry-run': { type: 'boolean', description: t('proof.run.dryRun') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -606,10 +607,10 @@ function renderVerdictHuman(name: string, frozen: NonNullable<ReturnType<typeof 
 // ---------------------------------------------------------------------------
 
 const listSubcommand = defineCommand({
-  meta: { name: 'list', description: '列出 .openxenon/proofs/ 下所有 proof' },
+  meta: { name: 'list', description: t('proof.list.description') },
   args: {
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -659,11 +660,11 @@ const listSubcommand = defineCommand({
 // ---------------------------------------------------------------------------
 
 const showSubcommand = defineCommand({
-  meta: { name: 'show', description: '读 frozen.json 并输出 verdict + 详情' },
+  meta: { name: 'show', description: t('proof.show.description') },
   args: {
-    name: { type: 'positional', required: true, description: 'Proof 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('proof.show.name') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -701,7 +702,7 @@ function renderShowHuman(
 ): string {
   const lines: string[] = []
   if (inProgress) {
-    lines.push(`⚠️ .running.json 残留：上次 run 可能中途崩溃，本次 verdict 来自上一次成功落盘的 frozen.json`)
+    lines.push(`Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json`)
     lines.push('')
   }
   lines.push(`Proof: ${frozen.name}`)
@@ -725,7 +726,7 @@ function renderShowHuman(
 export default defineCommand({
   meta: {
     name: 'proof',
-    description: 'Proof-First 入口（v0.1.2）：probe + frozen.json 闭环，跳过 Domain/Blueprint',
+    description: t('proof.description'),
   },
   subCommands: {
     create: createSubcommand,

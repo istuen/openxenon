@@ -130,7 +130,7 @@ export function validateParamCoverage(
       missing.push(prop.name)
       errors.push({
         kind: 'missing_required',
-        message: `必填参数 "${prop.name}" 未在 Task binding 中注入`,
+        message: `Required parameter "${prop.name}" not injected in Task binding`,
         details: { propName: prop.name, expected: prop.type },
       })
     }
@@ -160,7 +160,7 @@ export function validateTypeConsistency(
     if (!check.compatible) {
       errors.push({
         kind: 'type_mismatch',
-        message: `Prop "${prop.name}" 类型不匹配：${check.issue || `期望 ${prop.type}，实际 ${typeof value}`}`,
+        message: `Prop "${prop.name}" type mismatch: ${check.issue || `expected ${prop.type}, got ${typeof value}`}`,
         details: { propName: prop.name, expected: prop.type, actual: typeof value },
       })
     }
@@ -220,7 +220,7 @@ export function validateAbstractParamFields(abstractParams: string[], concretePa
     if (!concretePropNames.has(field)) {
       errors.push({
         kind: 'unknown_field',
-        message: `Abstract part 引用未知字段 "${field}"（目标 part "${concretePart.name}" 中不存在）`,
+        message: `Abstract part references unknown field "${field}" (not found in target part "${concretePart.name}")`,
         details: { propName: field },
       })
     }

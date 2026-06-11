@@ -28,9 +28,9 @@ export function isBareProbeRef(ref: string): boolean {
 
 export function validateProbeRef(ref: string): void {
   if (isBareProbeRef(ref)) {
-    throw new Error(`Probe ref "${ref}" 缺少命名空间前缀。必须使用 oxn/、@scope/ 或 ./ 前缀。`)
+    throw new Error(`Probe ref "${ref}" missing namespace prefix. Must use oxn/, @scope/, or ./ prefix.`)
   }
   if (!isValidProbeRef(ref)) {
-    throw new Error(`Probe ref "${ref}" 格式无效`)
+    throw new Error(`Probe ref "${ref}" has invalid format`)
   }
 }

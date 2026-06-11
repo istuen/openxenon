@@ -60,7 +60,7 @@ type LayerName = 'L0-Kernel' | 'L1-Infra' | 'L1-OXL' | 'L2-Builtin' | 'L2-Work' 
  *   - L2-Builtin: src/builtin/
  *   - L2-Work:    src/work/
  *   - L3-CLI:     src/cli/ + src/daemon/ + src/hall/ + src/skills/ +
- *                 src/watcher/ + src/core/ + src/i18n/
+ *                 src/watcher/ + src/core/
  */
 function getLayerFromPath(filePath: string): LayerName | null {
   const relativePath = relative(process.cwd(), filePath)
@@ -80,15 +80,14 @@ function getLayerFromPath(filePath: string): LayerName | null {
   if (relativePath.startsWith('src/work/')) {
     return 'L2-Work'
   }
-  // L3 Runtime: CLI + Daemon + Hall + Skill + Watcher + Core + i18n
+  // L3 Runtime: CLI + Daemon + Hall + Skill + Watcher + Core
   if (
     relativePath.startsWith('src/cli/') ||
     relativePath.startsWith('src/daemon/') ||
     relativePath.startsWith('src/hall/') ||
     relativePath.startsWith('src/skills/') ||
     relativePath.startsWith('src/watcher/') ||
-    relativePath.startsWith('src/core/') ||
-    relativePath.startsWith('src/i18n/')
+    relativePath.startsWith('src/core/')
   ) {
     return 'L3-CLI'
   }

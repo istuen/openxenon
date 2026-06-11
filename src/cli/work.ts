@@ -33,6 +33,7 @@
 
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'fs'
+import { t } from '../infra/i18n'
 import { join } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '../kernel/index'
@@ -631,8 +632,8 @@ function guardWorkNotStarted<T>(
     outputError(
       {
         code: 'OXN_WORK_ALREADY_RUNNING',
-        message: `work "${workName}" 已进入执行阶段，禁止修改图纸`,
-        suggestion: '如需调整 task 编排，请删除 .openxenon/works/<name>/ 目录后重新 create。',
+        message: t('work.alreadyRunning', { workName }),
+        suggestion: t('work.modifyHint'),
       },
       format,
     )
@@ -651,8 +652,8 @@ function guardWorkStarted<T>(
     outputError(
       {
         code: 'OXN_WORK_NOT_STARTED',
-        message: `work "${workName}" 状态机未启动`,
-        suggestion: '先执行 `oxn work run <name>` 进入执行阶段',
+        message: t('work.notStarted', { workName }),
+        suggestion: t('work.notStartedHint'),
       },
       format,
     )
@@ -665,22 +666,22 @@ function guardWorkStarted<T>(
 // Subcommand: list
 // ---------------------------------------------------------------------------
 const listSubcommand = defineCommand({
-  meta: { name: 'list', description: '列出所有 Work' },
+  meta: { name: 'list', description: t('work.list.description') },
   args: {
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args)
     const cwd = getProjectRoot()
 
     if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
     const worksDir = join(cwd, BOUNDARY_DIR, 'works')
     if (!existsSync(worksDir)) {
-      output({ data: { works: [] }, human: '暂无 Work' }, format)
+      output({ data: { works: [] }, human: t('work.emptyList') }, format)
       return
     }
 
@@ -719,7 +720,7 @@ const listSubcommand = defineCommand({
     }
 
     if (works.length === 0) {
-      output({ data: { works }, human: '暂无 Work' }, format)
+      output({ data: { works }, human: t('work.emptyList') }, format)
       return
     }
 
@@ -741,21 +742,21 @@ const listSubcommand = defineCommand({
 const createSubcommand = defineCommand({
   meta: {
     name: 'create',
-    description: '创建 Work 骨架（从 blueprint 渲染 work.oxn）',
+    description: t('work.create.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work ID（kebab-case）' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
     blueprint: {
       type: 'string',
       alias: 'b',
-      description: '从该 blueprint 生成 work.oxn（默认 .openxenon/blueprints/<name>.oxn）',
+      description: t('work.create.args.blueprint'),
     },
-    'blueprint-file': { type: 'string', description: '直接指定 blueprint.oxn 路径（覆盖 --blueprint 默认查找）' },
-    'output-dir': { type: 'string', description: '输出目录（默认 .openxenon/works/<name>/）' },
-    type: { type: 'string', alias: 't', default: 'task', description: 'Work 类型（默认 task）' },
-    force: { type: 'boolean', description: '覆盖已存在的文件' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    'blueprint-file': { type: 'string', description: t('work.create.args.blueprintPath') },
+    'output-dir': { type: 'string', description: t('work.create.args.outputDir') },
+    type: { type: 'string', alias: 't', default: 'task', description: t('work.create.args.workType') },
+    force: { type: 'boolean', description: t('work.create.args.force') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -768,14 +769,17 @@ const createSubcommand = defineCommand({
 
     if (!projectBoundaryExists()) {
       return outputError(
-        { code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init', suggestion: '在项目根目录执行 oxn init' },
+        { code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit'), suggestion: t('errors.initHint') },
         format,
       )
     }
 
     const validation = validateWorkName(workName)
     if (!validation.valid) {
-      return outputError({ code: 'OXN_INVALID_WORK_NAME', message: `Work ID 无效: ${validation.error}` }, format)
+      return outputError(
+        { code: 'OXN_INVALID_WORK_NAME', message: t('work.invalidId', { error: validation.error }) },
+        format,
+      )
     }
 
     const projectRoot = getProjectRoot()
@@ -884,7 +888,7 @@ const createSubcommand = defineCommand({
 
     const workFilePath = join(workDir, `${workName}.oxn`)
     if (existsSync(workFilePath)) {
-      return outputError({ code: 'OXN_WORK_EXISTS', message: `Work 已存在: ${workName} (type: ${workType})` }, format)
+      return outputError({ code: 'OXN_WORK_EXISTS', message: t('work.workExists', { workName, workType }) }, format)
     }
 
     const workOxnContent = `work "${workName}" {
@@ -917,7 +921,7 @@ const createSubcommand = defineCommand({
           type: workType,
           path: workFilePath,
         },
-        human: `Work 已创建: ${workName}\n类型: ${workType}\n路径: ${workFilePath}\n\n请编辑 work.oxn 填充 task 编排；或重新跑 \`oxn work create <name> --blueprint <bp>\` 从 blueprint 生成。`,
+        human: t('work.created', { workName, workType, workFilePath }),
       },
       format,
     )
@@ -930,13 +934,13 @@ const createSubcommand = defineCommand({
 const validateSubcommand = defineCommand({
   meta: {
     name: 'validate',
-    description: '校验 work.oxn 语法 + ref 解析；成功则落 domains.json / blueprints.json / .work',
+    description: t('work.validate.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    type: { type: 'string', description: 'Work 类型（task/explore/edit；决定 .work.mode）' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    type: { type: 'string', description: t('work.validate.args.type') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -945,7 +949,7 @@ const validateSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
 
     if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
     const workFile = getWorkOxnPath(projectRoot, workName)
@@ -1070,20 +1074,20 @@ const validateSubcommand = defineCommand({
 const addTaskSubcommand = defineCommand({
   meta: {
     name: 'add-task',
-    description: '在指定 work 下创建 task.oxn（绑定 blueprint + 可选 domain）',
+    description: t('work.addTask.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    task: { type: 'string', required: true, description: 'Task 名称（kebab-case 推荐）' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    task: { type: 'string', required: true, description: t('work.addTask.args.taskName') },
     blueprint: {
       type: 'string',
       required: true,
-      description: 'Blueprint 名（必须出现在 work.oxn 的 blueprint 声明中）',
+      description: t('work.addTask.args.blueprint'),
     },
-    domain: { type: 'string', description: '要引用的 Domain 名（必须出现在 work.oxn 的 domain 声明中）' },
-    force: { type: 'boolean', alias: 'f', description: '覆盖已存在的 task.oxn' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    domain: { type: 'string', description: t('work.addTask.args.domain') },
+    force: { type: 'boolean', alias: 'f', description: t('work.addTask.args.force') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1095,16 +1099,22 @@ const addTaskSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
 
     if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
     const workValidation = validateWorkName(workName)
     if (!workValidation.valid) {
-      return outputError({ code: 'OXN_INVALID_WORK_NAME', message: `Work ID 无效: ${workValidation.error}` }, format)
+      return outputError(
+        { code: 'OXN_INVALID_WORK_NAME', message: t('work.invalidId', { error: workValidation.error }) },
+        format,
+      )
     }
     const taskValidation = validateTaskName(taskName)
     if (!taskValidation.valid) {
-      return outputError({ code: 'OXN_INVALID_TASK_NAME', message: `Task 名称无效: ${taskValidation.error}` }, format)
+      return outputError(
+        { code: 'OXN_INVALID_TASK_NAME', message: t('work.invalidTaskName', { error: taskValidation.error }) },
+        format,
+      )
     }
 
     // NV-1: 状态机已启动 → 拒
@@ -1206,11 +1216,11 @@ ${domainLine}
 // Subcommand: list-task
 // ---------------------------------------------------------------------------
 const listTaskSubcommand = defineCommand({
-  meta: { name: 'list-task', description: '列出 work 下所有 task' },
+  meta: { name: 'list-task', description: t('work.listTask.description') },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1267,12 +1277,12 @@ const listTaskSubcommand = defineCommand({
 // Subcommand: task-status
 // ---------------------------------------------------------------------------
 const taskStatusSubcommand = defineCommand({
-  meta: { name: 'task-status', description: '查看 task.oxn 元信息（blueprint + domain）' },
+  meta: { name: 'task-status', description: t('work.taskStatus.description') },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    task: { type: 'string', required: true, description: 'Task 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    task: { type: 'string', required: true, description: t('work.args.taskName') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1316,12 +1326,12 @@ const taskStatusSubcommand = defineCommand({
 // Subcommand: verify-task-path — 提交手写后的 task.oxn 路径验证
 // ---------------------------------------------------------------------------
 const verifyTaskPathSubcommand = defineCommand({
-  meta: { name: 'verify-task-path', description: '验证手写 task.oxn 路径是否属于指定 work' },
+  meta: { name: 'verify-task-path', description: t('work.verifyTaskPath.description') },
   args: {
-    work: { type: 'string', required: true, description: 'Work 名称' },
-    path: { type: 'positional', required: true, description: '待验证的 task.oxn 绝对路径' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    work: { type: 'string', required: true, description: t('work.args.workName') },
+    path: { type: 'positional', required: true, description: t('work.verifyTaskPath.args.filePath') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1335,14 +1345,14 @@ const verifyTaskPathSubcommand = defineCommand({
 
     // 1) 文件存在？
     if (!existsSync(filePath)) {
-      return outputError({ code: 'OXN_PATH_NOT_FOUND', message: `文件不存在: ${filePath}` }, format)
+      return outputError({ code: 'OXN_PATH_NOT_FOUND', message: t('oxnCompile.notFound', { path: filePath }) }, format)
     }
 
     // 2) 文件名必须是 task.oxn？
     const basename = filePath.split('/').pop()
     if (basename !== TASK_OXN_FILE) {
       return outputError(
-        { code: 'OXN_INVALID_TASK_FILE', message: `文件名必须为 ${TASK_OXN_FILE}，得到: ${basename}` },
+        { code: 'OXN_INVALID_TASK_FILE', message: t('work.invalidTaskFile', { taskOxnFile: TASK_OXN_FILE, basename }) },
         format,
       )
     }
@@ -1354,7 +1364,7 @@ const verifyTaskPathSubcommand = defineCommand({
       return outputError(
         {
           code: 'OXN_PATH_NOT_IN_WORK',
-          message: `路径不属于 work "${workName}" 的 tasks 目录\n  期望前缀: ${expectedDir}\n  实际父目录: ${parentDir}`,
+          message: t('work.pathNotInWork', { workName, expectedDir, parentDir }),
         },
         format,
       )
@@ -1382,7 +1392,15 @@ const verifyTaskPathSubcommand = defineCommand({
           domain: domainMatch?.[1],
           partCount,
         },
-        human: `✅ 路径验证通过\nWork:     ${workName}\nTask:     ${taskName}\nDir:      ${taskDirName}\nBlueprint: ${blueprintMatch?.[1] ?? '(none)'}\nDomain:    ${domainMatch?.[1] ?? '(none)'}\nParts:     ${partCount}\nPath:      ${filePath}`,
+        human: t('work.verifyTaskPath.passed', {
+          workName,
+          taskName,
+          taskDirName,
+          blueprint: blueprintMatch?.[1] ?? '(none)',
+          domain: domainMatch?.[1] ?? '(none)',
+          partCount,
+          filePath,
+        }),
       },
       format,
     )
@@ -1393,15 +1411,15 @@ const verifyTaskPathSubcommand = defineCommand({
 // Subcommand: edit-task (Phase 1: P1 守卫)
 // ---------------------------------------------------------------------------
 const editTaskSubcommand = defineCommand({
-  meta: { name: 'edit-task', description: '编辑 task.oxn（objective / constraints / domain）' },
+  meta: { name: 'edit-task', description: t('work.editTask.description') },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    task: { type: 'string', required: true, description: 'Task 名称' },
-    objective: { type: 'string', description: '新的 objective 文本' },
-    'add-constraint': { type: 'string', description: '添加一条 constraint（可多次）' },
-    'add-domain': { type: 'string', description: '添加 domain 引用（必须已在 work.oxn domain 声明中）' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    task: { type: 'string', required: true, description: t('work.args.taskName') },
+    objective: { type: 'string', description: t('work.editTask.args.objective') },
+    'add-constraint': { type: 'string', description: t('work.editTask.args.constraint') },
+    'add-domain': { type: 'string', description: t('work.editTask.args.domain') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1493,14 +1511,14 @@ const editTaskSubcommand = defineCommand({
 // Subcommand: delete-task (Phase 1: P1 守卫)
 // ---------------------------------------------------------------------------
 const deleteTaskSubcommand = defineCommand({
-  meta: { name: 'delete-task', description: '删除 task 目录（仅 P1 允许，work 启动后拒绝）' },
+  meta: { name: 'delete-task', description: t('work.deleteTask.description') },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    task: { type: 'string', required: true, description: 'Task 名称' },
-    force: { type: 'boolean', alias: 'f', description: '强制删除（不提示）' },
-    'keep-state': { type: 'boolean', description: '保留 task .run/tasks/<t>/state.json 和 trace.jsonl（默认一并删）' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    task: { type: 'string', required: true, description: t('work.args.taskName') },
+    force: { type: 'boolean', alias: 'f', description: t('work.deleteTask.args.force') },
+    'keep-state': { type: 'boolean', description: t('work.deleteTask.args.keepTraces') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1555,12 +1573,12 @@ const deleteTaskSubcommand = defineCommand({
 const runSubcommand = defineCommand({
   meta: {
     name: 'run',
-    description: '启动 work 状态机（写 .run/state.json + .run/trace.jsonl + 各 task 状态）',
+    description: t('work.run.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1586,9 +1604,7 @@ const runSubcommand = defineCommand({
             {
               code,
               message: `Work run BLOCKED: ${lockVerify.message}`,
-              suggestion:
-                'work.oxn / domains.json / blueprints.json / tasks/<t>/task.oxn 之一被改；' +
-                `oxn work unlock ${workName} → edit → oxn work validate ${workName} → oxn work lock ${workName}`,
+              suggestion: t('work.hashChangedSuggestion', { workName }),
               context: {
                 reason: lockVerify.reason,
                 component: lockVerify.component,
@@ -1606,7 +1622,7 @@ const runSubcommand = defineCommand({
             {
               code: 'OXN_ALIGN_LOCK_NOT_FOUND',
               message: `work "${workName}" cannot run: .work missing`,
-              suggestion: '先执行 `oxn work validate <name>` 生成 .work',
+              suggestion: t('work.validateRequired'),
             },
             format,
           )
@@ -1615,7 +1631,7 @@ const runSubcommand = defineCommand({
           {
             code: 'OXN_ALIGN_LOCK_NOT_FOUND',
             message: `work "${workName}" cannot run: .work ${birthCert.reason}`,
-            suggestion: `先修复 .work：${birthCert.errors.join('; ')}`,
+            suggestion: t('work.birthCertInvalid', { errors: birthCert.errors.join('; ') }),
           },
           format,
         )
@@ -1625,7 +1641,7 @@ const runSubcommand = defineCommand({
           {
             code: 'OXN_ALIGN_LOCK_NOT_FOUND',
             message: `work "${workName}" has no planLock; run refuses to start execution`,
-            suggestion: '先执行 `oxn work lock <name>` 锁住计划',
+            suggestion: t('work.lockHint'),
           },
           format,
         )
@@ -1802,15 +1818,15 @@ const runSubcommand = defineCommand({
 const submitSubcommand = defineCommand({
   meta: {
     name: 'submit',
-    description: '推进 task 内的当前 part（--task 必填），可触发 probe（--run-probes）',
+    description: t('work.submit.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    task: { type: 'string', required: true, description: 'Task 名称' },
-    '--evidence': { type: 'string', description: 'AI 提交的证据 JSON' },
-    '--run-probes': { type: 'boolean', description: '执行 task 级探针（v0.1 占位）' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    task: { type: 'string', required: true, description: t('work.args.taskName') },
+    '--evidence': { type: 'string', description: t('work.submit.args.evidence') },
+    '--run-probes': { type: 'boolean', description: t('work.submit.args.runProbes') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1883,11 +1899,11 @@ const submitSubcommand = defineCommand({
 // Subcommand: status
 // ---------------------------------------------------------------------------
 const statusSubcommand = defineCommand({
-  meta: { name: 'status', description: '查询 work 当前状态（含 task 分解）' },
+  meta: { name: 'status', description: t('work.status.description') },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -2248,21 +2264,20 @@ function readWorkFile(filePath: string): WorkFileSummary | null {
 const contextSubcommand = defineCommand({
   meta: {
     name: 'context',
-    description:
-      '返回 AI 可见的工作上下文（work.oxn + task.oxn + 注入的 domains）；带 task 级 Domain 隔离；PR-9 默认要求 planLock 完好',
+    description: t('work.context.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    task: { type: 'string', description: 'Task 名称（推荐；不传则返回 work 级上下文）' },
-    'state-path': { type: 'string', description: '可选，state.json 路径（用于 currentFocus）' },
-    'emit-md': { type: 'string', description: '可选，把摘要写到指定 .md 路径' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    task: { type: 'string', description: t('work.context.args.task') },
+    'state-path': { type: 'string', description: t('work.status.args.statePath') },
+    'emit-md': { type: 'string', description: t('work.status.args.reportPath') },
     'unlock-check': {
       type: 'boolean',
       default: false,
-      description: '跳过 planLock hash 校验（先 unlock 再用本 flag 诊断 stale 计划；默认 false）',
+      description: t('work.status.args.skipLockCheck'),
     },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -2296,10 +2311,7 @@ const contextSubcommand = defineCommand({
             {
               code,
               message: `Context read BLOCKED: ${lockVerify.message}`,
-              suggestion:
-                'work.oxn / domains.json / blueprint.json / tasks/<t>/task.oxn 之一被改；' +
-                `oxn work unlock ${workName} → edit → oxn work validate ${workName} → oxn work lock ${workName}` +
-                '（诊断请用 --unlock-check）',
+              suggestion: t('work.hashChangedSuggestion', { workName }) + t('work.unlockCheckHint'),
               context: {
                 reason: lockVerify.reason,
                 component: lockVerify.component,
@@ -2316,7 +2328,7 @@ const contextSubcommand = defineCommand({
             {
               code: 'OXN_ALIGN_LOCK_NOT_FOUND',
               message: `work "${workName}" cannot read context: .work missing`,
-              suggestion: '先执行 `oxn work validate <name>` 生成 .work',
+              suggestion: t('work.validateRequired'),
             },
             format,
           )
@@ -2325,7 +2337,7 @@ const contextSubcommand = defineCommand({
           {
             code: 'OXN_ALIGN_LOCK_NOT_FOUND',
             message: `work "${workName}" cannot read context: .work ${birthCert.reason}`,
-            suggestion: `先修复 .work：${birthCert.errors.join('; ')}`,
+            suggestion: t('work.birthCertInvalid', { errors: birthCert.errors.join('; ') }),
           },
           format,
         )
@@ -2335,7 +2347,7 @@ const contextSubcommand = defineCommand({
           {
             code: 'OXN_ALIGN_LOCK_NOT_FOUND',
             message: `work "${workName}" has no planLock; context refuses stale read`,
-            suggestion: '先执行 `oxn work lock <name>` 锁住计划（诊断请用 --unlock-check）',
+            suggestion: t('work.lockHint') + t('work.unlockCheckHint'),
           },
           format,
         )
@@ -2448,7 +2460,7 @@ const contextSubcommand = defineCommand({
           invariants,
         },
         taskParts,
-        isolationNotice: '本 task 只能看到引用的 domain，work 中其他 domain 一律不可见。',
+        isolationNotice: t('work.isolationNotice'),
         lockHealth: noLockCheck
           ? { status: 'bypassed', reason: 'unlock-check flag set' }
           : birthCertForHealth && birthCertForHealth.ok && birthCertForHealth.cert?.planLock
@@ -2505,7 +2517,7 @@ const contextSubcommand = defineCommand({
   Parts:      ${work.parts.map((p) => p.name).join(', ')}
   Probes:     ${work.probes.map((p) => p.name).join(', ')}
   Tasks:      ${work.tasks.length}
-  (传 --task <name> 获取 task 级隔离上下文)${diagnostics.length > 0 ? `\n  ⚠ Diagnostics: ${diagnostics.length} unresolved ref(s)\n${diagnostics.map((d) => `    - [${d.type}] ${d.ref}: ${d.message}`).join('\n')}` : ''}`,
+  ${t('work.context.taskLevelHint')}${diagnostics.length > 0 ? `\n  ⚠ Diagnostics: ${diagnostics.length} unresolved ref(s)\n${diagnostics.map((d) => `    - [${d.type}] ${d.ref}: ${d.message}`).join('\n')}` : ''}`,
       },
       format,
     )
@@ -2590,12 +2602,12 @@ function renderContextHuman(c: {
 const lockSubcommand = defineCommand({
   meta: {
     name: 'lock',
-    description: '锁住 work 计划（设置 .work.planLock；后续 run/context/submit 都将校验 hash）',
+    description: t('work.lock.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -2603,7 +2615,7 @@ const lockSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
 
     if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
     // ── 1. 校验 .work 存在 ──
@@ -2611,8 +2623,8 @@ const lockSubcommand = defineCommand({
     if (!existing.ok) {
       const hint =
         existing.reason === 'missing'
-          ? '先执行 `oxn work validate <name>` 生成 .work'
-          : `先修复 .work schema 错误：${existing.errors.join('; ')}`
+          ? t('work.validateRequired')
+          : t('work.birthCertInvalid', { errors: existing.errors.join('; ') })
       return outputError(
         {
           code: 'OXN_WORK_LOCK_FAILED',
@@ -2629,7 +2641,7 @@ const lockSubcommand = defineCommand({
         {
           code: 'OXN_WORK_LOCK_FAILED',
           message: `work "${workName}" already locked`,
-          suggestion: `先执行 \`oxn work unlock ${workName}\` 再 lock`,
+          suggestion: t('work.unlockSuggestion', { workName }),
           context: { lockedAt: existing.cert.planLock.lockedAt },
         },
         format,
@@ -2643,9 +2655,7 @@ const lockSubcommand = defineCommand({
         {
           code: 'OXN_WORK_LOCK_FAILED',
           message: `cannot compute complete plan hash; missing: ${hash.missing.join(', ')}`,
-          suggestion:
-            '确保 work.oxn + per-work domains.json/blueprints.json + 所有 task.oxn 都已生成；' +
-            '若 planLock 是缺失，lock 前先 `oxn work validate <name>`',
+          suggestion: t('work.lockFailed'),
         },
         format,
       )
@@ -2702,12 +2712,12 @@ const lockSubcommand = defineCommand({
 const unlockSubcommand = defineCommand({
   meta: {
     name: 'unlock',
-    description: '解锁 work 计划（清 .work.planLock；解锁后 work.oxn 等可被修改）',
+    description: t('work.unlock.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -2715,7 +2725,7 @@ const unlockSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
 
     if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
     const existing = readBirthCert(projectRoot, workName)
@@ -2724,7 +2734,7 @@ const unlockSubcommand = defineCommand({
         {
           code: 'OXN_WORK_UNLOCK_FAILED',
           message: `.work not readable: ${existing.reason}`,
-          suggestion: 'lock 之前必须先 `oxn work validate <name>`',
+          suggestion: t('work.unlockHint'),
         },
         format,
       )
@@ -2735,7 +2745,7 @@ const unlockSubcommand = defineCommand({
         {
           code: 'OXN_WORK_UNLOCK_FAILED',
           message: `work "${workName}" is not locked`,
-          suggestion: '只有已 lock 的 work 才能 unlock；当前 planLock === null',
+          suggestion: t('work.unlockRequired'),
         },
         format,
       )
@@ -2791,12 +2801,12 @@ const unlockSubcommand = defineCommand({
 const migrateSubcommand = defineCommand({
   meta: {
     name: 'migrate',
-    description: '把 V0 旧布局 work 一次性迁到 V1（.run/ + .work + slim 索引）',
+    description: t('work.migrate.description'),
   },
   args: {
-    name: { type: 'positional', required: true, description: 'Work 名称' },
-    '--json': { type: 'boolean', description: 'JSON 格式输出' },
-    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -2804,7 +2814,7 @@ const migrateSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
 
     if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
     const result = migrateWorkToV1(projectRoot, workName)
@@ -2818,7 +2828,7 @@ const migrateSubcommand = defineCommand({
           {
             code: 'OXN_WORK_NO_V0_LAYOUT',
             message: result.message,
-            suggestion: 'migrate 仅对 V0 旧布局的 work 有用；该 work 还没运行过（无运行时产物）',
+            suggestion: t('work.migrateRequired'),
           },
           format,
         )
@@ -2872,7 +2882,7 @@ const migrateSubcommand = defineCommand({
             ? `\n\n  Diagnostics (${result.invalidRefs!.length}):\n${result.invalidRefs!.map((d) => `    ! [${d.type}] ${d.ref}: ${d.message}`).join('\n')}`
             : '') +
           `\n\n  Next: \`oxn work lock ${workName}\` then \`oxn work run ${workName}\`\n` +
-          `  (V0 备份目录 .migrated-v0/ 留待工程师手动清理)`,
+          t('work.migrate.cleanupHint'),
       },
       format,
     )
@@ -2885,8 +2895,7 @@ const migrateSubcommand = defineCommand({
 export default defineCommand({
   meta: {
     name: 'work',
-    description:
-      'Work 编排与运行时（list/create/validate/add-task/edit-task/list-task/task-status/verify-task-path/delete-task/run/submit/status/context/lock/unlock/migrate）',
+    description: t('work.description'),
   },
   subCommands: {
     list: listSubcommand,
