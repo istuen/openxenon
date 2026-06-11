@@ -10,7 +10,7 @@
 
 import { describe, expect, test } from 'bun:test'
 import { IAPError } from '../../core/errors'
-import { assertNameFileConsistent, toKebab } from '../domain'
+import { assertNameFileConsistent, toKebab } from '../../kernel/contracts/name-canonical'
 
 describe('toKebab (规范化函数)', () => {
   test('PascalCase → kebab-case', () => {

@@ -1,16 +1,18 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
-import { basename, join, resolve } from 'path'
+import { join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/constants'
 import { createOxnParser, isDomainDeclaration, type DomainDeclaration, type OXNDocument } from '../oxn-dsl'
 import {
   getDomainIndexPath,
   loadDomainIndex,
+  parseDomainSlim,
   writeDomainIndex,
   type DomainIndex,
 } from '../oxn-dsl/compiler/domain-index-builder'
-import { IAPAction, IAPError } from '../core/errors'
+import { IAPError } from '../core/errors'
+import { assertNameFileConsistent } from '../kernel/contracts/name-canonical'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 
 // =============================================================================
@@ -165,6 +167,11 @@ domain "${name}" {
 }
 `
     writeFileSync(outPath, template, 'utf-8')
+
+    // v1.1: 写入后回查 AST name 与文件名一致性（macOS-safe NAME_FILE_MISMATCH 硬阻断）。
+    // 模板字符串由 name 插值生成,正常情况下两者一致；此处作为防御性检查,
+    // 防止未来模板或 path 逻辑漂移导致写入"name=X"的 .oxn 但落盘到 stem=Y。
+    assertNameFileConsistent(name, outPath, 'domain')
 
     output(
       {
@@ -324,65 +331,6 @@ function domainAstToIr(domain: DomainDeclaration): {
 }
 
 // ---------------------------------------------------------------------------
-// v1.0.2: 字符串级规范化校验（macOS-safe）
-// ---------------------------------------------------------------------------
-
-/**
- * 把任意 string 归一化为 kebab-case（lowercase + 驼峰转 - + _ 转 -）。
- * 例: "MemberContext" → "member-context"; "wechat_minigame" → "wechat-minigame"
- */
-export function toKebab(s: string): string {
-  return s
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
-    .replace(/_/g, '-')
-    .toLowerCase()
-}
-
-/**
- * v1.0.2 NAME_FILE_MISMATCH 防御：
- *
- * 物理文件匹配在 macOS APFS / Windows NTFS（默认 case-insensitive）上会"假命中"——
- * `MemberContext.oxn` 和 `member-context.oxn` 在同一文件系统上指向同一 inode。
- * AI 在 macOS 跑通、Linux CI 挂掉 = 信任杀手。
- *
- * 解决：解析器层做纯字符串规范化比对。
- *   - declared: AST 内的 `domain "X"` 中的 X（如 "MemberContext"）
- *   - file: 文件路径 basename 去后缀（如 "member-context"）
- *   - 两者归一为 kebab-case 后比对
- *   - 不一致 → 抛 IAP_INTENT_NAME_FILE_MISMATCH
- *
- * OXN 不强制风格（PascalCase / kebab-case 都接受），只强制"声明 vs 文件"在规范化后一致。
- */
-export function assertNameFileConsistent(
-  declared: string,
-  filePath: string,
-  entityType: 'domain' | 'blueprint' | 'work',
-): void {
-  const fileStem = basename(filePath).replace(/\.oxn$/i, '')
-  const declaredNorm = toKebab(declared)
-  const fileNorm = toKebab(fileStem)
-  if (declaredNorm !== fileNorm) {
-    throw new IAPError(
-      'INTENT',
-      'NAME_FILE_MISMATCH',
-      IAPAction.YIELD_TO_HUMAN,
-      `Declared name '${declared}' does not match file '${fileStem}.oxn'`,
-      {
-        entityType,
-        declared,
-        file: `${fileStem}.oxn`,
-        normalized: declaredNorm,
-        suggestion:
-          `Either rename the file to '${declaredNorm}.oxn', ` +
-          `or change the declared name to match the file. ` +
-          `OXN does not enforce casing style, only canonicalization consistency.`,
-      },
-    )
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Subcommand: list
 // ---------------------------------------------------------------------------
 const listSubcommand = defineCommand({
@@ -396,6 +344,7 @@ const listSubcommand = defineCommand({
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const projectRoot = getProjectRoot()
     const domainsDir = getDomainsDir()
     if (!existsSync(domainsDir)) {
       return output(
@@ -407,6 +356,41 @@ const listSubcommand = defineCommand({
         format,
       )
     }
+
+    // v1.1 PR-1: 优先走 .openxenon/.cache/domains.json（slim 索引），
+    // 过滤 status='ok' 的条目 —— parseDomainSlim 软检测会把 NAME_FILE_MISMATCH
+    // 标记为 invalid，避免 list 静默显示坏数据。
+    const indexPath = getDomainIndexPath(projectRoot)
+    const cached = loadDomainIndex(indexPath)
+    if (cached) {
+      const okDomains = cached.domains
+        .filter((d) => d.status === 'ok')
+        .map((d) => ({
+          name: d.name,
+          file: d.file,
+          ...(d.description !== undefined ? { description: d.description } : {}),
+        }))
+      const invalidCount = cached.domains.length - okDomains.length
+      return output(
+        {
+          ok: true,
+          data: {
+            domains: okDomains,
+            ...(invalidCount > 0 ? { invalidCount, hint: 'run `oxn domain validate <name>` to inspect' } : {}),
+          },
+          human:
+            okDomains.length > 0
+              ? `Registered domains:\n${okDomains.map((d) => `  - ${d.name} (${d.file})${d.description ? `\n      ${d.description}` : ''}`).join('\n')}` +
+                (invalidCount > 0
+                  ? `\n\n${invalidCount} domain(s) skipped due to invalid status (NAME_FILE_MISMATCH or parse errors)`
+                  : '')
+              : 'No valid domains registered.',
+        },
+        format,
+      )
+    }
+
+    // 索引不存在时降级：目录扫描 + parseDomainSlim（不走 langium 重解析）。
     const domains: Array<{ name: string; file: string; description?: string }> = []
     const fileEntries: Array<{ fullPath: string; relPath: string }> = []
 
@@ -425,16 +409,13 @@ const listSubcommand = defineCommand({
     walk(domainsDir, '')
 
     for (const { fullPath, relPath } of fileEntries) {
-      const result = await validateDomainFile(fullPath)
-      const nameFromFile = relPath.replace(/\.oxn$/, '')
-      if (result.ok && result.domain) {
+      const slim = parseDomainSlim(fullPath, projectRoot)
+      if (slim.status === 'ok') {
         domains.push({
-          name: result.domain.name,
+          name: slim.name,
           file: relPath,
-          description: result.domain.descriptions?.[0]?.value,
+          ...(slim.description !== undefined ? { description: slim.description } : {}),
         })
-      } else {
-        domains.push({ name: nameFromFile, file: relPath })
       }
     }
     output(
