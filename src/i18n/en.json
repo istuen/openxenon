@@ -1,0 +1,129 @@
+{
+  "init": {
+    "projectExists": "Project already exists: {{name}}",
+    "modeUpdated": "Mode updated to: {{mode}}",
+    "localeUpdated": "Locale updated to: {{locale}}",
+    "projectInitialized": "Project initialized: {{name}} (locale: {{locale}})",
+    "compilingSkills": "Compiling Skills (adapter: {{adapter}})...",
+    "skillsCompiled": "Skills compiled successfully",
+    "skillsOutputDir": "Output directory: {{dir}}",
+    "invalidLocale": "Unsupported locale: {{locale}}",
+    "supportedLocales": "Supported locales: {{locales}}",
+    "description": "Initialize a project, establish physical fence in the current directory",
+    "toolsReset": "tools config reset to DEFAULTS",
+    "toolsUpdated": "tools config updated: {{tools}}"
+  },
+  "config": {
+    "notFound": "Project not initialized, run `oxn init` first",
+    "title": "Project Configuration:",
+    "description": "Manage project configuration",
+    "showTitle": "Project Configuration:",
+    "showLineMode": "  mode: {{mode}}",
+    "showLineLocale": "  locale: {{locale}}",
+    "showLineDebug": "  debug: {{debug}}",
+    "showLineName": "  name: {{name}}",
+    "showLineTools": "  tools: {{tools}}"
+  },
+  "configDebug": {
+    "enabled": "Debug mode enabled",
+    "logPath": "Logs will be written to: {{path}}",
+    "disabled": "Debug mode disabled",
+    "invalidAction": "Invalid action: {{action}}",
+    "useStartOrStop": "Use start or stop",
+    "description": "Manage project debug mode"
+  },
+  "daemon": {
+    "notRunning": "Daemon is not running",
+    "startSuggestion": "Run `oxn global daemon start` to start the Daemon (socket: {{socket}})",
+    "timeout": "Daemon response timeout",
+    "timeoutSuggestion": "Wait 5 seconds and retry, or run `oxn global daemon stop && oxn global daemon start`",
+    "errorRunning": "Daemon not running ({{code}}: {{message}})",
+    "errorTimeout": "Daemon response timeout ({{code}}: {{message}})",
+    "errorComm": "Daemon communication failed ({{code}}: {{message}})",
+    "suggestionStart": "Run `oxn global daemon start` to start the Daemon",
+    "suggestionTimeout": "Wait 5 seconds and retry, or run `oxn global daemon stop && oxn global daemon start`",
+    "statusNotRunning": "Daemon is not running",
+    "statusNotRunningHint": "Daemon status: not running\nUse `oxn daemon start` to start the Daemon",
+    "statusRunning": "Daemon status: running",
+    "statusRunningLine1": "PID: {{pid}}",
+    "statusRunningLine2": "Socket: {{socketPath}}",
+    "statusRunningLine3": "Recent log: {{lastLog}}",
+    "startAlreadyRunning": "Daemon already running (PID {{pid}})",
+    "startSuccess": "Daemon started successfully (PID {{pid}})",
+    "startFailed": "Start failed",
+    "startCheckSocket": "Check if {{socketPath}} is accessible"
+  },
+  "skillCompiler": {
+    "report": "Skill compile report ({{adapter}})",
+    "total": "Total: {{count}} Skills",
+    "created": "Created: {{count}}",
+    "updated": "Updated: {{count}}",
+    "skipped": "Skipped: {{count}}",
+    "references": "References: {{count}}"
+  },
+  "errors": {
+    "projectNotInit": "Project not initialized, run `oxn init` first",
+    "initHint": "Run `oxn init` in the project root directory"
+  },
+  "cache": {
+    "notFound": "Cache directory not found",
+    "empty": "Cache directory not found, nothing to clean",
+    "usage": "Use `oxn cache clear` or `oxn cache stats`",
+    "cleared": "Cleared {{count}} cache files",
+    "statsLine": "Cache files: {{count}}, total size: {{size}}KB, oldest: {{ageDays}} days",
+    "oldestAgeFormat": "{{ageDays}} days"
+  },
+  "gc": {
+    "noTaskDirs": "No task directories to clean",
+    "noTasks": "No tasks to clean",
+    "dryRunResult": "{{count}} tasks to delete ({{size}}KB)\nUse --dry-run to preview, or omit -d to actually delete",
+    "clearedResult": "Cleaned {{count}} tasks ({{size}}KB)"
+  },
+  "migrate": {
+    "invalidArgs": "Specify a file path, --dir directory, or --all",
+    "failed": "Migration failed"
+  },
+  "explore": {
+    "addFailed": "Failed to add question",
+    "invalidAnswer": "Invalid format, use: --answer id|content",
+    "noQaRecords": "No QA records, cannot generate report",
+    "reportExists": "Report already exists, use --force to overwrite",
+    "exists": "Explore already exists: {{name}}",
+    "existsHint": "Use a different name or delete the existing explore first",
+    "notFound": "Explore not found: {{name}}",
+    "notFoundHint": "Run `oxn explore new <name>` to create an explore first",
+    "fileNotFound": "File not found: {{path}}",
+    "created": "Explore created: {{path}}\n\nDirectory structure:\n  docs/\n  ai-qa.json\n  engineer-qa.json\n  report.md",
+    "scanIndexed": "Indexed: {{path}}\n\nSummary:\n{{summary}}\n\nRead full content: oxn explore scan <name> --read {{path}}",
+    "scanNoFiles": "No indexed files",
+    "qaAdded": "Question added (ID: {{id}}):\nQ: {{question}}\nA: _pending_",
+    "qaAnswered": "Updated (ID: {{id}}):\nA: {{answer}}",
+    "qaNotFound": "Question ID not found: {{id}}",
+    "qaNoPending": "No pending questions",
+    "qaNoRecords": "No QA records yet",
+    "qaListed": "AI QA: {{aiPath}} ({{aiCount}} entries)\nEngineer QA: {{engPath}} ({{engCount}} entries)",
+    "reportGenerated": "Report generated: {{path}}",
+    "noExplores": "No explores yet",
+    "deleteConfirm": "Confirm deletion of explore \"{{name}}\"?\nPath: {{path}}\n\nUse --force to confirm deletion",
+    "deleted": "Explore deleted: {{name}}"
+  },
+  "work": {
+    "lockRequired": "Run `oxn work lock <name>` to lock the plan first",
+    "validateRequired": "Run `oxn work validate <name>` to generate .work first",
+    "lockHint": "Run `oxn work lock <name>` to lock the plan first (use --unlock-check for diagnostics)",
+    "unlockRequired": "Only a locked work can be unlocked; current planLock === null",
+    "unlockHint": "Run `oxn work validate <name>` before lock",
+    "unlockSuggestion": "Run `oxn work unlock {{workName}}` then lock",
+    "modifyForbidden": "work \"{{workName}}\" has entered execution phase, modification is forbidden",
+    "modifyHint": "To adjust task orchestration, delete .openxenon/works/<name>/ and recreate.",
+    "notStarted": "work \"{{workName}}\" state machine not started",
+    "notStartedHint": "Run `oxn work run <name>` to enter execution phase",
+    "emptyList": "No works yet",
+    "created": "Work created: {{workName}}\nType: {{workType}}\nPath: {{workFilePath}}\n\nEdit work.oxn to fill task orchestration, or rerun `oxn work create <name> --blueprint <bp>` to generate from blueprint.",
+    "workExists": "Work already exists: {{workName}} (type: {{workType}})",
+    "invalidId": "Invalid Work ID: {{error}}",
+    "invalidTaskName": "Invalid task name: {{error}}",
+    "birthCertInvalid": "Fix .work schema errors first: {{errors}}",
+    "migrateRequired": "migrate only applies to V0 layout works that have runtime artifacts; this work has never been run"
+  }
+}

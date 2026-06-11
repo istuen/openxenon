@@ -4,7 +4,10 @@ import zhCnOxnCli from './locales/zh-CN/oxn-cli/instruction.md' with { type: 'te
 import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'text' }
 import zhCnWorkBlueprintRef from './locales/zh-CN/oxn-work/references/blueprint-format.md' with { type: 'text' }
 import zhCnProof from './locales/zh-CN/oxn-proof/instruction.md' with { type: 'text' }
-// v0.1: 英文版 Skill 已废弃（zh-CN 为唯一权威）
+import enOxnCli from './locales/en/oxn-cli/instruction.md' with { type: 'text' }
+import enWork from './locales/en/oxn-work/instruction.md' with { type: 'text' }
+import enWorkBlueprintRef from './locales/en/oxn-work/references/blueprint-format.md' with { type: 'text' }
+import enProof from './locales/en/oxn-proof/instruction.md' with { type: 'text' }
 import type { OpenXenonSkill, ReferenceFile } from './types'
 
 export interface SkillContent {
@@ -59,17 +62,21 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
     'oxn-proof': { instruction: zhCnProof, references: [] },
   },
   en: {
-    'oxn-cli': { instruction: zhCnOxnCli, references: [] }, // en 沿用 zh-CN（v0.1 英文版废弃）
+    'oxn-cli': { instruction: enOxnCli, references: [] },
     'oxn-work': {
-      instruction: zhCnWork,
-      references: [{ filename: 'blueprint-format.md', content: zhCnWorkBlueprintRef }],
+      instruction: enWork,
+      references: [{ filename: 'blueprint-format.md', content: enWorkBlueprintRef }],
     },
-    'oxn-proof': { instruction: zhCnProof, references: [] },
+    'oxn-proof': { instruction: enProof, references: [] },
   },
 }
 
 export function getSkillContent(skillId: string, locale: SupportedLocale): SkillContent | null {
-  return skillContents[locale]?.[skillId] ?? skillContents[DEFAULT_LOCALE]?.[skillId] ?? null
+  if (locale !== DEFAULT_LOCALE && !skillContents[locale]?.[skillId] && skillContents[DEFAULT_LOCALE]?.[skillId]) {
+    // v0.1.0+: 非默认 locale 资源缺失但 zh-CN 存在时 throw，阻止静默降级
+    throw new Error(`OXN_SKILL_NOT_TRANSLATED: skill "${skillId}" has no "${locale}" translation`)
+  }
+  return skillContents[locale]?.[skillId] ?? null
 }
 
 export function getAllSkillsForLocale(locale: SupportedLocale): OpenXenonSkill[] {
@@ -84,3 +91,8 @@ export function getAllSkillsForLocale(locale: SupportedLocale): OpenXenonSkill[]
     }
   })
 }
+
+// TODO: v0.1.0+ 推 en skill 翻译 — 迁移 checklist:
+//   - 确保 en 目录存在 `src/skills/locales/en/<skill>/instruction.md`
+//   - loader.ts 的 en 分支导入 en 资源（当前已就绪）
+//   - 端到端验证：oxn init --locale en → .opencode/skills/*.md 内容为英文

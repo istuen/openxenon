@@ -11,6 +11,7 @@
 //     edit-task <name> --task <t> ... — 改 task.oxn 内容
 //     list-task <name>                — 列 task 子实体
 //     task-status <name> --task <t>   — 读 task.oxn 元信息
+//     verify-task-path --work <w> <p> — 验证手写 task.oxn 路径
 //     delete-task <name> --task <t>   — 删 task 目录（仅 P1）
 //
 //   Phase 2: Execution（驱动 .json 状态机）
@@ -1241,6 +1242,7 @@ const listTaskSubcommand = defineCommand({
         const domainMatch = content.match(/domain\s+"([^"]+)"/)
         return {
           name,
+          file,
           blueprint: blueprintMatch?.[1],
           domain: domainMatch?.[1],
         }
@@ -1253,7 +1255,7 @@ const listTaskSubcommand = defineCommand({
         data: { tasks },
         human:
           tasks.length > 0
-            ? `Tasks in work "${workName}":\n${tasks.map((t) => `  - ${t.name} (blueprint: ${t.blueprint ?? '?'}, domain: ${t.domain ?? 'none'})`).join('\n')}`
+            ? `Tasks in work "${workName}":\n${tasks.map((t) => `  - ${t.name} (blueprint: ${t.blueprint ?? '?'}, domain: ${t.domain ?? 'none'})\n    Path: ${t.file}`).join('\n')}`
             : `No tasks in work "${workName}".`,
       },
       format,
@@ -1304,6 +1306,83 @@ const taskStatusSubcommand = defineCommand({
   Blueprint: ${blueprint ?? '(none)'}
   Domain:    ${domain ?? '(none)'}
   File:      ${taskFile}`,
+      },
+      format,
+    )
+  },
+})
+
+// ---------------------------------------------------------------------------
+// Subcommand: verify-task-path — 提交手写后的 task.oxn 路径验证
+// ---------------------------------------------------------------------------
+const verifyTaskPathSubcommand = defineCommand({
+  meta: { name: 'verify-task-path', description: '验证手写 task.oxn 路径是否属于指定 work' },
+  args: {
+    work: { type: 'string', required: true, description: 'Work 名称' },
+    path: { type: 'positional', required: true, description: '待验证的 task.oxn 绝对路径' },
+    '--json': { type: 'boolean', description: 'JSON 格式输出' },
+    '--yaml': { type: 'boolean', description: 'YAML 格式输出' },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const workName = ctx.args.work as string
+    let filePath = ctx.args.path as string
+
+    // Resolve to absolute
+    if (!filePath.startsWith('/')) {
+      filePath = join(getProjectRoot(), filePath)
+    }
+
+    // 1) 文件存在？
+    if (!existsSync(filePath)) {
+      return outputError({ code: 'OXN_PATH_NOT_FOUND', message: `文件不存在: ${filePath}` }, format)
+    }
+
+    // 2) 文件名必须是 task.oxn？
+    const basename = filePath.split('/').pop()
+    if (basename !== TASK_OXN_FILE) {
+      return outputError(
+        { code: 'OXN_INVALID_TASK_FILE', message: `文件名必须为 ${TASK_OXN_FILE}，得到: ${basename}` },
+        format,
+      )
+    }
+
+    // 3) 属于指定 work 的 tasks 目录？
+    const expectedDir = join(getProjectRoot(), BOUNDARY_DIR, 'works', workName, 'tasks')
+    const parentDir = filePath.split('/').slice(0, -1).join('/')
+    if (!parentDir.startsWith(expectedDir)) {
+      return outputError(
+        {
+          code: 'OXN_PATH_NOT_IN_WORK',
+          message: `路径不属于 work "${workName}" 的 tasks 目录\n  期望前缀: ${expectedDir}\n  实际父目录: ${parentDir}`,
+        },
+        format,
+      )
+    }
+
+    // 4) 解析基本信息
+    const content = readFileSync(filePath, 'utf-8')
+    const taskNameMatch = content.match(/task\s+"([^"]+)"/)
+    const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
+    const domainMatch = content.match(/domain\s+"([^"]+)"/)
+    const partCount = (content.match(/part\s+"[^"]+"/g) ?? []).length
+
+    const taskName = taskNameMatch?.[1] ?? '(unknown)'
+    const taskDirName = filePath.split('/').slice(-2, -1)[0]
+
+    output(
+      {
+        ok: true,
+        data: {
+          workName,
+          path: filePath,
+          taskName,
+          taskDirName,
+          blueprint: blueprintMatch?.[1],
+          domain: domainMatch?.[1],
+          partCount,
+        },
+        human: `✅ 路径验证通过\nWork:     ${workName}\nTask:     ${taskName}\nDir:      ${taskDirName}\nBlueprint: ${blueprintMatch?.[1] ?? '(none)'}\nDomain:    ${domainMatch?.[1] ?? '(none)'}\nParts:     ${partCount}\nPath:      ${filePath}`,
       },
       format,
     )
@@ -2807,7 +2886,7 @@ export default defineCommand({
   meta: {
     name: 'work',
     description:
-      'Work 编排与运行时（list/create/validate/add-task/edit-task/list-task/task-status/delete-task/run/submit/status/context/lock/unlock/migrate）',
+      'Work 编排与运行时（list/create/validate/add-task/edit-task/list-task/task-status/verify-task-path/delete-task/run/submit/status/context/lock/unlock/migrate）',
   },
   subCommands: {
     list: listSubcommand,
@@ -2816,6 +2895,7 @@ export default defineCommand({
     'add-task': addTaskSubcommand,
     'list-task': listTaskSubcommand,
     'task-status': taskStatusSubcommand,
+    'verify-task-path': verifyTaskPathSubcommand,
     'edit-task': editTaskSubcommand,
     'delete-task': deleteTaskSubcommand,
     run: runSubcommand,

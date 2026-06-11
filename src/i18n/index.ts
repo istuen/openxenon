@@ -2,6 +2,7 @@ import i18next from 'i18next'
 import type { SupportedLocale } from '../cli/project-config'
 import { DEFAULT_LOCALE } from '../cli/project-config'
 import zhCN from './zh-CN.json'
+import en from './en.json'
 
 i18next.init({
   lng: DEFAULT_LOCALE,
@@ -11,6 +12,7 @@ i18next.init({
   },
   resources: {
     'zh-CN': { translation: zhCN },
+    en: { translation: en },
   },
   initAsync: false,
 })

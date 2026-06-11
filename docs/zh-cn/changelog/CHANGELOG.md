@@ -4,6 +4,26 @@ OpenXenon 的所有重要变更都会记录在此文件。
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/)。
 
+## [0.1.0] - 2026-06-11
+
+### Added
+- **i18n Phase B 完整闭环 + Skills en 翻译**：en locale 全量可用（CLI 文案 + Skills instruction）
+- **en.json**：新建 `src/i18n/en.json`（105 key，全量英文镜像，与 zh-CN.json 1:1 结构对齐）
+- **en skill instruction**：新建 `src/skills/locales/en/` 下 4 个 instruction.md（oxn-cli / oxn-work / oxn-work/references/blueprint-format / oxn-proof），~1200 行英文翻译
+- **i18n 测试**：`src/i18n/__tests__/`（12 个：基本功能 + key 完整性 + en-zh parity）
+- **Skills i18n 测试**：`src/skills/__tests__/skill-i18n.test.ts`（7 个守卫测试）
+
+### Changed
+- `src/i18n/index.ts` 注册 en 资源
+- `src/skills/loader.ts` 重构：en 分支导入真实 en 资源；`getSkillContent` 非默认 locale 缺失时 throw（ADR-6）
+
+### Removed
+- `src/skills/locales/zh-CN/oxn-resume/instruction.md`（80 行死资产，0 消费方）
+
+### Note
+- 关联 forge：`forges/2026-06-11-i18n-version-drift.md` §5.3-5.4
+- 版本语义化跳跃 0.0.30 → 0.1.0 因 Skills en 翻译的验收方式不同（需端到端 LLM 行为验证）
+
 ## [0.0.29] - 2026-06-11
 
 ### Changed

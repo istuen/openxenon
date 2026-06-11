@@ -4,6 +4,26 @@ All notable changes to OpenXenon will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.0] - 2026-06-11
+
+### Added
+- **i18n Phase B complete + Skills en translation**: en locale fully available (CLI messages + Skills instructions)
+- **en.json**: created `src/i18n/en.json` (105 keys, full English mirror of zh-CN.json 1:1)
+- **en skill instructions**: created 4 files under `src/skills/locales/en/` (oxn-cli / oxn-work / oxn-work/references/blueprint-format / oxn-proof), ~1200 lines of English translation
+- **i18n tests**: `src/i18n/__tests__/` (12 tests: basic functionality, key completeness, en-zh parity)
+- **Skills i18n tests**: `src/skills/__tests__/skill-i18n.test.ts` (7 guard tests)
+
+### Changed
+- `src/i18n/index.ts` now registers en resources
+- `src/skills/loader.ts` refactored: en branch imports real en resources; `getSkillContent` throws for missing non-default locale (ADR-6)
+
+### Removed
+- `src/skills/locales/zh-CN/oxn-resume/instruction.md` (80 lines of dead assets, 0 consumers)
+
+### Note
+- Related forge: `forges/2026-06-11-i18n-version-drift.md` §5.3-5.4
+- Semantic version jump 0.0.30 → 0.1.0 due to different verification requirements for Skills en translation (requires end-to-end LLM behavior validation)
+
 ## [0.0.29] - 2026-06-11
 
 ### Changed
