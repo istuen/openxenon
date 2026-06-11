@@ -3088,16 +3088,29 @@ export const OXNGrammar = (): Grammar => loadedOXNGrammar ?? (loadedOXNGrammar =
             "cardinality": "*"
           },
           {
-            "$type": "Assignment",
-            "feature": "deps",
-            "operator": "=",
-            "terminal": {
-              "$type": "RuleCall",
-              "rule": {
-                "$ref": "#/rules@50"
+            "$type": "Group",
+            "elements": [
+              {
+                "$type": "Keyword",
+                "value": "deps"
               },
-              "arguments": []
-            },
+              {
+                "$type": "Keyword",
+                "value": "="
+              },
+              {
+                "$type": "Assignment",
+                "feature": "deps",
+                "operator": "=",
+                "terminal": {
+                  "$type": "RuleCall",
+                  "rule": {
+                    "$ref": "#/rules@50"
+                  },
+                  "arguments": []
+                }
+              }
+            ],
             "cardinality": "?"
           },
           {

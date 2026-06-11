@@ -239,12 +239,14 @@ ProofProbeDecl:
 // ==================== Task (v0.1-final: align 执行器) ====================
 // Task 将业务意图和技术意图插入留白的具体动作
 // v0.1-final: inject → domain/blueprint/part/probe 声明式对齐
+// v0.0.28+: deps 字段加 'deps' '=' 关键字引导 parser disambiguation。
+//           唯一合法写法：deps = ["t1", "t2"]。裸数组 / deps [...] / 重复 deps 全部拒绝。
 TaskDeclaration:
     'task' name=STRING '{'
         ('domain' domain=STRING)?
         ('blueprint' blueprint=STRING)?
         (parts+=TaskPartDecl)*
-        (deps=TaskDeps)?
+        ('deps' '=' deps=TaskDeps)?
     '}';
 
 TaskDeps:
