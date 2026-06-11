@@ -15,6 +15,7 @@ import type { OxnAssemblyIR, OxnAssemblyPart } from '../../oxl/schemas/oxn-assem
 import type { FileSystemPort } from '../../kernel/index'
 
 export interface SandboxConfig {
+  workId: string
   taskId: string
   projectRoot: string
   blueprintPath: string
@@ -24,6 +25,7 @@ export interface SandboxConfig {
 }
 
 export interface SandboxState {
+  workId: string
   taskId: string
   sandboxDir: string
   sandboxBlueprintPath: string
@@ -39,7 +41,7 @@ export class TaskSandbox {
 
   static create(config: SandboxConfig): SandboxState {
     const fs = TaskSandbox.getFs(config)
-    const sandboxDir = join(config.projectRoot, BOUNDARY_DIR, 'tasks', config.taskId, 'sandbox')
+    const sandboxDir = join(config.projectRoot, BOUNDARY_DIR, 'works', config.workId, 'tasks', config.taskId, 'sandbox')
     if (!fs.existsSync(sandboxDir)) {
       fs.mkdirSync(sandboxDir, { recursive: true })
     }
@@ -71,6 +73,7 @@ export class TaskSandbox {
     }
 
     return {
+      workId: config.workId,
       taskId: config.taskId,
       sandboxDir,
       sandboxBlueprintPath,

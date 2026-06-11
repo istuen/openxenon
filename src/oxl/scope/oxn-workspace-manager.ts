@@ -36,7 +36,7 @@ export interface OxnWorkspaceConfig {
 
 const DEFAULT_CONFIG: OxnWorkspaceConfig = {
   projectRoot: process.cwd(),
-  globalRoot: join(homedir(), '.openxenon', 'arsenals'),
+  globalRoot: join(homedir(), '.openxenon', 'arsenals'), // TODO(v1.1-path): 与 infra/paths.ts GLOBAL_ARSENAL_ROOT 重复
   supportedExtensions: ['.yaml', '.yml', '.json', '.oxn'],
 }
 
@@ -324,7 +324,7 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
 
     let dir: string | null = null
     if (scope === 'prj' && this.config.projectRoot) {
-      dir = join(this.config.projectRoot, '.openxenon', 'arsenals')
+      dir = join(this.config.projectRoot, '.openxenon', 'arsenals') // TODO(v1.1-path): 与 infra/paths.ts GLOBAL_ARSENAL_ROOT 重复
     }
 
     if (!dir) {

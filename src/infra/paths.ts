@@ -5,7 +5,7 @@ export const BOUNDARY_DIR = '.openxenon'
 
 export const GLOBAL_BOUNDARY = join(homedir(), '.openxenon')
 
-export const GLOBAL_ARSENAL_ROOT = join(GLOBAL_BOUNDARY, 'arsenal')
+export const GLOBAL_ARSENAL_ROOT = join(GLOBAL_BOUNDARY, 'arsenal') // TODO(v1.1-path): 单点真相源 — 其余 3 处引用已标注
 
 export type Scope = 'project' | 'global'
 

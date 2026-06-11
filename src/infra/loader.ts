@@ -142,7 +142,7 @@ function scanArsenalsDirectory(
   }
 
   function scanGlobal(type: AssetType): StandardAsset[] {
-    return scanArsenalStructure(GLOBAL_ARSENAL_ROOT, type, stateFilter)
+    return scanArsenalStructure(GLOBAL_ARSENAL_ROOT, type, stateFilter) // TODO(v1.1-path): 重复定义于 oxn-workspace-manager.ts
   }
 
   let projectAssets: StandardAsset[] = []
