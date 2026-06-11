@@ -21,7 +21,7 @@ import {
   parseBlueprintSlim,
   resolveBlueprintFile,
   writePerWorkBlueprintsIndex,
-} from '../work-blueprints-merger'
+} from '../per-work-blueprints-merger'
 
 let tmpDir: string
 let workName: string

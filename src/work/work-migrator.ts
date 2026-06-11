@@ -50,12 +50,12 @@ import {
   buildPerWorkDomainsIndex,
   writePerWorkDomainsIndex,
   getPerWorkDomainsJsonPath,
-} from '../oxn-dsl/compiler/work-domains-merger'
+} from './per-work-domains-merger'
 import {
   buildPerWorkBlueprintsIndex,
   writePerWorkBlueprintsIndex,
   getPerWorkBlueprintsJsonPath,
-} from '../oxn-dsl/compiler/work-blueprints-merger'
+} from './per-work-blueprints-merger'
 import { createBirthCert, writeWorkFile, type BirthCert } from './birth-cert'
 import { hashFile } from './plan-hash'
 

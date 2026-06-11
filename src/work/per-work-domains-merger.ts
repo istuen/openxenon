@@ -21,10 +21,10 @@
 import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from 'fs'
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
-import { parseOxnReference } from '../scope/oxn-scope'
-import { BOUNDARY_DIR, DOMAINS_DIR, WORK_DOMAINS_JSON } from '../../kernel/index'
-import { hashText } from '../../work/plan-hash'
-import { parseDomainSlim, type DomainIndexEntry } from './domain-index-builder'
+import { parseOxnReference } from '../oxn-dsl/scope/oxn-scope'
+import { BOUNDARY_DIR, DOMAINS_DIR, WORK_DOMAINS_JSON } from '../kernel/index'
+import { hashText } from './plan-hash'
+import { parseDomainSlim, type DomainIndexEntry } from '../oxn-dsl/compiler/domain-index-builder'
 
 // ───────── Zod schema ─────────
 

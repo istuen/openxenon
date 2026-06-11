@@ -98,7 +98,7 @@
 | **L0 Kernel** | L0-Contract | `src/kernel/contracts/` | 外部插座（Port 接口） |
 | **L0 Kernel** | L0-Processor | `src/kernel/processors/` `src/kernel/verdicts/` | 纯逻辑推演机 |
 | **L1 Foundation** | L1-Infra | `src/infra/` | 物理 IO 与探针执行 |
-| **L1 Foundation** | L1-OXN-DSL | `src/oxn-dsl/` | 语言解析 + 编译生成 |
+| **L1 Foundation** | L1-OXN-DSL | `src/oxn-dsl/` *(compiler/ 仅含语法解析与全局索引)* | 语言解析 + 编译生成 |
 | **L2 Module** | L2-Builtin | `src/builtin/` | 编译后内置资产（.oxn 资源） |
 | **L2 Module** | L2-Work | `src/work/` | 编排与执行（adapters / policies / sandbox / explore） |
 | **L3 Runtime** | L3-CLI | `src/cli/` `src/daemon/` `src/hall/` `src/skills/` `src/watcher/` `src/core/` `src/i18n/` | 入口与外部交互 |
@@ -292,15 +292,21 @@ v0.1.4 PR-K（Kernel 公开面收敛）落地后：
 - **修复**：零物理移动。`topologicalSortGeneric` 仍在 `processors/dag.ts`，`kernel/index.ts` 把它 re-export。`blueprint-dag.ts` 改 `from '../../kernel/index'`。
 - **哲学确认**：「纯函数本身就是计算契约」（与 Port 接口对消费者无差别）—— 验证了你的"4 子层 = 内部职责分工"理解。
 
-#### 残留 4（仍待决策，🟡 Med）：L1-OXN-DSL → L2-Work (work/plan-hash) × 2
+#### 残留 4（已解决，PR-M · 方向 A）：L1-OXN-DSL → L2-Work (work/plan-hash) × 2
 
-- **位置**：
+- **状态**：✅ **已解决**（PR-M · 方向 A · 整体迁位）
+- **原位置**：
   - `src/oxn-dsl/compiler/work-domains-merger.ts:26` `import { hashText } from '../../work/plan-hash'`
   - `src/oxn-dsl/compiler/work-blueprints-merger.ts:19` `import { hashText } from '../../work/plan-hash'`
-- **根因**：`hashText` 是 L2-Work `plan-hash.ts` 导出的纯函数文本归一化工具。L1-OXN-DSL 的 merger 想用它算 per-work slim index 的 source hash——业务上合理，但 L1→L2 越界。
-- **建议 A**：在 `src/oxn-dsl/compiler/text-hash.ts` 暴露 `hashText`/`normalizeText`（从 L1 `infra/hash` 包的 hashPort 包一层），merger 改引此模块；`plan-hash.ts` 内部仍用原 `hashText`（不破坏 L2-Work 现有调用方）。
-- **建议 B**：放开宪法的"L1-OXN-DSL 可调 L2-Work 纯函数工具"特例。
-- **决策方**：架构师在 v0.1.5+ 评审。
+- **根因**（更深层）：**merger 物理位置错位**——`work-{domains,blueprints}-merger` 真实职责是"work 运行时索引构建器"（处理 `works/<w>/{domains,blueprints}.json`），与"解析 .oxn 语法"无关。物理错位到 L1-OXN-DSL 才引发 L1→L2 越界。
+- **修复**：整体迁位 + 重命名
+  - `src/oxn-dsl/compiler/work-domains-merger.ts` → `src/work/per-work-domains-merger.ts`
+  - `src/oxn-dsl/compiler/work-blueprints-merger.ts` → `src/work/per-work-blueprints-merger.ts`
+  - 2 个测试同步迁到 `src/work/__tests__/`
+  - merger 自身 `from './plan-hash'`（同子层合法）
+  - 4 个 importer 改路径（`cli/work.ts` 改 `'../work/per-work-*'`，`work-migrator.ts` 改 `'./per-work-*'`）
+- **结果**：R-4 / R-6 全部消除（validate-deps 2 → 0）。merger 物理归属与真实职责一致。
+- **hashText 归属**：merger 调 `plan-hash.ts` 内部的 `hashText`（L2-Work 同子层互引合法）。
 
 #### C-12（已文档化，🟢 Low）：L0-Schema → L0-Contract (type-only)
 
@@ -323,6 +329,22 @@ v0.1.4 PR-K（Kernel 公开面收敛）落地后：
   - ESLint 加 L0 内部禁自我 `import './index'`（防循环）
   - 宪法 §3/§4.1/§7.4 同步重写
 - **验证**：`bun scripts/validate-dependencies.ts` 6 → **2**（仅 R-4/R-6 与 Kernel 公开面正交，保留）
+- **决策方**：架构师于 v0.1.4 审计批准
+
+#### C-14（v0.1.4 文档化，🟢 Low）：merger 错位归位 by 方向 A
+
+- **位置**：`src/work/per-work-domains-merger.ts` + `src/work/per-work-blueprints-merger.ts`（PR-M 创建）
+- **状态**：✅ **已落地**
+- **设计哲学**：
+  1. **物理归属与真实职责一致**——merger 处理 `works/<w>/{domains,blueprints}.json` 运行时索引，是 L2-Work 的事；与"解析 .oxn 语法"无关。L1-OXN-DSL `compiler/` 应当只含"语法解析 + 全局索引"。
+  2. **命名一致性**——`domain-index-builder` / `blueprint-index-builder` 是**全局**索引（扫 `.openxenon/{domains,blueprints}/` 全部）；per-work 索引应叫 `per-work-*-merger` 以显式区分。
+  3. **错位归位解决越界**——R-4 / R-6 根因是 merger 错位；迁位后 L2-Work 同子层互引（`from './plan-hash'`）天然合法，无需特例。
+- **修复成果**：
+  - 2 个 merger + 2 个测试 git mv 保留历史
+  - 4 个 importer 改路径（`cli/work.ts` + `work-migrator.ts`）
+  - merger 自身 import 调路径（`scope` 改 `../oxn-dsl/scope/`，`domain-index-builder` 改 `../oxn-dsl/compiler/`，`plan-hash` 改 `./plan-hash`）
+  - 宪法 §3 表格 L1-OXN-DSL 行加注"compiler/ 仅含语法解析与全局索引"
+- **验证**：`bun scripts/validate-dependencies.ts` 2 → **0**。`bun test` 1008/1008 pass。
 - **决策方**：架构师于 v0.1.4 审计批准
 
 ---

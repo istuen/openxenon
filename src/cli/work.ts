@@ -63,13 +63,13 @@ import {
   writePerWorkDomainsIndex,
   getPerWorkDomainsJsonPath,
   resolveDomainFile,
-} from '../oxn-dsl/compiler/work-domains-merger'
+} from '../work/per-work-domains-merger'
 import {
   buildPerWorkBlueprintsIndex,
   writePerWorkBlueprintsIndex,
   getPerWorkBlueprintsJsonPath,
   resolveBlueprintFile,
-} from '../oxn-dsl/compiler/work-blueprints-merger'
+} from '../work/per-work-blueprints-merger'
 import { buildDomainDiagnostic, buildBlueprintDiagnostic, type RefDiagnostic } from '../oxn-dsl/compiler/ref-diagnostic'
 import {
   applyPlanLock,

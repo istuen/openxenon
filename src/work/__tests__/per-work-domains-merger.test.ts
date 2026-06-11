@@ -21,7 +21,7 @@ import {
   loadPerWorkDomainsIndex,
   resolveDomainFile,
   writePerWorkDomainsIndex,
-} from '../work-domains-merger'
+} from '../per-work-domains-merger'
 
 let tmpDir: string
 let workName: string
