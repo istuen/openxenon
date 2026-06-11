@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, readdirSync, statSync } from 'fs'
 import { resolve } from 'path'
 import { BOUNDARY_DIR } from '../kernel/index'
+import { t } from '../i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
@@ -26,8 +27,8 @@ export default defineCommand({
     if (!existsSync(cacheDir)) {
       return output(
         {
-          data: { count: 0, size: '0KB', cacheDir, message: '缓存目录不存在' },
-          human: '缓存目录不存在',
+          data: { count: 0, size: '0KB', cacheDir, message: t('cache.notFound') },
+          human: t('cache.notFound'),
         },
         format,
       )
@@ -54,10 +55,14 @@ export default defineCommand({
           data: {
             count: files.length,
             size: `${Math.round(totalSize / 1024)}KB`,
-            oldestCacheAge: `${ageDays}天`,
+            oldestCacheAge: t('cache.oldestAgeFormat', { ageDays }),
             cacheDir,
           },
-          human: `缓存文件: ${files.length} 个, 总大小: ${Math.round(totalSize / 1024)}KB, 最老缓存: ${ageDays}天`,
+          human: t('cache.statsLine', {
+            count: files.length,
+            size: Math.round(totalSize / 1024),
+            ageDays,
+          }),
         },
         format,
       )

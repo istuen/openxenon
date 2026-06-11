@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 import { existsSync, readdirSync, rmSync } from 'fs'
 import { resolve } from 'path'
 import { BOUNDARY_DIR } from '../kernel/index'
+import { t } from '../i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
@@ -31,8 +32,8 @@ export default defineCommand({
     if (!existsSync(cacheDir)) {
       return output(
         {
-          data: { message: '缓存目录不存在，无需清理' },
-          human: '缓存目录不存在，无需清理',
+          data: { message: t('cache.empty') },
+          human: t('cache.empty'),
         },
         format,
       )
@@ -50,7 +51,7 @@ export default defineCommand({
       return output(
         {
           data: { deleted: deletedCount, cacheDir },
-          human: `已清空 ${deletedCount} 个缓存文件`,
+          human: t('cache.cleared', { count: deletedCount }),
         },
         format,
       )

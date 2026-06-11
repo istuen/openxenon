@@ -2,6 +2,7 @@ import { defineCommand } from 'citty'
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-2): daemon-start is the daemon entry point, must fork process directly; switch to Bun.spawn via infra
 import { isDaemonRunning, startDaemonWithHealthCheck } from '../daemon/process'
 import { DAEMON_SOCK_PATH } from '../infra/global'
+import { t } from '../i18n'
 
 export default defineCommand({
   meta: {
@@ -15,7 +16,7 @@ export default defineCommand({
       console.log(
         JSON.stringify({
           ok: true,
-          data: { message: `Daemon 已运行 (PID ${pid})`, pid },
+          data: { message: t('daemon.startAlreadyRunning', { pid }), pid },
         }),
       )
       return
@@ -28,7 +29,7 @@ export default defineCommand({
         JSON.stringify({
           ok: true,
           data: {
-            message: `Daemon 启动成功 (PID ${result.pid})`,
+            message: t('daemon.startSuccess', { pid: result.pid }),
             pid: result.pid,
             healthCheckMs: result.healthCheckMs,
           },
@@ -40,8 +41,8 @@ export default defineCommand({
           ok: false,
           error: {
             code: 'OXN_DAEMON_START_FAILED',
-            message: result.error || '启动失败',
-            suggestion: `检查 ${DAEMON_SOCK_PATH} 是否可访问`,
+            message: result.error || t('daemon.startFailed'),
+            suggestion: t('daemon.startCheckSocket', { socketPath: DAEMON_SOCK_PATH }),
           },
         }),
       )

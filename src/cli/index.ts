@@ -27,6 +27,7 @@
 // =============================================================================
 
 import { defineCommand, runMain } from 'citty'
+import pkg from '../../package.json' with { type: 'json' }
 import { IAPError, OXNCrash, isCliInputError } from '../core/errors'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
 
@@ -143,7 +144,7 @@ function handleCrash(tier: Extract<Tier, { kind: 'Crash' }>): never {
 const main = defineCommand({
   meta: {
     name: 'oxn',
-    version: '1.0.0',
+    version: pkg.version,
     description: 'OpenXenon CLI - 面向大语言模型的工程化控制引擎',
   },
   subCommands: {

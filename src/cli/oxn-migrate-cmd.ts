@@ -1,4 +1,5 @@
 import { defineCommand } from 'citty'
+import { t } from '../i18n'
 import { formatMigrationReport, migrateAllArsenals, migrateDirectory, migrateSingleFile } from './migrate-yaml'
 import { getFormatFromArgs, output, outputError } from './output'
 
@@ -44,7 +45,7 @@ export default defineCommand({
         return outputError(
           {
             code: 'OXN_MIGRATE_NO_TARGET',
-            message: '请指定文件路径、--dir 目录或 --all',
+            message: t('migrate.invalidArgs'),
           },
           format,
         )
@@ -61,7 +62,7 @@ export default defineCommand({
       return outputError(
         {
           code: 'OXN_MIGRATE_FAILED',
-          message: err instanceof Error ? err.message : '迁移失败',
+          message: err instanceof Error ? err.message : t('migrate.failed'),
         },
         format,
       )

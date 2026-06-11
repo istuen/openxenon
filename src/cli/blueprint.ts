@@ -15,6 +15,7 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
+import { t } from '../i18n'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
@@ -455,7 +456,7 @@ const indexSubcommand = defineCommand({
     const outPath = resolveBlueprintIndexPath(projectRoot, customEmit)
 
     if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: '项目未初始化，请先执行 oxn init' }, format)
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
     if (checkOnly) {

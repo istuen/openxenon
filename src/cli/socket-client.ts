@@ -1,5 +1,6 @@
 import { connect, type Socket } from 'net'
 import { DAEMON_SOCK_PATH } from '../infra/global'
+import { t } from '../i18n'
 import { IAPError, IAPAction } from '../core/errors'
 
 export interface SocketMessage {
@@ -27,22 +28,22 @@ function wrapSocketError(err: NodeJS.ErrnoException, phase: 'connect' | 'send'):
   const message = err.message ?? String(err)
 
   if (code === 'ECONNREFUSED' || code === 'ENOENT') {
-    return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Daemon 未运行（${code}: ${message}）`, {
+    return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, t('daemon.errorRunning', { code, message }), {
       phase,
       systemError: code,
       socketPath: DAEMON_SOCK_PATH,
-      suggestion: '请先执行 oxn global daemon start 启动 Daemon',
+      suggestion: t('daemon.suggestionStart'),
     })
   }
   if (code === 'ETIMEDOUT' || message.includes('timed out')) {
-    return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Daemon 响应超时（${code}: ${message}）`, {
+    return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, t('daemon.errorTimeout', { code, message }), {
       phase,
       systemError: code,
       socketPath: DAEMON_SOCK_PATH,
-      suggestion: '等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start',
+      suggestion: t('daemon.suggestionTimeout'),
     })
   }
-  return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Daemon 通信失败（${code}: ${message}）`, {
+  return new IAPError('PROOF', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, t('daemon.errorComm', { code, message }), {
     phase,
     systemError: code,
     socketPath: DAEMON_SOCK_PATH,

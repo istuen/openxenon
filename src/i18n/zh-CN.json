@@ -9,12 +9,20 @@
     "skillsOutputDir": "输出目录: {{dir}}",
     "invalidLocale": "不支持的语言: {{locale}}",
     "supportedLocales": "支持的语言: {{locales}}",
-    "description": "初始化项目，在当前项目建立物理围栏"
+    "description": "初始化项目，在当前项目建立物理围栏",
+    "toolsReset": "tools 配置已重置为 DEFAULTS",
+    "toolsUpdated": "tools 配置已更新: {{tools}}"
   },
   "config": {
     "notFound": "项目未初始化，请先执行 oxn init",
     "title": "项目配置:",
-    "description": "管理项目配置"
+    "description": "管理项目配置",
+    "showTitle": "项目配置:",
+    "showLineMode": "  mode: {{mode}}",
+    "showLineLocale": "  locale: {{locale}}",
+    "showLineDebug": "  debug: {{debug}}",
+    "showLineName": "  name: {{name}}",
+    "showLineTools": "  tools: {{tools}}"
   },
   "configDebug": {
     "enabled": "调试模式已开启",
@@ -28,7 +36,22 @@
     "notRunning": "Daemon 未运行",
     "startSuggestion": "请先执行 oxn global daemon start 启动 Daemon（socket: {{socket}}）",
     "timeout": "Daemon 响应超时",
-    "timeoutSuggestion": "等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start"
+    "timeoutSuggestion": "等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start",
+    "errorRunning": "Daemon 未运行（{{code}}: {{message}}）",
+    "errorTimeout": "Daemon 响应超时（{{code}}: {{message}}）",
+    "errorComm": "Daemon 通信失败（{{code}}: {{message}}）",
+    "suggestionStart": "请先执行 oxn global daemon start 启动 Daemon",
+    "suggestionTimeout": "等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start",
+    "statusNotRunning": "Daemon 未运行",
+    "statusNotRunningHint": "Daemon 状态: 未运行\n使用 `oxn daemon start` 启动 Daemon",
+    "statusRunning": "Daemon 状态: 运行中",
+    "statusRunningLine1": "PID: {{pid}}",
+    "statusRunningLine2": "Socket: {{socketPath}}",
+    "statusRunningLine3": "最近日志: {{lastLog}}",
+    "startAlreadyRunning": "Daemon 已运行 (PID {{pid}})",
+    "startSuccess": "Daemon 启动成功 (PID {{pid}})",
+    "startFailed": "启动失败",
+    "startCheckSocket": "检查 {{socketPath}} 是否可访问"
   },
   "skillCompiler": {
     "report": "Skill 编译报告 ({{adapter}})",
@@ -37,5 +60,70 @@
     "updated": "更新: {{count}}",
     "skipped": "跳过: {{count}}",
     "references": "References: {{count}}"
+  },
+  "errors": {
+    "projectNotInit": "项目未初始化，请先执行 oxn init",
+    "initHint": "在项目根目录执行 oxn init"
+  },
+  "cache": {
+    "notFound": "缓存目录不存在",
+    "empty": "缓存目录不存在，无需清理",
+    "usage": "使用 oxn cache clear 或 oxn cache stats",
+    "cleared": "已清空 {{count}} 个缓存文件",
+    "statsLine": "缓存文件: {{count}} 个, 总大小: {{size}}KB, 最老缓存: {{ageDays}}天",
+    "oldestAgeFormat": "{{ageDays}}天"
+  },
+  "gc": {
+    "noTaskDirs": "没有任务目录需要清理",
+    "noTasks": "没有需要清理的任务",
+    "dryRunResult": "共 {{count}} 个任务待删除 ({{size}}KB)\n使用 --dry-run 预览，或不使用 -d 参数实际删除",
+    "clearedResult": "已清理 {{count}} 个任务 ({{size}}KB)"
+  },
+  "migrate": {
+    "invalidArgs": "请指定文件路径、--dir 目录或 --all",
+    "failed": "迁移失败"
+  },
+  "explore": {
+    "addFailed": "添加问题失败",
+    "invalidAnswer": "格式错误，使用: --answer id|回答内容",
+    "noQaRecords": "无问答记录，无法生成报告",
+    "reportExists": "报告已存在，使用 --force 覆盖",
+    "exists": "探索已存在: {{name}}",
+    "existsHint": "使用其他名称或先删除现有探索",
+    "notFound": "探索不存在: {{name}}",
+    "notFoundHint": "先执行 oxn explore new <name> 创建探索",
+    "fileNotFound": "文件不存在: {{path}}",
+    "created": "探索已创建: {{path}}\n\n目录结构:\n  docs/\n  ai-qa.json\n  engineer-qa.json\n  report.md",
+    "scanIndexed": "已索引: {{path}}\n\n摘要:\n{{summary}}\n\n读取全文: oxn explore scan <name> --read {{path}}",
+    "scanNoFiles": "无已索引文件",
+    "qaAdded": "问题已添加 (ID: {{id}}):\nQ: {{question}}\nA: _待回答_",
+    "qaAnswered": "已更新 (ID: {{id}}):\nA: {{answer}}",
+    "qaNotFound": "未找到问题 ID: {{id}}",
+    "qaNoPending": "无待回答问题",
+    "qaNoRecords": "暂无问答记录",
+    "qaListed": "AI 问答: {{aiPath}} ({{aiCount}} 条)\n工程师问答: {{engPath}} ({{engCount}} 条)",
+    "reportGenerated": "报告已生成: {{path}}",
+    "noExplores": "暂无探索",
+    "deleteConfirm": "确认删除探索 \"{{name}}\"？\n路径: {{path}}\n\n使用 --force 确认删除",
+    "deleted": "已删除探索: {{name}}"
+  },
+  "work": {
+    "lockRequired": "先执行 `oxn work lock <name>` 锁住计划",
+    "validateRequired": "先执行 `oxn work validate <name>` 生成 .work",
+    "lockHint": "先执行 `oxn work lock <name>` 锁住计划（诊断请用 --unlock-check）",
+    "unlockRequired": "只有已 lock 的 work 才能 unlock；当前 planLock === null",
+    "unlockHint": "lock 之前必须先 `oxn work validate <name>`",
+    "unlockSuggestion": "先执行 `oxn work unlock {{workName}}` 再 lock",
+    "modifyForbidden": "work \"{{workName}}\" 已进入执行阶段，禁止修改图纸",
+    "modifyHint": "如需调整 task 编排，请删除 .openxenon/works/<name>/ 目录后重新 create。",
+    "notStarted": "work \"{{workName}}\" 状态机未启动",
+    "notStartedHint": "先执行 `oxn work run <name>` 进入执行阶段",
+    "emptyList": "暂无 Work",
+    "created": "Work 已创建: {{workName}}\n类型: {{workType}}\n路径: {{workFilePath}}\n\n请编辑 work.oxn 填充 task 编排；或重新跑 `oxn work create <name> --blueprint <bp>` 从 blueprint 生成。",
+    "workExists": "Work 已存在: {{workName}} (type: {{workType}})",
+    "invalidId": "Work ID 无效: {{error}}",
+    "invalidTaskName": "Task 名称无效: {{error}}",
+    "birthCertInvalid": "先修复 .work schema 错误：{{errors}}",
+    "migrateRequired": "migrate 仅对 V0 旧布局的 work 有用；该 work 还没运行过（无运行时产物）"
   }
 }

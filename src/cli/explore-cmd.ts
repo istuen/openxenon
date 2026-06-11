@@ -6,6 +6,7 @@ import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
 import { extname, join } from 'path'
 import { BOUNDARY_DIR } from '../kernel/index'
+import { t } from '../i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 function getProjectRoot(): string {
@@ -160,8 +161,8 @@ export default defineCommand({
           return outputError(
             {
               code: 'OXN_EXPLORE_EXISTS',
-              message: `探索已存在: ${name}`,
-              suggestion: '使用其他名称或先删除现有探索',
+              message: t('explore.exists', { name }),
+              suggestion: t('explore.existsHint'),
             },
             getFormatFromArgs(ctx.args),
           )
@@ -175,7 +176,7 @@ export default defineCommand({
         output(
           {
             data: { name, path: explorePath },
-            human: `探索已创建: ${explorePath}\n\n目录结构:\n  docs/\n  ai-qa.json\n  engineer-qa.json\n  report.md`,
+            human: t('explore.created', { path: explorePath }),
           },
           getFormatFromArgs(ctx.args),
         )
@@ -214,8 +215,8 @@ export default defineCommand({
           return outputError(
             {
               code: 'OXN_EXPLORE_NOT_FOUND',
-              message: `探索不存在: ${name}`,
-              suggestion: '先执行 oxn explore new <name> 创建探索',
+              message: t('explore.notFound', { name }),
+              suggestion: t('explore.notFoundHint'),
             },
             format,
           )
@@ -230,7 +231,7 @@ export default defineCommand({
             return outputError(
               {
                 code: 'OXN_FILE_NOT_FOUND',
-                message: `文件不存在: ${sourcePath}`,
+                message: t('explore.fileNotFound', { path: sourcePath }),
               },
               format,
             )
@@ -258,7 +259,7 @@ export default defineCommand({
           output(
             {
               data: { path: sourcePath, summary },
-              human: `已索引: ${sourcePath}\n\n摘要:\n${summary}\n\n读取全文: oxn explore scan <name> --read ${sourcePath}`,
+              human: t('explore.scanIndexed', { path: sourcePath, summary }),
             },
             format,
           )
@@ -277,7 +278,7 @@ export default defineCommand({
             return outputError(
               {
                 code: 'OXN_FILE_NOT_FOUND',
-                message: `文件不存在: ${filePath}`,
+                message: t('explore.fileNotFound', { path: filePath }),
               },
               format,
             )
@@ -288,7 +289,7 @@ export default defineCommand({
             const content = readFileSync(indexPath, 'utf-8')
             output({ data: { files: content }, human: content }, format)
           } else {
-            output({ data: { files: [] }, human: '无已索引文件' }, format)
+            output({ data: { files: [] }, human: t('explore.scanNoFiles') }, format)
           }
         }
       },
@@ -334,8 +335,8 @@ export default defineCommand({
           return outputError(
             {
               code: 'OXN_EXPLORE_NOT_FOUND',
-              message: `探索不存在: ${name}`,
-              suggestion: '先执行 oxn explore new <name> 创建探索',
+              message: t('explore.notFound', { name }),
+              suggestion: t('explore.notFoundHint'),
             },
             format,
           )
@@ -350,12 +351,12 @@ export default defineCommand({
           const doc = loadQADocument(qaPath)
           const lastQ = doc.questions[doc.questions.length - 1]
           if (!lastQ) {
-            return outputError({ code: 'OXN_INTERNAL_ERROR', message: '添加问题失败' }, format)
+            return outputError({ code: 'OXN_INTERNAL_ERROR', message: t('explore.addFailed') }, format)
           }
           output(
             {
               data: { id: lastQ.id, question: lastQ.question, answer: null },
-              human: `问题已添加 (ID: ${lastQ.id}):\nQ: ${question}\nA: _待回答_`,
+              human: t('explore.qaAdded', { id: lastQ.id, question }),
             },
             format,
           )
@@ -365,7 +366,7 @@ export default defineCommand({
             return outputError(
               {
                 code: 'OXN_INVALID_ANSWER_FORMAT',
-                message: '格式错误，使用: --answer id|回答内容',
+                message: t('explore.invalidAnswer'),
               },
               format,
             )
@@ -375,7 +376,7 @@ export default defineCommand({
             output(
               {
                 data: { id, answer },
-                human: `已更新 (ID: ${id}):\nA: ${answer}`,
+                human: t('explore.qaAnswered', { id, answer }),
               },
               format,
             )
@@ -383,7 +384,7 @@ export default defineCommand({
             return outputError(
               {
                 code: 'OXN_QA_NOT_FOUND',
-                message: `未找到问题 ID: ${id}`,
+                message: t('explore.qaNotFound', { id }),
               },
               format,
             )
@@ -392,7 +393,7 @@ export default defineCommand({
           const doc = loadQADocument(qaPath)
           const pending = doc.questions.filter((q) => q.answer === null)
           if (pending.length === 0) {
-            output({ data: { pending: [] }, human: '无待回答问题' }, format)
+            output({ data: { pending: [] }, human: t('explore.qaNoPending') }, format)
           } else {
             output(
               {
@@ -405,7 +406,7 @@ export default defineCommand({
         } else if (ctx.args.list) {
           const doc = loadQADocument(qaPath)
           if (doc.questions.length === 0) {
-            output({ data: { questions: [] }, human: '暂无问答记录' }, format)
+            output({ data: { questions: [] }, human: t('explore.qaNoRecords') }, format)
           } else {
             const lines = doc.questions
               .map((q) => `[${q.id}] Q: ${q.question}\n    A: ${q.answer ?? '_待回答_'}`)
@@ -429,7 +430,12 @@ export default defineCommand({
                 ai: { path: aiPath, count: aiDoc.questions.length },
                 engineer: { path: engPath, count: engDoc.questions.length },
               },
-              human: `AI 问答: ${aiPath} (${aiDoc.questions.length} 条)\n工程师问答: ${engPath} (${engDoc.questions.length} 条)`,
+              human: t('explore.qaListed', {
+                aiPath,
+                aiCount: aiDoc.questions.length,
+                engPath,
+                engCount: engDoc.questions.length,
+              }),
             },
             format,
           )
@@ -461,8 +467,8 @@ export default defineCommand({
           return outputError(
             {
               code: 'OXN_EXPLORE_NOT_FOUND',
-              message: `探索不存在: ${name}`,
-              suggestion: '先执行 oxn explore new <name> 创建探索',
+              message: t('explore.notFound', { name }),
+              suggestion: t('explore.notFoundHint'),
             },
             format,
           )
@@ -476,7 +482,7 @@ export default defineCommand({
           return outputError(
             {
               code: 'OXN_QA_NOT_FOUND',
-              message: '无问答记录，无法生成报告',
+              message: t('explore.noQaRecords'),
             },
             format,
           )
@@ -486,7 +492,7 @@ export default defineCommand({
           return outputError(
             {
               code: 'OXN_REPORT_EXISTS',
-              message: '报告已存在，使用 --force 覆盖',
+              message: t('explore.reportExists'),
             },
             format,
           )
@@ -553,7 +559,7 @@ export default defineCommand({
         output(
           {
             data: { path: reportPath },
-            human: `报告已生成: ${reportPath}`,
+            human: t('explore.reportGenerated', { path: reportPath }),
           },
           format,
         )
@@ -569,7 +575,7 @@ export default defineCommand({
         const exploresRoot = getExploresRoot()
 
         if (!existsSync(exploresRoot)) {
-          return output({ data: { explores: [] }, human: '暂无探索' }, format)
+          return output({ data: { explores: [] }, human: t('explore.noExplores') }, format)
         }
 
         const dirs = readdirSync(exploresRoot).filter((d) => existsSync(join(exploresRoot, d, 'ai-qa.json')))
@@ -608,7 +614,7 @@ export default defineCommand({
           return outputError(
             {
               code: 'OXN_EXPLORE_NOT_FOUND',
-              message: `探索不存在: ${name}`,
+              message: t('explore.notFound', { name }),
             },
             format,
           )
@@ -620,7 +626,7 @@ export default defineCommand({
           output(
             {
               data: { path: explorePath },
-              human: `确认删除探索 "${name}"？\n路径: ${explorePath}\n\n使用 --force 确认删除`,
+              human: t('explore.deleteConfirm', { name, path: explorePath }),
             },
             format,
           )
@@ -631,7 +637,7 @@ export default defineCommand({
         output(
           {
             data: { deleted: name },
-            human: `已删除探索: ${name}`,
+            human: t('explore.deleted', { name }),
           },
           format,
         )

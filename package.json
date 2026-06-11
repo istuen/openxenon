@@ -1,6 +1,6 @@
 {
   "name": "openxenon",
-  "version": "0.0.27",
+  "version": "0.0.29",
   "description": "OpenXenon — 工程师与 AI 协作工作台（OXN Engine 实施 L0-L3 四层架构与 IAP 范式，OXL = OpenXenon Language）",
   "author": "OpenXenon Team",
   "license": "MIT",

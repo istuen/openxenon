@@ -41,7 +41,7 @@ export default defineCommand({
     return output(
       {
         data: { ...config, tools: formatToolsLine(config.tools) },
-        human: `项目配置:\n  mode: ${config.mode}\n  locale: ${config.locale || DEFAULT_LOCALE}\n  debug: ${config.debug ? 'enabled' : 'disabled'}\n  name: ${config.name || 'unnamed'}\n  tools: ${formatToolsLine(config.tools)}\n`,
+        human: `${t('config.showTitle')}\n${t('config.showLineMode', { mode: config.mode })}\n${t('config.showLineLocale', { locale: config.locale || DEFAULT_LOCALE })}\n${t('config.showLineDebug', { debug: config.debug ? 'enabled' : 'disabled' })}\n${t('config.showLineName', { name: config.name || 'unnamed' })}\n${t('config.showLineTools', { tools: formatToolsLine(config.tools) })}\n`,
       },
       format,
     )

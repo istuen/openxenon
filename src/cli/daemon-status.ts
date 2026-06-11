@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty'
 // eslint-disable-next-line no-restricted-imports -- TODO(Phase-2): daemon-status needs socket-based status; probe only covers PID check
 import { getDaemonBasicStatus, getRecentLogs, queryDaemonStatus } from '../daemon/status-client'
+import { t } from '../i18n'
 import { output } from './output'
 
 export default defineCommand({
@@ -17,9 +18,9 @@ export default defineCommand({
           data: {
             isRunning: false,
             pid: 0,
-            message: 'Daemon 未运行',
+            message: t('daemon.statusNotRunning'),
           },
-          human: 'Daemon 状态: 未运行\n使用 `oxn daemon start` 启动 Daemon',
+          human: t('daemon.statusNotRunningHint'),
         },
         getFormatFromArgs(ctx.args),
       )
@@ -40,10 +41,10 @@ export default defineCommand({
           uptime: status.uptime,
           recentLogs: logs.slice(-5),
         },
-        human: `Daemon 状态: 运行中
-PID: ${status.pid}
-Socket: ${status.socketPath}
-最近日志: ${lastLog}`,
+        human: `${t('daemon.statusRunning')}
+${t('daemon.statusRunningLine1', { pid: status.pid })}
+${t('daemon.statusRunningLine2', { socketPath: status.socketPath })}
+${t('daemon.statusRunningLine3', { lastLog })}`,
       },
       getFormatFromArgs(ctx.args),
     )

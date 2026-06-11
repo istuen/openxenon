@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, readdirSync, rmSync, statSync } from 'fs'
 import { resolve } from 'path'
+import { t } from '../i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
@@ -40,8 +41,8 @@ export default defineCommand({
     if (!existsSync(tasksDir)) {
       return output(
         {
-          data: { message: '没有任务目录需要清理' },
-          human: '没有任务目录需要清理',
+          data: { message: t('gc.noTaskDirs') },
+          human: t('gc.noTaskDirs'),
         },
         format,
       )
@@ -79,8 +80,8 @@ export default defineCommand({
       if (toDelete.length === 0) {
         return output(
           {
-            data: { message: '没有需要清理的任务' },
-            human: '没有需要清理的任务',
+            data: { message: t('gc.noTasks') },
+            human: t('gc.noTasks'),
           },
           format,
         )
@@ -107,7 +108,10 @@ export default defineCommand({
         return output(
           {
             data: result,
-            human: `共 ${deletedCount} 个任务待删除 (${Math.round(totalSize / 1024)}KB)\n使用 --dry-run 预览，或不使用 -d 参数实际删除`,
+            human: t('gc.dryRunResult', {
+              count: deletedCount,
+              size: Math.round(totalSize / 1024),
+            }),
           },
           format,
         )
@@ -116,7 +120,10 @@ export default defineCommand({
       return output(
         {
           data: result,
-          human: `已清理 ${deletedCount} 个任务 (${Math.round(totalSize / 1024)}KB)`,
+          human: t('gc.clearedResult', {
+            count: deletedCount,
+            size: Math.round(totalSize / 1024),
+          }),
         },
         format,
       )

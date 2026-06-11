@@ -1,4 +1,5 @@
 import { defineCommand } from 'citty'
+import { t } from '../i18n'
 import { output } from './output'
 
 export default defineCommand({
@@ -13,8 +14,8 @@ export default defineCommand({
   async run(_ctx) {
     return output(
       {
-        data: { message: '使用 oxn cache clear 或 oxn cache stats' },
-        human: '使用 oxn cache clear 或 oxn cache stats',
+        data: { message: t('cache.usage') },
+        human: t('cache.usage'),
       },
       'human',
     )

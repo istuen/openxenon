@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { t } from '../i18n'
+import { setLocale, t } from '../i18n'
 import { BOUNDARY_DIR } from '../kernel/index'
 import { GLOBAL_BOUNDARY_PATH } from '../infra/global'
 import { autoRebuildDomainIndex } from './domain'
@@ -183,6 +183,8 @@ export default defineCommand({
       ensureGlobalBoundary()
       ensureProjectBoundary(projectPath)
 
+      setLocale(locale as SupportedLocale)
+
       const existingConfig = readProjectConfig(projectPath)
       let message = ''
 
@@ -204,7 +206,7 @@ export default defineCommand({
         if (resetTools) {
           existingConfig.tools = undefined
           updated = true
-          message += `\n  tools 配置已重置为 DEFAULTS`
+          message += `\n  ${t('init.toolsReset')}`
         } else {
           const merged = mergeToolsConfig(existingConfig.tools, {
             enabled: normalizeList(ctx.args.tools as string[] | string | undefined),
@@ -214,7 +216,7 @@ export default defineCommand({
             existingConfig.tools = merged.value
             updated = true
             const toolsList = (merged.value?.enabled ?? merged.value?.disabled ?? []).join(', ')
-            message += `\n  tools 配置已更新: ${toolsList}`
+            message += `\n  ${t('init.toolsUpdated', { tools: toolsList })}`
           }
         }
 
