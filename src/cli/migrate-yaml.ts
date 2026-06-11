@@ -1,7 +1,7 @@
 /**
  * Task 1.9 — YAML → OXN 迁移脚本
  *
- * 将旧的 YAML Blueprint 资产翻译为 OXN DSL 语法。
+ * 将旧的 YAML Blueprint 资产翻译为 OXL 语法。
  *
  * 核心翻译规则：
  *   1. stages/parts → blueprint { stage { } }

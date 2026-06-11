@@ -1,5 +1,5 @@
 // =============================================================================
-// Unified OXN DSL barrel (v0.1-final)
+// Unified OXL barrel (v0.1-final)
 //
 // The unified grammar (see src/oxl/langium/oxn.langium) defines:
 //   - Probe / Part / Blueprint — asset declarations (global directory)

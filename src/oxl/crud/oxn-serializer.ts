@@ -1,7 +1,7 @@
 /**
  * OxnSerializer - 手写模板字符串拼接
  *
- * MVP 阶段使用手写映射，将 JSON 配置转换为 OXN DSL 文本。
+ * MVP 阶段使用手写映射，将 JSON 配置转换为 OXL 文本。
  * 基于 CST 坐标计算插入点，直接 string.substring 拼接。
  */
 

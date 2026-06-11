@@ -1,9 +1,9 @@
 // Work: explore-dsl
-// 探索类工作流：探索 OXN DSL 语法结构，生成分析报告
+// 探索类工作流：探索 OXL 语法结构，生成分析报告
 
 work "explore-dsl" {
   context {
-    goal = "探索 OXN DSL 语法结构，生成分析报告";
+    goal = "探索 OXL 语法结构，生成分析报告";
     constraints = [
       "使用 oxn 命令而非直接读源码",
       "输出 markdown 报告到 .openxenon/works/explore-dsl/report.md"
@@ -20,7 +20,7 @@ work "explore-dsl" {
     domain "DSLContext";
     blueprint "explore-analyze-report";
     part "explore" {
-      skill_context = "探索 OXN DSL 语法结构";
+      skill_context = "探索 OXL 语法结构";
     }
     deps = [];
   }

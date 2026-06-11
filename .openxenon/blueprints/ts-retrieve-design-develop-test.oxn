@@ -21,7 +21,7 @@ blueprint "ts-retrieve-design-develop-test" {
   description = "TypeScript 项目四阶段工作流：检索（项目现状）→ 设计（结构与类型）→ 开发（实现代码）→ 测试（lint/type/test 验证）"
 
   // 可选参数：注入到所有 part，供 AI 决定检索/改动范围
-  //   target_module  — 目标模块路径（如 src/oxn-dsl）默认整个 src/
+  //   target_module  — 目标模块路径（如 src/oxl）默认整个 src/
   //   strict         — 是否启用严格模式（typecheck 失败即 FAIL）默认 true
 
   slot "retrieve" {

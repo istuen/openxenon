@@ -80,7 +80,7 @@ async function validateBlueprint(blueprintPath: string): Promise<{
 const createSubcommand = defineCommand({
   meta: {
     name: 'create',
-    description: '在 .openxenon/blueprints/ 生成一个新的 blueprint 骨架（用统一 OXN DSL）',
+    description: '在 .openxenon/blueprints/ 生成一个新的 blueprint 骨架（用统一 OXL）',
   },
   args: {
     name: { type: 'positional', required: true, description: 'Blueprint 名称（kebab-case）' },
@@ -217,7 +217,7 @@ ${slotBlocks.join('\n\n')}
 const validateSubcommand = defineCommand({
   meta: {
     name: 'validate',
-    description: '用统一 OXN DSL 解析器验证 .openxenon/blueprints/<name>.oxn',
+    description: '用统一 OXL 解析器验证 .openxenon/blueprints/<name>.oxn',
   },
   args: {
     name: { type: 'positional', required: true, description: 'Blueprint 名称' },
@@ -514,7 +514,7 @@ const indexSubcommand = defineCommand({
 const blueprintCommand = defineCommand({
   meta: {
     name: 'blueprint',
-    description: '管理 OXN DSL blueprint（create/validate/list/index）',
+    description: '管理 OXL blueprint（create/validate/list/index）',
   },
   subCommands: {
     create: createSubcommand,

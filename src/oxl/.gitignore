@@ -1,4 +1,4 @@
-# OXN DSL 编译产物（langium 生成 / 工作区临时 bundle）
+# OXL 编译产物（langium 生成 / 工作区临时 bundle）
 *.bundle.oxn
 *.bundle.assembly.json
 *.bundle.assembly.schema.json

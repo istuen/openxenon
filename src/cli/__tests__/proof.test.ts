@@ -382,10 +382,10 @@ describe('Kernel + Infra separation (real execution)', () => {
 })
 
 // -----------------------------------------------------------------------------
-// T8: 集成到 OXN DSL grammar — 确认 proof 顶层 entity 正确生成
+// T8: 集成到 OXL grammar — 确认 proof 顶层 entity 正确生成
 // -----------------------------------------------------------------------------
 
-describe('OXN DSL grammar integration', () => {
+describe('OXL grammar integration', () => {
   test('proof 出现在 TopLevelEntity', async () => {
     const { createOxnParser, isProofDeclaration } = await import('../../oxl')
     const { URI } = await import('langium')

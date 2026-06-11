@@ -5,10 +5,10 @@
 // 这些命令面向 DSL 作者与 OpenXenon 内部开发，不是日常 AI/工程师工作流的主入口。
 //
 // 子命令：
-//   compile      — OXN DSL → AssemblyIR（生成 .bundle.oxn + assembly.json + schema.json）
+//   compile      — OXL → AssemblyIR（生成 .bundle.oxn + assembly.json + schema.json）
 //   unpack       — .bundle.oxn → 隔离目录
 //   validate     — 校验 .oxn 文件
-//   migrate-yaml — YAML Blueprint → OXN DSL
+//   migrate-yaml — YAML Blueprint → OXL
 // =============================================================================
 
 import { defineCommand } from 'citty'

@@ -1,10 +1,10 @@
 // .openxenon/blueprints/dsl-evolve.oxn
 //
-// 修改 OXN DSL 语法时的标准工作流
+// 修改 OXL 语法时的标准工作流
 // 拓扑：propose-grammar → migrate-examples → regen-generated → verify
 //
 // 关键约束：
-//   - src/oxn-dsl/generated/ 永远不要手动编辑（biome 与 tsconfig 都忽略它）
+//   - src/oxl/generated/ 永远不要手动编辑（biome 与 tsconfig 都忽略它）
 //   - 改 .langium 后必须跑 bun run langium:generate
 //   - examples 与 builtins 是 source of truth；generated 是产物
 //
@@ -14,10 +14,10 @@
 
 blueprint "dsl-evolve" {
   version = 1
-  description = "OXN DSL 演进流程：提出语法变更 → 迁移 example → 重新生成 generated/ → 全量验证（lint+typecheck+test）"
+  description = "OXL 演进流程：提出语法变更 → 迁移 example → 重新生成 generated/ → 全量验证（lint+typecheck+test）"
 
-  prop "langium_source" { type = string; default = "src/oxn-dsl/langium/oxn.langium" }
-  prop "examples_dir" { type = string; default = "src/oxn-dsl/examples" }
+  prop "langium_source" { type = string; default = "src/oxl/langium/oxn.langium" }
+  prop "examples_dir" { type = string; default = "src/oxl/examples" }
 
   slot "propose-grammar" {
     deps = []
@@ -29,7 +29,7 @@ blueprint "dsl-evolve" {
   slot "migrate-examples" {
     deps = ["propose-grammar"]
     observe = ["fs-content-match"]
-    // 迁移 src/oxn-dsl/examples/{works,domains,blueprints,proofs} 到新语法
+    // 迁移 src/oxl/examples/{works,domains,blueprints,proofs} 到新语法
     // observe 强制 example 必须含新节点（不是仅"形式兼容"）
   }
 

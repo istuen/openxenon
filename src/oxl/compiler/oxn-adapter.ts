@@ -1,7 +1,7 @@
 /**
  * OXN Kernel 适配器 (Slot 范式 v3.0)
  *
- * 将 OXN Assembly IR 转换为 FrozenBlueprint，桥接 OXN DSL 前端与 Core 执行引擎。
+ * 将 OXN Assembly IR 转换为 FrozenBlueprint，桥接 OXL 前端与 Core 执行引擎。
  *
  * Slot 范式核心流程：
  *   1. OxnAssemblyIR + OxnAssemblyTaskIR

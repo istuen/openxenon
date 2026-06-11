@@ -5,7 +5,7 @@ import { join } from 'path'
 
 const EXAMPLES_DIR = join(__dirname, '../examples')
 
-describe('OXN DSL Examples', () => {
+describe('OXL Examples', () => {
   test('probe-example.oxn 文件存在', () => {
     expect(existsSync(join(EXAMPLES_DIR, 'probe-example.oxn'))).toBe(true)
   })

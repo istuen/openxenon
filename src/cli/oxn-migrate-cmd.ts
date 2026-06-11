@@ -5,7 +5,7 @@ import { getFormatFromArgs, output, outputError } from './output'
 export default defineCommand({
   meta: {
     name: 'migrate-yaml',
-    description: '将 YAML Blueprint 迁移为 OXN DSL 格式',
+    description: '将 YAML Blueprint 迁移为 OXL 格式',
   },
   args: {
     path: {
