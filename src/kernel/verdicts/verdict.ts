@@ -114,7 +114,7 @@ const fsMatchStrategy: ProbeStrategy = (observation, params) => {
   }
 }
 
-/** shell_exec / exec_exit_zero: 期望 exitCode === 0 */
+/** shell_exec: 期望 exitCode === 0 (canonical) */
 const shellExecStrategy: ProbeStrategy = (observation, params) => {
   const passed = observation.exitCode === 0
   return {
@@ -126,6 +126,38 @@ const shellExecStrategy: ProbeStrategy = (observation, params) => {
     params,
     duration: observation.executedAt,
     failureMessage: passed ? undefined : `exit code ${observation.exitCode ?? 'unknown'}`,
+  }
+}
+
+/** exec_exit_zero: 别名 → 委派给 shellExecStrategy (v1.1 verdict-unify 回收)
+ *
+ * 历史: 这曾是 L0 旧版的独立策略, v1.1 清理时被删, 但 Infra (probe-evaluator.ts)
+ * 仍有调用方传 exec_exit_zero 作为 probeType。重新注册以保持兼容。
+ */
+const execExitZeroStrategy: ProbeStrategy = shellExecStrategy
+
+/** exec_output_match: 期望 output 长度 >= minLength 且包含可选 pattern（v1.1 verdict-unify 回收）
+ *
+ * 数据契约: Infra 返回原始 output (string); verdict 走字符串长度 + 子串匹配判定。
+ * 与 fs_match (JSON.parse → matched 字段) 互补: exec_output_match 用于命令输出,
+ * fs_match 用于文件内容。
+ */
+const execOutputMatchStrategy: ProbeStrategy = (observation, params) => {
+  const output = observation.output ?? ''
+  const minLength = Number(params.minLength ?? 1)
+  const pattern = typeof params.pattern === 'string' ? params.pattern : undefined
+  const longEnough = output.trim().length >= minLength
+  const containsPattern = pattern ? output.includes(pattern) : true
+  const passed = longEnough && containsPattern && !observation.error
+  return {
+    passed,
+    message: passed
+      ? `exec-output-match: output length ${output.trim().length} >= ${minLength}${pattern ? `, contains "${pattern}"` : ''}`
+      : `exec-output-match: ${observation.error ?? (pattern ? `output missing pattern "${pattern}"` : `output too short (${output.trim().length} < ${minLength})`)}`,
+    actual: { outputLength: output.trim().length, hasPattern: pattern ? output.includes(pattern) : undefined },
+    params,
+    duration: observation.executedAt,
+    failureMessage: passed ? undefined : (observation.error ?? `output does not match expected pattern`),
   }
 }
 
@@ -511,20 +543,22 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   http_responds: httpRespondsStrategy,
   file_exports: fileExportsStrategy,
   shell_exec: shellExecStrategy,
+  // v1.1 verdict-unify 回收: 老别名回归 L0 注册表
+  exec_exit_zero: execExitZeroStrategy,
+  exec_output_match: execOutputMatchStrategy,
   // v1.2: git-* builtin probes（PoC: git-workflow Blueprint）
   git_clean: gitCleanStrategy,
   git_branch_exists: gitBranchExistsStrategy,
   git_status_clean: gitStatusCleanStrategy,
   git_merge_feasible: gitMergeFeasibleStrategy,
-  // v1.1: exec_exit_zero 与 exec_output_match 移除（迁移到 shell_exec / fs-content-match）
-  // 老 ref 通过 src/cli/migrate-probe-refs.ts 翻译；STRATEGIES 不再注册
 }
 
 export const PROBE_VERDICT_ALIASES: Record<string, string> = {
   'fs-exists': 'fs_exists',
   'fs-not-exists': 'fs_not_exists',
   'fs-content-match': 'fs_match',
-  'exec-exit-zero': 'shell_exec',
+  'exec-exit-zero': 'exec_exit_zero',
+  'exec-output-match': 'exec_output_match',
   'shell-exec': 'shell_exec',
   // v1.2: git-* aliases
   'git-clean': 'git_clean',

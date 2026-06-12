@@ -33,26 +33,34 @@ import {
   saveTaskState,
   saveWorkState,
 } from './dual-state-io'
+import { IAPError, IAPAction, type IAPAxis } from '../core/errors'
 
 // =============================================================================
-// 错误码
+// 错误码 (v1.1 fix-p1-architecture: 走 IAPError 双轨制, 不再自定义 class)
+//
+// 7 个原 ExecError 码映射到 IAPError(axis=ALIGN, code=INFRA_FAIL):
+//   - 这些都是「业务流预期内阻断」: 状态机前置条件未满足 (work 未 run / task 未 add-task /
+//     part 已 done 等), 属于可恢复业务流错误, AI 看到后应决策 (重试 / 改路径 / YIELD_TO_HUMAN)。
+//   - 不属于 OXNCrash (引擎崩溃 / 防线被击穿), 也不属于 isCliInputError (用户拼写错)。
+//   - 保留 oxnCode 字段让 CLI 输出时维持稳定的 OXN_* 错误码 (向下兼容)。
 // =============================================================================
 
-export class ExecError extends Error {
-  constructor(
-    public readonly code:
-      | 'OXN_WORKSPACE_NOT_FOUND'
-      | 'OXN_TASK_NOT_FOUND'
-      | 'OXN_TASK_OXN_MISSING'
-      | 'OXN_NO_NEXT_PART'
-      | 'OXN_PART_ALREADY_DONE'
-      | 'OXN_WORKSPACE_ALREADY_RUNNING'
-      | 'OXN_WORK_NOT_STARTED',
-    message: string,
-  ) {
-    super(message)
-    this.name = 'ExecError'
-  }
+export type ExecErrorCode =
+  | 'OXN_WORKSPACE_NOT_FOUND'
+  | 'OXN_TASK_NOT_FOUND'
+  | 'OXN_TASK_OXN_MISSING'
+  | 'OXN_NO_NEXT_PART'
+  | 'OXN_PART_ALREADY_DONE'
+  | 'OXN_WORKSPACE_ALREADY_RUNNING'
+  | 'OXN_WORK_NOT_STARTED'
+
+/** @deprecated v1.1 起走 IAPError 双轨制; 类名保留仅供类型推断/旧 import 路径, 不再 throw */
+export type ExecError = IAPError & { readonly oxnCode: ExecErrorCode }
+
+export function throwExecError(axis: IAPAxis, oxnCode: ExecErrorCode, message: string): never {
+  const err = new IAPError(axis, 'INFRA_FAIL', IAPAction.AUTONOMOUS_RETRY, message, { oxnCode })
+  ;(err as IAPError & { oxnCode: ExecErrorCode }).oxnCode = oxnCode
+  throw err
 }
 
 // =============================================================================
@@ -121,7 +129,8 @@ export interface RunTaskParams {
 export function runTask(params: RunTaskParams): TaskState {
   const workState = loadWorkState(params.projectRoot, params.workName)
   if (!workState) {
-    throw new ExecError(
+    throwExecError(
+      'ALIGN',
       'OXN_WORK_NOT_STARTED',
       `work .run/state.json not found for "${params.workName}". Run \`oxn work run <name>\` first.`,
     )
@@ -129,7 +138,8 @@ export function runTask(params: RunTaskParams): TaskState {
 
   const taskIndex = workState.tasks.find((t) => t.taskName === params.taskName)
   if (!taskIndex) {
-    throw new ExecError(
+    throwExecError(
+      'ALIGN',
       'OXN_TASK_NOT_FOUND',
       `task "${params.taskName}" is not declared in work "${params.workName}". add it via \`oxn work add-task\`.`,
     )
@@ -198,7 +208,8 @@ export interface SubmitTaskResult {
 export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
   const taskState = loadTaskState(params.projectRoot, params.workName, params.taskName)
   if (!taskState) {
-    throw new ExecError(
+    throwExecError(
+      'ALIGN',
       'OXN_TASK_NOT_FOUND',
       `task "${params.taskName}" not started. Run \`oxn work run <name>\` first.`,
     )

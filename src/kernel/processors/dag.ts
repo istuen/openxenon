@@ -44,6 +44,20 @@ export function topologicalSortGeneric(nodes: GraphNode[], edges?: GraphEdge[]):
     }
   }
 
+  // v1.1 fix-p1-architecture dag-edges-validation: edges 显式传入时, 也必须校验
+  // edge 端点是否在 nodes 集合里。修复前, 上方 if (edges) 分支用 `continue` 静默
+  // 跳过无效 edge, 导致 edge 引用不存在的节点时 DAG 静默合法化。
+  if (edges) {
+    for (const edge of edges) {
+      if (!nodeIds.has(edge.from)) {
+        errors.push(`Edge from '${edge.from}' references non-existent node`)
+      }
+      if (!nodeIds.has(edge.to)) {
+        errors.push(`Edge to '${edge.to}' references non-existent node`)
+      }
+    }
+  }
+
   if (errors.length > 0) {
     return { valid: false, path: [], errors }
   }

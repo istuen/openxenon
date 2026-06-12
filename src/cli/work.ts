@@ -45,13 +45,14 @@ import {
   createOxnParser,
   isBlueprintDeclaration,
   type BlueprintDeclaration,
+  isDomainDeclaration,
   isPartDeclaration,
   type PartDeclaration,
   type WorkContext,
   type WorkDeclaration,
   type OXNDocument as OxnAstDocument,
 } from '../oxl'
-import { ExecError, runTask, runWork, submitTask } from '../work'
+import { runTask, runWork, submitTask } from '../work'
 import {
   ensureWorkDir,
   getTaskOxnPath,
@@ -1089,7 +1090,7 @@ const addTaskSubcommand = defineCommand({
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
-  run(ctx) {
+  async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
     const taskName = ctx.args.task as string
@@ -1145,13 +1146,19 @@ const addTaskSubcommand = defineCommand({
     let allowedBlueprints: string[] = []
     let allowedDomains: string[] = []
     try {
-      const workContent = readFileSync(workFile, 'utf-8')
-      const bpMatches = Array.from(workContent.matchAll(/blueprint\s+"([^"]+)"/g))
-      const dMatches = Array.from(workContent.matchAll(/domain\s+"([^"]+)"/g))
-      allowedBlueprints = bpMatches.map((m) => m[1]!)
-      allowedDomains = dMatches.map((m) => m[1]!)
+      // v1.1 fix-p1-architecture parseoxn-migration: 改用 Langium AST 提取声明名,
+      // 避免 regex 误匹配注释/字符串字面量。软降级保留兼容。
+      const { doc } = await parseOxnFile(workFile)
+      allowedBlueprints = doc.entities
+        .filter(isBlueprintDeclaration)
+        .map((bp) => bp.name)
+        .filter((n): n is string => typeof n === 'string' && n.length > 0)
+      allowedDomains = doc.entities
+        .filter(isDomainDeclaration)
+        .map((d) => d.name)
+        .filter((n): n is string => typeof n === 'string' && n.length > 0)
     } catch {
-      // 软降级
+      // 软降级：AST 解析失败时不阻塞 add-task (用户可手动校对)
     }
 
     if (allowedBlueprints.length > 0 && !allowedBlueprints.includes(blueprintName)) {
@@ -1803,8 +1810,10 @@ const runSubcommand = defineCommand({
         format,
       )
     } catch (err) {
-      if (err instanceof ExecError) {
-        return outputError({ code: err.code, message: err.message }, format)
+      if (err instanceof IAPError) {
+        const ctx = err.context as { oxnCode?: unknown } | undefined
+        const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
+        return outputError({ code: oxnCode, message: err.message }, format)
       }
       const message = err instanceof Error ? err.message : String(err)
       output(errorJson('OXN_DSL_PARSE_FAILED', message), format)
@@ -1886,8 +1895,10 @@ const submitSubcommand = defineCommand({
         format,
       )
     } catch (err) {
-      if (err instanceof ExecError) {
-        return outputError({ code: err.code, message: err.message }, format)
+      if (err instanceof IAPError) {
+        const ctx = err.context as { oxnCode?: unknown } | undefined
+        const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
+        return outputError({ code: oxnCode, message: err.message }, format)
       }
       const message = err instanceof Error ? err.message : String(err)
       output(errorJson('OXN_LEADER_NEXT_FAILED', message), format)

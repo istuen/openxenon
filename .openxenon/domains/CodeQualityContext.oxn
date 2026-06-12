@@ -1,0 +1,34 @@
+// Domain: CodeQualityContext
+// 业务限界上下文：源代码质量的检测与改善
+//
+// 涵盖 4 类 P0 修复:
+//   - 跨平台一致性（require → ESM import）
+//   - 路径正确性（resolveForgeRoot 修复）
+//   - 正则安全（ReDoS 防护）
+//   - 命令注入（Shell escape）
+
+domain "CodeQualityContext" {
+  description = "源代码质量的检测与改善限界上下文：跨平台一致性、命名解析、模式应用、行为漂移"
+
+  term {
+    "PatternQuality":     "软件模式质量：Strategy/Port-Adapter/Registry/SOLID 的应用与遵守程度"
+    "LogicQuality":       "代码逻辑质量：null 安全、错误处理、竞态、边界条件、类型安全、资源泄漏"
+    "LayerConstitution":  "L0–L3 分层架构规则：kernel→infra→work→cli 的依赖方向与禁入关系"
+    "CodeSmell":          "可量化的反模式：重复实现、过长函数、跨层导入、类型断言滥用、需 ESM 残留"
+    "Lint":               "结构化静态门禁卡：ESLint no-restricted-imports + biome check + tsc noUncheckedIndexedAccess"
+    "CodebaseAudit":      "对 src/ 全量扫描形成的可定位报告，含 file:line 引用与严重级评分"
+    "Refactor":           "在保证行为不变前提下，按既定模式（如 5 阶段 fix-issue 蓝图）改造代码"
+    "Regression":         "typecheck / lint / test 三件套之一失败即视为引入了回归"
+  }
+
+  ban { "quality_assessment", "pattern_score", "smell" }
+
+  // ───── P0 修复硬规则 ─────
+  invariant {
+    "C1: ESM 项目禁用 CJS require() — verbatimModuleSyntax: true 下所有 14 处 require 必须改 import from 'node:*' 或包名"
+    "C2: 路径解析必须读 AGENTS.md 命名约定 — resolveForgeRoot 必须返回 .openxenon/forges/，不得用 .openxenon/arsenal/drafts/"
+    "C4: 用户输入进 RegExp 前必须做复杂度校验 — ReDoS 模式 (a+)+ / (a*)* / (a|a)* 必须被 safe-regex 拦截"
+    "C5: Shell 命令执行必须参数化 — 禁止 spawn(cmd, [], { shell: true })，必须用 spawn(cmd, [arg1, arg2]) 数组形式"
+    "P1: 高严重级 (HIGH/CRITICAL) 问题不修复不得合入 main — 修复前应跑 typecheck/lint/test 三件套零回归"
+  }
+}

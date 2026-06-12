@@ -13,6 +13,7 @@ import {
   WORK_RUN_STATE_JSON,
   WORK_RUN_TRACE_JSONL,
 } from '../kernel/index'
+import { IAPError, IAPAction } from '../core/errors'
 import { type TaskState, TaskStateSchema, type WorkspaceState, WorkspaceStateSchema } from './dual-state'
 
 // =============================================================================
@@ -91,11 +92,22 @@ export function loadWorkState(projectRoot: string, workName: string): WorkspaceS
     const parsed = JSON.parse(content)
     const result = WorkspaceStateSchema.safeParse(parsed)
     if (!result.success) {
-      throw new Error(`Invalid work state.json: ${result.error.message}`)
+      throw new IAPError(
+        'ALIGN',
+        'INFRA_FAIL',
+        IAPAction.YIELD_TO_HUMAN,
+        `Invalid work state.json: ${result.error.message}`,
+        { path },
+      )
     }
     return result.data
   } catch (err) {
-    throw new Error(`Failed to load work state: ${err instanceof Error ? err.message : String(err)}`)
+    if (err instanceof IAPError) throw err
+    const cause = err instanceof Error ? err.message : String(err)
+    throw new IAPError('ALIGN', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Failed to load work state: ${cause}`, {
+      path,
+      cause,
+    })
   }
 }
 
@@ -154,11 +166,22 @@ export function loadTaskState(projectRoot: string, workName: string, taskName: s
     const parsed = JSON.parse(content)
     const result = TaskStateSchema.safeParse(parsed)
     if (!result.success) {
-      throw new Error(`Invalid task state.json: ${result.error.message}`)
+      throw new IAPError(
+        'ALIGN',
+        'INFRA_FAIL',
+        IAPAction.YIELD_TO_HUMAN,
+        `Invalid task state.json: ${result.error.message}`,
+        { path },
+      )
     }
     return result.data
   } catch (err) {
-    throw new Error(`Failed to load task state: ${err instanceof Error ? err.message : String(err)}`)
+    if (err instanceof IAPError) throw err
+    const cause = err instanceof Error ? err.message : String(err)
+    throw new IAPError('ALIGN', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Failed to load task state: ${cause}`, {
+      path,
+      cause,
+    })
   }
 }
 

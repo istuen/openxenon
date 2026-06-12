@@ -65,15 +65,16 @@ describe('topologicalSortGeneric', () => {
       expect(result.path).toEqual(['A', 'B'])
     })
 
-    it('edges 参数中 from/to 不在节点列表中时跳过该边', () => {
+    it('edges 参数中 from/to 不在节点列表中时返回 valid=false, errors 含 non-existent (v1.1 dag-edges-validation)', () => {
       const nodes: GraphNode[] = [{ id: 'A' }, { id: 'B' }]
       const edges: GraphEdge[] = [
         { from: 'A', to: 'B' },
         { from: 'X', to: 'Y' },
       ]
       const result = topologicalSortGeneric(nodes, edges)
-      expect(result.valid).toBe(true)
-      expect(result.path).toEqual(['A', 'B'])
+      expect(result.valid).toBe(false)
+      expect(result.errors.length).toBeGreaterThan(0)
+      expect(result.errors.join(' ')).toContain('non-existent')
     })
   })
 
@@ -116,6 +117,22 @@ describe('topologicalSortGeneric', () => {
       const result = topologicalSortGeneric(nodes)
       expect(result.valid).toBe(false)
       expect(result.errors[0]).toContain('non-existent')
+    })
+
+    it('edges 中只有 from 引用不存在节点 (v1.1 dag-edges-validation)', () => {
+      const nodes: GraphNode[] = [{ id: 'A' }, { id: 'B' }]
+      const edges: GraphEdge[] = [{ from: 'X', to: 'A' }]
+      const result = topologicalSortGeneric(nodes, edges)
+      expect(result.valid).toBe(false)
+      expect(result.errors.join(' ')).toContain("Edge from 'X'")
+    })
+
+    it('edges 中只有 to 引用不存在节点 (v1.1 dag-edges-validation)', () => {
+      const nodes: GraphNode[] = [{ id: 'A' }]
+      const edges: GraphEdge[] = [{ from: 'A', to: 'Z' }]
+      const result = topologicalSortGeneric(nodes, edges)
+      expect(result.valid).toBe(false)
+      expect(result.errors.join(' ')).toContain("Edge to 'Z'")
     })
   })
 

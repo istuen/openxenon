@@ -333,11 +333,19 @@ export function resolveAssetPath(
     const assetPath = join(boundary, 'arsenal', type, name, state === 'draft' ? 'draft.oxn' : 'canonical.oxn')
     if (existsSync(assetPath)) return assetPath
   } else {
-    const subDir = state === 'draft' ? 'drafts' : ''
-    const assetPath = subDir
-      ? join(boundary, 'arsenal', type, subDir, `${name}.oxn`)
-      : join(boundary, 'arsenal', type, `${name}.oxn`)
-    if (existsSync(assetPath)) return assetPath
+    // v1.1 fix-p1-architecture draft-path-consistency: 统一 draft 布局为
+    //   `drafts/<name>/draft.oxn` (sub-dir 风格, 与 scanArsenalStructure 主路径一致,
+    //   且允许未来装更多子资源如 invariants.yaml / tests/). 旧 flat 布局
+    //   `drafts/<name>.oxn` 保留为 fallback (向下兼容已有项目).
+    if (state === 'draft') {
+      const subDirPath = join(boundary, 'arsenal', type, 'drafts', name, 'draft.oxn')
+      if (existsSync(subDirPath)) return subDirPath
+      const flatPath = join(boundary, 'arsenal', type, 'drafts', `${name}.oxn`)
+      if (existsSync(flatPath)) return flatPath
+    } else {
+      const assetPath = join(boundary, 'arsenal', type, `${name}.oxn`)
+      if (existsSync(assetPath)) return assetPath
+    }
   }
 
   return null
