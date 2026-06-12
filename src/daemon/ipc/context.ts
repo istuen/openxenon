@@ -1,7 +1,7 @@
 import { join } from 'path'
 import { existsSync, readFileSync } from '../../infra/filesystem'
 import { BOUNDARY_DIR, CONFIG_FILE } from '../../kernel/index'
-import type { ProjectConfig } from '../../cli/project-config'
+import type { ProjectConfig } from '../../infra/paths'
 import { missingProjectPath, projectNotFound } from './errors'
 
 export interface ProjectContext {

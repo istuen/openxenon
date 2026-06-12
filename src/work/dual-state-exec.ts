@@ -34,7 +34,7 @@ import {
   saveTaskState,
   saveWorkState,
 } from './dual-state-io'
-import { IAPError, IAPAction, type IAPAxis } from '../core/errors'
+import { IAPError, IAPAction, type IAPAxis } from '../kernel/index'
 
 // =============================================================================
 // 错误码 (v1.1 fix-p1-architecture: 走 IAPError 双轨制, 不再自定义 class)

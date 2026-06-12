@@ -13,7 +13,7 @@ import {
   WORK_RUN_STATE_JSON,
   WORK_RUN_TRACE_JSONL,
 } from '../kernel/index'
-import { IAPError, IAPAction } from '../core/errors'
+import { IAPError, IAPAction } from '../kernel/index'
 import { type TaskState, TaskStateSchema, type WorkspaceState, WorkspaceStateSchema } from './dual-state'
 
 // =============================================================================

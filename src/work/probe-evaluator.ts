@@ -1,5 +1,5 @@
 import type { ProbeObservation, ProbeResult, ProbeStrategy, ProbeVerdict, ProbeDefinition } from '../kernel/index'
-import { PROBE_VERDICT_STRATEGIES } from '../kernel/verdicts/verdict'
+import { PROBE_VERDICT_STRATEGIES } from '../kernel/index'
 
 export type { ProbeObservation, ProbeResult, ProbeVerdict, ProbeDefinition }
 export type { ProbeStrategy }
