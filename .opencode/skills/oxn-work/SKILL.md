@@ -97,39 +97,14 @@ work "MyFeature" {
 ### 步骤 3：创建至少一个 Task
 
 ```bash
-oxn work add-task <work-name> \
-  --task <task-name> \
+oxn work add-task \
+  --work <work-name> \
+  --task-name <task-name> \
   --blueprint <blueprint-name> \
   [--domain <DomainName>]
 ```
 
 ### 步骤 4：编辑 task 内容（手写 `task.oxn`）
-
-**重要：必须先查权威路径，再落笔，避免路径拼写错误。**
-
-```bash
-# 1) 获取 task 列表（含权威 file 路径）
-oxn work list-task <work-name> --json
-# 返回示例:
-# {
-#   "ok": true,
-#   "data": {
-#     "tasks": [
-#       { "name": "diagnose", "file": "/Users/.../.openxenon/works/<w>/tasks/diagnose/task.oxn", ... }
-#     ]
-#   }
-# }
-
-# 2) 从 JSON 的 file 字段取绝对路径，传给 write 工具
-
-# 3) 写完后验证路径
-oxn work verify-task-path --work <work-name> /path/to/task.oxn
-# 输出:
-# ✅ 路径验证通过
-# Work:     <work-name>
-# Task:     diagnose
-# Path:     /Users/.../task.oxn
-```
 
 ### 步骤 5：`work validate`
 
@@ -162,38 +137,6 @@ oxn work submit --work <w> --task <t> --json
 oxn work status --work <w> --json
 ```
 
-## 交互工作流（AI Agent 手写路径防错）
-
-> **设计目标**：AI Agent 写文件时永远不"猜"路径，而是通过 CLI 获取权威路径后写入。
-
-### 写 task.oxn 的标准步骤
-
-```mermaid
-graph TD
-    A[<b>收到"写 task.oxn"指令</b>] --> B[<code>oxn work list-task &lt;work> --json</code>]
-    B --> C[从返回 data.tasks[].file<br>提取权威绝对路径]
-    C --> D[用权威路径调用 write 工具]
-    D --> E[<code>oxn work verify-task-path \<br>  --work &lt;work> &lt;path></code>]
-    E --> F{验证通过？}
-    F -->|是| G[继续下一步]
-    F -->|否| H[修正路径 / 重新写入]
-    H --> D
-```
-
-### 查询单一 task 路径
-
-```bash
-oxn work task-status <work-name> --task <task-name> --json
-# 返回 data.file 字段 = task.oxn 绝对路径
-```
-
-### 验证手写后的文件
-
-```bash
-oxn work verify-task-path --work <work-name> /path/to/task.oxn
-# 校验：存在性 → 文件名 → 父目录隶属 → 内容解析
-```
-
 ## 参考命令
 
 | 想做什么 | 命令 |
@@ -205,9 +148,8 @@ oxn work verify-task-path --work <work-name> /path/to/task.oxn
 | 列出所有 Domain | `oxn domain list` |
 | **v1.1 V0→V1 布局迁移** | `oxn work migrate <w>` |
 | 创建 work 骨架（含 task 块） | `oxn work create <w> --blueprint <bp>` |
-| 列出 work 下所有 task（含路径） | `oxn work list-task <w> [--json]` |
-| 查看 task 状态（含 file 路径） | `oxn work task-status <w> --task <t> [--json]` |
-| **验证手写 task.oxn 路径** | `oxn work verify-task-path --work <w> <path>` |
+| 列出 work 下所有 task | `oxn work list-tasks --work <w>` |
+| 查看 task 状态 | `oxn work task-status --work <w> --task <t>` |
 | 获取 AI 上下文（**全量隔离**） | `oxn work context --work <w> --task <t>` |
 | **v1.1 校验 work.oxn + 写 .work** | `oxn work validate <w>` |
 | **v1.1 锁 work（planLock + 4 组件 hash）** | `oxn work lock <w>` |
