@@ -73,6 +73,10 @@ Thumbs.db
 .changes/
 openspec/
 
+# Forge 设计笔记（v0.1.0 发布后从 git 移除：内部设计文档不对外）
+# 已通过 git rm --cached 从历史中移除（保留本地文件，停止追踪）
+.openxenon/forges/
+
 # ─────────────────────────────────────────────────────────────
 # 6. 业务运行时数据
 #    实际规则已下沉到 .openxenon/.gitignore（domain/works/proof 等）
