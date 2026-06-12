@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import type { ProbeContextBase } from '../../kernel/index'
+import { isSafeRegex } from './regex-safety'
 
 export interface ProbeContext extends ProbeContextBase {}
 
@@ -31,6 +32,16 @@ export async function executeFsMatch(params: FsMatchParams, context: ProbeContex
     const content = readFileSync(fullPath, 'utf-8')
 
     if (regexStr) {
+      // C4 P0 fix: ReDoS guard. Reject unsafe patterns BEFORE invoking
+      // the RegExp engine to prevent catastrophic backtracking attacks
+      // (e.g. (a+)+b on a long 'aaaa...aaa!' input hangs the process).
+      if (!isSafeRegex(regexStr)) {
+        return {
+          matched: false,
+          error: `unsafe regex pattern rejected by ReDoS guard: ${regexStr.slice(0, 64)}`,
+          pattern: regexStr,
+        }
+      }
       const regex = new RegExp(regexStr)
       const matched = regex.test(content)
       return { matched, content, pattern: regexStr }
