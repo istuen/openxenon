@@ -2,7 +2,7 @@ name: Deploy Docs
 
 on:
   push:
-    branches: [main, feat/saturn]
+    branches: [dev, feat/saturn]
     paths: ['docs/**', '.github/workflows/docs.yml', 'package.json', 'bun.lock']
   workflow_dispatch:
 
@@ -42,7 +42,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    if: github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
