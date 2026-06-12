@@ -27,6 +27,25 @@ export interface TransformMapping {
   defaultValue?: unknown
 }
 
+/**
+ * v1.1 fix-p3-refactor nan-predicate: NaN 操作数显式报错。
+ * 修复前: Number(undefined) → NaN, NaN > 5 → false, 静默通过断言
+ *          (predicate 评估者无法区分"实际值 0"和"实际值 NaN")
+ * 修复后: 显式检测 NaN 操作数, 返回 passed: false + 明确 message,
+ *          让调用方知道是数据问题, 不是逻辑问题.
+ */
+function checkNaNOperands(expected: unknown, actual: unknown, op: string): PredicateResult | null {
+  const expNum = Number(expected)
+  const actNum = Number(actual)
+  if (Number.isNaN(expNum) || Number.isNaN(actNum)) {
+    return {
+      passed: false,
+      message: `NaN operand not comparable for ${op}: actual=${String(actual)}, expected=${String(expected)}`,
+    }
+  }
+  return null
+}
+
 export function evaluatePredicate(expected: unknown, actual: unknown, operator: Operator): PredicateResult {
   switch (operator) {
     case 'eq':
@@ -41,17 +60,29 @@ export function evaluatePredicate(expected: unknown, actual: unknown, operator: 
         message: actual !== expected ? 'Not equal (expected different)' : `Equal: ${actual} === ${expected}`,
       }
 
-    case 'gt':
+    case 'gt': {
+      const nanErr = checkNaNOperands(expected, actual, 'gt')
+      if (nanErr) return nanErr
       return { passed: Number(actual) > Number(expected), message: `Expected ${actual} > ${expected}` }
+    }
 
-    case 'gte':
+    case 'gte': {
+      const nanErr = checkNaNOperands(expected, actual, 'gte')
+      if (nanErr) return nanErr
       return { passed: Number(actual) >= Number(expected), message: `Expected ${actual} >= ${expected}` }
+    }
 
-    case 'lt':
+    case 'lt': {
+      const nanErr = checkNaNOperands(expected, actual, 'lt')
+      if (nanErr) return nanErr
       return { passed: Number(actual) < Number(expected), message: `Expected ${actual} < ${expected}` }
+    }
 
-    case 'lte':
+    case 'lte': {
+      const nanErr = checkNaNOperands(expected, actual, 'lte')
+      if (nanErr) return nanErr
       return { passed: Number(actual) <= Number(expected), message: `Expected ${actual} <= ${expected}` }
+    }
 
     case 'regex': {
       if (typeof expected !== 'string' || typeof actual !== 'string') {

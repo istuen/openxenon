@@ -12,6 +12,7 @@
 // =============================================================================
 
 import { existsSync, mkdirSync, renameSync, writeFileSync } from 'fs'
+import { dirname } from 'path'
 import {
   createInitialTaskState,
   createInitialWorkspaceState,
@@ -356,7 +357,9 @@ function writeWorkFrozen(projectRoot: string, workName: string, snapshot: WorkFr
 }
 
 function writeFrozen(path: string, snapshot: unknown): void {
-  const dir = path.substring(0, path.lastIndexOf('/'))
+  // v1.1 fix-p3-refactor path-dirname: 改用 dirname(path) 替代 substring+lastIndexOf('/'),
+  // 兼容 Windows 路径分隔符 (path.sep 在 win32 是 '\\', POSIX 是 '/')
+  const dir = dirname(path)
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
   }

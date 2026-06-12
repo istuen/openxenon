@@ -48,9 +48,16 @@ describe('evaluatePredicate', () => {
       expect(result.passed).toBe(true)
     })
 
-    it('NaN 比较结果为 false', () => {
+    it('NaN 操作数 → passed=false + message 含 "NaN operand" (v1.1 fix-p3-refactor nan-predicate)', () => {
       const result = evaluatePredicate(5, NaN, 'gt')
       expect(result.passed).toBe(false)
+      expect(result.message).toContain('NaN operand')
+    })
+
+    it('undefined 操作数 → NaN → 显式报错 (v1.1 nan-predicate)', () => {
+      const result = evaluatePredicate(5, undefined, 'gt')
+      expect(result.passed).toBe(false)
+      expect(result.message).toContain('NaN operand')
     })
   })
 
@@ -60,9 +67,10 @@ describe('evaluatePredicate', () => {
       expect(result.passed).toBe(true)
     })
 
-    it('NaN 比较返回 false', () => {
+    it('NaN 操作数 → passed=false + message 含 "NaN operand" (v1.1 nan-predicate)', () => {
       const result = evaluatePredicate(5, NaN, 'gte')
       expect(result.passed).toBe(false)
+      expect(result.message).toContain('NaN operand')
     })
   })
 
@@ -72,9 +80,10 @@ describe('evaluatePredicate', () => {
       expect(result.passed).toBe(true)
     })
 
-    it('NaN 比较返回 false', () => {
+    it('NaN 操作数 → passed=false + message 含 "NaN operand" (v1.1 nan-predicate)', () => {
       const result = evaluatePredicate(5, NaN, 'lt')
       expect(result.passed).toBe(false)
+      expect(result.message).toContain('NaN operand')
     })
   })
 

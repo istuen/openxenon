@@ -16,7 +16,8 @@
 
 import { MAX_PROOF_RUNS } from '../constants'
 import { getSemanticNameByInternalRef } from './catalog'
-import type { FrozenProof, FrozenProofProbeResult } from '../schemas/proof-schema'
+import { extractTarget } from './extraction'
+import type { FrozenProof } from '../schemas/proof-schema'
 import {
   emptyProbeStats,
   type ProbeRunRecord,
@@ -24,18 +25,6 @@ import {
   type ProbeTargetStats,
   type ProbeTypeStats,
 } from '../schemas/probe-stats-schema'
-
-/** 从 frozen probe 的 output.verdict.params 抽出 target（path 或 command） */
-function extractTarget(probe: FrozenProofProbeResult): string | undefined {
-  const output = probe.output as { verdict?: { params?: Record<string, unknown> } } | undefined
-  const params = output?.verdict?.params
-  if (!params) return undefined
-  if (typeof params.pattern === 'string') return params.pattern
-  if (typeof params.command === 'string') return params.command
-  if (typeof params.path === 'string') return params.path
-  if (typeof params.url === 'string') return params.url
-  return undefined
-}
 
 /** 从 frozen probe 的 ref 反查语义名；fallback 到 ref 去前缀 */
 function resolveTypeName(ref: string): string {
@@ -116,6 +105,10 @@ export function updateProbeStats(stats: ProbeStats, frozen: FrozenProof): ProbeS
   }
 
   // 追加 proofRun 记录 + FIFO 截断
+  // v1.1 fix-p3-refactor probe-stats-splice-clarify: 显式说明
+  //   - `proofRuns` 是浅克隆副本 ([...stats.proofRuns] line 56)
+  //   - 这里的 `push` + `splice` 只动副本, 不修改入参 stats.proofRuns
+  //   - 入参 stats 保持完整不可变 (functional update 范式)
   const newRun: ProbeRunRecord = {
     proofId: frozen.name,
     timestamp: frozen.runAt,

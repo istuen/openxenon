@@ -181,6 +181,16 @@ function copyV0ToBackup(
 
 // ───────── 顶层入口 ─────────
 
+/** PR-14d: 软警告（域/蓝图 ref 解析失败等）— 不入 IAPError 字典 */
+type InvalidRef = {
+  code: string
+  severity: 'warn'
+  ref: string
+  type: 'domain' | 'blueprint'
+  message: string
+  suggestion: string
+}
+
 export type MigrateResult =
   | {
       ok: true
@@ -191,14 +201,7 @@ export type MigrateResult =
       backupDir?: string
       warnings: string[]
       /** PR-14d: 软警告（域/蓝图 ref 解析失败等）— 不入 IAPError 字典 */
-      invalidRefs?: Array<{
-        code: string
-        severity: 'warn'
-        ref: string
-        type: 'domain' | 'blueprint'
-        message: string
-        suggestion: string
-      }>
+      invalidRefs?: InvalidRef[]
     }
   | {
       ok: false
@@ -207,18 +210,136 @@ export type MigrateResult =
       warnings: string[]
     }
 
+/**
+ * v1.1 fix-p3-refactor migrator-decompose: 从 V0 备份恢复 V1 文件。
+ * 删 V0 原文件, 从 .migrated-v0/ 读内容写到 .run/ 对应 V1 路径.
+ */
+function restoreV0ToV1Paths(
+  projectRoot: string,
+  workName: string,
+  copied: Array<{ rel: string; abs: string; backupAbs: string }>,
+  warnings: string[],
+): void {
+  for (const m of copied) {
+    const restoredAbs = computeV1Path(projectRoot, workName, m.rel)
+    if (!restoredAbs) continue
+    const restoredDir = join(restoredAbs, '..')
+    if (!existsSync(restoredDir)) {
+      mkdirSync(restoredDir, { recursive: true })
+    }
+    try {
+      const content = readFileSync(m.backupAbs)
+      writeFileSync(restoredAbs, content)
+    } catch {
+      warnings.push(`failed to restore ${m.rel} to V1 path`)
+    }
+  }
+}
+
+/**
+ * v1.1 fix-p3-refactor migrator-decompose: 重新生成 V1 产物
+ *   - per-work slim 索引 (domains.json + blueprints.json)
+ *   - .work 出生证明 (planLock=null, assets 重算)
+ * 返回 invalidRefs 软警告 (PR-14d).
+ */
+function regenerateV1Artifacts(
+  projectRoot: string,
+  workName: string,
+  workOxnPath: string,
+): {
+  artifactsWritten: string[]
+  invalidRefs: InvalidRef[]
+} {
+  const workDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
+  const workContent = readFileSync(workOxnPath, 'utf-8')
+  const artifactsWritten: string[] = []
+  const invalidRefs: InvalidRef[] = []
+
+  const domainsIdx = buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
+  const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
+  const domainsJsonPath = getPerWorkDomainsJsonPath(projectRoot, workName)
+  const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
+  writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
+  writePerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath, outPath: blueprintsJsonPath })
+  artifactsWritten.push(domainsJsonPath, blueprintsJsonPath)
+
+  // 解析 work.oxn context
+  const goalMatch = workContent.match(/goal\s*=\s*"((?:[^"\\]|\\.)*)"/)
+  const goal = goalMatch?.[1]?.replace(/\\"/g, '"') ?? ''
+  const constraintsMatch = workContent.match(/constraints\s*=\s*\[([^\]]*)\]/)
+  const constraints: string[] = constraintsMatch
+    ? Array.from(constraintsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!)
+    : []
+  const maxItersMatch = workContent.match(/max_iterations\s*=\s*(\d+)/)
+  const maxIterations = maxItersMatch ? Number.parseInt(maxItersMatch[1]!, 10) : 3
+
+  // PR-14d: 收集无效 ref
+  for (const d of domainsIdx.domains) {
+    if (d.status === 'invalid') {
+      const ref = d.ref ?? d.name
+      const reason = ref.startsWith('@oxn/')
+        ? '@oxn/ scope has no builtin domain registry (V1)'
+        : (d.errors[0] ?? 'domain file not found')
+      invalidRefs.push({
+        code: 'OXN_WORK_REFS_UNRESOLVED',
+        severity: 'warn',
+        ref,
+        type: 'domain',
+        message: `Domain '${d.name}' declared but unresolved during migrate: ${reason}`,
+        suggestion: `Check domain name spelling, or run \`oxn domain create ${d.name}\``,
+      })
+    }
+  }
+  for (const b of blueprintsIdx.blueprints) {
+    if (b.status === 'invalid') {
+      const ref = b.ref ?? b.name
+      const reason = ref.startsWith('@oxn/')
+        ? '@oxn/ scope has no builtin blueprint registry (V1)'
+        : (b.errors[0] ?? 'blueprint file not found')
+      invalidRefs.push({
+        code: 'OXN_WORK_REFS_UNRESOLVED',
+        severity: 'warn',
+        ref,
+        type: 'blueprint',
+        message: `Blueprint '${b.name}' declared but unresolved during migrate: ${reason}`,
+        suggestion: `Check blueprint name spelling, or run \`oxn blueprint create ${b.name}\``,
+      })
+    }
+  }
+
+  const domainAssets = domainsIdx.domains
+    .filter((d) => d.status === 'ok')
+    .map((d) => ({
+      name: d.name,
+      scope: d.scope,
+      version: 1,
+      fileHash: hashFile(join(projectRoot, d.file)) ?? '',
+    }))
+  const blueprintAssets = blueprintsIdx.blueprints
+    .filter((b) => b.status === 'ok')
+    .map((b) => ({
+      name: b.name,
+      version: b.version,
+      fileHash: hashFile(join(projectRoot, b.file)) ?? '',
+    }))
+
+  const cert: BirthCert = createBirthCert({
+    workName,
+    mode: 'task',
+    goal,
+    constraints,
+    maxIterations,
+    assets: { domains: domainAssets, blueprints: blueprintAssets },
+  })
+  writeWorkFile(projectRoot, workName, cert)
+  artifactsWritten.push(join(workDir, WORK_FILE))
+
+  return { artifactsWritten, invalidRefs }
+}
+
 export function migrateWorkToV1(projectRoot: string, workName: string): MigrateResult {
   const workDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
   const workOxnPath = join(workDir, 'work.oxn')
-  // PR-14d: 提前声明，让 try/catch 失败时也可用
-  const invalidRefs: Array<{
-    code: string
-    severity: 'warn'
-    ref: string
-    type: 'domain' | 'blueprint'
-    message: string
-    suggestion: string
-  }> = []
 
   // ── 1. work.oxn 必须存在 ──
   if (!existsSync(workOxnPath)) {
@@ -264,7 +385,7 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
     )
   }
 
-  // ── 3. 备份（copy 而非 move，V0 文件留作审计）──
+  // ── 3. 备份 V0 → 删 V0 原文件 ──
   let backupDir: string
   let copied: Array<{ rel: string; abs: string; backupAbs: string }>
   try {
@@ -279,8 +400,6 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
       warnings,
     }
   }
-
-  // 备份成功后删 V0 原文件（保留 .migrated-v0/ 备份）
   for (const m of copied) {
     try {
       unlinkSync(m.abs)
@@ -290,112 +409,14 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
   }
 
   // ── 4. 在新位置重建 V1 文件 ──
-  // 4.1 移动 V0 文件到 V1 路径（.run/state.json 等）
-  // 4.2 重新生成 .work（PR-2/6）：读取 work.oxn 解析 → birth cert
-  // 4.3 重新生成 domains.json / blueprints.json（PR-3/6）：merger
-  const artifactsWritten: string[] = []
+  restoreV0ToV1Paths(projectRoot, workName, copied, warnings)
 
-  // 把 V0 文件从备份读 → 写到 V1 路径
-  for (const m of copied) {
-    const restoredAbs = computeV1Path(projectRoot, workName, m.rel)
-    if (!restoredAbs) continue
-    const restoredDir = join(restoredAbs, '..')
-    if (!existsSync(restoredDir)) {
-      mkdirSync(restoredDir, { recursive: true })
-    }
-    try {
-      // 从备份读（V0 原文件已被 unlink），写到 V1 路径
-      const content = readFileSync(m.backupAbs)
-      writeFileSync(restoredAbs, content)
-    } catch {
-      warnings.push(`failed to restore ${m.rel} to V1 path`)
-    }
-  }
-
-  // 生成 .work（planLock=null，assets 重新算）
+  let artifactsWritten: string[] = []
+  let invalidRefs: InvalidRef[] = []
   try {
-    const workContent = readFileSync(workOxnPath, 'utf-8')
-    // 简单提取：直接调 merger 间接得到 ref 解析（不需要 AST 完整解析）
-    const domainsIdx = buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
-    const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
-    const domainsJsonPath = getPerWorkDomainsJsonPath(projectRoot, workName)
-    const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
-    writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
-    writePerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath, outPath: blueprintsJsonPath })
-    artifactsWritten.push(domainsJsonPath)
-    artifactsWritten.push(blueprintsJsonPath)
-
-    // 解析 work.oxn context 来填 goal/constraints/maxIterations
-    const goalMatch = workContent.match(/goal\s*=\s*"((?:[^"\\]|\\.)*)"/)
-    const goal = goalMatch?.[1]?.replace(/\\"/g, '"') ?? ''
-    const constraintsMatch = workContent.match(/constraints\s*=\s*\[([^\]]*)\]/)
-    const constraints: string[] = constraintsMatch
-      ? Array.from(constraintsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!)
-      : []
-    const maxItersMatch = workContent.match(/max_iterations\s*=\s*(\d+)/)
-    const maxIterations = maxItersMatch ? Number.parseInt(maxItersMatch[1]!, 10) : 3
-
-    // PR-14d: 收集无效的 ref（被 merger 排除但 work.oxn 仍声明的）
-    // 用 ref-diagnostic 工具构造软警告条目（PR-14 命名空间）
-    for (const d of domainsIdx.domains) {
-      if (d.status === 'invalid') {
-        const ref = d.ref ?? d.name
-        const reason = ref.startsWith('@oxn/')
-          ? '@oxn/ scope has no builtin domain registry (V1)'
-          : (d.errors[0] ?? 'domain file not found')
-        invalidRefs.push({
-          code: 'OXN_WORK_REFS_UNRESOLVED',
-          severity: 'warn',
-          ref,
-          type: 'domain',
-          message: `Domain '${d.name}' declared but unresolved during migrate: ${reason}`,
-          suggestion: `Check domain name spelling, or run \`oxn domain create ${d.name}\``,
-        })
-      }
-    }
-    for (const b of blueprintsIdx.blueprints) {
-      if (b.status === 'invalid') {
-        const ref = b.ref ?? b.name
-        const reason = ref.startsWith('@oxn/')
-          ? '@oxn/ scope has no builtin blueprint registry (V1)'
-          : (b.errors[0] ?? 'blueprint file not found')
-        invalidRefs.push({
-          code: 'OXN_WORK_REFS_UNRESOLVED',
-          severity: 'warn',
-          ref,
-          type: 'blueprint',
-          message: `Blueprint '${b.name}' declared but unresolved during migrate: ${reason}`,
-          suggestion: `Check blueprint name spelling, or run \`oxn blueprint create ${b.name}\``,
-        })
-      }
-    }
-
-    const domainAssets = domainsIdx.domains
-      .filter((d) => d.status === 'ok')
-      .map((d) => ({
-        name: d.name,
-        scope: d.scope,
-        version: 1,
-        fileHash: hashFile(join(projectRoot, d.file)) ?? '',
-      }))
-    const blueprintAssets = blueprintsIdx.blueprints
-      .filter((b) => b.status === 'ok')
-      .map((b) => ({
-        name: b.name,
-        version: b.version,
-        fileHash: hashFile(join(projectRoot, b.file)) ?? '',
-      }))
-
-    const cert: BirthCert = createBirthCert({
-      workName,
-      mode: 'task',
-      goal,
-      constraints,
-      maxIterations,
-      assets: { domains: domainAssets, blueprints: blueprintAssets },
-    })
-    writeWorkFile(projectRoot, workName, cert)
-    artifactsWritten.push(join(workDir, WORK_FILE))
+    const r = regenerateV1Artifacts(projectRoot, workName, workOxnPath)
+    artifactsWritten = r.artifactsWritten
+    invalidRefs = r.invalidRefs
   } catch (err) {
     warnings.push(`failed to regenerate .work: ${err instanceof Error ? err.message : String(err)}`)
   }

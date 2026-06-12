@@ -15,6 +15,7 @@
 // =============================================================================
 
 import { getSemanticNameByInternalRef } from './catalog'
+import { extractTarget } from './extraction'
 import type { FrozenProof, FrozenProofProbeResult } from '../schemas/proof-schema'
 import type { ProbeStats } from '../schemas/probe-stats-schema'
 import type { Evidence, EmergentPattern, Insight, ProbeStatsView, ProbeTypeStatsView } from '../schemas/insight-schema'
@@ -26,18 +27,6 @@ function extractFact(probe: FrozenProofProbeResult): string {
   if (verdict?.message) return verdict.message
   if (verdict?.actual !== undefined) return JSON.stringify(verdict.actual)
   return probe.errorMessage ?? '(no detail)'
-}
-
-/** 从 frozen probe 的 output 抽 target */
-function extractTarget(probe: FrozenProofProbeResult): string | undefined {
-  const output = probe.output as { verdict?: { params?: Record<string, unknown> } } | undefined
-  const params = output?.verdict?.params
-  if (!params) return undefined
-  if (typeof params.pattern === 'string') return params.pattern
-  if (typeof params.command === 'string') return params.command
-  if (typeof params.path === 'string') return params.path
-  if (typeof params.url === 'string') return params.url
-  return undefined
 }
 
 /** 从 frozen probe 的 ref 反查语义名；fallback 去前缀 */

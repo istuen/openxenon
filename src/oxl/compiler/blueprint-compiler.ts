@@ -196,7 +196,7 @@ export class OxnCompiler implements IOxnCompiler {
 
   compile(raw: Blueprint, ctx: CompileContext): CompiledBlueprint {
     const dagNodes: DagNode[] = (raw.parts || []).map((part) => ({
-      id: part.id || (part as any).name,
+      id: part.id || part.name || '',
       deps: part.deps || [],
     }))
 
@@ -250,8 +250,8 @@ export class OxnCompiler implements IOxnCompiler {
 
         const resolvedPartParams = resolveParams(partContent, part.params || {})
 
-        if ((part as any).min_version !== undefined) {
-          const required = (part as any).min_version as number
+        if (part.min_version !== undefined) {
+          const required = part.min_version
           const actual = (partContent._version as number) || 1
           if (actual < required) {
             throw new Error(
@@ -261,7 +261,7 @@ export class OxnCompiler implements IOxnCompiler {
         }
 
         const baseProbes = (partContent.probes as Array<Record<string, unknown>>) || []
-        const partProbes = ((part as any).probes as Array<Record<string, unknown>>) || []
+        const partProbes = (part.probes as Array<Record<string, unknown>>) || []
         const mergedProbes = mergeProbes(baseProbes, partProbes)
 
         resolvedPart = {
@@ -270,8 +270,8 @@ export class OxnCompiler implements IOxnCompiler {
           name: part.name || (partContent.name as string),
           deps: part.deps || (partContent.deps as string[]) || [],
           params: resolvedPartParams,
-          target: (part as any).target || (partContent as any).target,
-          action: (part as any).action || (partContent as any).action,
+          target: part.target || (partContent as { target?: unknown }).target,
+          action: part.action || (partContent as { action?: unknown }).action,
           probes: mergedProbes,
         }
       } else {
@@ -283,8 +283,8 @@ export class OxnCompiler implements IOxnCompiler {
           name: part.name,
           deps: part.deps || [],
           params: part.params || {},
-          target: (part as any).target,
-          action: (part as any).action,
+          target: part.target,
+          action: part.action,
           probes: mergedInlineProbes,
         }
       }
@@ -330,8 +330,8 @@ export class OxnCompiler implements IOxnCompiler {
         const partContent =
           deps?.parts.get(part.ref) || deps?.parts.get(`project/${part.ref}`) || deps?.parts.get(`./${part.ref}`)
         if (partContent) {
-          if ((part as any)._depHash && partContent._compiled_hash) {
-            const expected = (part as any)._depHash as string
+          if (part._depHash && partContent._compiled_hash) {
+            const expected = part._depHash
             const actual = partContent._compiled_hash as string
             if (actual !== expected) {
               throw new Error(
