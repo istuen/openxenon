@@ -24,10 +24,6 @@ export function resolveArsenalRoot(scope: Scope, cwd?: string): string {
   return join(resolveBoundary(scope, cwd), 'arsenal')
 }
 
-export function resolveForgeRoot(scope: Scope, cwd?: string): string {
-  return join(resolveBoundary(scope, cwd), 'arsenal', 'drafts')
-}
-
 export function resolveHallRoot(scope: Scope, cwd?: string): string {
   return scope === 'global' ? join(GLOBAL_BOUNDARY, 'hall') : join(getProjectBoundary(cwd), 'hall')
 }
