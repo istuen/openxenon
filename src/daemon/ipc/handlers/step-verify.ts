@@ -1,13 +1,10 @@
-import { registerRoute } from '../router'
-import { parseJSONBody } from '../validation'
-import { badRequest } from '../errors'
 import { taskCircuitBreaker } from '../../circuit-breaker'
 import { recoveryManager } from '../../recovery'
+import { badRequest } from '../errors'
+import { registerRoute } from '../router'
+import { parseJSONBody } from '../validation'
 
-async function handleStepVerify(
-  request: Request,
-  _projectPath: string
-): Promise<Response> {
+async function handleStepVerify(request: Request, _projectPath: string): Promise<Response> {
   try {
     const body = await parseJSONBody<{
       taskId?: string
@@ -28,12 +25,12 @@ async function handleStepVerify(
         JSON.stringify({
           error: 'CircuitBreakerOpen',
           message: 'Task execution is paused due to repeated failures. Please wait and retry.',
-          statusCode: 503
+          statusCode: 503,
         }),
         {
           status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        }
+          headers: { 'Content-Type': 'application/json' },
+        },
       )
     }
 
@@ -47,7 +44,7 @@ async function handleStepVerify(
       if (body.taskId && body.partId) {
         recoveryManager.createRecoveryPoint(body.taskId, body.partId, {
           verified: body.passed,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         })
       }
     }
@@ -58,12 +55,12 @@ async function handleStepVerify(
         taskId: body.taskId,
         partId: body.partId,
         circuitBreakerState: taskCircuitBreaker.getState(),
-        message: body.passed ? 'Part verified successfully' : 'Part verification failed'
+        message: body.passed ? 'Part verified successfully' : 'Part verification failed',
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -72,12 +69,12 @@ async function handleStepVerify(
       JSON.stringify({
         error: 'StepVerifyFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }

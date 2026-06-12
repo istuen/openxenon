@@ -1,0 +1,32 @@
+---
+categories:
+  - Changed
+  - Fixed
+  - Added
+---
+
+- **i18n Phase B（消费面迁移）**：把 30+ 处硬编码中文字符串迁移到 t() 调用，闭合 v0.0.26 引入的"消费面漂移"
+- 扩展 `src/i18n/zh-CN.json`：新增 5 命名空间（`errors.*` / `cache.*` / `gc.*` / `migrate.*` / `explore.*`）共 50+ key；扩展 `daemon.*` 至 12 key（statusRunningLine1-3 / startAlreadyRunning / startSuccess / startFailed / startCheckSocket / errorRunning / errorTimeout / errorComm / suggestionStart / suggestionTimeout）
+- 扩展 `init.*` 至 12 key（`toolsReset` / `toolsUpdated`）；扩展 `config.*` 至 8 key（`showTitle` 模板 + 5 个 `showLineXxx`）
+- 新增 `work.*` 命名空间（17 key：`lockRequired` / `validateRequired` / `lockHint` / `unlockRequired` / `unlockHint` / `unlockSuggestion` / `modifyForbidden` / `modifyHint` / `notStarted` / `notStartedHint` / `emptyList` / `created` / `workExists` / `invalidId` / `invalidTaskName` / `birthCertInvalid` / `migrateRequired`）
+- **改 12 个文件**：
+  - `src/cli/socket-client.ts` (5 处 → `t('daemon.*')`)
+  - `src/cli/daemon-status.ts` (3 处 → `t('daemon.*')`)
+  - `src/cli/daemon-start.ts` (3 处 → `t('daemon.*')`)
+  - `src/cli/work.ts` (7 处 OXN_NO_PROJECT + 5 处 suggestion + 2 处硬编码 human → `t('errors.projectNotInit')` + `t('work.*')`)
+  - `src/cli/blueprint.ts` (1 处 → `t('errors.projectNotInit')`)
+  - `src/cli/domain.ts` (1 处 → `t('errors.projectNotInit')`)
+  - `src/cli/config.ts` (整段模板 → `t('config.showTitle')` + `t('config.showLineXxx')` 系列)
+  - `src/cli/cache.ts` (1 处 → `t('cache.usage')`)
+  - `src/cli/cache-stats.ts` (3 处 → `t('cache.*')`)
+  - `src/cli/cache-clear.ts` (2 处 → `t('cache.*')`)
+  - `src/cli/gc.ts` (4 处 → `t('gc.*')`)
+  - `src/cli/oxn-migrate-cmd.ts` (2 处 → `t('migrate.*')`)
+  - `src/cli/explore-cmd.ts` (20 处核心错误 → `t('explore.*')`)
+- **i18n 死代码清理**：删除 `getCurrentLocale()`（0 调用方，`src/i18n/index.ts:24-26`）
+- **`init.ts` 真接 `setLocale`**：让 `oxn init --locale <l>` 真的切换本进程 i18next language（v0.0.28 之前只持久化 ProjectConfig.locale，进程内仍输出 zh-CN fallback）
+- **i18n 模块边界守卫**：`src/i18n/index.ts` 顶部加注释说明 v0.0.29+ 行为契约
+- bump `package.json` → **0.0.29**
+- 已知遗留：description 字段（citty 元数据，--help 输出）未走 i18n（属 PR-3 范畴）；hall.ts / oxn-unpack.ts / oxn-validate.ts / export.ts / global-hall.ts / oxn-compile.ts 共 6 文件 15 处硬编码未走 t()（属 PR-2.5 或 PR-3 范畴）
+- 关联 forge：[`2026-06-11-i18n-version-drift.md`](../.openxenon/forges/2026-06-11-i18n-version-drift.md) §5.2
+- 关联 work：[`.openxenon/works/i18n-pr2-consume-migrate-v2/`](../.openxenon/works/i18n-pr2-consume-migrate-v2/) (refactor-safe 蓝图 4 阶段闭环)

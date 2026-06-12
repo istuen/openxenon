@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs'
-import { DAEMON_LOG_PATH, CORE_DAEMON_CONFIG_PATH } from '../infra/global'
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from '../infra/filesystem'
+import { CORE_DAEMON_CONFIG_PATH, DAEMON_LOG_PATH } from '../infra/global'
 import { isDaemonRunning } from './process'
 
 export interface DaemonStatus {
@@ -17,7 +17,7 @@ export function getDaemonStatus(): DaemonStatus {
   if (existsSync(DAEMON_LOG_PATH)) {
     try {
       const logContent = readFileSync(DAEMON_LOG_PATH, 'utf-8')
-      const lines = logContent.split('\n').filter(line => line.trim().length > 0)
+      const lines = logContent.split('\n').filter((line) => line.trim().length > 0)
       recentLogs = lines.slice(-10)
     } catch (error) {
       console.error(`Failed to read log file: ${error}`)
@@ -28,13 +28,13 @@ export function getDaemonStatus(): DaemonStatus {
     isRunning,
     pid,
     logPath: DAEMON_LOG_PATH,
-    recentLogs
+    recentLogs,
   }
 }
 
 export function setDaemonAddress(socketPath: string): void {
   const config = {
-    socketPath
+    socketPath,
   }
   writeFileSync(CORE_DAEMON_CONFIG_PATH, JSON.stringify(config), 'utf-8')
 }

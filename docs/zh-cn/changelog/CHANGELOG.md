@@ -1,259 +1,108 @@
-# 变更日志
+# OpenXenon 更新日志（中文）
 
-本文件记录项目所有重要变更。
+OpenXenon 的所有重要变更都会记录在此文件。
 
-## [0.0.20] - 2026-05-17
+格式基于 [Keep a Changelog](https://keepachangelog.com/)。
 
-### 新增
-- Hall 仪表盘，支持 Arsenal/Forge 资产展示和详情视图
-- Task 探索和状态管理命令
-- 增量编译与编译缓存
-- Daemon 运行时监控、进程管理和 SSE 事件
+## [0.1.0] - 2026-06-11
 
-### 变更
-- 支持目录扫描功能
+### Added
+- **i18n Phase B 完整闭环 + Skills en 翻译**：en locale 全量可用（CLI 文案 + Skills instruction）
+- **en.json**：新建 `src/i18n/en.json`（105 key，全量英文镜像，与 zh-CN.json 1:1 结构对齐）
+- **en skill instruction**：新建 `src/skills/locales/en/` 下 4 个 instruction.md（oxn-cli / oxn-work / oxn-work/references/blueprint-format / oxn-proof），~1200 行英文翻译
+- **i18n 测试**：`src/i18n/__tests__/`（12 个：基本功能 + key 完整性 + en-zh parity）
+- **Skills i18n 测试**：`src/skills/__tests__/skill-i18n.test.ts`（7 个守卫测试）
 
-### 修复
-- 解决所有类型检查错误
+### Changed
+- `src/i18n/index.ts` 注册 en 资源
+- `src/skills/loader.ts` 重构：en 分支导入真实 en 资源；`getSkillContent` 非默认 locale 缺失时 throw（ADR-6）
 
-## [0.0.19] - 2026-05-16
+### Removed
+- `src/skills/locales/zh-CN/oxn-resume/instruction.md`（80 行死资产，0 消费方）
 
-### 新增
-- Hall（研讨厅）仪表盘
-- Forge/Arsenal 物理分离
-- Harvest 和 Probe 判定结果展示
+### Note
+- 关联 forge：`forges/2026-06-11-i18n-version-drift.md` §5.3-5.4
+- 版本语义化跳跃 0.0.30 → 0.1.0 因 Skills en 翻译的验收方式不同（需端到端 LLM 行为验证）
 
-### 变更
-- 统一 blueprint/arsenal/forge 文件结构
-- 完全重写 - 新的交互拓扑、四大核心概念、修订的文档结构
+## [0.0.29] - 2026-06-11
 
-### 修复
-- 添加 blueprint 支持到 forge --save 命令
-- 改为项目级 Hall 而非全局
-- 修复 Hall 文档在 README 中的位置
-- 修复 oxn-trace skill 使用 'oxn export' 而非不存在的 'oxn api'
+### Changed
+- **i18n Phase B（消费面迁移）**：把 30+ 处硬编码中文字符串迁移到 t() 调用，闭合 v0.0.26 引入的"消费面漂移"
+- 扩展 `src/i18n/zh-CN.json`：新增 5 命名空间（errors / cache / gc / migrate / explore）共 50+ key；扩展 daemon / init / config / work 至 12-17 key
+- 改 12 个文件：socket-client / daemon-status / daemon-start / work / blueprint / domain / config / cache / cache-stats / cache-clear / gc / oxn-migrate-cmd / explore-cmd
 
-## [0.0.18] - 2026-05-15
+### Fixed
+- 删除 i18n 死代码 `getCurrentLocale()`（0 调用方）
+- `init.ts` 真接 `setLocale`：让 `oxn init --locale <l>` 真的切换本进程 i18next language
 
-### 新增
-- F3 AI 执行循环 - 隐私隔离
-- HTML 渲染器用于 task-trace 报告和 Blueprint DAG 预览
+### Note
+- 关联 forge：`forges/2026-06-11-i18n-version-drift.md` §5.2
+- 已知遗留：description 字段未走 i18n（属 PR-3 范畴）；hall/oxn-unpack/oxn-validate/export/global-hall/oxn-compile 6 文件 15 处未走 t()（属 PR-2.5 或 PR-3 范畴）
+- 下版本（0.0.30）推 Phase B 资源 + 测试
 
-### 变更
-- 移除 proof 概念，扁平化 stage 结构
-- 合并 proof 到 stage，统一 probe/definition 调用 schema
-- 统一所有命令使用集中式输出模块
+## [Unreleased] - 0.0.28+
 
-### 移除
-- 弃用的 CLI 命令（draft、force-pass、rollback、inspect、trace、api、proof-list）
+### Fixed
+- **task.deps 字段语法收紧**为唯一合法写法 `deps = ["t1", "t2"]`（grammar 加 `'deps' '='` 关键字引导 parser disambiguation）
+- 拒绝写法：裸数组 `["t1"]` / `deps ["t1"]`（无 `=` 号） / 重复 deps 字段
+- 修复 grammar ↔ examples ↔ 真实 work 三方漂移：之前 4 种 deps 写法在 parser 阶段全部 fail
+- 迁移：`.openxenon/works/poc-git-isolation/work.oxn` 3 行 `deps [...]` → `deps = [...]`
+- **ts-compiles probe 修复**：当 `path` 与 `tsconfig`/`--project` 同时传入时，TSC 抛出 `error TS5042: Option 'project' cannot be mixed with source files on a command line.`——修复采用方案 A：写临时 `.tsconfig.oxn-<hash>.json`，命令退化为 `tsc --noEmit --project <tmp>`
+- **i18n PR-1**：闭合 `bun run version:check` 失败（`docs/zh-cn|en/changelog/CHANGELOG.md` 缺失）+ 修 `src/cli/index.ts:147` 写死 `'1.0.0'` → 改用 `pkg.version`
 
-## [0.0.17] - 2026-05-14
+### Added
+- `src/oxl/__tests__/task-deps.test.ts` — 5 合法 + 5 非法 task.deps 端到端契约测（10 个 testcase 全绿）
+- `src/oxl/__tests__/examples-parsing.test.ts` 升级为对真实 work 的真 parse 测（test.each 9 个 case 全绿）
+- `src/infra/probes/__tests__/ts-compiles.test.ts`：8 个单元测试覆盖三种参数组合
+- `docs/zh-cn/changelog/CHANGELOG.md` + `docs/en/changelog/CHANGELOG.md`（i18n PR-1）
 
-### 新增
-- Stage/Probe 命名空间和 Blueprint v1 架构
-- Skill 引用支持 skill-compiler
-- 探索机制 - 覆盖率、质量、自动化的 markdown 报告
+### Note
+- i18n Phase A 漂移备忘（详见 `forges/2026-06-11-i18n-version-drift.md §5.1`）：
+  - 36 处硬编码中文字符串未走 `t()`（9 处 OXN_NO_PROJECT + 7 处 daemon 错误 + 20 处其他）
+  - en locale 资源（CLI i18next + Skills prompt）缺失
+  - i18n 模块 + Skills 模块 0 单测
+  - 下版本（0.0.29）推 Phase B
 
-### 变更
-- 优化代码性能和减少重复
+## [0.0.27] - 2026-06-11
 
-### 修复
-- DAG 基础的 stage 顺序
-- 统一 Schema 和 Skill 引用的 probe 类型命名
-- 使用 kebab-case 名称作为 Task ID 而非随机 UUID
+### Added
+- `oxn-validate` CLI 命令
+- OXN DSL example files
+- Work type shorthand syntax
+- Part refs in slotBindings
 
-## [0.0.16] - 2026-05-13
+### Removed
+- `src/arsenals/builtin.ts` 及 `src/arsenals/` 空目录
+- `src/kernel/probes/` → `src/kernel/verdicts/`（物理重命名，关闭命名歧义）
 
-### 新增
-- Arsenal 注册表和语义注解搜索
-- ProbeDefinitionSchema
-- 宪法级 eslint 规则
+### Fixed
+- grammar ↔ examples ↔ 真实 work 三方漂移（task.deps 语法）
 
-### 变更
-- 迁移到 kernel/infra/arsenals FP 架构
-- 合并 api 和 cli
-- 简化物理架构为零数据库
-- 将 meta-forge 约束内部化到 YAML 文件
+### Note
+- i18n Phase A 漂移备忘（详见 `forges/2026-06-11-i18n-version-drift.md §5.1`）：见 [Unreleased] 段
 
-### 修复
-- 解决高危和中危漏洞
+## [0.0.26] - 2026-06-10
 
-## [0.0.15] - 2026-05-12
+### Added
+- i18n Phase A（`src/i18n/index.ts` + `zh-CN.json`，i18next ^26.2.0，3 命名空间 / 18 条文案）
+- OxnKernelAdapter migrated to oxn-dsl layer
+- explore scan index mode
+- Update skills to OXN DSL v3.1
 
-### 新增
-- Kernel lambda vacuum 重构
-- Daemon IPC 使用 receiver.ts 和 handlers/
-- CLI handlers 使用 socket-client 而非导入 daemon 模块
+### Note
+- 已知遗留（PR-1 修复 / PR-2 跟进）：i18n 消费面漂移、en 资源缺失、模块 0 单测
 
-### 变更
-- 连接 daemon executor 到 kernel evaluator
-- 物理宪法 enforcement
+## [Unreleased] - v0.1-final
 
-### 移除
-- 移除违反 Lambda Vacuum 的 dead kernel/probes/executor.ts
+### 重大变更
+- i18n Phase B 准备中（PR 拆分见 `forges/2026-06-11-i18n-version-drift.md`）
 
-## [0.0.14] - 2026-05-11
+### Added
 
-### 新增
-- Arsenal list 显示 stages 并支持类型/来源过滤
-- 内置资产 fallback，Skills 去除 daemon 引用
+### Changed
 
-### 变更
-- 更新 README 和 architecture.md 到 0.1 探索模式
-- 移除学术术语，使用通俗工程语言
+### Removed
 
-### 修复
-- 支持 oxn forge probe -s 使用 YAML 格式
-- 支持 oxn arsenal inspect 使用 <type>/<name> 格式
-- 接受 fs_exists/fs_not_exists probes 的 params.path 和 params.pattern
+### Deprecated
 
-## [0.0.13] - 2026-05-10
-
-### 新增
-- 实现 arsenal 注册表和搜索
-- 实现带语义注解的 arsenal 注册表和搜索
-- Skill-compiler 输出到 <skillId>/SKILL.md
-
-### 变更
-- 净化 Skills
-- 修复 Forge/Task 循环
-
-### 修复
-- Skill-compiler 在 SKILL.md frontmatter 中使用 name: 而非 skill:
-
-## [0.0.12] - 2026-05-09
-
-### 新增
-- Layer 1 Kernel Schema 测试
-- 基于文件的配置和纯文件系统状态规格
-
-### 变更
-- 从核心模块移除数据库引用
-- 更新 handlers 使用追加-only task-trace 和原子 manifest
-- 更新 runtimes、server、skills 为纯文件系统架构
-
-### 修复
-- 对齐代码和文档与当前 Schema
-- ProofInvocationSchema.probeRefs 现在接受 ProbeInvocation[]
-
-## [0.0.11] - 2026-05-08
-
-### 新增
-- CLI task 命令使用直接文件系统操作
-
-### 变更
-- 重构 README 和手册以提高清晰度
-
-### 修复
-- StageDefinitionSchema 添加 description
-- ProofDefinitionSchema.probes 结构化
-- ParameterDefSchema.description 必填
-
-## [0.0.10] - 2026-05-07
-
-### 新增
-- MIT 许可证
-
-### 变更
-- 移除 proof 概念，合并验证到 stage 扁平字段
-
-## [0.0.9] - 2026-05-06
-
-### 新增
-- BlueprintCompiler 集成到 task pipeline
-- L2 self-hosting 支持
-
-### 变更
-- 从文件路径派生 arsenal 状态（draft/canonical）
-
-### 修复
-- proof.probes 迁移和 probe 参数提取
-- 解决剩余类型检查错误
-
-## [0.0.8] - 2026-05-05
-
-### 新增
-- 标准生命周期 DRAFT/CANONICAL
-- /oxn-forge skill 用于生成 Draft 标准资产
-
-### 变更
-- 将 standards 命令重命名为 arsenal
-- 将 standards 重命名为 arsenals 并统一路径
-
-### 修复
-- 解决低危漏洞
-
-## [0.0.7] - 2026-05-04
-
-### 新增
-- Blueprint 模板和 Core tasks 表
-- Blueprints 资产类型支持
-- Blueprint CRUD 和 stage 引用解析器
-
-### 变更
-- 扩展 BlueprintSchema 添加 topology 和 edges
-- 添加 scope 和 state 过滤器到 arsenal 命令
-
-## [0.0.6] - 2026-05-03
-
-### 新增
-- 沙箱模式和 arsenal 导出/导入
-- Meta-forge blueprint 用于引导资产生成
-
-### 变更
-- 清理 post-mvp 功能 - 移除 draft/export/gc/daemon 命令和未使用的 proofs
-
-## [0.0.5] - 2026-05-02
-
-### 新增
-- 文件系统优先的 task 执行架构
-- BlueprintParser 用于 stage 声明
-
-### 变更
-- 重构 arsenals 目录并添加 migrate 命令
-
-### 修复
-- Blueprint-parser 正确处理 probes 上下文中的 stage 声明
-
-## [0.0.4] - 2026-05-01
-
-### 新增
-- Blueprint 模板和 Core tasks 表
-
-### 变更
-- 迁移项目数据库到三表扁平 schema
-
-### 修复
-- 统一 task 状态为大写并添加 task 目录创建
-
-## [0.0.3] - 2026-04-30
-
-### 新增
-- Task-Blueprint-Stage 的 Zod schemas
-- 重构 CLI 命令
-- 全局 --json flag 和 task 命令
-
-### 变更
-- 实现 flat-schema-migrator 与 XnMigrator 和 draft 系统
-
-## [0.0.2] - 2026-04-29
-
-### 新增
-- HTTP API 迁移到 Unix Socket 通信
-- fs* proofs 的默认 Stage 模板
-
-### 变更
-- 从 xn 迁移到 oxn 命名
-- 将 Xenonix 重命名为 OpenXenon
-- 用 Blueprint 替换 Playbook
-- 统一 Blueprint/Stage/Proof 命名
-
-## [0.0.1] - 2026-04-28
-
-### 新增
-- 初始提交
-- Skill 注入系统和适配器支持
-- Daemon 健康检查和错误处理
-- Task 执行 API
-- Xn* 接口和核心类型
-- Stage 模块和类型重构
+### Fixed

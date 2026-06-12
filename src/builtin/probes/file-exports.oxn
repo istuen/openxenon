@@ -1,0 +1,5 @@
+probe "file-exports" align "FileExports" {
+  description = "进程隔离 runtime import 提取模块的 exports 列表（exports.length > 0 → PASS）"
+  prop "path" { type = string; required = true }
+  output { exports = list<string>; exportCount = number; isolated = boolean; durationMs = number }
+}

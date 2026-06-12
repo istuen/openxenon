@@ -1,6 +1,6 @@
 import { parse as parseYaml } from 'yaml'
-import { topologicalSort, type DagNode } from '../../kernel/schemas/dag-validator'
-import { type Blueprint, type Part } from '../../kernel/schemas/blueprint.schema'
+import type { Blueprint, Part } from '../../kernel/index'
+import { type DagNode, topologicalSort } from '../../oxl/validators/blueprint-dag'
 
 export interface BlueprintRendererOptions {
   blueprintName: string
@@ -22,9 +22,9 @@ export function blueprintToDagHtml(options: BlueprintRendererOptions): string {
     return renderErrorHtml(`Blueprint 没有定义任何 Part: ${blueprintName}`)
   }
 
-  const dagNodes: DagNode[] = blueprint.parts.map(p => ({
+  const dagNodes: DagNode[] = blueprint.parts.map((p) => ({
     id: p.id,
-    deps: p.deps || []
+    deps: p.deps || [],
   }))
 
   let sortedIds: string[]
@@ -52,7 +52,7 @@ export function blueprintToDagHtml(options: BlueprintRendererOptions): string {
     nodeHeight,
     nodeGapY,
     headerHeight,
-    svgWidth
+    svgWidth,
   })
 
   return renderHtmlDocument({
@@ -61,8 +61,8 @@ export function blueprintToDagHtml(options: BlueprintRendererOptions): string {
     body: renderBlueprintBody({
       blueprintName,
       svgContent,
-      svgWidth
-    })
+      svgWidth,
+    }),
   })
 }
 
@@ -97,7 +97,7 @@ function renderDagSvg(opts: DagsSvgOptions): string {
       id,
       x: (svgWidth - nodeWidth) / 2,
       y: headerHeight + i * (nodeHeight + nodeGapY),
-      part
+      part,
     })
   }
 
@@ -105,7 +105,7 @@ function renderDagSvg(opts: DagsSvgOptions): string {
   for (const node of nodes) {
     const deps = node.part.deps || []
     for (const depId of deps) {
-      const depNode = nodes.find(n => n.id === depId)
+      const depNode = nodes.find((n) => n.id === depId)
       if (depNode) {
         edges.push({
           fromId: depId,
@@ -113,7 +113,7 @@ function renderDagSvg(opts: DagsSvgOptions): string {
           x1: depNode.x + nodeWidth / 2,
           y1: depNode.y + nodeHeight,
           x2: node.x + nodeWidth / 2,
-          y2: node.y
+          y2: node.y,
         })
       }
     }
@@ -172,10 +172,12 @@ function renderProbesHtml(part: Part): string {
     return '<div class="no-probes">No probes</div>'
   }
 
-  return part.probes.map(probe => {
-    const pattern = probe.pattern || ''
-    return `<div class="probe-tag">${escapeHtml(probe.type || '')}${pattern ? ` ${escapeHtml(pattern)}` : ''}</div>`
-  }).join('')
+  return part.probes
+    .map((probe) => {
+      const pattern = probe.pattern || ''
+      return `<div class="probe-tag">${escapeHtml(probe.type || '')}${pattern ? ` ${escapeHtml(pattern)}` : ''}</div>`
+    })
+    .join('')
 }
 
 function renderBlueprintHead(): string {
@@ -315,7 +317,7 @@ function renderErrorHtml(message: string): string {
   return renderHtmlDocument({
     title: 'Error',
     head: '',
-    body: `<div class="error">${escapeHtml(message)}</div>`
+    body: `<div class="error">${escapeHtml(message)}</div>`,
   })
 }
 

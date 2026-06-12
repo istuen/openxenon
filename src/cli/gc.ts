@@ -1,34 +1,35 @@
 import { defineCommand } from 'citty'
+import { existsSync, readdirSync, rmSync, statSync } from 'fs'
 import { resolve } from 'path'
-import { readdirSync, statSync, rmSync, existsSync } from 'fs'
-import { output, outputError, getFormatFromArgs } from './output'
+import { t } from '../infra/i18n'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {
     name: 'gc',
-    description: '清理已完成任务的旧资产'
+    description: '清理已完成任务的旧资产',
   },
   args: {
     dryRun: {
       alias: 'd',
       type: 'boolean',
       description: '预览模式 - 仅显示将要删除的内容',
-      default: false
+      default: false,
     },
     keep: {
       alias: 'k',
       type: 'string',
       description: '保留天数（默认: 7）',
-      default: '7'
+      default: '7',
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: 'JSON 格式输出',
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
-    }
+      description: 'YAML 格式输出',
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -38,10 +39,13 @@ export default defineCommand({
     const tasksDir = resolve(process.cwd(), '.openxenon', 'tasks')
 
     if (!existsSync(tasksDir)) {
-      return output({
-        data: { message: '没有任务目录需要清理' },
-        human: '没有任务目录需要清理'
-      }, format)
+      return output(
+        {
+          data: { message: t('gc.noTaskDirs') },
+          human: t('gc.noTaskDirs'),
+        },
+        format,
+      )
     }
 
     const now = Date.now()
@@ -62,22 +66,25 @@ export default defineCommand({
           toDelete.push({
             taskId,
             size: stat.size,
-            age: Math.round((now - stat.mtime.getTime()) / (24 * 60 * 60 * 1000))
+            age: Math.round((now - stat.mtime.getTime()) / (24 * 60 * 60 * 1000)),
           })
         } else {
           toKeep.push({
             taskId,
             size: stat.size,
-            age: Math.round((now - stat.mtime.getTime()) / (24 * 60 * 60 * 1000))
+            age: Math.round((now - stat.mtime.getTime()) / (24 * 60 * 60 * 1000)),
           })
         }
       }
 
       if (toDelete.length === 0) {
-        return output({
-          data: { message: '没有需要清理的任务' },
-          human: '没有需要清理的任务'
-        }, format)
+        return output(
+          {
+            data: { message: t('gc.noTasks') },
+            human: t('gc.noTasks'),
+          },
+          format,
+        )
       }
 
       let deletedCount = 0
@@ -94,26 +101,41 @@ export default defineCommand({
       const result = {
         deleted: deletedCount,
         totalSize: `${Math.round(totalSize / 1024)}KB`,
-        tasks: toDelete.map(t => ({ taskId: t.taskId, size: t.size, age: t.age }))
+        tasks: toDelete.map((t) => ({ taskId: t.taskId, size: t.size, age: t.age })),
       }
 
       if (dryRun) {
-        return output({
-          data: result,
-          human: `共 ${deletedCount} 个任务待删除 (${Math.round(totalSize / 1024)}KB)\n使用 --dry-run 预览，或不使用 -d 参数实际删除`
-        }, format)
+        return output(
+          {
+            data: result,
+            human: t('gc.dryRunResult', {
+              count: deletedCount,
+              size: Math.round(totalSize / 1024),
+            }),
+          },
+          format,
+        )
       }
 
-      return output({
-        data: result,
-        human: `已清理 ${deletedCount} 个任务 (${Math.round(totalSize / 1024)}KB)`
-      }, format)
+      return output(
+        {
+          data: result,
+          human: t('gc.clearedResult', {
+            count: deletedCount,
+            size: Math.round(totalSize / 1024),
+          }),
+        },
+        format,
+      )
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err)
-      return outputError({
-        code: 'OXN_GC_FAILED',
-        message: errorMsg
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_GC_FAILED',
+          message: errorMsg,
+        },
+        format,
+      )
     }
-  }
+  },
 })

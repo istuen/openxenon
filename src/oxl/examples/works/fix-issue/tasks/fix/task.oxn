@@ -1,0 +1,18 @@
+// Task: fix
+// 阶段 3：实施修复
+
+task "fix" blueprint "fix-issue" {
+  inject "work-context";
+
+  context {
+    objective = "修复 state.json 同步 bug；提交后 commit message 包含 'fix(state):' 前缀";
+    constraints = [
+      "最小修改原则（不超过 30 行）",
+      "不能动 WorkState 类型定义"
+    ];
+  }
+
+  slot "fix" {
+    deps = ["locate"];
+  }
+}

@@ -1,53 +1,58 @@
 import { defineCommand } from 'citty'
-import { collectContext, saveReport, loadExplorationAssets } from '../infra/explore/collector'
-import { evaluateExploration } from '../kernel/explore/evaluator'
-import { renderMarkdown } from '../kernel/explore/reporter'
-import { output, outputError, getFormatFromArgs } from './output'
+import { t } from '../infra/i18n'
+import { collectRawContext, loadExplorationAssets, saveReport } from '../infra/explore/collector'
+import { toExplorationContext } from '../work/explore/converters'
+import { evaluateExploration } from '../work/explore/evaluator'
+import { renderMarkdown } from '../work/explore/reporter'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {
     name: 'explore',
-    description: '探索项目状态，生成改进报告'
+    description: t('explore.status.description'),
   },
   args: {
     name: {
       type: 'positional',
-      description: '探索器名称 (coverage/quality/automation/all)',
-      default: 'all'
+      description: t('explore.status.explorerName'),
+      default: 'all',
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: t('format.json'),
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出'
-    }
+      description: t('format.yaml'),
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
     const projectRoot = process.cwd()
 
-    const context = await collectContext(projectRoot)
+    const rawContext = await collectRawContext(projectRoot)
+    const context = toExplorationContext(rawContext)
 
     const names = ctx.args.name === 'all' ? undefined : [ctx.args.name as string]
     const explorations = await loadExplorationAssets(projectRoot, names)
 
     if (explorations.length === 0) {
-      return outputError({
-        code: 'OXN_EXPLORE_NO_ASSET',
-        message: `未找到探索器: ${ctx.args.name}`
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_EXPLORE_NO_ASSET',
+          message: t('explore.status.notFound', { name: ctx.args.name }),
+        },
+        format,
+      )
     }
 
     const results = []
 
     for (const exploration of explorations) {
-      const result = evaluateExploration(
-        context,
-        exploration.rules,
-        { name: exploration.name, title: exploration.description }
-      )
+      const result = evaluateExploration(context, exploration.rules, {
+        name: exploration.name,
+        title: exploration.description,
+      })
 
       const markdown = renderMarkdown(result)
 
@@ -61,15 +66,16 @@ export default defineCommand({
         description: exploration.description,
         path: filepath,
         summary: result.summary,
-        findingsCount: result.findings.length
+        findingsCount: result.findings.length,
       })
     }
 
-    return output({
-      data: { explorations: results },
-      human: format === 'human' || !format
-        ? results.map(r => `${r.name}: ${r.summary}`).join('\n')
-        : undefined
-    }, format)
-  }
+    return output(
+      {
+        data: { explorations: results },
+        human: format === 'human' || !format ? results.map((r) => `${r.name}: ${r.summary}`).join('\n') : undefined,
+      },
+      format,
+    )
+  },
 })

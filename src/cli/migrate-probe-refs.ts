@@ -1,6 +1,14 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs'
-import { join } from 'path'
 import { globSync } from 'glob'
+import { join } from 'path'
+
+// =============================================================================
+// v1.1: 此模块专为向后兼容而保留——exec_exit_zero / exec_output_match 已在 v1.1
+// 内部清理（infra handlers / verdict strategies / contracts 均删除）。
+// 外部 Blueprint / proof 文件可能仍引用旧 ref，本模块把这些 ref 翻译为新 ref。
+//
+// Deprecated 入口保留至 v1.2；v1.3 之后建议彻底删除。
+// =============================================================================
 
 interface MigrationResult {
   file: string
@@ -13,18 +21,24 @@ interface ProbeMapping {
 }
 
 const BUILTIN_PROBES: ProbeMapping = {
-  'fs_exists': 'oxn/fs-exists',
-  'fs_not_exists': 'oxn/fs-not-exists',
-  'fs_match': 'oxn/fs-match',
-  'fs_content_match': 'oxn/fs-content-match',
-  'fs_parseable': 'oxn/fs-parseable',
-  'exec_exit_zero': 'oxn/exec-exit-zero',
-  'shell_exec': 'oxn/shell-exec',
+  fs_exists: 'oxn/fs-exists',
+  fs_not_exists: 'oxn/fs-not-exists',
+  fs_match: 'oxn/fs-match',
+  fs_content_match: 'oxn/fs-content-match',
+  fs_parseable: 'oxn/fs-parseable',
+  test_pass: 'oxn/test-pass',
+  deps_resolved: 'oxn/deps-resolved',
+  ts_compiles: 'oxn/ts-compiles',
+  lint_check: 'oxn/lint-check',
+  http_responds: 'oxn/http-responds',
+  file_exports: 'oxn/file-exports',
+  exec_exit_zero: 'oxn/exec-exit-zero',
+  shell_exec: 'oxn/shell-exec',
   'exec-exit-zero': 'oxn/exec-exit-zero',
-  'exec_exit_code': 'oxn/exec-exit-zero',
-  'file_exists': 'oxn/fs-exists',
-  'file_not_exists': 'oxn/fs-not-exists',
-  'content_match': 'oxn/fs-content-match',
+  exec_exit_code: 'oxn/exec-exit-zero',
+  file_exists: 'oxn/fs-exists',
+  file_not_exists: 'oxn/fs-not-exists',
+  content_match: 'oxn/fs-content-match',
 }
 
 function detectAndConvertRef(ref: string): string | null {
@@ -154,7 +168,7 @@ export function formatMigrationReport(results: MigrationResult[]): string {
     if (!byFile[r.file]) {
       byFile[r.file] = []
     }
-    byFile[r.file]!.push(r)
+    byFile[r.file]?.push(r)
   }
 
   for (const [file, itemResults] of Object.entries(byFile)) {
@@ -186,8 +200,8 @@ export const migrationCommands = {
       }
 
       return { migrated: results.length, results }
-    }
-  }
+    },
+  },
 }
 
 if (import.meta.main) {

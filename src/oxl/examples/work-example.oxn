@@ -1,0 +1,10 @@
+work "example-work" ref "@oxn/blueprints/oxn-example" {
+  part "develop" align "Code" {
+    prop "feature_desc" = "示例开发任务"
+    prop "timeout" = 60000
+  }
+
+  part "build" align "Build" {
+    prop "target" = "dist"
+  }
+}

@@ -1,0 +1,14 @@
+# Runtime state (not for Git; personal/sandbox data)
+works/
+proofs/
+config.json
+**/*-state.json
+**/*-trace.jsonl
+**/*-frozen.json
+
+# PR-1: Global Domain slim 索引（AI 离线读；可由 oxn domain index 重建）
+.cache/
+issues/
+
+# PR-2: Work 静态门禁卡（CLI 写；可由 oxn work validate 重建）
+.work

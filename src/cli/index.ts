@@ -1,100 +1,204 @@
+// =============================================================================
+// `oxn` CLI 入口 (v1.0 — Phase 4 完成版)
+//
+// 4 档 CLI 错误出口（顶层 try/catch 分类）：
+//   档 1 (IAPError)         → stdout JSON + process.exit(1)   ← AI 消费
+//   档 2 (OXNCrash)         → stderr + process.exit(2)        ← 人类消费（AI 看不到）
+//   档 3 (isCliInputError) → stdout JSON + process.exit(1)   ← 用户输入错，AI/人都能消费
+//   档 4 (兜底)            → stderr + process.exit(2)        ← 未知异常 = 引擎崩溃
+//
+// 进程退出码语义（Unix 哲学）：
+//   0 = 成功
+//   1 = 业务流阻断（IAPError / 用户输入错）       — 可恢复
+//   2 = 引擎崩溃（OXNCrash / 未知异常）            — 不可恢复
+//
+// 注意事项：
+//   - citty 对自身 CLI 错（缺 positional / 未知子命令）不 throw，直接 process.exit(1)
+//   - 顶层 catch 主要兜住：subcommand 漏 catch 的 IAPError / OXNCrash / 其他 Error
+//   - subcommand 通过 `return outputError(...)` / `outputUserInputError(...)` 报错时，
+//     outputError 内部已设 process.exitCode = 1
+//   - unhandledRejection 也走 4 档分类（防止 Bug 掩盖）
+//
+// Phase 4 完成：
+//   - socket-client.ts 已 throw IAPError('PROOF','INFRA_FAIL',...) 替代 OS 错透传
+//   - 7 个用户输入错（OXN_PROOF_*/OXN_PROBE_*/OXN_INPUT_*/OXN_OUTPUT_*/OXN_INVALID_*）
+//     已迁移至 outputUserInputError helper
+//   - handleLegacyDaemonError 已删除（IAPError catch 块天然处理）
+// =============================================================================
+
 import { defineCommand, runMain } from 'citty'
+import pkg from '../../package.json' with { type: 'json' }
+import { t } from '../infra/i18n'
+import { IAPError, OXNCrash, isCliInputError } from '../core/errors'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
-import { OxnErrorCode, ErrorCategory } from '../kernel/enums'
-import { DAEMON_SOCK_PATH } from '../infra/global'
 
-function formatError(err: unknown): string {
-  if (err && typeof err === 'object' && 'code' in err) {
-    return JSON.stringify({ ok: false, error: err })
-  }
+// =============================================================================
+// 4 档分类器
+// =============================================================================
 
-  const errObj = err instanceof Error ? err : new Error(String(err))
+/**
+ * 4 档分类器：把任意 thrown value 归到 4 档之一。
+ * 不会抛错，所有分支都返回结构化结果。
+ */
+type Tier =
+  | { kind: 'IAPError'; err: IAPError }
+  | { kind: 'OXNCrash'; err: OXNCrash }
+  | { kind: 'CliInput'; err: Error; code: string; message: string }
+  | { kind: 'Crash'; err: unknown }
 
-  if (errObj.message.includes('ECONNREFUSED') || errObj.message.includes('ENOENT') || errObj.message.includes('connect')) {
-    return JSON.stringify({
-      ok: false,
-      error: {
-        code: OxnErrorCode.SOCKET_REFUSED,
-        message: 'Daemon 未运行',
-        category: ErrorCategory.INFRA,
-        recoverable: true,
-        suggestion: `请先执行 oxn global daemon start 启动 Daemon（socket: ${DAEMON_SOCK_PATH}）`
-      }
-    })
-  }
-
-  if (errObj.message.includes('timed out') || errObj.message.includes('ETIMEDOUT')) {
-    return JSON.stringify({
-      ok: false,
-      error: {
-        code: OxnErrorCode.SOCKET_TIMEOUT,
-        message: 'Daemon 响应超时',
-        category: ErrorCategory.INFRA,
-        recoverable: true,
-        suggestion: '等 5 秒后重试，或执行 oxn global daemon stop && oxn global daemon start'
-      }
-    })
-  }
-
-  return JSON.stringify({
-    ok: false,
-    error: {
-      code: OxnErrorCode.UNKNOWN,
-      message: errObj.message,
-      category: ErrorCategory.SYSTEM,
-      recoverable: false,
-      suggestion: '这是 OpenXenon 内部错误，请将 debug 信息报告给工程师',
-      debug: process.env.OXN_DEBUG ? errObj.stack?.split('\n').slice(0, 5).join('\n') : undefined
+function classifyError(err: unknown): Tier {
+  if (err instanceof IAPError) return { kind: 'IAPError', err }
+  if (err instanceof OXNCrash) return { kind: 'OXNCrash', err }
+  if (isCliInputError(err)) {
+    const e = err as { code?: string; message?: string }
+    return {
+      kind: 'CliInput',
+      err: err instanceof Error ? err : new Error(String(err)),
+      code: e.code ?? 'OXN_INVALID_CLI_ARGS',
+      message: e.message ?? String(err),
     }
-  })
+  }
+  return { kind: 'Crash', err }
 }
+
+// =============================================================================
+// 4 档处理函数
+// =============================================================================
+
+/**
+ * 档 1：IAPError（业务流） → stdout JSON + exit 1
+ */
+function handleIAPError(tier: Extract<Tier, { kind: 'IAPError' }>): never {
+  const { err } = tier
+  const json = JSON.stringify(
+    {
+      ok: false,
+      error: {
+        code: err.name, // 'IAP_<AXIS>_<CODE>'
+        axis: err.axis,
+        action: err.action,
+        message: err.message,
+        context: err.context,
+      },
+    },
+    null,
+    2,
+  )
+  console.log(json)
+  process.exit(1)
+}
+
+/**
+ * 档 2：OXNCrash（引擎崩溃） → stderr stack + exit 2
+ */
+function handleOXNCrash(tier: Extract<Tier, { kind: 'OXNCrash' }>): never {
+  const { err } = tier
+  console.error(`\n=== OXN ENGINE CRASH: ${err.name} ===`)
+  console.error(err.message)
+  if (err.cause) {
+    console.error('Caused by:')
+    console.error(err.cause instanceof Error ? (err.cause.stack ?? err.cause) : String(err.cause))
+  }
+  process.exit(2)
+}
+
+/**
+ * 档 3：用户输入错 → stdout JSON + exit 1
+ */
+function handleCliInput(tier: Extract<Tier, { kind: 'CliInput' }>): never {
+  const json = JSON.stringify(
+    {
+      ok: false,
+      error: {
+        code: tier.code,
+        message: tier.message,
+      },
+    },
+    null,
+    2,
+  )
+  console.log(json)
+  process.exit(1)
+}
+
+/**
+ * 档 4：兜底（未知异常 = 引擎崩溃） → stderr stack + exit 2
+ *
+ * 哲学：任何不属于 IAPError / OXNCrash / CLI 输入错的异常，都是 OXN 自身 Bug。
+ * 严禁让 AI 看到这种 stack（AI 会试图 FIX_CODE 掩盖 Bug）。
+ */
+function handleCrash(tier: Extract<Tier, { kind: 'Crash' }>): never {
+  const { err } = tier
+  console.error('\n=== OXN UNEXPECTED CRASH ===')
+  if (err instanceof Error) {
+    console.error(err.stack ?? err.message)
+  } else {
+    console.error(err)
+  }
+  process.exit(2)
+}
+
+// =============================================================================
+// CLI 命令定义
+// =============================================================================
 
 const main = defineCommand({
   meta: {
     name: 'oxn',
-    version: '1.0.0',
-    description: 'OpenXenon CLI - 面向大语言模型的工程化控制引擎'
+    version: pkg.version,
+    description: t('cli.description'),
   },
   subCommands: {
-    init: () => import('./init').then(m => m.default),
-    task: () => import('./task').then(m => m.default),
-    arsenal: () => import('./arsenal').then(m => m.default),
-    export: () => import('./export').then(m => m.default),
-    gc: () => import('./gc').then(m => m.default),
-    cache: () => import('./cache').then(m => m.default),
-    forge: () => import('./forge').then(m => m.default),
-    hall: () => import('./hall').then(m => m.default),
-    explore: () => import('./explore-cmd').then(m => m.default),
-    global: () => import('./global').then(m => m.default),
-    config: () => import('./config').then(m => m.default),
+    // ---- Meta / project setup ----
+    init: () => import('./init').then((m) => m.default),
+    config: () => import('./config-cmd').then((m) => m.default),
+    'install-skill': () => import('./install-skill').then((m) => m.default),
+
+    // ---- Intent entities ----
+    domain: () => import('./domain').then((m) => m.default),
+    blueprint: () => import('./blueprint').then((m) => m.default),
+
+    // ---- Align runtime (work + task + state machine) ----
+    work: () => import('./work').then((m) => m.default),
+
+    // ---- Proof axis (v0.1.2: Proof-First 入口，独立运作) ----
+    proof: () => import('./proof').then((m) => m.default),
+    insight: () => import('./insight').then((m) => m.default),
+
+    // ---- Dev namespace (DSL 内部工具) ----
+    dev: () => import('./dev').then((m) => m.default),
   },
   args: {
     verbose: {
       alias: 'v',
       type: 'boolean',
       description: 'Enable verbose output',
-      default: false
+      default: false,
+    },
+    '--leader-mode': {
+      type: 'string',
+      description: 'Override leader track: "reference" or "mvp" (overrides env + .oxnrc)',
     },
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出',
-      default: false
+      description: t('format.json'),
+      default: false,
     },
     '--yaml': {
       type: 'boolean',
-      description: 'YAML 格式输出',
-      default: false
+      description: t('format.yaml'),
+      default: false,
     },
     '--html': {
       type: 'boolean',
-      description: 'HTML 格式输出',
-      default: false
+      description: t('format.html'),
+      default: false,
     },
     '--md': {
       type: 'boolean',
-      description: 'Markdown 格式输出',
-      default: false
-    }
+      description: t('format.markdown'),
+      default: false,
+    },
   },
   async run() {
     const format = detectCliFormat()
@@ -108,17 +212,47 @@ const main = defineCommand({
       console.log('OpenXenon CLI')
       console.log('Run `oxn --help` for usage information')
     }
-  }
+  },
 })
+
+// =============================================================================
+// 顶层 try/catch + unhandledRejection 4 档分流
+// =============================================================================
 
 try {
   runMain(main)
 } catch (err) {
-  console.log(formatError(err))
-  process.exit(1)
+  const tier = classifyError(err)
+  switch (tier.kind) {
+    case 'IAPError':
+      handleIAPError(tier)
+      break
+    case 'OXNCrash':
+      handleOXNCrash(tier)
+      break
+    case 'CliInput':
+      handleCliInput(tier)
+      break
+    case 'Crash':
+      handleCrash(tier)
+      break
+  }
 }
 
 process.on('unhandledRejection', (reason) => {
-  console.log(formatError(reason))
-  process.exit(1)
+  const tier = classifyError(reason)
+  switch (tier.kind) {
+    case 'IAPError':
+      handleIAPError(tier)
+      break
+    case 'OXNCrash':
+      handleOXNCrash(tier)
+      break
+    case 'CliInput':
+      handleCliInput(tier)
+      break
+    case 'Crash':
+      handleCrash(tier)
+      break
+  }
 })

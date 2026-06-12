@@ -1,0 +1,19 @@
+{
+  "projectName": "OpenXenonLanguage",
+  "languages": [
+    {
+      "id": "oxl",
+      "grammar": "src/oxl/langium/oxn.langium",
+      "fileExtensions": [".oxn"],
+      "textMate": {
+        "out": "syntaxes/oxn.tmLanguage.json"
+      },
+      "chevrotainParserConfig": {
+        "recoveryEnabled": true,
+        "nodeLocationTracking": "full",
+        "maxLookahead": 4
+      }
+    }
+  ],
+  "out": "src/oxl/generated/"
+}

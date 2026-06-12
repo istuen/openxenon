@@ -1,0 +1,161 @@
+{
+  "name": "oxl-enhanced",
+  "scopeName": "source.oxn",
+  "fileTypes": [".oxn"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#variable-refs" },
+    { "include": "#operators" },
+    { "include": "#numbers" },
+    { "include": "#type-keywords" },
+    { "include": "#constant-literals" },
+    { "include": "#entity-keywords" },
+    { "include": "#modifier-keywords" },
+    { "include": "#other-keywords" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.oxn",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.comment.oxn" }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.comment.oxn" }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.comment.oxn" }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.oxn"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.oxn",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.oxn",
+              "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+            },
+            {
+              "name": "keyword.operator.template.oxn",
+              "begin": "\\$\\{",
+              "end": "\\}",
+              "beginCaptures": {
+                "0": { "name": "punctuation.definition.template.begin.oxn" }
+              },
+              "endCaptures": {
+                "0": { "name": "punctuation.definition.template.end.oxn" }
+              },
+              "patterns": [{ "include": "#variable-refs" }]
+            }
+          ]
+        }
+      ]
+    },
+    "variable-refs": {
+      "patterns": [
+        {
+          "name": "variable.other.oxn",
+          "match": "\\b(prop|param|task)\\.[\\w.-]+"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.oxn",
+          "match": "==|!=|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.logical.oxn",
+          "match": "&&|\\|\\|"
+        },
+        {
+          "name": "keyword.operator.arithmetic.oxn",
+          "match": "\\+|\\-(?!>)"
+        },
+        {
+          "name": "keyword.operator.ternary.oxn",
+          "match": "\\?|:"
+        },
+        {
+          "name": "keyword.operator.assignment.oxn",
+          "match": "(?<![!=<>])=(?![=])"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.oxn",
+          "match": "\\b[0-9]+(\\.[0-9]+)?\\b"
+        }
+      ]
+    },
+    "type-keywords": {
+      "patterns": [
+        {
+          "name": "storage.type.primitive.oxn",
+          "match": "\\b(string|number|boolean)\\b"
+        },
+        {
+          "name": "storage.type.generic.oxn",
+          "match": "\\b(list|map)\\b"
+        },
+        {
+          "name": "storage.type.oxn",
+          "match": "\\b(enum|any)\\b"
+        }
+      ]
+    },
+    "constant-literals": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.oxn",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.language.null.oxn",
+          "match": "\\bnull\\b"
+        }
+      ]
+    },
+    "entity-keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.declaration.oxn",
+          "match": "\\b(blueprint|probe|part|interface|task)\\b"
+        }
+      ]
+    },
+    "modifier-keywords": {
+      "patterns": [
+        {
+          "name": "storage.modifier.oxn",
+          "match": "\\b(abstract|prop|props|param|params|input|output|required|default)\\b"
+        }
+      ]
+    },
+    "other-keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.oxn",
+          "match": "\\b(stage|execution|expectation|rule|binding|use|implements|run|deps|ref|version|description|condition|err_msg|method|type)\\b"
+        }
+      ]
+    }
+  }
+}

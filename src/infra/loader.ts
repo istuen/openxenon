@@ -1,48 +1,29 @@
-import { existsSync, readdirSync, readFileSync, renameSync, mkdirSync, writeFileSync } from 'fs'
 import { createHash } from 'crypto'
-import { join, dirname } from 'path'
-import { parse as parseYaml } from 'yaml'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { join } from 'path'
 import { z } from 'zod'
-import { type AssetState, type AssetType } from '../arsenals/paths'
-import { BUILTIN_PROBES, BUILTIN_PARTS } from '../arsenals/builtin'
-import { GLOBAL_ARSENALS_ROOT, GLOBAL_FORGES_ROOT, resolveBoundary, type Scope as InfraScope } from '../infra/paths'
+import type { AssetState, AssetType } from '../infra/paths'
+import { GLOBAL_ARSENAL_ROOT } from '../infra/paths'
+import { resolveBoundary } from '../infra/paths'
+import type { Scope as InfraScope } from '../infra/paths'
 
-export const ProbeTypeSchema = z.enum(['fs_exists', 'fs_not_exists', 'fs_match', 'shell_exec'])
+export type { ProbeNamespace, ParsedProbeRef } from '../oxl/validators/probe-namespace'
+
+export const ProbeTypeSchema = z.enum([
+  'fs_exists',
+  'fs_not_exists',
+  'fs_match',
+  'fs_parseable',
+  'test_pass',
+  'deps_resolved',
+  'ts_compiles',
+  'lint_check',
+  'http_responds',
+  'file_exports',
+  'shell_exec',
+])
 
 export type Scope = InfraScope | 'fallback' | 'builtin'
-
-export type ProbeNamespace = 'oxn' | 'scope' | 'project'
-
-export interface ParsedProbeRef {
-  namespace: ProbeNamespace
-  scopeName?: string
-  probeName: string
-  raw: string
-}
-
-export function parseProbeNamespace(ref: string): ParsedProbeRef | null {
-  if (ref.startsWith('oxn/')) {
-    return { namespace: 'oxn', probeName: ref.slice(3), raw: ref }
-  }
-  if (ref.startsWith('@')) {
-    const slashIndex = ref.indexOf('/')
-    if (slashIndex === -1) return null
-    return { namespace: 'scope', scopeName: ref.slice(1, slashIndex), probeName: ref.slice(slashIndex + 1), raw: ref }
-  }
-  if (ref.startsWith('./') || ref.startsWith('project/')) {
-    const probeName = ref.startsWith('./') ? ref.slice(2) : ref.slice(8)
-    return { namespace: 'project', probeName, raw: ref }
-  }
-  return null
-}
-
-export function isValidProbeRef(ref: string): boolean {
-  return parseProbeNamespace(ref) !== null
-}
-
-export function isBareProbeRef(ref: string): boolean {
-  return parseProbeNamespace(ref) === null
-}
 
 export interface StandardAsset {
   name: string
@@ -52,7 +33,11 @@ export interface StandardAsset {
   content: string
 }
 
-function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolean = false): StandardAsset[] {
+export function scanArsenalStructure(
+  boundary: string,
+  type: AssetType,
+  stateFilter?: 'draft' | 'canonical' | 'both',
+): StandardAsset[] {
   const typePath = join(boundary, type)
 
   if (!existsSync(typePath)) {
@@ -65,20 +50,40 @@ function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolea
   for (const entry of entries) {
     if (entry.isDirectory()) {
       const assetName = entry.name
-      if (scanForges) {
-        const draftFile = join(typePath, assetName, 'draft.yaml')
-        if (existsSync(draftFile)) {
-          const content = readFileSync(draftFile, 'utf-8')
-          assets.push({
-            name: assetName,
-            type,
-            state: 'draft',
-            path: draftFile,
-            content
-          })
+
+      if (assetName === 'drafts') {
+        const draftsPath = join(typePath, 'drafts')
+        if (existsSync(draftsPath) && (stateFilter === 'draft' || stateFilter === 'both' || !stateFilter)) {
+          const draftEntries = readdirSync(draftsPath, { withFileTypes: true })
+          for (const draftEntry of draftEntries) {
+            if (draftEntry.isDirectory()) {
+              const innerDraftFile = join(draftsPath, draftEntry.name, 'draft.oxn')
+              if (existsSync(innerDraftFile)) {
+                const content = readFileSync(innerDraftFile, 'utf-8')
+                assets.push({
+                  name: draftEntry.name,
+                  type,
+                  state: 'draft',
+                  path: innerDraftFile,
+                  content,
+                })
+              }
+            } else if (draftEntry.name.endsWith('.oxn')) {
+              const name = draftEntry.name.replace(/\.oxn$/, '')
+              const filePath = join(draftsPath, draftEntry.name)
+              const content = readFileSync(filePath, 'utf-8')
+              assets.push({
+                name,
+                type,
+                state: 'draft',
+                path: filePath,
+                content,
+              })
+            }
+          }
         }
-      } else {
-        const canonicalFile = join(typePath, assetName, 'canonical.yaml')
+      } else if (stateFilter === 'canonical' || stateFilter === 'both' || !stateFilter) {
+        const canonicalFile = join(typePath, assetName, 'canonical.oxn')
         if (existsSync(canonicalFile)) {
           const content = readFileSync(canonicalFile, 'utf-8')
           assets.push({
@@ -86,21 +91,25 @@ function scanFlatStructure(boundary: string, type: AssetType, scanForges: boolea
             type,
             state: 'canonical',
             path: canonicalFile,
-            content
+            content,
           })
         }
       }
-    } else if (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml') || entry.name.endsWith('.json')) {
-      const name = entry.name.replace(/\.(yaml|yml|json)$/, '')
+    } else if (
+      entry.name.endsWith('.yaml') ||
+      entry.name.endsWith('.yml') ||
+      entry.name.endsWith('.json') ||
+      entry.name.endsWith('.oxn')
+    ) {
+      const name = entry.name.replace(/\.(yaml|yml|json|oxn)$/, '')
       const filePath = join(typePath, entry.name)
       const content = readFileSync(filePath, 'utf-8')
-      const isCanonical = scanForges ? false : true
       assets.push({
         name,
         type,
-        state: isCanonical ? 'canonical' : 'draft',
+        state: 'canonical',
         path: filePath,
-        content
+        content,
       })
     }
   }
@@ -121,51 +130,23 @@ function getTypeFromPath(assetPath: string): AssetType | null {
   return null
 }
 
-function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined, type: AssetType): StandardAsset[] {
+function scanArsenalsDirectory(
+  scope: Scope,
+  projectBoundary: string | undefined,
+  type: AssetType,
+  stateFilter?: 'draft' | 'canonical' | 'both',
+): StandardAsset[] {
   function scanProjectBoundary(type: AssetType): StandardAsset[] {
     if (!projectBoundary) return []
-    return scanFlatStructure(join(projectBoundary, 'arsenals'), type)
+    return scanArsenalStructure(join(projectBoundary, 'arsenal'), type, stateFilter)
   }
 
   function scanGlobal(type: AssetType): StandardAsset[] {
-    return scanFlatStructure(GLOBAL_ARSENALS_ROOT, type)
-  }
-
-  function scanBuiltin(type: AssetType, state: AssetState): StandardAsset[] {
-    if (state !== 'canonical') return []
-
-    const assets: StandardAsset[] = []
-
-    if (type === 'probes') {
-      for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
-        assets.push({
-          name,
-          type: 'probes' as AssetType,
-          state: 'canonical' as AssetState,
-          path: `builtin:${name}`,
-          content: JSON.stringify(def)
-        })
-      }
-    }
-
-    if (type === 'parts') {
-      for (const [name, def] of Object.entries(BUILTIN_PARTS)) {
-        assets.push({
-          name,
-          type: 'parts' as AssetType,
-          state: 'canonical' as AssetState,
-          path: `builtin:${name}`,
-          content: JSON.stringify(def)
-        })
-      }
-    }
-
-    return assets
+    return scanArsenalStructure(GLOBAL_ARSENAL_ROOT, type, stateFilter) // TODO(v1.1-path): 重复定义于 oxn-workspace-manager.ts
   }
 
   let projectAssets: StandardAsset[] = []
   let globalAssets: StandardAsset[] = []
-  let builtinAssets: StandardAsset[] = []
 
   if (scope === 'project' || scope === 'fallback') {
     projectAssets = scanProjectBoundary(type)
@@ -173,66 +154,33 @@ function scanArsenalsDirectory(scope: Scope, projectBoundary: string | undefined
   if (scope === 'global' || (scope === 'fallback' && projectAssets.length === 0)) {
     globalAssets = scanGlobal(type)
   }
-  if (scope === 'builtin' || (scope === 'fallback' && globalAssets.length === 0)) {
-    builtinAssets = scanBuiltin(type, 'canonical')
-  }
 
-  const allAssets = [...projectAssets, ...globalAssets, ...builtinAssets]
+  const allAssets = [...projectAssets, ...globalAssets]
   const seen = new Set<string>()
-  return allAssets.filter(asset => {
+  return allAssets.filter((asset) => {
     if (seen.has(asset.path)) return false
     seen.add(asset.path)
     return true
   })
 }
 
-function scanForgesDirectory(scope: Scope, projectBoundary: string | undefined, type: AssetType): StandardAsset[] {
-  function scanProjectForges(type: AssetType): StandardAsset[] {
-    if (!projectBoundary) return []
-    const forgePath = join(projectBoundary, 'forges', type)
-    if (!existsSync(forgePath)) return []
-    return scanFlatStructure(forgePath, type, true)
-  }
-
-  function scanGlobalForges(type: AssetType): StandardAsset[] {
-    const forgePath = join(GLOBAL_FORGES_ROOT, type)
-    if (!existsSync(forgePath)) return []
-    return scanFlatStructure(forgePath, type, true)
-  }
-
-  let projectAssets: StandardAsset[] = []
-  let globalAssets: StandardAsset[] = []
-
-  if (scope === 'project' || scope === 'fallback') {
-    projectAssets = scanProjectForges(type)
-  }
-  if (scope === 'global' || (scope === 'fallback' && projectAssets.length === 0)) {
-    globalAssets = scanGlobalForges(type)
-  }
-
-  return [...projectAssets, ...globalAssets]
+export function loadArsenalsByState(
+  scope: Scope,
+  projectBoundary: string | undefined,
+  state: AssetState,
+): StandardAsset[] {
+  return scanArsenalsDirectory(scope, projectBoundary, 'probes', state)
+    .concat(scanArsenalsDirectory(scope, projectBoundary, 'blueprints', state))
+    .concat(scanArsenalsDirectory(scope, projectBoundary, 'parts', state))
 }
 
-export function loadArsenalsByState(scope: Scope, projectBoundary: string | undefined, state: AssetState): StandardAsset[] {
-  if (state === 'draft') {
-    return []
-  }
-  const projectProbes = scanArsenalsDirectory(scope, projectBoundary, 'probes')
-  const projectBlueprints = scanArsenalsDirectory(scope, projectBoundary, 'blueprints')
-  const projectParts = scanArsenalsDirectory(scope, projectBoundary, 'parts')
-
-  return [...projectProbes, ...projectBlueprints, ...projectParts]
-}
-
-export function loadArsenalsByTypeAndState(scope: Scope, projectBoundary: string | undefined, type: AssetType, state: AssetState): StandardAsset[] {
-  if (state === 'draft') {
-    return []
-  }
-  return scanArsenalsDirectory(scope, projectBoundary, type)
-}
-
-export function loadForgesByType(scope: Scope, projectBoundary: string | undefined, type: AssetType): StandardAsset[] {
-  return scanForgesDirectory(scope, projectBoundary, type)
+export function loadArsenalsByTypeAndState(
+  scope: Scope,
+  projectBoundary: string | undefined,
+  type: AssetType,
+  state: AssetState,
+): StandardAsset[] {
+  return scanArsenalsDirectory(scope, projectBoundary, type, state)
 }
 
 export function loadStandardByPath(assetPath: string): StandardAsset | null {
@@ -246,26 +194,21 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
     return null
   }
 
-  const isForge = assetPath.includes('/forges/')
-  const isArsenal = assetPath.includes('/arsenals/')
-
-  if (!isForge && !isArsenal) {
+  const pathParts = assetPath.split('/')
+  if (!pathParts.includes('arsenal')) {
     return null
   }
 
-  const parts = assetPath.split('/')
-  const typeIndex = parts.findIndex(p => p === 'forges' || p === 'arsenals')
-  if (typeIndex === -1) return null
-
+  const typeIndex = pathParts.findIndex((p) => p === 'arsenal')
   const nameIndex = typeIndex + 2
-  if (nameIndex >= parts.length) return null
+  if (nameIndex >= pathParts.length) return null
 
-  const name = parts[nameIndex]
-  if (!name || name === 'probes' || name === 'blueprints' || name === 'parts') {
+  const name = pathParts[nameIndex]
+  if (!name || name === 'probes' || name === 'blueprints' || name === 'parts' || name === 'drafts') {
     return null
   }
 
-  const isDraft = isForge || assetPath.endsWith('/draft.yaml')
+  const isDraft = pathParts.includes('drafts')
   const state: AssetState = isDraft ? 'draft' : 'canonical'
 
   return {
@@ -273,46 +216,7 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
     type,
     state,
     path: assetPath,
-    content
-  }
-}
-
-export function promoteStandard(fromPath: string): StandardAsset | null {
-  const isForgeFormat = fromPath.includes('/forges/') && fromPath.endsWith('.yaml')
-  const isArsenalDraftFormat = fromPath.includes('/arsenals/') && fromPath.includes('/draft/')
-
-  if (!isForgeFormat && !isArsenalDraftFormat) {
-    throw new Error(`Asset is not in draft state: ${fromPath}`)
-  }
-
-  if (!existsSync(fromPath)) {
-    throw new Error(`Draft file not found: ${fromPath}`)
-  }
-
-  const asset = loadStandardByPath(fromPath)
-  if (!asset) {
-    return null
-  }
-
-  let newPath: string
-
-  if (isForgeFormat) {
-    newPath = fromPath.replace('/forges/', '/arsenals/')
-  } else {
-    newPath = fromPath.replace('/draft/', '/')
-  }
-
-  const assetDir = dirname(newPath)
-  if (!existsSync(assetDir)) {
-    mkdirSync(assetDir, { recursive: true })
-  }
-
-  renameSync(fromPath, newPath)
-
-  return {
-    ...asset,
-    state: 'canonical',
-    path: newPath
+    content,
   }
 }
 
@@ -324,12 +228,12 @@ export function generateCompiledArtifact(assetPath: string, boundary: string): s
   const type = getTypeFromPath(assetPath)
   if (!type) return null
 
-  const parsed = parseYaml(content) as Record<string, unknown>
+  const parsed = JSON.parse(content) as Record<string, unknown>
   const compiled = {
     ...parsed,
     _compiled_hash: hash,
     _compiled_at: new Date().toISOString(),
-    _source_path: assetPath
+    _source_path: assetPath,
   }
 
   const cacheDir = join(boundary, 'cache', 'compiled', type)
@@ -337,7 +241,11 @@ export function generateCompiledArtifact(assetPath: string, boundary: string): s
     mkdirSync(cacheDir, { recursive: true })
   }
 
-  const name = assetPath.split('/').pop()?.replace(/\.yaml$/, '') || 'unknown'
+  const name =
+    assetPath
+      .split('/')
+      .pop()
+      ?.replace(/\.(yaml|oxn)$/, '') || 'unknown'
   const compiledPath = join(cacheDir, `${name}.compiled.json`)
   writeFileSync(compiledPath, JSON.stringify(compiled, null, 2), 'utf-8')
 
@@ -352,50 +260,92 @@ export function updateCacheManifest(boundary: string, type: string, name: string
   if (existsSync(manifestPath)) {
     try {
       manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-    } catch { /* use empty */ }
+    } catch {
+      /* use empty */
+    }
   }
   if (!manifest[type]) manifest[type] = {}
   manifest[type][name] = hash
   writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8')
 }
 
-export function loadStandardByName(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType): StandardAsset | null {
-  const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
+export interface LoadStandardOptions {
+  state?: 'canonical' | 'draft' | 'both'
+}
 
-  if (type === 'parts' || type === 'probes') {
-    const flatPath = join(boundary, 'arsenals', type, `${name}.yaml`)
-    if (existsSync(flatPath)) {
-      const content = readFileSync(flatPath, 'utf-8')
-      return { name, type, state: 'canonical' as const, path: flatPath, content }
+export function loadStandardByName(
+  scope: Scope,
+  projectBoundary: string | undefined,
+  name: string,
+  type: AssetType,
+  options?: LoadStandardOptions,
+): StandardAsset | null {
+  const stateFilter = options?.state || 'canonical'
+  const boundary =
+    scope === 'global' ? resolveBoundary(scope) : projectBoundary ? projectBoundary : resolveBoundary('project')
+
+  if (type === 'blueprints') {
+    if (stateFilter === 'canonical' || stateFilter === 'both') {
+      const canonicalPath = join(boundary, 'arsenal', type, name, 'canonical.oxn')
+      if (existsSync(canonicalPath)) {
+        const content = readFileSync(canonicalPath, 'utf-8')
+        return { name, type, state: 'canonical' as const, path: canonicalPath, content }
+      }
+    }
+    if (stateFilter === 'draft' || stateFilter === 'both') {
+      const draftPath = join(boundary, 'arsenal', type, 'drafts', name, 'draft.oxn')
+      if (existsSync(draftPath)) {
+        const content = readFileSync(draftPath, 'utf-8')
+        return { name, type, state: 'draft' as const, path: draftPath, content }
+      }
     }
   } else {
-    const canonicalPath = join(boundary, 'arsenals', type, name, 'canonical.yaml')
-    if (existsSync(canonicalPath)) {
-      const content = readFileSync(canonicalPath, 'utf-8')
-      return { name, type, state: 'canonical' as const, path: canonicalPath, content }
+    if (stateFilter === 'canonical' || stateFilter === 'both') {
+      const flatPath = join(boundary, 'arsenal', type, `${name}.oxn`)
+      if (existsSync(flatPath)) {
+        const content = readFileSync(flatPath, 'utf-8')
+        return { name, type, state: 'canonical' as const, path: flatPath, content }
+      }
     }
-  }
-
-  const forgeDraftPath = type === 'parts' || type === 'probes'
-    ? join(boundary, 'forges', type, `${name}.yaml`)
-    : join(boundary, 'forges', type, name, 'draft.yaml')
-  if (existsSync(forgeDraftPath)) {
-    const content = readFileSync(forgeDraftPath, 'utf-8')
-    return { name, type, state: 'draft' as const, path: forgeDraftPath, content }
+    if (stateFilter === 'draft' || stateFilter === 'both') {
+      const draftPath = join(boundary, 'arsenal', type, 'drafts', `${name}.oxn`)
+      if (existsSync(draftPath)) {
+        const content = readFileSync(draftPath, 'utf-8')
+        return { name, type, state: 'draft' as const, path: draftPath, content }
+      }
+    }
   }
 
   return null
 }
 
-export function resolveAssetPath(scope: Scope, projectBoundary: string | undefined, name: string, type: AssetType, state: AssetState): string | null {
-  const boundary = scope === 'global' ? resolveBoundary(scope) : (projectBoundary ? projectBoundary : resolveBoundary('project'))
+export function resolveAssetPath(
+  scope: Scope,
+  projectBoundary: string | undefined,
+  name: string,
+  type: AssetType,
+  state: AssetState,
+): string | null {
+  const boundary =
+    scope === 'global' ? resolveBoundary(scope) : projectBoundary ? projectBoundary : resolveBoundary('project')
 
-  if (type === 'parts' || type === 'probes') {
-    const flatPath = join(boundary, 'arsenals', type, `${name}.yaml`)
-    if (existsSync(flatPath)) return flatPath
-  } else {
-    const assetPath = join(boundary, 'arsenals', type, name, state === 'draft' ? 'draft.yaml' : 'canonical.yaml')
+  if (type === 'blueprints') {
+    const assetPath = join(boundary, 'arsenal', type, name, state === 'draft' ? 'draft.oxn' : 'canonical.oxn')
     if (existsSync(assetPath)) return assetPath
+  } else {
+    // v1.1 fix-p1-architecture draft-path-consistency: 统一 draft 布局为
+    //   `drafts/<name>/draft.oxn` (sub-dir 风格, 与 scanArsenalStructure 主路径一致,
+    //   且允许未来装更多子资源如 invariants.yaml / tests/). 旧 flat 布局
+    //   `drafts/<name>.oxn` 保留为 fallback (向下兼容已有项目).
+    if (state === 'draft') {
+      const subDirPath = join(boundary, 'arsenal', type, 'drafts', name, 'draft.oxn')
+      if (existsSync(subDirPath)) return subDirPath
+      const flatPath = join(boundary, 'arsenal', type, 'drafts', `${name}.oxn`)
+      if (existsSync(flatPath)) return flatPath
+    } else {
+      const assetPath = join(boundary, 'arsenal', type, `${name}.oxn`)
+      if (existsSync(assetPath)) return assetPath
+    }
   }
 
   return null
@@ -416,15 +366,19 @@ export interface CompileDependencies {
   probes: Map<string, Record<string, unknown>>
 }
 
-export function preloadCompileDependencies(projectBoundary: string): CompileDependencies {
+export function preloadCompileDependencies(
+  projectBoundary: string,
+  builtinParts: Record<string, unknown>,
+  builtinProbes: Record<string, unknown>,
+): CompileDependencies {
   const parts = new Map<string, Record<string, unknown>>()
   const probes = new Map<string, Record<string, unknown>>()
 
-  for (const [name, def] of Object.entries(BUILTIN_PROBES)) {
+  for (const [name, def] of Object.entries(builtinProbes)) {
     probes.set(`oxn/${name}`, def as Record<string, unknown>)
   }
 
-  for (const [name, def] of Object.entries(BUILTIN_PARTS)) {
+  for (const [name, def] of Object.entries(builtinParts)) {
     parts.set(`oxn/${name}`, def as Record<string, unknown>)
   }
 
@@ -433,13 +387,14 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
     try {
       const compiledPath = join(projectBoundary, 'cache', 'compiled', 'probes', `${asset.name}.compiled.json`)
       const content = existsSync(compiledPath)
-        ? JSON.parse(readFileSync(compiledPath, 'utf-8')) as Record<string, unknown>
-        : parseYaml(asset.content) as Record<string, unknown>
+        ? (JSON.parse(readFileSync(compiledPath, 'utf-8')) as Record<string, unknown>)
+        : null
+      if (!content) continue
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
       probes.set(ref, content)
       probes.set(`./${asset.name}`, content)
     } catch {
-      // skip invalid YAML
+      // skip invalid asset
     }
   }
 
@@ -448,25 +403,16 @@ export function preloadCompileDependencies(projectBoundary: string): CompileDepe
     try {
       const compiledPath = join(projectBoundary, 'cache', 'compiled', 'parts', `${asset.name}.compiled.json`)
       const content = existsSync(compiledPath)
-        ? JSON.parse(readFileSync(compiledPath, 'utf-8')) as Record<string, unknown>
-        : parseYaml(asset.content) as Record<string, unknown>
+        ? (JSON.parse(readFileSync(compiledPath, 'utf-8')) as Record<string, unknown>)
+        : null
+      if (!content) continue
       const ref = asset.path.includes('/.openxenon/') ? `project/${asset.name}` : asset.name
       parts.set(ref, content)
       parts.set(`./${asset.name}`, content)
     } catch {
-      // skip invalid YAML
+      // skip invalid asset
     }
   }
 
   return { parts, probes }
-}
-
-export function listStandards(scope: Scope, projectBoundary: string | undefined, state?: AssetState): StandardAsset[] {
-  if (state) {
-    return loadArsenalsByState(scope, projectBoundary, state)
-  }
-
-  const draft = loadArsenalsByState(scope, projectBoundary, 'draft')
-  const canonical = loadArsenalsByState(scope, projectBoundary, 'canonical')
-  return [...draft, ...canonical]
 }

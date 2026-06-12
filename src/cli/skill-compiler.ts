@@ -1,8 +1,12 @@
-import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'fs'
-import { dirname, join } from 'path'
 import { createHash } from 'crypto'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs'
+import { dirname, join } from 'path'
+import type { SupportedLocale } from './project-config'
+import { DEFAULT_LOCALE } from './project-config'
+import { getAllSkillsForLocale } from '../skills/loader'
 import type { OpenXenonSkill } from '../skills/types'
-import { allSkills } from '../skills'
+import { readProjectConfig } from './project-config-io'
+import { DEFAULT_ADAPTERS, SKILL_ADAPTERS, type SkillAdapterId } from '../skills/adapters'
 
 export interface CompilationResult {
   skillId: string
@@ -12,17 +16,27 @@ export interface CompilationResult {
 }
 
 export interface CompilationReport {
-  adapter: string
+  toolId: SkillAdapterId
   results: CompilationResult[]
   total: number
   created: number
   updated: number
   skipped: number
   referencesCreated: number
+  pruned: number
 }
 
-export function loadSkills(): OpenXenonSkill[] {
-  return allSkills
+export interface MultiToolCompilationReport {
+  byTool: Record<SkillAdapterId, CompilationReport>
+  total: number
+  created: number
+  updated: number
+  skipped: number
+  pruned: number
+}
+
+export function loadSkills(locale: SupportedLocale = DEFAULT_LOCALE): OpenXenonSkill[] {
+  return getAllSkillsForLocale(locale)
 }
 
 function defaultRender(skill: OpenXenonSkill): string {
@@ -34,14 +48,9 @@ ${skill.instruction}
 `
 }
 
-export function compileSkill(
-  skill: OpenXenonSkill,
-  _adapterId: string,
-  projectPath: string,
-  force: boolean = false
-): CompilationResult {
+function compileSkillToRoot(skill: OpenXenonSkill, skillsRoot: string, force: boolean = false): CompilationResult {
   const content = defaultRender(skill)
-  const outputPath = join(projectPath, '.opencode', 'skills', skill.id, 'SKILL.md')
+  const outputPath = join(skillsRoot, skill.id, 'SKILL.md')
   const skillDir = dirname(outputPath)
   const action: 'created' | 'updated' | 'skipped' = determineAction(outputPath, content, force)
   let referencesWritten = 0
@@ -82,64 +91,140 @@ export function compileSkill(
     skillId: skill.id,
     outputPath,
     action,
-    referencesWritten
+    referencesWritten,
   }
 }
 
-export function compileAllSkills(
-  adapterId: string,
+/**
+ * @deprecated Prefer {@link compileSkillToRoot} + per-tool loop in callers.
+ * Kept as a thin wrapper for any external consumers; defaults to opencode.
+ */
+export function compileSkill(
+  skill: OpenXenonSkill,
+  _adapterId: string,
   projectPath: string,
-  force: boolean = false
-): CompilationReport {
-  const skills = loadSkills()
-  const results: CompilationResult[] = []
+  force: boolean = false,
+): CompilationResult {
+  return compileSkillToRoot(skill, SKILL_ADAPTERS.opencode.root(projectPath), force)
+}
 
+function compileForTool(
+  toolId: SkillAdapterId,
+  projectPath: string,
+  skills: OpenXenonSkill[],
+  force: boolean,
+): CompilationReport {
+  const adapter = SKILL_ADAPTERS[toolId]
+  const skillsRoot = adapter.root(projectPath)
+  const results: CompilationResult[] = []
   for (const skill of skills) {
     try {
-      const result = compileSkill(skill, adapterId, projectPath, force)
-      results.push(result)
+      results.push(compileSkillToRoot(skill, skillsRoot, force))
     } catch (error) {
-      console.error(`Failed to compile skill ${skill.id}: ${error}`)
+      console.error(`Failed to compile skill ${skill.id} for tool ${toolId}: ${error}`)
     }
   }
-
-  const created = results.filter(r => r.action === 'created').length
-  const updated = results.filter(r => r.action === 'updated').length
-  const skipped = results.filter(r => r.action === 'skipped').length
+  const pruned = pruneStale(toolId, projectPath, skills)
+  const created = results.filter((r) => r.action === 'created').length
+  const updated = results.filter((r) => r.action === 'updated').length
+  const skipped = results.filter((r) => r.action === 'skipped').length
   const referencesCreated = results.reduce((sum, r) => sum + (r.referencesWritten || 0), 0)
-
   return {
-    adapter: adapterId,
+    toolId,
     results,
     total: results.length,
     created,
     updated,
     skipped,
-    referencesCreated
+    referencesCreated,
+    pruned,
   }
 }
 
-function determineAction(
-  outputPath: string,
-  newContent: string,
-  force: boolean
-): 'created' | 'updated' | 'skipped' {
+function pruneStale(toolId: SkillAdapterId, projectPath: string, skills: OpenXenonSkill[]): number {
+  const skillsDir = SKILL_ADAPTERS[toolId].pruneRoot(projectPath)
+  const currentIds = new Set(skills.map((s) => s.id))
+  let pruned = 0
+  if (!existsSync(skillsDir)) return 0
+  for (const entry of readdirSync(skillsDir)) {
+    if (entry.startsWith('.')) continue
+    if (currentIds.has(entry)) continue
+    const dir = join(skillsDir, entry)
+    try {
+      rmSync(dir, { recursive: true, force: true })
+      pruned++
+    } catch {
+      // best-effort cleanup
+    }
+  }
+  return pruned
+}
+
+/**
+ * Compile skills for the given set of tools (default: all DEFAULT_ADAPTERS).
+ * Each tool writes to its own root (e.g. .opencode/skills/, .claude/skills/, .agents/skills/).
+ * `adapterOrTools` accepts either a single id (back-compat) or a list.
+ */
+export function compileAllSkills(
+  adapterOrTools: string | readonly string[],
+  projectPath: string,
+  force: boolean = false,
+): MultiToolCompilationReport {
+  const toolIds: SkillAdapterId[] = resolveToolIds(adapterOrTools)
+  const config = readProjectConfig(projectPath)
+  const locale = (config?.locale ?? DEFAULT_LOCALE) as SupportedLocale
+  const skills = loadSkills(locale)
+
+  const byTool = {} as Record<SkillAdapterId, CompilationReport>
+  let total = 0
+  let created = 0
+  let updated = 0
+  let skipped = 0
+  let pruned = 0
+
+  for (const toolId of toolIds) {
+    const report = compileForTool(toolId, projectPath, skills, force)
+    byTool[toolId] = report
+    total += report.total
+    created += report.created
+    updated += report.updated
+    skipped += report.skipped
+    pruned += report.pruned
+  }
+
+  return { byTool, total, created, updated, skipped, pruned }
+}
+
+function resolveToolIds(input: string | readonly string[]): SkillAdapterId[] {
+  const arr = Array.isArray(input) ? input : [input]
+  const out: SkillAdapterId[] = []
+  for (const raw of arr) {
+    if (typeof raw !== 'string') continue
+    for (const piece of raw.split(',')) {
+      const v = piece.trim()
+      if (!v) continue
+      if (!(DEFAULT_ADAPTERS as readonly string[]).includes(v)) {
+        throw new Error(`Unknown skill tool id: "${v}". Valid: ${DEFAULT_ADAPTERS.join(', ')}`)
+      }
+      out.push(v as SkillAdapterId)
+    }
+  }
+  return Array.from(new Set(out))
+}
+
+function determineAction(outputPath: string, newContent: string, force: boolean): 'created' | 'updated' | 'skipped' {
   if (!existsSync(outputPath)) {
     return 'created'
   }
-
   if (force) {
     return 'updated'
   }
-
   const existingContent = readFileSync(outputPath, 'utf-8')
   const existingHash = createHash('sha256').update(existingContent).digest('hex')
   const newHash = createHash('sha256').update(newContent).digest('hex')
-
   if (existingHash === newHash) {
     return 'skipped'
   }
-
   return 'updated'
 }
 
@@ -147,38 +232,33 @@ function computeReferencesHash(references: { filename: string; content: string }
   if (!references || references.length === 0) {
     return ''
   }
-  const combined = references.map(r => `${r.filename}:${r.content}`).join('|')
+  const combined = references.map((r) => `${r.filename}:${r.content}`).join('|')
   return createHash('sha256').update(combined).digest('hex')
 }
 
-export function formatCompilationReport(report: CompilationReport): string {
-  const lines: string[] = [
-    `Skill 编译报告 (${report.adapter})`,
-    '='.repeat(40),
-    `总计: ${report.total} 个 Skill`,
-    `新建: ${report.created}`,
-    `更新: ${report.updated}`,
-    `跳过: ${report.skipped}`,
-    `References: ${report.referencesCreated}`,
-    '',
-    '详细结果:'
-  ]
-  
-  for (const result of report.results) {
-    const statusIcon = {
-      created: '✓',
-      updated: '↻',
-      skipped: '-'
-    }[result.action]
-    
-    const statusText = {
-      created: '新建',
-      updated: '更新',
-      skipped: '跳过'
-    }[result.action]
-    
-    lines.push(`  ${statusIcon} ${result.skillId} [${statusText}]`)
+export function formatCompilationReport(report: MultiToolCompilationReport): string {
+  const lines: string[] = []
+  let first = true
+  for (const toolId of DEFAULT_ADAPTERS) {
+    const r = report.byTool[toolId]
+    if (!r) continue
+    if (!first) lines.push('')
+    first = false
+    lines.push(`Skill 编译报告 [${r.toolId}]`)
+    lines.push('='.repeat(40))
+    lines.push(`总计: ${r.total} 个 Skill`)
+    lines.push(`新建: ${r.created}`)
+    lines.push(`更新: ${r.updated}`)
+    lines.push(`跳过: ${r.skipped}`)
+    lines.push(`References: ${r.referencesCreated}`)
+    if (r.pruned > 0) lines.push(`Pruned: ${r.pruned}`)
+    lines.push('')
+    lines.push('详细结果:')
+    for (const result of r.results) {
+      const statusIcon = { created: '✓', updated: '↻', skipped: '-' }[result.action]
+      const statusText = { created: '新建', updated: '更新', skipped: '跳过' }[result.action]
+      lines.push(`  ${statusIcon} ${result.skillId} [${statusText}]`)
+    }
   }
-  
   return lines.join('\n')
 }

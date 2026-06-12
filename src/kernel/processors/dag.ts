@@ -1,0 +1,90 @@
+import type { GraphNode, GraphEdge } from './graph'
+
+export interface TopologySortResult {
+  valid: boolean
+  path: string[]
+  errors: string[]
+}
+
+export function topologicalSortGeneric(nodes: GraphNode[], edges?: GraphEdge[]): TopologySortResult {
+  const nodeMap = new Map<string, string[]>()
+  const inDegree = new Map<string, number>()
+  const nodeIds = new Set(nodes.map((n) => n.id))
+
+  for (const node of nodes) {
+    nodeMap.set(node.id, [])
+    inDegree.set(node.id, 0)
+  }
+
+  if (edges) {
+    for (const edge of edges) {
+      if (!nodeIds.has(edge.from) || !nodeIds.has(edge.to)) {
+        continue
+      }
+      nodeMap.get(edge.from)?.push(edge.to)
+      inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1)
+    }
+  } else {
+    for (const node of nodes) {
+      for (const dep of node.deps || []) {
+        if (nodeIds.has(dep)) {
+          nodeMap.get(dep)?.push(node.id)
+          inDegree.set(node.id, (inDegree.get(node.id) ?? 0) + 1)
+        }
+      }
+    }
+  }
+
+  const errors: string[] = []
+  for (const node of nodes) {
+    for (const dep of node.deps || []) {
+      if (!nodeIds.has(dep)) {
+        errors.push(`Node '${node.id}' depends on non-existent node '${dep}'`)
+      }
+    }
+  }
+
+  // v1.1 fix-p1-architecture dag-edges-validation: edges 显式传入时, 也必须校验
+  // edge 端点是否在 nodes 集合里。修复前, 上方 if (edges) 分支用 `continue` 静默
+  // 跳过无效 edge, 导致 edge 引用不存在的节点时 DAG 静默合法化。
+  if (edges) {
+    for (const edge of edges) {
+      if (!nodeIds.has(edge.from)) {
+        errors.push(`Edge from '${edge.from}' references non-existent node`)
+      }
+      if (!nodeIds.has(edge.to)) {
+        errors.push(`Edge to '${edge.to}' references non-existent node`)
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return { valid: false, path: [], errors }
+  }
+
+  const queue: string[] = []
+  for (const [id, degree] of inDegree) {
+    if (degree === 0) queue.push(id)
+  }
+
+  // v1.1 fix-p2-robustness dag-queue-perf: queue.shift() 在 O(n) 上复制数组元素,
+  // 整体 O(n²). 改 head 索引指针, 取元素 O(1), 仅常数因子优化, 行为不变.
+  let head = 0
+  const path: string[] = []
+  while (head < queue.length) {
+    const current = queue[head++]!
+    path.push(current)
+    const neighbors = nodeMap.get(current) || []
+    for (const neighbor of neighbors) {
+      const newDegree = inDegree.get(neighbor)! - 1
+      inDegree.set(neighbor, newDegree)
+      if (newDegree === 0) queue.push(neighbor)
+    }
+  }
+
+  if (path.length !== nodes.length) {
+    return { valid: false, path: [], errors: ['DAG contains a cycle'] }
+  }
+
+  return { valid: true, path, errors: [] }
+}

@@ -1,0 +1,18 @@
+// Task: locate
+// 阶段 2：定位 root cause
+
+task "locate" blueprint "fix-issue" {
+  inject "work-context";
+
+  context {
+    objective = "用 git bisect 定位引入 bug 的 commit + 行号 + 改动的代码逻辑";
+    constraints = [
+      "不允许修改代码",
+      "至少给 1 条 commit SHA + 1 个具体行号"
+    ];
+  }
+
+  slot "locate" {
+    deps = ["diagnose"];
+  }
+}

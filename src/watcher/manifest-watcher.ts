@@ -1,7 +1,7 @@
-import { watch, type FSWatcher, readFileSync, existsSync } from 'fs'
-import type { StepManifest } from '../kernel/lib/types/task'
-import { getTaskDirectory } from '../kernel/lib/task-dir'
+import { existsSync, type FSWatcher, readFileSync, watch } from 'fs'
 import { readTaskTrace } from '../daemon/trace/writer'
+import { getTaskDirectory } from '../work/task-directory'
+import type { StepManifest } from '../kernel/index'
 
 export interface ManifestWatcherOptions {
   projectRoot: string
@@ -55,7 +55,7 @@ export class ManifestWatcher {
       const trace = readTaskTrace(taskDir)
 
       if (trace) {
-        const stageState = trace.stages.get(manifest.stepId)
+        const stageState = trace.parts.get(manifest.stepId)
         if (stageState) {
           stageState.status = manifest.status as any
         }

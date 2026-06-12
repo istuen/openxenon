@@ -1,12 +1,8 @@
-import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
+import { existsSync, readFileSync } from '../../infra/filesystem'
+import { BOUNDARY_DIR, CONFIG_FILE } from '../../kernel/index'
+import type { ProjectConfig } from '../../infra/paths'
 import { missingProjectPath, projectNotFound } from './errors'
-import { BOUNDARY_DIR, CONFIG_FILE } from '../../kernel/constants'
-
-interface ProjectConfig {
-  version: 1
-  mode: 'PRODUCTION' | 'SANDBOX'
-}
 
 export interface ProjectContext {
   projectPath: string
@@ -42,7 +38,7 @@ export function loadProjectContext(projectPath: string | null): ProjectContext |
   return {
     projectPath,
     configPath,
-    mode
+    mode,
   }
 }
 

@@ -1,0 +1,48 @@
+// .openxenon/blueprints/dsl-evolve.oxn
+//
+// 修改 OXL 语法时的标准工作流
+// 拓扑：propose-grammar → migrate-examples → regen-generated → verify
+//
+// 关键约束：
+//   - src/oxl/generated/ 永远不要手动编辑（biome 与 tsconfig 都忽略它）
+//   - 改 .langium 后必须跑 bun run langium:generate
+//   - examples 与 builtins 是 source of truth；generated 是产物
+//
+// 用法：
+//   oxn work create dsl-evolve-<feature> --blueprint dsl-evolve
+//   在 work context.goal 写明要加/改的语法节点
+
+blueprint "dsl-evolve" {
+  version = 1
+  description = "OXL 演进流程：提出语法变更 → 迁移 example → 重新生成 generated/ → 全量验证（lint+typecheck+test）"
+
+  prop "langium_source" { type = string; default = "src/oxl/langium/oxn.langium" }
+  prop "examples_dir" { type = string; default = "src/oxl/examples" }
+
+  slot "propose-grammar" {
+    deps = []
+    observe = ["fs-exists", "fs-parseable"]
+    // 必产出：grammar diff（新增节点 / 修改规则 / 删减的兼容策略）
+    // observe=fs-parseable 强制新语法在落地前先有可解析的草案
+  }
+
+  slot "migrate-examples" {
+    deps = ["propose-grammar"]
+    observe = ["fs-content-match"]
+    // 迁移 src/oxl/examples/{works,domains,blueprints,proofs} 到新语法
+    // observe 强制 example 必须含新节点（不是仅"形式兼容"）
+  }
+
+  slot "regen-generated" {
+    deps = ["migrate-examples"]
+    observe = ["shell-exec"]
+    // 跑 bun run langium:generate；generated/ 必须更新
+    // 观察：generated/ 的 mtime 晚于 .langium 的 mtime
+  }
+
+  slot "verify" {
+    deps = ["regen-generated"]
+    observe = ["lint-check", "ts-compiles", "test-pass"]
+    // 全量验证：架构守卫 + 类型 + 单测（langium 解析器 + CLI 子命令）
+  }
+}

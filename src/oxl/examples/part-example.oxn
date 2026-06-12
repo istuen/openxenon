@@ -1,0 +1,18 @@
+part "develop" align "Code" {
+  description = "示例 Part，展示 Intent-Align 语法"
+  prop "feature_desc" { type = string; required = true }
+
+  observe = ["ShellExec"]
+}
+
+part "build" align "Build" {
+  description = "构建 Part"
+  prop "target" { type = string; default = "dist" }
+}
+
+part "test-runner" align "Test" {
+  description = "测试 Part"
+  prop "timeout" { type = number; default = 30000 }
+
+  observe = ["ShellExec"]
+}

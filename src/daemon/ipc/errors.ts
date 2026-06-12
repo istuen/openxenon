@@ -4,23 +4,15 @@ export interface ErrorResponse {
   statusCode: number
 }
 
-export function createErrorResponse(
-  error: string,
-  message: string,
-  statusCode: number
-): ErrorResponse {
+export function createErrorResponse(error: string, message: string, statusCode: number): ErrorResponse {
   return { error, message, statusCode }
 }
 
-export function errorResponse(
-  error: string,
-  message: string,
-  statusCode: number
-): Response {
+export function errorResponse(error: string, message: string, statusCode: number): Response {
   const errorObj = createErrorResponse(error, message, statusCode)
   return new Response(JSON.stringify(errorObj), {
     status: statusCode,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
   })
 }
 
@@ -37,19 +29,11 @@ export function internalServerError(message: string): Response {
 }
 
 export function missingProjectPath(): Response {
-  return errorResponse(
-    'MissingProjectPath',
-    'X-Project-Path header is required',
-    400
-  )
+  return errorResponse('MissingProjectPath', 'X-Project-Path header is required', 400)
 }
 
 export function projectNotFound(projectPath: string): Response {
-  return errorResponse(
-    'ProjectNotFound',
-    `Project not initialized at ${projectPath}`,
-    404
-  )
+  return errorResponse('ProjectNotFound', `Project not initialized at ${projectPath}`, 404)
 }
 
 export function invalidJSON(message: string): Response {

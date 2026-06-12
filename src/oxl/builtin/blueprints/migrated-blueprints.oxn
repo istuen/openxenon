@@ -1,0 +1,13 @@
+blueprint "verify-readme" type "task" {
+  version = 1
+  part slot "check-readme" {
+    deps = []
+  }
+}
+
+blueprint "test-check-readme" type "task" {
+  version = 1
+  part slot "check-readme" {
+    deps = []
+  }
+}

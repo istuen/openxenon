@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync } from 'fs'
+import { appendFileSync, existsSync, mkdirSync } from '../infra/filesystem'
 import { DAEMON_LOG_PATH, GLOBAL_BOUNDARY_PATH } from '../infra/global'
 
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
@@ -19,9 +19,9 @@ function ensureLogDirectory(): void {
 export function log(level: LogLevel, message: string): void {
   const timestamp = new Date().toISOString()
   const logLine = `[${timestamp}] ${level}: ${message}\n`
-  
+
   console.log(logLine.trimEnd())
-  
+
   try {
     ensureLogDirectory()
     appendFileSync(DAEMON_LOG_PATH, logLine, 'utf-8')
@@ -43,7 +43,7 @@ export function createLogger(prefix: string): Logger {
     },
     error(message: string): void {
       log('ERROR', `[${prefix}] ${message}`)
-    }
+    },
   }
 }
 

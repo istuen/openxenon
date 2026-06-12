@@ -1,15 +1,12 @@
-import { registerRoute } from '../router'
-import { hallEmitter, type HallEvent } from '../../hall'
+import { type HallEvent, hallEmitter } from '../../hall'
 import { daemonLogger } from '../../logger'
+import { registerRoute } from '../router'
 
 function formatSSE(event: HallEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`
 }
 
-async function handleEventStream(
-  _request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleEventStream(_request: Request, _projectPath: string): Promise<Response> {
   const encoder = new TextEncoder()
 
   const stream = new ReadableStream({
@@ -17,8 +14,7 @@ async function handleEventStream(
       const sendEvent = (event: HallEvent) => {
         try {
           controller.enqueue(encoder.encode(formatSSE(event)))
-        } catch {
-        }
+        } catch {}
       }
 
       const onStageStarted = (data: HallEvent) => sendEvent(data)
@@ -65,7 +61,7 @@ async function handleEventStream(
         daemonLogger.info('SSE client disconnected')
         controller.close()
       })
-    }
+    },
   })
 
   return new Response(stream, {
@@ -73,9 +69,9 @@ async function handleEventStream(
     headers: {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no'
-    }
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
   })
 }
 

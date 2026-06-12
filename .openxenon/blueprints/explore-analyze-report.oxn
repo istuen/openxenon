@@ -1,0 +1,37 @@
+// .openxenon/blueprints/explore-analyze-report.oxn
+//
+// 探索 → 分析 → 报告（3 阶段，输出可审查的 Artifact）
+// 拓扑：explore → analyze → report
+//
+// 用法：
+//   oxn work create <work-id> --blueprint explore-analyze-report
+//   在 work context.goal 写明要探索的方向；task part 写明该阶段的具体边界
+
+blueprint "explore-analyze-report" {
+  version = 1
+  description = "代码库探索 → 问题/机会分析 → 落盘报告：三阶段强制每阶段都产出可审查的 Artifact（不允许脑内话）"
+
+  prop "report_format" { type = string; default = "markdown" }
+  prop "max_report_size_kb" { type = number; default = 256 }
+
+  slot "explore" {
+    deps = []
+    observe = ["fs-match"]
+    // 必读：src/、.openxenon/、相关 docs/
+    // 产出：现状地图（哪些模块 / 哪些入口 / 哪些关键文件）
+  }
+
+  slot "analyze" {
+    deps = ["explore"]
+    observe = ["fs-content-match"]
+    // 必读：源码层面的字面证据
+    // 产出：问题点 / 机会点的分析，每个点配可定位的代码引用
+  }
+
+  slot "report" {
+    deps = ["analyze"]
+    observe = ["fs-exists", "file-exports"]
+    // 必落盘：报告文件（默认 Markdown），可被后续 work 消费
+    // observe=file-exports 强制报告本身是有效结构（不是空文件 / 不是半截 JSON）
+  }
+}

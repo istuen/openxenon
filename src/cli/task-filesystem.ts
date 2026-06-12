@@ -1,33 +1,40 @@
-import { join, dirname } from 'path'
-import { existsSync, readFileSync, writeFileSync, appendFileSync } from 'fs'
-import { BOUNDARY_DIR, BLUEPRINT_FILE, TASKS_DIR, STEP_MANIFEST_FILE, FROZEN_BLUEPRINT_FILE } from '../kernel/constants'
-import { ensureDirectory } from '../infra/fs'
-import { parse as parseYaml } from 'yaml'
-import { probeHandlers, type ProbeResult, type ProbeContext } from '../infra/probes'
-import { evaluateProbe, type ProbeDefinition } from '../kernel/probes/evaluator'
-import { topologicalSort, validateDagTopology, type DagNode } from '../kernel/schemas/dag-validator'
-import { buildTraceEvent, type TraceEvent } from '../kernel/lib/task-trace'
-import { compileBlueprint, compileFrozen } from '../kernel/compiler/blueprint-compiler'
-import { preloadCompileDependencies } from '../infra/loader'
-import type { Blueprint } from '../kernel/schemas/blueprint.schema'
-import type { FrozenBlueprint } from '../kernel/schemas/frozen-schema'
-import { stringify as stringifyYaml } from 'yaml'
+import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
+import { join } from 'path'
+import { URI } from 'langium'
+// v0.1-final: task.oxn 直接通过 Langium AST 解析（不再走 bundle）
+// 保留 generateOxnAssembly 导入供未来 batch 验证使用
+// import { generateOxnAssembly } from '../oxl/generator/oxn-generator'
+import { createOxnServices, resetOxnServices } from '../oxl/langium/oxn-services'
+import { ensureDirectory } from '../infra/filesystem'
+import { type ProbeContext, type ProbeResult, probeHandlers } from '../infra/probes'
+import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, TASKS_DIR, TASK_OXN_FILE } from '../kernel/index'
+import { buildTraceEvent, type TraceEvent } from '../work/task-trace'
+import { evaluateProbe, type ProbeDefinition } from '../work/probe-evaluator'
+import { type DagNode, topologicalSort } from '../oxl/validators/blueprint-dag'
+import { computeContentHash, type FrozenBlueprint } from '../kernel/index'
+import { hashPort } from '../infra/hash'
+import type { OxnAssemblySlotBinding } from '../oxl/schemas/oxn-assembly.schema'
+import { loadStandardByName } from '../infra/loader'
+import { getProjectBoundaryPath } from './project'
+import { unifiedTaskSubmit } from './oxn-dual-track'
+// import { writeFrozenImmutable } from '../kernel/index'
 
-const TASK_TRACE_FILE = 'task-trace.yaml'
+const TASK_TRACE_FILE = 'task-trace.jsonl'
 const STATE_FILE = 'state.json'
 
 export interface TaskState {
   taskId: string
   taskName: string
   status: 'PENDING' | 'RUNNING' | 'COMPLETED'
-  currentPart: string | null
-  parts: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'>
+  currentPartId: string | null
+  parts: Record<string, PartStateNode>
 }
 
-export interface ParsedBlueprint {
-  name?: string
-  id?: string
-  parts?: Array<Record<string, unknown>>
+export interface PartStateNode {
+  name: string
+  status: 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'
+  probeResults?: ProbeResult[]
+  duration?: number
 }
 
 function validateTaskName(name: string): { valid: boolean; error?: string } {
@@ -35,7 +42,7 @@ function validateTaskName(name: string): { valid: boolean; error?: string } {
   if (name.length < 2) return { valid: false, error: 'Name too short (min 2 chars)' }
   if (name.length > 64) return { valid: false, error: 'Name too long (max 64 chars)' }
   if (!/^[a-z][a-z0-9-]*$/.test(name)) {
-    return { valid: false, error: 'Name must be kebab-case (lowercase letter, lowercase letters/numbers, hyphens)' }
+    return { valid: false, error: 'Name must be kebab-case' }
   }
   if (name.endsWith('-')) return { valid: false, error: 'Name cannot end with hyphen' }
   return { valid: true }
@@ -45,36 +52,8 @@ function getTaskDir(cwd: string, taskId: string): string {
   return join(cwd, BOUNDARY_DIR, TASKS_DIR, taskId)
 }
 
-function resolveTaskName(
-  content: string,
-  nameOverride?: string
-): string {
-  const candidate = nameOverride || content.match(/^name:\s*["']?([a-z][a-z0-9-]*)/m)?.[1]
-
-  if (!candidate) {
-    throw new Error(
-      'Task name required. Use --name or ensure blueprint has a name field.'
-    )
-  }
-
-  const validation = validateTaskName(candidate)
-  if (!validation.valid) {
-    throw new Error(`Invalid task name: ${validation.error}`)
-  }
-
-  return candidate
-}
-
 function taskDirExists(cwd: string, name: string): boolean {
   return existsSync(join(cwd, BOUNDARY_DIR, TASKS_DIR, name))
-}
-
-function getBlueprintPath(cwd: string, taskId: string): string {
-  return join(getTaskDir(cwd, taskId), BLUEPRINT_FILE)
-}
-
-function getFrozenBlueprintPath(cwd: string, taskId: string): string {
-  return join(getTaskDir(cwd, taskId), FROZEN_BLUEPRINT_FILE)
 }
 
 function getStatePath(cwd: string, taskId: string): string {
@@ -85,43 +64,50 @@ function getTracePath(cwd: string, taskId: string): string {
   return join(getTaskDir(cwd, taskId), TASK_TRACE_FILE)
 }
 
-function getStepManifestPath(cwd: string, taskId: string): string {
-  return join(getTaskDir(cwd, taskId), STEP_MANIFEST_FILE)
-}
-
 function readFrozenBlueprint(cwd: string, taskId: string): FrozenBlueprint | null {
-  const path = getFrozenBlueprintPath(cwd, taskId)
+  const path = join(getTaskDir(cwd, taskId), FROZEN_BLUEPRINT_JSON)
   if (!existsSync(path)) return null
   try {
-    const content = readFileSync(path, 'utf-8')
-    return parseYaml(content) as FrozenBlueprint
+    return JSON.parse(readFileSync(path, 'utf-8')) as FrozenBlueprint
   } catch {
     return null
   }
 }
 
+function detectLegacyState(state: TaskState): string[] {
+  const warnings: string[] = []
+  for (const key of Object.keys(state.parts)) {
+    if (!/^[a-z][a-z0-9-]*$/.test(key)) {
+      warnings.push(`Legacy part key "${key}" detected. Task is readonly.`)
+    }
+  }
+  return warnings
+}
+
 function writeState(cwd: string, taskId: string, state: TaskState): void {
+  const dir = getTaskDir(cwd, taskId)
+  ensureDirectory(dir)
   const path = getStatePath(cwd, taskId)
-  ensureDirectory(join(cwd, BOUNDARY_DIR, TASKS_DIR, taskId))
-  writeFileSync(path, JSON.stringify(state, null, 2), 'utf-8')
+  const tmpPath = `${path}.tmp`
+  writeFileSync(tmpPath, JSON.stringify(state, null, 2), 'utf-8')
+  renameSync(tmpPath, path)
 }
 
 function readState(cwd: string, taskId: string): TaskState | null {
   const path = getStatePath(cwd, taskId)
   if (!existsSync(path)) return null
   try {
-    const content = readFileSync(path, 'utf-8')
-    return JSON.parse(content) as TaskState
+    return JSON.parse(readFileSync(path, 'utf-8')) as TaskState
   } catch {
     return null
   }
 }
 
 function appendTraceEvent(cwd: string, taskId: string, event: TraceEvent): void {
-  const path = getTracePath(cwd, taskId)
-  ensureDirectory(join(cwd, BOUNDARY_DIR, TASKS_DIR, taskId))
-  const line = JSON.stringify(event) + '\n'
-  appendFileSync(path, line, 'utf-8')
+  const dir = getTaskDir(cwd, taskId)
+  ensureDirectory(dir)
+  const line = `${JSON.stringify(event)}\n`
+  appendFileSync(getTracePath(cwd, taskId), line, 'utf-8')
 }
 
 export interface SubmitResult {
@@ -133,99 +119,157 @@ export interface SubmitResult {
   message: string
 }
 
-export function taskSubmit(blueprintPath: string, cwd: string, nameOverride?: string, existingTaskId?: string, params?: Record<string, unknown>): SubmitResult {
-  if (!existsSync(blueprintPath)) {
-    throw new Error(`Blueprint file not found: ${blueprintPath}`)
-  }
-
-  const content = readFileSync(blueprintPath, 'utf-8')
-  const rawParsed = parseYaml(content) as ParsedBlueprint
-
-  if (!rawParsed.name && !rawParsed.id && !existingTaskId) {
-    throw new Error('Blueprint must have name or id field')
-  }
-
-  const taskId = existingTaskId || resolveTaskName(content, nameOverride)
-
-  if (!existingTaskId && taskDirExists(cwd, taskId)) {
-    throw new Error(`Task "${taskId}" already exists. Choose a different name with --name.`)
-  }
-
-  const dagNodes: DagNode[] = (rawParsed.parts || []).map(p => ({
-    id: String(p.id || p.name),
-    deps: (p.deps || []) as string[]
-  }))
-  const dagValidation = validateDagTopology(dagNodes)
-  if (!dagValidation.valid) {
-    throw new Error(`Invalid DAG: ${dagValidation.errors.join(', ')}`)
-  }
-
-  const parsed = rawParsed as unknown as Blueprint
-
+export function taskSubmit(taskId: string, cwd: string, params?: Record<string, unknown>): SubmitResult {
   const taskDir = getTaskDir(cwd, taskId)
-  ensureDirectory(taskDir)
+  const taskOxnPath = join(taskDir, TASK_OXN_FILE)
 
-  const blueprintDestPath = getBlueprintPath(cwd, taskId)
-  writeFileSync(blueprintDestPath, content, 'utf-8')
+  if (!existsSync(taskOxnPath)) {
+    throw new Error(`Task file not found: ${taskOxnPath}. Use 'oxn work add-task' to create a task first.`)
+  }
 
-  const bpProps = (rawParsed as any).props || {}
-  const propDefaults: Record<string, unknown> = {}
-  for (const [key, val] of Object.entries(bpProps as Record<string, any>)) {
-    if (val && val.default !== undefined) {
-      propDefaults[key] = val.default
+  const taskOxnContent = readFileSync(taskOxnPath, 'utf-8')
+
+  // Parse task.oxn with Langium to extract slotBindings
+  const slotBindings: OxnAssemblySlotBinding[] = []
+  let extractedTaskId: string | undefined
+  let blueprintName: string | undefined
+
+  try {
+    const services = createOxnServices()
+    const shared = services.shared
+    shared.ServiceRegistry.register(services)
+
+    const factory = shared.workspace.LangiumDocumentFactory
+    const uri = URI.file(taskOxnPath)
+    const doc = factory.fromString(taskOxnContent, uri, undefined)
+
+    if (doc.parseResult?.value && doc.state > 1) {
+      // v0.1-final: task.oxn 是一个独立 task 实体（含 blueprint + parts）
+      const taskNode = (doc.parseResult.value as any).entities?.find((e: any) => e.$type === 'TaskDeclaration')
+      if (taskNode) {
+        extractedTaskId = taskNode.name
+        blueprintName = taskNode.blueprint
+        for (const part of taskNode.parts ?? []) {
+          slotBindings.push({
+            slot: part.name,
+            props: {},
+            probeBindings: [],
+          })
+        }
+      }
+    } else {
+      throw new Error(
+        `Parse state ${doc.state}, lexer errors: ${doc.parseResult?.lexerErrors?.length}, parser errors: ${doc.parseResult?.parserErrors?.length}`,
+      )
+    }
+    resetOxnServices()
+  } catch (_err) {
+    resetOxnServices()
+    // Fallback to regex parsing if Langium fails
+    const taskNameMatch = taskOxnContent.match(/task\s+"([^"]+)"/)
+    extractedTaskId = taskNameMatch?.[1]
+    // v0.1: 只支持 blueprint "name" 语法（旧的 use "@prj/blueprints/name" 已废弃）
+    const blueprintMatch = taskOxnContent.match(/blueprint\s+"([^"]+)"/)
+    blueprintName = blueprintMatch?.[1]
+
+    // Extract slotBindings from task.oxn content using regex fallback
+    // Match: slot "name" { deps = [...] }
+    const slotBindingRegex = /slot\s+"([^"]+)"\s*\{([^}]*)\}/g
+    let match
+    while ((match = slotBindingRegex.exec(taskOxnContent)) !== null) {
+      const slotName = match[1] ?? ''
+      slotBindings.push({
+        slot: slotName,
+        props: {},
+        probeBindings: [],
+      })
     }
   }
 
-  const compileCtx = {
-    taskId,
-    taskName: parsed.name || parsed.id || taskId,
-    params: { ...propDefaults, ...(params || {}) }
+  if (!extractedTaskId) {
+    throw new Error('Invalid task.oxn: missing task name')
   }
 
-  let frozenBlueprint: FrozenBlueprint
+  let blueprintPath: string
+  let frozenFromTaskOxn: FrozenBlueprint
 
-  const bpDir = dirname(blueprintPath)
-  const assemblyPath = join(bpDir, 'blueprint.assembly.json')
-  if (existsSync(assemblyPath)) {
-    const assembly = JSON.parse(readFileSync(assemblyPath, 'utf-8'))
-    frozenBlueprint = compileFrozen(assembly, compileCtx)
-  } else {
-    frozenBlueprint = compileBlueprint(parsed, {
-      ...compileCtx,
-      dependencies: preloadCompileDependencies(join(cwd, BOUNDARY_DIR))
+  if (blueprintName) {
+    const projectBoundary = getProjectBoundaryPath(cwd)
+    const blueprintAsset = loadStandardByName('project', projectBoundary, blueprintName, 'blueprints')
+    if (!blueprintAsset) {
+      throw new Error(`Blueprint "${blueprintName}" not found in arsenal`)
+    }
+    blueprintPath = blueprintAsset.path
+
+    const tempResult = unifiedTaskSubmit(blueprintPath, cwd, taskId, extractedTaskId, {
+      params,
+      taskBinding: slotBindings,
     })
+    frozenFromTaskOxn = tempResult.frozen
+  } else {
+    throw new Error('task.oxn must reference a blueprint. Add: blueprint "<name>"')
   }
-  const frozenDestPath = getFrozenBlueprintPath(cwd, taskId)
-  writeFileSync(frozenDestPath, stringifyYaml(frozenBlueprint), 'utf-8')
 
-  const parts: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'> = {}
-  if (frozenBlueprint.parts) {
-    for (const part of frozenBlueprint.parts) {
-      parts[part.name] = 'PENDING'
+  const frozenPath = join(taskDir, FROZEN_BLUEPRINT_JSON)
+  const existingFrozen = existsSync(frozenPath)
+
+  if (existingFrozen) {
+    const existingContent = readFileSync(frozenPath, 'utf-8')
+    const existingHash = computeContentHash(existingContent, hashPort)
+    const newHash = computeContentHash(JSON.stringify(frozenFromTaskOxn, null, 2), hashPort)
+
+    if (existingHash !== newHash) {
+      const taskOxnHash = computeContentHash(taskOxnContent, hashPort)
+      const existingMeta = JSON.parse(existingContent)
+      const frozenMetaHash = existingMeta._xenon_meta?.content_hash
+
+      if (taskOxnHash !== frozenMetaHash) {
+        throw new Error(
+          `Inconsistency detected: task.oxn has been modified since last submit. ` +
+            `Expected frozen.json to match task.oxn (hash: ${taskOxnHash}), ` +
+            `but it doesn't. Please resubmit with 'oxn work submit --work <w> --task ${taskId}'.`,
+        )
+      }
     }
   }
+
+  const result = unifiedTaskSubmit(blueprintPath, cwd, taskId, extractedTaskId, { params, taskBinding: slotBindings })
+
+  const parts: Record<string, PartStateNode> = {}
+  if (result.frozen.parts) {
+    for (const part of result.frozen.parts) {
+      const partId = part.id || part.name
+      parts[partId] = {
+        name: part.name,
+        status: 'PENDING',
+      }
+    }
+  }
+
+  // v0.1.2: task-frozen.json 不带 top-level _xenon_meta（meta 在 parts/probes 层级）。
+  // 共享的 frozen-immutable writer 用于 proof-frozen.json（顶层带 _xenon_meta）。
+  // 此处保留旧 write 路径；统一签名/chmod 是 P+ 演进目标。
+  writeFileSync(frozenPath, JSON.stringify(result.frozen, null, 2), 'utf-8')
 
   const state: TaskState = {
     taskId,
-    taskName: parsed.name || parsed.id || 'unnamed',
+    taskName: extractedTaskId,
     status: 'RUNNING',
-    currentPart: null,
-    parts
+    currentPartId: null,
+    parts,
   }
-  writeState(cwd, taskId, state)
 
-  const traceEvent = buildTraceEvent('TASK_START', taskId, {
-    taskName: state.taskName
-  })
+  const traceEvent = buildTraceEvent('TASK_START', taskId, { taskName: extractedTaskId })
   appendTraceEvent(cwd, taskId, traceEvent)
+  writeState(cwd, taskId, state)
 
   return {
     taskId,
-    blueprintId: frozenBlueprint.id,
-    blueprintFile: `${TASKS_DIR}/${taskId}/${FROZEN_BLUEPRINT_FILE}`,
+    blueprintId: result.frozen.id,
+    blueprintFile: `${TASKS_DIR}/${taskId}/${FROZEN_BLUEPRINT_JSON}`,
     status: 'RUNNING',
-    partsCount: frozenBlueprint.parts.length,
-    message: 'Task created successfully'
+    partsCount: result.frozen.parts.length,
+    message: 'Task submitted successfully',
   }
 }
 
@@ -236,7 +280,7 @@ export interface NewResult {
   message: string
 }
 
-export function taskNew(taskId: string, taskName: string, cwd: string): NewResult {
+export function taskNew(taskId: string, taskName: string, cwd: string, blueprintName?: string): NewResult {
   if (taskDirExists(cwd, taskId)) {
     throw new Error(`Task "${taskId}" already exists. Choose a different name.`)
   }
@@ -249,25 +293,29 @@ export function taskNew(taskId: string, taskName: string, cwd: string): NewResul
   const taskDir = getTaskDir(cwd, taskId)
   ensureDirectory(taskDir)
 
+  const taskOxnContent = blueprintName
+    ? `task "${taskId}" blueprint "${blueprintName}" {\n}\n`
+    : `task "${taskId}" {\n  // Empty task, waiting for developer to fill in\n}\n`
+
+  writeFileSync(join(taskDir, TASK_OXN_FILE), taskOxnContent, 'utf-8')
+
   const state: TaskState = {
     taskId,
     taskName: taskName || taskId,
     status: 'PENDING',
-    currentPart: null,
-    parts: {}
+    currentPartId: null,
+    parts: {},
   }
-  writeState(cwd, taskId, state)
 
-  const traceEvent = buildTraceEvent('TASK_CREATED', taskId, {
-    taskName: state.taskName
-  })
+  const traceEvent = buildTraceEvent('TASK_START', taskId, { taskName: state.taskName })
   appendTraceEvent(cwd, taskId, traceEvent)
+  writeState(cwd, taskId, state)
 
   return {
     taskId,
     taskName: state.taskName,
     status: 'PENDING',
-    message: 'Task created successfully. Use oxn task submit --blueprint <path> --task-id ' + taskId + ' to add a blueprint.'
+    message: `Task created successfully. Use oxn work submit --work <w> --task ${taskId} to submit.`,
   }
 }
 
@@ -287,87 +335,70 @@ export function taskNext(taskId: string, cwd: string): NextResult {
     throw new Error(`Task not found: ${taskId}`)
   }
 
+  const legacyWarnings = detectLegacyState(state)
+  if (legacyWarnings.length > 0) {
+    throw new Error(`Legacy task detected (non-kebab part keys). Task is readonly.\n${legacyWarnings.join('\n')}`)
+  }
+
   if (state.status === 'COMPLETED') {
-    return {
-      taskId,
-      partId: null,
-      status: 'COMPLETED',
-      message: 'Task already completed'
-    }
+    return { taskId, partId: null, status: 'COMPLETED', message: 'Task already completed' }
   }
 
   const frozenBlueprint = readFrozenBlueprint(cwd, taskId)
-  if (!frozenBlueprint || !frozenBlueprint.parts || frozenBlueprint.parts.length === 0) {
+  if (!frozenBlueprint?.parts || frozenBlueprint.parts.length === 0) {
     throw new Error('No parts defined in frozen blueprint')
   }
 
-  const dagNodes: DagNode[] = frozenBlueprint.parts.map(p => ({
+  const dagNodes: DagNode[] = frozenBlueprint.parts.map((p) => ({
     id: p.id || p.name,
-    deps: p.deps || []
+    deps: p.deps || [],
   }))
   const executionOrder = topologicalSort(dagNodes)
 
-  const partNameById: Record<string, string> = {}
-  for (const part of frozenBlueprint.parts) {
-    partNameById[part.id || part.name] = part.name
-  }
-
   for (const partId of executionOrder) {
-    const partName = partNameById[partId]
-    if (!partName) continue
+    const partNode = state.parts[partId]
+    if (!partNode) continue
 
-    const partStatus = state.parts[partName]
-
-    if (partStatus === 'FAILED') {
-      throw new Error(`Part "${partName}" verification failed. Abort or retry.`)
+    if (partNode.status === 'FAILED') {
+      throw new Error(`Part "${partNode.name}" verification failed. Abort or retry.`)
     }
 
-    const deps = frozenBlueprint.parts.find(p => (p.id || p.name) === partId)?.deps || []
-    const depsSatisfied = deps.every(depId => {
-      const depName = partNameById[depId] || depId
-      return state.parts[depName] === 'PASSED'
-    })
+    const frozenPart = frozenBlueprint.parts.find((p) => (p.id || p.name) === partId)
+    const deps = frozenPart?.deps || []
+    const depsSatisfied = deps.every((depId) => state.parts[depId]?.status === 'PASSED')
 
-    if (depsSatisfied && (!partStatus || partStatus === 'PENDING')) {
-      state.parts[partName] = 'RUNNING'
-      state.currentPart = partName
+    if (depsSatisfied && partNode.status === 'PENDING') {
+      state.parts[partId] = { ...partNode, status: 'RUNNING' }
+      state.currentPartId = partId
+
+      const traceEvent = buildTraceEvent('PART_START', taskId, { partId, partName: partNode.name })
+      appendTraceEvent(cwd, taskId, traceEvent)
       writeState(cwd, taskId, state)
 
-      const traceEvent = buildTraceEvent('PART_START', taskId, {
-        partId,
-        partName
-      })
-      appendTraceEvent(cwd, taskId, traceEvent)
-
-      const part = frozenBlueprint.parts.find(p => (p.id || p.name) === partId)
-
-      const target = (part?.target as { description?: string; glob?: string } | undefined) || { description: partName }
-      const action = (part?.action as { instruction?: string; command?: string } | undefined) || {}
+      const target = (frozenPart?.target as { description?: string; glob?: string } | undefined) || {
+        description: partNode.name,
+      }
+      const action = (frozenPart?.action as { instruction?: string; command?: string } | undefined) || {}
 
       return {
         taskId,
         partId,
-        name: partName,
-        target: { description: target.description || partName, glob: target.glob },
+        name: partNode.name,
+        target: { description: target.description || partNode.name, glob: target.glob },
         action: { instruction: action.instruction, command: action.command },
-        message: 'Part started'
+        message: 'Part started',
       }
     }
   }
 
   state.status = 'COMPLETED'
-  state.currentPart = null
-  writeState(cwd, taskId, state)
+  state.currentPartId = null
 
   const completedEvent = buildTraceEvent('TASK_STATUS', taskId, { status: 'COMPLETED' })
   appendTraceEvent(cwd, taskId, completedEvent)
+  writeState(cwd, taskId, state)
 
-  return {
-    taskId,
-    partId: null,
-    status: 'COMPLETED',
-    message: 'All parts completed'
-  }
+  return { taskId, partId: null, status: 'COMPLETED', message: 'All parts completed' }
 }
 
 export interface VerifyResult {
@@ -384,11 +415,11 @@ export async function taskVerify(taskId: string, partId: string, cwd: string): P
   }
 
   const frozenBlueprint = readFrozenBlueprint(cwd, taskId)
-  if (!frozenBlueprint || !frozenBlueprint.parts) {
+  if (!frozenBlueprint?.parts) {
     throw new Error('No frozen blueprint or parts found')
   }
 
-  const part = frozenBlueprint.parts.find(p => p.id === partId || p.name === partId)
+  const part = frozenBlueprint.parts.find((p) => p.id === partId || p.name === partId)
   if (!part) {
     throw new Error(`Part not found: ${partId}`)
   }
@@ -414,112 +445,108 @@ export async function taskVerify(taskId: string, partId: string, cwd: string): P
 
       const handler = probeHandlers[probeType]
       if (!handler) {
-        probeResults.push({
+        const result: ProbeResult = {
           probeType,
           result: 'FAILED',
-          output: undefined,
           error: `Unknown probe type: ${probeType}`,
-          executedAt: Date.now()
+          executedAt: Date.now(),
+        }
+        probeResults.push(result)
+        const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
+          partId,
+          probeType,
+          result: 'FAILED',
+          error: result.error,
         })
+        appendTraceEvent(cwd, taskId, traceEvent)
         continue
       }
 
       try {
-        const result = await handler(params, context)
-        const probeResult = result as ProbeResult
+        const rawResult = await handler(params, context)
+        const probeResult = rawResult as ProbeResult
 
-        const probeDef: ProbeDefinition = {
-          type: probeType,
-          params: probe.params || {}
-        }
-
+        const probeDef: ProbeDefinition = { type: probeType, params: probe.params || {} }
         const verdict = evaluateProbe(probeDef, probeResult)
 
-        probeResults.push({
+        const fullResult: ProbeResult = {
           ...probeResult,
           result: verdict.passed ? 'PASSED' : 'FAILED',
           error: verdict.passed ? undefined : verdict.message,
           params: probe.params || {},
           actual: verdict.actual,
           failureMessage: verdict.failureMessage,
-          duration: verdict.duration
-        })
+          duration: verdict.duration,
+        }
+        probeResults.push(fullResult)
 
         const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
           partId,
           probeType,
-          result: verdict.passed ? 'PASSED' : 'FAILED',
+          result: fullResult.result,
           output: probeResult.output,
           error: verdict.message,
           params: probe.params || {},
           actual: verdict.actual,
           failureMessage: verdict.failureMessage,
-          duration: verdict.duration
+          duration: verdict.duration,
         })
         appendTraceEvent(cwd, taskId, traceEvent)
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err)
-        probeResults.push({
+        const failResult: ProbeResult = {
           probeType,
           result: 'FAILED',
-          output: undefined,
           error: errorMsg,
           executedAt: Date.now(),
           params: probe.params || {},
           duration: 0,
-          failureMessage: errorMsg
-        })
-
-        const traceEvent = buildTraceEvent('PROBE_RESULT', taskId, {
-          partId,
-          probeType,
-          result: 'FAILED',
-          output: undefined,
-          error: errorMsg,
-          params: probe.params || {},
-          duration: 0,
-          failureMessage: errorMsg
-        })
-        appendTraceEvent(cwd, taskId, traceEvent)
+          failureMessage: errorMsg,
+        }
+        probeResults.push(failResult)
+        appendTraceEvent(
+          cwd,
+          taskId,
+          buildTraceEvent('PROBE_RESULT', taskId, {
+            partId,
+            probeType,
+            result: 'FAILED',
+            error: errorMsg,
+            duration: 0,
+            failureMessage: errorMsg,
+          }),
+        )
       }
     }
   }
 
-  const allPassed = probeResults.every(r => r.result === 'PASSED')
+  const allPassed = probeResults.every((r) => r.result === 'PASSED')
   const partStatus: 'PASSED' | 'FAILED' = allPassed ? 'PASSED' : 'FAILED'
+  const duration = Date.now() - startTime
 
-  state.parts[part.name] = partStatus
-  state.currentPart = null
+  state.parts[partId] = {
+    name: state.parts[partId]?.name || part.name,
+    status: partStatus,
+    probeResults,
+    duration,
+  }
+  state.currentPartId = null
 
-  if (Object.values(state.parts).every(s => s === 'PASSED' || s === 'FAILED')) {
+  if (Object.values(state.parts).every((s) => s.status === 'PASSED' || s.status === 'FAILED')) {
     state.status = 'COMPLETED'
   }
-  writeState(cwd, taskId, state)
 
-  const traceEvent = buildTraceEvent('PART_COMPLETE', taskId, {
-    partId,
-    status: partStatus
-  })
+  const traceEvent = buildTraceEvent('PART_COMPLETE', taskId, { partId, status: partStatus })
   appendTraceEvent(cwd, taskId, traceEvent)
-
-  const stepManifest = {
-    taskId,
-    parts: {
-      [part.name]: {
-        status: partStatus,
-        probeResults,
-        duration: Date.now() - startTime
-      }
-    }
-  }
-  const manifestPath = getStepManifestPath(cwd, taskId)
-  writeFileSync(manifestPath, JSON.stringify(stepManifest, null, 2), 'utf-8')
+  writeState(cwd, taskId, state)
 
   return {
     passed: allPassed,
     partId,
     results: probeResults,
-    message: allPassed ? 'All probes passed' : `${probeResults.filter(r => r.result === 'FAILED').length}/${probeResults.length} probes failed`
+    message: allPassed
+      ? 'All probes passed'
+      : `${probeResults.filter((r) => r.result === 'FAILED').length}/${probeResults.length} probes failed`,
   }
 }
 
@@ -527,9 +554,8 @@ export interface StatusResult {
   taskId: string
   taskName: string
   status: 'PENDING' | 'RUNNING' | 'COMPLETED'
-  currentPart: string | null
-  parts: Record<string, 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'>
-  stepManifest?: Record<string, unknown>
+  currentPartId: string | null
+  parts: Record<string, PartStateNode>
 }
 
 export function taskStatus(taskId: string, cwd: string): StatusResult {
@@ -538,23 +564,11 @@ export function taskStatus(taskId: string, cwd: string): StatusResult {
     throw new Error(`Task not found: ${taskId}`)
   }
 
-  const manifestPath = getStepManifestPath(cwd, taskId)
-  let stepManifest: Record<string, unknown> | undefined
-  if (existsSync(manifestPath)) {
-    try {
-      const content = readFileSync(manifestPath, 'utf-8')
-      stepManifest = JSON.parse(content)
-    } catch {
-      // ignore parse errors
-    }
-  }
-
   return {
     taskId: state.taskId,
     taskName: state.taskName,
     status: state.status,
-    currentPart: state.currentPart,
+    currentPartId: state.currentPartId,
     parts: state.parts,
-    stepManifest
   }
 }

@@ -11,7 +11,6 @@ export class RadarClock {
   private entries: Map<string, RadarEntry> = new Map()
   private timeoutCallbacks: TimeoutCallback[] = []
   private schedulerTimer: ReturnType<typeof setInterval> | null = null
-  private checkIntervalMs: number = 1000
 
   startMonitor(taskId: string, partId: string, timeoutMs: number): void {
     const key = `${taskId}:${partId}`
@@ -19,7 +18,7 @@ export class RadarClock {
       taskId,
       partId,
       startTime: Date.now(),
-      timeout: timeoutMs
+      timeout: timeoutMs,
     })
   }
 
@@ -67,7 +66,6 @@ export class RadarClock {
 
   startScheduler(checkIntervalMs: number = 1000): void {
     this.stopScheduler()
-    this.checkIntervalMs = checkIntervalMs
     this.schedulerTimer = setInterval(() => {
       this.checkTimeouts()
     }, checkIntervalMs)
@@ -81,7 +79,7 @@ export class RadarClock {
   }
 
   private checkTimeouts(): void {
-    for (const [key, entry] of this.entries) {
+    for (const [_key, entry] of this.entries) {
       const elapsed = Date.now() - entry.startTime
       if (elapsed > entry.timeout) {
         for (const cb of this.timeoutCallbacks) {

@@ -1,259 +1,108 @@
-# Changelog
+# OpenXenon Changelog (English)
 
-All notable changes to this project will be documented in this file.
+All notable changes to OpenXenon will be documented in this file.
 
-## [0.0.20] - 2026-05-17
+The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-### Added
-- Hall dashboard with Arsenal/Forge asset display and detail view
-- Task explore and state management commands
-- Incremental compilation with compile cache
-- Daemon runtime monitoring, process management, and SSE events
-
-### Changed
-- Support directory scan in explore scan
-
-### Fixed
-- Resolve all typecheck errors
-
-## [0.0.19] - 2026-05-16
+## [0.1.0] - 2026-06-11
 
 ### Added
-- Hall (研讨厅) dashboard
-- Forge/Arsenal physical separation
-- Harvest and probe verdict display
+- **i18n Phase B complete + Skills en translation**: en locale fully available (CLI messages + Skills instructions)
+- **en.json**: created `src/i18n/en.json` (105 keys, full English mirror of zh-CN.json 1:1)
+- **en skill instructions**: created 4 files under `src/skills/locales/en/` (oxn-cli / oxn-work / oxn-work/references/blueprint-format / oxn-proof), ~1200 lines of English translation
+- **i18n tests**: `src/i18n/__tests__/` (12 tests: basic functionality, key completeness, en-zh parity)
+- **Skills i18n tests**: `src/skills/__tests__/skill-i18n.test.ts` (7 guard tests)
 
 ### Changed
-- Unify blueprint/arsenal/forge file structure
-- Complete rewrite - new interaction topology, four core concepts, revised doc structure
-
-### Fixed
-- Add blueprint support to forge --save command
-- Make Hall project-scoped instead of global
-- Correct Hall documentation placement in README
-- Correct oxn-trace skill to use 'oxn export' instead of non-existent 'oxn api'
-
-## [0.0.18] - 2026-05-15
-
-### Added
-- F3 AI execution loop - privacy isolation
-- HTML renderer for task-trace reports and Blueprint DAG preview
-
-### Changed
-- Remove proof concept, flatten stage structure
-- Merge proof into stage, unify probe/definition invocation schema
-- Uniformize all commands with centralized output module
+- `src/i18n/index.ts` now registers en resources
+- `src/skills/loader.ts` refactored: en branch imports real en resources; `getSkillContent` throws for missing non-default locale (ADR-6)
 
 ### Removed
-- Deprecated CLI commands (draft, force-pass, rollback, inspect, trace, api, proof-list)
+- `src/skills/locales/zh-CN/oxn-resume/instruction.md` (80 lines of dead assets, 0 consumers)
 
-## [0.0.17] - 2026-05-14
+### Note
+- Related forge: `forges/2026-06-11-i18n-version-drift.md` §5.3-5.4
+- Semantic version jump 0.0.30 → 0.1.0 due to different verification requirements for Skills en translation (requires end-to-end LLM behavior validation)
 
-### Added
-- Stage/Probe namespace and Blueprint v1 architecture
-- Skill references support to skill-compiler
-- Exploration mechanism - markdown reports for coverage, quality, automation
+## [0.0.29] - 2026-06-11
 
 ### Changed
-- Optimize code performance and reduce duplication
+- **i18n Phase B (consumption-side migration)**: migrated 30+ hardcoded Chinese strings to t() calls, closing the "consumption-side drift" introduced in v0.0.26
+- Extended `src/i18n/zh-CN.json`: added 5 namespaces (errors / cache / gc / migrate / explore) with 50+ keys; extended daemon / init / config / work to 12-17 keys
+- Modified 12 files: socket-client / daemon-status / daemon-start / work / blueprint / domain / config / cache / cache-stats / cache-clear / gc / oxn-migrate-cmd / explore-cmd
 
 ### Fixed
-- DAG-based stage ordering in taskNext
-- Unify probe type naming across Schema and Skill references
-- Use kebab-case name as Task ID instead of random UUID
+- Removed i18n dead code `getCurrentLocale()` (0 callers)
+- `init.ts` now actually calls `setLocale`: makes `oxn init --locale <l>` truly switch the i18next language for the current process
 
-## [0.0.16] - 2026-05-13
+### Note
+- Related forge: `forges/2026-06-11-i18n-version-drift.md` §5.2
+- Known leftovers: description fields not yet i18n'd (PR-3 scope); hall/oxn-unpack/oxn-validate/export/global-hall/oxn-compile (6 files, 15 occurrences) not yet t() (PR-2.5 or PR-3 scope)
+- Next version (0.0.30) ships Phase B resources + tests
 
-### Added
-- Arsenal registry and search with semantic annotations
-- ProbeDefinitionSchema
-- Constitution eslint rules
-
-### Changed
-- Migrate to kernel/infra/arsenals FP architecture
-- Consolidate api and cli
-- Simplify physical architecture to zero-database
-- Internalize meta-forge constraints to YAML files
+## [Unreleased] - 0.0.28+
 
 ### Fixed
-- Resolve high and medium severity vulnerabilities
-
-## [0.0.15] - 2026-05-12
+- **task.deps field syntax tightened** to the only legal form `deps = ["t1", "t2"]` (grammar adds `'deps' '='` keyword to guide parser disambiguation)
+- Rejected forms: bare array `["t1"]` / `deps ["t1"]` (no `=` sign) / duplicate deps fields
+- Fixed grammar ↔ examples ↔ real-work three-way drift: previously 4 deps forms all failed at parser stage
+- Migration: `.openxenon/works/poc-git-isolation/work.oxn` 3 lines `deps [...]` → `deps = [...]`
+- **ts-compiles probe fix**: when `path` is passed with `tsconfig`/`--project` simultaneously, TSC throws `error TS5042: Option 'project' cannot be mixed with source files on a command line.`—fix uses Approach A: write temporary `.tsconfig.oxn-<hash>.json`, command degrades to `tsc --noEmit --project <tmp>`
+- **i18n PR-1**: closed `bun run version:check` failure (missing `docs/zh-cn|en/changelog/CHANGELOG.md`) + fixed `src/cli/index.ts:147` hardcoded `'1.0.0'` → use `pkg.version`
 
 ### Added
-- Kernel lambda vacuum refactoring
-- Daemon IPC with receiver.ts and handlers/
-- CLI handlers use socket-client instead of importing daemon modules
+- `src/oxl/__tests__/task-deps.test.ts` — 5 valid + 5 invalid task.deps end-to-end contract tests (10 testcases all green)
+- `src/oxl/__tests__/examples-parsing.test.ts` upgraded from 4 existsSync smoke tests to real parse tests on real works (test.each 9 cases all green)
+- `src/infra/probes/__tests__/ts-compiles.test.ts`: 8 unit tests covering 3 parameter combinations
+- `docs/zh-cn/changelog/CHANGELOG.md` + `docs/en/changelog/CHANGELOG.md` (i18n PR-1)
 
-### Changed
-- Connect daemon executor to kernel evaluator
-- Physics constitutional enforcement
+### Note
+- i18n Phase A drift memo (see `forges/2026-06-11-i18n-version-drift.md §5.1`):
+  - 36 hardcoded Chinese strings not going through `t()` (9 OXN_NO_PROJECT + 7 daemon errors + 20 others)
+  - en locale resources (CLI i18next + Skills prompt) missing
+  - i18n module + Skills module 0 unit tests
+  - Next version (0.0.29) ships Phase B
+
+## [0.0.27] - 2026-06-11
+
+### Added
+- `oxn-validate` CLI command
+- OXN DSL example files
+- Work type shorthand syntax
+- Part refs in slotBindings
 
 ### Removed
-- Dead kernel/probes/executor.ts (violated Lambda Vacuum)
-
-## [0.0.14] - 2026-05-11
-
-### Added
-- Arsenal list showing stages with type/source filtering
-- Built-in assets fallback, Skills reference daemon
-
-### Changed
-- Update README and architecture.md to 0.1 exploration mode
-- Remove academic framing, use plain engineering language
+- `src/arsenals/builtin.ts` and `src/arsenals/` empty directory
+- `src/kernel/probes/` → `src/kernel/verdicts/` (physical rename, closing naming ambiguity)
 
 ### Fixed
-- Support YAML format in oxn forge probe -s
-- Support <type>/<name> format in oxn arsenal inspect
-- Accept both params.path and params.pattern for fs_exists/fs_not_exists probes
+- grammar ↔ examples ↔ real-work three-way drift (task.deps syntax)
 
-## [0.0.13] - 2026-05-10
+### Note
+- i18n Phase A drift memo (see `forges/2026-06-11-i18n-version-drift.md §5.1`): see [Unreleased] section
+
+## [0.0.26] - 2026-06-10
 
 ### Added
-- Implement arsenal registry and search
-- Implement arsenal registry and search with semantic annotations
-- Skill-compiler outputs to <skillId>/SKILL.md
+- i18n Phase A (`src/i18n/index.ts` + `zh-CN.json`, i18next ^26.2.0, 3 namespaces / 18 entries)
+- OxnKernelAdapter migrated to oxn-dsl layer
+- explore scan index mode
+- Update skills to OXN DSL v3.1
+
+### Note
+- Known leftovers (PR-1 fixes / PR-2 follows up): i18n consumption-side drift, en resources missing, module 0 unit tests
+
+## [Unreleased] - v0.1-final
+
+### Major Changes
+- i18n Phase B in preparation (PR split in `forges/2026-06-11-i18n-version-drift.md`)
+
+### Added
 
 ### Changed
-- Purify Skills
-- Fix Forge/Task loops
+
+### Removed
+
+### Deprecated
 
 ### Fixed
-- Skill-compiler uses name: instead of skill: in SKILL.md frontmatter
-
-## [0.0.12] - 2026-05-09
-
-### Added
-- Layer 1 Kernel Schema tests
-- File-based config and pure-filesystem-state specs
-
-### Changed
-- Remove database references from core modules
-- Update handlers to use append-only task-trace and atomic manifest
-- Update runtimes, server, skills for filesystem-only architecture
-
-### Fixed
-- Align code and docs with current Schema
-- ProofInvocationSchema.probeRefs now accepts ProbeInvocation[]
-
-## [0.0.11] - 2026-05-08
-
-### Added
-- CLI task commands with direct filesystem operations
-
-### Changed
-- Restructure README and manual for clarity
-
-### Fixed
-- StageDefinitionSchema add description
-- ProofDefinitionSchema.probes structured
-- ParameterDefSchema.description required
-
-## [0.0.10] - 2026-05-07
-
-### Added
-- MIT license
-
-### Changed
-- Remove proof concept, merge validation into stage flat fields
-
-## [0.0.9] - 2026-05-06
-
-### Added
-- BlueprintCompiler into task pipeline
-- L2 self-hosting support
-
-### Changed
-- Derive arsenal state from file path (draft/canonical)
-
-### Fixed
-- Proof.probes migration and probe params extraction
-- Resolve remaining typecheck errors
-
-## [0.0.8] - 2026-05-05
-
-### Added
-- Standards lifecycle DRAFT/CANONICAL
-- /oxn-forge skill for generating Draft standard assets
-
-### Changed
-- Rename standards command to arsenal
-- Rename standards to arsenals and unify paths
-
-### Fixed
-- Resolve low severity vulnerabilities
-
-## [0.0.7] - 2026-05-04
-
-### Added
-- Blueprint template and Core tasks table
-- Blueprints asset type support
-- Blueprint CRUD and stage reference resolver
-
-### Changed
-- Extend BlueprintSchema with topology and edges
-- Add scope and state filters to arsenal commands
-
-## [0.0.6] - 2026-05-03
-
-### Added
-- Sandbox mode and arsenal export/import
-- Meta-forge blueprint for guided asset generation
-
-### Changed
-- Cleanup post-mvp features - remove draft/export/gc/daemon commands and unused proofs
-
-## [0.0.5] - 2026-05-02
-
-### Added
-- File-system-first task execution architecture
-- BlueprintParser for stage declarations
-
-### Changed
-- Restructure arsenals directory and add migrate command
-
-### Fixed
-- Blueprint-parser correctly handles stage declarations in probes context
-
-## [0.0.4] - 2026-05-01
-
-### Added
-- Blueprint template and Core tasks table
-
-### Changed
-- Migrate project DB to three-table flat schema
-
-### Fixed
-- Unify task status to uppercase and add task directory creation
-
-## [0.0.3] - 2026-04-30
-
-### Added
-- Zod schemas for Task-Blueprint-Stage
-- Refactor CLI commands
-- Global --json flag and task command
-
-### Changed
-- Implement flat-schema-migrator with XnMigrator and draft system
-
-## [0.0.2] - 2026-04-29
-
-### Added
-- Unix Socket communication for HTTP API
-- Default Stage templates for fs* proofs
-
-### Changed
-- Migrate xn to oxn naming
-- Rename Xenonix to OpenXenon
-- Replace Playbook with Blueprint
-- Unify Blueprint/Stage/Proof naming
-
-## [0.0.1] - 2026-04-28
-
-### Added
-- Initial commit
-- Skill injection system and adapters support
-- Daemon health check and error handling
-- Task execution API
-- Xn* interfaces and core types
-- Stage module and type refactoring

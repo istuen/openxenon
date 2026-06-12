@@ -1,6 +1,6 @@
-export { fs } from './fs'
-export { process } from './process'
-export { socket } from './socket'
-
+export { fs } from './filesystem'
 export type { ExecResult } from './process'
+export { process } from './process'
 export type { SocketMessage, SocketServer } from './socket'
+export { socket } from './socket'
+export { pathPort } from './path-port'

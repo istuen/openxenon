@@ -5,10 +5,7 @@ export interface IncomingMessage {
   projectPath?: string
 }
 
-export type RouteHandler = (
-  body: unknown,
-  projectPath: string
-) => Response | Promise<Response>
+export type RouteHandler = (body: unknown, projectPath: string) => Response | Promise<Response>
 
 const routes: Map<string, RouteHandler> = new Map()
 
@@ -22,18 +19,16 @@ export function getRoute(method: string, path: string): RouteHandler | null {
   return routes.get(key) || null
 }
 
-export async function handleIncomingMessage(
-  message: IncomingMessage
-): Promise<Response> {
+export async function handleIncomingMessage(message: IncomingMessage): Promise<Response> {
   const { method, path, body, projectPath } = message
   const key = `${method.toUpperCase()} ${path}`
 
   const handler = routes.get(key)
   if (!handler) {
-    return new Response(
-      JSON.stringify({ error: 'NotFound', message: `No route for ${key}` }),
-      { status: 404, headers: { 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ error: 'NotFound', message: `No route for ${key}` }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    })
   }
 
   return handler(body, projectPath || '')

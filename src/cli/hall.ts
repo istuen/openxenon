@@ -1,22 +1,23 @@
 import { defineCommand } from 'citty'
+import { t } from '../infra/i18n'
 import { ensureHallDirectory, renderHall } from '../hall'
-import { getProjectBoundaryPath } from '../kernel'
-import { output, outputError, getFormatFromArgs } from './output'
+import { getProjectBoundaryPath } from './project'
+import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
   meta: {
     name: 'hall',
-    description: '打开研讨厅 (Hall)，查看全局状态和待办'
+    description: t('hall.description'),
   },
   args: {
     '--json': {
       type: 'boolean',
-      description: 'JSON 格式输出'
+      description: t('format.json'),
     },
     '--open': {
       type: 'boolean',
-      description: '在浏览器中打开'
-    }
+      description: t('hall.open'),
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -48,22 +49,31 @@ export default defineCommand({
           }
         })
 
-        return output({
-          data: { path: indexPath, url: hallUrl },
-          human: `Hall 已打开: ${hallUrl}`
-        }, format)
+        return output(
+          {
+            data: { path: indexPath, url: hallUrl },
+            human: t('hall.opened', { url: hallUrl }),
+          },
+          format,
+        )
       }
 
-      return output({
-        data: { path: indexPath, url: hallUrl },
-        human: `Hall 路径: ${indexPath}\n\n使用 --open 在浏览器中打开`
-      }, format)
+      return output(
+        {
+          data: { path: indexPath, url: hallUrl },
+          human: t('hall.pathHint', { path: indexPath }),
+        },
+        format,
+      )
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err)
-      return outputError({
-        code: 'OXN_HALL_ERROR',
-        message: errorMsg
-      }, format)
+      return outputError(
+        {
+          code: 'OXN_HALL_ERROR',
+          message: errorMsg,
+        },
+        format,
+      )
     }
-  }
+  },
 })

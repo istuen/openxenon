@@ -1,14 +1,11 @@
+import { getTaskDirectory } from '../../../work/task-directory'
+import { createPartState } from '../../../work/task-trace'
+import { readBlueprint, readTaskTrace, writePartComplete, writePartStart } from '../../trace/writer'
+import { badRequest, notFound } from '../errors'
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'
-import { badRequest, notFound } from '../errors'
-import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace, writePartStart, writePartComplete, readBlueprint } from '../../trace/writer'
-import { createPartState } from '../../../kernel/lib/task-trace'
 
-async function handleStepStart(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleStepStart(request: Request, projectPath: string): Promise<Response> {
   try {
     const body = await parseJSONBody<{ stepId?: string; taskId?: string; stepName?: string }>(request)
 
@@ -33,13 +30,13 @@ async function handleStepStart(
       return notFound('Blueprint not found')
     }
 
-    let part = parsed.parts.find(s => s.id === body.stepId || s.name === body.stepName)
+    const part = parsed.parts.find((s) => s.id === body.stepId || s.name === body.stepName)
 
     if (!part) {
       return notFound('Part not found')
     }
 
-    let partState = trace.parts.get(part!.id)
+    let partState = trace.parts.get(part?.id)
 
     if (!partState) {
       writePartStart(taskDir, taskId, part.id, part.name)
@@ -48,22 +45,24 @@ async function handleStepStart(
       trace.parts.set(part.id, partState)
     }
 
-    if (partState.status === 'PENDING') {
+    const currentPartState = partState
+
+    if (currentPartState.status === 'PENDING') {
       writePartStart(taskDir, taskId, part.id, part.name)
-      partState.status = 'RUNNING'
+      currentPartState.status = 'RUNNING'
     }
 
-    writePartComplete(taskDir, taskId, part.id, partState.status)
+    writePartComplete(taskDir, taskId, part.id, currentPartState.status)
 
     return new Response(
       JSON.stringify({
         stepId: part.id,
-        status: partState.status
+        status: currentPartState.status,
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -72,12 +71,12 @@ async function handleStepStart(
       JSON.stringify({
         error: 'StepStartFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }

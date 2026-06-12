@@ -1,0 +1,165 @@
+/**
+ * Kernel 纯处理器
+ *
+ * 提供通用逻辑运算，不含任何 OpenXenon 领域概念。
+ * L0 Kernel 公理：零 I/O、零领域语义、仅纯数学/逻辑运算。
+ */
+
+export type Operator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'regex' | 'contains'
+
+export interface PredicateResult {
+  passed: boolean
+  message: string
+}
+
+export interface ValidationResult {
+  valid: boolean
+  error?: string
+}
+
+export interface TransformRule {
+  from: string
+  to: string
+}
+
+export interface TransformMapping {
+  rules: TransformRule[]
+  defaultValue?: unknown
+}
+
+/**
+ * v1.1 fix-p3-refactor nan-predicate: NaN 操作数显式报错。
+ * 修复前: Number(undefined) → NaN, NaN > 5 → false, 静默通过断言
+ *          (predicate 评估者无法区分"实际值 0"和"实际值 NaN")
+ * 修复后: 显式检测 NaN 操作数, 返回 passed: false + 明确 message,
+ *          让调用方知道是数据问题, 不是逻辑问题.
+ */
+function checkNaNOperands(expected: unknown, actual: unknown, op: string): PredicateResult | null {
+  const expNum = Number(expected)
+  const actNum = Number(actual)
+  if (Number.isNaN(expNum) || Number.isNaN(actNum)) {
+    return {
+      passed: false,
+      message: `NaN operand not comparable for ${op}: actual=${String(actual)}, expected=${String(expected)}`,
+    }
+  }
+  return null
+}
+
+export function evaluatePredicate(expected: unknown, actual: unknown, operator: Operator): PredicateResult {
+  switch (operator) {
+    case 'eq':
+      return {
+        passed: actual === expected,
+        message: actual === expected ? 'Equal' : `Not equal: ${actual} !== ${expected}`,
+      }
+
+    case 'neq':
+      return {
+        passed: actual !== expected,
+        message: actual !== expected ? 'Not equal (expected different)' : `Equal: ${actual} === ${expected}`,
+      }
+
+    case 'gt': {
+      const nanErr = checkNaNOperands(expected, actual, 'gt')
+      if (nanErr) return nanErr
+      return { passed: Number(actual) > Number(expected), message: `Expected ${actual} > ${expected}` }
+    }
+
+    case 'gte': {
+      const nanErr = checkNaNOperands(expected, actual, 'gte')
+      if (nanErr) return nanErr
+      return { passed: Number(actual) >= Number(expected), message: `Expected ${actual} >= ${expected}` }
+    }
+
+    case 'lt': {
+      const nanErr = checkNaNOperands(expected, actual, 'lt')
+      if (nanErr) return nanErr
+      return { passed: Number(actual) < Number(expected), message: `Expected ${actual} < ${expected}` }
+    }
+
+    case 'lte': {
+      const nanErr = checkNaNOperands(expected, actual, 'lte')
+      if (nanErr) return nanErr
+      return { passed: Number(actual) <= Number(expected), message: `Expected ${actual} <= ${expected}` }
+    }
+
+    case 'regex': {
+      if (typeof expected !== 'string' || typeof actual !== 'string') {
+        return { passed: false, message: 'Regex operator requires string operands' }
+      }
+      try {
+        const match = new RegExp(expected).test(actual)
+        return { passed: match, message: match ? 'Pattern matched' : `Pattern "${expected}" did not match "${actual}"` }
+      } catch {
+        return { passed: false, message: `Invalid regex pattern: ${expected}` }
+      }
+    }
+
+    case 'contains':
+      if (typeof actual !== 'string' || typeof expected !== 'string') {
+        return { passed: false, message: 'Contains operator requires string operands' }
+      }
+      return {
+        passed: actual.includes(expected),
+        message: actual.includes(expected) ? 'Contains' : ` "${actual}" does not contain "${expected}"`,
+      }
+
+    default:
+      return { passed: false, message: `Unknown operator: ${operator}` }
+  }
+}
+
+export function validateSchemaGeneric(shape: Record<string, unknown>, actual: unknown): ValidationResult {
+  if (typeof shape !== 'object' || shape === null) {
+    return { valid: true }
+  }
+
+  if (typeof actual !== 'object' || actual === null) {
+    return { valid: false, error: 'Type mismatch: expected object' }
+  }
+
+  const shapeObj = shape as Record<string, unknown>
+  const actualObj = actual as Record<string, unknown>
+
+  if (shapeObj.type !== undefined) {
+    const expectedType = shapeObj.type as string
+    const actualType = Array.isArray(actual) ? 'array' : typeof actual
+    if (expectedType !== actualType) {
+      return { valid: false, error: `Type mismatch: expected ${expectedType}, got ${actualType}` }
+    }
+  }
+
+  if (shapeObj.required !== undefined && Array.isArray(shapeObj.required)) {
+    for (const key of shapeObj.required as string[]) {
+      if (!(key in actualObj)) {
+        return { valid: false, error: `Missing required property: ${key}` }
+      }
+    }
+  }
+
+  if (shapeObj.properties !== undefined && typeof shapeObj.properties === 'object') {
+    const props = shapeObj.properties as Record<string, unknown>
+    for (const [key, propSchema] of Object.entries(props)) {
+      if (key in actualObj) {
+        const propResult = validateSchemaGeneric(propSchema as Record<string, unknown>, actualObj[key])
+        if (!propResult.valid) {
+          return propResult
+        }
+      }
+    }
+  }
+
+  return { valid: true }
+}
+
+export function transformData(source: Record<string, unknown>, mapping: TransformMapping): Record<string, unknown> {
+  const result: Record<string, unknown> = {}
+
+  for (const rule of mapping.rules) {
+    const value = source[rule.from]
+    result[rule.to] = value !== undefined ? value : mapping.defaultValue
+  }
+
+  return result
+}

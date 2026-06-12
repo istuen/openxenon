@@ -1,181 +1,206 @@
 # OpenXenon
 
-> OpenXenon 是一个人机对齐框架——沉淀工程师意图与验证标准，积累工程资产，约束 AI 边界并确定性构建软件。
+> **OpenXenon — 工程师与 AI 协作工作台**
+> 工程师定义意图，AI 执行对齐，OXN 证明结果。
+>
+> **Proof 的结果反馈驱动 Intent 演化，IAP 形成闭环，让 Token 成为有效投入。**
 
-## 1. 探索目标
+---
 
-0.X 阶段，我们在探索一个核心问题：
+## 解决什么问题
 
-**工程师的经验，能否成为驾驭 AI 的能力？**
+当前 AI 模型虽然越来越强，但在**注意力机制做推理**的原理下，其依然是**概率性的输出**。在长上下文、长时间推理后，AI 必然会漂移重点并陷入**自我推理满足**。
 
-将工程师的审查经验前置为结构化资产与验证标准，让 AI 在约束边界内执行，由 Core Engine 协助工程师判定 AI 执行符合工程师意图的产物。
+由此带来三个核心问题：
 
-## 2. 核心角色与职责
+1. 如何**验证** AI 的执行结果，而非盲目信任？
+2. 如何让 AI 减少长上下文依赖，保持**高效推理**与对齐？
+3. 如何降低 AI 陷入无效推理引起的 **Token 无用消耗**？
 
-OpenXenon 的架构建立在三个核心角色的职责分离之上：
+---
 
-| 角色             | 定位           | 职责                                                           | 数据边界                                                  |
-| ---------------- | -------------- | -------------------------------------------------------------- | --------------------------------------------------------- |
-| **工程师**       | 决策者与验收者 | 定义意图、设定验证标准、审查最终结果、通过 Hall 可视化项目状态 | 拥有全局视野，定义系统资产，验收执行产出                  |
-| **AI 助手**      | 调度者与执行者 | 接收任务目标，选择执行策略，调度 Core CLI，实施代码操作        | 接收任务级目标与 target+action 指令，**无法感知验证标准** |
-| **Core  Engine** | 判决者与记录者 | 编译资产、下发指令、执行校验、记录状态                         | 独占验证标准与执行结果，提供 CLI 供 AI 调用，输出客观判定 |
+## 5 分钟 Quick Start — Proof-First 体验
 
-**交互原则**：工程师通过 AI 助手软件与 AI 模型交互，定义规则并验收；AI 助手驱动流程并执行操作；Core 比对规则与事实。AI 不了解标准，Core 不产生逻辑，工程师不介入实时审查。
+> **入口即核心**：OpenXenon 的第一次体验是 `oxn proof`，不要求先学 Domain/Blueprint。
+> 这本质是 IAP 范式中 **P 轴（Proof 轴）的独立运作模式**——工程师跳过 Intent/Align 资产化，直接使用 Probe 声明验收标准，由 OXN 产出 `frozen.json`。
 
-## 3. 核心概念
-
-| 层级          | 定义                                             | 资产化价值                     |
-| ------------- | ------------------------------------------------ | ------------------------------ |
-| **Blueprint** | 任务工程图，定义执行拓扑（DAG）                  | 意图沉淀，可参数化复用         |
-| **Part**       | 零件，包含 target/spec/action/probes 四字段，内置 _version 版本号，单文件存储 | 标准沉淀，可跨项目复用，通过 Fork 变体定制 |
-| **Probe**     | 原子检查，物理观测 + 纯函数判定                  | 判断沉淀，可组合复用           |
-| **Artifact**  | AI 构建的产物，Core 验证的对象                   | 执行结果，可追溯可复盘         |
-| **Hall**      | 研讨厅，工程师查看任务状态和 Draft 资产的 Web UI | 可视化决策，待扩展为动态控制台 |
-
-**Part 四字段结构**：
-
-| 字段     | 可见性       | 含义                         |
-| -------- | ------------ | ---------------------------- |
-| `target` | 对 AI 可见   | 约束执行的作用域             |
-| `action` | 对 AI 可见   | 下发给 AI 的执行指令         |
-| `spec`   | 对 AI 不可见 | 工程师对意图的结构化约束     |
-| `probes` | 对 AI 不可见 | 校验该工序是否完成的探针集合 |
-
-> 验证逻辑已平铺合并入 Stage，不再作为独立实体存在。
-
-## 4. 交互流程
-
-### 4.1 资产构建流程
-
-**交互链路：工程师 → Core**
-
-1. 工程师通过 Forge 定义 Probe、Part、Blueprint
-2. 工程师审查资产内容
-3. 工程师将审查通过的资产提交为 Canonical（正式版），归入 Arsenal
-
-```
-Draft ──[审查]──▶ Canonical
-(草稿)           (正式版)
-```
-
-### 4.2 任务执行流程
-
-**交互链路：工程师 → AI 助手 → Core CLI → AI 助手 → 工程师**
-
-1. **任务下达**：工程师通过 AI 助手软件里的 Skill（如 `/oxn-task`）下达任务目标
-2. **策略选择**：AI 助手根据任务目标，自动选择匹配的 Blueprint
-3. **循环执行**：AI 助手请求 Core CLI 执行后续每一步，形成闭环：
-   - AI 助手调用 Core CLI 请求下一指令（`taskNext`）
-   - Core 返回 `target` + `action`，**隐藏验证标准**
-   - AI 助手执行代码修改或命令操作，构建 Artifact
-   - AI 助手调用 Core CLI 提交执行结果（`taskVerify`）
-   - Core 执行 Probes 校验 Artifact，记录 Trace 并判定成败
-4. **结果交付**：AI 助手执行完成后，交由工程师审查最终产出
-
-```
-工程师 ──▶ AI 助手 ──▶ Core CLI ──▶ AI 助手 ──▶ 工程师
-  │          │           │          │           │
-  │          │           │          │           │
- 下达      调度       返回指令     执行       验收
- 目标      CLI       (隐藏标准)   构建       结果
-                                     Artifact
-```
-
-## 5. 当前状态
-
-版本: 0.1 — 探索阶段
-
-**自举验证**：
-
-| 级别        | 定义                                      | 状态       |
-| ----------- | ----------------------------------------- | ---------- |
-| L1 编译自举 | `pnpm build` → `oxn forge probe` 可执行   | ✅          |
-| L2 资产自举 | Forge→Task→Verify 全链路跑通              | ⚠️ 待验证   |
-| L3 质量自举 | OpenXenon 自身开发过程通过 OpenXenon 管理 | 🔜 0.2 目标 |
-
-**已实现**：
-
-- CLI 直连模式（不依赖 Daemon）
-- Forge 约束 + AI 生成 Draft
-- Arsenal DRAFT→CANONICAL 生命周期
-- Blueprint → frozen.yaml 编译管线
-- 内置资产编译进二进制
-- Part 是单文件（非目录），Probe 统一单文件存储
-- BUILTIN_PARTS：git-commit / create-branch / develop-feature
-- _version 内置版本号，min_version 编译期校验
-- oxn arsenal fork 创建 Part 变体
-- oxn arsenal extract 从 Task 提取历史版本
-- Forge unpack/repack 解包编辑
-
-**0.1 目标 = L2 通过**
-
-## 6. 开发计划
-
-| 版本     | 目标             | 核心功能                                |
-| -------- | ---------------- | --------------------------------------- |
-| **v0.1** | 核心闭环验证     | 跑通全流程，资产与产物形成良性循环      |
-| **v0.2** | 运行时监控与容错 | 守护进程、文件监听、状态熔断、异常恢复  |
-| **v0.3** | 多 AI 助手适配   | 适配多种 AI 助手软件（当前仅 OpenCode） |
-| **v0.4** | 多环境适配       | 支持 Node.js（当前仅 Bun）              |
-
-## 7. 快速开始
+### 克隆与构建
 
 ```bash
-# 1. 构建与初始化
-pnpm install && pnpm build
+git clone https://github.com/anomalyco/openxenon.git && cd openxenon
+bun install --frozen-lockfile && bun run build
+# 产物：dist/oxn（单文件可执行）
+```
+
+### 初始化工作台
+
+```bash
 ./dist/oxn init
-
-# 2. 查看资产库
-./dist/oxn arsenal list
-
-# 3. 构建资产（定义意图与标准）
-./dist/oxn forge probe --save '<yaml>' --name my-check
-./dist/oxn forge part --save '<yaml>' --name my-part
-./dist/oxn arsenal promote probes/my-check
-./dist/oxn arsenal promote parts/my-part
-
-# 4. 创建 Part 变体（Fork）
-./dist/oxn arsenal fork part git-commit --name git-commit-jira
-
-# 4. 提交 Blueprint（Core 编译并生成冻结快照）
-./dist/oxn task submit --blueprint my-blueprint.yaml
-
-# 5. 模拟 AI 助手获取指令（仅返回 target + action，体验信息隐藏）
-./dist/oxn task next --task-id <id>
-
-# 6. 模拟 AI 助手构建 Artifact 后，提交 Core 校验
-./dist/oxn task verify --task-id <id> --part-id <id>
-
-# 7. 查看研讨厅 (Hall)
-./dist/oxn hall
-# 或使用 --open 在浏览器中打开
+# 支持 -f 强制初始化
+# 支持指定 AI 助手，自动生成对应 Skill 配置：
+./dist/oxn init --ai opencode   # 生成 OpenCode Skill
+./dist/oxn init --ai cursor    # 生成 Cursor Skill
+./dist/oxn init --ai codex     # 生成 Codex Skill
 ```
 
-## 8. 架构概要
+### 第一次证明
+
+**方式 A：CLI 直接执行**
+
+```bash
+./dist/oxn proof create check-deploy
+./dist/oxn proof probe add fs-exists --target ./dist/index.js
+./dist/oxn proof run check-deploy
+# → Verdict: FAIL / PASS
+# → Proof saved: .openxenon/proofs/check-deploy/frozen.json
+```
+
+**方式 B：AI 助手中用 Skill 执行**
+
+在 Cursor / OpenCode / Codex 中输入：
 
 ```
-工程师经验 ──▶ Forge ──▶ Draft ──▶ Schema 校验 ──▶ Promote ──▶ Canonical 资产
-                                                              │
-                                                              ▼
-Blueprint ──▶ Frozen ──▶ [Part.target/action] ──▶ Artifact
-                                                  │
-                                   [Part.probes] ─┘──▶ Kernel ──▶ Verdict
+/oxn-proof 验证 dist/index.js 是否存在并导出 handler
 ```
 
-三层分离：
+AI 通过 Skill 调用 CLI，结果回流到 `frozen.json`。
 
-- **Kernel**：纯函数，零副作用，只做逻辑判定
-- **Infra**：唯一触碰文件系统和进程的组件
-- **Arsenal**：内置资产，编译进二进制
+---
 
-## 9. 文档
+## 进阶使用 — 升级到完整 IAP 协作
 
-- [快速开始](docs/getting-started.md)
-- [核心概念](docs/concepts/)
-- [CLI 参考](docs/guides/cli-reference.md)
-- [架构设计](docs/architecture/)
-- [故障排查](docs/guides/troubleshooting.md)
+当 Probe 重复到一定程度时，自然涌现出对 Intent 轴（Blueprint / Domain）的需求。
+
+| 进阶步骤 | 模块 | 解决的问题 |
+|---|---|---|
+| 1. 定义业务词典 | **Domain** | 锁定团队统一语言（term）、禁令（ban）与不变式（invariant） |
+| 2. 定义技术图纸 | **Blueprint** | 编排 slot 拓扑、Part 选件、Probe 验收标准 |
+| 3. 驱动 AI 作业 | **Work / Task** | 让 AI 在 Blueprint 边界内对齐执行，产出 Artifact 供 OXN 证明 |
+
+```bash
+# 1. 定义业务 Domain
+./dist/oxn domain create MemberContext
+# 编辑 .openxenon/domains/member-context.oxn
+./dist/oxn domain validate MemberContext
+
+# 2. 定义技术 Blueprint
+./dist/oxn blueprint create onboarding --domain MemberContext
+# 编辑 .openxenon/blueprints/onboarding.oxn
+
+# 3. 驱动 AI 作业
+./dist/oxn work create --name onboarding
+./dist/oxn work add-task --work-name onboarding --task-name register \
+  --blueprint onboarding --domain MemberContext
+./dist/oxn work context --work onboarding --task register --json
+# AI 写代码 → Probe 验证 → frozen.json
+```
+
+---
+
+## IAP 范式与 OXN Engine
+
+> **IAP（Intent-Align-Proof）** 是 OpenXenon 的架构灵魂。**OXN** 是工作台的运转引擎。
+
+### 三轴主导权
+
+| 主导轴 | 主导者 | 职责 | 对抗机制 |
+|---|---|---|---|
+| **Intent 轴** | **工程师** | 定义 Domain / Blueprint，锁定业务语言与技术拓扑 | Domain term 锁定边界 |
+| **Align 轴** | **AI** | 编排 Work / Task / Part，在 Blueprint slot 边界内执行 | Blueprint slot 锁定路径 |
+| **Proof 轴** | **OXN** | 产出不可篡改的 Proof（`frozen.json`） | Daemon 逃逸机制阻止假完成 |
+
+**IAP 第一法则**：**主导权不交叉，证明不可绕过**。无 `--force` 绕过。
+
+### 闭环流转
+
+```
+       Intent轴                    Align轴
+   Domain(.oxn)                 Work(.oxn)
+        │                            │
+        ▼                            ▼
+   Blueprint(.oxn)             Task → Artifact
+        │   Probe标准               │  Artifact事实
+        └────────────┬───────────────┘
+                     │
+                     ▼
+                 Proof轴
+              Proof(Verdict)
+                OXN Engine
+                     │
+                     │  反馈（P → I）
+                     │  Verdict 驱动 Intent 演化
+                     └───▶ Intent 演化
+```
+
+- **I → A → P 正向推导**：工程师定义 Intent，AI 在 Align 中执行，OXN 给出 Proof
+- **P → I 反馈闭环**：Proof 的 Verdict 反馈驱动 Intent 演化（精准化 / 业务化 / 资产化）
+- **A → I 反馈**：Align 偏差反馈修正 Intent 定义（slot 越界、term 漂移）
+
+三轴形成 **I → A → P → I** 闭环，下一轮的 Intent 比上一轮更精准。
+
+### OXN Engine = DSL + Runtime + CLI
+
+| 层 | 作用 |
+|---|---|
+| **DSL** | OXL 领域特定语言（Langium 实现）—— Domain / Blueprint / Work 的语法与解析 |
+| **Runtime** | 执行核心（Kernel / Infra / Daemon）—— 详见下节 |
+| **CLI** | 工程师与 AI 的唯一操作入口（`oxn init / proof / domain / blueprint / work`） |
+
+### OXN Runtime 纯洁性约束
+
+OXN Runtime 由三个模块协同执行证明权，每个模块只做自己的事：
+
+| 模块 | 中文 | 职责 | 约束 |
+|---|---|---|---|
+| **Kernel** | 内核 | 纯逻辑校验，零 IO | 不得执行任何副作用（如 `fs.existsSync`） |
+| **Infra** | 底座 | 副作用 / IO 执行，获取事实 | 只回答事实，不得做出 PASS/FAIL 判定 |
+| **Daemon** | 守护进程 | 生命周期管理 + 逃逸机制 | 不得修改 Kernel 规则；Probe FAIL 时阻止 Work 进入 done |
+
+**纯洁性第一法则**：
+
+- **Infra（底座）不能**绕过 Daemon（守护进程）自我宣布完成
+- **Daemon（守护进程）不能**修改 Kernel（内核）规则
+- **Kernel（内核）不能**直接执行 Task
+
+---
+
+## 文档
+
+- 📖 **[OpenXenon 完整文档](docs/introduction.md)** — 12 章 + 3 附录的 SSOT
+- 📖 **[OXL DSL 语法指南](docs/intent.md#blueprint技术蓝图)** — Domain / Blueprint / Work 完整语法
+- 📖 **[Probe 类型参考](docs/proof.md#内置-probe-类型)** — 内置 11 个 Probe
+- 🟦 **[AI 协作者入口](docs/llm-prompt.md)** — AI 模型专用协议
+
+---
+
+## 开发路线
+
+| 阶段 | 目标 | 状态 |
+|---|---|---|
+| **P0: Proof 轴独立** | Proof 闭环 | ✅ |
+| **P1: Intent 轴技术化** | Program Domain + Blueprint | ✅ |
+| **P2: Intent 轴业务化** | Business Domain + DDD | 🔜 进行中 |
+| **P3: Intent 轴资产化** | 意图涌现 + Hall（研讨厅） | 📋 规划中 |
+
+详见 [docs/roadmap.md](docs/roadmap.md)
+
+---
+
+## 自举验证与测试
+
+OpenXenon 用 OpenXenon 管理自己的开发过程——**自举**（self-bootstrapping）是质量基线。
+
+| 级别 | 定义 | 状态 |
+|---|---|---|
+| L1 编译自举 | `bun run build` → `oxn` 可执行 | ✅ |
+| L2 资产自举 | Domain / Blueprint / Work / Task 全链路跑通 | ✅ |
+| L2+ DSL 自举 | Grammar → Schema → Validator → Generator 联动 | ✅ |
+| L3 质量自举 | OpenXenon 自身开发过程通过 OpenXenon 管理 | 🔜 P2 目标 |
+
+**测试**：运行 `bun test` 查看当前数据；权威源为 `bunfig.toml` + `lefthook.yml`。
+
+---
 
 ## License
 
-MIT
+[MIT](LICENSE)

@@ -1,0 +1,7 @@
+probe "ts-compiles" align "TsCompiles" {
+  description = "跑 tsc --noEmit 验证类型检查通过（exit 0 → PASS）"
+  prop "path" { type = string; required = false }
+  prop "tsconfig" { type = string; required = false }
+  prop "timeout" { type = number; required = false; default = 120000 }
+  output { passed = boolean; exitCode = number; errorCount = number }
+}

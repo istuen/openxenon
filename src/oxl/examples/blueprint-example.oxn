@@ -1,0 +1,19 @@
+blueprint "oxn-example" {
+  description = "示例 Blueprint，展示 v0.1-final DSL 语法"
+
+  version = 1
+  prop "env" { type = string; default = "dev" }
+
+  slot "build" {
+    deps = []
+  }
+
+  slot "develop" {
+    deps = ["build"]
+  }
+
+  slot "test" {
+    deps = ["build"]
+    observe = ["ShellExec"]
+  }
+}

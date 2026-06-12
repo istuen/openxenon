@@ -1,16 +1,13 @@
-import { registerRoute } from '../router'
-import { parseJSONBody, validateRequiredFields } from '../validation'
-import { badRequest, notFound } from '../errors'
-import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace, writeTaskStatus } from '../../trace/writer'
+import { existsSync } from '../../../infra/filesystem'
+import { getTaskDirectory } from '../../../work/task-directory'
 import { processManager } from '../../process-manager'
 import { radarClock } from '../../radar/clock'
-import { existsSync } from 'fs'
+import { readTaskTrace, writeTaskStatus } from '../../trace/writer'
+import { badRequest, notFound } from '../errors'
+import { registerRoute } from '../router'
+import { parseJSONBody, validateRequiredFields } from '../validation'
 
-async function handleTaskStop(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleTaskStop(request: Request, projectPath: string): Promise<Response> {
   try {
     const body = await parseJSONBody<{ taskId?: string }>(request)
 
@@ -36,10 +33,10 @@ async function handleTaskStop(
       return notFound(`Task '${taskId}' not found`)
     }
 
-    const currentStage = trace.stages.find(s => s.status === 'RUNNING')
-    if (currentStage) {
+    const currentPart = Array.from(trace.parts.values()).find((s) => s.status === 'RUNNING')
+    if (currentPart) {
       processManager.killAll()
-      radarClock.stopMonitor(taskId, currentStage.id)
+      radarClock.stopMonitor(taskId, currentPart.partId)
     }
 
     writeTaskStatus(taskDir, taskId, 'FAILED')
@@ -49,12 +46,12 @@ async function handleTaskStop(
         status: 'stopped',
         taskId: taskId,
         taskStatus: 'FAILED',
-        killedProcesses: currentStage ? 1 : 0
+        killedProcesses: currentPart ? 1 : 0,
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -63,12 +60,12 @@ async function handleTaskStop(
       JSON.stringify({
         error: 'TaskStopFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }

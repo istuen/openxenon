@@ -1,0 +1,58 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["**", "!!**/dist", "!!**/.openxenon", "!!**/src/oxl/generated", "!!**/syntaxes"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noForEach": "off",
+        "noStaticOnlyClass": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "useNodejsImportProtocol": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "off",
+        "noTemplateCurlyInString": "off",
+        "noImplicitAnyLet": "off",
+        "noAssignInExpressions": "off",
+        "noNonNullAssertedOptionalChain": "off",
+        "noThenProperty": "off"
+      },
+      "correctness": {
+        "noVoidTypeReturn": "off",
+        "noUnusedImports": "off",
+        "noEmptyCharacterClassInRegex": "off"
+      }
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "asNeeded"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "off"
+      }
+    }
+  }
+}

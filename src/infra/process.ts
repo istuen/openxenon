@@ -15,7 +15,7 @@ export const process = {
         cmd: ['sh', '-c', command],
         cwd: cwdArg || cwd(),
         stdout: 'pipe',
-        stderr: 'pipe'
+        stderr: 'pipe',
       })
 
       const exitCode = proc.exitCode ?? -1
@@ -37,15 +37,15 @@ export const process = {
         code: exitCode,
         stdout: stdoutChunks.join(''),
         stderr: stderrChunks.join(''),
-        success: exitCode === 0
+        success: exitCode === 0,
       }
     } catch (error) {
       return {
         code: -1,
         stdout: '',
         stderr: error instanceof Error ? error.message : String(error),
-        success: false
+        success: false,
       }
     }
-  }
+  },
 }

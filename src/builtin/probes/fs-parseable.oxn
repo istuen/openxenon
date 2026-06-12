@@ -1,0 +1,5 @@
+probe "fs-parseable" align "FsParseable" {
+  description = "检查文件可被 JSON 解析"
+  prop "path" { type = string; required = true }
+  output { parsed = boolean; format = string; topLevelKeys = list<string> }
+}

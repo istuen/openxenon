@@ -1,34 +1,57 @@
-# Dependencies
+# ─────────────────────────────────────────────────────────────
+# 1. 依赖与锁文件
+# ─────────────────────────────────────────────────────────────
 node_modules/
 .pnpm-store/
 pnpm-lock.yaml
 
-# Build outputs
+# ─────────────────────────────────────────────────────────────
+# 2. 构建产物
+#    全局级兜底；具体子目录可在自己的 .gitignore 中再细化
+# ─────────────────────────────────────────────────────────────
 dist/
 *.js
 *.mjs
 *.cjs
-!.eslintrc.cjs
 *.d.ts
 *.d.ts.map
 *.js.map
+!.eslintrc.cjs
 
-# Executables
+# CLI 编译产物
 xn
 xn-*
 *.exe
 
-# Database files
+# ─────────────────────────────────────────────────────────────
+# 3. 运行产物（CLI / DB / 日志 / 临时文件）
+# ─────────────────────────────────────────────────────────────
 *.db
 *.db-journal
 *.db-wal
 *.db-shm
 
-# Logs
 *.log
 logs/
 
-# OS files
+*.tmp
+*.temp
+.cache/
+docs_tmp/
+
+# ─────────────────────────────────────────────────────────────
+# 4. 测试产物（全局兜底；tests/.gitignore 强化作用域）
+# ─────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# VitePress 站点产物（docs/ 站点源在 git，build 产物不入仓）
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
+# ─────────────────────────────────────────────────────────────
+# 5. 环境与 IDE（OS / 编辑器 / 项目元数据）
+# ─────────────────────────────────────────────────────────────
 .DS_Store
 .DS_Store?
 ._*
@@ -37,31 +60,23 @@ logs/
 ehthumbs.db
 Thumbs.db
 
-# IDE
 .vscode/
 .idea/
+.kilocode/
+.agents/
+.opencode/
+.claude/
 *.swp
 *.swo
 *~
 
-# Test coverage
-coverage/
-.nyc_output/
-
-# Temporary files
-*.tmp
-*.temp
-.cache/
-docs_tmp/
-
-# OpenXenon specific
-.openxenon/
-!src/
-
-# OpenSpec 工作流
+.changes/
 openspec/
 
-# IDE 配置
-.kilocode/
-.opencode/
+# ─────────────────────────────────────────────────────────────
+# 6. 业务运行时数据
+#    实际规则已下沉到 .openxenon/.gitignore（domain/works/proof 等）
+# ─────────────────────────────────────────────────────────────
 
+# ts-compiles probe 临时 tsconfig（运行时写盘，跑完即删）
+.tsconfig.oxn-*.json

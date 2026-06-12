@@ -1,16 +1,13 @@
 import { createServer, type Socket } from 'net'
-import { handleRequest } from './router'
+import { existsSync, unlinkSync } from '../../infra/filesystem'
 import { daemonLogger } from '../logger'
-import { existsSync, unlinkSync } from 'fs'
+import { handleRequest } from './router'
 
 import './handlers'
 
-export interface SocketRequest {
-  method: string
-  path: string
-  body?: unknown
-  projectPath?: string
-}
+// v1.1 fix-p2-robustness: SocketRequest 提升支持可选 id 字段 (用于 client 端 request id 路由)
+// 原导出从 infra/socket 复用, 这里保留本地 alias 避免循环导入
+import type { SocketRequest } from '../../infra/socket'
 
 const FS_EXECUTE_PATH = '/api/v1/fs/execute'
 
@@ -40,12 +37,18 @@ export function startSocketServer(socketPath: string): void {
 
         try {
           const request = JSON.parse(line) as SocketRequest
-          const { method, path, body, projectPath } = request
+          const { method, path, body, projectPath, id } = request
 
           if (path === '/api/v1/health' && method === 'GET') {
-            const response = await handleRequest(method, path, createMockRequest('GET', '/api/v1/health', undefined), null, '')
+            const response = await handleRequest(
+              method,
+              path,
+              createMockRequest('GET', '/api/v1/health', undefined),
+              null,
+              '',
+            )
             const responseBody = await response.json()
-            writeSocketResponse(socket, response.status, responseBody)
+            writeSocketResponse(socket, response.status, responseBody, id ?? null)
             continue
           }
 
@@ -59,7 +62,7 @@ export function startSocketServer(socketPath: string): void {
               const response = await handleRequest(method, path, mockReq, null, xenonDir)
               const clonedResponse = response.clone()
               const responseBody = await clonedResponse.json()
-              writeSocketResponse(socket, response.status, responseBody)
+              writeSocketResponse(socket, response.status, responseBody, id ?? null)
               continue
             }
 
@@ -67,7 +70,7 @@ export function startSocketServer(socketPath: string): void {
             const response = await handleRequest(method, path, mockReq, null, context.projectPath)
             const clonedResponse = response.clone()
             const responseBody = await clonedResponse.json()
-            writeSocketResponse(socket, response.status, responseBody)
+            writeSocketResponse(socket, response.status, responseBody, id ?? null)
             continue
           }
 
@@ -75,26 +78,49 @@ export function startSocketServer(socketPath: string): void {
           const context = loadProjectContext(projectPath || process.cwd())
 
           if ('status' in context) {
-            writeSocketResponse(socket, 400, { message: 'Invalid project', code: 'OXN_INVALID_PARAMS', category: 'USER', recoverable: false, suggestion: '请检查 projectPath 是否有效' })
+            writeSocketResponse(
+              socket,
+              400,
+              {
+                message: 'Invalid project',
+                code: 'OXN_INVALID_PARAMS',
+                category: 'USER',
+                recoverable: false,
+                suggestion: 'Check if projectPath is valid',
+              },
+              id ?? null,
+            )
             continue
           }
 
           const mockReq = createMockRequest(method, path, body)
-          const response = await handleRequest(
-            method,
-            path,
-            mockReq,
-            null,
-            context.projectPath
-          )
+          const response = await handleRequest(method, path, mockReq, null, context.projectPath)
 
           const clonedResponse = response.clone()
           const responseBody = await clonedResponse.json()
-          writeSocketResponse(socket, response.status, responseBody)
+          writeSocketResponse(socket, response.status, responseBody, id ?? null)
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error)
           daemonLogger.error(`Socket request error: ${errorMessage}`)
-          writeSocketResponse(socket, 500, { message: errorMessage, code: 'OXN_INTERNAL_ERROR', category: 'SYSTEM', recoverable: false, suggestion: 'Daemon 内部错误，请查看 daemon.log' })
+          let respId: string | null = null
+          try {
+            const parsed = JSON.parse(line) as { id?: string }
+            respId = parsed.id ?? null
+          } catch {
+            // ignore — request was unparseable
+          }
+          writeSocketResponse(
+            socket,
+            500,
+            {
+              message: errorMessage,
+              code: 'OXN_INTERNAL_ERROR',
+              category: 'SYSTEM',
+              recoverable: false,
+              suggestion: 'Daemon internal error, check daemon.log',
+            },
+            respId,
+          )
         }
       }
     })
@@ -121,25 +147,35 @@ function createMockRequest(method: string, path: string, body?: unknown): Reques
   return new Request(`http://localhost${path}`, {
     method,
     body: body ? JSON.stringify(body) : undefined,
-    headers: { 'Content-Type': 'application/json' }
+    headers: { 'Content-Type': 'application/json' },
   })
 }
 
-function writeSocketResponse(socket: Socket, status: number, body: unknown): void {
+function writeSocketResponse(socket: Socket, status: number, body: unknown, id: string | null): void {
   if (status >= 200 && status < 300) {
-    socket.write(JSON.stringify({ ok: true, data: body }) + '\n')
+    socket.write(`${JSON.stringify({ id, ok: true, data: body })}\n`)
   } else {
-    const err = body as { error?: string; message?: string; code?: string; category?: string; recoverable?: boolean; suggestion?: string }
-    socket.write(JSON.stringify({
-      ok: false,
-      error: {
-        code: err.code || 'OXN_INTERNAL_ERROR',
-        message: err.message || err.error || 'Unknown error',
-        category: err.category || 'SYSTEM',
-        recoverable: err.recoverable ?? false,
-        suggestion: err.suggestion || ''
-      }
-    }) + '\n')
+    const err = body as {
+      error?: string
+      message?: string
+      code?: string
+      category?: string
+      recoverable?: boolean
+      suggestion?: string
+    }
+    socket.write(
+      `${JSON.stringify({
+        id,
+        ok: false,
+        error: {
+          code: err.code || 'OXN_INTERNAL_ERROR',
+          message: err.message || err.error || 'Unknown error',
+          category: err.category || 'SYSTEM',
+          recoverable: err.recoverable ?? false,
+          suggestion: err.suggestion || '',
+        },
+      })}\n`,
+    )
   }
 }
 

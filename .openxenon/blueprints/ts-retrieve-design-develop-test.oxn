@@ -1,0 +1,55 @@
+// Blueprint: ts-retrieve-design-develop-test
+// TypeScript 编程语言四阶段工作流：检索 → 设计 → 开发 → 测试
+//
+// IAP 范式映射：
+//   - Intent 轴：本 Blueprint 自身 = 技术 Intent（slot 拓扑 + observe Probe 标准）
+//   - Align 轴：work 用本 Blueprint 实例化后，4 个 task 分别 align 到 retrieve/design/develop/test
+//   - Proof 轴：observe 数组声明的 builtin probe 是证明权的源头，Core Engine 据此判定 Verdict
+//
+// 适用场景：OpenXenon（TS 项目）内的任何"检索→设计→开发→测试"完整闭环，
+// 例如新功能开发、Bug 修复、重构、添加 CLI 子命令等。
+//
+// 用法：
+//   1. 校验：oxn blueprint validate ts-retrieve-design-develop-test
+//   2. 发起 work：
+//      oxn work create <work-id> --blueprint ts-retrieve-design-develop-test
+//   3. 在 work.oxn 的 context.goal 写明要做什么；
+//      在每个 task 的 part.skill_context 写明该 slot 阶段的具体目标
+
+blueprint "ts-retrieve-design-develop-test" {
+  version = 1
+  description = "TypeScript 项目四阶段工作流：检索（项目现状）→ 设计（结构与类型）→ 开发（实现代码）→ 测试（lint/type/test 验证）"
+
+  // 可选参数：注入到所有 part，供 AI 决定检索/改动范围
+  //   target_module  — 目标模块路径（如 src/oxl）默认整个 src/
+  //   strict         — 是否启用严格模式（typecheck 失败即 FAIL）默认 true
+
+  slot "retrieve" {
+    deps = []
+    observe = ["fs-match"]
+    // Phase 1: 检索项目现状
+    // AI 读 src/、.openxenon/、相关测试与文档，输出"现状地图"
+  }
+
+  slot "design" {
+    deps = ["retrieve"]
+    observe = ["fs-exists"]
+    // Phase 2: 设计
+    // AI 输出类型签名 / 接口 / 数据结构 / 调用关系（不写实现代码）
+    // observe=fs-exists 强制设计产物必须落到文件（设计不是脑内活动，是可审查的 Artifact）
+  }
+
+  slot "develop" {
+    deps = ["design"]
+    observe = ["lint-check", "type-check"]
+    // Phase 3: 开发
+    // AI 写实际 TS 代码；observe 触发 Proof 轴的 lint + typecheck Probe
+  }
+
+  slot "test" {
+    deps = ["develop"]
+    observe = ["test-runner"]
+    // Phase 4: 测试
+    // AI 跑 bun test；observe 触发 test-runner Probe 给出最终 Verdict
+  }
+}

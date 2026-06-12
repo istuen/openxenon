@@ -1,0 +1,25 @@
+// Task: grant-welcome-bonus
+// 注入 MarketingContext（不注入 MemberContext — 通过 prop 接收外部 memberId）
+// 跨域处理：本 task 不查会员库，只接收 memberId 入参
+// 文件位置：.openxenon/works/onboarding/tasks/grant-welcome-bonus/task.oxn
+
+task "grant-welcome-bonus" blueprint "dev-workflow" {
+  inject "MarketingContext";
+
+  context {
+    objective = "实现欢迎券发放逻辑，接收外部传入的 memberId";
+    constraints = [
+      "禁止查会员库",
+      "必须使用 noun.Coupon 命名类"
+    ];
+  }
+
+  slot "develop" {
+    deps = [];
+    prop "targetMemberId" = "todo: from work.oxn prop mapping";
+  }
+
+  slot "test" {
+    deps = ["develop"];
+  }
+}

@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'child_process'
+import { spawn } from 'child_process'
 import { daemonLogger } from './logger'
 
 export interface ManagedProcess {
@@ -17,7 +17,7 @@ export class ProcessManager {
 
   spawn(taskId: string, partId: string, command: string, args: string[] = []): ManagedProcess | null {
     const id = `${taskId}:${partId}`
-    
+
     if (this.processes.has(id)) {
       daemonLogger.warn(`Process already running for ${id}`)
       return null
@@ -26,7 +26,7 @@ export class ProcessManager {
     try {
       const child = spawn(command, args, {
         stdio: 'pipe',
-        detached: false
+        detached: false,
       })
 
       const managed: ManagedProcess = {
@@ -37,12 +37,12 @@ export class ProcessManager {
         command,
         args,
         startTime: Date.now(),
-        status: 'running'
+        status: 'running',
       }
 
       this.processes.set(id, managed)
 
-      child.on('exit', (code, signal) => {
+      child.on('exit', (code, _signal) => {
         const proc = this.processes.get(id)
         if (proc) {
           proc.status = code === 0 ? 'stopped' : 'stopped'
@@ -69,7 +69,7 @@ export class ProcessManager {
   kill(taskId: string, partId: string): boolean {
     const id = `${taskId}:${partId}`
     const proc = this.processes.get(id)
-    
+
     if (!proc) {
       daemonLogger.warn(`No process found for ${id}`)
       return false
@@ -91,8 +91,7 @@ export class ProcessManager {
       try {
         process.kill(proc.pid, 'SIGTERM')
         daemonLogger.info(`Killed process ${id}`)
-      } catch {
-      }
+      } catch {}
     }
     this.processes.clear()
   }
@@ -108,7 +107,7 @@ export class ProcessManager {
   markTimeout(taskId: string, partId: string): boolean {
     const id = `${taskId}:${partId}`
     const proc = this.processes.get(id)
-    
+
     if (!proc) {
       return false
     }

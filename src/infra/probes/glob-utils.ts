@@ -38,10 +38,10 @@ export function matchGlob(pattern: string, baseDir: string): string[] {
 
 export function matchPattern(path: string, pattern: string): boolean {
   if (pattern.includes('*') || pattern.includes('?')) {
-    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$')
+    const regex = new RegExp(`^${pattern.replace(/\*/g, '.*').replace(/\?/g, '.')}$`)
     return regex.test(path)
   }
-  return path === pattern || path.endsWith('/' + pattern) || path === pattern
+  return path === pattern || path.endsWith(`/${pattern}`) || path === pattern
 }
 
 export function parseGlobPattern(fullPattern: string, projectRoot: string): { baseDir: string; globPattern: string } {
@@ -50,7 +50,7 @@ export function parseGlobPattern(fullPattern: string, projectRoot: string): { ba
 
   const firstGlobIndex = Math.min(
     normalizedPattern.indexOf('*') === -1 ? Infinity : normalizedPattern.indexOf('*'),
-    normalizedPattern.indexOf('?') === -1 ? Infinity : normalizedPattern.indexOf('?')
+    normalizedPattern.indexOf('?') === -1 ? Infinity : normalizedPattern.indexOf('?'),
   )
 
   let splitIndex: number

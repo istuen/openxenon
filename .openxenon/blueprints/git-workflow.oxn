@@ -1,0 +1,49 @@
+// .openxenon/blueprints/git-workflow.oxn
+//
+// 独立 Blueprint：Git workspace 隔离 + 质量门 + merge 可行性证据。
+// 3 阶段 slot DAG 合法（声明时）：prepare-workspace → precommit → finalize
+// Work 编排层可选择性使用某个 slot（执行时）：用 `task.blueprint "git-workflow"` 绑定
+//
+// 哲学一致性（v0.1 IAP 三轴）：
+//   - Intent 侧：git 隔离策略 = 约束模板（slot + Probe 验收）
+//   - Align 侧：Work 编排决定用哪些 slot、什么顺序、插入什么
+//   - Proof 侧：observe 声明的 git-clean / git-branch-exists / shell-exec 给出客观事实
+//   - **OXN 永远不替人 merge**；finalize 槽位只产出 merge 可行性证据
+
+blueprint "git-workflow" {
+  version = 1
+  description = "Git workspace 隔离 + 质量门 + merge 可行性证据：3 阶段可被 Work 编排层选择性插入到任何主 Blueprint 的前后；OXN 只给证据，不替人决策"
+
+  prop "strategy"      { type = string; default = "none" }     // none | branch | worktree
+  prop "base_branch"   { type = string; default = "current" }
+  prop "target_branch" { type = string; default = "current" }
+  prop "worktree_root" { type = string; default = ".openxenon/_worktree" }
+
+  // ---- Stage 1: 准备工作区 ----
+  // 入口守卫：working tree 干净 + base 分支存在
+  // 成功 → git switch -c oxn/<work-id> 或 git worktree add
+  slot "prepare-workspace" {
+    deps = []
+    observe = ["git-clean", "git-branch-exists"]
+  }
+
+  // ---- Stage 2: 本地质量门 ----
+  // 隔离环境内：lint + typecheck
+  // 可被其他 Blueprint 的 Task 依赖；纯文档 work 可跳过
+  slot "precommit" {
+    deps = ["prepare-workspace"]
+    observe = ["shell-exec"]
+  }
+
+  // ---- Stage 3: merge 可行性证据 ----
+  // 跑 git merge-tree 算法（不实际 merge）：
+  //   1. fetch target_branch 最新
+  //   2. 三路合并模拟 → 冲突文件列表
+  //   3. 产出 verdict: can_ff_merge / can_merge_clean / has_conflicts / dirty_worktree
+  //   4. **永远不** 自行 commit merge
+  // 工程师看完 verdict 自己决定怎么 merge
+  slot "finalize" {
+    deps = ["precommit"]
+    observe = ["shell-exec", "git-status-clean", "git-merge-feasible"]
+  }
+}

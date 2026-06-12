@@ -1,0 +1,38 @@
+{
+  "name": "oxn",
+  "displayName": "OpenXenon Language",
+  "description": "OXL (OpenXenon Language) syntax highlighting support for .oxn files",
+  "version": "0.1.0",
+  "publisher": "openxenon",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "oxl",
+        "extensions": [
+          ".oxn"
+        ],
+        "aliases": [
+          "OXL",
+          "oxl",
+          "OXN",
+          "oxn"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "oxl",
+        "scopeName": "source.oxn",
+        "path": "./syntaxes/oxn.tmLanguage.json"
+      }
+    ]
+  }
+}

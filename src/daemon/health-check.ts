@@ -1,16 +1,13 @@
 import { createConnection } from 'net'
+import { existsSync } from '../infra/filesystem'
 import { daemonLogger } from './logger'
-import { existsSync } from 'fs'
 
 export interface HealthCheckResult {
   success: boolean
   elapsedMs: number
 }
 
-export async function waitForHealth(
-  socketPath: string,
-  timeout: number = 10000
-): Promise<HealthCheckResult> {
+export async function waitForHealth(socketPath: string, timeout: number = 10000): Promise<HealthCheckResult> {
   const start = Date.now()
 
   return new Promise((resolve) => {
@@ -89,10 +86,10 @@ export async function waitForHealth(
           }
         })
 
-        const request = JSON.stringify({
+        const request = `${JSON.stringify({
           method: 'GET',
-          path: '/api/v1/health'
-        }) + '\n'
+          path: '/api/v1/health',
+        })}\n`
 
         socket.write(request)
       } catch (error) {

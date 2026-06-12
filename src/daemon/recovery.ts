@@ -1,7 +1,7 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync, rmSync } from 'fs'
 import { join } from 'path'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '../infra/filesystem'
+import { getProjectBoundaryPath } from '../infra/paths'
 import { daemonLogger } from './logger'
-import { getProjectBoundaryPath } from '../kernel'
 
 export interface RecoveryPoint {
   id: string
@@ -20,7 +20,7 @@ export interface RecoveryConfig {
 
 const DEFAULT_CONFIG: RecoveryConfig = {
   maxRecoveryPoints: 5,
-  autoCheckpointIntervalMs: 60000
+  autoCheckpointIntervalMs: 60000,
 }
 
 export class RecoveryManager {
@@ -76,7 +76,7 @@ export class RecoveryManager {
       timestamp: Date.now(),
       statePath: stateBackupPath,
       artifactPath: artifactBackupPath,
-      metadata
+      metadata,
     }
 
     const points = this.getRecoveryPoints(taskId)
@@ -128,7 +128,7 @@ export class RecoveryManager {
 
   rollbackTo(taskId: string, recoveryPointId: string): boolean {
     const points = this.getRecoveryPoints(taskId)
-    const target = points.find(p => p.id === recoveryPointId)
+    const target = points.find((p) => p.id === recoveryPointId)
 
     if (!target) {
       daemonLogger.error(`Recovery point ${recoveryPointId} not found`)
@@ -199,8 +199,7 @@ export class RecoveryManager {
         if (existsSync(point.artifactPath)) {
           rmSync(point.artifactPath, { force: true })
         }
-      } catch {
-      }
+      } catch {}
     }
 
     try {
@@ -208,8 +207,7 @@ export class RecoveryManager {
       if (existsSync(indexPath)) {
         rmSync(indexPath, { force: true })
       }
-    } catch {
-    }
+    } catch {}
 
     this.recoveryPoints.delete(taskId)
     daemonLogger.info(`Cleared recovery points for task ${taskId}`)
@@ -218,9 +216,6 @@ export class RecoveryManager {
 
 export const recoveryManager = new RecoveryManager()
 
-export function createRecoveryManager(
-  config?: Partial<RecoveryConfig>,
-  projectRoot?: string
-): RecoveryManager {
+export function createRecoveryManager(config?: Partial<RecoveryConfig>, projectRoot?: string): RecoveryManager {
   return new RecoveryManager(config, projectRoot)
 }

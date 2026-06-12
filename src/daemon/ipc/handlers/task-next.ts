@@ -1,12 +1,9 @@
-import { registerRoute } from '../router'
+import { getTaskDirectory } from '../../../work/task-directory'
+import { readBlueprint, readTaskTrace } from '../../trace/writer'
 import { badRequest, notFound } from '../errors'
-import { getTaskDirectory } from '../../../kernel/lib/task-dir'
-import { readTaskTrace, readBlueprint } from '../../trace/writer'
+import { registerRoute } from '../router'
 
-async function handleTaskNext(
-  request: Request,
-  projectPath: string
-): Promise<Response> {
+async function handleTaskNext(request: Request, projectPath: string): Promise<Response> {
   try {
     const url = new URL(request.url)
     const taskId = url.searchParams.get('taskId')
@@ -26,12 +23,12 @@ async function handleTaskNext(
       return new Response(
         JSON.stringify({
           partId: null,
-          message: 'Task not started'
+          message: 'Task not started',
         }),
         {
           status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        }
+          headers: { 'Content-Type': 'application/json' },
+        },
       )
     }
 
@@ -46,12 +43,12 @@ async function handleTaskNext(
       return new Response(
         JSON.stringify({
           partId: null,
-          message: 'No parts defined in blueprint'
+          message: 'No parts defined in blueprint',
         }),
         {
           status: 200,
-          headers: { 'Content-Type': 'application/json' }
-        }
+          headers: { 'Content-Type': 'application/json' },
+        },
       )
     }
 
@@ -60,12 +57,12 @@ async function handleTaskNext(
         partId: firstPart.id,
         name: firstPart.name,
         target: firstPart.target,
-        spec: firstPart.spec?.description
+        spec: firstPart.spec?.description,
       }),
       {
         status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -74,12 +71,12 @@ async function handleTaskNext(
       JSON.stringify({
         error: 'TaskNextFailed',
         message: errorMessage,
-        statusCode: 500
+        statusCode: 500,
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        headers: { 'Content-Type': 'application/json' },
+      },
     )
   }
 }
