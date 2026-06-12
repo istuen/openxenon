@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'OpenXenon',
   description: '工程师与 AI 协作工作台 — 工程师定义意图，AI 执行对齐，OXN 证明结果',
-  cleanUrls: true,
+  cleanUrls: false,
   base: '/openxenon/',
   lastUpdated: true,
 
@@ -51,9 +51,9 @@ export default defineConfig({
     siteTitle: 'OpenXenon',
 
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Docs', link: '/introduction' },
-      { text: 'AI Prompt', link: '/llm-prompt' },
+      { text: 'Home', link: '/index.html' },
+      { text: 'Docs', link: '/introduction.html' },
+      { text: 'AI Prompt', link: '/llm-prompt.html' },
     ],
 
     sidebar: {
@@ -61,49 +61,49 @@ export default defineConfig({
         {
           text: '开始',
           items: [
-            { text: 'Introduction', link: '/introduction' },
-            { text: 'Quickstart', link: '/quickstart' },
+            { text: 'Introduction', link: '/introduction.html' },
+            { text: 'Quickstart', link: '/quickstart.html' },
           ],
         },
         {
           text: '范式与核心概念',
-          items: [{ text: 'Core Concepts', link: '/core-concepts' }],
+          items: [{ text: 'Core Concepts', link: '/core-concepts.html' }],
         },
         {
           text: 'IAP 三轴',
           items: [
-            { text: 'Intent', link: '/intent' },
-            { text: 'Align', link: '/align' },
-            { text: 'Proof', link: '/proof' },
+            { text: 'Intent', link: '/intent.html' },
+            { text: 'Align', link: '/align.html' },
+            { text: 'Proof', link: '/proof.html' },
           ],
         },
         {
           text: '实战',
           items: [
-            { text: 'Recipes', link: '/recipes' },
-            { text: 'DDD in Practice', link: '/ddd-in-practice' },
+            { text: 'Recipes', link: '/recipes.html' },
+            { text: 'DDD in Practice', link: '/ddd-in-practice.html' },
           ],
         },
         {
           text: '参考',
           items: [
-            { text: 'CLI', link: '/cli' },
-            { text: 'Architecture', link: '/architecture' },
-            { text: 'Extending', link: '/extending' },
-            { text: 'Roadmap', link: '/roadmap' },
+            { text: 'CLI', link: '/cli.html' },
+            { text: 'Architecture', link: '/architecture.html' },
+            { text: 'Extending', link: '/extending.html' },
+            { text: 'Roadmap', link: '/roadmap.html' },
           ],
         },
         {
           text: '附录',
           items: [
-            { text: 'Glossary', link: '/glossary' },
-            { text: 'IAP Cheatsheet', link: '/iap-cheatsheet' },
-            { text: 'FAQ', link: '/faq' },
+            { text: 'Glossary', link: '/glossary.html' },
+            { text: 'IAP Cheatsheet', link: '/iap-cheatsheet.html' },
+            { text: 'FAQ', link: '/faq.html' },
           ],
         },
       ],
 
-      '/llm-prompt/': [{ text: 'AI 协作者入口', items: [{ text: 'llm-prompt', link: '/llm-prompt' }] }],
+      '/llm-prompt/': [{ text: 'AI 协作者入口', items: [{ text: 'llm-prompt', link: '/llm-prompt.html' }] }],
     },
 
     search: { provider: 'local' },
