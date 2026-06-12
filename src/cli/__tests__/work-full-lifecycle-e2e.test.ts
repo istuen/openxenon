@@ -202,10 +202,11 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     const r1 = JSON.parse((await runCli(['work', 'run', 'lifecycle', '--json'])).stdout)
     expect(r1.ok).toBe(true)
 
-    // 再次 run 应报 already exists（output 包装层：data.ok / data.error）
+    // 再次 run 应报 already exists (v1.1 fix-p2-robustness output-data-overload:
+    // error 不再被外层 data 包装)
     const r2 = JSON.parse((await runCli(['work', 'run', 'lifecycle', '--json'])).stdout)
-    expect(r2.data.ok).toBe(false)
-    expect(r2.data.error.code).toBe('OXN_WORK_ALREADY_EXISTS')
+    expect(r2.ok).toBe(false)
+    expect(r2.error.code).toBe('OXN_WORK_ALREADY_EXISTS')
   })
 
   test('5. 锁后漂移 work.oxn → context 报 LOCK_HASH_MISMATCH', async () => {

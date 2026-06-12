@@ -10,6 +10,30 @@ export interface OutputOptions {
   human?: string | ((data: unknown) => string)
 }
 
+/**
+ * v1.1 fix-p2-robustness output-data-overload: 判别一个对象是否是 OutputOptions。
+ *
+ * 修复前: `output(myPayload)` 中若 myPayload 有 `data` 字段 (例如域/蓝图的 contents 字段
+ *          恰好叫 data), 会被错误地当 OutputOptions 处理, 然后把 `data` 字段当作
+ *          payload 二次包装成 { ok: true, data: myPayload.data } → 双重包装.
+ *
+ * 修复后: 用「CLI 渲染指令」独有字段 (`error` / `human` / `ok`) 联合判别.
+ *          - 有 `error` / `human` 字段 → 当 OutputOptions 处理
+ *          - 有 `ok: true` 字段 (CLI 标记) + `data` 字段 → 当 OutputOptions 处理
+ *          - 只有 `data` 字段 (无 error / human / ok) → 当普通 payload 处理
+ *          - 全无 → 视为普通 payload
+ *
+ * 历史问题: 单纯用 `data` in obj 误判 → 改用 ok (CLI 独有) 作为强信号,
+ *          兼顾「output({ok:true, data})」和「output({data, human})」两种调用习惯.
+ */
+function isOutputOptions(value: unknown): value is OutputOptions {
+  if (typeof value !== 'object' || value === null) return false
+  const v = value as Record<string, unknown>
+  if ('error' in v || 'human' in v) return true
+  if (v.ok === true && 'data' in v) return true
+  return false
+}
+
 function detectFormat(args: Record<string, unknown>): OutputFormat {
   if (args['--json'] || args.json) return 'json'
   if (args['--yaml'] || args.yaml) return 'yaml'
@@ -116,8 +140,8 @@ export function outputUserInputError(
 export function output(options: OutputOptions): void
 export function output(data: unknown, format?: OutputFormat): void
 export function output(optionsOrData: OutputOptions | unknown, format?: OutputFormat): void {
-  if (typeof optionsOrData === 'object' && optionsOrData !== null && 'data' in optionsOrData) {
-    const options = optionsOrData as OutputOptions
+  if (isOutputOptions(optionsOrData)) {
+    const options = optionsOrData
     const fmt = format || options.format || 'human'
     const { data, error, human } = options
 

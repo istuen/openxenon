@@ -55,6 +55,16 @@ export class CompileCache {
     return join(this.cacheDir, `${hash}.json`)
   }
 
+  /**
+   * v1.1 fix-p2-robustness compile-cache-mtime: 用 mtime + size 生成
+   * 一个 16 字符 fingerprint, 比 SHA-256 整文件快得多 (O(1) stat vs 整文件读 + hash).
+   * 不用于主 cache key (主 key 仍是 content hash), 仅用于 invalidateByPath
+   * 阶段的 fingerprint 快速比对, 确认文件未变则跳过整文件读.
+   */
+  private getStatFingerprint(stat: { mtimeMs: number; size: number }): string {
+    return `${stat.mtimeMs.toFixed(0)}-${stat.size}`
+  }
+
   get(blueprintContent: string): CacheEntry | null {
     const hash = this.getCacheKey(blueprintContent)
 
@@ -81,6 +91,7 @@ export class CompileCache {
     blueprintContent: string,
     data: Record<string, unknown>,
     dependencyHashes: Record<string, string> = {},
+    options: { blueprintPath?: string; fingerprint?: string } = {},
   ): CacheEntry {
     const hash = this.getCacheKey(blueprintContent)
     const entry: CacheEntry = {
@@ -88,6 +99,12 @@ export class CompileCache {
       data,
       timestamp: Date.now(),
       dependencyHashes,
+      blueprintPath: options.blueprintPath,
+    }
+    // 存 fingerprint (mtime+size) 到 dependencyHashes 旁路, 用 synthetic key
+    if (options.fingerprint) {
+      const deps = entry.dependencyHashes as Record<string, string>
+      deps.__fingerprint__ = options.fingerprint
     }
 
     this.memoryCache.set(hash, entry)
@@ -117,16 +134,49 @@ export class CompileCache {
   invalidateByPath(blueprintPath: string): void {
     try {
       const stat = statSync(blueprintPath)
-      const mtime = stat.mtimeMs
-      const content = readFileSync(blueprintPath, 'utf-8')
-      const hash = this.getCacheKey(content)
+      const fingerprint = this.getStatFingerprint(stat)
 
-      const filePath = this.getCacheFilePath(hash)
-      if (existsSync(filePath)) {
-        const raw = readFileSync(filePath, 'utf-8')
-        const entry = JSON.parse(raw) as CacheEntry
-        if (entry.blueprintPath === blueprintPath && entry.timestamp < mtime) {
-          this.invalidate(hash)
+      // mtime 不可靠 (如某些 FS / docker bind mount) → fingerprint 包含 NaN 时
+      // 回退 content hash. 此分支只覆盖极少数边角情况, 主流 FS (ext4/apfs/...) 走
+      // 快速路径.
+      const mtimeUsable = Number.isFinite(stat.mtimeMs) && stat.mtimeMs > 0
+
+      // 走 cache 目录快速扫描: 找带 blueprintPath 字段匹配的 entry
+      const files = readdirSync(this.cacheDir).filter((f) => f.endsWith('.json'))
+      for (const file of files) {
+        const filePath = join(this.cacheDir, file)
+        let entry: CacheEntry
+        try {
+          entry = JSON.parse(readFileSync(filePath, 'utf-8')) as CacheEntry
+        } catch {
+          continue
+        }
+        if (entry.blueprintPath !== blueprintPath) continue
+
+        if (mtimeUsable) {
+          // 快速路径: 比对 fingerprint, 一致则缓存仍 valid, 跳过整文件读
+          const storedFp = (entry.dependencyHashes as Record<string, string>).__fingerprint__
+          if (storedFp === fingerprint) {
+            continue
+          }
+          // fingerprint 变化 → 比 mtime (entry.timestamp vs file mtime)
+          if (entry.timestamp >= stat.mtimeMs) {
+            continue
+          }
+        } else {
+          // Fallback: 整文件读算 content hash 比对 (极慢路径)
+          const currentHash = computeContentHash(readFileSync(blueprintPath, 'utf-8'))
+          if (entry.hash === currentHash) {
+            continue
+          }
+        }
+
+        // 失效
+        this.memoryCache.delete(entry.hash)
+        try {
+          unlinkSync(filePath)
+        } catch {
+          // Ignore
         }
       }
     } catch {

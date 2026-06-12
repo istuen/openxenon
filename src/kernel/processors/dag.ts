@@ -67,9 +67,12 @@ export function topologicalSortGeneric(nodes: GraphNode[], edges?: GraphEdge[]):
     if (degree === 0) queue.push(id)
   }
 
+  // v1.1 fix-p2-robustness dag-queue-perf: queue.shift() 在 O(n) 上复制数组元素,
+  // 整体 O(n²). 改 head 索引指针, 取元素 O(1), 仅常数因子优化, 行为不变.
+  let head = 0
   const path: string[] = []
-  while (queue.length > 0) {
-    const current = queue.shift()!
+  while (head < queue.length) {
+    const current = queue[head++]!
     path.push(current)
     const neighbors = nodeMap.get(current) || []
     for (const neighbor of neighbors) {

@@ -138,10 +138,10 @@ describe('work status 补 planLock（PR-14a）', () => {
     await initProject()
     // 不调用 validate，所以没有 .work
     const r = JSON.parse((await runCli(['work', 'status', 'nonexistent', '--json'])).stdout)
-    // 业务层 error 包装在 data.ok=false + data.error
-    expect(r.data.ok).toBe(false)
-    expect(r.data.error.code).toBe('OXN_WORK_NOT_FOUND')
-    expect(r.data.error.message).toContain('.work birth cert')
+    // v1.1 fix-p2-robustness output-data-overload: error 不再被外层 data 包装
+    expect(r.ok).toBe(false)
+    expect(r.error.code).toBe('OXN_WORK_NOT_FOUND')
+    expect(r.error.message).toContain('.work birth cert')
   })
 
   test('4. .work 存在 + .run/state.json 缺失：workspace=null + planLock 镜像', async () => {
@@ -172,10 +172,10 @@ describe('work status 补 planLock（PR-14a）', () => {
     writeFileSync(workPath, '{ "not": "a birth cert" }', 'utf-8')
 
     const r = JSON.parse((await runCli(['work', 'status', 'demo', '--json'])).stdout)
-    expect(r.data.ok).toBe(false)
-    expect(r.data.error.code).toBe('OXN_WORK_NOT_FOUND')
-    expect(r.data.error.message).toContain('.work birth cert missing or invalid')
-    expect(r.data.error.message).toContain('schema-mismatch')
+    expect(r.ok).toBe(false)
+    expect(r.error.code).toBe('OXN_WORK_NOT_FOUND')
+    expect(r.error.message).toContain('.work birth cert missing or invalid')
+    expect(r.error.message).toContain('schema-mismatch')
   })
 
   test('6. status.planLock 与 context.lockHealth 字段名独立（语义不混淆）', async () => {
