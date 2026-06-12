@@ -334,7 +334,7 @@
     "pathNotInWork": "路径不在 work \"{{workName}}\" 的 tasks 目录内。预期目录: {{expectedDir}}，实际目录: {{parentDir}}",
     "lockFailed": "锁定失败: {{reason}}",
     "unlockCheckHint": "诊断请用 --unlock-check",
-    "isolationNotice": "AI 上下文工作目录: {{sandboxDir}}（项目根: {{projectRoot}}）",
+    "isolationNotice": "本 task 只能看到引用的 domain，work 中其他 domain 一律不可见。",
     "list": {
       "description": "列出所有 Work"
     },

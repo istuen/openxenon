@@ -334,7 +334,7 @@
     "pathNotInWork": "Path is not inside work \"{{workName}}\" tasks directory. Expected: {{expectedDir}}, got: {{parentDir}}",
     "lockFailed": "Lock failed: {{reason}}",
     "unlockCheckHint": "Use --unlock-check for diagnostics",
-    "isolationNotice": "AI context working directory: {{sandboxDir}} (project root: {{projectRoot}})",
+    "isolationNotice": "This task can only see referenced domains; other domains in the work are not visible.",
     "list": {
       "description": "List all works"
     },

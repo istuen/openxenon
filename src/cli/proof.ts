@@ -702,7 +702,7 @@ function renderShowHuman(
 ): string {
   const lines: string[] = []
   if (inProgress) {
-    lines.push(`Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json`)
+    lines.push(`⚠️ Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json`)
     lines.push('')
   }
   lines.push(`Proof: ${frozen.name}`)
