@@ -74,11 +74,20 @@ bun test                    # bun test，约 50 秒，414 个测试
 - 版本号：`bun run version:check` / `bun run version:sync`（权威版本号在 `package.json`；变更日志片段存放在 `.changes/<version>-<slug>.md`）。
 - `scripts/restore-skills.sh` 与 `scripts/verify-skill-structure.sh` 用于维护 `.opencode/skills/` 下的 OpenCode 技能包。
 
+## 文档 SSOT 规则
+
+- `docs/` 根平铺的 introduction + quickstart + core-concepts + intent + align + proof + recipes + ddd-in-practice + cli + architecture + extending + roadmap + glossary + iap-cheatsheet + faq + llm-prompt = **对外唯一权威（SSOT）**
+- 新增概念 / 命令 / Probe：先在 `docs/` 找到归属章节，若没有则新建
+- 跨章跳转用相对路径 + 锚链：`[Align](./align.md#work-task-part)`
+- AI 协作者使用 `docs/llm-prompt.md` 作为入口
+- 章内统一模板：What → Why → How → 参考
+- 旧 `docs/{core,architecture,reference,guides,design,horizon}/` 已备份。手册完成后统一处理。
+
 ## 快速导览
 
 - 运行时数据：`.openxenon/{works,tasks,proofs,issues,error}/`（目录内已 gitignore，运行时产物）。
 - IAP 资产：`.openxenon/{domains,blueprints}/`（已 tracked，业务声明 + AI 创作模板）。
 - Forge 设计笔记：`.openxenon/forges/`（已 tracked，跨 PR 工作的设计文档与状态分析）。
-- AI 可见的权威文档：`docs/core/document.md`（概念）、`docs/reference/oxn-dsl.md`（DSL）、`docs/reference/probe-types.md`（Probes）、`docs/architecture/l0-l3-constitution.md`（分层）。
+- AI 可见的权威文档：`docs/introduction.md`（入口）、`docs/core-concepts.md`（IAP 范式）、`docs/intent.md`（Intent 轴）、`docs/align.md`（Align 轴）、`docs/proof.md`（Proof 轴）、`docs/cli.md`（CLI 参考）、`docs/architecture.md`（架构）。
 - Probes 拆分：`src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。

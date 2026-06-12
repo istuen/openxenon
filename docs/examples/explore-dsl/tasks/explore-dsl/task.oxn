@@ -1,0 +1,28 @@
+// Task: explore-dsl
+// 注入 dsl-context，绑 explore-analyze-report
+// 跑遍 blueprint 的 3 个 slot: explore / analyze / report
+
+task "explore-dsl" blueprint "explore-analyze-report" {
+  inject "dsl-context";
+
+  context {
+    objective = "探索 OXL 的 grammar/schema/validator/compiler 四个子模块, 理解其依赖关系, 生成结构化报告";
+    constraints = [
+      "必须使用 noun.Grammar / noun.Schema / noun.Validator / noun.Compiler",
+      "禁止使用 ban 列表中的 ParserImpl / LexerImpl / GrammarFile",
+      "output 报告使用 CONTEXT.md 格式"
+    ];
+  }
+
+  slot "explore" {
+    deps = [];
+  }
+
+  slot "analyze" {
+    deps = ["explore"];
+  }
+
+  slot "report" {
+    deps = ["analyze"];
+  }
+}

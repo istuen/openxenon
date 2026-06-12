@@ -1,0 +1,23 @@
+// Task: register-member
+// 注入 MemberContext，绑定 dev-workflow
+// 文件位置：.openxenon/works/onboarding/tasks/register-member/task.oxn
+
+task "register-member" blueprint "dev-workflow" {
+  inject "MemberContext";
+
+  context {
+    objective = "实现会员注册逻辑，遵循 MemberContext 的统一语言";
+    constraints = [
+      "必须使用 noun.Member 命名类，禁止使用 ban 列表中的 User/Customer",
+      "密码必须 hash 后存储（rule.PasswordNeverPlaintext）"
+    ];
+  }
+
+  slot "develop" {
+    deps = [];
+  }
+
+  slot "test" {
+    deps = ["develop"];
+  }
+}
