@@ -66,5 +66,21 @@
 
 - ✅ Node 18+ 用户：直接 `npm i -g openxenon@0.1.6`，0 额外依赖
 - ✅ Bun 用户：自动走 Bun 路径，~50ms 启动
+- ✅ Deno 用户（v0.1.6 新增）：自动走 Deno 路径（`Deno.command` / `Deno.readTextFile`）
 - ✅ dev workflow：保持 Bun，开发期 `bun run dev`
 - ✅ Probe handler 签名不变：现有调用方无需修改
+
+## v0.1.6 增量
+
+- **Deno runtime 扩展**（arch-discussion §5.1 拍板方向）：
+  - 新建 `src/infra/runtime/deno/{spawn,file,glob,index}.ts`
+  - 新建 `src/infra/runtime/deno-global.d.ts`（Deno 全局类型增强）
+  - `detect.ts` 新增 `isDeno()` 缓存
+  - `index.ts` 工厂优先级：isDeno() ? denoRuntime : isBun() ? bunRuntime : nodeRuntime
+  - Deno.signal (number) 与 NodeJS.Signals (string) 协议差异：v0.1.6 妥协 Deno 路径 signal=null
+  - Deno 测试：当前无 Deno 环境，依赖 typecheck-only 验证；CI matrix 留口
+- **ADR-013 落盘**（`docs/architecture/adr/013-filesystem-port-vs-runtime-file.md`）：
+  - 澄清 FileSystemPort (Type A) 与 runtime/file.ts (Type B) 职责分工
+  - 选型决策树（Kernel / L2 同步 → Type A；probe handler → Type B）
+  - 关键发现：v0.1.6 引入 sandbox-manager 后 FileSystemPort 有了 L2-Work 消费者
+  - 不合并两套抽象（同步 vs 异步，L0 vs L1，依赖方向独立）

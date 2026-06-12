@@ -14,14 +14,21 @@
 //   - 注入：直接模块 import + 工厂模式（非函数参数）
 // =============================================================================
 
-import { isBun } from './detect'
+import { isBun, isDeno } from './detect'
 import { bunRuntime } from './bun/index'
+import { denoRuntime } from './deno/index'
 import { nodeRuntime } from './node/index'
 import type { GlobOptions, RuntimePort, SpawnOptions, SpawnResult } from './types'
 import type { FileHandle } from './types'
 
-/** 模块加载时一次性求值的 runtime 实例（v0.1.6 锁定） */
-export const runtime: RuntimePort = isBun() ? bunRuntime : nodeRuntime
+/** 模块加载时一次性求值的 runtime 实例（v0.1.6 锁定）
+ *
+ * 优先级（v0.1.6 Deno 扩展）：
+ *   1. isDeno()  →  denoRuntime (Deno 全局 API)
+ *   2. isBun()   →  bunRuntime  (Bun 全局 API)
+ *   3. fallback  →  nodeRuntime (Node 18+ 原生 API)
+ */
+export const runtime: RuntimePort = isDeno() ? denoRuntime : isBun() ? bunRuntime : nodeRuntime
 
 // =============================================================================
 // 函数级便捷导出（最佳 DX）

@@ -16,12 +16,14 @@
 
 /**
  * 模块加载时一次性求值（缓存）
- * - Bun 启动时 globalThis.Bun 存在 → true
- * - Node 18+ 启动时 globalThis.Bun undefined → false
+ * - Bun 启动时 globalThis.Bun 存在 → _isBun=true
+ * - Deno 启动时 globalThis.Deno 存在 → _isDeno=true
+ * - Node 18+ 启动时 globalThis.Bun/Deno 都 undefined → 两者都 false
  * - 若用 `bun --bun oxn` 启动（用户主动选 Bun），globalThis.Bun 存在
  *   走 Bun 快速路径正是用户想要的 —— **不**误判
  */
 const _isBun = typeof (globalThis as { Bun?: unknown }).Bun !== 'undefined'
+const _isDeno = typeof (globalThis as { Deno?: unknown }).Deno !== 'undefined'
 
 /**
  * 1. globalThis.Bun 检测（最可靠，最快，已缓存）
@@ -31,12 +33,19 @@ export function isBun(): boolean {
 }
 
 /**
+ * 1b. globalThis.Deno 检测（v0.1.6 Deno 扩展）
+ */
+export function isDeno(): boolean {
+  return _isDeno
+}
+
+/**
  * 2. process.versions 检测（fallback，更稳）
  * 适用：debug 上下文 / 日志输出
  */
 export function getRuntimeName(): 'bun' | 'node' | 'deno' | 'unknown' {
   if (_isBun) return 'bun'
-  if (typeof (globalThis as { Deno?: unknown }).Deno !== 'undefined') return 'deno'
+  if (_isDeno) return 'deno'
   if (typeof process !== 'undefined' && process.versions?.node) return 'node'
   return 'unknown'
 }
