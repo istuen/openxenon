@@ -197,7 +197,7 @@ CREATED → RUNNING → PASSED  (所有 part 通过)
                   → FAILED   (任一 part 失败)
 ```
 
-双层独立读写，故障时可独立恢复。详见 [State Schema](./architecture/state.md) （旧文档）。
+双层独立读写，故障时可独立恢复。详见旧 [State Schema](./reference/state-schema.md) （旧文档）。
 
 ---
 

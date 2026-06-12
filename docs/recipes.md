@@ -170,7 +170,7 @@ work "NewUserOnboarding" {
 }
 ```
 
-完整源码：[examples/onboarding/](./examples/onboarding/)
+完整源码：[examples/onboarding/README.md](./examples/onboarding/README.md)
 
 ---
 
@@ -203,7 +203,7 @@ work "fix-issue" {
 }
 ```
 
-完整源码：[examples/fix-issue/](./examples/fix-issue/)
+完整源码：[examples/fix-issue/README.md](./examples/fix-issue/README.md)
 
 ---
 
@@ -232,7 +232,7 @@ work "explore-dsl" {
 }
 ```
 
-完整源码：[examples/explore-dsl/](./examples/explore-dsl/)
+完整源码：[examples/explore-dsl/README.md](./examples/explore-dsl/README.md)
 
 ---
 

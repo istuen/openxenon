@@ -78,7 +78,7 @@ OpenXenon 的能力升级不是自上而下灌输的，而是由痛点自下而�
 
 ## 版本与变更
 
-变更日志入口：[CHANGELOG.md](../docs/changelog/CHANGELOG.md)（旧文档）
+变更日志入口：[CHANGELOG.md](./changelog/CHANGELOG.md)（旧文档）
 
 变更日志片段存放在 `.changes/` 目录，按版本号组织。发布新版本时运行：
 
@@ -90,4 +90,4 @@ bun run version:sync
 ## → 参考
 
 - [Introduction](./introduction.md) — OpenXenon 的愿景与定位
-- 旧文档：[IAP 信号系统](../_archive/horizon/iap-as-signal-system.md)（旧 SSOT）
+- 旧文档：[IAP 信号系统](./horizon/iap-as-signal-system.md)（旧 SSOT）

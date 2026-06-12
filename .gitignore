@@ -45,6 +45,10 @@ docs_tmp/
 coverage/
 .nyc_output/
 
+# VitePress 站点产物（docs/ 站点源在 git，build 产物不入仓）
+docs/.vitepress/cache/
+docs/.vitepress/dist/
+
 # ─────────────────────────────────────────────────────────────
 # 5. 环境与 IDE（OS / 编辑器 / 项目元数据）
 # ─────────────────────────────────────────────────────────────

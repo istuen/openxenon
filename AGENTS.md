@@ -83,6 +83,16 @@ bun test                    # bun test，约 50 秒，414 个测试
 - 章内统一模板：What → Why → How → 参考
 - 旧 `docs/{core,architecture,reference,guides,design,horizon}/` 已备份。手册完成后统一处理。
 
+## 文档站点
+
+- 站点生成器：VitePress，源在 `docs/*.md`，配置在 `docs/.vitepress/config.ts`
+- 部署：GitHub Pages 部署到 `https://istuen.github.io/openxenon/`
+- `config.ts` 只描述 nav 顺序与分组，**不写内容**
+- 新增章节：先在 `docs/` 创建 .md，再在 `config.ts` 添加 sidebar 条目
+- 部署触发：仅 main 分支 push 或手动 `workflow_dispatch` 触发部署；feat/* 推时仅 build 验证编译
+- Pages 启用由仓库管理员手动一次性操作（Settings → Pages → Source: "GitHub Actions"）
+- 本地预览：`bun run docs:dev`（http://localhost:5173）；本地构建：`bun run docs:build`
+
 ## 快速导览
 
 - 运行时数据：`.openxenon/{works,tasks,proofs,issues,error}/`（目录内已 gitignore，运行时产物）。

@@ -228,6 +228,6 @@ work "Onboarding" {
 
 ## → 参考
 
-- Domain 完整语法：[OXN DSL 参考](./oxl.md) （旧文档）
+- Domain 完整语法：旧 [OXN DSL 参考](./reference/oxn-dsl.md)
 - Blueprint DAG 设计原理：[Architecture](./architecture.md)
 - 如何把 Intent 资产对接 AI：[Align](./align.md)

@@ -108,4 +108,4 @@ OpenXenon 的对抗性设计假设 AI 可能尝试绕过验证：
 ## → 参考
 
 - [Core Concepts](./core-concepts.md) — IAP 范式与三模块概念
-- 旧文档：[L0-L3 宪法](../_archive/architecture/l0-l3-constitution.md)（完整分层定义与依赖规则）
+- 旧文档：[L0-L3 宪法](./architecture/l0-l3-constitution.md)（完整分层定义与依赖规则）

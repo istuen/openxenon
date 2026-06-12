@@ -33,7 +33,10 @@
     "prepublishOnly": "bun run prepublish:check && bun run build",
     "prepublish:check": "bun run typecheck && bun run lint && bun test",
     "version:check": "bun run scripts/version-check.ts",
-    "version:sync": "bun run scripts/version-sync.ts"
+    "version:sync": "bun run scripts/version-sync.ts",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "dependencies": {
     "citty": "^0.1.6",
@@ -52,7 +55,8 @@
     "langium": "^4.2.4",
     "langium-cli": "^4.2.1",
     "lefthook": "^2.1.8",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitepress": "^1.6.4"
   },
   "engines": {
     "node": ">=18"

@@ -196,4 +196,4 @@ Proof 轴的执行依赖 Runtime 三模块的严格分工：
 - [Intent](./intent.md) — Probe 标准来自 Blueprint 的 observe 字段
 - [Align](./align.md) — Task + Part 中的 Probe 内联方式
 - [Quickstart](./quickstart.md) — Proof-First 模式完整演示
-- 旧文档：[Probe 类型完整参考](./_archive/reference/probe-types.md)（旧 SSOT）
+- 旧文档：[Probe 类型完整参考](./reference/probe-types.md)（旧 SSOT）

@@ -4,10 +4,10 @@
 
 | 目录 | 场景 | 模式 | 复杂度 |
 |---|---|---|---|
-| [onboarding/](./onboarding/) | 跨域编排：新会员注册 + 发放福利 | 多 domain 协作 | ★★☆ |
-| [develop-member/](./develop-member/) | 单域开发：实现 Member 注册 | 单 domain 多 part | ★☆☆ |
-| [fix-issue/](./fix-issue/) | 故障修复：诊断 → 定位 → 修复 → 验证 | 多 task 串行 | ★★☆ |
-| [explore-dsl/](./explore-dsl/) | 探索分析：摸清 DSL 模块结构 | 单 task 反馈 | ★☆☆ |
+| [onboarding/README.md](./onboarding/README.md) | 跨域编排：新会员注册 + 发放福利 | 多 domain 协作 | ★★☆ |
+| [develop-member/README.md](./develop-member/README.md) | 单域开发：实现 Member 注册 | 单 domain 多 part | ★☆☆ |
+| [fix-issue/README.md](./fix-issue/README.md) | 故障修复：诊断 → 定位 → 修复 → 验证 | 多 task 串行 | ★★☆ |
+| [explore-dsl/README.md](./explore-dsl/README.md) | 探索分析：摸清 DSL 模块结构 | 单 task 反馈 | ★☆☆ |
 
 ## 使用方式
 

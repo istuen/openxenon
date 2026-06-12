@@ -117,6 +117,6 @@ src/builtin/
 
 ## → 参考
 
-- 旧文档：[Probe 开发指南](../_archive/guides/probe-development.md)（旧 SSOT）
-- 旧文档：[OXN DSL 参考](../_archive/reference/oxn-dsl.md)（旧 SSOT）
+- 旧文档：[Probe 开发指南](./guides/probe-development.md)（旧 SSOT）
+- 旧文档：[OXN DSL 参考](./reference/oxn-dsl.md)（旧 SSOT）
 - [Architecture](./architecture.md) — L0-L3 分层中扩展点的物理归属
