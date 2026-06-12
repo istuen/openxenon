@@ -1,0 +1,62 @@
+name: Runtime Compatibility
+
+on:
+  push:
+    branches: [main, feat/**]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 评审答复 Q3 拍板：3 组合（不测 Bun + 特定 Node 版本的交叉）
+        include:
+          - runtime: bun
+            node-version: '20'
+            verify: bun-test
+          - runtime: node
+            node-version: '20'   # Node 20 LTS（最广泛用户群）
+            verify: cli-e2e
+          - runtime: node
+            node-version: '22'   # Node 22 LTS（最新 LTS）
+            verify: cli-e2e
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - run: bun install --frozen-lockfile
+
+      # Build (统一用 --target=node，让 Node 矩阵能直接跑)
+      # 阻断 #1 修复：build:dist 必须改 --target=node，否则 dist/cli.js 在 Node 下 ReferenceError
+      - name: Build dist (Node target)
+        run: bun run langium:generate && bun run build:dist
+
+      # Bun 矩阵：跑 bun test（含 1091 既有 + 23 适配层 + 5 e2e = 1119+ 测）
+      - name: Bun test suite
+        if: matrix.verify == 'bun-test'
+        run: bun test
+
+      # Node 矩阵：跑端到端 CLI（**真的验证 OpenXenon 代码在 Node 下能跑**）
+      # 阻断 #3 修复：不是 npx bun test 跑 Bun test runner，而是 node dist/cli.js 端到端
+      - name: Node e2e CLI verification
+        if: matrix.verify == 'cli-e2e'
+        run: |
+          node dist/cli.js --version
+          node dist/cli.js init --help
+          cd /tmp && mkdir -p oxn-node-e2e && cd oxn-node-e2e
+          node /home/runner/work/openxenon/openxenon/dist/cli.js init
+          node /home/runner/work/openxenon/openxenon/dist/cli.js proof create e2e-test
+          node /home/runner/work/openxenon/openxenon/dist/cli.js proof probe add e2e-test shell-exec --input-json '{"command":"echo hello from node"}'
+          node /home/runner/work/openxenon/openxenon/dist/cli.js proof run e2e-test
+          node /home/runner/work/openxenon/openxenon/dist/cli.js proof show e2e-test

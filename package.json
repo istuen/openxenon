@@ -1,6 +1,6 @@
 {
   "name": "openxenon",
-  "version": "0.1.0",
+  "version": "0.1.6",
   "description": "OpenXenon — 工程师与 AI 协作工作台（OXN Engine 实施 L0-L3 四层架构与 IAP 范式，OXL = OpenXenon Language）",
   "author": "OpenXenon Team",
   "license": "MIT",
@@ -8,19 +8,18 @@
   "main": "./dist/cli.js",
   "types": "./dist/types/index.d.ts",
   "bin": {
-    "oxn": "./dist/oxn"
+    "oxn": "./dist/cli.js"
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "dev": "bun run src/cli/index.ts",
-    "build": "bun run langium:generate && bun build ./src/cli/index.ts --compile --outfile dist/oxn",
     "langium:generate": "langium generate",
-    "build:all": "bun run build:linux && bun run build:macos && bun run build:windows",
-    "build:linux": "bun build ./src/cli/index.ts --compile --target=bun-linux-x64 --outfile dist/oxn-linux",
-    "build:macos": "bun build ./src/cli/index.ts --compile --target=bun-darwin-x64 --outfile dist/oxn-macos",
-    "build:windows": "bun build ./src/cli/index.ts --compile --target=bun-windows-x64 --outfile dist/oxn.exe",
+    "build:dist": "bun build ./src/cli/index.ts --target=node --outdir dist --entry-naming cli.js",
+    "build:types": "tsc --emitDeclarationOnly --outDir dist/types",
+    "build:clean": "rm -rf dist",
+    "build": "bun run build:clean && bun run langium:generate && bun run build:dist && bun run build:types",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "lint": "eslint src/",
@@ -31,7 +30,8 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist node_modules",
     "prepare": "lefthook install",
-    "prepublishOnly": "bun run build",
+    "prepublishOnly": "bun run prepublish:check && bun run build",
+    "prepublish:check": "bun run typecheck && bun run lint && bun test",
     "version:check": "bun run scripts/version-check.ts",
     "version:sync": "bun run scripts/version-sync.ts"
   },
@@ -39,6 +39,7 @@
     "citty": "^0.1.6",
     "glob": "^13.0.6",
     "i18next": "^26.2.0",
+    "which": "^2.0.2",
     "yaml": "^2.8.3",
     "zod": "^4.3.6"
   },
