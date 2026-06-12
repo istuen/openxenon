@@ -1,13 +1,15 @@
 // =============================================================================
-// deps-resolved handler (v1.1 P1 probe)
+// deps-resolved handler (v0.1.6 — 走 runtime 适配层)
 //
-// 读 package.json + 验证所有依赖都被 lockfile 解析。
+// 设计依据：.openxenon/forges/2026-06-11-runtime-adapter-design.v0.3.md §9 清单 #15
+//
+// v0.1.6: 走 openFile().text() 替代直接 readFileSync（适配层抽象）
 // 纯 JS，无 spawn。复 ProgramContext.Package term。
 // =============================================================================
 
-import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import type { ProbeContextBase } from '../../kernel/index'
+import { openFile } from '../runtime/index'
 
 export interface ProbeContext extends ProbeContextBase {}
 
@@ -45,12 +47,13 @@ export async function executeDepsResolved(
   context: ProbeContext,
 ): Promise<DepsResolvedResult> {
   const pkgPath = params.packageJson ?? join(context.projectRoot, 'package.json')
-  const lockfilePath = params.lockfile ?? detectLockfile(context.projectRoot)
+  const lockfilePath = params.lockfile ?? (await detectLockfile(context.projectRoot))
 
-  // 1. 读 package.json
+  // 1. 读 package.json — v0.1.6 走 openFile().text()
   let pkg: PackageJson
   try {
-    const content = readFileSync(pkgPath, 'utf-8')
+    const pkgFile = await openFile(pkgPath)
+    const content = await pkgFile.text()
     pkg = JSON.parse(content) as PackageJson
   } catch (err) {
     return {
@@ -70,16 +73,19 @@ export async function executeDepsResolved(
 
   // 3. 读 lockfile（如果存在）解析 resolved 依赖
   let resolved: Record<string, string> = {}
-  if (lockfilePath && existsSync(lockfilePath)) {
-    try {
-      const lockContent = readFileSync(lockfilePath, 'utf-8')
-      resolved = parseLockfile(lockfilePath, lockContent)
-    } catch (err) {
-      return {
-        missing: [],
-        declared,
-        error: `Failed to read ${lockfilePath}: ${(err as Error).message}`,
-        lockfilePath,
+  if (lockfilePath) {
+    const lockFile = await openFile(lockfilePath)
+    if (await lockFile.exists()) {
+      try {
+        const lockContent = await lockFile.text()
+        resolved = parseLockfile(lockfilePath, lockContent)
+      } catch (err) {
+        return {
+          missing: [],
+          declared,
+          error: `Failed to read ${lockfilePath}: ${(err as Error).message}`,
+          lockfilePath,
+        }
       }
     }
   }
@@ -96,7 +102,7 @@ export async function executeDepsResolved(
 }
 
 /** 自动检测 lockfile（优先级：bun.lock > bun.lockb > package-lock.json > pnpm-lock.yaml） */
-function detectLockfile(projectRoot: string): string | undefined {
+async function detectLockfile(projectRoot: string): Promise<string | undefined> {
   const candidates = [
     join(projectRoot, 'bun.lock'),
     join(projectRoot, 'bun.lockb'),
@@ -105,7 +111,8 @@ function detectLockfile(projectRoot: string): string | undefined {
     join(projectRoot, 'yarn.lock'),
   ]
   for (const p of candidates) {
-    if (existsSync(p)) return p
+    const f = await openFile(p)
+    if (await f.exists()) return p
   }
   return undefined
 }
