@@ -6,7 +6,6 @@
   "license": "MIT",
   "type": "module",
   "main": "./dist/cli.js",
-  "types": "./dist/types/index.d.ts",
   "bin": {
     "oxn": "./dist/cli.js"
   },
@@ -17,9 +16,8 @@
     "dev": "bun run src/cli/index.ts",
     "langium:generate": "langium generate",
     "build:dist": "bun build ./src/cli/index.ts --target=node --outdir dist --entry-naming cli.js --banner='#!/usr/bin/env node'",
-    "build:types": "tsc --emitDeclarationOnly --outDir dist/types",
     "build:clean": "rm -rf dist",
-    "build": "bun run build:clean && bun run langium:generate && bun run build:dist && bun run build:types",
+    "build": "bun run build:clean && bun run langium:generate && bun run build:dist",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "lint": "eslint src/",
