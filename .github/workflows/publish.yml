@@ -59,12 +59,13 @@ jobs:
       # 这里只 build + publish + smoke, 不重复跑全套 CI 验证.
       # 注: 不用 --ignore-scripts 时, npm publish 会自动跑 'bun run prepublish:check && bun run build',
       # 后者在 Linux CI 上可能因 4 个环境相关测试 flake 而 fail, 实际产品代码无问题.
-      # 凭据注入: 显式写 ~/.npmrc + chmod 600, 因为 npm 11 优先读 .npmrc, 不读 env 变量.
+      # 凭据注入: 用 project-level .npmrc (token 不入库, 只在 runner 上临时写).
       - name: Publish @istuen/openxenon to npm
         run: |
-          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
-          chmod 600 ~/.npmrc
-          npm publish --access public --ignore-scripts
+          mkdir -p .npmrc-tmp
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc-tmp/.npmrc
+          npm publish --access public --ignore-scripts --userconfig .npmrc-tmp/.npmrc
+          rm -rf .npmrc-tmp
 
       # 验证发布成功
       - name: Verify published version
