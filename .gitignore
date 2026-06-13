@@ -72,7 +72,6 @@ Thumbs.db
 *.swo
 *~
 
-.changes/
 openspec/
 
 # Forge 设计笔记（v0.1.0 发布后从 git 移除：内部设计文档不对外）
