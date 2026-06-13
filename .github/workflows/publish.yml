@@ -60,9 +60,11 @@ jobs:
       # 注: 不用 --ignore-scripts 时, npm publish 会自动跑 'bun run prepublish:check && bun run build',
       # 后者在 Linux CI 上可能因 4 个环境相关测试 flake (lint-check 真 e2e, OXL 真实 works, install-skill, shell-exec timeout)
       # 而 fail, 但实际产品代码无问题.
+      # NPM_CONFIG_TOKEN: 显式设环境变量, npm 11+ 不再读 NODE_AUTH_TOKEN (旧 .npmrc 兼容).
       - name: Publish @istuen/openxenon to npm
         run: npm publish --access public --ignore-scripts
         env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       # 验证发布成功
