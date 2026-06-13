@@ -1,6 +1,6 @@
 {
   "name": "@istuen/openxenon",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "OpenXenon — 工程师与 AI 协作工作台（OXN Engine 实施 L0-L3 四层架构与 IAP 范式，OXL = OpenXenon Language）",
   "author": "istuen",
   "license": "MIT",
@@ -16,7 +16,7 @@
   "scripts": {
     "dev": "bun run src/cli/index.ts",
     "langium:generate": "langium generate",
-    "build:dist": "bun build ./src/cli/index.ts --target=node --outdir dist --entry-naming cli.js",
+    "build:dist": "bun build ./src/cli/index.ts --target=node --outdir dist --entry-naming cli.js --banner='#!/usr/bin/env node'",
     "build:types": "tsc --emitDeclarationOnly --outDir dist/types",
     "build:clean": "rm -rf dist",
     "build": "bun run build:clean && bun run langium:generate && bun run build:dist && bun run build:types",
