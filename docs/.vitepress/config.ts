@@ -62,7 +62,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: '首页', link: '/index.html' },
-          { text: '文档', link: '/quickstart.html' },
+          { text: '快速开始', link: '/zh-cn/quickstart.html' },
           { text: 'AI 入口', link: '/zh-cn/llm-prompt.html' },
         ],
         sidebar: {
@@ -71,12 +71,12 @@ export default defineConfig({
               text: '开始',
               items: [
                 { text: '介绍', link: '/index.html' },
-                { text: '快速开始', link: '/quickstart.html' },
+                { text: '快速开始', link: '/zh-cn/quickstart.html' },
               ],
             },
             {
               text: '范式与核心概念',
-              items: [{ text: '核心概念', link: '/core-concepts.html' }],
+              items: [{ text: '核心概念', link: '/zh-cn/core-concepts.html' }],
             },
             {
               text: 'IAP 三轴',
