@@ -44,28 +44,29 @@ npx -y @istuen/openxenon --version
 > **入口即核心**：OpenXenon 的第一次体验是 `oxn proof`，不要求先学 Domain/Blueprint。
 > 这本质是 IAP 范式中 **P 轴（Proof 轴）的独立运作模式**——工程师跳过 Intent/Align 资产化，直接使用 Probe 声明验收标准，由 OXN 产出 `frozen.json`。
 
-### 克隆与构建（开发者）
+### 安装（用户路径）
 
 ```bash
-git clone https://github.com/istuen/openxenon.git && cd openxenon
-bun install --frozen-lockfile && bun run build
-# 产物：dist/cli.js（单文件 Node bundle，~2.7MB）
+# 任选其一
+npm install -g @istuen/openxenon
+pnpm install -g @istuen/openxenon
+bun install -g @istuen/openxenon
+
+# 命令名: oxn
+oxn --version
 ```
+
+> 仓库源码是 dist/cli.js 的**开发基底**，不是用户安装路径。普通用户请走上面的 `npm install -g` 路径。
 
 ### 初始化工作台
 
 ```bash
-# 源码构建版 (./dist/oxn)
-./dist/oxn init
-
-# npm 安装版 (oxn 在 PATH 中)
 oxn init
 
-# 支持 -f 强制初始化
 # 支持指定 AI 助手，自动生成对应 Skill 配置：
 oxn init --ai opencode   # 生成 OpenCode Skill
-oxn init --ai cursor    # 生成 Cursor Skill
-oxn init --ai codex     # 生成 Codex Skill
+oxn init --ai cursor     # 生成 Cursor Skill
+oxn init --ai codex      # 生成 Codex Skill
 ```
 
 ### 第一次证明
@@ -73,9 +74,9 @@ oxn init --ai codex     # 生成 Codex Skill
 **方式 A：CLI 直接执行**
 
 ```bash
-./dist/oxn proof create check-deploy
-./dist/oxn proof probe add fs-exists --target ./dist/index.js
-./dist/oxn proof run check-deploy
+oxn proof create check-deploy
+oxn proof probe add fs-exists --target ./dist/index.js
+oxn proof run check-deploy
 # → Verdict: FAIL / PASS
 # → Proof saved: .openxenon/proofs/check-deploy/frozen.json
 ```
@@ -104,19 +105,19 @@ AI 通过 Skill 调用 CLI，结果回流到 `frozen.json`。
 
 ```bash
 # 1. 定义业务 Domain
-./dist/oxn domain create MemberContext
+oxn domain create MemberContext
 # 编辑 .openxenon/domains/member-context.oxn
-./dist/oxn domain validate MemberContext
+oxn domain validate MemberContext
 
 # 2. 定义技术 Blueprint
-./dist/oxn blueprint create onboarding --domain MemberContext
+oxn blueprint create onboarding --domain MemberContext
 # 编辑 .openxenon/blueprints/onboarding.oxn
 
 # 3. 驱动 AI 作业
-./dist/oxn work create --name onboarding
-./dist/oxn work add-task --work-name onboarding --task-name register \
+oxn work create --name onboarding
+oxn work add-task --work-name onboarding --task-name register \
   --blueprint onboarding --domain MemberContext
-./dist/oxn work context --work onboarding --task register --json
+oxn work context --work onboarding --task register --json
 # AI 写代码 → Probe 验证 → frozen.json
 ```
 
