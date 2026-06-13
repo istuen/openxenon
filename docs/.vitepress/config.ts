@@ -54,7 +54,7 @@ export default defineConfig({
   // - zh-CN: 中文站，目录 docs/zh-cn/，URL prefix /zh-cn/
   // - en:    英文站，目录 docs/en/，URL prefix /en/
   locales: {
-    'zh-CN': {
+    'zh-cn': {
       label: '简体中文',
       lang: 'zh-CN',
       link: '/zh-cn/',
