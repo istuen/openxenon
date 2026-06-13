@@ -1,4 +1,8 @@
-# Align
+---
+title: 对齐轴
+---
+
+# 对齐轴
 
 > Align 轴是 AI 的主权领域。AI 在 Intent 划定的边界内编排 Work / Task / Part，工程师审核，OXN 约束。
 
@@ -103,7 +107,7 @@ create → add-task → validate → lock → run → submit → status
 
 ```bash
 oxn work create <work-name> --blueprint <blueprint-name>
-# → Created .openxenon/works/<work-name>/work.oxn
+# 对齐轴
 ```
 
 ### 步骤 2：创建任务
@@ -114,27 +118,27 @@ oxn work add-task \
   --task-name <task-name> \
   --blueprint <blueprint-name> \
   --domain <DomainName>
-# → Created .openxenon/works/<w>/tasks/<t>/task.oxn
+# 对齐轴
 ```
 
 ### 步骤 3：校验（写 .work 门禁卡）
 
 ```bash
 oxn work validate <work-name> --json
-# 校验 work.oxn + 写 .work 静态门禁卡（domain/blueprint fileHash）
-# planLock 此时为 null（未锁）
+# 对齐轴
+# 对齐轴
 ```
 
 ### 步骤 4：锁定（计算 4 组件 hash）
 
 ```bash
 oxn work lock <work-name> --json
-# 计算 SHA-256：
-#   workOxnHash      = SHA-256(work.oxn)
-#   workDomainsHash  = SHA-256(concatenated domain.oxn files)
-#   blueprintsHash   = SHA-256(concatenated blueprint.oxn files)
-#   tasksHash        = SHA-256(concatenated task.oxn files)
-# 写入 .work.planLock + allHash
+# 对齐轴
+# 对齐轴
+# 对齐轴
+# 对齐轴
+# 对齐轴
+# 对齐轴
 ```
 
 锁后任何 `.oxn` 资产漂移 = `IAP_ALIGN_LOCK_HASH_MISMATCH`。解锁用 `oxn work unlock <w>`。
@@ -143,14 +147,14 @@ oxn work lock <work-name> --json
 
 ```bash
 oxn work run --work-file work.oxn --json
-# 启动 Work 状态机；要求 lock 已完成
+# 对齐轴
 ```
 
 ### 步骤 6：推进 Task
 
 ```bash
 oxn work submit --work <w> --task <t> --json
-# 推进 task 内的 part（每次前进一个 part）
+# 对齐轴
 ```
 
 ### 步骤 7：查询状态

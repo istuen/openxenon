@@ -1,4 +1,8 @@
-# Intent
+---
+title: 意图轴
+---
+
+# 意图轴
 
 > Intent 轴是工程师的主权领域。Domain 锁定业务词典，Blueprint 锁定技术拓扑。
 > 没有 Intent，AI 不行动，OXN 不证明。
@@ -188,9 +192,9 @@ OXN 内置了 `@oxn/domains/ProgramContext`，涵盖通用编程概念（SourceF
 
 ```bash
 oxn domain create MemberContext
-# 编辑 .openxenon/domains/member-context.oxn
+# 意图轴
 oxn domain validate MemberContext
-# → Domain MemberContext ✓ valid
+# 意图轴
 
 oxn domain list
 ```
@@ -199,9 +203,9 @@ oxn domain list
 
 ```bash
 oxn blueprint create dev-workflow --slots build,test,verify
-# 编辑 .openxenon/blueprints/dev-workflow.oxn
+# 意图轴
 oxn blueprint validate dev-workflow
-# → Blueprint dev-workflow ✓ valid
+# 意图轴
 
 oxn blueprint list
 ```

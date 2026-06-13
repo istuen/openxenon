@@ -17,10 +17,7 @@ declare module 'which' {
     mode?: 'shell' | 'exec'
   }
 
-  function which(
-    cmd: string,
-    options?: WhichOptions,
-  ): Promise<string | null>
+  function which(cmd: string, options?: WhichOptions): Promise<string | null>
 
   export default which
 }

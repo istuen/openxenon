@@ -22,11 +22,28 @@ declare global {
         readonly exit: (code?: number) => never
         readonly build: {
           os: 'darwin' | 'linux' | 'windows' | 'freebsd' | 'openbsd' | 'netbsd' | 'solaris' | 'aix'
-          arch: 'x86_64' | 'aarch64' | 'arm' | 'riscv64' | 's390x' | 'loong64' | 'ia32' | 'mips64el' | 'ppc64' | 'ppc64le'
+          arch:
+            | 'x86_64'
+            | 'aarch64'
+            | 'arm'
+            | 'riscv64'
+            | 's390x'
+            | 'loong64'
+            | 'ia32'
+            | 'mips64el'
+            | 'ppc64'
+            | 'ppc64le'
         }
         command: (
           cmd: string,
-          options?: { args?: readonly string[]; cwd?: string; env?: Record<string, string>; stdin?: 'inherit' | 'piped' | 'null'; stdout?: 'inherit' | 'piped' | 'null'; stderr?: 'inherit' | 'piped' | 'null' },
+          options?: {
+            args?: readonly string[]
+            cwd?: string
+            env?: Record<string, string>
+            stdin?: 'inherit' | 'piped' | 'null'
+            stdout?: 'inherit' | 'piped' | 'null'
+            stderr?: 'inherit' | 'piped' | 'null'
+          },
         ) => Promise<{ code: number; success: boolean; stdout: Uint8Array; stderr: Uint8Array; signal: number | null }>
         readTextFile: (path: string) => Promise<string>
         readFile: (path: string) => Promise<Uint8Array>

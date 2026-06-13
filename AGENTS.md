@@ -97,7 +97,7 @@ bun test                    # bun test，约 50 秒，414 个测试
 
 - 运行时数据：`.openxenon/{works,tasks,proofs,issues,error}/`（目录内已 gitignore，运行时产物）。
 - IAP 资产：`.openxenon/{domains,blueprints}/`（已 tracked，业务声明 + AI 创作模板）。
-- Forge 设计笔记：`.openxenon/forges/`（已 tracked，跨 PR 工作的设计文档与状态分析）。
+- Forge 设计笔记：`.openxenon/forges/`（已 tracked，跨 PR 工作的设计文档与状态分析）。**forges/ 计划于 v0.1.x 升级为 `.openxenon/pools/` Intent Pool**——设计稿见 `.openxenon/forges/2026-06-13-intent-pool-design.md`（v3 current）。升级后 forges/ 退役，pools/ 接管；5 类池（research/design/issue/audit/journal）分上下游两组生命周期，journal 由 `oxn work finalize` 两阶段原子写入。heading 模板自验证：`bun scripts/check-heading-skeleton.ts`。
 - AI 可见的权威文档：`docs/introduction.md`（入口）、`docs/core-concepts.md`（IAP 范式）、`docs/intent.md`（Intent 轴）、`docs/align.md`（Align 轴）、`docs/proof.md`（Proof 轴）、`docs/cli.md`（CLI 参考）、`docs/architecture.md`（架构）。
 - Probes 拆分：`src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。

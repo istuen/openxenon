@@ -1,4 +1,8 @@
-# Architecture
+---
+title: 架构
+---
+
+# 架构
 
 > OXN Engine = DSL + Runtime + CLI。Runtime 由 Kernel / Infra / Daemon 三模块组成，按 L0-L3 四层架构分层。
 

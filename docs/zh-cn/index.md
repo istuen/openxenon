@@ -1,4 +1,8 @@
-# Introduction
+---
+title: 首页
+---
+
+# 首页
 
 > OpenXenon 是工程师与 AI 协作工作台。工程师定义意图，AI 执行对齐，OXN 证明结果。
 

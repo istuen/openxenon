@@ -1,4 +1,8 @@
-# DDD in Practice
+---
+title: DDD 实战
+---
+
+# DDD 实战
 
 > 何时从 Program Domain 升级到 Business Domain。DDD 限界上下文在 OpenXenon 中的可执行化实践。
 
@@ -103,7 +107,7 @@ domain "MemberContext" {
 
 ```bash
 oxn domain validate MemberContext
-# → Domain MemberContext ✓ valid
+# DDD 实战
 ```
 
 验证通过后，这个 Domain 就可以被任何 Work 的 task 引用。
@@ -140,7 +144,7 @@ work "develop-member" {
 v0.1 Domain 的 invariant 是文档化的，但在 CI 中可以靠 Probe 间接校验：
 
 ```bash
-# CI pipeline 中
+# DDD 实战
 oxn domain validate MemberContext
 oxn proof run check-domain-compliance
 ```

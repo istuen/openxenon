@@ -1,4 +1,8 @@
-# Proof
+---
+title: 证明轴
+---
+
+# 证明轴
 
 > Proof 轴是 OXN 的主权领域。Probe 声明验收标准，OXN 产出不可篡改的 frozen.json，Verdict 决定 Pass 还是 Fail。
 
@@ -147,23 +151,23 @@ OXN 执行 Probe 后产出 frozen.json——不可篡改的证明记录：
 ### Proof-First 模式（快速验证）
 
 ```bash
-# 创建 Proof 空间
+# 证明轴
 oxn proof create check-deploy
 
-# 添加 Probe
+# 证明轴
 oxn proof probe add fs-exists --target ./dist/index.js
 oxn proof probe add file-exports --target ./dist/index.js --export handler
 oxn proof probe add http-responds --url http://localhost:3000/health --status 200
 
-# 运行证明
+# 证明轴
 oxn proof run check-deploy
-# → ✅ fs-exists: found
-# → ❌ file-exports: found 'default', expected 'handler'
-# → Verdict: FAIL (1/2)
+# 证明轴
+# 证明轴
+# 证明轴
 
-# 修复后重新证明
+# 证明轴
 oxn proof run check-deploy
-# → Verdict: PASS (2/2)
+# 证明轴
 ```
 
 ### 管理 Proof

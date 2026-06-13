@@ -1,4 +1,8 @@
-# IAP Cheatsheet
+---
+title: IAP 速记卡
+---
+
+# IAP 速记卡
 
 > 三大法则速记卡。一页可打印。
 

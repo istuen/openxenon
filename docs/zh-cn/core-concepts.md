@@ -1,4 +1,8 @@
-# Core Concepts
+---
+title: 核心概念
+---
+
+# 核心概念
 
 > IAP 三轴一图 + 三大主体权力分立 + IAP 第一法则。
 > 本章是理解 OpenXenon 所有后续内容的基础。

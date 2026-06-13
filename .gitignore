@@ -79,6 +79,9 @@ openspec/
 # 已通过 git rm --cached 从历史中移除（保留本地文件，停止追踪）
 .openxenon/forges/
 
+# 旧 docs 备份（M0 阶段安全网，手册完成后清理；不入仓）
+docs-bak-2026-06/
+
 # ─────────────────────────────────────────────────────────────
 # 6. 业务运行时数据
 #    实际规则已下沉到 .openxenon/.gitignore（domain/works/proof 等）

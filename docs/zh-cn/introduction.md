@@ -1,4 +1,8 @@
-# Introduction
+---
+title: 介绍
+---
+
+# 介绍
 
 > OpenXenon 是工程师与 AI 协作工作台。工程师定义意图，AI 执行对齐，OXN 证明结果。
 
@@ -50,9 +54,11 @@ OXN Engine 是 Proof 轴的执行主体，由三部分组成：
 
 | 如果你是... | 请读 | 用时 |
 |---|---|---|
-| **评估者 / 决策者** | Introduction → Core Concepts | 15 min |
-| **业务开发者** | Quickstart → Recipes → DDD in Practice | 1–2 h |
-| **AI 集成方** | llm-prompt → Align → CLI | 30 min |
-| **贡献者** | Architecture → Extending | 2–3 h |
+| **评估者 / 决策者** | 介绍 → 核心概念 | 15 min |
+| **业务开发者** | 快速开始 → 实战案例 → DDD 实战 | 1–2 h |
+| **AI 集成方** | AI 协作者入口 → 对齐轴 → CLI 参考 | 30 min |
+| **贡献者** | 架构 → 扩展 | 2–3 h |
 
 > 🟦 **如果你正在读这份文档的是 AI 模型**：请直接读 [llm-prompt.md](./llm-prompt.md)。
+
+> 💡 **使用提示**：本站点 URL 包含 `.html` 后缀（GitHub Pages 项目页限制）。建议通过左侧导航或顶栏菜单浏览，避免手敲 URL。

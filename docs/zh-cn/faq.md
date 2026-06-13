@@ -1,4 +1,8 @@
-# FAQ
+---
+title: 常见问题
+---
+
+# 常见问题
 
 ## 概念篇
 
@@ -101,7 +105,7 @@ Work 已运行。先用 `oxn work status` 看当前状态。
 ### 如何集成 CI？
 
 ```bash
-# CI 脚本中
+# 常见问题
 oxn domain validate MemberContext
 oxn blueprint validate dev-workflow
 oxn work validate onboarding --json
@@ -120,7 +124,7 @@ oxn proof run check-deploy
 
 ```bash
 oxn work migrate <work-name>
-# V0 文件备份到 .migrated-v0/，运行时状态迁到 .run/
+# 常见问题
 ```
 
 ### 废弃了哪些术语？

@@ -1,4 +1,8 @@
-# Extending
+---
+title: 扩展
+---
+
+# 扩展
 
 > 自定义 Probe、Part、DSL 扩展点。OpenXenon 的扩展体系分为三个层级。
 

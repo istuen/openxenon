@@ -1,4 +1,8 @@
-# CLI
+---
+title: CLI 参考
+---
+
+# CLI 参考
 
 > `oxn` 是工程师与 AI 操作 OpenXenon 的唯一入口。所有命令以 `oxn` 为前缀。
 
@@ -180,37 +184,37 @@ oxn install-skill --skill oxn-cli --force   # 安装指定 Skill
 ## 典型工作流
 
 ```bash
-# 1. 初始化
+# CLI 参考
 oxn init
 
-# 2. 定义业务上下文
+# CLI 参考
 oxn domain create MemberContext
-# 编辑 .openxenon/domains/member-context.oxn
+# CLI 参考
 oxn domain validate MemberContext
 
-# 3. 准备蓝图
+# CLI 参考
 oxn blueprint create dev-workflow --slots build,test
 oxn blueprint validate dev-workflow
 
-# 4. 创建 work
+# CLI 参考
 oxn work create onboarding --blueprint dev-workflow
 
-# 5. 创建 task
+# CLI 参考
 oxn work add-task --work onboarding --task-name register \
   --blueprint dev-workflow --domain MemberContext
 
-# 6. 校验 + 锁
+# CLI 参考
 oxn work validate onboarding --json
 oxn work lock onboarding --json
 
-# 7. 获取 AI 上下文
+# CLI 参考
 oxn work context --work onboarding --task register --json
 
-# 8. AI 执行 + 推进
+# CLI 参考
 oxn work run onboarding --json
 oxn work submit --work onboarding --task register --json
 
-# 9. 查看状态
+# CLI 参考
 oxn work status --work onboarding --json
 ```
 

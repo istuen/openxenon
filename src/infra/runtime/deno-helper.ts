@@ -24,7 +24,14 @@ interface DenoGlobal {
   }
   command: (
     cmd: string,
-    options?: { args?: readonly string[]; cwd?: string; env?: Record<string, string>; stdin?: 'inherit' | 'piped' | 'null'; stdout?: 'inherit' | 'piped' | 'null'; stderr?: 'inherit' | 'piped' | 'null' },
+    options?: {
+      args?: readonly string[]
+      cwd?: string
+      env?: Record<string, string>
+      stdin?: 'inherit' | 'piped' | 'null'
+      stdout?: 'inherit' | 'piped' | 'null'
+      stderr?: 'inherit' | 'piped' | 'null'
+    },
   ) => Promise<{ code: number; success: boolean; stdout: Uint8Array; stderr: Uint8Array; signal: number | null }>
   readTextFile: (path: string) => Promise<string>
   readFile: (path: string) => Promise<Uint8Array>

@@ -1,4 +1,8 @@
-# Recipes
+---
+title: 实战案例
+---
+
+# 实战案例
 
 > 5 个端到端实战案例：从单文件验证到跨域团队协作。每个 Recipe 可独立运行，完整源码在 `docs/examples/`。
 
@@ -19,25 +23,25 @@
 **场景**：验证 AI 生成的 `dist/index.js` 存在且可运行。不涉及 Domain / Blueprint。
 
 ```bash
-# 1. 初始化
+# 实战案例
 oxn init
 
-# 2. 创建 Proof
+# 实战案例
 oxn proof create check-build
 
-# 3. 添加验收标准
+# 实战案例
 oxn proof probe add fs-exists --target ./dist/index.js
 oxn proof probe add file-exports --target ./dist/index.js --export handler
 
-# 4. 让 AI 生成 dist/index.js
+# 实战案例
 
-# 5. 运行证明
+# 实战案例
 oxn proof run check-build
-# → ✅ fs-exists: found
-# → ✅ file-exports: found 'handler'
-# → Verdict: PASS (2/2)
+# 实战案例
+# 实战案例
+# 实战案例
 
-# 6. 查看证明
+# 实战案例
 oxn proof show check-build
 cat .openxenon/proofs/check-build/frozen.json
 ```
@@ -72,7 +76,7 @@ domain "MemberContext" {
 
 ```bash
 oxn domain validate MemberContext
-# → Domain MemberContext ✓ valid
+# 实战案例
 ```
 
 ### 步骤 2：定义 Blueprint
@@ -128,10 +132,10 @@ oxn work validate develop-member --json
 oxn work lock develop-member --json
 oxn work run develop-member --json
 
-# AI 执行 build part → 完成后
+# 实战案例
 oxn work submit --work develop-member --task register-member --json
 
-# 重复 submit 推进 test / verify
+# 实战案例
 oxn work status --work develop-member --json
 ```
 

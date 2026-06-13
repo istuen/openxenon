@@ -1,4 +1,8 @@
-# Quickstart
+---
+title: 快速开始
+---
+
+# 快速开始
 
 > 5 分钟跑通 Proof-First：装好 `oxn` → 创建 Proof → 添加 Probe → 运行验证 → 理解 frozen.json。
 > 不要求先学 Domain 或 Blueprint。
@@ -31,7 +35,7 @@ bun install --frozen-lockfile && bun run build
 ```bash
 ./dist/oxn init
 
-# 可选：指定 AI 助手，自动生成对应 Skill 配置
+# 快速开始
 ./dist/oxn init --ai opencode   # OpenCode
 ./dist/oxn init --ai cursor     # Cursor
 ./dist/oxn init --ai codex      # Codex
@@ -47,18 +51,18 @@ bun install --frozen-lockfile && bun run build
 ### 第三步：创建你的第一个 Proof
 
 ```bash
-# 创建一个名为 check-deploy 的 Proof 空间
+# 快速开始
 ./dist/oxn proof create check-deploy
-# → Created .openxenon/proofs/check-deploy/
+# 快速开始
 ```
 
 ### 第四步：添加 Probe（验收标准）
 
 ```bash
-# 检查文件是否存在
+# 快速开始
 ./dist/oxn proof probe add fs-exists --target ./dist/index.js
 
-# 检查 HTTP 端点是否响应
+# 快速开始
 ./dist/oxn proof probe add http-responds --url http://localhost:3000/health --status 200
 ```
 
@@ -123,10 +127,10 @@ frozen.json 是 OXN Engine 签发的检验报告。AI 和工程师都**只能读
 ## 更多 Proof 操作
 
 ```bash
-# 列出所有 Proof
+# 快速开始
 ./dist/oxn proof list
 
-# 查看指定 Proof 详情
+# 快速开始
 ./dist/oxn proof show check-deploy
 ```
 
