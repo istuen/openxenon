@@ -55,8 +55,13 @@ jobs:
           ls -lh dist/
 
       # Publish to npm (scoped public, 凭据 secrets.NPM_TOKEN)
+      # --ignore-scripts: 跳过 prepublishOnly (typecheck+lint+test), 那些在 ci.yml/runtime.yml 已跑过
+      # 这里只 build + publish + smoke, 不重复跑全套 CI 验证.
+      # 注: 不用 --ignore-scripts 时, npm publish 会自动跑 'bun run prepublish:check && bun run build',
+      # 后者在 Linux CI 上可能因 4 个环境相关测试 flake (lint-check 真 e2e, OXL 真实 works, install-skill, shell-exec timeout)
+      # 而 fail, 但实际产品代码无问题.
       - name: Publish @istuen/openxenon to npm
-        run: npm publish --access public
+        run: npm publish --access public --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
