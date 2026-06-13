@@ -64,7 +64,6 @@ Thumbs.db
 .idea/
 .kilocode/
 .agents/
-.opencode/
 .claude/
 *.swp
 *.swo
@@ -84,3 +83,19 @@ openspec/
 
 # ts-compiles probe 临时 tsconfig（运行时写盘，跑完即删）
 .tsconfig.oxn-*.json
+
+# ─────────────────────────────────────────────────────────────
+# 7. AI 工具个人配置 (.opencode/ .agents/ .claude/) — 个人配置不追踪
+#    但 .opencode/skills/oxn-*/SKILL.md 等是产品资产
+#    (CLI build 嵌入 + install-skill 复制), 需 un-ignore 具体文件
+#    注: git 2.53 行为 — 父目录被 ignore 后, un-ignore 子文件需先 un-ignore 父目录链
+# ─────────────────────────────────────────────────────────────
+.opencode/
+.agents/
+.claude/
+!.opencode/skills/
+!.opencode/skills/oxn-cli/SKILL.md
+!.opencode/skills/oxn-work/SKILL.md
+!.opencode/skills/oxn-work/.references.hash
+!.opencode/skills/oxn-work/references/blueprint-format.md
+!.opencode/skills/oxn-proof/SKILL.md
