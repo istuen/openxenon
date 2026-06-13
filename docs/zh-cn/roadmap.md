@@ -93,5 +93,5 @@ bun run version:sync
 
 ## → 参考
 
-- [Introduction](./introduction.md) — OpenXenon 的愿景与定位
+- [Introduction](../index.md) — OpenXenon 的愿景与定位
 - 旧文档：[IAP 信号系统](./horizon/iap-as-signal-system.md)（旧 SSOT）

@@ -5,7 +5,7 @@ title: AI 协作者入口
 # AI 协作者入口
 
 > ⚠️ **FOR AI AGENTS ONLY**
-> 人类读者请从根 [README.md](../README.md) 入口，或 docs/ 下的 [introduction.md](./introduction.md) 入口。
+> 人类读者请从根 [README.md](https://github.com/istuen/openxenon#readme) 入口，或 docs/ 下的 [index.md](../index.md) 入口。
 
 ## 你是谁
 

@@ -7,7 +7,10 @@ export default defineConfig({
   base: '/openxenon/',
   lastUpdated: true,
 
-  // v0.1.0 起步阶段：编译根目录的 docs/，扫描 docs/zh-cn/ 和 docs/en/
+  // 站点结构：
+  //   docs/index.md         → /openxenon/            （中文首页 = 介绍内容）
+  //   docs/zh-cn/foo.md     → /openxenon/zh-cn/foo.html  （中文其他 15 章）
+  //   docs/en/foo.md        → /openxenon/en/foo.html     （英文占位）
   // 旧 SSOT 子目录（core/architecture/reference/...）在 srcExclude 排除
   srcDir: '.',
   srcExclude: [
@@ -30,7 +33,6 @@ export default defineConfig({
   // v0.1.0 起步阶段：链接到旧 docs/{core,architecture,reference,guides,...} 的
   // 引用为有意为之（保留历史跳转）。
   ignoreDeadLinks: [
-    // 从 docs/zh-cn/*.md 出发的相对路径（./）
     /^\.\/architecture\//,
     /^\.\/reference\//,
     /^\.\/guides\//,
@@ -38,7 +40,6 @@ export default defineConfig({
     /^\.\/horizon\//,
     /^\.\/changelog\//,
     /^\.\/core\//,
-    // 从根 docs/*.md 出发的相对路径（../）
     /^\.\.\/architecture\//,
     /^\.\.\/reference\//,
     /^\.\.\/guides\//,
@@ -47,41 +48,35 @@ export default defineConfig({
     /^\.\.\/changelog\//,
     /^\.\.\/core\//,
     /^\.\.\/README/,
-    /^\.\/\.\.\/README/,
   ],
 
-  // 根路径 '/' 重定向到中文站首页
-  rewrites: {
-    '/': '/zh-cn/index.html',
-  },
-
   // VitePress i18n 配置：v0.1.0 启用 locales 块
-  // - zh-CN: 完整中文站点
-  // - en:    英文占位（v0.2+ 翻译后启用，内容相同目录结构）
+  // - root: 中文（docs/index.md + docs/zh-cn/）
+  // - en:   英文（docs/en/）
   locales: {
-    'zh-CN': {
+    root: {
       label: '简体中文',
       lang: 'zh-CN',
       title: 'OpenXenon · 工程师与 AI 协作工作台',
       description: '工程师定义意图，AI 执行对齐，OXN 证明结果',
       themeConfig: {
         nav: [
-          { text: '首页', link: '/zh-cn/index.html' },
-          { text: '文档', link: '/zh-cn/introduction.html' },
+          { text: '首页', link: '/index.html' },
+          { text: '文档', link: '/quickstart.html' },
           { text: 'AI 入口', link: '/zh-cn/llm-prompt.html' },
         ],
         sidebar: {
-          '/zh-cn/': [
+          '/': [
             {
               text: '开始',
               items: [
-                { text: '介绍', link: '/zh-cn/introduction.html' },
-                { text: '快速开始', link: '/zh-cn/quickstart.html' },
+                { text: '介绍', link: '/index.html' },
+                { text: '快速开始', link: '/quickstart.html' },
               ],
             },
             {
               text: '范式与核心概念',
-              items: [{ text: '核心概念', link: '/zh-cn/core-concepts.html' }],
+              items: [{ text: '核心概念', link: '/core-concepts.html' }],
             },
             {
               text: 'IAP 三轴',
@@ -130,7 +125,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Home', link: '/en/index.html' },
-          { text: 'Docs', link: '/en/introduction.html' },
+          { text: 'Docs', link: '/en/quickstart.html' },
           { text: 'AI Entry', link: '/en/llm-prompt.html' },
         ],
         sidebar: {
@@ -138,7 +133,7 @@ export default defineConfig({
             {
               text: 'Get Started',
               items: [
-                { text: 'Introduction', link: '/en/introduction.html' },
+                { text: 'Introduction', link: '/en/index.html' },
                 { text: 'Quickstart', link: '/en/quickstart.html' },
               ],
             },
