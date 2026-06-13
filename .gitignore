@@ -17,6 +17,9 @@ dist/
 *.d.ts.map
 *.js.map
 !.eslintrc.cjs
+# 例外: 源码内的 .d.ts 类型声明是 build 输入, 需追踪
+# (dist/ 产物已在 #2 ignore, bun run clean 不会误删)
+!src/**/*.d.ts
 
 # CLI 编译产物
 xn
