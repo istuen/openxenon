@@ -32,33 +32,33 @@ jobs:
       - name: Install dependencies (frozen lockfile)
         run: bun install --frozen-lockfile
 
-      # 1. Prepublish 检查 (typecheck + lint + test)
-      - name: Prepublish checks
-        run: bun run prepublish:check
-
-      # 2. Build (clean + langium + dist + types)
+      # Build (clean + langium + dist + types)
+      # 注: typecheck/lint/test 已在 ci.yml (push to main) 与 runtime.yml (push to main/feat/**)
+      # 跑过, dev 分支推 tag 时这些 CI 已 validate 完毕, 这里不再重复.
       - name: Build
         run: bun run build
 
-      # 3. 验证产物
+      # 验证产物
       - name: Verify dist/
         run: |
           test -f dist/cli.js || (echo "ERROR: dist/cli.js not found" && exit 1)
+          head -1 dist/cli.js | grep -q '^#!' || (echo "ERROR: dist/cli.js missing shebang" && exit 1)
           ls -lh dist/
 
-      # 4. Publish to npm (scoped public)
+      # Publish to npm (scoped public, 凭据 secrets.NPM_TOKEN)
       - name: Publish @istuen/openxenon to npm
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # 5. 验证发布成功
+      # 验证发布成功
       - name: Verify published version
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "Published version: $VERSION"
-          npm view @istuen/openxenon version
+          sleep 10  # npm registry 传播延迟
+          npm view @istuen/openxenon@$VERSION version
 
-      # 6. 端到端 smoke test (用 npx 跑刚发布的版本)
+      # 端到端 smoke test
       - name: Smoke test (npx --version)
-        run: npx -y @istuen/openxenon@latest --version
+        run: npx -y @istuen/openxenon@$VERSION --version
