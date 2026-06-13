@@ -1,0 +1,62 @@
+// Domain: DocContext
+//
+// 文档站点限界上下文（DDD Bounded Context）—— 沉淀 OpenXenon 对外产品手册
+// 站点的核心业务概念：站点、章节、locale、sidebar、VitePress、GitHub Pages。
+//
+// 工作流：
+//   1. AI 用 `oxn domain validate DocContext` 校验内容合法性
+//   2. AI 写文档 / 改站点结构时，必须用 term，禁止用 ban
+//   3. AI 写完一版后用 invariant 校验自己是否破坏了硬规则
+//
+// Reference: work.oxn 通过
+//   domain "DocContext" ref "@prj/domains/DocContext";
+// 引用本域。
+
+domain "DocContext" {
+  description = "OpenXenon 产品文档站点（VitePress + GitHub Pages）限界上下文：沉淀站点/章节/locale/sidebar 等核心概念，约束术语与不变式"
+
+  // ───────────────────────────────────────────────────────────────────
+  // 核心概念词表
+  // ───────────────────────────────────────────────────────────────────
+  term {
+    "VitePress":   "OpenXenon 文档站点的静态站点生成器（Vue + Vite 生态，1.6.4）"
+    "Locale":      "VitePress 的国际化概念：每个 locale 是一套独立语言/站点的 URL prefix + 文案 + nav + sidebar"
+    "Sidebar":     "VitePress 左侧导航，按 6 桶分组（开始/范式/IAP 三轴/实战/参考/附录）"
+    "IAP":         "OpenXenon 核心范式 Intent-Align-Proof 的英文 SSOT 术语，IAP 三轴不翻译（与 glossary.md 锁定一致）"
+    "Frozenjson":  "Proof 轴产出的不可篡改证明文件，存放于 .openxenon/proofs/ 或 .openxenon/works/*/tasks/*/"
+    "Workflow":    "OpenXenon 的 v1.1 8 阶段流程：init→migrate→create→add-task→validate→lock→run→submit"
+    "PlanLock":    "v1.1 新增的 .work 静态门禁卡，含 4 组件 SHA-256 hash（workOxn/workDomains/blueprints/tasks）"
+    "Builtin":     "OpenXenon 内置资产（@oxn scope），如 catalog probes、builtin blueprints"
+    "Align":       "IAP 第二轴：AI 在 Blueprint slot 边界内编排 Work/Task/Part（vs Intent 与 Proof）"
+  }
+
+  // ───────────────────────────────────────────────────────────────────
+  // 禁用词表
+  //   - 防止与 IAP/Intent/Align/Proof 等 SSOT 术语混淆
+  //   - 防止与 CodeQualityContext 的废弃术语混用
+  // ───────────────────────────────────────────────────────────────────
+  ban { "Arsenal", "Core Engine", "glo", "Jekyll", "MkDocs", "Docusaurus", "refs", "handle", "ref-logic" }
+
+  // ───────────────────────────────────────────────────────────────────
+  // 不变式（业务硬规则）
+  // 异主题分组：站点结构、URL 规范、CI/CD 边界、SSOT 锁
+  // ───────────────────────────────────────────────────────────────────
+  // ── 主题 A：站点结构（VitePress 原生 i18n）──
+  invariant { "站点根路径 / 必须可访问；不在根路径放 source markdown" }
+  invariant { "i18n 必须用对称 prefix 目录（zh-cn/ 与 en/），禁用 root + prefix 混合结构" }
+  invariant { "Sidebar 6 桶固定：开始 / 范式与核心概念 / IAP 三轴 / 实战 / 参考 / 附录" }
+  invariant { "Sidebar 章节文案用中文显示，slug 保持英文（IAP 术语锁定）" }
+
+  // ── 主题 B：URL 规范（GitHub Pages 项目页）──
+  invariant { "URL 必须含 .html 后缀（GitHub Pages 项目页不支持 cleanUrls）" }
+  invariant { "对外发布只用 dev 分支推送触发 Pages（main 留作 production 槽位）" }
+
+  // ── 主题 C：CI/CD 边界（OXN 不替人 commit）──
+  invariant { "Pages 部署工作流 docs.yml 的 deploy 守卫仅允许 dev 分支 push 或 workflow_dispatch" }
+  invariant { "feature/* 分支 push 触发 build 验证但不部署" }
+
+  // ── 主题 D：SSOT 与归档 ──
+  invariant { "对外 SSOT 是 docs/zh-cn/*.md（v0.1.0 中文为首发）" }
+  invariant { "旧 docs/{core,architecture,reference,guides,design,horizon,changelog} 备份到 _archive/，不再作对外引用源" }
+  invariant { "工程设计沉淀 .openxenon/forges/ v0.1.0 后从 git 移除（不对外）" }
+}

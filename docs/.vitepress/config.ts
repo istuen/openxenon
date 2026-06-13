@@ -7,10 +7,10 @@ export default defineConfig({
   base: '/openxenon/',
   lastUpdated: true,
 
-  // 站点结构：
-  //   docs/index.md         → /openxenon/            （中文首页 = 介绍内容）
-  //   docs/zh-cn/foo.md     → /openxenon/zh-cn/foo.html  （中文其他 15 章）
-  //   docs/en/foo.md        → /openxenon/en/foo.html     （英文占位）
+  // 站点结构（VitePress 对称 prefix i18n 模式）：
+  //   docs/index.md         → /openxenon/            （中文首页 = 介绍内容，root 路径）
+  //   docs/zh-cn/foo.md     → /openxenon/zh-cn/foo.html  （中文其他 15 章 + examples/）
+  //   docs/en/foo.md        → /openxenon/en/foo.html     （英文 16 占位 + examples/）
   // 旧 SSOT 子目录（core/architecture/reference/...）在 srcExclude 排除
   srcDir: '.',
   srcExclude: [
@@ -50,27 +50,28 @@ export default defineConfig({
     /^\.\.\/README/,
   ],
 
-  // VitePress i18n 配置：v0.1.0 启用 locales 块
-  // - root: 中文（docs/index.md + docs/zh-cn/）
-  // - en:   英文（docs/en/）
+  // VitePress 标准 i18n：两个 locale 都用 prefix（对称结构，天然支持同页切换）
+  // - zh-CN: 中文站，目录 docs/zh-cn/，URL prefix /zh-cn/
+  // - en:    英文站，目录 docs/en/，URL prefix /en/
   locales: {
-    root: {
+    'zh-CN': {
       label: '简体中文',
       lang: 'zh-CN',
+      link: '/zh-cn/',
       title: 'OpenXenon · 工程师与 AI 协作工作台',
       description: '工程师定义意图，AI 执行对齐，OXN 证明结果',
       themeConfig: {
         nav: [
-          { text: '首页', link: '/index.html' },
+          { text: '首页', link: '/zh-cn/index.html' },
           { text: '快速开始', link: '/zh-cn/quickstart.html' },
           { text: 'AI 入口', link: '/zh-cn/llm-prompt.html' },
         ],
         sidebar: {
-          '/': [
+          '/zh-cn/': [
             {
               text: '开始',
               items: [
-                { text: '介绍', link: '/index.html' },
+                { text: '介绍', link: '/zh-cn/index.html' },
                 { text: '快速开始', link: '/zh-cn/quickstart.html' },
               ],
             },
@@ -120,12 +121,13 @@ export default defineConfig({
     en: {
       label: 'English',
       lang: 'en-US',
+      link: '/en/',
       title: 'OpenXenon · Engineer + AI Workbench',
       description: 'Engineers define intent, AI executes alignment, OXN proves results',
       themeConfig: {
         nav: [
           { text: 'Home', link: '/en/index.html' },
-          { text: 'Docs', link: '/en/quickstart.html' },
+          { text: 'Quickstart', link: '/en/quickstart.html' },
           { text: 'AI Entry', link: '/en/llm-prompt.html' },
         ],
         sidebar: {
