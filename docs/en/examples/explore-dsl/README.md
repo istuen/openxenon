@@ -1,17 +1,17 @@
 # explore-dsl Work
 
-> 端到端 Work 案例：探索分析。摸清 OXL 模块结构。
+> End-to-end Work case: exploration and analysis. Figure out the OXL module structure.
 
-## 场景
+## Scenario
 
-探索性工作：摸清 grammar / schema / validator / compiler 四个子模块，生成分析报告。这是对**模式 1：单域单 task**的演示（1 work + 1 task + 1 domain + 1 blueprint）。
+Exploratory work: figure out the four sub-modules grammar / schema / validator / compiler, and produce an analysis report. This is a demonstration of **Pattern 1: single domain, single task** (1 work + 1 task + 1 domain + 1 blueprint).
 
-## 文件
+## Files
 
-- `work.oxn` — Work 编排
-- `tasks/explore-dsl/task.oxn` — 探索任务
+- `work.oxn` — Work orchestration
+- `tasks/explore-dsl/task.oxn` — Explore task
 
-## 跑通方式
+## How to run
 
 ```bash
 cp -r .openxenon/works/explore-dsl .openxenon/works/
@@ -21,4 +21,4 @@ oxn work run explore-dsl --json
 oxn work submit --work explore-dsl --task explore-dsl --json
 ```
 
-详见 [Recipes §5](../../recipes.md#recipe-5探索分析)。
+See [Recipes §5](../../recipes.md#recipe-5-explore-and-analyze).

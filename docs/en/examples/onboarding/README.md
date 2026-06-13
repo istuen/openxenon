@@ -1,35 +1,35 @@
 # onboarding Work
 
-> 端到端 Work 案例：跨域编排。新会员注册 + 发放欢迎福利。
+> End-to-end Work case: cross-domain orchestration. New member registration + welcome bonus issuance.
 
-## 场景
+## Scenario
 
-新会员注册时同时需要操作 OrderContext，两个限界上下文协作。这是对**模式 4：跨域编排**的演示。
+When a new member registers, we also need to operate on OrderContext — two bounded contexts collaborate. This is a demonstration of **Pattern 4: cross-domain orchestration**.
 
-## 文件
+## Files
 
-- `work.oxn` — Work 编排（声明 MemberContext + OrderContext 两个 domain ref）
-- `tasks/register-member/task.oxn` — 注册会员任务
-- `tasks/grant-welcome-bonus/task.oxn` — 发放欢迎福利任务
+- `work.oxn` — Work orchestration (declares MemberContext + OrderContext two domain refs)
+- `tasks/register-member/task.oxn` — Register member task
+- `tasks/grant-welcome-bonus/task.oxn` — Issue welcome bonus task
 
-## 跑通方式
+## How to run
 
 ```bash
-# 1. 复制到项目
+# 1. Copy into the project
 cp -r .openxenon/works/onboarding .openxenon/works/
 
-# 2. 校验
+# 2. Validate
 oxn work validate onboarding --json
 
-# 3. 锁定
+# 3. Lock
 oxn work lock onboarding --json
 
-# 4. 运行
+# 4. Run
 oxn work run onboarding --json
 
-# 5. AI 执行并推进
+# 5. AI executes and advances
 oxn work submit --work onboarding --task register-member --json
 oxn work submit --work onboarding --task grant-welcome-bonus --json
 ```
 
-详见 [Recipes §3](../../recipes.md#recipe-3跨域编排)。
+See [Recipes §3](../../recipes.md#recipe-3-cross-domain-orchestration).

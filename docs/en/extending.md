@@ -1,7 +1,126 @@
+---
+title: Extending
+---
+
 # Extending
 
-> 🚧 This is the English version of OpenXenon documentation.
+> Custom Probes, Parts, and DSL extension points. OpenXenon's extension system is structured in three layers.
 
-**v0.1.0 ships Chinese only.** The English translation is planned for v0.2.
+## What — Three-layer extension system
 
-**See the Chinese version**: [docs/zh-cn/extending.md](../zh-cn/extending.md)
+| Layer | Extension point | Difficulty | When to use |
+|---|---|---|---|
+| Custom Probe | Add a new verification instrument | Low | Built-in Probes are not enough |
+| Custom Part | Add a new execution component | Medium | Specific tool integration is needed |
+| DSL extension | Modify OXL syntax | High | New asset type or syntactic structure is needed |
+
+---
+
+## Custom Probe
+
+### Built-in Probe types
+
+OpenXenon ships 11 built-in Probes covering the most common verification needs:
+
+| Probe | Purpose |
+|---|---|
+| `fs-exists` | Check that a file exists |
+| `fs-not-exists` | Check that a file does not exist |
+| `fs-content-match` | Check that file content matches a regex |
+| `fs-parseable` | Check that a file is parseable (JSON, etc.) |
+| `shell-exec` | Execute a command and check the exit code |
+| `test-pass` | Run `bun test` |
+| `ts-compiles` | Run `tsc --noEmit` |
+| `lint-check` | Run `biome check` |
+| `deps-resolved` | Check dependency completeness |
+| `http-responds` | HTTP endpoint check |
+| `file-exports` | Check file exports |
+
+See [Proof](./proof.md) for full parameters and verdict logic.
+
+### Anatomy of a custom Probe
+
+A Probe consists of two parts:
+
+1. **Physical observation** (Infra layer): perform the actual IO operation
+2. **Pure-function verdict** (Kernel layer): produce Pass/Fail from the observation result
+
+```
+Observation function (Infra)   →   Verdict function (Kernel)
+fs.glob("dist/**/*.js")         →   found.length > 0 → PASS
+```
+
+### Inline Probe (recommended)
+
+Declare Probes directly inside a Part, no registration required:
+
+```oxn
+part "build" {
+  skill_context = "Implement the Member registration API"
+  probe "api-exists" ref "@oxn/probes/fs-exists" {
+    params = { path = "src/api/member.ts" }
+  }
+  probe "api-compiles" ref "@oxn/probes/ts-compiles" {
+    params = { project = "tsconfig.json" }
+  }
+}
+```
+
+---
+
+## Custom Part
+
+Part is the execution unit of a Task. Built-in Part types:
+
+| Part type | Description |
+|---|---|
+| `shell-exec` | Execute a shell command |
+| `jest-runner` | Run Jest tests |
+
+Custom Parts require code-level registration into the Part registry (see legacy doc `docs/guides/probe-development.md`).
+
+---
+
+## OXL DSL extension
+
+OXL is implemented on top of Langium. The grammar is defined in `src/oxl/langium/oxn.langium`.
+
+After modifying the grammar, regenerate:
+
+```bash
+bun run langium:generate
+```
+
+Generated files live in `src/oxl/generated/` and **must not be edited manually**.
+
+### Extension scenarios
+
+| Scenario | Method |
+|---|---|
+| Add a new DSL keyword | Modify `oxn.langium` grammar rules |
+| Add a new asset type | Add a new grammar rule + corresponding validator |
+| Add a new scope addressing | Add `@oxn/` or a custom scope |
+
+---
+
+## Private Builtin module
+
+Package commonly used project-local Domain / Blueprint / Probe as built-in assets, placed under `src/builtin/`:
+
+```
+src/builtin/
+├── blueprints/
+│   └── git-workflow.oxn
+├── domains/
+│   └── ProgramContext.oxn
+└── probes/
+    └── custom-probe.ts
+```
+
+These assets are copied to `.openxenon/` on `oxn init`.
+
+## → Reference
+
+- Legacy doc: [Probe development guide](./guides/probe-development.md) (old SSOT)
+- Legacy doc: [OXN DSL reference](./reference/oxn-dsl.md) (old SSOT)
+- [Architecture](./architecture.md) — Where extension points live in the L0–L3 layering
