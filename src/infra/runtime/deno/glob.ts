@@ -9,6 +9,7 @@
 
 import { join, relative } from 'node:path'
 import type { GlobOptions } from '../types'
+import { getDeno } from '../deno-helper'
 
 /**
  * v0.1.6 锁定的 glob 实现（Deno 路径）
@@ -16,10 +17,10 @@ import type { GlobOptions } from '../types'
  * 实现：Deno.readDir 递归（与 fs-match handler 自实现一致）
  */
 export async function globDeno(pattern: string, opts: GlobOptions = {}): Promise<string[]> {
-  if (!globalThis.Deno) {
+  const deno = getDeno()
+  if (!deno) {
     return []
   }
-  const deno = globalThis.Deno
   const cwd = opts.cwd ?? '.'
   const results: string[] = []
 
@@ -33,7 +34,7 @@ export async function globDeno(pattern: string, opts: GlobOptions = {}): Promise
 
   async function walk(dir: string): Promise<void> {
     try {
-      for await (const entry of deno.readDir(dir)) {
+      for await (const entry of deno!.readDir(dir)) {
         const fullPath = join(dir, entry.name)
         const rel = relative(cwd, fullPath)
         if (entry.isDirectory) {

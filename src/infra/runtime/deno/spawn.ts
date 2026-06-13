@@ -13,6 +13,7 @@
 // =============================================================================
 
 import type { SpawnOptions, SpawnResult } from '../types'
+import { getDeno } from '../deno-helper'
 
 const DEFAULT_TIMEOUT_MS = 30_000
 
@@ -32,7 +33,8 @@ export async function spawnDeno(cmd: string[], opts: SpawnOptions = {}): Promise
       signal: null,
     }
   }
-  if (!globalThis.Deno) {
+  const deno = getDeno()
+  if (!deno) {
     return {
       exitCode: null,
       stdout: '',
@@ -48,7 +50,7 @@ export async function spawnDeno(cmd: string[], opts: SpawnOptions = {}): Promise
   ;(timeoutHandle as { unref?: () => void }).unref?.()
 
   try {
-    const output = await globalThis.Deno.command(bin, {
+    const output = await deno.command(bin, {
       args,
       cwd: opts.cwd,
       env: opts.env,

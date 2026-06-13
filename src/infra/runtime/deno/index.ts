@@ -12,6 +12,7 @@ import type { FileHandle } from '../types'
 import { openFileDeno } from './file'
 import { globDeno } from './glob'
 import { spawnDeno } from './spawn'
+import { getDeno } from '../deno-helper'
 
 export const denoRuntime: RuntimePort = {
   name: 'deno',
@@ -21,9 +22,10 @@ export const denoRuntime: RuntimePort = {
   which: async (cmd: string): Promise<string | null> => {
     // Deno 没有原生命令 which，用 Deno.env.get('PATH') + Deno.command('which')
     // v0.1.6 简化：调用 `which` 命令（已假设 PATH 已配置）
-    if (!globalThis.Deno) return null
+    const deno = getDeno()
+    if (!deno) return null
     try {
-      const output = await globalThis.Deno.command('which', { args: [cmd], stdout: 'piped' })
+      const output = await deno.command('which', { args: [cmd], stdout: 'piped' })
       const path = new TextDecoder().decode(output.stdout).trim()
       return path || null
     } catch {

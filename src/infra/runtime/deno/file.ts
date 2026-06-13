@@ -5,15 +5,16 @@
 // =============================================================================
 
 import type { FileHandle } from '../types'
+import { getDeno } from '../deno-helper'
 
 /**
  * v0.1.6 锁定的 openFile 实现（Deno 路径）
  */
 export async function openFileDeno(path: string): Promise<FileHandle> {
-  if (!globalThis.Deno) {
+  const deno = getDeno()
+  if (!deno) {
     throw new Error('openFileDeno: Deno globalThis not available')
   }
-  const deno = globalThis.Deno
 
   return {
     text: () => deno.readTextFile(path),
