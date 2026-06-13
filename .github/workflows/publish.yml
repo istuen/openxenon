@@ -1,0 +1,64 @@
+name: Publish to npm
+
+# 触发: 推送 v*.*.* tag (e.g. v0.1.6, v0.2.0)
+# 手动: workflow_dispatch 可输入自定义 tag
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g. v0.1.6). 默认取当前 HEAD 的 tag.'
+        required: false
+
+permissions:
+  contents: read       # 读仓库 (checkout)
+  id-token: write      # OIDC npm provenance (可选, 但推荐)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # 不允许 main 分支上的 concurrency 互相阻塞
+    # tag push 跑完后, 同一 tag 多次 push 走同 group
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies (frozen lockfile)
+        run: bun install --frozen-lockfile
+
+      # 1. Prepublish 检查 (typecheck + lint + test)
+      - name: Prepublish checks
+        run: bun run prepublish:check
+
+      # 2. Build (clean + langium + dist + types)
+      - name: Build
+        run: bun run build
+
+      # 3. 验证产物
+      - name: Verify dist/
+        run: |
+          test -f dist/cli.js || (echo "ERROR: dist/cli.js not found" && exit 1)
+          ls -lh dist/
+
+      # 4. Publish to npm (scoped public)
+      - name: Publish @istuen/openxenon to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # 5. 验证发布成功
+      - name: Verify published version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Published version: $VERSION"
+          npm view @istuen/openxenon version
+
+      # 6. 端到端 smoke test (用 npx 跑刚发布的版本)
+      - name: Smoke test (npx --version)
+        run: npx -y @istuen/openxenon@latest --version

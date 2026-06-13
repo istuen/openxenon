@@ -1,8 +1,8 @@
 {
-  "name": "openxenon",
+  "name": "@istuen/openxenon",
   "version": "0.1.6",
   "description": "OpenXenon — 工程师与 AI 协作工作台（OXN Engine 实施 L0-L3 四层架构与 IAP 范式，OXL = OpenXenon Language）",
-  "author": "OpenXenon Team",
+  "author": "istuen",
   "license": "MIT",
   "type": "module",
   "main": "./dist/cli.js",
@@ -73,10 +73,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/openxenon/openxenon.git"
+    "url": "https://github.com/istuen/openxenon.git"
   },
   "bugs": {
-    "url": "https://github.com/openxenon/openxenon/issues"
+    "url": "https://github.com/istuen/openxenon/issues"
   },
-  "homepage": "https://openxenon.dev"
+  "homepage": "https://github.com/istuen/openxenon#readme"
 }

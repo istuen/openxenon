@@ -5,6 +5,26 @@
 >
 > **Proof 的结果反馈驱动 Intent 演化，IAP 形成闭环，让 Token 成为有效投入。**
 
+[![npm version](https://img.shields.io/npm/v/@istuen/openxenon)](https://www.npmjs.com/package/@istuen/openxenon)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+
+## Install
+
+```bash
+npm install -g @istuen/openxenon
+# 命令名: oxn
+oxn --version
+```
+
+或临时跑:
+
+```bash
+npx -y @istuen/openxenon --version
+```
+
+> 仓库源码是 dist/cli.js 的**开发基底**，不是 npm install 的目标。普通用户请走 `npm install -g` 路径。
+
 ---
 
 ## 解决什么问题
@@ -24,23 +44,28 @@
 > **入口即核心**：OpenXenon 的第一次体验是 `oxn proof`，不要求先学 Domain/Blueprint。
 > 这本质是 IAP 范式中 **P 轴（Proof 轴）的独立运作模式**——工程师跳过 Intent/Align 资产化，直接使用 Probe 声明验收标准，由 OXN 产出 `frozen.json`。
 
-### 克隆与构建
+### 克隆与构建（开发者）
 
 ```bash
-git clone https://github.com/anomalyco/openxenon.git && cd openxenon
+git clone https://github.com/istuen/openxenon.git && cd openxenon
 bun install --frozen-lockfile && bun run build
-# 产物：dist/oxn（单文件可执行）
+# 产物：dist/cli.js（单文件 Node bundle，~2.7MB）
 ```
 
 ### 初始化工作台
 
 ```bash
+# 源码构建版 (./dist/oxn)
 ./dist/oxn init
+
+# npm 安装版 (oxn 在 PATH 中)
+oxn init
+
 # 支持 -f 强制初始化
 # 支持指定 AI 助手，自动生成对应 Skill 配置：
-./dist/oxn init --ai opencode   # 生成 OpenCode Skill
-./dist/oxn init --ai cursor    # 生成 Cursor Skill
-./dist/oxn init --ai codex     # 生成 Codex Skill
+oxn init --ai opencode   # 生成 OpenCode Skill
+oxn init --ai cursor    # 生成 Cursor Skill
+oxn init --ai codex     # 生成 Codex Skill
 ```
 
 ### 第一次证明
