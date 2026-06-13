@@ -21,24 +21,38 @@ See [Core Concepts](./core-concepts.md) for the full IAP paradigm design rationa
 
 ## How — How to use it
 
-### Step 1: Environment requirements and build
+### Step 1: Environment requirements and install
 
-- **Bun** >= 1.0.0
+- **Node.js** >= 18 (any of npm / pnpm / bun is fine)
+- Some Probes (`ts-compiles` / `lint-check` / `test-pass`) require the corresponding toolchain in your project (`typescript` / `biome` / `bun test`)
+
+Install via npm:
 
 ```bash
-git clone https://github.com/anomalyco/openxenon.git && cd openxenon
-bun install --frozen-lockfile && bun run build
+npm install -g @istuen/openxenon
+```
+
+Install via pnpm:
+
+```bash
+pnpm install -g @istuen/openxenon
+```
+
+Install via bun:
+
+```bash
+bun install -g @istuen/openxenon
 ```
 
 ### Step 2: Initialize the workbench
 
 ```bash
-./dist/oxn init
+oxn init
 
 # Quickstart
-./dist/oxn init --ai opencode   # OpenCode
-./dist/oxn init --ai cursor     # Cursor
-./dist/oxn init --ai codex      # Codex
+oxn init --ai opencode   # OpenCode
+oxn init --ai cursor     # Cursor
+oxn init --ai codex      # Codex
 ```
 
 Output:
@@ -52,7 +66,7 @@ Project initialized: my-project (locale: zh-CN)
 
 ```bash
 # Quickstart
-./dist/oxn proof create check-deploy
+oxn proof create check-deploy
 # Quickstart
 ```
 
@@ -60,16 +74,16 @@ Project initialized: my-project (locale: zh-CN)
 
 ```bash
 # Quickstart
-./dist/oxn proof probe add fs-exists --target ./dist/index.js
+oxn proof probe add fs-exists --target ./dist/index.js
 
 # Quickstart
-./dist/oxn proof probe add http-responds --url http://localhost:3000/health --status 200
+oxn proof probe add http-responds --url http://localhost:3000/health --status 200
 ```
 
 ### Step 5: Run the proof
 
 ```bash
-./dist/oxn proof run check-deploy
+oxn proof run check-deploy
 ```
 
 Output (PASS):
@@ -128,10 +142,10 @@ AI calls the CLI through the Skill, results flow back into `frozen.json`.
 
 ```bash
 # Quickstart
-./dist/oxn proof list
+oxn proof list
 
 # Quickstart
-./dist/oxn proof show check-deploy
+oxn proof show check-deploy
 ```
 
 ## → Next step

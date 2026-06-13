@@ -29,7 +29,7 @@
     "oldestAgeFormat": "{{ageDays}}天"
   },
   "cli": {
-    "description": "OpenXenon CLI - 面向大语言模型的工程化控制引擎"
+    "description": "OpenXenon CLI — 工程师与 AI 协作工作台入口"
   },
   "config": {
     "notFound": "项目未初始化，请先执行 oxn init",

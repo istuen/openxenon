@@ -21,24 +21,38 @@ Proof-First 解决了 IAP 的冷启动问题：不需要先说服你学 Domain +
 
 ## How —— 怎么用
 
-### 第一步：环境要求与构建
+### 第一步：环境要求与安装
 
-- **Bun** >= 1.0.0
+- **Node.js** >= 18（运行 npm/pnpm/bun 任一即可）
+- 部分 Probe（`ts-compiles` / `lint-check` / `test-pass`）需要在你的项目里装对应的工具链（`typescript` / `biome` / `bun test`）
+
+通过 npm 安装：
 
 ```bash
-git clone https://github.com/anomalyco/openxenon.git && cd openxenon
-bun install --frozen-lockfile && bun run build
+npm install -g @istuen/openxenon
+```
+
+通过 pnpm 安装：
+
+```bash
+pnpm install -g @istuen/openxenon
+```
+
+通过 bun 安装：
+
+```bash
+bun install -g @istuen/openxenon
 ```
 
 ### 第二步：初始化工作台
 
 ```bash
-./dist/oxn init
+oxn init
 
 # 快速开始
-./dist/oxn init --ai opencode   # OpenCode
-./dist/oxn init --ai cursor     # Cursor
-./dist/oxn init --ai codex      # Codex
+oxn init --ai opencode   # OpenCode
+oxn init --ai cursor     # Cursor
+oxn init --ai codex      # Codex
 ```
 
 输出：
@@ -52,7 +66,7 @@ bun install --frozen-lockfile && bun run build
 
 ```bash
 # 快速开始
-./dist/oxn proof create check-deploy
+oxn proof create check-deploy
 # 快速开始
 ```
 
@@ -60,16 +74,16 @@ bun install --frozen-lockfile && bun run build
 
 ```bash
 # 快速开始
-./dist/oxn proof probe add fs-exists --target ./dist/index.js
+oxn proof probe add fs-exists --target ./dist/index.js
 
 # 快速开始
-./dist/oxn proof probe add http-responds --url http://localhost:3000/health --status 200
+oxn proof probe add http-responds --url http://localhost:3000/health --status 200
 ```
 
 ### 第五步：运行证明
 
 ```bash
-./dist/oxn proof run check-deploy
+oxn proof run check-deploy
 ```
 
 输出示例（通过时）：
@@ -128,10 +142,10 @@ frozen.json 是 OXN Engine 签发的检验报告。AI 和工程师都**只能读
 
 ```bash
 # 快速开始
-./dist/oxn proof list
+oxn proof list
 
 # 快速开始
-./dist/oxn proof show check-deploy
+oxn proof show check-deploy
 ```
 
 ## → 下一步

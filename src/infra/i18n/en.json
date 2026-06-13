@@ -29,7 +29,7 @@
     "oldestAgeFormat": "{{ageDays}} days"
   },
   "cli": {
-    "description": "OpenXenon CLI - Engineering control engine for Large Language Models"
+    "description": "OpenXenon CLI — Engineer + AI collaboration workbench entry"
   },
   "config": {
     "notFound": "Project not initialized, run `oxn init` first",
