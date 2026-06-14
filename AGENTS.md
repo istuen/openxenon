@@ -101,3 +101,39 @@ bun test                    # bun test，约 50 秒，414 个测试
 - AI 可见的权威文档：`docs/introduction.md`（入口）、`docs/core-concepts.md`（IAP 范式）、`docs/intent.md`（Intent 轴）、`docs/align.md`（Align 轴）、`docs/proof.md`（Proof 轴）、`docs/cli.md`（CLI 参考）、`docs/architecture.md`（架构）。
 - Probes 拆分：`src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
+
+## v0.2 路线图分支策略
+
+**主分支**：`feat/v0.2-proof-engine`（从 `dev` 拉出，**不基于** `main`）
+
+**子分支命名**：`feat/v0.2-t<N>-<slug>`，N 与 EXECUTION-ORDER.md §3 任务编号严格一致
+
+| 任务 | 子分支 | 周次 |
+|---|---|---|
+| T1 infra-io-phase2-6 | `feat/v0.2-t1-infra-io-phase2-6` | W1 |
+| T2 daemon-pr1-cleanup | `feat/v0.2-t2-daemon-pr1-cleanup` | W1 |
+| T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 |
+| T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a |
+| T5 taint PR-2 frozen+展示 | `feat/v0.2-t5-taint-pr2-frozen-verdict` | W3b |
+| T6 taint PR-3 Provider | `feat/v0.2-t6-taint-pr3-registry-providers` | W3c |
+| T7 taint PR-4 沙箱+CLI | `feat/v0.2-t7-taint-pr4-sandbox-cli` | W3d ⚠ PoC |
+| T8 intent-pool minimal | `feat/v0.2-t8-pool-minimal-research` | W4 |
+| T9 taint PR-5 daemon+workcheck | `feat/v0.2-t9-taint-pr5-daemon-workcheck` | W5a |
+| T10 taint PR-6 OXL grammar | `feat/v0.2-t10-taint-pr6-oxl-grammar` | W5b |
+| T11 three-layer PR-1 grammar | `feat/v0.2-t11-three-layer-pr1-grammar` | W5c |
+| T12 three-layer PR-2 finalize | `feat/v0.2-t12-three-layer-pr2-finalize` | W5d |
+| T13 intent-pool full | `feat/v0.2-t13-pool-full-forges-warn` | W6-7 |
+| T14 daemon PR-2/3/4 闭环 | `feat/v0.2-t14-daemon-pr234-loop` | W8 |
+| T15 taint PR-7 spike | `feat/v0.2-t15-taint-pr7-spike` | W8（spike，不入 main） |
+
+**严格约束**：
+- 所有子分支从 `feat/v0.2-proof-engine` 派生
+- **T10 → T11 串行**：OXL grammar 两次 `langium:generate` 分两次 PR，**绝对禁止并行**
+- **T7 PoC 闸门**：Bun `vm.SourceTextModule` PoC 不通过则降级方案 B（Worker）/ C（spawn 子进程）/ D（推迟 PR-4）
+- **T15 spike 边界**：不进入 main 分支；产出 `spike/probe-converge/README.md` 决策即可
+
+**Sprint 设计稿位置**：`.openxenon/forges/sprints/sprint-{N}/<doc>.md`（15 份）+ `EXECUTION-ORDER.md`（总索引）
+
+**对应 changelog 片段**：`.changes/0-2-0-roadmap.md`（路线图占位，每个子分支 PR 合入时记得新增一条 changelog）
+
+**Work v1.1 流程**：每个子分支开工时按 `oxn-work` skill 8 阶段（init → migrate → create → add-task → validate → lock → run → submit）走完一轮。
