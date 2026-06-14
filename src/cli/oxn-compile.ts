@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync } from '../infra/filesystem'
 import { DocumentState, URI } from 'langium'
 import { t } from '../infra/i18n'
 import { compileBundle } from '../oxl/compiler/bundle-compiler'

@@ -15,7 +15,7 @@
  *   oxn migrate-yaml --all                     # 迁移所有 Arsenal 资产
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from '../infra/filesystem'
 import { basename, dirname, join } from 'path'
 import { parse as parseYaml } from 'yaml'
 

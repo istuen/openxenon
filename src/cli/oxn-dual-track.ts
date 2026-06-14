@@ -8,7 +8,7 @@
  * 两者最终输出统一的 FrozenBlueprint，保证 Core 执行引擎零感知。
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
 import type { LangiumDocument } from 'langium'
 import { DocumentState, URI } from 'langium'
 import { dirname, join } from 'path'

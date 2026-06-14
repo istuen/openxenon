@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { existsSync, readdirSync, readFileSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from '../infra/filesystem'
 import { join } from 'path'
 import { t } from '../infra/i18n'
 import { URI } from 'langium'

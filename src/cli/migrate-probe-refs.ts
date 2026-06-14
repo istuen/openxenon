@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
 import { globSync } from 'glob'
 import { join } from 'path'
 

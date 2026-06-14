@@ -7,7 +7,7 @@
 // so we never silently persist arbitrary JSON.
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from '../infra/filesystem'
 import { dirname, join } from 'path'
 import { t } from '../infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'

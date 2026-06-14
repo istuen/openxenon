@@ -32,7 +32,15 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from '../infra/filesystem'
 import { t } from '../infra/i18n'
 import { join } from 'path'
 import { URI } from 'langium'
