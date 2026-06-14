@@ -1714,19 +1714,17 @@ const runSubcommand = defineCommand({
       const runDiagnostics: RefDiagnostic[] = []
       for (const d of work.domains ?? []) {
         if (!resolveDomainFile(d.ref ?? null, d.name, projectRoot)) {
-          const reason =
-            d.ref && d.ref.startsWith('@oxn/')
-              ? '@oxn/ scope has no builtin domain registry (V1)'
-              : `domain file not found for ref "${d.ref ?? d.name}"`
+          const reason = d.ref?.startsWith('@oxn/')
+            ? '@oxn/ scope has no builtin domain registry (V1)'
+            : `domain file not found for ref "${d.ref ?? d.name}"`
           runDiagnostics.push(buildDomainDiagnostic(d.name, d.ref ?? null, reason))
         }
       }
       for (const b of work.blueprints ?? []) {
         if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
-          const reason =
-            b.ref && b.ref.startsWith('@oxn/')
-              ? '@oxn/ scope has no builtin blueprint registry (V1)'
-              : `blueprint file not found for ref "${b.ref ?? b.name}"`
+          const reason = b.ref?.startsWith('@oxn/')
+            ? '@oxn/ scope has no builtin blueprint registry (V1)'
+            : `blueprint file not found for ref "${b.ref ?? b.name}"`
           runDiagnostics.push(buildBlueprintDiagnostic(b.name, b.ref ?? null, reason))
         }
       }
@@ -2198,19 +2196,17 @@ function collectUnresolvedRefDiagnostics(work: WorkFileSummary, projectRoot: str
   const diagnostics: RefDiagnostic[] = []
   for (const d of work.domains) {
     if (!resolveDomainFile(d.ref ?? null, d.name, projectRoot)) {
-      const reason =
-        d.ref && d.ref.startsWith('@oxn/')
-          ? '@oxn/ scope has no builtin domain registry (V1)'
-          : 'domain file not found for ref "' + (d.ref ?? d.name) + '"'
+      const reason = d.ref?.startsWith('@oxn/')
+        ? '@oxn/ scope has no builtin domain registry (V1)'
+        : `domain file not found for ref "${d.ref ?? d.name}"`
       diagnostics.push(buildDomainDiagnostic(d.name, d.ref ?? null, reason))
     }
   }
   for (const b of work.blueprints) {
     if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
-      const reason =
-        b.ref && b.ref.startsWith('@oxn/')
-          ? '@oxn/ scope has no builtin blueprint registry (V1)'
-          : 'blueprint file not found for ref "' + (b.ref ?? b.name) + '"'
+      const reason = b.ref?.startsWith('@oxn/')
+        ? '@oxn/ scope has no builtin blueprint registry (V1)'
+        : `blueprint file not found for ref "${b.ref ?? b.name}"`
       diagnostics.push(buildBlueprintDiagnostic(b.name, b.ref ?? null, reason))
     }
   }
@@ -2482,7 +2478,7 @@ const contextSubcommand = defineCommand({
         isolationNotice: t('work.isolationNotice'),
         lockHealth: noLockCheck
           ? { status: 'bypassed', reason: 'unlock-check flag set' }
-          : birthCertForHealth && birthCertForHealth.ok && birthCertForHealth.cert?.planLock
+          : birthCertForHealth?.ok && birthCertForHealth.cert?.planLock
             ? {
                 status: 'ok',
                 lockedAt: birthCertForHealth.cert.planLock.lockedAt,
