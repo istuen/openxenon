@@ -9,6 +9,9 @@ pre-commit:
       run: bunx eslint --no-warn-ignored {staged_files}
     typecheck:
       run: bun run typecheck
+    heading-skeleton:
+      glob: "**/*.md"
+      run: bun scripts/check-heading-skeleton.ts .openxenon/forges/ .openxenon/pools/
 
 pre-push:
   commands:

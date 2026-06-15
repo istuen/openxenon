@@ -78,6 +78,12 @@ openspec/
 # 已通过 git rm --cached 从历史中移除（保留本地文件，停止追踪）
 .openxenon/forges/
 
+# v0.2 T8 Intent Pool: 池内 frozen.json 不可变但不入仓
+.openxenon/pools/*/*/frozen.json
+.openxenon/pools/*/!(.gitkeep)
+# 但 .gitkeep 保留入仓 (Sprint 6 文档引导需要池目录骨架)
+!.openxenon/pools/*/.gitkeep
+
 # 旧 docs 备份（M0 阶段安全网，手册完成后清理；不入仓）
 docs-bak-2026-06/
 
