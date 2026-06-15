@@ -55,6 +55,8 @@ export type IAPErrorCode =
   | 'NAME_FILE_MISMATCH'
   | 'PROVIDER_DUPLICATE'
   | 'PROVIDER_UNSUPPORTED'
+  | 'SANDBOX_REJECTED'
+  | 'PROBE_INVALID'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

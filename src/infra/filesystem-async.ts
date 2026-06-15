@@ -14,16 +14,18 @@
  * v0.1.x 兼容: 同时导出顶层符号 (access, mkdir, readdir, readFile, writeFile)
  * 供现有 import 直接替换 source 路径
  */
-import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { access, chmod, mkdir, readdir, readFile, unlink, writeFile } from 'node:fs/promises'
 
 /** asyncFs 命名空间对象 (与 src/infra/filesystem.ts 的 fs 对称) */
 export const asyncFs = {
   access,
+  chmod,
   mkdir,
   readdir,
   readFile,
+  unlink,
   writeFile,
 }
 
 /** 顶层符号 re-export (供 import 直接替换 source 路径) */
-export { access, mkdir, readdir, readFile, writeFile }
+export { access, chmod, mkdir, readdir, readFile, unlink, writeFile }
