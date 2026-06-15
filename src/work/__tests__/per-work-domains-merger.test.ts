@@ -275,7 +275,7 @@ describe('writePerWorkDomainsIndex / loadPerWorkDomainsIndex', () => {
     writeDomainFile('foo', 'domain "Foo" { term { "X": "x" } }')
     writeFileSync(workOxnPath, `work "demo" { domain "Foo" ref "@prj/domains/foo"; }\n`)
     const outPath = getPerWorkDomainsJsonPath(tmpDir, workName)
-    const idx = writePerWorkDomainsIndex({ projectRoot: tmpDir, workName, workOxnPath, outPath })
+    const _idx = writePerWorkDomainsIndex({ projectRoot: tmpDir, workName, workOxnPath, outPath })
     expect(existsSync(outPath)).toBe(true)
     expect(existsSync(`${outPath}.tmp`)).toBe(false)
     const reloaded = loadPerWorkDomainsIndex(outPath)

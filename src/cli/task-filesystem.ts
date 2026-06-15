@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from 'fs'
+import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from '../infra/filesystem'
 import { join } from 'path'
 import { URI } from 'langium'
 // v0.1-final: task.oxn 直接通过 Langium AST 解析（不再走 bundle）

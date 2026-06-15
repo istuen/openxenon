@@ -110,7 +110,7 @@ bun test                    # bun test，约 50 秒，414 个测试
 
 | 任务 | 子分支 | 周次 |
 |---|---|---|
-| T1 infra-io-phase2-6 | `feat/v0.2-t1-infra-io-phase2-6` | W1 |
+| T1 infra-io-phase2-6 | `feat/v0.2-t1-infra-io-phase2-6` | W1 | **已拆分为 t1a + t1b**：t1a（cli 22 文件，`feat/v0.2-t1a-infra-fs-migrate-cli`）已开工；t1b（其余 30 + 5 死 Port）后续开 |
 | T2 daemon-pr1-cleanup | `feat/v0.2-t2-daemon-pr1-cleanup` | W1 |
 | T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 |
 | T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a |

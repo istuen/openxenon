@@ -199,7 +199,7 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
     return null
   }
 
-  const typeIndex = pathParts.findIndex((p) => p === 'arsenal')
+  const typeIndex = pathParts.indexOf('arsenal')
   const nameIndex = typeIndex + 2
   if (nameIndex >= pathParts.length) return null
 

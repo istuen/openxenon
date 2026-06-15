@@ -105,7 +105,7 @@ describe('oxn proof run → probe-stats.json', () => {
     expect(stats.proofRuns[0]?.verdict).toBe('PASSED')
     expect(stats.probes['shell-exec'].totalCount).toBe(1)
     expect(stats.probes['shell-exec'].passCount).toBe(1)
-    expect(stats.probes['shell-exec'].targets['true'].pass).toBe(1)
+    expect(stats.probes['shell-exec'].targets.true.pass).toBe(1)
   })
 
   test('单次 FAIL → stats 记录失败', async () => {
@@ -126,7 +126,7 @@ describe('oxn proof run → probe-stats.json', () => {
     const stats = readStatsFile()
     expect(stats.proofRuns[0]?.verdict).toBe('FAILED')
     expect(stats.probes['shell-exec'].failCount).toBe(1)
-    expect(stats.probes['shell-exec'].targets['false'].consecutiveFails).toBe(1)
+    expect(stats.probes['shell-exec'].targets.false.consecutiveFails).toBe(1)
   })
 
   test('多次 run 累加 stats', async () => {
@@ -149,7 +149,7 @@ describe('oxn proof run → probe-stats.json', () => {
     expect(stats.proofRuns.map((r: any) => r.proofId)).toEqual(['p-multi-0', 'p-multi-1', 'p-multi-2'])
     expect(stats.probes['shell-exec'].totalCount).toBe(3)
     expect(stats.probes['shell-exec'].passCount).toBe(3)
-    expect(stats.probes['shell-exec'].targets['true'].total).toBe(3)
+    expect(stats.probes['shell-exec'].targets.true.total).toBe(3)
   })
 
   test('同一 target 连续失败 → consecutiveFails 累加', async () => {
@@ -168,8 +168,8 @@ describe('oxn proof run → probe-stats.json', () => {
     }
 
     const stats = readStatsFile()
-    expect(stats.probes['shell-exec'].targets['false'].consecutiveFails).toBe(2)
-    expect(stats.probes['shell-exec'].targets['false'].fail).toBe(2)
+    expect(stats.probes['shell-exec'].targets.false.consecutiveFails).toBe(2)
+    expect(stats.probes['shell-exec'].targets.false.fail).toBe(2)
   })
 
   test('不同 probe type 同时被记录', async () => {

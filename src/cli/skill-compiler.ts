@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from '../infra/filesystem'
 import { dirname, join } from 'path'
 import type { SupportedLocale } from './project-config'
 import { DEFAULT_LOCALE } from './project-config'

@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { existsSync, readdirSync, rmSync } from 'fs'
+import { existsSync, readdirSync, rmSync } from '../infra/filesystem'
 import { resolve } from 'path'
 import { BOUNDARY_DIR } from '../kernel/index'
 import { t } from '../infra/i18n'

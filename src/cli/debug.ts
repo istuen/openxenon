@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, readFileSync } from 'fs'
+import { appendFileSync, existsSync, readFileSync } from '../infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR, DEBUG_LOG_FILE } from '../kernel/index'
 

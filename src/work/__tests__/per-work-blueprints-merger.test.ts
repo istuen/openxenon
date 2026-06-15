@@ -227,7 +227,7 @@ describe('writePerWorkBlueprintsIndex / loadPerWorkBlueprintsIndex', () => {
     writeBlueprintFile('p', 'blueprint "P" { slot "x" {} }')
     writeFileSync(workOxnPath, `work "demo" { blueprint "P" ref "@prj/blueprints/p"; }\n`)
     const outPath = getPerWorkBlueprintsJsonPath(tmpDir, workName)
-    const idx = writePerWorkBlueprintsIndex({
+    const _idx = writePerWorkBlueprintsIndex({
       projectRoot: tmpDir,
       workName,
       workOxnPath,

@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { existsSync, readdirSync, rmSync, statSync } from 'fs'
+import { existsSync, readdirSync, rmSync, statSync } from '../infra/filesystem'
 import { resolve } from 'path'
 import { t } from '../infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
