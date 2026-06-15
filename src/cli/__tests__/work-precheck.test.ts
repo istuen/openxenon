@@ -98,7 +98,6 @@ describe('workPrecheck (v2 核心倒置)', () => {
   })
 
   test('case 3: Work C 用 redis (UNREGISTERED) → 抛 IAP_PROOF_PROBE_MISSING', async () => {
-    const reg = getProviderRegistry()
     // redis 根本没注册 → getStatus 返 UNREGISTERED
     await expect(workPrecheck(['redis://'])).rejects.toThrow(IAPError)
     try {

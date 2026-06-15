@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from '../infra/filesystem'
 import { join } from 'path'
 import type { TaskState } from '../cli/task-filesystem'
+import { loadOxnRc } from '../cli/config-loader'
 
 // TODO(v0.2): Hall 当前扫旧 `.openxenon/tasks/<id>/` 布局（v0.0.x 时代 task 模型）。
 // v0.2 需改为扫 `.openxenon/works/<w>/tasks/<t>/` 双层布局，并按 workspace 聚合 HallStats。
@@ -119,6 +120,46 @@ export function scanForgeDrafts(projectRoot: string): ForgeDraft[] {
   return drafts
 }
 
+/** v0.2 T8: 扫 Intent Pool 入口 (pools/<pool>/<slug>.md) */
+export interface IntentPoolEntry {
+  pool: 'research'
+  slug: string
+  path: string
+  updatedAt: number
+}
+
+export function scanIntentPools(projectRoot: string): IntentPoolEntry[] {
+  const poolsDir = join(projectRoot, '.openxenon', 'pools')
+  if (!existsSync(poolsDir)) {
+    return []
+  }
+
+  const entries: IntentPoolEntry[] = []
+  // 本 PR 仅 research 池可用; Sprint 6 扩 union
+  const pools: Array<'research'> = ['research']
+  for (const pool of pools) {
+    const poolDir = join(poolsDir, pool)
+    if (!existsSync(poolDir)) continue
+
+    const list = readdirSync(poolDir, { withFileTypes: true })
+    for (const entry of list) {
+      if (!entry.isFile() || !entry.name.endsWith('.md')) continue
+      try {
+        const stat = statSync(join(poolDir, entry.name))
+        entries.push({
+          pool,
+          slug: entry.name.replace(/\.md$/, ''),
+          path: join(poolDir, entry.name),
+          updatedAt: stat.mtimeMs,
+        })
+      } catch {
+        // ignore
+      }
+    }
+  }
+  return entries
+}
+
 export function scanArsenalAssets(projectRoot: string): ArsenalAsset[] {
   const arsenalsDir = join(projectRoot, 'arsenals')
   if (!existsSync(arsenalsDir)) {
@@ -160,6 +201,15 @@ export function getHallStats(projectRoot: string): HallStats {
   const tasks = scanProjectTasks(projectRoot)
   const arsenalAssets = scanArsenalAssets(projectRoot)
   const forgeDrafts = scanForgeDrafts(projectRoot)
+  // scanIntentPools 供上层 / 后续 Hall 报告引用 (本 PR 仅触发 warnOnForgesDeprecated 路径)
+  scanIntentPools(projectRoot)
+
+  // v0.2 T8: forges/ 兼容期 — 默认静默, Sprint 6 flip 开关
+  // 配置读取走 src/cli/config-loader.ts (本文件不直引, 通过 HallStats 字段透传给上层)
+  const warnOnForgesDeprecated = forgeDrafts.length > 0 && shouldWarnOnForgesDeprecated(projectRoot)
+  if (warnOnForgesDeprecated) {
+    console.warn(`WARN: forges/ is deprecated, use pools/. Found ${forgeDrafts.length} legacy design drafts.`)
+  }
 
   const completedTasks = tasks.filter(
     (t) => t.status === 'COMPLETED' && Object.values(t.parts).every((s) => s.status === 'PASSED'),
@@ -699,4 +749,13 @@ export function renderHall(projectRoot: string): string {
   const indexPath = join(getHallPath(projectRoot), 'index.html')
   writeFileSync(indexPath, html, 'utf-8')
   return indexPath
+}
+
+// =============================================================================
+// v0.2 T8: 读取配置 warnOnForgesDeprecated (默认 false → 静默)
+// =============================================================================
+function shouldWarnOnForgesDeprecated(projectRoot: string): boolean {
+  const { config } = loadOxnRc(projectRoot)
+  if (!config) return false
+  return config.warnOnForgesDeprecated === true
 }

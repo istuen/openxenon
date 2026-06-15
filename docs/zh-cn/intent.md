@@ -235,3 +235,37 @@ work "Onboarding" {
 - Domain 完整语法：旧 [OXN DSL 参考](./reference/oxn-dsl.md)
 - Blueprint DAG 设计原理：[Architecture](./architecture.md)
 - 如何把 Intent 资产对接 AI：[Align](./align.md)
+
+## Intent Pool 第一轮落地 (v0.2 Sprint 4 T8)
+
+Intent Pool v3 把 v0.1.x 的 `forges/` 设计笔记分化为 5 个池 (research / design / issue / audit / journal)。本 PR (Sprint 4) 是**第一轮最小切片**:
+
+- **当前仅 `pools/research/` 池可用** — 其他 4 池 union 留 Sprint 6 启用
+- **Hall 扫描迁移**：`scanIntentPools()` 新增, 兼容期仍扫 `scanForgeDrafts()`
+- **forges/ 兼容期**：`warnOnForgesDeprecated` 开关默认 `false` (静默), Sprint 6 flip 后打印 WARN
+- **Heading 模板**：research 池 `# What` `# Why` `# How` 三公共必填 (留 `# Reference` 可选)
+- **lint 集成**：`bun scripts/check-heading-skeleton.ts` 扫 pools/ + forges/, 退出码 0/1
+- **lefthook pre-commit 钩子**：第 5 个 hook `heading-skeleton` (其他 4 个: biome / eslint / typecheck / test)
+
+### 5 池 heading 模板 (设计稿约定, Sprint 6 启用)
+
+| 池 | 必填 heading |
+|---|---|
+| research | `# What` `# Why` `# How` (`# Reference` 可选) |
+| design | `# What` `# Why` `# How` `# 决策记录` `# 范围之外` |
+| issue | `# What` `# Why` `# How` `# 复现步骤` `# 期望` `# 实际` |
+| audit | `# What` `# Why` `# How` `# 证据` `# 结论` |
+| journal | `# What` `# Why` `# How` `# 时间线` |
+
+### 相关命令
+
+```bash
+# 校验 heading 骨架
+bun scripts/check-heading-skeleton.ts .openxenon/pools/research/
+
+# 启用 forges/ WARN
+oxn config set warnOnForgesDeprecated true
+
+# Hall 扫描 (含 pools + forges)
+bun src/hall/index.ts
+```
