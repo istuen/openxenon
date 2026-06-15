@@ -1,7 +1,7 @@
 import { taskCircuitBreaker } from './daemon/circuit-breaker'
 import { startApiServer, stopApiServer } from './daemon/ipc/server'
 import { daemonLogger } from './daemon/logger'
-import { recoveryManager } from './daemon/recovery'
+import { recoveryManager } from './daemon/trace/recovery'
 import { clearDaemonAddress, setDaemonAddress } from './daemon/status'
 import { daemonSupervisor } from './daemon/supervisor'
 import { fileWatcher, type WatchEvent } from './daemon/watcher'
