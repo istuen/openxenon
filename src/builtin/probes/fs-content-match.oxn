@@ -1,4 +1,5 @@
 probe "fs-content-match" align "FsContentMatch" {
+  scheme = "file://"
   description = "检查文件内容是否匹配 regex 模式"
   prop "path" { type = string; required = true }
   prop "contains" { type = string; required = true }

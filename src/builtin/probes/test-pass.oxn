@@ -1,4 +1,5 @@
 probe "test-pass" align "TestPass" {
+  scheme = "file://"
   description = "跑 bun test 并验证全部通过（exit 0 → PASS）"
   prop "path" { type = string; required = false }
   prop "pattern" { type = string; required = false }

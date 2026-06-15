@@ -1,4 +1,5 @@
 probe "http-responds" align "HttpResponds" {
+  scheme = "http://"
   description = "HTTP 请求检查 status code（status === expectedStatus → PASS；默认 timeout 5s）"
   prop "url" { type = string; required = true }
   prop "method" { type = string; required = false; default = "GET" }
