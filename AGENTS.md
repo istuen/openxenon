@@ -117,6 +117,7 @@ bun test                    # bun test，约 50 秒，414 个测试
 | T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 | **✅ done** (commit 04d143e) — 软缺口 A: grammar 多语法兼容 + 软缺口 B: merger 从 regex 改 Langium AST (3 个 sync 函数改 async) |
 | T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a | **✅ done** (commit a5dbab4) — IO Primitive + InterferenceFlag 12 项 + TRUST_BASELINE + ProbeVerdict 三态 (PASS/FAIL/INCONCLUSIVE); 14 个 builtin probe 透传守护通过 |
 | T5 taint PR-2 frozen+展示 | `feat/v0.2-t5-taint-pr2-frozen-verdict` | W3b | **✅ done** (commit 05cd452 + 75d7bd6, merge eee9832) — frozen.json schema 三态升级 (verdict 必填 PASSED/FAILED/INCONCLUSIVE + interferenceFlags 可选) + FrozenProof 聚合三态 + reader hash 关键 bug 修复 (raw hash 不依赖 zod key 顺序) + renderShowHuman 3 态 emoji + TTY 色彩 + 8 case 新测试 (5 frozen-proof-shape + 3 renderShowHuman) + 中英双 SSOT 文档 |
+| T6 taint PR-3 Provider | `feat/v0.2-t6-taint-pr3-registry-providers` | W3c | **✅ done** (commit 9d7c136 + b0c2c58, merge 3e127c5) — ProviderRegistry + 4 内置 Provider (FileProvider lstat + 4 flag / HttpProvider WAF 6 头 + cdn_cache / ShellProvider 委派 shell-exec / GitProvider 委派 git-* ) + IAPError 字典扩展 (3→4 轴, 5→7 码) + 18 case 新测试 (5 file + 6 http + 7 registry) + L1-Infra 架构合规修复 (6 处 import 走 kernel barrel) |
 | T2 daemon-pr1-cleanup | `feat/v0.2-t2-daemon-pr1-cleanup` | W1 |
 | T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 |
 | T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a |
