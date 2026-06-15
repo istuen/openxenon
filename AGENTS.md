@@ -110,7 +110,9 @@ bun test                    # bun test，约 50 秒，414 个测试
 
 | 任务 | 子分支 | 周次 |
 |---|---|---|
-| T1 infra-io-phase2-6 | `feat/v0.2-t1-infra-io-phase2-6` | W1 | **已拆分为 t1a + t1b**：t1a（cli 22 文件，`feat/v0.2-t1a-infra-fs-migrate-cli`）已开工；t1b（其余 30 + 5 死 Port）后续开 |
+| T1a infra-fs-cli (子 PR 1) | `feat/v0.2-t1a-infra-fs-migrate-cli` | W1 | **✅ done** (commit df07407 + a621c64 + 1c30cf1) — src/cli/ 22 文件 fs 直引收口 + 47 case guard test + biome cleanup |
+| T1b infra-fs-rest (子 PR 2) | `feat/v0.2-t1b-infra-fs-migrate-rest` | W1 | **✅ done** (commit cb7b014 + e6d4ff4) — 28 非 cli 文件 fs 直引收口 + filesystem-async.ts + 删 3 个真死 Port + biome cleanup |
+| T1 infra-io-phase2-6 (总) | `feat/v0.2-t1-infra-io-phase2-6` | W1 | **✅ 拆分后 t1a + t1b 已合入主分支** (52 文件实测，父文档估 23 个) |
 | T2 daemon-pr1-cleanup | `feat/v0.2-t2-daemon-pr1-cleanup` | W1 |
 | T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 |
 | T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a |
