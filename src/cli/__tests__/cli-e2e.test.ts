@@ -109,7 +109,7 @@ describe('CLI 4-Tier E2E (Phase 4)', () => {
   })
 
   test('档 3: 不存在子命令 → citty exit 1', async () => {
-    const { stdout, stderr, exitCode } = await runCli(['proof', 'totally-bogus-subcmd', '--json'])
+    const { stderr, exitCode } = await runCli(['proof', 'totally-bogus-subcmd', '--json'])
 
     expect(exitCode).toBe(1)
     // citty USAGE 走 stderr
