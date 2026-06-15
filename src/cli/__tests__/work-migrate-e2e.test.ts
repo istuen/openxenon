@@ -380,14 +380,14 @@ describe('work migrate diagnostics（PR-14d）', () => {
     await initProject()
     setupV0Work('demo', ['a'])
 
-    // 在 work.oxn 额外声明多个不存在的 ref
+    // 在 work.oxn 额外声明多个不存在的 ref（按 OXL grammar 顺序: domain → blueprint）
     const workOxnPath = join(tmpDir, '.openxenon', 'works', 'demo', 'work.oxn')
     const content = readFileSync(workOxnPath, 'utf-8')
     writeFileSync(
       workOxnPath,
       content.replace(
-        'blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";',
-        'blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";\n  domain "GhostDom" ref "@prj/domains/ghostdom";\n  blueprint "GhostBP" ref "@prj/blueprints/ghostbp";',
+        'domain "DomainA" ref "@prj/domains/domain-a";\n  blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";',
+        'domain "DomainA" ref "@prj/domains/domain-a";\n  domain "GhostDom" ref "@prj/domains/ghostdom";\n  blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";\n  blueprint "GhostBP" ref "@prj/blueprints/ghostbp";',
       ),
     )
 
