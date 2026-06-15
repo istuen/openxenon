@@ -87,7 +87,7 @@ export const InsightSchema = z.object({
   /** 第一层：本 proof 的 verdict 与证据 */
   proof: z.object({
     name: z.string(),
-    verdict: z.enum(['PASSED', 'FAILED']),
+    verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
     runAt: z.string(),
     evidenceChain: z.array(EvidenceSchema),
   }),

@@ -407,3 +407,60 @@ describe('OXL grammar integration', () => {
     expect(ast.entities.some(isProofDeclaration)).toBe(true)
   })
 })
+
+// -----------------------------------------------------------------------------
+// T5 (v0.2 Sprint 3b): renderShowHuman 3-state verdict 展示
+// -----------------------------------------------------------------------------
+
+describe('renderShowHuman 3-state (T5)', () => {
+  function buildAndRoundtrip(
+    name: string,
+    probes: import('../../kernel/schemas/proof-schema').FrozenProofProbeResult[],
+  ): import('../../kernel/schemas/proof-schema').FrozenProof {
+    const path = join(tmpDir, `${name}.json`)
+    writeFrozenProof(path, buildFrozenProof({ name, probes }))
+    const r = readFrozenProof(path)
+    if (!r.ok || !r.frozen) throw new Error(`roundtrip failed: ${r.reason}`)
+    return r.frozen
+  }
+
+  test('PASSED 渲染含 ✅ 与 "PASSED (1/1)"', async () => {
+    const { renderShowHuman } = await import('../proof')
+    const frozen = buildAndRoundtrip('p1-shape', [
+      { probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 5 },
+    ])
+    const out = renderShowHuman(frozen)
+    expect(out).toMatch(/✅/)
+    expect(out).toMatch(/PASSED \(1\/1\)/)
+    expect(out).toMatch(/✅ p1 \(r\) — PASSED, 5ms/)
+  })
+
+  test('FAILED 渲染含 ❌', async () => {
+    const { renderShowHuman } = await import('../proof')
+    const frozen = buildAndRoundtrip('p1-fail', [
+      { probeName: 'p1', ref: 'r', passed: false, verdict: 'FAILED', durationMs: 5, errorMessage: 'not found' },
+    ])
+    const out = renderShowHuman(frozen)
+    expect(out).toMatch(/❌/)
+    expect(out).toMatch(/FAILED \(0\/1\)/)
+    expect(out).toMatch(/not found/)
+  })
+
+  test('INCONCLUSIVE 渲染含 ⚠️ + "INCONCLUSIVE probes"', async () => {
+    const { renderShowHuman } = await import('../proof')
+    const frozen = buildAndRoundtrip('p1-inconclusive', [
+      {
+        probeName: 'p1',
+        ref: 'r',
+        passed: false,
+        verdict: 'INCONCLUSIVE',
+        durationMs: 5,
+        interferenceFlags: ['sandbox_violation', 'permission_denied'],
+      },
+    ])
+    const out = renderShowHuman(frozen)
+    expect(out).toMatch(/⚠️/)
+    expect(out).toMatch(/INCONCLUSIVE \(0\/1, INCONCLUSIVE probes\)/)
+    expect(out).toMatch(/\[flags: sandbox_violation, permission_denied\]/)
+  })
+})

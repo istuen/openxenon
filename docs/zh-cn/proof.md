@@ -102,6 +102,26 @@ OXN 执行 Probe 后产出 frozen.json——不可篡改的证明记录：
 - 工程师**不能编辑** frozen.json——只能读
 - 如果 AI 能绕过 Probe 直接改 verdict，整个 Proof 轴名存实亡
 
+### Verdict 三态（v0.2 Sprint 3b T5 起）
+
+自 v0.2 起，`frozen.json` 区分三种 verdict：
+
+| Verdict | 含义 | 颜色（TTY） | 图标 |
+|---|---|---|---|
+| `PASSED` | 所有 probe 都通过 | 绿 | ✅ |
+| `FAILED` | 至少一个 probe 失败 | 红 | ❌ |
+| `INCONCLUSIVE` | 至少一个 probe 命中污染信号（沙箱违规、权限拒绝、cache 命中…） | 黄 | ⚠️ |
+
+聚合规则（见 `src/cli/proof-frozen-writer.ts`）：
+- 任一 probe `verdict === 'INCONCLUSIVE'` → 整体 `INCONCLUSIVE`
+- 否则全部 probe `PASSED` → `PASSED`
+- 否则 → `FAILED`
+- 空 probe 列表 → `FAILED`（无证据即无证明）
+
+`interferenceFlags[]` 是 probe 级的 YELLOW 信号记录，不会让 probe 自身失败，但
+会把整体 verdict 抬到 `INCONCLUSIVE`。使用 `oxn proof show <name>` 查看 flags
+和人类可读的 verdict。
+
 ### 物理路径
 
 | 模式 | 路径 |

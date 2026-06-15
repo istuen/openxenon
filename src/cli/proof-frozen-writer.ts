@@ -27,9 +27,29 @@ export interface WriteFrozenProofParams {
 }
 
 export function buildFrozenProof(params: WriteFrozenProofParams): FrozenProofBody {
-  const passedCount = params.probes.filter((p) => p.passed).length
   const totalCount = params.probes.length
-  const verdict = (passedCount === totalCount && totalCount > 0 ? 'PASSED' : 'FAILED') as 'PASSED' | 'FAILED'
+
+  // 容错补全: 老 caller / 老 test fixture 只传 passed, 缺 verdict; 按 passed 推断二态后,
+  // 再由 proof-runner.ts 提供的 3-state verdict 覆盖(若有)
+  const normalizedProbes: FrozenProofProbeResult[] = params.probes.map((p) => {
+    const inferred: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' =
+      (p.verdict as 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | undefined) ?? (p.passed ? 'PASSED' : 'FAILED')
+    return { ...p, verdict: inferred }
+  })
+
+  const passedCount = normalizedProbes.filter((p) => p.passed).length
+  const inconclusiveCount = normalizedProbes.filter((p) => p.verdict === 'INCONCLUSIVE').length
+  const failedCount = totalCount - passedCount - inconclusiveCount
+
+  // 三态聚合:任一 INCONCLUSIVE → 整体 INCONCLUSIVE; 否则全 PASSED → PASSED; 其余 FAILED
+  const verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' =
+    totalCount === 0
+      ? 'FAILED'
+      : inconclusiveCount > 0
+        ? 'INCONCLUSIVE'
+        : passedCount === totalCount
+          ? 'PASSED'
+          : 'FAILED'
 
   return {
     name: params.name,
@@ -37,8 +57,8 @@ export function buildFrozenProof(params: WriteFrozenProofParams): FrozenProofBod
     verdict,
     totalCount,
     passedCount,
-    failedCount: totalCount - passedCount,
-    probes: params.probes,
+    failedCount,
+    probes: normalizedProbes,
   }
 }
 
