@@ -14,8 +14,8 @@
 // =============================================================================
 
 import { createHash } from 'crypto'
-import { chmodSync, existsSync, readFileSync, statSync, writeFileSync } from 'fs'
-import { mkdirSync } from 'fs'
+import { chmodSync, existsSync, readFileSync, statSync, writeFileSync } from '../../infra/filesystem'
+import { mkdirSync } from '../../infra/filesystem'
 import { dirname } from 'path'
 
 /** frozen.json 文件权限：创建即只读（OS 层硬防御） */

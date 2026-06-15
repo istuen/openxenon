@@ -5,7 +5,7 @@
 // 不依赖 shell，纯 JS。
 // =============================================================================
 
-import { readFileSync } from 'fs'
+import { readFileSync } from '../filesystem'
 import { join } from 'path'
 import type { ProbeContextBase } from '../../kernel/index'
 

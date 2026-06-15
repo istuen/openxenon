@@ -1,4 +1,4 @@
-import { existsSync, unlinkSync } from 'fs'
+import { existsSync, unlinkSync } from './filesystem'
 import type { createServer } from 'net'
 
 export interface SocketMessage {

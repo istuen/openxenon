@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs'
+import { readFileSync } from '../filesystem'
 import { join } from 'path'
 import type { ProbeContextBase } from '../../kernel/index'
 import { isSafeRegex } from './regex-safety'

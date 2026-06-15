@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from './filesystem'
 import { join } from 'path'
 import { z } from 'zod'
 import type { AssetState, AssetType } from '../infra/paths'
@@ -199,7 +199,7 @@ export function loadStandardByPath(assetPath: string): StandardAsset | null {
     return null
   }
 
-  const typeIndex = pathParts.findIndex((p) => p === 'arsenal')
+  const typeIndex = pathParts.indexOf('arsenal')
   const nameIndex = typeIndex + 2
   if (nameIndex >= pathParts.length) return null
 

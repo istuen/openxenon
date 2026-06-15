@@ -11,7 +11,7 @@
 // 写盘策略：原子写（.tmp → rename），与 .cache/domains.json 模式一致。
 // =============================================================================
 
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '../filesystem'
 import { dirname } from 'path'
 import { safeValidateProbeStats, type ProbeStats } from '../../kernel/index'
 

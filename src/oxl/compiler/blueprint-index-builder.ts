@@ -28,7 +28,15 @@
 //   不一致 → status='invalid' + errors[] 标注（与 domain 一致）。
 // =============================================================================
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from '../../infra/filesystem'
 import { basename, join, relative } from 'path'
 import { z } from 'zod'
 
@@ -230,7 +238,7 @@ export function parseBlueprintSlim(filePath: string, projectRoot: string): Bluep
   const propCount = Array.from(propMatches).length
 
   // 卫生检查：description 含换行 / 解析失败的标记
-  if (description !== undefined && description.includes('\n')) {
+  if (description?.includes('\n')) {
     errors.push('description spans multiple lines (likely parse issue)')
   }
 

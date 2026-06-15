@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '../infra/filesystem'
 import { dirname, join } from 'path'
 import {
   BOUNDARY_DIR,

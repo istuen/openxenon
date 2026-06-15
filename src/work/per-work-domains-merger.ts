@@ -18,7 +18,7 @@
 //   - 找不到文件              → 标 invalid + errors[]
 // =============================================================================
 
-import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '../infra/filesystem'
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
 import { parseOxnReference } from '../oxl/scope/oxn-scope'

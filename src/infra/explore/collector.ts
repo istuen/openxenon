@@ -3,7 +3,7 @@
  * 触碰文件系统，是唯一的 I/O 层
  */
 
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, writeFile } from '../filesystem-async'
 import { glob } from 'glob'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'
@@ -164,8 +164,7 @@ async function collectProbes(projectRoot: string): Promise<RawProbeInfo[]> {
     // 简易 pattern 推导：取 semanticName 第一个 example 的 path 或 command
     const firstExample = p.examples[0]
     const inputs = firstExample?.inputs ?? {}
-    const pattern =
-      (inputs['path'] as string) ?? (inputs['url'] as string) ?? (inputs['command'] as string) ?? p.semanticName
+    const pattern = (inputs.path as string) ?? (inputs.url as string) ?? (inputs.command as string) ?? p.semanticName
     return { type: p.semanticName.replace(/-/g, '_'), pattern, source: 'builtin' }
   })
   coverages.push(...builtinProbes)

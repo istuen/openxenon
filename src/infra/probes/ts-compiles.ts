@@ -10,7 +10,7 @@
 //   path-only 模式：自动检测 ./tsconfig.json 并加 --project（保留项目配置，与"只传 tsconfig"等价）。
 // =============================================================================
 
-import { existsSync, unlinkSync, writeFileSync } from 'fs'
+import { existsSync, unlinkSync, writeFileSync } from '../filesystem'
 import { createHash, randomUUID } from 'crypto'
 import { join, resolve } from 'path'
 import { executeShellExec, type ShellExecResult } from './shell-exec'
