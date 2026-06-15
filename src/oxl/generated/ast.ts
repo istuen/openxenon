@@ -76,6 +76,7 @@ export type OpenXenonLanguageKeywordNames =
     | "prop"
     | "ref"
     | "required"
+    | "scheme"
     | "skill"
     | "skill_context"
     | "slot"
@@ -602,6 +603,7 @@ export interface ProbeDeclaration extends langium.AstNode {
     name: string;
     output: Array<ProbeOutputDeclaration>;
     props: Array<PropDeclaration>;
+    scheme?: string;
 }
 
 export const ProbeDeclaration = {
@@ -609,7 +611,8 @@ export const ProbeDeclaration = {
     descriptions: 'descriptions',
     name: 'name',
     output: 'output',
-    props: 'props'
+    props: 'props',
+    scheme: 'scheme'
 } as const;
 
 export function isProbeDeclaration(item: unknown): item is ProbeDeclaration {
@@ -1426,6 +1429,9 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 props: {
                     name: ProbeDeclaration.props,
                     defaultValue: []
+                },
+                scheme: {
+                    name: ProbeDeclaration.scheme
                 }
             },
             superTypes: [TopLevelEntity.$type]

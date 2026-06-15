@@ -1,4 +1,5 @@
 probe "ts-compiles" align "TsCompiles" {
+  scheme = "file://"
   description = "跑 tsc --noEmit 验证类型检查通过（exit 0 → PASS）"
   prop "path" { type = string; required = false }
   prop "tsconfig" { type = string; required = false }

@@ -1,4 +1,5 @@
 probe "git-branch-exists" align "GitBranchExists" {
+  scheme = "git://"
   description = "检查指定本地分支是否存在"
   prop "branch" { type = string; required = true }
   output { exists = boolean }

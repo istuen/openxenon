@@ -77,8 +77,12 @@ TemplateString:
 
 // ==================== Probe ====================
 // Probe 实体声明（资产定义，位于全局目录）
+// v0.2 T10 (OXL 1.3): 加可选 'scheme' ':' scheme=STRING 字段
+//   - 默认从 target URI 前缀推断; 显式声明用于: (1) target 缺失时寻址 (2) cli-add probe 跨域
+//   - 静态校验由 src/oxl/validators/probe-validator.ts 承担 (3 规则)
 ProbeDeclaration:
     'probe' name=STRING '{'
+        ('scheme' ':' scheme=STRING)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (output+=ProbeOutputDeclaration)?
