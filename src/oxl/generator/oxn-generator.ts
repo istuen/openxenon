@@ -52,6 +52,7 @@ import type {
   ProbeRefDecl,
   ObserveDeclaration,
 } from '../generated/ast.js'
+import { isTaskDepsField } from '../generated/ast.js'
 
 import { isBinaryExpr, isTemplateString, isTernaryExpr, isVariableRef } from '../generated/ast.js'
 
@@ -367,7 +368,7 @@ export function convertTaskDeclaration(decl: TaskDeclaration): OxnTaskIR {
     ...(decl.domain !== undefined ? { domain: decl.domain } : {}),
     ...(decl.blueprint !== undefined ? { blueprint: decl.blueprint } : {}),
     parts: (decl.parts || []).map(convertTaskPartDecl),
-    deps: decl.deps?.deps || [],
+    ...(isTaskDepsField(decl) && decl.deps ? { deps: decl.deps.deps || [] } : {}),
   }
 }
 

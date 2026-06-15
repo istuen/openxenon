@@ -8,10 +8,13 @@
 
 import type { ValidationAcceptor } from 'langium'
 import type { WorkDeclaration, TaskDeclaration } from '../generated/ast.js'
-import { isTaskDeclaration } from '../generated/ast.js'
+import { isTaskDeclaration, isTaskDepsField } from '../generated/ast.js'
 
 function getTaskDeps(task: TaskDeclaration): string[] {
-  return task.deps?.deps ?? []
+  if (isTaskDepsField(task) && task.deps) {
+    return task.deps.deps ?? []
+  }
+  return []
 }
 
 function validateDag(tasks: TaskDeclaration[]): { hasCycle: boolean; cycleHint?: string } {
@@ -75,7 +78,7 @@ export function validateTaskAlign(node: WorkDeclaration, accept: ValidationAccep
   for (const t of tasks) {
     for (const dep of getTaskDeps(t)) {
       if (!nameSet.has(dep)) {
-        accept('error', `task "${t.name}" references undeclared dep "${dep}"`, { node: t, property: 'deps' })
+        accept('error', `task "${t.name}" references undeclared dep "${dep}"`, { node: t, property: 'name' as const })
       }
     }
   }

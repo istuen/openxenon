@@ -283,7 +283,7 @@ async function validateAndWriteArtifacts(params: {
 
   // ── 1. 跑 merger 解析 domain/blueprint ref ──
   const workOxnPath = getWorkOxnPath(projectRoot, workName)
-  const domainsIdx = buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
+  const domainsIdx = await buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
   const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
 
   // ── 2. 收集 unresolved ──
@@ -324,7 +324,7 @@ async function validateAndWriteArtifacts(params: {
   // ── 3. 写 domains.json + blueprints.json ──
   const domainsJsonPath = getPerWorkDomainsJsonPath(projectRoot, workName)
   const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
-  writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
+  await writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
   writePerWorkBlueprintsIndex({
     projectRoot,
     workName,
@@ -2823,7 +2823,7 @@ const migrateSubcommand = defineCommand({
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
-  run(ctx) {
+  async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
     const projectRoot = getProjectRoot()
@@ -2832,7 +2832,7 @@ const migrateSubcommand = defineCommand({
       return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
-    const result = migrateWorkToV1(projectRoot, workName)
+    const result = await migrateWorkToV1(projectRoot, workName)
 
     if (!result.ok) {
       if (result.kind === 'work-not-found') {

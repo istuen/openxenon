@@ -246,11 +246,18 @@ TaskDeclaration:
         ('domain' domain=STRING)?
         ('blueprint' blueprint=STRING)?
         (parts+=TaskPartDecl)*
-        ('deps' '=' deps=TaskDeps)?
+        (TaskDepsField)?
     '}';
 
 TaskDeps:
-    '[' (deps+=STRING (',' deps+=STRING)*)? ']';
+    '[' (deps+=STRING (',' deps+=STRING)*)? ']'    // ["a", "b"]
+    | STRING (',' STRING)+                          // "a", "b" (无括号)
+    | STRING                                         // "a" (单元素无括号)
+;
+TaskDepsField:
+    'deps' ':' deps=TaskDeps                        // 老兼容 (deps : [])
+    | 'deps' '=' deps=TaskDeps                      // v0.0.28 后 (deps = [])
+;
 
 TaskPartDecl:
     'part' name=STRING '{'

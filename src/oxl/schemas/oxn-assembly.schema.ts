@@ -187,7 +187,7 @@ export const OxnTaskIRSchema = z.object({
   domain: z.string().optional(),
   blueprint: z.string().optional(),
   parts: z.array(OxnTaskPartDeclSchema).default([]),
-  deps: z.array(z.string()).default([]),
+  deps: z.array(z.string()).default([]).optional(),
 })
 export type OxnTaskIR = z.infer<typeof OxnTaskIRSchema>
 

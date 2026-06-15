@@ -21,7 +21,10 @@
 import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '../infra/filesystem'
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
+import { URI } from 'langium'
 import { parseOxnReference } from '../oxl/scope/oxn-scope'
+import { createOxnParser } from '../oxl/langium/oxn-services'
+import { isWorkDeclaration, isDomainRefDecl, isOXNDocument } from '../oxl/generated/ast'
 import { BOUNDARY_DIR, DOMAINS_DIR, WORK_DOMAINS_JSON } from '../kernel/index'
 import { hashText } from './plan-hash'
 import { parseDomainSlim, type DomainIndexEntry } from '../oxl/compiler/domain-index-builder'
@@ -57,30 +60,36 @@ export const PerWorkDomainsIndexSchema = z.object({
 export type PerWorkDomainEntry = z.infer<typeof PerWorkDomainEntrySchema>
 export type PerWorkDomainsIndex = z.infer<typeof PerWorkDomainsIndexSchema>
 
-// ───────── ref 提取（regex-only）─────────
+// ───────── ref 提取（Langium AST，v0.2 T3 软缺口 B 修复）─────────
 
 /**
  * 从 work.oxn 内容中提取 `domain "X" [ref "Y"];` 声明。
  * 保留声明顺序；同 name 多次声明 → 多次出现（call 端负责去重）。
  *
- * 设计：与 PR-1 parseDomainSlim 同样用 regex；
- *       langium 解析留给 PR-8（与 work validate 整合时一起做）。
+ * v0.2 T3 修订：改用 Langium AST 解析，规避旧 regex 实现的边界问题
+ * - description 字段字符串中含 `domain "fake"` 不会被误识别（AST 跳过 STRING 节点）
+ * - 注释中含 `domain "fake"` 不会被误识别（AST 跳过 COMMENT 节点）
+ * - 跨多行 `domain\n  "X"\n  ref\n  "Y";` 能正确识别（AST 节点结构化）
+ *
+ * 实现说明：v0.2 T3 改为 async（Langium parse 实际是 sync 但 TypeScript
+ * 包装为 async Promise；3 个 sync 调用方 buildPerWorkDomainsIndex /
+ * cli/work.ts:286 / work-migrator.ts:258 同步改 async）。
  */
 export interface DeclaredDomainRef {
   name: string
   ref: string | null
 }
 
-export function extractDomainRefs(workOxnContent: string): DeclaredDomainRef[] {
-  const out: DeclaredDomainRef[] = []
-  // 匹配 `domain "X"` 然后可选 `ref "Y"`，再到分号
-  // 不要求行首（允许 `work "x" { domain "Y" ref "Z"; }` 内联）
-  // 用 `;` 终止符做 disambiguate：task 内的 `domain "Y" blueprint "Z"` 无 `;`，不会误匹配
-  const re = /domain\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g
-  for (const m of workOxnContent.matchAll(re)) {
-    out.push({ name: m[1]!, ref: m[2] ?? null })
-  }
-  return out
+export async function extractDomainRefs(workOxnContent: string): Promise<DeclaredDomainRef[]> {
+  const parser = createOxnParser()
+  const doc = await parser.parse(workOxnContent, URI.file(`/tmp/extract-domain-refs-${Date.now()}.oxn`))
+  if (doc.parseErrors.length > 0) return [] as DeclaredDomainRef[]
+  const root = doc.ast
+  if (!root || !isOXNDocument(root)) return [] as DeclaredDomainRef[]
+  // 遍历顶层 entity 找 WorkDeclaration
+  const workDecl = root.entities.find(isWorkDeclaration)
+  if (!workDecl) return [] as DeclaredDomainRef[]
+  return workDecl.domains.filter(isDomainRefDecl).map((n) => ({ name: n.name, ref: n.ref ?? null }))
 }
 
 // ───────── ref → file 路径解析 ─────────
@@ -152,7 +161,7 @@ export interface BuildPerWorkDomainsOptions {
   generatedAt?: string
 }
 
-export function buildPerWorkDomainsIndex(options: BuildPerWorkDomainsOptions): PerWorkDomainsIndex {
+export async function buildPerWorkDomainsIndex(options: BuildPerWorkDomainsOptions): Promise<PerWorkDomainsIndex> {
   const { projectRoot, workName, workOxnPath } = options
   const generatedAt = options.generatedAt ?? new Date().toISOString()
 
@@ -161,7 +170,7 @@ export function buildPerWorkDomainsIndex(options: BuildPerWorkDomainsOptions): P
   }
   const content = readFileSync(workOxnPath, 'utf-8')
   const sourceHash = hashText(content)
-  const declared = extractDomainRefs(content)
+  const declared = await extractDomainRefs(content)
 
   // 去重：按 name 保留首次出现的 ref（call 端对此负责报告 duplicate）
   const seen = new Set<string>()
@@ -237,8 +246,8 @@ export interface WritePerWorkDomainsOptions extends BuildPerWorkDomainsOptions {
   outPath: string
 }
 
-export function writePerWorkDomainsIndex(options: WritePerWorkDomainsOptions): PerWorkDomainsIndex {
-  const idx = buildPerWorkDomainsIndex(options)
+export async function writePerWorkDomainsIndex(options: WritePerWorkDomainsOptions): Promise<PerWorkDomainsIndex> {
+  const idx = await buildPerWorkDomainsIndex(options)
   const { outPath } = options
   const dir = dirname(outPath)
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
