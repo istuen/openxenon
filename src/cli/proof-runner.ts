@@ -69,6 +69,7 @@ export async function executeProbe(
     return {
       probeName: probe.probeName,
       ref: probe.ref,
+      verdict: 'FAILED',
       passed: false,
       errorMessage: `unknown probe ref: ${probe.ref} (no Infra handler)`,
       durationMs: Date.now() - start,
@@ -79,6 +80,7 @@ export async function executeProbe(
     return {
       probeName: probe.probeName,
       ref: probe.ref,
+      verdict: 'FAILED',
       passed: false,
       errorMessage: `no Infra handler for kind: ${kind}`,
       durationMs: Date.now() - start,
@@ -92,6 +94,7 @@ export async function executeProbe(
     return {
       probeName: probe.probeName,
       ref: probe.ref,
+      verdict: 'FAILED',
       passed: false,
       errorMessage: `Infra exception: ${err instanceof Error ? err.message : String(err)}`,
       durationMs: Date.now() - start,
@@ -103,6 +106,7 @@ export async function executeProbe(
   return {
     probeName: probe.probeName,
     ref: probe.ref,
+    verdict: verdict.verdict === 'INCONCLUSIVE' ? 'INCONCLUSIVE' : verdict.passed ? 'PASSED' : 'FAILED',
     passed: verdict.passed,
     output: { observation, verdict },
     errorMessage: verdict.passed ? undefined : (verdict.failureMessage ?? verdict.message),

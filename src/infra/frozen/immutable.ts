@@ -107,8 +107,14 @@ export function readFrozenImmutable<T extends FrozenBody & { _xenon_meta: Frozen
   }
 
   // 验签：重算 body 的 SHA-256，与 _xenon_meta.content_hash 比对
-  const { _xenon_meta, ...body } = result
-  const expectedHash = createHash('sha256').update(JSON.stringify(body)).digest('hex')
+  // 注意:必须用 raw `parsed` 去掉 _xenon_meta 后再 hash,不能 hash zod `result`——
+  // zod 在 re-emit 时会按 schema 声明顺序重排 key,导致与 writer 端 hash 不一致。
+  // writer 端 hash 的是 writer 自己构造的 body(原始 key 顺序),reader 端必须对应。
+  const { _xenon_meta: _rawMeta, ...rawBody } = parsed as Record<string, unknown> & {
+    _xenon_meta: FrozenXenonMetaBase
+  }
+  const _xenon_meta = _rawMeta
+  const expectedHash = createHash('sha256').update(JSON.stringify(rawBody)).digest('hex')
   if (expectedHash !== _xenon_meta.content_hash) {
     return {
       ok: false,
