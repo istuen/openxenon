@@ -24,6 +24,7 @@ export class ProbeEvaluator {
       const passed = obs.result === 'PASSED'
       return {
         passed,
+        verdict: passed ? 'PASS' : 'FAIL',
         message: passed ? 'OK' : obs.error || 'Failed',
       }
     }
@@ -32,6 +33,7 @@ export class ProbeEvaluator {
     if (!strategy) {
       return {
         passed: false,
+        verdict: 'FAIL',
         message: `Unknown probe type: ${observation.probeType}`,
       }
     }
@@ -40,13 +42,13 @@ export class ProbeEvaluator {
 
   reduceResults(observations: ProbeObservation[], policy: 'AND' | 'OR'): ProbeVerdict {
     if (observations.length === 0) {
-      return { passed: false, message: 'No probes executed' }
+      return { passed: false, verdict: 'FAIL', message: 'No probes executed' }
     }
 
     const verdicts = observations.map((obs) => {
       const strategy = this.strategies[obs.probeType]
       if (!strategy) {
-        return { passed: false, message: `Unknown probe type: ${obs.probeType}` }
+        return { passed: false, verdict: 'FAIL', message: `Unknown probe type: ${obs.probeType}` }
       }
       return strategy(obs, {})
     })
@@ -54,11 +56,12 @@ export class ProbeEvaluator {
     if (policy === 'AND') {
       const allPassed = verdicts.every((v) => v.passed)
       if (allPassed) {
-        return { passed: true, message: 'All probes passed' }
+        return { passed: true, verdict: 'PASS', message: 'All probes passed' }
       }
       const failed = verdicts.filter((v) => !v.passed)
       return {
         passed: false,
+        verdict: 'FAIL',
         message: `${failed.length}/${verdicts.length} probes failed`,
       }
     }
@@ -69,16 +72,18 @@ export class ProbeEvaluator {
         const passed = verdicts.filter((v) => v.passed)
         return {
           passed: true,
+          verdict: 'PASS',
           message: `${passed.length}/${verdicts.length} probes passed`,
         }
       }
       return {
         passed: false,
+        verdict: 'FAIL',
         message: 'All probes failed',
       }
     }
 
-    return { passed: false, message: `Unknown policy: ${policy}` }
+    return { passed: false, verdict: 'FAIL', message: `Unknown policy: ${policy}` }
   }
 
   reduceStageVerdict(observations: ProbeObservation[], policy: 'AND' | 'OR'): 'PASSED' | 'FAILED' {
