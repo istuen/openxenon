@@ -28,7 +28,15 @@
 //   不一致 → status='invalid' + errors[] 标注（与 domain 一致）。
 // =============================================================================
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from '../../infra/filesystem'
 import { basename, join, relative } from 'path'
 import { z } from 'zod'
 

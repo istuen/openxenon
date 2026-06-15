@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from './filesystem'
 import { join } from 'path'
 import { z } from 'zod'
 import type { AssetState, AssetType } from '../infra/paths'

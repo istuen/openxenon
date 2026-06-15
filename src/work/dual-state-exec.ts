@@ -11,7 +11,7 @@
 // 命名范式：详见 kernel/constants.ts V1 布局
 // =============================================================================
 
-import { existsSync, mkdirSync, renameSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, renameSync, writeFileSync } from '../infra/filesystem'
 import { dirname } from 'path'
 import {
   createInitialTaskState,

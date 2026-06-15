@@ -10,7 +10,7 @@
 // =============================================================================
 
 import { join } from 'path'
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync } from '../filesystem'
 import { safeValidateProbeStats, type ProbeStats, safeValidateFrozenProof, type FrozenProof } from '../../kernel/index'
 
 /**

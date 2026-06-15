@@ -18,7 +18,7 @@
 // =============================================================================
 
 import { createHash } from 'node:crypto'
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
+import { existsSync, readdirSync, readFileSync, statSync } from '../infra/filesystem'
 import { join, relative } from 'path'
 import { hashPort } from '../infra/hash'
 import { WORK_DOMAINS_JSON, WORK_BLUEPRINTS_JSON } from '../kernel/index'

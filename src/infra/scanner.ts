@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, statSync } from 'fs'
+import { existsSync, readdirSync, statSync } from './filesystem'
 import { join } from 'path'
 
 interface ScannedFile {

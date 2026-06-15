@@ -1,6 +1,7 @@
 import type { FSWatcher } from 'fs'
 import {
   appendFileSync,
+  chmodSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -134,6 +135,7 @@ export const fs = {
 export type { FSWatcher }
 export {
   appendFileSync,
+  chmodSync,
   existsSync,
   mkdirSync,
   readdirSync,

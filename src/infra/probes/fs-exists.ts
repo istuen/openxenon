@@ -1,4 +1,4 @@
-import { statSync } from 'fs'
+import { statSync } from '../filesystem'
 import { join } from 'path'
 import type { ProbeContextBase } from '../../kernel/index'
 import { matchGlob, parseGlobPattern } from './glob-utils'

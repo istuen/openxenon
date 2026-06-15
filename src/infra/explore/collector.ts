@@ -3,7 +3,7 @@
  * 触碰文件系统，是唯一的 I/O 层
  */
 
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, writeFile } from '../filesystem-async'
 import { glob } from 'glob'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'

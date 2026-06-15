@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from '../infra/filesystem'
 import { join } from 'path'
 import type { TaskState } from '../cli/task-filesystem'
 
