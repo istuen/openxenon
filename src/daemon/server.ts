@@ -1,4 +1,6 @@
 import { daemonLogger } from './logger'
+import { daemonStartup } from '../infra/registry/daemon-startup'
+import { directoryExists } from '../infra/filesystem'
 
 export interface ServerConfig {
   port: number
@@ -12,6 +14,18 @@ export function startServer(config: ServerConfig): any {
   if (server) {
     daemonLogger.warn('Server already running, stopping previous instance')
     stopServer()
+  }
+
+  // v0.2 T9: 冷加载 ProviderRegistry (v2 核心倒置 — 启动期不阻断)
+  if (directoryExists('.openxenon')) {
+    void daemonStartup(process.cwd()).then((result) => {
+      for (const w of result.warnings) {
+        daemonLogger.warn(w)
+      }
+      daemonLogger.info(
+        `ProviderRegistry bootstrap: ${result.bootstrap.ok} ok, ${result.bootstrap.corrupted} corrupted, ${result.bootstrap.missing} missing`,
+      )
+    })
   }
 
   server = Bun.serve({

@@ -57,6 +57,9 @@ export type IAPErrorCode =
   | 'PROVIDER_UNSUPPORTED'
   | 'SANDBOX_REJECTED'
   | 'PROBE_INVALID'
+  | 'PROBE_CORRUPTED'
+  | 'PROBE_MISSING'
+  | 'PROBE_FIX_UNAVAILABLE'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown
