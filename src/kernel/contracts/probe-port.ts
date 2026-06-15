@@ -4,6 +4,8 @@ export interface ProbeObservation {
   error?: string
   executedAt: number
   exitCode?: number | null
+  /** v0.2 T4: Infra 层填充的信号污染标记（YELLOW 透传 / RED 短路 INCONCLUSIVE） */
+  interference?: { flags: import('./io-primitive').InterferenceFlag[] }
 }
 
 export interface ProbeResult extends ProbeObservation {
@@ -17,12 +19,22 @@ export interface ProbeResult extends ProbeObservation {
 export type ProbeStrategy = (observation: ProbeObservation, params: Record<string, unknown>) => ProbeVerdict
 
 export interface ProbeVerdict {
+  /**
+   * v0.2 T4: verdict 三态（必填）
+   * - PASS: 命中
+   * - FAIL: 未命中
+   * - INCONCLUSIVE: 信号污染（任一 RED flag 短路返回）
+   */
+  verdict: 'PASS' | 'FAIL' | 'INCONCLUSIVE'
+  /** 保留兼容字段：PASS / INCONCLUSIVE 都映射 passed: false（除 PASS 仍 passed: true） */
   passed: boolean
   message: string
   actual?: unknown
   params?: Record<string, unknown>
   duration?: number
   failureMessage?: string
+  /** v0.2 T4: YELLOW flag 透传记录（无 flag 时缺省） */
+  interferenceFlags?: import('./io-primitive').InterferenceFlag[]
 }
 
 export interface ProbeContextBase {
