@@ -14,5 +14,6 @@ export {
 } from './process'
 export { getServer, isServerRunning, type ServerConfig, startServer, stopServer } from './server'
 export { type DaemonStatus, getDaemonStatus } from './status'
+// daemonStartup 在 src/infra/registry/ (L1-Infra), 供 daemon / cli 共同调用
 
 import './ipc/handlers'

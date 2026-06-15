@@ -17,6 +17,8 @@ export default defineCommand({
   },
   subCommands: {
     add: () => import('./probe-add').then((m) => m.probeAddSubcommand),
-    // list/remove/update 在 PR-5/6 补, PoC 阶段只暴露 add
+    list: () => import('./probe-list').then((m) => m.probeListSubcommand),
+    fix: () => import('./probe-fix').then((m) => m.probeFixSubcommand),
+    // remove/update 在 PR-5.1/6 补
   },
 })
