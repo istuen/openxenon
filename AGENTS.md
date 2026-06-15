@@ -114,6 +114,7 @@ bun test                    # bun test，约 50 秒，414 个测试
 | T1b infra-fs-rest (子 PR 2) | `feat/v0.2-t1b-infra-fs-migrate-rest` | W1 | **✅ done** (commit cb7b014 + e6d4ff4) — 28 非 cli 文件 fs 直引收口 + filesystem-async.ts + 删 3 个真死 Port + biome cleanup |
 | T1 infra-io-phase2-6 (总) | `feat/v0.2-t1-infra-io-phase2-6` | W1 | **✅ 拆分后 t1a + t1b 已合入主分支** (52 文件实测，父文档估 23 个) |
 | T2 daemon-pr1-cleanup | `feat/v0.2-t2-daemon-pr1-cleanup` | W1 | **✅ done** (commit fdcd238) — src/daemon/recovery.ts → trace/recovery.ts (父文档 v0.1.x 早期版本的范围因 v0.1.8 演进中已分化, 仅做 recovery 移位) |
+| T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 | **✅ done** (commit 04d143e) — 软缺口 A: grammar 多语法兼容 + 软缺口 B: merger 从 regex 改 Langium AST (3 个 sync 函数改 async) |
 | T2 daemon-pr1-cleanup | `feat/v0.2-t2-daemon-pr1-cleanup` | W1 |
 | T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 |
 | T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a |
