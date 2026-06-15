@@ -197,7 +197,7 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
   }
 
   // 卫生检查：description 含换行 / 解析失败的标记
-  if (description !== undefined && description.includes('\n')) {
+  if (description?.includes('\n')) {
     errors.push('description spans multiple lines (likely parse issue)')
   }
 

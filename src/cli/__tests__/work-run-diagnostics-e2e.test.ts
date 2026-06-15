@@ -230,7 +230,7 @@ describe('work run 补 diagnostics + 持久化（PR-14c）', () => {
     await runCli(['work', 'run', 'demo', '--json'])
 
     // 状态已 passed，再 unlock 重新跑会报 already exists；用 status 读
-    const r = JSON.parse((await runCli(['work', 'status', 'demo', '--json'])).stdout)
+    const _r = JSON.parse((await runCli(['work', 'status', 'demo', '--json'])).stdout)
     // status 当前不读 .run/state.json 的 diagnostics（仅 planLock）；但 .run/state.json 已持久化
     const state = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json'), 'utf-8'))
     expect(state.diagnostics).toBeDefined()

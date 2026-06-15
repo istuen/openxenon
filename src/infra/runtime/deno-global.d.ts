@@ -11,7 +11,6 @@
 // =============================================================================
 
 declare global {
-  // eslint-disable-next-line no-var
   var Deno:
     | {
         readonly version: { deno: string; v8: string; typescript: string }

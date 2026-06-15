@@ -164,8 +164,7 @@ async function collectProbes(projectRoot: string): Promise<RawProbeInfo[]> {
     // 简易 pattern 推导：取 semanticName 第一个 example 的 path 或 command
     const firstExample = p.examples[0]
     const inputs = firstExample?.inputs ?? {}
-    const pattern =
-      (inputs['path'] as string) ?? (inputs['url'] as string) ?? (inputs['command'] as string) ?? p.semanticName
+    const pattern = (inputs.path as string) ?? (inputs.url as string) ?? (inputs.command as string) ?? p.semanticName
     return { type: p.semanticName.replace(/-/g, '_'), pattern, source: 'builtin' }
   })
   coverages.push(...builtinProbes)

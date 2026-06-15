@@ -45,7 +45,7 @@ export async function executeLintCheck(params: LintCheckParams, context: ProbeCo
   const shellResult: ShellExecResult = await executeShellExec(command, context as ProbeContext, params.timeout ?? 60000)
 
   // 解析 biome 输出：可能含 "Found N error(s)" 或 "X issues"
-  const combined = (shellResult.stdout ?? '') + '\n' + (shellResult.stderr ?? '')
+  const combined = `${shellResult.stdout ?? ''}\n${shellResult.stderr ?? ''}`
   const issueMatch = combined.match(/(?:Found|Found)\s+(\d+)\s+(?:error|issue)/i)
   const issueCount = issueMatch ? Number.parseInt(issueMatch[1] ?? '0', 10) : undefined
 
