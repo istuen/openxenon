@@ -60,6 +60,7 @@ export type IAPErrorCode =
   | 'PROBE_CORRUPTED'
   | 'PROBE_MISSING'
   | 'PROBE_FIX_UNAVAILABLE'
+  | 'INGEST_SCHEMA_INVALID'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

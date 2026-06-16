@@ -77,6 +77,31 @@ oxn dev validate                        # 校验 .oxn 语法
 oxn dev migrate-yaml <file>             # YAML → OXL
 ```
 
+### Token 可观测（v0.2.2+）
+
+每完成一个 task part 后调用 `oxn token ingest` 上报本轮 AI 模型 Token 消耗：
+
+```bash
+oxn token ingest --input-json '{
+  "source": "opencode",
+  "sessionID": "<当前会话ID>",
+  "workRef": "<work名>",
+  "taskRef": "<task名>",
+  "modelID": "<模型标识>",
+  "providerID": "<提供商标识>",
+  "timestamp": 1718500000000,
+  "tokens": {"input": 1200, "output": 800},
+  "cost": 0.03
+}'
+```
+
+- `source`: `opencode` / `claude` / `manual`
+- `tokens.input` / `tokens.output`: 本轮的 prompt 与 completion token 消耗
+- `cost`: 本轮费用（美元）
+- `timestamp`: Unix 毫秒时间戳
+
+---
+
 ## 反模式
 
 - 不要在 AI 助手软件中跑 `oxn init`（已 init 过）

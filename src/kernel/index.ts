@@ -61,6 +61,9 @@ export type {
   ProbeTypeStatsView,
 } from './schemas/insight-schema'
 
+export { TokenRecordSchema, safeValidateTokenRecord } from './schemas/token-record.schema'
+export type { TokenRecord } from './schemas/token-record.schema'
+
 export {
   BlueprintSchema,
   SlotDefinitionSchema,
