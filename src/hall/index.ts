@@ -122,7 +122,7 @@ export function scanForgeDrafts(projectRoot: string): ForgeDraft[] {
 
 /** v0.2 T8: 扫 Intent Pool 入口 (pools/<pool>/<slug>.md) */
 export interface IntentPoolEntry {
-  pool: 'research'
+  pool: 'research' | 'design' | 'issue' | 'audit' | 'journal'
   slug: string
   path: string
   updatedAt: number
@@ -135,8 +135,13 @@ export function scanIntentPools(projectRoot: string): IntentPoolEntry[] {
   }
 
   const entries: IntentPoolEntry[] = []
-  // 本 PR 仅 research 池可用; Sprint 6 扩 union
-  const pools: Array<'research'> = ['research']
+  const pools: Array<'research' | 'design' | 'issue' | 'audit' | 'journal'> = [
+    'research',
+    'design',
+    'issue',
+    'audit',
+    'journal',
+  ]
   for (const pool of pools) {
     const poolDir = join(poolsDir, pool)
     if (!existsSync(poolDir)) continue

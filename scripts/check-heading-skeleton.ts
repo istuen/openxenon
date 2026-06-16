@@ -20,14 +20,30 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { validateHeadingSkeleton, type HeadingSkeletonSpec } from '../src/infra/markdown-headings'
 
-/** research 池 spec (本 PR 唯一启用池) */
+/** 5 池 spec (v0.2 T8: research 池有 spec; T13 Sprint 6: 全部 5 池启用) */
 const POOL_SPECS: Record<string, HeadingSkeletonSpec> = {
   research: {
     required: ['# What', '# Why', '# How'],
     optional: ['# Reference'],
     order: 'flexible',
   },
-  // Sprint 6 启用: design / issue / audit / journal
+  design: {
+    required: ['# What', '# Why', '# How'],
+    optional: ['# 决策记录', '# 范围之外'],
+    order: 'flexible',
+  },
+  issue: {
+    required: ['# What', '# Why', '# How', '# 复现步骤', '# 期望', '# 实际'],
+    order: 'flexible',
+  },
+  audit: {
+    required: ['# What', '# Why', '# How', '# 证据', '# 结论'],
+    order: 'flexible',
+  },
+  journal: {
+    required: ['# What', '# Why', '# How', '# 时间线'],
+    order: 'flexible',
+  },
 }
 
 interface CheckResult {
