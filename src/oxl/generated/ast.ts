@@ -60,6 +60,7 @@ export type OpenXenonLanguageKeywordNames =
     | "lifecycle"
     | "list"
     | "loop_policy"
+    | "manual"
     | "map"
     | "max_iterations"
     | "null"
@@ -73,10 +74,13 @@ export type OpenXenonLanguageKeywordNames =
     | "parts"
     | "probe"
     | "proof"
+    | "proofs"
     | "prop"
     | "ref"
     | "required"
     | "scheme"
+    | "scope"
+    | "script"
     | "skill"
     | "skill_context"
     | "slot"
@@ -270,6 +274,21 @@ export function isDomainRefDecl(item: unknown): item is DomainRefDecl {
     return reflection.isInstance(item, DomainRefDecl.$type);
 }
 
+export interface DomProofRef extends langium.AstNode {
+    readonly $container: WorkDeclaration;
+    readonly $type: 'DomProofRef';
+    entries: Array<string>;
+}
+
+export const DomProofRef = {
+    $type: 'DomProofRef',
+    entries: 'entries'
+} as const;
+
+export function isDomProofRef(item: unknown): item is DomProofRef {
+    return reflection.isInstance(item, DomProofRef.$type);
+}
+
 export interface EnumType extends langium.AstNode {
     readonly $container: GenericType | OutputField | PropDeclaration;
     readonly $type: 'EnumType';
@@ -345,11 +364,17 @@ export function isInvariantBlock(item: unknown): item is InvariantBlock {
 export interface InvariantDecl extends langium.AstNode {
     readonly $container: InvariantBlock;
     readonly $type: 'InvariantDecl';
-    value: string;
+    manual?: string;
+    scope?: string;
+    script?: string;
+    value?: string;
 }
 
 export const InvariantDecl = {
     $type: 'InvariantDecl',
+    manual: 'manual',
+    scope: 'scope',
+    script: 'script',
     value: 'value'
 } as const;
 
@@ -962,6 +987,7 @@ export interface WorkDeclaration extends langium.AstNode {
     readonly $type: 'WorkDeclaration';
     blueprints: Array<BlueprintRefDecl>;
     context?: WorkContext;
+    domainProofs: Array<DomProofRef>;
     domains: Array<DomainRefDecl>;
     name: string;
     parts: Array<PartRefDecl>;
@@ -973,6 +999,7 @@ export const WorkDeclaration = {
     $type: 'WorkDeclaration',
     blueprints: 'blueprints',
     context: 'context',
+    domainProofs: 'domainProofs',
     domains: 'domains',
     name: 'name',
     parts: 'parts',
@@ -993,6 +1020,7 @@ export type OpenXenonLanguageAstType = {
     BlueprintRefDecl: BlueprintRefDecl
     DefaultValue: DefaultValue
     Description: Description
+    DomProofRef: DomProofRef
     DomainDeclaration: DomainDeclaration
     DomainRefDecl: DomainRefDecl
     EnumType: EnumType
@@ -1135,6 +1163,16 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
             },
             superTypes: []
         },
+        DomProofRef: {
+            name: DomProofRef.$type,
+            properties: {
+                entries: {
+                    name: DomProofRef.entries,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
         DomainDeclaration: {
             name: DomainDeclaration.$type,
             properties: {
@@ -1224,6 +1262,15 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
         InvariantDecl: {
             name: InvariantDecl.$type,
             properties: {
+                manual: {
+                    name: InvariantDecl.manual
+                },
+                scope: {
+                    name: InvariantDecl.scope
+                },
+                script: {
+                    name: InvariantDecl.script
+                },
                 value: {
                     name: InvariantDecl.value
                 }
@@ -1710,6 +1757,10 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 },
                 context: {
                     name: WorkDeclaration.context
+                },
+                domainProofs: {
+                    name: WorkDeclaration.domainProofs,
+                    defaultValue: []
                 },
                 domains: {
                     name: WorkDeclaration.domains,

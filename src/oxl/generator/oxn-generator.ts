@@ -268,7 +268,7 @@ function convertTermDecl(decl: TermDecl): OxnTermDecl {
 }
 
 function convertInvariantDecl(decl: InvariantDecl): OxnInvariantDecl {
-  return { value: decl.value }
+  return { value: decl.value ?? '' }
 }
 
 function convertDomainLanguage(decl: {

@@ -196,8 +196,15 @@ InvariantBlock:
         (invariants+=InvariantDecl)*
     '}' ';'?;
 
+// v0.2 T11 (Three-Layer Proof v2 PR-1):
+//   加 script / manual / scope 三个可选字段 (与老 value=STRING 兼容)
+//   script= 脚本 exit 0=pass, 1=fail; manual= 人工判定; scope= 作用范围 (work/domain/project)
 InvariantDecl:
-    value=STRING ';'?;
+    value=STRING ';'?                               // 老: 裸字符串
+  | 'script' '=' script=STRING ';'?                 // v0.2 T11
+  | 'manual' '=' manual=STRING ';'?                 // v0.2 T11
+  | 'scope' '=' scope=STRING ';'?                   // v0.2 T11
+;
 
 // ==================== Work (v0.1-final: workspace orchestrator) ====================
 // Work 是编排空间：资源池寻址 + Task 编排中心
@@ -209,8 +216,12 @@ WorkDeclaration:
         (blueprints+=BlueprintRefDecl)*
         (parts+=PartRefDecl)*
         (probes+=ProbeRefDecl)*
+        (domainProofs+=DomProofRef)*          // v0.2 T11: 在 tasks 之前声明 (语法层优先于执行流)
         (tasks+=TaskDeclaration)*
     '}';
+
+DomProofRef:
+    'proofs' '[' (entries+=STRING (',' entries+=STRING)*)? ']' ';'?;
 
 DomainRefDecl:
     'domain' name=STRING ('as' alias=STRING)? ('ref' ref=STRING)? ';';
