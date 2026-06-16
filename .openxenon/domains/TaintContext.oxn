@@ -1,0 +1,52 @@
+// Domain: TaintContext
+// v0.2 Sprint 3a-d: Probe Signal Taint v2 统一词汇
+//
+// 职责: 定义探针污损信号 (InterferenceFlag)、IO 原语 (IOPrimitive)、
+//       Provider 注册中心 (ProviderRegistry)、沙箱验证 (Sandbox) 等核心概念。
+//
+// 跨域分工:
+//   - L0L3Context: 架构分层约束 (IAPError schema ↔ IAP 字典)
+//   - ProofDomain: 判决书三态 (PASSED / FAILED / INCONCLUSIVE) + frozen.json 不可篡改
+//   - SecurityContext: 沙箱安全约束 (FORBIDDEN_MODULES, codeGeneration 禁用)
+//
+// 文件来源:
+//   .openxenon/forges/sprints/sprint-3*/  (PR-1~4 数据契约/Provider/沙箱)
+//   .openxenon/forges/sprints/sprint-5a/   (PR-5 Daemon 冷加载)
+//   .openxenon/forges/sprints/sprint-5b/   (PR-6 OXL grammar scheme:)
+
+domain "TaintContext" {
+  description = "Probe Signal Taint v2 限界上下文: 12 项信号污损标记 + 3 IO 原语 + ProviderRegistry + 沙箱验证 + Daemon 冷加载"
+
+  // ═══ 核心实体 ═══
+  term {
+    "InterferenceFlag": "12 项污损信号标记 (8 RED + 4 YELLOW), 由 Provider 在物理 IO 时填充, Kernel verdict.ts 据此判定 INCONCLUSIVE"
+    "IOPrimitive": "3 个最基础 IO 操作抽象: io.stat (元数据查询) / io.read (内容读取) / io.exec (进程执行)"
+    "TrustBaseline": "12 项 InterferenceFlag 的信任基线配置: RED flag (8 项) 短路返回 INCONCLUSIVE, YELLOW flag (4 项) 透传记录"
+    "ProbeVerdict": "三态判决: PASS (全部通过) / FAIL (至少一个失败) / INCONCLUSIVE (至少一个命中毒染信号)"
+    "Provider": "IO 执行器, 实现 InfraProvider 接口 (ioStat / ioRead / ioExec), 返回 {result, interference.flags}"
+    "ProviderRegistry": "Provider 注册中心: 4 个内置 Provider (file/http/shell/git) + bootstrapFromDisk + checkWorkDependencies"
+    "Sandbox": "vm.SourceTextModule 沙箱引擎: Bun.Transpiler + 严格白名单 context + 10 个 FORBIDDEN_MODULES + 7 个 FORBIDDEN_GLOBALS"
+    "WorkPrecheck": "Work 解析/启动前调 ProviderRegistry.checkWorkDependencies 精准阻断**该 Work** (v2 核心倒置: 不阻断 Daemon)"
+    "Bootstrap": "Daemon 启动期只读 .openxenon/probes/registry.json + 校验 Hash; CORRUPTED/MISSING 标状态不抛错"
+    "Scheme": "Provider URI 前缀 (file:// / http:// / shell:// / git://), OXL grammar 可选字段, 15 个 builtin probe 模板已迁移"
+    "ProbeValidator": "编译时校验: scheme 格式 scheme:// / scheme 已在 registry 注册 / scheme 与 target URI 前缀一致"
+  }
+
+  // ═══ 禁用词 ═══
+  ban { "Signal", "Flag", "TaintMark", "Corruption", "Pollution" }
+
+  // ═══ 业务不变量 ═══
+  invariant { "8 项 RED flag (waf_detected/just_modified/detached_head/shallow_clone/sandbox_violation/network_timeout/response_truncated/permission_denied/unknown) 触发 INCONCLUSIVE" }
+  invariant { "4 项 YELLOW flag (cdn_cache/cache_path/symlink) 透传记录, 不改变 verdict" }
+  invariant { "FileProvider.ioExec 必须抛 IAPError (file provider does not implement io.exec; use shell:// URI)" }
+  invariant { "HttpProvider WAF 头黑名单 6 项硬编码 (cf-ray/x-sucuri-id/x-akamai-transformed/x-imperva-id/x-azure-ref/x-aws-waf-token)" }
+  invariant { "沙箱 context 禁动态代码生成 (codeGeneration: { strings: false, wasm: false })" }
+  invariant { "ProviderRegistry.bootstrapFromDisk 遇 CORRUPTED/MISSING 不抛错, 仅标 status 计数" }
+  invariant { "workPrecheck 仅阻断该 Work (v2 核心倒置: 其他 Work 不受影响)" }
+  invariant { "daemonStartup 启动期只读 + 不触网 (v2 核心倒置: CORRUPTED 标状态不阻断 Daemon)" }
+
+  // ═══ 跨域分工 ═══
+  // script/manual/scope 字段 → GrammarContext (OXL InvariantDecl)
+  // PASS/FAIL/INCONCLUSIVE frozen → ProofDomain (frozen.json schema)
+  // IAPError SANDBOX_REJECTED/PROBE_CORRUPTED → IAPErrorContext (12 码字典)
+}

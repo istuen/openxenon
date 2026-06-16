@@ -1,0 +1,56 @@
+// Domain: PoolContext
+// v0.2 Sprint 4 + Sprint 6: Intent Pool v3 统一词汇
+//
+// 职责: 定义 5 类池 (research/design/issue/audit/journal)、pool-writer、heading-skeleton、
+//       CalvinSignal、forges/ 弃用兼容期 等核心概念。
+//
+// 跨域分工:
+//   - IntentDomain: Intent 轴的 Domain/Blueprint/Term/Ban/Invariant 概念
+//   - AlignDomain: Work/Task/Part 编排
+//   - ProofDomain: frozen.json 不可篡改 (pool-writer 复用 writeFrozenImmutable)
+//   - L0L3Context: 架构分层 (L1-Infra pool-writer 不依赖 L2+)
+//
+// 文件来源:
+//   .openxenon/forges/sprints/sprint-4/    (最小骨架: research 池 + Hall 扫描迁移)
+//   .openxenon/forges/sprints/sprint-6/    (全启用: 5 池 + CLI + heading specs)
+
+domain "PoolContext" {
+  description = "Intent Pool v3 限界上下文: 5 类池 (research/design/issue/audit/journal) + pool-writer + heading-skeleton + forges/ 弃用迁移"
+
+  // ═══ 核心实体 ═══
+  term {
+    "IntentPool": "5 类池 union (research/design/issue/audit/journal), v0.2 T8 仅 research, T13 全启用"
+    "PoolEntry": "单个池条目: pool/slug/title/content/metadata, 物理路径 .openxenon/pools/<pool>/<slug>.md"
+    "PoolWriter": "写入器 writePoolEntry: 写 .md (0o644) + frozen.json (0o444 复用 writeFrozenImmutable) + SHA-256 hash"
+    "HeadingSkeleton": "每个 .md 文件的 heading 骨架校验: 行首 ^#{1,6}\\s, 排除 ```代码块``` 内误识别"
+    "JournalSnippet": "从单个 .md 生成 journal 风格简短摘要: 提取首个 ## 标题 + 首段去 markdown 标记, 截断 200 chars"
+    "CalibrationSignal": "work finalize 阶段写入 pools/research/<slug>/frozen.json 的校准信号 (T12 集成)"
+    "ForgeDeprecation": "forges/ 目录弃用: 兼容期默认静默 (warnOnForgesDeprecated=false), Sprint 6 flip WARN"
+    "PoolScan": "Hall 扫描入口: scanIntentPools() 遍历 5 池 + scanForgeDrafts() 兼容期保留"
+    "PoolCLI": "oxn pool 子命令族: list (列池条目) + create (写新条目) + show/update/delete/transition (v0.3 计划)"
+  }
+
+  // ═══ 5 池 heading 模板 ═══
+  term {
+    "ResearchSpec": "'# What' '# Why' '# How' (可选 '# Reference') — 探索/调研类池"
+    "DesignSpec": "'# What' '# Why' '# How' (可选 '# 决策记录' '# 范围之外') — 设计稿类池"
+    "IssueSpec": "'# What' '# Why' '# How' '# 复现步骤' '# 期望' '# 实际' — 问题追踪类池"
+    "AuditSpec": "'# What' '# Why' '# How' '# 证据' '# 结论' — 审计类池"
+    "JournalSpec": "'# What' '# Why' '# How' '# 时间线' — 工作日志类池"
+  }
+
+  // ═══ 禁用词 ═══
+  ban { "Forge", "DesignNote", "WorkLog", "ResearchPaper" }
+
+  // ═══ 业务不变量 ═══
+  invariant { "5 池 heading 模板互为独立 spec, 不可交叉 (如 research 池不可出现 '# 决策记录')" }
+  invariant { "pool-writer.ts slug 必须匹配 /^[a-z0-9][a-z0-9-]*$/ (小写中划线)" }
+  invariant { "check-heading-skeleton.ts 仅检查 pools/ + forges/ (不影响其他 .md)" }
+  invariant { "forges/ 兼容期: warnOnForgesDeprecated 默认 false (静默), Sprint 6 flip 后打印 WARN" }
+  invariant { "pool 条目 frozen.json chmod 0o444 + content_hash 不可篡改 (复用 writeFrozenImmutable)" }
+
+  // ═══ 跨域分工 ═══
+  // INTENT: Pool 是 Intent 轴的"设计笔记本" → IntentDomain
+  // ALIGN: Pool 条目 lifecycle 可能驱动 Work/Task → AlignDomain
+  // PROOF: frozen.json 不可篡改性 → ProofDomain
+}

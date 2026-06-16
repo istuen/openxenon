@@ -1,0 +1,47 @@
+// Domain: GrammarContext
+// v0.2 Sprint 2 (soft-gaps) + Sprint 5b (OXL 1.3 scheme:) + Sprint 5c (three-layer 语法扩展) 统一词汇
+//
+// 职责: 定义 OXL DSL 语法实体 (ProbeDeclaration/InvariantDecl/WorkDeclaration/DomainProofRef)
+//       + Langium 生成管道 (langium:generate → parser/ast/grammar) + scheme 字段 + task deps 语法。
+//
+// 跨域分工:
+//   - IntentDomain: Domain/Blueprint declarative syntax (term/ban/invariant)
+//   - AlignDomain: Work/Task/Part orchestration syntax
+//   - TaintContext: scheme 字段映射到 ProviderRegistry
+//   - L0L3Context: 生成文件 (src/oxl/generated/) 不入手工编辑
+//
+// 文件来源:
+//   .openxenon/forges/sprints/sprint-2/   (软缺口 grammar 4-form + merger AST)
+//   .openxenon/forges/sprints/sprint-5b/  (OXL 1.3: ProbeDeclaration ↑ scheme: 字段)
+//   .openxenon/forges/sprints/sprint-5c/  (three-layer: InvariantDecl ↑ script/manual/scope)
+//   .openxenon/forges/2026-06-14-three-layer-proof-design.md (§8 PR-1 grammar)
+
+domain "GrammarContext" {
+  description = "OXL DSL 语法限界上下文: ProbeDeclaration/InvariantDecl/WorkDeclaration/DomainProofRef + Langium 生成管道 + scheme 字段"
+
+  // ═══ 核心实体 ═══
+  term {
+    "OXL": "OpenXenon Language — 基于 Langium 的 DDD DSL, 语法定义在 src/oxl/langium/oxn.langium"
+    "Langium": "TypeScript 实现的现代化 DSL 框架: grammar → parser/ast/grammar 自动生成 (bun run langium:generate)"
+    "ProbeDeclaration": "Probe 实体声明: probe name='STRING' { scheme? descriptions? props* output? } — T10 已加 scheme: 可选字段"
+    "InvariantDecl": "不变式声明: invariant { value/script/manual/scope } — T11 已扩三字段 + InvariantScope 枚举"
+    "WorkDeclaration": "Work 编排声明: 资源池寻址 + Task 编排 + T11 新加 domainProofs 字段"
+    "DomainProofRef": "Work 对 Domain Invariant 的显式引用: 'proofs [domain.invariant]' 语法 (T11)"
+    "TaskDeps": "Task 依赖声明: 4 种语法形式 (数组/单元素/多元素无括号/冒号赋值) — T3 soft-gaps 修复"
+    "Scheme": "Probe URI 前缀 (file:// / http:// / shell:// / git://) — OXL 1.3 grammar 可选字段"
+    "Parser": "Langium 自动生成的 TS 解析器: 从 .oxn 源码 → AST (src/oxl/generated/parser.ts)"
+    "AST": "Abstract Syntax Tree: Langium 生成的 TS 类型接口 (src/oxl/generated/ast.ts, 不可手工编辑)"
+    "Validator": "OXL 编译时校验: probe-validator (scheme 3 规则) / blueprint-dag / probe-namespace / probe-ref-validator"
+  }
+
+  // ═══ 禁用词 ═══
+  ban { "ANTLR", "Yacc", "PEG", "TypeScriptGrammar", "HandWrittenParser" }
+
+  // ═══ 业务不变量 ═══
+  invariant { "src/oxl/generated/ 目录由 langium:generate 自动生成, 绝对不可手工编辑" }
+  invariant { "T10 → T11 串行: OXL grammar 两次 langium:generate 必须分两次 PR, 禁止并行合入" }
+  invariant { "script / manual 字段在语法层不强制互斥 (runtime PR-2 校验)" }
+  invariant { "DomainProofRef 语法为 'proofs [entries+=STRING*]' (简单字符串数组, 跨域引用 PR-2 验证)" }
+  invariant { "TaskDeps 4 种语法形式全部支持: deps=['a','b'] / deps='a','b' / deps='a' / deps:'a'" }
+  invariant { "15 builtin probe 模板全部含 scheme 字段 (file:///http:///shell:///git://)" }
+}
