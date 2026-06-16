@@ -315,7 +315,9 @@ function domainAstToIr(domain: DomainDeclaration): {
 } {
   const invariants: string[] = []
   for (const block of domain.invariants ?? []) {
-    for (const inv of block.invariants ?? []) invariants.push(inv.value)
+    for (const inv of block.invariants ?? []) {
+      if (inv.value) invariants.push(inv.value)
+    }
   }
   const hasLanguage = !!(domain.terms || domain.ban || invariants.length > 0)
   return {
