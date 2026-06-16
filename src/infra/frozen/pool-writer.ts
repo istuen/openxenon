@@ -19,8 +19,8 @@ import { mkdir, writeFile } from '../filesystem-async'
 import { writeFrozenImmutable, FROZEN_FILE_MODE } from '../frozen/immutable'
 import { IAPError, IAPAction } from '../../kernel/index'
 
-/** 池类型 (本 PR 仅 research; Sprint 6 扩 union 加 design/issue/audit/journal) */
-export type IntentPool = 'research'
+/** 池类型 (v0.2 T8: research only; T13 Sprint 6: 全部 5 池启用) */
+export type IntentPool = 'research' | 'design' | 'issue' | 'audit' | 'journal'
 
 export interface WritePoolEntryInput {
   pool: IntentPool
