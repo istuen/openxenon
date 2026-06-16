@@ -125,7 +125,8 @@ bun test                    # bun test，约 50 秒，414 个测试
 | T11 three-layer PR-1 grammar | `feat/v0.2-t11-three-layer-pr1-grammar` | W5c | **✅ done** (commit aaad25d, merge 6e3000f) — InvariantDecl 加 script/manual/scope 可选字段 + WorkDeclaration 加 domainProofs+=DomProofRef (`proofs [...]` 语法) + 重新生成 parser/ast/grammar + 2 处兼容修复 + 10 case 新测试 + ⚠ 串行约束: T11 在 T10 之后合入 |
 | T12 three-layer PR-2 finalize | `feat/v0.2-t12-three-layer-pr2-finalize` | W5d | **✅ done** (commit d183aff, merge 13c4d52) — work finalize 二阶段原子写入 + domain-proof-evaluator + 硬阻断 on FAIL + 8 case 新测试 + L1-Infra 合规 |
 | T13 intent-pool full | `feat/v0.2-t13-pool-full-forges-warn` | W6-7 | **✅ done** (commit 16fb880, merge 8a6e9a0) — Intent Pool 5 池全启用 (research/design/issue/audit/journal) + 5 pool heading specs + 'oxn pool list/create' CLI + Hall scanIntentPools 5 池扫描 + physical dirs |
-| T14 daemon PR-2/3/4 闭环 | `feat/v0.2-t14-daemon-pr234-loop` | W8 | ⏳ 待启动 |
+| T14 daemon PR-2/3/4 闭环 | `feat/v0.2-t14-daemon-pr234-loop` | W8 | **✅ done** (commit edbf3fa, merge 5f5720c) — PR-2 step.ts (Proof-driven incremental steps) + PR-3 daemon restart/logs/kill CLI 命令 + PR-4 escape-mechanism + trace archiver + L2-L3 架构合规 (step.ts 物理路径 cli → infra, daemon 不 import CLI) |
+| T15 taint PR-7 spike | `feat/v0.2-t15-taint-pr7-spike` | W8（spike，不入 main） | ⏳ 待启动 |
 | T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 |
 | T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a |
 | T5 taint PR-2 frozen+展示 | `feat/v0.2-t5-taint-pr2-frozen-verdict` | W3b |
