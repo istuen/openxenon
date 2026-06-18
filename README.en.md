@@ -125,11 +125,11 @@ OXN Engine = **DSL** + **Runtime** + **CLI**
 
 ## Roadmap
 
-| Version | Theme | Capability | Status |
-|---|---|---|---|
-| **v0.1.8** | Foundation | IAP paradigm / closed loop / self-bootstrap | ✓ released on npm |
-| **v0.2.0** | Proof | Proof First / Infra Probe | 🔜 in progress |
-| **v0.3.0** | Base | Intent assets / Daemon | 📋 planned |
+| Version | Goal | Status |
+|---|---|---|
+| **v0.1.8** | IAP paradigm / closed loop / self-bootstrap | ✓ released on npm |
+| **v0.2.0** | Proof First / Infra Probe | 🔜 in progress |
+| **v0.3.0** | Intent assets / Daemon | 📋 planned |
 
 See [Roadmap](./docs/en/roadmap.md).
 
