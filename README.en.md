@@ -73,8 +73,6 @@ The AI Agent calls `oxn` via Skill, result flows back to `frozen.json`.
 | **Align**  | AI | Work / Task / Part | Blueprint `slot` |
 | **Proof**  | OXN | Proof (`frozen.json`) | Daemon blocks fake completion, **no `--force` bypass** |
 
-> **IAP First Law**: ownership does not cross; proof cannot be bypassed.
-
 ## Architecture
 
 OXN Engine = **DSL** + **Runtime** + **CLI**

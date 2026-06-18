@@ -68,8 +68,6 @@ oxn init --ai opencode
 | **Align**  | AI     | Work / Task / Part     | Blueprint `slot` 锁定路径                |
 | **Proof**  | OXN    | Proof（`frozen.json`） | Daemon 阻止假完成，**无 `--force` 绕过** |
 
-> **IAP 第一法则**：主导权不交叉，证明不可绕过。
-
 ## 文档
 
 - 📖 **[文档](./docs/index.md)**
