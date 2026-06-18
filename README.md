@@ -75,12 +75,11 @@ oxn init --ai opencode
 
 ## 路线图
 
-| 阶段   | 目标                                                  | 状态               |
-| ------ | ----------------------------------------------------- | ------------------ |
-| **P0** | Proof 轴独立（`oxn proof` 闭环）                      | ✓ 已完成（v0.1.0） |
-| **P1** | Intent 轴技术化（Program Domain + Blueprint）         | ✓ 已完成（v0.1.x） |
-| **P2** | Intent 轴业务化（Business Domain + DDD + 沙箱 Probe） | 🔜 进行中（v0.2）   |
-| **P3** | Intent 轴资产化（Intent Pool + Hall 研讨厅）          | 📋 规划中           |
+| 版本 | 主题 | 核心能力 | 状态 |
+|---|---|---|---|
+| **v0.1.8** | 地基 | IAP 范式 / 打造闭环 / 自举实践 | ✓ 已发布 npm |
+| **v0.2.0** | 证明 | Proof First / Infra Probe | 🔜 进行中 |
+| **v0.3.0** | 基座 | Intent 资产 / Daemon | 📋 规划中 |
 
 详见 [路线图](./docs/zh-cn/roadmap.md)。
 

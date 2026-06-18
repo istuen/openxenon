@@ -125,12 +125,11 @@ OXN Engine = **DSL** + **Runtime** + **CLI**
 
 ## Roadmap
 
-| Phase | Goal | Status |
-|---|---|---|
-| **P0** | Proof axis standalone (`oxn proof` loop) | ✓ done (v0.1.0) |
-| **P1** | Intent axis technicalization (Program Domain + Blueprint) | ✓ done (v0.1.x) |
-| **P2** | Intent axis business-ization (Business Domain + DDD + sandbox Probe) | 🔜 in progress (v0.2) |
-| **P3** | Intent axis asset-ization (Intent Pool + Hall) | 📋 planned |
+| Version | Theme | Capability | Status |
+|---|---|---|---|
+| **v0.1.8** | Foundation | IAP paradigm / closed loop / self-bootstrap | ✓ released on npm |
+| **v0.2.0** | Proof | Proof First / Infra Probe | 🔜 in progress |
+| **v0.3.0** | Base | Intent assets / Daemon | 📋 planned |
 
 See [Roadmap](./docs/en/roadmap.md).
 
