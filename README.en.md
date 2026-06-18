@@ -67,6 +67,8 @@ The AI Agent calls `oxn` via Skill, result flows back to `frozen.json`.
 
 ## The IAP Paradigm
 
+### Flowchart
+
 ```mermaid
 flowchart LR
     subgraph Intent["Intent axis"]
@@ -89,6 +91,45 @@ flowchart LR
     Align -->|"A → P"| Proof
     Proof -->|"P → I feedback"| Evolution
     Evolution -.-> Intent
+```
+
+### Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Eng as Engineer
+    participant AI as AI Agent
+    participant OXN as OXN Engine
+
+    rect rgba(100,150,250,0.1)
+        Note over Eng,OXN: I → A phase
+        Eng->>AI: Define Intent (Domain / Blueprint)
+        AI->>AI: Orchestrate within slot boundary (Work / Task / Part)
+    end
+
+    rect rgba(250,150,100,0.1)
+        Note over Eng,OXN: A → P phase
+        AI->>OXN: Submit artifact
+        OXN->>OXN: Run Probes independently
+        OXN-->>Eng: frozen.json (Verdict)
+    end
+
+    Note over Eng,OXN: P → I feedback (closed loop)
+    Eng->>Eng: Intent evolution
+    Eng->>AI: Restart cycle with new Intent
+```
+
+### State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> IntentDefined
+    IntentDefined --> Aligning: I → A
+    Aligning --> Proving: A → P
+    Proving --> VerdictEmitted: OXN runs Probes independently
+    VerdictEmitted --> IntentDefined: P → I feedback<br/>Intent evolution
+    VerdictEmitted --> [*]: Task complete
 ```
 
 | Axis | Owner | Output | Locked by |

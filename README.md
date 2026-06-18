@@ -68,6 +68,8 @@ oxn init --ai opencode
 | **Align**  | AI     | Work / Task / Part     | Blueprint `slot` 锁定路径                |
 | **Proof**  | OXN    | Proof（`frozen.json`） | Daemon 阻止假完成，**无 `--force` 绕过** |
 
+### Flowchart（流程图）
+
 ```mermaid
 flowchart LR
     subgraph Intent["Intent 轴"]
@@ -92,12 +94,49 @@ flowchart LR
     Evolution -.-> Intent
 ```
 
+### Sequence Diagram（时序图）
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Eng as 工程师
+    participant AI as AI Agent
+    participant OXN as OXN Engine
+
+    rect rgba(100,150,250,0.1)
+        Note over Eng,OXN: I → A 阶段
+        Eng->>AI: 定义 Intent (Domain / Blueprint)
+        AI->>AI: 在 slot 边界内编排 (Work / Task / Part)
+    end
+
+    rect rgba(250,150,100,0.1)
+        Note over Eng,OXN: A → P 阶段
+        AI->>OXN: 提交工作产物
+        OXN->>OXN: 独立运行 Probe
+        OXN-->>Eng: frozen.json (Verdict)
+    end
+
+    Note over Eng,OXN: P → I 反馈（闭环）
+    Eng->>Eng: Intent 演化
+    Eng->>AI: 用新 Intent 重启循环
+```
+
+### State Diagram（状态图）
+
+```mermaid
+stateDiagram-v2
+    [*] --> IntentDefined
+    IntentDefined --> Aligning: I → A
+    Aligning --> Proving: A → P
+    Proving --> VerdictEmitted: OXN 独立运行 Probe
+    VerdictEmitted --> IntentDefined: P → I 反馈<br/>Intent 演化
+    VerdictEmitted --> [*]: 任务完成
+```
+
 ## 文档
 
-- 📖 **[完整文档站](./docs/index.md)** — 12 章 + 3 附录，SSOT
-- 🟦 **[AI 协作者入口](./docs/zh-cn/llm-prompt.md)** — AI 模型专用协议（**仅 AI 读**）
-- 🏛️ **[架构与 L0–L3 宪法](./docs/zh-cn/architecture.md)**
-- 🧪 **[OXL DSL 语法](./docs/zh-cn/intent.md)**
+- 📖 **[文档](./docs/index.md)**
+- 🟦 **[AI 协作者入口](./docs/zh-cn/llm-prompt.md)**（**仅 AI 读**）
 
 ## 路线图
 
