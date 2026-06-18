@@ -26,62 +26,27 @@ OpenXenon 旨在为工程师与 AI 模型的协作，建立更好的**信任基�
 ### 安装
 
 ```bash
-npm install -g @istuen/openxenon   # 或 pnpm / bun
-oxn --version
+npm install -g @istuen/openxenon
 ```
 
 > [!TIP]
 > 仓库源码是 dist/cli.js 的开发基底，**不是**用户安装路径。普通用户请走 `npm install -g` 路径。
 
-### 路径 A：直接命令行
+
+### 在项目注入 OpenXenon 空间与 Skills
+
+
 
 ```bash
-oxn init                                    # 初始化 .openxenon/
-oxn proof create check-deploy
-oxn proof probe add fs-exists --target ./dist/index.js
-oxn proof run check-deploy
-# → Verdict: PASS / FAIL
-# → Proof saved: .openxenon/proofs/check-deploy/frozen.json
+# cd youer/project
+oxn init --ai opencode
 ```
 
-### 路径 B：在 AI 助手中调用
-
-```bash
-oxn init --ai opencode      # 生成 OpenCode Skill（claude / codex / cursor 同理）
-```
-
-然后在 OpenCode / Claude Code / Codex / Cursor 中输入：
+### 在 AI Agent 中调用
 
 ```
 /oxn-proof 验证 dist/index.js 是否存在并导出 handler
 ```
-
-AI 助手通过 Skill 调用 CLI，结果回流到 `frozen.json`。
-
-## IAP 范式
-
-```
-        Intent 轴                    Align 轴
-   Domain(.oxn)  ──┐         ┌── Work(.oxn)
-   Blueprint(.oxn)─┼─ I → A ─┼── Task → Artifact
-                   │         │
-                   └── A → P ┘
-                          │
-                          ▼
-                      Proof 轴
-                  Proof(Verdict) → frozen.json
-                          │
-                          └─── P → I 反馈 ───▶ Intent 演化
-```
-
-| 轴         | 主导者 | 产出                   | 锁定机制                                 |
-| ---------- | ------ | ---------------------- | ---------------------------------------- |
-| **Intent** | 工程师 | Domain / Blueprint     | `term` / `ban` / `invariant` 锁定边界    |
-| **Align**  | AI     | Work / Task / Part     | Blueprint `slot` 锁定路径                |
-| **Proof**  | OXN    | Proof（`frozen.json`） | Daemon 阻止假完成，**无 `--force` 绕过** |
-
-> **IAP 第一法则**：主导权不交叉，证明不可绕过。
-
 
 ## AI Agent 集成
 
@@ -94,25 +59,38 @@ AI 助手通过 Skill 调用 CLI，结果回流到 `frozen.json`。
 | **Codex**       | `oxn init --ai codex`    | ✓ 支持 |
 | **Cursor**      | `oxn init --ai cursor`   | ✓ 支持 |
 
-**集成流程：**
 
-```
-[工程师] ──> [AI Agent: OpenCode / Claude Code / Codex / Cursor]
-                          │         │
-                          │  Skill  ▼  /oxn-proof
-                          │      ┌─────────┐
-                          │      │  oxn CLI │
-                          │      └────┬────┘
-                          │           │
-                          │           ▼
-                          │   .openxenon/proofs/<name>/frozen.json
-                          │           │
-                          └───────────┘
-                          Verdict 回流到 AI Agent
-```
+## IAP 范式
 
-> 集成机制详解：[CLI 参考](./docs/zh-cn/cli.md)
-> 协议详情（供 AI 模型读）：[AI 协作者入口](./docs/zh-cn/llm-prompt.md)
+| 轴         | 主导者 | 产出                   | 锁定机制                                 |
+| ---------- | ------ | ---------------------- | ---------------------------------------- |
+| **Intent** | 工程师 | Domain / Blueprint     | `term` / `ban` / `invariant` 锁定边界    |
+| **Align**  | AI     | Work / Task / Part     | Blueprint `slot` 锁定路径                |
+| **Proof**  | OXN    | Proof（`frozen.json`） | Daemon 阻止假完成，**无 `--force` 绕过** |
+
+```mermaid
+flowchart LR
+    subgraph Intent["Intent 轴"]
+        Domain["Domain(.oxn)"]
+        Blueprint["Blueprint(.oxn)"]
+    end
+
+    subgraph Align["Align 轴"]
+        Work["Work(.oxn)"]
+        Task["Task → Artifact"]
+    end
+
+    subgraph Proof["Proof 轴"]
+        Frozen["Proof(Verdict) → frozen.json"]
+    end
+
+    Evolution["Intent 演化"]
+
+    Intent -->|"I → A"| Align
+    Align -->|"A → P"| Proof
+    Proof -->|"P → I 反馈"| Evolution
+    Evolution -.-> Intent
+```
 
 ## 文档
 

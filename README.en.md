@@ -67,18 +67,28 @@ The AI Agent calls `oxn` via Skill, result flows back to `frozen.json`.
 
 ## The IAP Paradigm
 
-```
-        Intent axis                Align axis
-   Domain(.oxn)  ──┐         ┌── Work(.oxn)
-   Blueprint(.oxn)─┼─ I → A ─┼── Task → Artifact
-                   │         │
-                   └── A → P ┘
-                          │
-                          ▼
-                      Proof axis
-                  Proof(Verdict) → frozen.json
-                          │
-                          └─── P → I feedback ───▶ Intent evolution
+```mermaid
+flowchart LR
+    subgraph Intent["Intent axis"]
+        Domain["Domain(.oxn)"]
+        Blueprint["Blueprint(.oxn)"]
+    end
+
+    subgraph Align["Align axis"]
+        Work["Work(.oxn)"]
+        Task["Task → Artifact"]
+    end
+
+    subgraph Proof["Proof axis"]
+        Frozen["Proof(Verdict) → frozen.json"]
+    end
+
+    Evolution["Intent evolution"]
+
+    Intent -->|"I → A"| Align
+    Align -->|"A → P"| Proof
+    Proof -->|"P → I feedback"| Evolution
+    Evolution -.-> Intent
 ```
 
 | Axis | Owner | Output | Locked by |
