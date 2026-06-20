@@ -40,7 +40,7 @@ export type ProbeTypeStats = z.infer<typeof ProbeTypeStatsSchema>
 export const ProbeRunRecordSchema = z.object({
   proofId: z.string().min(1),
   timestamp: z.string().min(1),
-  verdict: z.enum(['PASSED', 'FAILED']),
+  verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
   probeSummary: z.array(
     z.object({
       type: z.string().min(1),

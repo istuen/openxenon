@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { t } from '../infra/i18n'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '../infra/filesystem'
 import { join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/index'
@@ -315,7 +315,9 @@ function domainAstToIr(domain: DomainDeclaration): {
 } {
   const invariants: string[] = []
   for (const block of domain.invariants ?? []) {
-    for (const inv of block.invariants ?? []) invariants.push(inv.value)
+    for (const inv of block.invariants ?? []) {
+      if (inv.value) invariants.push(inv.value)
+    }
   }
   const hasLanguage = !!(domain.terms || domain.ban || invariants.length > 0)
   return {

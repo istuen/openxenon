@@ -49,7 +49,7 @@ describe('oxn domain index (PR-1)', () => {
   test('init 不会强制建索引（无 domains/ 目录时不建文件）', async () => {
     await initProject()
     const cacheDir = join(tmpDir, '.openxenon', '.cache')
-    const indexPath = join(cacheDir, 'domains.json')
+    const _indexPath = join(cacheDir, 'domains.json')
     // 没创建任何 domain → 索引可能不建（autoRebuild 静默跳过）
     // 但 init 消息应明确说出 "no domains yet"
     const { stdout } = await runCli(['init'])

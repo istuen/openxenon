@@ -77,8 +77,12 @@ TemplateString:
 
 // ==================== Probe ====================
 // Probe 实体声明（资产定义，位于全局目录）
+// v0.2 T10 (OXL 1.3): 加可选 'scheme' ':' scheme=STRING 字段
+//   - 默认从 target URI 前缀推断; 显式声明用于: (1) target 缺失时寻址 (2) cli-add probe 跨域
+//   - 静态校验由 src/oxl/validators/probe-validator.ts 承担 (3 规则)
 ProbeDeclaration:
     'probe' name=STRING '{'
+        ('scheme' ':' scheme=STRING)?
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (output+=ProbeOutputDeclaration)?
@@ -192,8 +196,15 @@ InvariantBlock:
         (invariants+=InvariantDecl)*
     '}' ';'?;
 
+// v0.2 T11 (Three-Layer Proof v2 PR-1):
+//   加 script / manual / scope 三个可选字段 (与老 value=STRING 兼容)
+//   script= 脚本 exit 0=pass, 1=fail; manual= 人工判定; scope= 作用范围 (work/domain/project)
 InvariantDecl:
-    value=STRING ';'?;
+    value=STRING ';'?                               // 老: 裸字符串
+  | 'script' '=' script=STRING ';'?                 // v0.2 T11
+  | 'manual' '=' manual=STRING ';'?                 // v0.2 T11
+  | 'scope' '=' scope=STRING ';'?                   // v0.2 T11
+;
 
 // ==================== Work (v0.1-final: workspace orchestrator) ====================
 // Work 是编排空间：资源池寻址 + Task 编排中心
@@ -205,8 +216,12 @@ WorkDeclaration:
         (blueprints+=BlueprintRefDecl)*
         (parts+=PartRefDecl)*
         (probes+=ProbeRefDecl)*
+        (domainProofs+=DomProofRef)*          // v0.2 T11: 在 tasks 之前声明 (语法层优先于执行流)
         (tasks+=TaskDeclaration)*
     '}';
+
+DomProofRef:
+    'proofs' '[' (entries+=STRING (',' entries+=STRING)*)? ']' ';'?;
 
 DomainRefDecl:
     'domain' name=STRING ('as' alias=STRING)? ('ref' ref=STRING)? ';';
@@ -246,11 +261,18 @@ TaskDeclaration:
         ('domain' domain=STRING)?
         ('blueprint' blueprint=STRING)?
         (parts+=TaskPartDecl)*
-        ('deps' '=' deps=TaskDeps)?
+        (TaskDepsField)?
     '}';
 
 TaskDeps:
-    '[' (deps+=STRING (',' deps+=STRING)*)? ']';
+    '[' (deps+=STRING (',' deps+=STRING)*)? ']'    // ["a", "b"]
+    | STRING (',' STRING)+                          // "a", "b" (无括号)
+    | STRING                                         // "a" (单元素无括号)
+;
+TaskDepsField:
+    'deps' ':' deps=TaskDeps                        // 老兼容 (deps : [])
+    | 'deps' '=' deps=TaskDeps                      // v0.0.28 后 (deps = [])
+;
 
 TaskPartDecl:
     'part' name=STRING '{'

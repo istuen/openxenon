@@ -6,7 +6,7 @@
  *   2. <name>.bundle.assembly.json — 纯数据契约
  *   3. <name>.bundle.assembly.schema.json — JSON Schema
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from '../../infra/filesystem'
 import { URI } from 'langium'
 import { basename, dirname, join } from 'path'
 import { parse as parseYaml } from 'yaml'

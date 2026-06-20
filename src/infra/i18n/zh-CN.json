@@ -230,6 +230,13 @@
     "description": "读取 frozen.json + probe-stats.json，产出结构化 Insight（v0.1.2 P→I 反馈；不混入策略）",
     "proof": "Proof 名称（必填）"
   },
+  "token": {
+    "description": "AI 模型 Token 消耗追踪",
+    "ingest": {
+      "description": "从 AI 助手摄入一条 Token 消耗记录",
+      "inputJson": "JSON 对象: { source, sessionID, workRef, modelID, providerID, tokens: { input, output }, cost, timestamp }"
+    }
+  },
   "installSkill": {
     "description": "把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work)",
     "target": "目标根目录 (默认: ~/.opencode/skills/)",

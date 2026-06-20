@@ -11,7 +11,7 @@
 // 与 work-domains-merger 对称设计。
 // =============================================================================
 
-import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from 'fs'
+import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '../infra/filesystem'
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
 import { parseOxnReference } from '../oxl/scope/oxn-scope'

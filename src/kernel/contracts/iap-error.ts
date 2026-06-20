@@ -24,8 +24,8 @@ export enum IAPAction {
   YIELD_TO_HUMAN = 'YIELD_TO_HUMAN',
 }
 
-/** IAP 三主权轴（无 X —— X 是 OXNCrash 的领域，不在此） */
-export type IAPAxis = 'INTENT' | 'ALIGN' | 'PROOF'
+/** IAP 四主权轴（无 X —— X 是 OXNCrash 的领域，不在此） */
+export type IAPAxis = 'INTENT' | 'ALIGN' | 'PROOF' | 'INFRA'
 
 /**
  * 错误码字典 —— TypeScript 字符串字面量联合。
@@ -47,7 +47,20 @@ export type IAPAxis = 'INTENT' | 'ALIGN' | 'PROOF'
  *   - Verdict: FAIL 走 frozen.json.verdict 通道（业务结果，AI 自己改）
  *   - OXNCrash 3 个：引擎崩溃，人类消费，AI 永远不看
  */
-export type IAPErrorCode = 'INFRA_FAIL' | 'CRASH' | 'CHECKLIST_MISSING' | 'UNDEFINED_TERM' | 'NAME_FILE_MISMATCH'
+export type IAPErrorCode =
+  | 'INFRA_FAIL'
+  | 'CRASH'
+  | 'CHECKLIST_MISSING'
+  | 'UNDEFINED_TERM'
+  | 'NAME_FILE_MISMATCH'
+  | 'PROVIDER_DUPLICATE'
+  | 'PROVIDER_UNSUPPORTED'
+  | 'SANDBOX_REJECTED'
+  | 'PROBE_INVALID'
+  | 'PROBE_CORRUPTED'
+  | 'PROBE_MISSING'
+  | 'PROBE_FIX_UNAVAILABLE'
+  | 'INGEST_SCHEMA_INVALID'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

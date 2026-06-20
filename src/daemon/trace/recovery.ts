@@ -1,7 +1,7 @@
 import { join } from 'path'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '../infra/filesystem'
-import { getProjectBoundaryPath } from '../infra/paths'
-import { daemonLogger } from './logger'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '../../infra/filesystem'
+import { getProjectBoundaryPath } from '../../infra/paths'
+import { daemonLogger } from '../logger'
 
 export interface RecoveryPoint {
   id: string

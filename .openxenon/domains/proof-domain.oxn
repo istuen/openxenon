@@ -36,7 +36,7 @@ domain "ProofDomain" {
     "EscapeAction": "Daemon 在 Probe FAIL 时的响应：BLOCK_DONE（默认） / WARN_ONLY"
     "FrozenJson":   "判决书：Core Engine 产出，生成后只读（frozen.json），AI 与工程师都只能读不能改"
     "Signature":    "frozen.json 的签名机制：签名被外部篡改 → OXN_CRASH_SIGNATURE_MISMATCH（防线击穿）"
-    "Verdict":      "Proof 轴的结构化判定：PASSED / FAILED + reason + probe + expected + actual"
+    "Verdict":      "Proof 轴的三态判定（v0.2 T5 升级）: PASSED / FAILED / INCONCLUSIVE + reason + probeName + ref + errorMessage + interferenceFlags[] + durationMs"
     "Catalog":      "Probe 注册表（@oxn/probes/*），CLI 加载期 fail-fast 校验"
   }
 

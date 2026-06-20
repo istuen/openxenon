@@ -102,6 +102,26 @@ After OXN runs Probes, it emits `frozen.json` — the tamper-proof proof record:
 - Engineers **cannot edit** `frozen.json` — read-only
 - If AI could bypass Probes and modify the verdict directly, the entire Proof axis would be a name in name only
 
+### Verdict 三态 (3-state verdict, v0.2 Sprint 3b T5)
+
+Since v0.2, `frozen.json` distinguishes three verdict states:
+
+| Verdict | Meaning | Color (TTY) | Icon |
+|---|---|---|---|
+| `PASSED` | All probes passed | green | ✅ |
+| `FAILED` | At least one probe failed | red | ❌ |
+| `INCONCLUSIVE` | At least one probe hit a taint signal (sandbox violation, permission denied, cache path, ...) | yellow | ⚠️ |
+
+Aggregation rule (per `src/cli/proof-frozen-writer.ts`):
+- Any probe with `verdict === 'INCONCLUSIVE'` → overall `INCONCLUSIVE`
+- Otherwise, all probes passed → `PASSED`
+- Otherwise → `FAILED`
+- Empty probe list → `FAILED` (no proof means no proof)
+
+`interferenceFlags[]` is a YELLOW-tint record on the probe level; it does not
+auto-fail the probe, but the overall verdict lifts to `INCONCLUSIVE`. Use
+`oxn proof show <name>` to inspect flags and the human-readable verdict.
+
 ### Physical paths
 
 | Mode | Path |

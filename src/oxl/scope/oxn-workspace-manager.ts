@@ -5,7 +5,7 @@
  *   @oxn/ → 内置资产（OxnBuiltinRegistry）
  *   @prj/ → 项目文件系统（.openxenon/blueprints/, .openxenon/domains/ 等）
  */
-import { existsSync, readdirSync, readFileSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from '../../infra/filesystem'
 import { homedir } from 'os'
 import { join } from 'path'
 import { parse as parseYaml } from 'yaml'

@@ -165,6 +165,14 @@ const main = defineCommand({
     proof: () => import('./proof').then((m) => m.default),
     insight: () => import('./insight').then((m) => m.default),
 
+    // ---- v0.2.2: AI Token 可观测 ----
+    token: () => import('./token').then((m) => m.default),
+
+    // ---- v0.2 T7: 第三方 Probe Provider (sandbox-validated) ----
+    probe: () => import('./probe').then((m) => m.default),
+    // ---- v0.2 T13: Intent Pool v3 ----
+    pool: () => import('./pool').then((m) => m.default),
+
     // ---- Dev namespace (DSL 内部工具) ----
     dev: () => import('./dev').then((m) => m.default),
   },

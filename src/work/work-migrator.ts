@@ -43,7 +43,7 @@
 //   - 半 V0（部分 task 没 task-state.json）：部分迁移 + warning 报告
 // =============================================================================
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from '../infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR, RUN_DIR, RUN_TASKS_SUBDIR, WORK_FILE } from '../kernel/index'
 import {
@@ -242,24 +242,24 @@ function restoreV0ToV1Paths(
  *   - .work 出生证明 (planLock=null, assets 重算)
  * 返回 invalidRefs 软警告 (PR-14d).
  */
-function regenerateV1Artifacts(
+async function regenerateV1Artifacts(
   projectRoot: string,
   workName: string,
   workOxnPath: string,
-): {
+): Promise<{
   artifactsWritten: string[]
   invalidRefs: InvalidRef[]
-} {
+}> {
   const workDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
   const workContent = readFileSync(workOxnPath, 'utf-8')
   const artifactsWritten: string[] = []
   const invalidRefs: InvalidRef[] = []
 
-  const domainsIdx = buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
+  const domainsIdx = await buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
   const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
   const domainsJsonPath = getPerWorkDomainsJsonPath(projectRoot, workName)
   const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
-  writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
+  await writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
   writePerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath, outPath: blueprintsJsonPath })
   artifactsWritten.push(domainsJsonPath, blueprintsJsonPath)
 
@@ -337,7 +337,7 @@ function regenerateV1Artifacts(
   return { artifactsWritten, invalidRefs }
 }
 
-export function migrateWorkToV1(projectRoot: string, workName: string): MigrateResult {
+export async function migrateWorkToV1(projectRoot: string, workName: string): Promise<MigrateResult> {
   const workDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
   const workOxnPath = join(workDir, 'work.oxn')
 
@@ -414,7 +414,7 @@ export function migrateWorkToV1(projectRoot: string, workName: string): MigrateR
   let artifactsWritten: string[] = []
   let invalidRefs: InvalidRef[] = []
   try {
-    const r = regenerateV1Artifacts(projectRoot, workName, workOxnPath)
+    const r = await regenerateV1Artifacts(projectRoot, workName, workOxnPath)
     artifactsWritten = r.artifactsWritten
     invalidRefs = r.invalidRefs
   } catch (err) {

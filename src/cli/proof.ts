@@ -25,7 +25,15 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from '../infra/filesystem'
 import { join } from 'path'
 import { t } from '../infra/i18n'
 import { URI } from 'langium'
@@ -705,16 +713,34 @@ function renderShowHuman(
     lines.push(`⚠️ Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json`)
     lines.push('')
   }
+  // v0.2 T5: 3-state verdict 展示 (PASSED/FAILED/INCONCLUSIVE) + 色彩降级
+  //  - TTY 启用时: PASSED=green, FAILED=red, INCONCLUSIVE=yellow
+  //  - 非 TTY / --no-color: 仅 emoji 区分
+  //  emoji 与色彩互为冗余: 管道 (| cat) 仍可读, TTY 仍可一眼区分
+  const ttyColor = process.stdout.isTTY === true
+  const verdictIcon = frozen.verdict === 'PASSED' ? '✅' : frozen.verdict === 'INCONCLUSIVE' ? '⚠️ ' : '❌'
+  let verdictText = `${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount}`
+  if (frozen.verdict === 'INCONCLUSIVE') {
+    verdictText += `, INCONCLUSIVE probes`
+  }
+  verdictText += ')'
+  if (ttyColor) {
+    const colorCode =
+      frozen.verdict === 'PASSED' ? '\u001b[32m' : frozen.verdict === 'INCONCLUSIVE' ? '\u001b[33m' : '\u001b[31m'
+    verdictText = `${colorCode}${verdictText}\u001b[0m`
+  }
   lines.push(`Proof: ${frozen.name}`)
-  lines.push(`Verdict: ${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount})`)
+  lines.push(`Verdict: ${verdictIcon} ${verdictText}`)
   lines.push(`Run at: ${frozen.runAt}`)
   lines.push(`Signature: ${frozen._xenon_meta.content_hash}`)
   lines.push('')
   lines.push('Probes:')
   for (const p of frozen.probes) {
-    const icon = p.passed ? '✅' : '❌'
+    const icon = p.verdict === 'PASSED' ? '✅' : p.verdict === 'INCONCLUSIVE' ? '⚠️ ' : '❌'
     const err = p.errorMessage ? ` — ${p.errorMessage}` : ''
-    lines.push(`  ${icon} ${p.probeName} (${p.ref}) — ${p.durationMs}ms${err}`)
+    const flags =
+      p.interferenceFlags && p.interferenceFlags.length > 0 ? ` [flags: ${p.interferenceFlags.join(', ')}]` : ''
+    lines.push(`  ${icon} ${p.probeName} (${p.ref}) — ${p.verdict}, ${p.durationMs}ms${err}${flags}`)
   }
   return lines.join('\n')
 }
@@ -738,4 +764,4 @@ export default defineCommand({
 })
 
 // 导出辅助函数（供测试与外部调用）
-export { getProofDir, getProofFrozenPath, getProofOxnPath, parseProofFile, proofProbesToIR }
+export { getProofDir, getProofFrozenPath, getProofOxnPath, parseProofFile, proofProbesToIR, renderShowHuman }

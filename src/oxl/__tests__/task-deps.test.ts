@@ -76,9 +76,29 @@ describe('TaskDeclaration.deps 语法契约（v0.0.28+）', () => {
     expect(r.parseErrors.length).toBeGreaterThan(0)
   })
 
-  test('非法: deps 缺方括号（deps = "a"）', async () => {
+  test('合法: deps = "a"（v0.2 T3 软缺口 A 修复：单 STRING 形态）', async () => {
     const r = await parse(WRAPPER(`task "t" { blueprint "fix-issue" part "p" { skill_context = "x" } deps = "a" }`))
-    expect(r.parseErrors.length).toBeGreaterThan(0)
+    expect([...r.parseErrors, ...r.lexerErrors]).toEqual([])
+  })
+
+  // ───── T3 软缺口 A 修复新增 case（v0.2 多语法兼容）─────
+  test('合法: deps : []（老兼容：冒号赋值）', async () => {
+    const r = await parse(WRAPPER(`task "t" { blueprint "fix-issue" part "p" { skill_context = "x" } deps : [] }`))
+    expect([...r.parseErrors, ...r.lexerErrors]).toEqual([])
+  })
+
+  test('合法: deps = "a", "b"（多元素无括号）', async () => {
+    const r = await parse(
+      WRAPPER(`task "t" { blueprint "fix-issue" part "p" { skill_context = "x" } deps = "a", "b" }`),
+    )
+    expect([...r.parseErrors, ...r.lexerErrors]).toEqual([])
+  })
+
+  test('合法: deps : "a", "b", "c"（老兼容 + 多元素无括号）', async () => {
+    const r = await parse(
+      WRAPPER(`task "t" { blueprint "fix-issue" part "p" { skill_context = "x" } deps : "a", "b", "c" }`),
+    )
+    expect([...r.parseErrors, ...r.lexerErrors]).toEqual([])
   })
 
   test('非法: 重复 deps 字段', async () => {

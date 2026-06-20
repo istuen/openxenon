@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync } from '../../infra/filesystem'
 import type { AstNode, LangiumCoreServices, LangiumDocument, LangiumSharedCoreServices } from 'langium'
 import { Cancellation, DocumentState, URI } from 'langium'
 import { isAbsolute, join } from 'path'

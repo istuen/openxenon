@@ -126,7 +126,7 @@ describe('isCliInputError', () => {
 
 describe('4-tier CLI catch block (process.exit/stdout/stderr)', () => {
   let exitCode: number | null = null
-  let exitCalled = false
+  let _exitCalled = false
   const origExit = process.exit
   const origLog = console.log
   const origErr = console.error
@@ -135,20 +135,20 @@ describe('4-tier CLI catch block (process.exit/stdout/stderr)', () => {
 
   beforeEach(() => {
     exitCode = null
-    exitCalled = false
+    _exitCalled = false
     stdoutBuf = ''
     stderrBuf = ''
     process.exit = ((code?: number) => {
       exitCode = code ?? 0
-      exitCalled = true
+      _exitCalled = true
       // 抛错中断当前控制流（模拟 process.exit 行为）
       throw new Error(`_intercepted_exit_${exitCode}`)
     }) as never
     console.log = (...args: unknown[]) => {
-      stdoutBuf += args.join(' ') + '\n'
+      stdoutBuf += `${args.join(' ')}\n`
     }
     console.error = (...args: unknown[]) => {
-      stderrBuf += args.join(' ') + '\n'
+      stderrBuf += `${args.join(' ')}\n`
     }
   })
 

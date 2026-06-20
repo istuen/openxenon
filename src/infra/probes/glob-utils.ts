@@ -1,4 +1,4 @@
-import { readdirSync, statSync } from 'fs'
+import { readdirSync, statSync } from '../filesystem'
 import { join, relative } from 'path'
 
 export interface ProbeContext {

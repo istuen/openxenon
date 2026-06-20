@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, writeFileSync } from '../infra/filesystem'
 import { join } from 'path'
 import { setLocale, t } from '../infra/i18n'
 import { BOUNDARY_DIR } from '../kernel/index'

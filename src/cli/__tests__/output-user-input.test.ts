@@ -28,7 +28,7 @@ describe('outputUserInputError (Phase 4)', () => {
     }) as never
     process.exitCode = 0
     console.log = (...args: unknown[]) => {
-      stdoutBuf += args.join(' ') + '\n'
+      stdoutBuf += `${args.join(' ')}\n`
     }
   })
 

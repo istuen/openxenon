@@ -101,3 +101,54 @@ bun test                    # bun test，约 50 秒，414 个测试
 - AI 可见的权威文档：`docs/introduction.md`（入口）、`docs/core-concepts.md`（IAP 范式）、`docs/intent.md`（Intent 轴）、`docs/align.md`（Align 轴）、`docs/proof.md`（Proof 轴）、`docs/cli.md`（CLI 参考）、`docs/architecture.md`（架构）。
 - Probes 拆分：`src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
+
+## v0.2 路线图分支策略
+
+**主分支**：`feat/v0.2-proof-engine`（从 `dev` 拉出，**不基于** `main`）
+
+**子分支命名**：`feat/v0.2-t<N>-<slug>`，N 与 EXECUTION-ORDER.md §3 任务编号严格一致
+
+| 任务 | 子分支 | 周次 |
+|---|---|---|
+| T1a infra-fs-cli (子 PR 1) | `feat/v0.2-t1a-infra-fs-migrate-cli` | W1 | **✅ done** (commit df07407 + a621c64 + 1c30cf1) — src/cli/ 22 文件 fs 直引收口 + 47 case guard test + biome cleanup |
+| T1b infra-fs-rest (子 PR 2) | `feat/v0.2-t1b-infra-fs-migrate-rest` | W1 | **✅ done** (commit cb7b014 + e6d4ff4) — 28 非 cli 文件 fs 直引收口 + filesystem-async.ts + 删 3 个真死 Port + biome cleanup |
+| T1 infra-io-phase2-6 (总) | `feat/v0.2-t1-infra-io-phase2-6` | W1 | **✅ 拆分后 t1a + t1b 已合入主分支** (52 文件实测，父文档估 23 个) |
+| T2 daemon-pr1-cleanup | `feat/v0.2-t2-daemon-pr1-cleanup` | W1 | **✅ done** (commit fdcd238) — src/daemon/recovery.ts → trace/recovery.ts (父文档 v0.1.x 早期版本的范围因 v0.1.8 演进中已分化, 仅做 recovery 移位) |
+| T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 | **✅ done** (commit 04d143e) — 软缺口 A: grammar 多语法兼容 + 软缺口 B: merger 从 regex 改 Langium AST (3 个 sync 函数改 async) |
+| T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a | **✅ done** (commit a5dbab4) — IO Primitive + InterferenceFlag 12 项 + TRUST_BASELINE + ProbeVerdict 三态 (PASS/FAIL/INCONCLUSIVE); 14 个 builtin probe 透传守护通过 |
+| T5 taint PR-2 frozen+展示 | `feat/v0.2-t5-taint-pr2-frozen-verdict` | W3b | **✅ done** (commit 05cd452 + 75d7bd6, merge eee9832) — frozen.json schema 三态升级 (verdict 必填 PASSED/FAILED/INCONCLUSIVE + interferenceFlags 可选) + FrozenProof 聚合三态 + reader hash 关键 bug 修复 (raw hash 不依赖 zod key 顺序) + renderShowHuman 3 态 emoji + TTY 色彩 + 8 case 新测试 (5 frozen-proof-shape + 3 renderShowHuman) + 中英双 SSOT 文档 |
+| T6 taint PR-3 Provider | `feat/v0.2-t6-taint-pr3-registry-providers` | W3c | **✅ done** (commit 9d7c136 + b0c2c58, merge 3e127c5) — ProviderRegistry + 4 内置 Provider (FileProvider lstat + 4 flag / HttpProvider WAF 6 头 + cdn_cache / ShellProvider 委派 shell-exec / GitProvider 委派 git-* ) + IAPError 字典扩展 (3→4 轴, 5→7 码) + 18 case 新测试 (5 file + 6 http + 7 registry) + L1-Infra 架构合规修复 (6 处 import 走 kernel barrel) |
+| T7 taint PR-4 沙箱+CLI | `feat/v0.2-t7-taint-pr4-sandbox-cli` | W3d ⚠ PoC | **✅ done** (commit 6258d4e + 1cef78f, merge 555202b) — PoC 闸门 Bun vm.SourceTextModule 通过 (方案 A) + probe-sandbox (FORBIDDEN_GLOBALS 7 + FORBIDDEN_MODULES 10 + 8 步 sandboxValidate) + probe-registry-store (registry.json v1 schema) + `oxn probe add` CLI (4 步流程: fetchSource → 落盘 0o444 → sandboxValidate → registryUpsert) + IAPError 字典 7→9 码 (加 SANDBOX_REJECTED + PROBE_INVALID) + 11 case 新测试 (6 sandbox + 5 e2e) + L3-CLI 架构合规修复 (3 新文件 0 fs 直引, 走 filesystem-async) + PoC 资产 bun-poc/spike-t7-sandbox/ |
+| T9 taint PR-5 daemon+workcheck | `feat/v0.2-t9-taint-pr5-daemon-workcheck` | W5a | **✅ done** (commit 52f97e4 + d72daab, merge ed73e77) — daemonStartup 物理路径 src/daemon/ → src/infra/registry/ (L1-Infra, 避免 CLI↔daemon 互引违规) + startServer 钩子点 + workPrecheck (精准阻断该 Work, v2 核心倒置) + `oxn probe list` / `fix` CLI (3 case + 2 case) + IAPError 字典 9→12 码 (加 PROBE_CORRUPTED + PROBE_MISSING + PROBE_FIX_UNAVAILABLE) + 8 case 新测试 (5 precheck + 3 list) + L2-Work + L3-CLI 架构合规修复 (server.ts existsSync 走 infra/filesystem) |
+| T8 intent-pool minimal | `feat/v0.2-t8-pool-minimal-research` | W4 末 | **✅ done** (commit a73c809 + a11dfef, merge 82542bb) — Intent Pool v3 最小切片 (research 池 + Hall 扫描迁移) — pool-writer (复用 writeImmutable 写 0o444 frozen.json) + journal-generator + markdown-headings (extractHeadings 排除 ```代码块```) + scripts/check-heading-skeleton.ts (CLI 退出码 0/1) + Hall 改造 (scanIntentPools + 埋 warnOnForgesDeprecated 开关) + OxnConfig 加字段 (默认 false, Sprint 6 flip) + lefthook pre-commit 第 5 hook + .gitignore 扩展 + .openxenon/pools/research/.gitkeep + 11 case 新测试 (3 pool-writer + 4 markdown-headings + 4 heading-skeleton) + 中英双 SSOT intent.md 章节 |
+| T10 taint PR-6 OXL grammar | `feat/v0.2-t10-taint-pr6-oxl-grammar` | W5b | **✅ done** (commit d5d67e5 + 8091311, merge d5dadc4) — OXL 1.3 grammar scheme: 字段 (ProbeDeclaration 加可选 'scheme' ':' scheme=STRING) + 重新生成 parser/ast/grammar/tmLanguage + 15 builtin probe 模板迁移 (fs-*/git-*/http/shell 全覆盖) + probe-validator.ts 新建 (3 规则校验) + validators/index.ts 统一出口 + 22 case 新测试 (16 probe-templates + 6 probe-validator) + ⚠ 串行约束: 本 PR 必须在 T11 之前合入 (OXL grammar 两次 langium:generate 分两次 PR) |
+| T11 three-layer PR-1 grammar | `feat/v0.2-t11-three-layer-pr1-grammar` | W5c | **✅ done** (commit aaad25d, merge 6e3000f) — InvariantDecl 加 script/manual/scope 可选字段 + WorkDeclaration 加 domainProofs+=DomProofRef (`proofs [...]` 语法) + 重新生成 parser/ast/grammar + 2 处兼容修复 + 10 case 新测试 + ⚠ 串行约束: T11 在 T10 之后合入 |
+| T12 three-layer PR-2 finalize | `feat/v0.2-t12-three-layer-pr2-finalize` | W5d | **✅ done** (commit d183aff, merge 13c4d52) — work finalize 二阶段原子写入 + domain-proof-evaluator + 硬阻断 on FAIL + 8 case 新测试 + L1-Infra 合规 |
+| T13 intent-pool full | `feat/v0.2-t13-pool-full-forges-warn` | W6-7 | **✅ done** (commit 16fb880, merge 8a6e9a0) — Intent Pool 5 池全启用 (research/design/issue/audit/journal) + 5 pool heading specs + 'oxn pool list/create' CLI + Hall scanIntentPools 5 池扫描 + physical dirs |
+| T14 daemon PR-2/3/4 闭环 | `feat/v0.2-t14-daemon-pr234-loop` | W8 | **✅ done** (commit edbf3fa, merge 5f5720c) — PR-2 step.ts (Proof-driven incremental steps) + PR-3 daemon restart/logs/kill CLI 命令 + PR-4 escape-mechanism + trace archiver + L2-L3 架构合规 (step.ts 物理路径 cli → infra, daemon 不 import CLI) |
+| T15 taint PR-7 spike | `feat/v0.2-t15-taint-pr7-spike` | W8（spike，不入 main） | ⏳ 待启动 |
+| T3 soft-gaps | `feat/v0.2-t3-soft-gaps` | W2 |
+| T4 taint PR-1 数据契约 | `feat/v0.2-t4-taint-pr1-data-contract` | W3a |
+| T5 taint PR-2 frozen+展示 | `feat/v0.2-t5-taint-pr2-frozen-verdict` | W3b |
+| T6 taint PR-3 Provider | `feat/v0.2-t6-taint-pr3-registry-providers` | W3c |
+| T7 taint PR-4 沙箱+CLI | `feat/v0.2-t7-taint-pr4-sandbox-cli` | W3d ⚠ PoC |
+| T8 intent-pool minimal | `feat/v0.2-t8-pool-minimal-research` | W4 |
+| T9 taint PR-5 daemon+workcheck | `feat/v0.2-t9-taint-pr5-daemon-workcheck` | W5a |
+| T10 taint PR-6 OXL grammar | `feat/v0.2-t10-taint-pr6-oxl-grammar` | W5b |
+| T11 three-layer PR-1 grammar | `feat/v0.2-t11-three-layer-pr1-grammar` | W5c |
+| T12 three-layer PR-2 finalize | `feat/v0.2-t12-three-layer-pr2-finalize` | W5d |
+| T13 intent-pool full | `feat/v0.2-t13-pool-full-forges-warn` | W6-7 |
+| T14 daemon PR-2/3/4 闭环 | `feat/v0.2-t14-daemon-pr234-loop` | W8 |
+| T15 taint PR-7 spike | `feat/v0.2-t15-taint-pr7-spike` | W8（spike，不入 main） |
+
+**严格约束**：
+- 所有子分支从 `feat/v0.2-proof-engine` 派生
+- **T10 → T11 串行**：OXL grammar 两次 `langium:generate` 分两次 PR，**绝对禁止并行**
+- **T7 PoC 闸门**：Bun `vm.SourceTextModule` PoC 不通过则降级方案 B（Worker）/ C（spawn 子进程）/ D（推迟 PR-4）
+- **T15 spike 边界**：不进入 main 分支；产出 `spike/probe-converge/README.md` 决策即可
+
+**Sprint 设计稿位置**：`.openxenon/forges/sprints/sprint-{N}/<doc>.md`（15 份）+ `EXECUTION-ORDER.md`（总索引）
+
+**对应 changelog 片段**：`.changes/0-2-0-roadmap.md`（路线图占位，每个子分支 PR 合入时记得新增一条 changelog）
+
+**Work v1.1 流程**：每个子分支开工时按 `oxn-work` skill 8 阶段（init → migrate → create → add-task → validate → lock → run → submit）走完一轮。

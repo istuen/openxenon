@@ -1,5 +1,5 @@
 import { taskCircuitBreaker } from '../../circuit-breaker'
-import { recoveryManager } from '../../recovery'
+import { recoveryManager } from '../../trace/recovery'
 import { badRequest } from '../errors'
 import { registerRoute } from '../router'
 import { parseJSONBody } from '../validation'

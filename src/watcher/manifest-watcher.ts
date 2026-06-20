@@ -1,4 +1,4 @@
-import { existsSync, type FSWatcher, readFileSync, watch } from 'fs'
+import { existsSync, type FSWatcher, readFileSync, watch } from '../infra/filesystem'
 import { readTaskTrace } from '../daemon/trace/writer'
 import { getTaskDirectory } from '../work/task-directory'
 import type { StepManifest } from '../kernel/index'

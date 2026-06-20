@@ -12,7 +12,7 @@
 // 防止顶层副作用污染主 probe runner。
 // =============================================================================
 
-import { existsSync } from 'fs'
+import { existsSync } from '../filesystem'
 import { join } from 'path'
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 import type { ProbeContextBase } from '../../kernel/index'

@@ -60,6 +60,7 @@ export type OpenXenonLanguageKeywordNames =
     | "lifecycle"
     | "list"
     | "loop_policy"
+    | "manual"
     | "map"
     | "max_iterations"
     | "null"
@@ -73,9 +74,13 @@ export type OpenXenonLanguageKeywordNames =
     | "parts"
     | "probe"
     | "proof"
+    | "proofs"
     | "prop"
     | "ref"
     | "required"
+    | "scheme"
+    | "scope"
+    | "script"
     | "skill"
     | "skill_context"
     | "slot"
@@ -269,6 +274,21 @@ export function isDomainRefDecl(item: unknown): item is DomainRefDecl {
     return reflection.isInstance(item, DomainRefDecl.$type);
 }
 
+export interface DomProofRef extends langium.AstNode {
+    readonly $container: WorkDeclaration;
+    readonly $type: 'DomProofRef';
+    entries: Array<string>;
+}
+
+export const DomProofRef = {
+    $type: 'DomProofRef',
+    entries: 'entries'
+} as const;
+
+export function isDomProofRef(item: unknown): item is DomProofRef {
+    return reflection.isInstance(item, DomProofRef.$type);
+}
+
 export interface EnumType extends langium.AstNode {
     readonly $container: GenericType | OutputField | PropDeclaration;
     readonly $type: 'EnumType';
@@ -344,11 +364,17 @@ export function isInvariantBlock(item: unknown): item is InvariantBlock {
 export interface InvariantDecl extends langium.AstNode {
     readonly $container: InvariantBlock;
     readonly $type: 'InvariantDecl';
-    value: string;
+    manual?: string;
+    scope?: string;
+    script?: string;
+    value?: string;
 }
 
 export const InvariantDecl = {
     $type: 'InvariantDecl',
+    manual: 'manual',
+    scope: 'scope',
+    script: 'script',
     value: 'value'
 } as const;
 
@@ -602,6 +628,7 @@ export interface ProbeDeclaration extends langium.AstNode {
     name: string;
     output: Array<ProbeOutputDeclaration>;
     props: Array<PropDeclaration>;
+    scheme?: string;
 }
 
 export const ProbeDeclaration = {
@@ -609,7 +636,8 @@ export const ProbeDeclaration = {
     descriptions: 'descriptions',
     name: 'name',
     output: 'output',
-    props: 'props'
+    props: 'props',
+    scheme: 'scheme'
 } as const;
 
 export function isProbeDeclaration(item: unknown): item is ProbeDeclaration {
@@ -744,10 +772,8 @@ export function isRequiredModifier(item: unknown): item is RequiredModifier {
 }
 
 export interface TaskDeclaration extends langium.AstNode {
-    readonly $container: WorkDeclaration;
-    readonly $type: 'TaskDeclaration';
-    blueprint?: string;
-    deps?: TaskDeps;
+    readonly $type: 'TaskDeclaration' | 'TaskDepsField';
+    blueprint: string;
     domain?: string;
     name: string;
     parts: Array<TaskPartDecl>;
@@ -756,7 +782,6 @@ export interface TaskDeclaration extends langium.AstNode {
 export const TaskDeclaration = {
     $type: 'TaskDeclaration',
     blueprint: 'blueprint',
-    deps: 'deps',
     domain: 'domain',
     name: 'name',
     parts: 'parts'
@@ -767,7 +792,7 @@ export function isTaskDeclaration(item: unknown): item is TaskDeclaration {
 }
 
 export interface TaskDeps extends langium.AstNode {
-    readonly $container: TaskDeclaration;
+    readonly $container: TaskDepsField;
     readonly $type: 'TaskDeps';
     deps: Array<string>;
 }
@@ -779,6 +804,24 @@ export const TaskDeps = {
 
 export function isTaskDeps(item: unknown): item is TaskDeps {
     return reflection.isInstance(item, TaskDeps.$type);
+}
+
+export interface TaskDepsField extends TaskDeclaration {
+    readonly $type: 'TaskDepsField';
+    deps: TaskDeps;
+}
+
+export const TaskDepsField = {
+    $type: 'TaskDepsField',
+    blueprint: 'blueprint',
+    deps: 'deps',
+    domain: 'domain',
+    name: 'name',
+    parts: 'parts'
+} as const;
+
+export function isTaskDepsField(item: unknown): item is TaskDepsField {
+    return reflection.isInstance(item, TaskDepsField.$type);
 }
 
 export interface TaskPartDecl extends langium.AstNode {
@@ -944,6 +987,7 @@ export interface WorkDeclaration extends langium.AstNode {
     readonly $type: 'WorkDeclaration';
     blueprints: Array<BlueprintRefDecl>;
     context?: WorkContext;
+    domainProofs: Array<DomProofRef>;
     domains: Array<DomainRefDecl>;
     name: string;
     parts: Array<PartRefDecl>;
@@ -955,6 +999,7 @@ export const WorkDeclaration = {
     $type: 'WorkDeclaration',
     blueprints: 'blueprints',
     context: 'context',
+    domainProofs: 'domainProofs',
     domains: 'domains',
     name: 'name',
     parts: 'parts',
@@ -975,6 +1020,7 @@ export type OpenXenonLanguageAstType = {
     BlueprintRefDecl: BlueprintRefDecl
     DefaultValue: DefaultValue
     Description: Description
+    DomProofRef: DomProofRef
     DomainDeclaration: DomainDeclaration
     DomainRefDecl: DomainRefDecl
     EnumType: EnumType
@@ -1007,6 +1053,7 @@ export type OpenXenonLanguageAstType = {
     RequiredModifier: RequiredModifier
     TaskDeclaration: TaskDeclaration
     TaskDeps: TaskDeps
+    TaskDepsField: TaskDepsField
     TaskPartDecl: TaskPartDecl
     TaskProbeDecl: TaskProbeDecl
     TemplateString: TemplateString
@@ -1116,6 +1163,16 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
             },
             superTypes: []
         },
+        DomProofRef: {
+            name: DomProofRef.$type,
+            properties: {
+                entries: {
+                    name: DomProofRef.entries,
+                    defaultValue: []
+                }
+            },
+            superTypes: []
+        },
         DomainDeclaration: {
             name: DomainDeclaration.$type,
             properties: {
@@ -1205,6 +1262,15 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
         InvariantDecl: {
             name: InvariantDecl.$type,
             properties: {
+                manual: {
+                    name: InvariantDecl.manual
+                },
+                scope: {
+                    name: InvariantDecl.scope
+                },
+                script: {
+                    name: InvariantDecl.script
+                },
                 value: {
                     name: InvariantDecl.value
                 }
@@ -1410,6 +1476,9 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 props: {
                     name: ProbeDeclaration.props,
                     defaultValue: []
+                },
+                scheme: {
+                    name: ProbeDeclaration.scheme
                 }
             },
             superTypes: [TopLevelEntity.$type]
@@ -1520,9 +1589,6 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 blueprint: {
                     name: TaskDeclaration.blueprint
                 },
-                deps: {
-                    name: TaskDeclaration.deps
-                },
                 domain: {
                     name: TaskDeclaration.domain
                 },
@@ -1545,6 +1611,28 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 }
             },
             superTypes: []
+        },
+        TaskDepsField: {
+            name: TaskDepsField.$type,
+            properties: {
+                blueprint: {
+                    name: TaskDepsField.blueprint
+                },
+                deps: {
+                    name: TaskDepsField.deps
+                },
+                domain: {
+                    name: TaskDepsField.domain
+                },
+                name: {
+                    name: TaskDepsField.name
+                },
+                parts: {
+                    name: TaskDepsField.parts,
+                    defaultValue: []
+                }
+            },
+            superTypes: [TaskDeclaration.$type]
         },
         TaskPartDecl: {
             name: TaskPartDecl.$type,
@@ -1669,6 +1757,10 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 },
                 context: {
                     name: WorkDeclaration.context
+                },
+                domainProofs: {
+                    name: WorkDeclaration.domainProofs,
+                    defaultValue: []
                 },
                 domains: {
                     name: WorkDeclaration.domains,

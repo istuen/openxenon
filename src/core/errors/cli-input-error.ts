@@ -33,6 +33,7 @@ const CLI_INPUT_CODE_PREFIXES = [
   'OXN_INPUT_',
   'OXN_OUTPUT_',
   'OXN_INVALID_',
+  'OXN_TOKEN_',
 ]
 
 /**

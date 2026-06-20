@@ -1,7 +1,7 @@
 import { existsSync } from '../../../infra/filesystem'
 import { getTaskDirectory } from '../../../work/task-directory'
 import { taskCircuitBreaker } from '../../circuit-breaker'
-import { recoveryManager } from '../../recovery'
+import { recoveryManager } from '../../trace/recovery'
 import { readTaskTrace } from '../../trace/writer'
 import { notFound } from '../errors'
 import { registerRoute } from '../router'

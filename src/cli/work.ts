@@ -32,7 +32,15 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+} from '../infra/filesystem'
 import { t } from '../infra/i18n'
 import { join } from 'path'
 import { URI } from 'langium'
@@ -275,7 +283,7 @@ async function validateAndWriteArtifacts(params: {
 
   // ── 1. 跑 merger 解析 domain/blueprint ref ──
   const workOxnPath = getWorkOxnPath(projectRoot, workName)
-  const domainsIdx = buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
+  const domainsIdx = await buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
   const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
 
   // ── 2. 收集 unresolved ──
@@ -316,7 +324,7 @@ async function validateAndWriteArtifacts(params: {
   // ── 3. 写 domains.json + blueprints.json ──
   const domainsJsonPath = getPerWorkDomainsJsonPath(projectRoot, workName)
   const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
-  writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
+  await writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
   writePerWorkBlueprintsIndex({
     projectRoot,
     workName,
@@ -1706,19 +1714,17 @@ const runSubcommand = defineCommand({
       const runDiagnostics: RefDiagnostic[] = []
       for (const d of work.domains ?? []) {
         if (!resolveDomainFile(d.ref ?? null, d.name, projectRoot)) {
-          const reason =
-            d.ref && d.ref.startsWith('@oxn/')
-              ? '@oxn/ scope has no builtin domain registry (V1)'
-              : `domain file not found for ref "${d.ref ?? d.name}"`
+          const reason = d.ref?.startsWith('@oxn/')
+            ? '@oxn/ scope has no builtin domain registry (V1)'
+            : `domain file not found for ref "${d.ref ?? d.name}"`
           runDiagnostics.push(buildDomainDiagnostic(d.name, d.ref ?? null, reason))
         }
       }
       for (const b of work.blueprints ?? []) {
         if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
-          const reason =
-            b.ref && b.ref.startsWith('@oxn/')
-              ? '@oxn/ scope has no builtin blueprint registry (V1)'
-              : `blueprint file not found for ref "${b.ref ?? b.name}"`
+          const reason = b.ref?.startsWith('@oxn/')
+            ? '@oxn/ scope has no builtin blueprint registry (V1)'
+            : `blueprint file not found for ref "${b.ref ?? b.name}"`
           runDiagnostics.push(buildBlueprintDiagnostic(b.name, b.ref ?? null, reason))
         }
       }
@@ -2190,19 +2196,17 @@ function collectUnresolvedRefDiagnostics(work: WorkFileSummary, projectRoot: str
   const diagnostics: RefDiagnostic[] = []
   for (const d of work.domains) {
     if (!resolveDomainFile(d.ref ?? null, d.name, projectRoot)) {
-      const reason =
-        d.ref && d.ref.startsWith('@oxn/')
-          ? '@oxn/ scope has no builtin domain registry (V1)'
-          : 'domain file not found for ref "' + (d.ref ?? d.name) + '"'
+      const reason = d.ref?.startsWith('@oxn/')
+        ? '@oxn/ scope has no builtin domain registry (V1)'
+        : `domain file not found for ref "${d.ref ?? d.name}"`
       diagnostics.push(buildDomainDiagnostic(d.name, d.ref ?? null, reason))
     }
   }
   for (const b of work.blueprints) {
     if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
-      const reason =
-        b.ref && b.ref.startsWith('@oxn/')
-          ? '@oxn/ scope has no builtin blueprint registry (V1)'
-          : 'blueprint file not found for ref "' + (b.ref ?? b.name) + '"'
+      const reason = b.ref?.startsWith('@oxn/')
+        ? '@oxn/ scope has no builtin blueprint registry (V1)'
+        : `blueprint file not found for ref "${b.ref ?? b.name}"`
       diagnostics.push(buildBlueprintDiagnostic(b.name, b.ref ?? null, reason))
     }
   }
@@ -2474,7 +2478,7 @@ const contextSubcommand = defineCommand({
         isolationNotice: t('work.isolationNotice'),
         lockHealth: noLockCheck
           ? { status: 'bypassed', reason: 'unlock-check flag set' }
-          : birthCertForHealth && birthCertForHealth.ok && birthCertForHealth.cert?.planLock
+          : birthCertForHealth?.ok && birthCertForHealth.cert?.planLock
             ? {
                 status: 'ok',
                 lockedAt: birthCertForHealth.cert.planLock.lockedAt,
@@ -2819,7 +2823,7 @@ const migrateSubcommand = defineCommand({
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
-  run(ctx) {
+  async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
     const projectRoot = getProjectRoot()
@@ -2828,7 +2832,7 @@ const migrateSubcommand = defineCommand({
       return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
-    const result = migrateWorkToV1(projectRoot, workName)
+    const result = await migrateWorkToV1(projectRoot, workName)
 
     if (!result.ok) {
       if (result.kind === 'work-not-found') {

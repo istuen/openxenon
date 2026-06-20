@@ -29,7 +29,6 @@
 export type { FileSystemPort } from './contracts/file-system-port'
 export type { HashPort } from './contracts/hash-port'
 export type { OsPort } from './contracts/os-port'
-export type { PathPort } from './contracts/path-port'
 export type { PartPort } from './contracts/part-port'
 export type {
   ProbeHandler,
@@ -61,6 +60,9 @@ export type {
   ProbeStatsView,
   ProbeTypeStatsView,
 } from './schemas/insight-schema'
+
+export { TokenRecordSchema, safeValidateTokenRecord } from './schemas/token-record.schema'
+export type { TokenRecord } from './schemas/token-record.schema'
 
 export {
   BlueprintSchema,

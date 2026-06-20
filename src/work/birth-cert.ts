@@ -15,7 +15,7 @@
 //     verifyPlanLock 是唯一"判定被改"的途径，不靠 chmod（跨平台安全）
 // =============================================================================
 
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from '../infra/filesystem'
 import { dirname, join } from 'path'
 import { z } from 'zod'
 import { hashPort } from '../infra/hash'

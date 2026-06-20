@@ -230,6 +230,13 @@
     "description": "Read frozen.json + probe-stats.json, produce structured Insight",
     "proof": "Proof name (required)"
   },
+  "token": {
+    "description": "AI model token consumption tracking",
+    "ingest": {
+      "description": "Ingest a token consumption record from an AI assistant",
+      "inputJson": "JSON object: { source, sessionID, workRef, modelID, providerID, tokens: { input, output }, cost, timestamp }"
+    }
+  },
   "installSkill": {
     "description": "Install oxn-* OpenCode Skills to target directory (default: ~/.opencode/skills/, all oxn-* skills)",
     "target": "Target root directory (default: ~/.opencode/skills/)",

@@ -19,7 +19,7 @@
 // the resolution chain continues with env / default. The error is logged
 // to stderr so the user knows to fix the file, but no error is returned.
 
-import { existsSync, readFileSync } from 'fs'
+import { existsSync, readFileSync } from '../infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR } from '../kernel/index'
 
@@ -32,6 +32,11 @@ export const DEFAULT_LEADER_MODE: LeaderMode = 'reference'
 export interface OxnConfig {
   version: 1
   leaderMode?: LeaderMode
+  /**
+   * v0.2 T8: 是否在 Hall 扫描 forges/ 时打印 WARN
+   * 默认 false (兼容期静默); Sprint 6 flip 开关
+   */
+  warnOnForgesDeprecated?: boolean
   [key: string]: unknown
 }
 
