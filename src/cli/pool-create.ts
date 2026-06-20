@@ -2,7 +2,7 @@
 // pool-create.ts (v0.2 T13)
 // =============================================================================
 import { join } from 'node:path'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync } from '../infra/filesystem'
 import { defineCommand } from 'citty'
 import { output } from './output'
 import { writePoolEntry } from '../infra/frozen/pool-writer'

@@ -1,6 +1,6 @@
 // src/cli/daemon-logs.ts — v0.2 T14 Daemon PR-3 logs command
 import { defineCommand } from 'citty'
-import { existsSync, createReadStream } from 'node:fs'
+import { existsSync, readFileSync } from '../infra/filesystem'
 import { join } from 'node:path'
 import { output } from './output'
 
@@ -15,13 +15,8 @@ export default defineCommand({
     }
     const limit = Number(args.lines ?? 50)
     // Simple tail: read file, return last N lines
-    const chunks: string[] = []
-    await new Promise<void>((resolve) => {
-      createReadStream(logPath, { encoding: 'utf-8' })
-        .on('data', (chunk: string) => chunks.push(chunk))
-        .on('end', resolve)
-    })
-    const lines = chunks.join('').split('\n').slice(-limit)
+    const content = readFileSync(logPath, 'utf-8')
+    const lines = content.split('\n').slice(-limit)
     output({ ok: true, lines, count: lines.length, path: logPath })
   },
 })

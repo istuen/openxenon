@@ -2,7 +2,7 @@
 // pool-list.ts (v0.2 T13)
 // =============================================================================
 import { join } from 'node:path'
-import { readdirSync } from 'node:fs'
+import { readdirSync } from '../infra/filesystem'
 import { defineCommand } from 'citty'
 import { output } from './output'
 import type { IntentPool } from '../infra/frozen/pool-writer'

@@ -1,6 +1,6 @@
 // src/cli/daemon-kill.ts — v0.2 T14 Daemon PR-3 kill command
 import { defineCommand } from 'citty'
-import { readFileSync } from 'node:fs'
+import { readFileSync } from '../infra/filesystem'
 import { join } from 'node:path'
 import { output } from './output'
 

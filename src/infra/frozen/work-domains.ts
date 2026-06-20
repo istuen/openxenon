@@ -7,7 +7,7 @@
 //   hardBlocked flag + overallVerdict
 // =============================================================================
 
-import { chmod, mkdir, rename, writeFile } from 'node:fs/promises'
+import { chmod, mkdir, rename, unlink, writeFile } from '../filesystem-async'
 import { join } from 'node:path'
 import { IAPError, IAPAction } from '../../kernel/index'
 import { evaluateDomainProof } from './domain-proof-evaluator'
@@ -86,7 +86,7 @@ export async function finalizeWorkDomains(
     if (failCount > 0) {
       // 删 draft
       try {
-        await (await import('node:fs/promises')).unlink(draftPath)
+        await unlink(draftPath)
       } catch {
         /* ignore */
       }
@@ -102,7 +102,7 @@ export async function finalizeWorkDomains(
 
     if (manualCount > 0) {
       try {
-        await (await import('node:fs/promises')).unlink(draftPath)
+        await unlink(draftPath)
       } catch {
         /* ignore */
       }
@@ -118,7 +118,7 @@ export async function finalizeWorkDomains(
 
     if (inconclusiveCount > 0) {
       try {
-        await (await import('node:fs/promises')).unlink(draftPath)
+        await unlink(draftPath)
       } catch {
         /* ignore */
       }
