@@ -129,3 +129,11 @@ export type {
   OxlMdAdapterResult,
   PreferredFormat,
 } from './oxl-md-adapter.js'
+
+// decompiler（.oxn → .md）
+export { compileOxnToMd, DecompilerParseError } from './oxl-md-decompiler.js'
+export type {
+  DecompileOptions,
+  DecompileResult,
+  IntentEntityType as DecompileEntityType,
+} from './oxl-md-decompiler.js'
