@@ -1,15 +1,14 @@
 /**
  * md-bridge 内部 barrel（v0.3 阶段 1+2）
  *
- * 阶段：v0.3.0 Step 1.2 + 阶段 1
+ * 阶段：v0.3.0 Step 1.2 + 阶段 1 + 阶段 2
  * 角色：md-bridge 子目录统一出口
  *
  * 关键导出：
  * - MdastOxlDriver：mdast 驱动的 OXL 入口
  * - driverRegistry：driver 注册表
- * - getActiveDriver / setActiveDriver：driver 选择 API
- * - pipeline / remark-to-mdast / mdast-validator / mdast-to-kernel
- *   / cache / reference-checker：md-bridge 核心 API
+ * - Pipeline / Validator / mdast-to-kernel：阶段 1 核心
+ * - source-hash / compiler / adapter：阶段 2 双轨制
  */
 
 export { MdastOxlDriver } from './mdast-oxl-driver.js'
@@ -87,3 +86,46 @@ export type {
   ReferenceCheckResult,
   ReferenceCheckOptions,
 } from './reference-checker.js'
+
+// ========================
+// 阶段 2：双轨制
+// ========================
+
+// source-hash
+export {
+  readMapping,
+  writeMapping,
+  deleteMapping,
+  listMappings,
+  readMappingTable,
+  writeMappingTable,
+  detectHashMismatch,
+  detectAllMismatches,
+  computeContentHash,
+  createMapping,
+  updateMappingAfterSync,
+} from './oxl-md-source-hash.js'
+export type {
+  SourceHashMapping,
+  SourceHashTable,
+  HashMismatchResult,
+  HashMismatchReason,
+  HashMismatchEntry,
+} from './oxl-md-source-hash.js'
+
+// compiler（.md → .oxn）
+export { compileMdToOxn, compileAndWriteMdToOxn } from './oxl-md-compiler.js'
+export type {
+  CompileOptions,
+  CompileResult,
+  CompileAndWriteOptions,
+  CompileAndWriteResult,
+} from './oxl-md-compiler.js'
+
+// adapter（.oxn ↔ .md）
+export { adaptOxlMd, OxlMdAdapterError, compileMdFile } from './oxl-md-adapter.js'
+export type {
+  OxlMdAdapterInput,
+  OxlMdAdapterResult,
+  PreferredFormat,
+} from './oxl-md-adapter.js'
