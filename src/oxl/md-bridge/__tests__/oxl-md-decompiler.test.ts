@@ -80,6 +80,42 @@ const SIMPLE_BLUEPRINT_OXN = `blueprint "dev-workflow" {
 }
 `
 
+// v0.3 follow-up: 完整 Blueprint（prop 多种 type + default + required + slot observe）
+const RICH_BLUEPRINT_OXN = `blueprint "rich-bp" {
+  version = 2
+  description = "rich 测试：prop 多 type + observe + version"
+
+  prop "timeout" {
+    type = number;
+    default = 60000;
+  }
+
+  prop "strict" {
+    type = boolean;
+    default = true;
+  }
+
+  prop "name" {
+    type = string;
+    required = true;
+  }
+
+  prop "tags" {
+    type = list<string>;
+  }
+
+  slot "analyze" {
+    deps = []
+    observe = ["fs-exists", "lint-check"]
+  }
+
+  slot "implement" {
+    deps = ["analyze"]
+    observe = ["ts-compiles", "test-pass"]
+  }
+}
+`
+
 const SIMPLE_WORK_OXN = `work "feature-x" {
   context {
     goal = "实现 X 功能";
@@ -199,6 +235,59 @@ describe('oxl-md-decompiler: Blueprint', () => {
   test('13. props serialized as :::intent{type=prop} blocks', async () => {
     const result = await compileOxnToMd(SIMPLE_BLUEPRINT_OXN, { entity: 'blueprint' })
     expect(result.md).toMatch(/:::intent\{#prop-feature[^}]*type="prop"/)
+  })
+
+  // v0.3 follow-up: prop.type 精度
+  test('14. prop.type preserved as number/boolean/string (not all "string")', async () => {
+    const result = await compileOxnToMd(RICH_BLUEPRINT_OXN, { entity: 'blueprint' })
+    expect(result.md).toMatch(/data-type="number"/)
+    expect(result.md).toMatch(/data-type="boolean"/)
+    expect(result.md).toMatch(/data-type="string"/)
+    // GenericType list<string> 应正确序列化
+    expect(result.md).toMatch(/data-type="list<string>"/)
+  })
+
+  // v0.3 follow-up: default 值提取
+  test('15. prop.default preserved in attributes and body', async () => {
+    const result = await compileOxnToMd(RICH_BLUEPRINT_OXN, { entity: 'blueprint' })
+    expect(result.md).toMatch(/data-type="number"[^}]*default="60000"/)
+    expect(result.md).toMatch(/data-type="boolean"[^}]*default="true"/)
+    expect(result.md).toMatch(/default: 60000/)
+    expect(result.md).toMatch(/default: true/)
+  })
+
+  // v0.3 follow-up: required 修饰符
+  test('16. prop.required serialized as required="true"', async () => {
+    const result = await compileOxnToMd(RICH_BLUEPRINT_OXN, { entity: 'blueprint' })
+    expect(result.md).toMatch(/required="true"/)
+  })
+
+  // v0.3 follow-up: slot observe 数组
+  test('17. slot.observe preserved as comma-separated list + body bullets', async () => {
+    const result = await compileOxnToMd(RICH_BLUEPRINT_OXN, { entity: 'blueprint' })
+    expect(result.md).toMatch(/observe="fs-exists,lint-check"/)
+    expect(result.md).toMatch(/observe="ts-compiles,test-pass"/)
+    expect(result.md).toContain('- observe: fs-exists')
+    expect(result.md).toContain('- observe: ts-compiles')
+  })
+
+  // v0.3 follow-up: blueprint.version 写入 frontmatter + body
+  test('18. blueprint.version preserved in frontmatter and body', async () => {
+    const result = await compileOxnToMd(RICH_BLUEPRINT_OXN, { entity: 'blueprint' })
+    // body 显示 Blueprint version: 2
+    expect(result.md).toContain('> Blueprint version: 2')
+  })
+
+  test('19. real blueprint fixture (add-cli-subcommand.oxn) converts with observe', async () => {
+    const path = join(process.cwd(), '.openxenon/blueprints/add-cli-subcommand.oxn')
+    if (!existsSync(path)) return
+    const oxn = readFileSync(path, 'utf-8')
+    const result = await compileOxnToMd(oxn, { entity: 'blueprint' })
+    expect(result.name).toBe('add-cli-subcommand')
+    // 4 个 slot 都有 observe
+    expect(result.md).toMatch(/observe="fs-exists"/)
+    expect(result.md).toMatch(/observe="lint-check,ts-compiles"/)
+    expect(result.md).toMatch(/observe="test-pass"/)
   })
 })
 

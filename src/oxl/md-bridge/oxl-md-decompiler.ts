@@ -311,10 +311,17 @@ function decompileBlueprint(blueprint: BlueprintDeclaration, options: DecompileO
       serializeFrontmatter({
         entity: 'blueprint',
         name: blueprint.name,
-        version,
+        // v0.3 follow-up: blueprint.version 写入 frontmatter（与 .oxn version=NUMBER 一致）
+        version: blueprint.version !== undefined ? String(blueprint.version) : version,
         source_hash: extractSourceHash(blueprint.$container),
       }),
     )
+  }
+
+  // v0.3 follow-up: blueprint.version 也写进 body（人类可读）
+  if (blueprint.version !== undefined) {
+    sections.push(`> Blueprint version: ${blueprint.version}`)
+    sections.push('')
   }
 
   sections.push(`# Blueprint: ${blueprint.name}`)
@@ -357,32 +364,124 @@ function decompileBlueprint(blueprint: BlueprintDeclaration, options: DecompileO
 function serializeProp(prop: PropDeclaration): string {
   const slug = slugify(prop.name)
   const typeName = extractTypeName(prop.type)
-  return `:::intent{#prop-${slug} type="prop" name="${escapeAttr(prop.name)}" data-type="${typeName}"}
-${prop.name} property
+  // v0.3 follow-up: 处理 default 值 + required 修饰符
+  const required = prop.required?.value === true
+  const defaultValue = prop.default ? expressionToString(prop.default.value) : undefined
+
+  const attrs: string[] = ['type="prop"', `name="${escapeAttr(prop.name)}"`, `data-type="${typeName}"`]
+  if (required) {
+    attrs.push('required="true"')
+  }
+  if (defaultValue !== undefined) {
+    attrs.push(`default="${escapeAttr(defaultValue)}"`)
+  }
+
+  // body 含 default 值（如有）便于人类阅读
+  const body = defaultValue !== undefined ? `${prop.name} property (default: ${defaultValue})` : `${prop.name} property`
+
+  return `:::intent{#prop-${slug} ${attrs.join(' ')}}
+${body}
 :::`
 }
 
-/** 提取 TypeReference 的可读名称（处理 AnyType/EnumType/GenericType 三种）*/
+/** 提取 TypeReference 的可读名称（处理 string 原始值 + TypeReference 包装 + AstNode 类型）*/
 function extractTypeName(typeRef: PropDeclaration['type']): string {
-  if (!typeRef) return 'string'
-  const t = typeRef as { $type?: string; container?: string; values?: string[] }
+  if (typeRef === undefined || typeRef === null) return 'string'
+
+  // v0.3 follow-up: PrimitiveType 是 'returns string' 规则，存储为 string 而非 AstNode
+  if (typeof typeRef === 'string') {
+    return typeRef
+  }
+
+  const t = typeRef as {
+    $type?: string
+    container?: string
+    values?: string[]
+    inner?: unknown
+    $cstNode?: { text?: string }
+  }
+
+  // TypeReference 包装节点（PrimitiveType 经 Langium 包装后）
+  // 实际类型值存在 $cstNode.text（如 "number" / "boolean" / "string"）
+  if (t.$type === 'TypeReference') {
+    const cstText = t.$cstNode?.text
+    if (cstText) return cstText
+    return 'string'
+  }
+
+  // EnumType / GenericType / AnyTypeRef 是 AstNode
   if (t.$type === 'EnumType' && t.values) {
     return `enum(${t.values.join('|')})`
   }
   if (t.$type === 'GenericType' && t.container) {
-    return `${t.container}<...>`
+    return `${t.container}<${extractTypeName(t.inner as PropDeclaration['type'])}>`
   }
-  if (t.$type === 'AnyTypeRef') {
+  if (t.$type === 'AnyTypeRef' || t.$type === 'AnyType') {
     return 'any'
   }
   return 'string'
 }
 
+/**
+ * 提取 Expression 的可读字符串表示
+ *
+ * Langium 对 PrimitiveType literal 的处理是「lossy」：LiteralExpr 节点本身不存 value，
+ * 实际值存在 $cstNode.text（CST 原文）。这里通过 $cstNode 取回原文。
+ */
+function expressionToString(expr: unknown): string {
+  if (expr === null || expr === undefined) return ''
+  if (typeof expr === 'string') return expr
+  if (typeof expr === 'number' || typeof expr === 'boolean') return String(expr)
+  if (typeof expr !== 'object') return String(expr)
+
+  const e = expr as { $type?: string; value?: unknown; $cstNode?: { text?: string } }
+  // TemplateString（v0.2 支持 "包含 ${var} 模板"）
+  if (e.$type === 'TemplateString' && typeof e.value === 'string') {
+    return e.value
+  }
+  // LiteralExpr：fallback 到 CST 原文
+  if (e.$type === 'LiteralExpr') {
+    const text = e.$cstNode?.text
+    if (text !== undefined) {
+      // 去除两侧引号
+      if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) {
+        return text.slice(1, -1)
+      }
+      return text
+    }
+  }
+  // VariableRef（不展开，仅显示 ref 路径）
+  if (e.$type === 'VariableRef') {
+    const qn = (expr as { path?: { name?: string; segments?: string[] } }).path
+    if (qn) {
+      return qn.segments?.length ? `${qn.name}.${qn.segments.join('.')}` : (qn.name ?? '')
+    }
+  }
+  return String(expr)
+}
+
 function serializeSlot(slot: PartSlotDeclaration): string {
   const slug = slugify(slot.name)
-  const deps = slot.deps.length > 0 ? ` deps="${escapeAttr(slot.deps.join(','))}"` : ''
-  return `:::intent{#slot-${slug} type="slot" id="${escapeAttr(slot.name)}"${deps}}
-- skill: ${slot.name}
+  // v0.3 follow-up: observe 数组以逗号分隔
+  const observe = slot.observe.flatMap((o) => o.observes)
+  const attrs: string[] = ['type="slot"', `id="${escapeAttr(slot.name)}"`]
+  if (slot.deps.length > 0) {
+    attrs.push(`deps="${escapeAttr(slot.deps.join(','))}"`)
+  }
+  if (observe.length > 0) {
+    attrs.push(`observe="${escapeAttr(observe.join(','))}"`)
+  }
+
+  // body: 第一行是 skill 名，下面是 observe 列表
+  const body: string[] = [`- skill: ${slot.name}`]
+  for (const o of slot.observe) {
+    for (const target of o.observes) {
+      body.push(`- observe: ${target}`)
+    }
+  }
+
+  return `:::intent{#slot-${slug} ${attrs.join(' ')}}
+${body.join('\n')}
 :::`
 }
 
