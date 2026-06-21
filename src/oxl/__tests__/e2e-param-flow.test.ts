@@ -13,9 +13,9 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { Cancellation, DocumentState, URI } from 'langium'
 import type { OxnAssemblyIR, OxnAssemblyPart, OxnWorkIR } from '../schemas/oxn-assembly.schema'
-import type { OXNDocument } from '../generated/ast'
+import type { OXNDocument } from '../langium-driver/generated/ast'
 import { categorizeEntities } from '../generator/oxn-generator'
-import { createOxnServices } from '../langium/oxn-services'
+import { createOxnServices } from '../langium-driver/oxn-services'
 
 interface Fixture {
   uri: string

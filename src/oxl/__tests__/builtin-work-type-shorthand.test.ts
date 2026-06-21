@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { Cancellation, DocumentState, URI } from 'langium'
-import type { OXNDocument } from '../generated/ast'
+import type { OXNDocument } from '../langium-driver/generated/ast'
 import { categorizeEntities } from '../generator/oxn-generator'
-import { createOxnServices } from '../langium/oxn-services'
+import { createOxnServices } from '../langium-driver/oxn-services'
 
 const SHORTHAND_TASK = `
 blueprint "shorthand-task" task {

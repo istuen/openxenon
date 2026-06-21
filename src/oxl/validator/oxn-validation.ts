@@ -10,7 +10,7 @@
 
 import type { LangiumCoreServices } from 'langium'
 import type { ValidationChecks } from 'langium'
-import type { OpenXenonLanguageAstType } from '../generated/ast.js'
+import type { OpenXenonLanguageAstType } from '../langium-driver/generated/ast.js'
 import { validateWorkTaskReference } from './slot-reference-validator.js'
 import { validateTaskAlign } from './intent-align-validator.js'
 

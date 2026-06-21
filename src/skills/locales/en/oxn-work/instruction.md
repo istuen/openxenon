@@ -252,7 +252,7 @@ work "explore-dsl" {
     part "explore" {
       skill_context = "Explore four sub-modules: grammar/schema/validator/compiler"
       acceptance = [
-        "Read src/oxl/langium/oxn.langium",
+        "Read src/oxl/langium-driver/oxn.langium",
         "Successfully compiled an example using oxn dev compile",
         "Output .openxenon/works/<w>/report.md"
       ]

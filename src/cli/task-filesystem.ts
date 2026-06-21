@@ -4,7 +4,7 @@ import { URI } from 'langium'
 // v0.1-final: task.oxn 直接通过 Langium AST 解析（不再走 bundle）
 // 保留 generateOxnAssembly 导入供未来 batch 验证使用
 // import { generateOxnAssembly } from '../oxl/generator/oxn-generator'
-import { createOxnServices, resetOxnServices } from '../oxl/langium/oxn-services'
+import { createOxnServices, resetOxnServices } from '../oxl/langium-driver/oxn-services'
 import { ensureDirectory } from '../infra/filesystem'
 import { type ProbeContext, type ProbeResult, probeHandlers } from '../infra/probes'
 import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, TASKS_DIR, TASK_OXN_FILE } from '../kernel/index'

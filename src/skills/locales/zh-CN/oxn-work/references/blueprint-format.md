@@ -1,6 +1,6 @@
 # Blueprint 格式参考（oxn-work 用）
 
-> **基于统一 OXL（`src/oxl/langium/oxn.langium`）**。语法跟 mvp / reference 任一时代的"旧版"都不兼容——请按本文档为准。
+> **基于统一 OXL（`src/oxl/langium-driver/oxn.langium`）**。语法跟 mvp / reference 任一时代的"旧版"都不兼容——请按本文档为准。
 
 ## 蓝图结构
 

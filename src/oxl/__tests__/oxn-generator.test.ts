@@ -15,7 +15,7 @@ import type {
   ProbeDeclaration,
   PropDeclaration,
   WorkDeclaration,
-} from '../generated/ast'
+} from '../langium-driver/generated/ast'
 import {
   categorizeEntities,
   convertBlueprintDeclaration,

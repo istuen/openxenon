@@ -8,8 +8,8 @@
  */
 
 import type { AstNode, ValidationAcceptor } from 'langium'
-import type { OXNDocument, WorkDeclaration } from '../generated/ast.js'
-import { isDomainDeclaration, isTaskDeclaration } from '../generated/ast.js'
+import type { OXNDocument, WorkDeclaration } from '../langium-driver/generated/ast.js'
+import { isDomainDeclaration, isTaskDeclaration } from '../langium-driver/generated/ast.js'
 
 function findDocument(node: AstNode): OXNDocument | undefined {
   let current: AstNode | undefined = node

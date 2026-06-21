@@ -51,10 +51,10 @@ import type {
   PartRefDecl,
   ProbeRefDecl,
   ObserveDeclaration,
-} from '../generated/ast.js'
-import { isTaskDepsField } from '../generated/ast.js'
+} from '../langium-driver/generated/ast.js'
+import { isTaskDepsField } from '../langium-driver/generated/ast.js'
 
-import { isBinaryExpr, isTemplateString, isTernaryExpr, isVariableRef } from '../generated/ast.js'
+import { isBinaryExpr, isTemplateString, isTernaryExpr, isVariableRef } from '../langium-driver/generated/ast.js'
 
 // ========================
 // Expression → String

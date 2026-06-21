@@ -3,8 +3,8 @@ import { existsSync, readFileSync } from '../infra/filesystem'
 import { DocumentState, URI } from 'langium'
 import { t } from '../infra/i18n'
 import { compileBundle } from '../oxl/compiler/bundle-compiler'
-import type { OXNDocument } from '../oxl/generated/ast'
-import { createOxnServices } from '../oxl/langium/oxn-services'
+import type { OXNDocument } from '../oxl/langium-driver/generated/ast'
+import { createOxnServices } from '../oxl/langium-driver/oxn-services'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export interface DiagnosticResult {

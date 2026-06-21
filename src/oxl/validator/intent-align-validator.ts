@@ -7,8 +7,8 @@
  */
 
 import type { ValidationAcceptor } from 'langium'
-import type { WorkDeclaration, TaskDeclaration } from '../generated/ast.js'
-import { isTaskDeclaration, isTaskDepsField } from '../generated/ast.js'
+import type { WorkDeclaration, TaskDeclaration } from '../langium-driver/generated/ast.js'
+import { isTaskDeclaration, isTaskDepsField } from '../langium-driver/generated/ast.js'
 
 function getTaskDeps(task: TaskDeclaration): string[] {
   if (isTaskDepsField(task) && task.deps) {

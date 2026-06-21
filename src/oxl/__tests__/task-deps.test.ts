@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { URI } from 'langium'
-import { createOxnParser } from '../langium/oxn-services'
+import { createOxnParser } from '../langium-driver/oxn-services'
 
 const parser = createOxnParser()
 

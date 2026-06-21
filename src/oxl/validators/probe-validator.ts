@@ -13,7 +13,7 @@
 // L0-OXL 层 — 可依赖 L0-Contract (ProviderRegistry) + L1-Infra 物理层
 // =============================================================================
 
-import type { ProbeDeclaration } from '../generated/ast'
+import type { ProbeDeclaration } from '../langium-driver/generated/ast'
 import type { ProviderRegistry } from '../../infra/registry/provider-registry'
 
 export interface ProbeSchemeError {

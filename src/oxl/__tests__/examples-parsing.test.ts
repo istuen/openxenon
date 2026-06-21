@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync, statSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
-import { createOxnParser } from '../langium/oxn-services'
+import { createOxnParser } from '../langium-driver/oxn-services'
 
 const EXAMPLES_DIR = join(__dirname, '../examples')
 
