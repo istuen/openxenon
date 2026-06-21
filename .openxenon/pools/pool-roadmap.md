@@ -2,11 +2,11 @@
 
 > **角色**：`.openxenon/pools/` 目录的入口与导航。读者从这里进入任何 pool 文档。
 >
-> **读者**：v0.2.0+ 所有参与者（AI 协作者 + 人类协作者）
+> **读者**：v0.3.0+ 所有参与者（AI 协作者 + 人类协作者）
 >
 > **维护**：每次新增 / 移动 / 废弃 pool 文档时同步更新本文
 >
-> **版本**：v0.2.0（持续维护，无版本绑定）
+> **版本**：v0.3.0（v0.3 阶段 0+1+2+3+4 全部完成后更新）
 
 ---
 
@@ -21,7 +21,7 @@ Intent Pool 是 OpenXenon v0.2.0（T13）引入的**思考资产池**，存放�
 | **Intent 资产** | `domains/` `blueprints/` | 业务声明 + AI 创作模板 | IAP Intent 阶段 |
 | **Align 资产** | `works/` `tasks/` | 工作执行 | IAP Align 阶段 |
 | **Proof 资产** | `proofs/` | frozen.json 验证 | IAP Proof 阶段 |
-| **Pool 资产** | `pools/{research,design,issue,audit,journal}/` | **过程产物** | 全程 |
+| **Pool 资产** | `pools/{research,design,issue,audit,journal}/` | **过程产物**（顶层 5 池）| 全程 |
 | **Sprint 资产** | `pools/sprints/<sprint-name>/` | **版本化 sprint 文档** | Sprint 期间 |
 
 **目录结构**（v0.3 sprint 化后）：
@@ -29,16 +29,17 @@ Intent Pool 是 OpenXenon v0.2.0（T13）引入的**思考资产池**，存放�
 ```
 .openxenon/pools/
 ├── pool-roadmap.md              # 本入口（顶层 tracked）
-├── research/                    # 5 池（保持 5 池结构）
-├── design/                      # 5 池（当前为空；sprint 文档进 sprints/）
-├── issue/                       # 5 池
-├── audit/                       # 5 池
-├── journal/                     # 5 池
+├── research/                    # 5 池（顶层，跨版本适用）
+├── design/                      # 5 池（顶层）
+├── issue/                       # 5 池（顶层）
+├── audit/                       # 5 池（顶层）
+├── journal/                     # 5 池（顶层）
 └── sprints/                     # 版本化 sprint 容器
-    └── v0.3-md-ssot/            # v0.3 sprint 文档集
-        ├── design/  (14 篇)
-        ├── audit/   (2 篇)
-        └── journal/ (1 篇)
+    └── v0.3-md-ssot/            # v0.3 sprint 文档集（25 篇）
+        ├── design/              # 18 篇
+        ├── audit/               # 2 篇
+        ├── journal/             # 3 篇
+        └── _archive/2026-06/    # 2 篇 DEPRECATED（路线 A / 路线 B）
 ```
 
 **5 类池的角色分工**：
@@ -61,18 +62,18 @@ Intent Pool 是 OpenXenon v0.2.0（T13）引入的**思考资产池**，存放�
 - 命名混乱（`2026-06-XX-topic.md` + 偶尔带版本）
 - 跨版本对比困难（v0.2 vs v0.3 文档混在一起）
 
-**v0.3 阶段 3 实际处理**：
-- 48 篇 forges/ 文档中只有 **7 篇**是 v0.3 Intent 决策 → 迁移到 `pools/sprints/v0.3-md-ssot/`
-- 其余 **41 篇**是 v0.1.x / v0.2.x 历史过程产物 → **保留 `forges/`** 作为外部历史源
-- `forges/` 不再"物理删除"（v0.2 计划已废除）
+**v0.3 阶段 3 实际处理**（已完成）：
+- 48 篇 forges/ 文档中**7 篇**是 v0.3 Intent 决策 → 迁移到 `pools/sprints/v0.3-md-ssot/`（5 Intent + 2 Archive）
+- 其余 **41 篇**（23 根目录 + 18 sprints/ 子目录）是 v0.1.x / v0.2.x 历史过程产物 → **保留 `forges/`** 作为外部历史源
+- **`forges/` 不再"物理删除"**（v0.2 计划已废除，永久保留为外部源）
 
 **解决**（v0.2.0 T13 + T14 + v0.3 sprint 化）：
 - 5 类池按"思考类型"清晰分类
 - **v0.3 新增**：`pools/sprints/<sprint-name>/` 子目录——按版本/主题归类 sprint 文档
 - 每类池有独立 CLI（`oxn pool create research|design|issue|audit|journal`）
 - IAP 资产（`domains/blueprints/works/proofs/`）与 pool 文档分离
-- 命名规范化（见 [`naming-system.md`](./sprints/v0.3-md-ssot/design/naming-system.md) v1.0）
-- forges/ 计划于 v0.3 阶段 5 物理删除（详见 `process-forges-deprecation-migration.md`）
+- 命名规范化（见 [`naming-system.md`](./sprints/v0.3-md-ssot/design/naming-system.md) v1.0，**v0.4.0 CI 校验推迟**）
+- forges/ 永久保留为外部源（**v0.3 阶段 3 决策**）
 
 ---
 
@@ -82,21 +83,36 @@ Intent Pool 是 OpenXenon v0.2.0（T13）引入的**思考资产池**，存放�
 
 | Sprint | 状态 | 文档数 | 阶段 |
 |---|---|---|---|
-| **v0.3-md-ssot** | 🟢 阶段 2 完成 + 阶段 3 迁移完成 | 25 篇（18 原 + 7 迁移）| 2026-06-20 ~ |
+| **v0.3-md-ssot** | ✅ **阶段 0+1+2+3+4 全部完成** | 25 篇（18 原 + 7 迁移）| 2026-06-20 ~ 2026-06-21 |
+
+**v0.3 sprint 完成情况**：
+
+- 阶段 0 — 战略 + 文档 + 抽象（18 篇文档 + OxlDriver 抽象 + langium-driver 内聚）✅
+- 阶段 1 — md-bridge 核心（unified 接入 Kernel Schema，6 文件 + 97 tests）✅
+- 阶段 2 — .oxn ↔ .md 双轨制（3 文件 + 30 tests）✅
+- 阶段 3 — forges/ 7 Intent 文档迁移（5 Intent + 2 Archive）✅
+- 阶段 4 — scripts 自动化（3 scripts + 25 tests）✅
+
+**v0.3 累计统计**：
+- 8 commits（feat/v0.3-md-ssot ahead of dev）
+- ~7,000 行新增代码
+- **1545 pass / 0 fail**（v0.2.0 1393 → v0.3.0 1545，+152 tests）
+- 25 篇 sprint 文档
 
 ### 当前文档地图
 
-#### `pools/sprints/v0.3-md-ssot/` 详解
+#### `pools/sprints/v0.3-md-ssot/` 详解（25 篇）
 
-##### `design/` — 14 篇（v0.3 规划核心）
+##### `design/` — 18 篇（v0.3 规划 + 实施核心）
 
-**核心架构（3 篇，必读）**：
+**核心架构（4 篇，必读）**：
 
 | 文档 | 角色 | 行数 |
 |---|---|---|
 | [`md-ssot-system.md`](./sprints/v0.3-md-ssot/design/md-ssot-system.md) | MD-SSOT 系统架构（路线 C v3.2 + 4 风险协议 + 范围收窄）| 521 |
-| [`v0.3.0-roadmap.md`](./sprints/v0.3-md-ssot/design/v0.3.0-roadmap.md) | v0.3 路线图（**2 阶段 ~6 周，v3.1 收窄**）| 353 |
+| [`v0.3.0-roadmap.md`](./sprints/v0.3-md-ssot/design/v0.3.0-roadmap.md) | v0.3 路线图（**5 阶段 0-4 全部完成 v3.2**）| 466 |
 | [`intent-ssot-boundary.md`](./sprints/v0.3-md-ssot/design/intent-ssot-boundary.md) | **Intent SSOT 边界权威定义（v1.0）**| 411 |
+| [`arch-v0.3-implementation-report.md`](./sprints/v0.3-md-ssot/design/arch-v0.3-implementation-report.md) | **v0.3 阶段 0-3 实施报告**（487 行，2026-06-21 落盘）| 487 |
 
 **v0.3 阶段文档（5 篇，特定于 v0.3.0）**：
 
@@ -115,9 +131,17 @@ Intent Pool 是 OpenXenon v0.2.0（T13）引入的**思考资产池**，存放�
 | [`l0-l3-alignment.md`](./sprints/v0.3-md-ssot/design/l0-l3-alignment.md) | L0–L3 兼容 + mdast 接入 | 341 |
 | [`arch-v0.2.0-feature-matrix.md`](./sprints/v0.3-md-ssot/design/arch-v0.2.0-feature-matrix.md) | v0.2.0 除 Pool 外 7 大特性矩阵 | 268 |
 | [`process-pool-operation.md`](./sprints/v0.3-md-ssot/design/process-pool-operation.md) | Pool 完整生命周期（create→write→freeze→scan→archive）| 458 |
-| [`naming-system.md`](./sprints/v0.3-md-ssot/design/naming-system.md) | OpenXenon 文档命名体系 v1.0（**v0.4.0 再规划**）| 463 |
-| [`process-version-iteration-flow.md`](./sprints/v0.3-md-ssot/design/process-version-iteration-flow.md) | 版本迭代流（5 scripts，**v0.4.0 再规划**）| 419 |
-| [`process-forges-deprecation-migration.md`](./sprints/v0.3-md-ssot/design/process-forges-deprecation-migration.md) | 51 forges/ → pools/ 分类迁移（**v0.4.0**）| 297 |
+| [`naming-system.md`](./sprints/v0.3-md-ssot/design/naming-system.md) | OpenXenon 文档命名体系 v1.0（**v0.4.0 CI 校验推迟**）| 463 |
+| [`process-version-iteration-flow.md`](./sprints/v0.3-md-ssot/design/process-version-iteration-flow.md) | 版本迭代流（5 scripts，**v0.4.0 实施**）| 419 |
+| [`process-forges-deprecation-migration.md`](./sprints/v0.3-md-ssot/design/process-forges-deprecation-migration.md) | 48 forges/ 分类迁移（**v0.3 阶段 3 已完成**，forges/ 永久保留）| 297 |
+
+**Intent 历史迁移（3 篇，forges/ → design/）**：
+
+| 文档 | 角色 | 来源 |
+|---|---|---|
+| [`probe-signal-taint-design.md`](./sprints/v0.3-md-ssot/design/probe-signal-taint-design.md) | Taint 系统设计（v0.2.x T4-T7 / T9）| from `forges/` |
+| [`three-layer-proof-design.md`](./sprints/v0.3-md-ssot/design/three-layer-proof-design.md) | 三层 Proof 设计（v0.2.x T11-T12）| from `forges/` |
+| [`domain-as-ssot-doc-binding.md`](./sprints/v0.3-md-ssot/design/domain-as-ssot-doc-binding.md) | Domain SSOT 文档绑定（v0.2.x）| from `forges/` |
 
 ##### `audit/` — 2 篇（v0.2.0 收尾审计）
 
@@ -126,11 +150,20 @@ Intent Pool 是 OpenXenon v0.2.0（T13）引入的**思考资产池**，存放�
 | [`audit-v0.2.0-md-ssot-readiness.md`](./sprints/v0.3-md-ssot/audit/audit-v0.2.0-md-ssot-readiness.md) | v0.2.0 MD-SSOT 准备度审计（85%）| 222 |
 | [`retro-v0.2.0-roadmap-execution.md`](./sprints/v0.3-md-ssot/audit/retro-v0.2.0-roadmap-execution.md) | v0.2.0 路线图执行复盘（15/15 PR）| 321 |
 
-##### `journal/` — 1 篇（v0.3 决策日志）
+##### `journal/` — 3 篇（v0.3 决策日志）
 
 | 文档 | 角色 | 行数 |
 |---|---|---|
+| [`2026-06-13-intent-pool-design-v0.3.0.md`](./sprints/v0.3-md-ssot/journal/2026-06-13-intent-pool-design-v0.3.0.md) | Intent Pool v3 设计（5 池分类 + sprints/）| from `forges/` |
+| [`2026-06-18-md-canonical-v1.md`](./sprints/v0.3-md-ssot/journal/2026-06-18-md-canonical-v1.md) | 路线 C v1 基线（**MD-SSOT 决策源头**）| from `forges/` |
 | [`2026-06-20-md-ssot-decision.md`](./sprints/v0.3-md-ssot/journal/2026-06-20-md-ssot-decision.md) | MD-SSOT 5 项关键决策日志 | 323 |
+
+##### `_archive/2026-06/` — 2 篇（DEPRECATED 路线归档）
+
+| 文档 | 角色 | 来源 |
+|---|---|---|
+| [`2026-06-18-md-friendly-view-deprecated.md`](./sprints/v0.3-md-ssot/_archive/2026-06/2026-06-18-md-friendly-view-deprecated.md) | **DEPRECATED** — 路线 A（MD 仅作友好视图）| from `forges/` |
+| [`2026-06-18-ddd-terms-deprecated.md`](./sprints/v0.3-md-ssot/_archive/2026-06/2026-06-18-ddd-terms-deprecated.md) | **DEPRECATED** — 路线 B（DDD 术语驱动）| from `forges/` |
 
 #### `pools/{research,design,issue,audit,journal}/` 顶层
 
@@ -157,6 +190,7 @@ sprints/v0.3-md-ssot/design/v0.3.0-roadmap.md          # 版本路线图（带�
 sprints/v0.3-md-ssot/journal/2026-06-20-...md         # 日期前缀日志
 sprints/v0.3-md-ssot/audit/audit-v0.2.0-...md         # 准备度审计
 sprints/v0.3-md-ssot/audit/retro-v0.2.0-...md         # 复盘
+sprints/v0.3-md-ssot/_archive/2026-06/...-deprecated.md  # 归档（带 @deprecated）
 ```
 
 ---
@@ -199,15 +233,16 @@ sprints/v0.3-md-ssot/audit/retro-v0.2.0-...md         # 复盘
 
 | 何时查阅 | 查阅 |
 |---|---|
-| 启动 v0.3 任意阶段前 | [`v0.3.0-roadmap.md`](./sprints/v0.3-md-ssot/design/v0.3.0-roadmap.md)（**v3.1 收窄 2 阶段**）|
+| 启动 v0.3 / v0.4 任意阶段前 | [`v0.3.0-roadmap.md`](./sprints/v0.3-md-ssot/design/v0.3.0-roadmap.md)（**v3.2 完成版**）|
 | 涉及文档 / MD 解析时 | [`md-ssot-system.md`](./sprints/v0.3-md-ssot/design/md-ssot-system.md)（**v3.2 + 4 风险协议**）|
 | 创建/分类任何 .openxenon/ 文档前 | [`intent-ssot-boundary.md`](./sprints/v0.3-md-ssot/design/intent-ssot-boundary.md)（v1.0 边界权威）|
-| 创建任何 pool / IAP 文档前 | [`naming-system.md`](./sprints/v0.3-md-ssot/design/naming-system.md)（**v0.4.0 再规划**）|
-| 涉及版本号 / release 时 | [`process-version-iteration-flow.md`](./sprints/v0.3-md-ssot/design/process-version-iteration-flow.md)（**v0.4.0 再规划**）|
-| 涉及 forges/ 迁移时 | [`process-forges-deprecation-migration.md`](./sprints/v0.3-md-ssot/design/process-forges-deprecation-migration.md)（**v0.4.0**）|
+| 创建任何 pool / IAP 文档前 | [`naming-system.md`](./sprints/v0.3-md-ssot/design/naming-system.md)（**v0.4.0 CI 集成推迟**）|
+| 涉及版本号 / release 时 | [`process-version-iteration-flow.md`](./sprints/v0.3-md-ssot/design/process-version-iteration-flow.md)（**v0.4.0 实施**）|
+| 涉及 forges/ 迁移时 | [`process-forges-deprecation-migration.md`](./sprints/v0.3-md-ssot/design/process-forges-deprecation-migration.md)（**v0.3 阶段 3 已完成**）|
 | 涉及 kernel/infra/oxl/builtin 时 | [`l0-l3-alignment.md`](./sprints/v0.3-md-ssot/design/l0-l3-alignment.md) |
 | 理解 Pool 内部机制时 | [`process-pool-operation.md`](./sprints/v0.3-md-ssot/design/process-pool-operation.md) |
 | 查阅 v0.2.0 重点特性时 | [`arch-v0.2.0-feature-matrix.md`](./sprints/v0.3-md-ssot/design/arch-v0.2.0-feature-matrix.md) |
+| 查阅 v0.3 实施细节时 | [`arch-v0.3-implementation-report.md`](./sprints/v0.3-md-ssot/design/arch-v0.3-implementation-report.md) |
 
 ---
 
@@ -218,15 +253,15 @@ sprints/v0.3-md-ssot/audit/retro-v0.2.0-...md         # 复盘
 | **新增** | 写完新文档后立即在本文对应 sprint/池章节添加条目 |
 | **移动** | 跨 sprint 迁移时同步更新 §当前文档地图 + `naming-system.md` §附录 |
 | **废弃** | 标记 `[DEPRECATED]` + 归档到 `pools/sprints/<sprint>/_archive/<YYYY-MM>/` |
-| **Sprint 完结** | 冻结 `pools/sprints/<sprint-name>/`；保留为只读历史 |
+| **Sprint 完结** | 冻结 `pools/sprints/<sprint-name>/`（status: completed）+ 写 retro |
 | **命名** | 所有改动遵循 `naming-system.md` v1.0 |
-| **CI 校验**（**v0.4.0 实施**）| `bun scripts/check-heading-skeleton.ts` + `bun scripts/check-naming.ts` |
+| **CI 校验**（**v0.4.0 实施**）| `bun scripts/check-heading-skeleton.ts` + `bun scripts/check-naming.ts` + `bun scripts/check-mdast.ts` |
 
 ### Sprint 完结流程（v0.3 完成后）
 
-1. 冻结 `pools/sprints/v0.3-md-ssot/`（标记为 `status: completed`）
-2. 写 `pools/sprints/v0.3-md-ssot/audit/retro-v0.3.0-roadmap-execution.md`
-3. 启动 `pools/sprints/v0.4.0-*/`（下一 sprint）
+- [x] 冻结 `pools/sprints/v0.3-md-ssot/`（**v0.3.0 发版后生效**）
+- [ ] 写 `pools/sprints/v0.3-md-ssot/audit/retro-v0.3.0-roadmap-execution.md`（v0.3.0 发版后）
+- [ ] 启动 `pools/sprints/v0.4.0-*/`（下一 sprint）
 
 ### 是否对应小版本？
 
@@ -235,10 +270,8 @@ sprints/v0.3-md-ssot/audit/retro-v0.2.0-...md         # 复盘
 - Sprint 内 checkpoint → 内部 tag（如 `v0.3.0-sprint-1`），**不计入版本号**
 - Patch 版本（`v0.X.Y`）= bug 修复；Minor 版本（`v0.X.0`）= 新 sprint 完结
 
-**示例**（v0.3.0 计划）：
-- `v0.3.0-sprint-1` 完成 unified 接入 → 内部 tag
-- `v0.3.0-sprint-2` 完成双轨制 → 内部 tag
-- **所有 sprint 完结 → tag `v0.3.0`** + 发版
+**示例**（v0.3.0 实际）：
+- `v0.3.0` 阶段 0+1+2+3+4 全部完成 → **tag `v0.3.0`** + 发版
 
 ---
 
@@ -247,20 +280,24 @@ sprints/v0.3-md-ssot/audit/retro-v0.2.0-...md         # 复盘
 | 维度 | 数据 |
 |---|---|
 | 池类型 | 5（research / design / issue / audit / journal）|
-| Sprint 数 | 1（v0.3-md-ssot 阶段 0）|
-| 当前文档 | 17 篇（pool-roadmap + 16 篇 sprint 文档）|
-| 核心架构 | 3 篇（md-ssot-system + v0.3.0-roadmap + intent-ssot-boundary）|
+| Sprint 数 | 1（v0.3-md-ssot 完成）|
+| 当前文档 | 25 篇（pool-roadmap + 24 篇 sprint 文档）|
+| 核心架构 | 4 篇（md-ssot-system + v0.3.0-roadmap + intent-ssot-boundary + arch-v0.3-implementation-report）|
 | v0.3 阶段 | 5 篇（req/arch/dev-design/test-design/product）|
 | 跨切架构 | 6 篇（l0-l3 / feature-matrix / process-pool / naming / version-iteration / forges-deprecation）|
+| Intent 历史迁移 | 3 篇（probe-signal-taint / three-layer-proof / domain-as-ssot）|
 | 审计报告 | 2 篇（v0.2.0 readiness + retro）|
-| 决策日志 | 1 篇（2026-06-20 MD-SSOT）|
-| 总行数 | ~6442 行（含本入口）|
+| 决策日志 | 3 篇（intent-pool-design / md-canonical-v1 / md-ssot-decision）|
+| DEPRECATED 归档 | 2 篇（md-friendly-view / ddd-terms）|
+| 总行数 | ~7000 行（v0.3 sprint 文档，不含本入口）|
+| forges/ 残留 | 41 篇（外部历史源，永久保留）|
 
 ---
 
 ## 参考
 
 - [`naming-system.md`](./sprints/v0.3-md-ssot/design/naming-system.md) v1.0 — 命名规范权威源
-- [`process-forges-deprecation-migration.md`](./sprints/v0.3-md-ssot/design/process-forges-deprecation-migration.md) — 51 forges/ → pools/ 迁移映射表
-- [`v0.3.0-roadmap.md`](./sprints/v0.3-md-ssot/design/v0.3.0-roadmap.md) §阶段 5 — forges/ 物理删除 + pools/ 完全接管
+- [`process-forges-deprecation-migration.md`](./sprints/v0.3-md-ssot/design/process-forges-deprecation-migration.md) — 48 forges/ 分类迁移记录（**v0.3 阶段 3 已完成**）
+- [`v0.3.0-roadmap.md`](./sprints/v0.3-md-ssot/design/v0.3.0-roadmap.md) §7 — v0.4.0 推迟清单
 - `.gitignore` — `pools/*/!(.gitkeep)` 实际未生效；设计稿 tracked。本入口 `pool-roadmap.md` 在 `pools/` 顶层，**默认 tracked**
+- [`forges/`](../../forges/) — 41 篇外部历史源（v0.1.x / v0.2.x 过程产物，**永久保留**）
