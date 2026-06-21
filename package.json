@@ -1,6 +1,6 @@
 {
   "name": "@istuen/openxenon",
-  "version": "0.2.0",
+  "version": "0.3.0-alpha",
   "description": "OpenXenon — 工程师与 AI 协作工作台（OXN Engine 实施 L0-L3 四层架构与 IAP 范式，OXL = OpenXenon Language）",
   "author": "istuen",
   "license": "MIT",
@@ -40,6 +40,11 @@
     "citty": "^0.1.6",
     "glob": "^13.0.6",
     "i18next": "^26.2.0",
+    "mdast-util-from-markdown": "^2.0.3",
+    "remark-directive": "^4.0.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
     "which": "^2.0.2",
     "yaml": "^2.8.3",
     "zod": "^4.3.6"
