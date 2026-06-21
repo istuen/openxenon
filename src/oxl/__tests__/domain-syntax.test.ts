@@ -1,10 +1,18 @@
 // Domain 语法边界测试 (v0.1.1)
 // 由 ts-retrieve-design-develop-test blueprint 的 develop slot 产出
 // 覆盖：合法语法（11 例）+ 非法语法（15 例）= 26 用例
+// v0.3 follow-up: 改用 body[] shape（term/ban/invariant 在 body 内任意顺序）
 
 import { beforeAll, describe, expect, test } from 'bun:test'
 import { URI } from 'langium'
-import { createOxnParser, isDomainDeclaration, type DomainDeclaration } from '../index'
+import {
+  createOxnParser,
+  isDomainDeclaration,
+  type BanBlock,
+  type DomainDeclaration,
+  type InvariantBlock,
+  type TermBlock,
+} from '../index'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -31,6 +39,21 @@ function okParse(d: { parseErrors: string[]; lexerErrors: string[]; domain?: Dom
   expect(d.domain).toBeDefined()
 }
 
+/** 提取 body 中的 term 块（v0.3 follow-up: body[] 替代直接的 terms）*/
+function getTermBlocks(d: DomainDeclaration): TermBlock[] {
+  return ((d.body ?? []) as Array<{ $type: string }>).filter((el) => el.$type === 'TermBlock') as TermBlock[]
+}
+
+/** 提取 body 中的 ban 块（v0.3 follow-up）*/
+function getBanBlock(d: DomainDeclaration): BanBlock | undefined {
+  return ((d.body ?? []) as Array<{ $type: string }>).find((el) => el.$type === 'BanBlock') as BanBlock | undefined
+}
+
+/** 提取 body 中的 invariant 块（v0.3 follow-up）*/
+function getInvariantBlocks(d: DomainDeclaration): InvariantBlock[] {
+  return ((d.body ?? []) as Array<{ $type: string }>).filter((el) => el.$type === 'InvariantBlock') as InvariantBlock[]
+}
+
 function errParse(d: { parseErrors: string[]; lexerErrors: string[] }, prefix: 'Parser' | 'Lexer' | 'Parser|Lexer') {
   const all = [...d.parseErrors, ...d.lexerErrors]
   expect(all.length).toBeGreaterThan(0)
@@ -50,19 +73,19 @@ describe('Domain syntax — happy path', () => {
     const d = await parseDomain(`domain "x" { term { "A": "a" } }`)
     okParse(d)
     expect(d.domain!.name).toBe('x')
-    expect(d.domain!.terms?.terms).toHaveLength(1)
+    expect(getTermBlocks(d.domain!).flatMap((tb) => tb.terms)).toHaveLength(1)
   })
 
   test('H2: term + ban (1 元素)', async () => {
     const d = await parseDomain(`domain "x" { term { "A": "a" } ban { "B" } }`)
     okParse(d)
-    expect(d.domain!.ban?.bans).toEqual(['B'])
+    expect(getBanBlock(d.domain!)?.bans).toEqual(['B'])
   })
 
   test('H3: term + ban + 1 invariant', async () => {
     const d = await parseDomain(`domain "x" { term { "A": "a" } ban { "B" } invariant { "r1" } }`)
     okParse(d)
-    expect(d.domain!.invariants?.[0]?.invariants).toHaveLength(1)
+    expect(getInvariantBlocks(d.domain!)[0]?.invariants).toHaveLength(1)
   })
 
   test('H4: term + ban + 3 invariant 块（多段）', async () => {
@@ -75,10 +98,11 @@ describe('Domain syntax — happy path', () => {
         invariant { "r3" }
       }`)
     okParse(d)
-    const total = d.domain!.invariants!.reduce((s, b) => s + b.invariants.length, 0)
+    const blocks = getInvariantBlocks(d.domain!)
+    const total = blocks.reduce((s, b) => s + b.invariants.length, 0)
     expect(total).toBe(3)
     // 顺序保持
-    const values = d.domain!.invariants!.flatMap((b) => b.invariants.map((i) => i.value))
+    const values = blocks.flatMap((b) => b.invariants.map((i) => i.value))
     expect(values).toEqual(['r1', 'r2', 'r3'])
   })
 
@@ -93,7 +117,7 @@ describe('Domain syntax — happy path', () => {
       }`)
     okParse(d)
     expect(d.domain!.descriptions[0]?.value).toBe('desc-text')
-    expect(d.domain!.invariants!.flatMap((b) => b.invariants)).toHaveLength(2)
+    expect(getInvariantBlocks(d.domain!).flatMap((b) => b.invariants)).toHaveLength(2)
   })
 
   test('H6: 完整 4 件套 + term 内 5 词', async () => {
@@ -113,9 +137,9 @@ describe('Domain syntax — happy path', () => {
         invariant { "i3" }
       }`)
     okParse(d)
-    expect(d.domain!.terms?.terms).toHaveLength(5)
-    expect(d.domain!.ban?.bans).toEqual(['X', 'Y', 'Z'])
-    expect(d.domain!.invariants!.flatMap((b) => b.invariants)).toHaveLength(3)
+    expect(getTermBlocks(d.domain!).flatMap((tb) => tb.terms)).toHaveLength(5)
+    expect(getBanBlock(d.domain!)?.bans).toEqual(['X', 'Y', 'Z'])
+    expect(getInvariantBlocks(d.domain!).flatMap((b) => b.invariants)).toHaveLength(3)
   })
 
   test('H7: term 行内 ; 终止', async () => {
@@ -131,19 +155,20 @@ describe('Domain syntax — happy path', () => {
   test('H9: 空 term block', async () => {
     const d = await parseDomain(`domain "x" { term {} }`)
     okParse(d)
-    expect(d.domain!.terms?.terms ?? []).toHaveLength(0)
+    expect(getTermBlocks(d.domain!).flatMap((tb) => tb.terms)).toHaveLength(0)
   })
 
   test('H10: 空 ban block', async () => {
     const d = await parseDomain(`domain "x" { ban {} }`)
     okParse(d)
-    expect(d.domain!.ban?.bans ?? []).toHaveLength(0)
+    expect(getBanBlock(d.domain!)?.bans ?? []).toHaveLength(0)
   })
 
   test('H11: 中文 invariant 值', async () => {
     const d = await parseDomain(`domain "x" { invariant { "密码必须 hash 存储" } }`)
     okParse(d)
-    expect(d.domain!.invariants![0]!.invariants[0]!.value).toBe('密码必须 hash 存储')
+    const blocks = getInvariantBlocks(d.domain!)
+    expect(blocks[0]!.invariants[0]!.value).toBe('密码必须 hash 存储')
   })
 })
 

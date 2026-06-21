@@ -4,7 +4,15 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/index'
-import { createOxnParser, isDomainDeclaration, type DomainDeclaration, type OXNDocument } from '../oxl'
+import {
+  createOxnParser,
+  isDomainDeclaration,
+  type BanBlock,
+  type DomainDeclaration,
+  type InvariantBlock,
+  type OXNDocument,
+  type TermBlock,
+} from '../oxl'
 import {
   getDomainIndexPath,
   loadDomainIndex,
@@ -313,20 +321,26 @@ function domainAstToIr(domain: DomainDeclaration): {
   description?: string
   language: { terms: Array<{ name: string; desc: string }>; ban: string[]; invariant: string[] } | null
 } {
+  // v0.3 follow-up: term / ban / invariant 都在 domain.body[] 内（任意顺序）
+  const body = (domain.body ?? []) as Array<{ $type: string }>
+  const termBlocks = body.filter((el) => el.$type === 'TermBlock') as TermBlock[]
+  const banBlock = body.find((el) => el.$type === 'BanBlock') as BanBlock | undefined
+  const invariantBlocks = body.filter((el) => el.$type === 'InvariantBlock') as InvariantBlock[]
+
   const invariants: string[] = []
-  for (const block of domain.invariants ?? []) {
+  for (const block of invariantBlocks) {
     for (const inv of block.invariants ?? []) {
       if (inv.value) invariants.push(inv.value)
     }
   }
-  const hasLanguage = !!(domain.terms || domain.ban || invariants.length > 0)
+  const hasLanguage = !!(termBlocks.length > 0 || banBlock || invariantBlocks.length > 0)
   return {
     name: domain.name,
     description: domain.descriptions?.[0]?.value,
     language: hasLanguage
       ? {
-          terms: (domain.terms?.terms ?? []).map((t) => ({ name: t.name, desc: t.desc })),
-          ban: domain.ban?.bans ?? [],
+          terms: termBlocks.flatMap((tb) => tb.terms).map((t) => ({ name: t.name, desc: t.desc })),
+          ban: banBlock?.bans ?? [],
           invariant: invariants,
         }
       : null,

@@ -210,29 +210,38 @@ function decompileDomain(domain: DomainDeclaration, options: DecompileOptions): 
     sections.push('')
   }
 
-  // 4. Term blocks
-  if (domain.terms && domain.terms.terms.length > 0) {
+  // 4-6. Body blocks: term / ban / invariant 在 body[] 内任意顺序（v0.3 follow-up）
+  const bodyElements: Array<{ $type: string }> = (domain.body ?? []) as Array<{ $type: string }>
+  const termBlocks = bodyElements.filter((el): el is TermBlock => el.$type === 'TermBlock') as unknown as TermBlock[]
+  const banBlock = bodyElements.find((el): el is BanBlock => el.$type === 'BanBlock') as unknown as BanBlock | undefined
+  const invariantBlocks = bodyElements.filter(
+    (el): el is InvariantBlock => el.$type === 'InvariantBlock',
+  ) as unknown as InvariantBlock[]
+
+  // 4. Term blocks（合并所有 term 块，保留原始顺序）
+  const allTerms: TermDecl[] = termBlocks.flatMap((tb) => tb.terms)
+  if (allTerms.length > 0) {
     sections.push('## Terms')
     sections.push('')
-    for (const term of domain.terms.terms) {
-      sections.push(serializeTerm(term, domain.terms))
+    for (const term of allTerms) {
+      sections.push(serializeTerm(term))
       sections.push('')
     }
   }
 
-  // 5. Ban blocks
-  if (domain.ban && domain.ban.bans.length > 0) {
+  // 5. Ban block
+  if (banBlock && banBlock.bans.length > 0) {
     sections.push('## Bans')
     sections.push('')
-    sections.push(serializeBan(domain.ban))
+    sections.push(serializeBan(banBlock))
     sections.push('')
   }
 
   // 6. Invariant blocks
-  if (domain.invariants.length > 0) {
+  if (invariantBlocks.length > 0) {
     sections.push('## Invariants')
     sections.push('')
-    for (const block of domain.invariants) {
+    for (const block of invariantBlocks) {
       for (const inv of block.invariants) {
         sections.push(serializeInvariant(inv, block))
         sections.push('')
@@ -250,7 +259,7 @@ function decompileDomain(domain: DomainDeclaration, options: DecompileOptions): 
   }
 }
 
-function serializeTerm(term: TermDecl, _block: TermBlock): string {
+function serializeTerm(term: TermDecl): string {
   const desc = unwrapString(term.desc)
   const slug = slugify(term.name)
   return `:::intent{#term-${slug} type="term" name="${escapeAttr(term.name)}"}

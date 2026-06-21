@@ -17,11 +17,14 @@ describe('InvariantDecl (T11 Three-Layer v2)', () => {
   test('老 value=STRING 兼容', async () => {
     const r = await parse(`domain "d" { invariant { "password must be hashed" } }`)
     expect(r.parseErrors).toEqual([])
-    const ast = r.ast as { entities?: Array<{ invariants?: unknown[] }> }
-    const d = ast.entities?.find((e) => (e as { $type: string }).$type === 'DomainDeclaration') as {
-      invariants?: Array<{ invariants?: Array<{ value?: string }> }>
+    const ast = r.ast as {
+      entities?: Array<{ body?: Array<{ $type: string; invariants?: Array<{ value?: string }> }> }>
     }
-    expect(d?.invariants?.[0]?.invariants?.[0]?.value).toBe('password must be hashed')
+    const d = ast.entities?.find((e) => (e as { $type: string }).$type === 'DomainDeclaration') as {
+      body?: Array<{ $type: string; invariants?: Array<{ value?: string }> }>
+    }
+    const invariantBlock = d?.body?.find((b) => b.$type === 'InvariantBlock')
+    expect(invariantBlock?.invariants?.[0]?.value).toBe('password must be hashed')
   })
 
   test('新 script = STRING', async () => {

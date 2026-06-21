@@ -28,10 +28,12 @@ import type {
   OxnTaskPartDecl,
 } from '../schemas/oxn-assembly.schema.js'
 import type {
+  BanBlock,
   BlueprintDeclaration,
   DomainDeclaration,
   ExecutionRef,
   Expression,
+  InvariantBlock,
   InvariantDecl,
   OXNDocument,
   PartDeclaration,
@@ -41,6 +43,7 @@ import type {
   PropDeclaration,
   TaskDeclaration,
   TaskPartDecl,
+  TermBlock,
   TaskProbeDecl,
   TermDecl,
   TopLevelEntity,
@@ -271,32 +274,35 @@ function convertInvariantDecl(decl: InvariantDecl): OxnInvariantDecl {
   return { value: decl.value ?? '' }
 }
 
-function convertDomainLanguage(decl: {
-  terms?: { terms: TermDecl[] }
-  ban?: { bans: string[] }
-  invariants?: Array<{ invariants: InvariantDecl[] }>
-}): {
+function convertDomainLanguage(decl: DomainDeclaration): {
   terms: OxnTermDecl[]
   ban: string[]
   invariant: OxnInvariantDecl[]
 } {
+  // v0.3 follow-up: term / ban / invariant 都在 domain.body[] 内（任意顺序）
+  const body = (decl.body ?? []) as Array<{ $type: string }>
+  const termBlocks = body.filter((el) => el.$type === 'TermBlock') as TermBlock[]
+  const banBlock = body.find((el) => el.$type === 'BanBlock') as BanBlock | undefined
+  const invariantBlocks = body.filter((el) => el.$type === 'InvariantBlock') as InvariantBlock[]
+
   const invariantList: InvariantDecl[] = []
-  for (const block of decl.invariants ?? []) {
+  for (const block of invariantBlocks) {
     for (const inv of block.invariants ?? []) invariantList.push(inv)
   }
   return {
-    terms: (decl.terms?.terms || []).map(convertTermDecl),
-    ban: decl.ban?.bans || [],
+    terms: termBlocks.flatMap((tb) => tb.terms).map(convertTermDecl),
+    ban: banBlock?.bans ?? [],
     invariant: invariantList.map(convertInvariantDecl),
   }
 }
 
 export function convertDomainDeclaration(decl: DomainDeclaration): OxnDomainIR {
-  const hasLanguage = !!(decl.terms || decl.ban || (decl.invariants && decl.invariants.length > 0))
+  const body = (decl.body ?? []) as Array<{ $type: string }>
+  const hasLanguage = !!(body.length > 0)
   return {
     name: decl.name,
     description: decl.descriptions?.[0]?.value,
-    language: hasLanguage ? convertDomainLanguage(decl as any) : undefined,
+    language: hasLanguage ? convertDomainLanguage(decl) : undefined,
   }
 }
 

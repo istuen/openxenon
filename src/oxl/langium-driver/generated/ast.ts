@@ -232,23 +232,29 @@ export function isDescription(item: unknown): item is Description {
   return reflection.isInstance(item, Description.$type)
 }
 
+export type DomainBodyElement = BanBlock | InvariantBlock | TermBlock
+
+export const DomainBodyElement = {
+  $type: 'DomainBodyElement',
+} as const
+
+export function isDomainBodyElement(item: unknown): item is DomainBodyElement {
+  return reflection.isInstance(item, DomainBodyElement.$type)
+}
+
 export interface DomainDeclaration extends langium.AstNode {
   readonly $container: OXNDocument
   readonly $type: 'DomainDeclaration'
-  ban?: BanBlock
+  body: Array<DomainBodyElement>
   descriptions: Array<Description>
-  invariants: Array<InvariantBlock>
   name: string
-  terms?: TermBlock
 }
 
 export const DomainDeclaration = {
   $type: 'DomainDeclaration',
-  ban: 'ban',
+  body: 'body',
   descriptions: 'descriptions',
-  invariants: 'invariants',
   name: 'name',
-  terms: 'terms',
 } as const
 
 export function isDomainDeclaration(item: unknown): item is DomainDeclaration {
@@ -1027,6 +1033,7 @@ export type OpenXenonLanguageAstType = {
   DefaultValue: DefaultValue
   Description: Description
   DomProofRef: DomProofRef
+  DomainBodyElement: DomainBodyElement
   DomainDeclaration: DomainDeclaration
   DomainRefDecl: DomainRefDecl
   EnumType: EnumType
@@ -1093,7 +1100,7 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
           defaultValue: [],
         },
       },
-      superTypes: [],
+      superTypes: [DomainBodyElement.$type],
     },
     BinaryExpr: {
       name: BinaryExpr.$type,
@@ -1177,25 +1184,24 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
       },
       superTypes: [],
     },
+    DomainBodyElement: {
+      name: DomainBodyElement.$type,
+      properties: {},
+      superTypes: [],
+    },
     DomainDeclaration: {
       name: DomainDeclaration.$type,
       properties: {
-        ban: {
-          name: DomainDeclaration.ban,
+        body: {
+          name: DomainDeclaration.body,
+          defaultValue: [],
         },
         descriptions: {
           name: DomainDeclaration.descriptions,
           defaultValue: [],
         },
-        invariants: {
-          name: DomainDeclaration.invariants,
-          defaultValue: [],
-        },
         name: {
           name: DomainDeclaration.name,
-        },
-        terms: {
-          name: DomainDeclaration.terms,
         },
       },
       superTypes: [TopLevelEntity.$type],
@@ -1260,7 +1266,7 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
           defaultValue: [],
         },
       },
-      superTypes: [],
+      superTypes: [DomainBodyElement.$type],
     },
     InvariantDecl: {
       name: InvariantDecl.$type,
@@ -1682,7 +1688,7 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
           defaultValue: [],
         },
       },
-      superTypes: [],
+      superTypes: [DomainBodyElement.$type],
     },
     TermDecl: {
       name: TermDecl.$type,

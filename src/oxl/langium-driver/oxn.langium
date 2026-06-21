@@ -170,13 +170,16 @@ PartSlotDeclaration:
 // Domain 是绝对自治的业务契约，定义统一语言和不变量
 // v0.1-final: noun/verb → term (map格式), domain_rules → invariant
 // v0.1.1: 允许多个 invariant 块（domain 文件可写多段不变量）；context_map 已移除
+// v0.3 follow-up: 允许多个 term 块（按业务分组），与 ban/invariant 块在 body 内任意顺序
 DomainDeclaration:
     'domain' name=STRING '{'
         (descriptions+=Description)?
-        (terms=TermBlock)?
-        (ban=BanBlock)?
-        (invariants+=InvariantBlock)*
+        body+=DomainBodyElement*
     '}';
+
+// Domain body 元素：term / ban / invariant 块可任意顺序出现，多次 term 块支持按业务分组
+DomainBodyElement:
+    TermBlock | BanBlock | InvariantBlock;
 
 TermBlock:
     'term' '{'
