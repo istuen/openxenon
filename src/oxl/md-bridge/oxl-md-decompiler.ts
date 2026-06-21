@@ -132,6 +132,13 @@ export async function compileOxnToMd(oxnContent: string, options: DecompileOptio
       }
       ;({ md, name } = decompileWork(firstEntity as WorkDeclaration, options))
       break
+    case 'task':
+      // v0.3 follow-up: task.oxn 文件支持
+      if (firstEntity.$type !== 'TaskDeclaration') {
+        throw new DecompilerParseError(`Expected TaskDeclaration, got ${firstEntity.$type}`, [])
+      }
+      ;({ md, name } = decompileTask(firstEntity as TaskDeclaration, options))
+      break
     default:
       throw new DecompilerParseError(`Entity type ${entityType} decompiler not yet implemented`, [])
   }
@@ -533,6 +540,39 @@ function decompileWork(work: WorkDeclaration, options: DecompileOptions): Decomp
   }
 }
 
+// v0.3 follow-up: 顶层 task.oxn 反编译器
+// work.oxn 内的 task 通过 serializeTask() 复用；standalone task 用 decompileTask()
+function decompileTask(task: TaskDeclaration, options: DecompileOptions): DecompileInternalResult {
+  const version = options.version ?? '0.3.0'
+  const useFrontmatter = options.frontmatter ?? true
+
+  const sections: string[] = []
+
+  if (useFrontmatter) {
+    sections.push(
+      serializeFrontmatter({
+        entity: 'task',
+        name: task.name,
+        version,
+        source_hash: extractSourceHash(task.$container),
+      }),
+    )
+  }
+
+  sections.push(`# Task: ${task.name}`)
+  sections.push('')
+  sections.push(serializeTask(task))
+
+  return {
+    md:
+      sections
+        .join('\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trimEnd() + '\n',
+    name: task.name,
+  }
+}
+
 function serializeWorkContext(ctx: WorkContext): string {
   const goal = ctx.goal ? unwrapString(ctx.goal) : ''
   const maxIter = ctx.loopPolicy?.maxIterations ?? 0
@@ -544,22 +584,33 @@ ${goal}
 
 function serializeTask(task: TaskDeclaration): string {
   const slug = slugify(task.name)
+  // v0.3 follow-up: domain/blueprint/parts 在 task.body[] 内任意顺序
+  const taskBody = (task.body ?? []) as Array<{ $type: string; domain?: string; blueprint?: string }>
+  const taskDomain = taskBody.find((el) => el.$type === 'TaskDomainField')?.domain
+  const taskBlueprint = taskBody.find((el) => el.$type === 'TaskBlueprintField')?.blueprint
+  const taskParts = taskBody.filter((el) => el.$type === 'TaskPartDecl') as unknown as Array<{
+    name: string
+    skill_context?: string
+    probes?: Array<{ name?: string }>
+  }>
+
   const attrs = ['type="task"', `id="${escapeAttr(task.name)}"`]
-  if (task.blueprint) {
-    attrs.push(`blueprint="${escapeAttr(task.blueprint)}"`)
+  if (taskBlueprint) {
+    attrs.push(`blueprint="${escapeAttr(taskBlueprint)}"`)
+  }
+  if (taskDomain) {
+    attrs.push(`domain="${escapeAttr(taskDomain)}"`)
   }
 
   const body: string[] = []
-  body.push(`- blueprint: ${task.blueprint}`)
-  if (task.domain) {
-    body.push(`- domain: ${task.domain}`)
-  }
-  for (const part of task.parts) {
+  if (taskBlueprint) body.push(`- blueprint: ${taskBlueprint}`)
+  if (taskDomain) body.push(`- domain: ${taskDomain}`)
+  for (const part of taskParts) {
     body.push(`- part: ${part.name}`)
     if (part.skill_context) {
       body.push(`  - skill_context: ${unwrapString(part.skill_context)}`)
     }
-    for (const probe of part.probes) {
+    for (const probe of part.probes ?? []) {
       body.push(`  - probe: ${probe.name ?? 'unnamed'}`)
     }
   }

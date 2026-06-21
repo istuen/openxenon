@@ -55,7 +55,7 @@ import type {
   ProbeRefDecl,
   ObserveDeclaration,
 } from '../langium-driver/generated/ast.js'
-import { isTaskDepsField } from '../langium-driver/generated/ast.js'
+// v0.3 follow-up: isTaskDepsField 不再使用（deps 在 body[] 内）
 
 import { isBinaryExpr, isTemplateString, isTernaryExpr, isVariableRef } from '../langium-driver/generated/ast.js'
 
@@ -369,12 +369,24 @@ function convertTaskPartDecl(decl: TaskPartDecl): OxnTaskPartDecl {
 }
 
 export function convertTaskDeclaration(decl: TaskDeclaration): OxnTaskIR {
+  // v0.3 follow-up: 任务内 domain/blueprint/parts/deps 在 body[] 内任意顺序
+  const body = (decl.body ?? []) as Array<{ $type: string; domain?: string; blueprint?: string; deps?: Array<string> }>
+  const taskDomain = body.find((el) => el.$type === 'TaskDomainField')?.domain
+  const taskBlueprint = body.find((el) => el.$type === 'TaskBlueprintField')?.blueprint
+  const taskParts = body.filter((el) => el.$type === 'TaskPartDecl') as unknown as Array<{
+    name: string
+    skill_context?: string
+    probes?: Array<unknown>
+  }>
+
+  const taskDepsField = body.find((el) => el.$type === 'TaskDepsField') as { deps?: Array<string> } | undefined
+
   return {
     name: decl.name,
-    ...(decl.domain !== undefined ? { domain: decl.domain } : {}),
-    ...(decl.blueprint !== undefined ? { blueprint: decl.blueprint } : {}),
-    parts: (decl.parts || []).map(convertTaskPartDecl),
-    ...(isTaskDepsField(decl) && decl.deps ? { deps: decl.deps.deps || [] } : {}),
+    ...(taskDomain !== undefined ? { domain: taskDomain } : {}),
+    ...(taskBlueprint !== undefined ? { blueprint: taskBlueprint } : {}),
+    parts: taskParts.map((p) => convertTaskPartDecl(p as never)),
+    ...(taskDepsField?.deps ? { deps: taskDepsField.deps } : {}),
   }
 }
 

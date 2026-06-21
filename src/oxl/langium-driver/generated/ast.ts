@@ -777,20 +777,42 @@ export function isRequiredModifier(item: unknown): item is RequiredModifier {
   return reflection.isInstance(item, RequiredModifier.$type)
 }
 
-export interface TaskDeclaration extends langium.AstNode {
-  readonly $type: 'TaskDeclaration' | 'TaskDepsField'
+export interface TaskBlueprintField extends langium.AstNode {
+  readonly $container: TaskDeclaration
+  readonly $type: 'TaskBlueprintField'
   blueprint: string
-  domain?: string
+}
+
+export const TaskBlueprintField = {
+  $type: 'TaskBlueprintField',
+  blueprint: 'blueprint',
+} as const
+
+export function isTaskBlueprintField(item: unknown): item is TaskBlueprintField {
+  return reflection.isInstance(item, TaskBlueprintField.$type)
+}
+
+export type TaskBodyElement = TaskBlueprintField | TaskDepsField | TaskDomainField | TaskPartDecl
+
+export const TaskBodyElement = {
+  $type: 'TaskBodyElement',
+} as const
+
+export function isTaskBodyElement(item: unknown): item is TaskBodyElement {
+  return reflection.isInstance(item, TaskBodyElement.$type)
+}
+
+export interface TaskDeclaration extends langium.AstNode {
+  readonly $container: OXNDocument | WorkDeclaration
+  readonly $type: 'TaskDeclaration'
+  body: Array<TaskBodyElement>
   name: string
-  parts: Array<TaskPartDecl>
 }
 
 export const TaskDeclaration = {
   $type: 'TaskDeclaration',
-  blueprint: 'blueprint',
-  domain: 'domain',
+  body: 'body',
   name: 'name',
-  parts: 'parts',
 } as const
 
 export function isTaskDeclaration(item: unknown): item is TaskDeclaration {
@@ -812,22 +834,34 @@ export function isTaskDeps(item: unknown): item is TaskDeps {
   return reflection.isInstance(item, TaskDeps.$type)
 }
 
-export interface TaskDepsField extends TaskDeclaration {
+export interface TaskDepsField extends langium.AstNode {
+  readonly $container: TaskDeclaration
   readonly $type: 'TaskDepsField'
   deps: TaskDeps
 }
 
 export const TaskDepsField = {
   $type: 'TaskDepsField',
-  blueprint: 'blueprint',
   deps: 'deps',
-  domain: 'domain',
-  name: 'name',
-  parts: 'parts',
 } as const
 
 export function isTaskDepsField(item: unknown): item is TaskDepsField {
   return reflection.isInstance(item, TaskDepsField.$type)
+}
+
+export interface TaskDomainField extends langium.AstNode {
+  readonly $container: TaskDeclaration
+  readonly $type: 'TaskDomainField'
+  domain: string
+}
+
+export const TaskDomainField = {
+  $type: 'TaskDomainField',
+  domain: 'domain',
+} as const
+
+export function isTaskDomainField(item: unknown): item is TaskDomainField {
+  return reflection.isInstance(item, TaskDomainField.$type)
 }
 
 export interface TaskPartDecl extends langium.AstNode {
@@ -940,6 +974,7 @@ export type TopLevelEntity =
   | PartDeclaration
   | ProbeDeclaration
   | ProofDeclaration
+  | TaskDeclaration
   | WorkDeclaration
 
 export const TopLevelEntity = {
@@ -1064,9 +1099,12 @@ export type OpenXenonLanguageAstType = {
   PropDeclaration: PropDeclaration
   QualifiedName: QualifiedName
   RequiredModifier: RequiredModifier
+  TaskBlueprintField: TaskBlueprintField
+  TaskBodyElement: TaskBodyElement
   TaskDeclaration: TaskDeclaration
   TaskDeps: TaskDeps
   TaskDepsField: TaskDepsField
+  TaskDomainField: TaskDomainField
   TaskPartDecl: TaskPartDecl
   TaskProbeDecl: TaskProbeDecl
   TemplateString: TemplateString
@@ -1589,24 +1627,32 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
       },
       superTypes: [],
     },
+    TaskBlueprintField: {
+      name: TaskBlueprintField.$type,
+      properties: {
+        blueprint: {
+          name: TaskBlueprintField.blueprint,
+        },
+      },
+      superTypes: [TaskBodyElement.$type],
+    },
+    TaskBodyElement: {
+      name: TaskBodyElement.$type,
+      properties: {},
+      superTypes: [],
+    },
     TaskDeclaration: {
       name: TaskDeclaration.$type,
       properties: {
-        blueprint: {
-          name: TaskDeclaration.blueprint,
-        },
-        domain: {
-          name: TaskDeclaration.domain,
+        body: {
+          name: TaskDeclaration.body,
+          defaultValue: [],
         },
         name: {
           name: TaskDeclaration.name,
         },
-        parts: {
-          name: TaskDeclaration.parts,
-          defaultValue: [],
-        },
       },
-      superTypes: [],
+      superTypes: [TopLevelEntity.$type],
     },
     TaskDeps: {
       name: TaskDeps.$type,
@@ -1621,24 +1667,20 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
     TaskDepsField: {
       name: TaskDepsField.$type,
       properties: {
-        blueprint: {
-          name: TaskDepsField.blueprint,
-        },
         deps: {
           name: TaskDepsField.deps,
         },
+      },
+      superTypes: [TaskBodyElement.$type],
+    },
+    TaskDomainField: {
+      name: TaskDomainField.$type,
+      properties: {
         domain: {
-          name: TaskDepsField.domain,
-        },
-        name: {
-          name: TaskDepsField.name,
-        },
-        parts: {
-          name: TaskDepsField.parts,
-          defaultValue: [],
+          name: TaskDomainField.domain,
         },
       },
-      superTypes: [TaskDeclaration.$type],
+      superTypes: [TaskBodyElement.$type],
     },
     TaskPartDecl: {
       name: TaskPartDecl.$type,
@@ -1654,7 +1696,7 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
           name: TaskPartDecl.skill_context,
         },
       },
-      superTypes: [],
+      superTypes: [TaskBodyElement.$type],
     },
     TaskProbeDecl: {
       name: TaskProbeDecl.$type,

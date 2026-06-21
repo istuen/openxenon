@@ -38,11 +38,10 @@ describe('TaskDeclaration.deps 语法契约（v0.0.28+）', () => {
     expect([...r.parseErrors, ...r.lexerErrors]).toEqual([])
   })
 
-  test('合法: deps = [] 后接 part（不合法但 grammar 宽容）', async () => {
-    // 实际 grammar: (parts+=TaskPartDecl)* ('deps' '=' deps=TaskDeps)?
-    // 严格说 deps 必须在所有 part 之后。但 parser 实际允许 deps 在前 / part 在后
-    // （错误信息显示 part 后期待 } 但找到 deps 字段，验证不通过）。
-    // 此测预期报错（grammar 顺序强制）。
+  test('合法: deps 在 part 之前（v0.3 follow-up: body[] 任意顺序）', async () => {
+    // v0.3 follow-up: TaskDeclaration body 改为 body+=TaskBodyElement*
+    // 任意顺序的 domain/blueprint/part/deps 都接受。
+    // 旧 grammar 严格要求 deps 必须在 part 之后 — v0.3 取消此约束。
     const r = await parse(
       WRAPPER(`
       task "t" {
@@ -52,7 +51,7 @@ describe('TaskDeclaration.deps 语法契约（v0.0.28+）', () => {
       }
     `),
     )
-    expect(r.parseErrors.length).toBeGreaterThan(0)
+    expect([...r.parseErrors, ...r.lexerErrors]).toEqual([])
   })
 
   test('合法: 不写 deps 字段（可选）', async () => {
@@ -101,7 +100,9 @@ describe('TaskDeclaration.deps 语法契约（v0.0.28+）', () => {
     expect([...r.parseErrors, ...r.lexerErrors]).toEqual([])
   })
 
-  test('非法: 重复 deps 字段', async () => {
+  test('合法: 重复 deps 字段（v0.3 follow-up: body[] 接受多个 deps）', async () => {
+    // v0.3 follow-up: body+=TaskBodyElement* 允许多个 TaskDepsField
+    // parser 不再拒绝；runtime 校验阶段会取最后一个 deps（与 Langium 规则一致）
     const r = await parse(
       WRAPPER(`
       task "t" {
@@ -112,7 +113,6 @@ describe('TaskDeclaration.deps 语法契约（v0.0.28+）', () => {
       }
     `),
     )
-    // 重复 deps 后 parser 报"Expecting '}'"
-    expect(r.parseErrors.length).toBeGreaterThan(0)
+    expect([...r.parseErrors, ...r.lexerErrors]).toEqual([])
   })
 })

@@ -61,27 +61,33 @@ export function validateWorkTaskReference(
   const workPartNames = new Set((node.parts ?? []).map((p) => p.name))
 
   for (const task of (node.tasks ?? []).filter(isTaskDeclaration)) {
+    // v0.3 follow-up: 任务内 domain/blueprint/parts 在 body[] 内任意顺序
+    const taskBody = (task.body ?? []) as Array<{ $type: string; domain?: string; blueprint?: string; name?: string }>
+    const taskDomain = taskBody.find((el) => el.$type === 'TaskDomainField')?.domain
+    const taskBlueprint = taskBody.find((el) => el.$type === 'TaskBlueprintField')?.blueprint
+    const taskParts = taskBody.filter((el) => el.$type === 'TaskPartDecl') as Array<{ name: string }>
+
     // 校验 task.domain 是否在 Work 域列表中
-    if (task.domain && workDomainNames.size > 0 && !workDomainNames.has(task.domain)) {
-      accept('warning', `task "${task.name}" references domain "${task.domain}" not declared in Work`, {
+    if (taskDomain && workDomainNames.size > 0 && !workDomainNames.has(taskDomain)) {
+      accept('warning', `task "${task.name}" references domain "${taskDomain}" not declared in Work`, {
         node: task,
-        property: 'domain',
+        property: 'name',
       })
     }
 
     // 校验 task.blueprint 是否在 Work blueprint 列表中
-    if (task.blueprint && workBlueprintNames.size > 0 && !workBlueprintNames.has(task.blueprint)) {
-      accept('warning', `task "${task.name}" references blueprint "${task.blueprint}" not declared in Work`, {
+    if (taskBlueprint && workBlueprintNames.size > 0 && !workBlueprintNames.has(taskBlueprint)) {
+      accept('warning', `task "${task.name}" references blueprint "${taskBlueprint}" not declared in Work`, {
         node: task,
-        property: 'blueprint',
+        property: 'name',
       })
     }
 
     // 校验 task.part 名是否在 Work part 列表中
-    for (const part of task.parts ?? []) {
+    for (const part of taskParts) {
       if (workPartNames.size > 0 && !workPartNames.has(part.name)) {
         accept('warning', `task "${task.name}" part "${part.name}" not declared in Work`, {
-          node: part,
+          node: task,
           property: 'name',
         })
       }
