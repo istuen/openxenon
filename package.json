@@ -32,6 +32,9 @@
     "prepublish:check": "bun run typecheck && bun run lint && bun test",
     "version:check": "bun run scripts/version-check.ts",
     "version:sync": "bun run scripts/version-sync.ts",
+    "version:aggregate": "bun run scripts/version-aggregate.ts",
+    "check:naming": "bun run scripts/check-naming.ts",
+    "check:mdast": "bun run scripts/parse-mdast.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"
