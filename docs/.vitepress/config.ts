@@ -7,6 +7,11 @@ export default defineConfig({
   base: '/openxenon/',
   lastUpdated: true,
 
+  // v0.3 PR-C：注入自定义 CSS（5 类 H1 顶部色条 + 11 类 H2 左边框 + 浅色背景）
+  head: [
+    ['link', { rel: 'stylesheet', href: '/.vitepress/theme/custom.css' }],
+  ],
+
   // 站点结构（VitePress 对称 prefix i18n 模式）：
   //   docs/index.md         → /openxenon/            （中文首页 = 介绍内容，root 路径）
   //   docs/zh-cn/foo.md     → /openxenon/zh-cn/foo.html  （中文其他 15 章 + examples/）

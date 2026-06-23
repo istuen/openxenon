@@ -32,6 +32,11 @@
         "language": "oxl",
         "scopeName": "source.oxn",
         "path": "./syntaxes/oxn.tmLanguage.json"
+      },
+      {
+        "scopeName": "markdown.intent.extensions.oxn",
+        "path": "./syntaxes/oxn-intent.tmLanguage.json",
+        "injectTo": ["text.html.markdown"]
       }
     ]
   }
