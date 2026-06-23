@@ -53,9 +53,12 @@ export class DomainCompiler implements EntityCompiler {
       $type?: string
       name?: string
       descriptions?: Array<{ value?: string }>
-      terms?: Array<{ name: string; desc?: string }>
-      bans?: Array<{ items?: string[] }>
-      invariants?: Array<{ value?: string; script?: string; manual?: string; scope?: string }>
+      body?: Array<{
+        $type: string
+        terms?: Array<{ name: string; desc?: string }>
+        bans?: string[]
+        invariants?: Array<{ value?: string; script?: string; manual?: string; scope?: string }>
+      }>
     }
 
     if (!decl || decl.$type !== 'DomainDeclaration') {
@@ -66,6 +69,13 @@ export class DomainCompiler implements EntityCompiler {
     const version = input.options?.version ?? '0.3.0'
     const includeFrontmatter = input.options?.frontmatter ?? true
     const warnings: string[] = []
+
+    // 提取 body 内的 TermBlock / BanBlock / InvariantBlock
+    const body = decl.body ?? []
+    const allTerms = body.flatMap((b) => (b.$type === 'TermBlock' ? (b.terms ?? []) : []))
+    const banBlock = body.find((b) => b.$type === 'BanBlock') as { bans?: string[] } | undefined
+    const allBanItems = banBlock?.bans ?? []
+    const allInvariants = body.flatMap((b) => (b.$type === 'InvariantBlock' ? (b.invariants ?? []) : []))
 
     const sections: string[] = []
 
@@ -93,10 +103,10 @@ export class DomainCompiler implements EntityCompiler {
     }
 
     // ## Terms
-    if (decl.terms && decl.terms.length > 0) {
+    if (allTerms.length > 0) {
       sections.push('## Terms')
       sections.push('')
-      for (const term of decl.terms) {
+      for (const term of allTerms) {
         sections.push(`### ${term.name}`)
         sections.push(`- name: ${term.name}`)
         if (term.desc) sections.push(`- desc: ${term.desc}`)
@@ -105,11 +115,11 @@ export class DomainCompiler implements EntityCompiler {
     }
 
     // ## Bans
-    if (decl.bans && decl.bans.length > 0) {
+    if (allBanItems.length > 0) {
       sections.push('## Bans')
       sections.push('')
-      // 合并所有 ban items 为单块（PR-A 简化：单块单条）
-      const allItems = decl.bans.flatMap((b) => b.items ?? [])
+      // 合并所有 ban items 为单块
+      const allItems = allBanItems
       if (allItems.length > 0) {
         sections.push(`### forbidden-constructs`)
         sections.push(`- items: ${allItems.join(', ')}`)
@@ -119,15 +129,20 @@ export class DomainCompiler implements EntityCompiler {
     }
 
     // ## Invariants
-    if (decl.invariants && decl.invariants.length > 0) {
+    if (allInvariants.length > 0) {
       sections.push('## Invariants')
       sections.push('')
-      decl.invariants.forEach((inv, idx) => {
-        const value = inv.value ?? inv.script ?? inv.manual ?? inv.scope ?? ''
+      allInvariants.forEach((inv, idx) => {
         const slug = String(idx + 1)
         sections.push(`### inv-${slug}`)
-        sections.push(`- value: ${value}`)
-        sections.push(`- desc: ${value}`)
+        // 优先用 value / script / manual / scope 的实际字段名（保持原始语义）
+        if (inv.value !== undefined) sections.push(`- value: ${unwrapStringValue(inv.value)}`)
+        if (inv.script !== undefined) sections.push(`- script: ${unwrapStringValue(inv.script)}`)
+        if (inv.manual !== undefined) sections.push(`- manual: ${unwrapStringValue(inv.manual)}`)
+        if (inv.scope !== undefined) sections.push(`- scope: ${unwrapStringValue(inv.scope)}`)
+        // 至少一个主字段（desc）— 兼容下游 consumer
+        const primaryValue = inv.value ?? inv.script ?? inv.manual ?? inv.scope ?? ''
+        sections.push(`- desc: ${unwrapStringValue(primaryValue)}`)
         sections.push('')
       })
     }
@@ -293,6 +308,15 @@ function isDomainCategory(cat: string): cat is DomainCategory {
   return (DOMAIN_CATEGORIES as readonly string[]).includes(cat)
 }
 
+/** 去除字符串两侧的引号（Langium STRING 终端包含引号）*/
+function unwrapStringValue(s: unknown): string {
+  if (typeof s !== 'string') return String(s ?? '')
+  if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) {
+    return s.slice(1, -1)
+  }
+  return s
+}
+
 /**
  * 解析 ban items
  * - 优先用 items 字段（数组）
@@ -332,31 +356,8 @@ function slugify(s: string): string {
 /**
  * 查找遗留 :::intent 容器指令（v0.3 改革前的旧语法）
  *
- * 通过 walk 找 containerDirective 节点（v0.3 v3.2 用 remark-directive 解析的 AST 节点）
+ * v0.3 PR-B：统一在 pipeline.ts 检测，此处保留 stub
  */
-function findLegacyIntentBlocks(mdast: import('mdast').Root): Array<{ position?: { start: { line: number } } }> {
-  const blocks: Array<{ position?: { start: { line: number } } }> = []
-  walk(mdast, (node) => {
-    if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
-      const dNode = node as { name?: string; position?: { start: { line: number } } }
-      if (dNode.name === 'intent') {
-        blocks.push({ position: dNode.position })
-      }
-    }
-  })
-  return blocks
-}
-
-function walk(
-  node: import('mdast').Root | import('mdast').RootContent,
-  visit: (n: import('mdast').RootContent) => void,
-): void {
-  if ('children' in node && Array.isArray(node.children)) {
-    for (const child of node.children) {
-      visit(child)
-      if ('children' in child && Array.isArray((child as { children: unknown[] }).children)) {
-        walk(child as import('mdast').Root | import('mdast').RootContent, visit)
-      }
-    }
-  }
-}
+import { findLegacyIntentBlocks } from './_legacy-detect.js'
+// re-export for backward compatibility
+export { findLegacyIntentBlocks }

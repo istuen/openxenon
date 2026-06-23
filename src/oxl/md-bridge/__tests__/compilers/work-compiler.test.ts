@@ -111,10 +111,11 @@ describe('WorkCompiler.compile', () => {
       tasks: [
         {
           name: 'step1',
-          blueprint: 'ci-pipeline',
-          domain: 'CoreDomain',
-          parts: [
+          body: [
+            { $type: 'TaskBlueprintField', blueprint: 'ci-pipeline' },
+            { $type: 'TaskDomainField', domain: 'CoreDomain' },
             {
+              $type: 'TaskPartDecl',
               name: 'build',
               skill_context: 'compile',
               probes: [{ name: 'check_artifact', scheme: 'fs', expect: 'exists=true' }],

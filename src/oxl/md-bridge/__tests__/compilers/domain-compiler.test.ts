@@ -181,16 +181,28 @@ describe('DomainCompiler.compile', () => {
   const compiler = new DomainCompiler()
 
   test('DomainDeclaration → .md 含 H1 + H2 分类 + H3 实例', () => {
+    // 使用真实 AST 结构：body[] 包含 TermBlock / BanBlock / InvariantBlock
     const decl = {
       $type: 'DomainDeclaration',
       name: 'TestDomain',
       descriptions: [{ value: 'Test description' }],
-      terms: [
-        { name: 'Intent', desc: 'declaration' },
-        { name: 'Domain', desc: 'business' },
+      body: [
+        {
+          $type: 'TermBlock',
+          terms: [
+            { name: 'Intent', desc: 'declaration' },
+            { name: 'Domain', desc: 'business' },
+          ],
+        },
+        {
+          $type: 'BanBlock',
+          bans: ['Foo', 'Bar'],
+        },
+        {
+          $type: 'InvariantBlock',
+          invariants: [{ value: 'rule 1' }],
+        },
       ],
-      bans: [{ items: ['Foo', 'Bar'] }],
-      invariants: [{ value: 'rule 1' }],
     }
     const result = compiler.compile({ decl })
     expect(result.name).toBe('TestDomain')

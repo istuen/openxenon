@@ -34,6 +34,13 @@ export type E_MD_xxx =
   | 'E_MD_REFERENCE_BROKEN_FATAL'
   | 'E_MD_REFERENCE_BROKEN_WARN'
   | 'E_MD_HASH_MISMATCH'
+  | 'E_MD_DEPRECATED_SYNTAX'
+  | 'E_MD_DUPLICATE_H3'
+  | 'E_MD_H1_MISSING'
+  | 'E_MD_H1_MISMATCH'
+  | 'E_MD_CATEGORY_UNKNOWN'
+  | 'E_MD_LIST_FORMAT_INVALID'
+  | 'E_MD_NESTED_LEVEL_OVERFLOW'
 
 export interface ValidationIssue {
   code: E_MD_xxx

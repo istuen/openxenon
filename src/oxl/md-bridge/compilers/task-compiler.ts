@@ -233,29 +233,9 @@ function isTaskCategory(cat: string): cat is TaskCategory {
   return (TASK_CATEGORIES as readonly string[]).includes(cat)
 }
 
-function findLegacyIntentBlocks(mdast: import('mdast').Root): Array<{ position?: { start: { line: number } } }> {
-  const blocks: Array<{ position?: { start: { line: number } } }> = []
-  walk(mdast, (node) => {
-    if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
-      const dNode = node as { name?: string; position?: { start: { line: number } } }
-      if (dNode.name === 'intent') {
-        blocks.push({ position: dNode.position })
-      }
-    }
-  })
-  return blocks
-}
-
-function walk(
-  node: import('mdast').Root | import('mdast').RootContent,
-  visit: (n: import('mdast').RootContent) => void,
-): void {
-  if ('children' in node && Array.isArray(node.children)) {
-    for (const child of node.children) {
-      visit(child)
-      if ('children' in child && Array.isArray((child as { children: unknown[] }).children)) {
-        walk(child as import('mdast').Root | import('mdast').RootContent, visit)
-      }
-    }
-  }
-}
+/**
+ * 查找遗留 :::intent 容器指令（v0.3 改革前的旧语法）
+ * v0.3 PR-B：统一在 pipeline.ts 检测
+ */
+import { findLegacyIntentBlocks } from './_legacy-detect.js'
+export { findLegacyIntentBlocks }

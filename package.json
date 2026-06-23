@@ -44,7 +44,6 @@
     "glob": "^13.0.6",
     "i18next": "^26.2.0",
     "mdast-util-from-markdown": "^2.0.3",
-    "remark-directive": "^4.0.0",
     "remark-frontmatter": "^5.0.0",
     "remark-parse": "^11.0.0",
     "unified": "^11.0.5",

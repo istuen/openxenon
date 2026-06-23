@@ -45,10 +45,11 @@ export class BlueprintCompiler implements EntityCompiler {
       $type?: string
       name?: string
       descriptions?: Array<{ value?: string }>
+      version?: number
       props?: Array<{
         name: string
-        type?: { $type?: string; values?: string[] }
-        required?: { value?: boolean }
+        type?: unknown
+        required?: { value?: unknown }
         default?: { value?: unknown }
       }>
       partSlots?: Array<{ name: string; deps?: string[]; observe?: Array<{ observes: string[] }> }>
@@ -59,7 +60,7 @@ export class BlueprintCompiler implements EntityCompiler {
     }
 
     const name = decl.name ?? 'unnamed'
-    const version = input.options?.version ?? '0.3.0'
+    const version = String(decl.version ?? input.options?.version ?? '0.3.0')
     const includeFrontmatter = input.options?.frontmatter ?? true
     const warnings: string[] = []
 
@@ -96,12 +97,26 @@ export class BlueprintCompiler implements EntityCompiler {
         const typeName = extractTypeName(prop.type)
         sections.push(`### ${prop.name}`)
         sections.push(`- type: ${typeName}`)
-        if (typeName.startsWith('enum(') && prop.type?.values) {
-          sections.push(`- values: [${prop.type.values.join(', ')}]`)
+        // enum 类型：- values: [a, b, c]
+        if (typeName.startsWith('enum(')) {
+          const enumType = prop.type as { values?: string[] }
+          if (enumType.values && enumType.values.length > 0) {
+            sections.push(`- values: [${enumType.values.join(', ')}]`)
+          }
         }
-        if (prop.required?.value === true) sections.push('- required: true')
+        // required 修饰符：value 是 BooleanLiteral AST 节点
+        if (prop.required?.value) {
+          if (typeof prop.required.value === 'object' && '$type' in (prop.required.value as object)) {
+            // 通过 $cstNode.text 提取原始文本
+            const cstText = (prop.required.value as { $cstNode?: { text?: string } }).$cstNode?.text
+            if (cstText === 'true') sections.push('- required: true')
+          } else if (prop.required.value === true) {
+            sections.push('- required: true')
+          }
+        }
         if (prop.default !== undefined) {
-          sections.push(`- default: ${String(prop.default.value ?? '')}`)
+          const defaultStr = expressionToString(prop.default.value)
+          if (defaultStr) sections.push(`- default: ${defaultStr}`)
         }
         sections.push('')
       }
@@ -275,17 +290,66 @@ function isBlueprintCategory(cat: string): cat is BlueprintCategory {
 function extractTypeName(typeRef: unknown): string {
   if (typeRef === undefined || typeRef === null) return 'string'
   if (typeof typeRef === 'string') return typeRef
-  const t = typeRef as { $type?: string; values?: string[]; container?: string }
+  const t = typeRef as {
+    $type?: string
+    values?: string[]
+    container?: string
+    inner?: unknown
+    $cstNode?: { text?: string }
+  }
+  // TypeReference 包装节点（PrimitiveType 经 Langium 包装后）
+  if (t.$type === 'TypeReference') {
+    const cstText = t.$cstNode?.text
+    if (cstText) return cstText
+    return 'string'
+  }
   if (t.$type === 'EnumType' && t.values) {
     return `enum(${t.values.join('|')})`
   }
   if (t.$type === 'GenericType' && t.container) {
-    return `${t.container}<...>`
+    return `${t.container}<${extractTypeName(t.inner)}>`
   }
   if (t.$type === 'AnyTypeRef' || t.$type === 'AnyType') {
     return 'any'
   }
   return 'string'
+}
+
+/**
+ * 提取 Expression 的可读字符串表示
+ *
+ * Langium 对 PrimitiveType literal 的处理是「lossy」：LiteralExpr 节点本身不存 value，
+ * 实际值存在 $cstNode.text（CST 原文）。这里通过 $cstNode 取回原文。
+ */
+function expressionToString(expr: unknown): string {
+  if (expr === null || expr === undefined) return ''
+  if (typeof expr === 'string') return expr
+  if (typeof expr === 'number' || typeof expr === 'boolean') return String(expr)
+  if (typeof expr !== 'object') return String(expr)
+
+  const e = expr as { $type?: string; value?: unknown; $cstNode?: { text?: string } }
+  // TemplateString（v0.2 支持 "包含 ${var} 模板"）
+  if (e.$type === 'TemplateString' && typeof e.value === 'string') {
+    return e.value
+  }
+  // LiteralExpr：fallback 到 CST 原文
+  if (e.$type === 'LiteralExpr') {
+    const text = e.$cstNode?.text
+    if (text !== undefined) {
+      if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) {
+        return text.slice(1, -1)
+      }
+      return text
+    }
+  }
+  // VariableRef（不展开，仅显示 ref 路径）
+  if (e.$type === 'VariableRef') {
+    const qn = (expr as { path?: { name?: string; segments?: string[] } }).path
+    if (qn) {
+      return qn.segments?.length ? `${qn.name}.${qn.segments.join('.')}` : (qn.name ?? '')
+    }
+  }
+  return String(expr)
 }
 
 /**
@@ -310,29 +374,9 @@ function parseValuesField(fields: ListField[]): string[] {
   return []
 }
 
-function findLegacyIntentBlocks(mdast: import('mdast').Root): Array<{ position?: { start: { line: number } } }> {
-  const blocks: Array<{ position?: { start: { line: number } } }> = []
-  walk(mdast, (node) => {
-    if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
-      const dNode = node as { name?: string; position?: { start: { line: number } } }
-      if (dNode.name === 'intent') {
-        blocks.push({ position: dNode.position })
-      }
-    }
-  })
-  return blocks
-}
-
-function walk(
-  node: import('mdast').Root | import('mdast').RootContent,
-  visit: (n: import('mdast').RootContent) => void,
-): void {
-  if ('children' in node && Array.isArray(node.children)) {
-    for (const child of node.children) {
-      visit(child)
-      if ('children' in child && Array.isArray((child as { children: unknown[] }).children)) {
-        walk(child as import('mdast').Root | import('mdast').RootContent, visit)
-      }
-    }
-  }
-}
+/**
+ * 查找遗留 :::intent 容器指令（v0.3 改革前的旧语法）
+ * v0.3 PR-B：统一在 pipeline.ts 检测
+ */
+import { findLegacyIntentBlocks } from './_legacy-detect.js'
+export { findLegacyIntentBlocks }

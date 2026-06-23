@@ -48,10 +48,11 @@ export class WorkCompiler implements EntityCompiler {
       context?: { goal?: string; loopPolicy?: { maxIterations?: number }; constraints?: string[] }
       tasks?: Array<{
         name: string
-        blueprint?: string
-        domain?: string
-        parts?: Array<{
-          name: string
+        body?: Array<{
+          $type: string
+          blueprint?: string
+          domain?: string
+          name?: string
           skill_context?: string
           probes?: Array<{ name?: string; scheme?: string; expect?: string }>
         }>
@@ -105,10 +106,28 @@ export class WorkCompiler implements EntityCompiler {
       sections.push('')
       for (const task of decl.tasks) {
         sections.push(`### ${task.name}`)
-        if (task.blueprint) sections.push(`- blueprint: ${task.blueprint}`)
-        if (task.domain) sections.push(`- domain: ${task.domain}`)
 
-        for (const part of task.parts ?? []) {
+        // 从 task.body[] 提取 blueprint / domain / parts
+        const taskBody = (task.body ?? []) as Array<{
+          $type: string
+          blueprint?: string
+          domain?: string
+          name?: string
+          skill_context?: string
+          probes?: Array<{ name?: string; scheme?: string; expect?: string }>
+        }>
+        const taskBlueprint = taskBody.find((el) => el.$type === 'TaskBlueprintField')?.blueprint
+        const taskDomain = taskBody.find((el) => el.$type === 'TaskDomainField')?.domain
+        const taskParts = taskBody.filter((el) => el.$type === 'TaskPartDecl') as Array<{
+          name: string
+          skill_context?: string
+          probes?: Array<{ name?: string; scheme?: string; expect?: string }>
+        }>
+
+        if (taskBlueprint) sections.push(`- blueprint: ${taskBlueprint}`)
+        if (taskDomain) sections.push(`- domain: ${taskDomain}`)
+
+        for (const part of taskParts) {
           sections.push(`- part: ${part.name}`)
           if (part.skill_context) {
             sections.push(`  - skill_context: ${part.skill_context}`)
@@ -354,29 +373,9 @@ function extractScalarFromList(list: List, key: string): string {
   return ''
 }
 
-function findLegacyIntentBlocks(mdast: import('mdast').Root): Array<{ position?: { start: { line: number } } }> {
-  const blocks: Array<{ position?: { start: { line: number } } }> = []
-  walk(mdast, (node) => {
-    if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
-      const dNode = node as { name?: string; position?: { start: { line: number } } }
-      if (dNode.name === 'intent') {
-        blocks.push({ position: dNode.position })
-      }
-    }
-  })
-  return blocks
-}
-
-function walk(
-  node: import('mdast').Root | import('mdast').RootContent,
-  visit: (n: import('mdast').RootContent) => void,
-): void {
-  if ('children' in node && Array.isArray(node.children)) {
-    for (const child of node.children) {
-      visit(child)
-      if ('children' in child && Array.isArray((child as { children: unknown[] }).children)) {
-        walk(child as import('mdast').Root | import('mdast').RootContent, visit)
-      }
-    }
-  }
-}
+/**
+ * 查找遗留 :::intent 容器指令（v0.3 改革前的旧语法）
+ * v0.3 PR-B：统一在 pipeline.ts 检测
+ */
+import { findLegacyIntentBlocks } from './_legacy-detect.js'
+export { findLegacyIntentBlocks }

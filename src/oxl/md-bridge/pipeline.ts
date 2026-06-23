@@ -24,7 +24,6 @@
 import { createHash } from 'node:crypto'
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
-import remarkDirective from 'remark-directive'
 import remarkFrontmatter from 'remark-frontmatter'
 import type { Root, RootContent } from 'mdast'
 
@@ -131,7 +130,7 @@ export function runMdPipeline(input: PipelineInput): PipelineOutput {
   const contentHash = createHash('sha256').update(input.content).digest('hex')
 
   // 1. 构造 unified 链
-  const processor = unified().use(remarkParse).use(remarkFrontmatter, ['yaml']).use(remarkDirective)
+  const processor = unified().use(remarkParse).use(remarkFrontmatter, ['yaml'])
 
   // 2. 解析 .md
   let mdast: Root
@@ -160,7 +159,7 @@ export function runMdPipeline(input: PipelineInput): PipelineOutput {
   const frontmatter = extractFrontmatter(mdast)
 
   // 4. 提取 `:::intent` 容器指令
-  const intents = extractIntents(mdast)
+  const intents = extractIntents(mdast, input.content)
 
   // 5. 推断 entity type（frontmatter.entity > input.entity > null）
   const entityType = (frontmatter.entity ?? input.entity ?? null) as IntentEntityType | null
@@ -281,46 +280,58 @@ function parseSimpleYaml(text: string): Record<string, unknown> {
 }
 
 /**
- * 提取 `:::intent{...}` 容器指令为 IntentBlock 列表
+ * 检测旧 `:::intent{...}` 容器指令
+ *
+ * v0.3 PR-B 改革：此格式已废弃，检测到立即抛 E_MD_DEPRECATED_SYNTAX
+ *
+ * 注：v0.3 PR-B 已移除 remark-directive plugin，AST 不再解析 :::
+ * 容器指令；本函数改为基于原始 content 字符串扫描 :::intent{ 出现位置。
+ *
+ * @throws Error 抛 [E_MD_DEPRECATED_SYNTAX] 错误（如果检测到 :::intent 块）
  */
-function extractIntents(mdast: Root): IntentBlock[] {
-  const intents: IntentBlock[] = []
+function extractIntents(_mdast: Root, rawContent?: string): IntentBlock[] {
+  if (!rawContent) return []
 
-  walk(mdast, (node) => {
-    if (isContainerDirective(node) && node.name === 'intent') {
-      const block: IntentBlock = {
-        name: node.name,
-        attributes: extractAttributes(node),
-        content: extractTextContent(node),
-        node,
-        position: node.position
-          ? {
-              start: { line: node.position.start.line, column: node.position.start.column },
-              end: { line: node.position.end.line, column: node.position.end.column },
-            }
-          : undefined,
-      }
-      intents.push(block)
+  const lines = rawContent.split('\n')
+  const detected: Array<{ line: number; name: string }> = []
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? ''
+    // 检测 :::intent{ 或 :::intent (无 attributes)
+    if (/^:::intent(\{|$)/.test(line.trim())) {
+      detected.push({ line: i + 1, name: 'intent' })
     }
-  })
+  }
 
-  return intents
+  if (detected.length > 0) {
+    throw new Error(
+      `[E_MD_DEPRECATED_SYNTAX] Syntax deprecated in v0.3.0. ` +
+        `${detected.length} legacy :::intent block(s) found ` +
+        `(first at line ${detected[0]?.line ?? '?'}). ` +
+        `Please use \`oxn domain compile\` to generate fresh .md from your .oxn files.`,
+    )
+  }
+
+  return []
 }
 
-/** 遍历 mdast 树 */
-function walk(node: Root | RootContent, visit: (n: RootContent) => void): void {
+/** 遍历 mdast 树（保留为兼容工具，PR-B 暂未使用）*/
+// @ts-ignore PR-B: 保留供未来扩展使用
+function _walk(node: Root | RootContent, visit: (n: RootContent) => void): void {
   if ('children' in node && Array.isArray(node.children)) {
     for (const child of node.children) {
       visit(child)
       if ('children' in child && Array.isArray(child.children)) {
-        walk(child as Root | RootContent, visit)
+        _walk(child as Root | RootContent, visit)
       }
     }
   }
 }
+void _walk // 防止 unused 警告
 
-/** 类型守卫：是否为 containerDirective */
-function isContainerDirective(node: unknown): node is RootContent & {
+/** 类型守卫：是否为 containerDirective（保留为兼容工具）*/
+// @ts-ignore PR-B: 保留供未来扩展使用
+function _isContainerDirective(node: unknown): node is RootContent & {
   type: 'containerDirective'
   name: string
   attributes?: Record<string, unknown>
@@ -334,51 +345,11 @@ function isContainerDirective(node: unknown): node is RootContent & {
     (node as { type: string }).type === 'containerDirective'
   )
 }
+void _isContainerDirective // 防止 unused 警告
 
-/** 提取 containerDirective 属性 */
-function extractAttributes(node: RootContent & { attributes?: Record<string, unknown> }): Record<string, string> {
-  if (!node.attributes) return {}
-
-  const result: Record<string, string> = {}
-  for (const [key, value] of Object.entries(node.attributes)) {
-    if (typeof value === 'string') {
-      result[key] = value
-    } else if (value && typeof value === 'object' && 'value' in value) {
-      // unified 解析的 label 节点：{ type: 'text', value: '...' }
-      result[key] = String((value as { value: unknown }).value)
-    }
-  }
-  return result
-}
-
-/** 提取 containerDirective 文本内容（每行一个 list item）*/
-function extractTextContent(node: RootContent & { children: RootContent[] }): string[] {
-  const lines: string[] = []
-
-  for (const child of node.children) {
-    if (child.type === 'paragraph') {
-      // paragraph 内的文本
-      const text = collectText(child)
-      if (text) lines.push(text)
-    } else if (child.type === 'list') {
-      // list 内的每个 listItem
-      for (const item of child.children) {
-        if (item.type === 'listItem') {
-          const text = collectText(item)
-          if (text) lines.push(text)
-        }
-      }
-    } else {
-      const text = collectText(child)
-      if (text) lines.push(text)
-    }
-  }
-
-  return lines
-}
-
-/** 递归收集节点内所有文本 */
-function collectText(node: unknown): string {
+/** 递归收集节点内所有文本（保留为兼容工具）*/
+// @ts-ignore PR-B: 保留供未来扩展使用
+function _collectText(node: unknown): string {
   if (typeof node === 'string') return node
   if (typeof node !== 'object' || node === null) return ''
 
@@ -387,8 +358,9 @@ function collectText(node: unknown): string {
   }
 
   if ('children' in node && Array.isArray((node as { children: unknown[] }).children)) {
-    return (node as { children: unknown[] }).children.map(collectText).join('')
+    return (node as { children: unknown[] }).children.map(_collectText).join('')
   }
 
   return ''
 }
+void _collectText // 防止 unused 警告

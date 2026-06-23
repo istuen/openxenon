@@ -1,6 +1,8 @@
 # Runtime state (not for Git; personal/sandbox data)
 works/
+works-md/
 proofs/
+proofs-md/
 config.json
 **/*-state.json
 **/*-trace.jsonl

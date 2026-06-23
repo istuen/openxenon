@@ -91,35 +91,28 @@ entity: domain
     })
   })
 
-  describe('Intent 容器指令提取', () => {
-    test('提取 :::intent 块（list 形式）', () => {
+  describe('Intent 容器指令提取（v0.3 PR-B：旧格式抛 E_MD_DEPRECATED_SYNTAX）', () => {
+    test('检测旧 :::intent 块抛 E_MD_DEPRECATED_SYNTAX', () => {
       const md = `# Test
 
 :::intent{#inv-1 type="invariant" scope="domain"}
 - rule 1
 - rule 2
 :::`
-      const result = runMdPipeline({ content: md })
-      expect(result.intents).toHaveLength(1)
-      expect(result.intents[0]?.name).toBe('intent')
-      expect(result.intents[0]?.attributes.id).toBe('inv-1')
-      expect(result.intents[0]?.attributes.type).toBe('invariant')
-      expect(result.intents[0]?.attributes.scope).toBe('domain')
-      expect(result.intents[0]?.content).toEqual(['rule 1', 'rule 2'])
+      // v0.3 PR-B：:::intent{...} 容器指令已废弃，解析时抛错
+      expect(() => runMdPipeline({ content: md })).toThrow('E_MD_DEPRECATED_SYNTAX')
     })
 
-    test('提取 :::intent 块（paragraph 形式）', () => {
+    test('检测旧 :::intent 块（paragraph 形式）抛错', () => {
       const md = `# Test
 
 :::intent{#term-1 type="term"}
 Order 业务实体定义
 :::`
-      const result = runMdPipeline({ content: md })
-      expect(result.intents).toHaveLength(1)
-      expect(result.intents[0]?.content).toEqual(['Order 业务实体定义'])
+      expect(() => runMdPipeline({ content: md })).toThrow('E_MD_DEPRECATED_SYNTAX')
     })
 
-    test('多个 :::intent 块', () => {
+    test('检测多个 :::intent 块抛错（首个 line 号）', () => {
       const md = `# Test
 
 :::intent{#t1 type="term"}
@@ -132,14 +125,13 @@ Content
 - ban 1
 - ban 2
 :::`
-      const result = runMdPipeline({ content: md })
-      expect(result.intents).toHaveLength(2)
-      expect(result.intents[0]?.attributes.id).toBe('t1')
-      expect(result.intents[1]?.attributes.id).toBe('t2')
+      expect(() => runMdPipeline({ content: md })).toThrow('E_MD_DEPRECATED_SYNTAX')
     })
 
-    test('无 :::intent 块返回空数组', () => {
-      const result = runMdPipeline({ content: '# Test\n\nno intents' })
+    test('无 :::intent 块（纯 H1/H2/H3 + 列表）正常工作', () => {
+      // 新格式：纯原生 MD，:::intent 不再需要
+      const result = runMdPipeline({ content: '# Test\n\n## Terms\n\n### A\n' })
+      expect(result.success).toBe(true)
       expect(result.intents).toEqual([])
     })
   })
