@@ -33,7 +33,7 @@ name: step1-verdict
 - value: 1 warning found, manual review needed
 
 ## Runtime
-### observed
+### snapshot
 - observed_at: 2026-06-23T12:34:56Z
 - probes_run: 3
 - probes_passed: 2
@@ -103,5 +103,110 @@ describe('ProofCompiler.compile', () => {
     expect(result.md).toContain('## Verdicts')
     expect(result.md).toContain('- type: pass')
     expect(result.md).toContain('## Runtime')
+  })
+})
+
+describe('ProofCompiler.validate v0.3.0 canonical 守卫', () => {
+  const compiler = new ProofCompiler()
+
+  function validateMd(md: string): Array<{ code: string; severity?: string }> {
+    const root = parseMd(md)
+    const frontmatter = { entity: 'proof', name: 't' }
+    return compiler.validate({ mdast: root, frontmatter }) as Array<{
+      code: string
+      severity?: string
+    }>
+  }
+
+  test('Q2: Runtime 显式 probes_failed 抛 E_MD_REDUNDANT_FIELD', () => {
+    const md = `---
+entity: proof
+version: 0.3.0
+name: t
+---
+
+# Proof: t
+
+## Verdicts
+### v1
+- type: pass
+- value: ok
+
+## Runtime
+### snapshot
+- probes_run: 4
+- probes_passed: 2
+- probes_failed: 1
+- probes_inconclusive: 1
+`
+    const errors = validateMd(md)
+    expect(errors.some((e) => e.code === 'E_MD_REDUNDANT_FIELD')).toBe(true)
+  })
+
+  test('Q3: Runtime 多 H3 抛 E_MD_INVALID_RUNTIME_BLOCK', () => {
+    const md = `---
+entity: proof
+version: 0.3.0
+name: t
+---
+
+# Proof: t
+
+## Verdicts
+### v1
+- type: pass
+- value: ok
+
+## Runtime
+### initial
+- observed_at: 2026-06-23T10:00:00Z
+### final
+- observed_at: 2026-06-23T12:00:00Z
+`
+    const errors = validateMd(md)
+    expect(errors.some((e) => e.code === 'E_MD_INVALID_RUNTIME_BLOCK')).toBe(true)
+  })
+
+  test('Q3: Runtime 0 H3 抛 E_MD_INVALID_RUNTIME_BLOCK', () => {
+    const md = `---
+entity: proof
+version: 0.3.0
+name: t
+---
+
+# Proof: t
+
+## Verdicts
+### v1
+- type: pass
+- value: ok
+
+## Runtime
+- observed_at: 2026-06-23T12:00:00Z
+`
+    const errors = validateMd(md)
+    expect(errors.some((e) => e.code === 'E_MD_INVALID_RUNTIME_BLOCK')).toBe(true)
+  })
+
+  test('Q3: Runtime H3 名不是 snapshot 抛 E_MD_INVALID_RUNTIME_BLOCK', () => {
+    const md = `---
+entity: proof
+version: 0.3.0
+name: t
+---
+
+# Proof: t
+
+## Verdicts
+### v1
+- type: pass
+- value: ok
+
+## Runtime
+### wrong-name
+- observed_at: 2026-06-23T12:00:00Z
+`
+    const errors = validateMd(md)
+    expect(errors.some((e) => e.code === 'E_MD_INVALID_RUNTIME_BLOCK')).toBe(true)
   })
 })
