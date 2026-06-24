@@ -43,6 +43,16 @@ export type E_MD_xxx =
   | 'E_MD_CATEGORY_UNKNOWN'
   | 'E_MD_LIST_FORMAT_INVALID'
   | 'E_MD_NESTED_LEVEL_OVERFLOW'
+  // v0.3.0 Q2 决策：推导字段被显式写出 → 数据冗余
+  | 'E_MD_REDUNDANT_FIELD'
+  // v0.3.0 Q3 决策：## Runtime 必须唯一 H3 = snapshot
+  | 'E_MD_INVALID_RUNTIME_BLOCK'
+  | 'E_MD_DUPLICATE_H3'
+  | 'E_MD_H1_MISSING'
+  | 'E_MD_H1_MISMATCH'
+  | 'E_MD_CATEGORY_UNKNOWN'
+  | 'E_MD_LIST_FORMAT_INVALID'
+  | 'E_MD_NESTED_LEVEL_OVERFLOW'
 
 export interface ValidationIssue {
   code: E_MD_xxx

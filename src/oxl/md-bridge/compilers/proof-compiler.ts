@@ -6,12 +6,27 @@
  * 角色：
  * - 编译：Langium ProofDeclaration → .md（## Verdicts / ## Runtime + ### 实例 + 列表）
  * - 解析：mdast → 业务对象（verdicts / runtime）
- * - 校验：H1 + H2 白名单 + H3 唯一性
+ * - 校验：H1 + H2 白名单 + H3 唯一性 + Q2/Q3 canonical 守卫
  *
  * 关键不变量：
  * - H2 分类白名单：Verdicts / Runtime
  * - Verdict 字段：type（pass/fail/inconclusive 三态）/ value
  * - Runtime 字段：observed_at / probes_run / probes_passed / probes_inconclusive
+ *
+ * Q1 决策（v0.3.0 锁死）：3 态命名分层
+ * - canonical .md（人类阅读）：lowercase `pass` / `fail` / `inconclusive`
+ * - frozen.json（机器内核）：uppercase `PASSED` / `FAILED` / `INCONCLUSIVE`
+ * - Kernel ProbeVerdict：uppercase `PASS` / `FAIL` / `INCONCLUSIVE`（无 -ED）
+ * - 映射边界在 src/cli/proof-frozen-writer.ts 与 oxn proof compile/run
+ *
+ * Q2 决策（v0.3.0 锁死）：`probes_failed` 必须拒绝（数据冗余是万恶之源）
+ * - 推导公式：failed = probes_run - probes_passed - probes_inconclusive
+ * - 用户若写 `- probes_failed: X`，抛 `E_MD_REDUNDANT_FIELD` 引导纠正
+ *
+ * Q3 决策（v0.3.0 锁死）：`## Runtime` 下必须**唯一**一个 H3 = `snapshot`
+ * - Runtime 描述「这一次验证结束时的聚合状态」，天然单态
+ * - 多个 H3（如 initial/final）属于 frozen.json probes[] 数组职责，不入 .md
+ * - 其他 H3 名或 0 个 H3 均抛 `E_MD_INVALID_RUNTIME_BLOCK`
  *
  * L0–L3 兼容性：
  * - L1-OXL 层（src/oxl/md-bridge/）
@@ -225,6 +240,60 @@ export class ProofCompiler implements EntityCompiler {
         })
       } else {
         h3Seen.set(key, { name: ctx.h3, line: ctx.h3Position?.line ?? 0 })
+      }
+    }
+
+    // v0.3.0 Q3 决策：## Runtime 必须唯一一个 H3 = `snapshot`
+    const runtimeContexts = contexts.filter((c) => c.h2 === 'Runtime' && c.h3)
+    if (runtimeContexts.length === 0) {
+      errors.push({
+        code: 'E_MD_INVALID_RUNTIME_BLOCK',
+        message:
+          "## Runtime must contain exactly one H3 named 'snapshot'. " +
+          'Found: 0 H3 blocks. Rename or restructure to add `### snapshot`.',
+        severity: 'error',
+      })
+    } else if (runtimeContexts.length > 1) {
+      const names = runtimeContexts.map((c) => `### ${c.h3}`).join(', ')
+      errors.push({
+        code: 'E_MD_INVALID_RUNTIME_BLOCK',
+        message:
+          "## Runtime must contain exactly one H3 named 'snapshot'. " +
+          `Found ${runtimeContexts.length} H3 blocks: ${names}. ` +
+          'Merge into a single `### snapshot` block.',
+        severity: 'error',
+        line: runtimeContexts[1]?.h3Position?.line,
+      })
+    } else if (runtimeContexts[0]?.h3 !== 'snapshot') {
+      const found = runtimeContexts[0]?.h3 ?? 'unknown'
+      errors.push({
+        code: 'E_MD_INVALID_RUNTIME_BLOCK',
+        message:
+          "## Runtime H3 must be named 'snapshot'. " +
+          `Found: '### ${found}' at line ${runtimeContexts[0]?.h3Position?.line ?? '?'}. ` +
+          "Rename to '### snapshot' or restructure.",
+        severity: 'error',
+        line: runtimeContexts[0]?.h3Position?.line,
+      })
+    }
+
+    // v0.3.0 Q2 决策：probes_failed 必须拒绝（推导字段）
+    // 推导公式：probes_failed = probes_run - probes_passed - probes_inconclusive
+    for (const ctx of runtimeContexts) {
+      if (!ctx.h3List) continue
+      const fields = extractListFields(ctx.h3List)
+      const redundantField = fields.find((f) => f.key === 'probes_failed')
+      if (redundantField) {
+        errors.push({
+          code: 'E_MD_REDUNDANT_FIELD',
+          message:
+            "Field 'probes_failed' is derived " +
+            '(probes_run - probes_passed - probes_inconclusive). ' +
+            'Do not write it explicitly in ## Runtime / ### snapshot. ' +
+            'Remove this line and the verifier will compute it automatically.',
+          severity: 'error',
+          line: ctx.h3Position?.line,
+        })
       }
     }
 
