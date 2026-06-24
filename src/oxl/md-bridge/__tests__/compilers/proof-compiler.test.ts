@@ -87,13 +87,19 @@ describe('ProofCompiler.validate', () => {
 describe('ProofCompiler.compile', () => {
   const compiler = new ProofCompiler()
 
-  test('ProofDeclaration → .md', () => {
+  test('ProofDeclaration → .md（v0.3.0 扁平范式）', () => {
     const decl = {
       $type: 'ProofDeclaration',
       name: 'step1-verdict',
       verdicts: [
-        { name: 'check1', type: 'pass' as const, value: 'ok' },
-        { name: 'check2', type: 'inconclusive' as const, value: 'manual' },
+        {
+          name: 'check1',
+          type: 'pass' as const,
+          value: 'ok',
+          artifact: [{ key: 'path', value: 'dist/oxn' }],
+          note: 'ok',
+        },
+        { name: 'check2', type: 'inconclusive' as const, value: 'manual', artifact: [], note: 'manual' },
       ],
       runtime: { observedAt: '2026-06-23', probesRun: 2, probesPassed: 1, probesInconclusive: 1 },
     }
@@ -101,8 +107,111 @@ describe('ProofCompiler.compile', () => {
     expect(result.name).toBe('step1-verdict')
     expect(result.md).toContain('# Proof: step1-verdict')
     expect(result.md).toContain('## Verdicts')
+    // v0.3.0 canonical：H3 标题裸名（不带 (pass) 后缀）
+    expect(result.md).toContain('### check1\n')
+    expect(result.md).toContain('### check2\n')
+    expect(result.md).not.toContain('### check1 (pass)')
+    // v0.3.0 canonical：state 写在 `- type:` 字段
     expect(result.md).toContain('- type: pass')
+    expect(result.md).toContain('- type: inconclusive')
+    // v0.3.0 canonical：value 写在 `- value:` 字段
+    expect(result.md).toContain('- value: ok')
+    expect(result.md).toContain('- value: manual')
+    // v0.3.0 canonical：artifact 展平为 `artifact_<key>:` 多行
+    expect(result.md).toContain('- artifact_path: dist/oxn')
+    // 不应有 H4 子结构
+    expect(result.md).not.toContain('#### artifact')
+    expect(result.md).not.toContain('#### note')
     expect(result.md).toContain('## Runtime')
+  })
+})
+
+// ==================== v0.3.0 canonical 双向兼容（parse 旧/新格式都能读） ====================
+
+const SAMPLE_PROOF_FLATTEN = `---
+entity: proof
+version: 0.3.0
+name: step1-verdict-flat
+proofs-target-work: ../../works/x/work.oxn
+proofs-target-frozen: ./x/frozen.json
+---
+
+# Proof: step1-verdict-flat
+
+> 验证 X 的 lifecycle。
+
+## Verdicts
+
+### artifact-size-check
+- type: pass
+- value: artifact 大小 2.3MB < 5MB 阈值
+- artifact_path: dist/oxn
+- artifact_type: file
+- artifact_exists: true
+
+### test-pass-rate
+- type: fail
+- value: pass rate 0.85 < 0.9 阈值
+- artifact_path: tests/coverage.json
+- artifact_rate: 0.85
+
+### lint-check
+- type: inconclusive
+- value: 1 warning 待人工 review
+- artifact_count: 1
+
+## Runtime
+### snapshot
+- observed_at: 2026-06-24T08:00:00Z
+- probes_run: 3
+- probes_passed: 1
+- probes_inconclusive: 1
+`
+
+describe('ProofCompiler.parse v0.3.0 扁平范式', () => {
+  const compiler = new ProofCompiler()
+  const root = parseMd(SAMPLE_PROOF_FLATTEN)
+  const frontmatter = {
+    entity: 'proof',
+    version: '0.3.0',
+    name: 'step1-verdict-flat',
+    'proofs-target-work': '../../works/x/work.oxn',
+    'proofs-target-frozen': './x/frozen.json',
+  }
+
+  test('YAML proofs-target-* 元数据读取', () => {
+    const result = compiler.parse({ mdast: root, frontmatter }) as {
+      proofsTargetWork?: string
+      proofsTargetFrozen?: string
+    }
+    expect(result.proofsTargetWork).toBe('../../works/x/work.oxn')
+    expect(result.proofsTargetFrozen).toBe('./x/frozen.json')
+  })
+
+  test('扁平 H3 + 键值对列表 → verdicts[].name / type / value', () => {
+    const result = compiler.parse({ mdast: root, frontmatter }) as {
+      verdicts: Array<{ name: string; type: string; value: string; artifact: Array<{ key: string; value: unknown }> }>
+    }
+    expect(result.verdicts).toHaveLength(3)
+    expect(result.verdicts[0]?.name).toBe('artifact-size-check')
+    expect(result.verdicts[0]?.type).toBe('pass')
+    expect(result.verdicts[0]?.value).toContain('2.3MB')
+    expect(result.verdicts[1]?.type).toBe('fail')
+    expect(result.verdicts[2]?.type).toBe('inconclusive')
+  })
+
+  test('artifact_<key>: 展平为 ListField[]', () => {
+    const result = compiler.parse({ mdast: root, frontmatter }) as {
+      verdicts: Array<{ artifact: Array<{ key: string; value: unknown }> }>
+    }
+    const art0 = result.verdicts[0]?.artifact ?? []
+    expect(art0).toHaveLength(3)
+    expect(art0[0]?.key).toBe('path')
+    expect(art0[0]?.value).toBe('dist/oxn')
+    expect(art0[1]?.key).toBe('type')
+    expect(art0[1]?.value).toBe('file')
+    expect(art0[2]?.key).toBe('exists')
+    expect(art0[2]?.value).toBe('true')
   })
 })
 

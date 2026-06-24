@@ -41,8 +41,11 @@ import type {
   ValidationError,
 } from '../entity-compiler.js'
 import { extractHeadingContexts, findH1 } from '../extract-headings.js'
-import { extractListFields, getScalar } from '../extract-list-fields.js'
+import { extractListFields, getScalar, type ListField } from '../extract-list-fields.js'
+import type { List } from 'mdast'
 import type { IntentEntityType } from '../pipeline.js'
+
+export type { ListField }
 
 /** Proof H2 分类白名单 */
 const PROOF_CATEGORIES = ['Verdicts', 'Runtime'] as const
@@ -62,7 +65,7 @@ export class ProofCompiler implements EntityCompiler {
     const decl = input.decl as {
       $type?: string
       name?: string
-      verdicts?: Array<{ name: string; type: VerdictType; value?: string }>
+      verdicts?: Array<{ name: string; type: VerdictType; value?: string; artifact?: ListField[]; note?: string }>
       runtime?: { observedAt?: string; probesRun?: number; probesPassed?: number; probesInconclusive?: number }
     }
 
@@ -93,9 +96,21 @@ export class ProofCompiler implements EntityCompiler {
       sections.push('## Verdicts')
       sections.push('')
       for (const v of decl.verdicts) {
+        // v0.3.0 canonical 形式（用户定稿）：H3 扁平 + 键值对列表
+        // - H3 标题 = 探针名（不带 state 后缀）
+        // - 第一行 `- type: pass|fail|inconclusive` 单独字段
+        // - `- value: <note>` 描述
+        // - artifact 数组展平为 `artifact_<key>: <value>` 多行
         sections.push(`### ${v.name}`)
         sections.push(`- type: ${v.type}`)
-        if (v.value) sections.push(`- value: ${v.value}`)
+        const noteText = v.note || v.value
+        if (noteText) sections.push(`- value: ${noteText}`)
+        if (v.artifact && v.artifact.length > 0) {
+          for (const a of v.artifact) {
+            const val = Array.isArray(a.value) ? a.value.join(', ') : String(a.value ?? '')
+            sections.push(`- artifact_${a.key}: ${val}`)
+          }
+        }
         sections.push('')
       }
     }
@@ -140,7 +155,13 @@ export class ProofCompiler implements EntityCompiler {
 
     const contexts = extractHeadingContexts(mdast)
 
-    const verdicts: Array<{ name: string; type: VerdictType; value: string }> = []
+    const verdicts: Array<{
+      name: string
+      type: VerdictType
+      value: string
+      artifact: ListField[]
+      note: string
+    }> = []
     let runtime: {
       observed_at: string
       probes_run: number
@@ -156,11 +177,31 @@ export class ProofCompiler implements EntityCompiler {
 
       switch (ctx.h2 as ProofCategory) {
         case 'Verdicts': {
-          const type = (getScalar(fields, 'type') ?? 'inconclusive') as VerdictType
+          // v0.3.0 canonical（用户定稿）：H3 扁平 + 键值对列表
+          // - H3 标题裸名（不带 (pass) 后缀）
+          // - state 来自 `- type: pass|fail|inconclusive`
+          // - value 来自 `- value: <note>`
+          // - artifact 展平为 `artifact_<key>: <value>` 多行
+          //
+          // 双向兼容（防呆）：也支持历史 H3 后缀 `### name (pass)` 写法
+          const typeFromTitle = parseVerdictStateFromTitle(ctx.h3)
+          const typeFromField = getScalar(fields, 'type')
+          const rawType = typeFromTitle ?? (typeFromField as VerdictType | undefined)
+          const type: VerdictType = rawType && isValidVerdictType(rawType) ? rawType : 'inconclusive'
+
+          // artifact 解析：优先 H4 sub-section（兼容老 form），其次 `artifact_*:` 展平字段
+          const artifactFromH4 = extractArtifactFromH4Sections(ctx.h4Sections)
+          const artifact = artifactFromH4.length > 0 ? artifactFromH4 : extractArtifactFromFields(fields)
+
+          // value / note：优先 H4 note（兼容老 form），其次 `- value:` 字段
+          const valueText = extractNoteText(ctx.h4Sections) ?? getScalar(fields, 'value') ?? ''
+
           verdicts.push({
-            name: ctx.h3,
-            type: isValidVerdictType(type) ? type : 'inconclusive',
-            value: getScalar(fields, 'value') ?? '',
+            name: stripVerdictStateFromTitle(ctx.h3),
+            type,
+            artifact,
+            note: valueText,
+            value: valueText,
           })
           break
         }
@@ -179,6 +220,14 @@ export class ProofCompiler implements EntityCompiler {
       entity: 'proof',
       name: typeof frontmatter.name === 'string' ? frontmatter.name : '',
       version: typeof frontmatter.version === 'string' ? frontmatter.version : '0.3.0',
+      proofsTargetWork:
+        typeof frontmatter['proofs-target-work'] === 'string'
+          ? (frontmatter['proofs-target-work'] as string)
+          : undefined,
+      proofsTargetFrozen:
+        typeof frontmatter['proofs-target-frozen'] === 'string'
+          ? (frontmatter['proofs-target-frozen'] as string)
+          : undefined,
       verdicts,
       runtime,
     }
@@ -311,6 +360,64 @@ function isProofCategory(cat: string): cat is ProofCategory {
 
 function isValidVerdictType(t: string): t is VerdictType {
   return t === 'pass' || t === 'fail' || t === 'inconclusive'
+}
+
+/**
+ * 从 H3 标题中提取 verdict 状态：`### p01-name (pass)` → `pass` | null
+ * 兼容 `### p01-name`（无括号）→ null
+ */
+function parseVerdictStateFromTitle(title: string): VerdictType | null {
+  const m = title.match(/\s*\((pass|fail|inconclusive)\)\s*$/i)
+  if (!m) return null
+  const state = m[1]!.toLowerCase()
+  return isValidVerdictType(state) ? state : null
+}
+
+/** 从 H3 标题中剥离 verdict 状态后缀：`### p01-name (pass)` → `p01-name` */
+function stripVerdictStateFromTitle(title: string): string {
+  return title.replace(/\s*\((pass|fail|inconclusive)\)\s*$/i, '').trim()
+}
+
+/**
+ * 从 H4 sections 提取 artifact（兼容老 v0.3.1 `#### artifact` 子结构）
+ * v0.3.0 canonical 不使用 H4；此函数仅作双向兼容防呆
+ */
+function extractArtifactFromH4Sections(h4Sections: Array<{ title: string; list: List | null }>): ListField[] {
+  const artifactSection = h4Sections.find((s) => s.title === 'artifact')
+  if (!artifactSection?.list) return []
+  return extractListFields(artifactSection.list)
+}
+
+/**
+ * 从 H4 sections 提取 note（兼容老 v0.3.1 `#### note` 子结构）
+ */
+function extractNoteText(h4Sections: Array<{ title: string; list: List | null }>): string | undefined {
+  const noteSection = h4Sections.find((s) => s.title === 'note')
+  if (!noteSection?.list) return undefined
+  const noteFields = extractListFields(noteSection.list)
+  const first = noteFields[0]
+  if (!first) return undefined
+  return typeof first.value === 'string' ? first.value : undefined
+}
+
+/**
+ * 从 v0.3.0 canonical 扁平字段提取 artifact
+ * 规则：`artifact_<key>: <value>` 形式展平（`- artifact_path: dist/oxn` → { key: 'path', value: 'dist/oxn' }）
+ * 保留字段 `- type:` `- value:` `- note:` 为顶层，不入 artifact
+ */
+function extractArtifactFromFields(fields: ListField[]): ListField[] {
+  const artifact: ListField[] = []
+  for (const f of fields) {
+    if (f.key === 'type' || f.key === 'value' || f.key === 'note') continue
+    // v0.3.0 canonical: artifact_<key>: → 去掉前缀
+    if (f.key.startsWith('artifact_')) {
+      artifact.push({ key: f.key.slice('artifact_'.length), value: f.value })
+      continue
+    }
+    // 老格式无前缀：把非 type/value/note 字段也纳入 artifact（向后兼容）
+    artifact.push(f)
+  }
+  return artifact
 }
 
 /**

@@ -15,14 +15,21 @@ name: order-build-validity
 ### build-exists
 - type: pass
 - value: dist/oxn 文件存在且 sha256 与 lock 记录一致
+- artifact_path: dist/oxn
+- artifact_type: file
+- artifact_exists: true
 
 ### type-check
 - type: pass
 - value: bun run typecheck 0 error（0 warning）
+- artifact_path: src/
+- artifact_type: directory
 
 ### lint
 - type: pass
 - value: bun run lint 0 error（pre-existing 1 warning 不计）
+- artifact_path: src/
+- artifact_type: directory
 
 ## Runtime
 
