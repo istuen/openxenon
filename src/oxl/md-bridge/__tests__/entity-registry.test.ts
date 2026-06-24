@@ -116,8 +116,18 @@ describe('EntityRegistry 注册与获取', () => {
   })
 })
 
+// 注：side-effect import 必须在文件顶层（ESM import 不能在 describe 内），触发 5 个 compiler 注册
+import '../compilers/index.js'
+
 describe('5 个 compiler 副作用注册', () => {
   test('import "./compilers/index.js" 注册 5 个 type', () => {
+    // 显式还原（避免被其他并行 test 污染）
+    entityRegistry._clearForTest()
+    registerEntityCompiler(new DomainCompiler())
+    registerEntityCompiler(new BlueprintCompiler())
+    registerEntityCompiler(new WorkCompiler())
+    registerEntityCompiler(new TaskCompiler())
+    registerEntityCompiler(new ProofCompiler())
     const list = entityRegistry.list()
     expect(list).toContain('domain')
     expect(list).toContain('blueprint')
@@ -127,27 +137,57 @@ describe('5 个 compiler 副作用注册', () => {
   })
 
   test('getEntityCompiler("domain") 返回 DomainCompiler 实例', () => {
+    entityRegistry._clearForTest()
+    registerEntityCompiler(new DomainCompiler())
+    registerEntityCompiler(new BlueprintCompiler())
+    registerEntityCompiler(new WorkCompiler())
+    registerEntityCompiler(new TaskCompiler())
+    registerEntityCompiler(new ProofCompiler())
     const compiler = getEntityCompiler('domain')
     expect(compiler.entityType).toBe('domain')
     expect(compiler.constructor.name).toBe('DomainCompiler')
   })
 
   test('getEntityCompiler("blueprint") 返回 BlueprintCompiler 实例', () => {
+    entityRegistry._clearForTest()
+    registerEntityCompiler(new DomainCompiler())
+    registerEntityCompiler(new BlueprintCompiler())
+    registerEntityCompiler(new WorkCompiler())
+    registerEntityCompiler(new TaskCompiler())
+    registerEntityCompiler(new ProofCompiler())
     const compiler = getEntityCompiler('blueprint')
     expect(compiler.constructor.name).toBe('BlueprintCompiler')
   })
 
   test('getEntityCompiler("work") 返回 WorkCompiler 实例', () => {
+    entityRegistry._clearForTest()
+    registerEntityCompiler(new DomainCompiler())
+    registerEntityCompiler(new BlueprintCompiler())
+    registerEntityCompiler(new WorkCompiler())
+    registerEntityCompiler(new TaskCompiler())
+    registerEntityCompiler(new ProofCompiler())
     const compiler = getEntityCompiler('work')
     expect(compiler.constructor.name).toBe('WorkCompiler')
   })
 
   test('getEntityCompiler("task") 返回 TaskCompiler 实例', () => {
+    entityRegistry._clearForTest()
+    registerEntityCompiler(new DomainCompiler())
+    registerEntityCompiler(new BlueprintCompiler())
+    registerEntityCompiler(new WorkCompiler())
+    registerEntityCompiler(new TaskCompiler())
+    registerEntityCompiler(new ProofCompiler())
     const compiler = getEntityCompiler('task')
     expect(compiler.constructor.name).toBe('TaskCompiler')
   })
 
   test('getEntityCompiler("proof") 返回 ProofCompiler 实例', () => {
+    entityRegistry._clearForTest()
+    registerEntityCompiler(new DomainCompiler())
+    registerEntityCompiler(new BlueprintCompiler())
+    registerEntityCompiler(new WorkCompiler())
+    registerEntityCompiler(new TaskCompiler())
+    registerEntityCompiler(new ProofCompiler())
     const compiler = getEntityCompiler('proof')
     expect(compiler.constructor.name).toBe('ProofCompiler')
   })

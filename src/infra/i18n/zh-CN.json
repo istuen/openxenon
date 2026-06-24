@@ -18,7 +18,12 @@
       "output": "自定义输出路径",
       "freshness": "仅校验索引是否新鲜"
     },
-    "description": "管理 OXL blueprint（create/validate/list/index）"
+    "compile": {
+      "description": "把 .oxn 重新编译为 v0.3 canonical 纯 MD .md（输出到 .openxenon/blueprints-md/）",
+      "name": "Blueprint 名称",
+      "filePath": "直接指定 .oxn 文件路径（可选逃生舱）"
+    },
+    "description": "管理 OXL blueprint（create/validate/list/index/compile）"
   },
   "cache": {
     "notFound": "缓存目录不存在",
@@ -104,7 +109,12 @@
       "output": "自定义输出路径",
       "freshness": "仅校验索引是否新鲜"
     },
-    "description": "Domain 模块 — DDD 限界上下文管理 (create/validate/list/index)"
+    "compile": {
+      "description": "把 .oxn 重新编译为 v0.3 canonical 纯 MD .md（输出到 .openxenon/domains-md/）",
+      "name": "Domain 名称",
+      "filePath": "直接指定 .oxn 文件路径（可选逃生舱）"
+    },
+    "description": "Domain 模块 — DDD 限界上下文管理 (create/validate/list/index/compile)"
   },
   "errors": {
     "projectNotInit": "项目未初始化，请先执行 oxn init",
