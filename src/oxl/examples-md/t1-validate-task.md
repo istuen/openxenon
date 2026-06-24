@@ -20,7 +20,7 @@ work: place-order
 
 ### schema-valid
 - scheme: schema
-- expect: every LineItem has sku/quantity/unit_price; quantity > 0; unit_price >= 0
+- expect: every LineItem has all of sku quantity unit_price with quantity > 0 and unit_price >= 0
 
 ### inventory-available
 - scheme: inventory

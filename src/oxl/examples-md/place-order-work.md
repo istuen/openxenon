@@ -12,7 +12,7 @@ name: place-order
 
 ## Context
 
-### main
+### primary
 - goal: 演示 place-order Work：5 类 Intent 资产中的 Work 轴纯 MD 语法样例
 - constraints:
   - 必须用 oxn work 命令而非直接读源码
