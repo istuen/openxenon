@@ -153,13 +153,14 @@ describe('oxl-md-decompiler: Domain', () => {
     expect(result.md).toContain('Order 业务实体上下文')
   })
 
-  test('2. terms as ### <name> under ## Terms (纯 MD 格式)', async () => {
+  test('2. terms as ### <name> under ## Terms (纯 MD 格式, no - name: redundancy)', async () => {
     const result = await compileOxnToMd(SIMPLE_DOMAIN_OXN, { entity: 'domain' })
     expect(result.md).toContain('## Terms')
     expect(result.md).toContain('### Order')
     expect(result.md).toContain('### OrderItem')
-    expect(result.md).toContain('- name: Order')
-    expect(result.md).toContain('- name: OrderItem')
+    // canonical: H3 是 name, 不再写 - name: <h3>
+    expect(result.md).not.toMatch(/^- name: Order$/m)
+    expect(result.md).not.toMatch(/^- name: OrderItem$/m)
     expect(result.md).toContain('Order 业务实体')
     expect(result.md).toContain('Order 内的商品项')
     // 不再含 :::intent
@@ -313,10 +314,10 @@ describe('oxl-md-decompiler: Work', () => {
     expect(result.md).toContain('# Work: feature-x')
   })
 
-  test('15. work context as ## Context with goal + max_iterations', async () => {
+  test('15. work context as ## Context with ### primary + goal + max_iterations', async () => {
     const result = await compileOxnToMd(SIMPLE_WORK_OXN, { entity: 'work' })
     expect(result.md).toContain('## Context')
-    expect(result.md).toMatch(/### main[\s\S]*- goal: 实现 X 功能[\s\S]*- max_iterations: 3/)
+    expect(result.md).toMatch(/### primary[\s\S]*- goal: 实现 X 功能[\s\S]*- max_iterations: 3/)
     expect(result.md).not.toContain(':::intent')
   })
 

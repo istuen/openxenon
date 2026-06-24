@@ -86,7 +86,7 @@ export class WorkCompiler implements EntityCompiler {
     if (decl.context) {
       sections.push('## Context')
       sections.push('')
-      sections.push('### main')
+      sections.push('### primary')
       if (decl.context.goal) sections.push(`- goal: ${decl.context.goal}`)
       if (decl.context.loopPolicy?.maxIterations !== undefined) {
         sections.push(`- max_iterations: ${decl.context.loopPolicy.maxIterations}`)

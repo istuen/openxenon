@@ -88,7 +88,7 @@ export class ProofCompiler implements EntityCompiler {
     if (decl.runtime) {
       sections.push('## Runtime')
       sections.push('')
-      sections.push('### observed')
+      sections.push('### snapshot')
       if (decl.runtime.observedAt) sections.push(`- observed_at: ${decl.runtime.observedAt}`)
       if (decl.runtime.probesRun !== undefined) sections.push(`- probes_run: ${decl.runtime.probesRun}`)
       if (decl.runtime.probesPassed !== undefined) sections.push(`- probes_passed: ${decl.runtime.probesPassed}`)

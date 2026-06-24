@@ -108,7 +108,6 @@ export class DomainCompiler implements EntityCompiler {
       sections.push('')
       for (const term of allTerms) {
         sections.push(`### ${term.name}`)
-        sections.push(`- name: ${term.name}`)
         if (term.desc) sections.push(`- desc: ${term.desc}`)
         sections.push('')
       }
@@ -122,7 +121,10 @@ export class DomainCompiler implements EntityCompiler {
       const allItems = allBanItems
       if (allItems.length > 0) {
         sections.push(`### forbidden-constructs`)
-        sections.push(`- items: ${allItems.join(', ')}`)
+        sections.push(`- items:`)
+        for (const item of allItems) {
+          sections.push(`  - ${item}`)
+        }
         sections.push(`- desc: ${allItems.join(', ')}`)
         sections.push('')
       }
@@ -140,9 +142,6 @@ export class DomainCompiler implements EntityCompiler {
         if (inv.script !== undefined) sections.push(`- script: ${unwrapStringValue(inv.script)}`)
         if (inv.manual !== undefined) sections.push(`- manual: ${unwrapStringValue(inv.manual)}`)
         if (inv.scope !== undefined) sections.push(`- scope: ${unwrapStringValue(inv.scope)}`)
-        // 至少一个主字段（desc）— 兼容下游 consumer
-        const primaryValue = inv.value ?? inv.script ?? inv.manual ?? inv.scope ?? ''
-        sections.push(`- desc: ${unwrapStringValue(primaryValue)}`)
         sections.push('')
       })
     }

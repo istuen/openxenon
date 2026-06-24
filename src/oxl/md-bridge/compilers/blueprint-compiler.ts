@@ -97,11 +97,14 @@ export class BlueprintCompiler implements EntityCompiler {
         const typeName = extractTypeName(prop.type)
         sections.push(`### ${prop.name}`)
         sections.push(`- type: ${typeName}`)
-        // enum 类型：- values: [a, b, c]
+        // enum 类型：- values: [a, b, c] → 改为缩进列表表达
         if (typeName.startsWith('enum(')) {
           const enumType = prop.type as { values?: string[] }
           if (enumType.values && enumType.values.length > 0) {
-            sections.push(`- values: [${enumType.values.join(', ')}]`)
+            sections.push(`- values:`)
+            for (const v of enumType.values) {
+              sections.push(`  - ${v}`)
+            }
           }
         }
         // required 修饰符：value 是 BooleanLiteral AST 节点

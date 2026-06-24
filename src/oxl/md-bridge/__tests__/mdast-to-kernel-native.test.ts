@@ -215,7 +215,7 @@ name: e2e-p
 - value: manual
 
 ## Runtime
-### observed
+### snapshot
 - observed_at: 2026-06-23
 - probes_run: 2
 - probes_passed: 1
