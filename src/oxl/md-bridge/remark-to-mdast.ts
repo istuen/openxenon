@@ -16,6 +16,8 @@
 
 import type { Root, Heading } from 'mdast'
 import { runMdPipeline, type PipelineInput, type PipelineOutput, type IntentBlock } from './pipeline.js'
+import { extractHeadingContexts } from './extract-headings.js'
+import { extractListFields } from './extract-list-fields.js'
 
 // ========================
 // 类型
@@ -115,23 +117,8 @@ export interface DomainParseResult {
 /**
  * 解析 Domain MD
  *
- * 期望结构：
- * ```md
- * ---
- * entity: domain
- * version: 0.3.0
- * ---
- *
- * # Domain: OrderContext
- *
- * :::intent{#term-1 type="term" scope="domain"}
- * Order 业务实体定义
- * :::
- *
- * ## Term: Order
- * | 属性 | 说明 |
- * | id | 唯一标识 |
- * ```
+ * v0.3.0 canonical: 纯 MD 形式（H1 + ## Terms/Bans/Invariants + ### 实例 + 列表）
+ * 替代旧的 `:::intent{type="term"}` 容器指令
  */
 export function parseDomainMd(content: string, filePath?: string): DomainParseResult {
   const result = remarkToMdast({ content, entity: 'domain', filePath })
@@ -145,14 +132,20 @@ export function parseDomainMd(content: string, filePath?: string): DomainParseRe
     )
   }
 
-  // 提取 name（从 title）
   const name = extractDomainName(result.title)
 
-  // 按 type 分类 intents
+  // v0.3.0 canonical: 从 H1/H2/H3 + 列表读 term/ban/invariant
+  const contexts = extractHeadingContexts(result.mdast)
   const blocks = {
-    terms: result.intents.filter((i) => i.attributes.type === 'term'),
-    bans: result.intents.filter((i) => i.attributes.type === 'ban'),
-    invariants: result.intents.filter((i) => i.attributes.type === 'invariant'),
+    terms: contexts
+      .filter((c) => c.h2 === 'Terms' && c.h3 && c.h3List && !c.h3List.ordered)
+      .map((c) => h3ContextToIntentBlock(c, 'term')),
+    bans: contexts
+      .filter((c) => c.h2 === 'Bans' && c.h3 && c.h3List && !c.h3List.ordered)
+      .map((c) => h3ContextToIntentBlock(c, 'ban')),
+    invariants: contexts
+      .filter((c) => c.h2 === 'Invariants' && c.h3 && c.h3List && !c.h3List.ordered)
+      .map((c) => h3ContextToIntentBlock(c, 'invariant')),
   }
 
   return {
@@ -185,6 +178,8 @@ export interface BlueprintParseResult {
 
 /**
  * 解析 Blueprint MD
+ *
+ * v0.3.0 canonical: ## Props / ## Slots + ### 实例 + 列表
  */
 export function parseBlueprintMd(content: string, filePath?: string): BlueprintParseResult {
   const result = remarkToMdast({ content, entity: 'blueprint', filePath })
@@ -200,13 +195,26 @@ export function parseBlueprintMd(content: string, filePath?: string): BlueprintP
 
   const name = extractBlueprintName(result.title)
 
+  // v0.3.0 canonical: 从 H3 列表读 prop/slot/probe
+  const contexts = extractHeadingContexts(result.mdast)
+  const props = contexts
+    .filter((c) => c.h2 === 'Props' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c) => h3ContextToIntentBlock(c, 'prop'))
+  const slots = contexts
+    .filter((c) => c.h2 === 'Slots' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c) => h3ContextToIntentBlock(c, 'slot'))
+  // probes 内联在 part 内（canonical 形式），不在独立 ## Probes；保留 empty 数组向后兼容
+  const probes = contexts
+    .filter((c) => c.h2 === 'Probes' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c) => h3ContextToIntentBlock(c, 'probe'))
+
   return {
     name,
     frontmatter: result.frontmatter,
     title: result.title,
-    props: result.intents.filter((i) => i.attributes.type === 'prop'),
-    slots: result.intents.filter((i) => i.attributes.type === 'slot'),
-    probes: result.intents.filter((i) => i.attributes.type === 'probe'),
+    props,
+    slots,
+    probes,
     contentHash: result.contentHash,
   }
 }
@@ -229,6 +237,8 @@ export interface WorkParseResult {
 
 /**
  * 解析 Work MD
+ *
+ * v0.3.0 canonical: ## Context / ## Tasks + ### 实例 + 列表
  */
 export function parseWorkMd(content: string, filePath?: string): WorkParseResult {
   const result = remarkToMdast({ content, entity: 'work', filePath })
@@ -244,12 +254,21 @@ export function parseWorkMd(content: string, filePath?: string): WorkParseResult
 
   const name = extractWorkName(result.title)
 
+  // v0.3.0 canonical: 从 H3 列表读 context/task
+  const contexts = extractHeadingContexts(result.mdast)
+  const ctxBlocks = contexts
+    .filter((c) => c.h2 === 'Context' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c) => h3ContextToIntentBlock(c, 'context'))
+  const tasks = contexts
+    .filter((c) => c.h2 === 'Tasks' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c) => h3ContextToIntentBlock(c, 'task'))
+
   return {
     name,
     frontmatter: result.frontmatter,
     title: result.title,
-    contexts: result.intents.filter((i) => i.attributes.type === 'context'),
-    tasks: result.intents.filter((i) => i.attributes.type === 'task'),
+    contexts: ctxBlocks,
+    tasks,
     contentHash: result.contentHash,
   }
 }
@@ -316,4 +335,39 @@ function extractBlueprintName(title: string): string {
 function extractWorkName(title: string): string {
   const match = title.match(/^Work:\s*(.+)$/i)
   return match ? (match[1]?.trim() ?? '') : title.trim()
+}
+
+// ========================
+// v0.3.0 canonical 辅助函数
+// ========================
+
+/**
+ * 把 H3 + 列表上下文转成 IntentBlock 形状（向后兼容旧 API）
+ * - attributes: 把列表字段拍平为 { key: value } 字符串字典
+ * - content: 描述 / 业务含义等人类可读内容
+ */
+function h3ContextToIntentBlock(
+  ctx: { h3: string | null; h3List: import('mdast').List | null; h3Position: { line: number; column: number } | null },
+  type: string,
+): IntentBlock {
+  const name = ctx.h3 ?? ''
+  const attributes: Record<string, string> = { id: name, name, type }
+  const content: string[] = []
+
+  if (ctx.h3List) {
+    const fields = extractListFields(ctx.h3List)
+    for (const f of fields) {
+      const v = Array.isArray(f.value) ? f.value.join(', ') : String(f.value)
+      attributes[f.key] = v
+      content.push(`${f.key}: ${v}`)
+    }
+  }
+
+  return {
+    name: 'intent',
+    attributes,
+    content,
+    node: ctx.h3List as unknown as import('mdast').RootContent,
+    position: ctx.h3Position ? { start: ctx.h3Position, end: ctx.h3Position } : undefined,
+  }
 }

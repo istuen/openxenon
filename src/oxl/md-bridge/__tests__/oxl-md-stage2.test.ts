@@ -38,6 +38,7 @@ import { parseDomainMd, parseBlueprintMd, parseWorkMd } from '../remark-to-mdast
 // 测试 fixtures
 // ========================
 
+// v0.3.0 canonical: 纯 MD 形式（H1 + H2 + H3 + 列表）
 const validDomainMd = `---
 entity: domain
 version: 0.3.0
@@ -46,21 +47,24 @@ name: OrderContext
 
 # Domain: OrderContext
 
-:::intent{#order-term type="term" scope="domain"}
-Order 业务实体
-:::
+## Terms
+
+### order-term
+- desc: Order 业务实体
 `
 const validBlueprintMd = `---
 entity: blueprint
-version: 0.3.0
+version: 1.0.0
 name: dev-workflow
 ---
 
 # Blueprint: dev-workflow
 
-:::intent{#slot-1 type="slot" id="develop"}
-- skill: develop
-:::
+## Slots
+
+### develop
+- deps: []
+- observe: []
 `
 const validWorkMd = `---
 entity: work
@@ -70,13 +74,16 @@ name: feature-x
 
 # Work: feature-x
 
-:::intent{#ctx-1 type="context" goal="实现 X" max_iterations="3"}
-- 实现 X 功能
-:::
+## Context
 
-:::intent{#t1 type="task" id="step1" deps="[]"}
-- name: step1
-:::
+### primary
+- goal: 实现 X
+- max_iterations: 3
+
+## Tasks
+
+### step1
+- deps: []
 `
 
 // ========================
@@ -180,17 +187,21 @@ name: Mixed
 
 # Domain: Mixed
 
-:::intent{#t1 type="term"}
-Term 1
-:::
+## Terms
 
-:::intent{#b1 type="ban"}
-- ban 1
-:::
+### t1
+- desc: Term 1
 
-:::intent{#i1 type="invariant"}
-- inv 1
-:::
+## Bans
+
+### forbidden-constructs
+- items:
+  - ban 1
+
+## Invariants
+
+### inv-1
+- value: inv 1
 `
     const result = parseDomainMd(md)
     const compiled = compileMdToOxn(result, { ...baseOptions, entity: 'domain' })
@@ -209,20 +220,22 @@ Term 1
   test('compileBlueprint — 含 probe', () => {
     const md = `---
 entity: blueprint
-version: 0.3.0
+version: 1.0.0
 name: with-probe
 ---
 
 # Blueprint: with-probe
 
-:::intent{#slot-1 type="slot" id="build"}
-- build
-:::
+## Slots
 
-:::intent{#probe-1 type="probe" slot="build"}
+### build
+- deps: []
+
+## Probes
+
+### probe-1
 - type: shell-exec
 - command: bun test
-:::
 `
     const result = parseBlueprintMd(md)
     const compiled = compileMdToOxn(result, { ...baseOptions, entity: 'blueprint' })

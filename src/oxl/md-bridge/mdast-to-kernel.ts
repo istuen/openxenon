@@ -24,6 +24,8 @@ import type { CompiledBlueprint, CompiledPart, CompiledProbe, XenonMeta } from '
 import { runMdPipeline, type PipelineOutput } from './pipeline.js'
 import { parseDomainMd, parseBlueprintMd, parseWorkMd } from './remark-to-mdast.js'
 import { validateMdast } from './mdast-validator.js'
+import { extractHeadingContexts } from './extract-headings.js'
+import { extractListFields } from './extract-list-fields.js'
 
 // ========================
 // 类型
@@ -251,7 +253,23 @@ function convertTaskToCompiled(pipelineResult: PipelineOutput, ctx: MdastToKerne
   const ref = `@prj/task/${taskName}`
 
   // part 块 → CompiledPart[]
-  const partIntents = pipelineResult.intents.filter((i) => i.attributes.type === 'part')
+  // v0.3.0 canonical: 从 ## Parts 下 ### 实例的 - skill_context 字段读取
+  const partContexts = extractHeadingContexts(pipelineResult.mdast).filter(
+    (c) => c.h2 === 'Parts' && c.h3 && c.h3List && !c.h3List.ordered,
+  )
+  const partIntents = partContexts.map((c) => {
+    const fields = c.h3List ? extractListFields(c.h3List) : []
+    const skillContext = fields.find((f) => f.key === 'skill_context')
+    return {
+      attributes: {
+        id: c.h3 ?? '',
+        name: c.h3 ?? '',
+        type: 'part',
+        deps: '',
+      },
+      content: typeof skillContext?.value === 'string' ? [skillContext.value] : [],
+    }
+  })
 
   let parts: CompiledPart[]
   if (partIntents.length > 0) {

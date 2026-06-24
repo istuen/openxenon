@@ -43,6 +43,7 @@ paragraph 2`
 
   describe('parseDomainMd', () => {
     test('解析标准 Domain', () => {
+      // v0.3.0 canonical: 纯 MD（H1 + ## Terms + ### 实例 + 列表）
       const md = `---
 entity: domain
 version: 0.3.0
@@ -51,13 +52,10 @@ name: OrderContext
 
 # Domain: OrderContext
 
-:::intent{#order-term type="term" scope="domain"}
-Order 业务实体
-:::
+## Terms
 
-## Term: Order
-| 属性 | 说明 |
-| id | 唯一标识 |
+### order-term
+- desc: Order 业务实体
 `
       const r = parseDomainMd(md)
       expect(r.name).toBe('OrderContext')
@@ -76,18 +74,22 @@ version: 0.3.0
 
 # Domain: Mixed
 
-:::intent{#t1 type="term"}
-Term 1
-:::
+## Terms
 
-:::intent{#b1 type="ban"}
-- ban 1
-- ban 2
-:::
+### t1
+- desc: Term 1
 
-:::intent{#i1 type="invariant"}
-- inv 1
-:::
+## Bans
+
+### forbidden-constructs
+- items:
+  - ban 1
+  - ban 2
+
+## Invariants
+
+### inv-1
+- value: inv 1
 `
       const r = parseDomainMd(md)
       expect(r.blocks.terms).toHaveLength(1)
@@ -96,7 +98,19 @@ Term 1
     })
 
     test('Domain name 提取（从 title）', () => {
-      const r = parseDomainMd('# Domain: MyDomain\n\n:::intent{...}\n- x\n:::')
+      const md = `---
+entity: domain
+version: 0.3.0
+---
+
+# Domain: MyDomain
+
+## Terms
+
+### x
+- desc: term
+`
+      const r = parseDomainMd(md)
       expect(r.name).toBe('MyDomain')
     })
 
@@ -110,24 +124,26 @@ Term 1
     test('解析标准 Blueprint', () => {
       const md = `---
 entity: blueprint
-version: 0.3.0
+version: 1.0.0
 ---
 
 # Blueprint: dev-workflow
 
-:::intent{#input-name type="prop" dataType="string"}
-- name: input
+## Props
+
+### input-name
 - type: string
-:::
 
-:::intent{#slot-1 type="slot" deps="[]"}
-- skill: develop
-:::
+## Slots
 
-:::intent{#probe-1 type="probe" slot="slot-1"}
+### slot-1
+- deps: []
+
+## Probes
+
+### probe-1
 - type: shell-exec
 - command: bun test
-:::
 `
       const r = parseBlueprintMd(md)
       expect(r.name).toBe('dev-workflow')
@@ -146,17 +162,20 @@ version: 0.3.0
 
 # Work: feature-x
 
-:::intent{#ctx-1 type="context" goal="实现 X" max_iterations="3"}
-- 实现 X 功能
-:::
+## Context
 
-:::intent{#t1 type="task" deps="[]"}
-- name: step1
-:::
+### primary
+- goal: 实现 X 功能
+- max_iterations: 3
 
-:::intent{#t2 type="task" deps="step1"}
-- name: step2
-:::
+## Tasks
+
+### step1
+- deps: []
+
+### step2
+- deps:
+  - step1
 `
       const r = parseWorkMd(md)
       expect(r.name).toBe('feature-x')

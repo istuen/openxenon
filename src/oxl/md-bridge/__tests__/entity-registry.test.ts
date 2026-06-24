@@ -153,9 +153,15 @@ describe('5 个 compiler 副作用注册', () => {
   })
 })
 
-// 注：_clearForTest 测试放最后——会清空注册表，影响后续测试
+// 注：_clearForTest 测试放最后 + 还原 5 个 compiler，避免影响其他并行测试
+import { DomainCompiler } from '../compilers/domain-compiler.js'
+import { BlueprintCompiler } from '../compilers/blueprint-compiler.js'
+import { WorkCompiler } from '../compilers/work-compiler.js'
+import { TaskCompiler } from '../compilers/task-compiler.js'
+import { ProofCompiler } from '../compilers/proof-compiler.js'
+
 describe('EntityRegistry 测试隔离（最后）', () => {
-  test('_clearForTest 清空注册表', () => {
+  test('_clearForTest 清空注册表 + 还原 5 个 compiler', () => {
     class TempCompiler implements EntityCompiler {
       readonly entityType = 'temp' as IntentEntityType
       compile(): CompileOutput {
@@ -175,5 +181,12 @@ describe('EntityRegistry 测试隔离（最后）', () => {
       entityRegistry._clearForTest()
     }
     expect(entityRegistry.list()).not.toContain('temp')
+
+    // 还原 5 个 canonical compiler（避免影响后续并行测试）
+    registerEntityCompiler(new DomainCompiler())
+    registerEntityCompiler(new BlueprintCompiler())
+    registerEntityCompiler(new WorkCompiler())
+    registerEntityCompiler(new TaskCompiler())
+    registerEntityCompiler(new ProofCompiler())
   })
 })

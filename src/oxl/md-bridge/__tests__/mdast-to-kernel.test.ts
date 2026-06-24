@@ -7,6 +7,7 @@
 import { describe, expect, test } from 'bun:test'
 import { mdastToKernel, MdastToKernelError } from '../mdast-to-kernel.js'
 
+// v0.3.0 canonical: 纯 MD 形式
 const validDomainMd = `---
 entity: domain
 version: 0.3.0
@@ -15,26 +16,30 @@ name: OrderContext
 
 # Domain: OrderContext
 
-:::intent{#order-term type="term" scope="domain"}
-Order 业务实体
-:::`
+## Terms
+
+### order-term
+- desc: Order 业务实体
+`
 
 const validBlueprintMd = `---
 entity: blueprint
-version: 0.3.0
+version: 1.0.0
 name: dev-workflow
 ---
 
 # Blueprint: dev-workflow
 
-:::intent{#input-name type="prop" name="input" dataType="string"}
-- name: input
-- type: string
-:::
+## Props
 
-:::intent{#slot-1 type="slot" deps="[]"}
-- skill: develop
-:::
+### input
+- type: string
+
+## Slots
+
+### develop
+- deps: []
+- observe: []
 `
 
 const validWorkMd = `---
@@ -45,17 +50,20 @@ name: feature-x
 
 # Work: feature-x
 
-:::intent{#ctx-1 type="context" goal="实现 X" max_iterations="3"}
-- 实现 X 功能
-:::
+## Context
 
-:::intent{#t1 type="task" id="step1" deps="[]"}
-- name: step1
-:::
+### primary
+- goal: 实现 X
+- max_iterations: 3
 
-:::intent{#t2 type="task" id="step2" deps="step1"}
-- name: step2
-:::
+## Tasks
+
+### step1
+- deps: []
+
+### step2
+- deps:
+  - step1
 `
 
 describe('md-bridge/mdast-to-kernel', () => {
@@ -156,6 +164,7 @@ work: feature-x
     })
 
     test('Task 多个 part → 多 FrozenPart', () => {
+      // v0.3.0 canonical: ## Parts + ### 实例
       const taskMd = `---
 entity: task
 version: 0.3.0
@@ -165,13 +174,13 @@ work: feature-x
 
 # Task: register-member
 
-:::intent{#develop type="part" id="develop"}
-- 实现注册
-:::
+## Parts
 
-:::intent{#test type="part" id="test"}
-- 写测试
-:::
+### develop
+- skill_context: 实现注册
+
+### test
+- skill_context: 写测试
 `
       const result = mdastToKernel({
         entity: 'task',

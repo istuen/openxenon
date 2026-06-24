@@ -21,7 +21,9 @@
  * - Fatal 错误阻断 Proof；Warn 仅警告不阻断
  */
 
-import { runMdPipeline, type IntentBlock, type PipelineOutput } from './pipeline.js'
+import { runMdPipeline, type PipelineOutput } from './pipeline.js'
+import { extractHeadingContexts } from './extract-headings.js'
+import { extractListFields } from './extract-list-fields.js'
 
 // ========================
 // 错误类型
@@ -141,8 +143,9 @@ export function validateMdast(content: string, ctx: ValidationContext): Validati
   errors.push(...typeErrors)
 
   // 5. E_MD_REFERENCE_BROKEN_FATAL / E_MD_REFERENCE_BROKEN_WARN
-  //    (校验所有 intent 块中的引用)
-  const refIssues = validateReferences(pipelineResult.intents, ctx)
+  //    (校验所有 intent 块 / H3 实例中的引用)
+  // v0.3.0：reference 来源 = `:::intent{scope=...}` (legacy) OR `- ref:` field on H3 instance (native MD)
+  const refIssues = validateReferences(pipelineResult, ctx)
   for (const issue of refIssues) {
     if (issue.code === 'E_MD_REFERENCE_BROKEN_FATAL') {
       errors.push(issue)
@@ -234,56 +237,61 @@ function validateTypes(result: PipelineOutput, _ctx: ValidationContext): Validat
   return issues
 }
 
-/** 校验引用（intents 中的 id / scope / ref 等）*/
-function validateReferences(intents: IntentBlock[], ctx: ValidationContext): ValidationIssue[] {
+/**
+ * 校验引用
+ * v0.3.0 PR-A 改革：reference 来源 = `:::intent{scope=...}` (legacy 已废弃但仍兼容) OR
+ *                  `- ref:` field on H3 instance (native MD canonical form)
+ */
+function validateReferences(pipelineResult: PipelineOutput, ctx: ValidationContext): ValidationIssue[] {
   const issues: ValidationIssue[] = []
 
-  for (const intent of intents) {
-    // 检查 scope 字段（指向 internal/external 资产）
+  // 1. Legacy :::intent{scope=...} (保留向后兼容，但 v0.3 输入抛 E_MD_DEPRECATED_SYNTAX 不会走到这里)
+  for (const intent of pipelineResult.intents) {
     const scope = intent.attributes.scope
     if (!scope) continue
+    const issue = checkScopeReference(scope, `${intent.name}.attributes.scope`, ctx)
+    if (issue) issues.push(issue)
+  }
 
-    if (scope.startsWith('.openxenon/')) {
-      // 内部 Intent 资产
-      if (ctx.knownInternalAssets && !ctx.knownInternalAssets.has(scope)) {
-        issues.push({
-          code: 'E_MD_REFERENCE_BROKEN_FATAL',
-          message: `Internal Intent asset not found: ${scope}`,
-          field: `intent.attributes.scope`,
-        })
-      }
-    } else {
-      // 外部 URL/路径（仅警告，不阻断）
-      // v0.3 阶段 1 简化：仅检查格式
-      const isUrl = /^https?:\/\//.test(scope)
-      const isRelative = scope.startsWith('./') || scope.startsWith('../')
-      if (!isUrl && !isRelative) {
-        issues.push({
-          code: 'E_MD_REFERENCE_BROKEN_WARN',
-          message: `External reference may be invalid: ${scope}`,
-          field: `intent.attributes.scope`,
-        })
-      }
-    }
-
-    // 检查 ref 字段（如果有）
-    const ref = intent.attributes.ref
-    if (ref) {
-      if (ref.startsWith('@prj/') || ref.startsWith('@oxn/')) {
-        // 内部 OXL 引用
-        if (ctx.knownInternalAssets && !ctx.knownInternalAssets.has(ref)) {
-          issues.push({
-            code: 'E_MD_REFERENCE_BROKEN_FATAL',
-            message: `Internal OXL ref not found: ${ref}`,
-            field: `intent.attributes.ref`,
-          })
-        }
-      }
-      // 外部 ref 跳过（v0.3 阶段 1 简化）
-    }
+  // 2. Native MD: H3 实例的 `- ref:` 字段
+  const contexts = extractHeadingContexts(pipelineResult.mdast)
+  for (const ctx_h3 of contexts) {
+    if (!ctx_h3.h3 || !ctx_h3.h3List || ctx_h3.h3List.ordered) continue
+    const fields = extractListFields(ctx_h3.h3List)
+    const refField = fields.find((f) => f.key === 'ref' && typeof f.value === 'string')
+    if (!refField || typeof refField.value !== 'string') continue
+    const fieldPath = `### ${ctx_h3.h3} → - ref:`
+    const issue = checkScopeReference(refField.value, fieldPath, ctx)
+    if (issue) issues.push(issue)
   }
 
   return issues
+}
+
+/** 单个 scope reference 的校验逻辑（FATAL vs WARN 分级）*/
+function checkScopeReference(scope: string, fieldPath: string, ctx: ValidationContext): ValidationIssue | null {
+  if (scope.startsWith('.openxenon/')) {
+    // 内部 Intent 资产
+    if (ctx.knownInternalAssets && !ctx.knownInternalAssets.has(scope)) {
+      return {
+        code: 'E_MD_REFERENCE_BROKEN_FATAL',
+        message: `Internal Intent asset not found: ${scope}`,
+        field: fieldPath,
+      }
+    }
+  } else {
+    // 外部 URL/路径（仅警告，不阻断）
+    const isUrl = /^https?:\/\//.test(scope)
+    const isRelative = scope.startsWith('./') || scope.startsWith('../')
+    if (!isUrl && !isRelative) {
+      return {
+        code: 'E_MD_REFERENCE_BROKEN_WARN',
+        message: `External reference may be invalid: ${scope}`,
+        field: fieldPath,
+      }
+    }
+  }
+  return null
 }
 
 function finalize(errors: ValidationIssue[], warnings: ValidationIssue[], startTime: number): ValidationResult {

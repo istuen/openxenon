@@ -7,6 +7,7 @@
 import { describe, expect, test } from 'bun:test'
 import { validateMdast, validateMdastStrict, ValidationError } from '../mdast-validator.js'
 
+// v0.3.0 canonical: pure MD form (H1+H2+H3 + indented lists, no :::intent)
 const validDomainMd = `---
 entity: domain
 version: 0.3.0
@@ -15,11 +16,15 @@ name: OrderContext
 
 # Domain: OrderContext
 
-:::intent{#order-term type="term" scope=".openxenon/domains/OrderContext"}
-Order 业务实体
-:::`
+## Terms
 
-const validBlueprintMd = `---
+### order-term
+- ref: .openxenon/domains/OrderContext
+- desc: Order 业务实体
+`
+
+// 注：保留 validBlueprintMd 用于未来 E_MD_* 校验测试扩展
+const _validBlueprintMd = `---
 entity: blueprint
 version: 0.3.0
 name: dev-workflow
@@ -27,9 +32,13 @@ name: dev-workflow
 
 # Blueprint: dev-workflow
 
-:::intent{#slot-1 type="slot"}
-- develop
-:::`
+## Slots
+
+### develop
+- deps: []
+- observe: []
+`
+void _validBlueprintMd
 
 describe('md-bridge/mdast-validator', () => {
   describe('E_MD_MISSING_REQUIRED', () => {
@@ -127,6 +136,7 @@ version: 0.3.0
 
   describe('E_MD_REFERENCE_BROKEN_FATAL', () => {
     test('内部 Intent 资产不存在（已知集合）', () => {
+      // v0.3.0: - ref: field on H3 instance replaces :::intent{scope=...}
       const md = `---
 entity: domain
 version: 0.3.0
@@ -134,9 +144,11 @@ version: 0.3.0
 
 # Title
 
-:::intent{#t1 type="term" scope=".openxenon/domains/Unknown"}
-- term
-:::
+## Terms
+
+### t1
+- ref: .openxenon/domains/Unknown
+- desc: term
 `
       const result = validateMdast(md, {
         entity: 'domain',
@@ -157,6 +169,7 @@ version: 0.3.0
 
   describe('E_MD_REFERENCE_BROKEN_WARN', () => {
     test('外部 URL 格式异常（仅警告）', () => {
+      // v0.3.0: - ref: field replaces :::intent{scope=...}
       const md = `---
 entity: domain
 version: 0.3.0
@@ -164,9 +177,11 @@ version: 0.3.0
 
 # Title
 
-:::intent{#t1 type="term" scope="not-a-valid-scope"}
-- term
-:::
+## Terms
+
+### t1
+- ref: not-a-valid-scope
+- desc: term
 `
       const result = validateMdast(md, { entity: 'domain' })
       expect(result.warnings.some((w) => w.code === 'E_MD_REFERENCE_BROKEN_WARN')).toBe(true)
@@ -180,9 +195,11 @@ version: 0.3.0
 
 # Title
 
-:::intent{#t1 type="term" scope="https://example.com/spec"}
-- term
-:::
+## Terms
+
+### t1
+- ref: https://example.com/spec
+- desc: term
 `
       const result = validateMdast(md, { entity: 'domain' })
       expect(result.warnings.filter((w) => w.code === 'E_MD_REFERENCE_BROKEN_WARN')).toHaveLength(0)
