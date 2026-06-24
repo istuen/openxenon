@@ -80,5 +80,13 @@ jobs:
           npm view @istuen/openxenon@$VERSION version
 
       # 端到端 smoke test
-      - name: Smoke test (npx --version)
-        run: npx -y @istuen/openxenon@$VERSION --version
+      # 用 npm install + 直接 node 调用, 避免 npx PATH/symlink 偶发失败 (v0.3.2 第一次跑时 'oxn: not found')
+      - name: Smoke test (install + node cli.js --version)
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          INSTALL_DIR=$(mktemp -d)
+          echo "Smoke testing @istuen/openxenon@$VERSION in $INSTALL_DIR"
+          npm install --prefix "$INSTALL_DIR" @istuen/openxenon@$VERSION --no-save --no-audit --no-fund 2>&1 | tail -5
+          node "$INSTALL_DIR/node_modules/@istuen/openxenon/dist/cli.js" --version
+          echo "Smoke test PASSED: $VERSION"
+          rm -rf "$INSTALL_DIR"
