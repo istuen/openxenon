@@ -186,6 +186,171 @@ See [Proof](./proof.md) for the full Probe type list.
 
 ---
 
+## v0.3 Unified MD Canonical Form
+
+> **The whole point of v0.3.0 reform**: completely replace `.oxn` container directives (`:::intent{...}`) with **pure native Markdown** hierarchy.
+> 0 `:::intent{...}` directives, 0 new npm dependencies, 0 Langium/.oxn baggage.
+>
+> **.md is always the canonical source**. `.oxn` is an optional compilation product (CLI does not yet ship `oxn domain compile`).
+
+### 3 Canonical Principles
+
+1. **H3 = canonical name** —— `### Cart` is already the official name of a term/prop/slot/task/part/probe/verdict. **Do not write `- name: Cart` again**.
+2. **One `- key: value` per line** —— do not use `;` to concatenate multiple keys on one line.
+3. **Arrays use indented lists** —— do not use `items: A, B, C` comma strings or `values: [a, b, c]` inline arrays.
+
+### 5 Entity Types Unified Form
+
+#### Domain (business glossary)
+
+```markdown
+## Terms
+
+### Cart
+- desc: User's unsettled shopping cart (with line items and price snapshot)
+
+### Order
+- desc: Immutable order record after submission
+
+## Bans
+
+### forbidden-constructs
+- items:
+  - cart-job
+  - order-pipeline
+- desc: Do not express cart/order/charge as Job/Pipeline pattern
+
+## Invariants
+
+### inv-cart-immutability
+- value: Cart → Order transformation is immutable
+```
+
+#### Blueprint (technical blueprint)
+
+```markdown
+## Props
+
+### timeout
+- type: number
+- required: true
+- default: 60000
+
+### env
+- type: enum
+- values:
+  - dev
+  - staging
+  - prod
+
+## Slots
+
+### build
+- deps: []
+- observe:
+  - deps-resolved
+
+### verify
+- deps:
+  - build
+  - test
+- observe:
+  - lint-check
+  - ts-compiles
+```
+
+#### Work (orchestration)
+
+```markdown
+## Context
+
+### primary
+- goal: Demonstrate Work canonical form
+- constraints:
+  - must use oxn work commands
+- max_iterations: 3
+
+## Tasks
+
+### t1-build
+- blueprint: order-workflow
+- domain: OrderDomain
+- part: build
+  - skill_context: build artifact
+```
+
+#### Task (execution unit)
+
+```markdown
+## Parts
+
+### build
+- skill_context: build artifact
+
+## Probes
+
+### schema-valid
+- scheme: schema
+- expect: every LineItem has all of sku quantity unit_price
+```
+
+#### Proof (verdict record)
+
+```markdown
+## Verdicts
+
+### build-exists
+- type: pass
+- value: dist/oxn file exists with sha256 matching lock
+
+### type-check
+- type: fail
+- value: bun run typecheck 1 error
+
+## Runtime
+
+### snapshot
+- observed_at: 2026-06-23T12:00:00Z
+- probes_run: 3
+- probes_passed: 2
+- probes_inconclusive: 1
+```
+
+### 5 Anti-Patterns (all forbidden in v0.3.0)
+
+| Anti-pattern | Wrong example | Correct example |
+|---|---|---|
+| `;` inline key separator | `- type: string; default: USD; required: true` | Split into 3 lines: `- type: string` / `- default: USD` / `- required: true` |
+| Redundant `- name:` | `### Cart` + `- name: Cart` | Keep only `### Cart` |
+| `items: A, B, C` comma string | `- items: cart-job, order-pipeline` | `- items:` + indented list |
+| `values: [a, b, c]` inline array | `- values: [dev, staging, prod]` | `- values:` + indented list |
+| Meaningless wrapper H3 | `### main` (work context) | `### primary` |
+
+### Natural-Language Fields Allow `;`
+
+`desc` / `value` / `expect` / `guidance` / `instruction` are natural-language fields and **allow `;`** (Chinese commonly uses `;` as intra-sentence separator).
+
+Structured fields (`type` / `default` / `required` / `items` / `values` / `deps` / `observe` / `domain` / `blueprint` / `part` / `scheme` / `name`) **forbid `;`**.
+
+### Complete Examples
+
+The 5 entity types' complete canonical .md examples are at [`src/oxl/examples-md/`](https://github.com/istuen/openxenon/tree/feat/v0.3-md-ssot/src/oxl/examples-md) (e-commerce Order scenario unified).
+
+### CI Guard
+
+`bun scripts/check-md-canonical.ts <dir>` —— scan any .md directory, enforce the 5 canonical rules.
+Exit code 0 = all pass; 1 = has violations (with file:line:rule details).
+
+| Rule | Trigger |
+|---|---|
+| E_MD_CANONICAL_NAME_REDUNDANT | Redundant `- name: <H3-text>` |
+| E_MD_CANONICAL_ITEMS_COMMA_STRING | `items: A, B, C` comma string |
+| E_MD_CANONICAL_VALUES_INLINE_ARRAY | `values: [a, b, c]` inline array |
+| E_MD_CANONICAL_SEMICOLON_INLINE | Structured field contains `;` |
+| E_MD_INVALID_SYNTAX | md-bridge pipeline parse failure |
+
+---
+
 ## How — How to use
 
 ### Create and validate Domain
