@@ -71,22 +71,37 @@ jobs:
           npm publish --access public --ignore-scripts --userconfig .npmrc-tmp/.npmrc
           rm -rf .npmrc-tmp
 
-      # 验证发布成功
-      - name: Verify published version
+      # 本地 smoke test (不依赖 npm registry, 测试 dist/ 构建正确)
+      - name: Smoke test (local dist/)
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          echo "Published version: $VERSION"
-          sleep 10  # npm registry 传播延迟
-          npm view @istuen/openxenon@$VERSION version
+          echo "Local smoke test: node dist/cli.js --version"
+          node dist/cli.js --version
+          echo "Local smoke test PASSED: $VERSION"
 
-      # 端到端 smoke test
-      # 用 npm install + 直接 node 调用, 避免 npx PATH/symlink 偶发失败 (v0.3.2 第一次跑时 'oxn: not found')
-      - name: Smoke test (install + node cli.js --version)
+      # 验证 npm registry 传播 + 端到端 install smoke
+      # v0.3.3 问题: npm view 在 sleep 10 后仍 404 (npm registry 传播 >10s)
+      # 修复: 循环重试 (最大 120s) + npm install smoke 合一
+      - name: Verify npm registry + install smoke
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          echo "Waiting for @istuen/openxenon@$VERSION on npm..."
+          for i in $(seq 1 12); do
+            sleep 10
+            if npm view @istuen/openxenon@$VERSION version &>/dev/null; then
+              echo "Verified: @istuen/openxenon@$VERSION is available"
+              break
+            fi
+            echo "Attempt $i/12: not yet propagated"
+            if [ "$i" = "12" ]; then
+              echo "FAILED: @istuen/openxenon@$VERSION not found on npm after 120s"
+              exit 1
+            fi
+          done
+          echo ""
+          echo "Install smoke: npm install @istuen/openxenon@$VERSION"
           INSTALL_DIR=$(mktemp -d)
-          echo "Smoke testing @istuen/openxenon@$VERSION in $INSTALL_DIR"
           npm install --prefix "$INSTALL_DIR" @istuen/openxenon@$VERSION --no-save --no-audit --no-fund 2>&1 | tail -5
           node "$INSTALL_DIR/node_modules/@istuen/openxenon/dist/cli.js" --version
-          echo "Smoke test PASSED: $VERSION"
+          echo "Install smoke test PASSED: $VERSION"
           rm -rf "$INSTALL_DIR"
