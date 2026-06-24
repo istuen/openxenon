@@ -86,9 +86,6 @@ openspec/
 .openxenon/pools/*/*.md
 !.openxenon/pools/*/.gitkeep
 
-# 旧 docs 备份（M0 阶段安全网，手册完成后清理；不入仓）
-docs-bak-2026-06/
-
 # ─────────────────────────────────────────────────────────────
 # 6. 业务运行时数据
 #    实际规则已下沉到 .openxenon/.gitignore（domain/works/proof 等）
@@ -99,14 +96,13 @@ docs-bak-2026-06/
 
 # ─────────────────────────────────────────────────────────────
 # 7. AI 工具个人配置 (.opencode/ .agents/ .claude/) — 个人配置不追踪
-#    但 .opencode/skills/oxn-*/SKILL.md 等是产品资产
-#    (CLI build 嵌入 + install-skill 复制), 需 un-ignore 具体文件
-#    注: git 2.53 行为 — 父目录被 ignore 后, un-ignore 子文件需先 un-ignore 父目录链
+#    例外：.opencode/skills/oxn-*/SKILL.md 等是产品资产
+#    (CLI build 嵌入 + install-skill 复制), 显式 un-ignore 每个文件
+#    (git 2.53 实测无需 un-ignore 父目录链; 用 `git add -f` 添加新文件)
 # ─────────────────────────────────────────────────────────────
 .opencode/
 .agents/
 .claude/
-!.opencode/skills/
 !.opencode/skills/oxn-cli/SKILL.md
 !.opencode/skills/oxn-work/SKILL.md
 !.opencode/skills/oxn-work/.references.hash
