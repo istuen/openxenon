@@ -4,12 +4,15 @@ grammar OXN
 entry OXNDocument:
     entities+=TopLevelEntity*;
 
+// v0.3 follow-up: 允许 task 作为顶层实体（用于 task.oxn 文件 — 120+ 个实际产物）
+// 历史上 task 只能内嵌于 WorkDeclaration；这里新增顶层支持以匹配 CLI `oxn work add-task` 产物
 TopLevelEntity:
     ProbeDeclaration
     | PartDeclaration
     | BlueprintDeclaration
     | DomainDeclaration
     | WorkDeclaration
+    | TaskDeclaration
     | ProofDeclaration;
 
 // ==================== Type System ====================
@@ -170,13 +173,16 @@ PartSlotDeclaration:
 // Domain 是绝对自治的业务契约，定义统一语言和不变量
 // v0.1-final: noun/verb → term (map格式), domain_rules → invariant
 // v0.1.1: 允许多个 invariant 块（domain 文件可写多段不变量）；context_map 已移除
+// v0.3 follow-up: 允许多个 term 块（按业务分组），与 ban/invariant 块在 body 内任意顺序
 DomainDeclaration:
     'domain' name=STRING '{'
         (descriptions+=Description)?
-        (terms=TermBlock)?
-        (ban=BanBlock)?
-        (invariants+=InvariantBlock)*
+        body+=DomainBodyElement*
     '}';
+
+// Domain body 元素：term / ban / invariant 块可任意顺序出现，多次 term 块支持按业务分组
+DomainBodyElement:
+    TermBlock | BanBlock | InvariantBlock;
 
 TermBlock:
     'term' '{'
@@ -256,13 +262,21 @@ ProofProbeDecl:
 // v0.1-final: inject → domain/blueprint/part/probe 声明式对齐
 // v0.0.28+: deps 字段加 'deps' '=' 关键字引导 parser disambiguation。
 //           唯一合法写法：deps = ["t1", "t2"]。裸数组 / deps [...] / 重复 deps 全部拒绝。
+// v0.3 follow-up: 允许 domain/blueprint 在 task 体内任意顺序（与 blueprint/task 实际写法对齐）
 TaskDeclaration:
     'task' name=STRING '{'
-        ('domain' domain=STRING)?
-        ('blueprint' blueprint=STRING)?
-        (parts+=TaskPartDecl)*
-        (TaskDepsField)?
+        body+=TaskBodyElement*
     '}';
+
+// Task body 元素：domain/blueprint/part/deps 可任意顺序出现
+TaskBodyElement:
+    TaskDomainField | TaskBlueprintField | TaskPartDecl | TaskDepsField;
+
+TaskDomainField:
+    'domain' domain=STRING;
+
+TaskBlueprintField:
+    'blueprint' blueprint=STRING;
 
 TaskDeps:
     '[' (deps+=STRING (',' deps+=STRING)*)? ']'    // ["a", "b"]

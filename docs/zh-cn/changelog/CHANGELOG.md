@@ -2,6 +2,90 @@
 
 > OpenXenon 变更日志。每条变更对应一个 git commit；详细 PR 列表见 `.openxenon/forges/sprints/EXECUTION-ORDER.md`。
 
+## [0.3.0] - 2026-06-24
+
+> **主题**：MD-Native Grammar 改革 — 完全替换 `:::intent{...}` 为纯原生 Markdown 层级映射
+> **范围**：3 个串行子 PR (t18-t19-t20) + 5 个后续 commits (canonical 范式落地) + A1 fixture 迁移 + A2 CLI 实装
+> **破坏性变更**：旧 `:::intent{...}` 解析期抛 `E_MD_DEPRECATED_SYNTAX`；用户须重跑 `oxn domain compile` / `oxn blueprint compile` 生成新格式
+
+### Added
+
+**v0.3.0 改革核心（5 commits on `feat/v0.3-md-ssot`）**：
+
+- **EntityCompiler 接口 + Registry**：`compile()` / `parse()` / `validate()` 三方法抽象；`EntityRegistry` Singleton 路由 5 类实体（src/oxl/md-bridge/entity-compiler.ts + entity-registry.ts）
+- **5 个 compiler 实现**：Domain / Blueprint / Work / Task / Proof（src/oxl/md-bridge/compilers/）
+- **extract-headings + extract-list-fields**：H1/H2/H3 上下文栈 + 列表字段树形递归（mdast 天然支持，无固定缩进）
+- **`oxn domain compile <name>` CLI**：把 `.oxn` 重编译为 v0.3 canonical 纯 MD `.md`（落 `.openxenon/domains-md/`，触发 auto-rebuild slim 索引）
+- **`oxn blueprint compile <name>` CLI**：同上 for blueprint
+- **canonical CI 守卫**（`scripts/check-md-canonical.ts`）：5 条规则防漂移
+  - `E_MD_CANONICAL_NAME_REDUNDANT`（H3 已是 canonical name，禁 `- name: <H3>`）
+  - `E_MD_CANONICAL_ITEMS_COMMA_STRING`（禁 `items: A, B, C`，必须缩进列表）
+  - `E_MD_CANONICAL_VALUES_INLINE_ARRAY`（禁 `values: [a, b, c]`，必须缩进列表）
+  - `E_MD_CANONICAL_SEMICOLON_INLINE`（结构性字段禁 `;`，自然语言字段豁免）
+  - `E_MD_INVALID_SYNTAX`（md-bridge pipeline 解析失败）
+
+**canonical 范式三原则**：
+1. H3 = canonical name（不再写冗余 `- name:`）
+2. 一行一个 `- key: value`（不再 `;` 内联分隔）
+3. 数组 = 缩进列表（不再逗号字符串或内联数组）
+
+**oxn-vscode 扩展**：
+- `oxn-intent.tmLanguage.json`：markdown 注入 5 类 entity H1/H2 高亮
+- `docs/.vitepress/theme/custom.css`：H2 分类加 border + 浅色背景
+- `scripts/check-intent-types-drift.ts`：CI 守卫 type 白名单一致
+
+**5 个 canonical 实体样例**（`src/oxl/examples-md/`）：
+- `order-domain.md`（电商 Order 限界上下文）
+- `order-workflow-blueprint.md`（validate → charge → ship 拓扑）
+- `place-order-work.md`（3 task 链）
+- `t1-validate-task.md`（Parts / Probes）
+- `order-build-validity-proof.md`（Verdicts / Runtime）
+- `README.md`：范式总览 + 13 E_MD_xxx + 5 canonical 守卫速查
+
+**docs 双 SSOT 同步**：
+- `docs/zh-cn/intent.md` + `docs/en/intent.md`：新增「v0.3 统一 MD 范式」章节（5 类资产 canonical 范式代码示例 + 5 反模式 + 自然语言字段豁免白名单）
+
+### Changed
+
+- **错误码扩展**：6 → 13 E_MD_xxx（新增 7 个：DEPRECATED_SYNTAX / DUPLICATE_H3 / H1_MISSING / H1_MISMATCH / CATEGORY_UNKNOWN / LIST_FORMAT_INVALID / NESTED_LEVEL_OVERFLOW）
+- **decompiler 产出 canonical 形式**：domain/blueprint/work/proof 4 个 compiler 的 `compile()` 输出不再含冗余 `- name:`、`items:` 改缩进列表、wrapper H3 改 `### primary` / `### snapshot`
+- **A1 fixture 迁移**：66 个 `:::intent` 测试 fixture 全部改写为 H1/H2/H3 + 列表形式；md-bridge 17 个 test 文件从 175/241 → 241/241 pass
+- **tests 隔离修复**：`entity-registry.test.ts` beforeEach 显式还原 5 个 compiler（避免并行 test 污染全局 registry）
+
+### Fixed
+
+- **test 隔离**：mdast-to-kernel-native.test.ts 的 beforeAll `_clearForTest` 不再影响 oxl-md-decompiler.test.ts
+- **CI canonical drift**：22 个 `.md` 文件（6 examples + 14 domains-md + 2 intent.md）全部通过 canonical 守卫
+- **typecheck**：md-bridge 4 个文件 TS2339 / TS6133 修复（未用 import / 缺失 deps 字段）
+
+### Removed
+
+- **删除** `remark-directive` 依赖（v0.3 PR-B breaking change）
+- **删除** legacy `parseDomainMd/parseBlueprintMd/parseWorkMd` 返回类型中的 `result.intents` 字段（已重写为 canonical 形式）
+
+### Migration 指南
+
+**v0.2 → v0.3 升级步骤**：
+
+```bash
+# 1. 升级包（package.json 0.3.0）
+bun install --frozen-lockfile
+
+# 2. 重生所有 .md（v0.3 PR-B breaking change）
+bun scripts/migrate-domains-to-native-md.ts
+bun scripts/migrate-blueprints-to-native-md.ts
+
+# 3. 验证 canonical 形式
+bun scripts/check-md-canonical.ts src/oxl/examples-md docs/zh-cn/intent.md docs/en/intent.md .openxenon/domains-md
+
+# 4. 验证测试
+bun test  # 应 1700/1700 pass
+```
+
+**Breaking changes**：
+- 旧 `:::intent{...}` 块在解析期抛 `E_MD_DEPRECATED_SYNTAX`（必须重跑 compile）
+- 工作流（Work）/ 任务（Task）/ 证明（Proof）的 .md 仍保留 v0.2 形式（待 v0.4 批量迁移）
+
 ## [0.2.0] - 2026-06-XX
 
 > **主题**：Proof Engine 主线 + Token Ingest

@@ -1,0 +1,159 @@
+/**
+ * docs/.vitepress/theme/custom.css
+ *
+ * v0.3 改革 PR-C（feat/v0.3-t20-md-native-highlight）
+ *
+ * 角色：
+ * - 给 VitePress 站点内的 Intent MD 文件加色彩（oxn-vscode 外的纯 CSS 兜底）
+ * - 5 类 H1 实体顶部色条
+ * - 11 类 H2 分类左边框 + 浅色背景
+ *
+ * 注：VitePress 默认 markdown 渲染没有 :: 容器指令支持
+ *     v0.3 改革后 .md 全部用纯原生 MD（H1/H2/H3 + 列表）
+ *     本 CSS 用 :has() 选择器按 H1/H2 文本内容匹配
+ */
+
+:root {
+  /* v0.3 改革 PR-C：5 类 H1 实体色 + 11 类 H2 分类色 */
+  --oxn-domain-color: #4a90e2;
+  --oxn-blueprint-color: #50c878;
+  --oxn-work-color: #ff8c42;
+  --oxn-task-color: #9b59b6;
+  --oxn-proof-color: #e74c3c;
+  --oxn-terms-bg: #e8f0fe;
+  --oxn-bans-bg: #fdedec;
+  --oxn-invariants-bg: #f4ecf7;
+  --oxn-props-bg: #f4f6f7;
+  --oxn-slots-bg: #eafaf1;
+  --oxn-context-bg: #fdf2e9;
+  --oxn-tasks-bg: #fef5e7;
+  --oxn-parts-bg: #ebedef;
+  --oxn-probes-bg: #fef9e7;
+  --oxn-verdicts-bg: #fdedec;
+  --oxn-runtime-bg: #f4ecf7;
+}
+
+/* === 5 类 H1 实体顶部色条 === */
+
+h1:has-text("Domain:") {
+  border-top: 4px solid var(--oxn-domain-color);
+  padding-top: 8px;
+}
+
+h1:has-text("Blueprint:") {
+  border-top: 4px solid var(--oxn-blueprint-color);
+  padding-top: 8px;
+}
+
+h1:has-text("Work:") {
+  border-top: 4px solid var(--oxn-work-color);
+  padding-top: 8px;
+}
+
+h1:has-text("Task:") {
+  border-top: 4px solid var(--oxn-task-color);
+  padding-top: 8px;
+}
+
+h1:has-text("Proof:") {
+  border-top: 4px solid var(--oxn-proof-color);
+  padding-top: 8px;
+}
+
+/* === 11 类 H2 分类左边框 + 浅色背景 === */
+
+h2:has-text("Terms") {
+  border-left: 4px solid var(--oxn-domain-color);
+  background: var(--oxn-terms-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Bans") {
+  border-left: 4px solid #c0392b;
+  background: var(--oxn-bans-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Invariants") {
+  border-left: 4px solid var(--oxn-task-color);
+  background: var(--oxn-invariants-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Props") {
+  border-left: 4px solid #7f8c8d;
+  background: var(--oxn-props-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Slots") {
+  border-left: 4px solid var(--oxn-blueprint-color);
+  background: var(--oxn-slots-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Context") {
+  border-left: 4px solid #2c3e50;
+  background: var(--oxn-context-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Tasks") {
+  border-left: 4px solid var(--oxn-work-color);
+  background: var(--oxn-tasks-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Parts") {
+  border-left: 4px solid #34495e;
+  background: var(--oxn-parts-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Probes") {
+  border-left: 4px solid #f39c12;
+  background: var(--oxn-probes-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Verdicts") {
+  border-left: 4px solid var(--oxn-proof-color);
+  background: var(--oxn-verdicts-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+h2:has-text("Runtime") {
+  border-left: 4px solid #8e44ad;
+  background: var(--oxn-runtime-bg);
+  padding: 4px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+/* === H3 实例名加粗 + 小圆点 === */
+h3 {
+  font-weight: 600;
+  margin-top: 1.5em;
+}
+
+h3::before {
+  content: "▸ ";
+  color: var(--oxn-domain-color);
+  font-weight: bold;
+}
+
+/* === frontmatter 块（VitePress 默认已有样式；此处加边框） */
+.markdown-body > pre,
+.markdown-body > code {
+  border-left: 3px solid #95a5a6;
+  padding-left: 12px;
+}

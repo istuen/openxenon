@@ -28,7 +28,7 @@ const PROTECTED_DIRS: string[] = [
   'src/infra/frozen',
   'src/infra/explore',
   'src/oxl/compiler',
-  'src/oxl/langium',
+  'src/oxl/langium-driver',
   'src/oxl/scope',
   'src/oxl/unpacker',
   'src/work',

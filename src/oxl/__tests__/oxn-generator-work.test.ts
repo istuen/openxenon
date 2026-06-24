@@ -14,7 +14,7 @@ import type {
   PartRefDecl,
   ProbeRefDecl,
   TaskPartDecl,
-} from '../generated/ast'
+} from '../langium-driver/generated/ast'
 import {
   categorizeEntities,
   convertBlueprintDeclaration,

@@ -4,7 +4,15 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/index'
-import { createOxnParser, isDomainDeclaration, type DomainDeclaration, type OXNDocument } from '../oxl'
+import {
+  createOxnParser,
+  isDomainDeclaration,
+  type BanBlock,
+  type DomainDeclaration,
+  type InvariantBlock,
+  type OXNDocument,
+  type TermBlock,
+} from '../oxl'
 import {
   getDomainIndexPath,
   loadDomainIndex,
@@ -15,6 +23,7 @@ import {
 import { IAPError } from '../core/errors'
 import { assertNameFileConsistent } from '../kernel/index'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
+import { compileOxnToMd } from '../oxl/md-bridge/oxl-md-decompiler.js'
 
 // =============================================================================
 // `oxn domain` — DDD 限界上下文管理
@@ -313,20 +322,26 @@ function domainAstToIr(domain: DomainDeclaration): {
   description?: string
   language: { terms: Array<{ name: string; desc: string }>; ban: string[]; invariant: string[] } | null
 } {
+  // v0.3 follow-up: term / ban / invariant 都在 domain.body[] 内（任意顺序）
+  const body = (domain.body ?? []) as Array<{ $type: string }>
+  const termBlocks = body.filter((el) => el.$type === 'TermBlock') as TermBlock[]
+  const banBlock = body.find((el) => el.$type === 'BanBlock') as BanBlock | undefined
+  const invariantBlocks = body.filter((el) => el.$type === 'InvariantBlock') as InvariantBlock[]
+
   const invariants: string[] = []
-  for (const block of domain.invariants ?? []) {
+  for (const block of invariantBlocks) {
     for (const inv of block.invariants ?? []) {
       if (inv.value) invariants.push(inv.value)
     }
   }
-  const hasLanguage = !!(domain.terms || domain.ban || invariants.length > 0)
+  const hasLanguage = !!(termBlocks.length > 0 || banBlock || invariantBlocks.length > 0)
   return {
     name: domain.name,
     description: domain.descriptions?.[0]?.value,
     language: hasLanguage
       ? {
-          terms: (domain.terms?.terms ?? []).map((t) => ({ name: t.name, desc: t.desc })),
-          ban: domain.ban?.bans ?? [],
+          terms: termBlocks.flatMap((tb) => tb.terms).map((t) => ({ name: t.name, desc: t.desc })),
+          ban: banBlock?.bans ?? [],
           invariant: invariants,
         }
       : null,
@@ -552,6 +567,109 @@ export function autoRebuildDomainIndex(projectRoot: string): {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Subcommand: compile (v0.3.0 — 把 .oxn 重编译为 v0.3 canonical 纯 MD .md)
+// ---------------------------------------------------------------------------
+const compileSubcommand = defineCommand({
+  meta: {
+    name: 'compile',
+    description: t('domain.compile.description'),
+  },
+  args: {
+    name: { type: 'positional', required: true, description: t('domain.compile.name') },
+    'file-path': { type: 'string', description: t('domain.compile.filePath') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const name = ctx.args.name as string
+    const customPath = ctx.args['file-path'] as string | undefined
+
+    if (!/^[A-Za-z][A-Za-z0-9_-]*(?:\/[A-Za-z][A-Za-z0-9_-]*)*$/.test(name)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_NAME',
+          message: `invalid domain name: ${JSON.stringify(name)}`,
+          suggestion:
+            'use PascalCase segments joined by / (e.g. "MemberContext"); each segment: letters, digits, underscores, dashes, starts with a letter',
+        },
+        format,
+      )
+    }
+
+    // 文件名兼容：PascalCase / kebab-case
+    const kebab = name
+      .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
+      .replace(/_/g, '-')
+      .toLowerCase()
+    const oxnPath = customPath
+      ? resolve(customPath)
+      : existsSync(join(getDomainsDir(), `${name}.oxn`))
+        ? join(getDomainsDir(), `${name}.oxn`)
+        : join(getDomainsDir(), `${kebab}.oxn`)
+
+    if (!existsSync(oxnPath)) {
+      return outputUserInputError('OXN_FILE_NOT_FOUND', `domain .oxn not found: ${oxnPath}`, {
+        suggestion: `run \`oxn domain create ${name}\` first, then edit + compile`,
+        format,
+      })
+    }
+
+    const oxnContent = readFileSync(oxnPath, 'utf-8')
+
+    let result
+    try {
+      result = await compileOxnToMd(oxnContent, {
+        entity: 'domain',
+        frontmatter: true,
+      })
+    } catch (err) {
+      return outputError(
+        {
+          code: 'OXN_DOMAIN_COMPILE_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+          suggestion: 'check `oxn domain validate <name>` for structural errors before compile',
+        },
+        format,
+      )
+    }
+
+    const mdPath = join(getProjectRoot(), BOUNDARY_DIR, 'domains-md', `${result.name}.md`)
+    const mdDir = join(getProjectRoot(), BOUNDARY_DIR, 'domains-md')
+    if (!existsSync(mdDir)) {
+      mkdirSync(mdDir, { recursive: true })
+    }
+    writeFileSync(mdPath, result.md, 'utf-8')
+
+    output(
+      {
+        ok: true,
+        data: {
+          name: result.name,
+          source: oxnPath,
+          target: mdPath,
+          contentHash: result.contentHash,
+          warnings: [],
+        },
+        human: `Compiled ${result.name}
+  source: ${oxnPath}
+  target: ${mdPath}
+  bytes:  ${result.md.length}
+  hash:   ${result.contentHash.slice(0, 16)}...`,
+      },
+      format,
+    )
+
+    // PR-1: compile 成功后静默重建全局索引（让 .md 变更反映到 domains.json）
+    const rebuild = autoRebuildDomainIndex(getProjectRoot())
+    if (!rebuild.ok) {
+      console.error(`Warning: domain index rebuild failed: ${rebuild.error}`)
+    }
+  },
+})
+
 export default defineCommand({
   meta: {
     name: 'domain',
@@ -562,6 +680,7 @@ export default defineCommand({
     validate: validateSubcommand,
     list: listSubcommand,
     index: indexSubcommand,
+    compile: compileSubcommand,
   },
   run() {
     // No-op

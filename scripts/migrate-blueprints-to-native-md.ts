@@ -1,0 +1,114 @@
+#!/usr/bin/env bun
+/**
+ * scripts/migrate-blueprints-to-native-md.ts
+ *
+ * v0.3 改革 PR-B 续作工具：把 11 个 .openxenon/blueprints/*.oxn 重新编译为新格式 .md
+ * 用新的 EntityRegistry 路由（oxl-md-decompiler.ts 5 个 compiler 实现）
+ *
+ * 使用：
+ *   bun scripts/migrate-blueprints-to-native-md.ts
+ *
+ * 输出：
+ *   - .openxenon/blueprints-md/<name>.md  ←  字节级覆盖旧文件
+ *   - .openxenon/blueprints-md/migration-stamp.json  ←  迁移审计记录
+ *
+ * 与 domains 版的差异：
+ *   - entity: 'blueprint'（不是 'domain'）
+ *   - 来源/目标目录不同
+ *   - blueprint 数量较少（11 个 vs 14 个 domain）
+ */
+
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
+import { compileOxnToMd } from '../src/oxl/md-bridge/oxl-md-decompiler.js'
+
+interface MigrationRecord {
+  source: string
+  target: string
+  bytesBefore: number
+  bytesAfter: number
+  contentHash: string
+  migratedAt: string
+}
+
+const PROJECT_ROOT = process.cwd()
+const BLUEPRINTS_DIR = join(PROJECT_ROOT, '.openxenon/blueprints')
+const BLUEPRINTS_MD_DIR = join(PROJECT_ROOT, '.openxenon/blueprints-md')
+const STAMP_FILE = join(BLUEPRINTS_MD_DIR, 'migration-stamp.json')
+
+async function migrateOne(oxnFilename: string): Promise<MigrationRecord | null> {
+  const baseName = oxnFilename.replace(/\.oxn$/, '')
+  const oxnPath = join(BLUEPRINTS_DIR, oxnFilename)
+  const mdPath = join(BLUEPRINTS_MD_DIR, `${baseName}.md`)
+
+  if (!existsSync(oxnPath)) {
+    console.warn(`⚠️  Source not found: ${oxnPath}`)
+    return null
+  }
+
+  const oxnContent = readFileSync(oxnPath, 'utf-8')
+  const bytesBefore = existsSync(mdPath) ? readFileSync(mdPath).length : 0
+
+  try {
+    const result = await compileOxnToMd(oxnContent, {
+      entity: 'blueprint',
+      frontmatter: true,
+    })
+    writeFileSync(mdPath, result.md, 'utf-8')
+    const bytesAfter = result.md.length
+
+    return {
+      source: oxnPath,
+      target: mdPath,
+      bytesBefore,
+      bytesAfter,
+      contentHash: result.contentHash,
+      migratedAt: new Date().toISOString(),
+    }
+  } catch (err) {
+    console.error(`❌ Failed: ${oxnFilename}`)
+    console.error(`   ${err instanceof Error ? err.message : String(err)}`)
+    return null
+  }
+}
+
+async function main() {
+  console.log('🚀 v0.3 改革续作：blueprints/*.oxn → blueprints-md/*.md 全量重新编译')
+  console.log(`   source: ${BLUEPRINTS_DIR}`)
+  console.log(`   target: ${BLUEPRINTS_MD_DIR}`)
+  console.log('')
+
+  const oxnFiles = readdirSync(BLUEPRINTS_DIR).filter((f) => f.endsWith('.oxn')).sort()
+  console.log(`📁 Found ${oxnFiles.length} .oxn files`)
+  console.log('')
+
+  const records: MigrationRecord[] = []
+  for (const file of oxnFiles) {
+    process.stdout.write(`  Migrating ${file} ... `)
+    const record = await migrateOne(file)
+    if (record) {
+      const delta = record.bytesAfter - record.bytesBefore
+      const sign = delta > 0 ? '+' : ''
+      console.log(`✓ (${record.bytesBefore}B → ${record.bytesAfter}B, ${sign}${delta}B)`)
+      records.push(record)
+    } else {
+      console.log('✗')
+    }
+  }
+
+  writeFileSync(STAMP_FILE, JSON.stringify({
+    migrationType: 'oxl-md-decompiler v0.3 PR-B (续: blueprints)',
+    migratedAt: new Date().toISOString(),
+    count: records.length,
+    records,
+  }, null, 2), 'utf-8')
+
+  console.log('')
+  console.log(`✅ ${records.length}/${oxnFiles.length} files migrated`)
+  console.log(`📄 Audit stamp: ${STAMP_FILE}`)
+}
+
+main().catch((err) => {
+  console.error('Fatal:', err)
+  process.exit(1)
+})

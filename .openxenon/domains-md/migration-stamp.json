@@ -1,0 +1,119 @@
+{
+  "migrationType": "oxl-md-decompiler v0.3 PR-B",
+  "migratedAt": "2026-06-24T01:31:05.878Z",
+  "count": 14,
+  "records": [
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/CodeQualityContext.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/CodeQualityContext.md",
+      "bytesBefore": 2904,
+      "bytesAfter": 1433,
+      "contentHash": "6dd568a3b2d456813ac9a329cd91dae414c5b00d4ba1b186f8eb42b83b8e5648",
+      "migratedAt": "2026-06-24T01:31:05.860Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/DaemonContext.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/DaemonContext.md",
+      "bytesBefore": 3293,
+      "bytesAfter": 1929,
+      "contentHash": "0b933e9d799a5609e394875fdc2f5d9d399325d68f990625d0c2e9c2cccca864",
+      "migratedAt": "2026-06-24T01:31:05.862Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/DocContext.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/DocContext.md",
+      "bytesBefore": 3799,
+      "bytesAfter": 1997,
+      "contentHash": "a7be4e8013f70c90a2214c795142ff4024a2abf47a0d37e031ac2d3cc7a86123",
+      "migratedAt": "2026-06-24T01:31:05.864Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/GrammarContext.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/GrammarContext.md",
+      "bytesBefore": 3188,
+      "bytesAfter": 1981,
+      "contentHash": "3936e77549622c1e532e2e06e16c9cd11e91387f1c2d3bb6bc3f35bc491ce48f",
+      "migratedAt": "2026-06-24T01:31:05.865Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/L0L3Context.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/L0L3Context.md",
+      "bytesBefore": 3924,
+      "bytesAfter": 2037,
+      "contentHash": "2cfd82b4c7a9cce4927781221652e1090ed9fe713f7564e304b6384fdd93e8de",
+      "migratedAt": "2026-06-24T01:31:05.866Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/PoolContext.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/PoolContext.md",
+      "bytesBefore": 3295,
+      "bytesAfter": 2070,
+      "contentHash": "0896d3effda757b011b40d10d50e8c5eb4ac4c32eaed75fd4da1caf5e437eacf",
+      "migratedAt": "2026-06-24T01:31:05.867Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/SecurityContext.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/SecurityContext.md",
+      "bytesBefore": 2448,
+      "bytesAfter": 1218,
+      "contentHash": "21b0c7c22c5b1102b2a058c2e38e705dedd4b2018aad722c3e85927150ef1492",
+      "migratedAt": "2026-06-24T01:31:05.868Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/TaintContext.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/TaintContext.md",
+      "bytesBefore": 4045,
+      "bytesAfter": 2428,
+      "contentHash": "2b5ff343c53329870406eae68fb08e4598793446e7b57276c7528682acfc0c3c",
+      "migratedAt": "2026-06-24T01:31:05.869Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/align-domain.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/align-domain.md",
+      "bytesBefore": 12057,
+      "bytesAfter": 5843,
+      "contentHash": "d17be4fd8dcfa73a53f96d947368863ec188001d5c4eb0f545cb52f37dc6c56c",
+      "migratedAt": "2026-06-24T01:31:05.870Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/config-domain.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/config-domain.md",
+      "bytesBefore": 7821,
+      "bytesAfter": 4227,
+      "contentHash": "f075c84d94fd2d47fcdde7139b1f7c7fa9cc0c6635cf9cb1898deeddf296a62e",
+      "migratedAt": "2026-06-24T01:31:05.871Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/iap-error-context.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/iap-error-context.md",
+      "bytesBefore": 18093,
+      "bytesAfter": 8708,
+      "contentHash": "b8d5b488da89fc4c515b5688966ca69936ff07251e905bcba7c94a4dcf2b0cb7",
+      "migratedAt": "2026-06-24T01:31:05.873Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/intent-align-context.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/intent-align-context.md",
+      "bytesBefore": 11867,
+      "bytesAfter": 5569,
+      "contentHash": "f24c35f5cc94391c999af9493f4238bcae84de64c6a9f92007afffa19a52711e",
+      "migratedAt": "2026-06-24T01:31:05.875Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/intent-domain.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/intent-domain.md",
+      "bytesBefore": 5394,
+      "bytesAfter": 2730,
+      "contentHash": "77445004f61dfbf859624c4b0c16bef5ce1875e3cf9079b55aa7a9ae5cca6561",
+      "migratedAt": "2026-06-24T01:31:05.877Z"
+    },
+    {
+      "source": "/Users/issac/pro/openxenon/.openxenon/domains/proof-domain.oxn",
+      "target": "/Users/issac/pro/openxenon/.openxenon/domains-md/proof-domain.md",
+      "bytesBefore": 6392,
+      "bytesAfter": 3212,
+      "contentHash": "909cd67405cd2344bd9c5a0c78d84b36f1b930cb519b94a31bd2a8aadf89b7e5",
+      "migratedAt": "2026-06-24T01:31:05.878Z"
+    }
+  ]
+}

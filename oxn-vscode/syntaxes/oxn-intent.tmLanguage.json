@@ -1,0 +1,34 @@
+{
+  "name": "oxn-intent",
+  "scopeName": "markdown.intent.extensions.oxn",
+  "injectionSelector": "L:text.html.markdown",
+  "fileTypes": [".md"],
+  "patterns": [
+    { "include": "#frontmatter" },
+    { "include": "#h1-entity" },
+    { "include": "#h2-category" }
+  ],
+  "repository": {
+    "frontmatter": {
+      "begin": "^---$",
+      "end": "^---$",
+      "contentName": "source.embedded.yaml",
+      "patterns": [
+        { "include": "source.yaml" }
+      ]
+    },
+    "h1-entity": {
+      "match": "^#\\s+(Domain|Blueprint|Work|Task|Proof):\\s+([A-Za-z][\\w-]*)",
+      "captures": {
+        "1": { "name": "keyword.control.entity.oxn" },
+        "2": { "name": "entity.name.type.oxn" }
+      }
+    },
+    "h2-category": {
+      "match": "^##\\s+(Terms|Bans|Invariants|Props|Slots|Tasks|Context|Parts|Probes|Verdicts|Runtime)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.category.oxn" }
+      }
+    }
+  }
+}

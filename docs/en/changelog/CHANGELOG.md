@@ -2,6 +2,90 @@
 
 > OpenXenon changelog. Each entry corresponds to a git commit; for detailed PR list see `.openxenon/forges/sprints/EXECUTION-ORDER.md`.
 
+## [0.3.0] - 2026-06-24
+
+> **Theme**: MD-Native Grammar Reform — completely replace `:::intent{...}` with pure native Markdown hierarchy
+> **Scope**: 3 serial sub-PRs (t18-t19-t20) + 5 follow-up commits (canonical form landed) + A1 fixture migration + A2 CLI implementation
+> **Breaking change**: legacy `:::intent{...}` throws `E_MD_DEPRECATED_SYNTAX` at parse time; users must rerun `oxn domain compile` / `oxn blueprint compile` to generate new format
+
+### Added
+
+**v0.3.0 Reform Core (5 commits on `feat/v0.3-md-ssot`)**:
+
+- **EntityCompiler interface + Registry**: `compile()` / `parse()` / `validate()` three-method abstraction; `EntityRegistry` Singleton routes 5 entity types (src/oxl/md-bridge/entity-compiler.ts + entity-registry.ts)
+- **5 compiler implementations**: Domain / Blueprint / Work / Task / Proof (src/oxl/md-bridge/compilers/)
+- **extract-headings + extract-list-fields**: H1/H2/H3 context stack + list-field tree recursive extraction (mdast native support, no fixed indentation)
+- **`oxn domain compile <name>` CLI**: recompile `.oxn` to v0.3 canonical pure MD `.md` (output to `.openxenon/domains-md/`, triggers auto-rebuild slim index)
+- **`oxn blueprint compile <name>` CLI**: same for blueprint
+- **Canonical CI guard** (`scripts/check-md-canonical.ts`): 5 rules to prevent drift
+  - `E_MD_CANONICAL_NAME_REDUNDANT` (H3 is canonical name, ban `- name: <H3>`)
+  - `E_MD_CANONICAL_ITEMS_COMMA_STRING` (ban `items: A, B, C`, must use indented list)
+  - `E_MD_CANONICAL_VALUES_INLINE_ARRAY` (ban `values: [a, b, c]`, must use indented list)
+  - `E_MD_CANONICAL_SEMICOLON_INLINE` (structural fields ban `;`, natural-language fields exempt)
+  - `E_MD_INVALID_SYNTAX` (md-bridge pipeline parse failure)
+
+**Canonical Form 3 Principles**:
+1. H3 = canonical name (no redundant `- name:`)
+2. One `- key: value` per line (no `;` inline separator)
+3. Arrays = indented lists (no comma strings or inline arrays)
+
+**oxn-vscode Extension**:
+- `oxn-intent.tmLanguage.json`: markdown injection highlighting 5 entity H1/H2
+- `docs/.vitepress/theme/custom.css`: H2 category border + light background
+- `scripts/check-intent-types-drift.ts`: CI guard for type whitelist consistency
+
+**5 Canonical Entity Examples** (`src/oxl/examples-md/`):
+- `order-domain.md` (e-commerce Order bounded context)
+- `order-workflow-blueprint.md` (validate → charge → ship topology)
+- `place-order-work.md` (3 task chain)
+- `t1-validate-task.md` (Parts / Probes)
+- `order-build-validity-proof.md` (Verdicts / Runtime)
+- `README.md`: form overview + 13 E_MD_xxx + 5 canonical guard quick reference
+
+**Docs Dual SSOT Sync**:
+- `docs/zh-cn/intent.md` + `docs/en/intent.md`: added "v0.3 Unified MD Form" section (5 entity canonical form code examples + 5 anti-patterns + natural-language field exemption whitelist)
+
+### Changed
+
+- **Error codes extended**: 6 → 13 E_MD_xxx (added 7: DEPRECATED_SYNTAX / DUPLICATE_H3 / H1_MISSING / H1_MISMATCH / CATEGORY_UNKNOWN / LIST_FORMAT_INVALID / NESTED_LEVEL_OVERFLOW)
+- **Decompiler outputs canonical form**: domain/blueprint/work/proof 4 compilers' `compile()` no longer emit redundant `- name:`, `items:` changed to indented list, wrapper H3 changed to `### primary` / `### snapshot`
+- **A1 fixture migration**: 66 `:::intent` test fixtures all rewritten to H1/H2/H3 + list form; md-bridge 17 test files from 175/241 → 241/241 pass
+- **Test isolation fix**: `entity-registry.test.ts` beforeEach explicitly restores 5 compilers (prevent parallel test pollution of global registry)
+
+### Fixed
+
+- **Test isolation**: mdast-to-kernel-native.test.ts beforeAll `_clearForTest` no longer affects oxl-md-decompiler.test.ts
+- **CI canonical drift**: 22 `.md` files (6 examples + 14 domains-md + 2 intent.md) all pass canonical guard
+- **typecheck**: md-bridge 4 files TS2339 / TS6133 fixed (unused import / missing deps field)
+
+### Removed
+
+- **Removed** `remark-directive` dependency (v0.3 PR-B breaking change)
+- **Removed** `result.intents` field from legacy `parseDomainMd/parseBlueprintMd/parseWorkMd` return types (rewritten to canonical form)
+
+### Migration Guide
+
+**v0.2 → v0.3 Upgrade Steps**:
+
+```bash
+# 1. Upgrade package (package.json 0.3.0)
+bun install --frozen-lockfile
+
+# 2. Regenerate all .md (v0.3 PR-B breaking change)
+bun scripts/migrate-domains-to-native-md.ts
+bun scripts/migrate-blueprints-to-native-md.ts
+
+# 3. Verify canonical form
+bun scripts/check-md-canonical.ts src/oxl/examples-md docs/zh-cn/intent.md docs/en/intent.md .openxenon/domains-md
+
+# 4. Verify tests
+bun test  # should be 1700/1700 pass
+```
+
+**Breaking changes**:
+- Legacy `:::intent{...}` blocks throw `E_MD_DEPRECATED_SYNTAX` at parse time (must rerun compile)
+- Work / Task / Proof `.md` files still retain v0.2 format (pending v0.4 batch migration)
+
 ## [0.2.0] - 2026-06-XX
 
 > **Theme**: Proof Engine mainline + Token Ingest

@@ -1,6 +1,6 @@
 # Blueprint Format Reference (for oxn-work)
 
-> **Based on unified OXL (`src/oxl/langium/oxn.langium`)**. Not compatible with any "legacy" syntax from the mvp / reference era — follow this document.
+> **Based on unified OXL (`src/oxl/langium-driver/oxn.langium`)**. Not compatible with any "legacy" syntax from the mvp / reference era — follow this document.
 
 ## Blueprint Structure
 

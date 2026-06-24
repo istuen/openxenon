@@ -215,6 +215,229 @@ Proof 轴的执行依赖 Runtime 三模块的严格分工：
 
 > **纯洁性第一法则**：Infra 不能绕过 Daemon 自我宣布完成 → Daemon 不能修改 Kernel 规则 → Kernel 不能直接执行 Task
 
+## v0.3 Proof Verdict 输出规范（canonical .md）
+
+> **本节是 v0.3.0 锁死的 canonical 纯 MD 形式规范**。与 `## Verdict 与逃逸机制` 互补：
+> 上一节讲 **frozen.json**（机器内核产物），本节讲 **.md canonical**（人类阅读 SSOT）。
+
+### 1️⃣ 核心结构（H1 + H2 + H3 + 列表）
+
+```markdown
+---
+entity: proof
+version: 0.3.0
+name: <proof-name>
+---
+
+# Proof: <proof-name>
+
+> 一句话说明这个 Proof 验证什么
+
+## Verdicts
+
+### <verdict-name>
+- type: pass | fail | inconclusive
+- value: <人类可读描述>
+
+## Runtime
+
+### snapshot
+- observed_at: <ISO 8601>
+- probes_run: <int>
+- probes_passed: <int>
+- probes_inconclusive: <int>
+```
+
+### 2️⃣ 3 态 Verdict 语义
+
+| `type` 值 | 语义 | 触发场景 |
+|---|---|---|
+| `pass` | 验证通过 | 所有 Probe 命中预期 |
+| `fail` | 验证失败 | 任一 Probe 未命中 |
+| `inconclusive` | 信号污染 | ProbeVerdict 收到 RED flag（如 fs 探针读到 SIGINT 路径） |
+
+### 3️⃣ 完整示例（3 状态混合）
+
+```markdown
+---
+entity: proof
+version: 0.3.0
+name: order-build-validity
+---
+
+# Proof: order-build-validity
+
+> 证明 place-order Work 的 build 步骤产出可执行 + 类型 + lint 全部通过
+
+## Verdicts
+
+### build-exists
+- type: pass
+- value: dist/oxn 文件存在且 sha256 与 lock 记录一致
+
+### type-check
+- type: pass
+- value: bun run typecheck 0 error（0 warning）
+
+### lint
+- type: fail
+- value: biome check 1 error in src/cli/proof.ts:88 — see frozen.json#probes[2].errorMessage
+
+### network-reachable
+- type: inconclusive
+- value: http-responds probe returned RED flag: TLS handshake interrupted by signal
+
+## Runtime
+
+### snapshot
+- observed_at: 2026-06-23T12:00:00Z
+- probes_run: 4
+- probes_passed: 2
+- probes_inconclusive: 1
+```
+
+### 4️⃣ 关键规则（编译器硬约束）
+
+| 规则 | 错误码 | 来源 |
+|---|---|---|
+| H2 必须是 `Verdicts` 或 `Runtime` | `E_MD_CATEGORY_UNKNOWN` | `proof-compiler.ts:203` |
+| H3 在所属 H2 内必须唯一 | `E_MD_DUPLICATE_H3` | `proof-compiler.ts:214` |
+| `type` 必须是 3 态之一（其他值静默降级 `inconclusive`）| 静默降级 | `proof-compiler.ts:243` |
+| 缺失 `type` 字段 | 静默默认 `inconclusive` | `proof-compiler.ts:144` |
+| `## Runtime` 必须**唯一**一个 H3 = `snapshot`（v0.3.0 Q3 决策）| `E_MD_INVALID_RUNTIME_BLOCK` | `proof-compiler.ts:251` |
+| Runtime 字段不得显式写 `probes_failed`（v0.3.0 Q2 决策）| `E_MD_REDUNDANT_FIELD` | `proof-compiler.ts:286` |
+
+### 5️⃣ Runtime 字段定义（强 schema）
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `observed_at` | ISO 8601 string | 否 | 跑 Proof 的时间戳 |
+| `probes_run` | int | 否 | 跑了几个 Probe |
+| `probes_passed` | int | 否 | 通过数 |
+| `probes_inconclusive` | int | 否 | 污染数 |
+| `probes_failed` | **推导** | **禁止显式写** | `run - passed - inconclusive` 自动计算 |
+
+> **数据冗余是万恶之源**：若用户（或 AI）手写 `probes_failed: 1`，而实际 `probes_passed + probes_inconclusive` 已给出，存储会不一致（`4 ≠ 2+1+1`）。**Q2 决策**：`E_MD_REDUNDANT_FIELD` strict reject。
+
+### 6️⃣ 双层 Verdict 关系（.md ⇄ frozen.json）
+
+```
+┌─────────────────────────┐         ┌────────────────────────────┐
+│ .md (canonical SSOT)    │         │ frozen.json (Kernel 产物) │
+├─────────────────────────┤         ├────────────────────────────┤
+│ ### build-exists         │         │ { verdict: "PASSED",      │
+│ - type: pass            │ ◀────▶  │   probes: [                │
+│ - value: dist/oxn ...   │  (Proof │     { probeName: "build..", │
+│                         │   run)  │       passed: true },      │
+│ ### type-check           │         │     ...                    │
+│ - type: fail            │         │   ],                       │
+│ - value: biome ...      │         │   totalCount: 2,           │
+│                         │         │   passedCount: 1 }        │
+└─────────────────────────┘         └────────────────────────────┘
+```
+
+**3 态命名差异**（Q1 决策：保持现状，不为形式统一改 Kernel Schema）：
+
+| 层 | 值空间 |
+|---|---|
+| `.md` canonical (ProofCompiler) | `pass` / `fail` / `inconclusive` ← lowercase |
+| `frozen.json` (FrozenProofSchema) | `PASSED` / `FAILED` / `INCONCLUSIVE` ← uppercase + `-ED` |
+| Kernel `ProbeVerdict` | `PASS` / `FAIL` / `INCONCLUSIVE` ← uppercase no `-ED` |
+
+**映射边界**：`src/cli/proof-frozen-writer.ts` 写 frozen.json 时做 `PASS → PASSED` 映射；`src/oxl/md-bridge/compilers/proof-compiler.ts:parse()` 反向读时，uppercase 值静默降级 `inconclusive`（避免大小写歧义）。
+
+### 7️⃣ 5 个 anti-pattern（避坑指南）
+
+```markdown
+❌ 1. 把 type 写成大写（frozen.json 风格）→ 静默降级为 inconclusive！
+- type: PASS
+
+❌ 2. 用 :::intent{...} 容器（v0.3 改革后抛 E_MD_DEPRECATED_SYNTAX）
+```
+: : :intent{#v1 type="verdict"}    ← 把开头 :::intent{ 拆开避免触发 canonical CI
+  type: pass
+: : :
+```
+
+❌ 3. 多个 Verdict 共享同一 H3 文本（抛 E_MD_DUPLICATE_H3）
+### build
+- type: pass
+### build          ← 同 H2 内重名 → 报错
+- type: fail
+
+❌ 4. 写未在白名单的 H2（抛 E_MD_CATEGORY_UNKNOWN）
+## Probes          ← 必须是 Verdicts 或 Runtime
+
+❌ 5. 显式写推导字段（抛 E_MD_REDUNDANT_FIELD）
+## Runtime
+### snapshot
+- probes_failed: 1   ← 由 probes_run - probes_passed - probes_inconclusive 推导
+```
+
+### 8️⃣ 端到端流程（v0.3.0）
+
+```bash
+# 1. 写 .oxn（Langium grammar）
+cat > .openxenon/proofs/my-proof/proof.oxn <<'EOF'
+proof "my-proof" {
+  description = "..."
+  probe "p1" { ref "@oxn/probes/fs-exists" params { pattern = "./dist/oxn" } }
+  probe "p2" { ref "@oxn/probes/shell-exec" params { command = "bun test" } }
+}
+EOF
+
+# 2. 编译为 v0.3 canonical .md（v0.3.0 新增 CLI）
+oxn proof compile my-proof
+# → 写 .openxenon/proofs-md/my-proof.md（含 ## Verdicts / ## Runtime）
+
+# 3. 跑 proof（自动生成 frozen.json）
+oxn proof run my-proof
+# → 写 .openxenon/proofs/my-proof/frozen.json（含 probes[] + verdict）
+
+# 4. （可选）AI 读 .md 看 verdict
+cat .openxenon/proofs-md/my-proof.md
+```
+
+### 9️⃣ 实测样例（仓库已有）
+
+`src/oxl/examples-md/order-build-validity-proof.md`（3 个 pass verdict + Runtime snapshot）：
+
+```markdown
+---
+entity: proof
+version: 0.3.0
+name: order-build-validity
+---
+
+# Proof: order-build-validity
+
+> 证明 place-order Work 的 build 步骤产出可执行 + 类型 + lint 全部通过
+
+## Verdicts
+
+### build-exists
+- type: pass
+- value: dist/oxn 文件存在且 sha256 与 lock 记录一致
+
+### type-check
+- type: pass
+- value: bun run typecheck 0 error（0 warning）
+
+### lint
+- type: pass
+- value: bun run lint 0 error（pre-existing 1 warning 不计）
+
+## Runtime
+
+### snapshot
+- observed_at: 2026-06-23T12:00:00Z
+- probes_run: 3
+- probes_passed: 3
+- probes_inconclusive: 0
+```
+
+---
+
 ## → 参考
 
 - [Intent](./intent.md) — Probe 标准来自 Blueprint 的 observe 字段

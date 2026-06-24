@@ -24,6 +24,7 @@ import { IAPError } from '../core/errors'
 import { assertNameFileConsistent } from '../kernel/index'
 import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
+import { compileOxnToMd } from '../oxl/md-bridge/oxl-md-decompiler.js'
 import {
   autoRebuildBlueprintIndex,
   getBlueprintIndexPath,
@@ -511,6 +512,89 @@ const indexSubcommand = defineCommand({
   },
 })
 
+// ---------------------------------------------------------------------------
+// Subcommand: compile (v0.3.0 — 把 .oxn 重编译为 v0.3 canonical 纯 MD .md)
+// ---------------------------------------------------------------------------
+const compileSubcommand = defineCommand({
+  meta: {
+    name: 'compile',
+    description: t('blueprint.compile.description'),
+  },
+  args: {
+    name: { type: 'positional', required: true, description: t('blueprint.compile.name') },
+    'file-path': { type: 'string', description: t('blueprint.compile.filePath') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const name = ctx.args.name as string
+    const customPath = ctx.args['file-path'] as string | undefined
+
+    const filePath = customPath
+      ? join(getProjectRoot(), customPath)
+      : join(getProjectRoot(), BOUNDARY_DIR, 'blueprints', `${name}.oxn`)
+
+    if (!existsSync(filePath)) {
+      return outputUserInputError('OXN_FILE_NOT_FOUND', `blueprint .oxn not found: ${filePath}`, {
+        suggestion: `run \`oxn blueprint create ${name}\` first, then edit + compile`,
+        format,
+      })
+    }
+
+    const oxnContent = readFileSync(filePath, 'utf-8')
+
+    let result
+    try {
+      result = await compileOxnToMd(oxnContent, {
+        entity: 'blueprint',
+        frontmatter: true,
+      })
+    } catch (err) {
+      return outputError(
+        {
+          code: 'OXN_BLUEPRINT_COMPILE_FAILED',
+          message: err instanceof Error ? err.message : String(err),
+          suggestion: 'check `oxn blueprint validate <name>` for structural errors before compile',
+        },
+        format,
+      )
+    }
+
+    const mdPath = join(getProjectRoot(), BOUNDARY_DIR, 'blueprints-md', `${result.name}.md`)
+    const mdDir = join(getProjectRoot(), BOUNDARY_DIR, 'blueprints-md')
+    if (!existsSync(mdDir)) {
+      mkdirSync(mdDir, { recursive: true })
+    }
+    writeFileSync(mdPath, result.md, 'utf-8')
+
+    output(
+      {
+        ok: true,
+        data: {
+          name: result.name,
+          source: filePath,
+          target: mdPath,
+          contentHash: result.contentHash,
+          warnings: [],
+        },
+        human: `Compiled ${result.name}
+  source: ${filePath}
+  target: ${mdPath}
+  bytes:  ${result.md.length}
+  hash:   ${result.contentHash.slice(0, 16)}...`,
+      },
+      format,
+    )
+
+    // PR-1: compile 成功后静默重建全局索引
+    const rebuild = autoRebuildBlueprintIndex(getProjectRoot())
+    if (!rebuild.ok) {
+      console.error(`Warning: blueprint index rebuild failed: ${rebuild.error}`)
+    }
+  },
+})
+
 const blueprintCommand = defineCommand({
   meta: {
     name: 'blueprint',
@@ -521,6 +605,7 @@ const blueprintCommand = defineCommand({
     validate: validateSubcommand,
     list: listSubcommand,
     index: indexSubcommand,
+    compile: compileSubcommand,
   },
   run() {
     // No-op（与 oxn domain 对齐）

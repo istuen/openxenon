@@ -15,7 +15,7 @@ import type {
   ProbeDeclaration,
   PropDeclaration,
   WorkDeclaration,
-} from '../generated/ast'
+} from '../langium-driver/generated/ast'
 import {
   categorizeEntities,
   convertBlueprintDeclaration,
@@ -230,8 +230,15 @@ describe('convertWorkDeclaration', () => {
           $containerProperty: '',
           $containerIndex: 0,
           name: 'TestIt',
-          blueprint: 'feature-pipeline',
-          parts: [],
+          // v0.3 follow-up: blueprint 在 body[] 内（TaskBlueprintField）
+          body: [
+            {
+              $type: 'TaskBlueprintField',
+              $containerProperty: '',
+              $containerIndex: 0,
+              blueprint: 'feature-pipeline',
+            },
+          ],
         },
       ],
     } as WorkDeclaration

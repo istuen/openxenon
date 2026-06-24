@@ -565,9 +565,12 @@ async function buildPartSpecs(
   }> = []
   for (const task of taskEntries) {
     const partName = parsePartName(task.name)
+    // v0.3 follow-up: task.blueprint 在 body[] 内
+    const taskBody = (task.body ?? []) as Array<{ $type: string; blueprint?: string }>
+    const taskBlueprint = taskBody.find((el) => el.$type === 'TaskBlueprintField')?.blueprint
     specs.push({
       partName,
-      align: task.blueprint ?? '',
+      align: taskBlueprint ?? '',
       skill: { lifecycle: 'code', objective: '', acceptance: [] },
     })
   }
@@ -1736,11 +1739,16 @@ const runSubcommand = defineCommand({
         workName,
         blueprintNames,
         domainNames,
-        tasks: taskEntries.map((t) => ({
-          taskName: parsePartName(t.name),
-          blueprint: t.blueprint ?? blueprintNames[0] ?? '',
-          injects: [],
-        })),
+        tasks: taskEntries.map((t) => {
+          // v0.3 follow-up: task.blueprint 在 body[] 内
+          const tBody = (t.body ?? []) as Array<{ $type: string; blueprint?: string }>
+          const tBlueprint = tBody.find((el) => el.$type === 'TaskBlueprintField')?.blueprint
+          return {
+            taskName: parsePartName(t.name),
+            blueprint: tBlueprint ?? blueprintNames[0] ?? '',
+            injects: [],
+          }
+        }),
         goal: work.context?.goal,
         constraints: work.context?.constraints,
         maxIterations: maxIters,
