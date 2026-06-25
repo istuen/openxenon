@@ -199,7 +199,10 @@ export function collectListFields(list: List): ListField[] {
       })
       fields.push({ key, value: arr, raw })
     } else {
-      fields.push({ key, value: value.trim() || null, raw })
+      // 剥首尾引号 (兼容 YAML 风格的 "value" / 'value')
+      const trimmed = value.trim()
+      const stripped = trimmed.replace(/^["']|["']$/g, '')
+      fields.push({ key, value: stripped || null, raw })
     }
   }
   return fields
