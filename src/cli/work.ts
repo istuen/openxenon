@@ -35,11 +35,12 @@ import { defineCommand } from 'citty'
 import {
   existsSync,
   mkdirSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  unlinkSync,
-  writeFileSync,
+   readdirSync,
+   readFileSync,
+   rmSync,
+   statSync,
+   unlinkSync,
+   writeFileSync,
 } from '../infra/filesystem'
 import { t } from '../infra/i18n'
 import { join } from 'path'
@@ -2999,6 +3000,146 @@ const compileSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
+// Subcommand: migrate-md (v0.4 PR-B.5)
+//
+// 安全版 work.oxn → work.md 迁移:
+//   1. 调 compileOxnToMd 生成 .openxenon/works/<w>/work.md
+//   2. 不动 work.oxn (work.ts 仍读 work.oxn, 继续工作)
+//   3. 不动 tasks/<n>/task.oxn (是 v0.3 期间 add-task 生成的占位符, 但保留)
+//   4. 支持 --all 批量处理所有 28+ works
+//
+// 为什么"安全版" (不动 work.oxn / tasks/)?
+//   - work.ts 当前所有命令都通过 getWorkOxnPath() 读 work.oxn
+//   - 全量改名 (work.oxn → work.md) 会让 v0.3.4 工作流断裂
+//   - 后续 PR-C1 (unified-native) 会把 work.ts 改成读 work.md, 那时才删 work.oxn
+//   - 现在生成的 work.md 是 v0.3 canonical 视图, 与 work.oxn langium 源并存
+//
+// 批处理报告 (--all 模式):
+//   - 28 works: success / skip (无 work.oxn) / error
+//   - 写入 log 到 .openxenon/works/.migrate-md.log
+// ---------------------------------------------------------------------------
+
+interface MigrateResult {
+  workName: string
+  status: 'compiled' | 'skipped' | 'error'
+  mdPath?: string
+  bytes?: number
+  error?: string
+}
+
+const migrateMdSubcommand = defineCommand({
+  meta: {
+    name: 'migrate-md',
+    description:
+      'Generate work.md (MD canonical) from work.oxn for one work (or --all). Safe: does not touch work.oxn or tasks/.',
+  },
+  args: {
+    name: { type: 'positional', required: false, description: 'Work name (omit if --all)' },
+    all: { type: 'boolean', description: 'Migrate all 28+ works under .openxenon/works/' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const projectRoot = getProjectRoot()
+    const all = ctx.args.all === true
+    const workName = ctx.args.name as string | undefined
+
+    if (!all && !workName) {
+      return outputError(
+        {
+          code: 'OXN_MIGRATE_MD_ARGS_MISSING',
+          message: 'either <name> or --all is required',
+          suggestion: 'run `oxn work migrate-md <name>` or `oxn work migrate-md --all`',
+        },
+        format,
+      )
+    }
+
+    const works = all
+      ? readdirSync(join(projectRoot, BOUNDARY_DIR, 'works')).filter((n) => {
+          const full = join(projectRoot, BOUNDARY_DIR, 'works', n)
+          try {
+            return statSync(full).isDirectory() && !n.startsWith('.')
+          } catch {
+            return false
+          }
+        })
+      : [workName as string]
+
+    const results: MigrateResult[] = []
+    for (const w of works) {
+      const workOxnPath = join(projectRoot, BOUNDARY_DIR, 'works', w, WORK_OXN_FILE)
+      if (!existsSync(workOxnPath)) {
+        results.push({ workName: w, status: 'skipped', error: 'work.oxn not found' })
+        continue
+      }
+      try {
+        const oxnContent = readFileSync(workOxnPath, 'utf-8')
+        const mdResult = await compileOxnToMd(oxnContent, { entity: 'work' })
+        const mdPath = join(projectRoot, BOUNDARY_DIR, 'works', w, 'work.md')
+        writeFileSync(mdPath, mdResult.md, 'utf-8')
+        results.push({
+          workName: w,
+          status: 'compiled',
+          mdPath,
+          bytes: mdResult.md.length,
+        })
+      } catch (e) {
+        results.push({
+          workName: w,
+          status: 'error',
+          error: e instanceof Error ? e.message : String(e),
+        })
+      }
+    }
+
+    // 写批处理 log
+    const logPath = join(projectRoot, BOUNDARY_DIR, 'works', '.migrate-md.log')
+    const logLines = [
+      `# v0.4 PR-B.5 migrate-md log — ${new Date().toISOString()}`,
+      `# works processed: ${results.length}`,
+      `#   compiled: ${results.filter((r) => r.status === 'compiled').length}`,
+      `#   skipped:  ${results.filter((r) => r.status === 'skipped').length}`,
+      `#   error:    ${results.filter((r) => r.status === 'error').length}`,
+      '',
+      ...results.map((r) => {
+        const status = r.status.toUpperCase().padEnd(9)
+        const bytes = r.bytes !== undefined ? ` (${r.bytes} bytes)` : ''
+        return `[${status}] ${r.workName}${bytes}${r.error ? ' — ' + r.error : ''}`
+      }),
+    ]
+    writeFileSync(logPath, logLines.join('\n') + '\n', 'utf-8')
+
+    const summary = {
+      total: results.length,
+      compiled: results.filter((r) => r.status === 'compiled').length,
+      skipped: results.filter((r) => r.status === 'skipped').length,
+      error: results.filter((r) => r.status === 'error').length,
+      logPath,
+    }
+
+    output(
+      {
+        ok: summary.error === 0,
+        data: { ...summary, results },
+        human:
+          `migrate-md ${all ? '--all' : `<${workName}>`}\n` +
+          `  total:    ${summary.total}\n` +
+          `  compiled: ${summary.compiled}\n` +
+          `  skipped:  ${summary.skipped}\n` +
+          `  error:    ${summary.error}\n` +
+          `  log:      ${summary.logPath}\n` +
+          (summary.error > 0
+            ? '\nFailed works:\n' + results.filter((r) => r.status === 'error').map((r) => `  - ${r.workName}: ${r.error}`).join('\n')
+            : ''),
+      },
+      format,
+    )
+  },
+})
+
+// ---------------------------------------------------------------------------
 // Top-level command
 // ---------------------------------------------------------------------------
 export default defineCommand({
@@ -3011,6 +3152,7 @@ export default defineCommand({
     create: createSubcommand,
     validate: validateSubcommand,
     compile: compileSubcommand,
+    'migrate-md': migrateMdSubcommand,
     'add-task': addTaskSubcommand,
     'list-task': listTaskSubcommand,
     'task-status': taskStatusSubcommand,
