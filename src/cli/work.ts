@@ -2913,6 +2913,92 @@ const migrateSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
+// Subcommand: compile (v0.4 PR-B Q5 foundation)
+//
+// 把 work.oxn (langium source) 编译为 v0.3 MD canonical 格式 (work.md).
+// 输出位置: .openxenon/works/<w>/work.md
+// v0.4 Q5 路径: 后续 PR 把 work.oxn 改名为 work.md (单文件), tasks/ 目录全删.
+// 当前 PR 仅提供 compile 命令作为基础, 28 works 全量迁移留待后续 PR.
+// ---------------------------------------------------------------------------
+
+import { compileOxnToMd, DecompilerParseError } from '../oxl/md-bridge/oxl-md-decompiler.js'
+
+const compileSubcommand = defineCommand({
+  meta: {
+    name: 'compile',
+    description:
+      'Compile work.oxn → work.md (v0.3 MD canonical format). Foundation for v0.4 Q5 single-work-file refactor.',
+  },
+  args: {
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    'output-path': {
+      type: 'string',
+      description: 'Output .md path (default: works/<w>/work.md, relative to project root)',
+    },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const workName = ctx.args.name as string
+    const projectRoot = getProjectRoot()
+    const outputPath =
+      (ctx.args['output-path'] as string | undefined) ?? join(projectRoot, BOUNDARY_DIR, 'works', workName, 'work.md')
+
+    const workOxnPath = join(projectRoot, BOUNDARY_DIR, 'works', workName, WORK_OXN_FILE)
+    if (!existsSync(workOxnPath)) {
+      return outputError(
+        { code: 'OXN_WORK_NOT_FOUND', message: `work.oxn not found at: ${workOxnPath}` },
+        format,
+      )
+    }
+
+    const oxnContent = readFileSync(workOxnPath, 'utf-8')
+
+    try {
+      const result = await compileOxnToMd(oxnContent, { entity: 'work' })
+      const outputDir = join(outputPath, '..')
+      if (!existsSync(outputDir)) {
+        mkdirSync(outputDir, { recursive: true })
+      }
+      writeFileSync(outputPath, result.md, 'utf-8')
+
+      output(
+        {
+          ok: true,
+          data: {
+            workName,
+            outputPath,
+            entity: result.entity,
+            contentHash: result.contentHash,
+            mdBytes: result.md.length,
+          },
+          human:
+            `Compiled work.oxn → work.md\n` +
+            `  work:    ${workName}\n` +
+            `  output:  ${outputPath}\n` +
+            `  size:    ${result.md.length} bytes\n` +
+            `  hash:    ${result.contentHash.slice(0, 16)}...`,
+        },
+        format,
+      )
+    } catch (e) {
+      if (e instanceof DecompilerParseError) {
+        return outputError(
+          {
+            code: 'OXN_WORK_COMPILE_FAILED',
+            message: `work.oxn parse failed: ${e.message}`,
+            suggestion: 'check work.oxn syntax (langium grammar)',
+          },
+          format,
+        )
+      }
+      throw e
+    }
+  },
+})
+
+// ---------------------------------------------------------------------------
 // Top-level command
 // ---------------------------------------------------------------------------
 export default defineCommand({
@@ -2924,6 +3010,7 @@ export default defineCommand({
     list: listSubcommand,
     create: createSubcommand,
     validate: validateSubcommand,
+    compile: compileSubcommand,
     'add-task': addTaskSubcommand,
     'list-task': listTaskSubcommand,
     'task-status': taskStatusSubcommand,
