@@ -34,8 +34,14 @@ import { extractHeadingContexts, findH1 } from '../extract-headings.js'
 import { extractListFields, getScalar, getArray, type ListField } from '../extract-list-fields.js'
 import type { IntentEntityType } from '../pipeline.js'
 
-/** Domain H2 分类白名单 */
-const DOMAIN_CATEGORIES = ['Terms', 'Bans', 'Invariants'] as const
+/** Domain H2 分类白名单
+ *
+ * v0.4 RFC PR-A: 新增 'Stack' 类别（Q2 决策 — 软推荐，不填不报错）
+ *  - Stack 表示"工程师对 AI 设定的技术环境约束"（语言/运行时/lint 工具）
+ *  - 与 Terms/Bans/Invariants 同级，语义上属于 Intent 约束
+ *  - blueprint 通过 domain 引用自动继承；blueprint 不重复定义 Stack
+ */
+const DOMAIN_CATEGORIES = ['Terms', 'Bans', 'Invariants', 'Stack'] as const
 type DomainCategory = (typeof DOMAIN_CATEGORIES)[number]
 
 /**
@@ -181,10 +187,12 @@ export class DomainCompiler implements EntityCompiler {
     const terms: Array<{ id: string; name: string; desc: string }> = []
     const bans: Array<{ id: string; items: string[]; desc: string }> = []
     const invariants: Array<{ id: string; value: string; desc: string }> = []
+    const stack: Array<{ id: string; name: string; fields: ListField[] }> = []
 
     let termIdx = 0
     let banIdx = 0
     let invIdx = 0
+    let stackIdx = 0
 
     for (const ctx of contexts) {
       if (!ctx.h2 || !ctx.h3) continue
@@ -218,6 +226,17 @@ export class DomainCompiler implements EntityCompiler {
             desc,
           })
           break
+        case 'Stack':
+          // v0.4 PR-A: Stack 分类（软推荐 — 不填不报错）
+          // 收集 H3 = 子分类（如 runtime/linter/test）下所有列表字段
+          // blueprint 通过 domain 引用自动继承 Stack 约束
+          stackIdx++
+          stack.push({
+            id: `stack-${slugify(ctx.h3)}`,
+            name: ctx.h3,
+            fields,
+          })
+          break
       }
     }
 
@@ -228,7 +247,8 @@ export class DomainCompiler implements EntityCompiler {
       terms,
       bans,
       invariants,
-      _counters: { termIdx, banIdx, invIdx },
+      stack,
+      _counters: { termIdx, banIdx, invIdx, stackIdx },
     }
   }
 

@@ -97,6 +97,72 @@ Domain 必须满足：
 
 ---
 
+## Stack：技术栈（v0.4 新增，可选）
+
+> **v0.4 软推荐** — 不填不报错；不填则该 domain 不参与 stack invariant 校验。
+> 详见 RFC：[`.openxenon/pools/sprints/v0.4-unify-md/design/v0.4-unify-md-rfc.md`](../../pools/sprints/v0.4-unify-md/design/v0.4-unify-md-rfc.md) §1
+
+Stack 表示"工程师对 AI 设定的技术环境约束"——语言 / 运行时 / lint 工具 / 测试框架。它是 **Intent 语义约束**（回答"用什么技术写"），不是 **Align 可执行骨架**（回答"按什么路径写"）。
+
+**关键边界**：
+- ✅ **定义在 domain.md** 的 `## Stack` H2 下，目录仍是 `domains/`
+- ✅ **blueprint 不重复定义 Stack**；运行时通过 `domain: <name>` 引用自动继承
+- ✅ Proof 校验时把 `## Stack` 当作 invariant 的一种特化（如检测到 `language: typescript` 但产物是 `.js`，可判 fail）
+- ❌ **不**新建 `stacks/` 目录（避免 5 类实体膨胀成 6 类）
+- ❌ **不**硬要求填写（v0.4 软推荐；v0.5 视情况决定是否升级为硬要求）
+
+### 完整结构（MD 范式）
+
+```markdown
+## Stack
+
+### runtime
+- language: typescript
+- runtime: bun
+- version: ">=1.1.0"
+
+### linter
+- tool: biome
+- config: biome.json
+
+### test
+- runner: bun test
+- coverage: "@oxn/probes/test-pass"
+```
+
+### 字段说明
+
+| H3 子分类 | 字段 | 必填 | 说明 |
+|---|---|---|---|
+| `runtime` | `language` | 是 | 编程语言（typescript / python / rust / go …）|
+| `runtime` | `runtime` | 是 | 运行时（bun / node / deno / python3 …）|
+| `runtime` | `version` | 否 | 版本约束（semver range）|
+| `linter` | `tool` | 是 | 静态检查工具（biome / eslint / clippy …）|
+| `linter` | `config` | 否 | 配置文件路径（相对项目根）|
+| `test` | `runner` | 是 | 测试运行器（bun test / pytest / cargo test …）|
+| `test` | `coverage` | 否 | 覆盖率 probe 引用 |
+
+**子分类可扩展**：上述是 v0.4 默认 3 类（runtime / linter / test）。工程师可按需新增 `## Stack` 下的 H3 子分类（如 `### build`、`### deploy`）。
+
+### 命名约定
+
+- H3 子分类名：kebab-case 或 snake_case（与 v0.3 H2 命名一致）
+- 物理位置：`.openxenon/domains/<name>.md` 内的 `## Stack` H2 section
+
+### 蓝图的引用继承
+
+Blueprint 不重定义 Stack。运行时通过 `domain: <name>` 引用：
+
+```oxn
+work "feature-x" {
+  domain "ExampleStackDomain" ref "@prj/domains/example-stack-domain"
+  blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow"
+  // ↑ dev-workflow 继承 ExampleStackDomain 的 Stack 约束
+}
+```
+
+---
+
 ## Blueprint：技术蓝图
 
 Blueprint 是"分几步做"的纯技术模板。它只声明 slot 拓扑和依赖关系，不包含业务语义。

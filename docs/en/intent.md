@@ -97,6 +97,72 @@ A Domain must:
 
 ---
 
+## Stack: tech stack (v0.4 new, optional)
+
+> **v0.4 soft recommendation** — Not filling does NOT raise an error. Domains without `## Stack` skip stack invariant validation.
+> See RFC: [`.openxenon/pools/sprints/v0.4-unify-md/design/v0.4-unify-md-rfc.md`](../../pools/sprints/v0.4-unify-md/design/v0.4-unify-md-rfc.md) §1
+
+Stack expresses "technical environment constraints the engineer sets for the AI" — language / runtime / linter / test framework. It is an **Intent semantic constraint** (answering "what tech to use"), NOT an **Align executable skeleton** (answering "what path to follow").
+
+**Key boundaries**:
+- ✅ **Defined in domain.md** under the `## Stack` H2 section; directory remains `domains/`
+- ✅ **Blueprint does NOT re-define Stack**; runtime inherits via `domain: <name>` reference
+- ✅ Proof validation treats `## Stack` as a specialized invariant (e.g., if `language: typescript` but artifact is `.js`, judge as fail)
+- ❌ **No new `stacks/` directory** (avoid inflating 5 entity types to 6)
+- ❌ **No hard requirement** (v0.4 soft; v0.5 may upgrade to hard)
+
+### Full structure (MD canonical)
+
+```markdown
+## Stack
+
+### runtime
+- language: typescript
+- runtime: bun
+- version: ">=1.1.0"
+
+### linter
+- tool: biome
+- config: biome.json
+
+### test
+- runner: bun test
+- coverage: "@oxn/probes/test-pass"
+```
+
+### Field reference
+
+| H3 sub-category | Field | Required | Description |
+|---|---|---|---|
+| `runtime` | `language` | yes | Programming language (typescript / python / rust / go …) |
+| `runtime` | `runtime` | yes | Runtime (bun / node / deno / python3 …) |
+| `runtime` | `version` | no | Version constraint (semver range) |
+| `linter` | `tool` | yes | Static checker (biome / eslint / clippy …) |
+| `linter` | `config` | no | Config file path (relative to project root) |
+| `test` | `runner` | yes | Test runner (bun test / pytest / cargo test …) |
+| `test` | `coverage` | no | Coverage probe reference |
+
+**Sub-categories extensible**: The above are v0.4 defaults (runtime / linter / test). Engineers may add new H3 sub-categories (e.g., `### build`, `### deploy`) under `## Stack`.
+
+### Naming conventions
+
+- H3 sub-category name: kebab-case or snake_case (consistent with v0.3 H2 naming)
+- Physical location: `.openxenon/domains/<name>.md` under the `## Stack` H2 section
+
+### Blueprint inheritance
+
+Blueprint does NOT redefine Stack. Runtime inherits via `domain: <name>`:
+
+```oxn
+work "feature-x" {
+  domain "ExampleStackDomain" ref "@prj/domains/example-stack-domain"
+  blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow"
+  // ↑ dev-workflow inherits ExampleStackDomain's Stack constraints
+}
+```
+
+---
+
 ## Blueprint: technical blueprint
 
 Blueprint is a pure-technical template for "how many steps". It only declares slot topology and dependency relations, with no business semantics.
