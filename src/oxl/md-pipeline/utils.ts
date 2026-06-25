@@ -171,8 +171,45 @@ import remarkParse from 'remark-parse'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkStringify from 'remark-stringify'
 
-export function parseMarkdown(content: string): Root {
-  return unified().use(remarkParse).use(remarkFrontmatter).parse(content) as Root
+/**
+ * Parse markdown into mdast Root + extract frontmatter.
+ * remarkFrontmatter plugin removes the yaml node from tree.children and stores
+ * parsed frontmatter in `tree.data.frontmatter` (via processor.run).
+ */
+export function parseMarkdown(
+  content: string,
+): { tree: Root; frontmatter: Record<string, unknown> } {
+  const processor = unified().use(remarkParse).use(remarkFrontmatter)
+  const tree = processor.parse(content) as Root
+  processor.runSync(tree)
+  // remark-frontmatter v11 不解析 yaml 内部数据, 只把 yaml 节点留在 tree.children
+  // 这里用简单正则提取 key: value 对
+  return {
+    tree,
+    frontmatter: extractYamlFromTree(tree),
+  }
+}
+
+/** 从 mdast 提取 yaml frontmatter (简单 key: value 解析, 不引入 js-yaml) */
+export function extractYamlFromTree(tree: Root): Record<string, unknown> {
+  const fm: Record<string, unknown> = {}
+  for (const child of tree.children) {
+    if (child.type === 'yaml') {
+      const value = (child as { value: string }).value
+      for (const line of value.split('\n')) {
+        const m = line.match(/^([\w-]+):\s*(.*)$/)
+        if (m) {
+          const v = m[2]!.trim()
+          // 简单类型推断
+          if (v === 'true') fm[m[1]!] = true
+          else if (v === 'false') fm[m[1]!] = false
+          else if (/^\d+$/.test(v)) fm[m[1]!] = Number(v)
+          else fm[m[1]!] = v.replace(/^["']|["']$/g, '')
+        }
+      }
+    }
+  }
+  return fm
 }
 
 /**

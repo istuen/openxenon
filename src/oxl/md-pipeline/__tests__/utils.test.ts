@@ -124,7 +124,7 @@ describe('v0.4 PR-C1: collectListFields', () => {
 describe('v0.4 PR-C1: parseMarkdown + stringifyMarkdown (round-trip)', () => {
   test('parse → stringify round-trip', () => {
     const original = '# Title\n\n## Section\n\n- key: value\n'
-    const root = parseMarkdown(original)
+    const { tree: root } = parseMarkdown(original)
     const serialized = stringifyMarkdown(root)
     expect(serialized).toContain('# Title')
     expect(serialized).toContain('## Section')
@@ -132,11 +132,18 @@ describe('v0.4 PR-C1: parseMarkdown + stringifyMarkdown (round-trip)', () => {
   })
 
   test('空 md 字符串 parse 成功', () => {
-    const root = parseMarkdown('')
+    const { tree: root } = parseMarkdown('')
     expect(root.type).toBe('root')
     expect(root.children).toHaveLength(0)
     const serialized = stringifyMarkdown(root)
     expect(typeof serialized).toBe('string')
+  })
+
+  test('frontmatter 自动提取', () => {
+    const md = '---\nname: Foo\nversion: 1.0.0\n---\n\n# Hello\n'
+    const { frontmatter } = parseMarkdown(md)
+    expect(frontmatter.name).toBe('Foo')
+    expect(frontmatter.version).toBe('1.0.0')
   })
 })
 
