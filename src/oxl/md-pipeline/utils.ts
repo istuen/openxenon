@@ -1,0 +1,195 @@
+/**
+ * md-pipeline/utils.ts — v0.4 PR-C1 unified-native 工具集
+ *
+ * 角色：用 mdast-util-visit / mdast-util-to-markdown 取代自研层。
+ *   - extract-headings.ts     →  collectHeadings() (mdast-util-visit)
+ *   - extract-list-fields.ts  →  collectListFields() (mdast-util-visit)
+ *   - mdast-validator.ts      →  remark-canonical plugin (PR-C3)
+ *   - driver-registry.ts      →  删 (PR-C4)
+ *
+ * 不变量：
+ *   - 不感知 fs（只接收 Root AST）
+ *   - 不感知 OpenXenon Kernel（只输出 mdast 工具函数）
+ *   - 输入输出 AST 是标准 mdast（unified 生态通用）
+ *
+ * L0–L3 兼容性：
+ *   - L1-OXL 层（src/oxl/md-pipeline/）
+ *   - 不 import L0-Processor / L1-Infra / L2-Work / L3
+ */
+
+import type { Heading, List, ListItem, Paragraph, Root, Text } from 'mdast'
+import { visit } from 'unist-util-visit'
+
+/**
+ * 收集所有 H1/H2/H3 节点 (typed, indexed by depth)
+ * 取代 extract-headings.ts 的手写遍历
+ */
+export interface CollectedHeading {
+  depth: 1 | 2 | 3 | 4 | 5 | 6
+  text: string
+  position?: { start: { line: number; column: number } }
+  children?: Heading['children']
+}
+
+export function collectHeadings(root: Root): CollectedHeading[] {
+  const result: CollectedHeading[] = []
+  visit(root, 'heading', (node: Heading) => {
+    const text = (node.children ?? [])
+      .filter((c): c is Text => c.type === 'text')
+      .map((c) => c.value)
+      .join('')
+    result.push({
+      depth: node.depth as 1 | 2 | 3 | 4 | 5 | 6,
+      text,
+      position: node.position,
+      children: node.children,
+    })
+  })
+  return result
+}
+
+/**
+ * 找 H1 节点 (取代 extract-headings.ts 的 findH1)
+ */
+export function findFirstHeading(root: Root, depth: 1 | 2 | 3 | 4 | 5 | 6 = 1): CollectedHeading | null {
+  let found: CollectedHeading | null = null
+  visit(root, 'heading', (node: Heading) => {
+    if (node.depth === depth && !found) {
+      const text = (node.children ?? [])
+        .filter((c): c is Text => c.type === 'text')
+        .map((c) => c.value)
+        .join('')
+      found = {
+        depth: node.depth as 1 | 2 | 3 | 4 | 5 | 6,
+        text,
+        position: node.position,
+        children: node.children,
+      }
+    }
+  })
+  return found
+}
+
+/**
+ * 收集 H2 + H3 嵌套结构 (取代 extractHeadingContexts 的核心逻辑)
+ * @returns Array of { h2, h3, h3List } tuples
+ */
+export interface HeadingContext {
+  h2: string | null
+  h3: string | null
+  h3List: List | null
+  h3Position?: { line: number; column: number }
+}
+
+export function collectHeadingContexts(root: Root): HeadingContext[] {
+  const contexts: HeadingContext[] = []
+  let currentH2: string | null = null
+
+  for (const child of root.children) {
+    if (child.type === 'heading') {
+      const h = child as Heading
+      const text = (h.children ?? [])
+        .filter((c): c is Text => c.type === 'text')
+        .map((c) => c.value)
+        .join('')
+      if (h.depth === 2) {
+        currentH2 = text
+      } else if (h.depth === 3 && currentH2) {
+        contexts.push({
+          h2: currentH2,
+          h3: text,
+          h3List: null,
+          h3Position: h.position?.start,
+        })
+      }
+    } else if (child.type === 'list' && contexts.length > 0 && !contexts[contexts.length - 1]!.h3List) {
+      // 紧跟 H3 的 list 节点 → 作为 h3List 关联
+      const last = contexts[contexts.length - 1]!
+      if (last.h3 && last.h3Position) {
+        const prevIdx = root.children.indexOf(child) - 1
+        const prev = prevIdx >= 0 ? root.children[prevIdx] : null
+        if (prev?.type === 'heading' && (prev as Heading).depth === 3) {
+          last.h3List = child as List
+        }
+      }
+    }
+  }
+
+  return contexts
+}
+
+/**
+ * 收集列表项中的 key-value 字段 (取代 extractListFields 的核心)
+ * - "list" 节点下, "listItem" 内的 paragraph 第一个 child 是 text
+ * - 该 text 形如 "key: value" → 拆分为 { key, value }
+ */
+export interface ListField {
+  key: string
+  value: string | string[] | null
+  raw: string
+}
+
+export function collectListFields(list: List): ListField[] {
+  const fields: ListField[] = []
+  for (const item of list.children) {
+    if (item.type !== 'listItem') continue
+    const li = item as ListItem
+    // 第一个 paragraph 包含 "key: value" 主行
+    const firstPara = (li.children ?? []).find((c) => c.type === 'paragraph') as Paragraph | undefined
+    if (!firstPara) continue
+    const firstText = (firstPara.children ?? []).find((c) => c.type === 'text') as Text | undefined
+    if (!firstText) continue
+    const raw = firstText.value
+    const m = raw.match(/^([\w-]+):\s*(.*)$/)
+    if (!m) continue
+    const [, key, value] = m as unknown as [string, string, string]
+    // 嵌套 list 作为 array value
+    const nestedList = (li.children ?? []).find((c) => c.type === 'list') as List | undefined
+    if (nestedList) {
+      const arr: string[] = []
+      visit(nestedList, 'listItem', (n: ListItem) => {
+        const txt = (n.children ?? []).find((c) => c.type === 'paragraph') as Paragraph | undefined
+        if (txt) {
+          const t = (txt.children ?? []).find((c) => c.type === 'text') as Text | undefined
+          if (t) arr.push(t.value)
+        }
+      })
+      fields.push({ key, value: arr, raw })
+    } else {
+      fields.push({ key, value: value.trim() || null, raw })
+    }
+  }
+  return fields
+}
+
+/**
+ * unified 入口: 把 markdown 字符串解析成 mdast Root
+ * 取代 pipeline.ts 的部分功能
+ */
+import { unified } from 'unified'
+import remarkParse from 'remark-parse'
+import remarkFrontmatter from 'remark-frontmatter'
+import remarkStringify from 'remark-stringify'
+
+export function parseMarkdown(content: string): Root {
+  return unified().use(remarkParse).use(remarkFrontmatter).parse(content) as Root
+}
+
+/**
+ * unified 出口: 把 mdast Root 序列化回 markdown 字符串
+ * 用于 work.md / domain-md / blueprint-md / proof-md 等 round-trip
+ */
+export function stringifyMarkdown(root: Root): string {
+  return unified().use(remarkStringify).stringify(root)
+}
+
+/**
+ * 计算 Root 节点数 (sanity check)
+ */
+export function countNodes(root: Root): number {
+  let n = 0
+  visit(root, () => {
+    n++
+  })
+  return n
+}
