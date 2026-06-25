@@ -40,8 +40,8 @@ import type {
   ValidationInput,
   ValidationError,
 } from '../entity-compiler.js'
-import { extractHeadingContexts, findH1 } from '../extract-headings.js'
-import { extractListFields, getScalar, type ListField } from '../extract-list-fields.js'
+import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
+import { extractListFields, getScalar, type ListField } from '../../md-pipeline/utils.js'
 import type { List } from 'mdast'
 import type { IntentEntityType } from '../pipeline.js'
 
@@ -190,11 +190,11 @@ export class ProofCompiler implements EntityCompiler {
           const type: VerdictType = rawType && isValidVerdictType(rawType) ? rawType : 'inconclusive'
 
           // artifact 解析：优先 H4 sub-section（兼容老 form），其次 `artifact_*:` 展平字段
-          const artifactFromH4 = extractArtifactFromH4Sections(ctx.h4Sections)
+          const artifactFromH4 = extractArtifactFromH4Sections(ctx.h4Sections ?? [])
           const artifact = artifactFromH4.length > 0 ? artifactFromH4 : extractArtifactFromFields(fields)
 
           // value / note：优先 H4 note（兼容老 form），其次 `- value:` 字段
-          const valueText = extractNoteText(ctx.h4Sections) ?? getScalar(fields, 'value') ?? ''
+          const valueText = extractNoteText(ctx.h4Sections ?? []) ?? getScalar(fields, 'value') ?? ''
 
           verdicts.push({
             name: stripVerdictStateFromTitle(ctx.h3),
@@ -411,11 +411,11 @@ function extractArtifactFromFields(fields: ListField[]): ListField[] {
     if (f.key === 'type' || f.key === 'value' || f.key === 'note') continue
     // v0.3.0 canonical: artifact_<key>: → 去掉前缀
     if (f.key.startsWith('artifact_')) {
-      artifact.push({ key: f.key.slice('artifact_'.length), value: f.value })
+      artifact.push({ key: f.key.slice('artifact_'.length), value: f.value, raw: f.raw })
       continue
     }
     // 老格式无前缀：把非 type/value/note 字段也纳入 artifact（向后兼容）
-    artifact.push(f)
+    artifact.push({ ...f })
   }
   return artifact
 }

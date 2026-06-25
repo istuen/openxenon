@@ -20,8 +20,9 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { runMdPipeline } from '../src/oxl/md-bridge/pipeline.js'
-import { extractHeadingContexts } from '../src/oxl/md-bridge/extract-headings.js'
-import { extractListFields } from '../src/oxl/md-bridge/extract-list-fields.js'
+// v0.4 PR-C4: extract-* 已删除, 改用 md-pipeline/utils 别名
+import { extractHeadingContexts } from '../src/oxl/md-pipeline/utils.js'
+import { extractListFields } from '../src/oxl/md-pipeline/utils.js'
 
 interface Violation {
   file: string

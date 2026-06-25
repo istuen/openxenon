@@ -1,24 +1,23 @@
 /**
- * md-bridge 内部 barrel（v0.3 阶段 1+2）
+ * md-bridge 内部 barrel (v0.3 阶段 1+2, v0.4 PR-C4 收口中)
  *
  * 阶段：v0.3.0 Step 1.2 + 阶段 1 + 阶段 2
- * 角色：md-bridge 子目录统一出口
+ * 角色：md-bridge 子目录统一出口 (兼容期, v0.5 完全切到 md-pipeline)
  *
- * 关键导出：
- * - MdastOxlDriver：mdast 驱动的 OXL 入口
- * - driverRegistry：driver 注册表
- * - Pipeline / Validator / mdast-to-kernel：阶段 1 核心
- * - source-hash / compiler / adapter：阶段 2 双轨制
+ * v0.4 PR-C4 移除:
+ * - driverRegistry / getActiveDriver / setActiveDriver → 改用 ../driver.ts
+ *
+ * 关键导出 (compat 期间保留):
+ * - MdastOxlDriver: mdast 驱动的 OXL 入口
+ * - Pipeline / Validator / mdast-to-kernel: 阶段 1 核心
+ * - source-hash / compiler / adapter: 阶段 2 双轨制
  */
 
 export { MdastOxlDriver } from './mdast-oxl-driver.js'
 export type { MdastRoot, MdastNode } from './mdast-oxl-driver.js'
 
-export {
-  driverRegistry,
-  getActiveDriver,
-  setActiveDriver,
-} from './driver-registry.js'
+// v0.4 PR-C4: driverRegistry 已迁出 → ../../../driver.ts
+// compat: import { getActiveDriver, setActiveDriver } from '../driver.js'
 
 // Pipeline
 export { runMdPipeline } from './pipeline.js'

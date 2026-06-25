@@ -25,8 +25,8 @@ import type {
   ValidationInput,
   ValidationError,
 } from '../entity-compiler.js'
-import { extractHeadingContexts, findH1 } from '../extract-headings.js'
-import { extractListFields, getScalar, getArray } from '../extract-list-fields.js'
+import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
+import { extractListFields, getScalar, getArray } from '../../md-pipeline/utils.js'
 import type { IntentEntityType } from '../pipeline.js'
 import type { List } from 'mdast'
 

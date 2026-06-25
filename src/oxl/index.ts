@@ -84,12 +84,9 @@ export type {
   OxlAstElement,
 } from './contracts/oxl-driver'
 
-export {
-  driverRegistry,
-  getActiveDriver,
-  setActiveDriver,
-  MdastOxlDriver,
-} from './md-bridge'
+// v0.4 PR-C4: driverRegistry 迁出 md-bridge → driver.ts
+// compat: import { getActiveDriver, setActiveDriver } from './driver.js'
+export { MdastOxlDriver } from './md-bridge'
 export { LangiumOxlDriver } from './langium-driver/langium-oxl-driver'
 
 // --- AST types (v0.1-final grammar) ---

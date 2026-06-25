@@ -1,9 +1,8 @@
 /**
- * md-pipeline/index.ts — v0.4 PR-C1 unified-native 入口
+ * md-pipeline/index.ts — v0.4 PR-C1/C2/C3 unified-native 统一出口
  *
  * 角色：unified pipeline 编排 (把 md 字符串 → mdast → 处理 → 序列化)
  *   取代 src/oxl/md-bridge/pipeline.ts (hybrid unified + 自研)
- *   新文件 src/oxl/md-pipeline/index.ts (纯 unified-native)
  *
  * 关键不变量：
  *   - 不感知 fs (只接收 content 字符串)
@@ -15,12 +14,13 @@
  *   - 不 import L0-Processor / L1-Infra / L2-Work / L3
  *
  * 迁移路径 (RFC §4 PR-C 序列)：
- *   - PR-C1 (本 PR): 基建 + utils.ts + 5 utility functions
- *   - PR-C2: 5 EntityCompilers → 5 unified transformer plugins
- *   - PR-C3: mdast-validator → remark-canonical plugin
- *   - PR-C4: 收口 — 删 driver-registry / extract-* / oxl-md-* + 切到 work.md
+ *   - PR-C1: 基建 + utils.ts + utility functions ✓
+ *   - PR-C2: 5 EntityCompilers → 5 unified transformer plugins ✓
+ *   - PR-C3: mdast-validator → remark-canonical plugin ✓
+ *   - PR-C4: 收口 — 删 driver-registry / extract-* / 切到 work.md ✓
  */
 
+// --- utils (PR-C1) ---
 export {
   collectHeadings,
   findFirstHeading,
@@ -29,7 +29,64 @@ export {
   parseMarkdown,
   stringifyMarkdown,
   countNodes,
+  extractYamlFromTree,
+  // compat aliases (PR-C4 兼容 md-bridge 自研层 5 compilers)
+  extractHeadingContexts as extractHeadingContexts,
+  findH1 as findH1,
+  extractListFields as extractListFields,
   type CollectedHeading,
   type HeadingContext,
   type ListField,
 } from './utils'
+
+// --- transformers (PR-C2) ---
+export {
+  extractDomainIR,
+  extractBlueprintIR,
+  extractWorkIR,
+  extractTaskIR,
+  extractProofIR,
+  remarkDomainExtractor,
+  remarkBlueprintExtractor,
+  remarkWorkExtractor,
+  remarkTaskExtractor,
+  remarkProofExtractor,
+  DOMAIN_CATEGORIES,
+  BLUEPRINT_CATEGORIES,
+  WORK_CATEGORIES,
+  TASK_CATEGORIES,
+  type DomainCategory,
+  type DomainIR,
+  type DomainTerm,
+  type DomainBan,
+  type DomainInvariant,
+  type DomainStackEntry,
+  type BlueprintCategory,
+  type BlueprintIR,
+  type BlueprintProp,
+  type BlueprintSlot,
+  type WorkCategory,
+  type WorkIR,
+  type WorkContext,
+  type WorkTaskIR,
+  type WorkPart,
+  type TaskCategory,
+  type TaskIR,
+  type TaskPart,
+  type TaskProbe,
+  type ProofIR,
+  type ProofProbeIR,
+} from './transformers'
+
+// --- plugins (PR-C3) ---
+export {
+  remarkCanonical,
+  validateCanonical,
+  ENTITY_H2_WHITELIST,
+  VALID_ENTITIES,
+  VALID_STATUS,
+  type CanonicalErrorCode,
+  type CanonicalIssue,
+  type CanonicalResult,
+  type RemarkCanonicalOptions,
+} from './plugins/remark-canonical'

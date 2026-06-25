@@ -24,8 +24,8 @@ import type { CompiledBlueprint, CompiledPart, CompiledProbe, XenonMeta } from '
 import { runMdPipeline, type PipelineOutput } from './pipeline.js'
 import { parseDomainMd, parseBlueprintMd, parseWorkMd } from './remark-to-mdast.js'
 import { validateMdast } from './mdast-validator.js'
-import { extractHeadingContexts } from './extract-headings.js'
-import { extractListFields } from './extract-list-fields.js'
+import { extractHeadingContexts } from '../md-pipeline/utils.js'
+import { extractListFields } from '../md-pipeline/utils.js'
 
 // ========================
 // 类型

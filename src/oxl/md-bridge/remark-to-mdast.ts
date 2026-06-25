@@ -16,8 +16,8 @@
 
 import type { Root, Heading } from 'mdast'
 import { runMdPipeline, type PipelineInput, type PipelineOutput, type IntentBlock } from './pipeline.js'
-import { extractHeadingContexts } from './extract-headings.js'
-import { extractListFields } from './extract-list-fields.js'
+import { extractHeadingContexts, type HeadingContext } from '../md-pipeline/utils.js'
+import { extractListFields } from '../md-pipeline/utils.js'
 
 // ========================
 // 类型
@@ -138,14 +138,14 @@ export function parseDomainMd(content: string, filePath?: string): DomainParseRe
   const contexts = extractHeadingContexts(result.mdast)
   const blocks = {
     terms: contexts
-      .filter((c) => c.h2 === 'Terms' && c.h3 && c.h3List && !c.h3List.ordered)
-      .map((c) => h3ContextToIntentBlock(c, 'term')),
+      .filter((c: HeadingContext) => c.h2 === 'Terms' && c.h3 && c.h3List && !c.h3List.ordered)
+      .map((c: HeadingContext) => h3ContextToIntentBlock(c, 'term')),
     bans: contexts
-      .filter((c) => c.h2 === 'Bans' && c.h3 && c.h3List && !c.h3List.ordered)
-      .map((c) => h3ContextToIntentBlock(c, 'ban')),
+      .filter((c: HeadingContext) => c.h2 === 'Bans' && c.h3 && c.h3List && !c.h3List.ordered)
+      .map((c: HeadingContext) => h3ContextToIntentBlock(c, 'ban')),
     invariants: contexts
-      .filter((c) => c.h2 === 'Invariants' && c.h3 && c.h3List && !c.h3List.ordered)
-      .map((c) => h3ContextToIntentBlock(c, 'invariant')),
+      .filter((c: HeadingContext) => c.h2 === 'Invariants' && c.h3 && c.h3List && !c.h3List.ordered)
+      .map((c: HeadingContext) => h3ContextToIntentBlock(c, 'invariant')),
   }
 
   return {
@@ -198,15 +198,15 @@ export function parseBlueprintMd(content: string, filePath?: string): BlueprintP
   // v0.3.0 canonical: 从 H3 列表读 prop/slot/probe
   const contexts = extractHeadingContexts(result.mdast)
   const props = contexts
-    .filter((c) => c.h2 === 'Props' && c.h3 && c.h3List && !c.h3List.ordered)
-    .map((c) => h3ContextToIntentBlock(c, 'prop'))
+    .filter((c: HeadingContext) => c.h2 === 'Props' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c: HeadingContext) => h3ContextToIntentBlock(c, 'prop'))
   const slots = contexts
-    .filter((c) => c.h2 === 'Slots' && c.h3 && c.h3List && !c.h3List.ordered)
-    .map((c) => h3ContextToIntentBlock(c, 'slot'))
+    .filter((c: HeadingContext) => c.h2 === 'Slots' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c: HeadingContext) => h3ContextToIntentBlock(c, 'slot'))
   // probes 内联在 part 内（canonical 形式），不在独立 ## Probes；保留 empty 数组向后兼容
   const probes = contexts
-    .filter((c) => c.h2 === 'Probes' && c.h3 && c.h3List && !c.h3List.ordered)
-    .map((c) => h3ContextToIntentBlock(c, 'probe'))
+    .filter((c: HeadingContext) => c.h2 === 'Probes' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c: HeadingContext) => h3ContextToIntentBlock(c, 'probe'))
 
   return {
     name,
@@ -257,11 +257,11 @@ export function parseWorkMd(content: string, filePath?: string): WorkParseResult
   // v0.3.0 canonical: 从 H3 列表读 context/task
   const contexts = extractHeadingContexts(result.mdast)
   const ctxBlocks = contexts
-    .filter((c) => c.h2 === 'Context' && c.h3 && c.h3List && !c.h3List.ordered)
-    .map((c) => h3ContextToIntentBlock(c, 'context'))
+    .filter((c: HeadingContext) => c.h2 === 'Context' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c: HeadingContext) => h3ContextToIntentBlock(c, 'context'))
   const tasks = contexts
-    .filter((c) => c.h2 === 'Tasks' && c.h3 && c.h3List && !c.h3List.ordered)
-    .map((c) => h3ContextToIntentBlock(c, 'task'))
+    .filter((c: HeadingContext) => c.h2 === 'Tasks' && c.h3 && c.h3List && !c.h3List.ordered)
+    .map((c: HeadingContext) => h3ContextToIntentBlock(c, 'task'))
 
   return {
     name,

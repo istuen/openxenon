@@ -22,8 +22,8 @@
  */
 
 import { runMdPipeline, type PipelineOutput } from './pipeline.js'
-import { extractHeadingContexts } from './extract-headings.js'
-import { extractListFields } from './extract-list-fields.js'
+import { extractHeadingContexts } from '../md-pipeline/utils.js'
+import { extractListFields } from '../md-pipeline/utils.js'
 
 // ========================
 // 错误类型

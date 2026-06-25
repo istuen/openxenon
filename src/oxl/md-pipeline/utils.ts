@@ -78,7 +78,9 @@ export interface HeadingContext {
   h2: string | null
   h3: string | null
   h3List: List | null
-  h3Position?: { line: number; column: number }
+  h3Position: { line: number; column: number } | null
+  /** 兼容字段：H3 下的 H4 子章节 (旧 extractHeadingContexts API) */
+  h4Sections?: Array<{ title: string; list: List | null }>
 }
 
 export function collectHeadingContexts(root: Root): HeadingContext[] {
@@ -95,11 +97,31 @@ export function collectHeadingContexts(root: Root): HeadingContext[] {
       if (h.depth === 2) {
         currentH2 = text
       } else if (h.depth === 3 && currentH2) {
+        // 检测后续 H4 节点（兼容旧 API）
+        const h4Sections: Array<{ title: string; list: List | null }> = []
+        for (let j = root.children.indexOf(child) + 1; j < root.children.length; j++) {
+          const next = root.children[j]!
+          if (next.type === 'heading') {
+            const nh = next as Heading
+            if (nh.depth < 4) break // 遇到更浅的 heading 退出
+            if (nh.depth === 4) {
+              const title = (nh.children ?? [])
+                .filter((c): c is Text => c.type === 'text')
+                .map((c) => c.value)
+                .join('')
+              h4Sections.push({ title, list: null })
+            }
+          } else if (next.type === 'list' && h4Sections.length > 0) {
+            h4Sections[h4Sections.length - 1]!.list = next as List
+            
+          }
+        }
         contexts.push({
           h2: currentH2,
           h3: text,
           h3List: null,
-          h3Position: h.position?.start,
+          h3Position: h.position?.start ?? null,
+          h4Sections: h4Sections.length > 0 ? h4Sections : undefined,
         })
       }
     } else if (child.type === 'list' && contexts.length > 0 && !contexts[contexts.length - 1]!.h3List) {
@@ -127,6 +149,27 @@ export interface ListField {
   key: string
   value: string | string[] | null
   raw: string
+}
+
+/** 从 fields 数组取单个 string 值 (compat: 取代 extract-list-fields.ts 的 getScalar) */
+export function getScalar(fields: ListField[], key: string): string | null {
+  const f = fields.find((x) => x.key === key)
+  if (!f) return null
+  if (typeof f.value === 'string') return f.value
+  if (Array.isArray(f.value)) return f.value.join(', ')
+  return null
+}
+
+/** 从 fields 数组取 array 值 (compat: 取代 extract-list-fields.ts 的 getArray) */
+export function getArray(fields: ListField[], key: string): string[] {
+  const f = fields.find((x) => x.key === key)
+  if (!f) return []
+  // 只有当 value 是 string[] (数组) 且首项是 string 时才返回
+  // 否则返回 [] (保持旧 API 行为, e.g. "- deps: []" → deps=[])
+  if (Array.isArray(f.value) && f.value.length > 0 && typeof f.value[0] === 'string') {
+    return f.value as string[]
+  }
+  return []
 }
 
 export function collectListFields(list: List): ListField[] {
@@ -229,4 +272,40 @@ export function countNodes(root: Root): number {
     n++
   })
   return n
+}
+
+// =============================================================================
+// v0.4 PR-C4: 兼容别名 (compat aliases for self-developed md-bridge layer)
+// =============================================================================
+//
+// 这些函数被 5 compilers (work/task/domain/blueprint/proof) 调用.
+// PR-C4 把 extract-headings.ts / extract-list-fields.ts 删掉后,
+// 这 2 个别名让 5 compilers 无需改 import 路径即可继续工作.
+// 旧 md-bridge mdast-to-kernel.ts / mdast-validator.ts 也用这些别名.
+
+/** @deprecated use collectHeadingContexts instead */
+export const extractHeadingContexts = collectHeadingContexts
+/** @deprecated use collectListFields instead */
+export const extractListFields = collectListFields
+
+/**
+ * @deprecated use findFirstHeading instead
+ * 提供旧 API 兼容: { entity, name, text, position: { line, column } }
+ * 新 findFirstHeading 返回 { depth, text, position: mdast.Position, children }
+ */
+export function findH1(root: Root, depth: 1 | 2 | 3 | 4 | 5 | 6 = 1): {
+  entity: string | null
+  name: string | null
+  text: string
+  position: { line: number; column: number } | null
+} | null {
+  const h = findFirstHeading(root, depth)
+  if (!h) return null
+  const m = h.text.match(/^(\w+):\s*(.+)$/)
+  return {
+    entity: m ? m[1]! : null,
+    name: m ? m[2]!.trim() : null,
+    text: h.text,
+    position: h.position?.start ?? null,
+  }
 }
