@@ -1,24 +1,40 @@
 // =============================================================================
-// `oxn insight` — Proof → Intent 结构化反馈（v0.1.2）
+// `oxn insight` — Proof → Intent 结构化反馈（v0.1.2 + v0.5 PR-B）
 //
-// 读 frozen.json（本次判决）+ probe-stats.json（跨 proof 历史）→ 产出 Insight。
-// 不混入策略：emergentPatterns 是原始数据，AI 自己推导结论。
+// 两种模式（互斥）：
+//   1. 单 proof 模式（默认）：
+//      `oxn insight <proof>`
+//      读 frozen.json（本次判决）+ probe-stats.json（跨 proof 历史）→ 产出 Insight
+//      不混入策略：emergentPatterns 是原始数据，AI 自己推导结论。
+//
+//   2. 跨 proof 模式（v0.5 PR-B 新增）：
+//      `oxn insight --cross-proof`
+//      主动扫描 proofs/*/frozen.json 全集 → 产出 CrossProofInsight
+//      4 维分析：trendMatrix / correlationMatrix / trends / probeEffectiveness
 //
 // 编排仅在 L3：
 //   1. 构造 statsPath（避免 L1 直接导入 kernel/constants 引发 §4.1 违规）
-//   2. 调 L1 readInsightInputs（IO + schema 校验）
-//   3. 调 L0 computeInsightFromInputs（纯函数）
+//   2. 调 L1 readInsightInputs / scanFrozenProofs（IO + schema 校验）
+//   3. 调 L0 computeInsightFromInputs / computeCrossProofInsightFromInputs（纯函数）
 //   4. 调 output 输出 JSON / YAML / human
 // =============================================================================
 
 import { defineCommand } from 'citty'
 import { join } from 'path'
 import { t } from '../infra/i18n'
-import { BOUNDARY_DIR, CACHE_DIR, PROBE_STATS_JSON } from '../kernel/index'
+import {
+  BOUNDARY_DIR,
+  CACHE_DIR,
+  PROBE_STATS_JSON,
+  computeCrossProofInsightFromInputs,
+  computeInsightFromInputs,
+  type CrossProofFilter,
+  type CrossProofInsight,
+  type Insight,
+} from '../kernel/index'
 import { readInsightInputs } from '../infra/probes/insight-collector'
-import { computeInsightFromInputs } from '../kernel/index'
-import { getFormatFromArgs, output, outputUserInputError } from './output'
-import type { Insight } from '../kernel/index'
+import { scanFrozenProofs } from '../infra/insight/cross-proof-scanner'
+import { getFormatFromArgs, output, outputUserInputError, type OutputFormat } from './output'
 
 function getProjectRoot(): string {
   return process.cwd()
@@ -26,6 +42,39 @@ function getProjectRoot(): string {
 
 function getProbeStatsPath(): string {
   return join(getProjectRoot(), BOUNDARY_DIR, CACHE_DIR, PROBE_STATS_JSON)
+}
+
+/**
+ * 跨 proof 模式的过滤参数（CLI args → CrossProofFilter）
+ * 注：citty 把 --key 转换为 ctx.args.key（去掉前导 --，kebab 保持）
+ */
+interface CrossProofCliArgs {
+  since?: string
+  proofs?: string
+  'probe-types'?: string
+  limit?: string
+}
+
+function parseCrossProofArgs(args: CrossProofCliArgs): CrossProofFilter & { limit?: number } {
+  const filter: CrossProofFilter & { limit?: number } = {}
+  if (args.since) filter.since = args.since
+  if (args.proofs) {
+    filter.proofIds = args.proofs
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
+  if (args['probe-types']) {
+    const types = args['probe-types']
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    if (types.length > 0) {
+      ;(filter as CrossProofFilter & { probeTypes?: string[] }).probeTypes = types
+    }
+  }
+  if (args.limit) filter.limit = Number.parseInt(args.limit, 10)
+  return filter
 }
 
 export default defineCommand({
@@ -36,45 +85,131 @@ export default defineCommand({
   args: {
     proof: {
       type: 'string',
-      required: true,
       description: t('insight.proof'),
+    },
+    '--cross-proof': {
+      type: 'boolean',
+      description: 'v0.5 PR-B: 跨多 proof 趋势分析（不需指定 proof）',
+    },
+    '--since': {
+      type: 'string',
+      description: '仅扫描 runAt >= 此 ISO 时间（仅 --cross-proof 模式）',
+    },
+    '--proofs': {
+      type: 'string',
+      description: '逗号分隔的 proofId 列表（仅 --cross-proof 模式）',
+    },
+    '--probe-types': {
+      type: 'string',
+      description: '逗号分隔的 probeType 列表（仅 --cross-proof 模式）',
+    },
+    '--limit': {
+      type: 'string',
+      description: '最多扫描的 proof 数（仅 --cross-proof 模式）',
     },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const proofName = ctx.args.proof as string
+    // citty strips leading "--" from args key (so ctx.args["cross-proof"] not ctx.args["--cross-proof"])
+    const crossProof = ctx.args['cross-proof'] === true
 
-    // 1. 编排：L3 计算 statsPath（避免 L1 → kernel/constants 违规）
-    const projectRoot = getProjectRoot()
-    const statsPath = getProbeStatsPath()
-
-    // 2. L1 IO
-    const inputs = readInsightInputs(projectRoot, proofName, statsPath)
-    if ('error' in inputs) {
-      return outputUserInputError('OXN_INSIGHT_INPUT_MISSING', inputs.error, {
-        suggestion: 'Run `oxn proof run <name>` first, then retry.',
-        format,
-      })
+    if (crossProof) {
+      return runCrossProofMode(ctx.args as CrossProofCliArgs, format)
     }
-
-    // 3. L0 纯函数计算
-    const insight = computeInsightFromInputs(projectRoot, proofName, inputs.frozen, inputs.stats)
-
-    // 4. 输出
-    output(
-      {
-        ok: true,
-        data: insight,
-        human: renderInsightHuman(insight),
-      },
-      format,
-    )
+    return runSingleProofMode(ctx.args.proof as string | undefined, format)
   },
 })
 
-/** Human 渲染（控制台友好版） */
+async function runSingleProofMode(proofName: string | undefined, format: OutputFormat) {
+  if (!proofName) {
+    return outputUserInputError(
+      'OXN_INSIGHT_INPUT_MISSING',
+      'proof name required (or use --cross-proof for cross-proof mode)',
+      { suggestion: 'Use `oxn insight <proof>` or `oxn insight --cross-proof`.', format },
+    )
+  }
+
+  // 1. 编排：L3 计算 statsPath
+  const projectRoot = getProjectRoot()
+  const statsPath = getProbeStatsPath()
+
+  // 2. L1 IO
+  const inputs = readInsightInputs(projectRoot, proofName, statsPath)
+  if ('error' in inputs) {
+    return outputUserInputError('OXN_INSIGHT_INPUT_MISSING', inputs.error, {
+      suggestion: 'Run `oxn proof run <name>` first, then retry.',
+      format,
+    })
+  }
+
+  // 3. L0 纯函数计算
+  const insight = computeInsightFromInputs(projectRoot, proofName, inputs.frozen, inputs.stats)
+
+  // 4. 输出
+  output(
+    {
+      ok: true,
+      data: insight,
+      human: renderInsightHuman(insight),
+    },
+    format,
+  )
+}
+
+async function runCrossProofMode(args: CrossProofCliArgs, format: OutputFormat) {
+  // 1. 编排
+  const projectRoot = getProjectRoot()
+  const filter = parseCrossProofArgs(args)
+
+  // 2. L1 IO：扫描全部 frozen.json
+  const scanResult = scanFrozenProofs(projectRoot, filter)
+  if (!scanResult.ok) {
+    return outputUserInputError('OXN_INSIGHT_INPUT_MISSING', scanResult.reason ?? 'scan failed', {
+      suggestion: 'Run at least one `oxn proof run <name>` first.',
+      format,
+    })
+  }
+
+  if (scanResult.frozen.length === 0) {
+    return outputUserInputError(
+      'OXN_INSIGHT_NO_PROOFS',
+      `no frozen proofs found under ${join(projectRoot, '.openxenon', 'proofs')}`,
+      {
+        suggestion:
+          scanResult.skipped.length > 0
+            ? `Found ${scanResult.skipped.length} skipped (in-progress / failed). Run \`oxn proof run <name>\` to complete them.`
+            : 'Run `oxn proof run <name>` first.',
+        format,
+      },
+    )
+  }
+
+  // 3. L1 limit（裁剪最旧的）
+  const limitedFrozen =
+    filter.limit && filter.limit > 0 && scanResult.frozen.length > filter.limit
+      ? scanResult.frozen.slice(scanResult.frozen.length - filter.limit)
+      : scanResult.frozen
+
+  // 4. L0 纯函数计算
+  const insight = computeCrossProofInsightFromInputs(projectRoot, limitedFrozen, filter)
+
+  // 5. 输出（含 skipped 提示）
+  output(
+    {
+      ok: true,
+      data: {
+        ...insight,
+        skipped: scanResult.skipped,
+      } as unknown as CrossProofInsight & { skipped: typeof scanResult.skipped },
+      human: renderCrossProofHuman(insight, scanResult.skipped),
+    },
+    format,
+  )
+}
+
+/** 单 proof Insight 的 human 渲染（保留原实现） */
 function renderInsightHuman(insight: Insight): string {
   const lines: string[] = []
   lines.push(`=== Insight: ${insight.proofId} (${insight.proof.verdict}) ===`)
@@ -115,6 +250,95 @@ function renderInsightHuman(insight: Insight): string {
     for (const p of insight.emergentPatterns) {
       const targetStr = p.target ? ` → ${p.target}` : ''
       lines.push(`  • [${p.type}] ${p.probeType}${targetStr} (occurrences=${p.occurrences})`)
+    }
+  }
+
+  return lines.join('\n')
+}
+
+/** 跨 proof CrossProofInsight 的 human 渲染 */
+function renderCrossProofHuman(insight: CrossProofInsight, skipped: Array<{ name: string; reason: string }>): string {
+  const lines: string[] = []
+  lines.push(`=== Cross-Proof Insight (${insight.proofCount} proofs) ===`)
+  if (insight.since) lines.push(`Since: ${insight.since}`)
+  lines.push(`Generated at: ${insight.generatedAt}`)
+  if (skipped.length > 0) {
+    lines.push(`Skipped: ${skipped.length} (e.g. ${skipped[0]?.name ?? '?'}: ${skipped[0]?.reason ?? '?'})`)
+  }
+  lines.push('')
+
+  // 维度 4：探针有效性（最优先，决策导向）
+  lines.push(`## Probe Effectiveness (${insight.probeEffectiveness.length} probe types)`)
+  if (insight.probeEffectiveness.length === 0) {
+    lines.push('  (no probe data)')
+  } else {
+    for (const p of insight.probeEffectiveness) {
+      const failPct = (p.failRate * 100).toFixed(1)
+      lines.push(
+        `  ${p.probeType}: ${p.failedProofs}/${p.totalRuns} failed (${failPct}%) [F:${p.failureVerdicts.FAILED}, I:${p.failureVerdicts.INCONCLUSIVE}]`,
+      )
+    }
+  }
+  lines.push('')
+
+  // 维度 3：恶化/改善信号
+  lines.push(`## Trend Signals (${insight.trends.length})`)
+  if (insight.trends.length === 0) {
+    lines.push('  (none detected; need ≥3 runs per (probeType, target))')
+  } else {
+    const icon = (trend: string): string => {
+      switch (trend) {
+        case 'worsening':
+          return '📉'
+        case 'improving':
+          return '📈'
+        case 'volatile':
+          return '🔀'
+        case 'stable-pass':
+          return '✅'
+        case 'stable-fail':
+          return '❌'
+        default:
+          return '⚠️'
+      }
+    }
+    for (const t of insight.trends) {
+      const targetStr = t.target ? ` → ${t.target}` : ''
+      lines.push(
+        `  ${icon(t.trend)} [${t.trend}] ${t.probeType}${targetStr} (latest: ${t.latestVerdict}, streak=${t.currentStreak}, window=${t.windowSize})`,
+      )
+    }
+  }
+  lines.push('')
+
+  // 维度 1：trend matrix（仅显示活跃 top 10）
+  const top10 = insight.trendMatrix.slice(0, 10)
+  lines.push(`## Trend Matrix (top ${top10.length} of ${insight.trendMatrix.length})`)
+  if (top10.length === 0) {
+    lines.push('  (no trend data)')
+  } else {
+    for (const e of top10) {
+      const targetStr = e.target ? ` \`${e.target}\`` : ' (no target)'
+      const seqStr = e.sequence
+        .slice(-5)
+        .map((s) => (s.verdict === 'PASSED' ? '✅' : s.verdict === 'INCONCLUSIVE' ? '⚠️' : '❌'))
+        .join('')
+      lines.push(
+        `  ${e.probeType}${targetStr}: total=${e.total} (P${e.passedCount}/F${e.failedCount}/I${e.inconclusiveCount}) last5=${seqStr}`,
+      )
+    }
+  }
+  lines.push('')
+
+  // 维度 2：关联矩阵（top 5）
+  const top5corr = insight.correlationMatrix.slice(0, 5)
+  lines.push(`## Correlation Matrix (top ${top5corr.length} of ${insight.correlationMatrix.length})`)
+  if (top5corr.length === 0) {
+    lines.push('  (no significant correlations; need ≥2 co-occurrences)')
+  } else {
+    for (const c of top5corr) {
+      const rate = (c.coFailureRate * 100).toFixed(1)
+      lines.push(`  ${c.probeTypeA} ↔ ${c.probeTypeB}: ${c.coOccurrences} co-occur, ${c.coFailures} co-fail (${rate}%)`)
     }
   }
 

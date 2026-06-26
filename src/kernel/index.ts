@@ -61,6 +61,24 @@ export type {
   ProbeTypeStatsView,
 } from './schemas/insight-schema'
 
+export {
+  CrossProofInsightSchema,
+  TrendMatrixEntrySchema,
+  CorrelationPairSchema,
+  TrendTypeSchema,
+  TrendSignalSchema,
+  ProbeEffectivenessSchema,
+  safeValidateCrossProofInsight,
+} from './schemas/cross-proof-insight-schema'
+export type {
+  CrossProofInsight,
+  TrendMatrixEntry,
+  CorrelationPair,
+  TrendType,
+  TrendSignal,
+  ProbeEffectiveness,
+} from './schemas/cross-proof-insight-schema'
+
 export { TokenRecordSchema, safeValidateTokenRecord } from './schemas/token-record.schema'
 export type { TokenRecord } from './schemas/token-record.schema'
 
@@ -195,6 +213,10 @@ export {
   detectEmergentPatterns,
   computeInsightFromInputs,
 } from './verdicts/insight-compute'
+export {
+  computeCrossProofInsightFromInputs,
+  type CrossProofFilter,
+} from './verdicts/cross-proof-compute'
 export { updateProbeStats, initProbeStatsFromFrozen } from './verdicts/probe-stats-updater'
 
 // ───────── 枚举 + 常量（Kernel 自身）─────────
