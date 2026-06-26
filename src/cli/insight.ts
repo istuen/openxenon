@@ -12,6 +12,12 @@
 //      主动扫描 proofs/*/frozen.json 全集 → 产出 CrossProofInsight
 //      4 维分析：trendMatrix / correlationMatrix / trends / probeEffectiveness
 //
+//   3. Pipeline 模式（v0.5 PR-C 新增）：
+//      `oxn insight --pipeline`
+//      关联 domains/ + blueprints/ + works/ + proofs/ 四层资产
+//      产出 PipelineInsight：invariantEffectiveness / coverageGaps / workProofTraces
+//      `oxn insight --pipeline --work <name>` 追踪单个 work 的 IAP 全链
+//
 // 编排仅在 L3：
 //   1. 构造 statsPath（避免 L1 直接导入 kernel/constants 引发 §4.1 违规）
 //   2. 调 L1 readInsightInputs / scanFrozenProofs（IO + schema 校验）
@@ -28,12 +34,15 @@ import {
   PROBE_STATS_JSON,
   computeCrossProofInsightFromInputs,
   computeInsightFromInputs,
+  computePipelineInsightFromInputs,
   type CrossProofFilter,
   type CrossProofInsight,
   type Insight,
+  type PipelineInsight,
 } from '../kernel/index'
 import { readInsightInputs } from '../infra/probes/insight-collector'
 import { scanFrozenProofs } from '../infra/insight/cross-proof-scanner'
+import { scanPipelineInput } from '../infra/insight/pipeline-analyzer'
 import { getFormatFromArgs, output, outputUserInputError, type OutputFormat } from './output'
 
 function getProjectRoot(): string {
@@ -107,6 +116,14 @@ export default defineCommand({
       type: 'string',
       description: '最多扫描的 proof 数（仅 --cross-proof 模式）',
     },
+    '--pipeline': {
+      type: 'boolean',
+      description: 'v0.5 PR-C: Intent→Work→Proof 全链分析（不需指定 proof）',
+    },
+    '--work': {
+      type: 'string',
+      description: '追踪指定 work 的 IAP 全链（仅 --pipeline 模式）',
+    },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
@@ -114,7 +131,11 @@ export default defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     // citty strips leading "--" from args key (so ctx.args["cross-proof"] not ctx.args["--cross-proof"])
     const crossProof = ctx.args['cross-proof'] === true
+    const pipeline = ctx.args['pipeline'] === true
 
+    if (pipeline) {
+      return runPipelineMode(ctx.args as Record<string, unknown>, format)
+    }
     if (crossProof) {
       return runCrossProofMode(ctx.args as CrossProofCliArgs, format)
     }
@@ -339,6 +360,152 @@ function renderCrossProofHuman(insight: CrossProofInsight, skipped: Array<{ name
     for (const c of top5corr) {
       const rate = (c.coFailureRate * 100).toFixed(1)
       lines.push(`  ${c.probeTypeA} ↔ ${c.probeTypeB}: ${c.coOccurrences} co-occur, ${c.coFailures} co-fail (${rate}%)`)
+    }
+  }
+
+  return lines.join('\n')
+}
+
+// ─── Pipeline 模式（v0.5 PR-C） ───────────────────────────────────────────
+
+async function runPipelineMode(args: Record<string, unknown>, format: OutputFormat) {
+  const projectRoot = getProjectRoot()
+  const workFilter = (args['work'] as string | undefined) ?? undefined
+
+  // 1. L1 IO：跨 subsystems 扫描
+  const scanResult = scanPipelineInput(projectRoot)
+
+  if (
+    scanResult.domains.length === 0 &&
+    scanResult.blueprints.length === 0 &&
+    scanResult.works.length === 0 &&
+    scanResult.allFrozenProofs.length === 0
+  ) {
+    return outputUserInputError(
+      'OXN_INSIGHT_NO_DATA',
+      'no domains, blueprints, works, or proofs found in .openxenon/',
+      {
+        suggestion:
+          'Create a domain (`oxn domain create`), blueprint (`oxn blueprint create`), work (`oxn work create`), or run a proof (`oxn proof run`).',
+        format,
+      },
+    )
+  }
+
+  // 2. 转换为 PipelineInput（work filter if given）
+  const filteredWorks = workFilter ? scanResult.works.filter((w) => w.workName === workFilter) : scanResult.works
+
+  // 3. L0 纯函数计算
+  const insight = computePipelineInsightFromInputs({
+    projectRoot,
+    domains: scanResult.domains,
+    blueprints: scanResult.blueprints,
+    works: filteredWorks.map((w) => ({
+      name: w.workName,
+      domainRefs: w.domainRefs,
+      blueprintRefs: w.blueprintRefs,
+      proofs: w.proofIds
+        .map((pid) => {
+          const fp = scanResult.allFrozenProofs.find((p) => p.name === pid)
+          if (!fp) return null
+          return {
+            proofId: fp.name,
+            verdict: fp.verdict,
+            runAt: fp.runAt,
+            probeSummary: fp.probes.map((p) => ({
+              probeType: resolveTypeNameSimple(p.ref),
+              verdict: p.verdict,
+              ...(extractTargetFromProbe(p) !== undefined ? { target: extractTargetFromProbe(p) } : {}),
+            })),
+          }
+        })
+        .filter((x): x is NonNullable<typeof x> => x !== null),
+      traceEventCount: w.traceEventCount,
+    })),
+    allFrozenProofs: scanResult.allFrozenProofs,
+  })
+
+  // 4. 输出
+  output(
+    {
+      ok: true,
+      data: insight,
+      human: renderPipelineHuman(insight),
+    },
+    format,
+  )
+}
+
+function resolveTypeNameSimple(ref: string): string {
+  return ref.replace(/^@oxn\/probes?\//, '') || ref
+}
+
+function extractTargetFromProbe(probe: { output?: unknown }): string | undefined {
+  const output = probe.output
+  if (output === null || output === undefined) return undefined
+  if (typeof output !== 'object') return undefined
+  const obj = output as Record<string, unknown>
+  const candidates = [obj.params, obj.target, obj.path, obj.url, obj.command, obj.file]
+  for (const c of candidates) {
+    if (typeof c === 'string' && c.length > 0) return c
+    if (c && typeof c === 'object') {
+      for (const v of Object.values(c as Record<string, unknown>)) {
+        if (typeof v === 'string' && v.length > 0) return v
+      }
+    }
+  }
+  return undefined
+}
+
+function renderPipelineHuman(insight: PipelineInsight): string {
+  const lines: string[] = []
+  lines.push(
+    `=== Pipeline Insight (${insight.domainCount} domains, ${insight.blueprintCount} blueprints, ${insight.workCount} works, ${insight.proofCount} proofs) ===`,
+  )
+  lines.push('')
+
+  // 维度 1：Invariant Effectiveness
+  lines.push(`## Invariant Effectiveness (${insight.invariantEffectiveness.length})`)
+  if (insight.invariantEffectiveness.length === 0) {
+    lines.push('  (no invariants found)')
+  } else {
+    for (const inv of insight.invariantEffectiveness) {
+      const icon =
+        inv.status === 'critical' ? '❌' : inv.status === 'warning' ? '⚠️' : inv.status === 'unused' ? '💤' : '✅'
+      const rate = (inv.hitRate * 100).toFixed(0)
+      lines.push(`  ${icon} [${inv.status}] ${inv.domainName}: ${inv.invariantText.slice(0, 80)}`)
+      lines.push(`     works=${inv.totalWorks} failed=${inv.failedWorks} proofs=${inv.totalProofs} hitRate=${rate}%`)
+    }
+  }
+  lines.push('')
+
+  // 维度 2：Coverage Gaps
+  lines.push(`## Intent Coverage Gaps (${insight.intentCoverageGaps.length})`)
+  if (insight.intentCoverageGaps.length === 0) {
+    lines.push('  (no blueprints with observe declarations)')
+  } else {
+    for (const gap of insight.intentCoverageGaps) {
+      const rate = (gap.coverageRate * 100).toFixed(0)
+      const missingStr = gap.missing.length > 0 ? ` missing=[${gap.missing.join(', ')}]` : ''
+      lines.push(
+        `  ${gap.source} (${gap.sourceType}): ${gap.actual.length}/${gap.declared.length} covered (${rate}%)${missingStr}`,
+      )
+    }
+  }
+  lines.push('')
+
+  // 维度 3：Work→Proof Traces
+  lines.push(`## Work → Proof Traces (${insight.workProofTraces.length})`)
+  if (insight.workProofTraces.length === 0) {
+    lines.push('  (no works with associated proofs)')
+  } else {
+    for (const trace of insight.workProofTraces) {
+      const proofList =
+        trace.proofs.length > 0 ? trace.proofs.map((p) => `${p.verdict}/${p.proofId}`).join(', ') : '(no proofs)'
+      const domainList = trace.domains.length > 0 ? ` [${trace.domains.join(', ')}]` : ''
+      lines.push(
+        `  ${trace.workName}${domainList}: ${trace.proofs.length} proofs (${proofList}), ${trace.traceEventCount} trace events`,
+      )
     }
   }
 

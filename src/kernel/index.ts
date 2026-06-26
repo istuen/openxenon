@@ -79,6 +79,20 @@ export type {
   ProbeEffectiveness,
 } from './schemas/cross-proof-insight-schema'
 
+export {
+  PipelineInsightSchema,
+  InvariantEffectivenessSchema,
+  IntentCoverageGapSchema,
+  WorkProofTraceSchema,
+  safeValidatePipelineInsight,
+} from './schemas/pipeline-insight-schema'
+export type {
+  PipelineInsight,
+  InvariantEffectiveness,
+  IntentCoverageGap,
+  WorkProofTrace,
+} from './schemas/pipeline-insight-schema'
+
 export { TokenRecordSchema, safeValidateTokenRecord } from './schemas/token-record.schema'
 export type { TokenRecord } from './schemas/token-record.schema'
 
@@ -217,6 +231,13 @@ export {
   computeCrossProofInsightFromInputs,
   type CrossProofFilter,
 } from './verdicts/cross-proof-compute'
+export { computePipelineInsightFromInputs } from './verdicts/pipeline-compute'
+export type {
+  PipelineInput,
+  DomainInput,
+  BlueprintInput,
+  WorkInput,
+} from './verdicts/pipeline-compute'
 export { updateProbeStats, initProbeStatsFromFrozen } from './verdicts/probe-stats-updater'
 
 // ───────── 枚举 + 常量（Kernel 自身）─────────
