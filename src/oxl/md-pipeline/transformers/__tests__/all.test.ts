@@ -79,9 +79,7 @@ describe('v0.4 PR-C2: extractDomainIR', () => {
   })
 
   test('空 domain 返回空数组', () => {
-    const { tree: root, frontmatter } = parseMarkdown(
-      '---\nentity: domain\nname: Empty\n---\n\n# Domain: Empty\n\n',
-    )
+    const { tree: root, frontmatter } = parseMarkdown('---\nentity: domain\nname: Empty\n---\n\n# Domain: Empty\n\n')
     const ir = extractDomainIR(root, frontmatter)
     expect(ir.terms).toEqual([])
     expect(ir.bans).toEqual([])

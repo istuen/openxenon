@@ -165,13 +165,15 @@ export type OxnWorkResourceRef = z.infer<typeof OxnWorkResourceRefSchema>
 export const OxnWorkContextSchema = z.object({
   goal: z.string().optional(),
   constraints: z.array(z.string()).default([]),
-  loopPolicy: z
-    .object({
-      maxIterations: z.number().int().min(1).default(3),
-    })
-    .optional(),
 })
 export type OxnWorkContext = z.infer<typeof OxnWorkContextSchema>
+
+/** v0.4.1: loopPolicy 移出 WorkContext, 独立 work-level */
+export const OxnWorkLoopPolicySchema = z
+  .object({
+    maxIterations: z.number().int().min(1).default(3),
+  })
+  .optional()
 
 /** Task 内 Part 声明 */
 export const OxnTaskPartDeclSchema = z.object({
@@ -195,6 +197,7 @@ export type OxnTaskIR = z.infer<typeof OxnTaskIRSchema>
 export const OxnWorkIRSchema = z.object({
   name: z.string().min(1),
   context: OxnWorkContextSchema.optional(),
+  loopPolicy: OxnWorkLoopPolicySchema,
   domains: z.array(OxnWorkResourceRefSchema).default([]),
   blueprints: z.array(OxnWorkResourceRefSchema).default([]),
   parts: z.array(OxnWorkResourceRefSchema).default([]),

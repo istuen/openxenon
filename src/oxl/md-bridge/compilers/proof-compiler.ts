@@ -69,7 +69,7 @@ export class ProofCompiler implements EntityCompiler {
       runtime?: { observedAt?: string; probesRun?: number; probesPassed?: number; probesInconclusive?: number }
     }
 
-    if (!decl || decl.$type !== 'ProofDeclaration') {
+    if (decl?.$type !== 'ProofDeclaration') {
       throw new Error(`ProofCompiler.compile: expected ProofDeclaration, got ${decl?.$type}`)
     }
 
@@ -127,11 +127,10 @@ export class ProofCompiler implements EntityCompiler {
       sections.push('')
     }
 
-    const md =
-      sections
-        .join('\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trimEnd() + '\n'
+    const md = `${sections
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trimEnd()}\n`
 
     return { md, name, warnings }
   }

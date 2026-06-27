@@ -77,7 +77,8 @@ export function extractBlueprintIR(root: Root, frontmatter: Record<string, unkno
   return {
     entity: 'blueprint',
     name: typeof frontmatter.name === 'string' ? frontmatter.name : '',
-    version: typeof frontmatter.version === 'string' ? frontmatter.version : '0.1.0',
+    // v0.4.1: version 可能为 number (来自 frontmatter 解析) 或 string
+    version: frontmatter.version !== undefined && frontmatter.version !== null ? String(frontmatter.version) : '0.1.0',
     description,
     props,
     slots,
@@ -158,5 +159,3 @@ export function remarkBlueprintExtractor(): (tree: Root) => void {
     ;(tree.data as Record<string, unknown>).blueprint = extractBlueprintIR(tree, frontmatter)
   }
 }
-
-

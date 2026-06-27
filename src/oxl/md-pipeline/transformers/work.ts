@@ -9,7 +9,7 @@ import { collectHeadingContexts, collectListFields, type ListField, extractYamlF
 // Work H2 分类白名单
 // ========================
 
-export const WORK_CATEGORIES = ['Context', 'Tasks'] as const
+export const WORK_CATEGORIES = ['Context', 'LoopPolicy', 'Refs', 'Tasks'] as const
 export type WorkCategory = (typeof WORK_CATEGORIES)[number]
 
 // ========================
@@ -35,14 +35,27 @@ export interface WorkTaskIR {
   parts: WorkPart[]
 }
 
+/** v0.4 Phase 2: work-level domain/blueprint ref (H3 under ## Refs) */
+export interface WorkRef {
+  /** domain | blueprint */
+  kind: 'domain' | 'blueprint'
+  /** ref 逻辑名 (= H3 文本) */
+  name: string
+  /** 完整 URI 引用 (如 @prj/domains/X) */
+  ref: string
+  /** 可选别名 */
+  alias: string | null
+}
+
 export interface WorkIR {
   entity: 'work'
   name: string
   version: string
   context: WorkContext
+  refs: WorkRef[]
   tasks: WorkTaskIR[]
   proofs: string[] // v0.3 T11 grammar: work 内显式声明要跑的 Proof
-  _counters: { taskIdx: number }
+  _counters: { refIdx: number; taskIdx: number }
 }
 
 // ========================
@@ -53,7 +66,9 @@ export function extractWorkIR(root: Root, frontmatter: Record<string, unknown> =
   const contexts = collectHeadingContexts(root)
 
   const context: WorkContext = { goal: '', maxIterations: 3, constraints: [] }
+  const refs: WorkRef[] = []
   const tasks: WorkTaskIR[] = []
+  let refIdx = 0
   let taskIdx = 0
 
   for (const ctx of contexts) {
@@ -66,6 +81,23 @@ export function extractWorkIR(root: Root, frontmatter: Record<string, unknown> =
         const fields = collectListFields(ctx.h3List)
         populateContextFromFields(context, fields)
       }
+    } else if (ctx.h2 === 'LoopPolicy') {
+      // v0.4.1: LoopPolicy 移出 WorkContext, 独立 H2
+      if (ctx.h3 === 'primary' && ctx.h3List) {
+        const fields = collectListFields(ctx.h3List)
+        const maxIterField = fields.find((f) => f.key === 'max_iterations')
+        if (typeof maxIterField?.value === 'string') {
+          context.maxIterations = Number(maxIterField.value) || 3
+        }
+      }
+    } else if (ctx.h2 === 'Refs' && ctx.h3) {
+      // H3 = ref 名 (如 IntentAlignContext), list 字段 = ref 属性
+      const fields = ctx.h3List ? collectListFields(ctx.h3List) : []
+      const ref = extractRefFromFields(ctx.h3, fields)
+      if (ref) {
+        refIdx++
+        refs.push(ref)
+      }
     } else if (ctx.h2 === 'Tasks' && ctx.h3) {
       taskIdx++
       const fields = ctx.h3List ? collectListFields(ctx.h3List) : []
@@ -76,11 +108,12 @@ export function extractWorkIR(root: Root, frontmatter: Record<string, unknown> =
   return {
     entity: 'work',
     name: typeof frontmatter.name === 'string' ? frontmatter.name : '',
-    version: typeof frontmatter.version === 'string' ? frontmatter.version : '0.3.0',
+    version: frontmatter.version !== undefined && frontmatter.version !== null ? String(frontmatter.version) : '0.3.0',
     context,
+    refs,
     tasks,
     proofs: extractProofsFromTree(root),
-    _counters: { taskIdx },
+    _counters: { refIdx, taskIdx },
   }
 }
 
@@ -92,6 +125,32 @@ function populateContextFromFields(context: WorkContext, fields: ListField[]): v
     } else if (f.key === 'constraints' && Array.isArray(f.value)) {
       context.constraints = f.value as string[]
     }
+  }
+}
+
+/**
+ * 从 H3 list 字段抽取 ref (kind / ref URI / alias)
+ * 例:
+ *   ### IntentAlignContext
+ *   - kind: domain
+ *   - ref: @prj/domains/intent-align-context
+ */
+function extractRefFromFields(name: string, fields: ListField[]): WorkRef | null {
+  const kindField = fields.find((f) => f.key === 'kind' && typeof f.value === 'string')
+  const refField = fields.find((f) => f.key === 'ref' && typeof f.value === 'string')
+  const aliasField = fields.find((f) => f.key === 'alias' && typeof f.value === 'string')
+
+  const kind = kindField?.value
+  const refUri = refField?.value
+  if (kind !== 'domain' && kind !== 'blueprint') return null
+  if (typeof refUri !== 'string') return null
+
+  const alias = typeof aliasField?.value === 'string' ? aliasField.value : null
+  return {
+    kind,
+    name,
+    ref: refUri,
+    alias,
   }
 }
 
@@ -193,5 +252,3 @@ export function remarkWorkExtractor(): (tree: Root) => void {
     ;(tree.data as Record<string, unknown>).work = extractWorkIR(tree, frontmatter)
   }
 }
-
-

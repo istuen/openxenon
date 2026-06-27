@@ -123,5 +123,3 @@ export function remarkTaskExtractor(): (tree: Root) => void {
     ;(tree.data as Record<string, unknown>).task = extractTaskIR(tree, frontmatter)
   }
 }
-
-

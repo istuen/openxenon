@@ -616,10 +616,7 @@ describe('v0.4 PR-B Q4-A: verifyWorkHash', () => {
     mkdirSync(proofDir, { recursive: true })
     writeFileSync(join(workDir, 'work.oxn'), '# content\n')
     proofOxnPath = join(proofDir, 'proof.oxn')
-    writeFileSync(
-      proofOxnPath,
-      ['// proofs-target-work: ../../works/foo/work.oxn', 'proof "foo" { }'].join('\n'),
-    )
+    writeFileSync(proofOxnPath, ['// proofs-target-work: ../../works/foo/work.oxn', 'proof "foo" { }'].join('\n'))
   })
 
   afterEach(() => {

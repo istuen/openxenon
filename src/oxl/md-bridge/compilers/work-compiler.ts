@@ -46,6 +46,8 @@ export class WorkCompiler implements EntityCompiler {
       $type?: string
       name?: string
       context?: { goal?: string; loopPolicy?: { maxIterations?: number }; constraints?: string[] }
+      domains?: Array<{ name?: string; ref?: string; alias?: string }>
+      blueprints?: Array<{ name?: string; ref?: string; alias?: string }>
       tasks?: Array<{
         name: string
         body?: Array<{
@@ -59,7 +61,7 @@ export class WorkCompiler implements EntityCompiler {
       }>
     }
 
-    if (!decl || decl.$type !== 'WorkDeclaration') {
+    if (decl?.$type !== 'WorkDeclaration') {
       throw new Error(`WorkCompiler.compile: expected WorkDeclaration, got ${decl?.$type}`)
     }
 
@@ -88,9 +90,6 @@ export class WorkCompiler implements EntityCompiler {
       sections.push('')
       sections.push('### primary')
       if (decl.context.goal) sections.push(`- goal: ${decl.context.goal}`)
-      if (decl.context.loopPolicy?.maxIterations !== undefined) {
-        sections.push(`- max_iterations: ${decl.context.loopPolicy.maxIterations}`)
-      }
       if (decl.context.constraints && decl.context.constraints.length > 0) {
         sections.push('- constraints:')
         for (const c of decl.context.constraints) {
@@ -98,6 +97,48 @@ export class WorkCompiler implements EntityCompiler {
         }
       }
       sections.push('')
+    }
+
+    // ## LoopPolicy (v0.4.1: moved out of WorkContext to fix parser backtrack issue)
+    const loopPolicy = (decl as { loopPolicy?: { maxIterations?: number } }).loopPolicy
+    if (loopPolicy?.maxIterations !== undefined) {
+      sections.push('## LoopPolicy')
+      sections.push('')
+      sections.push('### primary')
+      sections.push(`- max_iterations: ${loopPolicy.maxIterations}`)
+      sections.push('')
+    }
+
+    // ## Refs (v0.4 Phase 2 — work-level domain/blueprint ref 池)
+    const domains = (decl.domains ?? []) as Array<{
+      $type?: string
+      name?: string
+      ref?: string
+      alias?: string
+    }>
+    const blueprints = (decl.blueprints ?? []) as Array<{
+      $type?: string
+      name?: string
+      ref?: string
+      alias?: string
+    }>
+    if (domains.length > 0 || blueprints.length > 0) {
+      sections.push('## Refs')
+      sections.push('')
+      for (const d of domains) {
+        sections.push(`### ${d.name ?? 'unnamed'}`)
+        sections.push(`- kind: domain`)
+        if (d.alias) sections.push(`- alias: ${d.alias}`)
+        if (d.ref) sections.push(`- ref: ${d.ref}`)
+        sections.push('')
+      }
+      for (const b of blueprints) {
+        sections.push(`### ${b.name ?? 'unnamed'}`)
+        sections.push(`- kind: blueprint`)
+        if (b.alias) sections.push(`- alias: ${b.alias}`)
+        if (b.ref) sections.push(`- ref: ${b.ref}`)
+        sections.push('')
+      }
     }
 
     // ## Tasks
@@ -142,11 +183,10 @@ export class WorkCompiler implements EntityCompiler {
       }
     }
 
-    const md =
-      sections
-        .join('\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trimEnd() + '\n'
+    const md = `${sections
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trimEnd()}\n`
 
     return { md, name, warnings }
   }
@@ -310,7 +350,7 @@ function extractPartItemsFromList(
 
     // 从第一个 paragraph 提取 key + remainder
     const firstChild = item.children[0]
-    if (!firstChild || firstChild.type !== 'paragraph') continue
+    if (firstChild?.type !== 'paragraph') continue
 
     const { key, remainder } = extractKeyFromParagraph(firstChild)
     if (key !== 'part') continue // 只处理 part listItem
@@ -327,7 +367,7 @@ function extractPartItemsFromList(
       for (const probeItem of childList.children) {
         if (probeItem.type !== 'listItem') continue
         const p = probeItem.children[0]
-        if (!p || p.type !== 'paragraph') continue
+        if (p?.type !== 'paragraph') continue
         const { key: probeKey, remainder: probeRemainder } = extractKeyFromParagraph(p)
         if (probeKey !== 'probe') continue
         const probeName = probeRemainder.trim()
@@ -366,7 +406,7 @@ function extractScalarFromList(list: List, key: string): string {
   for (const item of list.children) {
     if (item.type !== 'listItem') continue
     const p = item.children[0]
-    if (!p || p.type !== 'paragraph') continue
+    if (p?.type !== 'paragraph') continue
     const { key: k, remainder } = extractKeyFromParagraph(p)
     if (k === key) return remainder.trim()
   }

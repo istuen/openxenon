@@ -67,7 +67,7 @@ export class DomainCompiler implements EntityCompiler {
       }>
     }
 
-    if (!decl || decl.$type !== 'DomainDeclaration') {
+    if (decl?.$type !== 'DomainDeclaration') {
       throw new Error(`DomainCompiler.compile: expected DomainDeclaration, got ${decl?.$type}`)
     }
 
@@ -152,11 +152,10 @@ export class DomainCompiler implements EntityCompiler {
       })
     }
 
-    const md =
-      sections
-        .join('\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trimEnd() + '\n'
+    const md = `${sections
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trimEnd()}\n`
 
     return { md, name, warnings }
   }
@@ -346,7 +345,7 @@ function parseBanItems(fields: ListField[], desc: string): string[] {
   const arr = getArray(fields, 'items')
   if (arr.length > 0) return arr
   const scalar = getScalar(fields, 'items')
-  if (scalar && scalar.includes(',')) {
+  if (scalar?.includes(',')) {
     return scalar
       .split(',')
       .map((s) => s.trim())

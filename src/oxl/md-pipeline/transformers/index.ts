@@ -66,6 +66,7 @@ export {
   type WorkCategory,
   type WorkIR,
   type WorkContext,
+  type WorkRef,
   type WorkTaskIR,
   type WorkPart,
 } from './work'

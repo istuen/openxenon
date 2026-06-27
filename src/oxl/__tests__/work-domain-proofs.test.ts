@@ -12,7 +12,8 @@ async function parse(s: string) {
 
 function work(extra: string) {
   return `work "w" {
-  context { goal = "x"; loop_policy { max_iterations = 3; } }
+  context { goal = "x"; } loop_policy { max_iterations = 3; }
+
   domain "L0L3Context" ref "@prj/domains/L0L3Context";
   blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow";
   ${extra}

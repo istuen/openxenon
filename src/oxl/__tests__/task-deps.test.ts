@@ -12,8 +12,10 @@ async function parse(content: string): Promise<{ parseErrors: string[]; lexerErr
   }
 }
 
+// v0.4.1: loopPolicy 移出 context, 独立 H2
 const WRAPPER = (inner: string) => `work "x" {
-  context { goal = "x"; loop_policy { max_iterations = 1; } }
+  context { goal = "x"; }
+  loop_policy { max_iterations = 1; }
   domain "AlignDomain" ref "@prj/domains/align-domain";
   blueprint "fix-issue" ref "@prj/blueprints/fix-issue";
   ${inner}

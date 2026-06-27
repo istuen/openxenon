@@ -123,8 +123,7 @@ const RICH_BLUEPRINT_OXN = `blueprint "rich-bp" {
 const SIMPLE_WORK_OXN = `work "feature-x" {
   context {
     goal = "实现 X 功能";
-    loop_policy { max_iterations = 3; }
-  }
+    } loop_policy { max_iterations = 3; }
   domain "X" ref "@prj/domains/X";
   blueprint "Y" ref "@prj/blueprints/Y";
 
@@ -420,7 +419,7 @@ function parseMdSimple(md: string): Root {
 /** 简单 YAML 解析 frontmatter */
 function extractFrontmatter(md: string): Record<string, unknown> {
   const fmMatch = md.match(/^---\n([\s\S]*?)\n---/)
-  if (!fmMatch || !fmMatch[1]) return {}
+  if (!fmMatch?.[1]) return {}
   const result: Record<string, unknown> = {}
   for (const line of fmMatch[1].split('\n')) {
     const colonIdx = line.indexOf(':')

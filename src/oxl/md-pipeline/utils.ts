@@ -113,7 +113,6 @@ export function collectHeadingContexts(root: Root): HeadingContext[] {
             }
           } else if (next.type === 'list' && h4Sections.length > 0) {
             h4Sections[h4Sections.length - 1]!.list = next as List
-            
           }
         }
         contexts.push({
@@ -222,9 +221,7 @@ import remarkStringify from 'remark-stringify'
  * remarkFrontmatter plugin removes the yaml node from tree.children and stores
  * parsed frontmatter in `tree.data.frontmatter` (via processor.run).
  */
-export function parseMarkdown(
-  content: string,
-): { tree: Root; frontmatter: Record<string, unknown> } {
+export function parseMarkdown(content: string): { tree: Root; frontmatter: Record<string, unknown> } {
   const processor = unified().use(remarkParse).use(remarkFrontmatter)
   const tree = processor.parse(content) as Root
   processor.runSync(tree)
@@ -296,7 +293,10 @@ export const extractListFields = collectListFields
  * 提供旧 API 兼容: { entity, name, text, position: { line, column } }
  * 新 findFirstHeading 返回 { depth, text, position: mdast.Position, children }
  */
-export function findH1(root: Root, depth: 1 | 2 | 3 | 4 | 5 | 6 = 1): {
+export function findH1(
+  root: Root,
+  depth: 1 | 2 | 3 | 4 | 5 | 6 = 1,
+): {
   entity: string | null
   name: string | null
   text: string

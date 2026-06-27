@@ -12,12 +12,7 @@ import remarkParse from 'remark-parse'
 import remarkFrontmatter from 'remark-frontmatter'
 import type { Root } from 'mdast'
 import { parseMarkdown, extractYamlFromTree } from '../../utils'
-import {
-  remarkCanonical,
-  validateCanonical,
-  ENTITY_H2_WHITELIST,
-  type CanonicalIssue,
-} from '../remark-canonical'
+import { remarkCanonical, validateCanonical, ENTITY_H2_WHITELIST, type CanonicalIssue } from '../remark-canonical'
 
 // =============================================================================
 // H1 守卫

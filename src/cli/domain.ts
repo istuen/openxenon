@@ -24,6 +24,18 @@ import { IAPError } from '../core/errors'
 import { assertNameFileConsistent } from '../kernel/index'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { compileOxnToMd } from '../oxl/md-bridge/oxl-md-decompiler.js'
+import {
+  computeSha256,
+  readSyncMetadata,
+  composeSyncContent,
+  writeCacheSha,
+  getCachePath,
+  getCacheMdPath,
+} from '../oxl/md-pipeline/sync-hash.js'
+import { serializeDomainToOxn } from '../oxl/md-pipeline/oxn-serializer.js'
+import { extractDomainIR } from '../oxl/md-pipeline/transformers/domain.js'
+import { parseMarkdown } from '../oxl/md-pipeline/utils.js'
+import { validateOxnParseable, verifyDomainRoundTrip } from '../oxl/md-pipeline/sync-validation.js'
 
 // =============================================================================
 // `oxn domain` — DDD 限界上下文管理
@@ -570,6 +582,411 @@ export function autoRebuildDomainIndex(projectRoot: string): {
 // ---------------------------------------------------------------------------
 // Subcommand: compile (v0.3.0 — 把 .oxn 重编译为 v0.3 canonical 纯 MD .md)
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Subcommand: sync (v0.4 Phase 1 — .oxn → .md 自动同步)
+// ---------------------------------------------------------------------------
+//
+// 提交流程:
+//   1. 读 .openxenon/domains/<name>.oxn, 算 SHA-256 → sha_oxn_current
+//   2. 读 .openxenon/domains-md/<name>.md frontmatter.oxn-source-sha → sha_oxn_prev
+//   3. 编译 .oxn → .md (用 oxl-md-decompiler)
+//   4. 比对:
+//      - sha_oxn_current == sha_oxn_prev AND sha_md_new == sha_md_prev → no-op
+//      - 否则 → 写 .md + 写 .cache/<name>.hash + 更新 frontmatter.oxn-source-sha
+//   5. 输出 status (compiled / unchanged / error)
+//
+// 兼容性:
+//   - 旧 .md 无 frontmatter.oxn-source-sha → 当作首次 sync, 必重生成
+//   - .oxn 不存在 → OXN_FILE_NOT_FOUND
+//   - 编译失败 → OXN_DOMAIN_COMPILE_FAILED
+//
+// RFC: .openxenon/pools/sprints/v0.4-unify-md/design/oxn-md-sync-rfc.md §2
+
+const syncSubcommand = defineCommand({
+  meta: {
+    name: 'sync',
+    description: '[v0.4 Phase 1] Sync .oxn → .md: regenerate .md only when .oxn changed (idempotent, hash-based).',
+  },
+  args: {
+    name: { type: 'positional', required: false, description: 'Domain name (omit if --all)' },
+    all: { type: 'boolean', description: 'Sync all registered domains' },
+    'dry-run': { type: 'boolean', description: 'Simulate without writing files' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const all = ctx.args.all === true
+    const dryRun = ctx.args['dry-run'] === true
+    const singleName = ctx.args.name as string | undefined
+    const projectRoot = getProjectRoot()
+
+    if (!all && !singleName) {
+      return outputError(
+        {
+          code: 'OXN_SYNC_ARGS_MISSING',
+          message: 'either <name> or --all is required',
+          suggestion: 'run `oxn domain sync <name>` or `oxn domain sync --all`',
+        },
+        format,
+      )
+    }
+
+    // 确定要处理的 names
+    const domainsDir = join(projectRoot, BOUNDARY_DIR, DOMAINS_DIR)
+    let names: string[]
+    if (all) {
+      if (!existsSync(domainsDir)) {
+        return outputError({ code: 'OXN_NO_PROJECT', message: 'no .openxenon/domains/' }, format)
+      }
+      names = readdirSync(domainsDir)
+        .filter((f) => f.endsWith('.oxn'))
+        .map((f) => f.slice(0, -'.oxn'.length))
+    } else {
+      names = [singleName as string]
+    }
+
+    const results: Array<{
+      name: string
+      status: 'updated' | 'unchanged' | 'error'
+      oxnSha?: string
+      mdSha?: string
+      error?: string
+    }> = []
+
+    for (const name of names) {
+      const oxnPath = join(domainsDir, `${name}.oxn`)
+      const mdPath = join(projectRoot, BOUNDARY_DIR, 'domains-md', `${name}.md`)
+      const cachePath = getCachePath(projectRoot, 'domain', name)
+
+      if (!existsSync(oxnPath)) {
+        results.push({ name, status: 'error', error: `.oxn not found: ${oxnPath}` })
+        continue
+      }
+
+      const oxnContent = readFileSync(oxnPath, 'utf-8')
+      const oxnSha = computeSha256(oxnContent)
+
+      // 读 .md frontmatter (如有)
+      const prevMeta = existsSync(mdPath) ? readSyncMetadata(mdPath) : null
+      const prevOxnSha = prevMeta?.oxnSourceSha
+
+      // 比对: oxn 未变 + .md 已存在 → no-op (idempotent)
+      if (prevOxnSha === oxnSha && existsSync(mdPath)) {
+        results.push({
+          name,
+          status: 'unchanged',
+          oxnSha,
+          mdSha: prevMeta?.mdSelfSha,
+        })
+        continue
+      }
+
+      if (dryRun) {
+        results.push({ name, status: 'updated', oxnSha })
+        continue
+      }
+
+      // 编译 .oxn → .md
+      let result
+      try {
+        result = await compileOxnToMd(oxnContent, { entity: 'domain', frontmatter: true })
+      } catch (err) {
+        results.push({
+          name,
+          status: 'error',
+          error: err instanceof Error ? err.message : String(err),
+        })
+        continue
+      }
+
+      // 写 .md
+      const mdDir = join(projectRoot, BOUNDARY_DIR, 'domains-md')
+      if (!existsSync(mdDir)) mkdirSync(mdDir, { recursive: true })
+
+      // 构造含 sync frontmatter 的 .md, 直接写盘 (无 chicken-egg 问题)
+      const finalContent = composeSyncContent(result.md, {
+        oxnSourceSha: oxnSha,
+        syncedAt: new Date().toISOString(),
+      })
+      const mdSha = computeSha256(finalContent)
+
+      writeFileSync(mdPath, finalContent, 'utf-8')
+      writeCacheSha(cachePath, mdSha)
+
+      results.push({ name, status: 'updated', oxnSha, mdSha })
+    }
+
+    const summary = {
+      total: results.length,
+      updated: results.filter((r) => r.status === 'updated').length,
+      unchanged: results.filter((r) => r.status === 'unchanged').length,
+      error: results.filter((r) => r.status === 'error').length,
+      dryRun,
+    }
+
+    output(
+      {
+        ok: summary.error === 0,
+        data: { ...summary, results },
+        human:
+          `domain sync ${all ? '--all' : names.length === 1 ? `<${names[0]}>` : `${names.length} items`}` +
+          (dryRun ? ' (dry-run)' : '') +
+          `\n  total:     ${summary.total}\n` +
+          `  updated:   ${summary.updated}\n` +
+          `  unchanged: ${summary.unchanged}\n` +
+          `  error:     ${summary.error}` +
+          (summary.error > 0
+            ? '\n\nFailed:\n' +
+              results
+                .filter((r) => r.status === 'error')
+                .map((r) => `  - ${r.name}: ${r.error}`)
+                .join('\n')
+            : ''),
+      },
+      format,
+    )
+  },
+})
+
+// ---------------------------------------------------------------------------
+// Subcommand: sync-md (v0.4 Phase 2 — .md → .oxn 反向同步)
+// ---------------------------------------------------------------------------
+//
+// 流程:
+//   1. 读 .md → SHA-256 → sha_md_current
+//   2. 读 .cache/<name>.md-hash → sha_md_prev
+//   3. 如果 sha_md_current == sha_md_prev → no-op
+//   4. 否则: parseMarkdown → extractDomainIR → serializeDomainToOxn → 写 .oxn
+//   5. 触发 Phase 1 sync (.oxn → .md) 更新 cache
+//
+// RFC: .openxenon/pools/sprints/v0.4-unify-md/design/oxn-md-sync-rfc.md §3
+
+const syncMdSubcommand = defineCommand({
+  meta: {
+    name: 'sync-md',
+    description: '[v0.4 Phase 2] Reverse sync .md → .oxn: regenerate .oxn when .md changed',
+  },
+  args: {
+    name: { type: 'positional', required: false },
+    all: { type: 'boolean' },
+    'dry-run': { type: 'boolean' },
+    'no-chain': { type: 'boolean', description: 'Skip Phase 1 re-sync (.oxn → .md)' },
+    'oxn-priority': { type: 'boolean', description: 'In conflict (both changed), prefer .oxn (run sync not sync-md)' },
+    'no-roundtrip': { type: 'boolean', description: 'Skip round-trip-loss validation' },
+    'no-parse-check': { type: 'boolean', description: 'Skip langium parse validation' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const all = ctx.args.all === true
+    const dryRun = ctx.args['dry-run'] === true
+    // citty 0.1.6 把 `--no-X` 解析为 `X: false` (no- 前缀反转)
+    const noChain = ctx.args.chain === false
+    const oxnPriority = ctx.args['oxn-priority'] === true
+    const noRoundtrip = ctx.args.roundtrip === false
+    const noParseCheck = ctx.args['parse-check'] === false
+    const singleName = ctx.args.name as string | undefined
+    const projectRoot = getProjectRoot()
+
+    if (!all && !singleName) {
+      return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
+    }
+
+    const mdDir = join(projectRoot, BOUNDARY_DIR, 'domains-md')
+    const oxnDir = join(projectRoot, BOUNDARY_DIR, DOMAINS_DIR)
+    let names: string[]
+    if (all) {
+      if (!existsSync(mdDir)) {
+        return outputError({ code: 'OXN_NO_PROJECT', message: 'no .openxenon/domains-md/' }, format)
+      }
+      names = readdirSync(mdDir)
+        .filter((f) => f.endsWith('.md'))
+        .map((f) => f.slice(0, -'.md'.length))
+    } else {
+      names = [singleName as string]
+    }
+
+    const results: Array<{
+      name: string
+      status: 'updated' | 'unchanged' | 'error' | 'oxn-wins'
+      mdSha?: string
+      oxnSha?: string
+      error?: string
+      errorCode?: string
+    }> = []
+
+    for (const name of names) {
+      const mdPath = join(mdDir, `${name}.md`)
+      const oxnPath = join(oxnDir, `${name}.oxn`)
+      const mdCachePath = getCacheMdPath(projectRoot, 'domain', name)
+
+      if (!existsSync(mdPath)) {
+        results.push({ name, status: 'error', error: `.md not found: ${mdPath}` })
+        continue
+      }
+
+      const mdContent = readFileSync(mdPath, 'utf-8')
+      const shaMdCurrent = computeSha256(mdContent)
+
+      // conflict: .oxn 也被改 + .oxn-priority → 跳过 .md 改, 跑 sync
+      const oxnExists = existsSync(oxnPath)
+      const oxnSha = oxnExists ? computeSha256(readFileSync(oxnPath, 'utf-8')) : ''
+      const oxnPrevSha = oxnExists ? readSyncMetadata(mdPath)?.oxnSourceSha : undefined
+      const bothChanged = oxnExists && oxnPrevSha && oxnPrevSha !== oxnSha
+      if (bothChanged && oxnPriority) {
+        // .oxn wins, 触发 Phase 1 sync 重生成 .md
+        try {
+          const oxnRaw = readFileSync(oxnPath, 'utf-8')
+          const mdResult = await compileOxnToMd(oxnRaw, { entity: 'domain', frontmatter: true })
+          const finalContent = composeSyncContent(mdResult.md, {
+            oxnSourceSha: oxnSha,
+            syncedAt: new Date().toISOString(),
+          })
+          const mdSha = computeSha256(finalContent)
+          writeFileSync(mdPath, finalContent, 'utf-8')
+          writeCacheSha(getCachePath(projectRoot, 'domain', name), mdSha)
+          writeFileSync(mdCachePath, mdSha + '\n', 'utf-8')
+        } catch (err) {
+          results.push({ name, status: 'error', error: `oxn-priority sync: ${String(err)}` })
+          continue
+        }
+        results.push({ name, status: 'oxn-wins', mdSha: shaMdCurrent, oxnSha })
+        continue
+      }
+
+      // idempotent: md 未变
+      if (existsSync(mdCachePath)) {
+        const shaMdPrev = readFileSync(mdCachePath, 'utf-8').trim()
+        if (shaMdCurrent === shaMdPrev) {
+          results.push({ name, status: 'unchanged', mdSha: shaMdCurrent })
+          continue
+        }
+      }
+
+      if (dryRun) {
+        results.push({ name, status: 'updated', mdSha: shaMdCurrent })
+        continue
+      }
+
+      // 解析 .md → IR → 序列化 → .oxn
+      let tree
+      let frontmatter
+      try {
+        const parsed = parseMarkdown(mdContent)
+        tree = parsed.tree
+        frontmatter = parsed.frontmatter
+      } catch (err) {
+        results.push({ name, status: 'error', error: `md parse: ${String(err)}` })
+        continue
+      }
+
+      let ir
+      try {
+        ir = extractDomainIR(tree, frontmatter)
+      } catch (err) {
+        results.push({ name, status: 'error', error: `IR extract: ${String(err)}` })
+        continue
+      }
+
+      const oxnContent = serializeDomainToOxn(ir)
+      const oxnShaNew = computeSha256(oxnContent)
+
+      // Phase 2 守卫 1: langium parse 验证
+      if (!noParseCheck) {
+        const parseResult = await validateOxnParseable(oxnContent)
+        if (!parseResult.ok) {
+          results.push({
+            name,
+            status: 'error',
+            error: `langium parse failed: ${parseResult.errors[0]}`,
+            errorCode: 'E_SYNC_LANGIUM_VALIDATION_FAILED',
+          })
+          continue
+        }
+      }
+
+      // Phase 2 守卫 2: round-trip 验证 (serialize → compile → extract → diff)
+      if (!noRoundtrip) {
+        const rtResult = await verifyDomainRoundTrip(ir, oxnContent)
+        if (!rtResult.ok) {
+          results.push({
+            name,
+            status: 'error',
+            error: `round-trip loss: ${rtResult.lostFields.join(', ')}`,
+            errorCode: 'E_SYNC_ROUND_TRIP_LOSS',
+          })
+          continue
+        }
+      }
+
+      // 写 .oxn
+      if (!existsSync(oxnDir)) mkdirSync(oxnDir, { recursive: true })
+      writeFileSync(oxnPath, oxnContent, 'utf-8')
+
+      // 触发 Phase 1 sync (更新 .md frontmatter + .cache/<name>.hash)
+      if (!noChain && existsSync(oxnPath)) {
+        try {
+          const oxnRaw = readFileSync(oxnPath, 'utf-8')
+          const mdResult = await compileOxnToMd(oxnRaw, { entity: 'domain', frontmatter: true })
+          const finalContent = composeSyncContent(mdResult.md, {
+            oxnSourceSha: oxnShaNew,
+            syncedAt: new Date().toISOString(),
+          })
+          const mdSha = computeSha256(finalContent)
+          writeFileSync(mdPath, finalContent, 'utf-8')
+          writeCacheSha(getCachePath(projectRoot, 'domain', name), mdSha)
+        } catch {
+          // chained sync fails silently — .oxn 已经写成功了
+        }
+      }
+
+      // 写 Phase 2 cache
+      const cacheDir = join(mdDir, '.cache')
+      if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true })
+      const finalMdSha = existsSync(mdPath) ? computeSha256(readFileSync(mdPath, 'utf-8')) : shaMdCurrent
+      writeFileSync(mdCachePath, finalMdSha + '\n', 'utf-8')
+
+      results.push({ name, status: 'updated', mdSha: finalMdSha, oxnSha: oxnShaNew })
+    }
+
+    const summary = {
+      total: results.length,
+      updated: results.filter((r) => r.status === 'updated').length,
+      unchanged: results.filter((r) => r.status === 'unchanged').length,
+      'oxn-wins': results.filter((r) => r.status === 'oxn-wins').length,
+      error: results.filter((r) => r.status === 'error').length,
+      dryRun,
+      oxnPriority,
+    }
+
+    output(
+      {
+        ok: summary.error === 0,
+        data: { ...summary, results },
+        human:
+          `domain sync-md ${all ? '--all' : names.length === 1 ? `<${names[0]}>` : `${names.length} items`}` +
+          (dryRun ? ' (dry-run)' : '') +
+          (oxnPriority ? ' (oxn-priority)' : '') +
+          `\n  total:     ${summary.total}\n  updated:   ${summary.updated}\n  unchanged: ${summary.unchanged}\n  oxn-wins:  ${summary['oxn-wins']}\n  error:     ${summary.error}` +
+          (summary.error > 0
+            ? '\n\nFailed:\n' +
+              results
+                .filter((r) => r.status === 'error')
+                .map((r) => `  - ${r.name}: [${r.errorCode ?? 'ERROR'}] ${r.error}`)
+                .join('\n')
+            : ''),
+      },
+      format,
+    )
+  },
+})
+
+// ---------------------------------------------------------------------------
+// Subcommand: compile
+// ---------------------------------------------------------------------------
+
 const compileSubcommand = defineCommand({
   meta: {
     name: 'compile',
@@ -681,6 +1098,8 @@ export default defineCommand({
     list: listSubcommand,
     index: indexSubcommand,
     compile: compileSubcommand,
+    sync: syncSubcommand,
+    'sync-md': syncMdSubcommand,
   },
   run() {
     // No-op

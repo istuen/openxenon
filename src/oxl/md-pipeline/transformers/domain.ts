@@ -63,6 +63,8 @@ export interface DomainIR {
   entity: 'domain'
   name: string
   version: string
+  /** v0.4.1: 从 H1 与首个 H2 之间的 `> blockquote` 抽取的域描述 */
+  description: string
   terms: DomainTerm[]
   bans: DomainBan[]
   invariants: DomainInvariant[]
@@ -145,7 +147,8 @@ export function extractDomainIR(root: Root, frontmatter: Record<string, unknown>
   return {
     entity: 'domain',
     name: typeof frontmatter.name === 'string' ? frontmatter.name : '',
-    version: typeof frontmatter.version === 'string' ? frontmatter.version : '0.3.0',
+    version: frontmatter.version !== undefined && frontmatter.version !== null ? String(frontmatter.version) : '0.3.0',
+    description: extractDescription(root),
     terms,
     bans,
     invariants,
@@ -166,6 +169,44 @@ function extractFirstFieldValue(fields: ListField[], fallback: string): string {
   const valueField = fields.find((f) => f.key === 'value')
   if (typeof valueField?.value === 'string') return valueField.value
   return fallback
+}
+
+/**
+ * v0.4.1: 抽取 H1 与首个 H2 之间的 `> blockquote` 作为域描述
+ * 例:
+ *   # Domain: X
+ *   > 这是描述文本
+ *   ## Terms
+ */
+function extractDescription(root: Root): string {
+  let seenH1 = false
+  for (const child of root.children) {
+    if (child.type === 'heading') {
+      if (child.depth === 1) {
+        seenH1 = true
+        continue
+      }
+      if (child.depth === 2) {
+        // 到达首个 H2, 描述段结束
+        return ''
+      }
+    }
+    if (seenH1 && child.type === 'blockquote') {
+      // 提取 blockquote 内所有 paragraph 文本
+      const texts: string[] = []
+      for (const sub of child.children) {
+        if (sub.type === 'paragraph') {
+          const ps: string[] = []
+          for (const p of sub.children) {
+            if ('value' in p && typeof p.value === 'string') ps.push(p.value)
+          }
+          if (ps.length > 0) texts.push(ps.join(''))
+        }
+      }
+      return texts.join(' ').trim()
+    }
+  }
+  return ''
 }
 
 // ========================
@@ -197,5 +238,3 @@ export function remarkDomainExtractor(): (tree: Root) => void {
     ;(tree.data as Record<string, unknown>).domain = extractDomainIR(tree, frontmatter)
   }
 }
-
-

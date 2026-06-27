@@ -31,9 +31,9 @@ export {
   countNodes,
   extractYamlFromTree,
   // compat aliases (PR-C4 兼容 md-bridge 自研层 5 compilers)
-  extractHeadingContexts as extractHeadingContexts,
-  findH1 as findH1,
-  extractListFields as extractListFields,
+  extractHeadingContexts,
+  findH1,
+  extractListFields,
   type CollectedHeading,
   type HeadingContext,
   type ListField,
@@ -68,6 +68,7 @@ export {
   type WorkCategory,
   type WorkIR,
   type WorkContext,
+  type WorkRef,
   type WorkTaskIR,
   type WorkPart,
   type TaskCategory,
@@ -90,3 +91,33 @@ export {
   type CanonicalResult,
   type RemarkCanonicalOptions,
 } from './plugins/remark-canonical'
+
+// --- sync-hash (v0.4 Phase 1: .oxn ↔ .md 同步元数据) ---
+export {
+  computeSha256,
+  readSyncMetadata,
+  writeSyncMetadata,
+  composeSyncContent,
+  readCacheSha,
+  writeCacheSha,
+  getCachePath,
+  getCacheMdPath,
+  type SyncMetadata,
+} from './sync-hash'
+
+// --- oxn-serializer (v0.4 Phase 2: IR → .oxn 反向编译) ---
+export { serializeDomainToOxn, serializeBlueprintToOxn, serializeWorkToOxn } from './oxn-serializer'
+
+// --- sync-validation (v0.4 Phase 2: 反向编译质量守卫) ---
+export {
+  validateOxnParseable,
+  verifyDomainRoundTrip,
+  verifyBlueprintRoundTrip,
+  verifyWorkRoundTrip,
+  diffDomainIR,
+  diffBlueprintIR,
+  diffWorkIR,
+  type LangiumValidationResult,
+  type RoundTripResult,
+  type SyncEntity,
+} from './sync-validation'

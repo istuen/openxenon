@@ -49,7 +49,7 @@ export class TaskCompiler implements EntityCompiler {
       body?: Array<{ $type: string; skill_context?: string; name?: string; scheme?: string; expect?: string }>
     }
 
-    if (!decl || decl.$type !== 'TaskDeclaration') {
+    if (decl?.$type !== 'TaskDeclaration') {
       throw new Error(`TaskCompiler.compile: expected TaskDeclaration, got ${decl?.$type}`)
     }
 
@@ -99,11 +99,10 @@ export class TaskCompiler implements EntityCompiler {
       }
     }
 
-    const md =
-      sections
-        .join('\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trimEnd() + '\n'
+    const md = `${sections
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trimEnd()}\n`
 
     return { md, name, warnings }
   }

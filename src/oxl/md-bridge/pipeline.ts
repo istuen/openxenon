@@ -316,7 +316,7 @@ function extractIntents(_mdast: Root, rawContent?: string): IntentBlock[] {
 }
 
 /** 遍历 mdast 树（保留为兼容工具，PR-B 暂未使用）*/
-// @ts-ignore PR-B: 保留供未来扩展使用
+// biome-ignore lint/correctness/noUnusedVariables: PR-B 保留供未来扩展使用
 function _walk(node: Root | RootContent, visit: (n: RootContent) => void): void {
   if ('children' in node && Array.isArray(node.children)) {
     for (const child of node.children) {
@@ -330,7 +330,7 @@ function _walk(node: Root | RootContent, visit: (n: RootContent) => void): void 
 void _walk // 防止 unused 警告
 
 /** 类型守卫：是否为 containerDirective（保留为兼容工具）*/
-// @ts-ignore PR-B: 保留供未来扩展使用
+// biome-ignore lint/correctness/noUnusedVariables: PR-B 保留供未来扩展使用
 function _isContainerDirective(node: unknown): node is RootContent & {
   type: 'containerDirective'
   name: string
@@ -348,7 +348,7 @@ function _isContainerDirective(node: unknown): node is RootContent & {
 void _isContainerDirective // 防止 unused 警告
 
 /** 递归收集节点内所有文本（保留为兼容工具）*/
-// @ts-ignore PR-B: 保留供未来扩展使用
+// biome-ignore lint/correctness/noUnusedVariables: PR-B 保留供未来扩展使用
 function _collectText(node: unknown): string {
   if (typeof node === 'string') return node
   if (typeof node !== 'object' || node === null) return ''

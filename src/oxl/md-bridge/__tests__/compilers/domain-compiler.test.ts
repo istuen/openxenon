@@ -178,9 +178,7 @@ describe('DomainCompiler.validate', () => {
 
   // ─── v0.4 PR-A: Stack H2 软推荐 ───
   test('## Stack 分类被接受（不在 E_MD_CATEGORY_UNKNOWN 之列）', () => {
-    const root = parseMd(
-      '# Domain: Test\n\n## Stack\n\n### runtime\n\n- language: typescript\n- runtime: bun\n',
-    )
+    const root = parseMd('# Domain: Test\n\n## Stack\n\n### runtime\n\n- language: typescript\n- runtime: bun\n')
     const frontmatter = { entity: 'domain', name: 'Test' }
     const errors = compiler.validate({ mdast: root, frontmatter })
     const unknown = errors.find((e) => e.code === 'E_MD_CATEGORY_UNKNOWN')

@@ -191,11 +191,7 @@ function checkDeprecatedSyntax(tree: Root): CanonicalIssue[] {
   visit(tree, (node) => {
     // remark-directive 解析为 containerDirective / leafDirective / textDirective 节点
     const t = (node as { type: string }).type
-    if (
-      t === 'containerDirective' ||
-      t === 'leafDirective' ||
-      t === 'textDirective'
-    ) {
+    if (t === 'containerDirective' || t === 'leafDirective' || t === 'textDirective') {
       issues.push({
         code: 'E_MD_DEPRECATED_SYNTAX',
         message: `Legacy :::intent block found. Use \`oxn ${entityFromTree(tree)} compile\` to regenerate .md from .oxn.`,
@@ -390,10 +386,7 @@ export function remarkCanonical(options: RemarkCanonicalOptions = {}): (tree: Ro
 // 便利函数: 不走 unified pipeline, 直接调
 // ========================
 
-export function validateCanonical(
-  tree: Root,
-  options: RemarkCanonicalOptions = {},
-): CanonicalResult {
+export function validateCanonical(tree: Root, options: RemarkCanonicalOptions = {}): CanonicalResult {
   const errors: CanonicalIssue[] = []
   const warnings: CanonicalIssue[] = []
 

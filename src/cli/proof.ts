@@ -219,7 +219,7 @@ function snapshotWorkMd(proofName: string, proofOxnPath: string): SnapshotResult
   if (!existsSync(hashDir)) mkdirSync(hashDir, { recursive: true })
   if (existsSync(hashPath)) chmodSync(hashPath, 0o644)
   try {
-    writeFileSync(hashPath, liveHash + '\n', { mode: 0o444 })
+    writeFileSync(hashPath, `${liveHash}\n`, { mode: 0o444 })
   } finally {
     chmodSync(hashPath, 0o444)
   }
@@ -690,16 +690,12 @@ const runSubcommand = defineCommand({
     //   work.md 缺失 → 抛 E_PROOF_WORK_MISSING
     const snapshot = snapshotWorkMd(name, oxnPath)
     if (snapshot.status === 'error') {
-      return outputUserInputError(
-        'OXN_PROOF_WORK_MISSING',
-        snapshot.error ?? 'work.md not found',
-        {
-          suggestion: snapshot.workPath
-            ? `check that \`// proofs-target-work: ${snapshot.workPath}\` points to existing work.md`
-            : 'add `// proofs-target-work: <path>` comment to proof.oxn header',
-          format,
-        },
-      )
+      return outputUserInputError('OXN_PROOF_WORK_MISSING', snapshot.error ?? 'work.md not found', {
+        suggestion: snapshot.workPath
+          ? `check that \`// proofs-target-work: ${snapshot.workPath}\` points to existing work.md`
+          : 'add `// proofs-target-work: <path>` comment to proof.oxn header',
+        format,
+      })
     }
 
     // v0.1.3 PR-2: Phase 1 — 写 .running.json（self-ref probe 可见）

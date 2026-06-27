@@ -40,7 +40,7 @@ async function runCli(args: string[]): Promise<{ stdout: string; stderr: string;
   return { stdout, stderr, exitCode }
 }
 
-async function runCliVerbose(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+async function _runCliVerbose(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   // 用于 --help 这类可能用 ANSI 清屏或 stdout 重定向的子命令
   return runCli(args)
 }
@@ -183,10 +183,33 @@ describe('oxn domain compile + 错误消息一致性 (A2)', () => {
     const { runMdPipeline } = await import('../../oxl/md-bridge/pipeline.js')
     const { getEntityCompiler, registerEntityCompiler } = await import('../../oxl/md-bridge/entity-registry.js')
     const { DomainCompiler } = await import('../../oxl/md-bridge/compilers/domain-compiler.js')
+    const { BlueprintCompiler } = await import('../../oxl/md-bridge/compilers/blueprint-compiler.js')
+    const { WorkCompiler } = await import('../../oxl/md-bridge/compilers/work-compiler.js')
+    const { TaskCompiler } = await import('../../oxl/md-bridge/compilers/task-compiler.js')
+    const { ProofCompiler } = await import('../../oxl/md-bridge/compilers/proof-compiler.js')
     const { entityRegistry } = await import('../../oxl/md-bridge/entity-registry.js')
+
+    // 保存当前注册状态, 测试结束后恢复 (避免污染其它测试)
+    const originalCompilers = new Map<string, unknown>()
+    // @ts-expect-error - 访问 compilers 是为了 snapshot
+    for (const [k, v] of (entityRegistry as unknown as { compilers: Map<string, unknown> }).compilers) {
+      originalCompilers.set(k, v)
+    }
 
     entityRegistry._clearForTest()
     registerEntityCompiler(new DomainCompiler())
+    registerEntityCompiler(new BlueprintCompiler())
+    registerEntityCompiler(new WorkCompiler())
+    registerEntityCompiler(new TaskCompiler())
+    registerEntityCompiler(new ProofCompiler())
+
+    // 保险: 测试结束后恢复 (避免 test 失败后状态泄漏)
+    afterEach(() => {
+      entityRegistry._clearForTest()
+      for (const [, v] of originalCompilers) {
+        registerEntityCompiler(v as Parameters<typeof registerEntityCompiler>[0])
+      }
+    })
 
     const mdPath = `${tmpDir}/.openxenon/domains-md/E2E.md`
     const mdContent = readFileSync(mdPath, 'utf-8')

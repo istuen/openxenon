@@ -53,12 +53,10 @@ export function extractProofIR(root: Root, frontmatter: Record<string, unknown> 
   }
 
   // v0.3 T11: proof.oxn frontmatter 可能有 proofs-target-work / proofs-target-frozen
-  const proofsTargetWork = typeof fm['proofs-target-work'] === 'string'
-    ? (fm['proofs-target-work'] as string)
-    : undefined
-  const proofsTargetFrozen = typeof fm['proofs-target-frozen'] === 'string'
-    ? (fm['proofs-target-frozen'] as string)
-    : undefined
+  const proofsTargetWork =
+    typeof fm['proofs-target-work'] === 'string' ? (fm['proofs-target-work'] as string) : undefined
+  const proofsTargetFrozen =
+    typeof fm['proofs-target-frozen'] === 'string' ? (fm['proofs-target-frozen'] as string) : undefined
 
   return {
     entity: 'proof',
@@ -77,7 +75,7 @@ function extractProbeFromFields(name: string, fields: ListField[]): ProofProbeIR
   // params 是嵌套 list, 这里简化为 { raw: '...' }
   const params: Record<string, unknown> = {}
   if (paramsField) {
-    params['_raw'] = paramsField.raw
+    params._raw = paramsField.raw
   }
 
   return {
@@ -106,5 +104,3 @@ export function remarkProofExtractor(): (tree: Root) => void {
     ;(tree.data as Record<string, unknown>).proof = extractProofIR(tree, frontmatter)
   }
 }
-
-

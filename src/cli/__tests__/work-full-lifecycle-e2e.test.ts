@@ -82,8 +82,7 @@ function setupWork(workName: string, taskNames: string[]): void {
   context {
     goal = "PR-13 lifecycle test";
     constraints = ["c1"];
-    loop_policy { max_iterations = 4; }
-  }
+    } loop_policy { max_iterations = 4; }
   domain "LifecycleDomain" ref "@prj/domains/lifecycle-domain";
   blueprint "LifecycleBP" ref "@prj/blueprints/lifecycle-bp";
 ${taskNames.map((t) => `  task "${t}" { blueprint "LifecycleBP" }`).join('\n')}
@@ -220,7 +219,7 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     const workPath = join(tmpDir, '.openxenon', 'works', 'lifecycle', 'work.oxn')
     writeFileSync(
       workPath,
-      'work "lifecycle" {\n  context { goal = "CHANGED"; constraints = ["c1"]; loop_policy { max_iterations = 4 } }\n  domain "LifecycleDomain" ref "@prj/domains/lifecycle-domain";\n  blueprint "LifecycleBP" ref "@prj/blueprints/lifecycle-bp";\n  task "a" {\n    domain "LifecycleDomain"\n    blueprint "LifecycleBP"\n  }\n}\n',
+      'work "lifecycle" {\n  context { goal = "CHANGED"; constraints = ["c1"]; }\n  loop_policy { max_iterations = 4; }\n  domain "LifecycleDomain" ref "@prj/domains/lifecycle-domain";\n  blueprint "LifecycleBP" ref "@prj/blueprints/lifecycle-bp";\n  task "a" {\n    domain "LifecycleDomain"\n    blueprint "LifecycleBP"\n  }\n}\n',
     )
 
     // context 应报 HASH_MISMATCH

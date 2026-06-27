@@ -81,7 +81,8 @@ function setupV0Work(workName: string, taskNames: string[]): void {
   writeFileSync(
     join(workDir, 'work.oxn'),
     `work "${workName}" {
-  context { goal = "test"; constraints = ["c1"]; loop_policy { max_iterations = 3; } }
+  context { goal = "test"; constraints = ["c1"]; } loop_policy { max_iterations = 3; }
+
   domain "DomainA" ref "@prj/domains/domain-a";
   blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";
 ${taskNames.map((t) => `  task "${t}" { blueprint "BlueprintX" }`).join('\n')}

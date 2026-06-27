@@ -55,7 +55,7 @@ export class BlueprintCompiler implements EntityCompiler {
       partSlots?: Array<{ name: string; deps?: string[]; observe?: Array<{ observes: string[] }> }>
     }
 
-    if (!decl || decl.$type !== 'BlueprintDeclaration') {
+    if (decl?.$type !== 'BlueprintDeclaration') {
       throw new Error(`BlueprintCompiler.compile: expected BlueprintDeclaration, got ${decl?.$type}`)
     }
 
@@ -152,11 +152,10 @@ export class BlueprintCompiler implements EntityCompiler {
       }
     }
 
-    const md =
-      sections
-        .join('\n')
-        .replace(/\n{3,}/g, '\n\n')
-        .trimEnd() + '\n'
+    const md = `${sections
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trimEnd()}\n`
 
     return { md, name, warnings }
   }

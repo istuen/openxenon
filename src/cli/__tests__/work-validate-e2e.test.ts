@@ -98,8 +98,7 @@ function setupWork(workName: string, taskNames: string[]): void {
   context {
     goal = "test goal";
     constraints = ["c1", "c2"];
-    loop_policy { max_iterations = 4; }
-  }
+    } loop_policy { max_iterations = 4; }
   domain "DomainA" ref "@prj/domains/domain-a";
   domain "DomainB" ref "@prj/domains/domain-b";
   blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";
