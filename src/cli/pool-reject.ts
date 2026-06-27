@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { join } from 'node:path'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
 import { defineCommand } from 'citty'
 import { output, outputUserInputError } from './output'
 import { type ImprovementSuggestion, type RejectionRecord, safeValidateImprovementSuggestion } from '../kernel/index'

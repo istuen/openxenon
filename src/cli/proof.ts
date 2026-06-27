@@ -838,6 +838,10 @@ function renderVerdictHuman(
   }
   lines.push(`\nProof saved: ${join(getProofDir(name), PROOF_FROZEN_JSON)}`)
   lines.push(`Read-only: ${isFrozenFileReadOnly(join(getProofDir(name), PROOF_FROZEN_JSON))}`)
+  // v0.5 PR-A: 提示 verdict.md 落盘位置
+  if (verdictWritten && verdictPath) {
+    lines.push(`Verdict doc: ${verdictPath}`)
+  }
   return lines.join('\n')
 }
 
@@ -1029,7 +1033,6 @@ function renderShowHuman(
   frozen: import('../kernel/schemas/proof-schema').FrozenProof,
   inProgress: boolean = false,
   verdictPath: string | null = null,
-): string {
 ): string {
   const lines: string[] = []
   if (inProgress) {

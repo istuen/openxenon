@@ -24,11 +24,12 @@ export const CANONICAL_FILE = 'canonical.yaml'
 // Proof 空间（v0.1.2 Proof-First 入口）
 //   .openxenon/proofs/<name>/proof.oxn   — Probe 声明
 //   .openxenon/proofs/<name>/frozen.json — 判决书（不可篡改）
+//   .openxenon/proofs/<name>/verdict.md  — 人类可读结案文档（v0.5 PR-A）
+//   .openxenon/proofs/<name>/proof.md   — work.md 不可变快照（v0.4 PR-B Q4-A）
+//   .openxenon/proofs/<name>/work-hash.txt — work.md 副本的 SHA-256（v0.4 PR-B Q4-A）
 export const PROOF_OXN_FILE = 'proof.oxn'
 export const PROOF_FROZEN_JSON = 'frozen.json'
-// v0.4 PR-B (Q4-A): proof 持有 work.md 不可变快照 + work-hash
-//   - proof.md         = work.md 的 byte-equal 副本 (immutable, 0o444)
-//   - work-hash.txt    = 该副本的 SHA-256 (用于 hash drift 校验)
+export const PROOF_VERDICT_MD = 'verdict.md'
 export const PROOF_MD_FILE = 'proof.md'
 export const PROOF_WORK_HASH_FILE = 'work-hash.txt'
 
