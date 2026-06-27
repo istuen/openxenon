@@ -131,7 +131,7 @@ export default defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     // citty strips leading "--" from args key (so ctx.args["cross-proof"] not ctx.args["--cross-proof"])
     const crossProof = ctx.args['cross-proof'] === true
-    const pipeline = ctx.args['pipeline'] === true
+    const pipeline = ctx.args.pipeline === true
 
     if (pipeline) {
       return runPipelineMode(ctx.args as Record<string, unknown>, format)
@@ -370,7 +370,7 @@ function renderCrossProofHuman(insight: CrossProofInsight, skipped: Array<{ name
 
 async function runPipelineMode(args: Record<string, unknown>, format: OutputFormat) {
   const projectRoot = getProjectRoot()
-  const workFilter = (args['work'] as string | undefined) ?? undefined
+  const workFilter = (args.work as string | undefined) ?? undefined
 
   // 1. L1 IO：跨 subsystems 扫描
   const scanResult = scanPipelineInput(projectRoot)

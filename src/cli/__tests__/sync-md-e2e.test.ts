@@ -91,7 +91,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
     const mdPath = join(tmpDir, '.openxenon', 'domains-md', 'NC.md')
     const mdBefore = readFileSync(mdPath, 'utf-8')
-    const mdMtimeBefore = (await import('fs')).statSync(mdPath).mtimeMs
+    const _mdMtimeBefore = (await import('fs')).statSync(mdPath).mtimeMs
 
     await runCli(['domain', 'sync-md', 'NC', '--no-chain', '--json'])
 

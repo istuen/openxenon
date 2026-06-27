@@ -103,9 +103,13 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     // 创建 proof
     const proofsDir = join(base, '.openxenon', 'proofs', 'test-work')
     mkdirSync(proofsDir, { recursive: true })
-    writeFileSync(join(proofsDir, 'proof.oxn'), `proof "test-work" {
+    writeFileSync(
+      join(proofsDir, 'proof.oxn'),
+      `proof "test-work" {
   probe "p1" { ref "@oxn/probes/shell-exec" params { command = "true", timeout = "5000" } }
-}`, 'utf-8')
+}`,
+      'utf-8',
+    )
     await runCli(['proof', 'run', 'test-work', '--json'])
 
     // 运行 pipeline insight
@@ -152,7 +156,11 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     for (const w of ['w1', 'w2']) {
       const d = join(base, '.openxenon', 'works', w)
       mkdirSync(d, { recursive: true })
-      writeFileSync(join(d, 'work.oxn'), `work "${w}" { domain "TestContext" ref "@prj/domains/TestContext" blueprint "test-bp" ref "@prj/blueprints/test-bp" }`, 'utf-8')
+      writeFileSync(
+        join(d, 'work.oxn'),
+        `work "${w}" { domain "TestContext" ref "@prj/domains/TestContext" blueprint "test-bp" ref "@prj/blueprints/test-bp" }`,
+        'utf-8',
+      )
     }
 
     const r = await runCli(['insight', '--pipeline', '--work', 'w1', '--json'])

@@ -69,8 +69,8 @@ function assertTargetExists(path: string): void {
  */
 function applyPatch(originalContent: string, patch: string): string {
   // 确保文件末尾有换行
-  const normalized = originalContent.endsWith('\n') ? originalContent : originalContent + '\n'
-  return normalized + patch + '\n'
+  const normalized = originalContent.endsWith('\n') ? originalContent : `${originalContent}\n`
+  return `${normalized + patch}\n`
 }
 
 /**

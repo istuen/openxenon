@@ -101,7 +101,7 @@ export function serializeDomainToOxn(ir: DomainIR, ts?: string): string {
   }
 
   lines.push('}')
-  return lines.join('\n') + '\n'
+  return `${lines.join('\n')}\n`
 }
 
 // ========================================================================
@@ -153,7 +153,7 @@ export function serializeBlueprintToOxn(ir: BlueprintIR, ts?: string): string {
   }
 
   lines.push('}')
-  return lines.join('\n') + '\n'
+  return `${lines.join('\n')}\n`
 }
 
 /** 格式化 default 值: 保留 NUMBER / BooleanLiteral / STRING 原样 */
@@ -236,5 +236,5 @@ export function serializeWorkToOxn(ir: WorkIR, ts?: string): string {
   }
 
   lines.push('}')
-  return lines.join('\n') + '\n'
+  return `${lines.join('\n')}\n`
 }
