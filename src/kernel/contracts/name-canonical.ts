@@ -66,7 +66,9 @@ export function assertNameFileConsistent(
   filePath: string,
   entityType: 'domain' | 'blueprint' | 'work' | 'proof',
 ): void {
-  const fileStem = basename(filePath).replace(/\.oxn$/i, '')
+  // v0.5 Phase 3: 支持 .oxn 和 .md 两种扩展名 (assetFormat 决定)
+  const fileStem = basename(filePath).replace(/\.(oxn|md)$/i, '')
+  const fileBase = basename(filePath) // 含扩展名, 用于错误消息
   const declaredNorm = toKebab(declared)
   const fileNorm = toKebab(fileStem)
   if (declaredNorm !== fileNorm) {
@@ -74,14 +76,14 @@ export function assertNameFileConsistent(
       'INTENT',
       'NAME_FILE_MISMATCH',
       IAPAction.YIELD_TO_HUMAN,
-      `Declared name '${declared}' does not match file '${fileStem}.oxn'`,
+      `Declared name '${declared}' does not match file '${fileBase}'`,
       {
         entityType,
         declared,
-        file: `${fileStem}.oxn`,
+        file: fileBase,
         normalized: declaredNorm,
         suggestion:
-          `Either rename the file to '${declaredNorm}.oxn', ` +
+          `Either rename the file to '${declaredNorm}.oxn' (or .md), ` +
           `or change the declared name to match the file. ` +
           `OXN does not enforce casing style, only canonicalization consistency.`,
       },

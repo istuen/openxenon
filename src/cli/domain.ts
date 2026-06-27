@@ -4,6 +4,13 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 
 import { join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/index'
+import { compileOxnToMd } from '../oxl/md-bridge/oxl-md-decompiler.js'
+import { parseMarkdown } from '../oxl/md-pipeline/utils'
+import { extractDomainIR } from '../oxl/md-pipeline/transformers/domain.js'
+import { serializeDomainToOxn } from '../oxl/md-pipeline/oxn-serializer.js'
+import type { AssetFormat } from '../infra/paths'
+import { resolveAssetPrimaryPath, resolveAssetAltPath, resolveAssetFormat, resolveAutoSync } from '../infra/paths'
+import { readProjectConfig } from './project-config-io'
 import {
   createOxnParser,
   isDomainDeclaration,
@@ -23,7 +30,6 @@ import {
 import { IAPError } from '../core/errors'
 import { assertNameFileConsistent } from '../kernel/index'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
-import { compileOxnToMd } from '../oxl/md-bridge/oxl-md-decompiler.js'
 import {
   computeSha256,
   readSyncMetadata,
@@ -32,9 +38,6 @@ import {
   getCachePath,
   getCacheMdPath,
 } from '../oxl/md-pipeline/sync-hash.js'
-import { serializeDomainToOxn } from '../oxl/md-pipeline/oxn-serializer.js'
-import { extractDomainIR } from '../oxl/md-pipeline/transformers/domain.js'
-import { parseMarkdown } from '../oxl/md-pipeline/utils.js'
 import { validateOxnParseable, verifyDomainRoundTrip } from '../oxl/md-pipeline/sync-validation.js'
 
 // =============================================================================
@@ -78,6 +81,10 @@ async function validateDomainFile(filePath: string): Promise<{
   if (!existsSync(filePath)) {
     return { ok: false, errors: [`domain file not found: ${filePath}`] }
   }
+  // v0.5 Phase 3: 根据扩展名选择验证路径
+  if (filePath.endsWith('.md')) {
+    return validateDomainFromMd(filePath)
+  }
   const content = readFileSync(filePath, 'utf-8')
   const parser = createOxnParser()
   const r = await parser.parse(content, URI.file(filePath))
@@ -95,56 +102,87 @@ async function validateDomainFile(filePath: string): Promise<{
   return { ok: true, ast, domain, errors: [] }
 }
 
+/**
+ * v0.5 Phase 3: 从 .md 验证 domain
+ * 用 md-pipeline 的 extractDomainIR, 把它反向序列化成 OXNDocument (langium AST shape),
+ * 这样下游的 domainAstToIr 不变.
+ */
+async function validateDomainFromMd(filePath: string): Promise<{
+  ok: boolean
+  ast?: OXNDocument
+  domain?: DomainDeclaration
+  errors: string[]
+}> {
+  const content = readFileSync(filePath, 'utf-8')
+  let ir: import('../oxl/md-pipeline/transformers/domain').DomainIR
+  try {
+    const { parseMarkdown } = await import('../oxl/md-pipeline/utils')
+    const { extractDomainIR } = await import('../oxl/md-pipeline/transformers/domain')
+    const parsed = parseMarkdown(content)
+    ir = extractDomainIR(parsed.tree, parsed.frontmatter)
+  } catch (e) {
+    return {
+      ok: false,
+      errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`],
+    }
+  }
+  // IR → 临时 .oxn → parse 拿到 AST (走 langium 路径拿 DomainDeclaration)
+  // 比直接构造 DomainDeclaration AST 更可靠
+  const { serializeDomainToOxn } = await import('../oxl/md-pipeline/oxn-serializer')
+  const oxnContent: string = serializeDomainToOxn(ir)
+  // 第二次 parse 拿到 AST (仅用于 domainAstToIr, 不写盘)
+  const parser = createOxnParser()
+  const r = await parser.parse(oxnContent, URI.file(`${filePath}.oxn`))
+  if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
+    return {
+      ok: false,
+      errors: [...r.parseErrors.map((e) => `[Parser] ${e}`), ...r.lexerErrors.map((e) => `[Lexer] ${e}`)],
+    }
+  }
+  const ast = r.ast as OXNDocument
+  const domain = ast.entities.find(isDomainDeclaration) ?? null
+  if (!domain) {
+    return { ok: false, ast, errors: ['no DomainDeclaration derived from md'] }
+  }
+  return { ok: true, ast, domain, errors: [] }
+}
+
 // ---------------------------------------------------------------------------
-// Subcommand: create
+// v0.5 Phase 3: format-aware template generator
 // ---------------------------------------------------------------------------
-const createSubcommand = defineCommand({
-  meta: {
-    name: 'create',
-    description: t('domain.create.description'),
-  },
-  args: {
-    name: { type: 'positional', required: true, description: t('domain.create.name') },
-    force: { type: 'boolean', alias: 'f', description: t('domain.create.force') },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const name = ctx.args.name as string
-    const force = ctx.args.force === true || ctx.args.f === true
-    const domainsDir = getDomainsDir()
 
-    if (!/^[A-Za-z][A-Za-z0-9_-]*(?:\/[A-Za-z][A-Za-z0-9_-]*)*$/.test(name)) {
-      return outputError(
-        {
-          code: 'OXN_INVALID_NAME',
-          message: `invalid domain name: ${JSON.stringify(name)}`,
-          suggestion:
-            'use PascalCase segments joined by / (e.g. "MemberContext" or "member/MembershipContext"); each segment: letters, digits, underscores, dashes, starts with a letter; no leading/trailing/consecutive slashes',
-        },
-        format,
-      )
-    }
+function domainCreateTemplate(name: string, format: AssetFormat): string {
+  if (format === 'md') {
+    // v0.5 Phase 3: .md 模板（含 frontmatter, 无 header 注释 — 注释写 .oxn）
+    return `---
+entity: domain
+version: 0.3.0
+name: ${name}
+---
 
-    if (!existsSync(domainsDir)) {
-      mkdirSync(domainsDir, { recursive: true })
-    }
+# Domain: ${name}
 
-    const outPath = join(domainsDir, `${name}.oxn`)
-    const outDir = join(domainsDir, name.split('/').slice(0, -1).join('/'))
-    if (outDir !== domainsDir && !existsSync(outDir)) {
-      mkdirSync(outDir, { recursive: true })
-    }
-    if (existsSync(outPath) && !force) {
-      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `domain file already exists: ${outPath}`, {
-        suggestion: 'use --force / -f to overwrite',
-        format,
-      })
-    }
+> TODO: one-line description of the bounded context's business boundary
 
-    // 生成 domain 骨架模板 (v0.1-final)
-    const template = `// Domain: ${name}
+## Terms
+
+### TODO_Term
+- desc: TODO: domain term definition
+
+## Bans
+
+- items:
+  - TODO_BannedTerm1
+  - TODO_BannedTerm2
+
+## Invariants
+
+- value: TODO: business invariant rule 1
+- value: TODO: business invariant rule 2
+`
+  }
+  // .oxn 模板（v0.4 既有）
+  return `// Domain: ${name}
 // Created by: oxn domain create ${name}
 //
 // ──────────────────────────────────────────────────────────────────
@@ -188,21 +226,102 @@ domain "${name}" {
   }
 }
 `
-    writeFileSync(outPath, template, 'utf-8')
+}
+
+// ---------------------------------------------------------------------------
+// Subcommand: create
+// ---------------------------------------------------------------------------
+const createSubcommand = defineCommand({
+  meta: {
+    name: 'create',
+    description: t('domain.create.description'),
+  },
+  args: {
+    name: { type: 'positional', required: true, description: t('domain.create.name') },
+    force: { type: 'boolean', alias: 'f', description: t('domain.create.force') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const name = ctx.args.name as string
+    const force = ctx.args.force === true || ctx.args.f === true
+    const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
+    const assetFormat = resolveAssetFormat(config)
+    const autoSync = resolveAutoSync(config)
+    const domainsDir = getDomainsDir()
+
+    if (!/^[A-Za-z][A-Za-z0-9_-]*(?:\/[A-Za-z][A-Za-z0-9_-]*)*$/.test(name)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_NAME',
+          message: `invalid domain name: ${JSON.stringify(name)}`,
+          suggestion:
+            'use PascalCase segments joined by / (e.g. "MemberContext" or "member/MembershipContext"); each segment: letters, digits, underscores, dashes, starts with a letter; no leading/trailing/consecutive slashes',
+        },
+        format,
+      )
+    }
+
+    if (!existsSync(domainsDir)) {
+      mkdirSync(domainsDir, { recursive: true })
+    }
+
+    // v0.5 Phase 3: 主路径由 config.assetFormat 决定
+    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'domain', name, assetFormat)
+    const altPath = resolveAssetAltPath(projectRoot, 'domain', name, assetFormat)
+    const primaryDir = join(primaryPath, '..')
+    const altDir = join(altPath, '..')
+    if (!existsSync(primaryDir)) mkdirSync(primaryDir, { recursive: true })
+    if (!existsSync(altDir)) mkdirSync(altDir, { recursive: true })
+
+    if (existsSync(primaryPath) && !force) {
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `domain file already exists: ${primaryPath}`, {
+        suggestion: 'use --force / -f to overwrite',
+        format,
+      })
+    }
+
+    // v0.5 Phase 3: 模板内容因格式不同而异
+    const template = domainCreateTemplate(name, assetFormat)
+
+    writeFileSync(primaryPath, template, 'utf-8')
+
+    // v0.5 Phase 3: 自动 sync 到另一种格式
+    if (autoSync) {
+      try {
+        if (assetFormat === 'oxn') {
+          // .oxn → .md
+          const { md: altContent } = await compileOxnToMd(template, { entity: 'domain', frontmatter: true })
+          writeFileSync(altPath, altContent, 'utf-8')
+        } else {
+          // .md → .oxn (use serializer)
+          const { tree, frontmatter: fm } = parseMarkdown(template)
+          const ir = extractDomainIR(tree, fm)
+          const altContent = serializeDomainToOxn(ir)
+          writeFileSync(altPath, altContent, 'utf-8')
+        }
+      } catch {
+        // autoSync 失败不阻断主命令
+      }
+    }
 
     // v1.1: 写入后回查 AST name 与文件名一致性（macOS-safe NAME_FILE_MISMATCH 硬阻断）。
     // 模板字符串由 name 插值生成,正常情况下两者一致；此处作为防御性检查,
     // 防止未来模板或 path 逻辑漂移导致写入"name=X"的 .oxn 但落盘到 stem=Y。
-    assertNameFileConsistent(name, outPath, 'domain')
+    assertNameFileConsistent(name, primaryPath, 'domain')
 
     output(
       {
         ok: true,
         data: {
           name,
-          path: outPath,
+          path: primaryPath,
+          format: assetFormat,
+          syncedTo: autoSync ? altPath : null,
         },
-        human: `Created domain ${name} at ${outPath}\n\nNext: edit ${outPath}, then run \`oxn domain validate ${name}\``,
+        human: `Created domain ${name} at ${primaryPath}${autoSync ? ` (synced to ${altPath})` : ''}\n\nNext: edit ${primaryPath}, then run \`oxn domain validate ${name}\``,
       },
       format,
     )
@@ -233,6 +352,9 @@ const validateSubcommand = defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
     const customPath = ctx.args['file-path'] as string | undefined
+    const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
+    const assetFormat = resolveAssetFormat(config)
     if (!/^[A-Za-z][A-Za-z0-9_-]*(?:\/[A-Za-z][A-Za-z0-9_-]*)*$/.test(name)) {
       return outputError(
         {
@@ -244,18 +366,24 @@ const validateSubcommand = defineCommand({
         format,
       )
     }
-    // 文件名兼容：Domain 名是 PascalCase，但 .oxn 文件可能是 kebab-case
-    // 处理 PascalCase 转 kebab-case：先在小写-大写边界插入 dash，再转小写
+    // v0.5 Phase 3: 路径由 config.assetFormat 决定（默认 oxn），但若主格式不存在,
+    // 自动 fall back 到 alt 格式 (向后兼容老 .oxn-only 项目)
     const kebab = name
       .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
       .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
       .replace(/_/g, '-')
       .toLowerCase()
+    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'domain', name, assetFormat)
+    const altPath = resolveAssetAltPath(projectRoot, 'domain', name, assetFormat)
     const filePath = customPath
       ? resolve(customPath)
-      : existsSync(join(getDomainsDir(), `${name}.oxn`))
-        ? join(getDomainsDir(), `${name}.oxn`)
-        : join(getDomainsDir(), `${kebab}.oxn`)
+      : existsSync(primaryPath)
+        ? primaryPath
+        : existsSync(altPath)
+          ? altPath
+          : existsSync(join(getDomainsDir(), `${kebab}.oxn`))
+            ? join(getDomainsDir(), `${kebab}.oxn`)
+            : primaryPath // 默认指向主格式,validate 时报 OXN_FILE_NOT_FOUND
 
     const result = await validateDomainFile(filePath)
     if (!result.ok) {
@@ -300,10 +428,12 @@ const validateSubcommand = defineCommand({
         data: {
           name: ir.name,
           file: filePath,
+          format: assetFormat,
           description: ir.description,
           language: ir.language,
         },
         human: `Domain ${ir.name} ✓ valid
+  Format:    ${filePath.endsWith('.md') ? 'md' : 'oxn'}
   Terms:     ${ir.language?.terms.length ?? 0}
   Ban:       ${ir.language?.ban.length ?? 0}
   Invariant: ${ir.language?.invariant.length ?? 0}`,
@@ -847,7 +977,7 @@ const syncMdSubcommand = defineCommand({
           const mdSha = computeSha256(finalContent)
           writeFileSync(mdPath, finalContent, 'utf-8')
           writeCacheSha(getCachePath(projectRoot, 'domain', name), mdSha)
-          writeFileSync(mdCachePath, mdSha + '\n', 'utf-8')
+          writeFileSync(mdCachePath, `${mdSha}\n`, 'utf-8')
         } catch (err) {
           results.push({ name, status: 'error', error: `oxn-priority sync: ${String(err)}` })
           continue
@@ -946,7 +1076,7 @@ const syncMdSubcommand = defineCommand({
       const cacheDir = join(mdDir, '.cache')
       if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true })
       const finalMdSha = existsSync(mdPath) ? computeSha256(readFileSync(mdPath, 'utf-8')) : shaMdCurrent
-      writeFileSync(mdCachePath, finalMdSha + '\n', 'utf-8')
+      writeFileSync(mdCachePath, `${finalMdSha}\n`, 'utf-8')
 
       results.push({ name, status: 'updated', mdSha: finalMdSha, oxnSha: oxnShaNew })
     }

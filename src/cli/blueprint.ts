@@ -24,7 +24,12 @@ import { IAPError } from '../core/errors'
 import { assertNameFileConsistent } from '../kernel/index'
 import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
+import { resolveAssetPrimaryPath, resolveAssetAltPath, resolveAssetFormat, resolveAutoSync } from '../infra/paths'
+import { readProjectConfig } from './project-config-io'
 import { compileOxnToMd } from '../oxl/md-bridge/oxl-md-decompiler.js'
+import { parseMarkdown } from '../oxl/md-pipeline/utils'
+import { extractBlueprintIR } from '../oxl/md-pipeline/transformers/blueprint.js'
+import { serializeBlueprintToOxn } from '../oxl/md-pipeline/oxn-serializer.js'
 import {
   computeSha256,
   readSyncMetadata,
@@ -33,9 +38,6 @@ import {
   getCachePath,
   getCacheMdPath,
 } from '../oxl/md-pipeline/sync-hash.js'
-import { serializeBlueprintToOxn } from '../oxl/md-pipeline/oxn-serializer.js'
-import { extractBlueprintIR } from '../oxl/md-pipeline/transformers/blueprint.js'
-import { parseMarkdown } from '../oxl/md-pipeline/utils.js'
 import { validateOxnParseable, verifyBlueprintRoundTrip } from '../oxl/md-pipeline/sync-validation.js'
 import {
   autoRebuildBlueprintIndex,
@@ -67,6 +69,10 @@ async function validateBlueprint(blueprintPath: string): Promise<{
   if (!existsSync(blueprintPath)) {
     return { ok: false, errors: [`blueprint file not found: ${blueprintPath}`] }
   }
+  // v0.5 Phase 3: .md 走 md-pipeline 路径
+  if (blueprintPath.endsWith('.md')) {
+    return validateBlueprintFromMd(blueprintPath)
+  }
   const content = readFileSync(blueprintPath, 'utf-8')
   const parser = createOxnParser()
   const r = await parser.parse(content, URI.file(blueprintPath))
@@ -86,6 +92,113 @@ async function validateBlueprint(blueprintPath: string): Promise<{
     }
   }
   return { ok: true, ast, errors: [] }
+}
+
+/**
+ * v0.5 Phase 3: 验证 .md blueprint (走 md-pipeline)
+ */
+async function validateBlueprintFromMd(blueprintPath: string): Promise<{
+  ok: boolean
+  ast?: OXNDocument
+  errors: string[]
+}> {
+  const content = readFileSync(blueprintPath, 'utf-8')
+  let ir: import('../oxl/md-pipeline/transformers/blueprint').BlueprintIR
+  try {
+    const { tree, frontmatter: fm } = parseMarkdown(content)
+    ir = extractBlueprintIR(tree, fm)
+  } catch (e) {
+    return {
+      ok: false,
+      errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`],
+    }
+  }
+  // IR → 临时 .oxn → 走 langium 拿到 AST (给 blueprintAstToIr 用)
+  const oxnContent = serializeBlueprintToOxn(ir)
+  const parser = createOxnParser()
+  const r = await parser.parse(oxnContent, URI.file(`${blueprintPath}.oxn`))
+  if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
+    return {
+      ok: false,
+      errors: [...r.parseErrors.map((e) => `[Parser] ${e}`), ...r.lexerErrors.map((e) => `[Lexer] ${e}`)],
+    }
+  }
+  const ast = r.ast as OXNDocument
+  const hasBlueprint = ast.entities.some(isBlueprintDeclaration)
+  if (!hasBlueprint) {
+    return {
+      ok: false,
+      ast,
+      errors: ['no BlueprintDeclaration derived from md'],
+    }
+  }
+  return { ok: true, ast, errors: [] }
+}
+
+// ---------------------------------------------------------------------------
+// v0.5 Phase 3: format-aware template generator
+// ---------------------------------------------------------------------------
+
+import type { AssetFormat as BlueprintFormat } from '../infra/paths'
+
+function blueprintCreateTemplate(name: string, slotsBlock: string, slotsArg: string, format: BlueprintFormat): string {
+  if (format === 'md') {
+    // 提取每个 slot 名 (简易: 解析 `slot "X" {` 行)
+    const slotNames: string[] = []
+    for (const line of slotsBlock.split('\n')) {
+      const m = line.match(/^ {2}slot "([^"]+)" \{/)
+      if (m) slotNames.push(m[1]!)
+    }
+    const mdSlots = slotNames.map((slotName) => `### ${slotName}\n- deps: []`).join('\n\n')
+    return `---
+entity: blueprint
+version: 0.3.0
+name: ${name}
+---
+
+# Blueprint: ${name}
+
+> TODO: one-line description of what this blueprint does
+
+## Slots
+
+${mdSlots}
+`
+  }
+  // .oxn 模板（v0.4 既有）
+  return `// Blueprint: ${name}
+// Created by: oxn blueprint create ${name} ${slotsArg ? `--slots ${slotsArg}` : ''}
+//
+// ──────────────────────────────────────────────────────────────────
+// HINTS — read before editing. \`oxn blueprint validate\` will reject
+// anything that violates these rules.
+// ──────────────────────────────────────────────────────────────────
+//  1. slot names: kebab-case (recommended), never PascalCase.
+//  2. slot deps: form a DAG. Cycles are rejected by the validator.
+//  3. The first slot MUST have deps = [] (entry point).
+//  4. prop type: string | number | boolean | any | list<T> | map<T> | enum(...)
+//  5. observe: reference builtin probes via @oxn/probes/{shell-exec|fs-exists|...}
+//     or describe the physical signal (e.g. ["ShellExec"]).
+//  6. Validate:  oxn blueprint validate ${name}
+//  7. Trial run: oxn work create --work-id trial-${name} --blueprint verify-pipeline
+//  8. Share via Git (this file IS the source of truth):
+//        git add .openxenon/blueprints/${name}.oxn && git commit
+// ──────────────────────────────────────────────────────────────────
+//
+// Edit goal/description/props/slots as needed. The mvp-style
+// \`context\` and per-part \`skill\` blocks are optional (unified grammar superset).
+// After editing, validate with:
+//   oxn blueprint validate ${name}
+// Then drive it with:
+//   oxn work create <work-name> --blueprint ${name} --json
+
+blueprint "${name}" {
+  version = 1
+  description = "TODO: one-line description of what this blueprint does"
+
+${slotsBlock}
+}
+`
 }
 
 // ---------------------------------------------------------------------------
@@ -111,6 +224,10 @@ const createSubcommand = defineCommand({
     const name = ctx.args.name as string
     const slotsArg = (ctx.args.slots as string | undefined) ?? ''
     const force = ctx.args.force === true || ctx.args.f === true
+    const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
+    const assetFormat = resolveAssetFormat(config)
+    const autoSync = resolveAutoSync(config)
     const blueprintsDir = getBlueprintsDir()
 
     if (!/^[a-z][a-z0-9-]*(?:\/[a-z][a-z0-9-]*)*$/.test(name)) {
@@ -148,13 +265,15 @@ const createSubcommand = defineCommand({
       mkdirSync(blueprintsDir, { recursive: true })
     }
 
-    const outPath = join(blueprintsDir, `${name}.oxn`)
-    const outDir = join(blueprintsDir, name.split('/').slice(0, -1).join('/'))
-    if (outDir !== blueprintsDir && !existsSync(outDir)) {
-      mkdirSync(outDir, { recursive: true })
-    }
-    if (existsSync(outPath) && !force) {
-      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `blueprint file already exists: ${outPath}`, {
+    // v0.5 Phase 3: 主路径由 config.assetFormat 决定
+    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'blueprint', name, assetFormat)
+    const altPath = resolveAssetAltPath(projectRoot, 'blueprint', name, assetFormat)
+    const primaryDir = join(primaryPath, '..')
+    const altDir = join(altPath, '..')
+    if (!existsSync(primaryDir)) mkdirSync(primaryDir, { recursive: true })
+    if (!existsSync(altDir)) mkdirSync(altDir, { recursive: true })
+    if (existsSync(primaryPath) && !force) {
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `blueprint file already exists: ${primaryPath}`, {
         suggestion: 'use --force / -f to overwrite',
         format,
       })
@@ -168,40 +287,30 @@ const createSubcommand = defineCommand({
       slotBlocks.push(`  slot "${slotName}" {\n    deps = ${depsStr}\n  }`)
     }
 
-    const template = `// Blueprint: ${name}
-// Created by: oxn blueprint create ${name} ${slotsArg ? `--slots ${slotsArg}` : ''}
-//
-// ──────────────────────────────────────────────────────────────────
-// HINTS — read before editing. \`oxn blueprint validate\` will reject
-// anything that violates these rules.
-// ──────────────────────────────────────────────────────────────────
-//  1. slot names: kebab-case (recommended), never PascalCase.
-//  2. slot deps: form a DAG. Cycles are rejected by the validator.
-//  3. The first slot MUST have deps = [] (entry point).
-//  4. prop type: string | number | boolean | any | list<T> | map<T> | enum(...)
-//  5. observe: reference builtin probes via @oxn/probes/{shell-exec|fs-exists|...}
-//     or describe the physical signal (e.g. ["ShellExec"]).
-//  6. Validate:  oxn blueprint validate ${name}
-//  7. Trial run: oxn work create --work-id trial-${name} --blueprint verify-pipeline
-//  8. Share via Git (this file IS the source of truth):
-//        git add .openxenon/blueprints/${name}.oxn && git commit
-// ──────────────────────────────────────────────────────────────────
-//
-// Edit goal/description/props/slots as needed. The mvp-style
-// \`context\` and per-part \`skill\` blocks are optional (unified grammar superset).
-// After editing, validate with:
-//   oxn blueprint validate ${name}
-// Then drive it with:
-//   oxn work create <work-name> --blueprint ${name} --json
+    // v0.5 Phase 3: format-aware template
+    const template = blueprintCreateTemplate(name, slotBlocks.join('\n\n'), slotsArg, assetFormat)
+    writeFileSync(primaryPath, template, 'utf-8')
 
-blueprint "${name}" {
-  version = 1
-  description = "TODO: one-line description of what this blueprint does"
-
-${slotBlocks.join('\n\n')}
-}
-`
-    writeFileSync(outPath, template, 'utf-8')
+    // v0.5 Phase 3: 自动 sync 到另一种格式
+    if (autoSync) {
+      void (async () => {
+        try {
+          if (assetFormat === 'oxn') {
+            // .oxn → .md
+            const altResult = await compileOxnToMd(template, { entity: 'blueprint', frontmatter: true })
+            writeFileSync(altPath, altResult.md, 'utf-8')
+          } else {
+            // .md → .oxn
+            const { tree, frontmatter: fm } = parseMarkdown(template)
+            const ir = extractBlueprintIR(tree, fm)
+            const altContent = serializeBlueprintToOxn(ir)
+            writeFileSync(altPath, altContent, 'utf-8')
+          }
+        } catch {
+          // autoSync 失败不阻断主命令
+        }
+      })()
+    }
 
     // PR-X: create 后静默重建全局 slim 索引（与 domain create 一致）
     const rebuild = autoRebuildBlueprintIndex(getProjectRoot())
@@ -214,11 +323,13 @@ ${slotBlocks.join('\n\n')}
         ok: true,
         data: {
           name,
-          path: outPath,
+          path: primaryPath,
+          format: assetFormat,
+          syncedTo: autoSync ? altPath : null,
           slotCount: slotNames.length,
           slots: slotNames,
         },
-        human: `Created blueprint ${name} at ${outPath}\nSlots: ${slotNames.join(', ')}\n\nNext: edit ${outPath}, then run \`oxn blueprint validate ${name}\``,
+        human: `Created blueprint ${name} at ${primaryPath}${autoSync ? ` (synced to ${altPath})` : ''}\nSlots: ${slotNames.join(', ')}\n\nNext: edit ${primaryPath}, then run \`oxn blueprint validate ${name}\``,
       },
       format,
     )
@@ -241,6 +352,9 @@ const validateSubcommand = defineCommand({
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
+    const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
+    const assetFormat = resolveAssetFormat(config)
     if (!/^[a-z][a-z0-9-]*(?:\/[a-z][a-z0-9-]*)*$/.test(name)) {
       return outputError(
         {
@@ -252,7 +366,10 @@ const validateSubcommand = defineCommand({
         format,
       )
     }
-    const bpPath = join(getBlueprintsDir(), `${name}.oxn`)
+    // v0.5 Phase 3: 主路径由 config 决定,fall back 到 alt
+    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'blueprint', name, assetFormat)
+    const altPath = resolveAssetAltPath(projectRoot, 'blueprint', name, assetFormat)
+    const bpPath = existsSync(primaryPath) ? primaryPath : existsSync(altPath) ? altPath : primaryPath
     const result = await validateBlueprint(bpPath)
     if (!result.ok) {
       return outputError(
@@ -738,7 +855,7 @@ const syncMdSubcommand = defineCommand({
           const mdSha = computeSha256(finalContent)
           writeFileSync(mdPath, finalContent, 'utf-8')
           writeCacheSha(getCachePath(projectRoot, 'blueprint', name), mdSha)
-          writeFileSync(mdCachePath, mdSha + '\n', 'utf-8')
+          writeFileSync(mdCachePath, `${mdSha}\n`, 'utf-8')
         } catch (err) {
           results.push({ name, status: 'error', error: `oxn-priority sync: ${String(err)}` })
           continue
@@ -829,7 +946,7 @@ const syncMdSubcommand = defineCommand({
       const cacheDir2 = join(mdDir, '.cache')
       if (!existsSync(cacheDir2)) mkdirSync(cacheDir2, { recursive: true })
       const finalMdSha = existsSync(mdPath) ? computeSha256(readFileSync(mdPath, 'utf-8')) : shaMdCurrent
-      writeFileSync(mdCachePath, finalMdSha + '\n', 'utf-8')
+      writeFileSync(mdCachePath, `${finalMdSha}\n`, 'utf-8')
 
       results.push({ name, status: 'updated', mdSha: finalMdSha, oxnSha: oxnShaNew })
     }

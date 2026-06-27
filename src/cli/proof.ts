@@ -204,7 +204,7 @@ function snapshotWorkMd(proofName: string, proofOxnPath: string): SnapshotResult
     return {
       status: 'error',
       workPath,
-      error: `work.md not found at: ${workPath}`,
+      error: `work file not found at: ${workPath}`,
     }
   }
 
@@ -260,7 +260,7 @@ function verifyWorkHash(proofName: string, proofOxnPath: string): VerifyResult {
 
   const workPath = resolveWorkPath(proofOxnPath, target)
   if (!existsSync(workPath)) {
-    return { status: 'work-missing', ok: false, workPath, error: `work.md not found: ${workPath}` }
+    return { status: 'work-missing', ok: false, workPath, error: `work file not found: ${workPath}` }
   }
 
   const liveHash = computeFileHash(workPath)
@@ -281,7 +281,7 @@ function verifyWorkHash(proofName: string, proofOxnPath: string): VerifyResult {
     workPath,
     liveHash,
     prevHash,
-    error: 'work.md changed since last proof run',
+    error: 'work file changed since last proof run',
   }
 }
 
@@ -688,17 +688,17 @@ const runSubcommand = defineCommand({
       })
     }
 
-    // v0.4 PR-B (Q4-A): Phase 0.5 — work.md 不可变快照
+    // v0.4 PR-B (Q4-A): Phase 0.5 — work file 不可变快照
     //   若 proof.oxn 含 `// proofs-target-work: <path>` 注释：
-    //     1. 计算 work.md SHA-256
+    //     1. 计算 work file SHA-256 (v0.5 Phase 3: .oxn 或 .md 均可)
     //     2. 对比 work-hash.txt: 一致 → 跳过；不一致 → 拷贝新快照 + 写新 hash
     //   缺注释 → 跳过（兼容旧 proof.oxn）
-    //   work.md 缺失 → 抛 E_PROOF_WORK_MISSING
+    //   work file 缺失 → 抛 E_PROOF_WORK_MISSING
     const snapshot = snapshotWorkMd(name, oxnPath)
     if (snapshot.status === 'error') {
-      return outputUserInputError('OXN_PROOF_WORK_MISSING', snapshot.error ?? 'work.md not found', {
+      return outputUserInputError('OXN_PROOF_WORK_MISSING', snapshot.error ?? 'work file not found', {
         suggestion: snapshot.workPath
-          ? `check that \`// proofs-target-work: ${snapshot.workPath}\` points to existing work.md`
+          ? `check that \`// proofs-target-work: ${snapshot.workPath}\` points to existing work file (.oxn or .md)`
           : 'add `// proofs-target-work: <path>` comment to proof.oxn header',
         format,
       })
@@ -815,9 +815,7 @@ const runSubcommand = defineCommand({
           verdictError,
           readOnly: isFrozenFileReadOnly(frozenPath),
         },
-        human: frozen
-          ? renderVerdictHuman(name, frozen, verdictPath, verdictWritten)
-          : 'frozen write failed',
+        human: frozen ? renderVerdictHuman(name, frozen, verdictPath, verdictWritten) : 'frozen write failed',
       },
       format,
     )
@@ -897,7 +895,7 @@ const verifySubcommand = defineCommand({
             v.status === 'drift'
               ? 're-run `oxn proof run <name>` to refresh the snapshot'
               : v.status === 'work-missing'
-                ? 'check that proofs-target-work path in proof.oxn header points to existing work.md'
+                ? 'check that proofs-target-work path in proof.oxn header points to existing work file (.oxn or .md)'
                 : 'run `oxn proof run <name>` to create initial snapshot',
         },
         format,
@@ -926,7 +924,7 @@ function renderVerifyHuman(v: ReturnType<typeof verifyWorkHash>): string {
     return `Proof has no proofs-target-work annotation — no snapshot mechanism active.`
   }
   if (v.status === 'match') {
-    return `✅ Work hash matches snapshot.\n  work.md:  ${v.workPath}\n  hash:     ${v.liveHash}`
+    return `✅ Work hash matches snapshot.\n  work file: ${v.workPath}\n  hash:      ${v.liveHash}`
   }
   return `${v.status}: ${v.error ?? 'unknown'}`
 }

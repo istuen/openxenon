@@ -594,11 +594,11 @@ describe('v0.4 PR-B Q4-A: snapshotWorkMd', () => {
     expect(r.status).toBe('no-target')
   })
 
-  test('work.md missing: status=error', () => {
+  test('work file missing: status=error', () => {
     rmSync(join(workDir, 'work.oxn'))
     const r = snapshotWorkMd('foo', proofOxnPath)
     expect(r.status).toBe('error')
-    expect(r.error).toContain('work.md not found')
+    expect(r.error).toContain('work file not found')
   })
 })
 
@@ -645,7 +645,7 @@ describe('v0.4 PR-B Q4-A: verifyWorkHash', () => {
     expect(r.liveHash).not.toBe(r.prevHash)
   })
 
-  test('work.md missing: status=work-missing', () => {
+  test('work file missing: status=work-missing', () => {
     snapshotWorkMd('foo', proofOxnPath)
     rmSync(join(workDir, 'work.oxn'))
     const r = verifyWorkHash('foo', proofOxnPath)

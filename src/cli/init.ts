@@ -230,6 +230,9 @@ export default defineCommand({
           locale: locale as SupportedLocale,
           name: projectName,
           createdAt: Date.now(),
+          // v0.5 Phase 3: 默认 oxn (向后兼容), autoSync 默认 true
+          assetFormat: 'oxn',
+          autoSync: true,
         }
         const resolved = resolveTools(
           {

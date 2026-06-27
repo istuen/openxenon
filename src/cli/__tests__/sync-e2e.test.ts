@@ -91,13 +91,17 @@ describe('oxn domain sync (Phase 1)', () => {
   test('dry-run: 不写 .md', async () => {
     await initProject()
     await runCli(['domain', 'create', 'Y'])
+    // v0.5 Phase 3: create 已自动 sync 到 .md — 删掉后再测 dry-run
+    const mdPath = join(tmpDir, '.openxenon', 'domains-md', 'Y.md')
+    if (existsSync(mdPath)) rmSync(mdPath)
+    const cacheDir = join(tmpDir, '.openxenon', 'domains-md', '.cache')
+    if (existsSync(cacheDir)) rmSync(cacheDir, { recursive: true })
 
     const r = await runCli(['domain', 'sync', 'Y', '--dry-run'])
     expect(r.exitCode).toBe(0)
     expect(r.stdout).toContain('updated:   1')
     expect(r.stdout).toContain('(dry-run)')
 
-    const mdPath = join(tmpDir, '.openxenon', 'domains-md', 'Y.md')
     expect(existsSync(mdPath)).toBe(false)
   })
 
