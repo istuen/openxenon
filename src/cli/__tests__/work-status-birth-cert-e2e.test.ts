@@ -79,8 +79,7 @@ function setupWork(workName: string, taskNames: string[]): void {
   context {
     goal = "PR-14a";
     constraints = ["c1"];
-    loop_policy { max_iterations = 4; }
-  }
+    } loop_policy { max_iterations = 4; }
   domain "LifecycleDomain" ref "@prj/domains/lifecycle-domain";
   blueprint "LifecycleBP" ref "@prj/blueprints/lifecycle-bp";
 ${taskNames.map((t) => `  task "${t}" { blueprint "LifecycleBP" }`).join('\n')}

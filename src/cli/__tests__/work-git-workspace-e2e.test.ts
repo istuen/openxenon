@@ -120,8 +120,7 @@ async function setupProjectWithGitWorkflow(workName: string): Promise<{ workDir:
   context {
     goal = "git worktree e2e";
     constraints = ["do not commit on main"];
-    loop_policy { max_iterations = 3; }
-  }
+    } loop_policy { max_iterations = 3; }
   domain "ProgramContext" ref "@prj/domains/program-context";
   blueprint "git-workflow" ref "@prj/blueprints/git-workflow";
 

@@ -6,6 +6,22 @@
 //   2. writeFrozenProof 调 shared writeFrozenImmutable（自动算 SHA-256 + chmod 0o444）
 //
 // 写权独占：本模块是 frozen.json 的**唯一**合法写路径（AI / 工程师禁手改）。
+//
+// v0.3.0 Q1 决策（3 态命名大小写分层）：
+// - canonical .md（人类阅读 SSOT）：lowercase  `pass` / `fail` / `inconclusive`
+// - frozen.json（机器内核）：           uppercase  `PASSED` / `FAILED` / `INCONCLUSIVE`
+// - Kernel ProbeVerdict（接口契约）：    uppercase  `PASS` / `FAIL` / `INCONCLUSIVE`（无 -ED）
+// - 映射在 buildFrozenProof 的 verdict 字段统一做：
+//     ProbeVerdict.PASS      → verdict: 'PASSED'
+//     ProbeVerdict.FAIL      → verdict: 'FAILED'
+//     ProbeVerdict.INCONCLUSIVE → verdict: 'INCONCLUSIVE'
+//   反向读 .md 时 src/oxl/md-bridge/compilers/proof-compiler.ts:parse()：
+//     lowercase 'pass' → 直接保留
+//     uppercase 'PASS' / 'PASSED' → 静默降级为 'inconclusive'（避免歧义）
+//
+// 理由（SSOT 分层）：canonical .md 面向人（lowercase 平易近人），
+//                    frozen.json 面向机（uppercase + 过去分词是 JSON Schema 枚举值惯例）。
+//                    不为形式统一破坏 Kernel Schema；mapping 在 compile/run 边界即可。
 // =============================================================================
 
 import {

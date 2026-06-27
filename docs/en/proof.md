@@ -215,6 +215,228 @@ Execution of the Proof axis depends on the strict division of labor among the th
 
 > **Purity First Law**: Infra must not bypass Daemon and self-declare done → Daemon must not modify Kernel rules → Kernel must not directly execute Task
 
+## v0.3 Proof Verdict Output Specification (canonical .md)
+
+> **This section is the v0.3.0 canonical pure-MD form specification**. Complements `## Verdict 与逃逸机制` (上一节 zh-cn ref): that section covers **frozen.json** (machine kernel product), this section covers **.md canonical** (human-readable SSOT).
+
+### 1️⃣ Core Structure (H1 + H2 + H3 + lists)
+
+```markdown
+---
+entity: proof
+version: 0.3.0
+name: <proof-name>
+---
+
+# Proof: <proof-name>
+
+> One-line description of what this Proof verifies
+
+## Verdicts
+
+### <verdict-name>
+- type: pass | fail | inconclusive
+- value: <human-readable description>
+
+## Runtime
+
+### snapshot
+- observed_at: <ISO 8601>
+- probes_run: <int>
+- probes_passed: <int>
+- probes_inconclusive: <int>
+```
+
+### 2️⃣ 3-State Verdict Semantics
+
+| `type` value | Semantics | Triggered when |
+|---|---|---|
+| `pass` | Verification passed | All Probes match expected |
+| `fail` | Verification failed | Any Probe missed expected |
+| `inconclusive` | Signal pollution | ProbeVerdict received RED flag (e.g. fs probe read SIGINT path) |
+
+### 3️⃣ Complete Example (3-state mix)
+
+```markdown
+---
+entity: proof
+version: 0.3.0
+name: order-build-validity
+---
+
+# Proof: order-build-validity
+
+> Verify place-order Work's build step produces executable + type + lint all pass
+
+## Verdicts
+
+### build-exists
+- type: pass
+- value: dist/oxn file exists with sha256 matching lock
+
+### type-check
+- type: pass
+- value: bun run typecheck 0 error (0 warning)
+
+### lint
+- type: fail
+- value: biome check 1 error in src/cli/proof.ts:88 — see frozen.json#probes[2].errorMessage
+
+### network-reachable
+- type: inconclusive
+- value: http-responds probe returned RED flag: TLS handshake interrupted by signal
+
+## Runtime
+
+### snapshot
+- observed_at: 2026-06-23T12:00:00Z
+- probes_run: 4
+- probes_passed: 2
+- probes_inconclusive: 1
+```
+
+### 4️⃣ Key Rules (Compiler Hard Constraints)
+
+| Rule | Error code | Source |
+|---|---|---|
+| H2 must be `Verdicts` or `Runtime` | `E_MD_CATEGORY_UNKNOWN` | `proof-compiler.ts:203` |
+| H3 unique within its H2 | `E_MD_DUPLICATE_H3` | `proof-compiler.ts:214` |
+| `type` must be one of 3 states (other values silently degrade to `inconclusive`) | silent degrade | `proof-compiler.ts:243` |
+| Missing `type` field | silent default `inconclusive` | `proof-compiler.ts:144` |
+| `## Runtime` must contain **exactly one** H3 = `snapshot` (v0.3.0 Q3 decision) | `E_MD_INVALID_RUNTIME_BLOCK` | `proof-compiler.ts:251` |
+| Runtime must NOT explicitly write `probes_failed` (v0.3.0 Q2 decision) | `E_MD_REDUNDANT_FIELD` | `proof-compiler.ts:286` |
+
+### 5️⃣ Runtime Field Schema
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `observed_at` | ISO 8601 string | No | Proof run timestamp |
+| `probes_run` | int | No | Total Probes run |
+| `probes_passed` | int | No | Passed count |
+| `probes_inconclusive` | int | No | Polluted count |
+| `probes_failed` | **derived** | **DO NOT write explicitly** | `run - passed - inconclusive` computed automatically |
+
+> **Data redundancy is the root of all evil**: if a user (or AI) writes `probes_failed: 1` manually while `probes_passed + probes_inconclusive` already imply a different value, storage becomes inconsistent (`4 ≠ 2+1+1`). **Q2 decision**: `E_MD_REDUNDANT_FIELD` strict reject.
+
+### 6️⃣ Dual-layer Verdict Mapping (.md ⇄ frozen.json)
+
+```
+┌─────────────────────────┐         ┌────────────────────────────┐
+│ .md (canonical SSOT)    │         │ frozen.json (Kernel output) │
+├─────────────────────────┤         ├────────────────────────────┤
+│ ### build-exists         │         │ { verdict: "PASSED",      │
+│ - type: pass            │ ◀────▶  │   probes: [                │
+│ - value: dist/oxn ...   │ (Proof  │     { probeName: "build..", │
+│                         │   run)  │       passed: true },      │
+│ ### type-check           │         │     ...                    │
+│ - type: fail            │         │   ],                       │
+│ - value: biome ...      │         │   totalCount: 2,           │
+│                         │         │   passedCount: 1 }        │
+└─────────────────────────┘         └────────────────────────────┘
+```
+
+**3-state naming discrepancy** (Q1 decision: keep status quo, don't modify Kernel Schema for form uniformity):
+
+| Layer | Value space |
+|---|---|
+| `.md` canonical (ProofCompiler) | `pass` / `fail` / `inconclusive` ← lowercase |
+| `frozen.json` (FrozenProofSchema) | `PASSED` / `FAILED` / `INCONCLUSIVE` ← uppercase + `-ED` |
+| Kernel `ProbeVerdict` | `PASS` / `FAIL` / `INCONCLUSIVE` ← uppercase no `-ED` |
+
+**Mapping boundary**: `src/cli/proof-frozen-writer.ts` does `PASS → PASSED` mapping when writing frozen.json. `src/oxl/md-bridge/compilers/proof-compiler.ts:parse()` does reverse — uppercase values silently degrade to `inconclusive` (avoid case ambiguity).
+
+### 7️⃣ 5 Anti-patterns (Avoid These)
+
+```markdown
+❌ 1. Writing type in uppercase (frozen.json style) → silently degrades to inconclusive!
+- type: PASS
+
+❌ 2. Using :::intent{...} containers (post-v0.3 throws E_MD_DEPRECATED_SYNTAX)
+```
+: : :intent{#v1 type="verdict"}    ← Split opening ::: to avoid triggering canonical CI
+  type: pass
+: : :
+```
+
+❌ 3. Multiple Verdicts sharing same H3 text (throws E_MD_DUPLICATE_H3)
+### build
+- type: pass
+### build          ← Same H2 name conflict → error
+- type: fail
+
+❌ 4. Writing H2 not in whitelist (throws E_MD_CATEGORY_UNKNOWN)
+## Probes          ← Must be Verdicts or Runtime
+
+❌ 5. Explicitly writing derived field (throws E_MD_REDUNDANT_FIELD)
+## Runtime
+### snapshot
+- probes_failed: 1   ← Derived from probes_run - probes_passed - probes_inconclusive
+```
+
+### 8️⃣ End-to-End Workflow (v0.3.0)
+
+```bash
+# 1. Write .oxn (Langium grammar)
+cat > .openxenon/proofs/my-proof/proof.oxn <<'EOF'
+proof "my-proof" {
+  description = "..."
+  probe "p1" { ref "@oxn/probes/fs-exists" params { pattern = "./dist/oxn" } }
+  probe "p2" { ref "@oxn/probes/shell-exec" params { command = "bun test" } }
+}
+EOF
+
+# 2. Compile to v0.3 canonical .md (new in v0.3.0)
+oxn proof compile my-proof
+# → Writes .openxenon/proofs-md/my-proof.md (with ## Verdicts / ## Runtime)
+
+# 3. Run proof (auto-generates frozen.json)
+oxn proof run my-proof
+# → Writes .openxenon/proofs/my-proof/frozen.json (with probes[] + verdict)
+
+# 4. (Optional) AI reads .md to see verdict
+cat .openxenon/proofs-md/my-proof.md
+```
+
+### 9️⃣ Real Example (in repo)
+
+`src/oxl/examples-md/order-build-validity-proof.md` (3 pass verdicts + Runtime snapshot):
+
+```markdown
+---
+entity: proof
+version: 0.3.0
+name: order-build-validity
+---
+
+# Proof: order-build-validity
+
+> Verify place-order Work's build step produces executable + type + lint all pass
+
+## Verdicts
+
+### build-exists
+- type: pass
+- value: dist/oxn file exists with sha256 matching lock
+
+### type-check
+- type: pass
+- value: bun run typecheck 0 error (0 warning)
+
+### lint
+- type: pass
+- value: bun run lint 0 error (pre-existing 1 warning not counted)
+
+## Runtime
+
+### snapshot
+- observed_at: 2026-06-23T12:00:00Z
+- probes_run: 3
+- probes_passed: 3
+- probes_inconclusive: 0
+```
+
+---
+
 ## → Reference
 
 - [Intent](./intent.md) — Probe standards come from Blueprint's `observe` field

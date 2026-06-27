@@ -1,7 +1,7 @@
 // =============================================================================
 // Unified OXL barrel (v0.1-final)
 //
-// The unified grammar (see src/oxl/langium/oxn.langium) defines:
+// The unified grammar (see src/oxl/langium-driver/oxn.langium) defines:
 //   - Probe / Part / Blueprint — asset declarations (global directory)
 //   - Domain — DDD bounded context (term/ban/invariant)
 //   - Work — workspace orchestrator (resource pool + task DAG)
@@ -69,7 +69,25 @@ export {
   createOxnParser,
   OxnParser,
   type OxnParseResult,
-} from './langium/oxn-services'
+} from './langium-driver/oxn-services'
+
+// --- OxlDriver 抽象（v0.3 Step 1.2 路线 C v3）---
+// 统一入口：langium + mdast 双 driver 切换
+// 默认 driver：langium（向后兼容 v0.2.0）
+// 切换方式：driverRegistry.setDefault('mdast') 或 OXL_DRIVER=mdast 环境变量
+export type {
+  OxlDriver,
+  OxlDocument,
+  OxlParseOptions,
+  OxlDriverName,
+  OxlDriverMetadata,
+  OxlAstElement,
+} from './contracts/oxl-driver'
+
+// v0.4 PR-C4: driverRegistry 迁出 md-bridge → driver.ts
+// compat: import { getActiveDriver, setActiveDriver } from './driver.js'
+export { MdastOxlDriver } from './md-bridge'
+export { LangiumOxlDriver } from './langium-driver/langium-oxl-driver'
 
 // --- AST types (v0.1-final grammar) ---
 export type {
@@ -103,7 +121,7 @@ export type {
   // v0.1.2 Proof-First
   ProofDeclaration,
   ProofProbeDecl,
-} from './generated/ast'
+} from './langium-driver/generated/ast'
 
 // --- AST type guards ---
 export {
@@ -125,7 +143,7 @@ export {
   // v0.1.2 Proof-First
   isProofDeclaration,
   isProofProbeDecl,
-} from './generated/ast'
+} from './langium-driver/generated/ast'
 
 // =============================================================================
 // v0.0.28 兼容层：OpenXenon Language (OXL) 品牌升级
@@ -134,7 +152,7 @@ export {
 // =============================================================================
 
 /** @deprecated brand upgrade: use OxlParser */
-export { createOxnParser as createOxlParser } from './langium/oxn-services'
+export { createOxnParser as createOxlParser } from './langium-driver/oxn-services'
 /** @deprecated brand upgrade: use OxlAssetLoader */
 export { createOxnAssetLoader as createOxlAssetLoader } from './loader/oxn-loader'
 /** @deprecated brand upgrade: use OxlCompiler */

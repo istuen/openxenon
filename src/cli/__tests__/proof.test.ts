@@ -464,3 +464,199 @@ describe('renderShowHuman 3-state (T5)', () => {
     expect(out).toMatch(/\[flags: sandbox_violation, permission_denied\]/)
   })
 })
+
+// =============================================================================
+// v0.4 PR-B (Q4-A): proof ↔ work 快照机制测试
+// =============================================================================
+
+import {
+  getProofMdPath,
+  getProofWorkHashPath,
+  parseProofMetadata,
+  resolveWorkPath,
+  snapshotWorkMd,
+  verifyWorkHash,
+} from '../proof'
+
+describe('v0.4 PR-B Q4-A: parseProofMetadata', () => {
+  test('extracts proofs-target-work from comment', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'oxn-meta-'))
+    const proofPath = join(tmp, 'proof.oxn')
+    writeFileSync(
+      proofPath,
+      [
+        '// Proof: foo',
+        '// proofs-target-work: ../../works/foo/work.oxn',
+        '// Other comment',
+        'proof "foo" { description = "..." probe "p1" { ref "x" } }',
+      ].join('\n'),
+    )
+    const meta = parseProofMetadata(proofPath)
+    expect(meta['proofs-target-work']).toBe('../../works/foo/work.oxn')
+    rmSync(tmp, { recursive: true, force: true })
+  })
+
+  test('returns empty metadata for proof without target comment', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'oxn-meta-'))
+    const proofPath = join(tmp, 'proof.oxn')
+    writeFileSync(proofPath, '// just a comment\nproof "foo" { }')
+    const meta = parseProofMetadata(proofPath)
+    expect(meta['proofs-target-work']).toBeUndefined()
+    rmSync(tmp, { recursive: true, force: true })
+  })
+
+  test('returns empty metadata for missing file', () => {
+    const meta = parseProofMetadata('/nonexistent/proof.oxn')
+    expect(meta).toEqual({})
+  })
+})
+
+describe('v0.4 PR-B Q4-A: resolveWorkPath', () => {
+  test('absolute path passes through', () => {
+    const proofPath = '/some/proof.oxn'
+    const result = resolveWorkPath(proofPath, '/abs/path/work.oxn')
+    expect(result).toBe('/abs/path/work.oxn')
+  })
+
+  test('relative path resolves against proof.oxn directory', () => {
+    const proofPath = '/x/proofs/foo/proof.oxn'
+    const result = resolveWorkPath(proofPath, '../../works/foo/work.oxn')
+    expect(result).toBe('/x/works/foo/work.oxn')
+  })
+})
+
+describe('v0.4 PR-B Q4-A: snapshotWorkMd', () => {
+  let tmpDir: string
+  let workDir: string
+  let proofDir: string
+  let proofOxnPath: string
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'oxn-snap-'))
+    workDir = join(tmpDir, 'works', 'foo')
+    proofDir = join(tmpDir, 'proofs', 'foo')
+    mkdirSync(workDir, { recursive: true })
+    mkdirSync(proofDir, { recursive: true })
+    writeFileSync(join(workDir, 'work.oxn'), '# work content v1\n')
+    proofOxnPath = join(proofDir, 'proof.oxn')
+    writeFileSync(
+      proofOxnPath,
+      [
+        '// Proof: foo',
+        `// proofs-target-work: ../../works/foo/work.oxn`,
+        'proof "foo" { description = "x" probe "p1" { ref "y" } }',
+      ].join('\n'),
+    )
+  })
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  test('first run: status=updated, writes proof.md + work-hash.txt', () => {
+    const r = snapshotWorkMd('foo', proofOxnPath)
+    expect(r.status).toBe('updated')
+    expect(r.workHash).toBeDefined()
+    expect(existsSync(getProofMdPath('foo'))).toBe(true)
+    expect(existsSync(getProofWorkHashPath('foo'))).toBe(true)
+  })
+
+  test('idempotent: same work.md → status=unchanged, no overwrite', async () => {
+    snapshotWorkMd('foo', proofOxnPath)
+    const mtime1 = statSync(getProofMdPath('foo')).mtimeMs
+    await new Promise((r) => setTimeout(r, 10))
+    const r2 = snapshotWorkMd('foo', proofOxnPath)
+    expect(r2.status).toBe('unchanged')
+    const mtime2 = statSync(getProofMdPath('foo')).mtimeMs
+    expect(mtime2).toBe(mtime1)
+  })
+
+  test('work.md changed: status=updated, new hash', () => {
+    snapshotWorkMd('foo', proofOxnPath)
+    const hash1 = readFileSync(getProofWorkHashPath('foo'), 'utf-8').trim()
+    writeFileSync(join(workDir, 'work.oxn'), '# work content v2 changed\n')
+    const r2 = snapshotWorkMd('foo', proofOxnPath)
+    expect(r2.status).toBe('updated')
+    const hash2 = readFileSync(getProofWorkHashPath('foo'), 'utf-8').trim()
+    expect(hash2).not.toBe(hash1)
+  })
+
+  test('proof.md is 0o444 (immutable)', () => {
+    snapshotWorkMd('foo', proofOxnPath)
+    const st = statSync(getProofMdPath('foo'))
+    // 0o444 = 292; 0o444 & 0o777 = 292
+    expect(st.mode & 0o777).toBe(0o444)
+  })
+
+  test('no proofs-target-work annotation: status=no-target', () => {
+    writeFileSync(proofOxnPath, '// no target\nproof "foo" { }')
+    const r = snapshotWorkMd('foo', proofOxnPath)
+    expect(r.status).toBe('no-target')
+  })
+
+  test('work.md missing: status=error', () => {
+    rmSync(join(workDir, 'work.oxn'))
+    const r = snapshotWorkMd('foo', proofOxnPath)
+    expect(r.status).toBe('error')
+    expect(r.error).toContain('work.md not found')
+  })
+})
+
+describe('v0.4 PR-B Q4-A: verifyWorkHash', () => {
+  let tmpDir: string
+  let workDir: string
+  let proofDir: string
+  let proofOxnPath: string
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'oxn-verify-'))
+    workDir = join(tmpDir, 'works', 'foo')
+    proofDir = join(tmpDir, 'proofs', 'foo')
+    mkdirSync(workDir, { recursive: true })
+    mkdirSync(proofDir, { recursive: true })
+    writeFileSync(join(workDir, 'work.oxn'), '# content\n')
+    proofOxnPath = join(proofDir, 'proof.oxn')
+    writeFileSync(proofOxnPath, ['// proofs-target-work: ../../works/foo/work.oxn', 'proof "foo" { }'].join('\n'))
+  })
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  test('no snapshot yet: status=no-snapshot, ok=false', () => {
+    const r = verifyWorkHash('foo', proofOxnPath)
+    expect(r.status).toBe('no-snapshot')
+    expect(r.ok).toBe(false)
+  })
+
+  test('after snapshot, no change: status=match, ok=true', () => {
+    snapshotWorkMd('foo', proofOxnPath)
+    const r = verifyWorkHash('foo', proofOxnPath)
+    expect(r.status).toBe('match')
+    expect(r.ok).toBe(true)
+  })
+
+  test('after snapshot, work.md changed: status=drift, ok=false', () => {
+    snapshotWorkMd('foo', proofOxnPath)
+    writeFileSync(join(workDir, 'work.oxn'), '# changed\n')
+    const r = verifyWorkHash('foo', proofOxnPath)
+    expect(r.status).toBe('drift')
+    expect(r.ok).toBe(false)
+    expect(r.liveHash).not.toBe(r.prevHash)
+  })
+
+  test('work.md missing: status=work-missing', () => {
+    snapshotWorkMd('foo', proofOxnPath)
+    rmSync(join(workDir, 'work.oxn'))
+    const r = verifyWorkHash('foo', proofOxnPath)
+    expect(r.status).toBe('work-missing')
+    expect(r.ok).toBe(false)
+  })
+
+  test('no target annotation: status=no-target, ok=true (silent pass)', () => {
+    writeFileSync(proofOxnPath, '// no target\nproof "foo" { }')
+    const r = verifyWorkHash('foo', proofOxnPath)
+    expect(r.status).toBe('no-target')
+    expect(r.ok).toBe(true)
+  })
+})

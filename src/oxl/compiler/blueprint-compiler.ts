@@ -2,7 +2,7 @@ import type { Blueprint, CompiledBlueprint, HashPort } from '../../kernel/index'
 import { computeContentHash } from '../../kernel/index'
 import { type DagNode, validateDagTopology } from '../../oxl/validators/blueprint-dag'
 import type { IOxnCompiler } from '../contracts/oxn-compiler-port'
-import { createOxnServices } from '../langium/oxn-services'
+import { createOxnServices } from '../langium-driver/oxn-services'
 
 export interface CompileContext {
   taskId: string

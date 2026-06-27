@@ -18,7 +18,12 @@
       "output": "Custom output path",
       "freshness": "Only check if index is fresh"
     },
-    "description": "Manage OXL blueprints (create/validate/list/index)"
+    "compile": {
+      "description": "Recompile .oxn to v0.3 canonical pure MD .md (output to .openxenon/blueprints-md/)",
+      "name": "Blueprint name",
+      "filePath": "Direct .oxn file path (optional escape hatch)"
+    },
+    "description": "Manage OXL blueprints (create/validate/list/index/compile)"
   },
   "cache": {
     "notFound": "Cache directory not found",
@@ -104,7 +109,12 @@
       "output": "Custom output path",
       "freshness": "Only check if index is fresh"
     },
-    "description": "Domain module — DDD bounded context management (create/validate/list/index)"
+    "compile": {
+      "description": "Recompile .oxn to v0.3 canonical pure MD .md (output to .openxenon/domains-md/)",
+      "name": "Domain name",
+      "filePath": "Specify .oxn file path directly (optional escape hatch)"
+    },
+    "description": "Domain module — DDD bounded context management (create/validate/list/index/compile)"
   },
   "errors": {
     "projectNotInit": "Project not initialized, run `oxn init` first",

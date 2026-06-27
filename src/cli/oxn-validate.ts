@@ -7,9 +7,9 @@ import { validateFrozenBlueprint } from '../kernel/index'
 import type { OxnAssemblyIR, OxnAssemblySlotBinding } from '../oxl/schemas/oxn-assembly.schema'
 import { validateOxnAssemblyIR } from '../oxl/schemas/oxn-assembly.schema'
 import { adaptOxnToFrozen } from '../oxl/compiler/oxn-adapter'
-import type { OXNDocument } from '../oxl/generated/ast.js'
+import type { OXNDocument } from '../oxl/langium-driver/generated/ast.js'
 import { generateOxnAssembly } from '../oxl/generator/oxn-generator.js'
-import { createOxnServices, resetOxnServices } from '../oxl/langium/oxn-services.js'
+import { createOxnServices, resetOxnServices } from '../oxl/langium-driver/oxn-services.js'
 import { output, outputError } from './output'
 
 export interface ValidationResult {

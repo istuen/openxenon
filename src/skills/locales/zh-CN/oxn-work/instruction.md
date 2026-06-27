@@ -252,7 +252,7 @@ work "explore-dsl" {
     part "explore" {
       skill_context = "探索 grammar/schema/validator/compiler 四个子模块"
       acceptance = [
-        "已读 src/oxl/langium/oxn.langium",
+        "已读 src/oxl/langium-driver/oxn.langium",
         "已用 oxn dev compile 跑通一个范例",
         "输出 .openxenon/works/<w>/report.md"
       ]

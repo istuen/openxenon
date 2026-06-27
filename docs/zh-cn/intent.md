@@ -97,6 +97,72 @@ Domain 必须满足：
 
 ---
 
+## Stack：技术栈（v0.4 新增，可选）
+
+> **v0.4 软推荐** — 不填不报错；不填则该 domain 不参与 stack invariant 校验。
+> 详见 RFC：[`.openxenon/pools/sprints/v0.4-unify-md/design/v0.4-unify-md-rfc.md`](../../pools/sprints/v0.4-unify-md/design/v0.4-unify-md-rfc.md) §1
+
+Stack 表示"工程师对 AI 设定的技术环境约束"——语言 / 运行时 / lint 工具 / 测试框架。它是 **Intent 语义约束**（回答"用什么技术写"），不是 **Align 可执行骨架**（回答"按什么路径写"）。
+
+**关键边界**：
+- ✅ **定义在 domain.md** 的 `## Stack` H2 下，目录仍是 `domains/`
+- ✅ **blueprint 不重复定义 Stack**；运行时通过 `domain: <name>` 引用自动继承
+- ✅ Proof 校验时把 `## Stack` 当作 invariant 的一种特化（如检测到 `language: typescript` 但产物是 `.js`，可判 fail）
+- ❌ **不**新建 `stacks/` 目录（避免 5 类实体膨胀成 6 类）
+- ❌ **不**硬要求填写（v0.4 软推荐；v0.5 视情况决定是否升级为硬要求）
+
+### 完整结构（MD 范式）
+
+```markdown
+## Stack
+
+### runtime
+- language: typescript
+- runtime: bun
+- version: ">=1.1.0"
+
+### linter
+- tool: biome
+- config: biome.json
+
+### test
+- runner: bun test
+- coverage: "@oxn/probes/test-pass"
+```
+
+### 字段说明
+
+| H3 子分类 | 字段 | 必填 | 说明 |
+|---|---|---|---|
+| `runtime` | `language` | 是 | 编程语言（typescript / python / rust / go …）|
+| `runtime` | `runtime` | 是 | 运行时（bun / node / deno / python3 …）|
+| `runtime` | `version` | 否 | 版本约束（semver range）|
+| `linter` | `tool` | 是 | 静态检查工具（biome / eslint / clippy …）|
+| `linter` | `config` | 否 | 配置文件路径（相对项目根）|
+| `test` | `runner` | 是 | 测试运行器（bun test / pytest / cargo test …）|
+| `test` | `coverage` | 否 | 覆盖率 probe 引用 |
+
+**子分类可扩展**：上述是 v0.4 默认 3 类（runtime / linter / test）。工程师可按需新增 `## Stack` 下的 H3 子分类（如 `### build`、`### deploy`）。
+
+### 命名约定
+
+- H3 子分类名：kebab-case 或 snake_case（与 v0.3 H2 命名一致）
+- 物理位置：`.openxenon/domains/<name>.md` 内的 `## Stack` H2 section
+
+### 蓝图的引用继承
+
+Blueprint 不重定义 Stack。运行时通过 `domain: <name>` 引用：
+
+```oxn
+work "feature-x" {
+  domain "ExampleStackDomain" ref "@prj/domains/example-stack-domain"
+  blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow"
+  // ↑ dev-workflow 继承 ExampleStackDomain 的 Stack 约束
+}
+```
+
+---
+
 ## Blueprint：技术蓝图
 
 Blueprint 是"分几步做"的纯技术模板。它只声明 slot 拓扑和依赖关系，不包含业务语义。
@@ -183,6 +249,171 @@ OXN 内置了 `@oxn/domains/ProgramContext`，涵盖通用编程概念（SourceF
 - `http-responds` / `file-exports`
 
 见 [Proof](./proof.md) 了解 Probe 类型完整列表。
+
+---
+
+## v0.3 统一 MD 范式（canonical 纯 MD 语法）
+
+> **v0.3.0 改革的全部目的**：把 `.oxn` 容器指令（`:::intent{...}`）完全替换为**纯原生 Markdown**层级映射。
+> 0 个 `:::intent{...}` 指令，0 个新 npm 依赖，0 个 Langium/.oxn 包袱。
+>
+> **.md 永远是 canonical 源**。`.oxn` 是可选的编译产物（CLI 暂未实装 `oxn domain compile`）。
+
+### canonical 范式三原则
+
+1. **H3 = canonical name** —— `### Cart` 已经是 term/prop/slot/task/part/probe/verdict 的官方名称，**不要再写 `- name: Cart`**
+2. **一行一个 `- key: value`** —— 不要用 `;` 把多个 key 拼在一行
+3. **数组用缩进列表** —— 不要用 `items: A, B, C` 逗号字符串或 `values: [a, b, c]` 内联数组
+
+### 5 类资产统一范式
+
+#### Domain（业务词典）
+
+```markdown
+## Terms
+
+### Cart
+- desc: 用户未结算的购物车集合（含 line items 与价格快照）
+
+### Order
+- desc: 提交后生成的不可变订单记录
+
+## Bans
+
+### forbidden-constructs
+- items:
+  - cart-job
+  - order-pipeline
+- desc: 不允许把 cart/order/charge 写成 Job/Pipeline 模式
+
+## Invariants
+
+### inv-cart-immutability
+- value: Cart → Order 转换是不可变的
+```
+
+#### Blueprint（技术蓝图）
+
+```markdown
+## Props
+
+### timeout
+- type: number
+- required: true
+- default: 60000
+
+### env
+- type: enum
+- values:
+  - dev
+  - staging
+  - prod
+
+## Slots
+
+### build
+- deps: []
+- observe:
+  - deps-resolved
+
+### verify
+- deps:
+  - build
+  - test
+- observe:
+  - lint-check
+  - ts-compiles
+```
+
+#### Work（编排）
+
+```markdown
+## Context
+
+### primary
+- goal: 演示 Work canonical 范式
+- constraints:
+  - 必须用 oxn work 命令
+- max_iterations: 3
+
+## Tasks
+
+### t1-build
+- blueprint: order-workflow
+- domain: OrderDomain
+- part: build
+  - skill_context: 构建产物
+```
+
+#### Task（执行单元）
+
+```markdown
+## Parts
+
+### build
+- skill_context: 构建产物
+
+## Probes
+
+### schema-valid
+- scheme: schema
+- expect: every LineItem has all of sku quantity unit_price
+```
+
+#### Proof（判决书）
+
+```markdown
+## Verdicts
+
+### build-exists
+- type: pass
+- value: dist/oxn 文件存在且 sha256 与 lock 记录一致
+
+### type-check
+- type: fail
+- value: bun run typecheck 1 error
+
+## Runtime
+
+### snapshot
+- observed_at: 2026-06-23T12:00:00Z
+- probes_run: 3
+- probes_passed: 2
+- probes_inconclusive: 1
+```
+
+### 5 个反模式（v0.3.0 全部禁止）
+
+| 反模式 | 错误样例 | 正确样例 |
+|---|---|---|
+| `;` 内联分隔 key | `- type: string; default: USD; required: true` | 拆成 3 行 `- type: string` / `- default: USD` / `- required: true` |
+| 冗余 `- name:` | `### Cart` + `- name: Cart` | 只保留 `### Cart` |
+| `items: A, B, C` 逗号字符串 | `- items: cart-job, order-pipeline` | `- items:` + 缩进列表 |
+| `values: [a, b, c]` 内联数组 | `- values: [dev, staging, prod]` | `- values:` + 缩进列表 |
+| 意义不明 wrapper H3 | `### main` (work context) | `### primary` |
+
+### 自然语言字段允许 `;`
+
+`desc` / `value` / `expect` / `guidance` / `instruction` 等自然语言字段**允许 `;`**（中文常用 `;` 作为句内分隔符）。
+
+结构性字段（`type` / `default` / `required` / `items` / `values` / `deps` / `observe` / `domain` / `blueprint` / `part` / `scheme` / `name`）**禁止 `;`**。
+
+### 完整样例
+
+5 类实体的完整 canonical .md 样例见 [`src/oxl/examples-md/`](https://github.com/istuen/openxenon/tree/feat/v0.3-md-ssot/src/oxl/examples-md)（电商 Order 业务场景统一串联）。
+
+### CI 守卫
+
+`bun scripts/check-md-canonical.ts <dir>` —— 扫任意 .md 目录，校验 canonical 范式 5 条规则。
+退出码 0 = 全部通过，1 = 有违规（带 file:line:rule 详情）。
+
+| 规则 | 触发条件 |
+|---|---|
+| E_MD_CANONICAL_NAME_REDUNDANT | `- name: <H3-text>` 冗余 |
+| E_MD_CANONICAL_ITEMS_COMMA_STRING | `items: A, B, C` 逗号字符串 |
+| E_MD_CANONICAL_VALUES_INLINE_ARRAY | `values: [a, b, c]` 内联数组 |
+| E_MD_CANONICAL_SEMICOLON_INLINE | 结构性字段含 `;` |
+| E_MD_INVALID_SYNTAX | md-bridge pipeline 解析失败 |
 
 ---
 

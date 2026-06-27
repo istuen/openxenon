@@ -97,6 +97,72 @@ A Domain must:
 
 ---
 
+## Stack: tech stack (v0.4 new, optional)
+
+> **v0.4 soft recommendation** — Not filling does NOT raise an error. Domains without `## Stack` skip stack invariant validation.
+> See RFC: [`.openxenon/pools/sprints/v0.4-unify-md/design/v0.4-unify-md-rfc.md`](../../pools/sprints/v0.4-unify-md/design/v0.4-unify-md-rfc.md) §1
+
+Stack expresses "technical environment constraints the engineer sets for the AI" — language / runtime / linter / test framework. It is an **Intent semantic constraint** (answering "what tech to use"), NOT an **Align executable skeleton** (answering "what path to follow").
+
+**Key boundaries**:
+- ✅ **Defined in domain.md** under the `## Stack` H2 section; directory remains `domains/`
+- ✅ **Blueprint does NOT re-define Stack**; runtime inherits via `domain: <name>` reference
+- ✅ Proof validation treats `## Stack` as a specialized invariant (e.g., if `language: typescript` but artifact is `.js`, judge as fail)
+- ❌ **No new `stacks/` directory** (avoid inflating 5 entity types to 6)
+- ❌ **No hard requirement** (v0.4 soft; v0.5 may upgrade to hard)
+
+### Full structure (MD canonical)
+
+```markdown
+## Stack
+
+### runtime
+- language: typescript
+- runtime: bun
+- version: ">=1.1.0"
+
+### linter
+- tool: biome
+- config: biome.json
+
+### test
+- runner: bun test
+- coverage: "@oxn/probes/test-pass"
+```
+
+### Field reference
+
+| H3 sub-category | Field | Required | Description |
+|---|---|---|---|
+| `runtime` | `language` | yes | Programming language (typescript / python / rust / go …) |
+| `runtime` | `runtime` | yes | Runtime (bun / node / deno / python3 …) |
+| `runtime` | `version` | no | Version constraint (semver range) |
+| `linter` | `tool` | yes | Static checker (biome / eslint / clippy …) |
+| `linter` | `config` | no | Config file path (relative to project root) |
+| `test` | `runner` | yes | Test runner (bun test / pytest / cargo test …) |
+| `test` | `coverage` | no | Coverage probe reference |
+
+**Sub-categories extensible**: The above are v0.4 defaults (runtime / linter / test). Engineers may add new H3 sub-categories (e.g., `### build`, `### deploy`) under `## Stack`.
+
+### Naming conventions
+
+- H3 sub-category name: kebab-case or snake_case (consistent with v0.3 H2 naming)
+- Physical location: `.openxenon/domains/<name>.md` under the `## Stack` H2 section
+
+### Blueprint inheritance
+
+Blueprint does NOT redefine Stack. Runtime inherits via `domain: <name>`:
+
+```oxn
+work "feature-x" {
+  domain "ExampleStackDomain" ref "@prj/domains/example-stack-domain"
+  blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow"
+  // ↑ dev-workflow inherits ExampleStackDomain's Stack constraints
+}
+```
+
+---
+
 ## Blueprint: technical blueprint
 
 Blueprint is a pure-technical template for "how many steps". It only declares slot topology and dependency relations, with no business semantics.
@@ -183,6 +249,171 @@ Companion built-in Probes:
 - `http-responds` / `file-exports`
 
 See [Proof](./proof.md) for the full Probe type list.
+
+---
+
+## v0.3 Unified MD Canonical Form
+
+> **The whole point of v0.3.0 reform**: completely replace `.oxn` container directives (`:::intent{...}`) with **pure native Markdown** hierarchy.
+> 0 `:::intent{...}` directives, 0 new npm dependencies, 0 Langium/.oxn baggage.
+>
+> **.md is always the canonical source**. `.oxn` is an optional compilation product (CLI does not yet ship `oxn domain compile`).
+
+### 3 Canonical Principles
+
+1. **H3 = canonical name** —— `### Cart` is already the official name of a term/prop/slot/task/part/probe/verdict. **Do not write `- name: Cart` again**.
+2. **One `- key: value` per line** —— do not use `;` to concatenate multiple keys on one line.
+3. **Arrays use indented lists** —— do not use `items: A, B, C` comma strings or `values: [a, b, c]` inline arrays.
+
+### 5 Entity Types Unified Form
+
+#### Domain (business glossary)
+
+```markdown
+## Terms
+
+### Cart
+- desc: User's unsettled shopping cart (with line items and price snapshot)
+
+### Order
+- desc: Immutable order record after submission
+
+## Bans
+
+### forbidden-constructs
+- items:
+  - cart-job
+  - order-pipeline
+- desc: Do not express cart/order/charge as Job/Pipeline pattern
+
+## Invariants
+
+### inv-cart-immutability
+- value: Cart → Order transformation is immutable
+```
+
+#### Blueprint (technical blueprint)
+
+```markdown
+## Props
+
+### timeout
+- type: number
+- required: true
+- default: 60000
+
+### env
+- type: enum
+- values:
+  - dev
+  - staging
+  - prod
+
+## Slots
+
+### build
+- deps: []
+- observe:
+  - deps-resolved
+
+### verify
+- deps:
+  - build
+  - test
+- observe:
+  - lint-check
+  - ts-compiles
+```
+
+#### Work (orchestration)
+
+```markdown
+## Context
+
+### primary
+- goal: Demonstrate Work canonical form
+- constraints:
+  - must use oxn work commands
+- max_iterations: 3
+
+## Tasks
+
+### t1-build
+- blueprint: order-workflow
+- domain: OrderDomain
+- part: build
+  - skill_context: build artifact
+```
+
+#### Task (execution unit)
+
+```markdown
+## Parts
+
+### build
+- skill_context: build artifact
+
+## Probes
+
+### schema-valid
+- scheme: schema
+- expect: every LineItem has all of sku quantity unit_price
+```
+
+#### Proof (verdict record)
+
+```markdown
+## Verdicts
+
+### build-exists
+- type: pass
+- value: dist/oxn file exists with sha256 matching lock
+
+### type-check
+- type: fail
+- value: bun run typecheck 1 error
+
+## Runtime
+
+### snapshot
+- observed_at: 2026-06-23T12:00:00Z
+- probes_run: 3
+- probes_passed: 2
+- probes_inconclusive: 1
+```
+
+### 5 Anti-Patterns (all forbidden in v0.3.0)
+
+| Anti-pattern | Wrong example | Correct example |
+|---|---|---|
+| `;` inline key separator | `- type: string; default: USD; required: true` | Split into 3 lines: `- type: string` / `- default: USD` / `- required: true` |
+| Redundant `- name:` | `### Cart` + `- name: Cart` | Keep only `### Cart` |
+| `items: A, B, C` comma string | `- items: cart-job, order-pipeline` | `- items:` + indented list |
+| `values: [a, b, c]` inline array | `- values: [dev, staging, prod]` | `- values:` + indented list |
+| Meaningless wrapper H3 | `### main` (work context) | `### primary` |
+
+### Natural-Language Fields Allow `;`
+
+`desc` / `value` / `expect` / `guidance` / `instruction` are natural-language fields and **allow `;`** (Chinese commonly uses `;` as intra-sentence separator).
+
+Structured fields (`type` / `default` / `required` / `items` / `values` / `deps` / `observe` / `domain` / `blueprint` / `part` / `scheme` / `name`) **forbid `;`**.
+
+### Complete Examples
+
+The 5 entity types' complete canonical .md examples are at [`src/oxl/examples-md/`](https://github.com/istuen/openxenon/tree/feat/v0.3-md-ssot/src/oxl/examples-md) (e-commerce Order scenario unified).
+
+### CI Guard
+
+`bun scripts/check-md-canonical.ts <dir>` —— scan any .md directory, enforce the 5 canonical rules.
+Exit code 0 = all pass; 1 = has violations (with file:line:rule details).
+
+| Rule | Trigger |
+|---|---|
+| E_MD_CANONICAL_NAME_REDUNDANT | Redundant `- name: <H3-text>` |
+| E_MD_CANONICAL_ITEMS_COMMA_STRING | `items: A, B, C` comma string |
+| E_MD_CANONICAL_VALUES_INLINE_ARRAY | `values: [a, b, c]` inline array |
+| E_MD_CANONICAL_SEMICOLON_INLINE | Structured field contains `;` |
+| E_MD_INVALID_SYNTAX | md-bridge pipeline parse failure |
 
 ---
 

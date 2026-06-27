@@ -7,14 +7,16 @@
  */
 
 import type { ValidationAcceptor } from 'langium'
-import type { WorkDeclaration, TaskDeclaration } from '../generated/ast.js'
-import { isTaskDeclaration, isTaskDepsField } from '../generated/ast.js'
+import type { WorkDeclaration, TaskDeclaration } from '../langium-driver/generated/ast.js'
+import { isTaskDeclaration } from '../langium-driver/generated/ast.js'
 
 function getTaskDeps(task: TaskDeclaration): string[] {
-  if (isTaskDepsField(task) && task.deps) {
-    return task.deps.deps ?? []
-  }
-  return []
+  // v0.3 follow-up: TaskDepsField 在 body[] 内（任意顺序）
+  const body = (task.body ?? []) as Array<{ $type: string; deps?: Array<string> }>
+  const depsField = body.find((el) => el.$type === 'TaskDepsField') as
+    | { $type: 'TaskDepsField'; deps?: Array<string> }
+    | undefined
+  return depsField?.deps ?? []
 }
 
 function validateDag(tasks: TaskDeclaration[]): { hasCycle: boolean; cycleHint?: string } {

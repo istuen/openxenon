@@ -7,8 +7,8 @@
 
 import type { TextEdit } from 'vscode-languageserver-types'
 import type { LangiumDocument } from 'langium'
-import type { PartDeclaration, BlueprintDeclaration } from '../generated/ast.js'
-import { isBlueprintDeclaration } from '../generated/ast.js'
+import type { PartDeclaration, BlueprintDeclaration } from '../langium-driver/generated/ast.js'
+import { isBlueprintDeclaration } from '../langium-driver/generated/ast.js'
 import { serializeProbeToOxnText, type ProbeConfig } from './oxn-serializer.js'
 
 export interface AddProbeIntent {

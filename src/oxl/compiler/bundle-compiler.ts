@@ -12,9 +12,9 @@ import { basename, dirname, join } from 'path'
 import { parse as parseYaml } from 'yaml'
 import type { OxnAssemblyBundle, OxnAssemblyBundleEntity } from '../schemas/oxn-assembly.schema'
 import { flattenBundle } from '../flattener/bundle-flattener.js'
-import type { OXNDocument } from '../generated/ast.js'
+import type { OXNDocument } from '../langium-driver/generated/ast.js'
 import { generateOxnAssembly } from '../generator/oxn-generator.js'
-import { createOxnServices, resetOxnServices } from '../langium/oxn-services.js'
+import { createOxnServices, resetOxnServices } from '../langium-driver/oxn-services.js'
 
 // ========================
 // JSON Schema 生成器 (简化版)

@@ -30,10 +30,7 @@ afterEach(() => {
 
 describe('check-heading-skeleton (T8)', () => {
   test('case 1: 全部 ok → passed=N + failed=[]', () => {
-    writeFileSync(
-      join(tmpDir, '.openxenon', 'pools', 'research', 'a.md'),
-      '# What\nx\n# Why\ny\n# How\nz\n',
-    )
+    writeFileSync(join(tmpDir, '.openxenon', 'pools', 'research', 'a.md'), '# What\nx\n# Why\ny\n# How\nz\n')
     writeFileSync(
       join(tmpDir, '.openxenon', 'pools', 'research', 'b.md'),
       '# What\nx\n# Why\ny\n# How\nz\n# Reference\nr\n',
@@ -45,10 +42,7 @@ describe('check-heading-skeleton (T8)', () => {
   })
 
   test('case 2: 缺 # How → failed[] 含该文件', () => {
-    writeFileSync(
-      join(tmpDir, '.openxenon', 'pools', 'research', 'a.md'),
-      '# What\nx\n# Why\ny\n',
-    )
+    writeFileSync(join(tmpDir, '.openxenon', 'pools', 'research', 'a.md'), '# What\nx\n# Why\ny\n')
     const r = checkDirectories([join(tmpDir, '.openxenon', 'pools', 'research')])
     expect(r.checked).toBe(1)
     expect(r.passed).toBe(0)

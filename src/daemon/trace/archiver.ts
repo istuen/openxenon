@@ -38,7 +38,7 @@ export async function archiveIfNeeded(
   await mkdir(archiveDirPath, { recursive: true })
   const archiveName = `trace-${Date.now()}.jsonl`
   const archivePath = join(archiveDirPath, archiveName)
-  await writeFile(archivePath, toArchive.join('\n') + '\n', { mode: 0o644 })
+  await writeFile(archivePath, `${toArchive.join('\n')}\n`, { mode: 0o644 })
 
   // 重写 trace.jsonl 为剩余部分
   await writeFile(tracePath, remaining.join('\n'), { mode: 0o644 })

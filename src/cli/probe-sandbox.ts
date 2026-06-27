@@ -22,7 +22,6 @@
 import { createHash } from 'node:crypto'
 import { chmod, readFile, writeFile } from '../infra/filesystem-async'
 import { join } from 'node:path'
-import { SourceTextModule, createContext } from 'node:vm'
 import { IAPError, IAPAction } from '../kernel/index'
 import type { InfraProvider } from '../infra/registry/provider-registry'
 import type { IOExecRequest, IOReadRequest, IOStatRequest } from '../kernel/contracts/io-primitive'
@@ -88,6 +87,76 @@ function bunTranspile(src: string): string {
   )
 }
 
+// ───────── Lazy node:vm (SourceTextModule 顶层 import 在 Node 下崩) ─────────
+
+/**
+ * SourceTextModule 在 Node.js 下需 `--experimental-vm-modules` flag 才可用。
+ * v0.3.0 npm 发布时顶层 import 导致 Node 23.11 默认运行时 oxn --version 整 CLI 崩。
+ *
+ * v0.3.1 修复：dynamic import 仅在 sandboxValidate() 调用时才加载。
+ * - Node + flag：正常工作
+ * - Node 无 flag：抛 IAPError SANDBOX_REJECTED（而非整 CLI 崩）
+ * - Bun：原生支持，正常工作
+ *
+ * 仅 `oxn probe add` 会触发 sandboxValidate；其它子命令（oxn work / oxn proof / oxn domain）
+ * 完全跳过 node:vm 加载，Node 23.11 默认即可用。
+ */
+interface VmSourceTextModule {
+  link(specifierResolver: (specifier: string) => Promise<VmSourceTextModule | unknown>): Promise<void>
+  evaluate(): Promise<void>
+  readonly namespace: object
+}
+interface VmModule {
+  SourceTextModule: new (
+    code: string,
+    options: {
+      identifier?: string
+      context: object
+      initializeImportMeta?: (meta: { url: string }) => void
+    },
+  ) => VmSourceTextModule
+  createContext: (sandbox: object, options?: object) => object
+}
+
+let cachedVm: VmModule | null = null
+let vmLoadError: Error | null = null
+
+async function loadVmModule(): Promise<VmModule> {
+  if (cachedVm) return cachedVm
+  if (vmLoadError) throw vmLoadError
+
+  let mod: typeof import('node:vm')
+  try {
+    mod = await import('node:vm')
+  } catch (err) {
+    vmLoadError = new IAPError(
+      'INFRA',
+      'SANDBOX_REJECTED',
+      IAPAction.YIELD_TO_HUMAN,
+      `node:vm not available: ${(err as Error).message}. Sandbox requires Bun runtime (or Node + --experimental-vm-modules).`,
+      { component: 'probe-sandbox' },
+    )
+    throw vmLoadError
+  }
+
+  if (typeof mod.SourceTextModule !== 'function' || typeof mod.createContext !== 'function') {
+    vmLoadError = new IAPError(
+      'INFRA',
+      'SANDBOX_REJECTED',
+      IAPAction.YIELD_TO_HUMAN,
+      'node:vm.SourceTextModule not available in this Node.js build. Sandbox requires Bun runtime (or Node with --experimental-vm-modules flag).',
+      { component: 'probe-sandbox' },
+    )
+    throw vmLoadError
+  }
+
+  cachedVm = {
+    SourceTextModule: mod.SourceTextModule as VmModule['SourceTextModule'],
+    createContext: mod.createContext as VmModule['createContext'],
+  }
+  return cachedVm
+}
+
 // ───────── 沙箱核心 ─────────
 
 /**
@@ -113,8 +182,9 @@ export async function sandboxValidate(sourcePath: string, expectedSchemes: strin
     return { ok: false, reason: `transpile failed: ${(err as Error).message}`, flags: ['sandbox_violation'] }
   }
 
-  // 3. 沙箱 context (严格白名单)
-  const ctx = createContext(
+  // 3. 沙箱 context (严格白名单) — lazy load node:vm (v0.3.1 fix)
+  const vm = await loadVmModule()
+  const ctx = vm.createContext(
     {
       // 静默 console (沙箱内 IO 都走 Provider)
       console: { log: () => {}, warn: () => {}, error: () => {} },
@@ -137,7 +207,7 @@ export async function sandboxValidate(sourcePath: string, expectedSchemes: strin
   )
 
   // 4. SourceTextModule
-  const module = new SourceTextModule(jsSource, {
+  const module = new vm.SourceTextModule(jsSource, {
     identifier: `probe-sandbox:${sourcePath}`,
     context: ctx,
     initializeImportMeta: (meta: { url: string }) => {
@@ -152,7 +222,7 @@ export async function sandboxValidate(sourcePath: string, expectedSchemes: strin
         flags.push('sandbox_violation')
         throw new Error(`sandbox_violation: module ${specifier} is forbidden`)
       }
-      return null as unknown as SourceTextModule
+      return null
     })
   } catch (err) {
     const e = err as Error

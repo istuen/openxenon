@@ -33,7 +33,9 @@ import {
   statSync,
   unlinkSync,
   writeFileSync,
+  chmodSync,
 } from '../infra/filesystem'
+import { createHash } from 'crypto'
 import { join } from 'path'
 import { t } from '../infra/i18n'
 import { URI } from 'langium'
@@ -43,7 +45,9 @@ import {
   PROBE_STATS_JSON,
   PROOFS_DIR,
   PROOF_FROZEN_JSON,
+  PROOF_MD_FILE,
   PROOF_OXN_FILE,
+  PROOF_WORK_HASH_FILE,
 } from '../kernel/index'
 import {
   createOxnParser,
@@ -95,6 +99,184 @@ function getProofFrozenPath(name: string): string {
 
 function getProofRunningPath(name: string): string {
   return join(getProofDir(name), PROOF_RUNNING_JSON)
+}
+
+// v0.4 PR-B (Q4-A): proof 持有 work.md 不可变快照 + work-hash
+//   - proof.md       = work.md 的 byte-equal 副本 (immutable, 0o444)
+//   - work-hash.txt  = 该副本的 SHA-256 hex (用于 hash drift 校验)
+function getProofMdPath(name: string): string {
+  return join(getProofDir(name), PROOF_MD_FILE)
+}
+
+function getProofWorkHashPath(name: string): string {
+  return join(getProofDir(name), PROOF_WORK_HASH_FILE)
+}
+
+// ---------------------------------------------------------------------------
+// v0.4 PR-B (Q4-A): proof ↔ work 快照机制
+// ---------------------------------------------------------------------------
+//
+// 背景：v0.3.4 proof 验证 live work.md — AI 改了 work.md 后，proof 仍验证
+// "老 work.md + 新 frozen.json" 的不一致快照，证据稳定性弱。
+//
+// v0.4 修复：proof.oxn 注释含 `// proofs-target-work: <path>` 时，run 时：
+//   1. 计算 work.md SHA-256 = H_live
+//   2. 读 work-hash.txt 中 H_prev（首次不存在）
+//   3. 一致 → 跳过拷贝（走 probe 流程）
+//   4. 不一致 / 首次 → 复制 work.md → proof.md (immutable, 0o444)
+//      写 H_live → work-hash.txt
+//   5. 跑 probe，写 frozen.json
+//
+// `oxn proof verify` 重新计算 H_live 与 H_prev 比对，不一致抛 E_PROOF_WORKHASH_DRIFT
+//
+// proof.md 不可变（0o444）；AI 改 work.md 不影响已存 proof.md；
+// 重新提交 proof 时做 hash 校验，原子写 (chmod 0o644 → write → chmod 0o444)。
+
+/** proof.oxn 头部注释中可识别的元数据键 */
+interface ProofMetadata {
+  /** work.md 路径（相对 proof.oxn 或绝对） */
+  'proofs-target-work'?: string
+  /** 历史遗留：proof frozen.json 路径（不参与快照机制） */
+  'proofs-target-frozen'?: string
+}
+
+/** 从 proof.oxn 头部 `//` 注释中提取元数据 */
+function parseProofMetadata(oxnPath: string): ProofMetadata {
+  if (!existsSync(oxnPath)) return {}
+  const content = readFileSync(oxnPath, 'utf-8')
+  const lines = content.split('\n')
+  const meta: ProofMetadata = {}
+  // 扫前 30 行（proof 头部注释通常 < 30 行）
+  for (const line of lines.slice(0, 30)) {
+    // 匹配 `// proofs-target-work: <value>` 形式
+    const m = line.match(/^\/\/\s*(proofs-target-(?:work|frozen))\s*:\s*(.+?)\s*$/)
+    if (m) {
+      meta[m[1] as keyof ProofMetadata] = m[2]
+    }
+  }
+  return meta
+}
+
+/** 算文件 SHA-256 hex */
+function computeFileHash(filePath: string): string {
+  const content = readFileSync(filePath)
+  return createHash('sha256').update(content).digest('hex')
+}
+
+/** 解析 proofs-target-work 路径：相对 proof.oxn 或绝对 */
+function resolveWorkPath(proofOxnPath: string, target: string): string {
+  if (target.startsWith('/')) return target
+  // 相对路径基于 proof.oxn 所在目录
+  const proofDir = join(proofOxnPath, '..')
+  return join(proofDir, target)
+}
+
+export type SnapshotStatus = 'unchanged' | 'updated' | 'no-target' | 'error'
+
+export interface SnapshotResult {
+  status: SnapshotStatus
+  workPath?: string
+  workHash?: string
+  prevHash?: string
+  error?: string
+}
+
+/**
+ * 拷贝 work.md → proof.md (immutable, 0o444)，写 work-hash.txt
+ *  - 条件：proofs-target-work 注释存在 + work.md 路径有效
+ *  - 短路：H_live === H_prev 时跳过拷贝
+ */
+function snapshotWorkMd(proofName: string, proofOxnPath: string): SnapshotResult {
+  const meta = parseProofMetadata(proofOxnPath)
+  const target = meta['proofs-target-work']
+  if (!target) {
+    return { status: 'no-target' }
+  }
+
+  const workPath = resolveWorkPath(proofOxnPath, target)
+  if (!existsSync(workPath)) {
+    return {
+      status: 'error',
+      workPath,
+      error: `work.md not found at: ${workPath}`,
+    }
+  }
+
+  const liveHash = computeFileHash(workPath)
+  const hashPath = getProofWorkHashPath(proofName)
+  const mdPath = getProofMdPath(proofName)
+  const prevHash = existsSync(hashPath) ? readFileSync(hashPath, 'utf-8').trim() : undefined
+
+  if (prevHash === liveHash && existsSync(mdPath)) {
+    return { status: 'unchanged', workPath, workHash: liveHash, prevHash }
+  }
+
+  // 原子写：work-hash.txt → proof.md (immutable)
+  const workContent = readFileSync(workPath, 'utf-8')
+
+  // 1. 写 work-hash.txt (chmod 0o444, 跟 frozen.json 一致)
+  const hashDir = join(hashPath, '..')
+  if (!existsSync(hashDir)) mkdirSync(hashDir, { recursive: true })
+  if (existsSync(hashPath)) chmodSync(hashPath, 0o644)
+  try {
+    writeFileSync(hashPath, `${liveHash}\n`, { mode: 0o444 })
+  } finally {
+    chmodSync(hashPath, 0o444)
+  }
+
+  // 2. 写 proof.md (immutable, 0o444)
+  if (existsSync(mdPath)) chmodSync(mdPath, 0o644)
+  try {
+    writeFileSync(mdPath, workContent, { mode: 0o444 })
+  } finally {
+    chmodSync(mdPath, 0o444)
+  }
+
+  return { status: 'updated', workPath, workHash: liveHash, prevHash }
+}
+
+/** 比对当前 work.md hash 与 work-hash.txt */
+export interface VerifyResult {
+  ok: boolean
+  status: 'match' | 'drift' | 'no-snapshot' | 'no-target' | 'work-missing'
+  workPath?: string
+  liveHash?: string
+  prevHash?: string
+  error?: string
+}
+
+function verifyWorkHash(proofName: string, proofOxnPath: string): VerifyResult {
+  const meta = parseProofMetadata(proofOxnPath)
+  const target = meta['proofs-target-work']
+  if (!target) {
+    return { status: 'no-target', ok: true }
+  }
+
+  const workPath = resolveWorkPath(proofOxnPath, target)
+  if (!existsSync(workPath)) {
+    return { status: 'work-missing', ok: false, workPath, error: `work.md not found: ${workPath}` }
+  }
+
+  const liveHash = computeFileHash(workPath)
+  const hashPath = getProofWorkHashPath(proofName)
+
+  if (!existsSync(hashPath)) {
+    return { status: 'no-snapshot', ok: false, workPath, liveHash, error: 'no work-hash.txt — proof never run' }
+  }
+
+  const prevHash = readFileSync(hashPath, 'utf-8').trim()
+
+  if (liveHash === prevHash) {
+    return { status: 'match', ok: true, workPath, liveHash, prevHash }
+  }
+  return {
+    status: 'drift',
+    ok: false,
+    workPath,
+    liveHash,
+    prevHash,
+    error: 'work.md changed since last proof run',
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -500,6 +682,22 @@ const runSubcommand = defineCommand({
       })
     }
 
+    // v0.4 PR-B (Q4-A): Phase 0.5 — work.md 不可变快照
+    //   若 proof.oxn 含 `// proofs-target-work: <path>` 注释：
+    //     1. 计算 work.md SHA-256
+    //     2. 对比 work-hash.txt: 一致 → 跳过；不一致 → 拷贝新快照 + 写新 hash
+    //   缺注释 → 跳过（兼容旧 proof.oxn）
+    //   work.md 缺失 → 抛 E_PROOF_WORK_MISSING
+    const snapshot = snapshotWorkMd(name, oxnPath)
+    if (snapshot.status === 'error') {
+      return outputUserInputError('OXN_PROOF_WORK_MISSING', snapshot.error ?? 'work.md not found', {
+        suggestion: snapshot.workPath
+          ? `check that \`// proofs-target-work: ${snapshot.workPath}\` points to existing work.md`
+          : 'add `// proofs-target-work: <path>` comment to proof.oxn header',
+        format,
+      })
+    }
+
     // v0.1.3 PR-2: Phase 1 — 写 .running.json（self-ref probe 可见）
     // 残留检测：若上一轮 run Phase 2/3 崩溃，.running.json 可能仍在
     // → 直接覆盖（保证 idempotent 启动），让本次 run 拿到 fresh 状态
@@ -608,6 +806,92 @@ function renderVerdictHuman(name: string, frozen: NonNullable<ReturnType<typeof 
   lines.push(`\nProof saved: ${join(getProofDir(name), PROOF_FROZEN_JSON)}`)
   lines.push(`Read-only: ${isFrozenFileReadOnly(join(getProofDir(name), PROOF_FROZEN_JSON))}`)
   return lines.join('\n')
+}
+
+// ---------------------------------------------------------------------------
+// Subcommand: verify (v0.4 PR-B Q4-A)
+// ---------------------------------------------------------------------------
+//
+// 重新计算 work.md SHA-256，与 work-hash.txt 比对：
+//   - match      → 证据一致，proof 可信
+//   - drift      → work.md 已被 AI 改动，旧 proof.md 快照是当前唯一可信证据
+//   - no-snapshot → proof 从未 run 过
+//   - no-target  → proof.oxn 缺 `// proofs-target-work:` 注释（无快照机制）
+//   - work-missing → 注释指向的 work.md 不存在
+//
+// 不会改任何文件（只读操作）。
+
+const verifySubcommand = defineCommand({
+  meta: {
+    name: 'verify',
+    description: 'Verify proof work-hash consistency (v0.4 PR-B Q4-A). Re-hash work.md and compare to work-hash.txt.',
+  },
+  args: {
+    name: { type: 'positional', required: true, description: 'Proof name' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const name = ctx.args.name as string
+    const oxnPath = getProofOxnPath(name)
+    if (!existsSync(oxnPath)) {
+      return outputUserInputError('OXN_PROOF_NOT_FOUND', `proof "${name}" not found`, {
+        suggestion: `run \`oxn proof create ${name}\` first`,
+        format,
+      })
+    }
+
+    const v = verifyWorkHash(name, oxnPath)
+    if (v.status === 'drift' || v.status === 'work-missing' || v.status === 'no-snapshot') {
+      // 失败：抛 E_PROOF_WORKHASH_DRIFT (drift) / E_PROOF_WORK_MISSING (work-missing) / E_PROOF_NO_SNAPSHOT
+      const code =
+        v.status === 'drift'
+          ? 'E_PROOF_WORKHASH_DRIFT'
+          : v.status === 'work-missing'
+            ? 'E_PROOF_WORK_MISSING'
+            : 'E_PROOF_NO_SNAPSHOT'
+      return outputError(
+        {
+          code,
+          message: v.error ?? v.status,
+          ...(v.workPath ? { context: { workPath: v.workPath, liveHash: v.liveHash, prevHash: v.prevHash } } : {}),
+          suggestion:
+            v.status === 'drift'
+              ? 're-run `oxn proof run <name>` to refresh the snapshot'
+              : v.status === 'work-missing'
+                ? 'check that proofs-target-work path in proof.oxn header points to existing work.md'
+                : 'run `oxn proof run <name>` to create initial snapshot',
+        },
+        format,
+      )
+    }
+
+    output(
+      {
+        ok: true,
+        data: {
+          name,
+          status: v.status,
+          workPath: v.workPath,
+          liveHash: v.liveHash,
+          prevHash: v.prevHash,
+        },
+        human: renderVerifyHuman(v),
+      },
+      format,
+    )
+  },
+})
+
+function renderVerifyHuman(v: ReturnType<typeof verifyWorkHash>): string {
+  if (v.status === 'no-target') {
+    return `Proof has no proofs-target-work annotation — no snapshot mechanism active.`
+  }
+  if (v.status === 'match') {
+    return `✅ Work hash matches snapshot.\n  work.md:  ${v.workPath}\n  hash:     ${v.liveHash}`
+  }
+  return `${v.status}: ${v.error ?? 'unknown'}`
 }
 
 // ---------------------------------------------------------------------------
@@ -758,10 +1042,25 @@ export default defineCommand({
     create: createSubcommand,
     probe: probeSubcommand,
     run: runSubcommand,
+    verify: verifySubcommand,
     list: listSubcommand,
     show: showSubcommand,
   },
 })
 
 // 导出辅助函数（供测试与外部调用）
-export { getProofDir, getProofFrozenPath, getProofOxnPath, parseProofFile, proofProbesToIR, renderShowHuman }
+export {
+  getProofDir,
+  getProofFrozenPath,
+  getProofMdPath,
+  getProofOxnPath,
+  getProofWorkHashPath,
+  parseProofFile,
+  parseProofMetadata,
+  proofProbesToIR,
+  renderShowHuman,
+  resolveWorkPath,
+  snapshotWorkMd,
+  verifyWorkHash,
+  computeFileHash,
+}

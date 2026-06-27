@@ -125,8 +125,7 @@ const SIMPLE_WORK = (workName: string, extraDomains: string[] = [], extraBluepri
   context {
     goal = "PR-14b";
     constraints = ["c1"];
-    loop_policy { max_iterations = 4; }
-  }
+    } loop_policy { max_iterations = 4; }
 ${ds.join('\n')}
 ${bps.join('\n')}
   task "a" { blueprint "LifecycleBP" }

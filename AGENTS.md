@@ -152,3 +152,33 @@ bun test                    # bun test，约 50 秒，414 个测试
 **对应 changelog 片段**：`.changes/0-2-0-roadmap.md`（路线图占位，每个子分支 PR 合入时记得新增一条 changelog）
 
 **Work v1.1 流程**：每个子分支开工时按 `oxn-work` skill 8 阶段（init → migrate → create → add-task → validate → lock → run → submit）走完一轮。
+
+## v0.3 路线图扩展：MD-Native Grammar 改革（🟡 RFC 待拍板）
+
+**主分支**：`feat/v0.3-md-ssot`（已开 8 commits，ahead of dev）
+
+**RFC 文档**：`.openxenon/pools/sprints/v0.3-md-ssot/design/md-native-grammar-rfc.md` v1.0
+
+**对应 changelog**：`.changes/0-3-0-md-native.md`
+
+| 任务 | 子分支 | 周次 | 状态 |
+|---|---|---|---|
+| T18 md-native grammar | `feat/v0.3-t18-md-native-grammar` | W9a | 🟡 **RFC 待拍板** — EntityCompiler 接口 + EntityRegistry 单例 + 5 个 compiler + extract-headings/extract-list-fields；70 case 新测试；不破坏旧 `:::intent{...}` 解析（双选项 `'native' \| 'directive'`）|
+| T19 md-native migrate | `feat/v0.3-t19-md-native-migrate` | W9b | 🟡 **RFC 待拍板** — decompiler 全切到纯 MD 输出；11 个 `domains-md/*.md` 重生；8 个测试 fixture 迁移；`E_MD_DEPRECATED_SYNTAX` 抛错；删 `remark-directive` 依赖 |
+| T20 md-native highlight | `feat/v0.3-t20-md-native-highlight` | W9c | 🟡 **RFC 待拍板** — oxn-vscode grammar 扩 markdown 注入 + VitePress CSS 着色；0 新 npm 依赖 |
+
+**严格约束**：
+
+- 所有子分支从 `feat/v0.3-md-ssot` 派生，合并后再派生（接续 v0.2 模式）
+- **T18 → T19 → T20 串行**：PR-A 留 `'directive'` 双选项作为安全网，PR-B 全切后 PR-C 仅做高亮
+- **T19 breaking change**：v0.3.0 发版时 `:::intent{...}` 解析期抛 `E_MD_DEPRECATED_SYNTAX`；changelog 写明「请重新跑 `oxn domain compile`」
+- **不引入新 npm 依赖**：`remark-attr` 0.11.1（6 年未更新 + tokenizer 冲突）和 `remark-heading-id` 都不引；H3 文本 + heading slug 自行实现
+- **`oxn-vscode` 物理隔离**：L3-CLI 不 import L1-OXL；`scripts/check-intent-types-drift.ts` CI 守卫 type 白名单一致
+
+**RFC 决策点（5 项已锁定）**：
+
+1. 语法范式：**纯 MD**（H1 实体 / H2 分类 / H3 实例 / 嵌套列表子结构）
+2. 复杂属性风格：**全嵌套列表**（Task 下 Part 用 `- part:` 缩进，不用 H4）
+3. ID 唯一性：**强制 H3 文本在 `##` 分类内唯一**（`E_MD_DUPLICATE_H3` 报错）
+4. 实体解耦：**Factory + Singleton**（`EntityRegistry` 对齐 `driverRegistry` 范式）
+5. VitePress 改造：**仅 CSS 着色**（H2 分类加 border + 浅色背景）
