@@ -2,6 +2,8 @@
 entity: blueprint
 version: 1
 name: explore-analyze-report
+oxn-source-sha: 97786444f96aa063916abb26017f2648b42c0c1e1b0ac80a611296e91835e85d
+synced-at: 2026-06-26T01:19:20.320Z
 ---
 
 # Blueprint: explore-analyze-report

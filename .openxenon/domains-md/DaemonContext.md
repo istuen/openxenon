@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: DaemonContext
+oxn-source-sha: da22730fcf222638ddc5e700cc4abe1941dfae58fabdcdc65c2616314c5638de
+synced-at: 2026-06-26T01:19:20.100Z
 ---
 
 # Domain: DaemonContext

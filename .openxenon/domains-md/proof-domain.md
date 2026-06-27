@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: ProofDomain
+oxn-source-sha: d784a8f320fb9b08b69655b2cbe7b7894813a21514523a6c5ca4831ac6a25b05
+synced-at: 2026-06-26T01:19:20.014Z
 ---
 
 # Domain: ProofDomain

@@ -2,6 +2,8 @@
 entity: blueprint
 version: 1
 name: refactor-safe
+oxn-source-sha: ab981fe1d342c19b252f18c0dd96126f58d38e8ac71bf006a9afccd1fcafc18e
+synced-at: 2026-06-26T01:19:20.308Z
 ---
 
 # Blueprint: refactor-safe

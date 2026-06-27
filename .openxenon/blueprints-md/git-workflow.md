@@ -2,6 +2,8 @@
 entity: blueprint
 version: 1
 name: git-workflow
+oxn-source-sha: a09a83febc0ca125bba295525ce18aaa6914e2bbc753a5b573e2c8c23c97ca00
+synced-at: 2026-06-26T01:19:20.299Z
 ---
 
 # Blueprint: git-workflow

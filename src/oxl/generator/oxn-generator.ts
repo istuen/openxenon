@@ -401,10 +401,10 @@ export function convertWorkDeclaration(decl: WorkDeclaration): OxnWorkIR {
       ? {
           goal: decl.context.goal,
           constraints: decl.context.constraints || [],
-          loopPolicy: decl.context.loopPolicy?.maxIterations
-            ? { maxIterations: decl.context.loopPolicy.maxIterations }
-            : undefined,
         }
+      : undefined,
+    loopPolicy: (decl as { loopPolicy?: { maxIterations?: number } }).loopPolicy?.maxIterations
+      ? { maxIterations: (decl as { loopPolicy?: { maxIterations?: number } }).loopPolicy!.maxIterations! }
       : undefined,
     domains: (decl.domains || []).map(convertDomainRefDecl),
     blueprints: (decl.blueprints || []).map(convertBlueprintRefDecl),

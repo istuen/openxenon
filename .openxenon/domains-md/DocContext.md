@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: DocContext
+oxn-source-sha: ee3fd499334b3d6ec64cf4332106ec7d4c6a6c3752f422ec0d1646c290154920
+synced-at: 2026-06-26T01:19:20.069Z
 ---
 
 # Domain: DocContext
@@ -23,7 +25,7 @@ name: DocContext
 - desc: OpenXenon 核心范式 Intent-Align-Proof 的英文 SSOT 术语，IAP 三轴不翻译（与 glossary.md 锁定一致）
 
 ### Frozenjson
-- desc: Proof 轴产出的不可篡改证明文件，存放于 .openxenon/proofs/ 或 .openxenon/works/*/tasks/*/
+- desc: Proof 轴产出的不可篡改证明文件，存放于 .openxenon/proofs/ 或 .openxenon/works/
 
 ### Workflow
 - desc: OpenXenon 的 v1.1 8 阶段流程：init→migrate→create→add-task→validate→lock→run→submit

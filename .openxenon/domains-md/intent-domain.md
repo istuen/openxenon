@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: IntentDomain
+oxn-source-sha: f02f24bbe16b7dddb01fb6287906e821907652cbc86e0a04f9db0ed7b14b9d8d
+synced-at: 2026-06-26T01:19:20.030Z
 ---
 
 # Domain: IntentDomain

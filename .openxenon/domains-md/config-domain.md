@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: config-domain
+oxn-source-sha: 6b2ac20c799c0e1c6ff78bb94fb187be84e8e08bc3805af8dd2334d304b18001
+synced-at: 2026-06-26T01:19:20.004Z
 ---
 
 # Domain: config-domain
@@ -50,10 +52,10 @@ name: config-domain
 - desc: 配置路径的版本迁移（如 .openxenon/config.json → .openxenon/.config）；由 writeProjectConfig 触发原子 rename
 
 ### SSOT
-- desc: Single Source of Truth：src/skills/locales/<locale>/<skill>/instruction.md；编译多份到各 AdaptersRoot
+- desc: Single Source of Truth：src/skills/locales/
 
 ### EmbeddedSkill
-- desc: Bun --compile 时打入二进制的 SKILL.md；通过 `import ... with { type: 'file' }` 引入
+- desc: Bun --compile 时打入二进制的 SKILL.md；通过
 
 ### SkillLoader
 - desc: src/skills/loader.ts：getAllSkillsForLocale() / getSkillContent() 入口
@@ -94,7 +96,7 @@ name: config-domain
 - value: oxn init 默认同时把同一份 SSOT Skill 编译到 3 套 AdaptersRoot（opencode/claude/agents）
 
 ### inv-2
-- value: oxn init --tools <id> 是白名单；--without-tools <id> 是黑名单；--reset-tools 清空 config.tools
+- value: oxn init --tools
 
 ### inv-3
 - value: config.tools.{enabled,disabled} 解析优先级：CLI 白名单 > config.enabled > 黑名单 > DEFAULT_ADAPTERS
@@ -121,7 +123,7 @@ name: config-domain
 - value: readProjectConfig 先试 .openxenon/.config，再 fallback .openxenon/config.json（双路径兜底，不写盘）
 
 ### inv-11
-- value: SSOT 唯一来源是 src/skills/locales/<locale>/<skill>/instruction.md（不在 oxn-cli/SKILL.md 直接编辑）
+- value: SSOT 唯一来源是 src/skills/locales/
 
 ### inv-12
 - value: SKILL.md frontmatter 仅含 name + description（与 agentskills.io 标准子集对齐；不引入 disable-model-invocation 等扩展字段）
@@ -130,7 +132,7 @@ name: config-domain
 - value: name 必须与目录名一致（^[a-z0-9]+(-[a-z0-9]+)*$），description ≤ 1024 字符
 
 ### inv-14
-- value: EmbeddedSkill 通过 `import ... with { type: 'file' }` 打入二进制；bun --compile 时路径替换为 $bunfs/...
+- value: EmbeddedSkill 通过
 
 ### inv-15
 - value: defaultRender 输出字节级稳定；老项目重跑 init 时 hash 命中 skipped（保证零侵入升级）

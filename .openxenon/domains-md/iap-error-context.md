@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: IAPErrorContext
+oxn-source-sha: ca786ba86600aaf2e37cb1718cedeeb3079fadaf2138effcad2aaf8d440f5afd
+synced-at: 2026-06-26T01:19:20.045Z
 ---
 
 # Domain: IAPErrorContext
@@ -11,10 +13,10 @@ name: IAPErrorContext
 ## Terms
 
 ### IAPError
-- desc: IAP 业务流转中的预期内阻断（轨道 1），AI 消费；字段：axis/code/action/context；name 格式 IAP_<AXIS>_<CODE>
+- desc: IAP 业务流转中的预期内阻断（轨道 1），AI 消费；字段：axis/code/action/context；name 格式 IAP_
 
 ### OXNCrash
-- desc: OXN 引擎自身 Bug / 底线被击穿（轨道 2），人类消费，AI 永远不看；字段：code/cause；name 格式 OXN_CRASH_<CODE>
+- desc: OXN 引擎自身 Bug / 底线被击穿（轨道 2），人类消费，AI 永远不看；字段：code/cause；name 格式 OXN_CRASH_
 
 ### IAPErrorCode
 - desc: IAPError 的 code 字段（v1.1 共 8 个）：PROOF:2（INFRA_FAIL, CRASH）/ ALIGN:4（CHECKLIST_MISSING, LOCK_NOT_FOUND, LOCK_HASH_MISMATCH, WORK_REMOVED）/ INTENT:2（UNDEFINED_TERM, NAME_FILE_MISMATCH）
@@ -154,10 +156,10 @@ name: IAPErrorContext
 - value: 进程退出码：0=成功 / 1=IAPError 或 CliInputError / 2=OXNCrash 或未知异常
 
 ### inv-10
-- value: IAPError 必含 4 字段：name（IAP_<AXIS>_<CODE>）/ axis / code / action + 可选 context
+- value: IAPError 必含 4 字段：name（IAP_
 
 ### inv-11
-- value: OXNCrash 必含 3 字段：name（OXN_CRASH_<CODE>）/ code / message + 可选 cause
+- value: OXNCrash 必含 3 字段：name（OXN_CRASH_
 
 ### inv-12
 - value: CLI 顶层 catch 块（src/cli/index.ts）4 档分流：IAPError / OXNCrash / CliInput / Crash（兜底）
@@ -235,7 +237,7 @@ name: IAPErrorContext
 - value: validate 后未锁的 work 可被 lock；锁后拒绝 validate 覆盖（保留 createdAt 时间戳，PR-6 守卫）
 
 ### inv-37
-- value: oxn work migrate（PR-10）将 V0 布局（works/<w>/work-state.json 等）迁移到 V1 布局（.run/state.json 等），V0 备份到 .migrated-v0/ 供审计
+- value: oxn work migrate（PR-10）将 V0 布局（works/
 
 ### inv-38
 - value: FrozenJson（frozen.json）生成后只读：AI 与工程师都只能读，禁手改

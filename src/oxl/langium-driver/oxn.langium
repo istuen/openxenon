@@ -215,9 +215,12 @@ InvariantDecl:
 // ==================== Work (v0.1-final: workspace orchestrator) ====================
 // Work 是编排空间：资源池寻址 + Task 编排中心
 // v0.1-final: use_domain/use_blueprint → domain/blueprint/part/probe ref 语法
+// v0.4.1: loopPolicy 移出 WorkContext, 避免 LL parser 在 3 consecutive optional + 1 mandatory
+//         场景下不能 backtrack. 现在结构: context 闭合 → loopPolicy (optional) → refs → tasks
 WorkDeclaration:
     'work' name=STRING '{'
         (context=WorkContext)?
+        (loopPolicy=LoopPolicy)?
         (domains+=DomainRefDecl)*
         (blueprints+=BlueprintRefDecl)*
         (parts+=PartRefDecl)*
@@ -301,11 +304,11 @@ TaskProbeDecl:
     '}';
 
 // ==================== Work Context (AI Global Context) ====================
+// v0.4.1: loopPolicy 移出, 见 WorkDeclaration 注释
 WorkContext:
     'context' '{'
         ('goal' '=' goal=STRING ';')?
         ('constraints' '=' '[' (constraints+=STRING (',' constraints+=STRING)*)? ']' ';')?
-        (loopPolicy=LoopPolicy)?
     '}';
 
 LoopPolicy:

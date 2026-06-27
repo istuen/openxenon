@@ -2,6 +2,8 @@
 entity: blueprint
 version: 1
 name: doc-publish
+oxn-source-sha: ca25c5399ba0536dbdcf1b3aa06b71953d21f2132525ee09b65da9cef3c8d349
+synced-at: 2026-06-26T01:19:20.329Z
 ---
 
 # Blueprint: doc-publish

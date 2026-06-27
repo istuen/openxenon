@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: AlignDomain
+oxn-source-sha: df0a88ade180076d0099a563593857526a4abfbc3dc17ff706e6c62a03c8d0bf
+synced-at: 2026-06-26T01:19:20.064Z
 ---
 
 # Domain: AlignDomain
@@ -41,19 +43,19 @@ name: AlignDomain
 - desc: 域/蓝图文件的 SHA-256（64-hex）：OXN 启动期算并存入 BirthCert.assets；validate 时重算，lock 时锁定
 
 ### WorkLayoutV0
-- desc: V0 布局：works/<w>/work-state.json + tasks/<t>/task-state.json（无 .run/ 目录）
+- desc: V0 布局：works/
 
 ### WorkLayoutV1
-- desc: V1 布局：works/<w>/.run/{state,trace,frozen}.{json,jsonl} + tasks/<t>/{state,trace,frozen}（PR-4+5 落地）
+- desc: V1 布局：works/
 
 ### MigratedV0Dir
-- desc: 迁移备份目录：.migrated-v0/<rel> 保留 V0 原文件供审计；不删不自动清，留工程师手动清理
+- desc: 迁移备份目录：.migrated-v0/
 
 ### Diagnostics
 - desc: data.diagnostics 字段（context / run / migrate / status 响应）—— 软警告命名空间，与 IAPError 物理隔离
 
 ### RefDiagnostic
-- desc: Diagnostics 单元素：{code, severity, ref, type, message, suggestion}；code 用 OXN_WORK_REFS_* CLI 协议字符串（非 IAP_<AXIS>_*）
+- desc: Diagnostics 单元素：{code, severity, ref, type, message, suggestion}；code 用 OXN_WORK_REFS_* CLI 协议字符串（非 IAP_
 
 ### RefDiagnosticSeverity
 - desc: RefDiagnostic.severity 枚举：warn（软警告，可继续执行）/ error（保留供未来 in-flight 错误，当前未使用）
@@ -62,13 +64,13 @@ name: AlignDomain
 - desc: RefDiagnostic.type 枚举：domain / blueprint；按域/蓝图分别构建
 
 ### Skill
-- desc: 一份面向 AI 的结构化指令单元（id + description + instruction + references），落地为 .opencode/skills/<id>/SKILL.md
+- desc: 一份面向 AI 的结构化指令单元（id + description + instruction + references），落地为 .opencode/skills/
 
 ### Instruction
 - desc: Skill 的主指令 markdown 正文（AI 第一句要读的内容）
 
 ### ReferenceFile
-- desc: Skill 的次级 markdown 引用文件，存放在 .opencode/skills/<id>/references/，按需加载
+- desc: Skill 的次级 markdown 引用文件，存放在 .opencode/skills/
 
 ### SkillMeta
 - desc: Skill 的元信息（id + description），用于 OpenCode 的 skill 索引与自动选择
@@ -154,10 +156,10 @@ name: AlignDomain
 - value: MigratedV0Dir 保留 V0 备份供审计；OXN 不自动清，工程师手动清理
 
 ### inv-12
-- value: Skill 唯一权威源在 src/skills/locales/<locale>/<id>/instruction.md（OpenXenon L3 源码），由 getAllSkillsForLocale() 加载
+- value: Skill 唯一权威源在 src/skills/locales/
 
 ### inv-13
-- value: .opencode/skills/<id>/SKILL.md 是 oxn init 的编译产物（src/cli/skill-compiler.ts:compileAllSkills），不手维护
+- value: .opencode/skills/
 
 ### inv-14
 - value: Skill ID 必须以 'oxn-' 前缀开头（如 oxn-cli、oxn-work），避免与第三方 skill 冲突
@@ -166,7 +168,7 @@ name: AlignDomain
 - value: zh-CN 是唯一权威 Locale；en Locale 已废弃，必须与 zh-CN 内容保持一致（不允许独立维护）
 
 ### inv-16
-- value: Skill 名 ↔ 目录 1:1 映射：.opencode/skills/<id>/ 必须存在且含 SKILL.md
+- value: Skill 名 ↔ 目录 1:1 映射：.opencode/skills/
 
 ### inv-17
 - value: Skill 加载保持项目级：oxn 不写用户 home（~/.config/、~/.opencode/），全局 Skill 安装由各 AI 客户端（OpenCode/Claude/Agents）自身管理
