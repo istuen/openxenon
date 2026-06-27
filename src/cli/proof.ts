@@ -47,6 +47,7 @@ import {
   PROOF_FROZEN_JSON,
   PROOF_MD_FILE,
   PROOF_OXN_FILE,
+  PROOF_VERDICT_MD,
   PROOF_WORK_HASH_FILE,
 } from '../kernel/index'
 import {
@@ -59,6 +60,7 @@ import {
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
+import { writeVerdictMd } from './proof-verdict-writer'
 import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/index'
 import { updateProbeStats } from '../kernel/index'
 import { emptyProbeStats } from '../kernel/index'
@@ -99,6 +101,10 @@ function getProofFrozenPath(name: string): string {
 
 function getProofRunningPath(name: string): string {
   return join(getProofDir(name), PROOF_RUNNING_JSON)
+}
+
+function getProofVerdictPath(name: string): string {
+  return join(getProofDir(name), PROOF_VERDICT_MD)
 }
 
 // v0.4 PR-B (Q4-A): proof 持有 work.md 不可变快照 + work-hash
@@ -762,6 +768,23 @@ const runSubcommand = defineCommand({
     const readBack = readFrozenProof(frozenPath)
     const frozen = readBack.frozen
 
+    // v0.5 PR-A: Phase 3.5 — 写 verdict.md（人类可读结案文档）
+    //   与 frozen.json 同时 chmod 0o444；frozen.json 已写入后再写 verdict.md
+    //   verdict.md 写失败**不影响** frozen.json 已写入的主流程（仅 stderr warning）
+    let verdictWritten = false
+    let verdictPath: string | null = null
+    let verdictError: string | null = null
+    if (frozen) {
+      verdictPath = getProofVerdictPath(name)
+      try {
+        writeVerdictMd(verdictPath, frozen)
+        verdictWritten = true
+      } catch (e) {
+        verdictError = e instanceof Error ? e.message : String(e)
+        process.stderr.write(`warning: verdict.md write failed: ${verdictError}\n`)
+      }
+    }
+
     // v0.1.2: 追加 probe 执行历史到全局 .cache/probe-stats.json
     // 编排仅发生在 L3-CLI：L0-Processor 纯函数合并 + L1-Infra IO 写盘。
     // 写失败不影响 verdict 返回（主流程已落 frozen.json）。
@@ -787,16 +810,26 @@ const runSubcommand = defineCommand({
           passedCount: frozen?.passedCount ?? 0,
           failedCount: frozen?.failedCount ?? 0,
           frozenPath,
+          verdictPath,
+          verdictWritten,
+          verdictError,
           readOnly: isFrozenFileReadOnly(frozenPath),
         },
-        human: frozen ? renderVerdictHuman(name, frozen) : 'frozen write failed',
+        human: frozen
+          ? renderVerdictHuman(name, frozen, verdictPath, verdictWritten)
+          : 'frozen write failed',
       },
       format,
     )
   },
 })
 
-function renderVerdictHuman(name: string, frozen: NonNullable<ReturnType<typeof readFrozenProof>['frozen']>): string {
+function renderVerdictHuman(
+  name: string,
+  frozen: NonNullable<ReturnType<typeof readFrozenProof>['frozen']>,
+  verdictPath: string | null = null,
+  verdictWritten: boolean = false,
+): string {
   const lines: string[] = []
   lines.push(`Proof "${name}" verdict: ${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount})`)
   for (const p of frozen.probes) {
@@ -963,6 +996,7 @@ const showSubcommand = defineCommand({
     const name = ctx.args.name as string
     const frozenPath = getProofFrozenPath(name)
     const runningPath = getProofRunningPath(name)
+    const verdictPath = getProofVerdictPath(name)
     const r = readFrozenProof(frozenPath)
 
     if (!r.ok || !r.frozen) {
@@ -977,11 +1011,14 @@ const showSubcommand = defineCommand({
     // 不阻断读 frozen.json，但显眼提示数据可能 stale
     const inProgress = existsSync(runningPath)
 
+    // v0.5 PR-A: 检测 verdict.md 是否存在（用于提示人类消费者）
+    const hasVerdict = existsSync(verdictPath)
+
     output(
       {
         ok: true,
-        data: { ...r.frozen, signatureValid: true, inProgress },
-        human: renderShowHuman(r.frozen, inProgress),
+        data: { ...r.frozen, signatureValid: true, inProgress, hasVerdict, verdictPath },
+        human: renderShowHuman(r.frozen, inProgress, hasVerdict ? verdictPath : null),
       },
       format,
     )
@@ -991,10 +1028,17 @@ const showSubcommand = defineCommand({
 function renderShowHuman(
   frozen: import('../kernel/schemas/proof-schema').FrozenProof,
   inProgress: boolean = false,
+  verdictPath: string | null = null,
+): string {
 ): string {
   const lines: string[] = []
   if (inProgress) {
     lines.push(`⚠️ Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json`)
+    lines.push('')
+  }
+  // v0.5 PR-A: 提示 verdict.md 可读
+  if (verdictPath) {
+    lines.push(`📄 Human-readable verdict: ${verdictPath}`)
     lines.push('')
   }
   // v0.2 T5: 3-state verdict 展示 (PASSED/FAILED/INCONCLUSIVE) + 色彩降级
@@ -1054,6 +1098,7 @@ export {
   getProofFrozenPath,
   getProofMdPath,
   getProofOxnPath,
+  getProofVerdictPath,
   getProofWorkHashPath,
   parseProofFile,
   parseProofMetadata,
