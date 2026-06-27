@@ -93,6 +93,24 @@ export type {
   WorkProofTrace,
 } from './schemas/pipeline-insight-schema'
 
+export {
+  ImprovementSuggestionSchema,
+  ImprovementSuggestionMetaSchema,
+  SuggestionStatusSchema,
+  SuggestionKindSchema,
+  ApprovalRecordSchema,
+  RejectionRecordSchema,
+  safeValidateImprovementSuggestion,
+} from './schemas/improvement-suggestion-schema'
+export type {
+  ImprovementSuggestion,
+  ImprovementSuggestionMeta,
+  SuggestionStatus,
+  SuggestionKind,
+  ApprovalRecord,
+  RejectionRecord,
+} from './schemas/improvement-suggestion-schema'
+
 export { TokenRecordSchema, safeValidateTokenRecord } from './schemas/token-record.schema'
 export type { TokenRecord } from './schemas/token-record.schema'
 

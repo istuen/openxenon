@@ -1,5 +1,5 @@
 // =============================================================================
-// pool.ts (v0.2 Sprint 6 T13 — Intent Pool v3 CLI)
+// pool.ts (v0.2 Sprint 6 T13 + v0.5 PR-D — Intent Pool CLI)
 // =============================================================================
 import { defineCommand } from 'citty'
 
@@ -11,5 +11,8 @@ export default defineCommand({
   subCommands: {
     list: () => import('./pool-list').then((m) => m.default),
     create: () => import('./pool-create').then((m) => m.default),
+    review: () => import('./pool-review').then((m) => m.default),
+    approve: () => import('./pool-approve').then((m) => m.default),
+    reject: () => import('./pool-reject').then((m) => m.default),
   },
 })
