@@ -96,15 +96,13 @@ openspec/
 
 # ─────────────────────────────────────────────────────────────
 # 7. AI 工具个人配置 (.opencode/ .agents/ .claude/) — 个人配置不追踪
-#    例外：.opencode/skills/oxn-*/SKILL.md 等是产品资产
+#    例外：.opencode/skills/oxn-work/SKILL.md 是 v0.6 唯一产品资产
 #    (CLI build 嵌入 + install-skill 复制), 显式 un-ignore 每个文件
 #    (git 2.53 实测无需 un-ignore 父目录链; 用 `git add -f` 添加新文件)
 # ─────────────────────────────────────────────────────────────
 .opencode/
 .agents/
 .claude/
-!.opencode/skills/oxn-cli/SKILL.md
 !.opencode/skills/oxn-work/SKILL.md
 !.opencode/skills/oxn-work/.references.hash
 !.opencode/skills/oxn-work/references/blueprint-format.md
-!.opencode/skills/oxn-proof/SKILL.md
