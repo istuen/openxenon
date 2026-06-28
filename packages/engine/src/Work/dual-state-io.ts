@@ -219,3 +219,18 @@ export function getWorkMdPath(projectRoot: string, workName: string): string {
 export function getTaskRunDir(projectRoot: string, workName: string, taskName: string): string {
   return join(getWorkRunDir(projectRoot, workName), RUN_TASKS_SUBDIR, taskName)
 }
+
+export function resolveWorkFilePath(
+  projectRoot: string,
+  workName: string,
+  assetFormat: string,
+): string {
+  const worksDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
+  const primaryPath = join(worksDir, assetFormat === 'oxn' ? 'work.oxn' : 'work.md')
+  const altPath = join(worksDir, assetFormat === 'oxn' ? 'work.md' : 'work.oxn')
+  const legacyPath = getWorkOxnPath(projectRoot, workName)
+  if (existsSync(primaryPath)) return primaryPath
+  if (existsSync(altPath)) return altPath
+  if (existsSync(legacyPath)) return legacyPath
+  return primaryPath
+}

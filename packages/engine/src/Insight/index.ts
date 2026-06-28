@@ -10,6 +10,7 @@ export { computeProofInsight } from './proof-insight'
 export { computeWorkInsight } from './work-insight'
 export { computeCrossProofInsight, computePipelineInsight } from './cross-proof'
 export { writeAuditSuggestion } from './audit-write'
+export * from './insight-manager'
 
 // Types
 export type {

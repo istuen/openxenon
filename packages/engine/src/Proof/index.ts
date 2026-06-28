@@ -15,6 +15,7 @@ export {
   getProofDir, getProofOxnPath, getProofFrozenPath,
   getProofMdPath, getProofWorkHashPath, resolveWorkPath,
 } from './path-utils'
+export * from './proof-manager'
 
 // Types
 export type { RenderVerdictParams, RenderShowParams } from './render'

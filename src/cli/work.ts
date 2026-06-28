@@ -44,22 +44,16 @@ import {
 } from '@openxenon/engine/infra/filesystem'
 import { t } from '@openxenon/engine/infra/i18n'
 import { join } from 'path'
-import { URI } from 'langium'
 import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '@openxenon/engine/kernel'
 import { assertDirNameConsistent } from '@openxenon/engine/kernel'
 import { IAPError } from '@openxenon/engine/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import {
-  isWorkDeclaration,
-  createOxnParser,
   isBlueprintDeclaration,
   type BlueprintDeclaration,
   isDomainDeclaration,
-  isPartDeclaration,
   type PartDeclaration,
-  type WorkContext,
   type WorkDeclaration,
-  type OXNDocument as OxnAstDocument,
 } from '@openxenon/engine/oxl'
 import { runTask, runWork, submitTask, nextRoundWork } from '@openxenon/engine/Work'
 import {
@@ -67,24 +61,18 @@ import {
   getTaskOxnPath,
   getTaskStatePath,
   getWorkOxnPath,
-  getWorkGatePath,
   getWorksDir,
   getTasksDir,
   getWorkMdPath,
   loadTaskState,
   loadWorkState,
   workStateExists,
+  resolveWorkFilePath,
 } from '@openxenon/engine/Work/dual-state-io'
 import {
-  buildPerWorkDomainsIndex,
-  writePerWorkDomainsIndex,
-  getPerWorkDomainsJsonPath,
   resolveDomainFile,
 } from '@openxenon/engine/Work/per-work-domains-merger'
 import {
-  buildPerWorkBlueprintsIndex,
-  writePerWorkBlueprintsIndex,
-  getPerWorkBlueprintsJsonPath,
   resolveBlueprintFile,
 } from '@openxenon/engine/Work/per-work-blueprints-merger'
 import {
@@ -94,87 +82,49 @@ import {
 } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import {
   applyPlanLock,
-  createBirthCert,
   clearPlanLock,
   readWorkFile as readBirthCert,
   verifyPlanLock,
   writeWorkFile,
-  type WorkMode,
   type BirthCert,
-  type DomainAssetEntry,
-  type BlueprintAssetEntry,
 } from '@openxenon/engine/Work/birth-cert'
-import { hashFile, hashWorkPlan } from '@openxenon/engine/Work/plan-hash'
+import { hashWorkPlan } from '@openxenon/engine/Work/plan-hash'
 import { readProjectConfig } from './project-config-io'
 import {
   resolveAssetPrimaryPath,
   resolveAssetAltPath,
   resolveAssetFormat,
   resolveAutoSync,
-  type AssetFormat,
 } from '@openxenon/engine/infra/paths'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
 import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import { migrateWorkToV1 } from '@openxenon/engine/Work/work-migrator'
+import { renderWorkSkeleton } from '@openxenon/engine/Work/work-skeleton'
+import {
+  validateAndWriteArtifacts,
+  workTypeToMode,
+} from '@openxenon/engine/Work/work-validator'
+import {
+  snapshotContext,
+  makeReport,
+  type DerivedWorkState,
+} from '@openxenon/engine/Work/work-reporter'
+import { collectUnresolvedRefDiagnostics } from '@openxenon/engine/Work/work-diagnostics'
+import { isWorkStarted } from '@openxenon/engine/Work'
+import {
+  readDomainFile,
+  readTaskFile,
+  readWorkFileFromText,
+  readWorkFile,
+  type WorkFileSummary,
+  type DomainFileSummary,
+} from '@openxenon/engine/oxl/summary-extractors'
+import { parseOxnFile, validateWorkFile } from '@openxenon/engine/oxl/work-file-loader'
 
 // ---------------------------------------------------------------------------
-// 报告层类型（派生自 WorkspaceState，CLI 报告使用）
+// 报告层类型（来自 engine/work-reporter）
 // ---------------------------------------------------------------------------
-
-type WorkStatus = 'pending' | 'running' | 'passed' | 'failed' | 'error'
-
-interface DerivedSkillSnapshot {
-  lifecycle: string
-  objective: string
-  acceptance: string[]
-  guidance?: string
-}
-
-interface DerivedPartExecution {
-  partName: string
-  align: string
-  status: WorkStatus
-  startedAt?: string
-  completedAt?: string
-  durationMs?: number
-  probes: Array<{
-    probeName: string
-    passed: boolean
-    output?: unknown
-    errorMessage?: string
-    durationMs?: number
-    executedAt?: string
-  }>
-  skill?: DerivedSkillSnapshot
-}
-
-interface DerivedPartSpec {
-  partName: string
-  align: string
-  ref?: string
-  skill: DerivedSkillSnapshot
-}
-
-interface DerivedSkillContext {
-  overallGoal: string
-  constraints: string[]
-  maxIterations: number
-}
-
-interface DerivedWorkState {
-  workName: string
-  status: WorkStatus
-  currentPart: string | null
-  completedParts: string[]
-  loopMeta: { currentIteration: number; maxIterations: number }
-  frozenPath: string | null
-  createdAt: string
-  updatedAt: string
-  skillContext?: DerivedSkillContext
-  partSpecs?: DerivedPartSpec[]
-  partExecutions?: DerivedPartExecution[]
-}
 
 // ---------------------------------------------------------------------------
 // Path helpers
@@ -243,302 +193,8 @@ function parsePartName(raw: string): string {
 // PR-6: validate → 写 domains.json + blueprints.json + .work birth cert
 // ---------------------------------------------------------------------------
 
-/**
- * 把 workType (--type) 映射到 .work.mode 枚举。
- * 非法值兜底为 'task'，并在 response.warnings 里报告。
- */
-function workTypeToMode(workType: string): { mode: WorkMode; warning?: string } {
-  if (workType === 'task' || workType === 'explore' || workType === 'edit') {
-    return { mode: workType }
-  }
-  return { mode: 'task', warning: `unknown workType "${workType}" → mode fallback to "task"` }
-}
-
-interface UnresolvedRef {
-  kind: 'domain' | 'blueprint'
-  name: string
-  ref: string | null
-  reason: string
-}
-
-interface ValidateArtifactsResult {
-  ok: boolean
-  /** 仅当 ok=true 时有值 */
-  artifacts?: {
-    domainsJsonPath: string
-    blueprintsJsonPath: string
-    workFilePath: string
-    assetCounts: { domains: number; blueprints: number; tasks: number }
-  }
-  /** 仅当 ok=false 时有值 */
-  unresolved?: UnresolvedRef[]
-  warnings: string[]
-}
-
-/**
- * PR-6: 解析 work.oxn 资源池引用 → 落 3 个产物。
- *
- * 行为：
- *   1. 用 PR-3 merger 扫描 work.oxn 中 domain/blueprint ref 列表
- *   2. 解析每个 ref（@prj/domains/X、@prj/blueprints/X、bare name fallback）
- *   3. 全部解析成功 → 写 domains.json + blueprints.json + .work
- *   4. 任一解析失败 → 不写任何产物，返回 unresolved 列表
- *
- * .work 写策略：
- *   - 已存在 + 已 lock（planLock !== null）→ 拒绝覆盖，错误返回
- *   - 已存在 + 未 lock → 刷新（planLock=null；assets 重写）
- *   - 不存在 → 全新创建
- *
- * 这保证：lock 后的图纸不能被 validate 静默改写。
- */
-async function validateAndWriteArtifacts(params: {
-  projectRoot: string
-  workName: string
-  work: WorkDeclaration
-  workType: string
-  /** 显式 task.oxn 缺失列表（已经过 parseOxnFile + 任务存在性检查） */
-  missingTaskOxn: string[]
-}): Promise<ValidateArtifactsResult> {
-  const { projectRoot, workName, work, workType, missingTaskOxn } = params
-  const warnings: string[] = []
-
-  // ── 1. 跑 merger 解析 domain/blueprint ref ──
-  const workOxnPath = getWorkOxnPath(projectRoot, workName)
-  const domainsIdx = await buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
-  const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
-
-  // ── 2. 收集 unresolved ──
-  const unresolved: UnresolvedRef[] = []
-  for (const d of domainsIdx.domains) {
-    if (d.status === 'invalid') {
-      unresolved.push({
-        kind: 'domain',
-        name: d.name,
-        ref: d.ref,
-        reason: d.errors[0] ?? 'invalid',
-      })
-    }
-  }
-  for (const b of blueprintsIdx.blueprints) {
-    if (b.status === 'invalid') {
-      unresolved.push({
-        kind: 'blueprint',
-        name: b.name,
-        ref: b.ref,
-        reason: b.errors[0] ?? 'invalid',
-      })
-    }
-  }
-  for (const t of missingTaskOxn) {
-    unresolved.push({
-      kind: 'blueprint', // 复用 kind 字段语义不严格；这里 task 缺失算 work-level 错误
-      name: t,
-      ref: null,
-      reason: `task "${t}" declared in work.oxn but tasks/${t}/task.oxn missing`,
-    })
-  }
-
-  if (unresolved.length > 0) {
-    return { ok: false, unresolved, warnings }
-  }
-
-  // ── 3. 写 domains.json + blueprints.json ──
-  const domainsJsonPath = getPerWorkDomainsJsonPath(projectRoot, workName)
-  const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
-  await writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
-  writePerWorkBlueprintsIndex({
-    projectRoot,
-    workName,
-    workOxnPath,
-    outPath: blueprintsJsonPath,
-  })
-
-  // ── 4. 构建 + 写 .work birth cert ──
-  const { mode, warning: modeWarn } = workTypeToMode(workType)
-  if (modeWarn) warnings.push(modeWarn)
-
-  // 检查现有 .work 是否 lock：lock 后不允许 validate 覆盖
-  const existing = readBirthCert(projectRoot, workName)
-  if (existing.ok && existing.cert.planLock !== null) {
-    return {
-      ok: false,
-      warnings: [
-        ...warnings,
-        `work is locked (planLock.lockedAt=${existing.cert.planLock.lockedAt}); ` +
-          `validate refuses to overwrite .work. Run \`oxn work unlock ${workName}\` first.`,
-      ],
-    }
-  }
-
-  // 资产列表：fileHash 必须 64-hex；ref 解析已成功 → 一定能算
-  const domainAssets: DomainAssetEntry[] = domainsIdx.domains.map((d) => ({
-    name: d.name,
-    scope: d.scope,
-    version: 1,
-    fileHash: hashFile(join(projectRoot, d.file)) ?? '',
-  }))
-  const blueprintAssets: BlueprintAssetEntry[] = blueprintsIdx.blueprints.map((b) => ({
-    name: b.name,
-    version: b.version,
-    fileHash: hashFile(join(projectRoot, b.file)) ?? '',
-  }))
-
-  // 校验所有 fileHash 真的算出来了（防御性：resolved=true 但 hash 缺失）
-  for (const a of [...domainAssets, ...blueprintAssets]) {
-    if (!/^[0-9a-f]{64}$/.test(a.fileHash)) {
-      return {
-        ok: false,
-        warnings: [...warnings, `fileHash missing for ${a.name} (file unreadable after resolve)`],
-      }
-    }
-  }
-
-  // work.oxn context → goal / constraints
-  // v0.4.1: loopPolicy 移出 WorkContext, 改读 work.loopPolicy
-  const goal = work.context?.goal ?? ''
-  const constraints = work.context?.constraints ?? []
-  const maxIterations = (work as { loopPolicy?: { maxIterations?: number } }).loopPolicy?.maxIterations ?? 3
-
-  const cert: BirthCert = createBirthCert({
-    workName,
-    mode,
-    goal,
-    constraints,
-    maxIterations,
-    assets: { domains: domainAssets, blueprints: blueprintAssets },
-  })
-  // 保留旧 cert 的 createdAt（如果存在）以稳定时间戳
-  if (existing.ok) {
-    cert.createdAt = existing.cert.createdAt
-  }
-  writeWorkFile(projectRoot, workName, cert)
-
-  return {
-    ok: true,
-    artifacts: {
-      domainsJsonPath,
-      blueprintsJsonPath,
-      workFilePath: getWorkGatePath(projectRoot, workName),
-      assetCounts: {
-        domains: domainAssets.length,
-        blueprints: blueprintAssets.length,
-        tasks: (work.tasks ?? []).length,
-      },
-    },
-    warnings,
-  }
-}
-
 function capitalize(s: string): string {
   return s.length === 0 ? s : s[0]!.toUpperCase() + s.slice(1)
-}
-
-function snapshotContext(
-  ctx: WorkContext | undefined,
-  maxIters: number,
-  loopPolicy: { maxIterations?: number } | undefined,
-): DerivedSkillContext {
-  return {
-    overallGoal: ctx?.goal ?? '',
-    constraints: ctx?.constraints ?? [],
-    // v0.4.1: loopPolicy 移出 WorkContext, 改读独立参数
-    maxIterations: loopPolicy?.maxIterations ?? maxIters,
-  }
-}
-
-function partStatus(partName: string, state: DerivedWorkState): 'pending' | 'running' | 'passed' | 'failed' {
-  if (state.completedParts.includes(partName)) return 'passed'
-  if (state.currentPart === partName) return 'running'
-  return 'pending'
-}
-
-function makeContextJson(
-  ctx: DerivedSkillContext | undefined,
-  currentFocus: string,
-  state: DerivedWorkState,
-): {
-  overallGoal: string
-  constraints: string[]
-  currentFocus: string
-  loopPolicy: { currentIteration: number; maxIterations: number }
-} {
-  return {
-    overallGoal: ctx?.overallGoal ?? '',
-    constraints: ctx?.constraints ?? [],
-    currentFocus,
-    loopPolicy: {
-      currentIteration: state.loopMeta.currentIteration,
-      maxIterations: state.loopMeta.maxIterations,
-    },
-  }
-}
-
-function makeReport(state: DerivedWorkState): {
-  workName: string
-  overallStatus: 'pending' | 'running' | 'passed' | 'failed' | 'error'
-  skillContext: {
-    overallGoal: string
-    constraints: string[]
-    currentFocus: string
-    loopPolicy: { currentIteration: number; maxIterations: number }
-  }
-  parts: Array<{
-    partName: string
-    align: string
-    ref?: string
-    lifecycle: string
-    status: 'pending' | 'running' | 'passed' | 'failed'
-    stepSkillContext: { lifecycle: string; objective: string; acceptance: string[]; guidance?: string }
-    probeResults: Array<{
-      probe: string
-      passed: boolean
-      output?: unknown
-      errorMessage?: string
-      durationMs?: number
-    }>
-  }>
-  loopMeta: { isLooping: boolean; iteration: number; maxIterations: number }
-  frozen: string | null
-} {
-  const partSpecs = state.partSpecs ?? []
-  const executions = state.partExecutions ?? []
-  const execByName = new Map<string, DerivedPartExecution>()
-  for (const ex of executions) execByName.set(ex.partName, ex)
-
-  return {
-    workName: state.workName,
-    overallStatus: state.status,
-    skillContext: makeContextJson(state.skillContext, state.currentPart ?? '', state),
-    parts: partSpecs.map((p) => {
-      const exec = execByName.get(p.partName)
-      return {
-        partName: p.partName,
-        align: p.align,
-        ...(p.ref !== undefined ? { ref: p.ref } : {}),
-        lifecycle: p.skill.lifecycle,
-        status: partStatus(p.partName, state),
-        stepSkillContext: {
-          lifecycle: p.skill.lifecycle,
-          objective: p.skill.objective,
-          acceptance: p.skill.acceptance,
-          ...(p.skill.guidance !== undefined ? { guidance: p.skill.guidance } : {}),
-        },
-        probeResults: (exec?.probes ?? []).map((pr) => ({
-          probe: pr.probeName,
-          passed: pr.passed,
-          ...(pr.output !== undefined ? { output: pr.output } : {}),
-          ...(pr.errorMessage !== undefined ? { errorMessage: pr.errorMessage } : {}),
-          ...(pr.durationMs !== undefined ? { durationMs: pr.durationMs } : {}),
-        })),
-      }
-    }),
-    loopMeta: {
-      isLooping: state.loopMeta.currentIteration > 0,
-      iteration: state.loopMeta.currentIteration,
-      maxIterations: state.loopMeta.maxIterations,
-    },
-    frozen: state.frozenPath,
-  }
 }
 
 function errorJson(
@@ -554,88 +210,6 @@ function errorJson(
 
 function readTextFile(filePath: string): string {
   return readFileSync(filePath, 'utf-8')
-}
-
-async function parseOxnFile(
-  filePath: string,
-): Promise<{ doc: OxnAstDocument; work: WorkDeclaration | null; parts: PartDeclaration[] }> {
-  const parser = createOxnParser()
-  const content = readTextFile(filePath)
-  const result = await parser.parse(content, URI.file(filePath))
-  if (result.parseErrors.length > 0 || result.lexerErrors.length > 0) {
-    throw new Error(`DSL parse failed: ${[...result.parseErrors, ...result.lexerErrors].join('; ')}`)
-  }
-  const doc = result.ast as OxnAstDocument
-  const work = doc.entities.find(isWorkDeclaration) ?? null
-  const parts = doc.entities.filter(isPartDeclaration)
-  return { doc, work, parts }
-}
-
-// v0.5 Phase 3: format-aware work file loader
-//   - .oxn → 直接 langium 解析
-//   - .md  → parseMarkdown → extractWorkIR → serializeWorkToOxn → 内存 langium 解析
-// 返回 WorkDeclaration + inline parts,失败抛 OXNCrash
-async function validateWorkFile(filePath: string): Promise<{
-  ok: boolean
-  doc?: OxnAstDocument
-  work?: WorkDeclaration
-  parts?: PartDeclaration[]
-  errors: string[]
-}> {
-  if (!existsSync(filePath)) {
-    return { ok: false, errors: [`work file not found: ${filePath}`] }
-  }
-  // v0.5 Phase 3: .md 走 md-pipeline 路径
-  if (filePath.endsWith('.md')) {
-    return validateWorkFromMd(filePath)
-  }
-  try {
-    const r = await parseOxnFile(filePath)
-    if (!r.work) {
-      return { ok: false, errors: ['no WorkDeclaration found in file'] }
-    }
-    return { ok: true, doc: r.doc, work: r.work, parts: r.parts, errors: [] }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    return { ok: false, errors: [message] }
-  }
-}
-
-async function validateWorkFromMd(filePath: string): Promise<{
-  ok: boolean
-  doc?: OxnAstDocument
-  work?: WorkDeclaration
-  parts?: PartDeclaration[]
-  errors: string[]
-}> {
-  const content = readTextFile(filePath)
-  let ir: import('@openxenon/engine/oxl/md-pipeline/transformers/work').WorkIR
-  try {
-    const parsed = parseMarkdown(content)
-    ir = extractWorkIR(parsed.tree, parsed.frontmatter)
-  } catch (e) {
-    return {
-      ok: false,
-      errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`],
-    }
-  }
-  // IR → 临时 .oxn → 走 langium 拿到 AST (下游 buildPartSpecs 等需要 WorkDeclaration)
-  const oxnContent = serializeWorkToOxn(ir)
-  const parser = createOxnParser()
-  const r = await parser.parse(oxnContent, URI.file(`${filePath}.oxn`))
-  if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
-    return {
-      ok: false,
-      errors: [...r.parseErrors.map((e) => `[Parser] ${e}`), ...r.lexerErrors.map((e) => `[Lexer] ${e}`)],
-    }
-  }
-  const doc = r.ast as OxnAstDocument
-  const work = doc.entities.find(isWorkDeclaration) ?? null
-  const parts = doc.entities.filter(isPartDeclaration)
-  if (!work) {
-    return { ok: false, doc, errors: ['no WorkDeclaration derived from md'] }
-  }
-  return { ok: true, doc, work, parts, errors: [] }
 }
 
 async function buildPartSpecs(
@@ -685,128 +259,12 @@ async function buildPartSpecs(
   return specs
 }
 
-function renderWorkSkeleton(
-  workName: string,
-  blueprintName: string,
-  slots: Array<{ name: string; align: string }>,
-  format: AssetFormat = 'oxn',
-): string {
-  if (format === 'md') {
-    const partEntries = slots
-      .map((s) => {
-        return `### ${s.name}
-- blueprint: ${blueprintName}
-- part: slot-name
-  - skill_context: TODO: 描述 ${s.name} 阶段要做什么`
-      })
-      .join('\n\n')
-    return `---
-entity: work
-version: 0.3.0
-name: ${workName}
----
-
-# Work: ${workName}
-
-## Context
-
-### primary
-- goal: TODO: 描述这个 work 要达成什么
-- max_iterations: 3
-- constraints:
-  - TODO: 列出硬约束
-
-## LoopPolicy
-
-### primary
-- max_iterations: 3
-
-## Refs
-
-### ${blueprintName}
-- kind: blueprint
-- ref: "@prj/blueprints/${blueprintName}"
-
-## Tasks
-
-${partEntries}
-`
-  }
-  const header = [
-    `// Generated by \`oxn work create\` from blueprint "${blueprintName}"`,
-    `// Edit goal/constraints and each task's objective, then run:`,
-    `//   oxn work run <name>`,
-    '',
-  ].join('\n')
-  const partEntries = slots
-    .map((s) => {
-      return `  task "${s.name}" {
-    blueprint "${blueprintName}"
-    part "slot-name" {
-      skill_context = "TODO: 描述 ${s.name} 阶段要做什么"
-    }
-  }`
-    })
-    .join('\n')
-  return `${header}work "${workName}" {
-  context {
-    goal = "TODO: 描述这个 work 要达成什么";
-    constraints = [
-      "TODO: 列出硬约束"
-    ];
-    } loop_policy {
-      max_iterations = 3;
-    }
-
-  blueprint "${blueprintName}" ref "@prj/blueprints/${blueprintName}";
-
-${partEntries}
-}
-`
-}
-
 // ---------------------------------------------------------------------------
 // Phase guards
 // ---------------------------------------------------------------------------
 
-function guardWorkNotStarted<T>(
-  projectRoot: string,
-  workName: string,
-  format: ReturnType<typeof getFormatFromArgs>,
-  onOk: () => T,
-): T | { __guardError: true } {
-  if (workStateExists(projectRoot, workName)) {
-    outputError(
-      {
-        code: 'OXN_WORK_ALREADY_RUNNING',
-        message: t('work.alreadyRunning', { workName }),
-        suggestion: t('work.modifyHint'),
-      },
-      format,
-    )
-    return { __guardError: true }
-  }
-  return onOk()
-}
-
-function guardWorkStarted<T>(
-  projectRoot: string,
-  workName: string,
-  format: ReturnType<typeof getFormatFromArgs>,
-  onOk: () => T,
-): T | { __guardError: true } {
-  if (!workStateExists(projectRoot, workName)) {
-    outputError(
-      {
-        code: 'OXN_WORK_NOT_STARTED',
-        message: t('work.notStarted', { workName }),
-        suggestion: t('work.notStartedHint'),
-      },
-      format,
-    )
-    return { __guardError: true }
-  }
-  return onOk()
+function isWorkNotStarted(projectRoot: string, workName: string): boolean {
+  return !isWorkStarted(projectRoot, workName)
 }
 
 // ---------------------------------------------------------------------------
@@ -1146,18 +604,7 @@ const validateSubcommand = defineCommand({
       return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
-    // v0.5 Phase 3: 路径由 config.assetFormat 决定（默认 oxn），但若主格式不存在,
-    // 自动 fall back 到 alt 格式 (向后兼容老 .oxn-only 项目)
-    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
-    const altPath = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
-    const legacyPath = getWorkOxnPath(projectRoot, workName)
-    const workFile = existsSync(primaryPath)
-      ? primaryPath
-      : existsSync(altPath)
-        ? altPath
-        : existsSync(legacyPath)
-          ? legacyPath
-          : primaryPath // 默认指向主格式,validate 时报 OXN_WORK_NOT_FOUND
+    const workFile = resolveWorkFilePath(projectRoot, workName, assetFormat)
     if (!existsSync(workFile)) {
       return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workFile}` }, format)
     }
@@ -1330,20 +777,19 @@ const addTaskSubcommand = defineCommand({
     }
 
     // NV-1: 状态机已启动 → 拒
-    const addGuard = guardWorkNotStarted(projectRoot, workName, format, () => null)
-    if (addGuard) return
+    if (!isWorkNotStarted(projectRoot, workName)) {
+      outputError(
+        {
+          code: 'OXN_WORK_ALREADY_RUNNING',
+          message: t('work.alreadyRunning', { workName }),
+          suggestion: t('work.modifyHint'),
+        },
+        format,
+      )
+      return
+    }
 
-    // v0.5 Phase 3: 路径由 config.assetFormat 决定 (fallback primary → alt → legacy)
-    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
-    const altPath = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
-    const legacyPath = getWorkOxnPath(projectRoot, workName)
-    const workFile = existsSync(primaryPath)
-      ? primaryPath
-      : existsSync(altPath)
-        ? altPath
-        : existsSync(legacyPath)
-          ? legacyPath
-          : primaryPath
+    const workFile = resolveWorkFilePath(projectRoot, workName, assetFormat)
     if (!existsSync(workFile)) {
       return outputError(
         {
@@ -1663,8 +1109,17 @@ const editTaskSubcommand = defineCommand({
     const assetFormat = resolveAssetFormat(config)
 
     // NV-1: 状态机已启动 → 拒
-    const editGuard = guardWorkNotStarted(projectRoot, workName, format, () => null)
-    if (editGuard) return
+    if (!isWorkNotStarted(projectRoot, workName)) {
+      outputError(
+        {
+          code: 'OXN_WORK_ALREADY_RUNNING',
+          message: t('work.alreadyRunning', { workName }),
+          suggestion: t('work.modifyHint'),
+        },
+        format,
+      )
+      return
+    }
 
     const taskFile = getWorkTaskFile(workName, taskName)
     if (!existsSync(taskFile)) {
@@ -1709,17 +1164,7 @@ const editTaskSubcommand = defineCommand({
     }
 
     if (addDomain) {
-      // v0.5 Phase 3: 路径由 config.assetFormat 决定
-      const primaryPath = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
-      const altPath = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
-      const legacyPath = getWorkOxnPath(projectRoot, workName)
-      const workFile = existsSync(primaryPath)
-        ? primaryPath
-        : existsSync(altPath)
-          ? altPath
-          : existsSync(legacyPath)
-            ? legacyPath
-            : primaryPath
+      const workFile = resolveWorkFilePath(projectRoot, workName, assetFormat)
       if (existsSync(workFile)) {
         // v0.5 Phase 3: .md 走 md-pipeline 反向序列化, 然后正则提取 domain 声明
         let workContent = readFileSync(workFile, 'utf-8')
@@ -1781,8 +1226,17 @@ const deleteTaskSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
 
     // NV-1: 状态机已启动 → 拒
-    const deleteGuard = guardWorkNotStarted(projectRoot, workName, format, () => null)
-    if (deleteGuard) return
+    if (!isWorkNotStarted(projectRoot, workName)) {
+      outputError(
+        {
+          code: 'OXN_WORK_ALREADY_RUNNING',
+          message: t('work.alreadyRunning', { workName }),
+          suggestion: t('work.modifyHint'),
+        },
+        format,
+      )
+      return
+    }
 
     const taskDir = getWorkTaskDir(workName, taskName)
     if (!existsSync(taskDir)) {
@@ -1901,16 +1355,7 @@ const runSubcommand = defineCommand({
         )
       }
 
-      const primaryPath = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
-      const altPath = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
-      const legacyPath = getWorkOxnPath(projectRoot, workName)
-      const filePath = existsSync(primaryPath)
-        ? primaryPath
-        : existsSync(altPath)
-          ? altPath
-          : existsSync(legacyPath)
-            ? legacyPath
-            : primaryPath
+      const filePath = resolveWorkFilePath(projectRoot, workName, assetFormat)
       if (!existsSync(filePath)) {
         return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work file not found at ${filePath}` }, format)
       }
@@ -2117,8 +1562,17 @@ const submitSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
 
     // NV-2: 状态机未启动 → 拒
-    const submitGuard = guardWorkStarted(projectRoot, workName, format, () => null)
-    if (submitGuard) return
+    if (!isWorkStarted(projectRoot, workName)) {
+      outputError(
+        {
+          code: 'OXN_WORK_NOT_STARTED',
+          message: t('work.notStarted', { workName }),
+          suggestion: t('work.notStartedHint'),
+        },
+        format,
+      )
+      return
+    }
 
     try {
       const result = submitTask({
@@ -2314,139 +1768,6 @@ const statusSubcommand = defineCommand({
 // ---------------------------------------------------------------------------
 // Subcommand: context
 // ---------------------------------------------------------------------------
-type WorkFileSummary = {
-  name: string
-  goal?: string
-  constraints: string[]
-  domains: Array<{ name: string; ref?: string }>
-  blueprints: Array<{ name: string; ref?: string }>
-  parts: Array<{ name: string; ref?: string }>
-  probes: Array<{ name: string; ref?: string }>
-  tasks: Array<{ name: string; domain?: string; blueprint?: string; deps: string[] }>
-}
-
-type DomainFileSummary = {
-  name: string
-  description?: string
-  language?: {
-    terms: Array<{ name: string; desc: string }>
-    ban: string[]
-    invariant: string[]
-  }
-} | null
-
-type TaskFileSummary = {
-  name: string
-  domain?: string
-  blueprint?: string
-  parts: Array<{
-    name: string
-    skillContext?: string
-    probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
-  }>
-  deps: string[]
-} | null
-
-function readDomainFile(filePath: string): DomainFileSummary {
-  if (!existsSync(filePath)) return null
-  const content = readFileSync(filePath, 'utf-8')
-
-  const nameMatch = content.match(/domain\s+"([^"]+)"/)
-  if (!nameMatch) return null
-
-  const descMatch = content.match(/description\s*=\s*"((?:[^"\\]|\\.)*)"/)
-
-  const termBlock = content.match(/term\s*\{([\s\S]*?)\}/)
-  const terms: Array<{ name: string; desc: string }> = []
-  if (termBlock) {
-    const termMatches = termBlock[1]!.matchAll(/"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)
-    for (const m of termMatches) {
-      terms.push({ name: m[1]!, desc: m[2]!.replace(/\\"/g, '"') })
-    }
-  }
-
-  const banBlock = content.match(/ban\s*\{([\s\S]*?)\}/)
-  const ban: string[] = []
-  if (banBlock) {
-    const banMatches = banBlock[1]!.matchAll(/"([^"]+)"/g)
-    for (const m of banMatches) {
-      ban.push(m[1]!)
-    }
-  }
-
-  // v0.1.1: 允许多个 invariant 块；遍历收集所有块
-  const invariant: string[] = []
-  for (const invBlock of content.matchAll(/invariant\s*\{([\s\S]*?)\}/g)) {
-    const invMatches = invBlock[1]!.matchAll(/"([^"]+)"/g)
-    for (const m of invMatches) {
-      invariant.push(m[1]!)
-    }
-  }
-
-  return {
-    name: nameMatch[1]!,
-    ...(descMatch ? { description: descMatch[1]!.replace(/\\"/g, '"') } : {}),
-    ...(terms.length > 0 || ban.length > 0 || invariant.length > 0 ? { language: { terms, ban, invariant } } : {}),
-  }
-}
-
-function readTaskFile(filePath: string): TaskFileSummary {
-  if (!existsSync(filePath)) return null
-  const content = readFileSync(filePath, 'utf-8')
-
-  const nameMatch = content.match(/task\s+"([^"]+)"/)
-  if (!nameMatch) return null
-
-  const domainMatch = content.match(/domain\s+"([^"]+)"/)
-  const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
-
-  const parts: Array<{
-    name: string
-    skillContext?: string
-    probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
-  }> = []
-  const partBlocks = Array.from(content.matchAll(/part\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
-  for (const m of partBlocks) {
-    const partName = m[1]!
-    const partBody = m[2]!
-
-    const skillMatch = partBody.match(/skill_context\s*=\s*"((?:[^"\\]|\\.)*)"/)
-    const skillContext = skillMatch ? skillMatch[1]!.replace(/\\"/g, '"') : undefined
-
-    const probes: Array<{ name: string; ref: string; params?: Record<string, string> }> = []
-    const probeBlocks = Array.from(partBody.matchAll(/probe\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
-    for (const pm of probeBlocks) {
-      const probeName = pm[1]!
-      const probeBody = pm[2]!
-      const refMatch = probeBody.match(/ref\s+"([^"]+)"/)
-      const ref = refMatch?.[1] ?? ''
-
-      const params: Record<string, string> = {}
-      const paramsBlock = probeBody.match(/params\s*=\s*\{([\s\S]*?)\}/)
-      if (paramsBlock) {
-        const paramMatches = paramsBlock[1]!.matchAll(/(\w+)\s*=\s*"([^"]*)"/g)
-        for (const p of paramMatches) {
-          params[p[1]!] = p[2]!
-        }
-      }
-
-      probes.push({ name: probeName, ref, ...(Object.keys(params).length > 0 ? { params } : {}) })
-    }
-
-    parts.push({ name: partName, skillContext, probes })
-  }
-
-  const depsMatch = content.match(/deps\s*=\s*\[([^\]]*)\]/)
-  const deps = depsMatch ? Array.from(depsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!) : []
-
-  return {
-    name: nameMatch[1]!,
-    domain: domainMatch?.[1],
-    blueprint: blueprintMatch?.[1],
-    parts,
-    deps,
-  }
-}
 
 function camelToKebab(s: string): string {
   return s
@@ -2454,95 +1775,6 @@ function camelToKebab(s: string): string {
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
     .toLowerCase()
-}
-
-// PR-14b: 扫描 work.oxn 中声明的 domain/blueprint ref，收集未解析的 diagnostics。
-// 用于 context / run / migrate 在 lock 守卫通过后显式报告"声明的资产不存在"软警告。
-function collectUnresolvedRefDiagnostics(work: WorkFileSummary, projectRoot: string): RefDiagnostic[] {
-  const diagnostics: RefDiagnostic[] = []
-  for (const d of work.domains) {
-    if (!resolveDomainFile(d.ref ?? null, d.name, projectRoot)) {
-      const reason = d.ref?.startsWith('@oxn/')
-        ? '@oxn/ scope has no builtin domain registry (V1)'
-        : `domain file not found for ref "${d.ref ?? d.name}"`
-      diagnostics.push(buildDomainDiagnostic(d.name, d.ref ?? null, reason))
-    }
-  }
-  for (const b of work.blueprints) {
-    if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
-      const reason = b.ref?.startsWith('@oxn/')
-        ? '@oxn/ scope has no builtin blueprint registry (V1)'
-        : `blueprint file not found for ref "${b.ref ?? b.name}"`
-      diagnostics.push(buildBlueprintDiagnostic(b.name, b.ref ?? null, reason))
-    }
-  }
-  return diagnostics
-}
-
-function readWorkFileFromText(content: string, _sourcePath: string): WorkFileSummary | null {
-  const nameMatch = content.match(/work\s+"([^"]+)"/)
-  if (!nameMatch) return null
-
-  const domains: Array<{ name: string; ref?: string }> = []
-  const domainMatches = Array.from(content.matchAll(/domain\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g))
-  for (const m of domainMatches) {
-    domains.push({ name: m[1]!, ...(m[2] ? { ref: m[2] } : {}) })
-  }
-
-  const blueprints: Array<{ name: string; ref?: string }> = []
-  const bpMatches = Array.from(content.matchAll(/blueprint\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g))
-  for (const m of bpMatches) {
-    blueprints.push({ name: m[1]!, ...(m[2] ? { ref: m[2] } : {}) })
-  }
-
-  const parts: Array<{ name: string; ref?: string }> = []
-  const partMatches = Array.from(content.matchAll(/part\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g))
-  for (const m of partMatches) {
-    parts.push({ name: m[1]!, ...(m[2] ? { ref: m[2] } : {}) })
-  }
-
-  const probes: Array<{ name: string; ref?: string }> = []
-  const probeMatches = Array.from(content.matchAll(/probe\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g))
-  for (const m of probeMatches) {
-    probes.push({ name: m[1]!, ...(m[2] ? { ref: m[2] } : {}) })
-  }
-
-  const ctxBlock = content.match(/context\s*\{([\s\S]*?)\}/)
-  let goal: string | undefined
-  let constraints: string[] = []
-  if (ctxBlock) {
-    const gMatch = ctxBlock[1]!.match(/goal\s*=\s*"((?:[^"\\]|\\.)*)"/)
-    if (gMatch) goal = gMatch[1]!.replace(/\\"/g, '"')
-    const cMatch = ctxBlock[1]!.match(/constraints\s*=\s*\[([^\]]*)\]/)
-    if (cMatch) {
-      constraints = Array.from(cMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!)
-    }
-  }
-
-  const tasks: Array<{ name: string; domain?: string; blueprint?: string; deps: string[] }> = []
-  const taskBlocks = Array.from(content.matchAll(/task\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
-  for (const m of taskBlocks) {
-    const taskName = m[1]!
-    const taskBody = m[2]!
-    const taskDomainMatch = taskBody.match(/domain\s+"([^"]+)"/)
-    const taskBpMatch = taskBody.match(/blueprint\s+"([^"]+)"/)
-    const taskDepsMatch = taskBody.match(/deps\s*=\s*\[([^\]]*)\]/)
-    const taskDeps = taskDepsMatch ? Array.from(taskDepsMatch[1]!.matchAll(/"([^"]+)"/g)).map((dm) => dm[1]!) : []
-    tasks.push({
-      name: taskName,
-      domain: taskDomainMatch?.[1],
-      blueprint: taskBpMatch?.[1],
-      deps: taskDeps,
-    })
-  }
-
-  return { name: nameMatch[1]!, goal, constraints, domains, blueprints, parts, probes, tasks }
-}
-
-function readWorkFile(filePath: string): WorkFileSummary | null {
-  if (!existsSync(filePath)) return null
-  const content = readFileSync(filePath, 'utf-8')
-  return readWorkFileFromText(content, filePath)
 }
 
 const contextSubcommand = defineCommand({
@@ -2575,17 +1807,7 @@ const contextSubcommand = defineCommand({
     const config = readProjectConfig(root)
     const assetFormat = resolveAssetFormat(config)
 
-    // v0.5 Phase 3: 路径由 config.assetFormat 决定（默认 oxn），fallback 到 alt + legacy
-    const primaryPath = resolveAssetPrimaryPath(root, 'work', workName, assetFormat)
-    const altPath = resolveAssetAltPath(root, 'work', workName, assetFormat)
-    const legacyPath = getWorkOxnPath(root, workName)
-    const workFile = existsSync(primaryPath)
-      ? primaryPath
-      : existsSync(altPath)
-        ? altPath
-        : existsSync(legacyPath)
-          ? legacyPath
-          : primaryPath
+    const workFile = resolveWorkFilePath(root, workName, assetFormat)
 
     // PR-9: context 与 run 对称 —— 锁守卫优先于 work.oxn 缺失检查
     // 默认硬要求；--unlock-check 用于诊断 stale 计划
