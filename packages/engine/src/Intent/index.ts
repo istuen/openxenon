@@ -10,6 +10,9 @@ export { createWork } from './create-work'
 export { computeWorkContext } from './get-context'
 export { validateWork } from './validate'
 export { lockWork } from './lock'
+export { analyzeBoundaries } from './analyze-boundaries'
+export type { BoundaryRef } from './analyze-boundaries'
+export { attachAsset, detachAsset } from './attach'
 
 // Types
 export type {

@@ -12,6 +12,8 @@ export { computeTaskMeta } from './task-status'
 export { runWork } from './run'
 export { submitPart } from './submit'
 export { finalizeWork } from './finalize'
+export { editTask } from './edit-task'
+export { deleteTask } from './delete-task'
 export type { TaskSummary } from './list-tasks'
 export type { TaskMeta } from './task-status'
 

@@ -8,6 +8,8 @@
 export { formatVerdictEmoji, renderInsightHuman } from './compute'
 export { computeProofInsight } from './proof-insight'
 export { computeWorkInsight } from './work-insight'
+export { computeCrossProofInsight, computePipelineInsight } from './cross-proof'
+export { writeAuditSuggestion } from './audit-write'
 
 // Types
 export type {

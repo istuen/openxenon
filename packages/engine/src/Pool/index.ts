@@ -7,6 +7,7 @@
 // Use cases
 export { createPoolEntry } from './create'
 export { listPoolEntries, reviewPoolEntry, approvePoolEntry, rejectPoolEntry } from './list'
+export { reviewPoolEntryFull, approvePoolEntryFull, rejectPoolEntryFull } from './gatekeeper'
 
 // Types
 export type {
