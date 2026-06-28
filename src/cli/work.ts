@@ -61,7 +61,7 @@ import {
   type WorkDeclaration,
   type OXNDocument as OxnAstDocument,
 } from '@openxenon/engine/oxl'
-import { runTask, runWork, submitTask } from '../work'
+import { runTask, runWork, submitTask, nextRoundWork } from '../work'
 import {
   ensureWorkDir,
   getTaskOxnPath,
@@ -3110,6 +3110,115 @@ const unlockSubcommand = defineCommand({
 //   - 既没 V0 也没 V1：OXN_WORK_NO_V0_LAYOUT（"纯 planning work，不需要迁移"）
 //   - 已 V1：kind=already-v1（no-op + warning 提示手动清理残留 V0）
 //
+
+// =============================================================================
+// v0.6 PR-2: `oxn work next-round <name>` — 关闭当前 round + 开启下一轮
+//
+// 行为：
+//   - 读取本轮 verdict（从 frozen.json.verdict）+ 失败 task 列表
+//   - 关闭当前 round（追加到 roundHistory，标记 endedAt + verdict + failures）
+//   - 若 verdict=PASSED → 抛 OXN_ROUND_ALREADY_PASSED（提示用 finalize 而非 next-round）
+//   - 开启新 round（currentRound++，追加 PENDING 记录）
+//   - 追加 trace event
+//   - 写 .run/state.json
+//
+// 手动触发（v0.6），不自动循环（避免无限循环 + 便于人工调整 Intent）
+// =============================================================================
+const nextRoundSubcommand = defineCommand({
+  meta: {
+    name: 'next-round',
+    description: '关闭当前 round + 开启下一轮 IAP 循环（v0.6 PR-2）',
+  },
+  args: {
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--verdict': {
+      type: 'string',
+      required: true,
+      description: '本轮 verdict：PASSED | FAILED | INCONCLUSIVE',
+    },
+    '--failures': {
+      type: 'string',
+      description: '本轮失败的 task 名列表（逗号分隔，可选）',
+    },
+    '--notes': { type: 'string', description: '本轮总结备注（可选）' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const workName = ctx.args.name as string
+    const verdictRaw = ctx.args.verdict as string
+    const failuresRaw = (ctx.args as Record<string, unknown>).failures as string | undefined
+    const notes = (ctx.args as Record<string, unknown>).notes as string | undefined
+    const projectRoot = getProjectRoot()
+
+    // 验证 verdict
+    if (verdictRaw !== 'PASSED' && verdictRaw !== 'FAILED' && verdictRaw !== 'INCONCLUSIVE') {
+      return outputError(
+        {
+          code: 'OXN_ROUND_VERDICT_INVALID',
+          message: `invalid --verdict: ${verdictRaw}`,
+          suggestion: 'valid values: PASSED | FAILED | INCONCLUSIVE',
+        },
+        format,
+      )
+    }
+    const verdict = verdictRaw as 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+
+    if (!projectBoundaryExists()) {
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
+    }
+
+    const failures = failuresRaw
+      ? failuresRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0)
+      : []
+
+    try {
+      const result = nextRoundWork({
+        projectRoot,
+        workName,
+        verdict,
+        failures,
+        ...(notes ? { notes } : {}),
+      })
+      output(
+        {
+          ok: true,
+          data: {
+            workName,
+            round: result.round,
+            previousVerdict: result.previousVerdict,
+            historyLength: result.historyLength,
+            workspace: result.workspace,
+          },
+          human: renderNextRoundHuman(result),
+        },
+        format,
+      )
+    } catch (err) {
+      if (err instanceof IAPError) {
+        const ctx = err.context as { oxnCode?: unknown } | undefined
+        const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
+        return outputError({ code: oxnCode, message: err.message }, format)
+      }
+      const message = err instanceof Error ? err.message : String(err)
+      output(errorJson('OXN_NEXT_ROUND_FAILED', message), format)
+    }
+  },
+})
+
+function renderNextRoundHuman(result: ReturnType<typeof nextRoundWork>): string {
+  const lines: string[] = [
+    `Work ${result.workspace.workName}: new round ${result.round} opened`,
+    `  Previous verdict: ${result.previousVerdict}`,
+    `  History length: ${result.historyLength} (1 active + ${result.historyLength - 1} closed)`,
+  ]
+  return lines.join('\n')
+}
+
 const migrateSubcommand = defineCommand({
   meta: {
     name: 'migrate',
@@ -3797,6 +3906,7 @@ export default defineCommand({
     context: contextSubcommand,
     lock: lockSubcommand,
     unlock: unlockSubcommand,
+    'next-round': nextRoundSubcommand,
     migrate: migrateSubcommand,
   },
   run() {
