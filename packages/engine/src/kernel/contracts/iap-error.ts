@@ -61,6 +61,8 @@ export type IAPErrorCode =
   | 'PROBE_MISSING'
   | 'PROBE_FIX_UNAVAILABLE'
   | 'INGEST_SCHEMA_INVALID'
+  | 'PATH_CONFLICT' // v0.6 PR-1: Asset 路径冲突（v0.6 主路径 + v0.5 旧布局同时存在）
+  | 'KIND_UNSUPPORTED' // v0.6 PR-1: Asset kind 不支持（如 work/proof 不参与 assetDir 配置）
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

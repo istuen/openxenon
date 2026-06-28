@@ -54,6 +54,66 @@ export interface ProjectConfig {
   assetFormat?: AssetFormat
   /** v0.5 Phase 3: auto-sync to the other format after every write (default true) */
   autoSync?: boolean
+  /** v0.6 PR-1: Asset 根目录（默认 'assets'） */
+  assetRoot?: string
+  /** v0.6 PR-1: 每类 asset 的子目录（默认 {domain: 'domain', blueprint: 'blueprint', stack: 'stack'}） */
+  assetDirs?: {
+    domain?: string
+    blueprint?: string
+    stack?: string
+  }
+}
+
+/** v0.6 PR-1: Asset 路径解析（支持 config + fallback） */
+export const DEFAULT_ASSET_ROOT = 'assets'
+export const DEFAULT_ASSET_DIRS = {
+  domain: 'domain',
+  blueprint: 'blueprint',
+  stack: 'stack',
+} as const
+
+export type AssetKind = 'domain' | 'blueprint' | 'stack'
+
+/**
+ * v0.6 PR-1: 解析单个 asset kind 的实际目录路径。
+ *
+ * 优先级：
+ *   1. config.assetDirs[kind]（v0.6 新配置）
+ *   2. config.assetRoot + DEFAULT_ASSET_DIRS[kind]（v0.6 默认）
+ *   3. 旧布局回退：BOUNDARY_DIR/{domain|blueprint|stack}/（v0.5 兼容）
+ *
+ * 注：回退仅在主路径不存在时启用，避免双写造成 IAP_ASSET_PATH_CONFLICT。
+ */
+export function resolveAssetDir(projectRoot: string, kind: AssetKind, config: ProjectConfig | null = null): string {
+  const boundary = join(projectRoot, BOUNDARY_DIR)
+  const custom = config?.assetDirs?.[kind]
+  const root = config?.assetRoot ?? DEFAULT_ASSET_ROOT
+
+  // 路径 1：用户自定义 assetDirs[kind]（绝对路径或相对 BOUNDARY_DIR）
+  if (custom) {
+    return custom.startsWith('/') ? custom : join(boundary, custom)
+  }
+
+  // 路径 2：默认 assetRoot + DEFAULT_ASSET_DIRS[kind]
+  return join(boundary, root, DEFAULT_ASSET_DIRS[kind])
+}
+
+/**
+ * v0.6 PR-1: 返回指定 kind 的所有候选路径（按优先级降序），用于探测
+ * 和 fallback 兼容。CLI 在 read/write 前会按顺序检查：
+ *   1. 主路径（config 决定）
+ *   2. 旧路径（.openxenon/<kind>/）
+ */
+export function resolveAssetCandidates(
+  projectRoot: string,
+  kind: AssetKind,
+  config: ProjectConfig | null = null,
+): { primary: string; fallback: string } {
+  const boundary = join(projectRoot, BOUNDARY_DIR)
+  const primary = resolveAssetDir(projectRoot, kind, config)
+  // 旧布局 fallback：.openxenon/<kind>/（domain/blueprint/stack 单数）
+  const fallback = join(boundary, kind)
+  return { primary, fallback }
 }
 
 export function resolveBoundary(scope: Scope, cwd?: string): string {
@@ -80,17 +140,23 @@ export function resolveHallRoot(scope: Scope, cwd?: string): string {
 export type AssetEntityKind = 'domain' | 'blueprint' | 'work' | 'proof'
 
 /**
- * v0.5 Phase 3: resolve the primary path for an asset based on configured format.
- * - `domain X` → `.openxenon/domains/X.oxn` (format='oxn') or `.openxenon/domains-md/X.md` (format='md')
- * - `blueprint X` → `.openxenon/blueprints/X.oxn` or `.openxenon/blueprints-md/X.md`
- * - `work X` → `.openxenon/works/X/work.oxn` or `.openxenon/works/X/work.md`
- * - `proof X` → `.openxenon/proofs/X/proof.oxn` or `.openxenon/proofs/X/proof.md`
+ * v0.5 Phase 3 + v0.6 PR-1: resolve the primary path for an asset based on configured format.
+ *
+ * - `domain X` → `.openxenon/assets/domain/X.oxn` (v0.6 默认) or `.openxenon/domains/X.oxn` (v0.5 fallback)
+ * - `blueprint X` → `.openxenon/assets/blueprint/X.oxn` 或 fallback
+ * - `work X` → `.openxenon/works/X/work.oxn` (不参与 assetDir 配置 — work 是流程而非资产)
+ * - `proof X` → `.openxenon/proofs/X/proof.oxn` (不参与 assetDir 配置 — proof 是流程而非资产)
+ *
+ * config 控制：
+ *   - assetRoot (默认 'assets')
+ *   - assetDirs.{domain,blueprint} (默认 'domain' / 'blueprint')
  */
 export function resolveAssetPrimaryPath(
   projectRoot: string,
   entity: AssetEntityKind,
   name: string,
   format: AssetFormat,
+  config: ProjectConfig | null = null,
 ): string {
   if (entity === 'work') {
     // .openxenon/works/<name>/{work.oxn|work.md}
@@ -100,17 +166,21 @@ export function resolveAssetPrimaryPath(
     // .openxenon/proofs/<name>/{proof.oxn|proof.md}
     return join(projectRoot, BOUNDARY_DIR, 'proofs', name, format === 'oxn' ? 'proof.oxn' : 'proof.md')
   }
-  // domain / blueprint: flat directory, file = <name>.<ext>
-  // (inline the literals — paths.ts is L1-Infra, must stay self-contained)
-  const dir =
-    format === 'oxn'
-      ? entity === 'domain'
-        ? 'domains'
-        : 'blueprints'
-      : entity === 'domain'
-        ? 'domains-md'
-        : 'blueprints-md'
-  return join(projectRoot, BOUNDARY_DIR, dir, `${name}.${format}`)
+  // domain / blueprint / stack: v0.6 asset 路径布局
+  // 默认 `assets/<kind>/`，config 可自定义
+  if (entity === 'domain' || entity === 'blueprint' || entity === 'stack') {
+    const baseDir = resolveAssetDir(projectRoot, entity, config)
+    const ext = format === 'oxn' ? 'oxn' : 'md'
+    // 旧布局别名：domain-md / blueprint-md
+    if (config === null && format === 'md') {
+      const boundary = join(projectRoot, BOUNDARY_DIR)
+      const legacyDir = entity === 'domain' ? 'domains-md' : 'blueprints-md'
+      return join(boundary, legacyDir, `${name}.${ext}`)
+    }
+    return join(baseDir, `${name}.${ext}`)
+  }
+  // 不应该到这里
+  throw new Error(`Unsupported entity: ${entity}`)
 }
 
 /** v0.5 Phase 3: resolve the alt-format path (the one to sync to/from). */
@@ -119,9 +189,10 @@ export function resolveAssetAltPath(
   entity: AssetEntityKind,
   name: string,
   format: AssetFormat,
+  config: ProjectConfig | null = null,
 ): string {
   const alt: AssetFormat = format === 'oxn' ? 'md' : 'oxn'
-  return resolveAssetPrimaryPath(projectRoot, entity, name, alt)
+  return resolveAssetPrimaryPath(projectRoot, entity, name, alt, config)
 }
 
 /** v0.5 Phase 3: helper — get the asset format with default fallback */

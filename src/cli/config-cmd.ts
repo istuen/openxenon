@@ -7,9 +7,10 @@
 // so we never silently persist arbitrary JSON.
 
 import { defineCommand } from 'citty'
+import { t } from '@openxenon/engine/infra/i18n'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { dirname, join } from 'path'
-import { t } from '@openxenon/engine/infra/i18n'
+import { DEFAULT_ASSET_DIRS, type ProjectConfig } from '@openxenon/engine/infra/paths'
 import { getFormatFromArgs, output, outputError } from './output'
 import {
   DEFAULT_LEADER_MODE,
@@ -21,7 +22,8 @@ import {
   type LeaderMode,
   type OxnConfig,
 } from './config-loader'
-import { readProjectConfig } from './project-config-io'
+import { readProjectConfig, writeProjectConfig } from './project-config-io'
+import { migrateAssetsToV6Layout } from '@openxenon/engine/infra/assets/asset-path-resolver'
 import { DEFAULT_ADAPTERS, type SkillAdapterId } from '../skills/adapters'
 
 const SUPPORTED_SET_KEYS = ['leaderMode'] as const
@@ -144,15 +146,87 @@ const setSubcommand = defineCommand({
       )
       return
     }
+
+    // v0.6 PR-1: assetRoot + assetDirs.<kind>
+    if (key === 'assetRoot') {
+      const next: OxnConfig = { ...readConfigFile(), version: 1, assetRoot: value }
+      const path = writeConfigFile(next)
+      output({ ok: true, data: { key, value, path, config: next } }, format)
+      return
+    }
+    if (key === 'assetDirs.domain' || key === 'assetDirs.blueprint' || key === 'assetDirs.stack') {
+      const kind = key.split('.')[1] as 'domain' | 'blueprint' | 'stack'
+      const current = readConfigFile()
+      const existingDirs: { domain?: string; blueprint?: string; stack?: string } = current.assetDirs ?? {}
+      const next: OxnConfig = {
+        ...current,
+        version: 1,
+        assetDirs: {
+          domain: existingDirs.domain ?? DEFAULT_ASSET_DIRS.domain,
+          blueprint: existingDirs.blueprint ?? DEFAULT_ASSET_DIRS.blueprint,
+          stack: existingDirs.stack ?? DEFAULT_ASSET_DIRS.stack,
+          [kind]: value,
+        },
+      }
+      const path = writeConfigFile(next)
+      output({ ok: true, data: { key, value, path, config: next } }, format)
+      return
+    }
+
     return outputError({ code: 'OXN_CONFIG_KEY_UNSUPPORTED', message: `unhandled key: ${key}` }, format)
   },
 })
+
+const migrateAssetsSubcommand = defineCommand({
+  meta: { name: 'migrate-assets', description: 'v0.5 → v0.6 资产目录布局迁移（探测 + 移动 + 写 config）' },
+  args: {
+    '--dry-run': { type: 'boolean', description: '只探测，不实际移动文件' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const projectRoot = process.cwd()
+    const dryRun = Boolean((ctx.args as Record<string, unknown>)['dry-run'])
+    const config = readProjectConfig(projectRoot) as ProjectConfig | null
+    const result = migrateAssetsToV6Layout(projectRoot, config, dryRun)
+
+    // 写回 config（如有）
+    if (!dryRun && result.configUpdated && config) {
+      writeProjectConfig(projectRoot, config)
+    }
+
+    output(
+      {
+        ok: true,
+        data: result,
+        human: renderMigrateAssetsHuman(result, dryRun),
+      },
+      format,
+    )
+  },
+})
+
+function renderMigrateAssetsHuman(result: ReturnType<typeof migrateAssetsToV6Layout>, dryRun: boolean): string {
+  const lines: string[] = [`Asset directory migration${dryRun ? ' (dry-run)' : ''}:`]
+  for (const m of result.moved) {
+    lines.push(`  ✓ ${m.kind}: ${m.from} → ${m.to} (${m.fileCount >= 0 ? m.fileCount + ' files' : 'preview'})`)
+  }
+  for (const s of result.skipped) {
+    lines.push(`  · ${s.kind}: skipped (${s.reason})`)
+  }
+  if (result.configUpdated) {
+    lines.push(`  ✓ config.json: updated (assetRoot + assetDirs defaults written)`)
+  }
+  return lines.join('\n')
+}
 
 const configCommand = defineCommand({
   meta: { name: 'config', description: t('config.command.description') },
   subCommands: {
     show: showSubcommand,
     set: setSubcommand,
+    'migrate-assets': migrateAssetsSubcommand,
   },
   run() {
     // No-op: citty still invokes the parent run() after a subcommand
