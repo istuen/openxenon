@@ -1,17 +1,19 @@
 /**
- * Intent module — DDD unified entry (v0.6 PR-5b)
+ * Intent module — DDD unified entry (v0.6 PR-5b续)
  *
  * E2 Work · Intent 阶段。
- * import { createWork, validateWork, lockWork } from '@openxenon/engine/Intent'
+ * import { createWork, computeWorkContext } from '@openxenon/engine/Intent'
  */
+
+// Use cases
+export { createWork } from './create-work'
+export { computeWorkContext } from './get-context'
+
+// Types
 export type {
   WorkType,
-  CreateWorkInput,
-  CreateWorkResult,
-  ValidateWorkInput,
-  ValidateWorkResult,
-  LockWorkInput,
-  LockWorkResult,
-  GetContextInput,
-  WorkContext,
+  CreateWorkInput, CreateWorkResult,
+  ValidateWorkInput, ValidateWorkResult,
+  LockWorkInput, LockWorkResult,
+  GetContextInput, WorkContext,
 } from './types'

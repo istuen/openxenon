@@ -1,15 +1,17 @@
 /**
- * Align module — DDD unified entry (v0.6 PR-5b)
+ * Align module — DDD unified entry (v0.6 PR-5b续)
  *
  * E2 Work · Align 阶段。
- * import { runWork, submitPart, getStatus } from '@openxenon/engine/Align'
+ * import { computeWorkStatus } from '@openxenon/engine/Align'
  */
+
+// Use cases
+export { computeWorkStatus } from './status'
+
+// Types
 export type {
-  RunWorkInput,
-  RunWorkResult,
-  SubmitPartInput,
-  SubmitPartResult,
+  RunWorkInput, RunWorkResult,
+  SubmitPartInput, SubmitPartResult,
   WorkStatusResult,
-  FinalizeInput,
-  FinalizeResult,
+  FinalizeInput, FinalizeResult,
 } from './types'
