@@ -1,9 +1,15 @@
 /**
- * Proof module — DDD unified entry (v0.6 PR-5c)
+ * Proof module — DDD unified entry (v0.6 PR-5c续)
  *
  * E2 Work · Proof 阶段 + Proof-First 独立验收。
- * import type { CreateProofInput, RunProofResult } from '@openxenon/engine/Proof'
  */
+
+// Use cases
+export { parseProofFile } from './parse'
+export { computeFileHash } from './hash'
+export { nextProbeName, escapeString } from './probe-utils'
+
+// Types
 export type {
   ProofVerdict,
   CreateProofInput, CreateProofResult,
@@ -14,4 +20,5 @@ export type {
   VerifyProofInput, VerifyProofResult,
   DescribeProbeInput, DescribeProbeResult,
   ListProbesResult,
+  ParseProofResult, FileHashResult,
 } from './types'

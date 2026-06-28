@@ -111,3 +111,16 @@ export interface DescribeProbeResult {
 export interface ListProbesResult {
   probes: Array<{ name: string; description: string }>
 }
+
+/** Parse-proof result (v0.6 PR-5c续) */
+export interface ParseProofResult {
+  ok: boolean
+  proof?: unknown
+  errors: string[]
+}
+
+/** Compute-file-hash (v0.6 PR-5c续) */
+export interface FileHashResult {
+  hash: string
+  filePath: string
+}

@@ -1,8 +1,13 @@
 /**
- * Insight module — DDD unified entry (v0.6 PR-5d)
+ * Insight module — DDD unified entry (v0.6 PR-5d续)
  *
- * E4 Insight 涌现层。v0.6 哲学占位，v0.7+ 涌现推理。
+ * E4 Insight 涌现层。
  */
+
+// Use cases
+export { formatVerdictEmoji, renderInsightHuman } from './compute'
+
+// Types
 export type {
   InsightDimension,
   ComputeProofInsightInput, ProofInsightResult,
