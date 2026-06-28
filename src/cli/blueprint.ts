@@ -65,7 +65,8 @@ function getProjectRoot(): string {
 }
 
 function getBlueprintsDir(): string {
-  return resolveAssetDir(getProjectRoot(), 'blueprint')
+  const config = readProjectConfig(getProjectRoot())
+  return resolveAssetDir(getProjectRoot(), 'blueprint', config as Parameters<typeof resolveAssetDir>[2])
 }
 
 function projectBoundaryExists(): boolean {

@@ -53,9 +53,24 @@ async function initProject(): Promise<void> {
   await init.exited
 }
 
+/** Force project config to v0.5 layout (domains/ instead of assets/domains/) for sync fixture consistency */
+async function setV5Layout(): Promise<void> {
+  const setRoot = Bun.spawn(['bun', CLI_PATH, 'config', 'set', 'assetRoot', ''], {
+    cwd: tmpDir, env: { ...process.env, NO_COLOR: '1' }, stdout: 'pipe', stderr: 'pipe',
+  })
+  await setRoot.exited
+  for (const k of ['domain', 'blueprint']) {
+    const setK = Bun.spawn(['bun', CLI_PATH, 'config', 'set', `assetDirs.${k}`, `${k}s`], {
+      cwd: tmpDir, env: { ...process.env, NO_COLOR: '1' }, stdout: 'pipe', stderr: 'pipe',
+    })
+    await setK.exited
+  }
+}
+
 describe('oxn domain sync (Phase 1)', () => {
   test('basic: domain sync 写出 .md + 注入 sync frontmatter', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'OrderContext'])
 
     const r = await runCli(['domain', 'sync', 'OrderContext'])
@@ -77,6 +92,7 @@ describe('oxn domain sync (Phase 1)', () => {
 
   test('idempotent: 第二次 sync all unchanged', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'X'])
 
     const first = await runCli(['domain', 'sync', 'X'])
@@ -90,6 +106,7 @@ describe('oxn domain sync (Phase 1)', () => {
 
   test('dry-run: 不写 .md', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'Y'])
     // v0.5 Phase 3: create 已自动 sync 到 .md — 删掉后再测 dry-run
     const mdPath = join(tmpDir, '.openxenon', 'domains-md', 'Y.md')
@@ -107,6 +124,7 @@ describe('oxn domain sync (Phase 1)', () => {
 
   test('hash drift: 改 .oxn 后 sync 重生成 .md', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'Z'])
 
     const first = await runCli(['domain', 'sync', 'Z'])
@@ -128,6 +146,7 @@ describe('oxn domain sync (Phase 1)', () => {
 
   test('--all: 处理多个 domain', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'A'])
     await runCli(['domain', 'create', 'B'])
 
@@ -140,6 +159,7 @@ describe('oxn domain sync (Phase 1)', () => {
 describe('oxn blueprint sync (Phase 1)', () => {
   test('basic: blueprint sync 写出 .md', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'dev-workflow'])
 
     const r = await runCli(['blueprint', 'sync', 'dev-workflow'])
@@ -152,6 +172,7 @@ describe('oxn blueprint sync (Phase 1)', () => {
 
   test('idempotent: 第二次 sync unchanged', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'flow-x'])
     await runCli(['blueprint', 'sync', 'flow-x'])
     const second = await runCli(['blueprint', 'sync', 'flow-x'])
@@ -162,6 +183,7 @@ describe('oxn blueprint sync (Phase 1)', () => {
 describe('oxn work sync (Phase 1)', () => {
   test('basic: work sync 写出 work.md', async () => {
     await initProject()
+    await setV5Layout()
     // work 需要 blueprint
     await runCli(['blueprint', 'create', 'dev-workflow'])
     await runCli(['work', 'create', 'my-work', '--blueprint', 'dev-workflow'])
@@ -176,6 +198,7 @@ describe('oxn work sync (Phase 1)', () => {
 
   test('idempotent: 第二次 sync unchanged', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'dev-workflow'])
     await runCli(['work', 'create', 'w1', '--blueprint', 'dev-workflow'])
     await runCli(['work', 'sync', 'w1'])
@@ -185,6 +208,7 @@ describe('oxn work sync (Phase 1)', () => {
 
   test('work sync --all 忽略 .cache 子目录', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'dev-workflow'])
     await runCli(['work', 'create', 'w-real', '--blueprint', 'dev-workflow'])
 
@@ -202,6 +226,7 @@ describe('oxn work sync (Phase 1)', () => {
 describe('sync metadata consistency', () => {
   test('.cache/<name>.hash 等于 .md 文件的实际 SHA-256', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'Check'])
 
     await runCli(['domain', 'sync', 'Check'])
