@@ -13,7 +13,7 @@ title: 术语表
 | **E1 Asset** | **静态边界** | 工程师维护的硬约束边界：Domain/Blueprint/Stack |
 | **E2 Work** | **动态协作** | 工程师与 AI 动态协作空间：IAP 三阶段 + Round |
 | **E3 Engine** | **独立公证** | 独立验证主权基座：探针 + frozen.json + hash 校验 |
-| **E4 Insight** | **涌现层** | 1+1>2，钱学森系统论整体论，AI 跨 Work 综合推理 |
+| **E4 Insight** | **涌现层** | 1+1>2，整体论，AI 跨 Work 综合推理 |
 | Domain | 领域 | E1 业务边界：term/ban/invariant |
 | Blueprint | 蓝图 | E1 技术拓扑边界：slot DAG + observe 探针 |
 | Stack | 技术栈 | E1 技术环境边界（v0.6 硬要求） |
@@ -42,7 +42,7 @@ title: 术语表
 | **薄 CLI** | L3 CLI 只做 parse args → import 调 L2 Engine → format output |
 | **Round** | E2 Work 内部单次 IAP 循环（v0.6 新增 `oxn work next-round`） |
 | **硬约束三层锁** | planLock + content_hash + chmod 0o444（Asset 不可变保证） |
-| **涌现层** | E4 Insight 的哲学定位：钱学森系统论 1+1>2 |
+| **涌现层** | E4 Insight 的哲学定位：整体论 1+1>2 |
 
 ## 废弃术语（v0.6）
 

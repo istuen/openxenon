@@ -44,6 +44,6 @@ L3 Tools (CLI+Skills+Daemon) → L2 Engine (E1-E4 business implementation)
 
 ## 5. E4 Insight — Emergence Layer (1+1>2)
 
-Qian Xuesen systems theory: "The whole is greater than the sum of its parts." v0.6: philosophy placeholder + CLI stub. v0.7+: cross-Work emergence reasoning.
+emergence theory: "The whole is greater than the sum of its parts." v0.6: philosophy placeholder + CLI stub. v0.7+: cross-Work emergence reasoning.
 
 See [Core Concepts (ZH-CN)](./core-concepts.md) for full detail. [Asset](./asset.md) · [Work](./work.md) · [Insight](./insight.md) · [Architecture](./architecture.md).

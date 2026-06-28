@@ -4,9 +4,9 @@ title: Insight
 
 # Insight (E4 · Emergence Layer)
 
-> **Insight is OXN's fourth structural entity (E4) — the overall emergence layer**. The first three entities (Asset + Work + Engine) are reductionist "decomposition + verification". E4 is holistic "synthesis + emergence" in the Qian Xuesen systems theory sense.
+> **Insight is OXN's fourth structural entity (E4) — the overall emergence layer**. The first three entities (Asset + Work + Engine) are reductionist "decomposition + verification". E4 is holistic "synthesis + emergence" in the emergence theory sense.
 
-## Qian Xuesen Systems Theory
+## Emergence Theory
 
 **Axiom**: "The whole is irreducible; overall emergence > simple sum of parts."
 

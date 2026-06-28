@@ -17,7 +17,7 @@ description: IAP 范式统一入口（v0.6 极简版）— 创建 work + 走 Int
 | **E1 Asset** | 静态边界 | Domain / Blueprint / Stack（工程师维护的硬约束边界） |
 | **E2 Work** | 动态协作 | IAP 三阶段 + Round 多轮循环（工程师 ↔ AI 共建） |
 | **E3 Engine** | 独立公证 | 探针 + frozen.json + hash 校验（OXN 验证主权） |
-| **E4 Insight** | 涌现层 | 1+1>2，钱学森系统论整体论（v0.6 哲学占位，v0.7+ 涌现推理） |
+| **E4 Insight** | 涌现层 | 1+1>2，整体论（v0.6 哲学占位，v0.7+ 涌现推理） |
 
 > OXN 的终极目标不是"spec 与实现一致"，而是**工程智慧的整体涌现**。
 > 前三层是还原论的"拆解+验证"，E4 是整体论的"综合+涌现"。

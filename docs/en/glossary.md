@@ -13,7 +13,7 @@ title: Glossary
 | **E1 Asset** | Static hard constraint boundary: Domain/Blueprint/Stack |
 | **E2 Work** | Dynamic collaboration space: IAP three-phase + Round loop |
 | **E3 Engine** | Independent verification sovereignty base |
-| **E4 Insight** | Emergence layer (1+1>2, Qian Xuesen systems theory) |
+| **E4 Insight** | Emergence layer (1+1>2, emergence theory) |
 | Domain | E1 business boundary: term/ban/invariant |
 | Blueprint | E1 technical topology boundary: slot DAG + observe probes |
 | Stack | E1 tech environment boundary (v0.6 hard requirement) |
