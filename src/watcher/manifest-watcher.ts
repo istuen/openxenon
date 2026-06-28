@@ -1,6 +1,6 @@
 import { existsSync, type FSWatcher, readFileSync, watch } from '@openxenon/engine/infra/filesystem'
 import { readTaskTrace } from '../daemon/trace/writer'
-import { getTaskDirectory } from '../work/task-directory'
+import { getTaskDirectory } from '@openxenon/engine/Work/task-directory'
 import type { StepManifest } from '@openxenon/engine/kernel'
 
 export interface ManifestWatcherOptions {

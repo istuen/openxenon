@@ -1,4 +1,4 @@
-import { getTaskDirectory } from '../../../work/task-directory'
+import { getTaskDirectory } from '@openxenon/engine/Work/task-directory'
 import { readTaskTrace } from '../../trace/writer'
 import { notFound } from '../errors'
 import { registerRoute } from '../router'

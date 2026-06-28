@@ -61,7 +61,7 @@ import {
   type WorkDeclaration,
   type OXNDocument as OxnAstDocument,
 } from '@openxenon/engine/oxl'
-import { runTask, runWork, submitTask, nextRoundWork } from '../work'
+import { runTask, runWork, submitTask, nextRoundWork } from '@openxenon/engine/Work'
 import {
   ensureWorkDir,
   getTaskOxnPath,
@@ -74,19 +74,19 @@ import {
   loadTaskState,
   loadWorkState,
   workStateExists,
-} from '../work/dual-state-io'
+} from '@openxenon/engine/Work/dual-state-io'
 import {
   buildPerWorkDomainsIndex,
   writePerWorkDomainsIndex,
   getPerWorkDomainsJsonPath,
   resolveDomainFile,
-} from '../work/per-work-domains-merger'
+} from '@openxenon/engine/Work/per-work-domains-merger'
 import {
   buildPerWorkBlueprintsIndex,
   writePerWorkBlueprintsIndex,
   getPerWorkBlueprintsJsonPath,
   resolveBlueprintFile,
-} from '../work/per-work-blueprints-merger'
+} from '@openxenon/engine/Work/per-work-blueprints-merger'
 import {
   buildDomainDiagnostic,
   buildBlueprintDiagnostic,
@@ -103,8 +103,8 @@ import {
   type BirthCert,
   type DomainAssetEntry,
   type BlueprintAssetEntry,
-} from '../work/birth-cert'
-import { hashFile, hashWorkPlan } from '../work/plan-hash'
+} from '@openxenon/engine/Work/birth-cert'
+import { hashFile, hashWorkPlan } from '@openxenon/engine/Work/plan-hash'
 import { readProjectConfig } from './project-config-io'
 import {
   resolveAssetPrimaryPath,
@@ -116,7 +116,7 @@ import {
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
 import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
-import { migrateWorkToV1 } from '../work/work-migrator'
+import { migrateWorkToV1 } from '@openxenon/engine/Work/work-migrator'
 
 // ---------------------------------------------------------------------------
 // 报告层类型（派生自 WorkspaceState，CLI 报告使用）

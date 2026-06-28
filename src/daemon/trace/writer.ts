@@ -1,8 +1,8 @@
 import { appendFileSync, existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import type { StepStatus, TaskStatus } from '@openxenon/engine/kernel/index'
 import { type ParsedBlueprint, parseBlueprintYaml } from './blueprint-parser'
-import type { TaskDirectory } from '../../work/task-directory'
-import { buildTraceEvent, reduceTraceEvents } from '../../work/task-trace'
+import type { TaskDirectory } from '@openxenon/engine/Work/task-directory'
+import { buildTraceEvent, reduceTraceEvents } from '@openxenon/engine/Work/task-trace'
 import type { PartState, TaskTraceState, TraceEvent } from '@openxenon/engine/kernel/index'
 
 function appendEventToFile(tracePath: string, event: TraceEvent): void {

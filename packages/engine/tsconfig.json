@@ -5,11 +5,10 @@
     "baseUrl": "../..",
     "paths": {
       "@openxenon/engine": ["./packages/engine/src/index"],
-      "@openxenon/engine/*": ["./packages/engine/src/*"],
-      "@openxenon/work/*": ["./src/work/*"]
+      "@openxenon/engine/*": ["./packages/engine/src/*"]
     },
     "outDir": "./dist",
     "composite": false
   },
-  "include": ["src/**/*", "../../src/work/**/*"]
+  "include": ["src/**/*"]
 }

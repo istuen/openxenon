@@ -1,5 +1,5 @@
 import { existsSync } from '@openxenon/engine/infra/filesystem'
-import { getTaskDirectory } from '../../../work/task-directory'
+import { getTaskDirectory } from '@openxenon/engine/Work/task-directory'
 import { taskCircuitBreaker } from '../../circuit-breaker'
 import { recoveryManager } from '../../trace/recovery'
 import { readTaskTrace } from '../../trace/writer'

@@ -1,5 +1,5 @@
 import { getProbeHandler, type ProbeContext, type ProbeResult } from '@openxenon/engine/infra/probes'
-import { evaluateProbe, type ProbeDefinition, reduceProbeResults } from '../../work/probe-evaluator'
+import { evaluateProbe, type ProbeDefinition, reduceProbeResults } from '@openxenon/engine/Work/probe-evaluator'
 import type { Blueprint, Part } from '@openxenon/engine/kernel/index'
 import { hallEmitter } from '../hall'
 import { daemonLogger } from '../logger'

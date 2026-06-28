@@ -1,5 +1,5 @@
 import { existsSync } from '@openxenon/engine/infra/filesystem'
-import { getTaskDirectory } from '../../../work/task-directory'
+import { getTaskDirectory } from '@openxenon/engine/Work/task-directory'
 import { processManager } from '../../process-manager'
 import { radarClock } from '../../radar/clock'
 import { readTaskTrace, writeTaskStatus } from '../../trace/writer'

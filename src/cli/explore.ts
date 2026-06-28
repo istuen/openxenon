@@ -1,9 +1,9 @@
 import { defineCommand } from 'citty'
 import { t } from '@openxenon/engine/infra/i18n'
 import { collectRawContext, loadExplorationAssets, saveReport } from '@openxenon/engine/infra/explore/collector'
-import { toExplorationContext } from '../work/explore/converters'
-import { evaluateExploration } from '../work/explore/evaluator'
-import { renderMarkdown } from '../work/explore/reporter'
+import { toExplorationContext } from '@openxenon/engine/Work/explore/converters'
+import { evaluateExploration } from '@openxenon/engine/Work/explore/evaluator'
+import { renderMarkdown } from '@openxenon/engine/Work/explore/reporter'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

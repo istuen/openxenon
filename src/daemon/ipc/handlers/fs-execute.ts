@@ -1,7 +1,7 @@
 import { directoryExists, ensureDirectory } from '@openxenon/engine/infra/filesystem'
 import { getProbeHandler, type ProbeResult as InfraProbeResult } from '@openxenon/engine/infra/probes'
-import { getTaskDirectory } from '../../../work/task-directory'
-import { evaluateProbe, type ProbeDefinition } from '../../../work/probe-evaluator'
+import { getTaskDirectory } from '@openxenon/engine/Work/task-directory'
+import { evaluateProbe, type ProbeDefinition } from '@openxenon/engine/Work/probe-evaluator'
 import {
   createProbeResult,
   readTaskTrace,

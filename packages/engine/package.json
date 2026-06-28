@@ -22,7 +22,9 @@
     "./Insight": "./src/Insight/index.ts",
     "./Insight/*": "./src/Insight/*",
     "./Pool": "./src/Pool/index.ts",
-    "./Pool/*": "./src/Pool/*"
+    "./Pool/*": "./src/Pool/*",
+    "./Work": "./src/Work/index.ts",
+    "./Work/*": "./src/Work/*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

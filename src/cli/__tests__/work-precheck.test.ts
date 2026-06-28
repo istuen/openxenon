@@ -25,7 +25,7 @@ import type {
   IOStatRequest,
   IOStatResult,
 } from '@openxenon/engine/kernel/contracts/io-primitive'
-import { workPrecheck } from '../../work/work-precheck'
+import { workPrecheck } from '@openxenon/engine/Work/work-precheck'
 
 function stubProvider(name: string, scheme: string): { provider: InfraProvider; manifest: ProviderManifest } {
   const provider: InfraProvider = {
