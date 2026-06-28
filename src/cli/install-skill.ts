@@ -14,9 +14,9 @@ import { t } from '@openxenon/engine/infra/i18n'
 // this resolves to the real on-disk path; in a `--compile`d binary, Bun
 // replaces it with an internal `$bunfs/...` path that always reads the
 // embedded content.
+//
+// v0.6: Only oxn-work skill remains (oxn-cli / oxn-proof deleted).
 import skillWork from '../../.opencode/skills/oxn-work/SKILL.md' with { type: 'file' }
-import skillCli from '../../.opencode/skills/oxn-cli/SKILL.md' with { type: 'file' }
-import skillProof from '../../.opencode/skills/oxn-proof/SKILL.md' with { type: 'file' }
 
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
@@ -25,9 +25,7 @@ import { fileURLToPath } from 'url'
 import { getFormatFromArgs, output } from './output'
 
 const EMBEDDED_SKILLS: Record<string, string> = {
-  'oxn-cli': skillCli,
   'oxn-work': skillWork,
-  'oxn-proof': skillProof,
 }
 
 function getDefaultSkillsRoot(): string {

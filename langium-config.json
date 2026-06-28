@@ -3,7 +3,7 @@
   "languages": [
     {
       "id": "oxl",
-      "grammar": "src/oxl/langium-driver/oxn.langium",
+      "grammar": "packages/engine/src/oxl/langium-driver/oxn.langium",
       "fileExtensions": [".oxn"],
       "textMate": {
         "out": "syntaxes/oxn.tmLanguage.json"
@@ -15,5 +15,5 @@
       }
     }
   ],
-  "out": "src/oxl/langium-driver/generated/"
+  "out": "packages/engine/src/oxl/langium-driver/generated/"
 }

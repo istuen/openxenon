@@ -8,19 +8,19 @@
   "workspaces": [
     "packages/*"
   ],
-  "main": "./packages/cli/dist/cli.js",
+  "main": "./dist/cli.js",
   "bin": {
-    "oxn": "./packages/cli/dist/cli.js"
+    "oxn": "./dist/cli.js"
   },
   "files": [
-    "packages/cli/dist"
+    "dist"
   ],
   "scripts": {
-    "dev": "bun run packages/cli/src/index.ts",
+    "dev": "bun run src/cli/index.ts",
     "langium:generate": "langium generate",
-    "build:cli": "bun run --filter '@openxenon/cli' build",
-    "build:clean": "rm -rf packages/cli/dist",
-    "build": "bun run build:clean && bun run langium:generate && bun run build:cli",
+    "build:dist": "bun build ./src/cli/index.ts --target=node --outdir dist --entry-naming cli.js --banner='#!/usr/bin/env node'",
+    "build:clean": "rm -rf dist",
+    "build": "bun run build:clean && bun run langium:generate && bun run build:dist",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "lint": "eslint src/ packages/",
@@ -29,7 +29,7 @@
     "format:check": "biome format src/ packages/",
     "check": "biome check src/ packages/",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf packages/*/dist node_modules",
+    "clean": "rm -rf dist node_modules",
     "prepare": "lefthook install",
     "prepublishOnly": "bun run prepublish:check && bun run build",
     "prepublish:check": "bun run typecheck && bun run lint && bun test",
