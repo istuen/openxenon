@@ -53,17 +53,25 @@ async function initProject(): Promise<void> {
   await init.exited
 }
 
-/** Force project config to v0.5 layout (domains/ instead of assets/domains/) for sync fixture consistency */
+/** Force project config to v0.5 layout for sync fixture consistency */
 async function setV5Layout(): Promise<void> {
-  const setRoot = Bun.spawn(['bun', CLI_PATH, 'config', 'set', 'assetRoot', ''], {
-    cwd: tmpDir, env: { ...process.env, NO_COLOR: '1' }, stdout: 'pipe', stderr: 'pipe',
-  })
-  await setRoot.exited
-  for (const k of ['domain', 'blueprint']) {
-    const setK = Bun.spawn(['bun', CLI_PATH, 'config', 'set', `assetDirs.${k}`, `${k}s`], {
-      cwd: tmpDir, env: { ...process.env, NO_COLOR: '1' }, stdout: 'pipe', stderr: 'pipe',
-    })
-    await setK.exited
+  const { readFileSync, writeFileSync } = await import('fs')
+  const { join } = await import('path')
+  const configPath = join(tmpDir, '.openxenon', 'config.json')
+  try {
+    const raw = readFileSync(configPath, 'utf-8')
+    const config = JSON.parse(raw)
+    config.assetRoot = ''
+    config.assetDirs = { domain: 'domains', blueprint: 'blueprints', stack: 'stack' }
+    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+  } catch {
+    // config.json may not exist yet — create it
+    const { mkdirSync } = await import('fs')
+    mkdirSync(join(tmpDir, '.openxenon'), { recursive: true })
+    writeFileSync(configPath, JSON.stringify({
+      version: 1, mode: 'PRODUCTION',
+      assetRoot: '', assetDirs: { domain: 'domains', blueprint: 'blueprints', stack: 'stack' },
+    }, null, 2), 'utf-8')
   }
 }
 

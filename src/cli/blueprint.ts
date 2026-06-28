@@ -278,8 +278,8 @@ const createSubcommand = defineCommand({
     }
 
     // v0.5 Phase 3: 主路径由 config.assetFormat 决定
-    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'blueprint', name, assetFormat)
-    const altPath = resolveAssetAltPath(projectRoot, 'blueprint', name, assetFormat)
+    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'blueprint', name, assetFormat, config)
+    const altPath = resolveAssetAltPath(projectRoot, 'blueprint', name, assetFormat, config)
     const primaryDir = join(primaryPath, '..')
     const altDir = join(altPath, '..')
     if (!existsSync(primaryDir)) mkdirSync(primaryDir, { recursive: true })
@@ -379,8 +379,8 @@ const validateSubcommand = defineCommand({
       )
     }
     // v0.5 Phase 3: 主路径由 config 决定,fall back 到 alt
-    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'blueprint', name, assetFormat)
-    const altPath = resolveAssetAltPath(projectRoot, 'blueprint', name, assetFormat)
+    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'blueprint', name, assetFormat, config)
+    const altPath = resolveAssetAltPath(projectRoot, 'blueprint', name, assetFormat, config)
     const bpPath = existsSync(primaryPath) ? primaryPath : existsSync(altPath) ? altPath : primaryPath
     const result = await validateBlueprint(bpPath)
     if (!result.ok) {
@@ -682,7 +682,7 @@ const syncSubcommand = defineCommand({
       return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
     }
 
-    const blueprintsDir = resolveAssetDir(projectRoot, 'blueprint')
+    const blueprintsDir = resolveAssetDir(projectRoot, 'blueprint', readProjectConfig(projectRoot))
     let names: string[]
     if (all) {
       if (!existsSync(blueprintsDir)) {
@@ -816,7 +816,7 @@ const syncMdSubcommand = defineCommand({
     }
 
     const mdDir = join(projectRoot, BOUNDARY_DIR, 'blueprints-md')
-    const oxnDir = resolveAssetDir(projectRoot, 'blueprint')
+    const oxnDir = resolveAssetDir(projectRoot, 'blueprint', readProjectConfig(projectRoot))
     let names: string[]
     if (all) {
       if (!existsSync(mdDir)) {
@@ -1008,7 +1008,7 @@ const compileSubcommand = defineCommand({
 
     const filePath = customPath
       ? join(getProjectRoot(), customPath)
-      : join(resolveAssetDir(getProjectRoot(), 'blueprint'), `${name}.oxn`)
+      : join(resolveAssetDir(getProjectRoot(), 'blueprint', readProjectConfig(getProjectRoot())), `${name}.oxn`)
 
     if (!existsSync(filePath)) {
       return outputUserInputError('OXN_FILE_NOT_FOUND', `blueprint .oxn not found: ${filePath}`, {

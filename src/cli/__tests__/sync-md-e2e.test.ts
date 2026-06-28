@@ -54,6 +54,24 @@ async function initProject(): Promise<void> {
   await init.exited
 }
 
+async function setV5Layout(): Promise<void> {
+  const { readFileSync, writeFileSync } = await import('fs')
+  const { join } = await import('path')
+  const configPath = join(tmpDir, '.openxenon', 'config.json')
+  try {
+    const raw = readFileSync(configPath, 'utf-8')
+    const config = JSON.parse(raw)
+    config.assetRoot = ''
+    config.assetDirs = { domain: 'domains', blueprint: 'blueprints', stack: 'stack' }
+    writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
+  } catch {
+    writeFileSync(configPath, JSON.stringify({
+      version: 1, mode: 'PRODUCTION',
+      assetRoot: '', assetDirs: { domain: 'domains', blueprint: 'blueprints', stack: 'stack' },
+    }, null, 2), 'utf-8')
+  }
+}
+
 async function runPhase1(name: string, kind: 'domain' | 'blueprint' | 'work'): Promise<void> {
   const proc = Bun.spawn(['bun', CLI_PATH, kind, 'sync', name], {
     cwd: tmpDir,
@@ -71,6 +89,7 @@ async function runPhase1(name: string, kind: 'domain' | 'blueprint' | 'work'): P
 describe('oxn domain sync-md (Phase 2)', () => {
   test('basic: domain sync-md 写出 .oxn + 触发 Phase 1 chain', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'OrderContext'])
     await runPhase1('OrderContext', 'domain')
 
@@ -86,6 +105,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('--no-chain: 跳过 Phase 1 chain, .md 内容不变 (citty 0.1.6 no- 前缀反转回归)', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'NC'])
     await runPhase1('NC', 'domain')
 
@@ -101,6 +121,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('--no-roundtrip: 跳过 round-trip 守卫', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'NRT'])
     await runPhase1('NRT', 'domain')
 
@@ -111,6 +132,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('idempotent: 第二次 sync-md → all unchanged', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'X'])
     await runPhase1('X', 'domain')
 
@@ -123,6 +145,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('dry-run: 不写 .oxn + 输出 updated 列表', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'Y'])
     await runPhase1('Y', 'domain')
 
@@ -135,6 +158,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('--no-parse-check: 跳过 langium parse 验证', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'W'])
     await runPhase1('W', 'domain')
 
@@ -146,6 +170,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('--oxn-priority: 模拟 .oxn 改 → 跳过 .md 改', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'P'])
     await runPhase1('P', 'domain')
 
@@ -163,6 +188,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('--all: 批量处理多个 domain', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'A'])
     await runCli(['domain', 'create', 'B'])
     await runPhase1('A', 'domain')
@@ -176,6 +202,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('round-trip: 关键字段保留 (terms/bans/invariants 数)', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'RT'])
     // 编辑 OrderContext.oxn 添加 term/ban/invariant
     const oxnPath = join(tmpDir, '.openxenon', 'domains', 'RT.oxn')
@@ -211,6 +238,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
   test('domain description 完整 round-trip (v0.4.1 fix: 从 > blockquote 抽取)', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['domain', 'create', 'DDesc'])
     const oxnPath = join(tmpDir, '.openxenon', 'domains', 'DDesc.oxn')
     writeFileSync(
@@ -246,6 +274,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 describe('oxn blueprint sync-md (Phase 2)', () => {
   test('basic: blueprint sync-md 写出 .oxn + 链', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'dev-workflow'])
     await runPhase1('dev-workflow', 'blueprint')
 
@@ -258,6 +287,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
 
   test('idempotent: 第二次 sync-md → unchanged', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'flow-x'])
     await runPhase1('flow-x', 'blueprint')
 
@@ -269,6 +299,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
 
   test('round-trip: slots/props 保留', async () => {
     await initProject()
+    await setV5Layout()
     const { mkdirSync } = await import('fs')
     const bpDir = join(tmpDir, '.openxenon', 'blueprints')
     mkdirSync(bpDir, { recursive: true })
@@ -302,6 +333,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
 
   test('blueprint version 1 完整 round-trip (v0.4.1 fix: frontmatter version 解析)', async () => {
     await initProject()
+    await setV5Layout()
     const { mkdirSync } = await import('fs')
     const bpDir = join(tmpDir, '.openxenon', 'blueprints')
     mkdirSync(bpDir, { recursive: true })
@@ -325,6 +357,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
 
   test('--all: 批量处理', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'a'])
     await runCli(['blueprint', 'create', 'b'])
     await runPhase1('a', 'blueprint')
@@ -343,6 +376,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
 describe('oxn work sync-md (Phase 2)', () => {
   test('basic: work sync-md 写出 work.oxn', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'dev-workflow'])
     await runCli(['work', 'create', 'my-w', '--blueprint', 'dev-workflow'])
     await runPhase1('my-w', 'work')
@@ -355,6 +389,7 @@ describe('oxn work sync-md (Phase 2)', () => {
 
   test('idempotent: 第二次 sync-md → unchanged', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'dev-workflow'])
     await runCli(['work', 'create', 'w-i', '--blueprint', 'dev-workflow'])
     await runPhase1('w-i', 'work')
@@ -367,6 +402,7 @@ describe('oxn work sync-md (Phase 2)', () => {
 
   test('--all: 忽略 .cache 子目录', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'dev-workflow'])
     await runCli(['work', 'create', 'w-r', '--blueprint', 'dev-workflow'])
     await runPhase1('w-r', 'work')
@@ -382,6 +418,7 @@ describe('oxn work sync-md (Phase 2)', () => {
 
   test('work-level domain/blueprint ref round-trip (## Refs H2)', async () => {
     await initProject()
+    await setV5Layout()
     await runCli(['blueprint', 'create', 'dev-workflow'])
     await runCli(['work', 'create', 'w-refs', '--blueprint', 'dev-workflow'])
 
@@ -439,6 +476,7 @@ describe('oxn work sync-md (Phase 2)', () => {
 describe('sync-md error paths', () => {
   test('无 .md 报 E_SYNC error (status=error)', async () => {
     await initProject()
+    await setV5Layout()
     // 不 create, 直接 sync-md
     const r = await runCli(['domain', 'sync-md', 'NonExist', '--no-chain', '--json'])
     expect(r.exitCode).toBe(0) // CLI exit ok=true 但 data 里有 error

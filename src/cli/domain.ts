@@ -66,7 +66,7 @@ function getProjectRoot(): string {
 }
 
 function getDomainsDir(): string {
-  return resolveAssetDir(getProjectRoot(), 'domain')
+  return resolveAssetDir(getProjectRoot(), 'domain', readProjectConfig(getProjectRoot()))
 }
 
 function projectBoundaryExists(): boolean {
@@ -275,8 +275,8 @@ const createSubcommand = defineCommand({
     }
 
     // v0.5 Phase 3: 主路径由 config.assetFormat 决定
-    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'domain', name, assetFormat)
-    const altPath = resolveAssetAltPath(projectRoot, 'domain', name, assetFormat)
+    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'domain', name, assetFormat, config)
+    const altPath = resolveAssetAltPath(projectRoot, 'domain', name, assetFormat, config)
     const primaryDir = join(primaryPath, '..')
     const altDir = join(altPath, '..')
     if (!existsSync(primaryDir)) mkdirSync(primaryDir, { recursive: true })
@@ -379,8 +379,8 @@ const validateSubcommand = defineCommand({
       .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
       .replace(/_/g, '-')
       .toLowerCase()
-    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'domain', name, assetFormat)
-    const altPath = resolveAssetAltPath(projectRoot, 'domain', name, assetFormat)
+    const primaryPath = resolveAssetPrimaryPath(projectRoot, 'domain', name, assetFormat, config)
+    const altPath = resolveAssetAltPath(projectRoot, 'domain', name, assetFormat, config)
     const filePath = customPath
       ? resolve(customPath)
       : existsSync(primaryPath)
@@ -704,7 +704,7 @@ export function autoRebuildDomainIndex(projectRoot: string): {
   error?: string
 } {
   try {
-    const domainsDir = resolveAssetDir(projectRoot, 'domain')
+    const domainsDir = resolveAssetDir(projectRoot, 'domain', readProjectConfig(projectRoot))
     if (!existsSync(domainsDir)) return { ok: true }
     const outPath = getDomainIndexPath(projectRoot)
     writeDomainIndex({ projectRoot, domainsDir, outPath })
@@ -769,7 +769,7 @@ const syncSubcommand = defineCommand({
     }
 
     // 确定要处理的 names
-    const domainsDir = resolveAssetDir(projectRoot, 'domain')
+    const domainsDir = resolveAssetDir(projectRoot, 'domain', readProjectConfig(projectRoot))
     let names: string[]
     if (all) {
       if (!existsSync(domainsDir)) {
