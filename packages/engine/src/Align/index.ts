@@ -8,8 +8,11 @@
 // Use cases
 export { computeWorkStatus } from './status'
 export { computeListTasks } from './list-tasks'
-export type { TaskSummary } from './list-tasks'
 export { computeTaskMeta } from './task-status'
+export { runWork } from './run'
+export { submitPart } from './submit'
+export { finalizeWork } from './finalize'
+export type { TaskSummary } from './list-tasks'
 export type { TaskMeta } from './task-status'
 
 // Types

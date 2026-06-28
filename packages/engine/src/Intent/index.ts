@@ -8,6 +8,8 @@
 // Use cases
 export { createWork } from './create-work'
 export { computeWorkContext } from './get-context'
+export { validateWork } from './validate'
+export { lockWork } from './lock'
 
 // Types
 export type {
