@@ -7,6 +7,10 @@
 
 // Use cases
 export { computeWorkStatus } from './status'
+export { computeListTasks } from './list-tasks'
+export type { TaskSummary } from './list-tasks'
+export { computeTaskMeta } from './task-status'
+export type { TaskMeta } from './task-status'
 
 // Types
 export type {

@@ -8,6 +8,8 @@
 export { parseProofFile } from './parse'
 export { computeFileHash } from './hash'
 export { nextProbeName, escapeString } from './probe-utils'
+export { renderVerdictHuman, renderShowHuman } from './render'
+export type { RenderVerdictParams, RenderShowParams } from './render'
 
 // Types
 export type {
