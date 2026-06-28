@@ -23,21 +23,21 @@ title: 架构
 ┌────────────────────────────────────────────────────────┐
 │  L3: Tools & Applications (工具与应用层)                │
 │      CLI (oxn) + Skills (oxn-work) + Daemon            │
-│      物理目录: src/cli/ / src/server.ts / .opencode/    │
+│      物理目录: packages/cli/src/ / .opencode/skills/    │
 ├────────────────────────────────────────────────────────┤
 │  L2: Engine Core Logic (引擎核心业务层)                  │
 │      E1-E4 全部实现在此                                  │
 │      Asset / Intent / Align / Proof / Insight / Pool    │
-│      物理目录: src/service/<Domain>/                    │
+│      物理目录: packages/engine/src/l2_iap_biz/<Domain>/ │
 ├────────────────────────────────────────────────────────┤
 │  L1: OXL + Infra (操作基座与语言层)                     │
 │      OXL: OpenXenon Language DSL 编译器                 │
 │      Infra: 文件系统/探针/Socket/OS 操作                 │
-│      物理目录: src/oxl/ / src/infra/                    │
+│      物理目录: packages/engine/src/l1_oxl_infra/        │
 ├────────────────────────────────────────────────────────┤
 │  L0: Kernel (逻辑内核层)                                 │
 │      纯逻辑零 IO: Schema / Contract / Verdict / Processor│
-│      物理目录: src/kernel/                               │
+│      物理目录: packages/engine/src/l0_kernel/            │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -45,10 +45,10 @@ title: 架构
 
 ## 3. E1-E4 在 L2 Engine 的实现
 
-L2 Engine 是 OXN 的核心，按 DDD 模块化组织：
+L2 Engine 是 OXN 的核心。物理位置在 `packages/engine/src/l2_iap_biz/`，按 DDD 模块化组织：
 
 ```
-src/service/                              ← L2 Engine 物理位置
+packages/engine/src/l2_iap_biz/           ← L2 Engine 物理位置
 ├── Asset/                                ← E1 Asset 硬约束边界
 │   ├── index.ts
 │   ├── create.ts / list.ts / validate.ts / compile.ts
@@ -131,9 +131,9 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 
 | 组件 | 物理位置 | 职责 |
 |---|---|---|
-| CLI | `src/cli/` | 薄组合调用层：parse args → 调 L2 Engine → format output |
-| Skills | `.opencode/skills/oxn-work/` | AI 助手指令：/oxn-work 统一入口 |
-| Daemon | `src/daemon/` | 守护进程：文件监听、Work 追踪（v0.6 可选） |
+| CLI | `packages/cli/src/` | 薄组合调用层：parse args → 调 L2 Engine → format output |
+| Skills | `packages/cli/skills/oxn-work/` | AI 助手指令：/oxn-work 统一入口 |
+| Daemon | `packages/engine/src/l2_iap_biz/daemon.ts` | 守护进程：Engine 常驻模式，文件监听 + Work 追踪 |
 
 ## 7. 与 OpenSpec 架构对比
 
