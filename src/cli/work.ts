@@ -65,7 +65,12 @@ import { runTask, runWork, submitTask, nextRoundWork } from '../work'
 import {
   ensureWorkDir,
   getTaskOxnPath,
+  getTaskStatePath,
   getWorkOxnPath,
+  getWorkGatePath,
+  getWorksDir,
+  getTasksDir,
+  getWorkMdPath,
   loadTaskState,
   loadWorkState,
   workStateExists,
@@ -413,7 +418,7 @@ async function validateAndWriteArtifacts(params: {
     artifacts: {
       domainsJsonPath,
       blueprintsJsonPath,
-      workFilePath: join(projectRoot, '.openxenon', 'works', workName, '.work'),
+      workFilePath: getWorkGatePath(projectRoot, workName),
       assetCounts: {
         domains: domainAssets.length,
         blueprints: blueprintAssets.length,
@@ -821,7 +826,7 @@ const listSubcommand = defineCommand({
       return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
-    const worksDir = join(cwd, BOUNDARY_DIR, 'works')
+    const worksDir = getWorksDir(cwd)
     if (!existsSync(worksDir)) {
       output({ data: { works: [] }, human: t('work.emptyList') }, format)
       return
@@ -1450,7 +1455,7 @@ const listTaskSubcommand = defineCommand({
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
-    const tasksDir = join(getProjectRoot(), BOUNDARY_DIR, 'works', workName, 'tasks')
+    const tasksDir = getTasksDir(getProjectRoot(), workName)
 
     if (!existsSync(tasksDir)) {
       output(
@@ -1583,7 +1588,7 @@ const verifyTaskPathSubcommand = defineCommand({
     }
 
     // 3) 属于指定 work 的 tasks 目录？
-    const expectedDir = join(getProjectRoot(), BOUNDARY_DIR, 'works', workName, 'tasks')
+    const expectedDir = getTasksDir(getProjectRoot(), workName)
     const parentDir = filePath.split('/').slice(0, -1).join('/')
     if (!parentDir.startsWith(expectedDir)) {
       return outputError(
@@ -2727,7 +2732,7 @@ const contextSubcommand = defineCommand({
       }
 
       const statePath =
-        statePathArg ?? join(root, BOUNDARY_DIR, 'works', workName, RUN_DIR, 'tasks', taskName, 'state.json')
+        statePathArg ?? getTaskStatePath(root, workName, taskName)
       let currentFocus: string | null = taskParts[0]?.name ?? null
       let taskStatus = 'pending'
       if (existsSync(statePath)) {
@@ -3682,9 +3687,9 @@ const compileSubcommand = defineCommand({
     const workName = ctx.args.name as string
     const projectRoot = getProjectRoot()
     const outputPath =
-      (ctx.args['output-path'] as string | undefined) ?? join(projectRoot, BOUNDARY_DIR, 'works', workName, 'work.md')
+      (ctx.args['output-path'] as string | undefined) ?? getWorkMdPath(projectRoot, workName)
 
-    const workOxnPath = join(projectRoot, BOUNDARY_DIR, 'works', workName, WORK_OXN_FILE)
+    const workOxnPath = getWorkOxnPath(projectRoot, workName)
     if (!existsSync(workOxnPath)) {
       return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work.oxn not found at: ${workOxnPath}` }, format)
     }

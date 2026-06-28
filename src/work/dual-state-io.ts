@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '
 import { dirname, join } from 'path'
 import {
   BOUNDARY_DIR,
+  WORK_FILE,
   RUN_DIR,
   RUN_TASKS_SUBDIR,
   TASK_OXN_FILE,
@@ -196,4 +197,25 @@ export function saveTaskState(projectRoot: string, workName: string, taskName: s
   state.updatedAt = new Date().toISOString()
   writeFileSync(tmpPath, JSON.stringify(state, null, 2), 'utf-8')
   renameSync(tmpPath, path)
+}
+
+// v0.6 阶段1: 路径解耦 — 补充缺失的公共路径工具
+export function getWorkGatePath(projectRoot: string, workName: string): string {
+  return join(getWorkDir(projectRoot, workName), WORK_FILE)
+}
+
+export function getTasksDir(projectRoot: string, workName: string): string {
+  return join(getWorkDir(projectRoot, workName), 'tasks')
+}
+
+export function getWorksDir(projectRoot: string): string {
+  return join(projectRoot, BOUNDARY_DIR, 'works')
+}
+
+export function getWorkMdPath(projectRoot: string, workName: string): string {
+  return join(getWorkDir(projectRoot, workName), 'work.md')
+}
+
+export function getTaskRunDir(projectRoot: string, workName: string, taskName: string): string {
+  return join(getWorkRunDir(projectRoot, workName), RUN_TASKS_SUBDIR, taskName)
 }
