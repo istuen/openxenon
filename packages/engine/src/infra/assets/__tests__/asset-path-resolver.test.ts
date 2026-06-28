@@ -60,8 +60,8 @@ describe('resolveAssetDir', () => {
 describe('resolveAssetCandidates', () => {
   it('returns primary + fallback', () => {
     const r = resolveAssetCandidates(tmp, 'domain')
-    expect(r.primary).toBe(join(tmp, '.openxenon', 'assets', 'domain'))
-    expect(r.fallback).toBe(join(tmp, '.openxenon', 'domain'))
+    expect(r.primary).toBe(join(tmp, '.openxenon', 'assets', 'domains'))
+    expect(r.fallback).toBe(join(tmp, '.openxenon', 'domains'))
   })
 })
 
@@ -76,7 +76,7 @@ describe('resolveAndDetectAssetDir', () => {
   })
 
   it('returns fallback when only fallback exists', () => {
-    const fallback = join(tmp, '.openxenon', 'domain')
+    const fallback = join(tmp, '.openxenon', 'domains')
     mkdirSync(fallback, { recursive: true })
     const r = resolveAndDetectAssetDir(tmp, 'domain')
     expect(r.path).toBe(fallback)
@@ -86,7 +86,7 @@ describe('resolveAndDetectAssetDir', () => {
 
   it('flags conflict when both exist', () => {
     const primary = resolveAssetDir(tmp, 'domain')
-    const fallback = join(tmp, '.openxenon', 'domain')
+    const fallback = join(tmp, '.openxenon', 'domains')
     mkdirSync(primary, { recursive: true })
     mkdirSync(fallback, { recursive: true })
     const r = resolveAndDetectAssetDir(tmp, 'domain')
@@ -95,7 +95,7 @@ describe('resolveAndDetectAssetDir', () => {
 
   it('returns primary path when neither exists', () => {
     const r = resolveAndDetectAssetDir(tmp, 'domain')
-    expect(r.path).toBe(join(tmp, '.openxenon', 'assets', 'domain'))
+    expect(r.path).toBe(join(tmp, '.openxenon', 'assets', 'domains'))
     expect(r.fromFallback).toBe(false)
     expect(r.conflict).toBe(false)
   })
@@ -103,7 +103,7 @@ describe('resolveAndDetectAssetDir', () => {
 
 describe('migrateAssetsToV6Layout', () => {
   it('dry-run does not modify files', () => {
-    const fallback = join(tmp, '.openxenon', 'domain')
+    const fallback = join(tmp, '.openxenon', 'domains')
     mkdirSync(fallback, { recursive: true })
     writeFileSync(join(fallback, 'Member.oxn'), 'domain "Member" {}')
 
@@ -113,7 +113,7 @@ describe('migrateAssetsToV6Layout', () => {
   })
 
   it('real run moves files from fallback to primary', () => {
-    const fallback = join(tmp, '.openxenon', 'domain')
+    const fallback = join(tmp, '.openxenon', 'domains')
     mkdirSync(fallback, { recursive: true })
     writeFileSync(join(fallback, 'Member.oxn'), 'domain "Member" {}')
     writeFileSync(join(fallback, 'Order.oxn'), 'domain "Order" {}')
@@ -123,7 +123,7 @@ describe('migrateAssetsToV6Layout', () => {
     expect(domainMove).toBeDefined()
     expect(domainMove?.fileCount).toBe(2)
 
-    const primary = join(tmp, '.openxenon', 'assets', 'domain')
+    const primary = join(tmp, '.openxenon', 'assets', 'domains')
     expect(existsSync(join(primary, 'Member.oxn'))).toBe(true)
     expect(existsSync(join(primary, 'Order.oxn'))).toBe(true)
   })

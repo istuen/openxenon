@@ -113,8 +113,8 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 ```
 .openxenon/
 ├── config.json                   ← assetRoot + assetDirs
-├── assets/domain/                ← E1 Asset 默认路径
-├── assets/blueprint/
+├── assets/domains/                ← E1 Asset 默认路径
+├── assets/blueprints/
 ├── assets/stack/
 ├── works/<w>/
 │   ├── work.oxn

@@ -115,7 +115,7 @@ Stack 定义在 Domain 的 `## Stack` H2 section 下。Proof 阶段直接断言�
 │   ├── blueprint/<name>.oxn
 │   └── stack/<name>.oxn
 ├── works/<w>/
-│   └── work.oxn                  ← ref @prj/assets/domain/MemberContext
+│   └── work.oxn                  ← ref @prj/assets/domains/MemberContext
 └── ...
 ```
 
@@ -134,7 +134,7 @@ oxn stack create ExampleStackDomain
 ```bash
 oxn work create MemberContext --type asset --asset-kind domain
 # → 走 8 阶段流程（validate → lock → run → finalize）
-# → .openxenon/assets/domain/MemberContext.oxn 正式入库
+# → .openxenon/assets/domains/MemberContext.oxn 正式入库
 ```
 
 Skill `oxn-work` 教学推荐严谨路径（可追溯、有 planLock）。

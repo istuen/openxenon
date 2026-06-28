@@ -67,8 +67,8 @@ export interface ProjectConfig {
 /** v0.6 PR-1: Asset 路径解析（支持 config + fallback） */
 export const DEFAULT_ASSET_ROOT = 'assets'
 export const DEFAULT_ASSET_DIRS = {
-  domain: 'domain',
-  blueprint: 'blueprint',
+  domain: 'domains',
+  blueprint: 'blueprints',
   stack: 'stack',
 } as const
 
@@ -111,8 +111,9 @@ export function resolveAssetCandidates(
 ): { primary: string; fallback: string } {
   const boundary = join(projectRoot, BOUNDARY_DIR)
   const primary = resolveAssetDir(projectRoot, kind, config)
-  // 旧布局 fallback：.openxenon/<kind>/（domain/blueprint/stack 单数）
-  const fallback = join(boundary, kind)
+  // 旧布局 fallback：.openxenon/<plural>/（domains/blueprints/stack）
+  const fallbackDir = kind === 'domain' ? 'domains' : kind === 'blueprint' ? 'blueprints' : 'stack'
+  const fallback = join(boundary, fallbackDir)
   return { primary, fallback }
 }
 

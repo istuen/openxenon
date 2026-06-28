@@ -64,8 +64,9 @@ export function resolveAndDetectAssetDir(
 
   const boundary = join(projectRoot, BOUNDARY_DIR)
   const primary = resolveAssetDir(projectRoot, kind, config)
-  // fallback 旧布局：.openxenon/<kind>/（v0.5 兼容）
-  const fallback = join(boundary, kind)
+  // fallback 旧布局：.openxenon/<plural>/（domains/blueprints/stack — v0.5 兼容）
+  const fallbackDir = kind === 'domain' ? 'domains' : kind === 'blueprint' ? 'blueprints' : 'stack'
+  const fallback = join(boundary, fallbackDir)
 
   const primaryExists = exists(primary)
   const fallbackExists = exists(fallback)
