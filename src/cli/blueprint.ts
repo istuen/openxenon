@@ -34,6 +34,7 @@ import {
   resolveAssetAltPath,
   resolveAssetFormat,
   resolveAutoSync,
+  resolveAssetDir,
 } from '@openxenon/engine/infra/paths'
 import { readProjectConfig } from './project-config-io'
 import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
@@ -64,7 +65,7 @@ function getProjectRoot(): string {
 }
 
 function getBlueprintsDir(): string {
-  return join(getProjectRoot(), BOUNDARY_DIR, 'blueprints')
+  return resolveAssetDir(getProjectRoot(), 'blueprint')
 }
 
 function projectBoundaryExists(): boolean {
@@ -680,7 +681,7 @@ const syncSubcommand = defineCommand({
       return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
     }
 
-    const blueprintsDir = join(projectRoot, BOUNDARY_DIR, 'blueprints')
+    const blueprintsDir = resolveAssetDir(projectRoot, 'blueprint')
     let names: string[]
     if (all) {
       if (!existsSync(blueprintsDir)) {
@@ -814,7 +815,7 @@ const syncMdSubcommand = defineCommand({
     }
 
     const mdDir = join(projectRoot, BOUNDARY_DIR, 'blueprints-md')
-    const oxnDir = join(projectRoot, BOUNDARY_DIR, 'blueprints')
+    const oxnDir = resolveAssetDir(projectRoot, 'blueprint')
     let names: string[]
     if (all) {
       if (!existsSync(mdDir)) {
@@ -1006,7 +1007,7 @@ const compileSubcommand = defineCommand({
 
     const filePath = customPath
       ? join(getProjectRoot(), customPath)
-      : join(getProjectRoot(), BOUNDARY_DIR, 'blueprints', `${name}.oxn`)
+      : join(resolveAssetDir(getProjectRoot(), 'blueprint'), `${name}.oxn`)
 
     if (!existsSync(filePath)) {
       return outputUserInputError('OXN_FILE_NOT_FOUND', `blueprint .oxn not found: ${filePath}`, {

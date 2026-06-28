@@ -3,7 +3,7 @@ import { t } from '@openxenon/engine/infra/i18n'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { join, resolve } from 'path'
 import { URI } from 'langium'
-import { BOUNDARY_DIR, DOMAINS_DIR } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractDomainIR } from '@openxenon/engine/oxl/md-pipeline/transformers/domain.js'
@@ -14,6 +14,7 @@ import {
   resolveAssetAltPath,
   resolveAssetFormat,
   resolveAutoSync,
+  resolveAssetDir,
 } from '@openxenon/engine/infra/paths'
 import { readProjectConfig } from './project-config-io'
 import {
@@ -65,7 +66,7 @@ function getProjectRoot(): string {
 }
 
 function getDomainsDir(): string {
-  return join(getProjectRoot(), BOUNDARY_DIR, DOMAINS_DIR)
+  return resolveAssetDir(getProjectRoot(), 'domain')
 }
 
 function projectBoundaryExists(): boolean {
@@ -703,7 +704,7 @@ export function autoRebuildDomainIndex(projectRoot: string): {
   error?: string
 } {
   try {
-    const domainsDir = join(projectRoot, BOUNDARY_DIR, DOMAINS_DIR)
+    const domainsDir = resolveAssetDir(projectRoot, 'domain')
     if (!existsSync(domainsDir)) return { ok: true }
     const outPath = getDomainIndexPath(projectRoot)
     writeDomainIndex({ projectRoot, domainsDir, outPath })
@@ -768,7 +769,7 @@ const syncSubcommand = defineCommand({
     }
 
     // 确定要处理的 names
-    const domainsDir = join(projectRoot, BOUNDARY_DIR, DOMAINS_DIR)
+    const domainsDir = resolveAssetDir(projectRoot, 'domain')
     let names: string[]
     if (all) {
       if (!existsSync(domainsDir)) {
@@ -930,7 +931,7 @@ const syncMdSubcommand = defineCommand({
     }
 
     const mdDir = join(projectRoot, BOUNDARY_DIR, 'domains-md')
-    const oxnDir = join(projectRoot, BOUNDARY_DIR, DOMAINS_DIR)
+    const oxnDir = resolveAssetDir(projectRoot, 'domain')
     let names: string[]
     if (all) {
       if (!existsSync(mdDir)) {
