@@ -6,6 +6,8 @@
 
 // Use cases
 export { formatVerdictEmoji, renderInsightHuman } from './compute'
+export { computeProofInsight } from './proof-insight'
+export { computeWorkInsight } from './work-insight'
 
 // Types
 export type {
