@@ -1,0 +1,52 @@
+{
+  "name": "@openxenon/engine",
+  "version": "0.6.0",
+  "description": "OXN Engine — 核心能力提供者（kernel + oxl + infra + Asset/Intent/Align/Proof/Insight/Pool + daemon）",
+  "author": "istuen",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./kernel/*": "./src/kernel/*",
+    "./oxl/*": "./src/oxl/*",
+    "./infra/*": "./src/infra/*",
+    "./Asset": "./src/Asset/index.ts",
+    "./Asset/*": "./src/Asset/*",
+    "./Intent": "./src/Intent/index.ts",
+    "./Intent/*": "./src/Intent/*",
+    "./Align": "./src/Align/index.ts",
+    "./Align/*": "./src/Align/*",
+    "./Proof": "./src/Proof/index.ts",
+    "./Proof/*": "./src/Proof/*",
+    "./Insight": "./src/Insight/index.ts",
+    "./Insight/*": "./src/Insight/*",
+    "./Pool": "./src/Pool/index.ts",
+    "./Pool/*": "./src/Pool/*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "langium": "^4.3.0",
+    "remark-frontmatter": "^5.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-util-visit": "^5.1.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.14",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "engine",
+    "oxl",
+    "iap",
+    "ai",
+    "verification"
+  ]
+}

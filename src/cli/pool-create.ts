@@ -8,12 +8,12 @@
 // =============================================================================
 
 import { join } from 'node:path'
-import { mkdirSync, readFileSync } from '../infra/filesystem'
+import { mkdirSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { defineCommand } from 'citty'
 import { output } from './output'
-import { writePoolEntry } from '../infra/frozen/pool-writer'
-import type { IntentPool } from '../infra/frozen/pool-writer'
-import { generateSuggestionFromInsight } from '../infra/insight/suggestion-generator'
+import { writePoolEntry } from '@openxenon/engine/infra/frozen/pool-writer'
+import type { IntentPool } from '@openxenon/engine/infra/frozen/pool-writer'
+import { generateSuggestionFromInsight } from '@openxenon/engine/infra/insight/suggestion-generator'
 
 const VALID_POOLS: IntentPool[] = ['research', 'design', 'issue', 'audit', 'journal']
 

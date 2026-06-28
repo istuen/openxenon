@@ -14,9 +14,9 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { IAPError, IAPAction } from '../kernel/index'
-import { getProviderRegistry } from '../infra/registry/provider-registry'
-import { daemonStartup } from '../infra/registry/daemon-startup'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel'
+import { getProviderRegistry } from '@openxenon/engine/infra/registry/provider-registry'
+import { daemonStartup } from '@openxenon/engine/infra/registry/daemon-startup'
 import { output } from './output'
 
 function getProjectRoot(): string {

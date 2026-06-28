@@ -3,8 +3,8 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { IAPError, IAPAction } from '../kernel/index'
-import { finalizeWorkDomains } from '../infra/frozen/work-domains'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel'
+import { finalizeWorkDomains } from '@openxenon/engine/infra/frozen/work-domains'
 
 export const workFinalizeSubcommand = defineCommand({
   meta: {

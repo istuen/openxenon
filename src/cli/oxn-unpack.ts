@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
-import { t } from '../infra/i18n'
-import { unpackBundle } from '../oxl/unpacker/bundle-unpacker'
+import { t } from '@openxenon/engine/infra/i18n'
+import { unpackBundle } from '@openxenon/engine/oxl/unpacker/bundle-unpacker'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

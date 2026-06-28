@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '../infra/filesystem'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { dirname, join } from 'path'
 import {
   BOUNDARY_DIR,
@@ -12,8 +12,8 @@ import {
   WORK_RUN_FROZEN_JSON,
   WORK_RUN_STATE_JSON,
   WORK_RUN_TRACE_JSONL,
-} from '../kernel/index'
-import { IAPError, IAPAction } from '../kernel/index'
+} from '@openxenon/engine/kernel'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel'
 import { type TaskState, TaskStateSchema, type WorkspaceState, WorkspaceStateSchema } from './dual-state'
 
 // =============================================================================

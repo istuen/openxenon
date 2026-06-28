@@ -3,10 +3,18 @@
  * 旧命令保持兼容以支持现有工作流，数据路径不变 (.openxenon/explores/)
  */
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from '../infra/filesystem'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from '@openxenon/engine/infra/filesystem'
 import { extname, join } from 'path'
-import { BOUNDARY_DIR } from '../kernel/index'
-import { t } from '../infra/i18n'
+import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
+import { t } from '@openxenon/engine/infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 function getProjectRoot(): string {

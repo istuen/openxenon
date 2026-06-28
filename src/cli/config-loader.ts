@@ -19,9 +19,9 @@
 // the resolution chain continues with env / default. The error is logged
 // to stderr so the user knows to fix the file, but no error is returned.
 
-import { existsSync, readFileSync } from '../infra/filesystem'
+import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { BOUNDARY_DIR } from '../kernel/index'
+import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 
 export type LeaderMode = 'reference' | 'mvp'
 

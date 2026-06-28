@@ -1,5 +1,11 @@
-import type { ProbeObservation, ProbeResult, ProbeStrategy, ProbeVerdict, ProbeDefinition } from '../kernel/index'
-import { PROBE_VERDICT_STRATEGIES } from '../kernel/index'
+import type {
+  ProbeObservation,
+  ProbeResult,
+  ProbeStrategy,
+  ProbeVerdict,
+  ProbeDefinition,
+} from '@openxenon/engine/kernel'
+import { PROBE_VERDICT_STRATEGIES } from '@openxenon/engine/kernel'
 
 export type { ProbeObservation, ProbeResult, ProbeVerdict, ProbeDefinition }
 export type { ProbeStrategy }

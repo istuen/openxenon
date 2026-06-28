@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { finalizeWorkDomains } from '../../infra/frozen/work-domains'
-import { IAPError } from '../../kernel/index'
+import { finalizeWorkDomains } from '@openxenon/engine/infra/frozen/work-domains'
+import { IAPError } from '@openxenon/engine/kernel'
 
 let tmpDir: string
 

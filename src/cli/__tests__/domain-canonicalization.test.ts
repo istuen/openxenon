@@ -9,8 +9,8 @@
 // =============================================================================
 
 import { describe, expect, test } from 'bun:test'
-import { IAPError } from '../../core/errors'
-import { assertNameFileConsistent, toKebab } from '../../kernel/index'
+import { IAPError } from '@openxenon/engine/errors'
+import { assertNameFileConsistent, toKebab } from '@openxenon/engine/kernel'
 
 describe('toKebab (规范化函数)', () => {
   test('PascalCase → kebab-case', () => {

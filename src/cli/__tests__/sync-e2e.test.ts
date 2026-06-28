@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { computeSha256, readSyncMetadata } from '../../oxl/md-pipeline/sync-hash'
+import { computeSha256, readSyncMetadata } from '@openxenon/engine/oxl/md-pipeline/sync-hash'
 
 const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
 

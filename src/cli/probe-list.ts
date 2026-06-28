@@ -10,8 +10,8 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { getProviderRegistry } from '../infra/registry/provider-registry'
-import { daemonStartup } from '../infra/registry/daemon-startup'
+import { getProviderRegistry } from '@openxenon/engine/infra/registry/provider-registry'
+import { daemonStartup } from '@openxenon/engine/infra/registry/daemon-startup'
 import { output } from './output'
 
 function getProjectRoot(): string {

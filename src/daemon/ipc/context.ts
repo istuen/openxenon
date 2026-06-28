@@ -1,7 +1,7 @@
 import { join } from 'path'
-import { existsSync, readFileSync } from '../../infra/filesystem'
-import { BOUNDARY_DIR, CONFIG_FILE } from '../../kernel/index'
-import type { ProjectConfig } from '../../infra/paths'
+import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
+import { BOUNDARY_DIR, CONFIG_FILE } from '@openxenon/engine/kernel/index'
+import type { ProjectConfig } from '@openxenon/engine/infra/paths'
 import { missingProjectPath, projectNotFound } from './errors'
 
 export interface ProjectContext {

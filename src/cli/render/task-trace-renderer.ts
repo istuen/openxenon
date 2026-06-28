@@ -1,4 +1,4 @@
-import type { PartState, TaskTraceState, TraceEvent } from '../../kernel/index'
+import type { PartState, TaskTraceState, TraceEvent } from '@openxenon/engine/kernel'
 
 export interface TaskTraceRendererOptions {
   taskId: string

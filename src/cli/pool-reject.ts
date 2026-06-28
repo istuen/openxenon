@@ -6,11 +6,15 @@
 // =============================================================================
 
 import { join } from 'node:path'
-import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
+import { existsSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { defineCommand } from 'citty'
 import { output, outputUserInputError } from './output'
-import { type ImprovementSuggestion, type RejectionRecord, safeValidateImprovementSuggestion } from '../kernel/index'
-import { ensureWritable } from '../infra/insight/intent-overwriter'
+import {
+  type ImprovementSuggestion,
+  type RejectionRecord,
+  safeValidateImprovementSuggestion,
+} from '@openxenon/engine/kernel'
+import { ensureWritable } from '@openxenon/engine/infra/insight/intent-overwriter'
 
 const AUDIT_POOL = 'audit'
 

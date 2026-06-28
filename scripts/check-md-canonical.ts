@@ -19,10 +19,10 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { runMdPipeline } from '../src/oxl/md-bridge/pipeline.js'
+import { runMdPipeline } from '@openxenon/engine/oxl/md-bridge/pipeline.js'
 // v0.4 PR-C4: extract-* 已删除, 改用 md-pipeline/utils 别名
-import { extractHeadingContexts } from '../src/oxl/md-pipeline/utils.js'
-import { extractListFields } from '../src/oxl/md-pipeline/utils.js'
+import { extractHeadingContexts } from '@openxenon/engine/oxl/md-pipeline/utils.js'
+import { extractListFields } from '@openxenon/engine/oxl/md-pipeline/utils.js'
 
 interface Violation {
   file: string

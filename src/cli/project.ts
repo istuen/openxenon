@@ -1,5 +1,5 @@
 import { join } from 'path'
-import { BOUNDARY_DIR } from '../kernel/index'
+import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 
 export interface Project {
   id: string

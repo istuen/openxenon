@@ -6,10 +6,10 @@
 // =============================================================================
 
 import { join } from 'node:path'
-import { existsSync, readFileSync } from '../infra/filesystem'
+import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { defineCommand } from 'citty'
 import { output, outputUserInputError } from './output'
-import { safeValidateImprovementSuggestion, type ImprovementSuggestion } from '../kernel/index'
+import { safeValidateImprovementSuggestion, type ImprovementSuggestion } from '@openxenon/engine/kernel'
 
 const AUDIT_POOL = 'audit'
 

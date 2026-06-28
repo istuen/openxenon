@@ -6,7 +6,7 @@ import type {
   TraceSummary,
   ExplorationRule,
   ExplorationAsset,
-} from '../../kernel/index'
+} from '@openxenon/engine/kernel'
 
 interface RawProjectDir {
   path: string

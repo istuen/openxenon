@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from '../infra/filesystem'
-import { CORE_DAEMON_CONFIG_PATH, DAEMON_LOG_PATH } from '../infra/global'
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
+import { CORE_DAEMON_CONFIG_PATH, DAEMON_LOG_PATH } from '@openxenon/engine/infra/global'
 import { isDaemonRunning } from './process'
 
 export interface DaemonStatus {

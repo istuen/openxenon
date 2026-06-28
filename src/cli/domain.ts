@@ -1,15 +1,20 @@
 import { defineCommand } from 'citty'
-import { t } from '../infra/i18n'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '../infra/filesystem'
+import { t } from '@openxenon/engine/infra/i18n'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { join, resolve } from 'path'
 import { URI } from 'langium'
-import { BOUNDARY_DIR, DOMAINS_DIR } from '../kernel/index'
-import { compileOxnToMd } from '../oxl/md-bridge/oxl-md-decompiler.js'
-import { parseMarkdown } from '../oxl/md-pipeline/utils'
-import { extractDomainIR } from '../oxl/md-pipeline/transformers/domain.js'
-import { serializeDomainToOxn } from '../oxl/md-pipeline/oxn-serializer.js'
-import type { AssetFormat } from '../infra/paths'
-import { resolveAssetPrimaryPath, resolveAssetAltPath, resolveAssetFormat, resolveAutoSync } from '../infra/paths'
+import { BOUNDARY_DIR, DOMAINS_DIR } from '@openxenon/engine/kernel'
+import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
+import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
+import { extractDomainIR } from '@openxenon/engine/oxl/md-pipeline/transformers/domain.js'
+import { serializeDomainToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
+import type { AssetFormat } from '@openxenon/engine/infra/paths'
+import {
+  resolveAssetPrimaryPath,
+  resolveAssetAltPath,
+  resolveAssetFormat,
+  resolveAutoSync,
+} from '@openxenon/engine/infra/paths'
 import { readProjectConfig } from './project-config-io'
 import {
   createOxnParser,
@@ -19,16 +24,16 @@ import {
   type InvariantBlock,
   type OXNDocument,
   type TermBlock,
-} from '../oxl'
+} from '@openxenon/engine/oxl'
 import {
   getDomainIndexPath,
   loadDomainIndex,
   parseDomainSlim,
   writeDomainIndex,
   type DomainIndex,
-} from '../oxl/compiler/domain-index-builder'
-import { IAPError } from '../core/errors'
-import { assertNameFileConsistent } from '../kernel/index'
+} from '@openxenon/engine/oxl/compiler/domain-index-builder'
+import { IAPError } from '@openxenon/engine/errors'
+import { assertNameFileConsistent } from '@openxenon/engine/kernel'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import {
   computeSha256,
@@ -37,8 +42,8 @@ import {
   writeCacheSha,
   getCachePath,
   getCacheMdPath,
-} from '../oxl/md-pipeline/sync-hash.js'
-import { validateOxnParseable, verifyDomainRoundTrip } from '../oxl/md-pipeline/sync-validation.js'
+} from '@openxenon/engine/oxl/md-pipeline/sync-hash.js'
+import { validateOxnParseable, verifyDomainRoundTrip } from '@openxenon/engine/oxl/md-pipeline/sync-validation.js'
 
 // =============================================================================
 // `oxn domain` — DDD 限界上下文管理
@@ -114,10 +119,10 @@ async function validateDomainFromMd(filePath: string): Promise<{
   errors: string[]
 }> {
   const content = readFileSync(filePath, 'utf-8')
-  let ir: import('../oxl/md-pipeline/transformers/domain').DomainIR
+  let ir: import('@openxenon/engine/oxl/md-pipeline/transformers/domain').DomainIR
   try {
-    const { parseMarkdown } = await import('../oxl/md-pipeline/utils')
-    const { extractDomainIR } = await import('../oxl/md-pipeline/transformers/domain')
+    const { parseMarkdown } = await import('@openxenon/engine/oxl/md-pipeline/utils')
+    const { extractDomainIR } = await import('@openxenon/engine/oxl/md-pipeline/transformers/domain')
     const parsed = parseMarkdown(content)
     ir = extractDomainIR(parsed.tree, parsed.frontmatter)
   } catch (e) {
@@ -128,7 +133,7 @@ async function validateDomainFromMd(filePath: string): Promise<{
   }
   // IR → 临时 .oxn → parse 拿到 AST (走 langium 路径拿 DomainDeclaration)
   // 比直接构造 DomainDeclaration AST 更可靠
-  const { serializeDomainToOxn } = await import('../oxl/md-pipeline/oxn-serializer')
+  const { serializeDomainToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
   const oxnContent: string = serializeDomainToOxn(ir)
   // 第二次 parse 拿到 AST (仅用于 domainAstToIr, 不写盘)
   const parser = createOxnParser()

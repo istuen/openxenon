@@ -18,16 +18,16 @@
 //   - 找不到文件              → 标 invalid + errors[]
 // =============================================================================
 
-import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '../infra/filesystem'
+import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '@openxenon/engine/infra/filesystem'
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
 import { URI } from 'langium'
-import { parseOxnReference } from '../oxl/scope/oxn-scope'
-import { createOxnParser } from '../oxl/langium-driver/oxn-services'
-import { isWorkDeclaration, isDomainRefDecl, isOXNDocument } from '../oxl/langium-driver/generated/ast'
-import { BOUNDARY_DIR, DOMAINS_DIR, WORK_DOMAINS_JSON } from '../kernel/index'
+import { parseOxnReference } from '@openxenon/engine/oxl/scope/oxn-scope'
+import { createOxnParser } from '@openxenon/engine/oxl/langium-driver/oxn-services'
+import { isWorkDeclaration, isDomainRefDecl, isOXNDocument } from '@openxenon/engine/oxl/langium-driver/generated/ast'
+import { BOUNDARY_DIR, DOMAINS_DIR, WORK_DOMAINS_JSON } from '@openxenon/engine/kernel'
 import { hashText } from './plan-hash'
-import { parseDomainSlim, type DomainIndexEntry } from '../oxl/compiler/domain-index-builder'
+import { parseDomainSlim, type DomainIndexEntry } from '@openxenon/engine/oxl/compiler/domain-index-builder'
 
 // ───────── Zod schema ─────────
 

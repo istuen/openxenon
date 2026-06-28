@@ -1,6 +1,6 @@
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from '../infra/filesystem'
-import { type DaemonProcessInfo, isDaemonRunning } from '../infra/daemon-probe'
-import { DAEMON_PID_PATH, DAEMON_SOCK_PATH, GLOBAL_BOUNDARY_PATH } from '../infra/global'
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
+import { type DaemonProcessInfo, isDaemonRunning } from '@openxenon/engine/infra/daemon-probe'
+import { DAEMON_PID_PATH, DAEMON_SOCK_PATH, GLOBAL_BOUNDARY_PATH } from '@openxenon/engine/infra/global'
 import { waitForHealth } from './health-check'
 import { daemonLogger } from './logger'
 

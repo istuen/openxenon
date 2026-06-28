@@ -7,7 +7,7 @@
 // to the user's global OpenCode skills folder (`~/.opencode/skills/`).
 // Use `--skill <id>` to install a single one.
 //
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 
 // Embed SKILL.md files into the compiled binary so the command works
 // regardless of the user's current working directory. In dev (`bun run`),
@@ -19,7 +19,7 @@ import skillCli from '../../.opencode/skills/oxn-cli/SKILL.md' with { type: 'fil
 import skillProof from '../../.opencode/skills/oxn-proof/SKILL.md' with { type: 'file' }
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '../infra/filesystem'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { dirname, join, resolve } from 'path'
 import { fileURLToPath } from 'url'
 import { getFormatFromArgs, output } from './output'

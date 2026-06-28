@@ -1,4 +1,4 @@
-import { Action, type ExecutionContext, type ExecutionPolicy } from '../../kernel/index'
+import { Action, type ExecutionContext, type ExecutionPolicy } from '@openxenon/engine/kernel'
 
 export class ProductionPolicy implements ExecutionPolicy {
   onProbeFailed(probeId: string, error: string, context: ExecutionContext): Action {

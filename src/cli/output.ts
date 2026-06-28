@@ -1,4 +1,4 @@
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import { stringify as yamlStringify } from 'yaml'
 
 export type OutputFormat = 'human' | 'json' | 'yaml' | 'html' | 'md'

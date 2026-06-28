@@ -30,8 +30,8 @@ import {
   readFrozenImmutable,
   writeFrozenImmutable,
   type FrozenXenonMetaBase,
-} from '../infra/frozen/immutable'
-import { type FrozenProof, type FrozenProofProbeResult, safeValidateFrozenProof } from '../kernel/index'
+} from '@openxenon/engine/infra/frozen/immutable'
+import { type FrozenProof, type FrozenProofProbeResult, safeValidateFrozenProof } from '@openxenon/engine/kernel'
 
 /** frozen.json 的 body 形态（不含 _xenon_meta，由 writer 注入） */
 export type FrozenProofBody = Omit<FrozenProof, '_xenon_meta'>

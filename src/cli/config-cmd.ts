@@ -7,9 +7,9 @@
 // so we never silently persist arbitrary JSON.
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from '../infra/filesystem'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { dirname, join } from 'path'
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 import {
   DEFAULT_LEADER_MODE,

@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "baseUrl": "../..",
+    "paths": {
+      "@openxenon/engine": ["./packages/engine/src/index"],
+      "@openxenon/engine/*": ["./packages/engine/src/*"],
+      "@openxenon/work/*": ["./src/work/*"]
+    },
+    "outDir": "./dist",
+    "composite": false
+  },
+  "include": ["src/**/*", "../../src/work/**/*"]
+}

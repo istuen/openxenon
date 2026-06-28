@@ -1,4 +1,4 @@
-import type { Blueprint, Part, FrozenBlueprint, FrozenPart, FrozenProbe } from '../../kernel/index'
+import type { Blueprint, Part, FrozenBlueprint, FrozenPart, FrozenProbe } from '@openxenon/engine/kernel'
 
 export function adaptFrozenToBlueprint(frozen: FrozenBlueprint): Blueprint {
   const parts: Part[] = frozen.parts.map(adaptFrozenPart)

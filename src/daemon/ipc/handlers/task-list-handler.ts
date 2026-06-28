@@ -1,5 +1,5 @@
 import { join } from 'path'
-import { existsSync, readdirSync, readFileSync } from '../../../infra/filesystem'
+import { existsSync, readdirSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { daemonLogger } from '../../logger'
 import { registerRoute } from '../router'
 

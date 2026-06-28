@@ -11,11 +11,11 @@
 // 与 work-domains-merger 对称设计。
 // =============================================================================
 
-import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '../infra/filesystem'
+import { existsSync, readFileSync, writeFileSync, renameSync, mkdirSync } from '@openxenon/engine/infra/filesystem'
 import { dirname, join, relative } from 'path'
 import { z } from 'zod'
-import { parseOxnReference } from '../oxl/scope/oxn-scope'
-import { BOUNDARY_DIR, WORK_BLUEPRINTS_JSON } from '../kernel/index'
+import { parseOxnReference } from '@openxenon/engine/oxl/scope/oxn-scope'
+import { BOUNDARY_DIR, WORK_BLUEPRINTS_JSON } from '@openxenon/engine/kernel'
 import { hashText } from './plan-hash'
 
 // ───────── Zod schema ─────────

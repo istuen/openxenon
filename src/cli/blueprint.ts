@@ -15,21 +15,31 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { t } from '../infra/i18n'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '../infra/filesystem'
+import { t } from '@openxenon/engine/infra/i18n'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import { URI } from 'langium'
-import { BOUNDARY_DIR } from '../kernel/index'
-import { IAPError } from '../core/errors'
-import { assertNameFileConsistent } from '../kernel/index'
-import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '../oxl'
+import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
+import { IAPError } from '@openxenon/engine/errors'
+import { assertNameFileConsistent } from '@openxenon/engine/kernel'
+import {
+  createOxnParser,
+  isBlueprintDeclaration,
+  type BlueprintDeclaration,
+  type OXNDocument,
+} from '@openxenon/engine/oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
-import { resolveAssetPrimaryPath, resolveAssetAltPath, resolveAssetFormat, resolveAutoSync } from '../infra/paths'
+import {
+  resolveAssetPrimaryPath,
+  resolveAssetAltPath,
+  resolveAssetFormat,
+  resolveAutoSync,
+} from '@openxenon/engine/infra/paths'
 import { readProjectConfig } from './project-config-io'
-import { compileOxnToMd } from '../oxl/md-bridge/oxl-md-decompiler.js'
-import { parseMarkdown } from '../oxl/md-pipeline/utils'
-import { extractBlueprintIR } from '../oxl/md-pipeline/transformers/blueprint.js'
-import { serializeBlueprintToOxn } from '../oxl/md-pipeline/oxn-serializer.js'
+import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
+import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
+import { extractBlueprintIR } from '@openxenon/engine/oxl/md-pipeline/transformers/blueprint.js'
+import { serializeBlueprintToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import {
   computeSha256,
   readSyncMetadata,
@@ -37,8 +47,8 @@ import {
   writeCacheSha,
   getCachePath,
   getCacheMdPath,
-} from '../oxl/md-pipeline/sync-hash.js'
-import { validateOxnParseable, verifyBlueprintRoundTrip } from '../oxl/md-pipeline/sync-validation.js'
+} from '@openxenon/engine/oxl/md-pipeline/sync-hash.js'
+import { validateOxnParseable, verifyBlueprintRoundTrip } from '@openxenon/engine/oxl/md-pipeline/sync-validation.js'
 import {
   autoRebuildBlueprintIndex,
   getBlueprintIndexPath,
@@ -47,7 +57,7 @@ import {
   writeBlueprintIndex,
   type BlueprintIndex,
   type BlueprintIndexEntry,
-} from '../oxl/compiler/blueprint-index-builder'
+} from '@openxenon/engine/oxl/compiler/blueprint-index-builder'
 
 function getProjectRoot(): string {
   return process.cwd()
@@ -103,7 +113,7 @@ async function validateBlueprintFromMd(blueprintPath: string): Promise<{
   errors: string[]
 }> {
   const content = readFileSync(blueprintPath, 'utf-8')
-  let ir: import('../oxl/md-pipeline/transformers/blueprint').BlueprintIR
+  let ir: import('@openxenon/engine/oxl/md-pipeline/transformers/blueprint').BlueprintIR
   try {
     const { tree, frontmatter: fm } = parseMarkdown(content)
     ir = extractBlueprintIR(tree, fm)
@@ -139,7 +149,7 @@ async function validateBlueprintFromMd(blueprintPath: string): Promise<{
 // v0.5 Phase 3: format-aware template generator
 // ---------------------------------------------------------------------------
 
-import type { AssetFormat as BlueprintFormat } from '../infra/paths'
+import type { AssetFormat as BlueprintFormat } from '@openxenon/engine/infra/paths'
 
 function blueprintCreateTemplate(name: string, slotsBlock: string, slotsArg: string, format: BlueprintFormat): string {
   if (format === 'md') {

@@ -1,7 +1,7 @@
-import type { Blueprint, Part, BlueprintProbe as Probe } from '../kernel/index'
-import { computeContentHash, createXenonMeta, type XenonMeta } from '../kernel/index'
-import type { PartPort } from '../kernel/index'
-import { hashPort } from '../infra/hash'
+import type { Blueprint, Part, BlueprintProbe as Probe } from '@openxenon/engine/kernel'
+import { computeContentHash, createXenonMeta, type XenonMeta } from '@openxenon/engine/kernel'
+import type { PartPort } from '@openxenon/engine/kernel'
+import { hashPort } from '@openxenon/engine/infra/hash'
 
 export interface LineageReportEntry {
   partId: string

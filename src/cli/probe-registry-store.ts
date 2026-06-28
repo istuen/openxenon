@@ -11,9 +11,9 @@
 // =============================================================================
 
 import { join } from 'node:path'
-import { mkdir, readFile, unlink, writeFile } from '../infra/filesystem-async'
-import { IAPError, IAPAction } from '../kernel/index'
-import type { ProviderManifest } from '../infra/registry/provider-registry'
+import { mkdir, readFile, unlink, writeFile } from '@openxenon/engine/infra/filesystem-async'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel'
+import type { ProviderManifest } from '@openxenon/engine/infra/registry/provider-registry'
 
 const REGISTRY_VERSION = 1
 const BOUNDARY_DIR = '.openxenon'

@@ -1,5 +1,5 @@
-import type { TaskStatus } from '../kernel/index'
-import type { PartState, ProbeResult, TaskTraceState, TaskTraceYaml, TraceEvent } from '../kernel/index'
+import type { TaskStatus } from '@openxenon/engine/kernel'
+import type { PartState, ProbeResult, TaskTraceState, TaskTraceYaml, TraceEvent } from '@openxenon/engine/kernel'
 
 function isOldFormat(content: string): boolean {
   const trimmed = content.trim()

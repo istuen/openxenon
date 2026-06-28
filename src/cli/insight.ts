@@ -27,7 +27,7 @@
 
 import { defineCommand } from 'citty'
 import { join } from 'path'
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import {
   BOUNDARY_DIR,
   CACHE_DIR,
@@ -39,10 +39,10 @@ import {
   type CrossProofInsight,
   type Insight,
   type PipelineInsight,
-} from '../kernel/index'
-import { readInsightInputs } from '../infra/probes/insight-collector'
-import { scanFrozenProofs } from '../infra/insight/cross-proof-scanner'
-import { scanPipelineInput } from '../infra/insight/pipeline-analyzer'
+} from '@openxenon/engine/kernel'
+import { readInsightInputs } from '@openxenon/engine/infra/probes/insight-collector'
+import { scanFrozenProofs } from '@openxenon/engine/infra/insight/cross-proof-scanner'
+import { scanPipelineInput } from '@openxenon/engine/infra/insight/pipeline-analyzer'
 import { getFormatFromArgs, output, outputUserInputError, type OutputFormat } from './output'
 
 function getProjectRoot(): string {

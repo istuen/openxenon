@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import { ensureHallDirectory, renderHall } from '../hall'
-import { GLOBAL_BOUNDARY } from '../infra/paths'
+import { GLOBAL_BOUNDARY } from '@openxenon/engine/infra/paths'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

@@ -14,8 +14,8 @@ import {
   resetProviderRegistry,
   type InfraProvider,
   type ProviderManifest,
-} from '../../infra/registry/provider-registry'
-import { IAPError } from '../../kernel/index'
+} from '@openxenon/engine/infra/registry/provider-registry'
+import { IAPError } from '@openxenon/engine/kernel'
 import type {
   IOExecRequest,
   IOExecResult,
@@ -24,7 +24,7 @@ import type {
   IOReadResult,
   IOStatRequest,
   IOStatResult,
-} from '../../kernel/contracts/io-primitive'
+} from '@openxenon/engine/kernel/contracts/io-primitive'
 import { workPrecheck } from '../../work/work-precheck'
 
 function stubProvider(name: string, scheme: string): { provider: InfraProvider; manifest: ProviderManifest } {

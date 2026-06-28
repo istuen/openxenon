@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import { DEFAULT_LOCALE } from './project-config'
 import { getFormatFromArgs, output, outputError } from './output'
 import { readProjectConfig } from './project-config-io'

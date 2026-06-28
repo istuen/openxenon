@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from '../infra/filesystem'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import type { TaskState } from '../cli/task-filesystem'
 import { loadOxnRc } from '../cli/config-loader'

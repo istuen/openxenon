@@ -34,10 +34,10 @@ import {
   unlinkSync,
   writeFileSync,
   chmodSync,
-} from '../infra/filesystem'
+} from '@openxenon/engine/infra/filesystem'
 import { createHash } from 'crypto'
 import { join } from 'path'
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import { URI } from 'langium'
 import {
   BOUNDARY_DIR,
@@ -49,24 +49,24 @@ import {
   PROOF_OXN_FILE,
   PROOF_VERDICT_MD,
   PROOF_WORK_HASH_FILE,
-} from '../kernel/index'
+} from '@openxenon/engine/kernel'
 import {
   createOxnParser,
   isProofDeclaration,
   type OXNDocument,
   type ProofDeclaration,
   type ProofProbeDecl,
-} from '../oxl'
+} from '@openxenon/engine/oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from './proof-runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
 import { writeVerdictMd } from './proof-verdict-writer'
-import { describeProbe, listProbesSummary, translateProbeInputs } from '../kernel/index'
-import { updateProbeStats } from '../kernel/index'
-import { emptyProbeStats } from '../kernel/index'
-import { readProbeStatsFromFile, writeProbeStatsToFile } from '../infra/probes/probe-stats-store'
-import { IAPError } from '../core/errors'
-import { assertDirNameConsistent } from '../kernel/index'
+import { describeProbe, listProbesSummary, translateProbeInputs } from '@openxenon/engine/kernel'
+import { updateProbeStats } from '@openxenon/engine/kernel'
+import { emptyProbeStats } from '@openxenon/engine/kernel'
+import { readProbeStatsFromFile, writeProbeStatsToFile } from '@openxenon/engine/infra/probes/probe-stats-store'
+import { IAPError } from '@openxenon/engine/errors'
+import { assertDirNameConsistent } from '@openxenon/engine/kernel'
 
 // v0.1.3 PR-2: 临时 .running.json（proof 运行中状态）
 //   物理位置: .openxenon/proofs/<name>/.running.json
@@ -1028,7 +1028,7 @@ const showSubcommand = defineCommand({
 })
 
 function renderShowHuman(
-  frozen: import('../kernel/schemas/proof-schema').FrozenProof,
+  frozen: import('@openxenon/engine/kernel/schemas/proof-schema').FrozenProof,
   inProgress: boolean = false,
   verdictPath: string | null = null,
 ): string {

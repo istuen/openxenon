@@ -17,10 +17,10 @@
 // =============================================================================
 
 import { createHash } from 'crypto'
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from '../infra/filesystem'
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { dirname } from 'path'
-import { FROZEN_FILE_MODE } from '../infra/frozen/immutable'
-import type { FrozenProof, FrozenProofProbeResult } from '../kernel/index'
+import { FROZEN_FILE_MODE } from '@openxenon/engine/infra/frozen/immutable'
+import type { FrozenProof, FrozenProofProbeResult } from '@openxenon/engine/kernel'
 
 // ─── 签名协议 ────────────────────────────────────────────────────────────────
 //

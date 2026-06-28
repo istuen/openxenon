@@ -1,8 +1,8 @@
 import { defineCommand } from 'citty'
-import { existsSync, readdirSync, rmSync } from '../infra/filesystem'
+import { existsSync, readdirSync, rmSync } from '@openxenon/engine/infra/filesystem'
 import { resolve } from 'path'
-import { BOUNDARY_DIR } from '../kernel/index'
-import { t } from '../infra/i18n'
+import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
+import { t } from '@openxenon/engine/infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

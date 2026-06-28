@@ -1,4 +1,4 @@
-import type { BlueprintPayload, PartPayload } from '../../daemon/types/daemon-payload'
+import type { BlueprintPayload, PartPayload } from '../types/daemon-payload'
 
 export interface ParsedBlueprint {
   id: string

@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import { ensureHallDirectory, renderHall } from '../hall'
 import { getProjectBoundaryPath } from './project'
 import { getFormatFromArgs, output, outputError } from './output'

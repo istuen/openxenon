@@ -4,7 +4,7 @@
  * 纯函数，无任何 I/O
  */
 
-import type { ExplorationResult, Finding } from '../../kernel/index'
+import type { ExplorationResult, Finding } from '@openxenon/engine/kernel'
 
 /**
  * 将 ExplorationResult 渲染为 Markdown

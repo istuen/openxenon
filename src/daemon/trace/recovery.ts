@@ -1,6 +1,6 @@
 import { join } from 'path'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '../../infra/filesystem'
-import { getProjectBoundaryPath } from '../../infra/paths'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
+import { getProjectBoundaryPath } from '@openxenon/engine/infra/paths'
 import { daemonLogger } from '../logger'
 
 export interface RecoveryPoint {

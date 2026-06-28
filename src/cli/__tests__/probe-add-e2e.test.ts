@@ -11,7 +11,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { IAPError, IAPAction } from '../../kernel/index'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel'
 import { sandboxValidate, writeProviderSource, sha256OfFile } from '../probe-sandbox'
 import { registryUpsert, registryRead, getCachePath, getRegistryPath } from '../probe-registry-store'
 

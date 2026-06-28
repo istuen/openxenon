@@ -28,8 +28,8 @@
 
 import { defineCommand, runMain } from 'citty'
 import pkg from '../../package.json' with { type: 'json' }
-import { t } from '../infra/i18n'
-import { IAPError, OXNCrash, isCliInputError } from '../core/errors'
+import { t } from '@openxenon/engine/infra/i18n'
+import { IAPError, OXNCrash, isCliInputError } from '@openxenon/engine/errors'
 import { cliContext, detectCliFormat, detectVerbosity } from './context'
 
 // =============================================================================

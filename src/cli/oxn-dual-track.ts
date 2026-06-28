@@ -8,28 +8,28 @@
  * 两者最终输出统一的 FrozenBlueprint，保证 Core 执行引擎零感知。
  */
 
-import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
+import { existsSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import type { LangiumDocument } from 'langium'
 import { DocumentState, URI } from 'langium'
 import { dirname, join } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { ensureDirectory } from '../infra/filesystem'
-import { preloadCompileDependencies } from '../infra/loader'
-import { compileBlueprint, compileFrozen } from '../oxl/compiler/blueprint-compiler'
-import { ASSEMBLY_JSON, BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON } from '../kernel/index'
-import type { Blueprint } from '../kernel/index'
-import { type DagNode, validateDagTopology } from '../oxl/validators/blueprint-dag'
-import type { FrozenBlueprint } from '../kernel/index'
+import { ensureDirectory } from '@openxenon/engine/infra/filesystem'
+import { preloadCompileDependencies } from '@openxenon/engine/infra/loader'
+import { compileBlueprint, compileFrozen } from '@openxenon/engine/oxl/compiler/blueprint-compiler'
+import { ASSEMBLY_JSON, BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON } from '@openxenon/engine/kernel'
+import type { Blueprint } from '@openxenon/engine/kernel'
+import { type DagNode, validateDagTopology } from '@openxenon/engine/oxl/validators/blueprint-dag'
+import type { FrozenBlueprint } from '@openxenon/engine/kernel'
 import {
   type OxnAssemblyIR,
   type OxnAssemblyPart,
   type OxnAssemblySlotBinding,
   validateOxnAssemblyIR,
-} from '../oxl/schemas/oxn-assembly.schema'
-import { adaptOxnToFrozen } from '../oxl/compiler/oxn-adapter'
-import type { OXNDocument } from '../oxl/langium-driver/generated/ast.js'
-import { generateOxnAssembly } from '../oxl/generator/oxn-generator.js'
-import { createOxnServices, resetOxnServices } from '../oxl/langium-driver/oxn-services.js'
+} from '@openxenon/engine/oxl/schemas/oxn-assembly.schema'
+import { adaptOxnToFrozen } from '@openxenon/engine/oxl/compiler/oxn-adapter'
+import type { OXNDocument } from '@openxenon/engine/oxl/langium-driver/generated/ast.js'
+import { generateOxnAssembly } from '@openxenon/engine/oxl/generator/oxn-generator.js'
+import { createOxnServices, resetOxnServices } from '@openxenon/engine/oxl/langium-driver/oxn-services.js'
 
 function extractBlueprintAssembly(doc: LangiumDocument): OxnAssemblyIR | undefined {
   if (!doc.parseResult?.value) return undefined

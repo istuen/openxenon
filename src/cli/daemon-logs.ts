@@ -1,6 +1,6 @@
 // src/cli/daemon-logs.ts — v0.2 T14 Daemon PR-3 logs command
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync } from '../infra/filesystem'
+import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
 import { output } from './output'
 

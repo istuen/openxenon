@@ -1,32 +1,35 @@
 {
   "name": "@istuen/openxenon",
   "version": "0.4.0",
-  "description": "OpenXenon — 工程师与 AI 协作工作台（OXN Engine 实施 L0-L3 四层架构与 IAP 范式，OXL = OpenXenon Language）",
+  "description": "OpenXenon — 工程师与 AI 协作工作台（v0.6 Monorepo 双包：CLI + Engine）",
   "author": "istuen",
   "license": "MIT",
   "type": "module",
-  "main": "./dist/cli.js",
+  "workspaces": [
+    "packages/*"
+  ],
+  "main": "./packages/cli/dist/cli.js",
   "bin": {
-    "oxn": "./dist/cli.js"
+    "oxn": "./packages/cli/dist/cli.js"
   },
   "files": [
-    "dist"
+    "packages/cli/dist"
   ],
   "scripts": {
-    "dev": "bun run src/cli/index.ts",
+    "dev": "bun run packages/cli/src/index.ts",
     "langium:generate": "langium generate",
-    "build:dist": "bun build ./src/cli/index.ts --target=node --outdir dist --entry-naming cli.js --banner='#!/usr/bin/env node'",
-    "build:clean": "rm -rf dist",
-    "build": "bun run build:clean && bun run langium:generate && bun run build:dist",
+    "build:cli": "bun run --filter '@openxenon/cli' build",
+    "build:clean": "rm -rf packages/cli/dist",
+    "build": "bun run build:clean && bun run langium:generate && bun run build:cli",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
-    "format": "biome format --write src/",
-    "format:check": "biome format src/",
-    "check": "biome check src/",
+    "lint": "eslint src/ packages/",
+    "lint:fix": "eslint src/ packages/ --fix",
+    "format": "biome format --write src/ packages/",
+    "format:check": "biome format src/ packages/",
+    "check": "biome check src/ packages/",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist node_modules",
+    "clean": "rm -rf packages/*/dist node_modules",
     "prepare": "lefthook install",
     "prepublishOnly": "bun run prepublish:check && bun run build",
     "prepublish:check": "bun run typecheck && bun run lint && bun test",

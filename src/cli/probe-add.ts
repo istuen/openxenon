@@ -16,11 +16,11 @@
 //            不得 import 上层
 // =============================================================================
 
-import { mkdir } from '../infra/filesystem-async'
+import { mkdir } from '@openxenon/engine/infra/filesystem-async'
 import { join } from 'node:path'
 import { defineCommand } from 'citty'
-import { IAPError, IAPAction } from '../kernel/index'
-import { getProviderRegistry } from '../infra/registry/provider-registry'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel'
+import { getProviderRegistry } from '@openxenon/engine/infra/registry/provider-registry'
 import { registryUpsert, getCachePath } from './probe-registry-store'
 import { sandboxValidate, sha256OfFile, writeProviderSource } from './probe-sandbox'
 import { output } from './output'
@@ -42,7 +42,7 @@ async function fetchSource(source: string): Promise<string> {
     return r.text()
   }
   // 本地路径
-  const { readFile } = await import('../infra/filesystem-async')
+  const { readFile } = await import('@openxenon/engine/infra/filesystem-async')
   try {
     return await readFile(source, 'utf-8')
   } catch (err) {
@@ -125,7 +125,7 @@ export const probeAddSubcommand = defineCommand({
     const validation = await sandboxValidate(cachePath, expectedSchemes)
     if (!validation.ok) {
       // 失败回滚: 删 cachePath
-      const { unlink } = await import('../infra/filesystem-async')
+      const { unlink } = await import('@openxenon/engine/infra/filesystem-async')
       try {
         await unlink(cachePath)
       } catch {

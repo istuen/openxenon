@@ -11,7 +11,7 @@
 // 命名范式：详见 kernel/constants.ts V1 布局
 // =============================================================================
 
-import { existsSync, mkdirSync, renameSync, writeFileSync } from '../infra/filesystem'
+import { existsSync, mkdirSync, renameSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { dirname } from 'path'
 import {
   createInitialTaskState,
@@ -34,7 +34,7 @@ import {
   saveTaskState,
   saveWorkState,
 } from './dual-state-io'
-import { IAPError, IAPAction, type IAPAxis } from '../kernel/index'
+import { IAPError, IAPAction, type IAPAxis } from '@openxenon/engine/kernel'
 
 // =============================================================================
 // 错误码 (v1.1 fix-p1-architecture: 走 IAPError 双轨制, 不再自定义 class)

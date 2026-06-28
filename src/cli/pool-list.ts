@@ -2,10 +2,10 @@
 // pool-list.ts (v0.2 T13)
 // =============================================================================
 import { join } from 'node:path'
-import { readdirSync } from '../infra/filesystem'
+import { readdirSync } from '@openxenon/engine/infra/filesystem'
 import { defineCommand } from 'citty'
 import { output } from './output'
-import type { IntentPool } from '../infra/frozen/pool-writer'
+import type { IntentPool } from '@openxenon/engine/infra/frozen/pool-writer'
 
 const POOLS: IntentPool[] = ['research', 'design', 'issue', 'audit', 'journal']
 

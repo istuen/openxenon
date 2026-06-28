@@ -10,10 +10,10 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
-import { writeTokenRecord } from '../infra/probes/token-writer'
-import { IAPError } from '../core/errors'
+import { writeTokenRecord } from '@openxenon/engine/infra/probes/token-writer'
+import { IAPError } from '@openxenon/engine/errors'
 
 function getProjectRoot(): string {
   return process.cwd()

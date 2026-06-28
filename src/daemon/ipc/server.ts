@@ -1,5 +1,5 @@
 import { createServer, type Socket } from 'net'
-import { existsSync, unlinkSync } from '../../infra/filesystem'
+import { existsSync, unlinkSync } from '@openxenon/engine/infra/filesystem'
 import { daemonLogger } from '../logger'
 import { handleRequest } from './router'
 
@@ -7,7 +7,7 @@ import './handlers'
 
 // v1.1 fix-p2-robustness: SocketRequest 提升支持可选 id 字段 (用于 client 端 request id 路由)
 // 原导出从 infra/socket 复用, 这里保留本地 alias 避免循环导入
-import type { SocketRequest } from '../../infra/socket'
+import type { SocketRequest } from '@openxenon/engine/infra/socket'
 
 const FS_EXECUTE_PATH = '/api/v1/fs/execute'
 

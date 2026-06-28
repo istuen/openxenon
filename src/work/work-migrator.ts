@@ -43,9 +43,16 @@
 //   - 半 V0（部分 task 没 task-state.json）：部分迁移 + warning 报告
 // =============================================================================
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from '../infra/filesystem'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  unlinkSync,
+  writeFileSync,
+} from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { BOUNDARY_DIR, RUN_DIR, RUN_TASKS_SUBDIR, WORK_FILE } from '../kernel/index'
+import { BOUNDARY_DIR, RUN_DIR, RUN_TASKS_SUBDIR, WORK_FILE } from '@openxenon/engine/kernel'
 import {
   buildPerWorkDomainsIndex,
   writePerWorkDomainsIndex,

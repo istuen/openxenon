@@ -1,8 +1,8 @@
 import { connect, type Socket } from 'net'
 import { randomUUID } from 'crypto'
-import { DAEMON_SOCK_PATH } from '../infra/global'
-import { t } from '../infra/i18n'
-import { IAPError, IAPAction } from '../core/errors'
+import { DAEMON_SOCK_PATH } from '@openxenon/engine/infra/global'
+import { t } from '@openxenon/engine/infra/i18n'
+import { IAPError, IAPAction } from '@openxenon/engine/errors'
 
 export interface SocketMessage {
   method: string

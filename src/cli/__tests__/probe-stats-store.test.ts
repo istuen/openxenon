@@ -15,8 +15,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'os'
 import { join } from 'path'
 
-import { readProbeStatsFromFile, writeProbeStatsToFile } from '../../infra/probes/probe-stats-store'
-import { emptyProbeStats } from '../../kernel/index'
+import { readProbeStatsFromFile, writeProbeStatsToFile } from '@openxenon/engine/infra/probes/probe-stats-store'
+import { emptyProbeStats } from '@openxenon/engine/kernel'
 
 let tmpDir: string
 
@@ -115,7 +115,7 @@ describe('writeProbeStatsToFile', () => {
 // updater 纯函数单测（顺便覆盖 schema 与 catalog 翻译）
 // =============================================================================
 
-import { updateProbeStats, initProbeStatsFromFrozen, type FrozenProof } from '../../kernel/index'
+import { updateProbeStats, initProbeStatsFromFrozen, type FrozenProof } from '@openxenon/engine/kernel'
 
 function makeFrozen(
   name: string,

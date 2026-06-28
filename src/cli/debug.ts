@@ -1,6 +1,6 @@
-import { appendFileSync, existsSync, readFileSync } from '../infra/filesystem'
+import { appendFileSync, existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { BOUNDARY_DIR, DEBUG_LOG_FILE } from '../kernel/index'
+import { BOUNDARY_DIR, DEBUG_LOG_FILE } from '@openxenon/engine/kernel'
 
 export function getDebugLogPath(projectRoot: string): string {
   return join(projectRoot, BOUNDARY_DIR, DEBUG_LOG_FILE)

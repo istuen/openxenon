@@ -12,9 +12,9 @@
 //   - 旧 `@oxn/probe/*`（单数）仍可 resolve（向后兼容别名）
 // =============================================================================
 
-import { getProbeHandler, hasProbeHandler, type ProbeContext } from '../infra/probes'
-import { judge } from '../kernel/index'
-import type { FrozenProofProbeResult } from '../kernel/index'
+import { getProbeHandler, hasProbeHandler, type ProbeContext } from '@openxenon/engine/infra/probes'
+import { judge } from '@openxenon/engine/kernel'
+import type { FrozenProofProbeResult } from '@openxenon/engine/kernel'
 
 /** 内存中的 proof.oxn 解析结果 */
 export interface ProofProbeIR {

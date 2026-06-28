@@ -12,7 +12,7 @@ import {
   resetProviderRegistry,
   type InfraProvider,
   type ProviderManifest,
-} from '../../infra/registry/provider-registry'
+} from '@openxenon/engine/infra/registry/provider-registry'
 import type {
   IOExecRequest,
   IOExecResult,
@@ -21,7 +21,7 @@ import type {
   IOReadResult,
   IOStatRequest,
   IOStatResult,
-} from '../../kernel/contracts/io-primitive'
+} from '@openxenon/engine/kernel/contracts/io-primitive'
 import { probeListSubcommand } from '../probe-list'
 
 function stubProvider(name: string, scheme: string): { provider: InfraProvider; manifest: ProviderManifest } {

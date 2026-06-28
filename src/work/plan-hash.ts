@@ -18,10 +18,10 @@
 // =============================================================================
 
 import { createHash } from 'node:crypto'
-import { existsSync, readdirSync, readFileSync, statSync } from '../infra/filesystem'
+import { existsSync, readdirSync, readFileSync, statSync } from '@openxenon/engine/infra/filesystem'
 import { join, relative } from 'path'
-import { hashPort } from '../infra/hash'
-import { WORK_DOMAINS_JSON, WORK_BLUEPRINTS_JSON } from '../kernel/index'
+import { hashPort } from '@openxenon/engine/infra/hash'
+import { WORK_DOMAINS_JSON, WORK_BLUEPRINTS_JSON } from '@openxenon/engine/kernel'
 import { getWorkDir, getWorkOxnPath } from './dual-state-io'
 
 // ───────── 文本 hash（归一化）─────────

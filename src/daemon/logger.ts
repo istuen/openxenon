@@ -1,5 +1,5 @@
-import { appendFileSync, existsSync, mkdirSync } from '../infra/filesystem'
-import { DAEMON_LOG_PATH, GLOBAL_BOUNDARY_PATH } from '../infra/global'
+import { appendFileSync, existsSync, mkdirSync } from '@openxenon/engine/infra/filesystem'
+import { DAEMON_LOG_PATH, GLOBAL_BOUNDARY_PATH } from '@openxenon/engine/infra/global'
 
 export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR'
 

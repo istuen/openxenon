@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty'
-import { existsSync, readdirSync, rmSync, statSync } from '../infra/filesystem'
+import { existsSync, readdirSync, rmSync, statSync } from '@openxenon/engine/infra/filesystem'
 import { resolve } from 'path'
-import { t } from '../infra/i18n'
+import { t } from '@openxenon/engine/infra/i18n'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({

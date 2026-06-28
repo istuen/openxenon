@@ -15,7 +15,7 @@
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { compileOxnToMd } from '../src/oxl/md-bridge/oxl-md-decompiler.js'
+import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
 
 interface MigrationRecord {
   source: string

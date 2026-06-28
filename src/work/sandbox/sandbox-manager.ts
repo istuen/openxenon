@@ -10,10 +10,10 @@
 
 import { basename, join } from 'path'
 import { parse as parseYaml } from 'yaml'
-import { BOUNDARY_DIR } from '../../kernel/index'
-import { type DagNode, validateDagTopology } from '../../oxl/validators/blueprint-dag'
-import type { OxnAssemblyIR, OxnAssemblyPart } from '../../oxl/schemas/oxn-assembly.schema'
-import type { FileSystemPort } from '../../kernel/index'
+import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
+import { type DagNode, validateDagTopology } from '@openxenon/engine/oxl/validators/blueprint-dag'
+import type { OxnAssemblyIR, OxnAssemblyPart } from '@openxenon/engine/oxl/schemas/oxn-assembly.schema'
+import type { FileSystemPort } from '@openxenon/engine/kernel'
 
 export interface SandboxConfig {
   workId: string

@@ -26,7 +26,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test } from 'bun:te
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { isGitAvailable, runGit, checkMergeFeasibility } from '../../infra/git/workspace'
+import { isGitAvailable, runGit, checkMergeFeasibility } from '@openxenon/engine/infra/git/workspace'
 
 const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
 const BUILTIN_BP_SRC = join(import.meta.dir, '..', '..', 'builtin', 'blueprints', 'git-workflow.oxn')

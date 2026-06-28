@@ -15,11 +15,18 @@
 //     verifyPlanLock 是唯一"判定被改"的途径，不靠 chmod（跨平台安全）
 // =============================================================================
 
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from '../infra/filesystem'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from '@openxenon/engine/infra/filesystem'
 import { dirname, join } from 'path'
 import { z } from 'zod'
-import { hashPort } from '../infra/hash'
-import { WORK_FILE } from '../kernel/index'
+import { hashPort } from '@openxenon/engine/infra/hash'
+import { WORK_FILE } from '@openxenon/engine/kernel'
 import { getWorkDir } from './dual-state-io'
 import { hashWorkPlan, type PlanHash } from './plan-hash'
 

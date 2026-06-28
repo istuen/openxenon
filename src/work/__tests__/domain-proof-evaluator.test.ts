@@ -2,7 +2,7 @@
 // domain-proof-evaluator.test.ts (T12)
 // =============================================================================
 import { describe, expect, test } from 'bun:test'
-import { evaluateDomainProof } from '../../infra/frozen/domain-proof-evaluator'
+import { evaluateDomainProof } from '@openxenon/engine/infra/frozen/domain-proof-evaluator'
 
 describe('evaluateDomainProof (T12)', () => {
   test('script exit 0 → PASS', async () => {

@@ -18,6 +18,10 @@
     "moduleDetection": "force",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
+    "paths": {
+      "@openxenon/engine": ["./packages/engine/src/index"],
+      "@openxenon/engine/*": ["./packages/engine/src/*"]
+    },
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
@@ -25,5 +29,5 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*", "tests/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "tests", "src/**/__tests__"]
+  "exclude": ["node_modules", "dist", "tests", "src/**/__tests__", "packages"]
 }

@@ -20,11 +20,11 @@
 // =============================================================================
 
 import { createHash } from 'node:crypto'
-import { chmod, readFile, writeFile } from '../infra/filesystem-async'
+import { chmod, readFile, writeFile } from '@openxenon/engine/infra/filesystem-async'
 import { join } from 'node:path'
-import { IAPError, IAPAction } from '../kernel/index'
-import type { InfraProvider } from '../infra/registry/provider-registry'
-import type { IOExecRequest, IOReadRequest, IOStatRequest } from '../kernel/contracts/io-primitive'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel'
+import type { InfraProvider } from '@openxenon/engine/infra/registry/provider-registry'
+import type { IOExecRequest, IOReadRequest, IOStatRequest } from '@openxenon/engine/kernel/contracts/io-primitive'
 
 // ───────── 拦截白名单/黑名单 ─────────
 

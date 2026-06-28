@@ -1,10 +1,10 @@
 import { defineCommand } from 'citty'
-import { existsSync, readFileSync } from '../infra/filesystem'
+import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { DocumentState, URI } from 'langium'
-import { t } from '../infra/i18n'
-import { compileBundle } from '../oxl/compiler/bundle-compiler'
-import type { OXNDocument } from '../oxl/langium-driver/generated/ast'
-import { createOxnServices } from '../oxl/langium-driver/oxn-services'
+import { t } from '@openxenon/engine/infra/i18n'
+import { compileBundle } from '@openxenon/engine/oxl/compiler/bundle-compiler'
+import type { OXNDocument } from '@openxenon/engine/oxl/langium-driver/generated/ast'
+import { createOxnServices } from '@openxenon/engine/oxl/langium-driver/oxn-services'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export interface DiagnosticResult {

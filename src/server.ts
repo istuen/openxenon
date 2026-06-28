@@ -5,8 +5,8 @@ import { recoveryManager } from './daemon/trace/recovery'
 import { clearDaemonAddress, setDaemonAddress } from './daemon/status'
 import { daemonSupervisor } from './daemon/supervisor'
 import { fileWatcher, type WatchEvent } from './daemon/watcher'
-import { deleteFile, ensureDirectory, fileExists, writeFile } from './infra/filesystem'
-import { DAEMON_PID_PATH, DAEMON_SOCK_PATH, GLOBAL_BOUNDARY_PATH } from './infra/global'
+import { deleteFile, ensureDirectory, fileExists, writeFile } from '@openxenon/engine/infra/filesystem'
+import { DAEMON_PID_PATH, DAEMON_SOCK_PATH, GLOBAL_BOUNDARY_PATH } from '@openxenon/engine/infra/global'
 
 function ensureGlobalDirectory(): void {
   if (!fileExists(GLOBAL_BOUNDARY_PATH)) {

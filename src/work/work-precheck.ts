@@ -11,8 +11,8 @@
 // scheme 抽象, T9 阶段保守设计, 后续 PR 可基于 probe.type 自动 derive)
 // =============================================================================
 
-import { IAPError, IAPAction } from '../kernel/index'
-import { getProviderRegistry } from '../infra/registry/provider-registry'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel'
+import { getProviderRegistry } from '@openxenon/engine/infra/registry/provider-registry'
 
 /** Work 启动前的前置校验, 仅阻断**该 Work** (其他 Work 不受影响) */
 export async function workPrecheck(requiredSchemes: string[]): Promise<void> {

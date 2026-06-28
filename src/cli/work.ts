@@ -41,13 +41,13 @@ import {
   statSync,
   unlinkSync,
   writeFileSync,
-} from '../infra/filesystem'
-import { t } from '../infra/i18n'
+} from '@openxenon/engine/infra/filesystem'
+import { t } from '@openxenon/engine/infra/i18n'
 import { join } from 'path'
 import { URI } from 'langium'
-import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '../kernel/index'
-import { assertDirNameConsistent } from '../kernel/index'
-import { IAPError } from '../core/errors'
+import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '@openxenon/engine/kernel'
+import { assertDirNameConsistent } from '@openxenon/engine/kernel'
+import { IAPError } from '@openxenon/engine/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import {
   isWorkDeclaration,
@@ -60,7 +60,7 @@ import {
   type WorkContext,
   type WorkDeclaration,
   type OXNDocument as OxnAstDocument,
-} from '../oxl'
+} from '@openxenon/engine/oxl'
 import { runTask, runWork, submitTask } from '../work'
 import {
   ensureWorkDir,
@@ -82,7 +82,11 @@ import {
   getPerWorkBlueprintsJsonPath,
   resolveBlueprintFile,
 } from '../work/per-work-blueprints-merger'
-import { buildDomainDiagnostic, buildBlueprintDiagnostic, type RefDiagnostic } from '../oxl/compiler/ref-diagnostic'
+import {
+  buildDomainDiagnostic,
+  buildBlueprintDiagnostic,
+  type RefDiagnostic,
+} from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import {
   applyPlanLock,
   createBirthCert,
@@ -103,10 +107,10 @@ import {
   resolveAssetFormat,
   resolveAutoSync,
   type AssetFormat,
-} from '../infra/paths'
-import { parseMarkdown } from '../oxl/md-pipeline/utils'
-import { extractWorkIR } from '../oxl/md-pipeline/transformers/work.js'
-import { serializeWorkToOxn } from '../oxl/md-pipeline/oxn-serializer.js'
+} from '@openxenon/engine/infra/paths'
+import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
+import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
+import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import { migrateWorkToV1 } from '../work/work-migrator'
 
 // ---------------------------------------------------------------------------
@@ -600,7 +604,7 @@ async function validateWorkFromMd(filePath: string): Promise<{
   errors: string[]
 }> {
   const content = readTextFile(filePath)
-  let ir: import('../oxl/md-pipeline/transformers/work').WorkIR
+  let ir: import('@openxenon/engine/oxl/md-pipeline/transformers/work').WorkIR
   try {
     const parsed = parseMarkdown(content)
     ir = extractWorkIR(parsed.tree, parsed.frontmatter)
@@ -3206,7 +3210,7 @@ const migrateSubcommand = defineCommand({
 // 当前 PR 仅提供 compile 命令作为基础, 28 works 全量迁移留待后续 PR.
 // ---------------------------------------------------------------------------
 
-import { compileOxnToMd, DecompilerParseError } from '../oxl/md-bridge/oxl-md-decompiler.js'
+import { compileOxnToMd, DecompilerParseError } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
 import {
   computeSha256,
   readSyncMetadata,
@@ -3214,8 +3218,8 @@ import {
   writeCacheSha,
   getCachePath,
   getCacheMdPath,
-} from '../oxl/md-pipeline/sync-hash.js'
-import { validateOxnParseable, verifyWorkRoundTrip } from '../oxl/md-pipeline/sync-validation.js'
+} from '@openxenon/engine/oxl/md-pipeline/sync-hash.js'
+import { validateOxnParseable, verifyWorkRoundTrip } from '@openxenon/engine/oxl/md-pipeline/sync-validation.js'
 
 // ---------------------------------------------------------------------------
 // Subcommand: sync (v0.4 Phase 1 — work.oxn → work.md 自动同步)
