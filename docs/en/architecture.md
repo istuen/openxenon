@@ -27,15 +27,15 @@ L3 Tools (CLI+Skills+Daemon) → L2 Engine (E1-E4 business logic)
 packages/cli/src/commands/        ← CLI thin shell
 packages/cli/skills/              ← AI skills (static)
 packages/engine/src/
-  ├── l2_iap_biz/                 ← L2 Engine: Asset/Intent/Align/Proof/Insight/Pool + daemon.ts
-  ├── l1_oxl_infra/               ← L1: OXL DSL + Infra probes
-  └── l0_kernel/                  ← L0: schemas, contracts, verdicts
+  ├──                  ← L2 Engine: Asset/Intent/Align/Proof/Insight/Pool + daemon.ts
+  ├── infra/               ← L1: OXL DSL + Infra probes
+  └── kernel/                  ← L0: schemas, contracts, verdicts
 ```
 
 ## 3. L2 Engine DDD Modular Structure
 
 ```
-packages/engine/src/l2_iap_biz/
+packages/engine/src/
 ├── Asset/{index,create,list,validate,compile,sync,...}.ts
 ├── Intent/{index,create-work,add-task,validate,lock,...}.ts
 ├── Align/{index,run,submit,status,finalize,...}.ts
