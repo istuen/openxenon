@@ -22,7 +22,7 @@ import { defineCommand } from 'citty'
 import { IAPError, IAPAction } from '@openxenon/engine/kernel'
 import { getProviderRegistry } from '@openxenon/engine/infra/registry/provider-registry'
 import { registryUpsert, getCachePath } from './probe-registry-store'
-import { sandboxValidate, sha256OfFile, writeProviderSource } from './probe-sandbox'
+import { sandboxValidate, sha256OfFile, writeProviderSource } from '@openxenon/engine/infra/probes/sandbox'
 import { output } from './output'
 
 function getProjectRoot(): string {

@@ -7,7 +7,7 @@ import {
   writeFileSync,
 } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import type { TaskState } from '../cli/task-filesystem'
+import type { TaskState } from '@openxenon/engine/Work/task-filesystem'
 import { loadOxnRc } from '../cli/config-loader'
 
 // TODO(v0.2): Hall 当前扫旧 `.openxenon/tasks/<id>/` 布局（v0.0.x 时代 task 模型）。

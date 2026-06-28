@@ -15,8 +15,7 @@ import { computeContentHash, type FrozenBlueprint } from '@openxenon/engine/kern
 import { hashPort } from '@openxenon/engine/infra/hash'
 import type { OxnAssemblySlotBinding } from '@openxenon/engine/oxl/schemas/oxn-assembly.schema'
 import { loadStandardByName } from '@openxenon/engine/infra/loader'
-import { getProjectBoundaryPath } from './project'
-import { unifiedTaskSubmit } from './oxn-dual-track'
+import { unifiedTaskSubmit } from '@openxenon/engine/oxl/compiler/dual-track'
 // import { writeFrozenImmutable } from '@openxenon/engine/kernel'
 
 const TASK_TRACE_FILE = 'task-trace.jsonl'
@@ -194,7 +193,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
   let frozenFromTaskOxn: FrozenBlueprint
 
   if (blueprintName) {
-    const projectBoundary = getProjectBoundaryPath(cwd)
+    const projectBoundary = join(cwd, BOUNDARY_DIR)
     const blueprintAsset = loadStandardByName('project', projectBoundary, blueprintName, 'blueprints')
     if (!blueprintAsset) {
       throw new Error(`Blueprint "${blueprintName}" not found in arsenal`)

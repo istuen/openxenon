@@ -58,9 +58,9 @@ import {
   type ProofProbeDecl,
 } from '@openxenon/engine/oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
-import { executeProbe, type ProofProbeIR } from './proof-runner'
+import { executeProbe, type ProofProbeIR } from '@openxenon/engine/Proof/runner'
 import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
-import { writeVerdictMd } from './proof-verdict-writer'
+import { writeVerdictMd } from '@openxenon/engine/Proof/verdict-writer'
 import { describeProbe, listProbesSummary, translateProbeInputs } from '@openxenon/engine/kernel'
 import { updateProbeStats } from '@openxenon/engine/kernel'
 import { emptyProbeStats } from '@openxenon/engine/kernel'

@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty'
 import { t } from '@openxenon/engine/infra/i18n'
-import { formatMigrationReport, migrateAllArsenals, migrateDirectory, migrateSingleFile } from './migrate-yaml'
+import { formatMigrationReport, migrateAllArsenals, migrateDirectory, migrateSingleFile } from '@openxenon/engine/oxl/compiler/yaml-migrator'
 import { getFormatFromArgs, output, outputError } from './output'
 
 export default defineCommand({
