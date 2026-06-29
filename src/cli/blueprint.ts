@@ -50,6 +50,7 @@ import {
   getCacheMdPath,
 } from '@openxenon/engine/oxl/md-pipeline/sync-hash.js'
 import { validateOxnParseable, verifyBlueprintRoundTrip } from '@openxenon/engine/oxl/md-pipeline/sync-validation.js'
+import { blueprintCreateTemplate } from '@openxenon/engine/Asset/blueprint-manager'
 import {
   autoRebuildBlueprintIndex,
   getBlueprintIndexPath,
@@ -145,72 +146,6 @@ async function validateBlueprintFromMd(blueprintPath: string): Promise<{
     }
   }
   return { ok: true, ast, errors: [] }
-}
-
-// ---------------------------------------------------------------------------
-// v0.5 Phase 3: format-aware template generator
-// ---------------------------------------------------------------------------
-
-import type { AssetFormat as BlueprintFormat } from '@openxenon/engine/infra/paths'
-
-function blueprintCreateTemplate(name: string, slotsBlock: string, slotsArg: string, format: BlueprintFormat): string {
-  if (format === 'md') {
-    // 提取每个 slot 名 (简易: 解析 `slot "X" {` 行)
-    const slotNames: string[] = []
-    for (const line of slotsBlock.split('\n')) {
-      const m = line.match(/^ {2}slot "([^"]+)" \{/)
-      if (m) slotNames.push(m[1]!)
-    }
-    const mdSlots = slotNames.map((slotName) => `### ${slotName}\n- deps: []`).join('\n\n')
-    return `---
-entity: blueprint
-version: 0.3.0
-name: ${name}
----
-
-# Blueprint: ${name}
-
-> TODO: one-line description of what this blueprint does
-
-## Slots
-
-${mdSlots}
-`
-  }
-  // .oxn 模板（v0.4 既有）
-  return `// Blueprint: ${name}
-// Created by: oxn blueprint create ${name} ${slotsArg ? `--slots ${slotsArg}` : ''}
-//
-// ──────────────────────────────────────────────────────────────────
-// HINTS — read before editing. \`oxn blueprint validate\` will reject
-// anything that violates these rules.
-// ──────────────────────────────────────────────────────────────────
-//  1. slot names: kebab-case (recommended), never PascalCase.
-//  2. slot deps: form a DAG. Cycles are rejected by the validator.
-//  3. The first slot MUST have deps = [] (entry point).
-//  4. prop type: string | number | boolean | any | list<T> | map<T> | enum(...)
-//  5. observe: reference builtin probes via @oxn/probes/{shell-exec|fs-exists|...}
-//     or describe the physical signal (e.g. ["ShellExec"]).
-//  6. Validate:  oxn blueprint validate ${name}
-//  7. Trial run: oxn work create --work-id trial-${name} --blueprint verify-pipeline
-//  8. Share via Git (this file IS the source of truth):
-//        git add .openxenon/blueprints/${name}.oxn && git commit
-// ──────────────────────────────────────────────────────────────────
-//
-// Edit goal/description/props/slots as needed. The mvp-style
-// \`context\` and per-part \`skill\` blocks are optional (unified grammar superset).
-// After editing, validate with:
-//   oxn blueprint validate ${name}
-// Then drive it with:
-//   oxn work create <work-name> --blueprint ${name} --json
-
-blueprint "${name}" {
-  version = 1
-  description = "TODO: one-line description of what this blueprint does"
-
-${slotsBlock}
-}
-`
 }
 
 // ---------------------------------------------------------------------------

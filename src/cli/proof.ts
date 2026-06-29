@@ -501,6 +501,10 @@ const probeDescribeSubcommand = defineCommand({
   },
 })
 
+// ---------------------------------------------------------------------------
+// Subcommand: probe add <proof> <probe> --input-json '{...}'
+// ---------------------------------------------------------------------------
+
 function renderProbeDescribeHuman(info: ReturnType<typeof describeProbe> & object): string {
   const lines: string[] = []
   lines.push(`# ${info.name}`)
@@ -522,10 +526,6 @@ function renderProbeDescribeHuman(info: ReturnType<typeof describeProbe> & objec
   }
   return lines.join('\n')
 }
-
-// ---------------------------------------------------------------------------
-// Subcommand: probe add <proof> <probe> --input-json '{...}'
-// ---------------------------------------------------------------------------
 
 const probeAddSubcommand = defineCommand({
   meta: {
@@ -822,6 +822,10 @@ const runSubcommand = defineCommand({
   },
 })
 
+// ---------------------------------------------------------------------------
+// Subcommand: verify (v0.4 PR-B Q4-A)
+// ---------------------------------------------------------------------------
+
 function renderVerdictHuman(
   name: string,
   frozen: NonNullable<ReturnType<typeof readFrozenProof>['frozen']>,
@@ -836,16 +840,11 @@ function renderVerdictHuman(
   }
   lines.push(`\nProof saved: ${join(getProofDir(name), PROOF_FROZEN_JSON)}`)
   lines.push(`Read-only: ${isFrozenFileReadOnly(join(getProofDir(name), PROOF_FROZEN_JSON))}`)
-  // v0.5 PR-A: 提示 verdict.md 落盘位置
   if (verdictWritten && verdictPath) {
     lines.push(`Verdict doc: ${verdictPath}`)
   }
   return lines.join('\n')
 }
-
-// ---------------------------------------------------------------------------
-// Subcommand: verify (v0.4 PR-B Q4-A)
-// ---------------------------------------------------------------------------
 //
 // 重新计算 work.md SHA-256，与 work-hash.txt 比对：
 //   - match      → 证据一致，proof 可信

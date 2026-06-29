@@ -8,7 +8,6 @@ import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompile
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractDomainIR } from '@openxenon/engine/oxl/md-pipeline/transformers/domain.js'
 import { serializeDomainToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
-import type { AssetFormat } from '@openxenon/engine/infra/paths'
 import {
   resolveAssetPrimaryPath,
   resolveAssetAltPath,
@@ -45,6 +44,7 @@ import {
   getCacheMdPath,
 } from '@openxenon/engine/oxl/md-pipeline/sync-hash.js'
 import { validateOxnParseable, verifyDomainRoundTrip } from '@openxenon/engine/oxl/md-pipeline/sync-validation.js'
+import { domainCreateTemplate, autoRebuildDomainIndex } from '@openxenon/engine/Asset/domain-manager'
 
 // =============================================================================
 // `oxn domain` — DDD 限界上下文管理
@@ -157,82 +157,6 @@ async function validateDomainFromMd(filePath: string): Promise<{
 // v0.5 Phase 3: format-aware template generator
 // ---------------------------------------------------------------------------
 
-function domainCreateTemplate(name: string, format: AssetFormat): string {
-  if (format === 'md') {
-    // v0.5 Phase 3: .md 模板（含 frontmatter, 无 header 注释 — 注释写 .oxn）
-    return `---
-entity: domain
-version: 0.3.0
-name: ${name}
----
-
-# Domain: ${name}
-
-> TODO: one-line description of the bounded context's business boundary
-
-## Terms
-
-### TODO_Term
-- desc: TODO: domain term definition
-
-## Bans
-
-- items:
-  - TODO_BannedTerm1
-  - TODO_BannedTerm2
-
-## Invariants
-
-- value: TODO: business invariant rule 1
-- value: TODO: business invariant rule 2
-`
-  }
-  // .oxn 模板（v0.4 既有）
-  return `// Domain: ${name}
-// Created by: oxn domain create ${name}
-//
-// ──────────────────────────────────────────────────────────────────
-// HINTS — read before editing. \`oxn domain validate\` will reject
-// anything that violates these rules.
-// ──────────────────────────────────────────────────────────────────
-//  1. Domain name: PascalCase recommended (e.g. MemberContext).
-//  2. term: ≥3 core entities, key=word, value=definition. AI MUST use
-//     these words when writing code in this context.
-//  3. ban: ≥2 forbidden words. AI MUST NOT use these words (prevents
-//     cross-context terminology drift like User/Customer/Member mix).
-//  4. invariant: ≥1 business hard-rule. v0.1 documents; v0.2 enforces
-//     via language-ban-checker Probe. 写法决策见 oxn-cli skill
-//     「invariant 写法决策树」章节（1 条→单块单条 / 同主题→单块多条 / 异主题→多块按 // ── <主题> ── 分组，IR 等价）。
-//  5. Validate: oxn domain validate ${name}
-//  6. Share via Git (this file IS the source of truth):
-//        git add .openxenon/domains/${name}.oxn && git commit
-// ──────────────────────────────────────────────────────────────────
-//
-// DDD bounded context skeleton. After filling in term / ban / invariant,
-// reference it from work.oxn via:
-//   domain "${name}" ref "@prj/domains/${name}";
-//
-// Validation:
-//   oxn domain validate ${name}
-
-domain "${name}" {
-  description = "TODO: one-line description of the bounded context's business boundary"
-
-  term {
-    "TODO_Term": "TODO: domain term definition"
-  }
-
-  ban { "TODO_BannedTerm1", "TODO_BannedTerm2" }
-
-  // invariant 写法决策：1 条→单块单条 / 同主题→单块多条 / 异主题→多块按 // ── <主题> ── 分组
-  // 默认示范「单块多条」（IR 等价；详见 oxn-cli skill「invariant 写法决策树」）
-  invariant {
-    "TODO: business invariant rule 1"
-    "TODO: business invariant rule 2"
-  }
-}
-`
-}
 
 // ---------------------------------------------------------------------------
 // Subcommand: create
@@ -691,29 +615,6 @@ const indexSubcommand = defineCommand({
     )
   },
 })
-
-// ---------------------------------------------------------------------------
-// Helper: 自动重建索引（被 create / validate 调）
-// ---------------------------------------------------------------------------
-//
-// 静默失败：索引写不出不应阻断主流程（domain 资产本身已正确）；
-// 失败时返回 { ok: false, error }，由调用方决定 stderr 打 warning。
-export function autoRebuildDomainIndex(projectRoot: string): {
-  ok: boolean
-  indexPath?: string
-  error?: string
-} {
-  try {
-    const domainsDir = resolveAssetDir(projectRoot, 'domain', readProjectConfig(projectRoot))
-    if (!existsSync(domainsDir)) return { ok: true }
-    const outPath = getDomainIndexPath(projectRoot)
-    writeDomainIndex({ projectRoot, domainsDir, outPath })
-    return { ok: true, indexPath: outPath }
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    return { ok: false, error: message }
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Subcommand: compile (v0.3.0 — 把 .oxn 重编译为 v0.3 canonical 纯 MD .md)
