@@ -168,7 +168,7 @@ describe('assertDirNameConsistent (L0-Contract, 目录式布局)', () => {
 
 describe('L0-Contract 物理归位约束', () => {
   test('name-canonical.ts 不引入 fs / net / child_process（Kernel 是兰姆达真空）', async () => {
-    const src = await Bun.file('src/kernel/contracts/name-canonical.ts').text()
+    const src = await Bun.file('packages/engine/src/kernel/contracts/name-canonical.ts').text()
     expect(src).not.toMatch(/from\s+['"]fs['"]|from\s+['"]node:fs['"]/)
     expect(src).not.toMatch(/from\s+['"]net['"]|from\s+['"]node:net['"]/)
     expect(src).not.toMatch(/from\s+['"]child_process['"]|from\s+['"]node:child_process['"]/)
@@ -176,7 +176,7 @@ describe('L0-Contract 物理归位约束', () => {
   })
 
   test('name-canonical.ts 仅 import 同层 iap-error 与 path.basename（合规）', async () => {
-    const src = await Bun.file('src/kernel/contracts/name-canonical.ts').text()
+    const src = await Bun.file('packages/engine/src/kernel/contracts/name-canonical.ts').text()
     expect(src).toMatch(/from\s+['"]\.\/iap-error['"]/)
     expect(src).toMatch(/from\s+['"]path['"]/)
     // 不能 import L0-Processor / L1+ / L2 / L3
