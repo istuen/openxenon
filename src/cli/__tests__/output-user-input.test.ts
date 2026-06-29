@@ -69,7 +69,7 @@ describe('outputUserInputError (Phase 4)', () => {
   })
 
   test('OXN_PROOF_* 前缀被 isCliInputError 识别（一致性）', async () => {
-    const { isCliInputError } = await import('../../core/errors')
+    const { isCliInputError } = await import('@openxenon/engine/errors')
     outputUserInputError('OXN_PROOF_NOT_FOUND', 'not found', { format: 'json' })
     const parsed = JSON.parse(stdoutBuf)
     expect(isCliInputError(parsed.error)).toBe(true)
