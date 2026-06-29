@@ -39,6 +39,8 @@ import {
 } from '@openxenon/engine/infra/filesystem'
 import { basename, join, relative } from 'path'
 import { z } from 'zod'
+import { resolveAssetDir } from '@openxenon/engine/infra/paths'
+import type { ProjectConfig } from '@openxenon/engine/infra/paths'
 
 // L1-OXL 不可依赖 L0-Processor（含 src/kernel/constants.ts，被分类器归到 L0-Processor）；
 // 此处与 domain-index-builder 保持一致：硬编码路径字符串常量。
@@ -347,7 +349,16 @@ export function autoRebuildBlueprintIndex(projectRoot: string): {
   error?: string
 } {
   try {
-    const blueprintsDir = join(projectRoot, BOUNDARY_DIR, 'blueprints')
+    let config: ProjectConfig | undefined
+    const configPath = join(projectRoot, BOUNDARY_DIR, 'config.json')
+    if (existsSync(configPath)) {
+      try {
+        config = JSON.parse(readFileSync(configPath, 'utf-8')) as ProjectConfig
+      } catch {
+        config = undefined
+      }
+    }
+    const blueprintsDir = resolveAssetDir(projectRoot, 'blueprint', config)
     if (!existsSync(blueprintsDir)) return { ok: true }
     const outPath = getBlueprintIndexPath(projectRoot)
     writeBlueprintIndex({ projectRoot, blueprintsDir, outPath })

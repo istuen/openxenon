@@ -38,7 +38,7 @@ describe('OXL Examples - 存在性 smoke test', () => {
 // v0.0.28+：work-examples 必须用新规 deps = [...]。
 // 单独测 works/ 目录下的真实 work（已用 v0.1-final 语法）能否 parse。
 import { readdirSync } from 'fs'
-const WORKS_DIR = join(__dirname, '../../../.openxenon/works')
+const WORKS_DIR = join(__dirname, '../../../../../.openxenon/works')
 
 describe('OXL 真实 works - parse 全过（v0.1-final 语法）', () => {
   const works: string[] = []

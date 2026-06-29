@@ -10,7 +10,7 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-const PROBES_DIR = join(import.meta.dir, '..', '..', '..', 'builtin', 'probes')
+const PROBES_DIR = join(import.meta.dir, '..', '..', '..', '..', '..', '..', 'src', 'builtin', 'probes')
 
 function listBuiltinProbes(): string[] {
   if (!existsSync(PROBES_DIR)) return []

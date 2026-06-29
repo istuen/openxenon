@@ -203,11 +203,11 @@ describe('Builtin OXN Assets (Task 2.5)', () => {
   // 单一真相源管理。builtin parts 保留为 .oxn 文件作为 schema 样例。
 
   test('builtin parts .oxn 文件存在', () => {
-    expect(existsSync('src/oxl/builtin/parts/builtin-parts.oxn')).toBe(true)
+    expect(existsSync('packages/engine/src/oxl/builtin/parts/builtin-parts.oxn')).toBe(true)
   })
 
   test('builtin parts 包含 3 个零件', () => {
-    const content = readFileSync('src/oxl/builtin/parts/builtin-parts.oxn', 'utf-8')
+    const content = readFileSync('packages/engine/src/oxl/builtin/parts/builtin-parts.oxn', 'utf-8')
     const partCount = (content.match(/part "/g) || []).length
     expect(partCount).toBe(3)
     expect(content).toContain('git-commit')
@@ -215,7 +215,7 @@ describe('Builtin OXN Assets (Task 2.5)', () => {
   })
 
   test('builtin parts 使用 @oxn/ 作用域引用探针', () => {
-    const content = readFileSync('src/oxl/builtin/parts/builtin-parts.oxn', 'utf-8')
+    const content = readFileSync('packages/engine/src/oxl/builtin/parts/builtin-parts.oxn', 'utf-8')
     expect(content).toContain('@oxn/probes/exec-exit-zero')
   })
 })

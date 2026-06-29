@@ -149,8 +149,8 @@ describe('oxn blueprint list (PR-X: 走索引)', () => {
   test('list 索引缺失时降级 dir 扫描（data.source="dir"）', async () => {
     await initProject()
     // 不调 create —— 索引可能不存在
-    // 但手建 .openxenon/blueprints/ + .oxn 文件模拟老项目
-    const blueprintsDir = join(tmpDir, '.openxenon', 'blueprints')
+    // 但手建 .openxenon/assets/blueprints/ + .oxn 文件模拟老项目（v0.6 路径）
+    const blueprintsDir = join(tmpDir, '.openxenon', 'assets', 'blueprints')
     mkdirSync(blueprintsDir, { recursive: true })
     writeFileSync(join(blueprintsDir, 'legacy.oxn'), `blueprint "legacy" { version = 1; description = "old style" }`)
     // 确保索引不存在

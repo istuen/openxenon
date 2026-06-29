@@ -1,0 +1,38 @@
+// Blueprint: dev-workflow
+// Created by: oxn blueprint create dev-workflow 
+//
+// ──────────────────────────────────────────────────────────────────
+// HINTS — read before editing. `oxn blueprint validate` will reject
+// anything that violates these rules.
+// ──────────────────────────────────────────────────────────────────
+//  1. slot names: kebab-case (recommended), never PascalCase.
+//  2. slot deps: form a DAG. Cycles are rejected by the validator.
+//  3. The first slot MUST have deps = [] (entry point).
+//  4. prop type: string | number | boolean | any | list<T> | map<T> | enum(...)
+//  5. observe: reference builtin probes via @oxn/probes/{shell-exec|fs-exists|...}
+//     or describe the physical signal (e.g. ["ShellExec"]).
+//  6. Validate:  oxn blueprint validate dev-workflow
+//  7. Trial run: oxn work create --work-id trial-dev-workflow --blueprint verify-pipeline
+//  8. Share via Git (this file IS the source of truth):
+//        git add .openxenon/blueprints/dev-workflow.oxn && git commit
+// ──────────────────────────────────────────────────────────────────
+//
+// Edit goal/description/props/slots as needed. The mvp-style
+// `context` and per-part `skill` blocks are optional (unified grammar superset).
+// After editing, validate with:
+//   oxn blueprint validate dev-workflow
+// Then drive it with:
+//   oxn work create <work-name> --blueprint dev-workflow --json
+
+blueprint "dev-workflow" {
+  version = 1
+  description = "TODO: one-line description of what this blueprint does"
+
+  slot "stage-1" {
+    deps = []
+  }
+
+  slot "stage-2" {
+    deps = ["stage-1"]
+  }
+}
