@@ -80,8 +80,8 @@ const showSubcommand = defineCommand({
           leaderMode: resolved.mode,
           source: resolved.source,
           defaults: { leaderMode: DEFAULT_LEADER_MODE },
-          projectConfig: config,
-          projectConfigPath: join(projectRoot, OXN_RC_FILENAME),
+          projectConfig,
+          projectConfigPath: join(projectRoot, '.openxenon', 'config.json'),
           openxenon: {
             config: projectConfig,
             path: join(projectRoot, '.openxenon', 'config.json'),

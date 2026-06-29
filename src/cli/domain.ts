@@ -14,6 +14,7 @@ import {
   resolveAssetFormat,
   resolveAutoSync,
   resolveAssetDir,
+  resolveAssetCandidates,
 } from '@openxenon/engine/infra/paths'
 import { readProjectConfig } from './project-config-io'
 import {
@@ -66,7 +67,10 @@ function getProjectRoot(): string {
 }
 
 function getDomainsDir(): string {
-  return resolveAssetDir(getProjectRoot(), 'domain', readProjectConfig(getProjectRoot()))
+  const { primary, fallback } = resolveAssetCandidates(getProjectRoot(), 'domain', readProjectConfig(getProjectRoot()))
+  if (existsSync(primary)) return primary
+  if (existsSync(fallback)) return fallback
+  return primary
 }
 
 function projectBoundaryExists(): boolean {
