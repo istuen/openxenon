@@ -13,7 +13,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { buildFrozenProof, readFrozenProof, writeFrozenProof } from '../../../cli/proof-frozen-writer'
+import { buildFrozenProof, readFrozenProof, writeFrozenProof } from '@openxenon/engine/Proof/proof-frozen-writer'
 
 let tmpDir: string
 

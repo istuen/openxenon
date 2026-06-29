@@ -58,7 +58,7 @@ afterEach(() => {
 
 const proof = await import('../proof')
 const { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } = await import(
-  '../proof-frozen-writer'
+  '@openxenon/engine/Proof/proof-frozen-writer'
 )
 
 // -----------------------------------------------------------------------------
@@ -296,7 +296,7 @@ describe('end-to-end: create → probe add → run → show', () => {
     expect(probeIRs[0]!.ref).toBe('@oxn/probes/fs-exists')
 
     // 3. executeProbe (Kernel + Infra 分离)
-    const result = await (await import('../proof-runner')).executeProbe(probeIRs[0]!)
+    const result = await (await import('@openxenon/engine/Proof/runner')).executeProbe(probeIRs[0]!)
     expect(result.passed).toBe(true)
 
     // 4. write frozen
@@ -319,7 +319,7 @@ describe('end-to-end: create → probe add → run → show', () => {
 
 describe('Kernel + Infra separation (real execution)', () => {
   test('fs-exists with existing file → PASS', async () => {
-    const { executeProbe, resolveProbeKind } = await import('../proof-runner')
+    const { executeProbe, resolveProbeKind } = await import('@openxenon/engine/Proof/runner')
     expect(resolveProbeKind('@oxn/probes/fs-exists')).toBe('fs-exists')
     const r = await executeProbe(
       {
@@ -334,7 +334,7 @@ describe('Kernel + Infra separation (real execution)', () => {
   })
 
   test('fs-exists with missing file → FAIL (Kernel verdict)', async () => {
-    const { executeProbe } = await import('../proof-runner')
+    const { executeProbe } = await import('@openxenon/engine/Proof/runner')
     const r = await executeProbe(
       {
         probeName: 'p1',
@@ -348,7 +348,7 @@ describe('Kernel + Infra separation (real execution)', () => {
   })
 
   test('shell-exec with exit 0 → PASS', async () => {
-    const { executeProbe } = await import('../proof-runner')
+    const { executeProbe } = await import('@openxenon/engine/Proof/runner')
     const r = await executeProbe(
       {
         probeName: 'p2',
@@ -361,7 +361,7 @@ describe('Kernel + Infra separation (real execution)', () => {
   })
 
   test('shell-exec with non-zero exit → FAIL', async () => {
-    const { executeProbe } = await import('../proof-runner')
+    const { executeProbe } = await import('@openxenon/engine/Proof/runner')
     const r = await executeProbe(
       {
         probeName: 'p3',
@@ -376,17 +376,17 @@ describe('Kernel + Infra separation (real execution)', () => {
 
   test('Kernel 纯函数：judge() 不碰 IO（无 fs.* / child_process）', async () => {
     const { readFileSync } = await import('fs')
-    const verdictSrc = readFileSync(join(repoRoot, 'src/kernel/verdicts/verdict.ts'), 'utf-8')
+    const verdictSrc = readFileSync(join(repoRoot, 'packages/engine/src/kernel/verdicts/verdict.ts'), 'utf-8')
     // 去掉注释行（// ...）和块注释，再 grep
     const codeOnly = verdictSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
     expect(codeOnly).not.toMatch(/\bfs\.|require\(['"]fs|child_process|spawn\(/)
   })
 
-  test('Infra 真实观测：fs-exists handler 在 src/infra/probes/ 里', async () => {
+  test('Infra 真实观测：fs-exists handler 在 packages/engine/src/infra/probes/ 里', async () => {
     const { readFileSync, existsSync } = await import('fs')
-    expect(existsSync(join(repoRoot, 'src/infra/probes/fs-exists.ts'))).toBe(true)
-    expect(existsSync(join(repoRoot, 'src/infra/probes/shell-exec.ts'))).toBe(true)
-    const fsExists = readFileSync(join(repoRoot, 'src/infra/probes/fs-exists.ts'), 'utf-8')
+    expect(existsSync(join(repoRoot, 'packages/engine/src/infra/probes/fs-exists.ts'))).toBe(true)
+    expect(existsSync(join(repoRoot, 'packages/engine/src/infra/probes/shell-exec.ts'))).toBe(true)
+    const fsExists = readFileSync(join(repoRoot, 'packages/engine/src/infra/probes/fs-exists.ts'), 'utf-8')
     expect(fsExists).toMatch(/statSync|readFileSync/)
   })
 })
@@ -397,7 +397,7 @@ describe('Kernel + Infra separation (real execution)', () => {
 
 describe('OXL grammar integration', () => {
   test('proof 出现在 TopLevelEntity', async () => {
-    const { createOxnParser, isProofDeclaration } = await import('../../oxl')
+    const { createOxnParser, isProofDeclaration } = await import('@openxenon/engine/oxl')
     const { URI } = await import('langium')
     const parser = createOxnParser()
     const r = await parser.parse('proof "x" { probe "p1" { ref "r" } }', URI.file('/tmp/proof-grammar-test.oxn'))

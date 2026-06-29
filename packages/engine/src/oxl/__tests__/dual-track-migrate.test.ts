@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, test } from 'bun:test'
-import { detectPipeline } from '../../cli/oxn-dual-track'
+import { detectPipeline } from '@openxenon/engine/oxl/compiler/dual-track'
 
 describe('detectPipeline', () => {
   test('.oxn 文件路由到新管线', () => {
@@ -27,7 +27,7 @@ describe('detectPipeline', () => {
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { formatMigrationReport, type MigrationStats, migrateSingleFile } from '../../cli/migrate-yaml'
+import { formatMigrationReport, type MigrationStats, migrateSingleFile } from '@openxenon/engine/oxl/compiler/yaml-migrator'
 
 describe('migrateSingleFile', () => {
   const tmpDir = '/tmp/oxn-migrate-test'

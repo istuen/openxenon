@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'fs'
 import { join } from 'path'
-import { taskNew, taskSubmit } from '../../../src/cli/task-filesystem'
-import { resetOxnServices } from '../../../src/oxl/langium-driver/oxn-services'
+import { taskNew, taskSubmit } from '@openxenon/engine/Work/task-filesystem'
+import { resetOxnServices } from '@openxenon/engine/oxl/langium-driver/oxn-services'
 
 const TEST_WORKDIR = '/tmp/oxn-task-test'
 

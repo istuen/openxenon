@@ -12,7 +12,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { IAPError, IAPAction } from '@openxenon/engine/kernel'
-import { sandboxValidate, writeProviderSource, sha256OfFile } from '../probe-sandbox'
+import { sandboxValidate, writeProviderSource, sha256OfFile } from '@openxenon/engine/infra/probes/sandbox'
 import { registryUpsert, registryRead, getCachePath, getRegistryPath } from '../probe-registry-store'
 
 const FIXTURES = join(import.meta.dir, 'fixtures')

@@ -9,7 +9,7 @@
 // =============================================================================
 
 import { describe, expect, test } from 'bun:test'
-import { sandboxValidate } from '../probe-sandbox'
+import { sandboxValidate } from '@openxenon/engine/infra/probes/sandbox'
 import { join } from 'node:path'
 
 const FIXTURES = join(import.meta.dir, 'fixtures')

@@ -16,7 +16,7 @@ import { serializeDomainToOxn, serializeBlueprintToOxn, serializeWorkToOxn } fro
 import type { DomainIR } from '../transformers/domain'
 import type { BlueprintIR } from '../transformers/blueprint'
 import type { WorkIR } from '../transformers/work'
-import { createOxnParser } from '../../../oxl'
+import { createOxnParser } from '@openxenon/engine/oxl'
 import { URI } from 'langium'
 
 /** 验证 .oxn 能被 langium 解析 (不抛错) */
