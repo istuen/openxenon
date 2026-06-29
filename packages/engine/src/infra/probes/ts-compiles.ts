@@ -87,7 +87,7 @@ export async function executeTsCompiles(params: TsCompilesParams, context: Probe
     // - path + tsconfig: 已经把 path 写入临时 tsconfig.files，只传 --project
     // - path only: 自动检测到 tsconfig 后也传 --project（避免丢项目配置）
     // - tsconfig only: 走默认
-    const args: string[] = ['npx', 'tsc', '--noEmit']
+    const args: string[] = ['bun', 'x', 'tsc', '--noEmit']
     if (projectPath) {
       args.push('--project', projectPath)
     } else if (params.path) {

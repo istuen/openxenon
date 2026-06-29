@@ -22,7 +22,7 @@ import { join } from 'path'
 import { executeTsCompiles, type TsCompilesParams } from '../ts-compiles'
 
 let tmpDir: string
-const repoRoot = join(import.meta.dir, '../../../..')
+const repoRoot = join(import.meta.dir, '../../../../../..')
 
 beforeEach(() => {
   tmpDir = mkdtempSync(join(tmpdir(), 'oxn-tsc-test-'))
