@@ -155,11 +155,11 @@ describe('ExpectationRunner (Task 4.3)', () => {
 
 describe('Core Migration (Task 4.4)', () => {
   test('迁移后的 OXN 蓝图文件存在', () => {
-    expect(existsSync('src/oxl/builtin/blueprints/migrated-blueprints.oxn')).toBe(true)
+    expect(existsSync('packages/engine/src/oxl/builtin/blueprints/migrated-blueprints.oxn')).toBe(true)
   })
 
   test('迁移文件包含 verify-readme 和 test-check-readme', () => {
-    const content = readFileSync('src/oxl/builtin/blueprints/migrated-blueprints.oxn', 'utf-8')
+    const content = readFileSync('packages/engine/src/oxl/builtin/blueprints/migrated-blueprints.oxn', 'utf-8')
     expect(content).toContain('verify-readme')
     expect(content).toContain('test-check-readme')
     expect(content).toContain('blueprint')
