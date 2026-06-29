@@ -836,7 +836,8 @@ const syncMdSubcommand = defineCommand({
     }
 
     const mdDir = join(projectRoot, BOUNDARY_DIR, 'domains-md')
-    const oxnDir = resolveAssetDir(projectRoot, 'domain')
+    const config = readProjectConfig(projectRoot)
+    const oxnDir = resolveAssetDir(projectRoot, 'domain', config)
     let names: string[]
     if (all) {
       if (!existsSync(mdDir)) {

@@ -174,7 +174,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
     await runCli(['domain', 'create', 'P'])
     await runPhase1('P', 'domain')
 
-    // 改 .oxn (模拟开发者手编辑)
+    // 改 .oxn (模拟开发者手编辑) — setV5Layout 用 v0.5 路径
     const oxnPath = join(tmpDir, '.openxenon', 'domains', 'P.oxn')
     const oxnContent = readFileSync(oxnPath, 'utf-8')
     writeFileSync(oxnPath, `${oxnContent}\n// manual edit\n`, 'utf-8')
