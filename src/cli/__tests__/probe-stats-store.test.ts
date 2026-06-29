@@ -177,7 +177,7 @@ describe('updateProbeStats', () => {
   })
 
   test('FIFO 截断 proofRuns', async () => {
-    const { MAX_PROOF_RUNS } = await import('../../kernel/constants')
+    const { MAX_PROOF_RUNS } = await import('@openxenon/engine/kernel')
     let s = emptyProbeStats('/p')
     // 写 MAX_PROOF_RUNS + 5 条
     for (let i = 0; i < MAX_PROOF_RUNS + 5; i++) {
