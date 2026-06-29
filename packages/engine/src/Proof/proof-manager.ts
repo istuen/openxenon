@@ -6,10 +6,15 @@ import {
   writeFileSync,
 } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
+import { URI } from 'langium'
 import { BOUNDARY_DIR, CACHE_DIR, PROBE_STATS_JSON, PROOFS_DIR, PROOF_FROZEN_JSON, PROOF_OXN_FILE } from '@openxenon/engine/kernel'
 import { createOxnParser, isProofDeclaration, type ProofDeclaration } from '@openxenon/engine/oxl'
 import { executeProbe } from './runner'
 import { updateProbeStats, emptyProbeStats, describeProbe } from '@openxenon/engine/kernel'
+import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
+import { writeVerdictMd } from './verdict-writer'
+import { snapshotWorkMd } from './snapshot'
+import { proofProbesToIR } from './probe-ir'
 import { readProbeStatsFromFile, writeProbeStatsToFile } from '@openxenon/engine/infra/probes/probe-stats-store'
 import { assertDirNameConsistent } from '@openxenon/engine/kernel'
 
@@ -244,15 +249,15 @@ async function parseProofFile(oxnPath: string): Promise<{ ok: boolean; proof?: P
   }
   const content = readFileSync(oxnPath, 'utf-8')
   const parser = createOxnParser()
-  const r = await parser.parse(content)
+  const r = await parser.parse(content, URI.file(oxnPath))
   if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
     return {
       ok: false,
       errors: [...r.parseErrors.map((e) => `[Parser] ${e}`), ...r.lexerErrors.map((e) => `[Lexer] ${e}`)],
     }
   }
-  const ast = r.ast
-  const proof = ast.entities.find(isProofDeclaration) as ProofDeclaration | undefined
+  const ast = r.ast as { entities: ProofDeclaration[] }
+  const proof = ast.entities.find(isProofDeclaration)
   if (!proof) {
     return { ok: false, errors: ['no proof declaration found'] }
   }

@@ -59,8 +59,9 @@ import {
 } from '@openxenon/engine/oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from '@openxenon/engine/Proof/runner'
-import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from './proof-frozen-writer'
+import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from '@openxenon/engine/Proof/proof-frozen-writer'
 import { writeVerdictMd } from '@openxenon/engine/Proof/verdict-writer'
+import { renderProbeDescribeHuman, renderVerdictHuman } from '@openxenon/engine/Proof/proof-manager'
 import { describeProbe, listProbesSummary, translateProbeInputs } from '@openxenon/engine/kernel'
 import { updateProbeStats } from '@openxenon/engine/kernel'
 import { emptyProbeStats } from '@openxenon/engine/kernel'
@@ -505,28 +506,6 @@ const probeDescribeSubcommand = defineCommand({
 // Subcommand: probe add <proof> <probe> --input-json '{...}'
 // ---------------------------------------------------------------------------
 
-function renderProbeDescribeHuman(info: ReturnType<typeof describeProbe> & object): string {
-  const lines: string[] = []
-  lines.push(`# ${info.name}`)
-  lines.push(info.description)
-  lines.push('')
-  lines.push('Inputs:')
-  for (const inp of info.inputs) {
-    const req = inp.required ? '(required)' : '(optional)'
-    lines.push(`  - ${inp.name}: ${inp.type} ${req} — ${inp.description}`)
-  }
-  if (info.examples.length > 0) {
-    lines.push('')
-    lines.push('Examples:')
-    for (const ex of info.examples) {
-      const inputs = JSON.stringify(ex.inputs)
-      lines.push(`  - ${ex.name}:`)
-      lines.push(`      oxn proof probe add <proof> ${info.name} --input-json '${inputs}'`)
-    }
-  }
-  return lines.join('\n')
-}
-
 const probeAddSubcommand = defineCommand({
   meta: {
     name: 'add',
@@ -815,7 +794,7 @@ const runSubcommand = defineCommand({
           verdictError,
           readOnly: isFrozenFileReadOnly(frozenPath),
         },
-        human: frozen ? renderVerdictHuman(name, frozen, verdictPath, verdictWritten) : 'frozen write failed',
+        human: frozen ? renderVerdictHuman(name, frozen, getProjectRoot(), verdictPath, verdictWritten) : 'frozen write failed',
       },
       format,
     )
@@ -825,26 +804,6 @@ const runSubcommand = defineCommand({
 // ---------------------------------------------------------------------------
 // Subcommand: verify (v0.4 PR-B Q4-A)
 // ---------------------------------------------------------------------------
-
-function renderVerdictHuman(
-  name: string,
-  frozen: NonNullable<ReturnType<typeof readFrozenProof>['frozen']>,
-  verdictPath: string | null = null,
-  verdictWritten: boolean = false,
-): string {
-  const lines: string[] = []
-  lines.push(`Proof "${name}" verdict: ${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount})`)
-  for (const p of frozen.probes) {
-    const icon = p.passed ? '✅' : '❌'
-    lines.push(`  ${icon} ${p.probeName} (${p.ref}) — ${p.durationMs}ms`)
-  }
-  lines.push(`\nProof saved: ${join(getProofDir(name), PROOF_FROZEN_JSON)}`)
-  lines.push(`Read-only: ${isFrozenFileReadOnly(join(getProofDir(name), PROOF_FROZEN_JSON))}`)
-  if (verdictWritten && verdictPath) {
-    lines.push(`Verdict doc: ${verdictPath}`)
-  }
-  return lines.join('\n')
-}
 //
 // 重新计算 work.md SHA-256，与 work-hash.txt 比对：
 //   - match      → 证据一致，proof 可信
