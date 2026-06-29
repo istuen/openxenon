@@ -200,7 +200,7 @@ describe('oxn proof run → verdict.md 落盘 (v0.5 PR-A)', () => {
     expect(j).toContain('_xenon_meta') // frozen.json 仍 OK
 
     // 直接调用 readVerdictMd 模块（不走 CLI）验签
-    const { readVerdictMd } = await import('../proof-verdict-writer')
+    const { readVerdictMd } = await import('@openxenon/engine/Proof/verdict-writer')
     const v = readVerdictMd(verdictPath(name))
     expect(v.ok).toBe(false)
     expect(v.reason).toMatch(/signature mismatch/)
