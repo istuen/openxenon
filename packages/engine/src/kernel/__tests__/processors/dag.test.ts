@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import { topologicalSortGeneric } from '../../../../src/kernel/processors/dag'
-import type { GraphNode, GraphEdge } from '../../../../src/kernel/processors/graph'
+import { topologicalSortGeneric } from '@openxenon/engine/kernel/processors/dag'
+import type { GraphNode, GraphEdge } from '@openxenon/engine/kernel/processors/graph'
 
 describe('topologicalSortGeneric', () => {
   describe('正常路径', () => {

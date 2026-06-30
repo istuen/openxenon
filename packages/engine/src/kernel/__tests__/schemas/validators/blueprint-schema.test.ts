@@ -8,7 +8,7 @@ import {
   extractTemplateVariables,
   validatePartTemplates,
   ALLOWED_VARIABLE_SCOPES,
-} from '../../../../../src/kernel/schemas/validators/blueprint.schema'
+} from '@openxenon/engine/kernel/schemas/validators/blueprint.schema'
 
 describe('BlueprintSchema', () => {
   describe('合法 Blueprint 通过校验', () => {

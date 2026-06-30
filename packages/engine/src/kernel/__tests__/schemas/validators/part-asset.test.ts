@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { PartDefinitionSchema, validatePartAsset } from '../../../../../src/kernel/schemas/validators/part-asset'
+import { PartDefinitionSchema, validatePartAsset } from '@openxenon/engine/kernel/schemas/validators/part-asset'
 
 describe('PartDefinitionSchema', () => {
   describe('合法 Definition 通过校验', () => {
