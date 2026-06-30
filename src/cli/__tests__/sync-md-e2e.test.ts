@@ -65,10 +65,20 @@ async function setV5Layout(): Promise<void> {
     config.assetDirs = { domain: 'domains', blueprint: 'blueprints', stack: 'stack' }
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
   } catch {
-    writeFileSync(configPath, JSON.stringify({
-      version: 1, mode: 'PRODUCTION',
-      assetRoot: '', assetDirs: { domain: 'domains', blueprint: 'blueprints', stack: 'stack' },
-    }, null, 2), 'utf-8')
+    writeFileSync(
+      configPath,
+      JSON.stringify(
+        {
+          version: 1,
+          mode: 'PRODUCTION',
+          assetRoot: '',
+          assetDirs: { domain: 'domains', blueprint: 'blueprints', stack: 'stack' },
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    )
   }
 }
 

@@ -26,7 +26,13 @@ import { readProjectConfig, writeProjectConfig } from './project-config-io'
 import { migrateAssetsToV6Layout } from '@openxenon/engine/infra/assets/asset-path-resolver'
 import { DEFAULT_ADAPTERS, type SkillAdapterId } from '../skills/adapters'
 
-const SUPPORTED_SET_KEYS = ['leaderMode', 'assetRoot', 'assetDirs.domain', 'assetDirs.blueprint', 'assetDirs.stack'] as const
+const SUPPORTED_SET_KEYS = [
+  'leaderMode',
+  'assetRoot',
+  'assetDirs.domain',
+  'assetDirs.blueprint',
+  'assetDirs.stack',
+] as const
 type SupportedSetKey = (typeof SUPPORTED_SET_KEYS)[number]
 
 function getProjectRoot(): string {

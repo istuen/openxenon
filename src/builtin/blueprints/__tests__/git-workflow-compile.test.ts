@@ -16,7 +16,12 @@ import { describe, expect, test } from 'bun:test'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { URI } from 'langium'
-import { createOxnParser, isBlueprintDeclaration, type BlueprintDeclaration, type OXNDocument } from '@openxenon/engine/oxl'
+import {
+  createOxnParser,
+  isBlueprintDeclaration,
+  type BlueprintDeclaration,
+  type OXNDocument,
+} from '@openxenon/engine/oxl'
 import { PROBE_CATALOG, getCatalogEntry } from '@openxenon/engine/kernel/verdicts/catalog'
 
 const BP_PATH = join(import.meta.dir, '..', 'git-workflow.oxn')

@@ -69,12 +69,8 @@ import {
   workStateExists,
   resolveWorkFilePath,
 } from '@openxenon/engine/Work/dual-state-io'
-import {
-  resolveDomainFile,
-} from '@openxenon/engine/Work/per-work-domains-merger'
-import {
-  resolveBlueprintFile,
-} from '@openxenon/engine/Work/per-work-blueprints-merger'
+import { resolveDomainFile } from '@openxenon/engine/Work/per-work-domains-merger'
+import { resolveBlueprintFile } from '@openxenon/engine/Work/per-work-blueprints-merger'
 import {
   buildDomainDiagnostic,
   buildBlueprintDiagnostic,
@@ -101,15 +97,8 @@ import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/wo
 import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import { migrateWorkToV1 } from '@openxenon/engine/Work/work-migrator'
 import { renderWorkSkeleton } from '@openxenon/engine/Work/work-skeleton'
-import {
-  validateAndWriteArtifacts,
-  workTypeToMode,
-} from '@openxenon/engine/Work/work-validator'
-import {
-  snapshotContext,
-  makeReport,
-  type DerivedWorkState,
-} from '@openxenon/engine/Work/work-reporter'
+import { validateAndWriteArtifacts, workTypeToMode } from '@openxenon/engine/Work/work-validator'
+import { snapshotContext, makeReport, type DerivedWorkState } from '@openxenon/engine/Work/work-reporter'
 import { collectUnresolvedRefDiagnostics } from '@openxenon/engine/Work/work-diagnostics'
 import { isWorkStarted } from '@openxenon/engine/Work'
 import {
@@ -1953,8 +1942,7 @@ const contextSubcommand = defineCommand({
         }
       }
 
-      const statePath =
-        statePathArg ?? getTaskStatePath(root, workName, taskName)
+      const statePath = statePathArg ?? getTaskStatePath(root, workName, taskName)
       let currentFocus: string | null = taskParts[0]?.name ?? null
       let taskStatus = 'pending'
       if (existsSync(statePath)) {
@@ -2908,8 +2896,7 @@ const compileSubcommand = defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
     const projectRoot = getProjectRoot()
-    const outputPath =
-      (ctx.args['output-path'] as string | undefined) ?? getWorkMdPath(projectRoot, workName)
+    const outputPath = (ctx.args['output-path'] as string | undefined) ?? getWorkMdPath(projectRoot, workName)
 
     const workOxnPath = getWorkOxnPath(projectRoot, workName)
     if (!existsSync(workOxnPath)) {

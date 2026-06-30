@@ -50,8 +50,12 @@ afterEach(() => {
 // Import AFTER chdir
 // -----------------------------------------------------------------------------
 
-const { buildVerdictMd, writeVerdictMd, readVerdictMd, FROZEN_FILE_MODE } = await import('@openxenon/engine/Proof/verdict-writer')
-const { buildFrozenProof, writeFrozenProof, readFrozenProof } = await import('@openxenon/engine/Proof/proof-frozen-writer')
+const { buildVerdictMd, writeVerdictMd, readVerdictMd, FROZEN_FILE_MODE } = await import(
+  '@openxenon/engine/Proof/verdict-writer'
+)
+const { buildFrozenProof, writeFrozenProof, readFrozenProof } = await import(
+  '@openxenon/engine/Proof/proof-frozen-writer'
+)
 
 // -----------------------------------------------------------------------------
 // T1: buildVerdictMd frontmatter

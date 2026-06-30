@@ -59,7 +59,12 @@ import {
 } from '@openxenon/engine/oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from '@openxenon/engine/Proof/runner'
-import { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } from '@openxenon/engine/Proof/proof-frozen-writer'
+import {
+  buildFrozenProof,
+  isFrozenFileReadOnly,
+  readFrozenProof,
+  writeFrozenProof,
+} from '@openxenon/engine/Proof/proof-frozen-writer'
 import { writeVerdictMd } from '@openxenon/engine/Proof/verdict-writer'
 import { renderProbeDescribeHuman, renderVerdictHuman } from '@openxenon/engine/Proof/proof-manager'
 import { describeProbe, listProbesSummary, translateProbeInputs } from '@openxenon/engine/kernel'
@@ -794,7 +799,9 @@ const runSubcommand = defineCommand({
           verdictError,
           readOnly: isFrozenFileReadOnly(frozenPath),
         },
-        human: frozen ? renderVerdictHuman(name, frozen, getProjectRoot(), verdictPath, verdictWritten) : 'frozen write failed',
+        human: frozen
+          ? renderVerdictHuman(name, frozen, getProjectRoot(), verdictPath, verdictWritten)
+          : 'frozen write failed',
       },
       format,
     )

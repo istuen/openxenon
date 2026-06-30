@@ -41,7 +41,12 @@ import { readInsightInputs } from '@openxenon/engine/infra/probes/insight-collec
 import { scanFrozenProofs } from '@openxenon/engine/infra/insight/cross-proof-scanner'
 import { scanPipelineInput } from '@openxenon/engine/infra/insight/pipeline-analyzer'
 import { getFormatFromArgs, output, outputUserInputError, type OutputFormat } from './output'
-import { parseCrossProofArgs, renderInsightHuman, renderCrossProofHuman, renderPipelineHuman } from '@openxenon/engine/Insight/insight-manager'
+import {
+  parseCrossProofArgs,
+  renderInsightHuman,
+  renderCrossProofHuman,
+  renderPipelineHuman,
+} from '@openxenon/engine/Insight/insight-manager'
 
 interface CrossProofCliArgs {
   since?: string

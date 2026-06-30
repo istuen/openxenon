@@ -181,7 +181,9 @@ describe('oxn domain compile + 错误消息一致性 (A2)', () => {
     // 验证 .md 文件可被 md-bridge 解析（验证 compile 产物可用）
     const { readFileSync } = await import('fs')
     const { runMdPipeline } = await import('@openxenon/engine/oxl/md-bridge/pipeline.js')
-    const { getEntityCompiler, registerEntityCompiler } = await import('@openxenon/engine/oxl/md-bridge/entity-registry.js')
+    const { getEntityCompiler, registerEntityCompiler } = await import(
+      '@openxenon/engine/oxl/md-bridge/entity-registry.js'
+    )
     const { DomainCompiler } = await import('@openxenon/engine/oxl/md-bridge/compilers/domain-compiler.js')
     const { BlueprintCompiler } = await import('@openxenon/engine/oxl/md-bridge/compilers/blueprint-compiler.js')
     const { WorkCompiler } = await import('@openxenon/engine/oxl/md-bridge/compilers/work-compiler.js')

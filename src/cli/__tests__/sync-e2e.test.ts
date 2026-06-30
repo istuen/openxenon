@@ -68,10 +68,20 @@ async function setV5Layout(): Promise<void> {
     // config.json may not exist yet — create it
     const { mkdirSync } = await import('fs')
     mkdirSync(join(tmpDir, '.openxenon'), { recursive: true })
-    writeFileSync(configPath, JSON.stringify({
-      version: 1, mode: 'PRODUCTION',
-      assetRoot: '', assetDirs: { domain: 'domains', blueprint: 'blueprints', stack: 'stack' },
-    }, null, 2), 'utf-8')
+    writeFileSync(
+      configPath,
+      JSON.stringify(
+        {
+          version: 1,
+          mode: 'PRODUCTION',
+          assetRoot: '',
+          assetDirs: { domain: 'domains', blueprint: 'blueprints', stack: 'stack' },
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    )
   }
 }
 
