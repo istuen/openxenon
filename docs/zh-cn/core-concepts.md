@@ -52,12 +52,18 @@ title: 核心概念
 | **E1 Asset** | 静态边界 | 工程师 | `service/Asset/` |
 | **E2 Work** | 动态协作 | 工程师 ↔ AI | `service/Intent/` + `service/Align/` |
 | **E3 Engine** | 独立公证 | OXN | L0-L2 全部（含 IAP 范式执行） |
-| **E4 Insight** | 涌现 | AI 推理 | `service/Insight/`（v0.6 哲学占位，v0.7+ 涌现推理） |
+| **E4 Insight** | 涌现 | AI 推理 | `packages/engine/src/Insight/`（v0.6 哲学占位，v0.7+ 涌现推理） |
 
 ## 2. L0-L3 工程实现（概念层）
 
-L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。物理目录不直接对应 L 层级——用各自名称：
-`kernel/`、`oxl/`、`infra/`、`cli/`、`daemon/`、`src/service/<Domain>/`。
+L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v0.6 Monorepo 拆分后物理目录：
+
+| 层级 | 物理位置 | 备注 |
+|---|---|---|
+| L0 Kernel | `packages/engine/src/kernel/` | 类型/常量/verdicts/catalog (Lambda 真空) |
+| L1 OXL+Infra | `packages/engine/src/oxl/` + `packages/engine/src/infra/` | DSL 解析 + 文件系统 + socket + frozen |
+| L2 Engine (DDD) | `packages/engine/src/{Asset,Intent,Align,Proof,Insight,Pool,Work}/` | 6+1 模块, 纯函数导出 |
+| L3 Tools | `packages/cli/src/commands/` + `src/daemon/` + `packages/cli/src/skills/` | CLI 薄壳 + 守护进程 + AI Skills |
 
 ```
 ┌────────────────────────────────────────────────────────┐
