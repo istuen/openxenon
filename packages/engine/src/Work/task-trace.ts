@@ -1,5 +1,7 @@
 import type { TaskStatus } from '@openxenon/engine/kernel'
 import type { PartState, ProbeResult, TaskTraceState, TaskTraceYaml, TraceEvent } from '@openxenon/engine/kernel'
+import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
+import type { TaskDirectory } from './task-directory'
 
 function isOldFormat(content: string): boolean {
   const trimmed = content.trim()
@@ -177,6 +179,20 @@ export function readTaskTraceFromContent(content: string): TaskTraceState | null
   }
 
   return reduceTraceEvents(events)
+}
+
+/**
+ * 读取 task 追踪文件并解析为 TaskTraceState
+ * - 文件不存在 → null
+ * - 文件为空或无效 → null
+ * v0.6: 从 src/daemon/trace/writer.ts 提取，避免 watcher → daemon 反向依赖
+ */
+export function readTaskTrace(taskDir: TaskDirectory): TaskTraceState | null {
+  if (!existsSync(taskDir.tracePath)) {
+    return null
+  }
+  const content = readFileSync(taskDir.tracePath, 'utf-8')
+  return readTaskTraceFromContent(content)
 }
 
 export function getTaskStatus(state: TaskTraceState | null): TaskStatus | 'NOT_FOUND' {

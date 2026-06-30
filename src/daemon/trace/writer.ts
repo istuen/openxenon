@@ -2,19 +2,12 @@ import { appendFileSync, existsSync, readFileSync } from '@openxenon/engine/infr
 import type { StepStatus, TaskStatus } from '@openxenon/engine/kernel/index'
 import { type ParsedBlueprint, parseBlueprintYaml } from './blueprint-parser'
 import type { TaskDirectory } from '@openxenon/engine/Work/task-directory'
-import { buildTraceEvent, reduceTraceEvents } from '@openxenon/engine/Work/task-trace'
+import { buildTraceEvent, readTaskTrace as readTaskTraceFromEngine } from '@openxenon/engine/Work/task-trace'
 import type { PartState, TaskTraceState, TraceEvent } from '@openxenon/engine/kernel/index'
 
 function appendEventToFile(tracePath: string, event: TraceEvent): void {
   const line = `${JSON.stringify(event)}\n`
   appendFileSync(tracePath, line, 'utf-8')
-}
-
-function readContent(tracePath: string): string | null {
-  if (!existsSync(tracePath)) {
-    return null
-  }
-  return readFileSync(tracePath, 'utf-8')
 }
 
 export function readBlueprint(taskDir: TaskDirectory): ParsedBlueprint | null {
@@ -114,11 +107,7 @@ export function writeProbeResult(
 }
 
 export function readTaskTrace(taskDir: TaskDirectory): TaskTraceState | null {
-  const content = readContent(taskDir.tracePath)
-  if (!content) {
-    return null
-  }
-  return readTaskTraceFromContent(content)
+  return readTaskTraceFromEngine(taskDir)
 }
 
 export function getTaskStatus(taskDir: TaskDirectory): TaskStatus | 'NOT_FOUND' {
@@ -143,27 +132,4 @@ export function getPartState(taskDir: TaskDirectory, partId: string): PartState 
   const state = readTaskTrace(taskDir)
   if (!state) return null
   return state.parts.get(partId) || null
-}
-
-function readTaskTraceFromContent(content: string): TaskTraceState | null {
-  if (!content.trim()) {
-    return null
-  }
-  return reduceTraceEventsFromString(content)
-}
-
-function reduceTraceEventsFromString(content: string): TaskTraceState {
-  const lines = content.split('\n').filter((line) => line.trim())
-  const events: TraceEvent[] = []
-
-  for (const line of lines) {
-    if (!line.trim()) continue
-    try {
-      events.push(JSON.parse(line) as TraceEvent)
-    } catch {
-      // Skip malformed lines
-    }
-  }
-
-  return reduceTraceEvents(events)
 }

@@ -1,5 +1,5 @@
 import { existsSync, type FSWatcher, readFileSync, watch } from '@openxenon/engine/infra/filesystem'
-import { readTaskTrace } from '../daemon/trace/writer'
+import { readTaskTrace } from '@openxenon/engine/Work/task-trace'
 import { getTaskDirectory } from '@openxenon/engine/Work/task-directory'
 import type { StepManifest } from '@openxenon/engine/kernel'
 

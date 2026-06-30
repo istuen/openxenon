@@ -1,5 +1,5 @@
-import type { SupportedLocale } from '../cli/project-config'
-import { DEFAULT_LOCALE } from '../cli/project-config'
+import type { SupportedLocale } from '@openxenon/engine/infra/i18n/locale'
+import { DEFAULT_LOCALE } from '@openxenon/engine/infra/i18n/locale'
 import zhCnOxnCli from './locales/zh-CN/oxn-cli/instruction.md' with { type: 'text' }
 import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'text' }
 import zhCnWorkBlueprintRef from './locales/zh-CN/oxn-work/references/blueprint-format.md' with { type: 'text' }
