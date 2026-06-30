@@ -10,10 +10,10 @@ import {
 import { dirname, join } from 'path'
 import type { SupportedLocale } from './project-config'
 import { DEFAULT_LOCALE } from './project-config'
-import { getAllSkillsForLocale } from '../../../../src/skills/loader'
-import type { OpenXenonSkill } from '../../../../src/skills/types'
+import { getAllSkillsForLocale } from '../skills/loader'
+import type { OpenXenonSkill } from '../skills/types'
 import { readProjectConfig } from './project-config-io'
-import { DEFAULT_ADAPTERS, SKILL_ADAPTERS, type SkillAdapterId } from '../../../../src/skills/adapters'
+import { DEFAULT_ADAPTERS, SKILL_ADAPTERS, type SkillAdapterId } from '../skills/adapters'
 
 export interface CompilationResult {
   skillId: string

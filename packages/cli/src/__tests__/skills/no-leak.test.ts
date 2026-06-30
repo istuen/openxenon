@@ -11,7 +11,7 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
 
-const SKILL_PATH = resolve(__dirname, '../instruction.md')
+const SKILL_PATH = resolve(__dirname, '..', '..', 'skills', 'locales', 'zh-CN', 'oxn-proof', 'instruction.md')
 
 describe('/oxn-proof skill content (no leak)', () => {
   test('skill 文件存在', () => {

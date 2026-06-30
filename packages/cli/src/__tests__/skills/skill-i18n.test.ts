@@ -2,9 +2,9 @@ import { describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@openxenon/engine/infra/i18n/locale'
-import { getSkillContent, getAllSkillsForLocale } from '../loader'
+import { getSkillContent, getAllSkillsForLocale } from '../../skills/loader'
 
-const LOCALES_DIR = join(import.meta.dir, '..', 'locales')
+const LOCALES_DIR = join(import.meta.dir, '..', '..', 'skills', 'locales')
 
 describe('PR-4: Skills i18n translation guard', () => {
   test('1. loader.ts imports match locale directory structure', () => {
@@ -86,13 +86,13 @@ describe('PR-4: Skills i18n translation guard', () => {
   })
 
   test('7. oxn-resume is not in loader.ts imports (dead asset guard)', () => {
-    const loaderContent = readFileSync(join(import.meta.dir, '..', 'loader.ts'), 'utf-8')
+    const loaderContent = readFileSync(join(import.meta.dir, '..', '..', 'skills', 'loader.ts'), 'utf-8')
     expect(loaderContent).not.toContain('oxn-resume')
   })
 })
 
 function extractLoaderInfo() {
-  const loaderContent = readFileSync(join(import.meta.dir, '..', 'loader.ts'), 'utf-8')
+  const loaderContent = readFileSync(join(import.meta.dir, '..', '..', 'skills', 'loader.ts'), 'utf-8')
   const imports: string[] = []
   const re = /from\s+['"]\.\/locales\/([^'"]+)['"]/g
   let match: RegExpExecArray | null
