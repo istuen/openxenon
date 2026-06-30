@@ -3,8 +3,11 @@ import { glob } from 'glob'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-const KERNEL_ROOT = join(import.meta.dir, '../../src/kernel')
-const OXN_DSL_ROOT = join(import.meta.dir, '../../src/oxl')
+const PROJECT_ROOT = join(import.meta.dir, '../..')
+const KERNEL_ROOT = join(PROJECT_ROOT, 'packages/engine/src/kernel')
+const OXL_ROOT = join(PROJECT_ROOT, 'packages/engine/src/oxl')
+const INFRA_ROOT = join(PROJECT_ROOT, 'packages/engine/src/infra')
+const CLI_ROOT = join(PROJECT_ROOT, 'src/cli')
 
 describe('Kernel Architectural Guard', () => {
   describe('L0 Kernel 不应导入 L1/L2/L3 模块', () => {
@@ -211,11 +214,11 @@ describe('Kernel Architectural Guard', () => {
   describe('L1 OXL 不应导入 L2/L3 模块', () => {
     it('L1 OXL 不应导入 builtin 模块', () => {
       const dslFiles = glob
-        .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
+        .sync('**/*.ts', { cwd: OXL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
       const forbidden = ['builtin']
       for (const file of dslFiles) {
-        const content = readFileSync(join(OXN_DSL_ROOT, file), 'utf-8')
+        const content = readFileSync(join(OXL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
           expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
           expect(content).not.toMatch(new RegExp(`require\\(['"]${mod}(\\/|['"])`))
@@ -225,11 +228,11 @@ describe('Kernel Architectural Guard', () => {
 
     it('L1 OXL 不应导入 work 模块', () => {
       const dslFiles = glob
-        .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
+        .sync('**/*.ts', { cwd: OXL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
       const forbidden = ['work']
       for (const file of dslFiles) {
-        const content = readFileSync(join(OXN_DSL_ROOT, file), 'utf-8')
+        const content = readFileSync(join(OXL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
           expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
           expect(content).not.toMatch(new RegExp(`require\\(['"]${mod}(\\/|['"])`))
@@ -239,11 +242,11 @@ describe('Kernel Architectural Guard', () => {
 
     it('L1 OXL 不应导入 cli 模块', () => {
       const dslFiles = glob
-        .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
+        .sync('**/*.ts', { cwd: OXL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
       const forbidden = ['cli']
       for (const file of dslFiles) {
-        const content = readFileSync(join(OXN_DSL_ROOT, file), 'utf-8')
+        const content = readFileSync(join(OXL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
           expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
           expect(content).not.toMatch(new RegExp(`require\\(['"]${mod}(\\/|['"])`))
@@ -253,11 +256,11 @@ describe('Kernel Architectural Guard', () => {
 
     it('L1 OXL 不应导入 daemon/hall/skills/watcher/core/i18n 模块', () => {
       const dslFiles = glob
-        .sync('**/*.ts', { cwd: OXN_DSL_ROOT })
+        .sync('**/*.ts', { cwd: OXL_ROOT })
         .filter((f) => !f.includes('/__tests__/') && !f.endsWith('.test.ts'))
       const forbidden = ['daemon', 'hall', 'skills', 'watcher', 'core', 'i18n']
       for (const file of dslFiles) {
-        const content = readFileSync(join(OXN_DSL_ROOT, file), 'utf-8')
+        const content = readFileSync(join(OXL_ROOT, file), 'utf-8')
         for (const mod of forbidden) {
           expect(content).not.toMatch(new RegExp(`from ['"]${mod}(\\/|['"])`))
           expect(content).not.toMatch(new RegExp(`require\\(['"]${mod}(\\/|['"])`))
