@@ -12,9 +12,15 @@ export { reviewPoolEntryFull, approvePoolEntryFull, rejectPoolEntryFull } from '
 // Types
 export type {
   PoolKind,
-  CreatePoolEntryInput, CreatePoolEntryResult,
-  ReviewPoolEntryInput, ReviewPoolEntryResult,
-  ApprovePoolEntryInput, ApprovePoolEntryResult,
-  RejectPoolEntryInput, RejectPoolEntryResult,
-  ListPoolEntriesInput, ListPoolEntriesResult, PoolEntrySummary,
+  CreatePoolEntryInput,
+  CreatePoolEntryResult,
+  ReviewPoolEntryInput,
+  ReviewPoolEntryResult,
+  ApprovePoolEntryInput,
+  ApprovePoolEntryResult,
+  RejectPoolEntryInput,
+  RejectPoolEntryResult,
+  ListPoolEntriesInput,
+  ListPoolEntriesResult,
+  PoolEntrySummary,
 } from './types'

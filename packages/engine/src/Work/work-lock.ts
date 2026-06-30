@@ -1,9 +1,4 @@
-import {
-  readWorkFile as readBirthCert,
-  writeWorkFile,
-  applyPlanLock,
-  clearPlanLock,
-} from './birth-cert'
+import { readWorkFile as readBirthCert, writeWorkFile, applyPlanLock, clearPlanLock } from './birth-cert'
 import { hashWorkPlan } from './plan-hash'
 
 export interface LockResult {

@@ -14,13 +14,11 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
   const filePath = resolveAssetFile(input.projectRoot, input.kind, input.name)
 
   if (!existsSync(filePath)) {
-    throw new IAPError(
-      'INFRA',
-      'KIND_UNSUPPORTED',
-      IAPAction.YIELD_TO_HUMAN,
-      `Asset file not found: ${filePath}`,
-      { kind: input.kind, name: input.name, path: filePath },
-    )
+    throw new IAPError('INFRA', 'KIND_UNSUPPORTED', IAPAction.YIELD_TO_HUMAN, `Asset file not found: ${filePath}`, {
+      kind: input.kind,
+      name: input.name,
+      path: filePath,
+    })
   }
 
   const content = readFileSync(filePath, 'utf-8')

@@ -8,11 +8,7 @@ import {
 } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR, TASK_OXN_FILE } from '@openxenon/engine/kernel'
-import {
-  isBlueprintDeclaration,
-  isDomainDeclaration,
-  type BlueprintDeclaration,
-} from '@openxenon/engine/oxl'
+import { isBlueprintDeclaration, isDomainDeclaration, type BlueprintDeclaration } from '@openxenon/engine/oxl'
 import { renderWorkSkeleton } from './work-skeleton'
 import { isWorkStarted } from './dual-state-exec'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
@@ -298,7 +294,9 @@ export async function addTaskToWork(params: AddTaskParams): Promise<AddTaskResul
   }
 
   if (allowedBlueprints.length > 0 && !allowedBlueprints.includes(blueprintName)) {
-    throw new Error(`blueprint "${blueprintName}" not declared in work "${workName}" (allowed: ${allowedBlueprints.join(', ')})`)
+    throw new Error(
+      `blueprint "${blueprintName}" not declared in work "${workName}" (allowed: ${allowedBlueprints.join(', ')})`,
+    )
   }
 
   if (domainName && allowedDomains.length > 0 && !allowedDomains.includes(domainName)) {
@@ -396,7 +394,8 @@ export function editTask(params: EditTaskParams): EditTaskResult {
     } else {
       content = content.replace(
         /(context\s*\{)([^}]*?)(\})/m,
-        (_m, head: string, body: string, tail: string) => `${head}\n    constraints = ["${newConstraint}"];${body}${tail}`,
+        (_m, head: string, body: string, tail: string) =>
+          `${head}\n    constraints = ["${newConstraint}"];${body}${tail}`,
       )
     }
   }

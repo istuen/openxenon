@@ -220,11 +220,7 @@ export function getTaskRunDir(projectRoot: string, workName: string, taskName: s
   return join(getWorkRunDir(projectRoot, workName), RUN_TASKS_SUBDIR, taskName)
 }
 
-export function resolveWorkFilePath(
-  projectRoot: string,
-  workName: string,
-  assetFormat: string,
-): string {
+export function resolveWorkFilePath(projectRoot: string, workName: string, assetFormat: string): string {
   const worksDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
   const primaryPath = join(worksDir, assetFormat === 'oxn' ? 'work.oxn' : 'work.md')
   const altPath = join(worksDir, assetFormat === 'oxn' ? 'work.md' : 'work.oxn')

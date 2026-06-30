@@ -1,7 +1,4 @@
-import {
-  existsSync,
-  readFileSync,
-} from '@openxenon/engine/infra/filesystem'
+import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 import {
@@ -154,8 +151,7 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
       }
     }
 
-    const statePath =
-      statePathArg ?? getTaskStatePath(root, workName, taskName)
+    const statePath = statePathArg ?? getTaskStatePath(root, workName, taskName)
     let currentFocus: string | null = taskParts[0]?.name ?? null
     let taskStatus = 'pending'
     if (existsSync(statePath)) {

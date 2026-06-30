@@ -121,13 +121,11 @@ export async function create(input: CreateInput): Promise<CreateResult> {
   const assetPath = resolveAssetFile(input.projectRoot, kind, input.name, format)
 
   if (existsSync(assetPath)) {
-    throw new IAPError(
-      'INFRA',
-      'PATH_CONFLICT',
-      IAPAction.YIELD_TO_HUMAN,
-      `Asset already exists: ${assetPath}`,
-      { kind, name: input.name, path: assetPath },
-    )
+    throw new IAPError('INFRA', 'PATH_CONFLICT', IAPAction.YIELD_TO_HUMAN, `Asset already exists: ${assetPath}`, {
+      kind,
+      name: input.name,
+      path: assetPath,
+    })
   }
 
   const dir = dirname(assetPath)
@@ -147,13 +145,9 @@ export async function create(input: CreateInput): Promise<CreateResult> {
       content = createStackTemplate(input.name)
       break
     default:
-      throw new IAPError(
-        'INFRA',
-        'KIND_UNSUPPORTED',
-        IAPAction.YIELD_TO_HUMAN,
-        `Unsupported asset kind: ${kind}`,
-        { kind },
-      )
+      throw new IAPError('INFRA', 'KIND_UNSUPPORTED', IAPAction.YIELD_TO_HUMAN, `Unsupported asset kind: ${kind}`, {
+        kind,
+      })
   }
 
   writeFileSync(assetPath, content, 'utf-8')

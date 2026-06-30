@@ -1,19 +1,9 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from '@openxenon/engine/infra/filesystem'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 import type { AssetFormat, ProjectConfig } from '@openxenon/engine/infra/paths'
-import {
-  resolveAssetDir,
-} from '@openxenon/engine/infra/paths'
-import {
-  getDomainIndexPath,
-  writeDomainIndex,
-} from '@openxenon/engine/oxl/compiler/domain-index-builder'
+import { resolveAssetDir } from '@openxenon/engine/infra/paths'
+import { getDomainIndexPath, writeDomainIndex } from '@openxenon/engine/oxl/compiler/domain-index-builder'
 import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractDomainIR } from '@openxenon/engine/oxl/md-pipeline/transformers/domain.js'
@@ -103,7 +93,10 @@ domain "${name}" {
 `
 }
 
-export function autoRebuildDomainIndex(projectRoot: string, config?: ProjectConfig): {
+export function autoRebuildDomainIndex(
+  projectRoot: string,
+  config?: ProjectConfig,
+): {
   ok: boolean
   indexPath?: string
   error?: string

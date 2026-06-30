@@ -10,7 +10,9 @@ import type { PoolKind } from './types'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 
 export function reviewPoolEntryFull(
-  projectRoot: string, slug: string, pool: PoolKind = 'audit',
+  projectRoot: string,
+  slug: string,
+  pool: PoolKind = 'audit',
 ): { content: string; pool: PoolKind; slug: string; exists: boolean } {
   const path = join(projectRoot, BOUNDARY_DIR, 'pools', pool, `${slug}.md`)
   if (!existsSync(path)) return { content: '', pool, slug, exists: false }
@@ -18,7 +20,10 @@ export function reviewPoolEntryFull(
 }
 
 export function approvePoolEntryFull(
-  projectRoot: string, slug: string, pool: PoolKind = 'audit', dryRun = false,
+  projectRoot: string,
+  slug: string,
+  pool: PoolKind = 'audit',
+  dryRun = false,
 ): { ok: boolean; beforeHash?: string; afterHash?: string } {
   const path = join(projectRoot, BOUNDARY_DIR, 'pools', pool, `${slug}.md`)
   if (!existsSync(path)) {
@@ -32,7 +37,10 @@ export function approvePoolEntryFull(
 }
 
 export function rejectPoolEntryFull(
-  projectRoot: string, slug: string, reason: string, pool: PoolKind = 'audit',
+  projectRoot: string,
+  slug: string,
+  reason: string,
+  pool: PoolKind = 'audit',
 ): { ok: boolean } {
   const path = join(projectRoot, BOUNDARY_DIR, 'pools', pool, `${slug}.md`)
   if (!existsSync(path)) return { ok: false }

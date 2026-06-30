@@ -1,19 +1,9 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  writeFileSync,
-} from '@openxenon/engine/infra/filesystem'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 import type { AssetFormat, ProjectConfig } from '@openxenon/engine/infra/paths'
-import {
-  resolveAssetDir,
-} from '@openxenon/engine/infra/paths'
-import {
-  getBlueprintIndexPath,
-  writeBlueprintIndex,
-} from '@openxenon/engine/oxl/compiler/blueprint-index-builder'
+import { resolveAssetDir } from '@openxenon/engine/infra/paths'
+import { getBlueprintIndexPath, writeBlueprintIndex } from '@openxenon/engine/oxl/compiler/blueprint-index-builder'
 import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractBlueprintIR } from '@openxenon/engine/oxl/md-pipeline/transformers/blueprint.js'
@@ -30,7 +20,12 @@ import { validateOxnParseable, verifyBlueprintRoundTrip } from '@openxenon/engin
 
 type BlueprintFormat = AssetFormat
 
-export function blueprintCreateTemplate(name: string, slotsBlock: string, slotsArg: string, format: BlueprintFormat): string {
+export function blueprintCreateTemplate(
+  name: string,
+  slotsBlock: string,
+  slotsArg: string,
+  format: BlueprintFormat,
+): string {
   if (format === 'md') {
     const slotNames: string[] = []
     for (const line of slotsBlock.split('\n')) {
@@ -88,7 +83,10 @@ ${slotsBlock}
 `
 }
 
-export function autoRebuildBlueprintIndex(projectRoot: string, config?: ProjectConfig): {
+export function autoRebuildBlueprintIndex(
+  projectRoot: string,
+  config?: ProjectConfig,
+): {
   ok: boolean
   indexPath?: string
   error?: string
