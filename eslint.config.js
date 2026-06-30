@@ -4,10 +4,13 @@ import tsPlugin from '@typescript-eslint/eslint-plugin'
 export default [
   {
     // 全局：跳过自动生成文件（langium generate 产物），其内部 eslint-disable 提示可能 stale
-    ignores: ['src/oxl/generated/**'],
+    ignores: [
+      'src/oxl/generated/**',
+      'packages/engine/src/oxl/langium-driver/generated/**',
+    ],
   },
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.ts', 'packages/**/*.ts'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -20,7 +23,7 @@ export default [
     },
   },
   {
-    files: ['src/kernel/**/*.ts'],
+    files: ['src/kernel/**/*.ts', 'packages/engine/src/kernel/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [
@@ -47,13 +50,13 @@ export default [
     // Test files in src/<layer>/__tests__/ legitimately need fs (to mock disk
     // state). Production code under the same layer still respects the
     // no-restricted-imports rules above.
-    files: ['src/**/__tests__/**/*.ts'],
+    files: ['src/**/__tests__/**/*.ts', 'packages/**/__tests__/**/*.ts'],
     rules: {
       'no-restricted-imports': 'off',
     },
   },
   {
-    files: ['src/cli/**/*.ts'],
+    files: ['src/cli/**/*.ts', 'packages/cli/src/commands/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [
@@ -63,7 +66,7 @@ export default [
     },
   },
   {
-    files: ['src/infra/**/*.ts'],
+    files: ['src/infra/**/*.ts', 'packages/engine/src/infra/**/*.ts'],
     rules: {
       'no-restricted-imports': ['error', {
         patterns: [
