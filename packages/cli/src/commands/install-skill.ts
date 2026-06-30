@@ -16,7 +16,7 @@ import { t } from '@openxenon/engine/infra/i18n'
 // embedded content.
 //
 // v0.6: Only oxn-work skill remains (oxn-cli / oxn-proof deleted).
-import skillWork from '../../.opencode/skills/oxn-work/SKILL.md' with { type: 'file' }
+import skillWork from '../../../../.opencode/skills/oxn-work/SKILL.md' with { type: 'file' }
 
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
@@ -45,7 +45,7 @@ function readSkillContent(skillId: string): { content: string; source: string } 
   }
   const here = dirname(fileURLToPath(import.meta.url))
   const candidates = [
-    resolve(join(here, '..', '..', '.opencode', 'skills', skillId, 'SKILL.md')),
+    resolve(join(here, '..', '..', '..', '..', '.opencode', 'skills', skillId, 'SKILL.md')),
     resolve(join(process.cwd(), '.opencode', 'skills', skillId, 'SKILL.md')),
   ]
   for (const path of candidates) {

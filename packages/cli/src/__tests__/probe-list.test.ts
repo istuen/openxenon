@@ -22,7 +22,7 @@ import type {
   IOStatRequest,
   IOStatResult,
 } from '@openxenon/engine/kernel/contracts/io-primitive'
-import { probeListSubcommand } from '../probe-list'
+import { probeListSubcommand } from '../commands/probe-list'
 
 function stubProvider(name: string, scheme: string): { provider: InfraProvider; manifest: ProviderManifest } {
   const provider: InfraProvider = {

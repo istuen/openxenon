@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { countVerbosity } from '../context'
+import { countVerbosity } from '../commands/context'
 
 describe('countVerbosity (v1.1 fix-p2-robustness vv-arg-parsing)', () => {
   it('空 argv → 0', () => {

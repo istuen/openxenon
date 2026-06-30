@@ -32,7 +32,7 @@ async function runCli(args: string[]): Promise<{ stdout: string; stderr: string;
 
 describe('config-loader module', () => {
   test('loadOxnRc returns null when .oxnrc is absent', async () => {
-    const { loadOxnRc } = await import('../config-loader')
+    const { loadOxnRc } = await import('../commands/config-loader')
     const r = loadOxnRc(tmpDir)
     expect(r.config).toBeNull()
     expect(r.warning).toBeUndefined()
@@ -40,7 +40,7 @@ describe('config-loader module', () => {
 
   test('loadOxnRc parses a valid .oxnrc with leaderMode', async () => {
     writeFileSync(join(tmpDir, '.oxnrc'), JSON.stringify({ version: 1, leaderMode: 'mvp' }))
-    const { loadOxnRc } = await import('../config-loader')
+    const { loadOxnRc } = await import('../commands/config-loader')
     const r = loadOxnRc(tmpDir)
     expect(r.warning).toBeUndefined()
     expect(r.config?.leaderMode).toBe('mvp')
@@ -48,7 +48,7 @@ describe('config-loader module', () => {
 
   test('loadOxnRc returns warning on invalid JSON', async () => {
     writeFileSync(join(tmpDir, '.oxnrc'), '{ this is not json')
-    const { loadOxnRc } = await import('../config-loader')
+    const { loadOxnRc } = await import('../commands/config-loader')
     const r = loadOxnRc(tmpDir)
     expect(r.config).toBeNull()
     expect(r.warning).toContain('invalid JSON')
@@ -56,7 +56,7 @@ describe('config-loader module', () => {
 
   test('loadOxnRc returns warning on unsupported version', async () => {
     writeFileSync(join(tmpDir, '.oxnrc'), JSON.stringify({ version: 99 }))
-    const { loadOxnRc } = await import('../config-loader')
+    const { loadOxnRc } = await import('../commands/config-loader')
     const r = loadOxnRc(tmpDir)
     expect(r.config).toBeNull()
     expect(r.warning).toContain('unsupported version')
@@ -64,14 +64,14 @@ describe('config-loader module', () => {
 
   test('loadOxnRc returns warning on invalid leaderMode value', async () => {
     writeFileSync(join(tmpDir, '.oxnrc'), JSON.stringify({ version: 1, leaderMode: 'banana' }))
-    const { loadOxnRc } = await import('../config-loader')
+    const { loadOxnRc } = await import('../commands/config-loader')
     const r = loadOxnRc(tmpDir)
     expect(r.config).toBeNull()
     expect(r.warning).toContain('invalid leaderMode')
   })
 
   test('resolveLeaderMode priority: cli > env > project > default', async () => {
-    const { resolveLeaderMode } = await import('../config-loader')
+    const { resolveLeaderMode } = await import('../commands/config-loader')
     expect(resolveLeaderMode({}).mode).toBe('reference')
     expect(resolveLeaderMode({ projectConfig: { version: 1, leaderMode: 'mvp' } }).mode).toBe('mvp')
     expect(resolveLeaderMode({ envValue: 'mvp' }).mode).toBe('mvp')
@@ -83,7 +83,7 @@ describe('config-loader module', () => {
   })
 
   test('normalizeLeaderMode accepts only reference | mvp', async () => {
-    const { normalizeLeaderMode } = await import('../config-loader')
+    const { normalizeLeaderMode } = await import('../commands/config-loader')
     expect(normalizeLeaderMode('reference')).toBe('reference')
     expect(normalizeLeaderMode('MVP')).toBe('mvp')
     expect(normalizeLeaderMode('foo')).toBeNull()

@@ -29,7 +29,7 @@ import { join } from 'path'
 import { isGitAvailable, runGit, checkMergeFeasibility } from '@openxenon/engine/infra/git/workspace'
 
 const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
-const BUILTIN_BP_SRC = join(import.meta.dir, '..', '..', 'builtin', 'blueprints', 'git-workflow.oxn')
+const BUILTIN_BP_SRC = join(import.meta.dir, '..', '..', '..', '..', 'src', 'builtin', 'blueprints', 'git-workflow.oxn')
 
 let tmpDir: string
 let gitAvailable = true

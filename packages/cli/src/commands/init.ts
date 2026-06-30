@@ -11,7 +11,7 @@ import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './project-config'
 import { getFormatFromArgs, output, outputError } from './output'
 import { readProjectConfig, writeProjectConfig } from './project-config-io'
 import { compileAllSkills, formatCompilationReport } from './skill-compiler'
-import { DEFAULT_ADAPTERS, isSkillAdapterId, type SkillAdapterId } from '../skills/adapters'
+import { DEFAULT_ADAPTERS, isSkillAdapterId, type SkillAdapterId } from '../../../../src/skills/adapters'
 
 const PROJECT_BOUNDARY_GITIGNORE = `# Runtime state (not for Git; personal/sandbox data)
 works/

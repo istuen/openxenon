@@ -20,7 +20,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 
 const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
-const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..')
+const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..', '..')
 const DOMAINS_DIR = join(PROJECT_ROOT, '.openxenon', 'domains')
 const IAP_DOMAIN = join(DOMAINS_DIR, 'iap-error-context.oxn')
 

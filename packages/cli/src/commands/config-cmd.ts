@@ -24,7 +24,7 @@ import {
 } from './config-loader'
 import { readProjectConfig, writeProjectConfig } from './project-config-io'
 import { migrateAssetsToV6Layout } from '@openxenon/engine/infra/assets/asset-path-resolver'
-import { DEFAULT_ADAPTERS, type SkillAdapterId } from '../skills/adapters'
+import { DEFAULT_ADAPTERS, type SkillAdapterId } from '../../../../src/skills/adapters'
 
 const SUPPORTED_SET_KEYS = [
   'leaderMode',

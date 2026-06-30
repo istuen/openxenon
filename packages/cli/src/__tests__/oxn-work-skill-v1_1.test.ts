@@ -19,7 +19,7 @@ import { join } from 'path'
 import { homedir } from 'os'
 
 const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
-const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..')
+const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..', '..')
 const SKILL_PROJECT = join(PROJECT_ROOT, '.opencode', 'skills', 'oxn-work', 'SKILL.md')
 const SKILL_GLOBAL = join(homedir(), '.opencode', 'skills', 'oxn-work', 'SKILL.md')
 

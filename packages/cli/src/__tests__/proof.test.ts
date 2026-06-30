@@ -27,7 +27,7 @@ let repoRoot: string
 beforeAll(() => {
   origCwd = process.cwd()
   // __dirname = src/cli/__tests__/，向上 3 级才是 repo root
-  repoRoot = resolve(__dirname, '../../..')
+  repoRoot = resolve(__dirname, '../../../../')
   tmpDir = mkdtempSync(join(tmpdir(), 'oxn-proof-test-'))
   process.chdir(tmpDir)
   writeFileSync(join(tmpDir, 'package.json'), '{"name":"tmp","version":"0.0.1"}', 'utf-8')
@@ -56,7 +56,7 @@ afterEach(() => {
 // Import the CLI + helpers AFTER chdir so paths resolve against tmpDir
 // -----------------------------------------------------------------------------
 
-const proof = await import('../proof')
+const proof = await import('../commands/proof')
 const { buildFrozenProof, isFrozenFileReadOnly, readFrozenProof, writeFrozenProof } = await import(
   '@openxenon/engine/Proof/proof-frozen-writer'
 )
@@ -425,7 +425,7 @@ describe('renderShowHuman 3-state (T5)', () => {
   }
 
   test('PASSED 渲染含 ✅ 与 "PASSED (1/1)"', async () => {
-    const { renderShowHuman } = await import('../proof')
+    const { renderShowHuman } = await import('../commands/proof')
     const frozen = buildAndRoundtrip('p1-shape', [
       { probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 5 },
     ])
@@ -436,7 +436,7 @@ describe('renderShowHuman 3-state (T5)', () => {
   })
 
   test('FAILED 渲染含 ❌', async () => {
-    const { renderShowHuman } = await import('../proof')
+    const { renderShowHuman } = await import('../commands/proof')
     const frozen = buildAndRoundtrip('p1-fail', [
       { probeName: 'p1', ref: 'r', passed: false, verdict: 'FAILED', durationMs: 5, errorMessage: 'not found' },
     ])
@@ -447,7 +447,7 @@ describe('renderShowHuman 3-state (T5)', () => {
   })
 
   test('INCONCLUSIVE 渲染含 ⚠️ + "INCONCLUSIVE probes"', async () => {
-    const { renderShowHuman } = await import('../proof')
+    const { renderShowHuman } = await import('../commands/proof')
     const frozen = buildAndRoundtrip('p1-inconclusive', [
       {
         probeName: 'p1',
@@ -476,7 +476,7 @@ import {
   resolveWorkPath,
   snapshotWorkMd,
   verifyWorkHash,
-} from '../proof'
+} from '../commands/proof'
 
 describe('v0.4 PR-B Q4-A: parseProofMetadata', () => {
   test('extracts proofs-target-work from comment', () => {
