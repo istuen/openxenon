@@ -1,5 +1,5 @@
-import { getTaskDirectory } from '../../../work/task-directory'
-import { createPartState } from '../../../work/task-trace'
+import { getTaskDirectory } from '@openxenon/engine/Work/task-directory'
+import { createPartState } from '@openxenon/engine/Work/task-trace'
 import { readBlueprint, readTaskTrace, writePartComplete, writePartStart } from '../../trace/writer'
 import { badRequest, notFound } from '../errors'
 import { registerRoute } from '../router'

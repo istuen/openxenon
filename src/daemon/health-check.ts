@@ -1,5 +1,5 @@
 import { createConnection } from 'net'
-import { existsSync } from '../infra/filesystem'
+import { existsSync } from '@openxenon/engine/infra/filesystem'
 import { daemonLogger } from './logger'
 
 export interface HealthCheckResult {

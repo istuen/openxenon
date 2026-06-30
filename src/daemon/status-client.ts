@@ -1,7 +1,7 @@
 import { createConnection } from 'net'
-import { isDaemonRunning } from '../infra/daemon-probe'
-import { existsSync, readFileSync } from '../infra/filesystem'
-import { DAEMON_LOG_PATH, DAEMON_SOCK_PATH } from '../infra/global'
+import { isDaemonRunning } from '@openxenon/engine/infra/daemon-probe'
+import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
+import { DAEMON_LOG_PATH, DAEMON_SOCK_PATH } from '@openxenon/engine/infra/global'
 
 export interface DaemonStatusInfo {
   isRunning: boolean

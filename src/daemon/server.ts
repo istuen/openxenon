@@ -1,6 +1,6 @@
 import { daemonLogger } from './logger'
-import { daemonStartup } from '../infra/registry/daemon-startup'
-import { directoryExists } from '../infra/filesystem'
+import { daemonStartup } from '@openxenon/engine/infra/registry/daemon-startup'
+import { directoryExists } from '@openxenon/engine/infra/filesystem'
 
 export interface ServerConfig {
   port: number

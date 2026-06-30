@@ -19,7 +19,7 @@
 
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { runMdPipeline, validateMdast } from '../src/oxl/md-bridge/index.js'
+import { runMdPipeline, validateMdast } from '@openxenon/engine/oxl/md-bridge/index.js'
 
 // ========================
 // 类型

@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
-import { existsSync, readFileSync, writeFileSync } from '../infra/filesystem'
-import { DAEMON_PID_PATH } from '../infra/global'
+import { existsSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
+import { DAEMON_PID_PATH } from '@openxenon/engine/infra/global'
 import { daemonLogger } from './logger'
 
 export interface SupervisorConfig {

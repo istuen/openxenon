@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: TaintContext
+oxn-source-sha: 719801db076a8f2b2eb1198ed4b640d9774a583ee9d922a452905959677f6dc8
+synced-at: 2026-06-26T01:19:20.052Z
 ---
 
 # Domain: TaintContext
@@ -32,7 +34,7 @@ name: TaintContext
 - desc: vm.SourceTextModule 沙箱引擎: Bun.Transpiler + 严格白名单 context + 10 个 FORBIDDEN_MODULES + 7 个 FORBIDDEN_GLOBALS
 
 ### WorkPrecheck
-- desc: Work 解析/启动前调 ProviderRegistry.checkWorkDependencies 精准阻断**该 Work** (v2 核心倒置: 不阻断 Daemon)
+- desc: Work 解析/启动前调 ProviderRegistry.checkWorkDependencies 精准阻断
 
 ### Bootstrap
 - desc: Daemon 启动期只读 .openxenon/probes/registry.json + 校验 Hash; CORRUPTED/MISSING 标状态不抛错

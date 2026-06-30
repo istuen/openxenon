@@ -2,6 +2,8 @@
 entity: blueprint
 version: 1
 name: ts-retrieve-design-develop-test
+oxn-source-sha: 17204c4388f9d1a6fd29aaec7d6c00406982f73de7ad47dc63f1cfe792e09bca
+synced-at: 2026-06-26T01:19:20.316Z
 ---
 
 # Blueprint: ts-retrieve-design-develop-test

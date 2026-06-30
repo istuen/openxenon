@@ -2,6 +2,8 @@
 entity: blueprint
 version: 1
 name: dev-workflow
+oxn-source-sha: cbb0c08de0fe855a709c70aef33e0e5c540305e40365942992a2180c3442f94e
+synced-at: 2026-06-26T01:19:20.333Z
 ---
 
 # Blueprint: dev-workflow

@@ -1,7 +1,7 @@
 // =============================================================================
 // proof.ts (v0.2 T14 — Daemon PR-2: Proof handler rewrite)
 // =============================================================================
-import type { StepResult } from '../../infra/step'
+import type { StepResult } from '@openxenon/engine/infra/step'
 
 interface ProofRunParams {
   proofName: string

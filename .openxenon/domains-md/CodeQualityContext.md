@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: CodeQualityContext
+oxn-source-sha: 364e4704bbc67598393ec34e06e446bf07418476ed4444fa1938ca6a7c46ca69
+synced-at: 2026-06-26T01:19:20.085Z
 ---
 
 # Domain: CodeQualityContext

@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: SecurityContext
+oxn-source-sha: 5ecd72eeea7ae1590c4444d9d389c9d1fa2e62dc75ba22d92d2ca54bf9ec1418
+synced-at: 2026-06-26T01:19:20.019Z
 ---
 
 # Domain: SecurityContext

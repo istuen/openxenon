@@ -129,7 +129,7 @@ cat .openxenon/proofs/check-deploy/frozen.json
 In Cursor / OpenCode / Codex, type:
 
 ```
-/oxn-proof verify that dist/index.js exists and exports handler
+/oxn-work verify that dist/index.js exists and exports handler
 ```
 
 AI calls the CLI through the Skill, results flow back into `frozen.json`.

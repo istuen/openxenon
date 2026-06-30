@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: IntentAlignContext
+oxn-source-sha: 992ebcab79c65a1bc8224215d0c4203222b1966b1ebc7794b1a1e8df63d3da28
+synced-at: 2026-06-26T01:19:20.096Z
 ---
 
 # Domain: IntentAlignContext

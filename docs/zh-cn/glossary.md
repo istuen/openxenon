@@ -4,92 +4,54 @@ title: 术语表
 
 # 术语表
 
-> OpenXenon 关键术语中英对照表。所有概念的定义以本章为准。
+> v0.6 重构：E1-E4 结构实体（理念层）+ L0-L3 工程分层（概念层）+ 物理目录（实际路径）。
 
-## 产品与引擎
+## E1-E4 四结构实体（理念层）
 
-| 术语 | 缩写 | 中文 | 定义 |
+| 术语 | 中文 | 定义 |
+|---|---|---|
+| **E1 Asset** | **静态边界** | 工程师维护的硬约束边界：Domain/Blueprint/Stack |
+| **E2 Work** | **动态协作** | 工程师与 AI 动态协作空间：IAP 三阶段 + Round |
+| **E3 Engine** | **独立公证** | 独立验证主权基座：探针 + frozen.json + hash 校验 |
+| **E4 Insight** | **涌现层** | 1+1>2，整体论，AI 跨 Work 综合推理 |
+| Domain | 领域 | E1 业务边界：term/ban/invariant |
+| Blueprint | 蓝图 | E1 技术拓扑边界：slot DAG + observe 探针 |
+| Stack | 技术栈 | E1 技术环境边界（v0.6 硬要求） |
+| Work | 工作 | E2 IAP 周期承载体 |
+| IAP | IAP 范式 | Intent → Align → Proof 三阶段核心逻辑 |
+| Round | 轮次 | E2 Work 内部单次 IAP 循环（v0.6 新增） |
+
+## L0-L3 工程分层（概念层）
+
+| 术语 | 中文 | 定义 | 物理目录 |
 |---|---|---|---|
-| OpenXenon | — | 工作台 | 工程师与 AI 协作工作台（产品品牌） |
-| OXN Engine | OXN | 运转引擎 | 工作台的运转引擎，证明结果的主体 |
-| OXN Runtime | Runtime | 运行引擎 | OXN 的执行核心（Kernel + Infra + Daemon） |
-| IAP | IAP | IAP 范式 | Intent-Align-Proof 三轴模型 |
+| **L3 Tools** | 工具与应用层 | 用户/Agent 交互界面 | `src/cli/` + `.opencode/skills/` + `src/daemon/` |
+| **L2 Engine** | 引擎核心业务 | E1-E4 全部实现 | `src/service/<Domain>/` |
+| **L1 OXL + Infra** | 操作基座与语言 | DSL 编译 + OS/硬件操作 | `src/oxl/` + `src/infra/` |
+| **L0 Kernel** | 逻辑内核 | 纯逻辑零 IO | `src/kernel/` |
+| CLI | 命令行入口 | 薄组合调用层 | `src/cli/` |
+| Daemon | 守护进程 | 文件监听、Work 追踪 | `src/daemon/` |
+| Skills | AI 技能 | oxn-work 统一 Skill | `.opencode/skills/oxn-work/` |
 
-## IAP 三轴实体
+## 新增架构术语（v0.6）
 
-### Intent 轴
-
-| 术语 | 中文 | 定义 |
-|---|---|---|
-| Domain | 领域 | 意图的词汇表、禁令与不变式 |
-| Blueprint | 蓝图 | 技术流水线模板（slot 拓扑 + Probe 标准） |
-| Program Domain | 编程领域 | OXN 内置的编程概念词汇表，无需 DDD 即可使用 |
-| term | 术语 | Domain 中的核心词汇，AI 必须使用 |
-| ban | 禁令 | Domain 中的禁用词，AI 不得使用 |
-| invariant | 不变量 | Domain 中的业务不变量 |
-
-### Align 轴
-
-| 术语 | 中文 | 定义 |
-|---|---|---|
-| Work | 工作 | AI 对齐 Blueprint 的完整作业空间 |
-| Task | 任务 | Work 中的一个执行步骤，对齐 1 个 Blueprint |
-| Part | 构件 | Task 中的执行单元，对齐 Blueprint 的 1 个 slot |
-| Artifact | 产物 | Task 执行后落盘的文件或状态 |
-| skill_context | 执行指令 | Part 中 AI 可见的执行描述 |
-| slot | 步骤 | Blueprint 中的拓扑节点 |
-| deps | 依赖 | Task 或 Slot 之间的执行顺序依赖 |
-
-### Proof 轴
-
-| 术语 | 中文 | 定义 |
-|---|---|---|
-| Probe | 探针 | 验收标准的声明（Intent 侧）与执行（Proof 侧） |
-| Proof | 证明 | OXN 产出的不可篡改判定记录 |
-| Verdict | 裁定 | PASS 或 FAIL 的最终结论 |
-| frozen.json | 冻结证明 | Proof 的物理形态，不可篡改 |
-
-## Runtime 架构
-
-| 术语 | 中文 | 定义 |
-|---|---|---|
-| Kernel | 内核 | 纯逻辑校验，零 IO |
-| Infra | 底座 | 副作用执行，只回答事实不做判定 |
-| Daemon | 守护进程 | 生命周期管理与逃逸机制 |
-| Escape Mechanism | 逃逸机制 | Verdict FAIL 时的强制干预（预警+阻止+诊断） |
-
-## 寻址
-
-| 术语 | 格式 | 含义 |
-|---|---|---|
-| @oxn | `@oxn/<type>/<name>` | 内置资产（OpenXenon 自带） |
-| @prj | `@prj/<type>/<name>` | 项目内资产（`.openxenon/<type>/<name>.oxn`） |
-
-## 文件与目录
-
-| 路径 | 含义 |
+| 术语 | 定义 |
 |---|---|
-| `.openxenon/` | 项目 OXN 工作台根目录 |
-| `.openxenon/domains/<kebab>.oxn` | Domain 资产 |
-| `.openxenon/blueprints/<name>.oxn` | Blueprint 资产 |
-| `.openxenon/works/<w>/work.oxn` | Work 编排文件 |
-| `.openxenon/works/<w>/tasks/<t>/task.oxn` | Task 编排文件 |
-| `.openxenon/works/<w>/.work` | 静态门禁卡 |
-| `.openxenon/proofs/<name>/frozen.json` | Proof-First 模式证明结果 |
-| `.openxenon/works/<w>/tasks/<t>/frozen.json` | IAP 完整模式证明结果 |
-| `.openxenon/works/<w>/.run/` | v1.1 运行时状态目录 |
+| **E1-E4 结构实体** | OXN 的 4 个哲学顶层概念（理念层），不直接映射代码目录 |
+| **DDD 模块化 Service** | L2 Engine 业务模块组织方式：`Service/<Domain>/{index,create,...}.ts` |
+| **薄 CLI** | L3 CLI 只做 parse args → import 调 L2 Engine → format output |
+| **Round** | E2 Work 内部单次 IAP 循环（v0.6 新增 `oxn work next-round`） |
+| **硬约束三层锁** | planLock + content_hash + chmod 0o444（Asset 不可变保证） |
+| **涌现层** | E4 Insight 的哲学定位：整体论 1+1>2 |
 
-## 废弃术语
+## 废弃术语（v0.6）
 
 | 废弃术语 | 原因 | 替代 |
 |---|---|---|
-| Core Engine | 模糊、暗示单体 | OXN Engine / OXN Runtime |
-| @glo | 与 Git 协作模型冲突 | @prj + @oxn |
-| Arsenal | v0.0.x 僵尸模块 | Builtin / @oxn |
-| noun / verb | 已被重命名 | term |
-| domain_rules | 已被重命名 | invariant |
-| expectation / rule | 已删除 | Probe 承载 |
-| stage | 已删除 | slot |
-| oxn work new | 已删除 | oxn work create |
-| oxn leader * | 已删除 | 并入 oxn work |
-| oxn part new / oxn probe new | Part/Probe 不是独立资产 | 在 task 块内联写 |
+| **IAP 三轴** | 重构为 E1-E4 + L0-L3 | E1-E4 四结构实体 |
+| **Layer 1/2/3/4（哲学上下文）** | 与工程 L0-L3 混淆 | E1-E4 |
+| **Insight 作为 Work Mode** | 升为 E4 涌现层 | E4 Insight |
+| **4 大 Work 模式** | Insight 独立 → 3 模式 | Asset / Develop / Proof |
+| `oxn-cli` Skill | 删除 | `/oxn-work` |
+| `oxn-proof` Skill | 删除 | `/oxn-work` |
+| `intent.md / align.md / proof.md` | 删除 | `work.md` |

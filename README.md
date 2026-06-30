@@ -30,7 +30,7 @@ npm install -g @istuen/openxenon
 ```
 
 > [!TIP]
-> 仓库源码是 dist/cli.js 的开发基底，**不是**用户安装路径。普通用户请走 `npm install -g` 路径。
+> 仓库 v0.6+ 是 Monorepo 双包（packages/engine + packages/cli），dist/cli.js 是 npm 发布产物。开发请走 git clone + bun install；普通用户请走 `npm install -g` 路径，**不是**用户安装路径。
 
 
 ### 在项目注入 OpenXenon 空间与 Skills
@@ -45,28 +45,78 @@ oxn init --ai opencode
 ### 在 AI Agent 中调用
 
 ```
-/oxn-proof 验证 dist/index.js 是否存在并导出 handler
+/oxn-work 验证 src/index.ts 是否存在（v0.6 之后入口已改为 packages/cli/src/index.ts）
 ```
 
 ## AI Agent 集成
 
 `oxn init --ai <agent>` 一步生成对应 Skill，AI 助手即可调用 `oxn` CLI。
 
-| AI Agent        | 初始化命令               | 状态   |
-| --------------- | ------------------------ | ------ |
-| **OpenCode**    | `oxn init --ai opencode` | ✓ 支持 |
-| **Claude Code** | `oxn init --ai claude`   | ✓ 支持 |
-| **Codex**       | `oxn init --ai codex`    | ✓ 支持 |
-| **Cursor**      | `oxn init --ai cursor`   | ✓ 支持 |
+| AI Agent        | 初始化命令               | Skill     | 状态   |
+| --------------- | ------------------------ | --------- | ------ |
+| **OpenCode**    | `oxn init --ai opencode` | `/oxn-work` | ✓ 支持 |
+| **Claude Code** | `oxn init --ai claude`   | `/oxn-work` | ✓ 支持 |
+| **Codex**       | `oxn init --ai codex`    | `/oxn-work` | ✓ 支持 |
+| **Cursor**      | `oxn init --ai cursor`   | `/oxn-work` | ✓ 支持 |
 
+> v0.6 起 Skills 收敛为唯一 `/oxn-work`（IAP 范式统一入口）。原 `oxn-cli` / `oxn-proof` 已删除。
 
 ## IAP 范式
+
+### 三轴主导权（不交叉，不可绕过）
 
 | 轴         | 主导者 | 产出                   | 锁定机制                                 |
 | ---------- | ------ | ---------------------- | ---------------------------------------- |
 | **Intent** | 工程师 | Domain / Blueprint     | `term` / `ban` / `invariant` 锁定边界    |
 | **Align**  | AI     | Work / Task / Part     | Blueprint `slot` 锁定路径                |
 | **Proof**  | OXN    | Proof（`frozen.json`） | Daemon 阻止假完成，**无 `--force` 绕过** |
+
+### E1-E4 四结构实体（v0.6 哲学层）
+
+| 实体  | 中文     | 性质                | 主导权  |
+| ----- | -------- | ------------------- | ------- |
+| E1 Asset  | 静态边界 | Domain / Blueprint / Stack | 工程师 |
+| E2 Work   | 动态协作 | IAP + Round 多轮循环 | 工程师 ↔ AI |
+| E3 Engine | 独立公证 | 探针 + frozen.json + hash | OXN |
+| E4 Insight | 涌现层 | 1+1>2 整体论 | AI 推理 |
+
+> **E1-E4 + L0-L3**：理念层 E1-E4 解释 *为什么*，代码层 L0-L3 解释 *依赖方向*。
+> 详见 [Core Concepts](./docs/zh-cn/core-concepts.md) 与 [Architecture](./docs/zh-cn/architecture.md)。
+
+### Work 三模式 + Round 多轮
+
+```
+Work (my-feature)
+├── 模式 A: Asset   — Intent 资产化（Domain/Blueprint/Stack 落盘）
+├── 模式 B: Develop — Align 实战（Round 多轮 IAP 循环）
+└── 模式 C: Proof   — 独立验收（frozen.json 不可篡改）
+
+Round: oxn work next-round <name>   # 显式开启下一轮 IAP
+        oxn work finalize <name>     # 汇总所有 round
+```
+
+## 架构
+
+v0.6 起 OXN 采用 **Monorepo 双包** 结构（[v0.6 Monorepo RFC](./.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-monorepo-packages.md)）：
+
+```
+openxenon/
+├── packages/
+│   ├── engine/         ← L1 Infra + L2 Engine (12+ modules)
+│   │                    @openxenon/engine (12+ 子模块)
+│   │                    Asset / Intent / Align / Proof / Insight / Pool / Work
+│   │                    errors / infra / kernel / oxl
+│   └── cli/             ← L3 CLI (薄组合调用层)
+│                        @openxenon/cli (38 子命令 + 8 locales)
+└── src/                 ← 保留: daemon/ + builtin/ + watcher/
+```
+
+| 层级 | 物理位置 | 职责 |
+|---|---|---|
+| L0 Kernel | `packages/engine/src/kernel/` | 类型/常量/verdicts/catalog (Lambda 真空) |
+| L1 OXL+Infra | `packages/engine/src/{oxl,infra}/` | DSL 解析 + 文件系统 + socket + frozen |
+| L2 Engine | `packages/engine/src/{Asset,Intent,Align,Proof,Insight,Pool,Work}/` | 6+1 DDD 模块, 纯函数导出 |
+| L3 Tools | `packages/cli/src/commands/` + `src/daemon/` + `packages/cli/src/skills/` | CLI 薄壳 + 守护进程 + AI Skills |
 
 ## 文档
 
@@ -78,10 +128,15 @@ oxn init --ai opencode
 | 版本 | 目标 | 状态 |
 |---|---|---|
 | **v0.1.8** | IAP 范式 / 打造闭环 / 自举实践 | ✓ 已发布 npm |
-| **v0.2.0** | Proof First / Infra Probe | 🔜 进行中 |
-| **v0.3.0** | Intent 资产 / Daemon | 📋 规划中 |
+| **v0.2.0** | Proof First / Infra Probe | ✓ 已发布 |
+| **v0.3.0** | MD-Native 资产 / Daemon | ✓ 已发布 |
+| **v0.4.0** | OXL 1.3 + 三层架构 | ✓ 已发布 |
+| **v0.5.0** | Proof Insight Loop | ✓ 已发布 |
+| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo 双包** | ✓ **已发布** ([PR #3](https://github.com/istuen/openxenon/pull/3)) |
 
-详见 [路线图](./docs/zh-cn/roadmap.md)。
+> v0.6 是**架构重塑**版：从 IAP 三轴叙事重构为 E1-E4 四结构实体 + L0-L3 工程分层 + Monorepo 双包（`packages/engine` + `packages/cli`）。详见 [v0.6 IAP Refactor RFC](./.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md) 与 [Changelog](./.changes/0-6-0-iap-refactor.md)。
+>
+> v0.7+ 规划（[apps/hall Migration Plan](./docs/architecture/v0.7-hall-migration-plan.md)）：Web UI 独立 package + Engine 独立发布 + Insight 涌现推理。
 
 ## 参与贡献
 

@@ -1,4 +1,4 @@
-import { type FSWatcher, watch } from '../infra/filesystem'
+import { type FSWatcher, watch } from '@openxenon/engine/infra/filesystem'
 import { daemonLogger } from './logger'
 
 export interface WatcherConfig {

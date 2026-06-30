@@ -1,0 +1,32 @@
+{
+  "name": "@openxenon/cli",
+  "version": "0.6.0",
+  "description": "OXN CLI — L3 Tools 入口（薄组合调用层），调 Engine 业务模块",
+  "author": "istuen",
+  "license": "MIT",
+  "type": "module",
+  "main": "./src/index.ts",
+  "bin": {
+    "oxn": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build ./src/index.ts --target=node --outdir dist --entry-naming cli.js --banner='#!/usr/bin/env node'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openxenon/engine": "workspace:*",
+    "citty": "^0.1.6",
+    "i18next": "^26.3.2",
+    "which": "^2.0.2"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.14",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "cli",
+    "tools",
+    "oxn"
+  ]
+}

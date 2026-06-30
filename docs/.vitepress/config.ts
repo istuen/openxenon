@@ -8,9 +8,7 @@ export default defineConfig({
   lastUpdated: true,
 
   // v0.3 PR-C：注入自定义 CSS（5 类 H1 顶部色条 + 11 类 H2 左边框 + 浅色背景）
-  head: [
-    ['link', { rel: 'stylesheet', href: '/.vitepress/theme/custom.css' }],
-  ],
+  head: [['link', { rel: 'stylesheet', href: '/.vitepress/theme/custom.css' }]],
 
   // 站点结构（VitePress 对称 prefix i18n 模式）：
   //   docs/index.md         → /openxenon/            （中文首页 = 介绍内容，root 路径）
@@ -85,11 +83,11 @@ export default defineConfig({
               items: [{ text: '核心概念', link: '/zh-cn/core-concepts.html' }],
             },
             {
-              text: 'IAP 三轴',
+              text: 'OXN 四结构实体（v0.6）',
               items: [
-                { text: '意图轴', link: '/zh-cn/intent.html' },
-                { text: '对齐轴', link: '/zh-cn/align.html' },
-                { text: '证明轴', link: '/zh-cn/proof.html' },
+                { text: 'Asset · E1 静态边界', link: '/zh-cn/asset.html' },
+                { text: 'Work · E2 动态协作', link: '/zh-cn/work.html' },
+                { text: 'Insight · E4 涌现层', link: '/zh-cn/insight.html' },
               ],
             },
             {
@@ -149,11 +147,11 @@ export default defineConfig({
               items: [{ text: 'Core Concepts', link: '/en/core-concepts.html' }],
             },
             {
-              text: 'IAP Three Axes',
+              text: 'OXN Structural Entities (v0.6)',
               items: [
-                { text: 'Intent', link: '/en/intent.html' },
-                { text: 'Align', link: '/en/align.html' },
-                { text: 'Proof', link: '/en/proof.html' },
+                { text: 'Asset · E1 Static Boundary', link: '/en/asset.html' },
+                { text: 'Work · E2 Dynamic Collaboration', link: '/en/work.html' },
+                { text: 'Insight · E4 Emergence', link: '/en/insight.html' },
               ],
             },
             {

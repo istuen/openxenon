@@ -38,7 +38,7 @@ npm install -g @istuen/openxenon   # or pnpm / bun
 oxn --version
 ```
 
-The repository source is the dev base for `dist/cli.js`, **not** the user install path. Regular users should use `npm install -g` above.
+The repository source is the dev base for `dist/cli.js`, **not** the user install path. v0.6+ uses a Monorepo (packages/engine + packages/cli); developers should `git clone` + `bun install`. Regular users should use `npm install -g` above.
 
 ### Path A — Direct CLI
 
@@ -60,12 +60,14 @@ oxn init --ai opencode      # Generate OpenCode Skill (claude / codex / cursor w
 Then in OpenCode / Claude Code / Codex / Cursor, type:
 
 ```
-/oxn-proof verify that dist/index.js exists and exports the handler
+/oxn-work verify that src/index.ts exists (v0.6 entry point moved to packages/cli/src/index.ts)
 ```
 
 The AI Agent calls `oxn` via Skill, result flows back to `frozen.json`.
 
 ## The IAP Paradigm
+
+### Three axes (ownership does not cross, proof cannot be bypassed)
 
 | Axis | Owner | Output | Locked by |
 |---|---|---|---|
@@ -73,35 +75,71 @@ The AI Agent calls `oxn` via Skill, result flows back to `frozen.json`.
 | **Align**  | AI | Work / Task / Part | Blueprint `slot` |
 | **Proof**  | OXN | Proof (`frozen.json`) | Daemon blocks fake completion, **no `--force` bypass** |
 
+### E1-E4 structural entities (v0.6 philosophical layer)
+
+| Entity | Nature | Owner |
+|---|---|---|
+| E1 Asset  | Static boundary (Domain / Blueprint / Stack) | Engineer |
+| E2 Work   | Dynamic collaboration (IAP + Round) | Engineer ↔ AI |
+| E3 Engine | Independent notarization (Probe + frozen.json + hash) | OXN |
+| E4 Insight | Emergence layer (1+1>2) | AI reasoning |
+
+> **E1-E4 + L0-L3**: the E1-E4 entities explain *why*; the L0-L3 layers explain *dependency direction*. See [Core Concepts](./docs/en/core-concepts.md) and [Architecture](./docs/en/architecture.md).
+
+### Work 3 modes + Round
+
+```
+Work (my-feature)
+├── Mode A: Asset   — Intent asset-ize (Domain/Blueprint/Stack write-to-disk)
+├── Mode B: Develop — Align execution (Round multi-cycle IAP)
+└── Mode C: Proof   — Independent acceptance (frozen.json tamper-proof)
+
+Round: oxn work next-round <name>   # explicitly start next IAP cycle
+        oxn work finalize <name>     # aggregate all rounds
+```
+
 ## Architecture
 
-OXN Engine = **DSL** + **Runtime** + **CLI**
+v0.6+ uses a **Monorepo dual-package** layout (see [v0.6 Monorepo RFC](./.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-monorepo-packages.md)):
 
-| Layer | Role |
-|---|---|
-| **DSL (OXL)** | Langium-implemented domain-specific language for Domain / Blueprint / Work |
-| **Runtime** | Kernel (pure logic) + Infra (IO) + Daemon (supervisor + escape mechanism) |
-| **CLI** | The single operation entry for engineers and AI (`oxn init / proof / domain / blueprint / work`) |
+```
+openxenon/
+├── packages/
+│   ├── engine/         ← L1 Infra + L2 Engine (12+ modules)
+│   │                    @openxenon/engine (12+ submodules)
+│   │                    Asset / Intent / Align / Proof / Insight / Pool / Work
+│   │                    errors / infra / kernel / oxl
+│   └── cli/             ← L3 CLI (thin orchestration layer)
+│                        @openxenon/cli (38 subcommands + 8 locales)
+└── src/                 ← retained: daemon/ + builtin/ + watcher/
+```
 
-> **Purity constraint**: Kernel must not do IO; Infra must not judge PASS/FAIL; Daemon must not change rules. See [Architecture](./docs/en/architecture.md).
+| Layer | Physical location | Role |
+|---|---|---|
+| L0 Kernel | `packages/engine/src/kernel/` | Types/constants/verdicts/catalog (Lambda vacuum) |
+| L1 OXL+Infra | `packages/engine/src/{oxl,infra}/` | DSL parsing + filesystem + socket + frozen |
+| L2 Engine | `packages/engine/src/{Asset,Intent,Align,Proof,Insight,Pool,Work}/` | 6+1 DDD modules, pure-function exports |
+| L3 Tools | `packages/cli/src/commands/` + `src/daemon/` + `packages/cli/src/skills/` | CLI shell + daemon + AI Skills |
 
 ## AI Agent Integrations
 
 `oxn init --ai <agent>` generates the corresponding Skill in one step, then the AI Agent can call the `oxn` CLI.
 
-| AI Agent | Init command | Status |
-|---|---|---|
-| **OpenCode**    | `oxn init --ai opencode` | ✓ supported |
-| **Claude Code** | `oxn init --ai claude`   | ✓ supported |
-| **Codex**       | `oxn init --ai codex`    | ✓ supported |
-| **Cursor**      | `oxn init --ai cursor`   | ✓ supported |
+| AI Agent | Init command | Skill | Status |
+|---|---|---|---|
+| **OpenCode**    | `oxn init --ai opencode` | `/oxn-work` | ✓ supported |
+| **Claude Code** | `oxn init --ai claude`   | `/oxn-work` | ✓ supported |
+| **Codex**       | `oxn init --ai codex`    | `/oxn-work` | ✓ supported |
+| **Cursor**      | `oxn init --ai cursor`   | `/oxn-work` | ✓ supported |
+
+> As of v0.6 Skills are unified into a single `/oxn-work` (the IAP paradigm unified entry point). The legacy `oxn-cli` / `oxn-proof` Skills were removed.
 
 **Integration flow:**
 
 ```
 [Engineer] ──> [AI Agent: OpenCode / Claude Code / Codex / Cursor]
                           │         │
-                          │  Skill  ▼  /oxn-proof
+                          │  Skill  ▼  /oxn-work
                           │      ┌─────────┐
                           │      │  oxn CLI │
                           │      └────┬────┘
@@ -128,10 +166,15 @@ OXN Engine = **DSL** + **Runtime** + **CLI**
 | Version | Goal | Status |
 |---|---|---|
 | **v0.1.8** | IAP paradigm / closed loop / self-bootstrap | ✓ released on npm |
-| **v0.2.0** | Proof First / Infra Probe | 🔜 in progress |
-| **v0.3.0** | Intent assets / Daemon | 📋 planned |
+| **v0.2.0** | Proof First / Infra Probe | ✓ released |
+| **v0.3.0** | MD-Native assets / Daemon | ✓ released |
+| **v0.4.0** | OXL 1.3 + three-layer architecture | ✓ released |
+| **v0.5.0** | Proof Insight Loop | ✓ released |
+| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo dual-package** | ✓ **released** ([PR #3](https://github.com/istuen/openxenon/pull/3)) |
 
-See [Roadmap](./docs/en/roadmap.md).
+> v0.6 is an **architectural reshape** release: from the IAP three-axis narrative to E1-E4 four structural entities + L0-L3 engineering layers + a Monorepo dual-package layout (`packages/engine` + `packages/cli`). See the [v0.6 IAP Refactor RFC](./.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md) and [Changelog](./.changes/0-6-0-iap-refactor.md).
+>
+> v0.7+ roadmap (see [apps/hall Migration Plan](./docs/architecture/v0.7-hall-migration-plan.md)): standalone Web UI package, independent Engine publishing, and Insight emergence reasoning.
 
 ## Contributing
 

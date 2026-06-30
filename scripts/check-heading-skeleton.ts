@@ -18,7 +18,7 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { validateHeadingSkeleton, type HeadingSkeletonSpec } from '../src/infra/markdown-headings'
+import { validateHeadingSkeleton, type HeadingSkeletonSpec } from '@openxenon/engine/infra/markdown-headings'
 
 /** 5 池 spec (v0.2 T8: research 池有 spec; T13 Sprint 6: 全部 5 池启用) */
 const POOL_SPECS: Record<string, HeadingSkeletonSpec> = {

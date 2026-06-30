@@ -32,7 +32,7 @@ concurrentTestGlob = [
   "src/core/errors/__tests__/**",
   "src/oxl/__tests__/**",
   "src/oxl/compiler/__tests__/**",
-  "src/work/__tests__/**",
+  "packages/engine/src/Work/__tests__/**",
   "src/skills/**",
   "src/cli/__tests__/task-filesystem.test.ts",
   "src/daemon/__tests__/**",

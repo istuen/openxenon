@@ -2,6 +2,8 @@
 entity: domain
 version: 0.3.0
 name: GrammarContext
+oxn-source-sha: cdbd4e6d426c157f258838f406da45dc6026ce83457ccd29595195850d5c8268
+synced-at: 2026-06-26T01:19:20.106Z
 ---
 
 # Domain: GrammarContext
@@ -69,7 +71,7 @@ name: GrammarContext
 - value: DomainProofRef 语法为 'proofs [entries+=STRING*]' (简单字符串数组, 跨域引用 PR-2 验证)
 
 ### inv-5
-- value: TaskDeps 4 种语法形式全部支持: deps=['a','b'] / deps='a','b' / deps='a' / deps:'a'
+- value: TaskDeps 4 种语法形式全部支持: deps=['a','b'] / deps='a','b' / deps='a' / deps:'a
 
 ### inv-6
 - value: 15 builtin probe 模板全部含 scheme 字段 (file:///http:///shell:///git://)

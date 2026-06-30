@@ -4,6 +4,7 @@
 >
 > 本文档不引入新功能，只**澄清现状 + 修复已发现的两个小问题**。
 
+> **v0.6 状态**：Skill 极简版已落地 — 3 个 Skill (`oxn-cli` / `oxn-proof` / `oxn-work`) 收敛为唯一 `/oxn-work`（IAP 范式统一入口，含 Asset/Develop/Proof 3 模式 + Round 多轮）。见 [v0.6 IAP Refactor RFC](../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)。
 ---
 
 ## 0. 三个澄清（用户主定标准）

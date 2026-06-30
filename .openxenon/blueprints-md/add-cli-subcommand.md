@@ -2,6 +2,8 @@
 entity: blueprint
 version: 1
 name: add-cli-subcommand
+oxn-source-sha: d8ebf036c22b075ec1a95eb0ad78b1b208c39f82af9ab58411b419113183c83c
+synced-at: 2026-06-26T01:19:20.326Z
 ---
 
 # Blueprint: add-cli-subcommand

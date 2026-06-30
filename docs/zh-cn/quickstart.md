@@ -129,7 +129,7 @@ cat .openxenon/proofs/check-deploy/frozen.json
 在 Cursor / OpenCode / Codex 中输入：
 
 ```
-/oxn-proof 验证 dist/index.js 是否存在并导出 handler
+/oxn-work 验证 dist/index.js 是否存在并导出 handler
 ```
 
 AI 通过 Skill 调用 CLI，结果回流到 frozen.json。
