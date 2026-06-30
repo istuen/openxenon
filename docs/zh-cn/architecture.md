@@ -131,8 +131,8 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 
 | 组件 | 物理位置 | 职责 |
 |---|---|---|
-| CLI | `packages/cli/src/` | 薄组合调用层：parse args → 调 L2 Engine → format output |
-| Skills | `packages/cli/skills/oxn-work/` | AI 助手指令：/oxn-work 统一入口 |
+| CLI | `packages/cli/src/commands/` + `packages/cli/src/index.ts` | 薄组合调用层：parse args → 调 L2 Engine → format output |
+| Skills | `packages/cli/src/skills/` (含 8 个 locale .md) | AI 助手指令：/oxn-work 统一入口 |
 | Daemon | `packages/engine/src/daemon.ts` | 守护进程：Engine 常驻模式，文件监听 + Work 追踪 |
 
 ## 7. 与 OpenSpec 架构对比
@@ -150,13 +150,22 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 ## 8. Skill 入口架构
 
 ```
-.opencode/skills/
-└── oxn-work/                ← 唯一 Skill（IAP 范式统一入口）
-    └── SKILL.md
+packages/cli/src/skills/            ← Skills 资源 (v0.6 阶段 6 迁入)
+├── adapters.ts                     SkillAdapterId 类型 + DEFAULT_ADAPTERS
+├── loader.ts                       locale 加载器 (.md with type:'text')
+├── types.ts                        OpenXenonSkill / ReferenceFile
+├── index.ts                        barrel
+└── locales/                        8 个 i18n 文件
+    ├── en/oxn-cli/instruction.md
+    ├── en/oxn-work/instruction.md
+    ├── en/oxn-proof/instruction.md   (v0.6 保留, v0.7+ 计划合并到 oxn-work)
+    ├── zh-CN/...
+    └── ...
 
 L3 CLI → L2 Engine（DDD 模块化调用）
-  import { create } from '../service/Asset'
-  import { run } from '../service/Align'
+  // packages/cli/src/commands/*.ts 调 packages/engine/src/<Domain>/
+  import { create } from '@openxenon/engine/Asset'
+  import { run } from '@openxenon/engine/Align'
 ```
 
 ---
