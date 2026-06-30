@@ -87,7 +87,10 @@ export function renderInsightHuman(insight: Insight): string {
   return lines.join('\n')
 }
 
-export function renderCrossProofHuman(insight: CrossProofInsight, skipped: Array<{ name: string; reason: string }>): string {
+export function renderCrossProofHuman(
+  insight: CrossProofInsight,
+  skipped: Array<{ name: string; reason: string }>,
+): string {
   const lines: string[] = []
   lines.push(`=== Cross-Proof Insight (${insight.proofCount} proofs) ===`)
   if (insight.since) lines.push(`Since: ${insight.since}`)
@@ -232,9 +235,7 @@ export function renderPipelineHuman(insight: PipelineInsight): string {
     lines.push('  (no work-proof traces)')
   } else {
     for (const trace of insight.workProofTraces) {
-      const proofStr = trace.proofs
-        .map((p) => `${p.verdict === 'PASSED' ? '✅' : '❌'} ${p.proofId}`)
-        .join(', ')
+      const proofStr = trace.proofs.map((p) => `${p.verdict === 'PASSED' ? '✅' : '❌'} ${p.proofId}`).join(', ')
       lines.push(`  ${trace.workName}: ${proofStr}`)
     }
   }
@@ -287,10 +288,7 @@ export interface PipelineInsightResult {
   insight: PipelineInsight
 }
 
-export function computePipelineInsightData(
-  projectRoot: string,
-  workFilter?: string,
-): PipelineInsightResult {
+export function computePipelineInsightData(projectRoot: string, workFilter?: string): PipelineInsightResult {
   const scanResult = scanPipelineInput(projectRoot)
   if (
     scanResult.domains.length === 0 &&
