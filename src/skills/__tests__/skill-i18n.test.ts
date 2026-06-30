@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '../../cli/project-config'
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@openxenon/engine/infra/i18n/locale'
 import { getSkillContent, getAllSkillsForLocale } from '../loader'
 
 const LOCALES_DIR = join(import.meta.dir, '..', 'locales')

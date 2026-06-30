@@ -28,6 +28,6 @@
     "noUncheckedIndexedAccess": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*", "tests/**/*", "scripts/**/*"],
-  "exclude": ["node_modules", "dist", "tests", "src/**/__tests__", "packages"]
+  "include": ["src/**/*", "packages/cli/src/**/*", "tests/**/*", "scripts/**/*"],
+  "exclude": ["node_modules", "dist", "tests", "src/**/__tests__", "packages/**/__tests__", "packages/engine", "packages/oxn-vscode"]
 }
