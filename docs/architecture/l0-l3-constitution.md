@@ -86,7 +86,7 @@
   - **Watcher**（文件监听）
   - **Core**（错误字典 / IAPError / OXNCrash）
   - **i18n**（多语言）
-- **子目录**：`src/cli/` · `src/daemon/` · `src/hall/` · `src/skills/` · `src/watcher/` · `src/core/` · `src/i18n/`
+- **子目录**：`src/cli/` · `src/daemon/` · `src/skills/` · `src/watcher/` · `src/core/` · `src/i18n/`
 
 ---
 
@@ -101,7 +101,7 @@
 | **L1 Foundation** | L1-OXL | `src/oxl/` *(compiler/ 仅含语法解析与全局索引)* | 语言解析 + 编译生成 |
 | **L2 Module** | L2-Builtin | `src/builtin/` | 编译后内置资产（.oxn 资源） |
 | **L2 Module** | L2-Work | `src/work/` | 编排与执行（adapters / policies / sandbox / explore） |
-| **L3 Runtime** | L3-CLI | `src/cli/` `src/daemon/` `src/hall/` `src/skills/` `src/watcher/` `src/core/` `src/i18n/` | 入口与外部交互 |
+| **L3 Runtime** | L3-CLI | `src/cli/` `src/daemon/` `src/skills/` `src/watcher/` `src/core/` `src/i18n/` | 入口与外部交互 |
 
 > **L0 Kernel 公开面（v0.1.4 PR-K 修订）**：
 >
@@ -241,7 +241,7 @@ find src -maxdepth 2 -type d | sort
 | **C-2** | 🔴 High | 脚本未识别 `import type` 语句（误报 7 个 type-only 依赖为真实违规：`DagNode`/`DagValidationResult` + 4 个 enums + `HashPort`） | 已修 |
 | **C-3** | 🟡 Med | 脚本未跳过 `__tests__/` 与 `*.test.ts` 文件（test 文件按 relaxed 规则处理；3 个 test 违规被隐藏） | 已修 |
 | **C-4** | 🟡 Med | L2 引用 `L2-Arsenal`（目录已删除），未映射 `src/builtin/` | 已修（→ L2-Builtin） |
-| **C-5** | 🟡 Med | L3 映射缺失 `src/hall/` `src/skills/` `src/watcher/` `src/core/` `src/i18n/` | 已修（全部归 L3-CLI） |
+| **C-5** | 🟡 Med | L3 映射缺失 `src/skills/` `src/watcher/` `src/core/` `src/i18n/` | 已修（全部归 L3-CLI） |
 | **C-6** | 🟡 Med | `L1-Infra` allowedDeps 含 `L2-Arsenal`（已不存在） | 已修（移除） |
 | **C-7** | 🟡 Med | `tests/kernel/architectural-guard.test.ts` 检查 `arsenals`（目录已不存在） | 已修（→ builtin） |
 | **C-8** | 🟢 Low | 脚本入口未指向本文档 | 已修（头部加宪法引用注释） |
