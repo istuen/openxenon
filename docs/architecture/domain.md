@@ -37,7 +37,7 @@ domain "<DomainName>" {
 
   ban { "<禁用词1>", "<禁用词2>" }
 
-  // invariant 写法决策（详见 oxn-cli skill「invariant 写法决策树」）：
+  // invariant 写法决策（详见 oxn-work skill「invariant 写法决策树」）：
   //   1 条→单块单条 / 同主题→单块多条 / 异主题→多块按 // ── <主题> ── 分组，IR 等价
   invariant {
     "<业务不变量1>"
@@ -112,7 +112,7 @@ domain "MemberContext" {
     "密码任何时候都不能明文存储"
     "同一邮箱在同一上下文内不可重复注册"
   }
-  // 异主题不变量需按 // ── <主题> ── 注释分组后拆多块（决策见 oxn-cli skill）
+  // 异主题不变量需按 // ── <主题> ── 注释分组后拆多块（决策见 oxn-work skill）
 
   context_map {
     imports "OrderContext" as "Order"

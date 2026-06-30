@@ -127,12 +127,14 @@ oxn init --ai codex      # 生成 Codex Skill
 
 ---
 
-## Skill 安装
+## Skill 初始化
 
 ```bash
-oxn install-skill                    # 安装全部 Skill
-oxn install-skill --skill oxn-cli --force   # 安装指定 Skill
+oxn init --ai opencode      # 生成 OpenCode Skill（一键初始化）
+oxn init --ai claude        # Claude Code Skill
 ```
+
+> v0.6+ 统一 Skill：`/oxn-work`（IAP 范式统一入口）。原 `/oxn-proof`、`/oxn-cli` 已删除。
 
 ---
 

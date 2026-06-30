@@ -151,16 +151,14 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 
 ```
 packages/cli/src/skills/            ← Skills 资源 (v0.6 阶段 6 迁入)
-├── adapters.ts                     SkillAdapterId 类型 + DEFAULT_ADAPTERS
 ├── loader.ts                       locale 加载器 (.md with type:'text')
 ├── types.ts                        OpenXenonSkill / ReferenceFile
 ├── index.ts                        barrel
-└── locales/                        8 个 i18n 文件
-    ├── en/oxn-cli/instruction.md
+└── locales/                        4 个 i18n 文件（v0.6 Skill 极简：仅 oxn-work）
     ├── en/oxn-work/instruction.md
-    ├── en/oxn-proof/instruction.md   (v0.6 保留, v0.7+ 计划合并到 oxn-work)
-    ├── zh-CN/...
-    └── ...
+    ├── en/oxn-work/references/blueprint-format.md
+    ├── zh-CN/oxn-work/instruction.md
+    └── zh-CN/oxn-work/references/blueprint-format.md
 
 L3 CLI → L2 Engine（DDD 模块化调用）
   // packages/cli/src/commands/*.ts 调 packages/engine/src/<Domain>/

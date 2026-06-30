@@ -1,13 +1,9 @@
 import type { SupportedLocale } from '@openxenon/engine/infra/i18n/locale'
 import { DEFAULT_LOCALE } from '@openxenon/engine/infra/i18n/locale'
-import zhCnOxnCli from './locales/zh-CN/oxn-cli/instruction.md' with { type: 'text' }
 import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'text' }
 import zhCnWorkBlueprintRef from './locales/zh-CN/oxn-work/references/blueprint-format.md' with { type: 'text' }
-import zhCnProof from './locales/zh-CN/oxn-proof/instruction.md' with { type: 'text' }
-import enOxnCli from './locales/en/oxn-cli/instruction.md' with { type: 'text' }
 import enWork from './locales/en/oxn-work/instruction.md' with { type: 'text' }
 import enWorkBlueprintRef from './locales/en/oxn-work/references/blueprint-format.md' with { type: 'text' }
-import enProof from './locales/en/oxn-proof/instruction.md' with { type: 'text' }
 import type { OpenXenonSkill, ReferenceFile } from './types'
 
 export interface SkillContent {
@@ -20,54 +16,37 @@ interface SkillMeta {
   description: string
 }
 
+// v0.6 Skill 极简：唯一 Skill 为 oxn-work（IAP 范式统一入口）
+// 原 oxn-cli / oxn-proof 已删除 — 按 v0.6 RFC "Skill 极简" 决策
 const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
   'zh-CN': [
-    { id: 'oxn-cli', description: '统一的 OpenXenon CLI 操作入口，把自然语言翻译成 oxn 命令并执行' },
     {
       id: 'oxn-work',
       description:
-        '发起 + 驱动 OpenXenon Work v1.1（创建 work.oxn + tasks/<name>/task.oxn，注入 domain；含 v1.1 8 阶段流程：init→migrate→create→add-task→validate→lock→run→submit/status，强制 lock 边界守卫 .work.planLock）',
-    },
-    {
-      id: 'oxn-proof',
-      description:
-        'v0.1.2 Proof-First 入口：5 命令闭环（create / probe add / run / list / show），用 Probe 声明验收标准，OXN 产出不可篡改的 frozen.json',
+        'IAP 范式统一入口（v0.6 极简版）— 创建 work + 走 Intent→Align→Proof 三阶段 + Round 多轮循环。work = IAP 范式的最小完整单元，所有工作（建资产/开发/跑验收）都内聚到 3 大 Work 模式',
     },
   ],
   en: [
     {
-      id: 'oxn-cli',
-      description: 'Unified OpenXenon CLI entry point — translate natural language into oxn commands',
-    },
-    {
       id: 'oxn-work',
       description:
-        'Launch and drive OpenXenon Work v1.1 (create work.oxn + tasks/<name>/task.oxn with domain inject; v1.1 8-phase flow: init→migrate→create→add-task→validate→lock→run→submit/status, enforced by .work.planLock lock-boundary guard)',
-    },
-    {
-      id: 'oxn-proof',
-      description:
-        'v0.1.2 Proof-First: 5-command loop (create / probe add / run / list / show), declare acceptance with Probes, OXN produces immutable frozen.json',
+        'IAP paradigm unified entry point (v0.6 simplified) — create a work and drive Intent→Align→Proof three-stage + Round multi-cycle loop. Work = the minimal complete unit of the IAP paradigm, all work (asset building / development / running acceptance) converges into 3 Work modes',
     },
   ],
 }
 
 const skillContents: Record<string, Record<string, SkillContent>> = {
   'zh-CN': {
-    'oxn-cli': { instruction: zhCnOxnCli, references: [] },
     'oxn-work': {
       instruction: zhCnWork,
       references: [{ filename: 'blueprint-format.md', content: zhCnWorkBlueprintRef }],
     },
-    'oxn-proof': { instruction: zhCnProof, references: [] },
   },
   en: {
-    'oxn-cli': { instruction: enOxnCli, references: [] },
     'oxn-work': {
       instruction: enWork,
       references: [{ filename: 'blueprint-format.md', content: enWorkBlueprintRef }],
     },
-    'oxn-proof': { instruction: enProof, references: [] },
   },
 }
 
@@ -92,7 +71,4 @@ export function getAllSkillsForLocale(locale: SupportedLocale): OpenXenonSkill[]
   })
 }
 
-// TODO: v0.1.0+ 推 en skill 翻译 — 迁移 checklist:
-//   - 确保 en 目录存在 `src/skills/locales/en/<skill>/instruction.md`
-//   - loader.ts 的 en 分支导入 en 资源（当前已就绪）
-//   - 端到端验证：oxn init --locale en → .opencode/skills/*.md 内容为英文
+// v0.6+: 所有 Skill 资源已确认 en + zh-CN 双 locale 就绪（oxn-work 为唯一 Skill）

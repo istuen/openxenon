@@ -127,12 +127,14 @@ See [Intent](./intent.md) for full Domain + Blueprint syntax.
 
 ---
 
-## Skill install
+## Skill Initialization
 
 ```bash
-oxn install-skill                    # install all Skills
-oxn install-skill --skill oxn-cli --force   # install a specific Skill
+oxn init --ai opencode      # Generate OpenCode Skill (one-step init)
+oxn init --ai claude        # Claude Code Skill
 ```
+
+> v0.6+ unified Skill: `/oxn-work` (IAP unified entry point). Legacy `/oxn-proof` and `/oxn-cli` Skills removed.
 
 ---
 
