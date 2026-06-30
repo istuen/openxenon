@@ -27,7 +27,11 @@ describe('detectPipeline', () => {
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { formatMigrationReport, type MigrationStats, migrateSingleFile } from '@openxenon/engine/oxl/compiler/yaml-migrator'
+import {
+  formatMigrationReport,
+  type MigrationStats,
+  migrateSingleFile,
+} from '@openxenon/engine/oxl/compiler/yaml-migrator'
 
 describe('migrateSingleFile', () => {
   const tmpDir = '/tmp/oxn-migrate-test'
