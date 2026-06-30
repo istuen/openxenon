@@ -1,35 +1,20 @@
 /**
  * Proof module — DDD unified entry (v0.6 阶段4: 导出链完成)
  *
- * 10 个函数 + 类型全部在此入口。
+ * E3 Engine · Proof 阶段。
+ * v0.6 清理: 只 re-export 4 个 CLI 实际使用的子模块
+ *   - proof-frozen-writer: buildFrozenProof/writeFrozenProof/...
+ *   - proof-manager: renderProbeDescribeHuman/renderVerdictHuman
+ *   - runner: executeProbe
+ *   - verdict-writer: writeVerdictMd/readVerdictMd
  */
 
-// Use cases
-export { parseProofFile } from './parse'
-export { computeFileHash } from './hash'
-export { nextProbeName, escapeString } from './probe-utils'
-export { renderVerdictHuman, renderShowHuman } from './render'
-export { proofProbesToIR } from './probe-ir'
-export { snapshotWorkMd, verifyWorkHash } from './snapshot'
 export {
-  getProofDir, getProofOxnPath, getProofFrozenPath,
-  getProofMdPath, getProofWorkHashPath, resolveWorkPath,
-} from './path-utils'
-export * from './proof-manager'
-
-// Types
-export type { RenderVerdictParams, RenderShowParams } from './render'
-export type { ProofProbeIR } from './probe-ir'
-export type { SnapshotStatus, SnapshotResult, VerifyResult } from './snapshot'
-export type {
-  ProofVerdict,
-  CreateProofInput, CreateProofResult,
-  ListProofsInput, ListProofsResult, ProofSummary,
-  AddProbeInput, AddProbeResult,
-  RunProofInput, RunProofResult,
-  ShowProofInput, ShowProofResult,
-  VerifyProofInput, VerifyProofResult,
-  DescribeProbeInput, DescribeProbeResult,
-  ListProbesResult,
-  ParseProofResult, FileHashResult,
-} from './types'
+  buildFrozenProof,
+  isFrozenFileReadOnly,
+  readFrozenProof,
+  writeFrozenProof,
+} from './proof-frozen-writer'
+export { renderProbeDescribeHuman, renderVerdictHuman } from './proof-manager'
+export { executeProbe } from './runner'
+export { writeVerdictMd, readVerdictMd } from './verdict-writer'
