@@ -4,7 +4,7 @@
  * Reads Round history from WorkspaceState for cross-round IAP summary.
  * v0.6: Thin wrapper over Round history. v0.7+: Cross-Work emergence reasoning.
  */
-import { loadWorkState } from '../../../src/work/dual-state-io'
+import { loadWorkState } from '@openxenon/engine/Work/dual-state-io'
 import type { ComputeWorkInsightInput, WorkInsightResult } from './types'
 
 export function computeWorkInsight(input: ComputeWorkInsightInput): WorkInsightResult {

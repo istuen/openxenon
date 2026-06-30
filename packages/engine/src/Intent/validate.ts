@@ -4,7 +4,7 @@
  * Wraps validateAndWriteArtifacts from CLI work.ts for migration to Engine.
  */
 import { existsSync } from '@openxenon/engine/infra/filesystem'
-import { getWorkGatePath, getWorkOxnPath } from '../../../src/work/dual-state-io'
+import { getWorkGatePath, getWorkOxnPath } from '@openxenon/engine/Work/dual-state-io'
 import type { ValidateWorkInput, ValidateWorkResult } from './types'
 
 export function validateWork(input: ValidateWorkInput): ValidateWorkResult {

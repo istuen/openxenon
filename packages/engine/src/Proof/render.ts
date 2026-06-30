@@ -7,7 +7,7 @@
 import type { FrozenProof } from '@openxenon/engine/kernel'
 import { join } from 'path'
 import { PROOF_FROZEN_JSON } from '@openxenon/engine/kernel'
-import { isFrozenFileReadOnly } from '../../../src/cli/proof-frozen-writer'
+import { isFrozenFileReadOnly } from '@openxenon/engine/Proof/proof-frozen-writer'
 
 export interface RenderVerdictParams {
   name: string

@@ -3,8 +3,8 @@
  *
  * Wraps dual-state-exec.ts runWork, migrating to Engine module.
  */
-import { runWork as execRunWork } from '../../../src/work/dual-state-exec'
-import type { WorkspaceState } from '../../../src/work/dual-state'
+import { runWork as execRunWork } from '@openxenon/engine/Work/dual-state-exec'
+import type { WorkspaceState } from '@openxenon/engine/Work/dual-state'
 import type { RunWorkInput, RunWorkResult } from './types'
 
 export function runWork(input: RunWorkInput): RunWorkResult {

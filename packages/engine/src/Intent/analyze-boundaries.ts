@@ -4,7 +4,7 @@
  * Scans work.oxn for domain/blueprint ref declarations and resolves them.
  */
 import { readFileSync, existsSync } from '@openxenon/engine/infra/filesystem'
-import { getWorkOxnPath } from '../../../src/work/dual-state-io'
+import { getWorkOxnPath } from '@openxenon/engine/Work/dual-state-io'
 
 export interface BoundaryRef {
   kind: 'domain' | 'blueprint'

@@ -6,7 +6,7 @@
 import { readdirSync, existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import { TASK_OXN_FILE } from '@openxenon/engine/kernel'
-import { getTasksDir } from '../../../src/work/dual-state-io'
+import { getTasksDir } from '@openxenon/engine/Work/dual-state-io'
 
 export interface TaskSummary {
   name: string

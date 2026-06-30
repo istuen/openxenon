@@ -3,7 +3,7 @@
  *
  * Wraps plan-hash.ts hashWorkPlan for planLock 四组件 hash 计算。
  */
-import { hashWorkPlan } from '../../../src/work/plan-hash'
+import { hashWorkPlan } from '@openxenon/engine/Work/plan-hash'
 import type { LockWorkInput, LockWorkResult } from './types'
 
 export function lockWork(input: LockWorkInput): LockWorkResult {

@@ -2,7 +2,7 @@
  * Intent module — attach/detach asset use case (v0.6 PR-5b实现)
  */
 import { readFileSync, writeFileSync, existsSync } from '@openxenon/engine/infra/filesystem'
-import { getWorkOxnPath } from '../../../src/work/dual-state-io'
+import { getWorkOxnPath } from '@openxenon/engine/Work/dual-state-io'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 
 export function attachAsset(

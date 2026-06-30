@@ -5,7 +5,7 @@
  * Note: finalizeWorkDomains is async — this wrapper delegates synchronously for now.
  * Full async extraction to follow in dedicated PR.
  */
-import { loadWorkState } from '../../../src/work/dual-state-io'
+import { loadWorkState } from '@openxenon/engine/Work/dual-state-io'
 import type { FinalizeInput, FinalizeResult } from './types'
 
 export function finalizeWork(input: FinalizeInput): FinalizeResult {

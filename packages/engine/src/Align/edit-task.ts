@@ -4,8 +4,8 @@
  * Edit task.oxn content via filesystem write.
  */
 import { readFileSync, writeFileSync, existsSync } from '@openxenon/engine/infra/filesystem'
-import { loadWorkState } from '../../../src/work/dual-state-io'
-import { getTaskOxnPath, loadTaskState } from '../../../src/work/dual-state-io'
+import { loadWorkState } from '@openxenon/engine/Work/dual-state-io'
+import { getTaskOxnPath, loadTaskState } from '@openxenon/engine/Work/dual-state-io'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 
 export function editTask(

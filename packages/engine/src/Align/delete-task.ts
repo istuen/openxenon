@@ -3,7 +3,7 @@
  */
 import { existsSync, rmdirSync, unlinkSync, readdirSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { getTasksDir } from '../../../src/work/dual-state-io'
+import { getTasksDir } from '@openxenon/engine/Work/dual-state-io'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 
 export function deleteTask(projectRoot: string, workName: string, taskName: string): { ok: boolean } {

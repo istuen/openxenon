@@ -2,7 +2,7 @@
  * Align module — get-work-status use case (v0.6 PR-5b续)
  */
 import type { WorkStatusResult } from './types'
-import type { WorkspaceState } from '../../../../src/work/dual-state'
+import type { WorkspaceState } from '@openxenon/engine/Work/dual-state'
 
 /**
  * 读取 work 状态快照（从双状态机 WorkspaceState + Round history）
