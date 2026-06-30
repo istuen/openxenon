@@ -216,7 +216,7 @@ const migrateAssetsSubcommand = defineCommand({
 function renderMigrateAssetsHuman(result: ReturnType<typeof migrateAssetsToV6Layout>, dryRun: boolean): string {
   const lines: string[] = [`Asset directory migration${dryRun ? ' (dry-run)' : ''}:`]
   for (const m of result.moved) {
-    lines.push(`  ✓ ${m.kind}: ${m.from} → ${m.to} (${m.fileCount >= 0 ? m.fileCount + ' files' : 'preview'})`)
+    lines.push(`  ✓ ${m.kind}: ${m.from} → ${m.to} (${m.fileCount >= 0 ? `${m.fileCount} files` : 'preview'})`)
   }
   for (const s of result.skipped) {
     lines.push(`  · ${s.kind}: skipped (${s.reason})`)
