@@ -18,7 +18,7 @@
   "scripts": {
     "dev": "bun run packages/cli/src/index.ts",
     "langium:generate": "langium generate",
-    "build:dist": "bun build ./src/cli/index.ts --target=node --outdir dist --entry-naming cli.js --banner='#!/usr/bin/env node'",
+    "build:dist": "bun build ./packages/cli/src/index.ts --target=node --outdir dist --entry-naming cli.js --banner='#!/usr/bin/env node'",
     "build:clean": "rm -rf dist",
     "build": "bun run build:clean && bun run langium:generate && bun run build:dist",
     "test": "bun test",
