@@ -87,14 +87,25 @@ export type AssetKind = 'domain' | 'blueprint' | 'stack'
 export function resolveAssetDir(projectRoot: string, kind: AssetKind, config: ProjectConfig | null = null): string {
   const boundary = join(projectRoot, BOUNDARY_DIR)
   const custom = config?.assetDirs?.[kind]
+  const hasAssetRoot = config?.assetRoot != null
   const root = config?.assetRoot ?? DEFAULT_ASSET_ROOT
 
-  // 路径 1：用户自定义 assetDirs[kind]（绝对路径或相对 BOUNDARY_DIR）
-  if (custom) {
-    return custom.startsWith('/') ? custom : join(boundary, custom)
+  // 路径 1：用户自定义 assetDirs[kind]（绝对路径直接返回）
+  if (custom?.startsWith('/')) {
+    return custom
   }
 
-  // 路径 2：默认 assetRoot + DEFAULT_ASSET_DIRS[kind]
+  // 路径 2：v0.5 兼容 — config 只设 assetDirs（无 assetRoot）→ custom 直接作子目录
+  if (custom && !hasAssetRoot) {
+    return join(boundary, custom)
+  }
+
+  // 路径 3：v0.6 — config 同时设 assetRoot + assetDirs → custom 嵌套在 assetRoot 下
+  if (custom) {
+    return join(boundary, root, custom)
+  }
+
+  // 路径 4：默认 assetRoot + DEFAULT_ASSET_DIRS[kind]
   return join(boundary, root, DEFAULT_ASSET_DIRS[kind])
 }
 

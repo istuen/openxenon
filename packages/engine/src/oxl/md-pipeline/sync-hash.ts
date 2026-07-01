@@ -122,12 +122,50 @@ export function writeCacheSha(cachePath: string, sha: string): void {
   writeFileSync(cachePath, `${sha}\n`, 'utf-8')
 }
 
-/** 取得 .cache/<name>.hash 路径 (Phase 1 helper) */
+/** 取得 .cache/<name>.hash 路径 (Phase 1 helper)
+ * v0.6.1-alpha.0 #1-2: 跟随 .md 镜像路径，cache 在同目录的 .cache/ 下
+ * 用 v0.6 默认布局 assets/<plural>-md/.cache/
+ */
 export function getCachePath(rootDir: string, entity: 'domain' | 'blueprint' | 'work', name: string): string {
-  return join(rootDir, '.openxenon', entity === 'work' ? 'works' : `${entity}s-md`, '.cache', `${name}.hash`)
+  if (entity === 'work') {
+    return join(rootDir, '.openxenon', 'works', '.cache', `${name}.hash`)
+  }
+  // v0.6 默认: assets/domains-md/.cache/X.hash (assetFormat='oxn' 时)
+  // v0.5 fallback: domains-md/.cache/X.hash
+  // 用 config.assetRoot 决定
+  const configPath = join(rootDir, '.openxenon', 'config.json')
+  let assetRoot = 'assets'
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs') as typeof import('fs')
+    const raw = fs.readFileSync(configPath, 'utf-8')
+    const config = JSON.parse(raw)
+    if (config.assetRoot) assetRoot = config.assetRoot
+  } catch {
+    // ignore
+  }
+  const plural = entity === 'domain' ? 'domains-md' : entity === 'blueprint' ? 'blueprints-md' : 'stack-md'
+  return join(rootDir, '.openxenon', assetRoot, plural, '.cache', `${name}.hash`)
 }
 
-/** 取得 Phase 2 .cache/<name>.md-hash 路径 (用于 .md → .oxn 方向 idempotent 比对) */
+/** 取得 Phase 2 .cache/<name>.md-hash 路径 (用于 .md → .oxn 方向 idempotent 比对)
+ * v0.6.1-alpha.0 #1-2: 与 getCachePath 一致
+ */
 export function getCacheMdPath(rootDir: string, entity: 'domain' | 'blueprint' | 'work', name: string): string {
-  return join(rootDir, '.openxenon', entity === 'work' ? 'works' : `${entity}s-md`, '.cache', `${name}.md-hash`)
+  if (entity === 'work') {
+    return join(rootDir, '.openxenon', 'works', '.cache', `${name}.md-hash`)
+  }
+  const configPath = join(rootDir, '.openxenon', 'config.json')
+  let assetRoot = 'assets'
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs') as typeof import('fs')
+    const raw = fs.readFileSync(configPath, 'utf-8')
+    const config = JSON.parse(raw)
+    if (config.assetRoot) assetRoot = config.assetRoot
+  } catch {
+    // ignore
+  }
+  const plural = entity === 'domain' ? 'domains-md' : entity === 'blueprint' ? 'blueprints-md' : 'stack-md'
+  return join(rootDir, '.openxenon', assetRoot, plural, '.cache', `${name}.md-hash`)
 }

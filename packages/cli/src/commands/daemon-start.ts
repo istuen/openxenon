@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
- 
+
 import { isDaemonRunning, startDaemonWithHealthCheck } from '../../../../src/daemon/process'
 import { DAEMON_SOCK_PATH } from '@openxenon/engine/infra/global'
 import { t } from '@openxenon/engine/infra/i18n'

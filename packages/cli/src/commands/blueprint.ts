@@ -332,6 +332,22 @@ const validateSubcommand = defineCommand({
     const blueprint = result.ast?.entities.find(isBlueprintDeclaration)
     const ir = blueprint ? blueprintAstToIr(blueprint) : null
 
+    // v0.6.1-alpha.0 #1-13: slot DAG 环检测（硬阻断）
+    if (ir) {
+      const cycle = findDagCycle(ir.deps)
+      if (cycle) {
+        return outputError(
+          {
+            code: 'OXN_BLUEPRINT_DAG_CYCLE',
+            message: `blueprint ${name} has a cycle in slot deps: ${cycle.join(' → ')}`,
+            suggestion:
+              'remove the cycle to make the DAG acyclic; use `oxn blueprint compile` to see the resolved order',
+          },
+          format,
+        )
+      }
+    }
+
     // v1.1: 字符串级规范化校验（macOS-safe NAME_FILE_MISMATCH）
     // 与 oxn domain validate 对称：parseBlueprintSlim 索引层软检测是兜底,
     // CLI validate 是硬阻断层,两道防御必须都过。
@@ -385,12 +401,14 @@ function blueprintAstToIr(blueprint: BlueprintDeclaration): {
   name: string
   version?: number
   slots: string[]
+  deps: Record<string, string[]>
   props: Array<{ name: string; type: string; required?: boolean; default?: unknown }>
 } {
   return {
     name: blueprint.name,
     version: blueprint.version,
     slots: blueprint.partSlots.map((s) => s.name),
+    deps: Object.fromEntries(blueprint.partSlots.map((s) => [s.name, s.deps])),
     props: blueprint.props.map((p) => ({
       name: p.name,
       type: typeof p.type === 'string' ? p.type : 'complex',
@@ -398,6 +416,49 @@ function blueprintAstToIr(blueprint: BlueprintDeclaration): {
       ...(p.default ? { default: p.default.value } : {}),
     })),
   }
+}
+
+/**
+ * v0.6.1-alpha.0 #1-13: 检测 slot DAG 是否含循环。
+ * DFS + 灰/白/黑标记；返回首个循环路径（含起点），无环返回 null。
+ */
+function findDagCycle(deps: Record<string, string[]>): string[] | null {
+  const WHITE = 0
+  const GRAY = 1
+  const BLACK = 2
+  const color = new Map<string, number>()
+  for (const k of Object.keys(deps)) color.set(k, WHITE)
+
+  const stack: string[] = []
+
+  function visit(node: string): string[] | null {
+    color.set(node, GRAY)
+    stack.push(node)
+    for (const dep of deps[node] ?? []) {
+      const c = color.get(dep) ?? WHITE
+      if (c === GRAY) {
+        // 找到环：从 dep 在 stack 中首次出现的位置到末尾
+        const idx = stack.indexOf(dep)
+        return [...stack.slice(idx), dep]
+      }
+      if (c === WHITE) {
+        const found = visit(dep)
+        if (found) return found
+      }
+      // BLACK: 已访问过，无环
+    }
+    color.set(node, BLACK)
+    stack.pop()
+    return null
+  }
+
+  for (const node of Object.keys(deps)) {
+    if (color.get(node) === WHITE) {
+      const found = visit(node)
+      if (found) return found
+    }
+  }
+  return null
 }
 
 // ---------------------------------------------------------------------------

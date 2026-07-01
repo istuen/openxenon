@@ -12,7 +12,19 @@
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
+
+// v0.6.1-alpha.0 #1-4 兼容：测试在写 .oxn 前抬位 0o644（CLI 会自动恢复）
+function writeOxn(path: string, content: string): void {
+  if (existsSync(path)) {
+    try {
+      chmodSync(path, 0o644)
+    } catch {
+      // ignore
+    }
+  }
+  writeFileSync(path, content, 'utf-8')
+}
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { computeSha256 } from '@openxenon/engine/oxl/md-pipeline/sync-hash'
@@ -61,8 +73,9 @@ async function setV5Layout(): Promise<void> {
   try {
     const raw = readFileSync(configPath, 'utf-8')
     const config = JSON.parse(raw)
-    config.assetRoot = ''
-    config.assetDirs = { domain: 'domains', blueprint: 'blueprints', stack: 'stack' }
+    // v0.6.1-alpha.0 #1-2: 不设 assetDirs（让 CLI 用 default `assets/domains/...`）
+    config.assetRoot = 'assets'
+    delete config.assetDirs
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
   } catch {
     writeFileSync(
@@ -71,8 +84,7 @@ async function setV5Layout(): Promise<void> {
         {
           version: 1,
           mode: 'PRODUCTION',
-          assetRoot: '',
-          assetDirs: { domain: 'domains', blueprint: 'blueprints', stack: 'stack' },
+          assetRoot: 'assets',
         },
         null,
         2,
@@ -109,7 +121,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
     expect(json.ok).toBe(true)
     expect(json.data.results[0].status).toBe('updated')
 
-    const oxnPath = join(tmpDir, '.openxenon', 'domains', 'OrderContext.oxn')
+    const oxnPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'OrderContext.oxn')
     expect(existsSync(oxnPath)).toBe(true)
   })
 
@@ -119,7 +131,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
     await runCli(['domain', 'create', 'NC'])
     await runPhase1('NC', 'domain')
 
-    const mdPath = join(tmpDir, '.openxenon', 'domains-md', 'NC.md')
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'NC.md')
     const mdBefore = readFileSync(mdPath, 'utf-8')
     const _mdMtimeBefore = (await import('fs')).statSync(mdPath).mtimeMs
 
@@ -185,9 +197,9 @@ describe('oxn domain sync-md (Phase 2)', () => {
     await runPhase1('P', 'domain')
 
     // 改 .oxn (模拟开发者手编辑) — setV5Layout 用 v0.5 路径
-    const oxnPath = join(tmpDir, '.openxenon', 'domains', 'P.oxn')
+    const oxnPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'P.oxn')
     const oxnContent = readFileSync(oxnPath, 'utf-8')
-    writeFileSync(oxnPath, `${oxnContent}\n// manual edit\n`, 'utf-8')
+    writeOxn(oxnPath, `${oxnContent}\n// manual edit\n`)
 
     // 用 --oxn-priority: .oxn 改触发 Phase 1 sync 重新生成 .md
     const r = await runCli(['domain', 'sync-md', 'P', '--oxn-priority', '--no-chain', '--json'])
@@ -215,8 +227,8 @@ describe('oxn domain sync-md (Phase 2)', () => {
     await setV5Layout()
     await runCli(['domain', 'create', 'RT'])
     // 编辑 OrderContext.oxn 添加 term/ban/invariant
-    const oxnPath = join(tmpDir, '.openxenon', 'domains', 'RT.oxn')
-    writeFileSync(
+    const oxnPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'RT.oxn')
+    writeOxn(
       oxnPath,
       `domain "RT" {
   description = "Round-trip test domain"
@@ -250,8 +262,8 @@ describe('oxn domain sync-md (Phase 2)', () => {
     await initProject()
     await setV5Layout()
     await runCli(['domain', 'create', 'DDesc'])
-    const oxnPath = join(tmpDir, '.openxenon', 'domains', 'DDesc.oxn')
-    writeFileSync(
+    const oxnPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'DDesc.oxn')
+    writeOxn(
       oxnPath,
       `domain "DDesc" {
   description = "我的真实描述文本 - 不能丢失"
@@ -264,7 +276,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
     // Phase 1: .oxn → .md
     await runPhase1('DDesc', 'domain')
-    const mdContent = readFileSync(join(tmpDir, '.openxenon', 'domains-md', 'DDesc.md'), 'utf-8')
+    const mdContent = readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains-md', 'DDesc.md'), 'utf-8')
     expect(mdContent).toContain('> 我的真实描述文本 - 不能丢失')
 
     // Phase 2: .md → .oxn
@@ -311,7 +323,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
     await initProject()
     await setV5Layout()
     const { mkdirSync } = await import('fs')
-    const bpDir = join(tmpDir, '.openxenon', 'blueprints')
+    const bpDir = join(tmpDir, '.openxenon', 'assets', 'blueprints')
     mkdirSync(bpDir, { recursive: true })
     const oxnPath = join(bpDir, 'rt-bp.oxn')
     writeFileSync(
@@ -345,7 +357,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
     await initProject()
     await setV5Layout()
     const { mkdirSync } = await import('fs')
-    const bpDir = join(tmpDir, '.openxenon', 'blueprints')
+    const bpDir = join(tmpDir, '.openxenon', 'assets', 'blueprints')
     mkdirSync(bpDir, { recursive: true })
     const oxnPath = join(bpDir, 'v-bp.oxn')
     writeFileSync(

@@ -91,6 +91,7 @@ import {
   resolveAssetAltPath,
   resolveAssetFormat,
   resolveAutoSync,
+  resolveAssetDir,
 } from '@openxenon/engine/infra/paths'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
@@ -385,8 +386,14 @@ const createSubcommand = defineCommand({
     // (projectRoot already declared above)
 
     if (customBlueprint || blueprintNameArg) {
+      // v0.6.1-alpha.0 #2-8: 用 config 解析 blueprint 路径（不再硬编码老路径）
+      const config = readProjectConfig(projectRoot)
+      const bpAssetDir = resolveAssetDir(projectRoot, 'blueprint', config)
       const defaultCandidates = blueprintNameArg
         ? [
+            join(bpAssetDir, `${blueprintNameArg}.oxn`),
+            join(bpAssetDir, blueprintNameArg, 'blueprint.oxn'),
+            // v0.5 fallback
             join(projectRoot, '.openxenon', 'blueprints', `${blueprintNameArg}.oxn`),
             join(projectRoot, '.openxenon', 'blueprints', blueprintNameArg, 'blueprint.oxn'),
           ]

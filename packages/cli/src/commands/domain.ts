@@ -1,6 +1,14 @@
 import { defineCommand } from 'citty'
 import { t } from '@openxenon/engine/infra/i18n'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+  chmodSync,
+  statSync,
+} from '@openxenon/engine/infra/filesystem'
 import { join, resolve } from 'path'
 import { URI } from 'langium'
 import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
@@ -220,6 +228,8 @@ const createSubcommand = defineCommand({
     const template = domainCreateTemplate(name, assetFormat)
 
     writeFileSync(primaryPath, template, 'utf-8')
+    // v0.6.1-alpha.0 #1-4: 立即锁 0o444（planLock 守卫前提）— 工程师无法绕过 .oxn 文件
+    chmodSync(primaryPath, 0o444)
 
     // v0.5 Phase 3: 自动 sync 到另一种格式
     if (autoSync) {
@@ -228,12 +238,14 @@ const createSubcommand = defineCommand({
           // .oxn → .md
           const { md: altContent } = await compileOxnToMd(template, { entity: 'domain', frontmatter: true })
           writeFileSync(altPath, altContent, 'utf-8')
+          chmodSync(altPath, 0o444)
         } else {
           // .md → .oxn (use serializer)
           const { tree, frontmatter: fm } = parseMarkdown(template)
           const ir = extractDomainIR(tree, fm)
           const altContent = serializeDomainToOxn(ir)
           writeFileSync(altPath, altContent, 'utf-8')
+          chmodSync(altPath, 0o444)
         }
       } catch {
         // autoSync 失败不阻断主命令
@@ -696,7 +708,7 @@ const syncSubcommand = defineCommand({
 
     for (const name of names) {
       const oxnPath = join(domainsDir, `${name}.oxn`)
-      const mdPath = join(projectRoot, BOUNDARY_DIR, 'domains-md', `${name}.md`)
+      const mdPath = join(projectRoot, BOUNDARY_DIR, 'assets', 'domains-md', `${name}.md`)
       const cachePath = getCachePath(projectRoot, 'domain', name)
 
       if (!existsSync(oxnPath)) {
@@ -741,7 +753,7 @@ const syncSubcommand = defineCommand({
       }
 
       // 写 .md
-      const mdDir = join(projectRoot, BOUNDARY_DIR, 'domains-md')
+      const mdDir = join(projectRoot, BOUNDARY_DIR, 'assets', 'domains-md')
       if (!existsSync(mdDir)) mkdirSync(mdDir, { recursive: true })
 
       // 构造含 sync frontmatter 的 .md, 直接写盘 (无 chicken-egg 问题)
@@ -824,6 +836,8 @@ const syncMdSubcommand = defineCommand({
     const dryRun = ctx.args['dry-run'] === true
     // citty 0.1.6 把 `--no-X` 解析为 `X: false` (no- 前缀反转)
     const noChain = ctx.args.chain === false
+    // v0.6.1-alpha.0 #1-15: 显式 --oxn-priority 触发 .oxn 优先保护（防 data loss）
+    // 默认 false 保持向后兼容；测试场景可显式加 --oxn-priority 验证保护行为
     const oxnPriority = ctx.args['oxn-priority'] === true
     const noRoundtrip = ctx.args.roundtrip === false
     const noParseCheck = ctx.args['parse-check'] === false
@@ -834,7 +848,7 @@ const syncMdSubcommand = defineCommand({
       return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
     }
 
-    const mdDir = join(projectRoot, BOUNDARY_DIR, 'domains-md')
+    const mdDir = join(projectRoot, BOUNDARY_DIR, 'assets', 'domains-md')
     const config = readProjectConfig(projectRoot)
     const oxnDir = resolveAssetDir(projectRoot, 'domain', config)
     let names: string[]
@@ -962,9 +976,19 @@ const syncMdSubcommand = defineCommand({
         }
       }
 
-      // 写 .oxn
+      // 写 .oxn（v0.6.1-alpha.0 #1-4 兼容：原文件 0o444 时临时抬位 0o644，写完恢复 0o444）
       if (!existsSync(oxnDir)) mkdirSync(oxnDir, { recursive: true })
-      writeFileSync(oxnPath, oxnContent, 'utf-8')
+      const wasReadOnly = existsSync(oxnPath) && (statSync(oxnPath).mode & 0o777) === 0o444
+      if (wasReadOnly) {
+        chmodSync(oxnPath, 0o644)
+      }
+      try {
+        writeFileSync(oxnPath, oxnContent, 'utf-8')
+      } finally {
+        if (wasReadOnly) {
+          chmodSync(oxnPath, 0o444)
+        }
+      }
 
       // 触发 Phase 1 sync (更新 .md frontmatter + .cache/<name>.hash)
       if (!noChain && existsSync(oxnPath)) {
@@ -1094,8 +1118,8 @@ const compileSubcommand = defineCommand({
       )
     }
 
-    const mdPath = join(getProjectRoot(), BOUNDARY_DIR, 'domains-md', `${result.name}.md`)
-    const mdDir = join(getProjectRoot(), BOUNDARY_DIR, 'domains-md')
+    const mdPath = join(getProjectRoot(), BOUNDARY_DIR, 'assets', 'domains-md', `${result.name}.md`)
+    const mdDir = join(getProjectRoot(), BOUNDARY_DIR, 'assets', 'domains-md')
     if (!existsSync(mdDir)) {
       mkdirSync(mdDir, { recursive: true })
     }

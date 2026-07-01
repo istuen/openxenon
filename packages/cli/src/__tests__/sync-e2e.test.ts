@@ -12,6 +12,19 @@
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { chmodSync } from 'fs'
+
+// v0.6.1-alpha.0 #1-4 兼容：写 .oxn 前抬位 0o644（CLI 会自动恢复）
+function writeOxn(path: string, content: string): void {
+  if (existsSync(path)) {
+    try {
+      chmodSync(path, 0o644)
+    } catch {
+      /* ignore */
+    }
+  }
+  writeFileSync(path, content, 'utf-8')
+}
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { computeSha256, readSyncMetadata } from '@openxenon/engine/oxl/md-pipeline/sync-hash'
@@ -61,8 +74,9 @@ async function setV5Layout(): Promise<void> {
   try {
     const raw = readFileSync(configPath, 'utf-8')
     const config = JSON.parse(raw)
-    config.assetRoot = ''
-    config.assetDirs = { domain: 'domains', blueprint: 'blueprints', stack: 'stack' }
+    // v0.6.1-alpha.0 #1-2: 不设 assetDirs（让 CLI 用 default `assets/domains/...`）
+    config.assetRoot = 'assets'
+    delete config.assetDirs
     writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8')
   } catch {
     // config.json may not exist yet — create it
@@ -74,8 +88,7 @@ async function setV5Layout(): Promise<void> {
         {
           version: 1,
           mode: 'PRODUCTION',
-          assetRoot: '',
-          assetDirs: { domain: 'domains', blueprint: 'blueprints', stack: 'stack' },
+          assetRoot: 'assets',
         },
         null,
         2,
@@ -95,7 +108,7 @@ describe('oxn domain sync (Phase 1)', () => {
     expect(r.exitCode).toBe(0)
     expect(r.stdout).toContain('updated:   1')
 
-    const mdPath = join(tmpDir, '.openxenon', 'domains-md', 'OrderContext.md')
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'OrderContext.md')
     expect(existsSync(mdPath)).toBe(true)
 
     const md = readFileSync(mdPath, 'utf-8')
@@ -127,9 +140,9 @@ describe('oxn domain sync (Phase 1)', () => {
     await setV5Layout()
     await runCli(['domain', 'create', 'Y'])
     // v0.5 Phase 3: create 已自动 sync 到 .md — 删掉后再测 dry-run
-    const mdPath = join(tmpDir, '.openxenon', 'domains-md', 'Y.md')
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'Y.md')
     if (existsSync(mdPath)) rmSync(mdPath)
-    const cacheDir = join(tmpDir, '.openxenon', 'domains-md', '.cache')
+    const cacheDir = join(tmpDir, '.openxenon', 'assets', 'domains-md', '.cache')
     if (existsSync(cacheDir)) rmSync(cacheDir, { recursive: true })
 
     const r = await runCli(['domain', 'sync', 'Y', '--dry-run'])
@@ -147,18 +160,18 @@ describe('oxn domain sync (Phase 1)', () => {
 
     const first = await runCli(['domain', 'sync', 'Z'])
     expect(first.exitCode).toBe(0)
-    const firstMdSha = computeSha256(readFileSync(join(tmpDir, '.openxenon', 'domains-md', 'Z.md'), 'utf-8'))
+    const firstMdSha = computeSha256(readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains-md', 'Z.md'), 'utf-8'))
 
     // 改 .oxn
-    const oxnPath = join(tmpDir, '.openxenon', 'domains', 'Z.oxn')
+    const oxnPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'Z.oxn')
     const oxnContent = readFileSync(oxnPath, 'utf-8')
-    writeFileSync(oxnPath, `${oxnContent}\n// modified\n`, 'utf-8')
+    writeOxn(oxnPath, `${oxnContent}\n// modified\n`)
 
     const second = await runCli(['domain', 'sync', 'Z'])
     expect(second.exitCode).toBe(0)
     expect(second.stdout).toContain('updated:   1')
 
-    const secondMdSha = computeSha256(readFileSync(join(tmpDir, '.openxenon', 'domains-md', 'Z.md'), 'utf-8'))
+    const secondMdSha = computeSha256(readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains-md', 'Z.md'), 'utf-8'))
     expect(secondMdSha).not.toBe(firstMdSha)
   })
 
@@ -248,8 +261,8 @@ describe('sync metadata consistency', () => {
     await runCli(['domain', 'create', 'Check'])
 
     await runCli(['domain', 'sync', 'Check'])
-    const mdPath = join(tmpDir, '.openxenon', 'domains-md', 'Check.md')
-    const cachePath = join(tmpDir, '.openxenon', 'domains-md', '.cache', 'Check.hash')
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'Check.md')
+    const cachePath = join(tmpDir, '.openxenon', 'assets', 'domains-md', '.cache', 'Check.hash')
     const actualSha = computeSha256(readFileSync(mdPath, 'utf-8'))
     const cacheSha = readFileSync(cachePath, 'utf-8').trim()
 
