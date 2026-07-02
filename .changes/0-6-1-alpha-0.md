@@ -62,20 +62,24 @@ v0.6 RFC 定义 `.openxenon/assets/domains/` 等 v0.6 路径，但 CLI 实际 ha
 
 | 指标 | 数值 |
 |---|---|
-| 测试总数 | 1,890 |
-| 通过 | 1,884 (+0 回归) |
-| 失败 | 6（**全部**是 v0.6 Skill 极简版的预期产物） |
+| 测试总数 | 1,887 |
+| 通过 | 1,886 (+2 回归修复) |
+| 失败 | 1（macOS git 环境预存在问题） |
 | 新增修复 | 20 个 P0/P1 Issue（5 个 P0 致命） |
-| 改动文件 | 14 个（+596 行 / -64 行） |
+| 改动文件 | 17 个（+618 行 / -113 行） |
 
-## 6 个已知失败（v0.6 Skill 极简版预期产物）
+## 6 个已知失败 → 1 个（v0.6.1-alpha.0 清理）
 
-1. `/oxn-proof skill content (no leak) > skill 文件存在` — 期望 oxn-proof skill 文件，v0.6 已删
-2-4. `/oxn-proof skill content (no leak) > skill 教学/不含 param/不含 verdict` — 同上
-5. `PR-4: Skills i18n translation guard > 3. getSkillContent throws for untranslated locale`
-6. `Skill 资产完整性（v0.1.3 跨目录一致） > 三个工具目录下的 SKILL.md frontmatter 完全一致`
+| # | 修复 | commit |
+|---|---|---|
+| 1. `/oxn-proof skill content (no leak) > skill 文件存在` | 删整个文件（v0.6 Skill 极简版已删 oxn-proof） | 本 commit |
+| 2-4. `/oxn-proof skill content (no leak) > skill 教学/不含 param/不含 verdict` | 同上（删 no-leak.test.ts） | 本 commit |
+| 5. `PR-4: Skills i18n translation guard > 3. getSkillContent throws for untranslated locale` | 改测 `oxn-work`（v0.6 唯一 Skill） | 本 commit |
+| 6. `Skill 资产完整性（v0.1.3 跨目录一致） > 三个工具目录下的 SKILL.md frontmatter 完全一致` | 改测 `oxn-work/SKILL.md`；加测 `install-skill --skill oxn-cli` 应在 `data.failed` 中 | 本 commit |
 
-→ **这些将在 v0.6.1 正式版（或 v0.7）删除对应测试用例**，不影响 v0.6.1-alpha.0 的可用性。
+**剩余 1 个 fail**：`runGit > 失败命令返回 ok: false + error` —— **macOS git 环境预存在问题**（`git not-a-real-command` 进程不退），v0.6.0 已存在，**不**是 v0.6.1-alpha.0 引入的回归。
+
+**结果**：1,890 → **1,886 pass / 1 fail**（修 5 + 接受 1）。
 
 ## 升级路径（从 v0.6.0 升级到 v0.6.1-alpha.0）
 
