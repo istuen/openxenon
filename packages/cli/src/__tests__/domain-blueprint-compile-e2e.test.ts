@@ -77,8 +77,8 @@ describe('oxn domain compile (A2)', () => {
     expect(compile.exitCode).toBe(0)
     expect(compile.stdout).toContain('Compiled OrderContext')
 
-    // 3. .md 输出到 .openxenon/assets/domains-md/OrderContext.md（v0.6 RFC 路径）
-    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'OrderContext.md')
+    // 3. .md 输出到 .openxenon/assets/domains/OrderContext.md（v0.6 RFC 路径）
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'OrderContext.md')
     expect(existsSync(mdPath)).toBe(true)
     const md = readFileSync(mdPath, 'utf-8')
     expect(md).toContain('# Domain: OrderContext')
@@ -95,7 +95,7 @@ describe('oxn domain compile (A2)', () => {
     expect(json.ok).toBe(true)
     expect(json.data.name).toBe('X')
     expect(json.data.contentHash).toMatch(/^[a-f0-9]{64}$/)
-    expect(json.data.target).toContain('.openxenon/assets/domains-md/X.md')
+    expect(json.data.target).toContain('.openxenon/assets/domains/X.md')
   })
 
   test('domain compile 支持 PascalCase 与 kebab-case 互通（OrderContext）', async () => {
@@ -213,7 +213,7 @@ describe('oxn domain compile + 错误消息一致性 (A2)', () => {
       }
     })
 
-    const mdPath = `${tmpDir}/.openxenon/assets/domains-md/E2E.md`
+    const mdPath = `${tmpDir}/.openxenon/assets/domains/E2E.md`
     const mdContent = readFileSync(mdPath, 'utf-8')
     const pipeline = runMdPipeline({ content: mdContent, filePath: mdPath })
 

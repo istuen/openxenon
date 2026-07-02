@@ -108,7 +108,7 @@ describe('oxn domain sync (Phase 1)', () => {
     expect(r.exitCode).toBe(0)
     expect(r.stdout).toContain('updated:   1')
 
-    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'OrderContext.md')
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'OrderContext.md')
     expect(existsSync(mdPath)).toBe(true)
 
     const md = readFileSync(mdPath, 'utf-8')
@@ -140,9 +140,9 @@ describe('oxn domain sync (Phase 1)', () => {
     await setV5Layout()
     await runCli(['domain', 'create', 'Y'])
     // v0.5 Phase 3: create 已自动 sync 到 .md — 删掉后再测 dry-run
-    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'Y.md')
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'Y.md')
     if (existsSync(mdPath)) rmSync(mdPath)
-    const cacheDir = join(tmpDir, '.openxenon', 'assets', 'domains-md', '.cache')
+    const cacheDir = join(tmpDir, '.openxenon', 'assets', 'domains', '.cache')
     if (existsSync(cacheDir)) rmSync(cacheDir, { recursive: true })
 
     const r = await runCli(['domain', 'sync', 'Y', '--dry-run'])
@@ -160,7 +160,7 @@ describe('oxn domain sync (Phase 1)', () => {
 
     const first = await runCli(['domain', 'sync', 'Z'])
     expect(first.exitCode).toBe(0)
-    const firstMdSha = computeSha256(readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains-md', 'Z.md'), 'utf-8'))
+    const firstMdSha = computeSha256(readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'Z.md'), 'utf-8'))
 
     // 改 .oxn
     const oxnPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'Z.oxn')
@@ -171,7 +171,7 @@ describe('oxn domain sync (Phase 1)', () => {
     expect(second.exitCode).toBe(0)
     expect(second.stdout).toContain('updated:   1')
 
-    const secondMdSha = computeSha256(readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains-md', 'Z.md'), 'utf-8'))
+    const secondMdSha = computeSha256(readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'Z.md'), 'utf-8'))
     expect(secondMdSha).not.toBe(firstMdSha)
   })
 
@@ -261,8 +261,8 @@ describe('sync metadata consistency', () => {
     await runCli(['domain', 'create', 'Check'])
 
     await runCli(['domain', 'sync', 'Check'])
-    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'Check.md')
-    const cachePath = join(tmpDir, '.openxenon', 'assets', 'domains-md', '.cache', 'Check.hash')
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'Check.md')
+    const cachePath = join(tmpDir, '.openxenon', 'assets', 'domains', '.cache', 'Check.hash')
     const actualSha = computeSha256(readFileSync(mdPath, 'utf-8'))
     const cacheSha = readFileSync(cachePath, 'utf-8').trim()
 

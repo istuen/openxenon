@@ -92,7 +92,7 @@
   },
   "domain": {
     "create": {
-      "description": "Generate a new domain skeleton in .openxenon/domains/ (DDD bounded context)",
+      "description": "Generate a new domain skeleton in .openxenon/assets/domains/ (DDD bounded context, v0.6 path)",
       "name": "Domain name (PascalCase recommended, e.g. MemberContext)",
       "force": "Overwrite existing file"
     },
@@ -102,7 +102,7 @@
       "filePath": "Specify .oxn file path directly (optional escape hatch)"
     },
     "list": {
-      "description": "List all registered domains in .openxenon/domains/"
+      "description": "List all registered domains in .openxenon/assets/domains/ (v0.6 path)"
     },
     "index": {
       "description": "Rebuild global Domain slim index",
@@ -110,7 +110,7 @@
       "freshness": "Only check if index is fresh"
     },
     "compile": {
-      "description": "Recompile .oxn to v0.3 canonical pure MD .md (output to .openxenon/domains-md/)",
+      "description": "Recompile .oxn to v0.3 canonical pure MD .md (output to .openxenon/assets/domains/, same dir as .oxn)",
       "name": "Domain name",
       "filePath": "Specify .oxn file path directly (optional escape hatch)"
     },

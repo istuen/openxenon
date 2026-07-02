@@ -465,11 +465,12 @@ const listSubcommand = defineCommand({
     // v1.1 PR-1: 优先走 .openxenon/.cache/domains.json（slim 索引），
     // 过滤 status='ok' 的条目 —— parseDomainSlim 软检测会把 NAME_FILE_MISMATCH
     // 标记为 invalid，避免 list 静默显示坏数据。
+    // v0.6.1-alpha.0 #1-18: 额外校验文件实际存在（缓存可能陈旧，文件已删）
     const indexPath = getDomainIndexPath(projectRoot)
     const cached = loadDomainIndex(indexPath)
     if (cached) {
       const okDomains = cached.domains
-        .filter((d) => d.status === 'ok')
+        .filter((d) => d.status === 'ok' && existsSync(join(projectRoot, BOUNDARY_DIR, d.file)))
         .map((d) => ({
           name: d.name,
           file: d.file,
@@ -640,7 +641,7 @@ const indexSubcommand = defineCommand({
 //
 // 提交流程:
 //   1. 读 .openxenon/domains/<name>.oxn, 算 SHA-256 → sha_oxn_current
-//   2. 读 .openxenon/domains-md/<name>.md frontmatter.oxn-source-sha → sha_oxn_prev
+//   2. 读 .openxenon/assets/domains/<name>.md frontmatter.oxn-source-sha → sha_oxn_prev
 //   3. 编译 .oxn → .md (用 oxl-md-decompiler)
 //   4. 比对:
 //      - sha_oxn_current == sha_oxn_prev AND sha_md_new == sha_md_prev → no-op
@@ -708,7 +709,8 @@ const syncSubcommand = defineCommand({
 
     for (const name of names) {
       const oxnPath = join(domainsDir, `${name}.oxn`)
-      const mdPath = join(projectRoot, BOUNDARY_DIR, 'assets', 'domains-md', `${name}.md`)
+      // v0.6.1-alpha.0 #1-7: .md 路径与主目录对齐
+      const mdPath = join(domainsDir, `${name}.md`)
       const cachePath = getCachePath(projectRoot, 'domain', name)
 
       if (!existsSync(oxnPath)) {
@@ -753,7 +755,11 @@ const syncSubcommand = defineCommand({
       }
 
       // 写 .md
-      const mdDir = join(projectRoot, BOUNDARY_DIR, 'assets', 'domains-md')
+      // v0.6.1-alpha.0 #1-7: sync-md .md 路径与 domain create 主目录保持一致
+      //   v0.5 模式：.oxn 与 .md 写同目录（assetFormat 选 primary）
+      //   v0.6 RFC：默认 `assets/domains/<name>.oxn` + 同目录 `<name>.md`
+      //   改前：sync-md 写 `assets/domains-md/`（孤儿目录），与 create 路径错位
+      const mdDir = resolveAssetDir(projectRoot, 'domain', readProjectConfig(projectRoot))
       if (!existsSync(mdDir)) mkdirSync(mdDir, { recursive: true })
 
       // 构造含 sync frontmatter 的 .md, 直接写盘 (无 chicken-egg 问题)
@@ -763,6 +769,14 @@ const syncSubcommand = defineCommand({
       })
       const mdSha = computeSha256(finalContent)
 
+      // v0.6.1-alpha.0 #1-4: sync-md 写盘前抬位 0o644（domain create 写的 .md 是 0o444）
+      if (existsSync(mdPath)) {
+        try {
+          chmodSync(mdPath, 0o644)
+        } catch {
+          /* ignore */
+        }
+      }
       writeFileSync(mdPath, finalContent, 'utf-8')
       writeCacheSha(cachePath, mdSha)
 
@@ -848,17 +862,17 @@ const syncMdSubcommand = defineCommand({
       return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
     }
 
-    const mdDir = join(projectRoot, BOUNDARY_DIR, 'assets', 'domains-md')
+    // v0.6.1-alpha.0 #1-7: 与 sync-md 一致，列名以主目录的 .oxn 为准
     const config = readProjectConfig(projectRoot)
     const oxnDir = resolveAssetDir(projectRoot, 'domain', config)
     let names: string[]
     if (all) {
-      if (!existsSync(mdDir)) {
-        return outputError({ code: 'OXN_NO_PROJECT', message: 'no .openxenon/domains-md/' }, format)
+      if (!existsSync(oxnDir)) {
+        return outputError({ code: 'OXN_NO_PROJECT', message: `no ${oxnDir.replace(`${projectRoot}/`, '')}` }, format)
       }
-      names = readdirSync(mdDir)
-        .filter((f) => f.endsWith('.md'))
-        .map((f) => f.slice(0, -'.md'.length))
+      names = readdirSync(oxnDir)
+        .filter((f) => f.endsWith('.oxn'))
+        .map((f) => f.slice(0, -'.oxn'.length))
     } else {
       names = [singleName as string]
     }
@@ -873,7 +887,7 @@ const syncMdSubcommand = defineCommand({
     }> = []
 
     for (const name of names) {
-      const mdPath = join(mdDir, `${name}.md`)
+      const mdPath = join(oxnDir, `${name}.md`)
       const oxnPath = join(oxnDir, `${name}.oxn`)
       const mdCachePath = getCacheMdPath(projectRoot, 'domain', name)
 
@@ -1007,8 +1021,8 @@ const syncMdSubcommand = defineCommand({
         }
       }
 
-      // 写 Phase 2 cache
-      const cacheDir = join(mdDir, '.cache')
+      // 写 Phase 2 cache（v0.6.1-alpha.0 #1-7: cache 与主目录同级）
+      const cacheDir = join(oxnDir, '.cache')
       if (!existsSync(cacheDir)) mkdirSync(cacheDir, { recursive: true })
       const finalMdSha = existsSync(mdPath) ? computeSha256(readFileSync(mdPath, 'utf-8')) : shaMdCurrent
       writeFileSync(mdCachePath, `${finalMdSha}\n`, 'utf-8')
@@ -1118,10 +1132,19 @@ const compileSubcommand = defineCommand({
       )
     }
 
-    const mdPath = join(getProjectRoot(), BOUNDARY_DIR, 'assets', 'domains-md', `${result.name}.md`)
-    const mdDir = join(getProjectRoot(), BOUNDARY_DIR, 'assets', 'domains-md')
+    // v0.6.1-alpha.0 #1-7: domain compile .md 输出与 .oxn 同目录（v0.5 双轨语义）
+    const mdDir = resolveAssetDir(getProjectRoot(), 'domain', readProjectConfig(getProjectRoot()))
     if (!existsSync(mdDir)) {
       mkdirSync(mdDir, { recursive: true })
+    }
+    const mdPath = join(mdDir, `${result.name}.md`)
+    // v0.6.1-alpha.0 #1-4: 写盘前抬位 0o644（.md 可能是 0o444）
+    if (existsSync(mdPath)) {
+      try {
+        chmodSync(mdPath, 0o644)
+      } catch {
+        /* ignore */
+      }
     }
     writeFileSync(mdPath, result.md, 'utf-8')
 

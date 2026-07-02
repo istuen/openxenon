@@ -131,7 +131,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
     await runCli(['domain', 'create', 'NC'])
     await runPhase1('NC', 'domain')
 
-    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains-md', 'NC.md')
+    const mdPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'NC.md')
     const mdBefore = readFileSync(mdPath, 'utf-8')
     const _mdMtimeBefore = (await import('fs')).statSync(mdPath).mtimeMs
 
@@ -276,7 +276,7 @@ describe('oxn domain sync-md (Phase 2)', () => {
 
     // Phase 1: .oxn → .md
     await runPhase1('DDesc', 'domain')
-    const mdContent = readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains-md', 'DDesc.md'), 'utf-8')
+    const mdContent = readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'DDesc.md'), 'utf-8')
     expect(mdContent).toContain('> 我的真实描述文本 - 不能丢失')
 
     // Phase 2: .md → .oxn

@@ -131,7 +131,7 @@ describe('sync-hash', () => {
     test('getCachePath returns .cache dir structure (v0.6 default)', () => {
       // v0.6.1-alpha.0 #1-2: 跟随 assetRoot，默认 assets/domains-md/.cache/
       const path = getCachePath('/proj', 'domain', 'Foo')
-      expect(path).toBe('/proj/.openxenon/assets/domains-md/.cache/Foo.hash')
+      expect(path).toBe('/proj/.openxenon/assets/domains/.cache/Foo.hash')
     })
   })
 })

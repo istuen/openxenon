@@ -144,7 +144,8 @@ export function getCachePath(rootDir: string, entity: 'domain' | 'blueprint' | '
   } catch {
     // ignore
   }
-  const plural = entity === 'domain' ? 'domains-md' : entity === 'blueprint' ? 'blueprints-md' : 'stack-md'
+  // v0.6.1-alpha.0 #1-7: cache 与主目录同级
+  const plural = entity === 'domain' ? 'domains' : entity === 'blueprint' ? 'blueprints' : 'stack'
   return join(rootDir, '.openxenon', assetRoot, plural, '.cache', `${name}.hash`)
 }
 
@@ -166,6 +167,7 @@ export function getCacheMdPath(rootDir: string, entity: 'domain' | 'blueprint' |
   } catch {
     // ignore
   }
-  const plural = entity === 'domain' ? 'domains-md' : entity === 'blueprint' ? 'blueprints-md' : 'stack-md'
+  // v0.6.1-alpha.0 #1-7: cache 与主目录同级（v0.5 双轨同目录语义）
+  const plural = entity === 'domain' ? 'domains' : entity === 'blueprint' ? 'blueprints' : 'stack'
   return join(rootDir, '.openxenon', assetRoot, plural, '.cache', `${name}.md-hash`)
 }

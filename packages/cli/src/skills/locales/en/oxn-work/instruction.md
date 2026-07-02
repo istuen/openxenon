@@ -3,8 +3,12 @@
 ## Objective
 
 Create a **Work + at least one Task** workspace based on a Blueprint, and after the v1.1 hard-switch, enforce the 8-stage flow:
-- `work.oxn` — workspace orchestrator (declares ref pool + task DAG)
+- `work.oxn` — workspace orchestrator (declares ref pool + task DAG; v0.6 primary, asset format = oxn)
+- `work.md` — MD mirror of the same work (v0.6 auto-sync, located in the same directory as work.oxn at `assets/works/<w>/`, regenerated whenever work.oxn changes)
 - `tasks/<name>/task.oxn` — single blueprint execution + explicit alignment
+
+> v0.6 dual-track: `.oxn` is the source of truth; `.md` is a human-readable mirror. Editing either triggers `oxn work sync` to reconcile the other.
+> Mirrors the dual-track design of domain / blueprint / stack (`assets/{kind}/<name>.oxn` + `<name>.md`) — see v0.6 RFC §3 Unified Paradigm.
 
 After the v1.1 hard-switch, the original `oxn-leader` has been merged into `oxn work`; there is no standalone leader skill.
 
@@ -14,15 +18,35 @@ After the v1.1 hard-switch, the original `oxn-leader` has been merged into `oxn 
 
 - Already in the OXN project root directory
 - Project has been initialized with `oxn init` (`.openxenon/` boundary exists)
-- Must have a Blueprint (located at `.openxenon/blueprints/<name>.oxn`), created with `oxn blueprint create`
-- **Optional**: Have a DDD Domain (located at `.openxenon/domains/<kebab>.oxn`), created with `oxn domain create`
+- Must have a Blueprint (located at `.openxenon/assets/blueprints/<name>.oxn`, v0.6 layout; fallback to `.openxenon/blueprints/` for legacy), created with `oxn blueprint create`
+- **Optional**: Have a DDD Domain (located at `.openxenon/assets/domains/<kebab>.oxn`, v0.6 layout; fallback to `.openxenon/domains/` for legacy), created with `oxn domain create`
 
-## Intent-Align Paradigm Reminder
+## Intent-Align Paradigm Reminder (v0.6 E1–E4 dual-layer narrative)
 
-- **Domain** = Business Intent (term/ban/invariant)
-- **Blueprint** = Technical Intent (slot topology)
-- **Work** = Align orchestrator (declares ref pool)
-- **Task** = Align execution unit (aligns 1 blueprint + N domains)
+**v0.6 philosophical boundary** (post-refactor):
+
+> **Engineers define intent, AI runs alignment, OXN produces proof.**
+
+Four structural entities (E1–E4):
+
+- **E1 Domain** = Business constraint hard boundary (term / ban / invariant; the business truth of business IAP)
+- **E1 Blueprint** = Technical constraint hard boundary (slot topology; the technical feasibility of technical IAP)
+- **E2 Work** = Align orchestrator (declares ref pool + task DAG; orchestrates business + technical constraints into multi-round alignment workflows)
+- **E3 Task** = Align execution unit (aligns 1 blueprint + N domains + M parts)
+- **E3 Part** = Align iteration step (each part contains intent_checklist + skill_context + optional probe)
+- **E4 Insight** = Emergent layer (cross-work synthesis reasoning; outside current Work scope)
+
+Engineering layers (L0–L3):
+
+- **L0 Schema/Contract/Processor** — pure types and verdict functions (no IO)
+- **L1 Infra/OXL** — IO execution and document parsing
+- **L2 Builtin/Work** — business modules
+- **L3 CLI/Daemon/Hall/Skills/Watcher** — user / process interfaces
+
+> The legacy IAP three-axis narrative (Intent-Align-Proof) has been replaced by the E1-E4 four-structure model; Round snapshots are retained as the Align stage's iteration unit (v0.6 RFC §2.3).
+
+Asset details:
+
 - **Part / Probe** = **Not standalone assets**, **inline** within `task { part { probe {} } }` blocks
 
 ## v1.1 8-Stage Flow Chart
@@ -367,21 +391,34 @@ OXN provides a **builtin `git-workflow` blueprint** (`src/builtin/blueprints/git
 
 **Core boundary**: **OXN never commits / pushes / merges on behalf of humans.** It only observes and produces mergeability evidence for humans to consume when running `git merge`.
 
-### Derived Builtin Blueprint (Standard cp Convention)
+### Derived Builtin Blueprint (Standard cp Convention, v0.6 path)
 
 ```bash
 oxn init
-cp src/builtin/blueprints/git-workflow.oxn .openxenon/blueprints/git-workflow.oxn
+# v0.6.1-alpha.0: builtin blueprint derivation aligned with v0.6 assets/ layout
+mkdir -p .openxenon/assets/blueprints
+cp src/builtin/blueprints/git-workflow.oxn .openxenon/assets/blueprints/git-workflow.oxn
+chmod 644 .openxenon/assets/blueprints/git-workflow.oxn  # unlock from 0o444 lock state
 oxn domain create ProgramContext          # Must include at least term: WorkingTree / Branch / MergeCommit
 oxn blueprint validate git-workflow
 ```
 
-### Integration with Work 8-Stage Flow
+### Integration with Work 8-Stage Flow (v0.6.1-alpha.0: create auto-generates task.oxn skeletons)
 
 ```bash
+# v0.6.1-alpha.0 #3-3 fix: work create automatically generates tasks/<slot>/task.oxn skeleton per blueprint slot
 oxn work create gw-feat-x --blueprint git-workflow
-oxn work add-task gw-feat-x --task ship --blueprint git-workflow --domain ProgramContext
-# Edit work.oxn + tasks/ship/task.oxn (4 part = 4 slot)
+# After creation, .openxenon/works/gw-feat-x/ automatically contains:
+#   work.oxn
+#   tasks/init/task.oxn
+#   tasks/build/task.oxn
+#   tasks/verify/task.oxn
+#   tasks/ship/task.oxn       (git-workflow has 4 slots = 4 task.oxn skeletons)
+# Just edit the files to fill skill_context etc., **no need to run add-task manually**
+
+# Manual add-task is still available (if you need to add more tasks later):
+oxn work add-task gw-feat-x --task extra --blueprint git-workflow --domain ProgramContext
+
 oxn work validate gw-feat-x --json
 oxn work lock gw-feat-x --json
 ```
@@ -395,6 +432,7 @@ cd -
 oxn work run gw-feat-x --json
 oxn work submit gw-feat-x --task ship --json          # 4 times (4 part = 4 slot)
 oxn work status gw-feat-x --json                       # overallStatus = passed
+oxn work finalize gw-feat-x --json                     # Finalize (added in v0.6.1) — write final status
 ```
 
 ### Obtaining Mergeability Evidence (Critical)

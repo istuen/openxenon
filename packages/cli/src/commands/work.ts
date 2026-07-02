@@ -150,6 +150,40 @@ function ensureDirectory(dir: string): void {
   }
 }
 
+// v0.6.1-alpha.0 #3-3: work create 后自动为 blueprint 每个 slot 生成 task.oxn 骨架
+function writeTaskTemplate(
+  projectRoot: string,
+  workName: string,
+  taskName: string,
+  blueprintName: string,
+  domainName: string,
+): { written: boolean; path: string; reason?: 'exists' } {
+  const taskDir = getTaskDir(projectRoot, workName, taskName)
+  const taskFile = getWorkTaskFile(workName, taskName)
+  if (existsSync(taskFile)) {
+    return { written: false, path: taskFile, reason: 'exists' }
+  }
+  const domainLine = domainName ? `  domain "${domainName}"` : ''
+  const template = `// Task: ${taskName} (work: ${workName}, blueprint: ${blueprintName})
+// Created by: oxn work add-task <name> --task ${taskName} --blueprint ${blueprintName} ${domainName ? `--domain ${domainName}` : ''}
+//
+// 任务执行：
+//   oxn work status <name>
+//   oxn work context <name> --task ${taskName}
+
+task "${taskName}" {
+  blueprint "${blueprintName}"
+${domainLine}
+  part "slot-name" {
+    skill_context = "TODO: 描述 AI 执行指令"
+  }
+}
+`
+  ensureDirectory(taskDir)
+  writeFileSync(taskFile, template, 'utf-8')
+  return { written: true, path: taskFile }
+}
+
 function validateWorkName(name: string): { valid: boolean; error?: string } {
   if (!name) return { valid: false, error: 'Name is required' }
   if (name.length < 2) return { valid: false, error: 'Name too short (min 2 chars)' }
@@ -493,6 +527,18 @@ const createSubcommand = defineCommand({
             // autoSync 失败不阻断主命令
           }
         }
+        // v0.6.1-alpha.0 #3-3: work create 自动为 blueprint 每个 slot 生成 task.oxn 骨架
+        //   避免 work 锁后 run 报 "task X not found in work Y"。
+        //   用户可继续手动 `add-task` 补 task 或 `--force` 覆盖。
+        const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
+        for (const slot of slots) {
+          const t = writeTaskTemplate(projectRoot, workName, slot.name, resolvedBlueprintName, '')
+          autoTasks.push({
+            name: slot.name,
+            path: t.path,
+            status: t.written ? 'created' : 'exists',
+          })
+        }
         return output(
           {
             ok: true,
@@ -507,7 +553,8 @@ const createSubcommand = defineCommand({
                 slots: slots.map((s) => s.name),
               },
               files: { work: workFile },
-              nextStep: `Edit the file, then run: oxn work add-task <name> --task <slot> --blueprint ${resolvedBlueprintName}\n  oxn work run <name>`,
+              tasks: autoTasks,
+              nextStep: `Edit the task files, then run: oxn work validate ${workName} && oxn work lock ${workName} && oxn work run ${workName}`,
             },
           },
           format,
@@ -798,7 +845,6 @@ const addTaskSubcommand = defineCommand({
       )
     }
 
-    const taskDir = getWorkTaskDir(workName, taskName)
     const taskFile = getWorkTaskFile(workName, taskName)
     if (existsSync(taskFile) && !force) {
       return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.oxn already exists at ${taskFile}`, {
@@ -849,24 +895,13 @@ const addTaskSubcommand = defineCommand({
       )
     }
 
-    const domainLine = domainName ? `  domain "${domainName}"` : ''
-    const template = `// Task: ${taskName} (work: ${workName}, blueprint: ${blueprintName})
-// Created by: oxn work add-task <name> --task ${taskName} --blueprint ${blueprintName} ${domainName ? `--domain ${domainName}` : ''}
-//
-// 任务执行：
-//   oxn work status <name>
-//   oxn work context <name> --task ${taskName}
-
-task "${taskName}" {
-  blueprint "${blueprintName}"
-${domainLine}
-  part "slot-name" {
-    skill_context = "TODO: 描述 AI 执行指令"
-  }
-}
-`
-    ensureDirectory(taskDir)
-    writeFileSync(taskFile, template, 'utf-8')
+    const writeResult = writeTaskTemplate(getProjectRoot(), workName, taskName, blueprintName, domainName)
+    if (!writeResult.written && writeResult.reason === 'exists') {
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.oxn already exists at ${taskFile}`, {
+        suggestion: 'use --force to overwrite',
+        format,
+      })
+    }
 
     output(
       {
@@ -1289,6 +1324,26 @@ const runSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
+
+    // v0.6.1-alpha.0 #3-5: work 目录整个被删 → 报 OXN_ALIGN_WORK_REMOVED
+    //   区分：未 init 走 LOCK_NOT_FOUND（work 从未存在过，提案 work create）；
+    //         已 init 但 .openxenon/works/<w>/ 被删 → WORK_REMOVED（暗示 work 锁后被删）
+    const workDir = getWorkDir(projectRoot, workName)
+    if (!existsSync(workDir)) {
+      // 优先判断"未 init"：.openxenon/works/ 整目录不存在 → LOCK_NOT_FOUND
+      const worksRoot = join(projectRoot, BOUNDARY_DIR, 'works')
+      const code = existsSync(worksRoot) ? 'OXN_ALIGN_WORK_REMOVED' : 'OXN_ALIGN_LOCK_NOT_FOUND'
+      const message =
+        code === 'OXN_ALIGN_WORK_REMOVED'
+          ? `work "${workName}" cannot run: work directory deleted`
+          : `work "${workName}" cannot run: no works/ directory — project not initialized or never created a work`
+      const suggestion =
+        code === 'OXN_ALIGN_WORK_REMOVED'
+          ? `run \`oxn work list\` to see existing works; or create a new one with \`oxn work create ${workName}\``
+          : '先执行 `oxn work validate <name>` 生成 .work'
+      return outputError({ code, message, suggestion }, format)
+    }
+
     try {
       // PR-8: 锁守卫优先于 work.oxn 缺失检查——
       //   若 work.oxn 缺失是因为 lock 后被删（不是初建），应报 WORK_REMOVED 而非 NOT_FOUND，
