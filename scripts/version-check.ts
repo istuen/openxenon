@@ -4,8 +4,8 @@ const PKG_VERSION = JSON.parse(readFileSync('package.json', 'utf-8')).version
 
 const files = [
   { path: 'README.md', pattern: /版本:\s*[\d.]+/ },
-  { path: 'docs/zh-cn/changelog/CHANGELOG.md', pattern: /##\s*\[([\d.]+)\]/ },
-  { path: 'docs/en/changelog/CHANGELOG.md', pattern: /##\s*\[([\d.]+)\]/ },
+  { path: 'docs/zh-cn/changelog/CHANGELOG.md', pattern: /##\s*\[([\d.\-a-z]+)\]/ },
+  { path: 'docs/en/changelog/CHANGELOG.md', pattern: /##\s*\[([\d.\-a-z]+)\]/ },
 ]
 
 let hasError = false

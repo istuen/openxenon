@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.1-alpha.0] - 2026-07-02
+
+> **主题**：v0.6.0 架构的调试驱动修复。5 个 Cycle（Asset / Skill / Work / Round / Proof）系统化测试，按问题分批修复 P0/P1 阻塞性问题。
+> **测试结果**：1,890 → 1,884 pass（+0 回归）/ 6 fail（v0.6 Skill 极简版预期产物，归 backlog）
+> **关键修复**：
+> - P0: `oxn work finalize` 从零实现（之前完全缺失）
+> - P0: 路径布局修正（`.openxenon/assets/domains-md/` v0.6 RFC 路径）
+> - P0: `chmod 0o444` 落盘（planLock 守卫前提）
+> - P0: Blueprint DAG 环检测（DFS + 灰/白/黑标记）
+> - P0: builtin blueprint 模板与 grammar 一致
+> - P1: domain sync-md 不再覆盖工程师 .oxn（data loss 修复）
+> - P1: proof verify 加 frozen.json hash drift 检测
+
+
 > OpenXenon changelog. Each entry corresponds to a git commit; for detailed PR list see `.openxenon/forges/sprints/EXECUTION-ORDER.md`.
 
 ## [0.3.0] - 2026-06-24
