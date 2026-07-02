@@ -28,7 +28,7 @@ After the v1.1 hard-switch, the original `oxn-leader` has been merged into `oxn 
 ## v1.1 8-Stage Flow Chart
 
 ```
-init → migrate → create → add-task → validate → lock → run → submit / status
+init → migrate → create → add-task → validate → lock → run → submit → finalize
                                               │         │
                                               ▼         ▼
                                           .work      .work.planLock
@@ -49,6 +49,7 @@ init → migrate → create → add-task → validate → lock → run → submi
 - **5**: `oxn work run` (start state machine; requires lock complete)
 - **6**: `oxn work submit` (advance parts within task)
 - **7**: `oxn work status` (query work status)
+- **8**: `oxn work finalize` (close: aggregate all rounds + write final state)
 
 ## Creating Work + Task (v1.1 8 Steps)
 
@@ -183,6 +184,8 @@ Migration tool: `oxn work migrate <w>` (V0 backed up to `.migrated-v0/` for audi
 | `IAP_ALIGN_LOCK_NOT_FOUND` | .work.planLock missing / not locked | YIELD_TO_HUMAN: `oxn work lock` not called / init missing |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | One of the 4-component hashes drifted (workOxn/workDomains/blueprints/tasks) | YIELD_TO_HUMAN: check context.component field to locate drift source |
 | `IAP_ALIGN_WORK_REMOVED` | work.oxn missing but .work still exists (destroyed after lock) | YIELD_TO_HUMAN (distinct from WORK_NOT_FOUND: both are absent) |
+| `OXN_ROUND_ALREADY_PASSED` | Already PASSED, but `next-round` called again | YIELD_TO_HUMAN: call `oxn work finalize` to close |
+| `OXN_ROUND_VERDICT_INVALID` | `--verdict` value not in PASSED/FAILED/INCONCLUSIVE | Fix the command flag |
 
 Trio guard order: first check planLock exists → then check 4-component hash → finally check work.oxn exists.
 

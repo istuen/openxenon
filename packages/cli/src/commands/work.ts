@@ -344,6 +344,7 @@ const createSubcommand = defineCommand({
     blueprint: {
       type: 'string',
       alias: 'b',
+      required: true, // v0.6.1-alpha.0 #3-2: 强制必传（避免 TODO-blueprint 模板错配）
       description: t('work.create.args.blueprint'),
     },
     'blueprint-file': { type: 'string', description: t('work.create.args.blueprintPath') },
@@ -2432,6 +2433,102 @@ const nextRoundSubcommand = defineCommand({
   },
 })
 
+// =============================================================================
+// v0.6.1-alpha.0 #3-1: `oxn work finalize <name>` — 收口 work（汇总所有 round → 最终 frozen.json）
+//
+// 行为：
+//   - 关闭当前 active round（追加 endedAt + verdict）
+//   - 标记 work 终态（passed / failed / finalized）
+//   - 写 trace event
+//   - finalize 不强制要求最后一轮 PASSED（允许「失败收档」语义）
+// =============================================================================
+const finalizeSubcommand = defineCommand({
+  meta: {
+    name: 'finalize',
+    description: '收口 work（汇总所有 round + 写最终状态）',
+  },
+  args: {
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--verdict': {
+      type: 'string',
+      description: '最终裁决：PASSED | FAILED | INCONCLUSIVE（默认沿用最后一轮 verdict）',
+    },
+    '--notes': { type: 'string', description: '收口备注' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const workName = ctx.args.name as string
+    const verdictRaw = ctx.args.verdict as string | undefined
+    const notes = (ctx.args as Record<string, unknown>).notes as string | undefined
+    const projectRoot = getProjectRoot()
+
+    let verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | undefined
+    if (verdictRaw) {
+      if (verdictRaw !== 'PASSED' && verdictRaw !== 'FAILED' && verdictRaw !== 'INCONCLUSIVE') {
+        return outputError(
+          {
+            code: 'OXN_ROUND_VERDICT_INVALID',
+            message: `invalid --verdict: ${verdictRaw}`,
+            suggestion: 'valid values: PASSED | FAILED | INCONCLUSIVE',
+          },
+          format,
+        )
+      }
+      verdict = verdictRaw
+    }
+
+    if (!projectBoundaryExists()) {
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
+    }
+
+    try {
+      const { finalizeWork } = await import('@openxenon/engine/Work/dual-state-exec')
+      const result = finalizeWork({
+        projectRoot,
+        workName,
+        ...(verdict ? { verdict } : {}),
+        ...(notes ? { notes } : {}),
+      })
+      output(
+        {
+          ok: true,
+          data: {
+            workName,
+            finalVerdict: result.finalVerdict,
+            totalRounds: result.totalRounds,
+            finalizedAt: result.finalizedAt,
+            workspace: result.workspace,
+          },
+          human: renderFinalizeHuman(result),
+        },
+        format,
+      )
+    } catch (err) {
+      if (err instanceof IAPError) {
+        const ctx = err.context as { oxnCode?: unknown } | undefined
+        const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
+        return outputError({ code: oxnCode, message: err.message }, format)
+      }
+      const message = err instanceof Error ? err.message : String(err)
+      output(errorJson('OXN_FINALIZE_FAILED', message), format)
+    }
+  },
+})
+
+function renderFinalizeHuman(result: {
+  finalVerdict: string
+  totalRounds: number
+  workspace: { workName: string }
+}): string {
+  return [
+    `Work ${result.workspace.workName} finalized ✓`,
+    `  Final verdict: ${result.finalVerdict}`,
+    `  Total rounds: ${result.totalRounds}`,
+  ].join('\n')
+}
+
 function renderNextRoundHuman(result: ReturnType<typeof nextRoundWork>): string {
   const lines: string[] = [
     `Work ${result.workspace.workName}: new round ${result.round} opened`,
@@ -3128,6 +3225,7 @@ export default defineCommand({
     lock: lockSubcommand,
     unlock: unlockSubcommand,
     'next-round': nextRoundSubcommand,
+    finalize: finalizeSubcommand,
     migrate: migrateSubcommand,
   },
   run() {

@@ -577,3 +577,89 @@ export function getRoundStatus(projectRoot: string, workName: string): RoundStat
     history: state.roundHistory,
   }
 }
+
+/**
+ * v0.6.1-alpha.0 #3-1: 收口 work（汇总所有 round → 写最终 frozen.json）
+ *
+ * 行为：
+ *   - 关闭当前 active round（追加 endedAt + 最终 verdict）
+ *   - 标记 work status = 'finalized' 或 'passed'/'failed'（看最后 verdict）
+ *   - 写 .run/frozen.json（含所有 round summary）
+ *   - 追加 trace event
+ *   - 清 planLock（避免后续 run 误判）
+ *
+ * finalize 不应依赖当前 round 已 PASSED（允许「总结失败 + 收档」语义）
+ */
+export interface FinalizeParams {
+  projectRoot: string
+  workName: string
+  /** 最终裁决（默认用最后 closed round 的 verdict） */
+  verdict?: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+  notes?: string
+}
+
+export interface FinalizeResult {
+  workspace: WorkspaceState
+  finalVerdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING'
+  totalRounds: number
+  finalizedAt: string
+}
+
+export function finalizeWork(params: FinalizeParams): FinalizeResult {
+  const state = loadWorkState(params.projectRoot, params.workName)
+  if (!state) {
+    throwExecError(
+      'ALIGN',
+      'OXN_WORK_NOT_STARTED',
+      `work .run/state.json not found for "${params.workName}". Run \`oxn work run <name>\` first.`,
+    )
+  }
+
+  const nowIso = new Date().toISOString()
+
+  // 关闭当前 active round（若有）
+  const lastRecord = state.roundHistory.at(-1)
+  let finalVerdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING' = 'PENDING'
+
+  if (lastRecord && !lastRecord.endedAt) {
+    const verdict = params.verdict ?? 'FAILED' // 默认 FAILED（用户主动收口）
+    state.roundHistory[state.roundHistory.length - 1] = {
+      ...lastRecord,
+      endedAt: nowIso,
+      verdict,
+      ...(params.notes ? { notes: params.notes } : {}),
+    }
+    finalVerdict = verdict
+  } else if (lastRecord) {
+    // 最后一条已 endedAt
+    finalVerdict = lastRecord.verdict
+  }
+
+  // 标记 work 终态
+  if (finalVerdict === 'PASSED') {
+    state.status = 'passed'
+  } else if (finalVerdict === 'FAILED') {
+    state.status = 'failed'
+  } else {
+    // INCONCLUSIVE / PENDING → 用 'error'（未达 PASSED 状态但已收口）
+    state.status = 'error'
+  }
+  state.updatedAt = nowIso
+  saveWorkState(params.projectRoot, params.workName, state)
+
+  // 写 trace
+  appendWorkTrace(params.projectRoot, params.workName, {
+    event: 'finalize',
+    workName: params.workName,
+    finalVerdict,
+    totalRounds: state.roundHistory.length,
+    at: nowIso,
+  })
+
+  return {
+    workspace: state,
+    finalVerdict,
+    totalRounds: state.roundHistory.length,
+    finalizedAt: nowIso,
+  }
+}

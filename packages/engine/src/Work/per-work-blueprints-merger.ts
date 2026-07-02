@@ -16,6 +16,7 @@ import { dirname, join, relative } from 'path'
 import { z } from 'zod'
 import { parseOxnReference } from '@openxenon/engine/oxl/scope/oxn-scope'
 import { BOUNDARY_DIR, WORK_BLUEPRINTS_JSON } from '@openxenon/engine/kernel'
+import { resolveAssetCandidates } from '@openxenon/engine/infra/paths'
 import { hashText } from './plan-hash'
 
 // ───────── Zod schema ─────────
@@ -78,10 +79,16 @@ export function resolveBlueprintFile(
   name: string,
   projectRoot: string,
 ): { scope: '@oxn' | '@prj'; filePath: string } | null {
-  const bpDir = join(projectRoot, BOUNDARY_DIR, 'blueprints')
+  // v0.6.1-alpha.0 #3-4: 用 resolveAssetCandidates 兼容 v0.5 (blueprints/) + v0.6 (assets/blueprints/) 双布局
+  const { primary: bpPrimary, fallback: bpFallback } = resolveAssetCandidates(projectRoot, 'blueprint')
   const candidates = (n: string): string[] => {
     const kebab = toKebab(n)
-    return [join(bpDir, `${n}.oxn`), join(bpDir, `${kebab}.oxn`)]
+    return [
+      join(bpPrimary, `${n}.oxn`),
+      join(bpPrimary, `${kebab}.oxn`),
+      join(bpFallback, `${n}.oxn`),
+      join(bpFallback, `${kebab}.oxn`),
+    ]
   }
 
   if (ref) {

@@ -28,7 +28,7 @@ v1.1 hard-switch 之后，原 `oxn-leader` 已并入 `oxn work`，无独立 lead
 ## v1.1 8 阶段流程图
 
 ```
-init → migrate → create → add-task → validate → lock → run → submit / status
+init → migrate → create → add-task → validate → lock → run → submit → finalize
                                               │         │
                                               ▼         ▼
                                           .work      .work.planLock
@@ -49,6 +49,7 @@ init → migrate → create → add-task → validate → lock → run → submi
 - **5**: `oxn work run`（启动状态机；要求 lock 完成）
 - **6**: `oxn work submit`（推进 task 内 part）
 - **7**: `oxn work status`（查询 work 状态）
+- **8**: `oxn work finalize`（收口：汇总所有 round + 写最终状态）
 
 ## 创建 Work + Task（v1.1 8 步）
 
@@ -183,6 +184,8 @@ v1.1 把 work 运行时状态从 work.oxn 同级目录搬到 `.run/` 子目录�
 | `IAP_ALIGN_LOCK_NOT_FOUND` | .work.planLock 缺失/未锁 | YIELD_TO_HUMAN：未调 `oxn work lock` / init 缺失 |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | 4 组件 hash 之一漂移（workOxn/workDomains/blueprints/tasks） | YIELD_TO_HUMAN：context.component 字段定位漂移源 |
 | `IAP_ALIGN_WORK_REMOVED` | work.oxn 失踪但 .work 还在（锁后被破坏） | YIELD_TO_HUMAN（区别于 WORK_NOT_FOUND：两个都无） |
+| `OXN_ROUND_ALREADY_PASSED` | 已 PASSED 仍调 next-round | YIELD_TO_HUMAN：调 `oxn work finalize` 收口 |
+| `OXN_ROUND_VERDICT_INVALID` | `--verdict` 值不在 PASSED/FAILED/INCONCLUSIVE | 修命令参数 |
 
 三剑客守卫次序：先校验 planLock 存在 → 再校验 4 组件 hash → 最后校验 work.oxn 存在。
 
