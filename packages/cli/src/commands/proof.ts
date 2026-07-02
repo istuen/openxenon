@@ -842,6 +842,22 @@ const verifySubcommand = defineCommand({
       })
     }
 
+    // v0.6.1-alpha.0 #5-1: 先校验 frozen.json 自身 hash 完整性（防篡改）
+    const frozenPath = getProofFrozenPath(name)
+    if (existsSync(frozenPath)) {
+      const fr = readFrozenProof(frozenPath)
+      if (!fr.ok) {
+        return outputError(
+          {
+            code: 'E_PROOF_HASH_DRIFT',
+            message: `frozen.json signature mismatch: ${fr.reason}`,
+            suggestion: 're-run `oxn proof run <name>` to refresh the snapshot',
+          },
+          format,
+        )
+      }
+    }
+
     const v = verifyWorkHash(name, oxnPath)
     if (v.status === 'drift' || v.status === 'work-missing' || v.status === 'no-snapshot') {
       // 失败：抛 E_PROOF_WORKHASH_DRIFT (drift) / E_PROOF_WORK_MISSING (work-missing) / E_PROOF_NO_SNAPSHOT
