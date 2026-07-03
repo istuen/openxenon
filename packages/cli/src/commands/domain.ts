@@ -51,6 +51,7 @@ import {
   writeCacheSha,
   getCachePath,
   getCacheMdPath,
+  clearCacheForEntity,
 } from '@openxenon/engine/oxl/md-pipeline/sync-hash.js'
 import { validateOxnParseable, verifyDomainRoundTrip } from '@openxenon/engine/oxl/md-pipeline/sync-validation.js'
 import { domainCreateTemplate, autoRebuildDomainIndex } from '@openxenon/engine/Asset/domain-manager'
@@ -1063,6 +1064,88 @@ const syncMdSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
+// Subcommand: cache (v0.6.1-alpha.0 #1-16 — 清理 .cache/*.hash)
+// ---------------------------------------------------------------------------
+
+const domainCacheCleanSubcommand = defineCommand({
+  meta: {
+    name: 'clean',
+    description: t('domain.cache.clean.description'),
+  },
+  args: {
+    '--dry-run': { type: 'boolean', description: t('domain.cache.clean.dryRun') },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const dryRun = ctx.args['dry-run'] === true
+    const projectRoot = getProjectRoot()
+
+    if (!projectBoundaryExists()) {
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
+    }
+
+    const result = dryRun ? { removed: 0, cacheDir: null, paths: [] } : clearCacheForEntity(projectRoot, 'domain')
+
+    if (dryRun) {
+      // dry-run: 用 readdirSync 列举但不删
+      const config = readProjectConfig(projectRoot)
+      const domainsDir = resolveAssetDir(projectRoot, 'domain', config)
+      const cacheDir = join(domainsDir, '.cache')
+      const paths: string[] = []
+      if (existsSync(cacheDir)) {
+        for (const f of readdirSync(cacheDir)) {
+          if (f.endsWith('.hash') || f.endsWith('.md-hash')) paths.push(join(cacheDir, f))
+        }
+      }
+      return output(
+        {
+          ok: true,
+          data: { dryRun: true, cacheDir, wouldRemove: paths.length, paths },
+          human:
+            paths.length === 0
+              ? `Domain cache empty: ${cacheDir}`
+              : `Would remove ${paths.length} file(s) from ${cacheDir}:\n${paths.map((p) => `  - ${p}`).join('\n')}`,
+        },
+        format,
+      )
+    }
+
+    return output(
+      {
+        ok: true,
+        data: {
+          removed: result.removed,
+          cacheDir: result.cacheDir,
+          paths: result.paths,
+        },
+        human:
+          result.removed === 0
+            ? result.cacheDir === null
+              ? 'No domain cache to clean (no .cache/ directory).'
+              : `Domain cache empty: ${result.cacheDir}`
+            : `Removed ${result.removed} cache file(s) from ${result.cacheDir}\n${result.paths.map((p) => `  - ${p}`).join('\n')}\n\nNext: run \`oxn domain sync --all\` to rebuild cache.`,
+      },
+      format,
+    )
+  },
+})
+
+const domainCacheSubcommand = defineCommand({
+  meta: {
+    name: 'cache',
+    description: t('domain.cache.description'),
+  },
+  subCommands: {
+    clean: domainCacheCleanSubcommand,
+  },
+  run() {
+    // No-op
+  },
+})
+
+// ---------------------------------------------------------------------------
 // Subcommand: compile
 // ---------------------------------------------------------------------------
 
@@ -1188,6 +1271,7 @@ export default defineCommand({
     compile: compileSubcommand,
     sync: syncSubcommand,
     'sync-md': syncMdSubcommand,
+    cache: domainCacheSubcommand,
   },
   run() {
     // No-op

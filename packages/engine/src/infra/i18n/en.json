@@ -114,7 +114,14 @@
       "name": "Domain name",
       "filePath": "Specify .oxn file path directly (optional escape hatch)"
     },
-    "description": "Domain module — DDD bounded context management (create/validate/list/index/compile)"
+    "cache": {
+      "description": "Domain module cache management (v0.6.1-alpha.0 #1-16 — clean .cache/*.hash)",
+      "clean": {
+        "description": "Delete .cache/<name>.hash and .cache/<name>.md-hash (Phase 1 / Phase 2 sync cache)",
+        "dryRun": "List files to be removed without actually deleting them"
+      }
+    },
+    "description": "Domain module — DDD bounded context management (create/validate/list/index/compile/sync/cache)"
   },
   "errors": {
     "projectNotInit": "Project not initialized, run `oxn init` first",
