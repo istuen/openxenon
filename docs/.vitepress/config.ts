@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'OpenXenon',
-  description: '工程师与 AI 协作工作台 — 工程师定义意图，AI 执行对齐，OXN 证明结果',
+  description: '轻量级人机协作工具 — 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明',
   cleanUrls: false,
   base: '/openxenon/',
   lastUpdated: true,
@@ -72,8 +72,8 @@ export default defineConfig({
       label: '简体中文',
       lang: 'zh-CN',
       link: '/zh-cn/',
-      title: 'OpenXenon · 工程师与 AI 协作工作台',
-      description: '工程师定义意图，AI 执行对齐，OXN 证明结果',
+      title: 'OpenXenon · 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明',
+      description: '轻量级人机协作工具 — 工程师信任 AI Agent 在边界内的执行成果',
       themeConfig: {
         nav: [
           { text: '首页', link: '/zh-cn/index.html' },
@@ -137,8 +137,8 @@ export default defineConfig({
       label: 'English',
       lang: 'en-US',
       link: '/en/',
-      title: 'OpenXenon · Engineer + AI Workbench',
-      description: 'Engineers define intent, AI executes alignment, OXN proves results',
+      title: 'OpenXenon · Engineers define intent, AI Agents run alignment, OXN Engine emits proof',
+      description: 'Lightweight human–AI collaboration tool — engineers trust AI Agents within boundaries',
       themeConfig: {
         nav: [
           { text: 'Home', link: '/en/index.html' },
@@ -202,7 +202,7 @@ export default defineConfig({
     search: { provider: 'local' },
     socialLinks: [{ icon: 'github', link: 'https://github.com/istuen/openxenon' }],
     footer: {
-      message: 'OpenXenon · 工程师与 AI 协作工作台',
+      message: 'OpenXenon · 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明',
       copyright: `MIT License · ${new Date().getFullYear()}`,
     },
   },

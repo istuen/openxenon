@@ -25,7 +25,7 @@ After the v1.1 hard-switch, the original `oxn-leader` has been merged into `oxn 
 
 **v0.6 philosophical boundary** (post-refactor):
 
-> **Engineers define intent, AI runs alignment, OXN produces proof.**
+> **Engineers define intent, AI Agents run alignment, OXN Engine emits proof.**
 
 Four structural entities (E1–E4):
 

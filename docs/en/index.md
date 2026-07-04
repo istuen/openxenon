@@ -4,51 +4,55 @@ title: Introduction
 
 # Introduction
 
-> OpenXenon is the collaboration workbench for engineers and AI. Engineers define intent, AI executes alignment, OXN proves the results.
+> **OpenXenon — engineers define intent, AI Agents run alignment, OXN Engine emits proof.**
+>
+> Engineers trust AI Agents' execution results within boundaries.
 
 ## What — What is it
 
-OpenXenon addresses the most fundamental problem in the AI coding era: **When AI says "I'm done", who verifies it actually is?**
+OpenXenon is a **lightweight human–AI collaboration tool**. Its OXN Engine, built on the IAP (Intent–Align–Proof) paradigm, drives the "Engineer ↔ AI Agent ↔ OXN Engine" collaboration pipeline.
 
-The answer is **OXN** — a proof engine independent of AI. It does not write code, does not replace AI, and does one thing only: **prove, in a tamper-proof way, whether AI's work result is acceptable.**
-
-The core paradigm is **IAP (Intent–Align–Proof)**, with three actors and clean separation of concerns:
+**Core proposition**: when an AI Agent says "I'm done", who lets the engineer **trust** that it really happened? — Not the AI's self-claim, but the tamper-proof record independently notarized by OXN Engine.
 
 ```
-Engineer         AI              OXN
-  │              │               │
-  ▼              ▼               ▼
-Intent          Align           Proof
-Domain(.oxn)    Work(.oxn)      frozen.json
-Blueprint(.oxn) Task → Artifact  Verdict
-  │              │               │
-  └──────────────┴───────────────┘
-      no overlap, no bypass
+Engineer              AI Agent              OXN Engine
+  │                      │                       │
+  ▼                      ▼                       ▼
+Define Intent        Run Alignment         Emit Proof
+  │                      │                       │
+  │  Domain/Blueprint   │  Work/Task/Part   │  frozen.json + verdict.md
+  │                      │                       │
+  └────── collaboration pipeline ──────┴────── trust base ──────┘
 ```
+
+**In one line**: **Engineers define intent, AI Agents run alignment, OXN Engine emits proof.**
 
 ## Problems Solved
 
-1. **Verify AI execution results** — After AI claims a task done, OXN independently runs Probes and emits `frozen.json`. AI cannot modify that file.
-2. **Engineer-intent alignment** — Through Domain and Blueprint upfront constraints, tell AI "what language" and "what steps", preventing drift.
-3. **Make Token spend effective** — Proof result feedback drives intent evolution, experience accumulates into reusable assets, no Token burned in vain.
+1. **Verify AI execution results** — After AI Agent claims a task done, OXN Engine independently runs Probes and emits `frozen.json` + `verdict.md`. AI Agent cannot modify these files.
+2. **Engineer-intent alignment** — Through Domain / Blueprint / Stack upfront boundaries, tell AI Agent what is allowed, what is forbidden, what language to use, and what steps to follow.
+3. **Make Token spend effective** — Proof result feedback drives intent evolution; experience accumulates into reusable assets, no Token burned in vain.
 
 ## IAP Paradigm at a Glance
 
-| Axis | Owner | Responsibility | Key Asset |
+| Stage | Actor | Behavior | Key Output |
 |---|---|---|---|
-| Intent | Engineer | Define business glossary and technical blueprint | Domain / Blueprint |
-| Align | AI | Orchestrate execution within blueprint boundaries | Work / Task / Part |
-| Proof | OXN | Independent verification, emit tamper-proof proof | Probe / Proof / frozen.json |
+| **Intent (define)** | Engineer | Define business glossary and technical blueprint | Domain / Blueprint / Stack |
+| **Align (run)** | AI Agent | Orchestrate Work/Task/Part within boundaries | Work / Task / landed artifacts |
+| **Proof (emit)** | OXN Engine | Run Probes, record objective facts, output tamper-proof evidence | frozen.json + verdict.md |
 
-> **IAP First Law**: Ownership does not cross; proof cannot be bypassed.
+> **Trust comes from objective notarization, not from AI's self-claim.** OXN Engine is a **notary, not a judge** — it records "what happened" (script exit codes, test coverage, file paths, etc., as objective facts) and does not judge whether the work is "acceptable". The "acceptability" judgment belongs to the engineer, based on comparing Asset against Proof.
 
 ## OXN Engine
 
-OXN Engine is the executor of the Proof axis, composed of three parts:
+OXN Engine is the executor of the IAP paradigm — a **control structure, not an execution environment**. It has four layers:
 
-- **DSL** — OXL domain-specific language (implemented in Langium), defines Domain / Blueprint / Work syntax
-- **Runtime** — Kernel (pure logic verification) + Infra (IO execution) + Daemon (supervisor + escape mechanism)
-- **CLI** — The only operation entry for engineers and AI (`oxn proof` / `oxn work` / `oxn blueprint` / `oxn domain`)
+- **L0 Kernel** — Pure logic, zero IO (Schema / Contract / Verdict / Processor). Strictly forbids probabilistic mathematical models.
+- **L1 OXL + Infra** — OXL domain-specific language (Langium implementation) + filesystem / socket / frozen unified side-effect entry points
+- **L2 Engine** — Asset / Intent / Align / Proof / Insight / Pool six business modules (DDD-modularized)
+- **L3 Tools** — CLI (`oxn` entry, thin composition layer) + Skills (`/oxn-work` is the only skill) + Daemon (supervisor + escape mechanism)
+
+> **OXN Engine does not provide a code-execution environment.** Sandbox, CI/CD, and tests are invoked through libraries; their results are gathered as evidence by Probes. The engine does not care how execution happens — only whether the results are objectively recorded.
 
 ## Choose Your Learning Path
 

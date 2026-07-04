@@ -8,7 +8,10 @@
 
 ## 什么是 OpenXenon
 
-OpenXenon 是一款面向 AI Agent 的轻量级人机协作引擎。
+> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
+> **工程师信任 AI Agent 在边界内的执行成果。**
+
+OpenXenon 是一款面向 AI Agent 的轻量级人机协作工具。
 它作为 Skills 注入现有的 AI Agent 工作台（如 Cursor、OpenCode、Codex、Claude Code）中。
 它专注于将工程师的意图转化为 AI 可对齐的边界，并严格证明 AI 的工作结果。
 OpenXenon 旨在为工程师与 AI 模型的协作，建立更好的**信任基座**。
@@ -63,22 +66,24 @@ oxn init --ai opencode
 
 ## IAP 范式
 
-### 三轴主导权（不交叉，不可绕过）
+### 协作流水线（工程师 ↔ AI Agent ↔ OXN Engine）
 
-| 轴         | 主导者 | 产出                   | 锁定机制                                 |
-| ---------- | ------ | ---------------------- | ---------------------------------------- |
-| **Intent** | 工程师 | Domain / Blueprint     | `term` / `ban` / `invariant` 锁定边界    |
-| **Align**  | AI     | Work / Task / Part     | Blueprint `slot` 锁定路径                |
-| **Proof**  | OXN    | Proof（`frozen.json`） | Daemon 阻止假完成，**无 `--force` 绕过** |
+| 阶段 | 角色 | 产出 | 锁定机制 |
+|---|---|---|---|
+| **Intent**（定意图） | 工程师 | Domain / Blueprint / Stack | `term` / `ban` / `invariant` 锁定边界（planLock + content_hash）|
+| **Align**（跑对齐） | AI Agent | Work / Task / Part | Blueprint `slot` 锁定路径，AI 不得修改 Asset |
+| **Proof**（出证明） | OXN Engine | Proof（`frozen.json` + `verdict.md`）| 不可篡改（chmod 0o444 + content_hash）|
+
+> **OXN Engine 是公证人，不是裁判**——它记录"发生了什么"（脚本退出码、测试覆盖率、文件路径等客观事实），不评判"工作合格不合格"。"合格"判定属于工程师，基于 Asset 对照 Proof。
 
 ### E1-E4 四结构实体（v0.6 哲学层）
 
 | 实体  | 中文     | 性质                | 主导权  |
 | ----- | -------- | ------------------- | ------- |
 | E1 Asset  | 静态边界 | Domain / Blueprint / Stack | 工程师 |
-| E2 Work   | 动态协作 | IAP + Round 多轮循环 | 工程师 ↔ AI |
-| E3 Engine | 独立公证 | 探针 + frozen.json + hash | OXN |
-| E4 Insight | 涌现层 | 1+1>2 整体论 | AI 推理 |
+| E2 Work   | 动态协作 | IAP + Round 多轮循环 | 工程师 ↔ AI Agent |
+| E3 Engine | 独立公证 | 探针 + frozen.json + hash | OXN Engine |
+| E4 Insight | 涌现层 | 1+1>2 整体论 + **行为特征观测** | AI 推理 |
 
 > **E1-E4 + L0-L3**：理念层 E1-E4 解释 *为什么*，代码层 L0-L3 解释 *依赖方向*。
 > 详见 [Core Concepts](./docs/zh-cn/core-concepts.md) 与 [Architecture](./docs/zh-cn/architecture.md)。
@@ -113,10 +118,12 @@ openxenon/
 
 | 层级 | 物理位置 | 职责 |
 |---|---|---|
-| L0 Kernel | `packages/engine/src/kernel/` | 类型/常量/verdicts/catalog (Lambda 真空) |
+| L0 Kernel | `packages/engine/src/kernel/` | 类型/常量/verdicts/catalog (Lambda 真空，**严禁概率性数学模型**) |
 | L1 OXL+Infra | `packages/engine/src/{oxl,infra}/` | DSL 解析 + 文件系统 + socket + frozen |
 | L2 Engine | `packages/engine/src/{Asset,Intent,Align,Proof,Insight,Pool,Work}/` | 6+1 DDD 模块, 纯函数导出 |
 | L3 Tools | `packages/cli/src/commands/` + `src/daemon/` + `packages/cli/src/skills/` | CLI 薄壳 + 守护进程 + AI Skills |
+
+> **OXN Engine 是控制结构，不是执行环境**。沙箱、CI/CD、测试通过库调用，Probe 采集结果作为证据。Engine 不关心怎么执行，只关心执行结果是否被客观记录。
 
 ## 文档
 

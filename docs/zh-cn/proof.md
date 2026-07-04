@@ -4,26 +4,29 @@ title: 证明
 
 # 证明（E3 · Engine 独立公证）
 
-> **Proof 是 OXN 的第三结构实体（E3）——Engine 的独立公证**，由 `frozen.json`（机器 SSOT）+ `verdict.md`（人类 SSOT）+ `probe-stats.json`（全局索引）三层证据构成。
+> **Proof 是 OXN 的第三结构实体（E3）——OXN Engine 的独立公证**，由 `frozen.json`（机器 SSOT）+ `verdict.md`（人类 SSOT）+ `probe-stats.json`（全局索引）三层证据构成。
 > v0.6 起 `oxn proof` 是独立子命令（不再依赖 `oxn work finalize` 触发），但 Proof 仍可在 Work 内作为 Proof 模式（Align 阶段的探针断言）。
+
+> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
 
 ## 1. Proof 概念
 
 ### 1.1 哲学边界
 
-OXN 的终极目标不是"spec 与实现一致"，而是**独立第三方对 AI 工作结果做不可篡改的证明**：
+OXN 的终极目标不是"spec 与实现一致"，而是**独立第三方对 AI Agent 工作结果做不可篡改的客观公证**：
 
 ```
-工程师           AI              OXN
-  │               │               │
-  ▼               ▼               ▼
-Intent           Align           Proof
-Domain(.oxn)    Work(.oxn)      frozen.json
-Blueprint(.oxn)  Task → Artifact  Verdict
-  │               │               │
-  └───────────────┴───────────────┘
-         不可交叉，不可绕过
+工程师                AI Agent              OXN Engine
+  │                    │                       │
+  ▼                    ▼                       ▼
+Intent                Align                   Proof
+Domain(.oxn)          Work(.oxn)             frozen.json
+Blueprint(.oxn)       Task → Artifact        Verdict (事实记录)
+  │                    │                       │
+  └────── 协作流水线 ──────┴────── 信任基座 ──────┘
 ```
+
+> **Proof = 公证人，不是裁判**。OXN Engine 记录"发生了什么"（脚本退出码、测试覆盖率、文件路径等客观事实），不评判"工作合格不合格"。"合格"判定属于工程师——基于 Asset 与 Proof 的对照。
 
 ### 1.2 关键不变量
 
@@ -33,8 +36,8 @@ Blueprint(.oxn)  Task → Artifact  Verdict
    - 内容层：`_xenon_meta.content_hash` = SHA-256（self-excluding 协议）
    - 验证层：`oxn proof verify` 可重新比对 hash
 3. **机器 + 人类双 SSOT**：
-   - `frozen.json`（uppercase verdict：PASSED / FAILED / INCONCLUSIVE）
-   - `verdict.md`（lowercase 友好：pass / fail / inconclusive）
+   - `frozen.json`（uppercase verdict：PASSED / FAILED / INCONCLUSIVE —— **探针运行结果客观记录**，非质量判定）
+   - `verdict.md`（lowercase 友好：pass / fail / inconclusive —— frozen.json 的可读视图）
    - 两者同步写、同步锁、含 cross-reference hash
 
 ---
@@ -212,7 +215,7 @@ _(none detected)_
 | 字段 | 含义 |
 |---|---|
 | `proof_id` | proof 名（与目录名 / frozen.json `name` 一致） |
-| `verdict` | 3-state（PASSED/FAILED/INCONCLUSIVE） |
+| `verdict` | 3-state（PASSED/FAILED/INCONCLUSIVE）—— **探针运行结果客观记录，非"工作合格"判定** |
 | `run_at` | ISO 8601 时间戳 |
 | `frozen_hash` | 交叉引用 `frozen.json` 的 `_xenon_meta.content_hash` |
 | `probe_count` / `passed_count` / `failed_count` | 聚合统计 |

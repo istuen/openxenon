@@ -6,25 +6,27 @@ title: IAP 速记卡
 
 > 三大法则速记卡。一页可打印。
 
+> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
+
 ---
 
-## IAP 第一法则
+## IAP 协作流水线（核心法则）
 
-> **主导权不交叉，证明不可绕过。**
+> **三方各司其职，OXN 出证明，工程师定信任。**
 
-- AI 不得越过 Blueprint 的 slot 边界（对齐权受制于意图权）
-- 工程师不得在 Probe 检查前宣布完成（意图权受制于证明权）
-- OXN 不得修改 Domain 术语或 Blueprint 规则（证明权不得篡权）
+- 工程师定意图：维护 Asset（Domain / Blueprint / Stack），不写实现代码
+- AI Agent 跑对齐：在 Asset 边界内编排 Work / Task / Part，但不得修改边界
+- OXN Engine 出证明：跑 Probe 记录客观事实（脚本退出码、测试覆盖率、文件路径），不评判"工作合格不合格"——合格与否由工程师对照 Asset 自定
 
 ---
 
 ## IAP 第二法则（纯洁性）
 
-> **Infra 不能绕过 Daemon 自我宣布完成**
+> **Infra 不能绕过 Daemon 自我宣布完成；Kernel 严禁概率模型**
 
 | 模块 | 能做 | 不能做 |
 |---|---|---|
-| Kernel | 纯逻辑校验 | 执行 IO / 改规则 |
+| Kernel | 纯逻辑校验 | 执行 IO / 改规则 / **引入概率性数学模型** |
 | Infra | 观测事实 | 做 PASS/FAIL 判定 |
 | Daemon | 管理运行时 | 修改 Kernel 规则 |
 
@@ -47,7 +49,7 @@ skill_context           state.json 写权限
 ## Y 型流转图
 
 ```
-       Intent轴                    Align轴
+       Intent                    Align
    Domain(.oxn)                Work(.oxn)
         │                            │
         ▼                            ▼
@@ -56,7 +58,7 @@ skill_context           state.json 写权限
         └────────────┬───────────────┘
                      │
                      ▼
-                 Proof轴
+                 Proof
               Proof(Verdict)
                      │
                      └──▶ Intent 演化（P → I 反馈）
