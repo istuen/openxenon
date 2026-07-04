@@ -1,14 +1,19 @@
 // =============================================================================
-// insight-cross-proof-e2e.test.ts — v0.5 PR-B
+// insight-cross-proof-e2e.test.ts — v0.5 PR-B → v0.6 PR-5d 重命名
 //
 // 黑盒 E2E：oxn insight --cross-proof 扫描全部 proofs/*/frozen.json
+//
+// v0.6 PR-5d 重命名说明：
+//   - 维度 4: probeEffectiveness → probeBehaviorPattern
+//   - human 渲染标题: "## Probe Effectiveness" → "## Probe Behavior Pattern"
+//   - 计算逻辑不变（仍按 failRate 降序）；命名重在表达"AI 行为特征信号"而非"代码质量评分"
 //
 // 覆盖：
 //   1. 多 proof happy path：3 个不同 proof 跑完后 --cross-proof 输出 4 维分析
 //   2. trendMatrix 反映 (probeType, target) 跨多 proof 的 verdict 序列
 //   3. correlationMatrix 检测两 probe 类型的共现失败率
 //   4. trends 检测 worsening（最近 3 次全 FAIL 且之前 PASS）
-//   5. probeEffectiveness 按 failRate 降序排序
+//   5. probeBehaviorPattern 按 failRate 降序排序（行为特征信号）
 //   6. --since 过滤：仅含 runAt >= since 的 proof
 //   7. --proofs 过滤：仅含白名单
 //   8. --probe-types 过滤：trendMatrix 仅含指定 type
@@ -112,15 +117,15 @@ describe('oxn insight --cross-proof (v0.5 PR-B)', () => {
         trendMatrix: unknown[]
         correlationMatrix: unknown[]
         trends: unknown[]
-        probeEffectiveness: Array<{ probeType: string; totalRuns: number; failedProofs: number; failRate: number }>
+        probeBehaviorPattern: Array<{ probeType: string; totalRuns: number; failedProofs: number; failRate: number }>
       }
     }
     expect(j.ok).toBe(true)
     expect(j.data.proofCount).toBe(3)
     expect(j.data.trendMatrix.length).toBeGreaterThan(0)
-    expect(j.data.probeEffectiveness.length).toBeGreaterThan(0)
+    expect(j.data.probeBehaviorPattern.length).toBeGreaterThan(0)
     // shell-exec 全部 PASSED
-    const shellEff = j.data.probeEffectiveness.find((p) => p.probeType === 'shell-exec')
+    const shellEff = j.data.probeBehaviorPattern.find((p) => p.probeType === 'shell-exec')
     expect(shellEff).toBeDefined()
     expect(shellEff?.failRate).toBe(0)
   })
@@ -189,7 +194,7 @@ describe('oxn insight --cross-proof (v0.5 PR-B)', () => {
     expect(worsening?.latestVerdict).toBe('FAILED')
   })
 
-  test('probeEffectiveness 按 failRate 降序排序', async () => {
+  test('probeBehaviorPattern 按 failRate 降序排序（行为特征信号，非代码质量评分）', async () => {
     await initProject()
     // ts-like (always fail) + shell-exec (always pass)
     writeProof(
@@ -201,10 +206,10 @@ describe('oxn insight --cross-proof (v0.5 PR-B)', () => {
 
     const r = await runCli(['insight', '--cross-proof', '--json'])
     const j = JSON.parse(r.stdout) as {
-      data: { probeEffectiveness: Array<{ probeType: string; failedProofs: number; totalRuns: number }> }
+      data: { probeBehaviorPattern: Array<{ probeType: string; failedProofs: number; totalRuns: number }> }
     }
-    expect(j.data.probeEffectiveness[0]?.probeType).toBe('shell-exec')
-    expect(j.data.probeEffectiveness[0]?.failedProofs).toBe(1) // p1 含 1 failed probe
+    expect(j.data.probeBehaviorPattern[0]?.probeType).toBe('shell-exec')
+    expect(j.data.probeBehaviorPattern[0]?.failedProofs).toBe(1) // p1 含 1 failed probe
   })
 
   test('--since 过滤：仅含 runAt >= since 的 proof', async () => {
@@ -276,7 +281,7 @@ describe('oxn insight --cross-proof (v0.5 PR-B)', () => {
     const r = await runCli(['insight', '--cross-proof'])
     expect(r.exitCode).toBe(0)
     expect(r.stdout).toContain('Cross-Proof Insight')
-    expect(r.stdout).toContain('## Probe Effectiveness')
+    expect(r.stdout).toContain('## Probe Behavior Pattern')
     expect(r.stdout).toContain('## Trend Signals')
     expect(r.stdout).toContain('## Trend Matrix')
     expect(r.stdout).toContain('## Correlation Matrix')

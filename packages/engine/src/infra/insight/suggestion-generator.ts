@@ -110,10 +110,11 @@ function fromPipeline(insight: PipelineInsight, targetDomain: string): Suggestio
 /**
  * 从 CrossProofInsight 生成建议
  * 规则：probe 失败率 ≥ 50% 且失败次数 ≥ 2 → add-invariant
+ * 注：v0.6 PR-5d 重命名 probeEffectiveness → probeBehaviorPattern；failRate 仍是"探针行为特征"客观统计
  */
 function fromCrossProof(insight: CrossProofInsight, targetDomain: string): SuggestionDraft | null {
-  // 取 probeEffectiveness 中失败率最高的
-  const worstProbe = insight.probeEffectiveness
+  // 取 probeBehaviorPattern 中失败率最高的（行为特征信号）
+  const worstProbe = insight.probeBehaviorPattern
     .filter((p) => p.failedProofs >= 2 && p.failRate >= 0.5)
     .sort((a, b) => b.failRate - a.failRate)[0]
   if (!worstProbe) return null
@@ -130,10 +131,10 @@ function fromCrossProof(insight: CrossProofInsight, targetDomain: string): Sugge
     '',
     '## Why',
     '',
-    `Cross-proof insight 检测到 probe 失败率高：`,
+    `Cross-proof insight 检测到该类探针的 AI 行为特征信号：`,
     `- probe type: \`${worstProbe.probeType}\``,
     `- failed/total: ${worstProbe.failedProofs}/${worstProbe.totalRuns}`,
-    `- failRate: ${(worstProbe.failRate * 100).toFixed(0)}%`,
+    `- failRate（行为特征统计，非代码质量评分）: ${(worstProbe.failRate * 100).toFixed(0)}%`,
     '',
     '## How',
     '',

@@ -9,14 +9,14 @@ title: AI 协作者入口
 
 ## 你是谁
 
-你正在协助一名 OpenXenon 工程师。OpenXenon 是一个"工程师 + AI"协作工作台，核心范式是 IAP（Intent-Align-Proof），核心引擎叫 OXN。
+你正在协助一名 OpenXenon 工程师。OpenXenon 是一款轻量级人机协作工具，核心范式是 IAP（Intent–Align–Proof），核心引擎叫 OXN Engine。
 
-**IAP 三轴**：
-- **Intent 轴**（工程师主权）：Domain 锁定业务语言、Blueprint 锁定技术拓扑
-- **Align 轴**（AI 主权）：你 —— 在 Blueprint slot 边界内编排 Work/Task/Part
-- **Proof 轴**（OXN 主权）：独立产出不可篡改 frozen.json
+> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
 
-> **IAP 第一法则**：主导权不交叉，证明不可绕过。
+**IAP 三阶段**：
+- **Intent（定意图，工程师主权）**：Domain 锁定业务语言、Blueprint 锁定技术拓扑
+- **Align（跑对齐，AI Agent 主权）**：你 —— 在 Blueprint slot 边界内编排 Work/Task/Part
+- **Proof（出证明，OXN Engine 主权）**：独立产出不可篡改 `frozen.json` + `verdict.md`（**记录客观事实，不评判工作合格**）
 
 ## 必读章节
 

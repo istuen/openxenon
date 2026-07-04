@@ -1,7 +1,12 @@
 // =============================================================================
-// cross-proof-compute.test.ts — v0.5 PR-B
+// cross-proof-compute.test.ts — v0.5 PR-B → v0.6 PR-5d 重命名
 //
 // L0-Processor 纯函数测试：FrozenProof[] + filter → CrossProofInsight
+//
+// v0.6 PR-5d 重命名说明：
+//   - 维度 4: probeEffectiveness → probeBehaviorPattern
+//   - 计算逻辑不变（仍按 failRate 降序）
+//   - 测试覆盖保持；字段访问更新为 probeBehaviorPattern
 //
 // 覆盖：
 //   1. 空 input → 4 维均空数组 + proofCount=0
@@ -12,7 +17,7 @@
 //   6. trends: worsening 检测（最近 3 次全 FAIL 且之前有 PASS）
 //   7. trends: improving 检测（最近 3 次全 PASS 且之前有 FAIL）
 //   8. trends: stable-pass / stable-fail / volatile / insufficient-data
-//   9. probeEffectiveness 按 failRate 降序
+//   9. probeBehaviorPattern 按 failRate 降序（行为特征排序，非代码质量评分）
 //  10. filter: since 只包含 runAt >= since
 //  11. filter: proofIds 只包含白名单
 //  12. filter: probeTypes 只包含白名单（即便其他 probe 共存）
@@ -73,7 +78,7 @@ describe('computeCrossProofInsightFromInputs empty', () => {
     expect(insight.trendMatrix).toEqual([])
     expect(insight.correlationMatrix).toEqual([])
     expect(insight.trends).toEqual([])
-    expect(insight.probeEffectiveness).toEqual([])
+    expect(insight.probeBehaviorPattern).toEqual([])
   })
 })
 
@@ -308,11 +313,11 @@ describe('computeCrossProofInsightFromInputs trends', () => {
 })
 
 // -----------------------------------------------------------------------------
-// T9: probeEffectiveness
+// T9: probeBehaviorPattern（v0.6 PR-5d 重命名 probeEffectiveness → probeBehaviorPattern）
 // -----------------------------------------------------------------------------
 
-describe('computeCrossProofInsightFromInputs probeEffectiveness', () => {
-  test('按 failRate 降序', () => {
+describe('computeCrossProofInsightFromInputs probeBehaviorPattern', () => {
+  test('按 failRate 降序（行为特征信号，非代码质量评分）', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
         mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false),
@@ -328,11 +333,11 @@ describe('computeCrossProofInsightFromInputs probeEffectiveness', () => {
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
-    expect(insight.probeEffectiveness.length).toBe(2)
-    expect(insight.probeEffectiveness[0]?.probeType).toBe('ts-compiles')
-    expect(insight.probeEffectiveness[0]?.failRate).toBe(2 / 3)
-    expect(insight.probeEffectiveness[1]?.probeType).toBe('test-pass')
-    expect(insight.probeEffectiveness[1]?.failRate).toBe(1 / 3)
+    expect(insight.probeBehaviorPattern.length).toBe(2)
+    expect(insight.probeBehaviorPattern[0]?.probeType).toBe('ts-compiles')
+    expect(insight.probeBehaviorPattern[0]?.failRate).toBe(2 / 3)
+    expect(insight.probeBehaviorPattern[1]?.probeType).toBe('test-pass')
+    expect(insight.probeBehaviorPattern[1]?.failRate).toBe(1 / 3)
   })
 
   test('failureVerdicts 正确分类', () => {
@@ -342,7 +347,7 @@ describe('computeCrossProofInsightFromInputs probeEffectiveness', () => {
       mkFrozen('p3', '2026-06-25T11:00:00Z', [mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true)]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
-    const eff = insight.probeEffectiveness[0]!
+    const eff = insight.probeBehaviorPattern[0]!
     expect(eff.failureVerdicts.FAILED).toBe(1)
     expect(eff.failureVerdicts.INCONCLUSIVE).toBe(1)
   })

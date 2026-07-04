@@ -1,13 +1,15 @@
 // =============================================================================
-// suggestion-generator.test.ts — v0.5 PR-D
+// suggestion-generator.test.ts — v0.5 PR-D → v0.6 PR-5d 重命名
 //
 // L1-Infra: 从 Insight JSON 提取结构化改进建议
+// v0.6 PR-5d 重命名说明：probeEffectiveness → probeBehaviorPattern（行为特征，非代码质量评分）
+//
 // 覆盖：
 //   1. fromPipeline: critical invariant → add-invariant suggestion
 //   2. fromPipeline: warning invariant → add-invariant suggestion
 //   3. fromPipeline: ok invariant → null (no suggestion)
 //   4. fromPipeline: unused → null
-//   5. fromCrossProof: high failRate probe → suggestion
+//   5. fromCrossProof: high failRate probe → suggestion（行为特征信号）
 //   6. fromCrossProof: low failRate → null
 //   7. generateSuggestionFromInsight 顶层入口
 // =============================================================================
@@ -57,7 +59,7 @@ function mkCrossProofInsight(
     trendMatrix: [],
     correlationMatrix: [],
     trends: [],
-    probeEffectiveness: probes.map((p) => ({
+    probeBehaviorPattern: probes.map((p) => ({
       ...p,
       failureVerdicts: { FAILED: p.failedProofs, INCONCLUSIVE: 0 },
     })),

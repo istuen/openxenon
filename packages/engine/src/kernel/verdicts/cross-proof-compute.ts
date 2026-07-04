@@ -1,10 +1,15 @@
 // =============================================================================
-// cross-proof-compute.ts (v0.5 PR-B)
+// cross-proof-compute.ts (v0.5 PR-B → v0.6 PR-5d 重命名)
 //
 // L0-Processor 纯函数：FrozenProof[] → CrossProofInsight
 //
 // 输入：扫描 proofs/*/frozen.json 得到的 FrozenProof 列表（按 runAt 升序）
-// 输出：4 维 CrossProofInsight（trendMatrix + correlationMatrix + trends + probeEffectiveness）
+// 输出：4 维 CrossProofInsight（trendMatrix + correlationMatrix + trends + probeBehaviorPattern）
+//
+// v0.6 PR-5d 重命名说明：
+//   - 维度 4 由 probeEffectiveness → probeBehaviorPattern
+//   - 计算逻辑不变（仍按 failRate 降序）；但语义从"探针有效性排名"转为"AI Agent 触碰探针的行为特征"
+//   - 输出供 Insight 消费，**记录客观事实，不评判代码质量**
 //
 // 设计原则：
 //   - 不修改入参；返回全新对象
@@ -18,7 +23,7 @@ import type { FrozenProof } from '../schemas/proof-schema'
 import type {
   CorrelationPair,
   CrossProofInsight,
-  ProbeEffectiveness,
+  ProbeBehaviorPattern,
   TrendMatrixEntry,
   TrendSignal,
   TrendType,
@@ -305,12 +310,16 @@ function detectTrends(keyedProbes: KeyedProbe[]): TrendSignal[] {
 }
 
 /**
- * 维度 4：探针有效性排名
+ * 维度 4：探针行为特征（v0.6 PR-5d 重命名 probeEffectiveness → probeBehaviorPattern）
+ *
+ * 描述"AI Agent 触碰某类 Probe 的行为特征"——**记录客观事实，不评判代码质量**：
  *   - totalRuns：触发的 proof 总数（一个 probe type 在一个 proof 中计 1 次，无论 verdict）
  *   - failedProofs：触发了至少 1 次 FAIL 或 INCONCLUSIVE 的 proof 数
- *   - failRate = failedProofs / totalRuns
+ *   - failRate = failedProofs / totalRuns —— 客观事实统计，非"代码质量评分"
+ *
+ * 工程师基于此判断"是否需要调整 Asset / 调宽调严边界"。
  */
-function rankProbeEffectiveness(frozenList: FrozenProof[]): ProbeEffectiveness[] {
+function rankProbeBehaviorPattern(frozenList: FrozenProof[]): ProbeBehaviorPattern[] {
   // proofId → probeType → { passed }
   const proofTypeMap = new Map<string, Map<string, { passed: boolean; anyFailing: boolean }>>()
   for (const frozen of frozenList) {
@@ -354,7 +363,7 @@ function rankProbeEffectiveness(frozenList: FrozenProof[]): ProbeEffectiveness[]
     }
   }
 
-  const result: ProbeEffectiveness[] = []
+  const result: ProbeBehaviorPattern[] = []
   for (const [probeType, stat] of stats) {
     result.push({
       probeType,
@@ -391,7 +400,7 @@ export function computeCrossProofInsightFromInputs(
     trendMatrix: buildTrendMatrix(keyedProbes),
     correlationMatrix: buildCorrelationMatrix(frozenList),
     trends: detectTrends(keyedProbes),
-    probeEffectiveness: rankProbeEffectiveness(frozenList),
+    probeBehaviorPattern: rankProbeBehaviorPattern(frozenList),
     meta: {
       insightVersion: '0.1.0',
       dataSources: ['frozen.json'],

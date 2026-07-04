@@ -1,14 +1,20 @@
 // =============================================================================
-// CrossProofInsight Schema (v0.5 PR-B)
+// CrossProofInsight Schema (v0.5 PR-B → v0.6 PR-5d 重命名)
 //
 // 跨多 proof 的结构化洞察（不同于 Insight 单 proof 模式）。
 // 数据源：主动扫描 .openxenon/proofs/*/frozen.json 全集
 //
-// 4 维分析：
-//   1. trendMatrix:     (probeType, target) 在时间轴上的 verdict 序列 + 趋势判定
-//   2. correlationMatrix: probe type 共现关系（heatmap 友好）
-//   3. trends:           连续恶化/改善/波动检测
-//   4. probeEffectiveness: 按 fail rate 排序的探针有效性
+// 4 维分析（v0.6 PR-5d 重构：维度 4 由 "probeEffectiveness" → "probeBehaviorPattern"）：
+//   1. trendMatrix:        (probeType, target) 在时间轴上的 verdict 序列 + 趋势判定
+//   2. correlationMatrix:  probe type 共现关系（heatmap 友好）
+//   3. trends:             连续恶化/改善/波动检测
+//   4. probeBehaviorPattern: 按 fail rate 排序的探针行为特征
+//
+// 命名重塑说明（v0.6 v1.3 拍板）：
+//   - 旧名 probeEffectiveness 暗示"代码质量评分"（effectiveness = 有效性）
+//   - 新名 probeBehaviorPattern 强调"AI Agent 协作行为特征"——记录客观事实，不评判代码质量
+//   - 数据结构与计算逻辑不变；failRate 字段仍记录"探针触发失败的比例"作为行为信号
+//   - 工程师基于此判断"是否需要调整 Asset"，而非"代码是否合格"
 //
 // 设计原则：
 //   - 与 Insight (单 proof) 解耦，独立的 schema 与 compute 模块
@@ -88,23 +94,32 @@ export const TrendSignalSchema = z.object({
 })
 export type TrendSignal = z.infer<typeof TrendSignalSchema>
 
-// ───────── 第四维：探针有效性排名 ─────────
+// ───────── 第四维：探针行为特征（v0.6 PR-5d 命名：probeEffectiveness → probeBehaviorPattern）───────
 
-export const ProbeEffectivenessSchema = z.object({
+/**
+ * ProbeBehaviorPattern（v0.6 PR-5d 重命名）
+ *
+ * 描述"AI Agent 触碰某类 Probe 的行为特征"——**记录客观事实，不评判代码质量**。
+ * - 数据来源：跨多个 proof 的 frozen.json 聚合
+ * - failRate 字段含义：从探针运行结果客观记录中统计的"该类探针触发失败的比例"
+ * - 不是"代码质量评分"，是"AI Agent 在这类探针上的行为模式信号"
+ * - 工程师基于此判断"是否需要调整 Asset / 调宽调严边界"
+ */
+export const ProbeBehaviorPatternSchema = z.object({
   probeType: z.string(),
-  /** 触发的总次数 */
+  /** 触发的总次数（含 PASSED / FAILED / INCONCLUSIVE）*/
   totalRuns: z.number().int().min(0),
   /** 至少触发 1 次 FAIL 的 proof 数 */
   failedProofs: z.number().int().min(0),
-  /** fail rate = failedProofs / totalRuns */
+  /** fail rate = failedProofs / totalRuns —— 客观事实统计，非质量判定 */
   failRate: z.number().min(0).max(1),
-  /** 失败时的 verdict 分布 */
+  /** 失败时的 verdict 分布（仅记录数据）*/
   failureVerdicts: z.object({
     FAILED: z.number().int().min(0),
     INCONCLUSIVE: z.number().int().min(0),
   }),
 })
-export type ProbeEffectiveness = z.infer<typeof ProbeEffectivenessSchema>
+export type ProbeBehaviorPattern = z.infer<typeof ProbeBehaviorPatternSchema>
 
 // ───────── 顶层 ─────────
 
@@ -126,8 +141,8 @@ export const CrossProofInsightSchema = z.object({
   /** 维度 3: 恶化/改善/波动信号 */
   trends: z.array(TrendSignalSchema),
 
-  /** 维度 4: 探针有效性排名（按 failRate 降序）*/
-  probeEffectiveness: z.array(ProbeEffectivenessSchema),
+  /** 维度 4: 探针行为特征（按 failRate 降序；v0.6 PR-5d 重命名 probeEffectiveness → probeBehaviorPattern）*/
+  probeBehaviorPattern: z.array(ProbeBehaviorPatternSchema),
 
   /** 元信息 */
   meta: z.object({

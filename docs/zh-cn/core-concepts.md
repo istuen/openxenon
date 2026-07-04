@@ -4,6 +4,8 @@ title: 核心概念
 
 # 核心概念
 
+> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
+>
 > **OXN 由 4 个结构实体（E1-E4）加 L0-L3 工程实现构建而成**。E1-E4 定义 OXN 的哲学边界，L0-L3 描述代码的依赖方向。物理目录用各自名称（`kernel/`、`oxl/`、`infra/`、`Asset/`、`Intent/`、`cli/`、`daemon/` 等），不直接对应 E 或 L。
 
 ## 1. E1-E4 四结构实体（理念层）
@@ -50,8 +52,8 @@ title: 核心概念
 | 实体 | 性质 | 主导权 | 对应代码模块（L2 Engine） |
 |---|---|---|---|
 | **E1 Asset** | 静态边界 | 工程师 | `service/Asset/` |
-| **E2 Work** | 动态协作 | 工程师 ↔ AI | `service/Intent/` + `service/Align/` |
-| **E3 Engine** | 独立公证 | OXN | L0-L2 全部（含 IAP 范式执行） |
+| **E2 Work** | 动态协作 | 工程师 ↔ AI Agent | `service/Intent/` + `service/Align/` |
+| **E3 Engine** | 独立公证（控制结构） | OXN Engine | L0-L2 全部（含 IAP 范式执行） |
 | **E4 Insight** | 涌现 | AI 推理 | `packages/engine/src/Insight/`（v0.6 哲学占位，v0.7+ 涌现推理） |
 
 ## 2. L0-L3 工程实现（概念层）
@@ -88,22 +90,22 @@ L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v
 
 **依赖方向**：L3 → L2 → L1 → L0（单向，无循环依赖）
 
-## 3. 三大主体权力分立
+## 3. 三大主体分工
 
-| 主体 | 主导实体 | 核心权力 | 绝对禁区 |
+| 主体 | 主导实体 | 核心动作 | 绝对禁区 |
 |---|---|---|---|
-| 工程师 | E1 Asset + E2 Intent 阶段 | 维护资产库、创建 work、选择边界 | 不能自我证明意图正确 |
-| AI 模型 | E2 Align 阶段 | 执行 tasks、多轮 Round 对齐、落盘产物 | 不能自我验证执行合格 |
-| OXN | E3 Engine（Proof + Round） + E4 Insight | 跑探针、产出 verdict、涌现推理 | 不能修改 Asset 或替 AI 执行 |
+| 工程师 | E1 Asset + E2 Intent 阶段 | 定意图（维护资产库、创建 work、选择边界、决定合格判定） | 不能把"工作是否合格"的判定权让渡给 AI |
+| AI Agent | E2 Align 阶段 | 跑对齐（执行 tasks、多轮 Round 对齐、落盘产物） | 不能越过 Asset 边界，不能修改 Asset |
+| OXN Engine | E3 Engine（Proof + Round） + E4 Insight | 出证明（跑探针、记录客观事实、产出 verdict） | 不评判代码质量、不修改 Asset、不替 AI 执行 |
 
-## 4. IAP 第一法则
+## 4. IAP 协作流水线核心
 
-> **主导权不交叉，证明不可绕过。**
+> **工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
 
-- AI 不得越过 Asset 边界（Align 受制于 Asset）
-- 工程师不得在 Probe 检查前宣布完成（Intent 受制于 Proof）
-- OXN 不得修改 Domain 术语或 Blueprint 规则（Proof 不得篡权）
-- Insight 不得自动回写 Asset（必须经过 review/approve 闸门）
+- **工程师**：定意图（边界 + 蓝图）；负责"工作是否合格"的最终判定（基于 Asset 对照 Proof）
+- **AI Agent**：跑对齐；在 Asset 边界内自由发挥；不得修改 Asset
+- **OXN Engine**：出证明；记录客观事实（脚本退出码、测试覆盖率、文件路径等）；不评判好坏
+- **Insight（E4）**：行为特征观测（v0.6 哲学占位，v0.7+ 涌现推理）；不评判代码质量；不得自动回写 Asset（必须经过 review/approve 闸门）
 
 ## 5. E2 Work — IAP 范式的最小完整单元
 
@@ -112,28 +114,28 @@ L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v
 | 模式 | Intent 阶段 | Align 阶段 | Proof 阶段 | Skill 入口 |
 |---|---|---|---|---|
 | **Asset 模式** | 选资产类型 | 填内容 + 落盘 | 语法校验 + planLock | `oxn work --type asset` |
-| **Develop 模式** | 选边界 + goal | AI 写代码（Round 对齐） | 跑 lint/test/build | `oxn work --type develop` |
+| **Develop 模式** | 选边界 + goal | AI Agent 写代码（Round 对齐） | 跑 lint/test/build | `oxn work --type develop` |
 | **Proof 模式** | 声明探针 | 准备环境 | 跑探针 + frozen.json | `oxn work --type proof` |
 
 **IAP 三阶段**（Intent → Align → Proof）：
 
 ```
 Work (一次完整 IAP 周期)
-├── Intent 阶段 (工程师主权)
+├── Intent 阶段 (工程师定意图)
 │   1. 创建 work.oxn
 │   2. 分析 work 需要哪些 Asset 作为边界
 │   3. 选择引用 Asset (ref @prj/assets/...)
 │
-├── Align 阶段 (AI 模型主权) — Round 多轮对齐
+├── Align 阶段 (AI Agent 跑对齐) — Round 多轮对齐
 │   ├── Round 1: 拆 N 个 Tasks → 执行 → Proof → verdict
 │   ├── verdict fail? → 回到 Intent 调整 → Round 2
 │   ├── verdict fail? → 回到 Intent 调整 → Round 3
 │   └── ...
 │
-├── Proof 阶段 (Engine 主权)
-│   1. 跑探针 (Probe)
-│   2. 产出 verdict（PASSED / FAILED / INCONCLUSIVE 三态）
-│   3. verdict = FAIL → 逃逸机制触发 (block done)
+├── Proof 阶段 (OXN Engine 出证明)
+│   1. 跑探针 (Probe) — 记录客观事实（脚本退出码、覆盖率、文件路径）
+│   2. 产出 verdict（PASSED / FAILED / INCONCLUSIVE 三态 — 是事实记录，非合格判定）
+│   3. 工程师基于 Asset + Proof 决定合格与否（若 FAIL 则 block done）
 │
 └── work finalize → 写 frozen.json → 可供 E4 Insight 消费
 ```
@@ -159,7 +161,7 @@ Work (一次完整 IAP 周期)
 
 详见 [Asset](./asset.md)。
 
-## 7. E3 Engine — 独立验证主权基座
+## 7. E3 Engine — 独立公证基座
 
 OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 
@@ -168,9 +170,10 @@ OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 | L3 | CLI / Skills / Daemon | 工具与应用入口 | 不能绕过 Engine 直接读写 frozen.json |
 | L2 | Asset / Intent / Align / Proof / Insight / Pool | IAP 业务逻辑（DDD 模块化） | 不直接 IO，通过 L1 Infra Port 调用 |
 | L1 | OXL（DSL 编译）+ Infra（探针/文件系统） | 语言解析 + OS/硬件级操作 | 只回答事实，不做 PASS/FAIL 判定 |
-| L0 | Kernel | 纯逻辑内核：状态冻结、Schema/Contract/Verdict | 零 IO，不得执行任何副作用 |
+| L0 | Kernel | 纯逻辑内核：状态冻结、Schema/Contract/Verdict | 零 IO，**严禁引入概率性数学模型（PID/ESN/突变论）** |
 
-> **纯洁性核法则**：Infra 不能绕过 Engine 自我宣布完成 → Engine 不能修改 Kernel 规则 → Kernel 不能直接执行 Task
+> **纯洁性核法则**：Infra 不能绕过 Engine 自我宣布完成 → Engine 不能修改 Kernel 规则 → Kernel 不能直接执行 Task。
+> **Kernel 确定性**：Proof 之所以硬，是因为 Kernel 保持纯逻辑零副作用。任何概率性、模糊性、不确定性数学模型一律归属 Insight 模块，不得进入 Proof 决策路径。
 
 详见 [Architecture](./architecture.md)。
 
@@ -184,10 +187,17 @@ OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 | Work 可拆解为 Round/Task | 只能综合推理——跨多 Work 的互动模式才能涌现新认知 |
 | Engine 可拆解为模块 | AI 推理涌现，非 Engine 规则计算 |
 
+**E4 Insight 的作用域 = 行为特征观测，不评判代码质量**：
+
+- ✅ **输出目标**：工程师做决策时所需的协作态势信号（AI 用了哪些边界 / 触碰了什么边界 / 哪条 Asset 规则被反复试探 / Loop 收敛速度 / 退出模式）
+- ❌ **不输出**：代码质量评分、代码"美丑"、设计模式合规性
+- ❌ **不自动回写**：所有 Insight 建议必须经过 `oxn pool review` / `approve` 闸门，由工程师决定是否落实
+
 **v0.6 规划**：
-- 哲学定位 + CLI 入口占位（`oxn insight --work <w>`）
+- 哲学定位 + CLI 入口占位（`oxn insight --work <w>` / `--cross-proof` / `--pipeline`）
 - **涌现推理留 v0.7+**（跨 Work 综合推理需数据累积）
-- v0.6 Insight Service 提供单 Work 的 IAP 历史总结（最弱形态）
+- v0.6 Insight Service 提供单 Work 的 IAP 历史总结 + 跨 Proof 趋势（最弱形态）
+- 用例命名调整：`probeEffectiveness` → `probeBehaviorPattern`（v0.6 PR-5d 实装；强调行为特征而非 failRate 排序）
 
 详见 [Insight](./insight.md)。
 

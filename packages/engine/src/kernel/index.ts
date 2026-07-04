@@ -67,7 +67,7 @@ export {
   CorrelationPairSchema,
   TrendTypeSchema,
   TrendSignalSchema,
-  ProbeEffectivenessSchema,
+  ProbeBehaviorPatternSchema,
   safeValidateCrossProofInsight,
 } from './schemas/cross-proof-insight-schema'
 export type {
@@ -76,7 +76,7 @@ export type {
   CorrelationPair,
   TrendType,
   TrendSignal,
-  ProbeEffectiveness,
+  ProbeBehaviorPattern,
 } from './schemas/cross-proof-insight-schema'
 
 export {

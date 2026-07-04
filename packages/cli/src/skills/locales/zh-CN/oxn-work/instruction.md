@@ -25,7 +25,7 @@ v1.1 hard-switch 之后，原 `oxn-leader` 已并入 `oxn work`，无独立 lead
 
 **v0.6 哲学边界**（重构后）：
 
-> **工程师定意图，AI 跑对齐，OXN 出证明。**
+> **工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
 
 四结构实体（E1–E4）：
 
