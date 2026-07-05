@@ -33,6 +33,51 @@ OpenXenon 是一款**轻量级人机协作工具**。它用 IAP 范式（Intent�
 2. **工程师意图对齐** — 通过 Domain / Blueprint / Stack 前置边界，告诉 AI Agent 哪些能做、哪些不能做、用什么语言、按什么步骤。
 3. **Token 投入有效化** — 证明结果反馈驱动意图演化，经验沉淀为可复用资产，不让 Token 白烧。
 
+## 为什么需要 OpenXenon — 三痛点
+
+> _（ADR-0014 · slogan-readme-2）_
+
+深夜两点的工程师正在"babysitting the AI"——盯着终端、反复追问"你真的做完了吗？真的修好了吗？真的跑过测试了吗？" 这不是个案，是 2025 年之后所有用 AI 写代码的工程师的日常。
+
+### 痛点 1 · Drift（漂移）
+
+AI 跑着跑着目标悄悄偏了：
+
+> "帮我把 user 表加个索引" → AI 改了 user 表 → 加了索引 → 还改了 orders 表（不必要的 side effect）
+
+工程师最初的需求只是"加索引"，但 AI 越跑越远，最后交付的是"重构用户模块"。**Drift 是最难发现的 bug——你看到代码时它已经成型**。
+
+### 痛点 2 · Hallucination（幻觉）
+
+AI 自信地输出错误：
+
+> "已修复，测试通过" → 实际：改的是错误文件 → 测试根本没跑
+
+AI 的"自信"是它最难对付的特性——它从不迟疑，从不说"我不确定"，从不在交付前自检。**Hallucination 不是 AI 的缺陷，是它的本质**。
+
+### 痛点 3 · Hallucinatory Self-Confirmation（幻觉自证）
+
+AI 把没检查当没问题，反复迭代越跑越偏：
+
+> Round 1：AI 说"修好了" → 实际没跑测试
+> Round 2：AI 说"加测试了" → 测试不覆盖 bug
+> Round 3：AI 说"测试通过了" → 因为测试断言写反了
+> Round 4：AI 说"修复完成" → 因为它相信 Round 3 的结论
+
+> **这是 AI 协作最深层的陷阱**：AI 不是"做不到"，而是"做到了但不知道自己没做到"，然后**自我说服自己做到了**。
+
+### OXN 的回应
+
+OXN 用三个不可妥协的机制切断幻觉自证循环：
+
+| 机制 | 切哪个幻觉环节 |
+|---|---|
+| **frozen.json**（OS 层 + 内容层 + 写权独占） | AI 改不了"事实" |
+| **E3 Engine 独立公证**（Engine ≠ AI） | 验证不是 AI 自查 |
+| **3-state verdict**（PASSED / FAILED / INCONCLUSIVE） | INCONCLUSIVE 强制人审 |
+
+> OpenXenon 是个半成品，但我们真心希望它能帮到那些深夜还在 babysitting AI 的工程师。
+
 ## IAP 范式速览
 
 | 阶段 | 角色 | 行为 | 关键产物 |

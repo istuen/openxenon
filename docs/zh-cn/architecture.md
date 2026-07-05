@@ -166,6 +166,114 @@ L3 CLI → L2 Engine（DDD 模块化调用）
   import { run } from '@openxenon/engine/Align'
 ```
 
+## 9. L0-L1 Runtime 不变量
+
+OXN 在 L0 Kernel / L1 OXL / L1 Infra 之间划定**七项核心不变量**，确保 Engine 始终是公证人（不评判）+ Kernel 始终真空（无 IO）。
+
+### 9.1 运行期隔离 + frozen 命名（ADR-0003）
+
+**核心命题**：`frozen.json` 是运行期唯一合法产物。Engine 不得感知源格式（YAML / OXN / MD）。
+
+```ts
+// ✅ Engine / Kernel 调 frozen.json 时不关心源格式
+const frozen = readFrozenImmutable(path)  // 完全不知道是不是从 .oxn 编出来的
+
+// ❌ 禁止：Engine 内根据源格式走不同代码路径
+if (sourceFormat === 'oxn') { ... } else if (sourceFormat === 'md') { ... }
+```
+
+源格式信息记录在 `_xenon_meta.source_format` 字段，运行期代码不做条件分支。
+
+### 9.2 frozen 命名约束
+
+- ✅ `frozen.json`（不带 `.yaml`/`.oxn`/`.md` 后缀）
+- ❌ `frozen.oxn.json` / `frozen.yaml.json`（暴露源格式）
+
+### 9.3 ProbeObservation vs ProbeVerdict 二元公理（ADR-0008）
+
+Kernel 内两类数据严格区分：
+
+| 类型 | 含义 | 所在层 | 谁生成 |
+|---|---|---|---|
+| `ProbeObservation` | 物理事实（exitCode、stdout、stderr） | L1 Infra | Probe 执行器 |
+| `ProbeVerdict` | 业务判定（PASS / FAIL / ERROR） | L0 Kernel | Processor |
+
+关键不变量：
+
+- L1 Infra **只产出** ProbeObservation，**不判定**业务对错
+- L0 Processor **只消费** ProbeObservation，**不调用** IO（fs / net / child_process）
+- 跨层数据传递只能通过 Contract（`kernel/contracts/probe-port.ts`）
+
+### 9.4 Trace-before-State 写入顺序（ADR-0009）
+
+写 `state.json` 前必须先 append `trace.jsonl` 事件：
+
+```ts
+// ❌ 禁止
+fs.writeFileSync(statePath, ...)
+
+// ✅ 必须
+fs.appendFileSync(tracePath, eventJsonl)
+fs.writeFileSync(statePath, ...)
+```
+
+原因：state 是快照，trace 是历史。若 state 写成功但 trace 未写，崩溃后无法解释 state 来源。Trace 在前意味着：state 永远有迹可循。
+
+### 9.5 Intent / Align / Observe 四关键字（ADR-0021）
+
+OXL 关键字按 4 个语义轴分离（避免 `type` 重载歧义）：
+
+| 关键字 | 含义 | 载体 | 谁写 |
+|---|---|---|---|
+| `kind` | Blueprint 类别（task/plan/explore） | Blueprint 顶层 | 工程师 |
+| `intent` | Part 能力声明（"我提供什么"） | Part 块 | 工程师 |
+| `align` | 能力实现（"我具体怎么做"） | Part 块 | AI / 工程师 |
+| `observe` | Probe 维度（"我测什么"） | Probe 块 | 工程师 |
+
+**反模式**：
+
+- ❌ `type` 重载（既表 Blueprint 类别，又表 Part 能力）
+- ❌ `role` / `port` 命名（语义不清）
+- ❌ `Blueprint type task` 隐式（应显式 `kind "task"`）
+
+### 9.6 PathPort 注入（ADR-0010）
+
+Kernel 不直接调 `path.join` / `path.resolve`。所有路径操作通过 `PathPort` 注入：
+
+```ts
+// L0-Contract 定义接口
+interface PathPort {
+  join(...parts: string[]): string
+  resolve(p: string): string
+  relative(from: string, to: string): string
+}
+
+// L1-Infra 提供实现
+class NodePathPort implements PathPort { ... }
+```
+
+原因：
+
+- L0 不能假定运行环境是 Node 还是 Bun
+- L0 不能硬编码绝对路径（如 `/tmp/`）
+- L1 可注入 Path / Hash / Fs / Clock 等 Port，让 L0 跨 runtime 可移植
+
+### 9.7 L1 contracts 不允许 Langium 类型泄露（ADR-0013）
+
+`packages/engine/src/oxl/index.ts` **不导出 Langium 类型**：
+
+```ts
+export { createOxnCompiler, type OxnCompiler } from './compiler.js'
+export type { OxnIR, OxnValidationResult } from './ir-types.js'
+// ❌ 禁止 export { AstNode, ... } from 'langium'
+```
+
+实现要点：
+
+- **接口**放 `packages/engine/src/oxl/contracts/`（L1 内部）
+- **类实现**通过 `createOxnCompiler()` 工厂函数返回，**不 export 类本身**
+- **Langium types** 仅在 `src/oxl/generated/` 内（被 build 排除）
+
 ---
 
 ## → 参考

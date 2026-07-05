@@ -521,6 +521,71 @@ appendWorkTrace(event='finalize', finalVerdict, totalRounds)
 
 ---
 
+## 11.5 证据链三件套（ADR-0011）
+
+每个 Work 运行时目录固定包含**三个不可变证据文件**：
+
+```
+works/<work-name>/
+├── .work                         # v1.1 出生证明 + planLock
+├── .run/
+│   ├── frozen.json               # 编译期产物（不可变，0o444）
+│   ├── trace.jsonl               # NDJSON 事件流（append-only）
+│   └── state.json                # 当前状态快照（atomic write）
+```
+
+### 11.5.1 语义分工
+
+| 文件 | 角色 | 写入时机 | 可变 |
+|---|---|---|---|
+| `frozen.json` | 公证（Work 起始 / 终态不可变快照） | `work lock` / `work finalize` | 否 |
+| `trace.jsonl` | 历史（所有事件追加流） | 每次状态变更 | append-only |
+| `state.json` | 现状（最近一次的派生态） | 每次 trace 之后 | 是（来自 trace 重放） |
+
+### 11.5.2 post-snapshot 模型
+
+`frozen.json` 不是"pre-execution contract"，而是 **post-validation 快照**：
+
+- ✅ 删 `state.json` 仅凭 trace.jsonl 可重放
+- ✅ AI 可在 Work 期间 `oxn update probe` 调整（不是 freeze 死）
+- ✅ E4 Insight 通过 trace 看到完整 IAP 历史
+
+### 11.5.3 反模式
+
+- ❌ 直接覆盖 `state.json` 不写 trace——失去溯源能力
+- ❌ 改写 `frozen.json`——hash 失配立即报 `IAP_ALIGN_LOCK_HASH_MISMATCH`
+- ❌ 跳过 `trace.jsonl` 直接写 `state.json`——违反 ADR-0009 Trace-before-State
+
+## 11.6 partId 主键 + Atomic-Write（ADR-0024）
+
+### 11.6.1 partId vs partName
+
+| 字段 | 类型 | 唯一性 | 改名时 |
+|---|---|---|---|
+| `partId` | UUID（生成） | 全局唯一 | 不变（脱钩语义） |
+| `partName` | 字符串（人类可读） | Scope 内唯一 | 可改（语义升级） |
+
+`state.json` 始终以 `partId` 作 key，改 `partName` 不破坏索引。
+
+### 11.6.2 Atomic-Write 协议
+
+```ts
+// ❌ 禁止
+fs.writeFileSync(statePath, JSON.stringify(state))
+
+// ✅ 必须：先写 .tmp 再 rename
+fs.writeFileSync(`${statePath}.tmp`, JSON.stringify(state))
+fs.renameSync(`${statePath}.tmp`, statePath)
+```
+
+原因：进程崩溃 / 断电时 tmp → rename 保证要么旧文件完整，要么新文件完整，**无半成品**。原子性是 Trace-before-State 的物理基础。
+
+### 11.6.3 三层锁（Work 引用 Asset 时）
+
+参见 §7.3：Asset 三层锁确保 Work 期间 Asset 不可变。`partId` 是 Work 内部的 part 唯一标识，与 Asset 的 content_hash 共同形成完整不可变证据链。
+
+---
+
 # 12. 完整 CLI 子命令清单（24 个）
 
 | 子命令 | 功能 | Lock 守卫 |

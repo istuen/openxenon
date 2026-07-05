@@ -33,6 +33,51 @@ Define Intent        Run Alignment         Emit Proof
 2. **Engineer-intent alignment** — Through Domain / Blueprint / Stack upfront boundaries, tell AI Agent what is allowed, what is forbidden, what language to use, and what steps to follow.
 3. **Make Token spend effective** — Proof result feedback drives intent evolution; experience accumulates into reusable assets, no Token burned in vain.
 
+## Why OpenXenon — Three Pains
+
+> _(ADR-0014 · slogan-readme-2)_
+
+It's 2 AM. An engineer is babysitting the AI — staring at the terminal, repeatedly asking: "Did you really finish? Did you really fix it? Did you really run the tests?" This is not an isolated case. This is the daily life of every engineer using AI to write code after 2025.
+
+### Pain 1 · Drift
+
+The AI drifts from the goal mid-execution:
+
+> "Add an index to the user table" → AI modifies the user table → adds the index → also modifies the orders table (unnecessary side effect)
+
+The engineer's original ask was just "add an index", but the AI wanders further and further, finally delivering "a refactored user module." **Drift is the hardest bug to find — by the time you see the code, it's already formed.**
+
+### Pain 2 · Hallucination
+
+The AI confidently outputs errors:
+
+> "Fixed, tests pass" → Reality: the wrong file was modified → tests were never run
+
+The AI's "confidence" is its most difficult property — it never hesitates, never says "I'm not sure", never self-checks before delivering. **Hallucination is not an AI defect; it is the AI's nature.**
+
+### Pain 3 · Hallucinatory Self-Confirmation
+
+The AI treats "unchecked" as "no problem" and iterates itself deeper into delusion:
+
+> Round 1: AI says "fixed" → tests actually never ran
+> Round 2: AI says "added tests" → tests don't cover the bug
+> Round 3: AI says "tests pass" → because assertions are reversed
+> Round 4: AI says "fix complete" → because it trusted Round 3's conclusion
+
+> **This is the deepest trap of AI collaboration**: the AI is not "unable to do it", but "did it without knowing it didn't", and then **convinced itself it did**.
+
+### OXN's Response
+
+OXN breaks the hallucination self-confirmation loop with three non-negotiable mechanisms:
+
+| Mechanism | Which Hallucination Link It Breaks |
+|---|---|
+| **frozen.json** (OS layer + content layer + exclusive write) | AI cannot modify "facts" |
+| **E3 Engine independent notarization** (Engine ≠ AI) | Verification is not AI self-check |
+| **3-state verdict** (PASSED / FAILED / INCONCLUSIVE) | INCONCLUSIVE forces human review |
+
+> OpenXenon is a work in progress, but we sincerely hope it can help those engineers who are still babysitting AI late at night.
+
 ## IAP Paradigm at a Glance
 
 | Stage | Actor | Behavior | Key Output |

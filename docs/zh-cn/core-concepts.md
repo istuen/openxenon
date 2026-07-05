@@ -226,6 +226,58 @@ OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 
 > **work = IAP 范式的最小完整单元**。建资产、开发功能、跑验收——所有工作都走 `/oxn-work`。
 
+## 11. 三相模型：静态结构 → Loop → 静态产物（ADR-0006）
+
+OXN 的物质形态经历**三相循环**：
+
+```
+Phase 1: 静态结构（Asset · E1）
+   ↓ 工程师写入 / AI 生成
+Phase 2: Loop（Work · E2 — 动态过程）
+   ↓ Intent → Align → Proof → Round
+Phase 3: 静态产物（frozen.json · E3 + Insight · E4）
+```
+
+| Phase | 主导 | 物质形态 | 关键产物 |
+|---|---|---|---|
+| **1. 静态结构** | 工程师 | 相对静止的"边界" | Domain / Blueprint / Stack |
+| **2. Loop** | 工程师 ↔ AI | 物质运动 | trace.jsonl（NDJSON 事件流） |
+| **3. 静态产物** | OXN Engine | 物质再次静止 | frozen.json + verdict.md |
+
+**哲学底色**：借鉴热力学"耗散结构"理论。资产层始终是相对静态的"边界"，Loop 阶段所有变化都被 trace 记录，frozen.json 是物质再次静止的"凝固点"。Insight E4 涌现层处理 Phase 2 累积的痕迹。
+
+## 12. Main/Sub Agent 审计链哲学（ADR-0012）
+
+AI 协作采用 **Main Agent + Sub Agent** 架构，OXN 通过**审计链**而非**预防限制**约束 AI：
+
+```
+Engine (OXN) — Main Agent
+   ↓ 调 Sub Agent（AI）执行 Align
+Sub Agent (AI)
+   ↓ 写 trace.jsonl / state.json（自描述）
+   ↓ Engine 公证（不评判对错，只记录"发生了什么"）
+```
+
+### 12.1 反模式（否决）
+
+- ❌ "AI 不应该看到 Probe" — 错。AI 必须看到 Probe 才能调用，但所有调用都被 trace。
+- ❌ "AI 不应该改 Asset" — 错。AI 可 CRUD，但变更必须经 audit chain 落档。
+
+### 12.2 设计后果
+
+- ✅ 不阻碍 AI 发挥，但保留事后审计能力
+- ✅ "AI 行为可解释" 通过 trace 而非 schema 限制
+- ✅ slogan：**"OpenXenon 不生产代码，只生产信任"**
+
+### 12.3 与传统"沙箱"的区别
+
+| 维度 | 传统沙箱 | OXN 审计链 |
+|---|---|---|
+| 约束时机 | 预防（pre-emptive） | 事后（post-hoc） |
+| 失败处理 | 拒绝执行 | 记录并继续 |
+| 哲学 | "不该做的不能做" | "做了什么都被记住" |
+| AI 自主性 | 低（被约束） | 高（被信任 + 可审计） |
+
 ---
 
 ## → 参考

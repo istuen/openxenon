@@ -487,7 +487,62 @@ Phase 4 (v0.1.2):
 
 ---
 
-## 10. 关键代码路径索引（v0.6.1-alpha.0）
+## 10. Probe 五级参数优先级链（ADR-0002）
+
+### 10.1 Probe 默认值规则
+
+| 字段类型 | 是否允许 default | 原因 |
+|---|---|---|
+| Probe `required` 字段 | ❌ 禁 default | 强制调用者显式传入 |
+| Probe `optional` 字段 | ✅ 允许 default | 提供合理回退 |
+
+### 10.2 五级参数优先级链（从高到低）
+
+1. `Task --param key=value`（命令行最高优先）
+2. `parts[].params`（Part 实例化覆盖）
+3. 顶级 `params`（Blueprint 显式）
+4. `Part` schema default
+5. `Probe` schema default（最低）
+
+### 10.3 编译期校验
+
+OXL 编译期校验 required 字段**必须**在五级链中有显式来源，否则编译报错。
+
+## 11. Proof = 公证人 ≠ 裁判（ADR-0031）
+
+### 11.1 公证人做什么
+
+- ✅ 记录"发生了什么"（命令 / 退出码 / stdout / stderr）
+- ✅ 在 hash 校验基础上证明"数据未被篡改"
+- ✅ 输出可重现的 verdict（基于已定义规则）
+
+### 11.2 公证人不做什么
+
+- ❌ 评判"代码质量" / "设计好坏"
+- ❌ 预测"未来风险"
+- ❌ 自主决定"该不该 merge"
+
+### 11.3 决策权归属
+
+| 决策 | 归属 |
+|---|---|
+| 代码是否合并 | 工程师（或 PR reviewer AI） |
+| Probe 是否失败 | 公证人（仅基于事实判定） |
+| 业务是否正确 | 人类 |
+
+> slogan 印证：**OpenXenon 不生产代码，只生产信任。**
+
+### 11.4 与 E4 Insight 的边界
+
+| E3 Engine（Proof） | E4 Insight |
+|---|---|
+| 还原论：单 Probe 行为 | 整体论：跨 Probe 模式 |
+| 客观事实判定 | 行为特征信号 |
+| 永不自主回写 Asset | 可经 audit pool approve 回写 Asset |
+
+---
+
+## 12. 关键代码路径索引（v0.6.1-alpha.0）
 
 | 文件 | 角色 |
 |---|---|

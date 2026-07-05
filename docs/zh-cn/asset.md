@@ -146,6 +146,101 @@ Skill `oxn-work` 教学推荐严谨路径（可追溯、有 planLock）。
 - ❌ Domain 里放 slot——Domain 是业务边界，slot 是技术拓扑，正交
 - ❌ Blueprint 里放 term——同上
 
+## 10. Blueprint props 漏斗效应（ADR-0001）
+
+**核心命题**：Blueprint props ≠ Part props 的简单合集，而是**漏斗**——通过硬编码 / 拼接 / 默认值吸收子层复杂度，对外暴露收敛后的稳定 API。
+
+### 10.1 三层默认值优先级链
+
+从高到低：
+
+1. **父层显式**（Blueprint 顶层 `params` 或 Task `--param key=value`）
+2. **本层 default**（Blueprint 的 props.default）
+3. **子层 schema default**（Part / Probe 的 props.default）
+
+### 10.2 漏斗效应的好处
+
+- ✅ Task 命令行参数简短（只需关心 Blueprint 暴露面）
+- ✅ Part 内部细节对调用者隐藏
+- ✅ Part 改名 / 删除属性时**只需检查 Blueprint 引用**，无需追溯 Work
+
+### 10.3 反模式
+
+- ❌ 让调用者必须知道 Part 内部所有 props
+- ❌ 在 Blueprint 里"反射式"暴露 Part 全部字段（破坏漏斗效应）
+
+## 11. ArsenalResolver 优先级链（ADR-0004）
+
+资产解析时按从高到低的优先级：
+
+```
+Project (`@prj/...`)  >  Global (`@gbl/...`)  >  Builtin (`@oxn/...`)
+```
+
+### 11.1 设计意图
+
+- ✅ **项目级资产可覆盖 builtin**——工程师可渐进式替换 builtin 实现
+- ✅ **不污染 builtin**——项目级仅在当前项目可见
+- ✅ **L2-Builtin 独占 BUILTIN_\*** 常量驻留位置，Kernel / OXL 永不直接依赖
+
+### 11.2 调用方
+
+Work 看到的是 `ArsenalResolver`（而非 `BuiltinArsenal` 直接引用）。DSL 通过 Port 注入获得 Resolver，Arsenal 类（Forge / Promote）封装解析逻辑。
+
+### 11.3 反模式
+
+- ❌ 在 L0 Kernel / L1 OXL 直接 `import { BUILTIN_PROBES } from '...'`——必须通过 Resolver 端口
+- ❌ 项目级资产尝试覆盖 builtin 时不同名命名（导致 resolver 看到两个实体）
+
+## 12. Blueprint Type 范式（ADR-0019）
+
+Blueprint 通过 `type` 字段声明其语义类别：
+
+```oxl
+blueprint "my-feature" {
+  type "task"       // 单次执行单元（强制 Probe）
+  // type "plan"    // 多次 Round 编排（强制 Probe + Round）
+  // type "explore" // 探索性 work（Probe 警告级，非强制）
+  ...
+}
+```
+
+| Type | 意图 | Proof 严格度 |
+|---|---|---|
+| `task` | 单次任务执行 | 强制 |
+| `plan` | 多 Round 编排 | 强制 |
+| `explore` | 探索（草稿 / 研究） | 警告 |
+
+`type` 是 Blueprint **本身**的元数据，**不与 `slot` 混用**。Skill 根据 type 选择 round 策略。
+
+## 13. catalog.json 与 Probe 黑名单（ADR-0035）
+
+### 13.1 catalog.json 替代 catalog.md
+
+Asset 索引位于 `.openxenon/assets/catalog.json`（**不入 git**，本地缓存）。JSON 优先于 MD，因为：
+
+- ✅ 便于 CI / Skill 自动校验
+- ✅ 与 frozen.json 同格式家族（一致工具链）
+- ❌ catalog.md 不可机读、易过期
+
+### 13.2 Probe 不入 catalog
+
+Probes 是"AI 盲区"（不应让 AI 看见全部 Probe 再选择性调用）。catalog **仅含** Asset：
+
+| 类型 | 入 catalog |
+|---|---|
+| Domain | ✅ |
+| Blueprint | ✅ |
+| Stack | ✅ |
+| Probe | ❌（AI 看不到全部，Skill 按需引导） |
+
+### 13.3 CLI 命令
+
+```bash
+oxn arsenal list            # 列出当前可见 Asset（Project + Global + Builtin）
+oxn arsenal show <name>     # 显示 Asset 详情
+```
+
 ---
 
 ## → 参考
