@@ -46,6 +46,7 @@ export default defineConfig({
     /^\.\/intent/,
     /^\.\/align/,
     /^\.\/proof/,
+    /^\.\/.*\.oxn$/,
     /^\.\.\/architecture\//,
     /^\.\.\/reference\//,
     /^\.\.\/guides\//,
