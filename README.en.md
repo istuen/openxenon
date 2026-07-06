@@ -1,6 +1,9 @@
 # OpenXenon
 
-> **A lightweight human-AI collaboration engine for AI Agents.**
+> **Engineers define intent, AI Agents run alignment, OXN Engine emits proof.**
+> **Engineers trust AI Agents' execution results within boundaries.**
+
+> A lightweight human–AI collaboration tool for AI Agents.
 >
 > Plugs into AI Agent workbenches (OpenCode, Claude Code, Codex, Cursor) to prove AI-generated results with tamper-proof `frozen.json`.
 >
@@ -67,22 +70,24 @@ The AI Agent calls `oxn` via Skill, result flows back to `frozen.json`.
 
 ## The IAP Paradigm
 
-### Three axes (ownership does not cross, proof cannot be bypassed)
+### Collaboration pipeline (Engineer ↔ AI Agent ↔ OXN Engine)
 
-| Axis | Owner | Output | Locked by |
+| Stage | Actor | Output | Locked by |
 |---|---|---|---|
-| **Intent** | Engineer | Domain / Blueprint | `term` / `ban` / `invariant` |
-| **Align**  | AI | Work / Task / Part | Blueprint `slot` |
-| **Proof**  | OXN | Proof (`frozen.json`) | Daemon blocks fake completion, **no `--force` bypass** |
+| **Intent** (define) | Engineer | Domain / Blueprint / Stack | `term` / `ban` / `invariant` boundaries (planLock + content_hash) |
+| **Align** (run) | AI Agent | Work / Task / Part | Blueprint `slot` lock; AI must not modify Asset |
+| **Proof** (emit) | OXN Engine | Proof (`frozen.json` + `verdict.md`) | Tamper-proof (chmod 0o444 + content_hash) |
+
+> **OXN Engine is a notary, not a judge** — it records "what happened" (script exit codes, test coverage, file paths as objective facts) and does not judge whether the work is "acceptable". The "acceptability" judgment belongs to the engineer, based on comparing Asset against Proof.
 
 ### E1-E4 structural entities (v0.6 philosophical layer)
 
 | Entity | Nature | Owner |
 |---|---|---|
 | E1 Asset  | Static boundary (Domain / Blueprint / Stack) | Engineer |
-| E2 Work   | Dynamic collaboration (IAP + Round) | Engineer ↔ AI |
-| E3 Engine | Independent notarization (Probe + frozen.json + hash) | OXN |
-| E4 Insight | Emergence layer (1+1>2) | AI reasoning |
+| E2 Work   | Dynamic collaboration (IAP + Round) | Engineer ↔ AI Agent |
+| E3 Engine | Independent notarization (Probe + frozen.json + hash) — control structure, not execution env | OXN Engine |
+| E4 Insight | Emergence layer (1+1>2) + **behavior-characteristic observation** | AI reasoning |
 
 > **E1-E4 + L0-L3**: the E1-E4 entities explain *why*; the L0-L3 layers explain *dependency direction*. See [Core Concepts](./docs/en/core-concepts.md) and [Architecture](./docs/en/architecture.md).
 

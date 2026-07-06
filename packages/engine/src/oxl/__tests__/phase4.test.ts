@@ -163,8 +163,8 @@ describe('Core Migration (Task 4.4)', () => {
     expect(content).toContain('verify-readme')
     expect(content).toContain('test-check-readme')
     expect(content).toContain('blueprint')
-    expect(content).toContain('type "task"')
-    expect(content).toContain('part slot')
+    // v0.6.1-alpha.0 #1-11: blueprint grammar 用 `slot`（不再用废弃的 `type "task"` + `part slot`）
+    expect(content).toContain('slot')
   })
 
   // v1.1: builtin-probes.oxn 已删除——探针通过 PROBE_CATALOG 单一管理

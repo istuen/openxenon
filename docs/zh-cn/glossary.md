@@ -55,3 +55,27 @@ title: 术语表
 | `oxn-cli` Skill | 删除 | `/oxn-work` |
 | `oxn-proof` Skill | 删除 | `/oxn-work` |
 | `intent.md / align.md / proof.md` | 删除 | `work.md` |
+
+## OXL 寻址哲学（ADR-0023）
+
+`@` 前缀在 OXL 全库语义统一：
+
+| 前缀 | 含义 | 例 |
+|---|---|---|
+| `@oxn/` | builtin | `@oxn/probe/fs-exists` |
+| `@prj/` | 项目级 | `@prj/blueprints/dev-workflow` |
+| `@gbl/` | 用户全局 | `@gbl/part/my-helper` |
+| `@term/` | 同 Domain 跨 term 引用 | `@term/OrderItem` |
+
+**反模式（否决 `->` 伪指针）**：
+
+```oxl
+// ❌ 否决：伪指针（OOP 思维在 OXL 中的渗透）
+OrderItem -> Order
+
+// ✅ 改用：纯文本或 `@term/`
+"OrderItem"           // 自然语言引用
+"@term/OrderItem"     // 物理引用（强制存在校验）
+```
+
+`->` 不携带位置信息，编译期无法校验。OXL 引用必须是**物理可寻址**（Langium 能解析为实际 AST 节点）。

@@ -38,11 +38,12 @@ describe('PR-4: Skills i18n translation guard', () => {
   })
 
   test('3. getSkillContent throws for untranslated locale', () => {
+    // v0.6.1-alpha.0: v0.6 Skill 极简版只保留 oxn-work；测试改用 oxn-work
     // 'fr' is not a supported locale, but getSkillContent will still
     // look it up. We simulate an unknown locale accessing a the skill.
     // The function should throw when locale !== DEFAULT_LOCALE and the
     // skill is missing.
-    expect(() => getSkillContent('oxn-cli', 'fr' as never)).toThrow()
+    expect(() => getSkillContent('oxn-work', 'fr' as never)).toThrow()
   })
 
   test('4. SUPPORTED_LOCALES matches locales/ subdirectories', () => {

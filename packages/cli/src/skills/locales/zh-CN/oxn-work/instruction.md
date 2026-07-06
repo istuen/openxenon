@@ -3,8 +3,12 @@
 ## 目标
 
 依据 Blueprint 创建一个 **Work + 至少一个 Task** 的工作区，并在 v1.1 hard-switch 之后强制走 8 阶段流程：
-- `work.oxn` — workspace 编排器（声明 ref 池 + task DAG）
+- `work.oxn` — workspace 编排器（声明 ref 池 + task DAG；v0.6 主路径，资产格式 = oxn）
+- `work.md` — 同 work 的 MD 镜像（v0.6 自动 sync，与 work.oxn 同目录 `assets/works/<w>/`，改 .oxn 后 sync 重生）
 - `tasks/<name>/task.oxn` — 单 blueprint 执行 + 显式 align
+
+> v0.6 双轨：`.oxn` 是 source of truth；`.md` 是可读镜像。改哪个都会触发 `oxn work sync` 同步另一个。
+> 类似 domain / blueprint / stack 的双轨设计（`assets/{kind}/<name>.oxn` + `<name>.md`）— v0.6 RFC §3 统一范式。
 
 v1.1 hard-switch 之后，原 `oxn-leader` 已并入 `oxn work`，无独立 leader skill。
 
@@ -14,21 +18,41 @@ v1.1 hard-switch 之后，原 `oxn-leader` 已并入 `oxn work`，无独立 lead
 
 - 已在 OXN 项目根目录
 - 项目已 `oxn init` 初始化（存在 `.openxenon/` 边界）
-- 必须有 Blueprint（位于 `.openxenon/blueprints/<name>.oxn`），用 `oxn blueprint create` 创建
-- **可选**：有 DDD Domain（位于 `.openxenon/domains/<kebab>.oxn`），用 `oxn domain create` 创建
+- 必须有 Blueprint（位于 `.openxenon/assets/blueprints/<name>.oxn`，v0.6 布局；fallback 兼容 `.openxenon/blueprints/`），用 `oxn blueprint create` 创建
+- **可选**：有 DDD Domain（位于 `.openxenon/assets/domains/<kebab>.oxn`，v0.6 布局；fallback 兼容 `.openxenon/domains/`），用 `oxn domain create` 创建
 
-## Intent-Align 范式提醒
+## Intent-Align 范式提醒（v0.6 E1–E4 双层叙事）
 
-- **Domain** = 业务 Intent（term/ban/invariant）
-- **Blueprint** = 技术 Intent（slot 拓扑）
-- **Work** = Align 编排器（声明 ref 池）
-- **Task** = Align 执行单元（align 1 blueprint + N domains）
+**v0.6 哲学边界**（重构后）：
+
+> **工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
+
+四结构实体（E1–E4）：
+
+- **E1 Domain** = 业务约束硬边界（term / ban / invariant；业务 IAP 的"业务真实性")
+- **E1 Blueprint** = 技术约束硬边界（slot 拓扑；技术 IAP 的"技术可行性")
+- **E2 Work** = Align 编排器（声明 ref 池 + task DAG；将业务 + 技术约束编排为多轮对齐工作流）
+- **E3 Task** = Align 执行单元（align 1 blueprint + N domains + M parts）
+- **E3 Part** = Align 迭代步骤（每个 part 含 intent_checklist + skill_context + 可选 probe）
+- **E4 Insight** = 涌现层（跨 work 综合推理；当前 Work 范围不涉及）
+
+工程分层（L0–L3）：
+
+- **L0 Schema/Contract/Processor** — 纯类型与判定函数（无 IO）
+- **L1 Infra/OXL** — IO 执行与文档解析
+- **L2 Builtin/Work** — 业务模块化
+- **L3 CLI/Daemon/Hall/Skills/Watcher** — 用户 / 进程接口
+
+> 旧 IAP 三轴叙事（Intent-Align-Proof）已被 E1-E4 四结构取代；Round 快照保留为 Align 阶段的迭代单元（v0.6 RFC §2.3）。
+
+资产细节：
+
 - **Part / Probe** = **不是独立资产**，**内联**在 `task { part { probe {} } }` 块里
 
 ## v1.1 8 阶段流程图
 
 ```
-init → migrate → create → add-task → validate → lock → run → submit / status
+init → migrate → create → add-task → validate → lock → run → submit → finalize
                                               │         │
                                               ▼         ▼
                                           .work      .work.planLock
@@ -49,6 +73,7 @@ init → migrate → create → add-task → validate → lock → run → submi
 - **5**: `oxn work run`（启动状态机；要求 lock 完成）
 - **6**: `oxn work submit`（推进 task 内 part）
 - **7**: `oxn work status`（查询 work 状态）
+- **8**: `oxn work finalize`（收口：汇总所有 round + 写最终状态）
 
 ## 创建 Work + Task（v1.1 8 步）
 
@@ -182,7 +207,9 @@ v1.1 把 work 运行时状态从 work.oxn 同级目录搬到 `.run/` 子目录�
 | `IAP_ALIGN_CHECKLIST_MISSING` | task.part.intent_checklist 必填缺失 | YIELD_TO_HUMAN |
 | `IAP_ALIGN_LOCK_NOT_FOUND` | .work.planLock 缺失/未锁 | YIELD_TO_HUMAN：未调 `oxn work lock` / init 缺失 |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | 4 组件 hash 之一漂移（workOxn/workDomains/blueprints/tasks） | YIELD_TO_HUMAN：context.component 字段定位漂移源 |
-| `IAP_ALIGN_WORK_REMOVED` | work.oxn 失踪但 .work 还在（锁后被破坏） | YIELD_TO_HUMAN（区别于 WORK_NOT_FOUND：两个都无） |
+| `IAP_ALIGN_WORK_REMOVED` | work 目录被删 / work.oxn 失踪（无论 .work 是否还在） | YIELD_TO_HUMAN（区别于 WORK_NOT_FOUND：work 从未存在过） |
+| `OXN_ROUND_ALREADY_PASSED` | 已 PASSED 仍调 next-round | YIELD_TO_HUMAN：调 `oxn work finalize` 收口 |
+| `OXN_ROUND_VERDICT_INVALID` | `--verdict` 值不在 PASSED/FAILED/INCONCLUSIVE | 修命令参数 |
 
 三剑客守卫次序：先校验 planLock 存在 → 再校验 4 组件 hash → 最后校验 work.oxn 存在。
 
@@ -364,21 +391,34 @@ OXN 在 git worktree 场景下提供 **builtin `git-workflow` 蓝图**（`src/bu
 
 **核心边界**：**OXN 永远不替人 commit / push / merge**。它只观察并产出可合并性证据，让人类在 `git merge` 时消费。
 
-### 派生 builtin 蓝图（标准 cp 约定）
+### 派生 builtin 蓝图（标准 cp 约定，v0.6 路径）
 
 ```bash
 oxn init
-cp src/builtin/blueprints/git-workflow.oxn .openxenon/blueprints/git-workflow.oxn
+# v0.6.1-alpha.0: builtin blueprint 派生路径与 v0.6 assets 布局对齐
+mkdir -p .openxenon/assets/blueprints
+cp src/builtin/blueprints/git-workflow.oxn .openxenon/assets/blueprints/git-workflow.oxn
+chmod 644 .openxenon/assets/blueprints/git-workflow.oxn  # 0o444 锁态时手动解锁
 oxn domain create ProgramContext          # 至少含 term: WorkingTree / Branch / MergeCommit
 oxn blueprint validate git-workflow
 ```
 
-### 与 work 8 阶段流程集成
+### 与 work 8 阶段流程集成（v0.6.1-alpha.0：create 自动生成 task.oxn 骨架）
 
 ```bash
+# v0.6.1-alpha.0 #3-3 修复：work create 自动为 blueprint 每个 slot 生成对应 tasks/<slot>/task.oxn 骨架
 oxn work create gw-feat-x --blueprint git-workflow
-oxn work add-task gw-feat-x --task ship --blueprint git-workflow --domain ProgramContext
-# 编辑 work.oxn + tasks/ship/task.oxn（4 part = 4 slot）
+# 创建后 .openxenon/works/gw-feat-x/ 下自动有：
+#   work.oxn
+#   tasks/init/task.oxn
+#   tasks/build/task.oxn
+#   tasks/verify/task.oxn
+#   tasks/ship/task.oxn       (git-workflow 4 slots = 4 task.oxn 骨架)
+# 只需编辑文件填 skill_context 等内容，**不必再手动 add-task**
+
+# 也可手动补加（如果 work 跑完要再加 task）：
+oxn work add-task gw-feat-x --task extra --blueprint git-workflow --domain ProgramContext
+
 oxn work validate gw-feat-x --json
 oxn work lock gw-feat-x --json
 ```
@@ -392,6 +432,7 @@ cd -
 oxn work run gw-feat-x --json
 oxn work submit gw-feat-x --task ship --json          # 4 次（4 part = 4 slot）
 oxn work status gw-feat-x --json                       # overallStatus = passed
+oxn work finalize gw-feat-x --json                     # 收口（v0.6.1 新增）— 写最终状态
 ```
 
 ### 拿到可合并性证据（关键）

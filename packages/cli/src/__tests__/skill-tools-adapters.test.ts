@@ -132,10 +132,22 @@ describe('oxn init --tools (v0.1.3 多 AI 助手分发)', () => {
 })
 
 describe('oxn install-skill (v0.1.3 保留，向下兼容)', () => {
-  test('6. install-skill --skill oxn-cli 仍可调用（v0.1.3 兼容：默认装到 ~/.opencode/skills/）', async () => {
+  // v0.6.1-alpha.0: v0.6 Skill 极简版只保留 oxn-work；测试改用 oxn-work
+  test('6. install-skill --skill oxn-work 仍可调用（v0.1.3 兼容：默认装到 ~/.opencode/skills/）', async () => {
+    await runCli(['init', '--json'])
+    const r = await runCli(['install-skill', '--skill', 'oxn-work', '--force', '--json'])
+    expect(r.exitCode).toBe(0)
+  })
+
+  // v0.6.1-alpha.0: install-skill --skill oxn-cli 应在 data.failed 中（v0.6 已删）
+  test('6b. install-skill --skill oxn-cli 应在 data.failed 中（v0.6 已删）', async () => {
     await runCli(['init', '--json'])
     const r = await runCli(['install-skill', '--skill', 'oxn-cli', '--force', '--json'])
-    expect(r.exitCode).toBe(0)
+    const json = JSON.parse(r.stdout)
+    // install-skill 输出嵌套结构：{ ok, data: { ok, data: { installed, skipped, failed } } }
+    const inner = json.data?.data ?? json.data
+    expect(inner.failed).toBeArrayOfSize(1)
+    expect(inner.failed[0].skill).toBe('oxn-cli')
   })
 })
 
@@ -157,13 +169,14 @@ describe('oxn config show (v0.1.3 tools 行)', () => {
   })
 })
 
-describe('Skill 资产完整性（v0.1.3 跨目录一致）', () => {
-  test('三个工具目录下的 SKILL.md frontmatter 完全一致', async () => {
+describe('Skill 资产完整性（v0.6.1 跨目录一致）', () => {
+  // v0.6.1-alpha.0: v0.6 Skill 极简版只保留 oxn-work，改测 oxn-work
+  test('三个工具目录下的 oxn-work SKILL.md frontmatter 完全一致', async () => {
     const r = await runCli(['init', '--json'])
     expect(r.exitCode).toBe(0)
-    const opencode = readFileSync(join(tmpDir, '.opencode', 'skills', 'oxn-cli', 'SKILL.md'), 'utf-8')
-    const claude = readFileSync(join(tmpDir, '.claude', 'skills', 'oxn-cli', 'SKILL.md'), 'utf-8')
-    const agents = readFileSync(join(tmpDir, '.agents', 'skills', 'oxn-cli', 'SKILL.md'), 'utf-8')
+    const opencode = readFileSync(join(tmpDir, '.opencode', 'skills', 'oxn-work', 'SKILL.md'), 'utf-8')
+    const claude = readFileSync(join(tmpDir, '.claude', 'skills', 'oxn-work', 'SKILL.md'), 'utf-8')
+    const agents = readFileSync(join(tmpDir, '.agents', 'skills', 'oxn-work', 'SKILL.md'), 'utf-8')
     expect(opencode).toBe(claude)
     expect(opencode).toBe(agents)
   })

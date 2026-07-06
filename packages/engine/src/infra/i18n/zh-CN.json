@@ -92,7 +92,7 @@
   },
   "domain": {
     "create": {
-      "description": "在 .openxenon/domains/ 生成一个新的 domain 骨架（DDD 限界上下文）",
+      "description": "在 .openxenon/assets/domains/ 生成一个新的 domain 骨架（DDD 限界上下文，v0.6 路径）",
       "name": "Domain 名称（PascalCase 推荐，如 MemberContext）",
       "force": "覆盖已存在的文件"
     },
@@ -102,7 +102,7 @@
       "filePath": "直接指定 .oxn 文件路径（可选逃生舱）"
     },
     "list": {
-      "description": "列出 .openxenon/domains/ 下所有已注册的 domain"
+      "description": "列出 .openxenon/assets/domains/ 下所有已注册的 domain（v0.6 路径）"
     },
     "index": {
       "description": "重建全局 Domain slim 索引",
@@ -110,11 +110,18 @@
       "freshness": "仅校验索引是否新鲜"
     },
     "compile": {
-      "description": "把 .oxn 重新编译为 v0.3 canonical 纯 MD .md（输出到 .openxenon/domains-md/）",
+      "description": "把 .oxn 重新编译为 v0.3 canonical 纯 MD .md（输出到 .openxenon/assets/domains/，与 .oxn 同目录）",
       "name": "Domain 名称",
       "filePath": "直接指定 .oxn 文件路径（可选逃生舱）"
     },
-    "description": "Domain 模块 — DDD 限界上下文管理 (create/validate/list/index/compile)"
+    "cache": {
+      "description": "Domain 模块缓存管理（v0.6.1-alpha.0 #1-16 — 清理 .cache/*.hash）",
+      "clean": {
+        "description": "删除 .cache/<name>.hash 与 .cache/<name>.md-hash（Phase 1 / Phase 2 同步缓存）",
+        "dryRun": "仅列出待删文件不实际删除"
+      }
+    },
+    "description": "Domain 模块 — DDD 限界上下文管理 (create/validate/list/index/compile/sync/cache)"
   },
   "errors": {
     "projectNotInit": "项目未初始化，请先执行 oxn init",

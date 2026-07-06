@@ -21,6 +21,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "^2.5.1",
+        "@types/mdast": "^4.0.4",
         "@typescript-eslint/eslint-plugin": "^8.62.0",
         "@typescript-eslint/parser": "^8.62.0",
         "bun-types": "^1.3.14",
@@ -30,6 +31,41 @@
         "lefthook": "^2.1.9",
         "typescript": "^5.9.3",
         "vitepress": "^1.6.4",
+      },
+    },
+    "packages/cli": {
+      "name": "@openxenon/cli",
+      "version": "0.6.1-alpha.0",
+      "bin": {
+        "oxn": "./dist/cli.js",
+      },
+      "dependencies": {
+        "@openxenon/engine": "workspace:*",
+        "citty": "^0.1.6",
+        "i18next": "^26.3.2",
+        "which": "^2.0.2",
+      },
+      "devDependencies": {
+        "bun-types": "^1.3.14",
+        "typescript": "^5.9.3",
+      },
+    },
+    "packages/engine": {
+      "name": "@openxenon/engine",
+      "version": "0.6.1-alpha.0",
+      "dependencies": {
+        "langium": "^4.3.0",
+        "remark-frontmatter": "^5.0.0",
+        "remark-parse": "^11.0.0",
+        "remark-stringify": "^11.0.0",
+        "unified": "^11.0.5",
+        "unist-util-visit": "^5.1.0",
+        "yaml": "^2.9.0",
+        "zod": "^4.4.3",
+      },
+      "devDependencies": {
+        "bun-types": "^1.3.14",
+        "typescript": "^5.9.3",
       },
     },
   },
@@ -187,6 +223,10 @@
     "@iconify/types": ["@iconify/types@2.0.0", "https://registry.npmmirror.com/@iconify/types/-/types-2.0.0.tgz", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
 
     "@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.5", "https://registry.npmmirror.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz", {}, "sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og=="],
+
+    "@openxenon/cli": ["@openxenon/cli@workspace:packages/cli"],
+
+    "@openxenon/engine": ["@openxenon/engine@workspace:packages/engine"],
 
     "@rollup/rollup-android-arm-eabi": ["@rollup/rollup-android-arm-eabi@4.61.1", "https://registry.npmmirror.com/@rollup/rollup-android-arm-eabi/-/rollup-android-arm-eabi-4.61.1.tgz", { "os": "android", "cpu": "arm" }, "sha512-JnBB8MdXj45cajvTuO5FmPlvFVJRQgvrz1uSEl3NwqFnReAPGwb8EanbGi4z2nRaqLzjJSv5/JmycoTKlRZxHA=="],
 

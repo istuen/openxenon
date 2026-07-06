@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty'
- 
+
 import { getDaemonBasicStatus, getRecentLogs, queryDaemonStatus } from '../../../../src/daemon/status-client'
 import { t } from '@openxenon/engine/infra/i18n'
 import { output } from './output'

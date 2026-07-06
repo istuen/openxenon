@@ -13,7 +13,6 @@ import { describe, test, expect, beforeAll } from 'bun:test'
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'
 import remarkFrontmatter from 'remark-frontmatter'
-import remarkDirective from 'remark-directive'
 import type { Root } from 'mdast'
 
 // 直接 import 5 个 compiler class + registry
@@ -40,7 +39,8 @@ beforeAll(() => {
 
 /** 工具：MD 字符串 → { mdast, frontmatter } */
 function parseMdWithFrontmatter(md: string): { mdast: Root; frontmatter: Record<string, unknown> } {
-  const processor = unified().use(remarkParse).use(remarkFrontmatter, ['yaml']).use(remarkDirective)
+  // 注：v0.3 PR-B 已移除 remark-directive plugin，AST 不再解析 :::
+  const processor = unified().use(remarkParse).use(remarkFrontmatter, ['yaml'])
   const tree = processor.parse(md) as Root
 
   // 提取 frontmatter

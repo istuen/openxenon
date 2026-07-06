@@ -141,10 +141,200 @@ Skill `oxn-work` 教学推荐严谨路径（可追溯、有 planLock）。
 
 ## 9. 反模式
 
-- ❌ 把 Asset 当"可随时修改的文档"——Asset 创建后 planLock 锁定，修改必须走专门的 Asset 模式 Work + audit pool approve
+- ❌ 把 Asset 当"可随时修改的文档"——Asset 创建后 planLock 锁定，修改必须走专门的 Asset 模式 Work（`oxn work create --type asset`）
 - ❌ 在 Work 内直接修改 Asset——Work 只能引用 Asset，不能改写
 - ❌ Domain 里放 slot——Domain 是业务边界，slot 是技术拓扑，正交
 - ❌ Blueprint 里放 term——同上
+- ❌ 跳过 Work 的 IAP 闭环直接 `write_file` Asset（v0.6.3+ 必须通过 Work 路径）
+
+## 10. Blueprint props 漏斗效应（ADR-0001）
+
+**核心命题**：Blueprint props ≠ Part props 的简单合集，而是**漏斗**——通过硬编码 / 拼接 / 默认值吸收子层复杂度，对外暴露收敛后的稳定 API。
+
+### 10.1 三层默认值优先级链
+
+从高到低：
+
+1. **父层显式**（Blueprint 顶层 `params` 或 Task `--param key=value`）
+2. **本层 default**（Blueprint 的 props.default）
+3. **子层 schema default**（Part / Probe 的 props.default）
+
+### 10.2 漏斗效应的好处
+
+- ✅ Task 命令行参数简短（只需关心 Blueprint 暴露面）
+- ✅ Part 内部细节对调用者隐藏
+- ✅ Part 改名 / 删除属性时**只需检查 Blueprint 引用**，无需追溯 Work
+
+### 10.3 反模式
+
+- ❌ 让调用者必须知道 Part 内部所有 props
+- ❌ 在 Blueprint 里"反射式"暴露 Part 全部字段（破坏漏斗效应）
+
+## 11. ArsenalResolver 优先级链（ADR-0004）
+
+资产解析时按从高到低的优先级：
+
+```
+Project (`@prj/...`)  >  Global (`@gbl/...`)  >  Builtin (`@oxn/...`)
+```
+
+### 11.1 设计意图
+
+- ✅ **项目级资产可覆盖 builtin**——工程师可渐进式替换 builtin 实现
+- ✅ **不污染 builtin**——项目级仅在当前项目可见
+- ✅ **L2-Builtin 独占 BUILTIN_\*** 常量驻留位置，Kernel / OXL 永不直接依赖
+
+### 11.2 调用方
+
+Work 看到的是 `ArsenalResolver`（而非 `BuiltinArsenal` 直接引用）。DSL 通过 Port 注入获得 Resolver，Arsenal 类（Forge / Promote）封装解析逻辑。
+
+### 11.3 反模式
+
+- ❌ 在 L0 Kernel / L1 OXL 直接 `import { BUILTIN_PROBES } from '...'`——必须通过 Resolver 端口
+- ❌ 项目级资产尝试覆盖 builtin 时不同名命名（导致 resolver 看到两个实体）
+
+## 12. Blueprint Type 范式（ADR-0019）
+
+Blueprint 通过 `type` 字段声明其语义类别：
+
+```oxl
+blueprint "my-feature" {
+  type "task"       // 单次执行单元（强制 Probe）
+  // type "plan"    // 多次 Round 编排（强制 Probe + Round）
+  // type "explore" // 探索性 work（Probe 警告级，非强制）
+  ...
+}
+```
+
+| Type | 意图 | Proof 严格度 |
+|---|---|---|
+| `task` | 单次任务执行 | 强制 |
+| `plan` | 多 Round 编排 | 强制 |
+| `explore` | 探索（草稿 / 研究） | 警告 |
+
+`type` 是 Blueprint **本身**的元数据，**不与 `slot` 混用**。Skill 根据 type 选择 round 策略。
+
+## 13. catalog.json 与 Probe 黑名单（ADR-0035）
+
+### 13.1 catalog.json 替代 catalog.md
+
+Asset 索引位于 `.openxenon/assets/catalog.json`（**不入 git**，本地缓存）。JSON 优先于 MD，因为：
+
+- ✅ 便于 CI / Skill 自动校验
+- ✅ 与 frozen.json 同格式家族（一致工具链）
+- ❌ catalog.md 不可机读、易过期
+
+### 13.2 Probe 不入 catalog
+
+Probes 是"AI 盲区"（不应让 AI 看见全部 Probe 再选择性调用）。catalog **仅含** Asset：
+
+| 类型 | 入 catalog |
+|---|---|
+| Domain | ✅ |
+| Blueprint | ✅ |
+| Stack | ✅ |
+| Probe | ❌（AI 看不到全部，Skill 按需引导） |
+
+### 13.3 CLI 命令
+
+```bash
+oxn arsenal list            # 列出当前可见 Asset（Project + Global + Builtin）
+oxn arsenal show <name>     # 显示 Asset 详情
+```
+
+---
+
+## 14. Asset 论文结构（ADR-0051 · v0.6.3+）
+
+> Asset 是一篇"微型论文"——结构固定、逻辑自洽、可被引用、可被验证。**完整设计见 [Asset Paper Schema · 资产论文结构](./asset-paper.md)**，本节为概览。
+
+### 14.1 Schema 扩展（4 新字段）
+
+```yaml
+---
+type: domain
+id: payment-core
+version: 1.2.0
+status: stable
+
+# 🆕 论文结构（v0.6.3 引入）
+abstract: |                          # 论文摘要（必填，老 Asset 默认空字符串）
+  本文档定义支付核心领域的边界。
+references:                          # 引用其他 Asset（依赖 DAG 出边）
+  - asset: stack-nodejs
+  - asset: api-rest-standard
+citations: 3                         # 被引用次数（Engine 自动维护）
+auditTrail:                          # 版本历史
+  - version: 1.2.0
+    date: 2026-10-15
+    author: engineer-X
+    changes: 新增 §3.4 幂等性约束
+---
+```
+
+### 14.2 引用计数 → 影响半径
+
+```typescript
+function impactRadius(asset: Asset): 'low' | 'medium' | 'high' | 'critical' {
+  const citations = asset.citations ?? 0
+  if (citations >= 10) return 'critical'  // 重构级
+  if (citations >= 5) return 'high'      // 重大变更
+  if (citations >= 1) return 'medium'    // 业务级
+  return 'low'                            // 局部
+}
+```
+
+**变更策略**：
+- **critical** (≥10) — 触发 planLock 重算 + 全量测试
+- **high** (5-9) — 触发相关模块测试
+- **medium** (1-4) — 仅相关业务测试
+- **low** (0) — 孤岛 Asset，无验证
+
+### 14.3 DAG 校验 + 循环依赖检测
+
+```bash
+$ oxn asset validate --check-dag
+# → 自动检测 references[] 拓扑
+# → 孤儿引用：OXN_ASSET_ORPHAN_REFERENCE
+# → 循环依赖：OXN_ASSET_CIRCULAR_DEPENDENCY
+```
+
+### 14.4 库/外部子目录
+
+```
+.openxenon/assets/
+├── domain/                          # 原
+├── blueprint/                       # 原
+├── stack/                           # 原
+├── library/                         # 🆕 外部信息聚合（Work 产出）
+└── external/                        # 🆕 外部引用指针（URL + hash + ttl）
+```
+
+| 子目录 | 内容 | 大小限制 | 写入路径 |
+|---|---|---|---|
+| `library/` | AI 解析后写入 .oxn | < 50KB | 通过 Work |
+| `external/` | 仅引用指针 | 无 | 手动 / 自动 fetch |
+
+### 14.5 引用图渲染（v0.7.0 W11-12）
+
+```bash
+$ oxn asset graph payment-core
+# digraph G {
+#   payment-core -> stack-nodejs
+#   payment-core -> api-rest-standard
+# }
+
+$ oxn asset graph payment-core --format mermaid
+# graph LR
+#   payment-core --> stack-nodejs
+#   payment-core --> api-rest-standard
+# }
+
+$ oxn asset impact payment-core
+# impact: high
+# citations: 3
+# referencedBy: [order-checkout, refund-flow, payment-gateway]
+```
 
 ---
 
@@ -153,4 +343,6 @@ Skill `oxn-work` 教学推荐严谨路径（可追溯、有 planLock）。
 - [Core Concepts](./core-concepts.md) — E1-E4 完整概念
 - [Work](./work.md) — E2 动态协作 + IAP + Round
 - [Insight](./insight.md) — E4 涌现层
+- [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper 论文结构 + 引用计数 + DAG
+- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
 - [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)

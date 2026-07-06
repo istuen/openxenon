@@ -100,11 +100,12 @@ export function renderCrossProofHuman(
   }
   lines.push('')
 
-  lines.push(`## Probe Effectiveness (${insight.probeEffectiveness.length} probe types)`)
-  if (insight.probeEffectiveness.length === 0) {
+  lines.push(`## Probe Behavior Pattern (${insight.probeBehaviorPattern.length} probe types)`)
+  lines.push('  # 记录 AI Agent 触碰探针的行为特征（failRate = 客观事实统计，非代码质量评分）')
+  if (insight.probeBehaviorPattern.length === 0) {
     lines.push('  (no probe data)')
   } else {
-    for (const p of insight.probeEffectiveness) {
+    for (const p of insight.probeBehaviorPattern) {
       const failPct = (p.failRate * 100).toFixed(1)
       lines.push(
         `  ${p.probeType}: ${p.failedProofs}/${p.totalRuns} failed (${failPct}%) [F:${p.failureVerdicts.FAILED}, I:${p.failureVerdicts.INCONCLUSIVE}]`,

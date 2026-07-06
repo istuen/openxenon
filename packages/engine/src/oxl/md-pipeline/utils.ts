@@ -17,7 +17,7 @@
  *   - 不 import L0-Processor / L1-Infra / L2-Work / L3
  */
 
-import type { Heading, List, ListItem, Paragraph, Root, Text } from 'mdast'
+import type { Heading, List, ListItem, Paragraph, PhrasingContent, Root, Text } from 'mdast'
 import { visit } from 'unist-util-visit'
 
 /**
@@ -35,8 +35,8 @@ export function collectHeadings(root: Root): CollectedHeading[] {
   const result: CollectedHeading[] = []
   visit(root, 'heading', (node: Heading) => {
     const text = (node.children ?? [])
-      .filter((c): c is Text => c.type === 'text')
-      .map((c) => c.value)
+      .filter((c: PhrasingContent): c is Text => c.type === 'text')
+      .map((c: Text) => c.value)
       .join('')
     result.push({
       depth: node.depth as 1 | 2 | 3 | 4 | 5 | 6,
@@ -56,8 +56,8 @@ export function findFirstHeading(root: Root, depth: 1 | 2 | 3 | 4 | 5 | 6 = 1): 
   visit(root, 'heading', (node: Heading) => {
     if (node.depth === depth && !found) {
       const text = (node.children ?? [])
-        .filter((c): c is Text => c.type === 'text')
-        .map((c) => c.value)
+        .filter((c: PhrasingContent): c is Text => c.type === 'text')
+        .map((c: Text) => c.value)
         .join('')
       found = {
         depth: node.depth as 1 | 2 | 3 | 4 | 5 | 6,
@@ -91,8 +91,8 @@ export function collectHeadingContexts(root: Root): HeadingContext[] {
     if (child.type === 'heading') {
       const h = child as Heading
       const text = (h.children ?? [])
-        .filter((c): c is Text => c.type === 'text')
-        .map((c) => c.value)
+        .filter((c: PhrasingContent): c is Text => c.type === 'text')
+        .map((c: Text) => c.value)
         .join('')
       if (h.depth === 2) {
         currentH2 = text
@@ -106,8 +106,8 @@ export function collectHeadingContexts(root: Root): HeadingContext[] {
             if (nh.depth < 4) break // 遇到更浅的 heading 退出
             if (nh.depth === 4) {
               const title = (nh.children ?? [])
-                .filter((c): c is Text => c.type === 'text')
-                .map((c) => c.value)
+                .filter((c: PhrasingContent): c is Text => c.type === 'text')
+                .map((c: Text) => c.value)
                 .join('')
               h4Sections.push({ title, list: null })
             }
@@ -177,22 +177,32 @@ export function collectListFields(list: List): ListField[] {
     if (item.type !== 'listItem') continue
     const li = item as ListItem
     // 第一个 paragraph 包含 "key: value" 主行
-    const firstPara = (li.children ?? []).find((c) => c.type === 'paragraph') as Paragraph | undefined
+    const firstPara = (li.children ?? []).find((c: ListItem['children'][number]) => c.type === 'paragraph') as
+      | Paragraph
+      | undefined
     if (!firstPara) continue
-    const firstText = (firstPara.children ?? []).find((c) => c.type === 'text') as Text | undefined
+    const firstText = (firstPara.children ?? []).find((c: Paragraph['children'][number]) => c.type === 'text') as
+      | Text
+      | undefined
     if (!firstText) continue
     const raw = firstText.value
     const m = raw.match(/^([\w-]+):\s*(.*)$/)
     if (!m) continue
     const [, key, value] = m as unknown as [string, string, string]
     // 嵌套 list 作为 array value
-    const nestedList = (li.children ?? []).find((c) => c.type === 'list') as List | undefined
+    const nestedList = (li.children ?? []).find((c: ListItem['children'][number]) => c.type === 'list') as
+      | List
+      | undefined
     if (nestedList) {
       const arr: string[] = []
       visit(nestedList, 'listItem', (n: ListItem) => {
-        const txt = (n.children ?? []).find((c) => c.type === 'paragraph') as Paragraph | undefined
+        const txt = (n.children ?? []).find((c: ListItem['children'][number]) => c.type === 'paragraph') as
+          | Paragraph
+          | undefined
         if (txt) {
-          const t = (txt.children ?? []).find((c) => c.type === 'text') as Text | undefined
+          const t = (txt.children ?? []).find((c: Paragraph['children'][number]) => c.type === 'text') as
+            | Text
+            | undefined
           if (t) arr.push(t.value)
         }
       })

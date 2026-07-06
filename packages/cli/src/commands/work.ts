@@ -91,6 +91,7 @@ import {
   resolveAssetAltPath,
   resolveAssetFormat,
   resolveAutoSync,
+  resolveAssetDir,
 } from '@openxenon/engine/infra/paths'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
@@ -147,6 +148,40 @@ function ensureDirectory(dir: string): void {
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
   }
+}
+
+// v0.6.1-alpha.0 #3-3: work create 后自动为 blueprint 每个 slot 生成 task.oxn 骨架
+function writeTaskTemplate(
+  projectRoot: string,
+  workName: string,
+  taskName: string,
+  blueprintName: string,
+  domainName: string,
+): { written: boolean; path: string; reason?: 'exists' } {
+  const taskDir = getTaskDir(projectRoot, workName, taskName)
+  const taskFile = getWorkTaskFile(workName, taskName)
+  if (existsSync(taskFile)) {
+    return { written: false, path: taskFile, reason: 'exists' }
+  }
+  const domainLine = domainName ? `  domain "${domainName}"` : ''
+  const template = `// Task: ${taskName} (work: ${workName}, blueprint: ${blueprintName})
+// Created by: oxn work add-task <name> --task ${taskName} --blueprint ${blueprintName} ${domainName ? `--domain ${domainName}` : ''}
+//
+// 任务执行：
+//   oxn work status <name>
+//   oxn work context <name> --task ${taskName}
+
+task "${taskName}" {
+  blueprint "${blueprintName}"
+${domainLine}
+  part "slot-name" {
+    skill_context = "TODO: 描述 AI 执行指令"
+  }
+}
+`
+  ensureDirectory(taskDir)
+  writeFileSync(taskFile, template, 'utf-8')
+  return { written: true, path: taskFile }
 }
 
 function validateWorkName(name: string): { valid: boolean; error?: string } {
@@ -343,6 +378,7 @@ const createSubcommand = defineCommand({
     blueprint: {
       type: 'string',
       alias: 'b',
+      required: true, // v0.6.1-alpha.0 #3-2: 强制必传（避免 TODO-blueprint 模板错配）
       description: t('work.create.args.blueprint'),
     },
     'blueprint-file': { type: 'string', description: t('work.create.args.blueprintPath') },
@@ -385,8 +421,14 @@ const createSubcommand = defineCommand({
     // (projectRoot already declared above)
 
     if (customBlueprint || blueprintNameArg) {
+      // v0.6.1-alpha.0 #2-8: 用 config 解析 blueprint 路径（不再硬编码老路径）
+      const config = readProjectConfig(projectRoot)
+      const bpAssetDir = resolveAssetDir(projectRoot, 'blueprint', config)
       const defaultCandidates = blueprintNameArg
         ? [
+            join(bpAssetDir, `${blueprintNameArg}.oxn`),
+            join(bpAssetDir, blueprintNameArg, 'blueprint.oxn'),
+            // v0.5 fallback
             join(projectRoot, '.openxenon', 'blueprints', `${blueprintNameArg}.oxn`),
             join(projectRoot, '.openxenon', 'blueprints', blueprintNameArg, 'blueprint.oxn'),
           ]
@@ -485,6 +527,18 @@ const createSubcommand = defineCommand({
             // autoSync 失败不阻断主命令
           }
         }
+        // v0.6.1-alpha.0 #3-3: work create 自动为 blueprint 每个 slot 生成 task.oxn 骨架
+        //   避免 work 锁后 run 报 "task X not found in work Y"。
+        //   用户可继续手动 `add-task` 补 task 或 `--force` 覆盖。
+        const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
+        for (const slot of slots) {
+          const t = writeTaskTemplate(projectRoot, workName, slot.name, resolvedBlueprintName, '')
+          autoTasks.push({
+            name: slot.name,
+            path: t.path,
+            status: t.written ? 'created' : 'exists',
+          })
+        }
         return output(
           {
             ok: true,
@@ -499,7 +553,8 @@ const createSubcommand = defineCommand({
                 slots: slots.map((s) => s.name),
               },
               files: { work: workFile },
-              nextStep: `Edit the file, then run: oxn work add-task <name> --task <slot> --blueprint ${resolvedBlueprintName}\n  oxn work run <name>`,
+              tasks: autoTasks,
+              nextStep: `Edit the task files, then run: oxn work validate ${workName} && oxn work lock ${workName} && oxn work run ${workName}`,
             },
           },
           format,
@@ -790,7 +845,6 @@ const addTaskSubcommand = defineCommand({
       )
     }
 
-    const taskDir = getWorkTaskDir(workName, taskName)
     const taskFile = getWorkTaskFile(workName, taskName)
     if (existsSync(taskFile) && !force) {
       return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.oxn already exists at ${taskFile}`, {
@@ -841,24 +895,13 @@ const addTaskSubcommand = defineCommand({
       )
     }
 
-    const domainLine = domainName ? `  domain "${domainName}"` : ''
-    const template = `// Task: ${taskName} (work: ${workName}, blueprint: ${blueprintName})
-// Created by: oxn work add-task <name> --task ${taskName} --blueprint ${blueprintName} ${domainName ? `--domain ${domainName}` : ''}
-//
-// 任务执行：
-//   oxn work status <name>
-//   oxn work context <name> --task ${taskName}
-
-task "${taskName}" {
-  blueprint "${blueprintName}"
-${domainLine}
-  part "slot-name" {
-    skill_context = "TODO: 描述 AI 执行指令"
-  }
-}
-`
-    ensureDirectory(taskDir)
-    writeFileSync(taskFile, template, 'utf-8')
+    const writeResult = writeTaskTemplate(getProjectRoot(), workName, taskName, blueprintName, domainName)
+    if (!writeResult.written && writeResult.reason === 'exists') {
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.oxn already exists at ${taskFile}`, {
+        suggestion: 'use --force to overwrite',
+        format,
+      })
+    }
 
     output(
       {
@@ -1281,6 +1324,26 @@ const runSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
+
+    // v0.6.1-alpha.0 #3-5: work 目录整个被删 → 报 OXN_ALIGN_WORK_REMOVED
+    //   区分：未 init 走 LOCK_NOT_FOUND（work 从未存在过，提案 work create）；
+    //         已 init 但 .openxenon/works/<w>/ 被删 → WORK_REMOVED（暗示 work 锁后被删）
+    const workDir = getWorkDir(projectRoot, workName)
+    if (!existsSync(workDir)) {
+      // 优先判断"未 init"：.openxenon/works/ 整目录不存在 → LOCK_NOT_FOUND
+      const worksRoot = join(projectRoot, BOUNDARY_DIR, 'works')
+      const code = existsSync(worksRoot) ? 'OXN_ALIGN_WORK_REMOVED' : 'OXN_ALIGN_LOCK_NOT_FOUND'
+      const message =
+        code === 'OXN_ALIGN_WORK_REMOVED'
+          ? `work "${workName}" cannot run: work directory deleted`
+          : `work "${workName}" cannot run: no works/ directory — project not initialized or never created a work`
+      const suggestion =
+        code === 'OXN_ALIGN_WORK_REMOVED'
+          ? `run \`oxn work list\` to see existing works; or create a new one with \`oxn work create ${workName}\``
+          : '先执行 `oxn work validate <name>` 生成 .work'
+      return outputError({ code, message, suggestion }, format)
+    }
+
     try {
       // PR-8: 锁守卫优先于 work.oxn 缺失检查——
       //   若 work.oxn 缺失是因为 lock 后被删（不是初建），应报 WORK_REMOVED 而非 NOT_FOUND，
@@ -2425,6 +2488,102 @@ const nextRoundSubcommand = defineCommand({
   },
 })
 
+// =============================================================================
+// v0.6.1-alpha.0 #3-1: `oxn work finalize <name>` — 收口 work（汇总所有 round → 最终 frozen.json）
+//
+// 行为：
+//   - 关闭当前 active round（追加 endedAt + verdict）
+//   - 标记 work 终态（passed / failed / finalized）
+//   - 写 trace event
+//   - finalize 不强制要求最后一轮 PASSED（允许「失败收档」语义）
+// =============================================================================
+const finalizeSubcommand = defineCommand({
+  meta: {
+    name: 'finalize',
+    description: '收口 work（汇总所有 round + 写最终状态）',
+  },
+  args: {
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    '--verdict': {
+      type: 'string',
+      description: '最终裁决：PASSED | FAILED | INCONCLUSIVE（默认沿用最后一轮 verdict）',
+    },
+    '--notes': { type: 'string', description: '收口备注' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const workName = ctx.args.name as string
+    const verdictRaw = ctx.args.verdict as string | undefined
+    const notes = (ctx.args as Record<string, unknown>).notes as string | undefined
+    const projectRoot = getProjectRoot()
+
+    let verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | undefined
+    if (verdictRaw) {
+      if (verdictRaw !== 'PASSED' && verdictRaw !== 'FAILED' && verdictRaw !== 'INCONCLUSIVE') {
+        return outputError(
+          {
+            code: 'OXN_ROUND_VERDICT_INVALID',
+            message: `invalid --verdict: ${verdictRaw}`,
+            suggestion: 'valid values: PASSED | FAILED | INCONCLUSIVE',
+          },
+          format,
+        )
+      }
+      verdict = verdictRaw
+    }
+
+    if (!projectBoundaryExists()) {
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
+    }
+
+    try {
+      const { finalizeWork } = await import('@openxenon/engine/Work/dual-state-exec')
+      const result = finalizeWork({
+        projectRoot,
+        workName,
+        ...(verdict ? { verdict } : {}),
+        ...(notes ? { notes } : {}),
+      })
+      output(
+        {
+          ok: true,
+          data: {
+            workName,
+            finalVerdict: result.finalVerdict,
+            totalRounds: result.totalRounds,
+            finalizedAt: result.finalizedAt,
+            workspace: result.workspace,
+          },
+          human: renderFinalizeHuman(result),
+        },
+        format,
+      )
+    } catch (err) {
+      if (err instanceof IAPError) {
+        const ctx = err.context as { oxnCode?: unknown } | undefined
+        const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
+        return outputError({ code: oxnCode, message: err.message }, format)
+      }
+      const message = err instanceof Error ? err.message : String(err)
+      output(errorJson('OXN_FINALIZE_FAILED', message), format)
+    }
+  },
+})
+
+function renderFinalizeHuman(result: {
+  finalVerdict: string
+  totalRounds: number
+  workspace: { workName: string }
+}): string {
+  return [
+    `Work ${result.workspace.workName} finalized ✓`,
+    `  Final verdict: ${result.finalVerdict}`,
+    `  Total rounds: ${result.totalRounds}`,
+  ].join('\n')
+}
+
 function renderNextRoundHuman(result: ReturnType<typeof nextRoundWork>): string {
   const lines: string[] = [
     `Work ${result.workspace.workName}: new round ${result.round} opened`,
@@ -3121,6 +3280,7 @@ export default defineCommand({
     lock: lockSubcommand,
     unlock: unlockSubcommand,
     'next-round': nextRoundSubcommand,
+    finalize: finalizeSubcommand,
     migrate: migrateSubcommand,
   },
   run() {

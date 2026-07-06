@@ -18,7 +18,14 @@
  */
 
 import { createHash } from 'crypto'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from '@openxenon/engine/infra/filesystem'
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  unlinkSync,
+} from '@openxenon/engine/infra/filesystem'
 import { dirname, join } from 'path'
 
 /** 同步元数据 (写 .md frontmatter) */
@@ -122,12 +129,105 @@ export function writeCacheSha(cachePath: string, sha: string): void {
   writeFileSync(cachePath, `${sha}\n`, 'utf-8')
 }
 
-/** 取得 .cache/<name>.hash 路径 (Phase 1 helper) */
+/** 取得 .cache/<name>.hash 路径 (Phase 1 helper)
+ * v0.6.1-alpha.0 #1-2: 跟随 .md 镜像路径，cache 在同目录的 .cache/ 下
+ * 用 v0.6 默认布局 assets/<plural>-md/.cache/
+ */
 export function getCachePath(rootDir: string, entity: 'domain' | 'blueprint' | 'work', name: string): string {
-  return join(rootDir, '.openxenon', entity === 'work' ? 'works' : `${entity}s-md`, '.cache', `${name}.hash`)
+  if (entity === 'work') {
+    return join(rootDir, '.openxenon', 'works', '.cache', `${name}.hash`)
+  }
+  // v0.6 默认: assets/domains-md/.cache/X.hash (assetFormat='oxn' 时)
+  // v0.5 fallback: domains-md/.cache/X.hash
+  // 用 config.assetRoot 决定
+  const configPath = join(rootDir, '.openxenon', 'config.json')
+  let assetRoot = 'assets'
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs') as typeof import('fs')
+    const raw = fs.readFileSync(configPath, 'utf-8')
+    const config = JSON.parse(raw)
+    if (config.assetRoot) assetRoot = config.assetRoot
+  } catch {
+    // ignore
+  }
+  // v0.6.1-alpha.0 #1-7: cache 与主目录同级
+  const plural = entity === 'domain' ? 'domains' : entity === 'blueprint' ? 'blueprints' : 'stack'
+  return join(rootDir, '.openxenon', assetRoot, plural, '.cache', `${name}.hash`)
 }
 
-/** 取得 Phase 2 .cache/<name>.md-hash 路径 (用于 .md → .oxn 方向 idempotent 比对) */
+/** 取得 Phase 2 .cache/<name>.md-hash 路径 (用于 .md → .oxn 方向 idempotent 比对)
+ * v0.6.1-alpha.0 #1-2: 与 getCachePath 一致
+ */
 export function getCacheMdPath(rootDir: string, entity: 'domain' | 'blueprint' | 'work', name: string): string {
-  return join(rootDir, '.openxenon', entity === 'work' ? 'works' : `${entity}s-md`, '.cache', `${name}.md-hash`)
+  if (entity === 'work') {
+    return join(rootDir, '.openxenon', 'works', '.cache', `${name}.md-hash`)
+  }
+  const configPath = join(rootDir, '.openxenon', 'config.json')
+  let assetRoot = 'assets'
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require('fs') as typeof import('fs')
+    const raw = fs.readFileSync(configPath, 'utf-8')
+    const config = JSON.parse(raw)
+    if (config.assetRoot) assetRoot = config.assetRoot
+  } catch {
+    // ignore
+  }
+  // v0.6.1-alpha.0 #1-7: cache 与主目录同级（v0.5 双轨同目录语义）
+  const plural = entity === 'domain' ? 'domains' : entity === 'blueprint' ? 'blueprints' : 'stack'
+  return join(rootDir, '.openxenon', assetRoot, plural, '.cache', `${name}.md-hash`)
+}
+
+/** v0.6.1-alpha.0 #1-16: 清理 entity 的 .cache/ 目录下所有 hash 文件
+ * 返回清理的文件数（包括 .hash + .md-hash）
+ *
+ * 路径：
+ *   - entity='work'    → .openxenon/works/.cache/*.hash, *.md-hash
+ *   - entity 其它      → .openxenon/{config.assetRoot}/{plural}/.cache/*.hash, *.md-hash
+ *
+ * 注：仅删 .hash 与 .md-hash 文件，保留 .cache 目录本身（下次 sync 会复用）
+ */
+export function clearCacheForEntity(
+  rootDir: string,
+  entity: 'domain' | 'blueprint' | 'work',
+): {
+  removed: number
+  cacheDir: string | null
+  paths: string[]
+} {
+  let cacheDir: string
+  if (entity === 'work') {
+    cacheDir = join(rootDir, '.openxenon', 'works', '.cache')
+  } else {
+    // v0.6.1-alpha.0 #1-7: 与 getCachePath 一致 (复用 assetRoot 读 config)
+    const configPath = join(rootDir, '.openxenon', 'config.json')
+    let assetRoot = 'assets'
+    try {
+      const raw = readFileSync(configPath, 'utf-8')
+      const config = JSON.parse(raw)
+      if (config.assetRoot) assetRoot = config.assetRoot
+    } catch {
+      // ignore
+    }
+    const plural = entity === 'domain' ? 'domains' : entity === 'blueprint' ? 'blueprints' : 'stack'
+    cacheDir = join(rootDir, '.openxenon', assetRoot, plural, '.cache')
+  }
+  if (!existsSync(cacheDir)) {
+    return { removed: 0, cacheDir: null, paths: [] }
+  }
+  const paths: string[] = []
+  for (const f of readdirSync(cacheDir)) {
+    if (f.endsWith('.hash') || f.endsWith('.md-hash')) {
+      paths.push(join(cacheDir, f))
+    }
+  }
+  for (const p of paths) {
+    try {
+      unlinkSync(p)
+    } catch {
+      // ignore per-file errors (e.g. perm denied; skip but continue)
+    }
+  }
+  return { removed: paths.length, cacheDir, paths }
 }
