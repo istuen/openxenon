@@ -134,6 +134,45 @@ Insight 本身不持久化报告——每次动态计算。资产级建议可写
 | 与 Asset 关系 | 无 | 直接产出 Asset 层改进建议 |
 | 与 OpenSpec 区分 | 无 | 涌现闭环（OpenSpec archive 无法做到） |
 
+## 8. v0.6.x 状态：单源消费
+
+> **⚠ v0.7.x Memory 双源段已反弹**（2026-07-05）。v0.6.x Insight 保持**单源**（frozen.json + domains + blueprints + works + proofs）。
+> **新方向**：v0.6.3 引入 Asset 论文结构（abstract / references / citations / auditTrail），外部信息通过 `library/` + `external/` Asset 子目录注入，详见 [Asset Paper Schema · 资产论文结构](./asset-paper.md)。
+
+Insight pipeline-compute 与 cross-proof-compute 数据流：
+
+```
+Pipeline / Cross-proof Compute
+   ↓
+内部源（v0.6.x 唯一）
+frozen.json
+domains
+blueprints
+works
+proofs
+   ↓
+PipelineInsight
+   · invariantEffectiveness
+   · intentCoverageGaps
+   · workProofTraces
+   ↓
+v0.7.0+ 增量（Phase B）：
+   · AssetGraph（基于 Asset Paper references[] + citations）
+```
+
+**v0.7.0+ 增量路径**（v0.6.3 Asset Paper Schema 基础上）：
+
+- Insight 推荐 audit Asset（直接 new Asset 而非 audit memory）
+- 工程师 `oxn work create --type asset --asset-kind xx`
+- AI 跑 IAP 产出新 Asset
+- 后续 Work 自动消费（含 citations 排序）
+
+**反模式**：
+- ❌ 在 Insight 输出中包含完整 Memory 快照（破坏 KV Cache 前缀）
+- ❌ 通过 Memory apply 直接修改 Asset（失去 IAP 闭环）
+
+> **v0.6.3+ 替代路径**：外部信息通过 `library/` + `external/` Asset 子目录注入，详见 [Asset Paper Schema · 资产论文结构](./asset-paper.md)。v0.7.x Memory RFC 已被反弹（archive/）。
+
 ---
 
 ## → 参考
@@ -142,4 +181,6 @@ Insight 本身不持久化报告——每次动态计算。资产级建议可写
 - [Architecture](./architecture.md) — Engine L0-L3 分层
 - [Asset](./asset.md) — E1 硬约束边界
 - [Work](./work.md) — E2 动态协作 + Round + IAP
+- [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper + 引用计数 + DAG
 - [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
+- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft

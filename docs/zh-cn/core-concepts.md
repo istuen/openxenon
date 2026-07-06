@@ -226,25 +226,58 @@ OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 
 > **work = IAP 范式的最小完整单元**。建资产、开发功能、跑验收——所有工作都走 `/oxn-work`。
 
-## 11. 三相模型：静态结构 → Loop → 静态产物（ADR-0006）
+## 11. Asset 论文结构 + 三相模型（ADR-0051 / ADR-0006）
+
+> **v0.6.3+ 扩展**：Asset 不再是"规则堆砌"，而是"微型论文 + 引用网络"。详见 [Asset Paper Schema · 资产论文结构](./asset-paper.md)。本节简述三相模型与论文结构的对应。
+
+### 11.1 三相模型（ADR-0006 简述）
 
 OXN 的物质形态经历**三相循环**：
 
 ```
-Phase 1: 静态结构（Asset · E1）
+Phase 1: 静态结构（Asset · E1）— 论文本体
    ↓ 工程师写入 / AI 生成
-Phase 2: Loop（Work · E2 — 动态过程）
+Phase 2: Loop（Work · E2 — 动态过程）— 论文被引用 / 修改
    ↓ Intent → Align → Proof → Round
-Phase 3: 静态产物（frozen.json · E3 + Insight · E4）
+Phase 3: 静态产物（frozen.json · E3 + Insight · E4）— 引用计数
 ```
 
 | Phase | 主导 | 物质形态 | 关键产物 |
 |---|---|---|---|
-| **1. 静态结构** | 工程师 | 相对静止的"边界" | Domain / Blueprint / Stack |
-| **2. Loop** | 工程师 ↔ AI | 物质运动 | trace.jsonl（NDJSON 事件流） |
-| **3. 静态产物** | OXN Engine | 物质再次静止 | frozen.json + verdict.md |
+| **1. 静态结构（论文本体）** | 工程师 | 相对静止的"论文" | Domain / Blueprint / Stack + abstract/references[] |
+| **2. Loop（论文被引用）** | 工程师 ↔ AI | 物质运动 | trace.jsonl（NDJSON 事件流） |
+| **3. 静态产物（引用计数）** | OXN Engine | 物质再次静止 | frozen.json + verdict.md + citations 字段 |
 
-**哲学底色**：借鉴热力学"耗散结构"理论。资产层始终是相对静态的"边界"，Loop 阶段所有变化都被 trace 记录，frozen.json 是物质再次静止的"凝固点"。Insight E4 涌现层处理 Phase 2 累积的痕迹。
+### 11.2 Asset 论文结构（v0.6.3 新增 · 完整见 asset-paper.md）
+
+```yaml
+---
+type: domain
+id: payment-core
+version: 1.2.0
+status: stable
+abstract: |                            # Phase 1 论文摘要
+  本文档定义支付核心领域的边界。
+references:                            # Phase 1 引用其他论文（依赖 DAG）
+  - asset: stack-nodejs
+  - asset: api-rest-standard
+citations: 3                           # Phase 3 自动维护的引用计数
+auditTrail:                            # 论文修改历史
+  - version: 1.2.0
+    date: 2026-10-15
+    author: engineer-X
+    changes: 新增 §3.4 幂等性约束
+---
+```
+
+**关键不变量**：Asset 是论文，引用链 = 依赖网络，citations 量化影响力。
+
+**哲学底色**：借鉴热力学"耗散结构"理论 + 学术论文的"引用-被引"评价体系。资产层始终是相对静态的"边界"，Loop 阶段所有变化都被 trace 记录，frozen.json 是物质再次静止的"凝固点"。Insight E4 涌现层处理 Phase 2 累积的痕迹。
+
+### 11.3 v0.7.x Memory RFC 反弹（2026-07-05）
+
+> **⚠ 历史段**：v0.7.x 曾计划引入 `.openxenon/memory/` 中间层（v0.7.x Memory RFC），但通过奥姆剃刀反思后**全面反弹**。Memory 是"中间态"，Asset + Work 已足够承载所有信息流。
+> **替代方案**：Asset 论文结构（`abstract` / `references` / `citations` / `auditTrail`）+ Work/context.md 模板。详见 [Asset Paper Schema · 资产论文结构](./asset-paper.md) + [Work · §12 Work context.md 设计](./work.md#12-work-contextmd-设计adr-0049--取代-memory-l1)。
 
 ## 12. Main/Sub Agent 审计链哲学（ADR-0012）
 
@@ -282,10 +315,12 @@ Sub Agent (AI)
 
 ## → 参考
 
-- [Asset](./asset.md) — E1 硬约束边界 SSOT
-- [Work](./work.md) — E2 动态协作 IAP 核心 SSOT
-- [Insight](./insight.md) — E4 涌现层 SSOT
+- [Asset · E1 硬约束边界 SSOT](./asset.md)
+- [Work · E2 动态协作 IAP 核心 SSOT](./work.md)
+- [Insight · E4 涌现层 SSOT](./insight.md)
 - [Architecture](./architecture.md) — Engine L0-L3 分层
+- [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper + 引用计数 + DAG（v0.6.3+）
 - [Glossary](./glossary.md) — 完整术语表
 - [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
 - [v0.6 Service 层设计稿](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-service-layer-design.md)
+- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft

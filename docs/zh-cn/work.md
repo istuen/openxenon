@@ -556,6 +556,39 @@ works/<work-name>/
 - ❌ 改写 `frozen.json`——hash 失配立即报 `IAP_ALIGN_LOCK_HASH_MISMATCH`
 - ❌ 跳过 `trace.jsonl` 直接写 `state.json`——违反 ADR-0009 Trace-before-State
 
+### 11.5.4 Memory 节点（v0.7.x 增补 · ADR-0042）
+
+Evidence Chain **四件套**（v0.7.x 增 Memory 节点）：
+
+```
+works/<work-name>/
+├── .work                                # v1.1 出生证明 + planLock
+├── .run/
+│   ├── frozen.json                      # 编译期产物（不可变，0o444）
+│   ├── trace.jsonl                      # NDJSON 事件流（append-only）
+│   └── state.json                       # 当前状态快照（atomic write）
+
+.openxenon/memory/                      # ← v0.7.x 新增
+├── index.json
+├── entries/
+│   ├── mem-2026-11-15-001.md            # ← 第四件套：Memory entry
+│   └── ...
+└── archive/
+```
+
+**Memory 与 Work 的关系**：
+
+| 维度 | 关系 |
+|---|---|
+| 写入时机 | Work run 期间触发 Insight → `--write-memory` 写 audit memory |
+| 关联字段 | `MemoryEntry.relatedAssetIds` 包含 Work 引用的 Asset |
+| 反向引用 | Work.frozen.json `_xenon_meta.relatedMemoryIds`（v0.7.x 计划） |
+| 生命周期 | Memory 比 Work 寿命更长（Work finalize 后 Memory 仍保留 pattern） |
+
+**关键不变量**：Memory entry 不属于 Work 物理目录，但通过 `relatedAssetIds` 建立逻辑链接。这是 v0.7.x Insight 双源改造的物理表现。
+
+> **v0.6.3 反弹说明（2026-07-05）**：v0.7.x Memory RFC 已被反弹，Evidence Chain 回归 3 件套（`.work` + `.run/{frozen,trace,state}.json`）。详见 [§12 Work context.md 设计](#12-work-contextmd-设计adr-0049--取代-memory-l1)。
+
 ## 11.6 partId 主键 + Atomic-Write（ADR-0024）
 
 ### 11.6.1 partId vs partName
@@ -651,12 +684,145 @@ fs.renameSync(`${statePath}.tmp`, statePath)
 
 ---
 
+## 12. Work context.md 设计（ADR-0049 · 取代 Memory L1）
+
+> **v0.6.3+ 替代方案**：v0.7.x Memory RFC 反弹后，Work 内动态上下文不再走 `.openxenon/memory/`，而是使用 `context.md`（Work 内的"短期记忆"）。本节是 §11.5.4 的替代。
+
+### 12.1 背景与决策
+
+**v0.7.x Memory RFC 反思**（2026-07-05）：
+
+| 原方案（被反弹）| 新方案（本 ADR-0049）|
+|---|---|
+| `.openxenon/memory/entries/<id>.md`（Memory L1）| `works/<work-id>/context.md`（Work 内）|
+| 全局 hash + TTL 衰减 | Work 生命周期（finalize 后冻结）|
+| 独立模块（`oxn memory ingest`）| 复用 Work 流程（自动生成）|
+
+**核心原则**：奥姆剃刀 + 工作流驱动 — 删除 Memory 中间层，回归 Asset + Work 二元结构。
+
+### 12.2 context.md 模板
+
+```markdown
+<!-- works/<work-id>/context.md -->
+---
+workId: w-fix-payment-idempotency
+intent: 修复支付网关回调的幂等性
+createdAt: 1731628800000
+status: aligning
+currentRound: 3
+references:                        # 引用 Asset（不复制内容，只存指针）
+  - assets/domain/payment-core.oxn
+  - assets/stack/nodejs.oxn
+  - assets/library/axios-docs.oxn
+---
+
+## Intent
+[工程师声明的意图]
+
+## Roadmap
+- [x] 1. 读取 payment/service.ts
+- [x] 2. 分析幂等性漏洞
+- [~] 3. 编写单元测试  ← current
+- [ ] 4. 修复代码
+- [ ] 5. 运行 Proof
+
+## Loop History（仅摘要，不全量历史）
+### Round 1
+- User: 启动 Work
+- AI: 读取代码 → 发现漏洞位置
+
+### Round 3 (current)
+- User: 写测试
+- AI: 写测试用例
+- Tool: write_file(tests/payment/idempotency.test.ts)
+- Key Observation: 现有代码未去重
+
+## Key Observations
+- 支付回调未使用 idempotency_key
+- 现有 fix 方案：参考 library/axios-docs.oxn §3.2
+```
+
+### 12.3 KV Cache 提示词结构
+
+```text
+[1. System Instruction]              ← Stable
+[2. assets/* (Stable Prefix)]       ← Stable per-project
+[3. works/<id>/context.md (Stable per-Work)]   ← Stable per-Work
+[4. Loop Tail (Dynamic)]             ← 每轮追加
+```
+
+**关键工程约束**：
+- ① ② 字节级稳定（按字母序排序，避免 Map 遍历）
+- ③ 在 Work 周期内稳定（仅关键节点变化）
+- ④ 只追加不回写（保证前 3 段前缀稳定）
+
+### 12.4 与 Asset 的引用关系
+
+`context.md` frontmatter 包含 `references[]` 字段（Asset ID 列表），但不复制内容：
+
+```markdown
+---
+references:
+  - assets/domain/payment-core.oxn
+  - assets/stack/nodejs.oxn
+  - assets/library/axios-docs.oxn
+---
+
+# 不复制 Asset 内容，只引用
+# Skill 模板：
+# {{include context.md references}}  # 列出引用
+# 然后 AI 主动 read_file 实际内容
+```
+
+### 12.5 Work 生命周期中 context.md 的演变
+
+```
+Work 启动 → 自动生成空 context.md（仅 Intent + Roadmap）
+   ↓
+Loop N（每轮）→ 追加到 Loop History + Key Observations
+   ↓
+Work finalize → context.md 冻结（不再修改）
+   ↓
+[可选] 写一份 summary 到 .openxenon/works/<id>/memory-summary.md（v0.8.0 计划）
+```
+
+### 12.6 反模式
+
+- ❌ context.md 回写项目级 Asset 内容（破坏 KV Cache 前缀稳定）
+- ❌ context.md 包含完整 Loop 全文（Token 爆炸）
+- ❌ context.md 包含时间戳等易变元数据到前缀部分
+- ❌ 跳过 Work 直接修改 Asset（失去 IAP 闭环）
+
+### 12.7 关键不变量
+
+- context.md 不属于项目级 Memory（不参与 v0.6.x citations 计算）
+- context.md 仅在 Work 目录内（`works/<id>/`），不跨 Work 共享
+- context.md 文件名固定（`context.md`），便于 Skill 模板 `{{include}}` 引用
+
+### 12.8 与 v0.6.x 兼容性
+
+- v0.6.x 项目无 `context.md` → Work 启动时自动生成空模板
+- v0.6.x `intent.md` / `align.md` / `proof.md` 已废弃（前 v0.5 文件名）→ v0.6.x 起统一 `context.md`
+
+### 12.9 关键代码路径
+
+| 文件 | 角色 |
+|---|---|
+| `packages/engine/src/Work/context-md-template.ts` | context.md 模板（Work 启动时生成）|
+| `packages/engine/src/Work/context-md-renderer.ts` | KV Cache 提示词组装（按 §12.3 顺序）|
+| `packages/engine/src/Work/context-md-lifecycle.ts` | Work 生命周期 hook（启动/Loop/finalize）|
+
+---
+
 ## → 参考
 
 - [Core Concepts](./core-concepts.md) — E1-E4 完整概念
 - [Asset](./asset.md) — E1 硬约束边界（Asset 创建与锁）
+- [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper 论文结构 + 引用计数 + DAG
 - [Proof](./proof.md) — E3 Engine 独立公证（frozen.json / verdict.md）
 - [Insight](./insight.md) — E4 涌现层
 - [Architecture](./architecture.md) — Engine L0-L3 分层
 - [CLI 参考](./cli.md) — 完整 oxn 命令清单
 - [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
+- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
+- [ADR-0049 Work/context.md 取代 Memory L1](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0049-work-context-md-replaces-memory.md)

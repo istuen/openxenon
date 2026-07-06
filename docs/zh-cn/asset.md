@@ -141,10 +141,11 @@ Skill `oxn-work` 教学推荐严谨路径（可追溯、有 planLock）。
 
 ## 9. 反模式
 
-- ❌ 把 Asset 当"可随时修改的文档"——Asset 创建后 planLock 锁定，修改必须走专门的 Asset 模式 Work + audit pool approve
+- ❌ 把 Asset 当"可随时修改的文档"——Asset 创建后 planLock 锁定，修改必须走专门的 Asset 模式 Work（`oxn work create --type asset`）
 - ❌ 在 Work 内直接修改 Asset——Work 只能引用 Asset，不能改写
 - ❌ Domain 里放 slot——Domain 是业务边界，slot 是技术拓扑，正交
 - ❌ Blueprint 里放 term——同上
+- ❌ 跳过 Work 的 IAP 闭环直接 `write_file` Asset（v0.6.3+ 必须通过 Work 路径）
 
 ## 10. Blueprint props 漏斗效应（ADR-0001）
 
@@ -243,9 +244,105 @@ oxn arsenal show <name>     # 显示 Asset 详情
 
 ---
 
+## 14. Asset 论文结构（ADR-0051 · v0.6.3+）
+
+> Asset 是一篇"微型论文"——结构固定、逻辑自洽、可被引用、可被验证。**完整设计见 [Asset Paper Schema · 资产论文结构](./asset-paper.md)**，本节为概览。
+
+### 14.1 Schema 扩展（4 新字段）
+
+```yaml
+---
+type: domain
+id: payment-core
+version: 1.2.0
+status: stable
+
+# 🆕 论文结构（v0.6.3 引入）
+abstract: |                          # 论文摘要（必填，老 Asset 默认空字符串）
+  本文档定义支付核心领域的边界。
+references:                          # 引用其他 Asset（依赖 DAG 出边）
+  - asset: stack-nodejs
+  - asset: api-rest-standard
+citations: 3                         # 被引用次数（Engine 自动维护）
+auditTrail:                          # 版本历史
+  - version: 1.2.0
+    date: 2026-10-15
+    author: engineer-X
+    changes: 新增 §3.4 幂等性约束
+---
+```
+
+### 14.2 引用计数 → 影响半径
+
+```typescript
+function impactRadius(asset: Asset): 'low' | 'medium' | 'high' | 'critical' {
+  const citations = asset.citations ?? 0
+  if (citations >= 10) return 'critical'  // 重构级
+  if (citations >= 5) return 'high'      // 重大变更
+  if (citations >= 1) return 'medium'    // 业务级
+  return 'low'                            // 局部
+}
+```
+
+**变更策略**：
+- **critical** (≥10) — 触发 planLock 重算 + 全量测试
+- **high** (5-9) — 触发相关模块测试
+- **medium** (1-4) — 仅相关业务测试
+- **low** (0) — 孤岛 Asset，无验证
+
+### 14.3 DAG 校验 + 循环依赖检测
+
+```bash
+$ oxn asset validate --check-dag
+# → 自动检测 references[] 拓扑
+# → 孤儿引用：OXN_ASSET_ORPHAN_REFERENCE
+# → 循环依赖：OXN_ASSET_CIRCULAR_DEPENDENCY
+```
+
+### 14.4 库/外部子目录
+
+```
+.openxenon/assets/
+├── domain/                          # 原
+├── blueprint/                       # 原
+├── stack/                           # 原
+├── library/                         # 🆕 外部信息聚合（Work 产出）
+└── external/                        # 🆕 外部引用指针（URL + hash + ttl）
+```
+
+| 子目录 | 内容 | 大小限制 | 写入路径 |
+|---|---|---|---|
+| `library/` | AI 解析后写入 .oxn | < 50KB | 通过 Work |
+| `external/` | 仅引用指针 | 无 | 手动 / 自动 fetch |
+
+### 14.5 引用图渲染（v0.7.0 W11-12）
+
+```bash
+$ oxn asset graph payment-core
+# digraph G {
+#   payment-core -> stack-nodejs
+#   payment-core -> api-rest-standard
+# }
+
+$ oxn asset graph payment-core --format mermaid
+# graph LR
+#   payment-core --> stack-nodejs
+#   payment-core --> api-rest-standard
+# }
+
+$ oxn asset impact payment-core
+# impact: high
+# citations: 3
+# referencedBy: [order-checkout, refund-flow, payment-gateway]
+```
+
+---
+
 ## → 参考
 
 - [Core Concepts](./core-concepts.md) — E1-E4 完整概念
 - [Work](./work.md) — E2 动态协作 + IAP + Round
 - [Insight](./insight.md) — E4 涌现层
+- [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper 论文结构 + 引用计数 + DAG
+- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
 - [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
