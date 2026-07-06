@@ -155,7 +155,7 @@ describe('buildPerWorkBlueprintsIndex', () => {
       'pipeline',
       `blueprint "pipeline" {
   version = 1
-  slot "retrieve" { observe = ["fs-match"] }
+  slot "retrieve" { "observe" = ["fs-match"] }
   slot "design"   { deps = ["retrieve"]; observe = ["fs-exists"] }
   slot "develop"  { deps = ["design"]; observe = ["lint-check", "type-check"] }
   slot "test"     { deps = ["develop"]; observe = ["test-runner"] }
@@ -183,7 +183,7 @@ describe('buildPerWorkBlueprintsIndex', () => {
   })
 
   test('同 name 去重', () => {
-    writeBlueprintFile('a', 'blueprint "A" { version = 1 slot "x" {} }')
+    writeBlueprintFile('a', 'blueprint "X" { assetVersion = 1 slot "x" {} }')
     writeFileSync(
       workOxnPath,
       `work "demo" {

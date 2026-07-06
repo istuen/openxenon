@@ -80,7 +80,7 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     writeFileSync(
       join(bpsDir, 'test-bp.oxn'),
       `blueprint "test-bp" {
-  slot "build" { observe = ["shell-exec"] }
+  slot "build" { "observe" = ["shell-exec"] }
 }
 `,
       'utf-8',
@@ -150,7 +150,7 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     writeFileSync(join(domainsDir, 'TestContext.oxn'), `domain "TestContext" { invariant { "test" } }`, 'utf-8')
     const bpsDir = join(base, '.openxenon', 'blueprints')
     mkdirSync(bpsDir, { recursive: true })
-    writeFileSync(join(bpsDir, 'test-bp.oxn'), `blueprint "test-bp" { slot "build" { observe = [] } }`, 'utf-8')
+    writeFileSync(join(bpsDir, 'test-bp.oxn'), `blueprint "test-bp" { slot "build" { "observe" = [] } }`, 'utf-8')
 
     // 创建 2 个 work
     for (const w of ['w1', 'w2']) {

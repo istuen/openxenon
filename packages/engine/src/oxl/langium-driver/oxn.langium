@@ -6,6 +6,7 @@ entry OXNDocument:
 
 // v0.3 follow-up: 允许 task 作为顶层实体（用于 task.oxn 文件 — 120+ 个实际产物）
 // 历史上 task 只能内嵌于 WorkDeclaration；这里新增顶层支持以匹配 CLI `oxn work add-task` 产物
+// v0.6.1-alpha.1: 新增 StackDeclaration 与 RoadmapDeclaration（Asset Paper 4 字段支持）
 TopLevelEntity:
     ProbeDeclaration
     | PartDeclaration
@@ -13,7 +14,9 @@ TopLevelEntity:
     | DomainDeclaration
     | WorkDeclaration
     | TaskDeclaration
-    | ProofDeclaration;
+    | ProofDeclaration
+    | StackDeclaration                  // 🆕 v0.6.1-alpha.1
+    | RoadmapDeclaration;               // 🆕 v0.6.1-alpha.1
 
 // ==================== Type System ====================
 TypeReference:
@@ -155,9 +158,16 @@ ParamPair:
 // ==================== Blueprint ====================
 // Blueprint 实体声明（技术流水线模板，位于全局目录）
 // v0.1-final: 移除 expectation 和 rule，保留 observe 数组形式
+// v0.6.1-alpha.1: 添加 Asset Paper 4 字段（abstract / references / citations）
+// 历史兼容：保留 'version = 1' 别名（v0.5/v0.6.x 兼容）
+// 新代码推荐用 'assetVersion = 1'（与 PropKV 'version' 区分；PropKV 'version' 作为 key 仍然有效）
+// 注：v0.6.1-alpha.1 同时支持两者（都映射到 .version 字段），Langium 解析器在遇到 'version' 关键字时优先选择外层字段
 BlueprintDeclaration:
     'blueprint' name=STRING '{'
-        ('version' '=' version=NUMBER)?
+        (('assetVersion' '=' version=NUMBER) | ('version' '=' version=NUMBER))?  // 🆕 v0.6.1-alpha.1 (双别名向后兼容)
+        ('abstract' '=' abstract=STRING)?                                          // 🆕 v0.6.1-alpha.1
+        ('references' '=' '[' (references+=STRING (',' references+=STRING)*)? ']')? // 🆕 v0.6.1-alpha.1
+        ('citations' '=' citations=NUMBER)?                                        // 🆕 v0.6.1-alpha.1
         (descriptions+=Description)?
         (props+=PropDeclaration)*
         (partSlots+=PartSlotDeclaration)*
@@ -174,8 +184,14 @@ PartSlotDeclaration:
 // v0.1-final: noun/verb → term (map格式), domain_rules → invariant
 // v0.1.1: 允许多个 invariant 块（domain 文件可写多段不变量）；context_map 已移除
 // v0.3 follow-up: 允许多个 term 块（按业务分组），与 ban/invariant 块在 body 内任意顺序
+// v0.6.1-alpha.1: 添加 Asset Paper 4 字段（abstract / references / citations）
+// 历史兼容：保留 'version = 1' 别名
 DomainDeclaration:
     'domain' name=STRING '{'
+        (('version' '=' version=NUMBER) | ('assetVersion' '=' version=NUMBER))?  // 🆕 v0.6.1-alpha.1 (version 优先)
+        ('abstract' '=' abstract=STRING)?
+        ('references' '=' '[' (references+=STRING (',' references+=STRING)*)? ']')?
+        ('citations' '=' citations=NUMBER)?
         (descriptions+=Description)?
         body+=DomainBodyElement*
     '}';
@@ -211,6 +227,67 @@ InvariantDecl:
   | 'manual' '=' manual=STRING ';'?                 // v0.2 T11
   | 'scope' '=' scope=STRING ';'?                   // v0.2 T11
 ;
+
+// ==================== Stack (v0.6.1-alpha.1 新增) ====================
+// Stack 是技术栈约束：language + runtime + linter + test
+// v0.6.1-alpha.1: 新增 AssetKind + Asset Paper 4 字段
+StackDeclaration:
+    'stack' name=STRING '{'
+        (('version' '=' version=NUMBER) | ('assetVersion' '=' version=NUMBER))?  // 🆕 v0.6.1-alpha.1 (version 优先匹配 - 避免 PropKV 冲突)
+        ('abstract' '=' abstract=STRING)?
+        ('references' '=' '[' (references+=STRING (',' references+=STRING)*)? ']')?
+        ('citations' '=' citations=NUMBER)?
+        (descriptions+=Description)?
+        (runtimes+=RuntimeBlock)*                  // 0..* runtime 块
+        (linters+=LinterBlock)*                    // 0..* linter 块
+        (testers+=TestBlock)*                      // 0..* test 块
+    '}';
+
+RuntimeBlock:
+    'runtime' name=STRING '{'
+        (descriptions+=Description)?
+        (props+=PropKV)*                          // 🆕 v0.6.1-alpha.1: key-value 对（version / config）
+    '}';
+
+LinterBlock:
+    'linter' name=STRING '{'
+        (descriptions+=Description)?
+        (props+=PropKV)*                          // 🆕 v0.6.1-alpha.1
+    '}';
+
+TestBlock:
+    'test' name=STRING '{'
+        (descriptions+=Description)?
+        (props+=PropKV)*                          // 🆕 v0.6.1-alpha.1
+    '}';
+
+// PropKV: 简单 key-value 对（v0.6.1-alpha.1）
+// 例：version = ">=5.0.0" / config = "biome.json" / command = "bun test"
+// name 可以是 ID 或 STRING（避免 'version' 是 keyword 字符串的问题）
+PropKV:
+    (name=ID | name=STRING) '=' value=STRING;
+
+// ==================== Roadmap (v0.6.1-alpha.1 新增) ====================
+// Roadmap 是 Asset 导航图（自包含 Asset，references 留空）
+// 核心定位（per user instruction 2026-07-08）：
+//   - "Roadmap 模板不需要引用其他 Asset，其内容就是连接到其他 Asset 的"
+//   - body 内含 Asset 路径/链接（人工维护或后续解析器）
+//   - references 留空（避免循环 DAG 校验）
+//   - citations 仍维护（被反向引用次数）
+// 注意：移除 'version' 字段（避免与 PropKV 的 'version' 关键字冲突）
+RoadmapDeclaration:
+    'roadmap' name=STRING '{'
+        (('version' '=' version=NUMBER) | ('assetVersion' '=' version=NUMBER))?  // 🆕 v0.6.1-alpha.1 (version 优先)
+        ('abstract' '=' abstract=STRING)?
+        // 注意：references 留空（不参与 DAG 校验）
+        ('citations' '=' citations=NUMBER)?
+        (descriptions+=Description)?
+        (links+=RoadmapLink)*                      // body 内含 Asset 路径（人工维护）
+    '}';
+
+// Roadmap 内部链接（仅 string target，不参与 DAG）
+RoadmapLink:
+    target=STRING;
 
 // ==================== Work (v0.1-final: workspace orchestrator) ====================
 // Work 是编排空间：资源池寻址 + Task 编排中心

@@ -61,6 +61,7 @@ export interface ProjectConfig {
     domain?: string
     blueprint?: string
     stack?: string
+    roadmap?: string // 🆕 v0.6.1-alpha.1
   }
 }
 
@@ -70,9 +71,10 @@ export const DEFAULT_ASSET_DIRS = {
   domain: 'domains',
   blueprint: 'blueprints',
   stack: 'stack',
+  roadmap: 'roadmaps', // 🆕 v0.6.1-alpha.1
 } as const
 
-export type AssetKind = 'domain' | 'blueprint' | 'stack'
+export type AssetKind = 'domain' | 'blueprint' | 'stack' | 'roadmap' // 🆕 v0.6.1-alpha.1: 'roadmap'
 
 /**
  * v0.6 PR-1: 解析单个 asset kind 的实际目录路径。
@@ -122,8 +124,15 @@ export function resolveAssetCandidates(
 ): { primary: string; fallback: string } {
   const boundary = join(projectRoot, BOUNDARY_DIR)
   const primary = resolveAssetDir(projectRoot, kind, config)
-  // 旧布局 fallback：.openxenon/<plural>/（domains/blueprints/stack）
-  const fallbackDir = kind === 'domain' ? 'domains' : kind === 'blueprint' ? 'blueprints' : 'stack'
+  // 旧布局 fallback：.openxenon/<plural>/（domains/blueprints/stack/roadmaps）
+  const fallbackDir =
+    kind === 'domain'
+      ? 'domains'
+      : kind === 'blueprint'
+        ? 'blueprints'
+        : kind === 'roadmap'
+          ? 'roadmaps' // 🆕 v0.6.1-alpha.1
+          : 'stack'
   const fallback = join(boundary, fallbackDir)
   return { primary, fallback }
 }

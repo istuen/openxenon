@@ -61,8 +61,8 @@ const DOMAIN = `domain "LifecycleDomain" {
 `
 
 const BLUEPRINT = `blueprint "LifecycleBP" {
-  version = 1
-  slot "alpha" { observe = ["fs-match"] }
+  assetVersion = 1
+  slot "alpha" { "observe" = ["fs-match"] }
   slot "beta" { deps = ["alpha"]; observe = ["fs-exists"] }
 }
 `
@@ -295,7 +295,7 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
 // ─────────────────────────────────────────────────────────────
 
 const SINGLE_SLOT_BLUEPRINT = `blueprint "single" {
-  version = 1
+  assetVersion = 1
   description = "single slot"
   slot "alpha" { }
 }

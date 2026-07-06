@@ -213,7 +213,7 @@ export function parseBlueprintSlim(filePath: string, projectRoot: string): Bluep
   const description = descMatch?.[1]?.replace(/\\"/g, '"')
 
   // version（默认 1）
-  // 不锚定 ^ —— blueprint body 内可能 `description = "..."; version = 1;` 内联
+  // 不锚定 ^ —— blueprint "X" { assetVersion = 1;` 内联
   // 先尝试匹配数字版本；若有 `version = <非数字>`（如 "abc"）也算"写了但格式错"，要报错
   let version = 1
   const verDigitMatch = content.match(/\bversion\s*=\s*(\d+)\s*;?/)

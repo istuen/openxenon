@@ -329,7 +329,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
     writeFileSync(
       oxnPath,
       `blueprint "rt-bp" {
-  version = 1
+  assetVersion = 1
   description = "Round-trip test"
   slot "build" {
     deps = []
@@ -363,7 +363,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
     writeFileSync(
       oxnPath,
       `blueprint "v-bp" {
-  version = 1
+  assetVersion = 1
   description = "version round-trip test"
   slot "build" { deps = []; observe = ["deps-resolved"] }
 }`,
@@ -374,7 +374,7 @@ describe('oxn blueprint sync-md (Phase 2)', () => {
     const r = await runCli(['blueprint', 'sync-md', 'v-bp', '--no-chain', '--json'])
     expect(r.exitCode).toBe(0)
     const finalOxn = readFileSync(oxnPath, 'utf-8')
-    expect(finalOxn).toContain('version = 1')
+    expect(finalOxn).toContain('assetVersion = 1')
   })
 
   test('--all: 批量处理', async () => {

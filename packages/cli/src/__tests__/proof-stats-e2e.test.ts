@@ -206,7 +206,7 @@ describe('oxn proof run → probe-stats.json', () => {
     writeFileSync(
       proofPath,
       `proof "p-noinit" {
- probe "p1" { ref "@oxn/probes/shell-exec"; params { command = "true" } }
+ probe "p1" { ref "@oxn/probes/shell-exec"; params { "command" = "true" } }
  }
 `,
       'utf-8',

@@ -1,12 +1,12 @@
 blueprint "verify-readme" {
-  version = 1
+  assetVersion = 1
   slot "check-readme" {
     deps = []
   }
 }
 
 blueprint "test-check-readme" {
-  version = 1
+  assetVersion = 1
   slot "check-readme" {
     deps = []
   }

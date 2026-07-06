@@ -38,13 +38,16 @@ export type OpenXenonLanguageKeywordNames =
     | "?"
     | "["
     | "]"
+    | "abstract"
     | "acceptance"
     | "align"
     | "any"
     | "as"
+    | "assetVersion"
     | "ban"
     | "blueprint"
     | "boolean"
+    | "citations"
     | "constraints"
     | "context"
     | "default"
@@ -58,6 +61,7 @@ export type OpenXenonLanguageKeywordNames =
     | "guidance"
     | "invariant"
     | "lifecycle"
+    | "linter"
     | "list"
     | "loop_policy"
     | "manual"
@@ -77,16 +81,21 @@ export type OpenXenonLanguageKeywordNames =
     | "proofs"
     | "prop"
     | "ref"
+    | "references"
     | "required"
+    | "roadmap"
+    | "runtime"
     | "scheme"
     | "scope"
     | "script"
     | "skill"
     | "skill_context"
     | "slot"
+    | "stack"
     | "string"
     | "task"
     | "term"
+    | "test"
     | "true"
     | "type"
     | "version"
@@ -157,19 +166,25 @@ export function isBinaryExpr(item: unknown): item is BinaryExpr {
 export interface BlueprintDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'BlueprintDeclaration';
+    abstract?: string;
+    citations?: number;
     descriptions: Array<Description>;
     name: string;
     partSlots: Array<PartSlotDeclaration>;
     props: Array<PropDeclaration>;
+    references: Array<string>;
     version?: number;
 }
 
 export const BlueprintDeclaration = {
     $type: 'BlueprintDeclaration',
+    abstract: 'abstract',
+    citations: 'citations',
     descriptions: 'descriptions',
     name: 'name',
     partSlots: 'partSlots',
     props: 'props',
+    references: 'references',
     version: 'version'
 } as const;
 
@@ -218,7 +233,7 @@ export function isDefaultValue(item: unknown): item is DefaultValue {
 }
 
 export interface Description extends langium.AstNode {
-    readonly $container: BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration | ProofDeclaration;
+    readonly $container: BlueprintDeclaration | DomainDeclaration | LinterBlock | PartDeclaration | ProbeDeclaration | ProofDeclaration | RoadmapDeclaration | RuntimeBlock | StackDeclaration | TestBlock;
     readonly $type: 'Description';
     value: string;
 }
@@ -245,16 +260,24 @@ export function isDomainBodyElement(item: unknown): item is DomainBodyElement {
 export interface DomainDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'DomainDeclaration';
+    abstract?: string;
     body: Array<DomainBodyElement>;
+    citations?: number;
     descriptions: Array<Description>;
     name: string;
+    references: Array<string>;
+    version?: number;
 }
 
 export const DomainDeclaration = {
     $type: 'DomainDeclaration',
+    abstract: 'abstract',
     body: 'body',
+    citations: 'citations',
     descriptions: 'descriptions',
-    name: 'name'
+    name: 'name',
+    references: 'references',
+    version: 'version'
 } as const;
 
 export function isDomainDeclaration(item: unknown): item is DomainDeclaration {
@@ -386,6 +409,25 @@ export const InvariantDecl = {
 
 export function isInvariantDecl(item: unknown): item is InvariantDecl {
     return reflection.isInstance(item, InvariantDecl.$type);
+}
+
+export interface LinterBlock extends langium.AstNode {
+    readonly $container: StackDeclaration;
+    readonly $type: 'LinterBlock';
+    descriptions: Array<Description>;
+    name: string;
+    props: Array<PropKV>;
+}
+
+export const LinterBlock = {
+    $type: 'LinterBlock',
+    descriptions: 'descriptions',
+    name: 'name',
+    props: 'props'
+} as const;
+
+export function isLinterBlock(item: unknown): item is LinterBlock {
+    return reflection.isInstance(item, LinterBlock.$type);
 }
 
 export type LiteralExpr = NullLiteral;
@@ -743,6 +785,23 @@ export function isPropDeclaration(item: unknown): item is PropDeclaration {
     return reflection.isInstance(item, PropDeclaration.$type);
 }
 
+export interface PropKV extends langium.AstNode {
+    readonly $container: LinterBlock | RuntimeBlock | TestBlock;
+    readonly $type: 'PropKV';
+    name: string;
+    value: string;
+}
+
+export const PropKV = {
+    $type: 'PropKV',
+    name: 'name',
+    value: 'value'
+} as const;
+
+export function isPropKV(item: unknown): item is PropKV {
+    return reflection.isInstance(item, PropKV.$type);
+}
+
 export interface QualifiedName extends langium.AstNode {
     readonly $container: VariableRef;
     readonly $type: 'QualifiedName';
@@ -775,6 +834,96 @@ export const RequiredModifier = {
 
 export function isRequiredModifier(item: unknown): item is RequiredModifier {
     return reflection.isInstance(item, RequiredModifier.$type);
+}
+
+export interface RoadmapDeclaration extends langium.AstNode {
+    readonly $container: OXNDocument;
+    readonly $type: 'RoadmapDeclaration';
+    abstract?: string;
+    citations?: number;
+    descriptions: Array<Description>;
+    links: Array<RoadmapLink>;
+    name: string;
+    version?: number;
+}
+
+export const RoadmapDeclaration = {
+    $type: 'RoadmapDeclaration',
+    abstract: 'abstract',
+    citations: 'citations',
+    descriptions: 'descriptions',
+    links: 'links',
+    name: 'name',
+    version: 'version'
+} as const;
+
+export function isRoadmapDeclaration(item: unknown): item is RoadmapDeclaration {
+    return reflection.isInstance(item, RoadmapDeclaration.$type);
+}
+
+export interface RoadmapLink extends langium.AstNode {
+    readonly $container: RoadmapDeclaration;
+    readonly $type: 'RoadmapLink';
+    target: string;
+}
+
+export const RoadmapLink = {
+    $type: 'RoadmapLink',
+    target: 'target'
+} as const;
+
+export function isRoadmapLink(item: unknown): item is RoadmapLink {
+    return reflection.isInstance(item, RoadmapLink.$type);
+}
+
+export interface RuntimeBlock extends langium.AstNode {
+    readonly $container: StackDeclaration;
+    readonly $type: 'RuntimeBlock';
+    descriptions: Array<Description>;
+    name: string;
+    props: Array<PropKV>;
+}
+
+export const RuntimeBlock = {
+    $type: 'RuntimeBlock',
+    descriptions: 'descriptions',
+    name: 'name',
+    props: 'props'
+} as const;
+
+export function isRuntimeBlock(item: unknown): item is RuntimeBlock {
+    return reflection.isInstance(item, RuntimeBlock.$type);
+}
+
+export interface StackDeclaration extends langium.AstNode {
+    readonly $container: OXNDocument;
+    readonly $type: 'StackDeclaration';
+    abstract?: string;
+    citations?: number;
+    descriptions: Array<Description>;
+    linters: Array<LinterBlock>;
+    name: string;
+    references: Array<string>;
+    runtimes: Array<RuntimeBlock>;
+    testers: Array<TestBlock>;
+    version?: number;
+}
+
+export const StackDeclaration = {
+    $type: 'StackDeclaration',
+    abstract: 'abstract',
+    citations: 'citations',
+    descriptions: 'descriptions',
+    linters: 'linters',
+    name: 'name',
+    references: 'references',
+    runtimes: 'runtimes',
+    testers: 'testers',
+    version: 'version'
+} as const;
+
+export function isStackDeclaration(item: unknown): item is StackDeclaration {
+    return reflection.isInstance(item, StackDeclaration.$type);
 }
 
 export interface TaskBlueprintField extends langium.AstNode {
@@ -968,7 +1117,26 @@ export function isTernaryExpr(item: unknown): item is TernaryExpr {
     return reflection.isInstance(item, TernaryExpr.$type);
 }
 
-export type TopLevelEntity = BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration | ProofDeclaration | TaskDeclaration | WorkDeclaration;
+export interface TestBlock extends langium.AstNode {
+    readonly $container: StackDeclaration;
+    readonly $type: 'TestBlock';
+    descriptions: Array<Description>;
+    name: string;
+    props: Array<PropKV>;
+}
+
+export const TestBlock = {
+    $type: 'TestBlock',
+    descriptions: 'descriptions',
+    name: 'name',
+    props: 'props'
+} as const;
+
+export function isTestBlock(item: unknown): item is TestBlock {
+    return reflection.isInstance(item, TestBlock.$type);
+}
+
+export type TopLevelEntity = BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration | ProofDeclaration | RoadmapDeclaration | StackDeclaration | TaskDeclaration | WorkDeclaration;
 
 export const TopLevelEntity = {
     $type: 'TopLevelEntity'
@@ -1070,6 +1238,7 @@ export type OpenXenonLanguageAstType = {
     GenericType: GenericType
     InvariantBlock: InvariantBlock
     InvariantDecl: InvariantDecl
+    LinterBlock: LinterBlock
     LiteralExpr: LiteralExpr
     LoopPolicy: LoopPolicy
     NullLit: NullLit
@@ -1090,8 +1259,13 @@ export type OpenXenonLanguageAstType = {
     ProofDeclaration: ProofDeclaration
     ProofProbeDecl: ProofProbeDecl
     PropDeclaration: PropDeclaration
+    PropKV: PropKV
     QualifiedName: QualifiedName
     RequiredModifier: RequiredModifier
+    RoadmapDeclaration: RoadmapDeclaration
+    RoadmapLink: RoadmapLink
+    RuntimeBlock: RuntimeBlock
+    StackDeclaration: StackDeclaration
     TaskBlueprintField: TaskBlueprintField
     TaskBodyElement: TaskBodyElement
     TaskDeclaration: TaskDeclaration
@@ -1104,6 +1278,7 @@ export type OpenXenonLanguageAstType = {
     TermBlock: TermBlock
     TermDecl: TermDecl
     TernaryExpr: TernaryExpr
+    TestBlock: TestBlock
     TopLevelEntity: TopLevelEntity
     TypeReference: TypeReference
     VariableRef: VariableRef
@@ -1154,6 +1329,14 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
         BlueprintDeclaration: {
             name: BlueprintDeclaration.$type,
             properties: {
+                abstract: {
+                    name: BlueprintDeclaration.abstract,
+                    optional: true
+                },
+                citations: {
+                    name: BlueprintDeclaration.citations,
+                    optional: true
+                },
                 descriptions: {
                     name: BlueprintDeclaration.descriptions,
                     defaultValue: [],
@@ -1169,6 +1352,11 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 },
                 props: {
                     name: BlueprintDeclaration.props,
+                    defaultValue: [],
+                    optional: true
+                },
+                references: {
+                    name: BlueprintDeclaration.references,
                     defaultValue: [],
                     optional: true
                 },
@@ -1234,9 +1422,17 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
         DomainDeclaration: {
             name: DomainDeclaration.$type,
             properties: {
+                abstract: {
+                    name: DomainDeclaration.abstract,
+                    optional: true
+                },
                 body: {
                     name: DomainDeclaration.body,
                     defaultValue: [],
+                    optional: true
+                },
+                citations: {
+                    name: DomainDeclaration.citations,
                     optional: true
                 },
                 descriptions: {
@@ -1246,6 +1442,15 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 },
                 name: {
                     name: DomainDeclaration.name
+                },
+                references: {
+                    name: DomainDeclaration.references,
+                    defaultValue: [],
+                    optional: true
+                },
+                version: {
+                    name: DomainDeclaration.version,
+                    optional: true
                 }
             },
             superTypes: [TopLevelEntity.$type]
@@ -1333,6 +1538,25 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 },
                 value: {
                     name: InvariantDecl.value,
+                    optional: true
+                }
+            },
+            superTypes: []
+        },
+        LinterBlock: {
+            name: LinterBlock.$type,
+            properties: {
+                descriptions: {
+                    name: LinterBlock.descriptions,
+                    defaultValue: [],
+                    optional: true
+                },
+                name: {
+                    name: LinterBlock.name
+                },
+                props: {
+                    name: LinterBlock.props,
+                    defaultValue: [],
                     optional: true
                 }
             },
@@ -1649,6 +1873,18 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
             },
             superTypes: []
         },
+        PropKV: {
+            name: PropKV.$type,
+            properties: {
+                name: {
+                    name: PropKV.name
+                },
+                value: {
+                    name: PropKV.value
+                }
+            },
+            superTypes: []
+        },
         QualifiedName: {
             name: QualifiedName.$type,
             properties: {
@@ -1675,6 +1911,111 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 }
             },
             superTypes: []
+        },
+        RoadmapDeclaration: {
+            name: RoadmapDeclaration.$type,
+            properties: {
+                abstract: {
+                    name: RoadmapDeclaration.abstract,
+                    optional: true
+                },
+                citations: {
+                    name: RoadmapDeclaration.citations,
+                    optional: true
+                },
+                descriptions: {
+                    name: RoadmapDeclaration.descriptions,
+                    defaultValue: [],
+                    optional: true
+                },
+                links: {
+                    name: RoadmapDeclaration.links,
+                    defaultValue: [],
+                    optional: true
+                },
+                name: {
+                    name: RoadmapDeclaration.name
+                },
+                version: {
+                    name: RoadmapDeclaration.version,
+                    optional: true
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        },
+        RoadmapLink: {
+            name: RoadmapLink.$type,
+            properties: {
+                target: {
+                    name: RoadmapLink.target
+                }
+            },
+            superTypes: []
+        },
+        RuntimeBlock: {
+            name: RuntimeBlock.$type,
+            properties: {
+                descriptions: {
+                    name: RuntimeBlock.descriptions,
+                    defaultValue: [],
+                    optional: true
+                },
+                name: {
+                    name: RuntimeBlock.name
+                },
+                props: {
+                    name: RuntimeBlock.props,
+                    defaultValue: [],
+                    optional: true
+                }
+            },
+            superTypes: []
+        },
+        StackDeclaration: {
+            name: StackDeclaration.$type,
+            properties: {
+                abstract: {
+                    name: StackDeclaration.abstract,
+                    optional: true
+                },
+                citations: {
+                    name: StackDeclaration.citations,
+                    optional: true
+                },
+                descriptions: {
+                    name: StackDeclaration.descriptions,
+                    defaultValue: [],
+                    optional: true
+                },
+                linters: {
+                    name: StackDeclaration.linters,
+                    defaultValue: [],
+                    optional: true
+                },
+                name: {
+                    name: StackDeclaration.name
+                },
+                references: {
+                    name: StackDeclaration.references,
+                    defaultValue: [],
+                    optional: true
+                },
+                runtimes: {
+                    name: StackDeclaration.runtimes,
+                    defaultValue: [],
+                    optional: true
+                },
+                testers: {
+                    name: StackDeclaration.testers,
+                    defaultValue: [],
+                    optional: true
+                },
+                version: {
+                    name: StackDeclaration.version,
+                    optional: true
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
         },
         TaskBlueprintField: {
             name: TaskBlueprintField.$type,
@@ -1814,6 +2155,25 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 }
             },
             superTypes: [Expression.$type]
+        },
+        TestBlock: {
+            name: TestBlock.$type,
+            properties: {
+                descriptions: {
+                    name: TestBlock.descriptions,
+                    defaultValue: [],
+                    optional: true
+                },
+                name: {
+                    name: TestBlock.name
+                },
+                props: {
+                    name: TestBlock.props,
+                    defaultValue: [],
+                    optional: true
+                }
+            },
+            superTypes: []
         },
         TopLevelEntity: {
             name: TopLevelEntity.$type,

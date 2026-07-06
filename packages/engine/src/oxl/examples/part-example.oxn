@@ -29,10 +29,10 @@ part "develop" {
   prop "timeout" { type = number; default = 60000 }
 
   probe dev_compile align "Compile" ref "ShellExec" {
-    params = { command = "bun run typecheck" }
+    params = { "command" = "bun run typecheck" }
   }
   probe dev_lint align "Lint" ref "ShellExec" {
-    params = { command = "bun run lint" }
+    params = { "command" = "bun run lint" }
   }
 
   observe = ["ShellExec", "LintCheck", "TsCompiles"]

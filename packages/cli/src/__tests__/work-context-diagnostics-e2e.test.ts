@@ -66,8 +66,8 @@ const DOMAIN = `domain "LifecycleDomain" {
 `
 
 const BLUEPRINT = `blueprint "LifecycleBP" {
-  version = 1
-  slot "alpha" { observe = ["fs-match"] }
+  assetVersion = 1
+  slot "alpha" { "observe" = ["fs-match"] }
   slot "beta" { deps = ["alpha"]; observe = ["fs-exists"] }
 }
 `
@@ -93,7 +93,7 @@ function writeExtraBlueprint(name: string): void {
   // v1.1 PR-fix-domain-name-consistency: 同 writeExtraDomain, caller 传 kebab-case
   writeFileSync(
     join(tmpDir, '.openxenon', 'blueprints', `${name}.oxn`),
-    `blueprint "${name}" { version = 1; slot "x" { deps = []; observe = ["fs-exists"] } }\n`,
+    `blueprint "${name}" { assetVersion = 1; slot "x" { deps = []; observe = ["fs-exists"] } }\n`,
   )
 }
 

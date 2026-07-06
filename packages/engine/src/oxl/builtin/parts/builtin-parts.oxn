@@ -26,10 +26,10 @@ part "develop-feature" {
   prop "feature_desc" { type = string; required = true }
   prop "cwd" { type = string; required = false; default = "." }
   probe build ref "@oxn/probes/exec-exit-zero" {
-    params = { command = "pnpm build" }
+    params = { "command" = "pnpm build" }
   }
   probe test ref "@oxn/probes/exec-exit-zero" {
-    params = { command = "pnpm test" }
+    params = { "command" = "pnpm test" }
   }
   execution = [build, test]
 }

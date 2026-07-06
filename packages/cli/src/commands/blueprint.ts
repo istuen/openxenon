@@ -406,7 +406,7 @@ function blueprintAstToIr(blueprint: BlueprintDeclaration): {
 } {
   return {
     name: blueprint.name,
-    version: blueprint.version,
+    version: blueprint.version ?? 1,
     slots: blueprint.partSlots.map((s) => s.name),
     deps: Object.fromEntries(blueprint.partSlots.map((s) => [s.name, s.deps])),
     props: blueprint.props.map((p) => ({

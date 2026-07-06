@@ -75,7 +75,7 @@ ${mdSlots}
 //   oxn work create <work-name> --blueprint ${name} --json
 
 blueprint "${name}" {
-  version = 1
+  assetVersion = 1
   description = "TODO: one-line description of what this blueprint does"
 
 ${slotsBlock}

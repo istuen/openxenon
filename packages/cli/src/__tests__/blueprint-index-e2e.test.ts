@@ -152,7 +152,10 @@ describe('oxn blueprint list (PR-X: 走索引)', () => {
     // 但手建 .openxenon/assets/blueprints/ + .oxn 文件模拟老项目（v0.6 路径）
     const blueprintsDir = join(tmpDir, '.openxenon', 'assets', 'blueprints')
     mkdirSync(blueprintsDir, { recursive: true })
-    writeFileSync(join(blueprintsDir, 'legacy.oxn'), `blueprint "legacy" { version = 1; description = "old style" }`)
+    writeFileSync(
+      join(blueprintsDir, 'legacy.oxn'),
+      `blueprint "legacy" { assetVersion = 1; description = "old style" }`,
+    )
     // 确保索引不存在
     const indexPath = join(tmpDir, '.openxenon', '.cache', 'blueprints.json')
     if (existsSync(indexPath)) rmSync(indexPath)

@@ -83,7 +83,7 @@ ${slotList.map((s) => `\n### ${s}\n- deps: []`).join('\n')}
   return `// Blueprint: ${name}
 blueprint "${name}" {
   description = "TODO: one-line description of the technical pipeline"
-  version = 1
+  assetVersion = 1
 ${slotBlocks}
 }
 `

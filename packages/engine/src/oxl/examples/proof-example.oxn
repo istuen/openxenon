@@ -17,7 +17,7 @@ proof "shell-sanity" {
 
   probe "shell_exec_check" {
     ref "ShellExec"
-    params { command = "echo hello && exit 0" }
+    params { "command" = "echo hello && exit 0" }
   }
 
   probe "fs_exists_check" {
@@ -27,6 +27,6 @@ proof "shell-sanity" {
 
   probe "lint_check" {
     ref "LintCheck"
-    params { command = "bun run lint" }
+    params { "command" = "bun run lint" }
   }
 }

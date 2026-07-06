@@ -121,6 +121,13 @@ export type {
   // v0.1.2 Proof-First
   ProofDeclaration,
   ProofProbeDecl,
+  // v0.6.1-alpha.1: 新增 Stack + Roadmap
+  StackDeclaration,
+  RoadmapDeclaration,
+  RuntimeBlock,
+  LinterBlock,
+  TestBlock,
+  RoadmapLink,
 } from './langium-driver/generated/ast'
 
 // --- AST type guards ---
@@ -143,6 +150,13 @@ export {
   // v0.1.2 Proof-First
   isProofDeclaration,
   isProofProbeDecl,
+  // v0.6.1-alpha.1: 新增 Stack + Roadmap 类型 guards
+  isStackDeclaration,
+  isRoadmapDeclaration,
+  isRuntimeBlock,
+  isLinterBlock,
+  isTestBlock,
+  isRoadmapLink,
 } from './langium-driver/generated/ast'
 
 // =============================================================================
@@ -150,6 +164,39 @@ export {
 // 历史 API 仍以 `Oxn*` 名字导出（@deprecated）；新代码请用 `Oxl*`
 // 计划下个版本（v0.1.x）批量移除
 // =============================================================================
+
+// =============================================================================
+// v0.6.1-alpha.1 兼容层：'version' / 'assetVersion' 字段同义
+// OXL 语法：'version = 1' 和 'assetVersion = 1' 都映射到 .version 字段
+// AST 只有一个 .version 字段（'assetVersion' 是 OXL 语法别名，编译时归一化到 .version）
+// 注意：PropKV 中的 'version' 字符串作为 key 是另一回事（RuntimeBlock 内的 props += PropKV）
+// =============================================================================
+import type {
+  BlueprintDeclaration,
+  DomainDeclaration,
+  StackDeclaration,
+  RoadmapDeclaration,
+} from './langium-driver/generated/ast'
+
+/** Blueprint version getter（'version' / 'assetVersion' 共享）*/
+export function getBlueprintVersion(b: BlueprintDeclaration): number | undefined {
+  return b.version
+}
+
+/** Domain version getter */
+export function getDomainVersion(d: DomainDeclaration): number | undefined {
+  return d.version
+}
+
+/** Stack version getter */
+export function getStackVersion(s: StackDeclaration): number | undefined {
+  return s.version
+}
+
+/** Roadmap version getter */
+export function getRoadmapVersion(r: RoadmapDeclaration): number | undefined {
+  return r.version
+}
 
 /** @deprecated brand upgrade: use OxlParser */
 export { createOxnParser as createOxlParser } from './langium-driver/oxn-services'

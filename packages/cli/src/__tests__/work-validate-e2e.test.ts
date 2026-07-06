@@ -70,8 +70,8 @@ const DOMAIN_B = `domain "DomainB" {
 `
 
 const BLUEPRINT_X = `blueprint "BlueprintX" {
-  version = 1
-  slot "alpha" { observe = ["fs-match"] }
+  assetVersion = 1
+  slot "alpha" { "observe" = ["fs-match"] }
   slot "beta" { deps = ["alpha"]; observe = ["fs-exists"] }
 }
 `
