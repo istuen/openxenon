@@ -1,6 +1,6 @@
 # AGENTS.md
 
-OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 Langium 的 OXN DSL。包管理器为 **Bun**（锁文件 `bun.lock`）。仓库本地的 OpenCode 技能（v0.6 起仅 `.opencode/skills/oxn-work`，唯一 Skill）与 opsx 命令（`.opencode/command/opsx-*.md`）属于工作流的一部分。
+OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 Langium 的 OXN DSL。包管理器为 **Bun**（锁文件 `bun.lock`）。仓库本地的 OpenCode 技能（v0.6.1 起共 2 个 Skill：`oxn-asset` 管 Asset 生命周期、`oxn-work` 管 Work 编排与执行；源在 `packages/cli/src/skills/locales/`，编译产物到 `.opencode/skills/`，不 git 追踪）与 opsx 命令（`.opencode/command/opsx-*.md`）属于工作流的一部分。
 
 **v0.6 架构重构**：OXN 从"IAP 三轴叙事"重构为"E1-E4 四结构实体 + L0-L3 工程分层"双层叙事。代码从 `src/` 单包拆为 `packages/cli` + `packages/engine` 双包 Monorepo——CLI 是薄组合调用层，Engine 承载全部业务实现（L2 `` DDD 模块化：`Asset/Intent/Align/Proof/Insight/Pool` + `daemon.ts`）。详见 [v0.6 RFC + Monorepo + Service 设计](.openxenon/pools/sprints/v0.6-iap-refactor/design/) 与 [changelog](.changes/0-6-0-iap-refactor.md)。
 

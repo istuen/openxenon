@@ -32,12 +32,11 @@ oxn work migrate <work-name>
 # 原 V0 文件备份到 .migrated-v0/（不删，留审计）
 ```
 
-### 步骤 1：创建 Domain（可选）
+### 步骤 1：前置（创建/修改 Asset，**非本 Skill 范围**）
 
-```bash
-oxn domain create MemberContext
-oxn domain validate MemberContext
-```
+> **注意**：本 Skill 不管 Asset 创建/修改。如需创建/修改 Domain/Blueprint/Stack 等，请触发 **`oxn-asset` Skill**（它通过 `oxn work create --type asset --asset-kind X` 走 IAP 闭环）。
+>
+> 假设 Asset 已就绪。
 
 ### 步骤 2：创建 Work 编排
 

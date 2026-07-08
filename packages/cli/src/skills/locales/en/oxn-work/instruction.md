@@ -12,7 +12,7 @@ Create **Work + ≥1 Task**, 8-stage flow: `create → add-task → validate →
 D = business intent | B = technical intent | W = align orchestrator | T = align execution
 
 ## Execution
-1. Prereq: `oxn init` + `.openxenon/assets/blueprints/*.oxn`
+1. Prereq: project `oxn init`-ed, **required Assets (domain/blueprint/stack) ready** — to create/modify Assets, **trigger `oxn-asset` Skill** (this Skill does NOT manage Asset lifecycle)
 2. Fork `assets/work-{explore,develop,fix,onboarding}.md` → rename to `work.oxn`
 3. Templates are complete .md samples, directly parseable by `WorkCompiler.parse()` (not OXL code-block documentation)
 4. Run 8 stages: `references/8-phase-detail.md`

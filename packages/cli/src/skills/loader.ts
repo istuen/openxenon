@@ -1,5 +1,16 @@
 import type { SupportedLocale } from '@openxenon/engine/infra/i18n/locale'
 import { DEFAULT_LOCALE } from '@openxenon/engine/infra/i18n/locale'
+import zhCnAsset from './locales/zh-CN/oxn-asset/instruction.md' with { type: 'text' }
+import zhCnAssetKind from './locales/zh-CN/oxn-asset/references/asset-kind-reference.md' with { type: 'text' }
+import zhCnAssetCreation from './locales/zh-CN/oxn-asset/references/asset-creation.md' with { type: 'text' }
+import zhCnAssetEvolution from './locales/zh-CN/oxn-asset/references/asset-evolution.md' with { type: 'text' }
+import zhCnAssetLifecycle from './locales/zh-CN/oxn-asset/references/asset-lifecycle.md' with { type: 'text' }
+import zhCnAssetVsWork from './locales/zh-CN/oxn-asset/references/asset-vs-work.md' with { type: 'text' }
+import zhCnAssetDomain from './locales/zh-CN/oxn-asset/assets/domain.md' with { type: 'text' }
+import zhCnAssetBlueprint from './locales/zh-CN/oxn-asset/assets/blueprint.md' with { type: 'text' }
+import zhCnAssetStack from './locales/zh-CN/oxn-asset/assets/stack.md' with { type: 'text' }
+import zhCnAssetLibrary from './locales/zh-CN/oxn-asset/assets/library.md' with { type: 'text' }
+import zhCnAssetExternal from './locales/zh-CN/oxn-asset/assets/external.md' with { type: 'text' }
 import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'text' }
 import zhCnWork8Phase from './locales/zh-CN/oxn-work/references/8-phase-detail.md' with { type: 'text' }
 import zhCnWorkErrors from './locales/zh-CN/oxn-work/references/error-codes.md' with { type: 'text' }
@@ -10,6 +21,17 @@ import zhCnWorkExplore from './locales/zh-CN/oxn-work/assets/work-explore.md' wi
 import zhCnWorkDevelop from './locales/zh-CN/oxn-work/assets/work-develop.md' with { type: 'text' }
 import zhCnWorkFix from './locales/zh-CN/oxn-work/assets/work-fix.md' with { type: 'text' }
 import zhCnWorkOnboarding from './locales/zh-CN/oxn-work/assets/work-onboarding.md' with { type: 'text' }
+import enAsset from './locales/en/oxn-asset/instruction.md' with { type: 'text' }
+import enAssetKind from './locales/en/oxn-asset/references/asset-kind-reference.md' with { type: 'text' }
+import enAssetCreation from './locales/en/oxn-asset/references/asset-creation.md' with { type: 'text' }
+import enAssetEvolution from './locales/en/oxn-asset/references/asset-evolution.md' with { type: 'text' }
+import enAssetLifecycle from './locales/en/oxn-asset/references/asset-lifecycle.md' with { type: 'text' }
+import enAssetVsWork from './locales/en/oxn-asset/references/asset-vs-work.md' with { type: 'text' }
+import enAssetDomain from './locales/en/oxn-asset/assets/domain.md' with { type: 'text' }
+import enAssetBlueprint from './locales/en/oxn-asset/assets/blueprint.md' with { type: 'text' }
+import enAssetStack from './locales/en/oxn-asset/assets/stack.md' with { type: 'text' }
+import enAssetLibrary from './locales/en/oxn-asset/assets/library.md' with { type: 'text' }
+import enAssetExternal from './locales/en/oxn-asset/assets/external.md' with { type: 'text' }
 import enWork from './locales/en/oxn-work/instruction.md' with { type: 'text' }
 import enWork8Phase from './locales/en/oxn-work/references/8-phase-detail.md' with { type: 'text' }
 import enWorkErrors from './locales/en/oxn-work/references/error-codes.md' with { type: 'text' }
@@ -33,31 +55,57 @@ interface SkillMeta {
   description: string
 }
 
-// v0.6 Skill 极简：唯一 Skill 为 oxn-work（IAP 范式统一入口）
-// 原 oxn-cli / oxn-proof 已删除 — 按 v0.6 RFC "Skill 极简" 决策
+// v0.6 Skill 极简：2 个 Skill
+// - oxn-asset: Asset 生命周期（创建/修改/演进/删除），覆盖 5 种 AssetKind（domain/blueprint/stack/library/external）
+// - oxn-work:  Work 编排 + 执行（4 子模式 explore/develop/fix/onboarding），引用 Asset 到 Tasks
 //
-// v0.6.1-alpha.0: instruction.md 拆为 1 SKILL.md (≤200 tokens 目标) + 5 references/* + 4 assets/* (work-* 模板)
-//   - references/: 8-phase-detail / error-codes / anti-patterns / v0-v1-migration / git-workspace
-//   - assets/: work-{explore,develop,fix,onboarding}.md  (4 大 work.oxn 模式模板 — .md 格式含 OXN 代码块)
+// v0.6.1-alpha.0: 每个 Skill = 1 SKILL.md (≤200 tokens 目标) + 5 references/* + assets/* 模板
 const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
   'zh-CN': [
     {
+      id: 'oxn-asset',
+      description:
+        'Asset 生命周期管理（v0.6）— 创建/修改/演进/删除 domain / blueprint / stack / library / external。底层走 oxn work --type asset 模式。当用户需要建、改、删 Asset 时触发。不处理 Work 编排、任务执行、Proof 展示（那是 oxn-work）',
+    },
+    {
       id: 'oxn-work',
       description:
-        'IAP 范式统一入口（v0.6 极简版）— 创建 work + 走 Intent→Align→Proof 三阶段 + Round 多轮循环。work = IAP 范式的最小完整单元，所有工作（建资产/开发/跑验收）都内聚到 3 大 Work 模式',
+        'Work 编排 + 执行（v0.6 极简版）— 引用 Asset 到 Tasks，走 Round 多轮循环，结束展示 Proof。所有开发/修复/onboarding/explore 工作都走这里。不处理 Asset 创建/修改（那是 oxn-asset）',
     },
   ],
   en: [
     {
+      id: 'oxn-asset',
+      description:
+        'Asset lifecycle management (v0.6) — create/modify/evolve/delete domain / blueprint / stack / library / external. Underlying oxn work --type asset mode. Triggered when user needs to create, modify, or delete Assets. Does NOT handle Work orchestration, task execution, or Proof display (that is oxn-work)',
+    },
+    {
       id: 'oxn-work',
       description:
-        'IAP paradigm unified entry point (v0.6 simplified) — create a work and drive Intent→Align→Proof three-stage + Round multi-cycle loop. Work = the minimal complete unit of the IAP paradigm, all work (asset building / development / running acceptance) converges into 3 Work modes',
+        'Work orchestration + execution (v0.6 simplified) — reference Assets in Tasks, drive Round cycles, display Proof after completion. All development/fix/onboarding/explore work goes here. Does NOT handle Asset creation/modification (that is oxn-asset)',
     },
   ],
 }
 
 const skillContents: Record<string, Record<string, SkillContent>> = {
   'zh-CN': {
+    'oxn-asset': {
+      instruction: zhCnAsset,
+      references: [
+        { filename: 'asset-kind-reference.md', content: zhCnAssetKind },
+        { filename: 'asset-creation.md', content: zhCnAssetCreation },
+        { filename: 'asset-evolution.md', content: zhCnAssetEvolution },
+        { filename: 'asset-lifecycle.md', content: zhCnAssetLifecycle },
+        { filename: 'asset-vs-work.md', content: zhCnAssetVsWork },
+      ],
+      assets: [
+        { filename: 'domain.md', content: zhCnAssetDomain },
+        { filename: 'blueprint.md', content: zhCnAssetBlueprint },
+        { filename: 'stack.md', content: zhCnAssetStack },
+        { filename: 'library.md', content: zhCnAssetLibrary },
+        { filename: 'external.md', content: zhCnAssetExternal },
+      ],
+    },
     'oxn-work': {
       instruction: zhCnWork,
       references: [
@@ -76,6 +124,23 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
     },
   },
   en: {
+    'oxn-asset': {
+      instruction: enAsset,
+      references: [
+        { filename: 'asset-kind-reference.md', content: enAssetKind },
+        { filename: 'asset-creation.md', content: enAssetCreation },
+        { filename: 'asset-evolution.md', content: enAssetEvolution },
+        { filename: 'asset-lifecycle.md', content: enAssetLifecycle },
+        { filename: 'asset-vs-work.md', content: enAssetVsWork },
+      ],
+      assets: [
+        { filename: 'domain.md', content: enAssetDomain },
+        { filename: 'blueprint.md', content: enAssetBlueprint },
+        { filename: 'stack.md', content: enAssetStack },
+        { filename: 'library.md', content: enAssetLibrary },
+        { filename: 'external.md', content: enAssetExternal },
+      ],
+    },
     'oxn-work': {
       instruction: enWork,
       references: [
@@ -117,4 +182,4 @@ export function getAllSkillsForLocale(locale: SupportedLocale): OpenXenonSkill[]
   })
 }
 
-// v0.6+: 所有 Skill 资源已确认 en + zh-CN 双 locale 就绪（oxn-work 为唯一 Skill）
+// v0.6+: 所有 Skill 资源已确认 en + zh-CN 双 locale 就绪（oxn-asset + oxn-work 共 2 个 Skill）

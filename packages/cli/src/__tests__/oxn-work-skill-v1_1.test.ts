@@ -71,6 +71,12 @@ describe('oxn-work SKILL.md v1.1 + 渐进式披露（PR-12 + ADR-0039）', () =>
     expect(fm).toContain('name: oxn-work')
   })
 
+  test('5b. oxn-work description 不含 Asset 创建/修改', () => {
+    const content = readIfExists(SKILL_PROJECT)
+    const fm = content.split('---')[1]
+    expect(fm).not.toMatch(/create.*Asset|Asset.*create/)
+  })
+
   test('6. 关键错误码在 references/error-codes.md 存在', () => {
     const content = readIfExists(join(SKILL_DIR, 'references', 'error-codes.md'))
     expect(content).toContain('IAP_ALIGN_LOCK_NOT_FOUND')

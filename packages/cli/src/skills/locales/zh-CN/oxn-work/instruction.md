@@ -12,7 +12,7 @@
 D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
 
 ## 执行
-1. 前置：`oxn init` + `.openxenon/assets/blueprints/*.oxn`
+1. 前置：项目已 `oxn init`，**所需 Asset（domain/blueprint/stack 等）已就绪** — 若需创建/修改 Asset，**请触发 `oxn-asset` Skill**（本 Skill 不管 Asset 生命周期）
 2. fork `assets/work-{explore,develop,fix,onboarding}.md` → 改名为 `work.oxn`
 3. 模板是完整 .md 示例，可被 `WorkCompiler.parse()` 直接解析（不是 OXL 代码块文档）
 4. 走 8 阶段：`references/8-phase-detail.md`

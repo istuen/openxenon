@@ -33,12 +33,11 @@ oxn work migrate <work-name>
 # Original V0 files backed up to .migrated-v0/ (not deleted, left for audit)
 ```
 
-### Step 1: Create Domain (Optional)
+### Step 1: Prerequisite (Create/Modify Assets — **OUT OF SCOPE for this Skill**)
 
-```bash
-oxn domain create MemberContext
-oxn domain validate MemberContext
-```
+> **Note**: This Skill does NOT manage Asset creation/modification. To create/modify Domain/Blueprint/Stack etc., trigger the **`oxn-asset` Skill** (it goes through `oxn work create --type asset --asset-kind X` for IAP closed loop).
+>
+> Assume Assets are already in place.
 
 ### Step 2: Create Work Orchestration
 
