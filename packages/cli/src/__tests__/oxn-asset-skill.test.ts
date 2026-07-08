@@ -71,13 +71,7 @@ describe('oxn-asset SKILL.md 渐进式披露（v0.6.1-alpha.1）', () => {
   })
 
   test('5. assets/ 5 个 AssetKind 模板全部存在', () => {
-    const expected = [
-      'domain.md',
-      'blueprint.md',
-      'stack.md',
-      'library.md',
-      'external.md',
-    ]
+    const expected = ['domain.md', 'blueprint.md', 'stack.md', 'library.md', 'external.md']
     for (const filename of expected) {
       const path = join(SKILL_DIR, 'assets', filename)
       expect(existsSync(path)).toBe(true)
@@ -169,12 +163,23 @@ describe('oxn-asset SKILL.md 一致性 + install-skill 传播', () => {
   })
 
   test('16. oxn install-skill --force 成功传播到全局', () => {
-    const proc = Bun.spawn(['bun', join(PROJECT_ROOT, 'packages/cli/src/index.ts'), 'install-skill', '--skill', 'oxn-asset', '--force', '--json'], {
-      cwd: PROJECT_ROOT,
-      env: { ...process.env, NO_COLOR: '1' },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
+    const proc = Bun.spawn(
+      [
+        'bun',
+        join(PROJECT_ROOT, 'packages/cli/src/index.ts'),
+        'install-skill',
+        '--skill',
+        'oxn-asset',
+        '--force',
+        '--json',
+      ],
+      {
+        cwd: PROJECT_ROOT,
+        env: { ...process.env, NO_COLOR: '1' },
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
+    )
     return proc.exited.then(() => {
       expect(proc.exitCode).toBe(0)
       expect(existsSync(SKILL_GLOBAL)).toBe(true)
