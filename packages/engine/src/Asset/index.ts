@@ -9,8 +9,9 @@
  *   list({ kind: 'domain', projectRoot })
  */
 export { create } from './create'
-export { validate } from './validate'
+export { validate, validateAssetReferences } from './validate'
 export { list, listAll } from './list'
+export { checkAssetDAG } from './dag-validator'
 export * from './domain-manager'
 export * from './blueprint-manager'
 
@@ -29,3 +30,5 @@ export type {
   SyncInput,
   SyncResult,
 } from './types'
+
+export type { AssetNode, DagValidationResult } from './dag-validator'
