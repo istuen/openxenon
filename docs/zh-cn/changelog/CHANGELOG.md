@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.6.1] - 2026-07-08
+
+> **主题**：Asset/Work 全面 MD-canonical — 5 子 PR 完整闭环
+> **范围**：v0.6.1-alpha.0 → v0.6.1 stable（5 sub-PR + 1 extension）
+> **破坏性变更**：
+> - 旧 `:::intent{...}` 容器指令解析期抛 `E_MD_DEPRECATED_SYNTAX`
+> - Work 引用值强制 `@md/<scope>/<name>` 前缀；裸名 / `@prj/...` 抛 `E_MD_REFERENCE_PREFIX_INVALID`
+> - `oxn work create` 默认写 `work.md`（可通过 `--oxn-legacy` flag 回退 .oxn）
+
+### Added
+
+- **PR-2 `@md/...` 前缀**：Work 引用值 `blueprint: @md/blueprints/X`、`domain: @md/domains/Y`（D-γ b 锁定）
+- **PR-3 Asset canonical 翻转**：AssetFormat 默认 `md`；`resolveAssetFileCandidatesV61` 4 级路径候选（`.md` → `.oxn` → fallback layout）
+- **PR-3 `oxn work create` 默认 .md**：双轨 .md + .oxn 留 fallback
+- **PR-4 `--no-langium` flag**：`oxn domain validate <X> --no-langium` / `oxn blueprint validate <X> --no-langium` —— 强制 mdast 路径
+- **PR-4 builtin .md 副本**：15 builtin probes + 3 builtin blueprints 都有 `.md` canonical 副本
+- **PR-4 守卫**：
+  - `bun run check:md-fallback` —— 扫描 .oxn 数量（INFO 日志）
+  - `bun run check:no-langium` —— 拦截新增 Langium import（fatal）
+
+### Changed
+
+- **PR-1** `oxl-md-decompiler.ts` 移除 `'directive'` 选项；`mdast-to-kernel.ts` / `mdast-validator.ts` 同步
+- **PR-3 `assetFormat` 默认**：`'oxn'` → `'md'`
+- **PR-4 `driver.ts` 默认**：`'unified'` → `'mdast'`
+- **PR-3 Sync 命令写入位置**：`.md` 写到主目录而非 `*-md/` 孤儿
+
+### Deprecated
+
+- **PR-4 `langium-driver/` 目录**：`@deprecated v0.7.0 will be removed`
+- **PR-4 `langium`/`langium-cli` npm 依赖**：v0.7.0 切割
+
+### Migration
+
+```bash
+# 升级到 v0.6.1
+bunx @istuen/openxenon@0.6.1 install-skill
+
+# 迁移存量 .oxn 资产（可选；可推迟到 v0.7.0）
+oxn domain sync --all
+oxn blueprint sync --all
+
+# 强校验 mdast 路径生效
+oxn domain validate <X> --no-langium
+```
+
+### Tests
+
+- `bun test packages/engine/src/oxl/md-bridge`：**242 / 242 pass**
+- `bun test src/builtin/__tests__/builtin-assets-md.test.ts`：**21 / 21 pass**（新增）
+- `bun run typecheck / check / lint`：**0 error**
+
+详细 PR 列表见 `.changes/0-6-1-asset-md-default.md`。
+
+---
+
 ## [0.6.1-alpha.0] - 2026-07-02
 
 > **主题**：v0.6.0 架构的调试驱动修复。5 个 Cycle（Asset / Skill / Work / Round / Proof）系统化测试，按问题分批修复 P0/P1 阻塞性问题。

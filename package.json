@@ -1,6 +1,6 @@
 {
   "name": "@istuen/openxenon",
-  "version": "0.6.1-alpha.0",
+  "version": "0.6.1",
   "description": "OpenXenon — 工程师与 AI 协作工作台（v0.6 Monorepo 双包：CLI + Engine）",
   "author": "istuen",
   "license": "MIT",

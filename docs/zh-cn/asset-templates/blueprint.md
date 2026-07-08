@@ -1,7 +1,7 @@
 ---
 entity: blueprint
 version: 0.1.0
-name: <name>
+name: NAME
 abstract: |
   TODO: 一句话描述本技术流程的步骤与依赖。
   TODO: 适用场景（2-3 行）
@@ -9,7 +9,7 @@ references: []
 citations: 0
 ---
 
-# Blueprint: <name>
+# Blueprint: NAME
 
 > TODO: 一句话描述本技术流程
 

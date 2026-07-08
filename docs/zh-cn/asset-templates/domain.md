@@ -1,7 +1,7 @@
 ---
 entity: domain
 version: 0.1.0
-name: <name>
+name: NAME
 abstract: |
   TODO: 一句话描述本限界上下文的业务边界。
   TODO: 关键业务场景（2-3 行）
@@ -9,7 +9,7 @@ references: []
 citations: 0
 ---
 
-# Domain: <name>
+# Domain: NAME
 
 > TODO: 一句话描述本限界上下文的业务边界
 

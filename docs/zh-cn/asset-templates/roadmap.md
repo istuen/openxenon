@@ -1,7 +1,7 @@
 ---
 entity: roadmap
 version: 0.1.0
-name: <name>
+name: NAME
 abstract: |
   TODO: 一句话描述本 Roadmap 的导航目的（哪些 Asset 优先读取、按什么顺序）。
   TODO: 维护策略（手工 vs 自动更新，v0.6.1-alpha.1 阶段是手工）。
@@ -9,7 +9,7 @@ references: []
 citations: 0
 ---
 
-# Roadmap: <name>
+# Roadmap: NAME
 
 > TODO: 一句话描述本 Roadmap 的导航目的
 

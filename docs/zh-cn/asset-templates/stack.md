@@ -1,7 +1,7 @@
 ---
 entity: stack
 version: 0.1.0
-name: <name>
+name: NAME
 abstract: |
   TODO: 一句话描述技术栈（语言 + runtime + 工具链）。
   TODO: 关键约束（2-3 行）
@@ -9,7 +9,7 @@ references: []
 citations: 0
 ---
 
-# Stack: <name>
+# Stack: NAME
 
 > TODO: 一句话描述本技术栈
 

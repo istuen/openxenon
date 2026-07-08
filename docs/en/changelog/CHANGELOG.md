@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.6.1] - 2026-07-08
+
+> **Theme**: Asset/Work fully MD-canonical — 5 sub-PRs complete closed loop
+> **Scope**: v0.6.1-alpha.0 → v0.6.1 stable (5 sub-PRs + 1 extension)
+> **Breaking changes**:
+> - Old `:::intent{...}` container directive throws `E_MD_DEPRECATED_SYNTAX` at parse time
+> - Work reference values require `@md/<scope>/<name>` prefix; bare names / `@prj/...` throw `E_MD_REFERENCE_PREFIX_INVALID`
+> - `oxn work create` writes `work.md` by default (use `--oxn-legacy` flag to fall back to .oxn)
+
+### Added
+
+- **PR-2 `@md/...` prefix**: Work reference values `blueprint: @md/blueprints/X`, `domain: @md/domains/Y` (D-γ b)
+- **PR-3 Asset canonical flip**: AssetFormat default `md`; `resolveAssetFileCandidatesV61` 4-level path candidates (`.md` → `.oxn` → fallback layout)
+- **PR-3 `oxn work create` defaults to .md**: dual-track `.md` + `.oxn` as fallback
+- **PR-4 `--no-langium` flag**: `oxn domain validate <X> --no-langium` / `oxn blueprint validate <X> --no-langium` — forces mdast path
+- **PR-4 builtin .md copies**: 15 builtin probes + 3 builtin blueprints each have a `.md` canonical copy
+- **PR-4 guards**:
+  - `bun run check:md-fallback` — scans .oxn count (INFO log)
+  - `bun run check:no-langium` — blocks new Langium imports (fatal)
+
+### Changed
+
+- **PR-1** `oxl-md-decompiler.ts` removes `'directive'` option; `mdast-to-kernel.ts` / `mdast-validator.ts` synced
+- **PR-3 `assetFormat` default**: `'oxn'` → `'md'`
+- **PR-4 `driver.ts` default**: `'unified'` → `'mdast'`
+- **PR-3 Sync command write location**: `.md` writes to primary directory, not `*-md/` orphan
+
+### Deprecated
+
+- **PR-4 `langium-driver/` directory**: `@deprecated v0.7.0 will be removed`
+- **PR-4 `langium`/`langium-cli` npm deps**: v0.7.0 cutover
+
+### Migration
+
+```bash
+# Upgrade to v0.6.1
+bunx @istuen/openxenon@0.6.1 install-skill
+
+# Migrate existing .oxn assets (optional; can defer to v0.7.0)
+oxn domain sync --all
+oxn blueprint sync --all
+
+# Force mdast path validation
+oxn domain validate <X> --no-langium
+```
+
+### Tests
+
+- `bun test packages/engine/src/oxl/md-bridge`: **242 / 242 pass**
+- `bun test src/builtin/__tests__/builtin-assets-md.test.ts`: **21 / 21 pass** (new)
+- `bun run typecheck / check / lint`: **0 error**
+
+For full PR list see `.changes/0-6-1-asset-md-default.md`.
+
+---
+
 ## [0.6.1-alpha.0] - 2026-07-02
 
 > **主题**：v0.6.0 架构的调试驱动修复。5 个 Cycle（Asset / Skill / Work / Round / Proof）系统化测试，按问题分批修复 P0/P1 阻塞性问题。
