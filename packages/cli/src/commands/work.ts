@@ -195,6 +195,19 @@ function validateWorkName(name: string): { valid: boolean; error?: string } {
   return { valid: true }
 }
 
+// v0.6.1-alpha.1 Batch 2: Asset names can be PascalCase (Domain) or kebab-case (other)
+function validateAssetName(name: string): { valid: boolean; error?: string } {
+  if (!name) return { valid: false, error: 'Name is required' }
+  if (name.length < 2) return { valid: false, error: 'Name too short (min 2 chars)' }
+  if (name.length > 64) return { valid: false, error: 'Name too long (max 64 chars)' }
+  // PascalCase: MemberContext (starts with uppercase letter)
+  // kebab-case: member-context (starts with lowercase letter)
+  if (!/^[A-Za-z][A-Za-z0-9-]*$/.test(name)) {
+    return { valid: false, error: 'Name must be PascalCase or kebab-case (letters/numbers/hyphens only)' }
+  }
+  return { valid: true }
+}
+
 function validateTaskName(name: string): { valid: boolean; error?: string } {
   if (!name) return { valid: false, error: 'Task name is required' }
   if (name.length < 1) return { valid: false, error: 'Task name too short' }
@@ -366,6 +379,76 @@ const listSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
+// v0.6.1-alpha.1 Batch 2: Asset mode create handler
+//
+// 当 `oxn work create <name> --type asset --asset-kind <kind>` 调用时，
+// 走 Asset 创建流程（domain/blueprint/stack/library/external），
+// 内部调用 Asset/create.ts 的 create() 写 Asset 文件。
+// ---------------------------------------------------------------------------
+
+const VALID_ASSET_KINDS = ['domain', 'blueprint', 'stack', 'library', 'external'] as const
+type ValidAssetKind = (typeof VALID_ASSET_KINDS)[number]
+
+interface AssetModeCreateInput {
+  assetKind: string
+  name: string
+  projectRoot: string
+  format: 'human' | 'json' | 'yaml' | 'html' | 'md'
+  force: boolean
+}
+
+async function handleAssetModeCreate(input: AssetModeCreateInput): Promise<unknown> {
+  const { assetKind, name, projectRoot, format, force } = input
+
+  // Validate assetKind
+  if (!VALID_ASSET_KINDS.includes(assetKind as ValidAssetKind)) {
+    return outputError(
+      {
+        code: 'OXN_INVALID_ASSET_KIND',
+        message: `Invalid --asset-kind: '${assetKind}'`,
+        suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
+      },
+      format,
+    )
+  }
+
+  // Validate name (Asset names can be PascalCase or kebab-case)
+  const validation = validateAssetName(name)
+  if (!validation.valid) {
+    return outputError({ code: 'OXN_INVALID_ASSET_NAME', message: validation.error ?? 'invalid name' }, format)
+  }
+
+  // Dispatch to Asset module create()
+  const { create } = await import('@openxenon/engine/Asset/create')
+  const config = readProjectConfig(projectRoot)
+
+  try {
+    const result = await create({
+      kind: assetKind as ValidAssetKind,
+      name,
+      projectRoot,
+      format: config?.assetFormat ?? 'oxn',
+      force,
+    })
+    return output(
+      {
+        data: {
+          kind: assetKind,
+          name,
+          path: result.assetPath,
+          createdAt: result.createdAt,
+        },
+        human: `✓ Asset '${name}' (${assetKind}) created at ${result.assetPath}`,
+      },
+      format,
+    )
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err)
+    return outputError({ code: 'OXN_ASSET_CREATE_FAILED', message: errorMsg }, format)
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Subcommand: create
 // ---------------------------------------------------------------------------
 const createSubcommand = defineCommand({
@@ -378,12 +461,16 @@ const createSubcommand = defineCommand({
     blueprint: {
       type: 'string',
       alias: 'b',
-      required: true, // v0.6.1-alpha.0 #3-2: 强制必传（避免 TODO-blueprint 模板错配）
+      required: false, // v0.6.1-alpha.1 Batch 2: --asset-kind 时不要求 blueprint
       description: t('work.create.args.blueprint'),
     },
     'blueprint-file': { type: 'string', description: t('work.create.args.blueprintPath') },
     'output-dir': { type: 'string', description: t('work.create.args.outputDir') },
     type: { type: 'string', alias: 't', default: 'task', description: t('work.create.args.workType') },
+    'asset-kind': {
+      type: 'string',
+      description: 'v0.6.1-alpha.1 Batch 2: Asset mode — domain | blueprint | stack | library | external',
+    },
     force: { type: 'boolean', description: t('work.create.args.force') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
@@ -392,6 +479,7 @@ const createSubcommand = defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
     const workType = (ctx.args.type as string) || 'task'
+    const assetKindArg = ctx.args['asset-kind'] as string | undefined
     const customBlueprint = ctx.args['blueprint-file'] as string | undefined
     const blueprintNameArg = ctx.args.blueprint as string | undefined
     const customOutputDir = ctx.args['output-dir'] as string | undefined
@@ -406,6 +494,18 @@ const createSubcommand = defineCommand({
         { code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit'), suggestion: t('errors.initHint') },
         format,
       )
+    }
+
+    // v0.6.1-alpha.1 Batch 2: Asset mode dispatch
+    // 当 --asset-kind 指定时，调用 Asset create 逻辑（不创建 work）
+    if (assetKindArg) {
+      return await handleAssetModeCreate({
+        assetKind: assetKindArg,
+        name: workName,
+        projectRoot,
+        format,
+        force,
+      })
     }
 
     const validation = validateWorkName(workName)

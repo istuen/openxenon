@@ -13,6 +13,10 @@ export interface CreateInput {
   name: string
   format?: AssetFormat
   projectRoot: string
+  /** v0.6.1-alpha.1 Batch 2: 可选 slots 列表（仅 blueprint 生效）*/
+  slots?: string[]
+  /** v0.6.1-alpha.1 Batch 2: 覆盖已存在文件（默认 false）*/
+  force?: boolean
 }
 
 export interface CreateResult {

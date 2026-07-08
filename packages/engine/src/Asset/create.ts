@@ -90,37 +90,76 @@ ${slotBlocks}
 }
 
 function createStackTemplate(name: string): string {
-  return `---
-entity: stack
-version: 0.3.0
-name: ${name}
----
+  return `// Stack: ${name}
+// Created by: oxn work create ${name} --type asset --asset-kind stack
+//
+// 技术栈约束骨架。runtime / linter / test 三类约束。
 
-# Stack: ${name}
+stack "${name}" {
+  description = "TODO: one-line description of the technical environment constraints"
 
-> TODO: one-line description of the technical environment constraints
+  runtime "typescript" {
+    version = ">=5.0.0"
+  }
 
-## runtime
-- language: typescript
-- runtime: bun
-- version: ">=1.1.0"
+  linter "biome" {
+    config = "biome.json"
+  }
 
-## linter
-- tool: biome
-- config: biome.json
+  test "bun-test" {
+    command = "bun test"
+    coverage = "@oxn/probes/test-pass"
+  }
+}
+`
+}
 
-## test
-- runner: bun test
-- coverage: "@oxn/probes/test-pass"
+function createLibraryTemplate(name: string): string {
+  return `// Library: ${name}
+// Created by: oxn work create ${name} --type asset --asset-kind library
+//
+// 文档聚合骨架。Sources H2 收集外部 SDK / wiki 文档抓取记录。
+
+library "${name}" {
+  description = "TODO: one-line description of the library's content scope"
+
+  source "example-docs" {
+    url = "https://example.com/docs"
+    version = "1.0.0"
+    fetched = "2026-07-08"
+    summary = "TODO: describe the source content"
+  }
+}
+`
+}
+
+function createExternalTemplate(name: string): string {
+  return `// External: ${name}
+// Created by: oxn work create ${name} --type asset --asset-kind external
+//
+// 外部资源链接骨架。Links H2 收集 API / 服务地址（需 TTL 刷新）。
+
+external "${name}" {
+  description = "TODO: one-line description of the external resource's purpose"
+
+  link "payment-api" {
+    url = "https://api.example.com/v1"
+    kind = "rest-api"
+    ttl = "7d"
+    auth = "api-key"
+    summary = "TODO: describe the external resource"
+  }
+}
 `
 }
 
 export async function create(input: CreateInput): Promise<CreateResult> {
   const kind = input.kind
   const format = input.format ?? 'oxn'
+  const force = input.force ?? false
   const assetPath = resolveAssetFile(input.projectRoot, kind, input.name, format)
 
-  if (existsSync(assetPath)) {
+  if (existsSync(assetPath) && !force) {
     throw new IAPError('INFRA', 'PATH_CONFLICT', IAPAction.YIELD_TO_HUMAN, `Asset already exists: ${assetPath}`, {
       kind,
       name: input.name,
@@ -139,10 +178,16 @@ export async function create(input: CreateInput): Promise<CreateResult> {
       content = createDomainTemplate(input.name, format)
       break
     case 'blueprint':
-      content = createBlueprintTemplate(input.name, format)
+      content = createBlueprintTemplate(input.name, format, input.slots)
       break
     case 'stack':
       content = createStackTemplate(input.name)
+      break
+    case 'library':
+      content = createLibraryTemplate(input.name)
+      break
+    case 'external':
+      content = createExternalTemplate(input.name)
       break
     default:
       throw new IAPError('INFRA', 'KIND_UNSUPPORTED', IAPAction.YIELD_TO_HUMAN, `Unsupported asset kind: ${kind}`, {

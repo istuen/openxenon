@@ -62,6 +62,8 @@ export interface ProjectConfig {
     blueprint?: string
     stack?: string
     roadmap?: string // 🆕 v0.6.1-alpha.1
+    library?: string // 🆕 v0.6.1-alpha.1 Batch 2
+    external?: string // 🆕 v0.6.1-alpha.1 Batch 2
   }
 }
 
@@ -72,9 +74,11 @@ export const DEFAULT_ASSET_DIRS = {
   blueprint: 'blueprints',
   stack: 'stack',
   roadmap: 'roadmaps', // 🆕 v0.6.1-alpha.1
+  library: 'libraries', // 🆕 v0.6.1-alpha.1 Batch 2
+  external: 'externals', // 🆕 v0.6.1-alpha.1 Batch 2
 } as const
 
-export type AssetKind = 'domain' | 'blueprint' | 'stack' | 'roadmap' // 🆕 v0.6.1-alpha.1: 'roadmap'
+export type AssetKind = 'domain' | 'blueprint' | 'stack' | 'roadmap' | 'library' | 'external' // 🆕 v0.6.1-alpha.1 Batch 2: library + external
 
 /**
  * v0.6 PR-1: 解析单个 asset kind 的实际目录路径。

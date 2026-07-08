@@ -31,8 +31,12 @@ import type { Root, RootContent } from 'mdast'
 // 类型
 // ========================
 
-/** Intent 5 类资产类型 */
-export type IntentEntityType = 'domain' | 'blueprint' | 'work' | 'task' | 'proof'
+/** Intent 5 类资产类型
+ *
+ * v0.6.1-alpha.1 Batch 2: 扩展为 5 种 AssetKind（domain / blueprint / stack / library / external）
+ * + 3 种运行时实体（work / task / proof）
+ */
+export type IntentEntityType = 'domain' | 'blueprint' | 'stack' | 'library' | 'external' | 'work' | 'task' | 'proof'
 
 /** Pipeline 输入 */
 export interface PipelineInput {

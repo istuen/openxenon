@@ -149,6 +149,12 @@ function detectEntityType(entity: { $type: string }): IntentEntityType {
       return 'domain'
     case 'BlueprintDeclaration':
       return 'blueprint'
+    case 'StackDeclaration':
+      return 'stack'
+    case 'LibraryDeclaration':
+      return 'library'
+    case 'ExternalDeclaration':
+      return 'external'
     case 'WorkDeclaration':
       return 'work'
     case 'TaskDeclaration':

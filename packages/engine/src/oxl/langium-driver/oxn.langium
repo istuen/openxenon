@@ -6,7 +6,8 @@ entry OXNDocument:
 
 // v0.3 follow-up: 允许 task 作为顶层实体（用于 task.oxn 文件 — 120+ 个实际产物）
 // 历史上 task 只能内嵌于 WorkDeclaration；这里新增顶层支持以匹配 CLI `oxn work add-task` 产物
-// v0.6.1-alpha.1: 新增 StackDeclaration 与 RoadmapDeclaration（Asset Paper 4 字段支持）
+// v0.6.1-alpha.1: 新增 StackDeclaration + RoadmapDeclaration（Asset Paper 4 字段支持）
+// v0.6.1-alpha.1 Batch 2: 新增 LibraryDeclaration + ExternalDeclaration
 TopLevelEntity:
     ProbeDeclaration
     | PartDeclaration
@@ -16,7 +17,9 @@ TopLevelEntity:
     | TaskDeclaration
     | ProofDeclaration
     | StackDeclaration                  // 🆕 v0.6.1-alpha.1
-    | RoadmapDeclaration;               // 🆕 v0.6.1-alpha.1
+    | RoadmapDeclaration                // 🆕 v0.6.1-alpha.1
+    | LibraryDeclaration                // 🆕 v0.6.1-alpha.1 Batch 2
+    | ExternalDeclaration;              // 🆕 v0.6.1-alpha.1 Batch 2
 
 // ==================== Type System ====================
 TypeReference:
@@ -288,6 +291,52 @@ RoadmapDeclaration:
 // Roadmap 内部链接（仅 string target，不参与 DAG）
 RoadmapLink:
     target=STRING;
+
+// ==================== Library (v0.6.1-alpha.1 Batch 2 新增) ====================
+// Library 是文档聚合：抓取外部 SDK/wiki 文档 → AI 可消费的 .md
+// H2 分类：Sources（每个 source 是一条抓取记录）
+// 字段：url / version / fetched / summary
+// 来源 ADR-0048：library/ 外部信息统一通过 Work 路径引入
+LibraryDeclaration:
+    'library' name=STRING '{'
+        (('version' '=' version=NUMBER) | ('assetVersion' '=' version=NUMBER))?  // 双别名向后兼容
+        ('abstract' '=' abstract=STRING)?
+        ('references' '=' '[' (references+=STRING (',' references+=STRING)*)? ']')?
+        ('citations' '=' citations=NUMBER)?
+        (descriptions+=Description)?
+        (sources+=SourceBlock)*                    // 0..* source 块
+    '}';
+
+SourceBlock:
+    'source' name=STRING '{'
+        'url' '=' url=STRING ';'
+        ('version' '=' version=STRING ';')?
+        ('fetched' '=' fetched=STRING ';')?
+        ('summary' '=' summary=STRING)?
+    '}';
+
+// ==================== External (v0.6.1-alpha.1 Batch 2 新增) ====================
+// External 是外部资源链接：API/服务地址（需 TTL 刷新）
+// H2 分类：Links（每个 link 是一个外部资源）
+// 字段：url / kind / ttl / auth / summary
+ExternalDeclaration:
+    'external' name=STRING '{'
+        (('version' '=' version=NUMBER) | ('assetVersion' '=' version=NUMBER))?
+        ('abstract' '=' abstract=STRING)?
+        ('references' '=' '[' (references+=STRING (',' references+=STRING)*)? ']')?
+        ('citations' '=' citations=NUMBER)?
+        (descriptions+=Description)?
+        (links+=ExternalLinkBlock)*                 // 0..* link 块
+    '}';
+
+ExternalLinkBlock:
+    'link' name=STRING '{'
+        'url' '=' url=STRING ';'
+        'kind' '=' kind=STRING ';'
+        'ttl' '=' ttl=STRING ';'
+        ('auth' '=' auth=STRING ';')?
+        ('summary' '=' summary=STRING)?
+    '}';
 
 // ==================== Work (v0.1-final: workspace orchestrator) ====================
 // Work 是编排空间：资源池寻址 + Task 编排中心

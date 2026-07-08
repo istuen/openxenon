@@ -44,6 +44,7 @@ export type OpenXenonLanguageKeywordNames =
     | "any"
     | "as"
     | "assetVersion"
+    | "auth"
     | "ban"
     | "blueprint"
     | "boolean"
@@ -56,11 +57,16 @@ export type OpenXenonLanguageKeywordNames =
     | "domain"
     | "enum"
     | "execution"
+    | "external"
     | "false"
+    | "fetched"
     | "goal"
     | "guidance"
     | "invariant"
+    | "kind"
+    | "library"
     | "lifecycle"
+    | "link"
     | "linter"
     | "list"
     | "loop_policy"
@@ -91,13 +97,17 @@ export type OpenXenonLanguageKeywordNames =
     | "skill"
     | "skill_context"
     | "slot"
+    | "source"
     | "stack"
     | "string"
+    | "summary"
     | "task"
     | "term"
     | "test"
     | "true"
+    | "ttl"
     | "type"
+    | "url"
     | "version"
     | "work"
     | "{"
@@ -233,7 +243,7 @@ export function isDefaultValue(item: unknown): item is DefaultValue {
 }
 
 export interface Description extends langium.AstNode {
-    readonly $container: BlueprintDeclaration | DomainDeclaration | LinterBlock | PartDeclaration | ProbeDeclaration | ProofDeclaration | RoadmapDeclaration | RuntimeBlock | StackDeclaration | TestBlock;
+    readonly $container: BlueprintDeclaration | DomainDeclaration | ExternalDeclaration | LibraryDeclaration | LinterBlock | PartDeclaration | ProbeDeclaration | ProofDeclaration | RoadmapDeclaration | RuntimeBlock | StackDeclaration | TestBlock;
     readonly $type: 'Description';
     value: string;
 }
@@ -358,6 +368,58 @@ export function isExpression(item: unknown): item is Expression {
     return reflection.isInstance(item, Expression.$type);
 }
 
+export interface ExternalDeclaration extends langium.AstNode {
+    readonly $container: OXNDocument;
+    readonly $type: 'ExternalDeclaration';
+    abstract?: string;
+    citations?: number;
+    descriptions: Array<Description>;
+    links: Array<ExternalLinkBlock>;
+    name: string;
+    references: Array<string>;
+    version?: number;
+}
+
+export const ExternalDeclaration = {
+    $type: 'ExternalDeclaration',
+    abstract: 'abstract',
+    citations: 'citations',
+    descriptions: 'descriptions',
+    links: 'links',
+    name: 'name',
+    references: 'references',
+    version: 'version'
+} as const;
+
+export function isExternalDeclaration(item: unknown): item is ExternalDeclaration {
+    return reflection.isInstance(item, ExternalDeclaration.$type);
+}
+
+export interface ExternalLinkBlock extends langium.AstNode {
+    readonly $container: ExternalDeclaration;
+    readonly $type: 'ExternalLinkBlock';
+    auth?: string;
+    kind: string;
+    name: string;
+    summary?: string;
+    ttl: string;
+    url: string;
+}
+
+export const ExternalLinkBlock = {
+    $type: 'ExternalLinkBlock',
+    auth: 'auth',
+    kind: 'kind',
+    name: 'name',
+    summary: 'summary',
+    ttl: 'ttl',
+    url: 'url'
+} as const;
+
+export function isExternalLinkBlock(item: unknown): item is ExternalLinkBlock {
+    return reflection.isInstance(item, ExternalLinkBlock.$type);
+}
+
 export interface GenericType extends langium.AstNode {
     readonly $container: GenericType | OutputField | PropDeclaration;
     readonly $type: 'GenericType';
@@ -409,6 +471,33 @@ export const InvariantDecl = {
 
 export function isInvariantDecl(item: unknown): item is InvariantDecl {
     return reflection.isInstance(item, InvariantDecl.$type);
+}
+
+export interface LibraryDeclaration extends langium.AstNode {
+    readonly $container: OXNDocument;
+    readonly $type: 'LibraryDeclaration';
+    abstract?: string;
+    citations?: number;
+    descriptions: Array<Description>;
+    name: string;
+    references: Array<string>;
+    sources: Array<SourceBlock>;
+    version?: number;
+}
+
+export const LibraryDeclaration = {
+    $type: 'LibraryDeclaration',
+    abstract: 'abstract',
+    citations: 'citations',
+    descriptions: 'descriptions',
+    name: 'name',
+    references: 'references',
+    sources: 'sources',
+    version: 'version'
+} as const;
+
+export function isLibraryDeclaration(item: unknown): item is LibraryDeclaration {
+    return reflection.isInstance(item, LibraryDeclaration.$type);
 }
 
 export interface LinterBlock extends langium.AstNode {
@@ -895,6 +984,29 @@ export function isRuntimeBlock(item: unknown): item is RuntimeBlock {
     return reflection.isInstance(item, RuntimeBlock.$type);
 }
 
+export interface SourceBlock extends langium.AstNode {
+    readonly $container: LibraryDeclaration;
+    readonly $type: 'SourceBlock';
+    fetched?: string;
+    name: string;
+    summary?: string;
+    url: string;
+    version?: string;
+}
+
+export const SourceBlock = {
+    $type: 'SourceBlock',
+    fetched: 'fetched',
+    name: 'name',
+    summary: 'summary',
+    url: 'url',
+    version: 'version'
+} as const;
+
+export function isSourceBlock(item: unknown): item is SourceBlock {
+    return reflection.isInstance(item, SourceBlock.$type);
+}
+
 export interface StackDeclaration extends langium.AstNode {
     readonly $container: OXNDocument;
     readonly $type: 'StackDeclaration';
@@ -1136,7 +1248,7 @@ export function isTestBlock(item: unknown): item is TestBlock {
     return reflection.isInstance(item, TestBlock.$type);
 }
 
-export type TopLevelEntity = BlueprintDeclaration | DomainDeclaration | PartDeclaration | ProbeDeclaration | ProofDeclaration | RoadmapDeclaration | StackDeclaration | TaskDeclaration | WorkDeclaration;
+export type TopLevelEntity = BlueprintDeclaration | DomainDeclaration | ExternalDeclaration | LibraryDeclaration | PartDeclaration | ProbeDeclaration | ProofDeclaration | RoadmapDeclaration | StackDeclaration | TaskDeclaration | WorkDeclaration;
 
 export const TopLevelEntity = {
     $type: 'TopLevelEntity'
@@ -1235,9 +1347,12 @@ export type OpenXenonLanguageAstType = {
     EnumType: EnumType
     ExecutionRef: ExecutionRef
     Expression: Expression
+    ExternalDeclaration: ExternalDeclaration
+    ExternalLinkBlock: ExternalLinkBlock
     GenericType: GenericType
     InvariantBlock: InvariantBlock
     InvariantDecl: InvariantDecl
+    LibraryDeclaration: LibraryDeclaration
     LinterBlock: LinterBlock
     LiteralExpr: LiteralExpr
     LoopPolicy: LoopPolicy
@@ -1265,6 +1380,7 @@ export type OpenXenonLanguageAstType = {
     RoadmapDeclaration: RoadmapDeclaration
     RoadmapLink: RoadmapLink
     RuntimeBlock: RuntimeBlock
+    SourceBlock: SourceBlock
     StackDeclaration: StackDeclaration
     TaskBlueprintField: TaskBlueprintField
     TaskBodyElement: TaskBodyElement
@@ -1498,6 +1614,68 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
             },
             superTypes: []
         },
+        ExternalDeclaration: {
+            name: ExternalDeclaration.$type,
+            properties: {
+                abstract: {
+                    name: ExternalDeclaration.abstract,
+                    optional: true
+                },
+                citations: {
+                    name: ExternalDeclaration.citations,
+                    optional: true
+                },
+                descriptions: {
+                    name: ExternalDeclaration.descriptions,
+                    defaultValue: [],
+                    optional: true
+                },
+                links: {
+                    name: ExternalDeclaration.links,
+                    defaultValue: [],
+                    optional: true
+                },
+                name: {
+                    name: ExternalDeclaration.name
+                },
+                references: {
+                    name: ExternalDeclaration.references,
+                    defaultValue: [],
+                    optional: true
+                },
+                version: {
+                    name: ExternalDeclaration.version,
+                    optional: true
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
+        },
+        ExternalLinkBlock: {
+            name: ExternalLinkBlock.$type,
+            properties: {
+                auth: {
+                    name: ExternalLinkBlock.auth,
+                    optional: true
+                },
+                kind: {
+                    name: ExternalLinkBlock.kind
+                },
+                name: {
+                    name: ExternalLinkBlock.name
+                },
+                summary: {
+                    name: ExternalLinkBlock.summary,
+                    optional: true
+                },
+                ttl: {
+                    name: ExternalLinkBlock.ttl
+                },
+                url: {
+                    name: ExternalLinkBlock.url
+                }
+            },
+            superTypes: []
+        },
         GenericType: {
             name: GenericType.$type,
             properties: {
@@ -1542,6 +1720,42 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 }
             },
             superTypes: []
+        },
+        LibraryDeclaration: {
+            name: LibraryDeclaration.$type,
+            properties: {
+                abstract: {
+                    name: LibraryDeclaration.abstract,
+                    optional: true
+                },
+                citations: {
+                    name: LibraryDeclaration.citations,
+                    optional: true
+                },
+                descriptions: {
+                    name: LibraryDeclaration.descriptions,
+                    defaultValue: [],
+                    optional: true
+                },
+                name: {
+                    name: LibraryDeclaration.name
+                },
+                references: {
+                    name: LibraryDeclaration.references,
+                    defaultValue: [],
+                    optional: true
+                },
+                sources: {
+                    name: LibraryDeclaration.sources,
+                    defaultValue: [],
+                    optional: true
+                },
+                version: {
+                    name: LibraryDeclaration.version,
+                    optional: true
+                }
+            },
+            superTypes: [TopLevelEntity.$type]
         },
         LinterBlock: {
             name: LinterBlock.$type,
@@ -1966,6 +2180,30 @@ export class OpenXenonLanguageAstReflection extends langium.AbstractAstReflectio
                 props: {
                     name: RuntimeBlock.props,
                     defaultValue: [],
+                    optional: true
+                }
+            },
+            superTypes: []
+        },
+        SourceBlock: {
+            name: SourceBlock.$type,
+            properties: {
+                fetched: {
+                    name: SourceBlock.fetched,
+                    optional: true
+                },
+                name: {
+                    name: SourceBlock.name
+                },
+                summary: {
+                    name: SourceBlock.summary,
+                    optional: true
+                },
+                url: {
+                    name: SourceBlock.url
+                },
+                version: {
+                    name: SourceBlock.version,
                     optional: true
                 }
             },
