@@ -1,14 +1,31 @@
 import type { SupportedLocale } from '@openxenon/engine/infra/i18n/locale'
 import { DEFAULT_LOCALE } from '@openxenon/engine/infra/i18n/locale'
 import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'text' }
-import zhCnWorkBlueprintRef from './locales/zh-CN/oxn-work/references/blueprint-format.md' with { type: 'text' }
+import zhCnWork8Phase from './locales/zh-CN/oxn-work/references/8-phase-detail.md' with { type: 'text' }
+import zhCnWorkErrors from './locales/zh-CN/oxn-work/references/error-codes.md' with { type: 'text' }
+import zhCnWorkAnti from './locales/zh-CN/oxn-work/references/anti-patterns.md' with { type: 'text' }
+import zhCnWorkV0V1 from './locales/zh-CN/oxn-work/references/v0-v1-migration.md' with { type: 'text' }
+import zhCnWorkGit from './locales/zh-CN/oxn-work/references/git-workspace.md' with { type: 'text' }
+import zhCnWorkExplore from './locales/zh-CN/oxn-work/assets/work-explore.md' with { type: 'text' }
+import zhCnWorkDevelop from './locales/zh-CN/oxn-work/assets/work-develop.md' with { type: 'text' }
+import zhCnWorkFix from './locales/zh-CN/oxn-work/assets/work-fix.md' with { type: 'text' }
+import zhCnWorkOnboarding from './locales/zh-CN/oxn-work/assets/work-onboarding.md' with { type: 'text' }
 import enWork from './locales/en/oxn-work/instruction.md' with { type: 'text' }
-import enWorkBlueprintRef from './locales/en/oxn-work/references/blueprint-format.md' with { type: 'text' }
+import enWork8Phase from './locales/en/oxn-work/references/8-phase-detail.md' with { type: 'text' }
+import enWorkErrors from './locales/en/oxn-work/references/error-codes.md' with { type: 'text' }
+import enWorkAnti from './locales/en/oxn-work/references/anti-patterns.md' with { type: 'text' }
+import enWorkV0V1 from './locales/en/oxn-work/references/v0-v1-migration.md' with { type: 'text' }
+import enWorkGit from './locales/en/oxn-work/references/git-workspace.md' with { type: 'text' }
+import enWorkExplore from './locales/en/oxn-work/assets/work-explore.md' with { type: 'text' }
+import enWorkDevelop from './locales/en/oxn-work/assets/work-develop.md' with { type: 'text' }
+import enWorkFix from './locales/en/oxn-work/assets/work-fix.md' with { type: 'text' }
+import enWorkOnboarding from './locales/en/oxn-work/assets/work-onboarding.md' with { type: 'text' }
 import type { OpenXenonSkill, ReferenceFile } from './types'
 
 export interface SkillContent {
   instruction: string
   references: ReferenceFile[]
+  assets: ReferenceFile[]
 }
 
 interface SkillMeta {
@@ -18,6 +35,10 @@ interface SkillMeta {
 
 // v0.6 Skill 极简：唯一 Skill 为 oxn-work（IAP 范式统一入口）
 // 原 oxn-cli / oxn-proof 已删除 — 按 v0.6 RFC "Skill 极简" 决策
+//
+// v0.6.1-alpha.0: instruction.md 拆为 1 SKILL.md (≤200 tokens 目标) + 5 references/* + 4 assets/* (work-* 模板)
+//   - references/: 8-phase-detail / error-codes / anti-patterns / v0-v1-migration / git-workspace
+//   - assets/: work-{explore,develop,fix,onboarding}.md  (4 大 work.oxn 模式模板 — .md 格式含 OXN 代码块)
 const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
   'zh-CN': [
     {
@@ -39,13 +60,37 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
   'zh-CN': {
     'oxn-work': {
       instruction: zhCnWork,
-      references: [{ filename: 'blueprint-format.md', content: zhCnWorkBlueprintRef }],
+      references: [
+        { filename: '8-phase-detail.md', content: zhCnWork8Phase },
+        { filename: 'error-codes.md', content: zhCnWorkErrors },
+        { filename: 'anti-patterns.md', content: zhCnWorkAnti },
+        { filename: 'v0-v1-migration.md', content: zhCnWorkV0V1 },
+        { filename: 'git-workspace.md', content: zhCnWorkGit },
+      ],
+      assets: [
+        { filename: 'work-explore.md', content: zhCnWorkExplore },
+        { filename: 'work-develop.md', content: zhCnWorkDevelop },
+        { filename: 'work-fix.md', content: zhCnWorkFix },
+        { filename: 'work-onboarding.md', content: zhCnWorkOnboarding },
+      ],
     },
   },
   en: {
     'oxn-work': {
       instruction: enWork,
-      references: [{ filename: 'blueprint-format.md', content: enWorkBlueprintRef }],
+      references: [
+        { filename: '8-phase-detail.md', content: enWork8Phase },
+        { filename: 'error-codes.md', content: enWorkErrors },
+        { filename: 'anti-patterns.md', content: enWorkAnti },
+        { filename: 'v0-v1-migration.md', content: enWorkV0V1 },
+        { filename: 'git-workspace.md', content: enWorkGit },
+      ],
+      assets: [
+        { filename: 'work-explore.md', content: enWorkExplore },
+        { filename: 'work-develop.md', content: enWorkDevelop },
+        { filename: 'work-fix.md', content: enWorkFix },
+        { filename: 'work-onboarding.md', content: enWorkOnboarding },
+      ],
     },
   },
 }
@@ -67,6 +112,7 @@ export function getAllSkillsForLocale(locale: SupportedLocale): OpenXenonSkill[]
       description: meta.description,
       instruction: content?.instruction ?? '',
       references: content?.references,
+      assets: content?.assets,
     }
   })
 }

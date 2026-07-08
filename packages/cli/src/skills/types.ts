@@ -9,4 +9,5 @@ export interface OpenXenonSkill {
   instruction: string
   examples?: Record<string, unknown>
   references?: ReferenceFile[]
+  assets?: ReferenceFile[]
 }

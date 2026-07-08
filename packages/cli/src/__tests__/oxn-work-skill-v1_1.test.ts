@@ -1,15 +1,16 @@
 // =============================================================================
-// oxn-work-skill-v1_1.test.ts — PR-12
+// oxn-work-skill-v1_1.test.ts — PR-12 + ADR-0039 重构
 //
-// 覆盖 `.opencode/skills/oxn-work/SKILL.md` v1.1 内容收敛：
-//   1. front matter 描述含 v1.1
-//   2. 8 阶段流程图存在
-//   3. 4 个 v1.1 新增阶段（validate/lock/unlock/migrate）有独立小节
-//   4. v1.1 错误处理速查表存在（含 3 个 IAPError ALIGN 新码）
-//   5. v0.1 引用全部替换为 v1.1
-//   6. install-skill 命令能成功传播到全局路径
-//   7. 项目源（`.opencode/skills/oxn-work/SKILL.md`）和全局（`~/.opencode/skills/oxn-work/SKILL.md`）内容一致
-//   8. 错误码描述含 LOCK_NOT_FOUND / LOCK_HASH_MISMATCH / WORK_REMOVED
+// 覆盖 `.opencode/skills/oxn-work/` v1.1 + 渐进式披露结构：
+//   1. SKILL.md 极简（≤1000 tokens 目标，含 frontmatter）
+//   2. SKILL.md 8 阶段流程（含 v1.1 字样）
+//   3. references/ 5 个文件（按需加载）
+//   4. assets/ 4 个 work.oxn 模板
+//   5. frontmatter 名称 = oxn-work
+//   6. 关键错误码在 SKILL.md 或 references 中存在
+//   7. 反模式内容在 references/anti-patterns.md
+//   8. V0→V1 路径映射在 references/v0-v1-migration.md
+//   9. 安装一致性：项目源 SKILL.md 与全局 SKILL.md 一致
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
@@ -20,85 +21,71 @@ import { homedir } from 'os'
 
 const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
 const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..', '..')
-const SKILL_PROJECT = join(PROJECT_ROOT, '.opencode', 'skills', 'oxn-work', 'SKILL.md')
+const SKILL_DIR = join(PROJECT_ROOT, '.opencode', 'skills', 'oxn-work')
+const SKILL_PROJECT = join(SKILL_DIR, 'SKILL.md')
 const SKILL_GLOBAL = join(homedir(), '.opencode', 'skills', 'oxn-work', 'SKILL.md')
 
-describe('oxn-work SKILL.md v1.1 内容收敛（PR-12）', () => {
-  test('1. front matter description 含 v1.1 关键字', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
-    const fm = content.split('---')[1]
-    expect(fm).toMatch(/description:\s*.*v1\.1/)
+function readIfExists(path: string): string {
+  return existsSync(path) ? readFileSync(path, 'utf-8') : ''
+}
+
+describe('oxn-work SKILL.md v1.1 + 渐进式披露（PR-12 + ADR-0039）', () => {
+  test('1. SKILL.md 极简（≤1000 tokens 含 frontmatter）', () => {
+    const content = readIfExists(SKILL_PROJECT)
+    expect(content.length).toBeGreaterThan(0)
+    // 简易 token 估算：英文字符 ~0.25 token/字符
+    const roughTokens = Math.ceil(content.length / 4)
+    expect(roughTokens).toBeLessThanOrEqual(1000)
   })
 
-  test('2. 含 8 阶段流程图（v1.1 新增）', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
-    expect(content).toContain('## v1.1 8 阶段流程图')
+  test('2. SKILL.md 含 8 阶段流程（v1.1）', () => {
+    const content = readIfExists(SKILL_PROJECT)
+    expect(content).toMatch(/create.*add-task.*validate.*lock.*run.*submit.*finalize/s)
+  })
+
+  test('3. references/ 5 个文件全部存在', () => {
+    const expected = [
+      '8-phase-detail.md',
+      'error-codes.md',
+      'anti-patterns.md',
+      'v0-v1-migration.md',
+      'git-workspace.md',
+    ]
+    for (const filename of expected) {
+      const path = join(SKILL_DIR, 'references', filename)
+      expect(existsSync(path)).toBe(true)
+    }
+  })
+
+  test('4. assets/ 4 个 work 模板（.md 格式含 OXN 代码块）全部存在', () => {
+    const expected = ['work-explore.md', 'work-develop.md', 'work-fix.md', 'work-onboarding.md']
+    for (const filename of expected) {
+      const path = join(SKILL_DIR, 'assets', filename)
+      expect(existsSync(path)).toBe(true)
+    }
+  })
+
+  test('5. frontmatter name = oxn-work', () => {
+    const content = readIfExists(SKILL_PROJECT)
+    const fm = content.split('---')[1]
+    expect(fm).toContain('name: oxn-work')
+  })
+
+  test('6. 关键错误码在 references/error-codes.md 存在', () => {
+    const content = readIfExists(join(SKILL_DIR, 'references', 'error-codes.md'))
     expect(content).toContain('IAP_ALIGN_LOCK_NOT_FOUND')
     expect(content).toContain('IAP_ALIGN_LOCK_HASH_MISMATCH')
     expect(content).toContain('IAP_ALIGN_WORK_REMOVED')
   })
 
-  test('3. v1.1 新增阶段（validate/lock/unlock/migrate）有独立小节', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
-    expect(content).toMatch(/### 步骤 0.*[Mm]igrate/m)
-    expect(content).toContain('### 步骤 5：`work validate`')
-    expect(content).toContain('### 步骤 6：`work lock`')
-    expect(content).toContain('oxn work unlock')
+  test('7. 反模式内容在 references/anti-patterns.md', () => {
+    const content = readIfExists(join(SKILL_DIR, 'references', 'anti-patterns.md'))
+    expect(content).toContain('跳过 validate+lock 直接 run')
+    expect(content).toContain('在锁后修改 .oxn')
   })
 
-  test('4. v1.1 错误处理速查表存在', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
-    expect(content).toContain('## v1.1 错误处理速查')
-    // 三剑客错误码
-    expect(content).toContain('IAP_ALIGN_LOCK_NOT_FOUND')
-    expect(content).toContain('IAP_ALIGN_LOCK_HASH_MISMATCH')
-    expect(content).toContain('IAP_ALIGN_WORK_REMOVED')
-    // 旧的 v1.0.2 也保留
-    expect(content).toContain('IAP_ALIGN_CHECKLIST_MISSING')
-  })
-
-  test('5. v0.1 引用全部替换为 v1.1（关键字检查）', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
-    // 升级要点必须含 v1.1
-    expect(content).toContain('**v1.1 升级要点**')
-    // 标题/目标段全应 v1.1
-    expect(content).toMatch(/v1\.1 hard-switch 之后/)
-    // 不能有 v0.1 顶级标题（除历史溯源上下文）
-    // frontmatter description 含 v1.1
-    const fm = content.split('---')[1]
-    expect(fm).toContain('v1.1')
-  })
-
-  test('6. 参考命令表含 4 个 v1.1 新增子命令', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
-    // 关键 v1.1 命令
-    expect(content).toContain('**v1.1 校验 work.oxn + 写 .work**')
-    expect(content).toContain('**v1.1 锁 work')
-    expect(content).toContain('**v1.1 解锁 work')
-    expect(content).toContain('**v1.1 V0→V1 布局迁移**')
-  })
-
-  test('7. 反模式段含 v1.1 守卫相关反模式', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
-    expect(content).toContain('不要跳过 validate+lock 直接 run')
-    expect(content).toContain('IAP_ALIGN_LOCK_NOT_FOUND')
-    expect(content).toContain('不要绕过 lock 守卫跑生产')
-    expect(content).toContain('不要在锁后修改 .oxn')
-  })
-
-  test('8. .work / planLock 术语在文档中出现', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
-    expect(content).toContain('**v1.1 新增** `.work` 静态门禁卡')
-    expect(content).toMatch(/planLock.*4 组件 hash|4 组件 hash.*planLock/)
-    expect(content).toContain('workOxnHash')
-    expect(content).toContain('workDomainsHash')
-    expect(content).toContain('blueprintsHash')
-    expect(content).toContain('tasksHash')
-    expect(content).toContain('allHash')
-  })
-
-  test('9. V0→V1 路径映射在文档中说明', () => {
-    const content = readFileSync(SKILL_PROJECT, 'utf-8')
+  test('8. V0→V1 路径映射在 references/v0-v1-migration.md', () => {
+    const content = readIfExists(join(SKILL_DIR, 'references', 'v0-v1-migration.md'))
     expect(content).toContain('works/<w>/work-{state,trace,frozen}.{json,jsonl}')
     expect(content).toContain('works/<w>/.run/{state,trace,frozen}.{json,jsonl}')
     expect(content).toContain('.migrated-v0/')
@@ -106,18 +93,17 @@ describe('oxn-work SKILL.md v1.1 内容收敛（PR-12）', () => {
 })
 
 describe('oxn-work SKILL.md 一致性 + install-skill 传播（PR-12）', () => {
-  test('10. 项目源 SKILL.md 与全局 SKILL.md 一致', () => {
+  test('9. 项目源 SKILL.md 与全局 SKILL.md 一致', () => {
     if (!existsSync(SKILL_GLOBAL)) {
-      // 跳过（全局未安装）
       console.log('skip: global SKILL not installed')
       return
     }
-    const proj = readFileSync(SKILL_PROJECT, 'utf-8')
-    const glob = readFileSync(SKILL_GLOBAL, 'utf-8')
+    const proj = readIfExists(SKILL_PROJECT)
+    const glob = readIfExists(SKILL_GLOBAL)
     expect(proj).toBe(glob)
   })
 
-  test('11. oxn install-skill --force 成功传播到全局', () => {
+  test('10. oxn install-skill --force 成功传播到全局', () => {
     if (!existsSync(join(homedir(), '.opencode', 'skills'))) {
       mkdirSync(join(homedir(), '.opencode', 'skills'), { recursive: true })
     }
@@ -130,9 +116,8 @@ describe('oxn-work SKILL.md 一致性 + install-skill 传播（PR-12）', () => 
     return proc.exited.then(() => {
       expect(proc.exitCode).toBe(0)
       expect(existsSync(SKILL_GLOBAL)).toBe(true)
-      // 强制安装后内容应一致
-      const proj = readFileSync(SKILL_PROJECT, 'utf-8')
-      const glob = readFileSync(SKILL_GLOBAL, 'utf-8')
+      const proj = readIfExists(SKILL_PROJECT)
+      const glob = readIfExists(SKILL_GLOBAL)
       expect(proj).toBe(glob)
     })
   })

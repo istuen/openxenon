@@ -94,6 +94,29 @@ function compileSkillToRoot(skill: OpenXenonSkill, skillsRoot: string, force: bo
     }
   }
 
+  if (skill.assets && skill.assets.length > 0) {
+    const assetsDir = join(skillDir, 'assets')
+    if (!existsSync(assetsDir)) {
+      mkdirSync(assetsDir, { recursive: true })
+    }
+
+    const assetsHashFile = join(skillDir, '.assets.hash')
+    const newAssetsHash = computeReferencesHash(skill.assets)
+    let needsWrite = true
+
+    if (existsSync(assetsHashFile)) {
+      const oldHash = readFileSync(assetsHashFile, 'utf-8').trim()
+      needsWrite = oldHash !== newAssetsHash
+    }
+
+    if (needsWrite || force) {
+      for (const asset of skill.assets) {
+        writeFileSync(join(assetsDir, asset.filename), asset.content, 'utf-8')
+      }
+      writeFileSync(assetsHashFile, newAssetsHash, 'utf-8')
+    }
+  }
+
   return {
     skillId: skill.id,
     outputPath,
