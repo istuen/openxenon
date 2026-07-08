@@ -386,7 +386,7 @@ const listSubcommand = defineCommand({
 // 内部调用 Asset/create.ts 的 create() 写 Asset 文件。
 // ---------------------------------------------------------------------------
 
-const VALID_ASSET_KINDS = ['domain', 'blueprint', 'stack', 'library', 'external'] as const
+const VALID_ASSET_KINDS = ['domain', 'blueprint', 'stack', 'roadmap', 'library', 'external'] as const
 type ValidAssetKind = (typeof VALID_ASSET_KINDS)[number]
 
 interface AssetModeCreateInput {

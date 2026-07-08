@@ -151,6 +151,8 @@ function detectEntityType(entity: { $type: string }): IntentEntityType {
       return 'blueprint'
     case 'StackDeclaration':
       return 'stack'
+    case 'RoadmapDeclaration':
+      return 'roadmap'
     case 'LibraryDeclaration':
       return 'library'
     case 'ExternalDeclaration':

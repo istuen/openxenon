@@ -25,6 +25,7 @@ import { registerEntityCompiler } from '../entity-registry.js'
 import { DomainCompiler } from './domain-compiler.js'
 import { BlueprintCompiler } from './blueprint-compiler.js'
 import { StackCompiler } from './stack-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
+import { RoadmapCompiler } from './roadmap-compiler.js' // 🆕 v0.6.1-alpha.1 (Asset 缺口全补 Phase 1)
 import { LibraryCompiler } from './library-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
 import { ExternalCompiler } from './external-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
 import { WorkCompiler } from './work-compiler.js'
@@ -32,12 +33,13 @@ import { TaskCompiler } from './task-compiler.js'
 import { ProofCompiler } from './proof-compiler.js'
 
 // ========================
-// 副作用：注册 8 个 EntityCompiler
+// 副作用：注册 9 个 EntityCompiler（v0.6.1-alpha.1 Asset 缺口全补：+roadmap）
 // ========================
 
 registerEntityCompiler(new DomainCompiler())
 registerEntityCompiler(new BlueprintCompiler())
 registerEntityCompiler(new StackCompiler()) // 🆕 v0.6.1-alpha.1 Batch 2
+registerEntityCompiler(new RoadmapCompiler()) // 🆕 v0.6.1-alpha.1 (Asset 缺口全补 Phase 1)
 registerEntityCompiler(new LibraryCompiler()) // 🆕 v0.6.1-alpha.1 Batch 2
 registerEntityCompiler(new ExternalCompiler()) // 🆕 v0.6.1-alpha.1 Batch 2
 registerEntityCompiler(new WorkCompiler())
@@ -51,6 +53,7 @@ registerEntityCompiler(new ProofCompiler())
 export { DomainCompiler } from './domain-compiler.js'
 export { BlueprintCompiler } from './blueprint-compiler.js'
 export { StackCompiler } from './stack-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
+export { RoadmapCompiler } from './roadmap-compiler.js' // 🆕 v0.6.1-alpha.1 (Asset 缺口全补 Phase 1)
 export { LibraryCompiler } from './library-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
 export { ExternalCompiler } from './external-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
 export { WorkCompiler } from './work-compiler.js'

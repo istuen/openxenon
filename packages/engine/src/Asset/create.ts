@@ -114,6 +114,24 @@ stack "${name}" {
 `
 }
 
+function createRoadmapTemplate(name: string): string {
+  return `// Roadmap: ${name}
+// Created by: oxn work create ${name} --type asset --asset-kind roadmap
+//
+// 路线图骨架。Roadmap 是简化版 Asset，仅含 links 分类
+// （不参与 references[] DAG 校验，oxn.langium 注释锁定）。
+// link 语法：裸字符串 target (RoadmapLink 是 unnamed rule，无需前缀)
+// target 引用其他 Asset 路径（@prj/domains/X 或 @prj/blueprints/Y）
+
+roadmap "${name}" {
+  abstract = "TODO: one-line description of the roadmap's scope"
+
+  "@prj/domains/MemberContext"
+  "@prj/blueprints/dev-workflow"
+}
+`
+}
+
 function createLibraryTemplate(name: string): string {
   return `// Library: ${name}
 // Created by: oxn work create ${name} --type asset --asset-kind library
@@ -182,6 +200,9 @@ export async function create(input: CreateInput): Promise<CreateResult> {
       break
     case 'stack':
       content = createStackTemplate(input.name)
+      break
+    case 'roadmap':
+      content = createRoadmapTemplate(input.name)
       break
     case 'library':
       content = createLibraryTemplate(input.name)
