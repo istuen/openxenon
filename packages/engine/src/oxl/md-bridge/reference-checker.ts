@@ -26,6 +26,7 @@
 import { join, isAbsolute } from 'node:path'
 import { existsSync } from 'node:fs'
 import { fs } from '@openxenon/engine/infra/filesystem.js'
+import { parseMdRef } from './parse-md-ref.js'
 
 // ========================
 // 类型
@@ -43,7 +44,7 @@ export interface ReferenceTarget {
   /** 严重程度 */
   severity: ReferenceSeverity
   /** 引用类型 */
-  kind: 'domain' | 'blueprint' | 'work' | 'task' | 'proof' | 'url' | 'path' | 'unknown'
+  kind: 'domain' | 'blueprint' | 'stack' | 'roadmap' | 'work' | 'task' | 'proof' | 'url' | 'path' | 'unknown'
 }
 
 export interface ReferenceCheckResult {
@@ -96,6 +97,35 @@ export function parseReferenceTarget(raw: string, _projectRoot?: string): Refere
       internal: true,
       severity: 'fatal',
       kind: detectOxnRefKind(trimmed),
+    }
+  }
+
+  // 2.5 v0.6.1 PR-2 (D-γ b): Work 内嵌引用 @md/<scope>/<name> 前缀
+  if (trimmed.startsWith('@md/')) {
+    try {
+      // scope 推断为 'blueprint'（reference-checker 不感知字段类型时保守走 blueprint 校验）
+      // 调用方可用 checkMdReferenceForField(scope) 显式指定
+      const parsed = parseMdRef(trimmed, 'blueprint')
+      const kindMap: Record<string, ReferenceTarget['kind']> = {
+        blueprints: 'blueprint',
+        domains: 'domain',
+        stacks: 'stack',
+        roadmaps: 'roadmap',
+      }
+      return {
+        raw: trimmed,
+        internal: true,
+        severity: 'fatal',
+        kind: kindMap[parsed.scope] ?? 'unknown',
+      }
+    } catch (_err) {
+      // parseMdRef 已抛 IAPError；这里 fallthrough 走 'unknown' + warn
+      return {
+        raw: trimmed,
+        internal: false,
+        severity: 'warn',
+        kind: 'unknown',
+      }
     }
   }
 

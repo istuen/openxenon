@@ -29,8 +29,8 @@ name: refactor-auth
 
 ## Tasks
 ### step1
-- blueprint: ci-pipeline
-- domain: CoreDomain
+- blueprint: @md/blueprints/ci-pipeline
+- domain: @md/domains/CoreDomain
 - part: build_module
   - skill_context: 打包并检查
   - probe: check_artifact_size

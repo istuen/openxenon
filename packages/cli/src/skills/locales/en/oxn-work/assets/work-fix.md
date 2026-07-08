@@ -20,25 +20,25 @@ name: fix-issue
 ## Tasks
 
 ### diagnose
-- blueprint: fix-issue
-- domain: WorkContext
+- blueprint: @md/blueprints/fix-issue
+- domain: @md/domains/WorkContext
 - part: diagnose
   - skill_context: Reproduce bug, record the scene
 
 ### locate
-- blueprint: fix-issue
-- domain: WorkContext
+- blueprint: @md/blueprints/fix-issue
+- domain: @md/domains/WorkContext
 - part: locate
   - skill_context: Identify root cause
 
 ### fix
-- blueprint: fix-issue
-- domain: WorkContext
+- blueprint: @md/blueprints/fix-issue
+- domain: @md/domains/WorkContext
 - part: fix
   - skill_context: Implement fix
 
 ### verify
-- blueprint: fix-issue
-- domain: WorkContext
+- blueprint: @md/blueprints/fix-issue
+- domain: @md/domains/WorkContext
 - part: verify
   - skill_context: Verify fix result

@@ -20,25 +20,25 @@ name: fix-issue
 ## Tasks
 
 ### diagnose
-- blueprint: fix-issue
-- domain: WorkContext
+- blueprint: @md/blueprints/fix-issue
+- domain: @md/domains/WorkContext
 - part: diagnose
   - skill_context: 复现 bug，记录现场
 
 ### locate
-- blueprint: fix-issue
-- domain: WorkContext
+- blueprint: @md/blueprints/fix-issue
+- domain: @md/domains/WorkContext
 - part: locate
   - skill_context: 定位根本原因
 
 ### fix
-- blueprint: fix-issue
-- domain: WorkContext
+- blueprint: @md/blueprints/fix-issue
+- domain: @md/domains/WorkContext
 - part: fix
   - skill_context: 实施修复方案
 
 ### verify
-- blueprint: fix-issue
-- domain: WorkContext
+- blueprint: @md/blueprints/fix-issue
+- domain: @md/domains/WorkContext
 - part: verify
   - skill_context: 验证修复结果

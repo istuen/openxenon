@@ -20,13 +20,13 @@ name: NewUserOnboarding
 ## Tasks
 
 ### RegisterMember
-- blueprint: dev-workflow
-- domain: MemberContext
+- blueprint: @md/blueprints/dev-workflow
+- domain: @md/domains/MemberContext
 - part: develop
   - skill_context: 实现 Member 注册 API，密码必须加密
 
 ### GrantWelcomeBonus
-- blueprint: dev-workflow
-- domain: OrderContext
+- blueprint: @md/blueprints/dev-workflow
+- domain: @md/domains/OrderContext
 - part: develop
   - skill_context: 调用 Order 上下文发放欢迎积分

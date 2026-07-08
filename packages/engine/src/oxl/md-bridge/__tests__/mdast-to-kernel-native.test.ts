@@ -154,7 +154,7 @@ name: e2e-w
 
 ## Tasks
 ### step1
-- blueprint: bp1
+- blueprint: @md/blueprints/bp1
 - part: p1
   - skill_context: sc
   - probe: pr1

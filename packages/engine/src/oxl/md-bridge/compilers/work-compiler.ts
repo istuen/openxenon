@@ -2,6 +2,7 @@
  * md-bridge/compilers/work-compiler.ts — Work EntityCompiler 实现
  *
  * v0.3 改革 PR-A（feat/v0.3-t18-md-native-grammar）
+ * v0.6.1 PR-2：D-γ b 锁定，Work 引用值用 `@md/<scope>/<name>` 前缀格式
  *
  * 角色：
  * - 编译：Langium WorkDeclaration → .md（## Context / ## Tasks + ### 实例 + 嵌套 part/probe 列表）
@@ -11,7 +12,7 @@
  * 关键不变量：
  * - H2 分类白名单：Context / Tasks
  * - Context 字段：goal / max_iterations / constraints
- * - Task 字段：blueprint / domain / 嵌套 part（含 skill_context + probe）
+ * - Task 字段：blueprint / domain（强制 `@md/...` 前缀，D-γ b）/ 嵌套 part（含 skill_context + probe）
  *
  * L0–L3 兼容性：
  * - L1-OXL 层（src/oxl/md-bridge/）
@@ -27,6 +28,7 @@ import type {
 } from '../entity-compiler.js'
 import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
 import { extractListFields, getScalar, getArray } from '../../md-pipeline/utils.js'
+import { parseMdRef } from '../parse-md-ref.js'
 import type { IntentEntityType } from '../pipeline.js'
 import type { List } from 'mdast'
 
@@ -212,7 +214,9 @@ export class WorkCompiler implements EntityCompiler {
     let contextObj: { goal: string; max_iterations: number; constraints: string[] } | null = null
     const tasks: Array<{
       name: string
+      /** v0.6.1 PR-2 (D-γ b): 格式 `@md/blueprints/<name>`；解析后存 bare name */
       blueprint: string
+      /** v0.6.1 PR-2 (D-γ b): 格式 `@md/domains/<name>`；解析后存 bare name */
       domain: string
       parts: Array<{
         name: string
@@ -239,10 +243,16 @@ export class WorkCompiler implements EntityCompiler {
           // Task 下嵌套 part（含 skill_context + probe）
           // 使用 raw mdast 提取（处理嵌套 probe 形如 "- probe: <name>\n    - scheme: ...")
           const partItems = ctx.h3List ? extractPartItemsFromList(ctx.h3List) : []
+          // v0.6.1 PR-2 (D-γ b): blueprint/domain 字段值强制 `@md/<scope>/<name>` 前缀
+          // parseMdRef 失败抛 IAPError REFERENCE_PREFIX_INVALID（轴=INTENT，action=AUTONOMOUS_RETRY）
+          const blueprintRaw = getScalar(fields, 'blueprint') ?? ''
+          const domainRaw = getScalar(fields, 'domain') ?? ''
+          const blueprintRef = blueprintRaw ? parseMdRef(blueprintRaw, 'blueprint') : null
+          const domainRef = domainRaw ? parseMdRef(domainRaw, 'domain') : null
           tasks.push({
             name: ctx.h3,
-            blueprint: getScalar(fields, 'blueprint') ?? '',
-            domain: getScalar(fields, 'domain') ?? '',
+            blueprint: blueprintRef ? blueprintRef.name : '',
+            domain: domainRef ? domainRef.name : '',
             parts: partItems,
           })
           break

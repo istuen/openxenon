@@ -26,6 +26,7 @@ import { parseDomainMd, parseBlueprintMd, parseWorkMd } from './remark-to-mdast.
 import { validateMdast } from './mdast-validator.js'
 import { extractHeadingContexts } from '../md-pipeline/utils.js'
 import { extractListFields } from '../md-pipeline/utils.js'
+import { parseMdRef } from './parse-md-ref.js'
 
 // ========================
 // 类型
@@ -248,8 +249,14 @@ function convertWorkToCompiled(_pipelineResult: PipelineOutput, ctx: MdastToKern
 function convertTaskToCompiled(pipelineResult: PipelineOutput, ctx: MdastToKernelContext): CompiledBlueprint {
   const hash = computeHash(ctx.content)
   const taskName = String(pipelineResult.frontmatter.name ?? pipelineResult.entityType ?? 'unnamed-task')
-  const blueprintRef = String(pipelineResult.frontmatter.blueprint ?? 'dev-workflow')
-  const domainRef = String(pipelineResult.frontmatter.domain ?? 'WorkContext')
+  // v0.6.1 PR-2 (D-γ b): frontmatter blueprint/domain 字段强制 `@md/<scope>/<name>` 前缀
+  // 解析失败抛 IAPError REFERENCE_PREFIX_INVALID（轴=INTENT）
+  const blueprintRaw = String(pipelineResult.frontmatter.blueprint ?? '@md/blueprints/dev-workflow')
+  const domainRaw = String(pipelineResult.frontmatter.domain ?? '@md/domains/WorkContext')
+  const blueprintParsed = parseMdRef(blueprintRaw, 'blueprint')
+  const domainParsed = parseMdRef(domainRaw, 'domain')
+  const blueprintRef = blueprintParsed.name
+  const domainRef = domainParsed.name
   const ref = `@prj/task/${taskName}`
 
   // part 块 → CompiledPart[]

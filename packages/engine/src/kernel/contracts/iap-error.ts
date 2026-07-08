@@ -63,6 +63,7 @@ export type IAPErrorCode =
   | 'INGEST_SCHEMA_INVALID'
   | 'PATH_CONFLICT' // v0.6 PR-1: Asset 路径冲突（v0.6 主路径 + v0.5 旧布局同时存在）
   | 'KIND_UNSUPPORTED' // v0.6 PR-1: Asset kind 不支持（如 work/proof 不参与 assetDir 配置）
+  | 'REFERENCE_PREFIX_INVALID' // v0.6.1 PR-2: Work 引用值非 `@md/...` 前缀格式（D-γ b 锁定）
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

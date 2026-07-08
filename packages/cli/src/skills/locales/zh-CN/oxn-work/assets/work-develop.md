@@ -20,8 +20,8 @@ name: develop-member
 ## Tasks
 
 ### register-member
-- blueprint: dev-workflow
-- domain: MemberContext
+- blueprint: @md/blueprints/dev-workflow
+- domain: @md/domains/MemberContext
 - part: develop
   - skill_context: 实现 Member 注册功能
 - part: test

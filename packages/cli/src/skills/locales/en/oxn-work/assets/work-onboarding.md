@@ -20,13 +20,13 @@ name: NewUserOnboarding
 ## Tasks
 
 ### RegisterMember
-- blueprint: dev-workflow
-- domain: MemberContext
+- blueprint: @md/blueprints/dev-workflow
+- domain: @md/domains/MemberContext
 - part: develop
   - skill_context: Implement Member registration API, password must be encrypted
 
 ### GrantWelcomeBonus
-- blueprint: dev-workflow
-- domain: OrderContext
+- blueprint: @md/blueprints/dev-workflow
+- domain: @md/domains/OrderContext
 - part: develop
   - skill_context: Call Order context to grant welcome bonus
