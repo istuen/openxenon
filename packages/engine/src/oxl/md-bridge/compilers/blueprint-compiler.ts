@@ -165,16 +165,15 @@ export class BlueprintCompiler implements EntityCompiler {
   // ====================
 
   parse(input: ParseInput): Record<string, unknown> {
-    const { mdast, frontmatter, options, filePath: _filePath } = input
+    const { mdast, frontmatter, filePath: _filePath } = input
 
-    if (options?.allowLegacyDirective !== true) {
-      const legacy = findLegacyIntentBlocks(mdast)
-      if (legacy.length > 0) {
-        throw new Error(
-          `E_MD_DEPRECATED_SYNTAX: ${legacy.length} legacy :::intent block(s) found. ` +
-            `Syntax deprecated in v0.3.0. Please use \`oxn blueprint compile\` to generate fresh .md.`,
-        )
-      }
+    // v0.6.1 PR-1: 安全网移除，无条件抛 E_MD_DEPRECATED_SYNTAX
+    const legacy = findLegacyIntentBlocks(mdast)
+    if (legacy.length > 0) {
+      throw new Error(
+        `E_MD_DEPRECATED_SYNTAX: ${legacy.length} legacy :::intent block(s) found. ` +
+          `Syntax deprecated in v0.3.0. Please use \`oxn blueprint compile\` to generate fresh .md.`,
+      )
     }
 
     const contexts = extractHeadingContexts(mdast)

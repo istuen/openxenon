@@ -115,10 +115,11 @@ legacy
     expect(() => compiler.parse({ mdast: root, frontmatter })).not.toThrow()
   })
 
-  test('allowLegacyDirective=true 跳过检测', () => {
-    // 当前测试只验证 allowLegacyDirective 选项存在；具体行为待 PR-B 集成测试
-    const compilerWithOption = new DomainCompiler()
-    expect(typeof compilerWithOption.parse).toBe('function')
+  test('v0.6.1 PR-1: ParseOptions 不再含 allowLegacyDirective', () => {
+    // v0.6.1 PR-1（RFC T19 收尾）后，allowLegacyDirective 安全网被移除；
+    // ParseOptions 退化为空接口（_reserved 占位）。
+    const compiler = new DomainCompiler()
+    expect(typeof compiler.parse).toBe('function')
   })
 })
 

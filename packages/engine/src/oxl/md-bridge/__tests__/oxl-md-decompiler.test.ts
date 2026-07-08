@@ -377,7 +377,7 @@ describe('oxl-md-decompiler: Round-trip via EntityRegistry', () => {
     const tree = parseMdSimple(decompiled.md)
     // 通过 compiler.parse() 验证
     const frontmatter = extractFrontmatter(decompiled.md)
-    const result = compiler.parse({ mdast: tree, frontmatter, options: { allowLegacyDirective: true } }) as {
+    const result = compiler.parse({ mdast: tree, frontmatter }) as {
       terms: Array<{ name: string; desc: string }>
     }
     expect(result.terms.length).toBeGreaterThanOrEqual(1)

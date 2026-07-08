@@ -40,7 +40,7 @@ function parseMdWithFrontmatter(content: string): { mdast: any; frontmatter: Rec
   if (yamlNode && 'value' in yamlNode) {
     for (const line of (yamlNode as { value: string }).value.split('\n')) {
       const m = line.match(/^(\w+):\s*(.*)$/)
-      if (m && m[1] && m[2] !== undefined) fm[m[1]] = m[2]
+      if (m?.[1] && m[2] !== undefined) fm[m[1]] = m[2]
     }
   }
   return { mdast: tree, frontmatter: fm }

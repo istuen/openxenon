@@ -165,18 +165,16 @@ export class DomainCompiler implements EntityCompiler {
   // ====================
 
   parse(input: ParseInput): Record<string, unknown> {
-    const { mdast, frontmatter, options, filePath: _filePath } = input
+    const { mdast, frontmatter, filePath: _filePath } = input
 
-    // 1. 校验旧 :::intent 块
-    if (options?.allowLegacyDirective !== true) {
-      const legacy = findLegacyIntentBlocks(mdast)
-      if (legacy.length > 0) {
-        throw new Error(
-          `E_MD_DEPRECATED_SYNTAX: ${legacy.length} legacy :::intent block(s) found at line ` +
-            `${legacy[0]?.position?.start.line ?? '?'}. ` +
-            `Syntax deprecated in v0.3.0. Please use \`oxn domain compile\` to generate fresh .md from your .oxn files.`,
-        )
-      }
+    // 1. 校验旧 :::intent 块（v0.6.1 PR-1：安全网移除，无条件抛错）
+    const legacy = findLegacyIntentBlocks(mdast)
+    if (legacy.length > 0) {
+      throw new Error(
+        `E_MD_DEPRECATED_SYNTAX: ${legacy.length} legacy :::intent block(s) found at line ` +
+          `${legacy[0]?.position?.start.line ?? '?'}. ` +
+          `Syntax deprecated in v0.3.0. Please use \`oxn domain compile\` to generate fresh .md from your .oxn files.`,
+      )
     }
 
     // 2. 提取 heading contexts

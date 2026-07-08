@@ -60,14 +60,15 @@ export interface ParseInput {
   filePath?: string
 }
 
-/** 解析选项 */
+/**
+ * 解析选项
+ *
+ * v0.6.1 PR-1（RFC T19 收尾）后：`allowLegacyDirective` 已删除。
+ * `:::intent{...}` 旧语法解析期**无条件**抛 `E_MD_DEPRECATED_SYNTAX`。
+ */
 export interface ParseOptions {
-  /**
-   * 是否允许旧 `:::intent{...}` 语法（v0.3 兼容期）
-   * - false（默认）：检测到 `:::intent` 块抛 E_MD_DEPRECATED_SYNTAX
-   * - true：跳过 `:::intent` 块（旧路径，仅 v0.3 过渡期使用，v0.4 移除）
-   */
-  allowLegacyDirective?: boolean
+  /** v0.6.1 后保留为空接口；预留 v0.7 扩展位 */
+  readonly _reserved?: never
 }
 
 /** 校验输入 */
