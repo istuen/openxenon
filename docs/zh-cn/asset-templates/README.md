@@ -2,15 +2,16 @@
 
 > **本目录是 Asset Paper Schema 的 4 个模板**，配合 [v0.6.1-alpha.1](../../.openxenon/pools/sprints/v0.6.1-alpha.1/) 分支落地。
 > **v0.6.1-alpha.1 目标**：把 Asset 从"规则堆砌"升级为"论文式结构 + 引用机制"。
+> **v0.3+ 格式**：所有模板采用 MD-native 格式（`.md`），OXL（`.oxn`）仅用于工具内部。
 
 ## 4 个模板
 
 | 模板 | 路径 | 用途 | AssetKind |
 |---|---|---|---|
-| **Domain** | [`domain.oxn`](./domain.oxn) | 业务限界上下文（term / ban / invariant）| `domain` |
-| **Workflow** | [`workflow.oxn`](./workflow.oxn) | 技术流程（slot DAG）| `workflow`（**v0.6.1-alpha.1 重命名**，原 `blueprint`）|
-| **Stack** | [`stack.oxn`](./stack.oxn) | 技术栈约束（runtime / linter / test）| `stack` |
-| **Roadmap** | [`roadmap.oxn`](./roadmap.oxn) | Asset 导航图（核心常读 / 按需加载 / 近期变更）| `roadmap`（**v0.6.1-alpha.1 新增**）|
+| **Domain** | [`domain.md`](./domain.md) | 业务限界上下文（term / ban / invariant）| `domain` |
+| **Blueprint** | [`blueprint.md`](./blueprint.md) | 技术流程（slot DAG）| `blueprint` |
+| **Stack** | [`stack.md`](./stack.md) | 技术栈约束（runtime / linter / test）| `stack` |
+| **Roadmap** | [`roadmap.md`](./roadmap.md) | Asset 导航图（核心常读 / 按需加载 / 近期变更）| `roadmap`（**v0.6.1-alpha.1 新增**）|
 
 ## 4 字段 Asset Paper Schema
 
@@ -26,22 +27,20 @@
 **Roadmap 特殊设计**（按用户最新指示）：
 - ❌ `references[]` **留空**（避免循环 DAG 校验）
 - 📌 body 内含 Asset 路径/链接（人工维护或后续解析器）
-- 📌 仅 Roadmap 类型适用此规则（Domain/Workflow/Stack 走完整 references[]）
+- 📌 仅 Roadmap 类型适用此规则（Domain/Blueprint/Stack 走完整 references[]）
 
 ## 使用方法
 
 ### 1. 复制模板
 ```bash
-cp docs/zh-cn/asset-templates/domain.oxn .openxenon/assets/domain/MyDomain.oxn
+cp docs/zh-cn/asset-templates/domain.md .openxenon/assets/domain/MyDomain.md
 ```
 
 ### 2. 替换占位符
-```oxn
+```markdown
 # 替换：
-- id: <name>          → id: MyDomain
+- name: <name>        → name: MyDomain
 - version: 0.1.0      → version: 1.0.0
-- author: <engineer>  → author: issac
-- date: <YYYY-MM-DD>  → date: 2026-07-08
 
 # 填充 abstract
 abstract: |
@@ -59,8 +58,8 @@ oxn work lock my-work
 | 阶段 | 任务 | 版本 |
 |---|---|---|
 | ✅ Batch 1 | 4 模板（骨架 + 1 示例）| v0.6.1-alpha.1 |
-| 🔜 Batch 2 | AssetKind 扩展 + OXL grammar + Asset Paper 4 字段 schema | v0.6.1-alpha.1 |
-| 🔜 Batch 3 | Workflow 重命名迁移脚本（blueprint → workflow）| v0.6.1-alpha.1 |
+| ✅ Batch 2 | AssetKind 扩展 + OXL grammar + Asset Paper 4 字段 schema | v0.6.1-alpha.1 |
+| 🔜 Batch 3 | MD-native 模板迁移（.oxn → .md）| v0.6.1-alpha.1 |
 | 🔜 Batch 4 | 引用计数算法 + DAG 校验 | v0.6.1-alpha.1 |
 | 🔜 Batch 5 | CLI 扩展（`oxn asset graph` 等）| v0.6.1-alpha.1 |
 | 🔜 Batch 6 | 测试 + 文档 | v0.6.1-alpha.1 |
