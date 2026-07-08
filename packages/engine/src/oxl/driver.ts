@@ -87,8 +87,14 @@ const unifiedDriver: UnifiedDriver = {
   },
 }
 
-/** 当前 active driver (统一 only, 旧 langium/mdast 别名映射为 unified) */
-let activeDriverName: DriverName = 'unified'
+/**
+ * 当前 active driver (统一 only, 旧 langium/mdast 别名映射为 unified)
+ *
+ * v0.6.1 PR-4 (D-β c 锁定): 默认从 'unified' → 'mdast' 语义保持。
+ * 'langium' 仍保留入口（兼容旧 worker 测试），但默认走 'mdast' 后端。
+ * v0.7.0 切割时 'langium' alias 完全删除（langium-driver/ 目录 git rm）。
+ */
+let activeDriverName: DriverName = 'mdast'
 
 /** 获取 active driver (返回 unified driver) */
 export function getActiveDriver(): UnifiedDriver {
@@ -111,7 +117,8 @@ export function getActiveDriverName(): DriverName {
 
 /** 列出所有支持的 driver 名 (兼容: 显示 3 个名, 实际都走 unified) */
 export function listDrivers(): DriverName[] {
-  return ['langium', 'mdast', 'unified']
+  // v0.6.1 PR-4: 把 'mdast' 提到首位（默认）；'unified' 保留兼容 alias；'langium' 标为 deprecated
+  return ['mdast', 'langium', 'unified']
 }
 
 /**

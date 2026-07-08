@@ -119,6 +119,32 @@ src/builtin/
 
 这些资产在 `oxn init` 时复制到 `.openxenon/`。
 
+---
+
+## Langium 退役时间表（v0.6.1 PR-4 + v0.7.0）
+
+> **D-β c 锁定**：v0.6.1 不卸 Langium（保留作 v0.6.x fallback）；v0.7.0 切割
+
+| 阶段 | 时间 | 状态 |
+|---|---|---|
+| **v0.6.0** 起 | unified-native（默认走 mdast + EntityCompiler）| ✅ 已完成 |
+| **v0.6.1 PR-1** | `:::intent{...}` 旧语法解析期抛 `E_MD_DEPRECATED_SYNTAX` | ✅ 已完成 |
+| **v0.6.1 PR-4** | Langium driver 标 `@deprecated`；`oxn <asset> validate --no-langium` 引入 | ✅ 当前 PR |
+| **v0.6.1 PR-4** | CI 守卫：`bun run check:no-langium-usage`（拦截新增 Langium import） | ✅ 当前 PR |
+| **v0.7.0 cutover**（8–12 周后）| `git rm` `packages/engine/src/oxl/langium-driver/` + `generated/` + 卸 `langium`/`langium-cli` npm dep | 🔲 待启动 |
+
+**用户行为变更**：
+
+1. **新代码禁止 import Langium** — 走 mdast + EntityCompiler 路径
+2. **CLI 默认走 mdast** — `oxn <asset> validate` 默认不动 Langium grammar
+3. **强校验**：`oxn <asset> validate --no-langium` 标志保证 mdast-only（v0.7.0 后唯一合法形式）
+
+**迁移指南（v0.7.0 准备）**：
+
+- 现有 `.oxn` 文件用 `oxn domain sync --all` / `oxn blueprint sync --all` 转 `.md`
+- 转完后用户代码不再需要 `import { URI } from 'langium'` — 删即可
+- 参考 [md-native-grammar-rfc.md](https://github.com/istuen/openxenon/blob/main/.openxenon/pools/sprints/v0.3-md-ssot/design/md-native-grammar-rfc.md) D9
+
 ## → 参考
 
 - 旧文档：[Probe 开发指南](./guides/probe-development.md)（旧 SSOT）

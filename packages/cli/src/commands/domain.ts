@@ -291,6 +291,10 @@ const validateSubcommand = defineCommand({
   args: {
     name: { type: 'positional', required: true, description: t('domain.validate.name') },
     'file-path': { type: 'string', description: t('domain.validate.filePath') },
+    '--no-langium': {
+      type: 'boolean',
+      description: 'v0.6.1 PR-4 (D-β c): 强制走 mdast 路径；如文件是 .oxn 则报错',
+    },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
@@ -298,6 +302,7 @@ const validateSubcommand = defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
     const customPath = ctx.args['file-path'] as string | undefined
+    const noLangium = ctx.args['--no-langium'] === true
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
@@ -330,6 +335,18 @@ const validateSubcommand = defineCommand({
           : existsSync(join(getDomainsDir(), `${kebab}.oxn`))
             ? join(getDomainsDir(), `${kebab}.oxn`)
             : primaryPath // 默认指向主格式,validate 时报 OXN_FILE_NOT_FOUND
+
+    // v0.6.1 PR-4 (D-β c): --no-langium 标志强制走 mdast 路径
+    if (noLangium && filePath.endsWith('.oxn')) {
+      return outputError(
+        {
+          code: 'OXN_NO_LANGIUM_REJECTED',
+          message: `--no-langium specified but file is .oxn: ${filePath}. Run \`oxn domain sync ${name}\` to convert to .md, then re-validate.`,
+          suggestion: 'drop --no-langium flag or migrate .oxn → .md first',
+        },
+        format,
+      )
+    }
 
     const result = await validateDomainFile(filePath)
     if (!result.ok) {

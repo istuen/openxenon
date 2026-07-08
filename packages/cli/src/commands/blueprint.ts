@@ -293,12 +293,17 @@ const validateSubcommand = defineCommand({
   },
   args: {
     name: { type: 'positional', required: true, description: t('blueprint.validate.name') },
+    '--no-langium': {
+      type: 'boolean',
+      description: 'v0.6.1 PR-4 (D-β c): 强制走 mdast 路径；如文件是 .oxn 则报错',
+    },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
+    const noLangium = ctx.args['--no-langium'] === true
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
@@ -317,6 +322,19 @@ const validateSubcommand = defineCommand({
     const primaryPath = resolveAssetPrimaryPath(projectRoot, 'blueprint', name, assetFormat, config)
     const altPath = resolveAssetAltPath(projectRoot, 'blueprint', name, assetFormat, config)
     const bpPath = existsSync(primaryPath) ? primaryPath : existsSync(altPath) ? altPath : primaryPath
+
+    // v0.6.1 PR-4 (D-β c): --no-langium 标志强制走 mdast 路径
+    if (noLangium && bpPath.endsWith('.oxn')) {
+      return outputError(
+        {
+          code: 'OXN_NO_LANGIUM_REJECTED',
+          message: `--no-langium specified but file is .oxn: ${bpPath}. Run \`oxn blueprint sync ${name}\` to convert to .md, then re-validate.`,
+          suggestion: 'drop --no-langium flag or migrate .oxn → .md first',
+        },
+        format,
+      )
+    }
+
     const result = await validateBlueprint(bpPath)
     if (!result.ok) {
       return outputError(
