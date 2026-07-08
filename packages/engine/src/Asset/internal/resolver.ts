@@ -1,14 +1,22 @@
 /**
- * Asset module — internal path resolver (v0.6 PR-5a)
+ * Asset module — internal path resolver (v0.6 PR-5a + v0.6.1 PR-3)
  *
  * 复用 PR-1 的 resolveAssetDir/resolveAndDetectAssetDir 并封装为 Asset 专用 helper。
+ * v0.6.1 PR-3 增量：resolveAssetFileFirst 函数，按 .md 优先 .oxn fallback 解析实际读取路径。
  */
 import { join } from 'path'
-import { resolveAssetDir, resolveAssetCandidates, type AssetKind } from '@openxenon/engine/infra/paths'
+import {
+  resolveAssetDir,
+  resolveAssetCandidates,
+  resolveAssetFileCandidatesV61,
+  type AssetKind,
+} from '@openxenon/engine/infra/paths'
 import { existsSync } from '@openxenon/engine/infra/filesystem'
 
 /**
  * 解析 asset 文件的完整路径（主路径优先，fallback 为后备）.
+ *
+ * v0.6.1 PR-3 保留向后兼容：默认 ext='oxn'，调用方可显式传 'md'。
  */
 export function resolveAssetFile(projectRoot: string, kind: AssetKind, name: string, ext: string = 'oxn'): string {
   const dir = resolveAssetDir(projectRoot, kind, null)
@@ -37,4 +45,26 @@ export function resolveAssetFileCandidates(
 export function detectAssetConflict(projectRoot: string, kind: AssetKind, name: string, ext: string = 'oxn'): boolean {
   const { primary, fallback } = resolveAssetFileCandidates(projectRoot, kind, name, ext)
   return existsSync(primary) && existsSync(fallback)
+}
+
+/**
+ * v0.6.1 PR-3: 4 级候选 .md 优先解析（用于读路径）。
+ *
+ * 返回第一个存在的文件路径。如果都没找到，返回 primary .md（让 create 命令新建）。
+ */
+export function resolveAssetFileFirst(
+  projectRoot: string,
+  kind: Exclude<AssetKind, 'library' | 'external'>,
+  name: string,
+): string {
+  const candidates = resolveAssetFileCandidatesV61(
+    projectRoot,
+    kind as 'domain' | 'blueprint' | 'stack' | 'roadmap',
+    name,
+    null,
+  )
+  for (const p of candidates) {
+    if (existsSync(p)) return p
+  }
+  return candidates[0]!
 }

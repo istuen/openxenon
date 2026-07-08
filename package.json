@@ -38,6 +38,7 @@
     "version:aggregate": "bun run scripts/version-aggregate.ts",
     "check:naming": "bun run scripts/check-naming.ts",
     "check:mdast": "bun run scripts/parse-mdast.ts",
+    "check:md-fallback": "bun run scripts/check-md-fallback-stats.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"

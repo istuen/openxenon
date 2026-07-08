@@ -59,9 +59,12 @@ See [Proof](./proof.md) for the full Proof axis concept.
 
 ### Lifecycle
 
+> **v0.6.1+**: New `oxn work create` defaults to writing `works/<n>/work.md` (canonical .md), while keeping `.oxn` as v0.6.x fallback;
+> Add flag `--oxn-legacy` to revert to .oxn writes.
+
 | Command | Effect |
 |---|---|
-| `oxn work create <id> --blueprint <bp>` | Create Work skeleton |
+| `oxn work create <id> --blueprint <bp>` | Create Work skeleton (default .md) |
 | `oxn work add-task --work <w> --task-name <t> --blueprint <bp> [--domain <d>]` | Create a Task |
 | `oxn work validate <w> [--json]` | Validate `work.oxn` + write `.work` gate card |
 | `oxn work lock <w> [--json]` | Lock the work (planLock + 4-component hash) |
@@ -107,9 +110,20 @@ See [Align](./align.md) for the full v1.1 8-stage flow.
 
 | Command | Effect |
 |---|---|
-| `oxn domain create <DomainName>` | Create Domain skeleton |
+| `oxn domain create <DomainName>` | Create Domain skeleton (default .md, add `--oxn-legacy` for .oxn) |
 | `oxn domain validate <DomainName>` | Validate Domain |
 | `oxn domain list` | List all Domains |
+| `oxn domain sync --all` | **v0.6.1**: Batch .oxn → .md sync (keeps .oxn as v0.6.x fallback) |
+
+### Asset path resolution (v0.6.1)
+
+CLI resolves assets in this order:
+1. `<primary>/<name>.md`     — v0.6 canonical
+2. `<primary>/<name>.oxn`    — v0.6.x fallback (v0.7.0 cutover planned)
+3. `<fallback>/<name>.md`   — v0.5 layout .md (if exists)
+4. `<fallback>/<name>.oxn`  — v0.5 legacy (compat window)
+
+Monitor .oxn count: `bun run check:md-fallback`
 
 See [Intent](./intent.md) for full Domain + Blueprint syntax.
 

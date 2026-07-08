@@ -59,9 +59,12 @@ oxn init --ai codex      # 生成 Codex Skill
 
 ### 生命周期
 
+> **v0.6.1+**：新 `oxn work create` 默认写 `works/<n>/work.md`（canonical .md），同时保留 `.oxn` 作 v0.6.x fallback；
+> 切回 .oxn 写：加 flag `--oxn-legacy`。
+
 | 命令 | 作用 |
 |---|---|
-| `oxn work create <id> --blueprint <bp>` | 创建 Work 骨架 |
+| `oxn work create <id> --blueprint <bp>` | 创建 Work 骨架（默认 .md）|
 | `oxn work add-task --work <w> --task-name <t> --blueprint <bp> [--domain <d>]` | 创建 Task |
 | `oxn work validate <w> [--json]` | 校验 work.oxn + 写 .work 门禁卡 |
 | `oxn work lock <w> [--json]` | 锁 work（planLock + 4 组件 hash） |
@@ -107,9 +110,20 @@ oxn init --ai codex      # 生成 Codex Skill
 
 | 命令 | 作用 |
 |---|---|
-| `oxn domain create <DomainName>` | 创建 Domain 骨架 |
+| `oxn domain create <DomainName>` | 创建 Domain 骨架（默认 .md，可加 `--oxn-legacy`）|
 | `oxn domain validate <DomainName>` | 校验 Domain |
 | `oxn domain list` | 列出所有 Domain |
+| `oxn domain sync --all` | **v0.6.1**：批量 .oxn → .md 同步（保留 .oxn 作 v0.6.x fallback）|
+
+### Asset 路径查找（v0.6.1）
+
+CLI 解析 Asset 时按以下顺序：
+1. `<primary>/<name>.md`     — v0.6 canonical
+2. `<primary>/<name>.oxn`    — v0.6.x fallback（v0.7.0 切割）
+3. `<fallback>/<name>.md`   — v0.5 layout .md（如果存在）
+4. `<fallback>/<name>.oxn`  — v0.5 legacy（兼容期）
+
+观察 .oxn 数量：`bun run check:md-fallback`
 
 见 [Intent](./intent.md) 了解 Domain + Blueprint 完整语法。
 

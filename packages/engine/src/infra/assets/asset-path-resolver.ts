@@ -23,14 +23,19 @@ import {
   type AssetKind,
   type ProjectConfig,
   resolveAssetDir,
-  resolveAssetCandidates,
-  type AssetFormat,
 } from '../paths'
 import { IAPError, IAPAction } from '../../errors'
 
 // Re-export for downstream consumers
-export { resolveAssetDir, resolveAssetCandidates, DEFAULT_ASSET_ROOT, DEFAULT_ASSET_DIRS }
-export type { AssetKind, ProjectConfig, AssetFormat }
+export {
+  resolveAssetDir,
+  resolveAssetCandidates,
+  resolveAssetFileCandidatesV61,
+  resolveAssetWritePathV61,
+  DEFAULT_ASSET_ROOT,
+  DEFAULT_ASSET_DIRS,
+} from '../paths'
+export type { AssetKind, ProjectConfig, AssetFormat } from '../paths'
 
 export interface ResolvedAssetPath {
   /** 实际使用的路径 */

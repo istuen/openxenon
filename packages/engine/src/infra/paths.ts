@@ -33,10 +33,13 @@ export function getProjectBoundaryPath(projectRoot: string): string {
 // -----------------------------------------------------------------------------
 export type SkillAdapterIdLiteral = 'opencode' | 'claude' | 'agents'
 
-// v0.5 Phase 3: asset format choice. CLI reads/writes the chosen format as the
+// v0.5 Phase 3 + v0.6.1 PR-3: asset format choice. CLI reads/writes the chosen format as the
 // "primary" source. The other format is auto-synced (when `autoSync` is true) on
-// every write. Default = `'oxn'` for backward compatibility — v0.4 users see no
-// behavior change.
+// every write.
+//
+// v0.6.1+: Default = 'md' — D-α c 锁定（v0.6.1 不删 .oxn，留作 v0.6.x fallback）；
+//            v0.7.0 切割时 .oxn 全删，'md' 成为唯一 canonical。
+// v0.5.x:  Default = 'oxn' — 向后兼容 v0.4 users。
 export type AssetFormat = 'oxn' | 'md'
 
 export interface ProjectConfig {
@@ -220,12 +223,73 @@ export function resolveAssetAltPath(
   return resolveAssetPrimaryPath(projectRoot, entity, name, alt, config)
 }
 
-/** v0.5 Phase 3: helper — get the asset format with default fallback */
+/** v0.5 Phase 3 + v0.6.1 PR-3: helper — get the asset format with default fallback.
+ *  v0.6.1+: 默认 'md'（D-α c 锁定）
+ *  v0.5.x:  默认 'oxn'
+ */
 export function resolveAssetFormat(config: ProjectConfig | null): AssetFormat {
-  return config?.assetFormat ?? 'oxn'
+  return config?.assetFormat ?? 'md'
 }
 
 /** v0.5 Phase 3: helper — get the autoSync flag with default fallback */
 export function resolveAutoSync(config: ProjectConfig | null): boolean {
   return config?.autoSync ?? true
+}
+
+// =============================================================================
+// v0.6.1 PR-3: Asset canonical 翻转 + .md 优先 + .oxn fallback
+//
+// D-α c 锁定：v0.6.1 不删 .oxn；保留作 v0.6.x fallback；v0.7.0 切割。
+// 因此读路径按 4 级候选降序，CLI 选第一个存在的；写路径默认 .md（除非 --oxn-legacy）。
+// =============================================================================
+
+/**
+ * v0.6.1 PR-3: 列出 asset 文件的 4 级候选路径（按优先级降序）
+ *
+ * 顺序：
+ *   1. `<primary>/<name>.md`     — v0.6 layout .md（canonical）
+ *   2. `<primary>/<name>.oxn`    — v0.6 layout .oxn（v0.6.x fallback）
+ *   3. `<fallback>/<name>.md`   — v0.5 layout .md（如有）
+ *   4. `<fallback>/<name>.oxn`  — v0.5 layout .oxn（v0.5 legacy）
+ *
+ * @param projectRoot 项目根目录
+ * @param entity domain | blueprint | stack | roadmap | library | external
+ * @param name asset 名（不含扩展名）
+ * @param config 可选 project config
+ * @returns 4 个候选路径，按优先级降序
+ */
+export function resolveAssetFileCandidatesV61(
+  projectRoot: string,
+  entity: Exclude<AssetKind, 'library' | 'external'>,
+  name: string,
+  config: ProjectConfig | null = null,
+): readonly string[] {
+  const { primary, fallback } = resolveAssetCandidates(projectRoot, entity, config)
+  return [
+    // 1. .md primary（v0.6 canonical）
+    join(primary, `${name}.md`),
+    // 2. .oxn primary（v0.6 layout fallback — D-α c 锁定）
+    join(primary, `${name}.oxn`),
+    // 3. .md fallback（v0.5 layout .md 同步产物）
+    join(fallback, `${name}.md`),
+    // 4. .oxn fallback（v0.5 legacy）
+    join(fallback, `${name}.oxn`),
+  ] as const
+}
+
+/**
+ * v0.6.1 PR-3: 返回 asset 默认写入路径（canonical = .md）。
+ *
+ * 与读路径不同：写路径只产 1 个目标（默认 .md），不走 fallback。
+ * CLI 通过 flag (--oxn-legacy) 切到 .oxn 写入。
+ */
+export function resolveAssetWritePathV61(
+  projectRoot: string,
+  entity: Exclude<AssetKind, 'library' | 'external'>,
+  name: string,
+  config: ProjectConfig | null = null,
+  format: 'md' | 'oxn' = 'md',
+): string {
+  const baseDir = resolveAssetDir(projectRoot, entity, config)
+  return join(baseDir, `${name}.${format}`)
 }
