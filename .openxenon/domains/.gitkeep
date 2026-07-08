@@ -1,0 +1,4 @@
+# Reserved for v0.5 fallback compat (Asset resolveAssetDir fallback path).
+# v0.6 起新位置在 .openxenon/assets/domains/ (DEFAULT_ASSET_DIRS.domain)
+# 此目录保留以兼容老项目 readProjectConfig fallback 探测。
+# ExampleStackDomain.oxn 已废弃，移到 .openxenon/.archived/domains/。

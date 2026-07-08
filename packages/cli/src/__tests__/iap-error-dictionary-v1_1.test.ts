@@ -21,7 +21,9 @@ import { join } from 'path'
 
 const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
 const PROJECT_ROOT = join(import.meta.dir, '..', '..', '..', '..')
-const DOMAINS_DIR = join(PROJECT_ROOT, '.openxenon', 'domains')
+// v0.6.1-alpha.1: Domain 物理位置迁到 .openxenon/assets/domains/ (v0.6 默认布局);
+// .openxenon/domains/ 保留为 v0.5 fallback 兼容。
+const DOMAINS_DIR = join(PROJECT_ROOT, '.openxenon', 'assets', 'domains')
 const IAP_DOMAIN = join(DOMAINS_DIR, 'iap-error-context.oxn')
 
 describe('IAPError 字典 v1.1 收敛（PR-11）', () => {
@@ -121,10 +123,10 @@ describe('IAPError 字典 v1.1 解析可执行性', () => {
     await init.exited
     expect(init.exitCode).toBe(0)
 
-    // 拷贝真实 IAPErrorContext 域文件
+    // 拷贝真实 IAPErrorContext 域文件（v0.6 默认布局：assets/domains/）
     const content = readFileSync(IAP_DOMAIN, 'utf-8')
-    mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'domains', 'iap-error-context.oxn'), content)
+    mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'iap-error-context.oxn'), content)
 
     // 解析验证
     const v = Bun.spawn(['bun', CLI_PATH, 'domain', 'validate', 'IAPErrorContext', '--json'], {
