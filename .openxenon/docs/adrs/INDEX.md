@@ -127,26 +127,31 @@
 
 ## 写作约定
 
-每条 ADR 包含：
+每条 ADR 包含 frontmatter（status / date / supersedes / superseded-by）+ 7 节结构：
 
 ```yaml
----
-ADR-编号: NNNN-<slug>
-来源: <源文件名> (<日期>)
-抽取日: YYYY-MM-DD
-状态: Adopted | Partially Adopted | Proposed | Superseded
-影响层: L0-Schema | L0-Contract | L0-Processor | L1-Infra | L1-OXL | L2-Builtin | L2-Work | L3 | 跨层
----
-
-# ADR-NNNN: <标题>
-
-## 决策（What）
-## 背景（Why）
-## 后果（Consequences）
-
-## 参考
-- 源文件: ...
+status: PROPOSED        # PROPOSED | ACCEPTED | DEPRECATED | SUPERSEDED
+date: YYYY-MM-DD
+supersedes: null        # ADR-NNNN (如适用)
+superseded-by: null     # ADR-NNNN (如适用)
 ```
+
+### ADR 7 节模板
+
+1. **Context** — 背景与动机：是什么问题 / 决策触发？现有约束？涉及哪些利益相关者？
+2. **Decision** — 决策本身（**只写决策**，不解释为什么——为什么放 Consequences 节）
+3. **Consequences** — 影响与后果（正面 / 风险 / 衍生工作）
+4. **Alternatives Considered**（可选但推荐）— 其他方案 A/B + 优缺点
+5. **References** — 相关文档 / 链接
+
+### 编号规则
+
+| 区间 | 含义 | 来源 |
+|---|---|---|
+| `0000` | 模板 | `dev/architecture/adr/0000-template.md`（已合并到此 INDEX） |
+| `0001` ~ `0047` | docs-tmp 时代 ADR | 从 `.openxenon/forges/splits/archive/docs-tmp-era/` 迁入 |
+| `0048` ~ `0051` | Asset Paper 4 ADR | 从 `.openxenon/forges/splits/archive/docs-tmp-era/decisions/` 迁入 |
+| `0052+` | 新 ADR | 新决策按顺序编号 |
 
 ## 元数据
 

@@ -1,137 +1,71 @@
-# dev/ — OpenXenon 开发者文档
+# dev/ — OpenXenon 开发者操作指南
 
-> **本目录是 OpenXenon 项目自身的开发文档，不是用户文档。**
+> **本目录是 OpenXenon 维护者 + 贡献者写给开发者看的操作手册，不是产品文档。**
 >
-> 三层文档架构：
+> 完整的三层文档架构见 [AGENTS.md](../AGENTS.md) 「文档 SSOT 规则」段：
 >
-> | 层 | 用途 | 路径 |
-> |---|---|---|
-> | **L1 用户文档** | 用 OXN 的工程师读 | [`../docs/`](../docs/) |
-> | **L2 开发文档**（本目录） | 维护者 + AI Agent 读 | `dev/` |
-> | **L3 OXN 自举** | OXN 自己读 / 写 | [`../.openxenon/`](../.openxenon/) |
+> - **L1 对外** — `docs/{zh-cn,en}/` — 用户看的 SSOT
+> - **L2 对内-沉淀** — `.openxenon/docs/{adrs,rfcs}/` — append-only 决策记录
+> - **L3 对内-探索** — `.openxenon/pools/{drafts,issues,journals,spikes}/` — 流动探索
+> - **L4 运行时** — `.openxenon/{works,proofs,.cache}/` — IAP 执行产物
 >
-> **AI Agent 入口**：[`AGENTS.md`](./AGENTS.md)
-> **完整 SSOT 交叉索引**：[`SST-MAP.md`](./SST-MAP.md)
+> 本目录是 **L1 和 L2 之外的入口**——为"新贡献者入门"、"本地开发流程"、"发布流程"等"做事"类内容留位置。
 
 ---
 
-## 1. 目录结构
+## 1. 当前内容
 
-| 子目录 | 内容 | 谁写 |
-|---|---|---|
-| `architecture/` | 内部架构（含 L0-L3 宪法、错误码、模块边界） | 维护者 |
-| `architecture/adr/` | 全部架构决策记录（ADR-0001+） | 维护者 |
-| `changelog/` | 全部版本 changelog 片段（v0.0.1 ~ v0.8.0+） | 维护者 |
-| `changelog/_archive/` | SUPERSEDED 片段 | 仅审计 |
-| `releases/` | 发布说明（合并 changelog + 升级指南） | 维护者 |
-| `design/` | 长文设计稿 / RFC | 维护者 + AI |
-| `horizon/` | 前瞻（v0.7+ 战略、长期路线） | 维护者 |
-| `guides/` | 开发者操作指南（如何本地开发 / 调试 / 发布） | 维护者 |
-| `decisions/` | 重大决策记录（不在 ADR 范畴的 meta 决策） | 维护者 |
-| `roadmap/` | 路线图（实际路线 + 历史归档） | 维护者 |
-| `roadmap/_archive/` | SUPERSEDED 路线图 | 仅审计 |
-
----
-
-## 2. 受众
-
-| 角色 | 读什么 |
+| 文件 | 用途 |
 |---|---|
-| **OXN 维护者（issac）** | 全部 |
-| **AI Agent 协作者** | 必读 `AGENTS.md` + `SST-MAP.md`；按需读其他 |
-| **新贡献者** | 先读本 README → `guides/getting-started-dev.md` |
-| **用户** | 请移步 [`../docs/`](../docs/) |
+| `README.md`（本文件） | 开发者操作指南入口 |
 
----
+## 2. 待建文档（贡献者可加）
+
+| 主题 | 预期文件 | 触发时机 |
+|---|---|---|
+| 新贡献者入门 | `getting-started-dev.md` | 新人第一次 clone 仓库 |
+| 本地开发流程 | `dev-workflow.md` | 多人协作时统一约定 |
+| 发布流程 | `release-process.md` | v0.7+ 发版时落地 |
+| 调试指南 | `debugging.md` | 排查常见 issue 时落地 |
+| AI Agent 协作 | `ai-collaboration.md` | 跨多人 + AI 时补充 |
+
+> **新文件创建方式**：
+> 1. 用 `oxn work create <work-name> --type doc --blueprint doc-promote` 走 IAP
+> 2. 落地后 `git add dev/<filename> && git commit -m "docs(dev): add <title>"`
+> 3. 更新本 README「当前内容」表
 
 ## 3. 跨层引用规则（强约束）
 
-### 3.1 单向引用
-
 ```
-L1 docs/  ──→  L2 dev/        ✅ 允许（用户深入了解）
-L2 dev/   ──→  L1 docs/       ❌ 禁止（dev/ 应独立可读）
-L2 dev/   ──→  L3 .openxenon/ ✅ 允许（RFC 引用具体 sprint 文档）
-L3 .openxenon/ ──→ L2 dev/    ❌ 禁止（OXN 自举不引用开发者文档）
-L3 .openxenon/ ──→ L1 docs/   ⚠️ 谨慎（OXN 自举读用户 SSOT）
-```
-
-### 3.2 守门机制
-
-由 `scripts/check-doc-boundary.ts` 在 pre-commit 自动校验：
-
-- L1 docs/ 不准反向引用 L3 .openxenon/
-- L2 dev/ 不准反向引用 L1 docs/
-- L1 docs/architecture/ 不准含 `ADR-\d{4}` 编号（迁 dev/architecture/adr/）
-
----
-
-## 4. 文档 SSOT 优先级
-
-冲突解决：高优先级覆盖低优先级。
-
-| 优先级 | 路径 | 用途 |
-|---|---|---|
-| 1 | [`AGENTS.md`](./AGENTS.md) | AI Agent 行为宪法 |
-| 2 | [`SST-MAP.md`](./SST-MAP.md) | 交叉索引 |
-| 3 | `architecture/` | 内部架构 SSOT |
-| 4 | `architecture/adr/` | 决策记录 SSOT |
-| 5 | `changelog/` | 版本变更 SSOT |
-| 6 | `roadmap/` | 路线图 SSOT |
-| 7 | `design/` / `horizon/` | 长文设计 / 前瞻 |
-| — | `_archive/` | 归档，**不**参与 SSOT |
-
----
-
-## 5. ADR 编号规则
-
-| 区间 | 含义 | 来源 |
-|---|---|---|
-| `0000` | 模板 | `architecture/adr/0000-template.md` |
-| `0001` ~ `0047` | docs-tmp 时代 ADR | 从 `.openxenon/forges/splits/archive/docs-tmp-era/` 迁入 |
-| `0048` ~ `0051` | Asset Paper 4 ADR | 从 `.openxenon/forges/splits/archive/docs-tmp-era/decisions/` 迁入 |
-| `0052+` | 新 ADR | 新决策按顺序编号 |
-
-每篇 ADR 必须：
-1. 顶部含 `status: PROPOSED | ACCEPTED | DEPRECATED | SUPERSEDED`
-2. 顶部含 `date: YYYY-MM-DD`
-3. 至少含 `## Context` / `## Decision` / `## Consequences` 三节
-4. 标题格式：`ADR-NNNN: <一句话标题>`
-
----
-
-## 6. 维护脚本
-
-```bash
-# 三层文档边界守门
-bun scripts/check-doc-boundary.ts
-
-# 双语镜像同步率
-bun scripts/check-doc-sst-sync.ts
-
-# L3 SUPERSEDED RFC 守门
-bun scripts/check-superseded-rfcs.ts
-
-# 聚合入口
-bun run check:doc-sst
+L1 docs/  ──→  L2 .openxenon/docs/      ✅ 允许（用户深入了解）
+L2 .openxenon/docs/ ──→  L1 docs/        ❌ 禁止（沉淀层应独立可读）
+L2 .openxenon/docs/ ──→  L3 .openxenon/pools/  ✅ 允许（引用探索稿）
+L3 .openxenon/pools/ ──→  L2 .openxenon/docs/  ❌ 禁止（探索稿不引用决策）
+dev/  ──→  L1/L2/L3   ✅ 允许（开发者手册引用 SSOT）
+L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南）
 ```
 
-均在 `lefthook.yml` 的 pre-commit hook 中自动运行。
+> **写入规则**：
+> - dev/ 内容应独立可读（被 SSOT 引用时 dev/ 文件也可被读到）
+> - dev/ 不应被 `bun run docs:build` 构建（仅作工程内部手册）
+> - dev/ 内容的 SSOT 仍由 `docs/` + `.openxenon/docs/` 提供
 
----
+## 4. 与 dev-workflow Blueprint 的关系
 
-## 7. 相关 RFC 与决策
+`dev-workflow` 是 OXN Asset 系统中技术流程 Blueprint（slot DAG），dev/ 目录是其"人类可读"对应物。dev/ 文档可被 Blueprint slot 引用作为说明文字，但 Blueprint slot DAG 才是机器可执行的真值源。
 
-- **v0.6 IAP 架构重构**：[`../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md`](../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
-- **v0.6.x observability-roadmap**：[`../.openxenon/pools/sprints/v0.6.x-observability-roadmap/`](../.openxenon/pools/sprints/v0.6.x-observability-roadmap/)（**SUPERSEDED**，见 `decisions/`）
-- **三层架构决策**：[`decisions/2026-07-XX-three-tier-doc-arch.md`](./decisions/2026-07-XX-three-tier-doc-arch.md)
+## 5. 相关 SSOT
 
----
+- 文档三层架构：[AGENTS.md](../AGENTS.md) 「文档 SSOT 规则」
+- ADR 写作模板 + 7 节格式：[.openxenon/docs/adrs/INDEX.md](../.openxenon/docs/adrs/INDEX.md)
+- 文档工程约束（三层分离 + ADR append-only + promote 走 Work）：[.openxenon/assets/domains/DocEngineeringContext.md](../.openxenon/assets/domains/DocEngineeringContext.md)
+- 临时文档提升流程：[.openxenon/pools/README.md](../.openxenon/pools/README.md)
 
-## 8. 版本
+## 6. 版本
 
 | 字段 | 值 |
 |---|---|
-| 创建 | 2026-07-09 |
+| 创建 | 2026-07-09（最初 v0.6 落地） |
+| 重构 | 2026-07-09（从「L2 独立开发文档区」收敛为「开发者操作指南专用入口」） |
 | 关联 PR | feat/doc-three-tier-arch |
 | 最近更新 | 2026-07-09 |

@@ -138,6 +138,37 @@ pools/drafts/xxx-draft.md（散落，无格式）
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
+## 开发者操作指南
+
+> **`dev/` 目录 = 维护者 + 贡献者写给开发者看的操作手册，不是产品文档。**
+>
+> 完整目录结构与跨层引用规则见 [`dev/README.md`](./dev/README.md)。本段是核心摘要。
+
+**当前 `dev/` 内容**：
+
+| 文件 | 用途 |
+|---|---|
+| `dev/README.md` | 开发者操作指南入口（待建：getting-started / dev-workflow / release-process / debugging / ai-collaboration） |
+
+**跨层引用规则**（与 dev/README 同步）：
+
+```
+L1 docs/  ──→  L2 .openxenon/docs/      ✅ 允许（用户深入了解）
+L2 .openxenon/docs/ ──→  L1 docs/        ❌ 禁止（沉淀层应独立可读）
+L2 .openxenon/docs/ ──→  L3 .openxenon/pools/  ✅ 允许（引用探索稿）
+L3 .openxenon/pools/ ──→  L2 .openxenon/docs/  ❌ 禁止（探索稿不引用决策）
+dev/  ──→  L1/L2/L3   ✅ 允许（开发者手册引用 SSOT）
+L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南）
+```
+
+**新 dev/ 文档的添加流程**：
+
+1. 用 `oxn work create <name> --type doc --blueprint doc-promote` 走 IAP（template fill → validate → lock → run → submit → finalize）
+2. 落地后 `git add dev/<filename> && git commit -m "docs(dev): add <title>"`
+3. 更新 `dev/README.md`「当前内容」表 + 本段摘要
+
+**v0.6+ 三层文档守门**：由 `bun scripts/check-doc-boundary.ts` 在 pre-commit 自动校验（TODO：v0.7 落地）。
+
 ## v0.2 路线图分支策略（已完成，归档）
 
 > **状态**：T1a–T14 全部 done 并合入；T15 spike 待启动（不入 main）。下表为历史归档，不再以"进行中"维护。
