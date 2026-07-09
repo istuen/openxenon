@@ -43,10 +43,13 @@ synced-at: 2026-07-08T13:52:19.207Z
 - desc: oxn work submit --work-name <w> --task <t>: 推进 task 内 part 状态;通过 Probe -> 写 frozen.json (PROOF verdict)
 
 ### WorkType
-- desc: 4 子模式: develop (功能开发, 默认) / fix (Bug 修复) / explore (探索调研, 不写 code) / onboarding (新人入门)
+- desc: 6 子模式: develop (功能开发, 默认) / fix (Bug 修复) / explore (探索调研, 不写 code) / onboarding (新人入门) / asset (Asset 生命周期, v0.6.1 Batch 2) / doc (文档工作, v0.6.1 — 站点构建用 doc-publish Blueprint, 临时文档提升用 doc-promote Blueprint)
 
 ### AssetMode
 - desc: v0.6.1-alpha.1 Batch 2 新增: --type asset --asset-kind <kind>;走 Asset 生命周期 (不是 task DAG)
+
+### DocMode
+- desc: v0.6.1 新增: --type doc;走 DocEngineeringContext;由引用的 blueprint 决定流水线（doc-publish = 站点构建 / doc-promote = 临时文档提升 / 其他 = 自定义文档工作）
 
 ### BirthCert
 - desc: Work .work 静态门禁卡: planLock (4 hash) + assets (域/蓝图 fileHash) + context (goal/constraints/maxIterations) + diagnostics;写一次后只读
@@ -81,7 +84,9 @@ synced-at: 2026-07-08T13:52:19.207Z
   - oxn work new
   - oxn work task create
   - auto-promote-work
-- desc: WorkV0Layout, V0Bypass, BypassLock, BypassValidate, BypassMigrate, oxn-work-new, oxn-work-task-create, PhaseSkip, DirectSubmit, UnlockedRun, InlineAsset, oxn work new, oxn work task create, auto-promote-work
+  - DirectCopyToDocs
+  - SkipPromoteWork
+- desc: WorkV0Layout, V0Bypass, BypassLock, BypassValidate, BypassMigrate, oxn-work-new, oxn-work-task-create, PhaseSkip, DirectSubmit, UnlockedRun, InlineAsset, oxn work new, oxn work task create, auto-promote-work, DirectCopyToDocs, SkipPromoteWork
 
 ## Invariants
 
@@ -89,7 +94,7 @@ synced-at: 2026-07-08T13:52:19.207Z
 - value: 8 阶段顺序不可跳: init -> migrate -> create -> add-task -> validate -> lock -> run -> submit;违反 -> IAPError 拒绝
 
 ### inv-2
-- value: --type 必填 4 个子模式之一: develop / fix / explore / onboarding;v0.6.1-alpha.1 Batch 2 加 --type asset (Asset 模式)
+- value: --type 必填 6 个子模式之一: develop / fix / explore / onboarding / asset / doc;v0.6.1 加 --type doc（文档工作）
 
 ### inv-3
 - value: validate 成功前不能 lock: 缺 .work.planLock -> IAP_ALIGN_LOCK_NOT_FOUND (YIELD_TO_HUMAN)

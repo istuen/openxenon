@@ -1,14 +1,14 @@
 ---
 entity: domain
 version: 0.3.0
-name: DocContext
+name: VitePressContext
 oxn-source-sha: ee3fd499334b3d6ec64cf4332106ec7d4c6a6c3752f422ec0d1646c290154920
-synced-at: 2026-07-08T13:52:19.200Z
+synced-at: 2026-07-09T17:30:00.000Z
 ---
 
-# Domain: DocContext
+# Domain: VitePressContext
 
-> OpenXenon 产品文档站点（VitePress + GitHub Pages）限界上下文：沉淀站点/章节/locale/sidebar 等核心概念，约束术语与不变式
+> OpenXenon 产品文档站点（VitePress + GitHub Pages）限界上下文：沉淀站点/章节/locale/sidebar 等核心概念，约束术语与不变式。原 DocContext 于 v0.6.1 更名以区分文档站点构建与文档工程
 
 ## Terms
 
@@ -88,3 +88,5 @@ synced-at: 2026-07-08T13:52:19.200Z
 
 ### inv-11
 - value: 工程设计沉淀 .openxenon/forges/ v0.1.0 后从 git 移除（不对外）
+
+<!-- auditTrail: evolved from DocContext at 2026-07-09T09:01:39.611Z -->
