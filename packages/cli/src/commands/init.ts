@@ -13,19 +13,32 @@ import { readProjectConfig, writeProjectConfig } from './project-config-io'
 import { compileAllSkills, formatCompilationReport } from './skill-compiler'
 import { DEFAULT_ADAPTERS, isSkillAdapterId, type SkillAdapterId } from '../skills/adapters'
 
-const PROJECT_BOUNDARY_GITIGNORE = `# Runtime state (not for Git; personal/sandbox data)
+const PROJECT_BOUNDARY_GITIGNORE = `# .openxenon/ 工程工作台 .gitignore 模板（v0.7）
+# 默认每个目录单独一行忽略。工程师需 tracked 某目录时注释掉对应行即可。
+# 详见 AGENTS.md「文档 SSOT 规则」 + docs/zh-cn/core-concepts.md §1 E1 Asset。
+
+# ─── 运行时产物（始终 ignored）───
 works/
 proofs/
+.cache/
+issues/
+.work
 **/*-state.json
 **/*-trace.jsonl
 **/*-frozen.json
 proofs/*/frozen.json
 
-# PR-1: Global Domain slim 索引（AI 离线读；可由 oxn domain index 重建）
-.cache/
+# ─── 资产（默认 ignored；工程师需 tracked 则注释掉下行）───
+assets/
 
-# PR-2: Work 静态门禁卡（CLI 写；可由 oxn work validate 重建）
-.work
+# ─── 对内-沉淀（tracked，无需 ignore）───
+# docs/adrs/, docs/rfcs/ 默认 tracked（ADR append-only / RFC 定稿后不变）
+
+# ─── 对内-探索（tracked，无需 ignore）───
+# pools/drafts/, pools/issues/, pools/journals/, pools/spikes/ 默认 tracked
+
+# ─── 老布局 fallback（保留兼容位；空则保留 .gitkeep）───
+# domains/  — v0.5 fallback（保留 .gitkeep）
 `
 
 function ensureGlobalBoundary(): void {

@@ -1,5 +1,6 @@
 import { homedir } from 'os'
 import { join } from 'path'
+import { getBoundaryDir } from './oxnrc'
 
 export const BOUNDARY_DIR = '.openxenon'
 
@@ -59,6 +60,8 @@ export interface ProjectConfig {
   autoSync?: boolean
   /** v0.6 PR-1: Asset 根目录（默认 'assets'） */
   assetRoot?: string
+  /** v0.7: 运行时边界目录名（默认 '.openxenon'） */
+  boundaryDir?: string
   /** v0.6 PR-1: 每类 asset 的子目录（默认 {domain: 'domain', blueprint: 'blueprint', stack: 'stack'}） */
   assetDirs?: {
     domain?: string
@@ -84,17 +87,21 @@ export const DEFAULT_ASSET_DIRS = {
 export type AssetKind = 'domain' | 'blueprint' | 'stack' | 'roadmap' | 'library' | 'external' // 🆕 v0.6.1-alpha.1 Batch 2: library + external
 
 /**
- * v0.6 PR-1: 解析单个 asset kind 的实际目录路径。
+ * v0.6 PR-1 + v0.7: 解析单个 asset kind 的实际目录路径。
  *
  * 优先级：
- *   1. config.assetDirs[kind]（v0.6 新配置）
- *   2. config.assetRoot + DEFAULT_ASSET_DIRS[kind]（v0.6 默认）
- *   3. 旧布局回退：BOUNDARY_DIR/{domain|blueprint|stack}/（v0.5 兼容）
+ *   1. config.assetDirs[kind]（v0.6 新配置，绝对路径直接返回）
+ *   2. config.assetDirs[kind] 相对路径（v0.7：以 ./ 或 ../ 开头不 join boundary）
+ *   3. config.assetRoot + DEFAULT_ASSET_DIRS[kind]（v0.6 默认）
+ *      — v0.7：assetRoot 以 ./ 或 ../ 开头时不 join boundary（跳出 .openxenon/）
+ *   4. 旧布局回退：<boundaryDir>/{domain|blueprint|stack}/（v0.5 兼容）
  *
  * 注：回退仅在主路径不存在时启用，避免双写造成 IAP_ASSET_PATH_CONFLICT。
+ * boundaryDir 默认读 BOUNDARY_DIR 常量，config.boundaryDir 可覆盖（v0.7）。
  */
 export function resolveAssetDir(projectRoot: string, kind: AssetKind, config: ProjectConfig | null = null): string {
-  const boundary = join(projectRoot, BOUNDARY_DIR)
+  const boundaryDir = getBoundaryDir(config)
+  const boundary = join(projectRoot, boundaryDir)
   const custom = config?.assetDirs?.[kind]
   const hasAssetRoot = config?.assetRoot != null
   const root = config?.assetRoot ?? DEFAULT_ASSET_ROOT
@@ -104,34 +111,45 @@ export function resolveAssetDir(projectRoot: string, kind: AssetKind, config: Pr
     return custom
   }
 
-  // 路径 2：v0.5 兼容 — config 只设 assetDirs（无 assetRoot）→ custom 直接作子目录
+  // 路径 2（v0.7 新增）：custom 相对路径以 ./ 或 ../ 开头 → 直接 join projectRoot，不走 boundary
+  if (custom && (custom.startsWith('./') || custom.startsWith('../'))) {
+    return join(projectRoot, custom)
+  }
+
+  // 路径 3：v0.5 兼容 — config 只设 assetDirs（无 assetRoot）→ custom 直接作子目录
   if (custom && !hasAssetRoot) {
     return join(boundary, custom)
   }
 
-  // 路径 3：v0.6 — config 同时设 assetRoot + assetDirs → custom 嵌套在 assetRoot 下
+  // 路径 4：v0.6 — config 同时设 assetRoot + assetDirs → custom 嵌套在 assetRoot 下
   if (custom) {
     return join(boundary, root, custom)
   }
 
-  // 路径 4：默认 assetRoot + DEFAULT_ASSET_DIRS[kind]
+  // 路径 5（v0.7 新增）：assetRoot 相对路径以 ./ 或 ../ 开头 → 直接 join projectRoot，不走 boundary
+  if (root.startsWith('./') || root.startsWith('../')) {
+    return join(projectRoot, root, DEFAULT_ASSET_DIRS[kind])
+  }
+
+  // 路径 6：默认 assetRoot + DEFAULT_ASSET_DIRS[kind]
   return join(boundary, root, DEFAULT_ASSET_DIRS[kind])
 }
 
 /**
- * v0.6 PR-1: 返回指定 kind 的所有候选路径（按优先级降序），用于探测
+ * v0.6 PR-1 + v0.7: 返回指定 kind 的所有候选路径（按优先级降序），用于探测
  * 和 fallback 兼容。CLI 在 read/write 前会按顺序检查：
- *   1. 主路径（config 决定）
- *   2. 旧路径（.openxenon/<kind>/）
+ *   1. 主路径（config 决定，含 boundaryDir 配置化）
+ *   2. 旧路径（<boundaryDir>/<kind>/）
  */
 export function resolveAssetCandidates(
   projectRoot: string,
   kind: AssetKind,
   config: ProjectConfig | null = null,
 ): { primary: string; fallback: string } {
-  const boundary = join(projectRoot, BOUNDARY_DIR)
+  const boundaryDir = getBoundaryDir(config)
+  const boundary = join(projectRoot, boundaryDir)
   const primary = resolveAssetDir(projectRoot, kind, config)
-  // 旧布局 fallback：.openxenon/<plural>/（domains/blueprints/stack/roadmaps）
+  // 旧布局 fallback：<boundaryDir>/<plural>/（domains/blueprints/stack/roadmaps）
   const fallbackDir =
     kind === 'domain'
       ? 'domains'

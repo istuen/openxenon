@@ -24,6 +24,7 @@
 
 import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
+import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 
 export type LeaderMode = 'reference' | 'mvp'
 
@@ -35,6 +36,11 @@ export interface OxnConfig {
   version: 1
   leaderMode?: LeaderMode
   /**
+   * v0.7: 运行时边界目录名（默认 '.openxenon'）。可重命名为 '.oxn' 或项目已有目录。
+   * 渐进式迁移：未配置时所有 join(..., BOUNDARY_DIR, ...) 仍用默认常量。
+   */
+  boundaryDir?: string
+  /**
    * v0.2 T8: 是否在 Hall 扫描 forges/ 时打印 WARN
    * 默认 false (兼容期静默); Sprint 6 flip 开关
    */
@@ -43,6 +49,26 @@ export interface OxnConfig {
 }
 
 export const OXN_RC_FILENAME = '.oxnrc'
+
+/**
+ * v0.7: 解析运行时边界目录名
+ * - 优先读 config.boundaryDir
+ * - 默认回退到常量 BOUNDARY_DIR（当前为 '.openxenon'）
+ * - 返回纯目录名，调用方自行 join(projectRoot, ...)
+ *
+ * 参数兼容 OxnConfig 和 ProjectConfig（两者都可选 boundaryDir 字段）。
+ */
+export function getBoundaryDir(config: { boundaryDir?: string } | null | undefined): string {
+  return config?.boundaryDir ?? BOUNDARY_DIR
+}
+
+/**
+ * v0.7: 解析运行时边界目录的完整路径
+ * - 组合 getBoundaryDir + projectRoot
+ */
+export function getBoundaryPath(projectRoot: string, config: { boundaryDir?: string } | null | undefined): string {
+  return join(projectRoot, getBoundaryDir(config))
+}
 
 /**
  * Try to load and parse a .oxnrc from the project root. Returns `null` when
