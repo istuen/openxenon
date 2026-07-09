@@ -76,6 +76,13 @@ bun test                    # bun test，约 130 秒，1959 个测试 / 148 文�
 - 生成文件与测试文件已被 `tsconfig` 与 biome 排除——不要在其中加入生产代码。
 - 版本号：`bun run version:check` / `bun run version:sync`（权威版本号在 `package.json`；变更日志片段存放在 `.changes/<version>-<slug>.md`）。
 - `scripts/restore-skills.sh` 与 `scripts/verify-skill-structure.sh` 用于维护 `.opencode/skills/` 下的 OpenCode 技能包。
+- **Skill 工作流（SSOT → 编译产物）**：
+  - **SSOT**：`packages/cli/src/skills/locales/{zh-CN,en}/<skill>/instruction.md`（与 `assets/`、`references/`）
+  - **编译产物**：`.opencode/skills/<skill>/SKILL.md` + `~/.opencode/skills/<skill>/SKILL.md`（两个都不 git 追踪）
+  - **编译触发**：`oxn init`（自动跑 `compileAllSkills` 从 SSOT 重新生成 SKILL.md）
+  - **分发触发**：`oxn install-skill`（把已编译的 SKILL.md 拷贝到目标 AI 助手路径如 `~/.opencode/skills/`、`~/.claude/skills/`）
+  - **正确维护流**：修改 `instruction.md` → 跑 `bun run packages/cli/src/index.ts init -f` → `.opencode/skills/` 自动重建
+  - **错误反模式**：不要手动编 `.opencode/skills/<skill>/SKILL.md`——下次 `init -f` 会从 SSOT 覆盖你的修改
 
 ## 文档三层架构
 
