@@ -74,22 +74,32 @@ Thumbs.db
 
 openspec/
 
-# Forge 设计笔记（v0.1.0 发布后从 git 移除：内部设计文档不对外）
-# 已通过 git rm --cached 从历史中移除（保留本地文件，停止追踪）
-.openxenon/forges/
-
-# v0.2 T8 Intent Pool: 池内设计文档不入仓（运行时产物），仅 .gitkeep 保留入仓保目录骨架
-# 注：gitignore 不支持 !(pattern) bash glob 语法。用 `**/*` + `!**/.gitkeep` 双行写法等价。
-.openxenon/pools/*/*/frozen.json
-.openxenon/pools/*/**/*
-.openxenon/pools/*.md
-.openxenon/pools/*/*.md
-!.openxenon/pools/*/.gitkeep
-
 # ─────────────────────────────────────────────────────────────
-# 6. 业务运行时数据
-#    实际规则已下沉到 .openxenon/.gitignore（domain/works/proof 等）
+# 6. .openxenon/ 工程工作台 — git 规则
+#    tracked（确定性）：docs/adrs/, docs/rfcs/, pools/drafts/, pools/issues/, pools/journals/, pools/spikes/
+#    ignored（运行时）：works/, proofs/, .cache/, issues/, *-state.json, *-trace.jsonl, *-frozen.json
+#    资产 assets/：默认 ignored（工程师按需注释对应行 opt-in tracked）
+#    详见 .openxenon/.gitignore（运行时产物）与 .openxenon/pools/.gitignore
 # ─────────────────────────────────────────────────────────────
+
+# 运行时产物（始终 ignored）
+.openxenon/works/
+.openxenon/proofs/
+.openxenon/.cache/
+.openxenon/issues/
+.openxenon/**/*-state.json
+.openxenon/**/*-trace.jsonl
+.openxenon/**/*-frozen.json
+.openxenon/.work
+
+# 资产（默认 ignored；工程师需 tracked 则注释掉下行）
+.openxenon/assets/
+
+# 开发性文档池（tracked）：docs/, pools/drafts/, pools/issues/, pools/journals/, pools/spikes/
+# 仅 ignore 池内运行时产物
+.openxenon/pools/**/*-state.json
+.openxenon/pools/**/*-trace.jsonl
+.openxenon/pools/**/*-frozen.json
 
 # ts-compiles probe 临时 tsconfig（运行时写盘，跑完即删）
 .tsconfig.oxn-*.json

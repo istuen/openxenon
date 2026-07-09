@@ -1,3 +1,8 @@
+# .openxenon/.gitignore — 工程工作台运行时产物
+# 三层文档规则见 AGENTS.md「文档 SSOT 规则」
+#   tracked：docs/adrs/, docs/rfcs/, pools/{drafts,issues,journals,spikes}/, assets/（工程师按需 opt-in）
+#   ignored：works/, proofs/, .cache/, issues/, *-state.json, *-trace.jsonl, *-frozen.json
+
 # Runtime state (not for Git; personal/sandbox data)
 works/
 works-md/
@@ -8,9 +13,9 @@ config.json
 **/*-trace.jsonl
 **/*-frozen.json
 
-# PR-1: Global Domain slim 索引（AI 离线读；可由 oxn domain index 重建）
+# Global Domain slim 索引（AI 离线读；可由 oxn domain index 重建）
 .cache/
 issues/
 
-# PR-2: Work 静态门禁卡（CLI 写；可由 oxn work validate 重建）
+# Work 静态门禁卡（CLI 写；可由 oxn work validate 重建）
 .work
