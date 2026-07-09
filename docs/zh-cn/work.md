@@ -35,23 +35,25 @@ Work (一次完整 IAP 周期)
 
 **关键**：一次 Intent 不一定要开发——可以是探索、讨论然后落盘成文档。IAP 范式不做强制开发路径假设。
 
-## 2. 3 大 Work 模式
+## 2. 单一 Work 流程（Blueprint 驱动）
 
-所有模式走同一套 8 阶段流程（init→migrate→create→add-task→validate→lock→run→submit→finalize）：
+**v0.7+ 收敛**：Work 不再有 mode（task/explore/edit/workType 已删除），所有编排差异由 Blueprint 承载。一套 8 阶段流程（init→migrate→create→add-task→validate→lock→run→submit→finalize）覆盖所有场景：
 
-| 模式 | Intent | Align | Proof | Skill 入口 |
-|---|---|---|---|---|
-| **Asset 模式** | 选资产类型（domain/blueprint/stack） | 填内容 + 落盘 | 语法校验 + planLock | `oxn work --type asset` |
-| **Develop 模式** | 选边界 + goal | AI 写代码（Round 对齐） | 跑 lint/test/build | `oxn work --type develop` |
-| **Proof 模式** | 声明探针 | 准备环境 | 跑探针 + frozen.json | `oxn work --type proof` |
+| 场景 | 入口 | 选什么 |
+|---|---|---|
+| **想摸清/报告** | `oxn work create <w>` + fork `assets/work-explore.md` 模板 | Blueprint = `explore-analyze-report` |
+| **单域开发** | `oxn work create <w> --blueprint dev-workflow` | Blueprint = `dev-workflow` |
+| **bug 修复** | `oxn work create <w> --blueprint fix-issue` | Blueprint = `fix-issue` |
+| **跨域编排** | `oxn work create <w> --blueprint dev-workflow` + 多 domain ref | Blueprint = `dev-workflow` (多 domain) |
+| **编辑 Asset** | `oxn work create <asset> --asset-kind X` | 不创建 Work，走 Asset Short Circuit |
 
-**v0.6 调整**：Insight 从 "Work Mode D" 升为 E4 涌现层。Work 只负责交付，Insight 负责涌现。
+**奥姆剃刀**：删 `mode`/`workType`/`workTypeToMode`/`EditTarget` 一切行为零影响的残留字段。Blueprint slots/deps/observe/props 已经表达了"开发/修复/探索/重构/单域/跨域"所有差异。
 
-**Develop 模式 4 子模式**（在 Align 阶段内部）：
-- explore（探索性工作：1 task + 1 blueprint slot）
-- develop（单域深度开发：1 task 多 part = blueprint 多 slot）
-- fix（多 task 串行 deps）
-- onboarding（跨域编排：work 级 N domain + task 按需 inject）
+**Asset Short Circuit**：`--asset-kind X` 单独触发，跳过 work.oxn 骨架，直接写 `.openxenon/assets/{kinds}/{name}.oxn`。这是 CLI 子命令级别的特化路由，**不是 Work mode**。
+
+**v0.6 调整**（仍生效）：Insight 从 "Work Mode D" 升为 E4 涌现层。Work 只负责交付，Insight 负责涌现。
+
+**模板选择器**（`work-{explore,develop,fix,onboarding}.md`，Skill 包内）：是 AI 选 Blueprint 的辅助表，**不是引擎 mode**。模板直接 fork 改名即可。
 
 ## 3. Round 多轮 IAP 循环（v0.6 新增）
 

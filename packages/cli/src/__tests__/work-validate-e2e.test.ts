@@ -4,14 +4,14 @@
 // 覆盖：
 //   1. happy path：validate 成功后落 3 个产物（domains.json + blueprints.json + .work）
 //   2. .work 包含 assets.domains / assets.blueprints（fileHash 64-hex）
-//   3. .work.mode 与 --type 映射
-//   4. 失败 path：domain ref 找不到 → 不写任何产物 + 报告
-//   5. 失败 path：blueprint ref 找不到 → 同上
-//   6. 失败 path：task.oxn 缺失 → 同上
-//   7. lock 后 validate 拒绝覆盖
-//   8. 重复 validate 幂等（idempotent）
-//   9. 未 init 的项目 → OXN_NO_PROJECT
-//   10. 不存在的 work → OXN_WORK_NOT_FOUND
+//   3. 失败 path：domain ref 找不到 → 不写任何产物 + 报告
+//   4. 失败 path：blueprint ref 找不到 → 同上
+//   5. 失败 path：task.oxn 缺失 → 同上
+//   6. lock 后 validate 拒绝覆盖
+//   7. 重复 validate 幂等（idempotent）
+//   8. 未 init 的项目 → OXN_NO_PROJECT
+//   9. 不存在的 work → OXN_WORK_NOT_FOUND
+//   10. v0.7+：无 --type 参数（mode 概念已删除）
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
@@ -123,7 +123,6 @@ describe('oxn work validate (PR-6)', () => {
     const r = JSON.parse((await runCli(['work', 'validate', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
     expect(r.data.valid).toBe(true)
-    expect(r.data.mode).toBe('task') // default
     expect(r.data.assetCounts).toEqual({ domains: 2, blueprints: 1, tasks: 2 })
 
     // 3 个产物文件全部存在
@@ -141,7 +140,6 @@ describe('oxn work validate (PR-6)', () => {
     const cert = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'), 'utf-8'))
     expect(cert.kind).toBe('work-birth-cert')
     expect(cert.workName).toBe('demo')
-    expect(cert.mode).toBe('task')
     expect(cert.goal).toBe('test goal')
     expect(cert.constraints).toEqual(['c1', 'c2'])
     expect(cert.maxIterations).toBe(4)
@@ -152,28 +150,16 @@ describe('oxn work validate (PR-6)', () => {
     expect(cert.planLock).toBe(null)
   })
 
-  test('.work.mode 与 --type 映射：task/explore/edit', async () => {
+  test('v0.7+：--type 参数已移除（不再接受）', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a'])
 
-    for (const t of ['task', 'explore', 'edit'] as const) {
-      // 每次切换 mode 都要重写 work.oxn（validate 时读到的 mode）
-      const r = JSON.parse((await runCli(['work', 'validate', 'demo', '--type', t, '--json'])).stdout)
-      expect(r.ok).toBe(true)
-      expect(r.data.mode).toBe(t)
-    }
-  })
-
-  test('未知 --type 兜底为 task + warning', async () => {
-    await initProject()
-    setupProject()
-    setupWork('demo', ['a'])
-
-    const r = JSON.parse((await runCli(['work', 'validate', 'demo', '--type', 'unknown-mode', '--json'])).stdout)
+    // citty 对 unknown arg 默认忽略（不报错）；关键是不再映射 mode
+    const r = JSON.parse((await runCli(['work', 'validate', 'demo', '--type', 'task', '--json'])).stdout)
     expect(r.ok).toBe(true)
-    expect(r.data.mode).toBe('task')
-    expect((r.data.warnings as string[]).some((w) => w.includes('unknown workType'))).toBe(true)
+    expect(r.data.mode).toBeUndefined() // 字段已删除
+    expect(r.data.workType).toBeUndefined() // 字段已删除
   })
 
   // ───────── 失败 path ─────────

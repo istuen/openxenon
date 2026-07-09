@@ -15,19 +15,11 @@ import {
   createBirthCert,
   readWorkFile as readBirthCert,
   writeWorkFile,
-  type WorkMode,
   type BirthCert,
   type DomainAssetEntry,
   type BlueprintAssetEntry,
 } from './birth-cert'
 import { hashFile } from './plan-hash'
-
-export function workTypeToMode(workType: string): { mode: WorkMode; warning?: string } {
-  if (workType === 'task' || workType === 'explore' || workType === 'edit') {
-    return { mode: workType }
-  }
-  return { mode: 'task', warning: `unknown workType "${workType}" → mode fallback to "task"` }
-}
 
 interface UnresolvedRef {
   kind: 'domain' | 'blueprint'
@@ -52,10 +44,9 @@ export async function validateAndWriteArtifacts(params: {
   projectRoot: string
   workName: string
   work: WorkDeclaration
-  workType: string
   missingTaskOxn: string[]
 }): Promise<ValidateArtifactsResult> {
-  const { projectRoot, workName, work, workType, missingTaskOxn } = params
+  const { projectRoot, workName, work, missingTaskOxn } = params
   const warnings: string[] = []
 
   const workOxnPath = getWorkOxnPath(projectRoot, workName)
@@ -106,9 +97,6 @@ export async function validateAndWriteArtifacts(params: {
     outPath: blueprintsJsonPath,
   })
 
-  const { mode, warning: modeWarn } = workTypeToMode(workType)
-  if (modeWarn) warnings.push(modeWarn)
-
   const existing = readBirthCert(projectRoot, workName)
   if (existing.ok && existing.cert.planLock !== null) {
     return {
@@ -148,7 +136,6 @@ export async function validateAndWriteArtifacts(params: {
 
   const cert: BirthCert = createBirthCert({
     workName,
-    mode,
     goal,
     constraints,
     maxIterations,

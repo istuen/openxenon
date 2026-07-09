@@ -98,7 +98,7 @@ import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/wo
 import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import { migrateWorkToV1 } from '@openxenon/engine/Work/work-migrator'
 import { renderWorkSkeleton } from '@openxenon/engine/Work/work-skeleton'
-import { validateAndWriteArtifacts, workTypeToMode } from '@openxenon/engine/Work/work-validator'
+import { validateAndWriteArtifacts } from '@openxenon/engine/Work/work-validator'
 import { snapshotContext, makeReport, type DerivedWorkState } from '@openxenon/engine/Work/work-reporter'
 import { collectUnresolvedRefDiagnostics } from '@openxenon/engine/Work/work-diagnostics'
 import { isWorkStarted } from '@openxenon/engine/Work'
@@ -379,11 +379,12 @@ const listSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
-// v0.6.1-alpha.1 Batch 2: Asset mode create handler
+// Asset Short Circuit (--asset-kind)
 //
-// 当 `oxn work create <name> --type asset --asset-kind <kind>` 调用时，
+// 当 `oxn work create <name> --asset-kind <kind>` 调用时，
 // 走 Asset 创建流程（domain/blueprint/stack/library/external），
 // 内部调用 Asset/create.ts 的 create() 写 Asset 文件。
+// v0.7+：移除 `--type` 参数；`--asset-kind` 单独触发短路，无需 `--type asset` 前缀。
 // ---------------------------------------------------------------------------
 
 const VALID_ASSET_KINDS = ['domain', 'blueprint', 'stack', 'roadmap', 'library', 'external'] as const
@@ -461,15 +462,14 @@ const createSubcommand = defineCommand({
     blueprint: {
       type: 'string',
       alias: 'b',
-      required: false, // v0.6.1-alpha.1 Batch 2: --asset-kind 时不要求 blueprint
+      required: false, // --asset-kind 短路时不要求 blueprint
       description: t('work.create.args.blueprint'),
     },
     'blueprint-file': { type: 'string', description: t('work.create.args.blueprintPath') },
     'output-dir': { type: 'string', description: t('work.create.args.outputDir') },
-    type: { type: 'string', alias: 't', default: 'task', description: t('work.create.args.workType') },
     'asset-kind': {
       type: 'string',
-      description: 'v0.6.1-alpha.1 Batch 2: Asset mode — domain | blueprint | stack | library | external',
+      description: t('work.create.args.assetKind'),
     },
     force: { type: 'boolean', description: t('work.create.args.force') },
     '--json': { type: 'boolean', description: t('format.json') },
@@ -478,7 +478,6 @@ const createSubcommand = defineCommand({
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
-    const workType = (ctx.args.type as string) || 'task'
     const assetKindArg = ctx.args['asset-kind'] as string | undefined
     const customBlueprint = ctx.args['blueprint-file'] as string | undefined
     const blueprintNameArg = ctx.args.blueprint as string | undefined
@@ -496,8 +495,7 @@ const createSubcommand = defineCommand({
       )
     }
 
-    // v0.6.1-alpha.1 Batch 2: Asset mode dispatch
-    // 当 --asset-kind 指定时，调用 Asset create 逻辑（不创建 work）
+    // Asset Short Circuit: --asset-kind 直接走 Asset create（不创建 work）
     if (assetKindArg) {
       return await handleAssetModeCreate({
         assetKind: assetKindArg,
@@ -665,20 +663,14 @@ const createSubcommand = defineCommand({
       }
     }
 
-    // 无 blueprint：写 .openxenon/work/<type>/<id>.oxn 简化骨架（旧 mvp 路径）
-    // v0.5 Phase 3: 路径由 config 决定
-    const workDir = join(projectRoot, BOUNDARY_DIR, 'work', workType)
-    if (!existsSync(workDir)) {
-      ensureDirectory(workDir)
-    }
-
-    // v0.5 Phase 3: 主路径由 config.assetFormat 决定（与 blueprint-based 路径对称）
+    // 无 blueprint：写 .openxenon/works/<w>/work.oxn 简化骨架
+    // v0.7+：移除 workType 子目录（旧 mvp 路径），统一在 works/<w>/ 下
     const workFileFinal = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
     const workAltFileFinal = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
     const workFileDir = join(workFileFinal, '..')
     if (!existsSync(workFileDir)) mkdirSync(workFileDir, { recursive: true })
     if (existsSync(workFileFinal)) {
-      return outputError({ code: 'OXN_WORK_EXISTS', message: t('work.workExists', { workName, workType }) }, format)
+      return outputError({ code: 'OXN_WORK_EXISTS', message: t('work.workExists', { workName }) }, format)
     }
 
     const workOxnContent = renderWorkSkeleton(
@@ -712,10 +704,9 @@ const createSubcommand = defineCommand({
         data: {
           workId: workName,
           workName,
-          type: workType,
           path: workFileFinal,
         },
-        human: t('work.created', { workName, workType, workFilePath: workFileFinal }),
+        human: t('work.created', { workName, workFilePath: workFileFinal }),
       },
       format,
     )
@@ -732,14 +723,12 @@ const validateSubcommand = defineCommand({
   },
   args: {
     name: { type: 'positional', required: true, description: t('work.args.workName') },
-    type: { type: 'string', description: t('work.validate.args.type') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
     const workName = ctx.args.name as string
-    const workType = (ctx.args.type as string | undefined) ?? 'task'
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
@@ -804,7 +793,6 @@ const validateSubcommand = defineCommand({
       projectRoot,
       workName,
       work,
-      workType,
       missingTaskOxn,
     })
 
@@ -839,8 +827,6 @@ const validateSubcommand = defineCommand({
         ok: true,
         data: {
           workName,
-          workType: 'workspace',
-          mode: workTypeToMode(workType).mode,
           blueprintRef: work.blueprints?.[0]?.name,
           valid: true,
           errors: [],
@@ -854,7 +840,6 @@ const validateSubcommand = defineCommand({
         },
         human:
           `Work validate OK\n` +
-          `  Mode:        ${workTypeToMode(workType).mode}\n` +
           `  Domain refs: ${a.assetCounts.domains} resolved\n` +
           `  Blueprint refs: ${a.assetCounts.blueprints} resolved\n` +
           `  Task count:  ${a.assetCounts.tasks}\n` +

@@ -61,7 +61,6 @@ export function validateTaskName(name: string): { valid: boolean; error?: string
 export interface CreateWorkParams {
   projectRoot: string
   workName: string
-  workType: string
   assetFormat: AssetFormat
   autoSync: boolean
   blueprint?: { name?: string; file?: string }
@@ -80,7 +79,7 @@ export interface CreateWorkResult {
 }
 
 export async function createWork(params: CreateWorkParams): Promise<CreateWorkResult> {
-  const { projectRoot, workName, workType, assetFormat, autoSync, force } = params
+  const { projectRoot, workName, assetFormat, autoSync, force } = params
   const blueprintDecl = params.blueprint
   const customOutputDir = params.outputDir
 
@@ -185,17 +184,13 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
     }
   }
 
-  const workDir = join(projectRoot, BOUNDARY_DIR, 'work', workType)
-  if (!existsSync(workDir)) {
-    ensureDirectory(workDir)
-  }
-
+  // v0.7+：无 workType 子目录（不再有 mode）；works/<w>/ 统一布局
   const workFileFinal = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
   const workAltFileFinal = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
   const workFileDir = join(workFileFinal, '..')
   if (!existsSync(workFileDir)) mkdirSync(workFileDir, { recursive: true })
   if (existsSync(workFileFinal)) {
-    throw new Error(`work "${workName}" already exists (type: ${workType})`)
+    throw new Error(`work "${workName}" already exists`)
   }
 
   const workOxnContent = renderWorkSkeleton(

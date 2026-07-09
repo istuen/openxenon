@@ -332,7 +332,6 @@ async function regenerateV1Artifacts(
 
   const cert: BirthCert = createBirthCert({
     workName,
-    mode: 'task',
     goal,
     constraints,
     maxIterations,

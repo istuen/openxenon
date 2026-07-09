@@ -345,8 +345,8 @@
     "notStarted": "work \"{{workName}}\" 状态机未启动",
     "notStartedHint": "先执行 `oxn work run <name>` 进入执行阶段",
     "emptyList": "暂无 Work",
-    "created": "Work 已创建: {{workName}}\n类型: {{workType}}\n路径: {{workFilePath}}\n\n请编辑 work.oxn 填充 task 编排；或重新跑 `oxn work create <name> --blueprint <bp>` 从 blueprint 生成。",
-    "workExists": "Work 已存在: {{workName}} (type: {{workType}})",
+    "created": "Work 已创建: {{workName}}\n路径: {{workFilePath}}\n\n请编辑 work.oxn 填充 task 编排；或重新跑 `oxn work create <name> --blueprint <bp>` 从 blueprint 生成。",
+    "workExists": "Work 已存在: {{workName}}",
     "invalidId": "Work ID 无效: {{error}}",
     "invalidTaskName": "Task 名称无效: {{error}}",
     "birthCertInvalid": "先修复 .work schema 错误：{{errors}}",
@@ -368,15 +368,12 @@
         "blueprint": "从该 blueprint 生成 work.oxn",
         "blueprintPath": "直接指定 blueprint.oxn 路径",
         "outputDir": "输出目录（默认 .openxenon/works/<name>/）",
-        "workType": "Work 类型（默认 task）",
+        "assetKind": "Asset Short Circuit：创建 Asset 而非 work（domain | blueprint | stack | roadmap | library | external）",
         "force": "覆盖已存在的文件"
       }
     },
     "validate": {
-      "description": "校验 work.oxn 语法 + ref 解析",
-      "args": {
-        "type": "Work 类型"
-      }
+      "description": "校验 work.oxn 语法 + ref 解析"
     },
     "addTask": {
       "description": "在指定 work 下创建 task.oxn",

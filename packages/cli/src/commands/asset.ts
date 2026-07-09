@@ -12,7 +12,7 @@
 //   evolve <name> --new-name Z       演进 (创建新版本，auditTrail 引用旧版)
 //
 // alias 兼容：
-//   oxn work create --type asset --asset-kind X (保留，Batch 2 老入口)
+//   oxn work create --asset-kind X  (v0.7+：移除 `--type asset`，--asset-kind 单独触发短路)
 //
 // =============================================================================
 

@@ -114,8 +114,8 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     const v = JSON.parse((await runCli(['work', 'validate', 'lifecycle', '--json'])).stdout)
     expect(v.ok).toBe(true)
     expect(v.data.valid).toBe(true)
-    expect(v.data.workType).toBe('workspace')
-    expect(v.data.mode).toBe('task')
+    expect(v.data.workType).toBeUndefined() // v0.7+：workType 字段已删除
+    expect(v.data.mode).toBeUndefined() // v0.7+：mode 字段已删除
 
     // 3 个产物文件
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'lifecycle', 'domains.json'))).toBe(true)

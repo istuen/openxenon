@@ -18,13 +18,15 @@ D = business intent | B = technical intent | W = align orchestrator | T = align 
 4. Run 8 stages: `references/8-phase-detail.md`
 5. On error: `references/error-codes.md`
 
-## Patterns
-| Need | Template (.md containing OXN code block) |
+## Blueprint Selection
+| Need | Template (.md containing OXN code block) → Blueprint |
 |---|---|
-| Explore / report | `assets/work-explore.md` |
-| Single-domain dev | `assets/work-develop.md` |
-| Bug fix | `assets/work-fix.md` |
-| Cross-domain | `assets/work-onboarding.md` |
+| Explore / report | `assets/work-explore.md` → `explore-analyze-report` |
+| Single-domain dev | `assets/work-develop.md` → `dev-workflow` |
+| Bug fix | `assets/work-fix.md` → `fix-issue` |
+| Cross-domain | `assets/work-onboarding.md` → `dev-workflow` (multi-domain) |
+
+> v0.7+: Work has no modes (task/explore/edit); behavior differences are carried by Blueprint slots/observe.
 
 ## Key Errors
 `LOCK_NOT_FOUND` / `HASH_MISMATCH` → YIELD | `TASK_OXN_MISSING` → `add-task` | `ROUND_ALREADY_PASSED` → `work finalize`

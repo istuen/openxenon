@@ -345,8 +345,8 @@
     "notStarted": "work \"{{workName}}\" state machine not started",
     "notStartedHint": "Run `oxn work run <name>` to enter execution phase",
     "emptyList": "No works yet",
-    "created": "Work created: {{workName}}\nType: {{workType}}\nPath: {{workFilePath}}\n\nEdit work.oxn to fill task orchestration, or rerun `oxn work create <name> --blueprint <bp>` to generate from blueprint.",
-    "workExists": "Work already exists: {{workName}} (type: {{workType}})",
+    "created": "Work created: {{workName}}\nPath: {{workFilePath}}\n\nEdit work.oxn to fill task orchestration, or rerun `oxn work create <name> --blueprint <bp>` to generate from blueprint.",
+    "workExists": "Work already exists: {{workName}}",
     "invalidId": "Invalid Work ID: {{error}}",
     "invalidTaskName": "Invalid task name: {{error}}",
     "birthCertInvalid": "Fix .work schema errors first: {{errors}}",
@@ -368,15 +368,12 @@
         "blueprint": "Generate work.oxn from this blueprint",
         "blueprintPath": "Specify blueprint.oxn path directly",
         "outputDir": "Output directory (default .openxenon/works/<name>/)",
-        "workType": "Work type (default task)",
+        "assetKind": "Asset Short Circuit: create an Asset instead of a Work (domain | blueprint | stack | roadmap | library | external)",
         "force": "Overwrite existing files"
       }
     },
     "validate": {
-      "description": "Validate work.oxn syntax + ref resolution",
-      "args": {
-        "type": "Work type"
-      }
+      "description": "Validate work.oxn syntax + ref resolution"
     },
     "addTask": {
       "description": "Create task.oxn under the specified work",

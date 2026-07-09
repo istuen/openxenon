@@ -8,6 +8,7 @@
 //   4. applyPlanLock / clearPlanLock 不可变更新
 //   5. verifyPlanLock 4 种结果：ok / no-plan-lock / work-removed / hash-mismatch
 //   6. checkAssetsDrift 资产漂移检测
+//   7. v0.7+ 移除 mode/editTarget：BirthCert schema 不再含这些字段
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
@@ -64,8 +65,6 @@ describe('BirthCertSchema', () => {
       workName: 'foo',
       createdAt: '2026-06-08T00:00:00.000Z',
       updatedAt: '2026-06-08T00:00:00.000Z',
-      mode: 'task',
-      editTarget: null,
       goal: '',
       constraints: [],
       maxIterations: 3,
@@ -75,57 +74,12 @@ describe('BirthCertSchema', () => {
     expect(BirthCertSchema.safeParse(cert).success).toBe(true)
   })
 
-  test('mode 必须是 task | explore | edit', () => {
-    const base: BirthCert = {
-      schemaVersion: 1,
-      kind: 'work-birth-cert',
-      workName: 'foo',
-      createdAt: '2026-06-08T00:00:00.000Z',
-      updatedAt: '2026-06-08T00:00:00.000Z',
-      mode: 'task',
-      editTarget: null,
-      goal: '',
-      constraints: [],
-      maxIterations: 3,
-      assets: { domains: [], blueprints: [] },
-      planLock: null,
-    }
-    expect(BirthCertSchema.safeParse({ ...base, mode: 'task' }).success).toBe(true)
-    expect(BirthCertSchema.safeParse({ ...base, mode: 'explore' }).success).toBe(true)
-    expect(BirthCertSchema.safeParse({ ...base, mode: 'edit' }).success).toBe(true)
-    expect(BirthCertSchema.safeParse({ ...base, mode: 'proof' }).success).toBe(false) // V1 不允许
-    expect(BirthCertSchema.safeParse({ ...base, mode: 'unknown' }).success).toBe(false)
-  })
-
-  test('editTarget 格式校验：domain:X / blueprint:X', () => {
-    const base: BirthCert = {
-      schemaVersion: 1,
-      kind: 'work-birth-cert',
-      workName: 'foo',
-      createdAt: '2026-06-08T00:00:00.000Z',
-      updatedAt: '2026-06-08T00:00:00.000Z',
-      mode: 'edit',
-      editTarget: null,
-      goal: '',
-      constraints: [],
-      maxIterations: 3,
-      assets: { domains: [], blueprints: [] },
-      planLock: null,
-    }
-    expect(BirthCertSchema.safeParse({ ...base, editTarget: 'domain:MemberContext' }).success).toBe(true)
-    expect(BirthCertSchema.safeParse({ ...base, editTarget: 'blueprint:fix-issue' }).success).toBe(true)
-    expect(BirthCertSchema.safeParse({ ...base, editTarget: 'MemberContext' }).success).toBe(false)
-    expect(BirthCertSchema.safeParse({ ...base, editTarget: 'domain:' }).success).toBe(false)
-  })
-
   test('workName 必须是 kebab-case', () => {
     const base = {
       schemaVersion: 1,
       kind: 'work-birth-cert',
       createdAt: '2026-06-08T00:00:00.000Z',
       updatedAt: '2026-06-08T00:00:00.000Z',
-      mode: 'task' as const,
-      editTarget: null,
       goal: '',
       constraints: [],
       maxIterations: 3,
@@ -146,8 +100,6 @@ describe('BirthCertSchema', () => {
       workName: 'foo',
       createdAt: '2026-06-08T00:00:00.000Z',
       updatedAt: '2026-06-08T00:00:00.000Z',
-      mode: 'task' as const,
-      editTarget: null,
       goal: '',
       constraints: [],
       maxIterations: 3,
@@ -178,8 +130,6 @@ describe('BirthCertSchema', () => {
       workName: 'foo',
       createdAt: '2026-06-08T00:00:00.000Z',
       updatedAt: '2026-06-08T00:00:00.000Z',
-      mode: 'task' as const,
-      editTarget: null,
       goal: '',
       constraints: [],
       maxIterations: 3,
@@ -198,6 +148,35 @@ describe('BirthCertSchema', () => {
         planLock: null,
       }).success,
     ).toBe(false)
+  })
+
+  test('v0.7+：BirthCert schema 不再含 mode/editTarget 字段', () => {
+    const base: BirthCert = {
+      schemaVersion: 1,
+      kind: 'work-birth-cert',
+      workName: 'foo',
+      createdAt: '2026-06-08T00:00:00.000Z',
+      updatedAt: '2026-06-08T00:00:00.000Z',
+      goal: '',
+      constraints: [],
+      maxIterations: 3,
+      assets: { domains: [], blueprints: [] },
+      planLock: null,
+    }
+    // 写入历史字段应当被 zod 默认剥除（strict mode 关闭）或被 BirthCertSchema 不再要求
+    const parsed = BirthCertSchema.safeParse({
+      ...base,
+      // @ts-expect-error - v0.7+ 不再接受 mode/editTarget
+      mode: 'task',
+      // @ts-expect-error - v0.7+ 不再接受 mode/editTarget
+      editTarget: 'domain:X',
+    })
+    // schema 默认会剥除未知字段（passthrough 默认 false），parse 仍成功但 mode/editTarget 被剥离
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect((parsed.data as { mode?: string }).mode).toBeUndefined()
+      expect((parsed.data as { editTarget?: string }).editTarget).toBeUndefined()
+    }
   })
 })
 
@@ -219,7 +198,6 @@ describe('workFile I/O', () => {
   test('writeWorkFile 原子写 + readWorkFile 还原', () => {
     const cert = createBirthCert({
       workName,
-      mode: 'task',
       goal: 'demo',
       assets: {
         domains: [{ name: 'A', version: 1, fileHash: HASH_A }],
@@ -234,7 +212,6 @@ describe('workFile I/O', () => {
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.cert.workName).toBe(workName)
-      expect(r.cert.mode).toBe('task')
       expect(r.cert.assets.domains[0]?.name).toBe('A')
     }
   })
@@ -271,16 +248,13 @@ describe('workFile I/O', () => {
 // ───────── createBirthCert ─────────
 
 describe('createBirthCert', () => {
-  test('最小参数（mode + assets）', () => {
+  test('最小参数（assets）', () => {
     const c = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [], blueprints: [] },
     })
     expect(c.schemaVersion).toBe(1)
     expect(c.kind).toBe('work-birth-cert')
-    expect(c.mode).toBe('task')
-    expect(c.editTarget).toBe(null)
     expect(c.goal).toBe('')
     expect(c.constraints).toEqual([])
     expect(c.maxIterations).toBe(3)
@@ -290,7 +264,6 @@ describe('createBirthCert', () => {
   test('scope 默认 @prj', () => {
     const c = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [{ name: 'A', version: 1, fileHash: HASH_A }], blueprints: [] },
     })
     expect(c.assets.domains[0]?.scope).toBe('@prj')
@@ -299,7 +272,6 @@ describe('createBirthCert', () => {
   test('显式 scope=@oxn', () => {
     const c = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [{ name: 'A', scope: '@oxn', version: 1, fileHash: HASH_A }], blueprints: [] },
     })
     expect(c.assets.domains[0]?.scope).toBe('@oxn')
@@ -308,23 +280,11 @@ describe('createBirthCert', () => {
   test('createdAt/updatedAt 自动填当前时间（可覆盖）', () => {
     const c = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [], blueprints: [] },
       createdAt: '2026-01-01T00:00:00.000Z',
     })
     expect(c.createdAt).toBe('2026-01-01T00:00:00.000Z')
     expect(c.updatedAt).toBe('2026-01-01T00:00:00.000Z')
-  })
-
-  test('edit mode + editTarget', () => {
-    const c = createBirthCert({
-      workName,
-      mode: 'edit',
-      editTarget: 'domain:MemberContext',
-      assets: { domains: [], blueprints: [] },
-    })
-    expect(c.mode).toBe('edit')
-    expect(c.editTarget).toBe('domain:MemberContext')
   })
 })
 
@@ -334,7 +294,6 @@ describe('applyPlanLock / clearPlanLock', () => {
   test('applyPlanLock 设置 4 组件 hash + allHash + lockedAt', () => {
     const base = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [], blueprints: [] },
     })
     const HASH_ALL = HASH_A
@@ -360,7 +319,6 @@ describe('applyPlanLock / clearPlanLock', () => {
   test('applyPlanLock 任一组件为 null → 抛错', () => {
     const base = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [], blueprints: [] },
     })
     expect(() =>
@@ -378,7 +336,6 @@ describe('applyPlanLock / clearPlanLock', () => {
   test('clearPlanLock 重置 planLock=null + 更新 updatedAt', () => {
     const base = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [], blueprints: [] },
     })
     const hash = {
@@ -398,7 +355,6 @@ describe('applyPlanLock / clearPlanLock', () => {
   test('不可变：applyPlanLock 不修改原 cert', () => {
     const base = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [], blueprints: [] },
     })
     const hash = {
@@ -433,7 +389,6 @@ describe('verifyPlanLock', () => {
     }
     const base = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [], blueprints: [] },
     })
     // 直接构造 planLock（避免依赖 hashWorkPlan 模块）
@@ -473,7 +428,6 @@ describe('verifyPlanLock', () => {
   test('no-plan-lock: cert.planLock === null', () => {
     const cert = createBirthCert({
       workName,
-      mode: 'task',
       assets: { domains: [], blueprints: [] },
     })
     const r = verifyPlanLock(tmpDir, workName, cert)
@@ -553,7 +507,6 @@ describe('checkAssetsDrift', () => {
   function makeCertWithAssets(domains: Array<{ name: string; fileHash: string }>): BirthCert {
     return createBirthCert({
       workName,
-      mode: 'task',
       assets: {
         domains: domains.map((d) => ({ name: d.name, version: 1, fileHash: d.fileHash })),
         blueprints: [],

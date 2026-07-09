@@ -7,12 +7,12 @@
 // 物理位置：.openxenon/works/<w>/.work  （单文件，不是目录）
 //
 // 关键设计：
-//   - V1 mode 枚举：'task' | 'explore' | 'edit'   (proof 已剥离到 oxn proof 独立体系)
 //   - assets: 资产锁（domain/blueprint 引用 + 版本 + 当前文件 hash），
 //     漂移即"资产版本变了但 work.oxn 没改"，是反常信号
 //   - planLock: 锁时算 4 组件 hash；后续 run/context/submit 都用 verifyPlanLock 校验
 //   - 不可变：planLock 设上后只能走 unlock → edit → re-validate → re-lock；
 //     verifyPlanLock 是唯一"判定被改"的途径，不靠 chmod（跨平台安全）
+//   - v0.7：删除 mode/editTarget 字段（实际行为零影响，Blueprint 已承载差异）
 // =============================================================================
 
 import {
@@ -31,22 +31,6 @@ import { getWorkDir } from './dual-state-io'
 import { hashWorkPlan, type PlanHash } from './plan-hash'
 
 // ───────── Zod schema ─────────
-
-export const WorkModeSchema = z.enum(['task', 'explore', 'edit'])
-export type WorkMode = z.infer<typeof WorkModeSchema>
-
-/**
- * edit mode 的目标标记：
- *   - 'domain:<Name>'       编辑某个 Domain
- *   - 'blueprint:<name>'    编辑某个 Blueprint
- * 仅 mode='edit' 时填；其他 mode 留 null。
- */
-export const EditTargetSchema = z
-  .string()
-  .regex(/^(domain|blueprint):[A-Za-z][\w-]*$/, 'editTarget must be `domain:<Name>` or `blueprint:<name>`')
-  .nullable()
-  .default(null)
-export type EditTarget = z.infer<typeof EditTargetSchema>
 
 export const DomainAssetEntrySchema = z.object({
   name: z.string().min(1),
@@ -83,8 +67,6 @@ export const BirthCertSchema = z.object({
   workName: z.string().regex(/^[a-z][a-z0-9-]*$/, 'workName must be kebab-case'),
   createdAt: z.string().min(1),
   updatedAt: z.string().min(1),
-  mode: WorkModeSchema,
-  editTarget: EditTargetSchema,
   goal: z.string().default(''),
   constraints: z.array(z.string()).default([]),
   maxIterations: z.number().int().min(1).default(3),
@@ -160,8 +142,6 @@ export function clearWorkFile(projectRoot: string, workName: string): void {
 
 export interface CreateBirthCertParams {
   workName: string
-  mode: WorkMode
-  editTarget?: EditTarget
   goal?: string
   constraints?: string[]
   maxIterations?: number
@@ -180,8 +160,6 @@ export function createBirthCert(params: CreateBirthCertParams): BirthCert {
     workName: params.workName,
     createdAt: now,
     updatedAt: now,
-    mode: params.mode,
-    editTarget: params.editTarget ?? null,
     goal: params.goal ?? '',
     constraints: params.constraints ?? [],
     maxIterations: params.maxIterations ?? 3,

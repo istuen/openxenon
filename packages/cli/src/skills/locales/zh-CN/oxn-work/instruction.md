@@ -18,13 +18,15 @@ D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
 4. 走 8 阶段：`references/8-phase-detail.md`
 5. 报错：`references/error-codes.md`
 
-## 模式
-| 需求 | 模板（.md 含 OXN 代码块）|
+## Blueprint 选择
+| 需求 | 模板（.md 含 OXN 代码块）→ Blueprint |
 |---|---|
-| 摸清/报告 | `assets/work-explore.md` |
-| 单域开发 | `assets/work-develop.md` |
-| bug 修复 | `assets/work-fix.md` |
-| 跨域 | `assets/work-onboarding.md` |
+| 摸清/报告 | `assets/work-explore.md` → `explore-analyze-report` |
+| 单域开发 | `assets/work-develop.md` → `dev-workflow` |
+| bug 修复 | `assets/work-fix.md` → `fix-issue` |
+| 跨域 | `assets/work-onboarding.md` → `dev-workflow` (多 domain) |
+
+> v0.7+：Work 不再有 mode（task/explore/edit）；行为差异由 Blueprint slots/observe 承载。
 
 ## 错误
 `LOCK_NOT_FOUND`/`HASH_MISMATCH` → YIELD | `TASK_OXN_MISSING` → `add-task` | `ROUND_ALREADY_PASSED` → `work finalize`
