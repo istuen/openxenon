@@ -1,6 +1,6 @@
 // Blueprint: asset-archive
 // Created by: oxn asset create asset-archive --kind blueprint
-// Work: asset-skill-assets (stage-2)
+// Work: asset-skill-assets (stage-2) - AssetPaper 4 字段由 asset-paper-backfill 回填
 //
 // Asset 归档执行路径 (oxn-asset Skill 步骤 5):
 //   check-references (扫所有引用方 + 警告仍在使用方)
@@ -8,9 +8,13 @@
 //        -> move-to-archived (mv 到 .openxenon/.archived/{kinds}/ + citations 保留 + planLock 仍可查询)
 
 blueprint "asset-archive" {
+  abstract = "Asset archive pipeline: check-references to confirm to move-to-archived"
+  references = []
+  citations = 0
   description = "Asset 归档流水线: check-references → confirm → move-to-archived"
   assetVersion = 1
   slot "check-references" { deps = [] }
   slot "confirm" { deps = ["check-references"] }
   slot "move-to-archived" { deps = ["confirm"] }
 }
+// auditTrail: created by oxn-asset Skill at 2026-07-10

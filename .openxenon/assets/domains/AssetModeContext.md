@@ -139,3 +139,12 @@ synced-at: 2026-07-08T13:52:19.197Z
 
 ### inv-19
 - value: Asset 引用方 (Work/Task/Asset) 变更后, 引用目标 citations 字段自动 +1;不需手工改
+
+### inv-XX
+- value: AssetKind reference isolation: Asset.references 仅可引用同 AssetKind (target name 必须在该 kind 文件夹下实际存在);跨 kind 组合由 Roadmap scene.links 承担 (avoid 依赖地狱);跨 kind references 触发 IAP_INTENT_CROSS_KIND_REF (v0.6.2+ hard-block; 当前 soft-warn)
+
+### inv-YY
+- value: Asset references 数量预算 N=5: 单一节点 fan-out 上限 (防依赖地狱);超过触发 IAP_INTENT_REFS_BUDGET_EXCEEDED (v0.6.2+ soft-warn);Roadmap scene.links 不受此限 (Roadmap 设计为多 kind 并列)
+
+### inv-ZZ
+- value: Leaf Asset legitimacy: Asset.references=[] 是合法 leaf 节点;叶子 Asset 可被 Work/Task/Roadmap 引用, 不要求必须有引用方;僵尸判断由 Roadmap 是否引用 + citations==0 + 创建后未使用 共同决定 (引用 0 不等于僵尸)

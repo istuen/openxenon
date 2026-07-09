@@ -1,13 +1,15 @@
 // Domain: AssetLifecycleContext
 // Created by: oxn domain create AssetLifecycleContext
-// Work: asset-skill-assets (stage-1)
+// Work: asset-skill-assets (stage-1) - AssetPaper 4 字段由 asset-paper-backfill 回填
 //
 // 资产生命周期业务边界 v0.6.x: 为 oxn-asset Skill 的 3 个执行路径
 // （create/evolve/archive）提供业务词汇与不变量。
-// 注意: .oxn STRING terminal 不支持反斜杠转义;复杂中文用 .md canonical 镜像。
 
 domain "AssetLifecycleContext" {
-  description = "Asset lifecycle v0.6.x: define create/evolve/archive vocabulary and invariants for oxn-asset Skill"
+  abstract = "Asset lifecycle v0.6.x: define create/evolve/archive vocabulary and invariants for oxn-asset Skill"
+  references = []
+  citations = 0
+  description = "Asset 生命周期 v0.6.x 限界上下文: create/evolve/archive 三个执行路径的术语、禁用与不变量。供 oxn-asset Skill 消费。"
 
   term {
     "AssetCreate": "asset create path - user says add X type, runs oxn work create --type asset --asset-kind X"
@@ -22,6 +24,8 @@ domain "AssetLifecycleContext" {
     "AssetMigration": "v0.5 to v0.6 layout migration"
     "AssetFrontmatter": "Asset .md YAML frontmatter: entity + version + name"
     "AssetNaming": "Asset naming: domain PascalCase; blueprint/stack/roadmap kebab-case"
+    "AssetReferenceScope": "Asset.references 仅引用同 kind Asset (v0.6.x 决策 1); 跨 kind 组合由 Roadmap scene 承担 (避免依赖地狱)"
+    "AssetRefBudget": "Asset.references 数量上限预算 N=5 (决策 3); 超过视为过度耦合 (需用 Roadmap 拆解); Roadmap scene.links 不受此限"
   }
 
   ban { "ignoreAssetLock", "directWriteOxn", "copyFromOldLayout", "assetBypassWork", "AssetKindMix", "CategoryMix", "missingAbstract", "missingReferences", "missingCitations", "missingAuditTrail", "oxn-asset-new", "skipValidation", "forceBypass" }
@@ -37,5 +41,7 @@ domain "AssetLifecycleContext" {
     "Duplicate Asset name triggers OXN_ASSET_EXISTS PATH_CONFLICT; --force overwrites"
     "Asset archive --reason Y moves to .openxenon/.archived/{kinds}/"
     "Asset delete --force requires zero references; otherwise triggers IAP_ASSET_HAS_REFS"
+    "Asset references can only point to same AssetKind (decision 1); cross-kind combinations go through Roadmap scene links to avoid dependency hell; violating triggers IAP_INTENT_CROSS_KIND_REF (hard-block planned for v0.6.2)"
   }
 }
+// auditTrail: created by oxn-asset Skill at 2026-07-10

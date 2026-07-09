@@ -32,11 +32,15 @@ synced-at: 2026-07-09
 | kind | name | description |
 |---|---|---|
 | domain | WorkOrchestrationContext | 8 stages + 6 workType + PlanLock |
-| domain | AssetModeContext | 5 AssetKind + lifecycle + references DAG |
+| domain | AssetModeContext | 6 AssetKind (incl. roadmap) + lifecycle + references DAG |
+| domain | AssetLifecycleContext | Asset lifecycle create/evolve/archive vocabulary for oxn-asset Skill |
 | domain | intent-domain | Intent axis: CLI entry / OXL / Program |
 | domain | align-domain | Align axis: Work sandbox + Skill + Slot/Part/Probe |
 | domain | proof-domain | Proof axis: Builtin + frozen.json |
 | blueprint | dev-workflow | Generic development (build/develop/test/verify) |
+| blueprint | asset-create | Asset creation pipeline (choose-kind/fork-template/fill-content/validate-commit) |
+| blueprint | asset-evolve | Asset evolve pipeline (read-current/plan-changes/apply-evolve) |
+| blueprint | asset-archive | Asset archive pipeline (check-references/confirm/move-to-archived) |
 | blueprint | add-cli-subcommand | Add new oxn CLI subcommand |
 | blueprint | dsl-evolve | OXL grammar evolution |
 | blueprint | refactor-safe | Safe refactor with L0-L3 guard |
@@ -79,6 +83,7 @@ synced-at: 2026-07-09
 | domain | L0L3Context | L0-L3 architecture core vocabulary |
 | domain | MonorepoContext | Dual-package Monorepo |
 | domain | DocEngineeringContext | Three-layer doc rules |
+| domain | AssetLifecycleContext | Asset create/evolve/archive vocabulary for engineers |
 | blueprint | dev-workflow | First workflow to run |
 
 ---
