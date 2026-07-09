@@ -3,7 +3,7 @@
 // `oxn install-skill` copies canonical OpenCode Skills from
 // `.opencode/skills/oxn-*/SKILL.md` (this repo) to a target directory.
 //
-// Default behaviour: install ALL oxn-* skills (currently oxn-work, oxn-asset)
+// Default behaviour: install ALL oxn-* skills (oxn-cli, oxn-work, oxn-proof)
 // to the user's global OpenCode skills folder (`~/.opencode/skills/`).
 // Use `--skill <id>` to install a single one.
 //
@@ -15,16 +15,8 @@ import { t } from '@openxenon/engine/infra/i18n'
 // replaces it with an internal `$bunfs/...` path that always reads the
 // embedded content.
 //
-// v0.6.x: oxn-work + oxn-asset remain (oxn-cli / oxn-proof deleted).
-//
-// Note for maintainers: when editing `packages/cli/src/skills/locales/<locale>/<skill>/instruction.md`,
-// the corresponding `.opencode/skills/<skill>/SKILL.md` (the file imported below)
-// MUST be updated in the same commit, otherwise AI agents will see stale content
-// (the `import` line below reads the compiled .opencode/skills/<skill>/SKILL.md,
-// NOT the locale source). In dev mode this is consistent (both update together);
-// in --compile mode the binary snapshot must be regenerated via `bun run build`.
+// v0.6: Only oxn-work skill remains (oxn-cli / oxn-proof deleted).
 import skillWork from '../../../../.opencode/skills/oxn-work/SKILL.md' with { type: 'file' }
-import skillAsset from '../../../../.opencode/skills/oxn-asset/SKILL.md' with { type: 'file' }
 
 import { defineCommand } from 'citty'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
@@ -34,7 +26,6 @@ import { getFormatFromArgs, output } from './output'
 
 const EMBEDDED_SKILLS: Record<string, string> = {
   'oxn-work': skillWork,
-  'oxn-asset': skillAsset,
 }
 
 function getDefaultSkillsRoot(): string {
