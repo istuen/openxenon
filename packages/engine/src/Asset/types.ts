@@ -82,3 +82,63 @@ export interface SyncResult {
   targetHash: string
   changed: boolean
 }
+
+// =============================================================================
+// v0.6.1-alpha.1 Asset Lifecycle: archive / delete / evolve
+// =============================================================================
+
+export interface ArchiveInput {
+  kind: AssetKind
+  name: string
+  /** 归档原因（必填，用于审计） */
+  reason: string
+  projectRoot: string
+}
+
+export interface ArchiveResult {
+  ok: boolean
+  /** 幂等操作（资产已归档） */
+  idempotent: boolean
+  /** 归档后 .oxn 路径 */
+  archivedPath: string
+  /** 归档 metadata.json 路径 */
+  metadataPath?: string
+  message: string
+}
+
+export interface DeleteInput {
+  kind: AssetKind
+  name: string
+  /** 强制删除（无此 flag → YIELD_TO_HUMAN） */
+  force: boolean
+  projectRoot: string
+}
+
+export interface DeleteResult {
+  ok: boolean
+  /** 幂等操作（资产不存在） */
+  idempotent: boolean
+  /** 删除路径（用于审计） */
+  deletedPath: string
+  /** 删除日志路径 */
+  logPath?: string
+  message: string
+}
+
+export interface EvolveInput {
+  kind: AssetKind
+  name: string
+  /** 新版本 name */
+  newName: string
+  projectRoot: string
+}
+
+export interface EvolveResult {
+  ok: boolean
+  oldName: string
+  newName: string
+  oldPath: string
+  newPath: string
+  evolvedAt: string
+  message: string
+}

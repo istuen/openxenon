@@ -12,6 +12,9 @@ export { create } from './create'
 export { validate, validateAssetReferences } from './validate'
 export { list, listAll } from './list'
 export { checkAssetDAG } from './dag-validator'
+export { archive } from './archive'
+export { deleteAsset } from './delete'
+export { evolve } from './evolve'
 export * from './domain-manager'
 export * from './blueprint-manager'
 
@@ -29,6 +32,19 @@ export type {
   CompileResult,
   SyncInput,
   SyncResult,
+  ArchiveInput,
+  ArchiveResult,
+  DeleteInput,
+  DeleteResult,
+  EvolveInput,
+  EvolveResult,
 } from './types'
 
 export type { AssetNode, DagValidationResult } from './dag-validator'
+export type { AssetReferenceEntry } from './internal/reference-checker'
+export { isAssetReferenced, listAssetReferences } from './internal/reference-checker'
+export {
+  resolveArchivedAssetFile,
+  resolveArchivedMetadataFile,
+  getArchivedAssetDir,
+} from './internal/archived-resolver'
