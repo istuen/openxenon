@@ -1,8 +1,8 @@
 # /oxn-asset — Asset 生命周期管理 v0.6
 
 ## 目标
-管理 Asset 整个生命周期：创建 / 修改 / 演进 / 删除 / 查询，覆盖 5 种 AssetKind：
-**domain** / **blueprint** / **stack** / **library** / **external**
+管理 Asset 整个生命周期：创建 / 修改 / 演进 / 删除 / 查询，覆盖 6 种 AssetKind：
+**domain** / **blueprint** / **stack** / **roadmap** / **library** / **external**
 
 底层走 `oxn work create --type asset --asset-kind X`（IAP 闭环）。
 
@@ -17,6 +17,7 @@
 - **Domain** = 业务边界（term/ban/invariant）
 - **Blueprint** = 技术边界（slot DAG）
 - **Stack** = 环境边界（runtime/linter/test）
+- **Roadmap** = 导航图（场景化 links → Domain/Blueprint）
 - **Library** = 知识边界（文档聚合）
 - **External** = 外部边界（API/服务）
 
@@ -34,6 +35,7 @@
 | domain | `assets/domain.md` | Terms / Bans / Invariants |
 | blueprint | `assets/blueprint.md` | Props / Slots |
 | stack | `assets/stack.md` | Runtimes / Linters / Tests |
+| roadmap | `assets/roadmap.md` | Scenes (sub: scene) |
 | library | `assets/library.md` | Sources |
 | external | `assets/external.md` | Links |
 
@@ -53,3 +55,24 @@
 - 不锁后改 .oxn（先 `oxn work unlock`）
 - 不混用 Asset 模式和 Work 模式（asset 模式无 task DAG）
 - 不删被引用的 Asset（先 `oxn asset archive` 归档）
+
+## Roadmap 路由调用（v0.6.x 新增）
+
+AI Agent 在创建/修改 Asset 前，建议先读 Roadmap 定位该用哪个 Domain/Blueprint 边界：
+
+```bash
+# 列出 Roadmap（项目级，通常只有 oxn-system 一个）
+oxn roadmap list
+
+# 看场景内容（doc / dev / debug / test / release / onboard）
+oxn roadmap show oxn-system --scene dev
+
+# 按 goal 排序匹配（在指定 scene 内）
+oxn roadmap suggest --goal "<goal>" --scene <scene> --top 5
+
+# Asset 变更后检测 dangling / outdated（手动 hint，不自动改）
+oxn roadmap sync oxn-system --scene <scene> --dry-run
+oxn roadmap sync oxn-system --scene <scene> --apply   # 写入
+```
+
+注意：`--scene` 必填（避免 AI 在全 Roadmap 乱搜）。如果不知道场景，先看 `oxn roadmap show oxn-system` 列出 6 个 scene 描述。

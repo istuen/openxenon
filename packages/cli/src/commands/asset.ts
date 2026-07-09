@@ -17,9 +17,9 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
+import { join } from 'node:path'
 import { existsSync } from '@openxenon/engine/infra/filesystem'
 import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
-import { join } from 'node:path'
 import { t } from '@openxenon/engine/infra/i18n'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { readProjectConfig } from './project-config-io'
@@ -236,6 +236,9 @@ const createSubcommand = defineCommand({
         format: config?.assetFormat ?? 'oxn',
         force,
       })
+      // v0.6.x Roadmap integration: if oxn-system Roadmap exists, hint user to sync
+      // (Mode B: manual hint, not auto-sync — per user decision)
+      const roadmapHint = await maybeRoadmapSyncHint(projectRoot)
       return output(
         {
           data: {
@@ -243,8 +246,10 @@ const createSubcommand = defineCommand({
             name,
             path: result.assetPath,
             createdAt: result.createdAt,
+            roadmapHint,
           },
-          human: `✓ Asset '${name}' (${kind}) created at ${result.assetPath}`,
+          human:
+            `✓ Asset '${name}' (${kind}) created at ${result.assetPath}` + (roadmapHint ? `\n\n${roadmapHint}` : ''),
         },
         format,
       )
@@ -253,6 +258,20 @@ const createSubcommand = defineCommand({
     }
   },
 })
+
+/**
+ * Check if `oxn-system` Roadmap exists; if yes, return a hint to run sync.
+ * Returns null if no Roadmap or the asset itself is a Roadmap.
+ */
+async function maybeRoadmapSyncHint(projectRoot: string): Promise<string | null> {
+  const roadmapPath = join(projectRoot, '.openxenon', 'assets', 'roadmaps', 'oxn-system.md')
+  if (!existsSync(roadmapPath)) return null
+  return (
+    `ℹ️  Detected Asset change. oxn-system Roadmap exists.\n` +
+    `   Run: oxn roadmap sync oxn-system --scene <scene>  to detect dangling links\n` +
+    `   Or:  oxn roadmap sync oxn-system                       to scan all scenes`
+  )
+}
 
 // =============================================================================
 // Subcommand: validate (PR-2: --strict + --check-dag --all)

@@ -138,6 +138,27 @@ pools/drafts/xxx-draft.md（散落，无格式）
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
+## AI Agent 路由入口（v0.6.x Roadmap）
+
+> **第一步：定位 scene，再读 Roadmap**
+> 收到 goal 后判断属于哪个 scene（doc / dev / debug / test / release / onboard），
+> 读 `.openxenon/assets/roadmaps/oxn-system.md` 的对应 scene 段。
+> 列出该 scene 的 Domain + Blueprint 列表（每项带 description）。
+> 用 `oxn roadmap suggest --goal "<goal>" --scene <scene>` 排序匹配。
+
+### 场景速查
+- 写/改/读文档 → `scene=doc`（DocEngineeringContext + VitePressContext + doc-publish + doc-promote）
+- 改代码/加 CLI → `scene=dev`（WorkOrchestrationContext + dev-workflow + add-cli-subcommand）
+- Bug 修复/frozen 异常 → `scene=debug`（iap-error-context + fix-issue）
+- 写测试 → `scene=test`（WorkOrchestrationContext + dev-workflow）
+- 发版 → `scene=release`（MonorepoContext + release-cut + migrate-version）
+- 新人入门 → `scene=onboard`（L0L3Context + MonorepoContext + dev-workflow）
+
+### Asset 变更后（手动 sync，Mode B）
+- `oxn asset create` 成功后会自动提示 `oxn roadmap sync`（不自动改 Roadmap）
+- 跑 `oxn roadmap sync oxn-system --scene <scene> --dry-run` 检查 dangling / outdated link
+- 确认后加 `--apply` 写入：删 dangling + 刷新过时 description
+
 ## 开发者操作指南
 
 > **`dev/` 目录 = 维护者 + 贡献者写给开发者看的操作手册，不是产品文档。**
