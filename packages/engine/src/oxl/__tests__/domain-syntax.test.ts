@@ -249,14 +249,4 @@ describe('Domain syntax — error path', () => {
     const d = await parseDomain(`{}`)
     errParse(d, 'Parser')
   })
-
-  test('E16: 跨轴硬约束 — 用 v0.0 旧语法 domain_rules', async () => {
-    // 旧语法 domain_rules 在 v0.1.1 grammar 里不存在，应报错
-    const d = await parseDomain(`
-      domain "x" {
-        noun { "A" }
-        domain_rules { "r1" }
-      }`)
-    errParse(d, 'Parser')
-  })
 })

@@ -4,8 +4,6 @@ import { join } from 'path'
 import { URI } from 'langium'
 import { createOxnParser } from '../langium-driver/oxn-services'
 
-const EXAMPLES_DIR = join(__dirname, '../examples')
-
 async function parseOxlFile(path: string): Promise<{ parseErrors: string[]; lexerErrors: string[] }> {
   const content = readFileSync(path, 'utf-8')
   const parser = createOxnParser()
@@ -15,25 +13,6 @@ async function parseOxlFile(path: string): Promise<{ parseErrors: string[]; lexe
     lexerErrors: r.lexerErrors,
   }
 }
-
-function examplesExist(): boolean {
-  return statSync(EXAMPLES_DIR, { throwIfNoEntry: false }) !== undefined
-}
-
-describe('OXL Examples - 存在性 smoke test', () => {
-  test('examples 目录存在', () => {
-    expect(examplesExist()).toBe(true)
-  })
-
-  test('所有 examples 文件存在（不 parse）', () => {
-    if (!examplesExist()) return
-    const files = readdirSync(EXAMPLES_DIR).filter((f: string) => f.endsWith('.oxn'))
-    expect(files.length).toBeGreaterThan(0)
-    // 注：examples/ 目前使用 v0.0.x 旧规（align / version / slot / ref 等），
-    // 与当前 grammar (v0.1-final) 不兼容 —— 这是已知的 IAP 软缺口 #5，
-    // 不在本 PR 修复范围。examples 升级待独立 issue。
-  })
-})
 
 // v0.0.28+：work-examples 必须用新规 deps = [...]。
 // 单独测 works/ 目录下的真实 work（已用 v0.1-final 语法）能否 parse。

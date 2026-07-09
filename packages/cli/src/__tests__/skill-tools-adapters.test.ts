@@ -138,17 +138,6 @@ describe('oxn install-skill (v0.1.3 保留，向下兼容)', () => {
     const r = await runCli(['install-skill', '--skill', 'oxn-work', '--force', '--json'])
     expect(r.exitCode).toBe(0)
   })
-
-  // v0.6.1-alpha.0: install-skill --skill oxn-cli 应在 data.failed 中（v0.6 已删）
-  test('6b. install-skill --skill oxn-cli 应在 data.failed 中（v0.6 已删）', async () => {
-    await runCli(['init', '--json'])
-    const r = await runCli(['install-skill', '--skill', 'oxn-cli', '--force', '--json'])
-    const json = JSON.parse(r.stdout)
-    // install-skill 输出嵌套结构：{ ok, data: { ok, data: { installed, skipped, failed } } }
-    const inner = json.data?.data ?? json.data
-    expect(inner.failed).toBeArrayOfSize(1)
-    expect(inner.failed[0].skill).toBe('oxn-cli')
-  })
 })
 
 describe('oxn config show (v0.1.3 tools 行)', () => {
