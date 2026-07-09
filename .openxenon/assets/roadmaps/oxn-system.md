@@ -3,117 +3,113 @@ entity: roadmap
 version: 1
 name: oxn-system
 abstract: |
-  OpenXenon 自举系统路由图：把文档层 + IAP 工作流 + Asset 生命周期映射到 19 Domain + 12 Blueprint 的导航入口。AI Agent 读这一份 Roadmap 即可定位该用哪些 Domain + Blueprint
-citations: 0
+  OpenXenon scene-based routing: 6 builtin scenes (doc / dev / debug / test / release / onboard) map goals to Domain + Blueprint. AI Agent reads this Roadmap + calls oxn roadmap suggest --goal --scene to locate relevant Assets.
+oxn-source-sha: pending
+synced-at: 2026-07-09
 ---
 
 # Roadmap: oxn-system
 
-> 6 个路由分区 — 文档三层架构 + IAP 8 阶段工作流 + Asset 生命周期 + IAP 三轴范式 + 横切关切 + Skill 入口
+> 6 builtin scenes. Use `oxn roadmap show oxn-system --scene <scene>` to view one scene.
+> AI Agent: `oxn roadmap suggest --goal "<goal>" --scene <scene>` for ranked matches.
+> After Asset create/edit: `oxn roadmap sync oxn-system --scene <scene> --dry-run` (manual hint, NOT auto-sync).
 
-## Links
+## Scenes
 
-### 文档三层架构 (4 links)
+### scene: doc
+> Scenario: write/read documentation, ask what OXN is, find chapters.
 
-#### link-1: DocEngineeringContext
-- target: @prj/domains/DocEngineeringContext
+| kind | name | description |
+|---|---|---|
+| domain | DocEngineeringContext | Three-layer doc rules, ADR append-only, promote via Work |
+| domain | VitePressContext | Doc site build constraints (i18n prefix, sidebar, .html suffix) |
+| blueprint | doc-publish | Doc site build + GitHub Pages deploy |
+| blueprint | doc-promote | Promote pools/drafts to ADR/RFC (gather/author/validate/promote) |
 
-#### link-2: VitePressContext
-- target: @prj/domains/VitePressContext
+### scene: dev
+> Scenario: modify code, add CLI subcommand, evolve Asset.
 
-#### link-3: doc-publish
-- target: @prj/blueprints/doc-publish
+| kind | name | description |
+|---|---|---|
+| domain | WorkOrchestrationContext | 8 stages + 6 workType + PlanLock |
+| domain | AssetModeContext | 5 AssetKind + lifecycle + references DAG |
+| domain | intent-domain | Intent axis: CLI entry / OXL / Program |
+| domain | align-domain | Align axis: Work sandbox + Skill + Slot/Part/Probe |
+| domain | proof-domain | Proof axis: Builtin + frozen.json |
+| blueprint | dev-workflow | Generic development (build/develop/test/verify) |
+| blueprint | add-cli-subcommand | Add new oxn CLI subcommand |
+| blueprint | dsl-evolve | OXL grammar evolution |
+| blueprint | refactor-safe | Safe refactor with L0-L3 guard |
+| blueprint | git-workflow | Git worktree branch workflow |
 
-#### link-4: doc-promote
-- target: @prj/blueprints/doc-promote
+### scene: debug
+> Scenario: frozen.json anomaly, Probe fail, hash mismatch, regression.
 
-### IAP 8 阶段工作流 (10 links)
+| kind | name | description |
+|---|---|---|
+| domain | iap-error-context | IAPError 8 + OXNCrash 3 codes, exit code contract |
+| domain | TaintContext | Probe signal taint 12 items + 3 IO primitives |
+| domain | L0L3Context | L0-L3 architecture boundaries (prevent Kernel IO) |
+| blueprint | fix-issue | Bug reproduction + locate + fix + verify |
 
-#### link-5: WorkOrchestrationContext
-- target: @prj/domains/WorkOrchestrationContext
+### scene: test
+> Scenario: write tests, run test suite, analyze coverage.
 
-#### link-6: dev-workflow
-- target: @prj/blueprints/dev-workflow
+| kind | name | description |
+|---|---|---|
+| domain | WorkOrchestrationContext | 8 stages run/submit logic |
+| domain | CodeQualityContext | Cross-platform consistency, naming, pattern application |
+| blueprint | dev-workflow | Reuses dev-workflow, stage-2 includes test |
 
-#### link-7: add-cli-subcommand
-- target: @prj/blueprints/add-cli-subcommand
+### scene: release
+> Scenario: version migration, release cut, changelog.
 
-#### link-8: dsl-evolve
-- target: @prj/blueprints/dsl-evolve
+| kind | name | description |
+|---|---|---|
+| domain | MonorepoContext | packages/cli + packages/engine dual-package |
+| domain | I18nContext | zh-CN/en bilingual + t() |
+| blueprint | migrate-version | Migrate between versions |
+| blueprint | release-cut | Cut a release + changelog |
 
-#### link-9: fix-issue
-- target: @prj/blueprints/fix-issue
+### scene: onboard
+> Scenario: new contributor first day, full project overview.
 
-#### link-10: refactor-safe
-- target: @prj/blueprints/refactor-safe
+| kind | name | description |
+|---|---|---|
+| domain | L0L3Context | L0-L3 architecture core vocabulary |
+| domain | MonorepoContext | Dual-package Monorepo |
+| domain | DocEngineeringContext | Three-layer doc rules |
+| blueprint | dev-workflow | First workflow to run |
 
-#### link-11: migrate-version
-- target: @prj/blueprints/migrate-version
+---
 
-#### link-12: release-cut
-- target: @prj/blueprints/release-cut
+## Usage
 
-#### link-13: explore-analyze-report
-- target: @prj/blueprints/explore-analyze-report
+```bash
+# List all Roadmaps
+oxn roadmap list
 
-#### link-14: git-workflow
-- target: @prj/blueprints/git-workflow
+# View full Roadmap
+oxn roadmap show oxn-system
 
-### Asset 生命周期 (2 links)
+# View single scene
+oxn roadmap show oxn-system --scene dev
 
-#### link-15: AssetModeContext
-- target: @prj/domains/AssetModeContext
+# AI Agent: suggest in a scene
+oxn roadmap suggest --goal "Add new CLI subcommand" --scene dev --top 3
 
-#### link-16: L0L3Context
-- target: @prj/domains/L0L3Context
+# After Asset change: detect dangling links (manual, dry-run by default)
+oxn roadmap sync oxn-system --scene doc --dry-run
+oxn roadmap sync oxn-system --scene doc --apply   # actually modify
+```
 
-### IAP 三轴范式 (5 links)
+## Scene quick-reference
 
-#### link-17: intent-align-context
-- target: @prj/domains/intent-align-context
-
-#### link-18: intent-domain
-- target: @prj/domains/intent-domain
-
-#### link-19: align-domain
-- target: @prj/domains/align-domain
-
-#### link-20: proof-domain
-- target: @prj/domains/proof-domain
-
-#### link-21: iap-error-context
-- target: @prj/domains/iap-error-context
-
-### 横切关切 (8 links)
-
-#### link-22: MonorepoContext
-- target: @prj/domains/MonorepoContext
-
-#### link-23: GrammarContext
-- target: @prj/domains/GrammarContext
-
-#### link-24: I18nContext
-- target: @prj/domains/I18nContext
-
-#### link-25: CodeQualityContext
-- target: @prj/domains/CodeQualityContext
-
-#### link-26: SecurityContext
-- target: @prj/domains/SecurityContext
-
-#### link-27: TaintContext
-- target: @prj/domains/TaintContext
-
-#### link-28: PoolContext
-- target: @prj/domains/PoolContext
-
-#### link-29: config-domain
-- target: @prj/domains/config-domain
-
-### Skill 入口 (2 links)
-
-#### link-30: oxn-work
-- target: @oxn/skills/oxn-work
-
-#### link-31: oxn-asset
-- target: @oxn/skills/oxn-asset
+| Goal keywords | scene |
+|---|---|
+| write / read / doc / chapter / manual / guide | `doc` |
+| code / cli / subcommand / implement / refactor / evolve / asset / git / branch | `dev` |
+| bug / error / fail / frozen / mismatch / regression / hash / taint | `debug` |
+| test / coverage / assertion | `test` |
+| version / release / cut / changelog / migrate | `release` |
+| new / start / overview / project / architecture | `onboard` |
