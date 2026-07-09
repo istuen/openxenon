@@ -8,18 +8,18 @@ synced-at: 2026-07-08T13:52:19.197Z
 
 # Domain: AssetModeContext
 
-> Asset 生命周期 v0.6.1 限界上下文: 5 AssetKind (domain/blueprint/stack/library/external) + Work Asset Mode (--type asset --asset-kind X) + Asset-Lifecycle (创建/演进/归档) + Asset-DAG (references 校验)
+> Asset 生命周期 v0.6.x 限界上下文: 6 AssetKind (domain/blueprint/stack/roadmap/library/external) + Work Asset Mode (--type asset --asset-kind X) + Asset-Lifecycle (创建/演进/归档) + Asset-DAG (references 校验)
 
 ## Terms
 
 ### AssetKind
-- desc: 5 类资产枚举: domain (业务限界上下文) / blueprint (技术 slot DAG) / stack (技术栈约束) / library (文档聚合) / external (外部资源链接);v0.6.1-alpha.1 Batch 2 加 library/external
+- desc: 6 类资产枚举: domain (业务限界上下文) / blueprint (技术 slot DAG) / stack (技术栈约束) / roadmap (导航图) / library (文档聚合) / external (外部资源链接);v0.6.1-alpha.1 Batch 2 加 library/external;v0.6.x 加 roadmap
 
 ### AssetMode
 - desc: v0.6.1-alpha.1 Batch 2 新增: oxn work create --type asset --asset-kind X;走 Asset 生命周期而非 task DAG;无 .work/.run
 
 ### AssetTemplate
-- desc: assets/{kind}.md 模板: domain.md (Terms/Bans/Invariants) / blueprint.md (Props/Slots) / stack.md (Runtimes/Linters/Tests) / library.md (Sources) / external.md (Links)
+- desc: assets/{kind}.md 模板: domain.md (Terms/Bans/Invariants) / blueprint.md (Props/Slots) / stack.md (Runtimes/Linters/Tests) / roadmap.md (Scenes) / library.md (Sources) / external.md (Links)
 
 ### AssetLifecycle
 - desc: Asset 完整生命周期: create (oxn work create --type asset) / evolve (oxn work create --evolve-from) / archive (oxn asset archive) / delete (oxn asset delete);v0.6.3+ planLock hard-block
@@ -43,7 +43,7 @@ synced-at: 2026-07-08T13:52:19.197Z
 - desc: resolveAssetFile / resolveAssetDir / resolveAssetCandidates: 6 类资产路径解析;primary=v0.6 (assets/{kind}/) + fallback=v0.5 ({kinds}/)
 
 ### AssetCategoryWhitelist
-- desc: 5 AssetKind 的 H2 分类白名单: domain≠blueprint≠stack≠library≠external;混用 → E_MD_CATEGORY_UNKNOWN
+- desc: 6 AssetKind 的 H2 分类白名单: domain≠blueprint≠stack≠roadmap≠library≠external;混用 → E_MD_CATEGORY_UNKNOWN
 
 ### AssetFrontmatter
 - desc: Asset .md 格式的 YAML frontmatter: entity + version + name (+ references/citations);H1 实体 / H2 分类 / H3 实例
@@ -84,10 +84,10 @@ synced-at: 2026-07-08T13:52:19.197Z
 ## Invariants
 
 ### inv-1
-- value: 5 AssetKind 白名单不可混用: domain 的 H2 (Terms/Bans/Invariants) 与 blueprint 的 H2 (Props/Slots) 严格隔离;混用 → E_MD_CATEGORY_UNKNOWN
+- value: 6 AssetKind 白名单不可混用: domain 的 H2 (Terms/Bans/Invariants) 与 blueprint 的 H2 (Props/Slots) 严格隔离;混用 → E_MD_CATEGORY_UNKNOWN
 
 ### inv-2
-- value: --type asset 必填 --asset-kind X;5 AssetKind 之外的值 → OXN_INVALID_ASSET_KIND (CLI 加载期拒绝)
+- value: --type asset 必填 --asset-kind X;6 AssetKind 之外的值 → OXN_INVALID_ASSET_KIND (CLI 加载期拒绝)
 
 ### inv-3
 - value: Asset 模式 (--type asset) 不走 task DAG;不写 .work / .run;只写 .openxenon/assets/{kinds}/{name}.oxn + .md 镜像
@@ -126,7 +126,7 @@ synced-at: 2026-07-08T13:52:19.197Z
 - value: 重复创建同 name 资产 → OXN_ASSET_EXISTS (PATH_CONFLICT);--force 覆盖;不静默合并
 
 ### inv-15
-- value: 5 AssetKind 编译器 (DomainCompiler/BlueprintCompiler/StackCompiler/LibraryCompiler/ExternalCompiler) 注册到 EntityRegistry 单例;不可重复注册
+- value: 6 AssetKind 编译器 (DomainCompiler/BlueprintCompiler/StackCompiler/RoadmapCompiler/LibraryCompiler/ExternalCompiler) 注册到 EntityRegistry 单例;不可重复注册
 
 ### inv-16
 - value: Asset 不与 Work 混用: 同一 .openxenon/ 目录下 Asset (.oxn) 与 Work (.work) 互不引用;Asset 通过 @prj 寻址被 Work 引用

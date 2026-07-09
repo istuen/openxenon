@@ -1,0 +1,41 @@
+// Domain: AssetLifecycleContext
+// Created by: oxn domain create AssetLifecycleContext
+// Work: asset-skill-assets (stage-1)
+//
+// 资产生命周期业务边界 v0.6.x: 为 oxn-asset Skill 的 3 个执行路径
+// （create/evolve/archive）提供业务词汇与不变量。
+// 注意: .oxn STRING terminal 不支持反斜杠转义;复杂中文用 .md canonical 镜像。
+
+domain "AssetLifecycleContext" {
+  description = "Asset lifecycle v0.6.x: define create/evolve/archive vocabulary and invariants for oxn-asset Skill"
+
+  term {
+    "AssetCreate": "asset create path - user says add X type, runs oxn work create --type asset --asset-kind X"
+    "AssetEvolve": "asset evolve path - user says modify X, runs oxn asset evolve"
+    "AssetArchive": "asset archive path - user says deprecate X, runs oxn asset archive"
+    "AssetKindSelection": "Skill step 1: pick from 6 AssetKinds (domain/blueprint/stack/roadmap/library/external)"
+    "AssetTemplateFork": "Skill step 2: fork from assets/{kind}.md template"
+    "AssetContentFill": "Skill step 3: fill per AssetKind template structure"
+    "AssetCompletion": "Skill step 6: oxn asset list + citations auto-increment"
+    "AssetPaper4Fields": "Asset 4 fields invariant: abstract + references + citations + auditTrail"
+    "AssetCitation": "Asset reverse-ref count; auto +1 on any new referrer"
+    "AssetMigration": "v0.5 to v0.6 layout migration"
+    "AssetFrontmatter": "Asset .md YAML frontmatter: entity + version + name"
+    "AssetNaming": "Asset naming: domain PascalCase; blueprint/stack/roadmap kebab-case"
+  }
+
+  ban { "ignoreAssetLock", "directWriteOxn", "copyFromOldLayout", "assetBypassWork", "AssetKindMix", "CategoryMix", "missingAbstract", "missingReferences", "missingCitations", "missingAuditTrail", "oxn-asset-new", "skipValidation", "forceBypass" }
+
+  invariant {
+    "Asset 4 fields required: abstract + references + citations + auditTrail; missing triggers IAP_INTENT_ASSET_INCOMPLETE"
+    "--type asset requires --asset-kind X; 6 AssetKind whitelist; invalid triggers OXN_INVALID_ASSET_KIND"
+    "Asset create triggers planLock fileHash check; drift triggers IAP_ALIGN_LOCK_HASH_MISMATCH"
+    "Asset references DAG must be acyclic; cycle triggers IAP_INTENT_DAG_CYCLE"
+    "Asset cannot reference self; triggers IAP_INTENT_SELF_REFERENCE"
+    "Asset mode (--type asset) does not use task DAG; no .work/.run"
+    "Asset template (assets/{kind}.md) is SSOT; no in-place modify"
+    "Duplicate Asset name triggers OXN_ASSET_EXISTS PATH_CONFLICT; --force overwrites"
+    "Asset archive --reason Y moves to .openxenon/.archived/{kinds}/"
+    "Asset delete --force requires zero references; otherwise triggers IAP_ASSET_HAS_REFS"
+  }
+}
