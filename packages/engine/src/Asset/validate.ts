@@ -182,9 +182,12 @@ export async function validateAssetPaper4Fields(
 
   const warnings: string[] = []
   if (!abstract) warnings.push(`abstract field missing (recommended: 1-line business boundary description)`)
-  if (references === undefined)
+  // Roadmap grammar intentionally omits references field (asset-compiler/oxn.langium:285)
+  // Roadmap's "navigation" role is fulfilled by its own links[] (per grammar comment 2026-07-08).
+  if (references === undefined && kind !== 'roadmap')
     warnings.push(`references field missing (use references = ["X", "Y"] or references = [])`)
-  if (citations === undefined) warnings.push(`citations field missing (set initial value, e.g. citations = 0)`)
+  if (citations === undefined && kind !== 'roadmap')
+    warnings.push(`citations field missing (set initial value, e.g. citations = 0)`)
   if (!auditTrail && kind !== 'roadmap')
     warnings.push(`auditTrail comment missing (add // auditTrail: created by <name> at <time>)`)
 

@@ -1,0 +1,97 @@
+// Roadmap: oxn-system
+// Created by: oxn asset create --kind roadmap + manual content
+// Work: roadmap-bootstrap (Plan B execution)
+//
+// 路由图角色（per grammar comment 2026-07-08）：
+//   - "Roadmap 是 Asset 导航图（自包含 Asset，references 留空）"
+//   - body 内含 Asset 路径/链接（人工维护）
+//   - references 留空（不参与 DAG 校验）
+//   - citations 仍维护（被反向引用次数）
+//
+// 5 分区路由：
+//   1. 文档三层（对外 docs/ + 对内-沉淀 .openxenon/docs/ + 对内-探索 .openxenon/pools/）
+//   2. IAP 8 阶段工作流
+//   3. 资产生命周期（domain/blueprint/stack/roadmap）
+//   4. IAP 三轴范式（intent/align/proof）
+//   5. 横切关切（monorepo/grammar/i18n/quality/security/taint/pool/config）
+
+roadmap "oxn-system" {
+  version = 1
+  abstract = "OpenXenon 自举系统路由图：把文档层 + IAP 工作流 + Asset 生命周期映射到 19 Domain + 12 Blueprint 的导航入口。AI Agent 读这一份 Roadmap 即可定位该用哪些 Domain + Blueprint"
+  citations = 0
+
+  "5 个路由分区"
+
+  // ============================================================
+  // 1. 文档三层架构
+  // ============================================================
+
+  "─── 文档三层架构 ───"
+
+  "@prj/domains/DocEngineeringContext"
+  "@prj/domains/VitePressContext"
+  "@prj/blueprints/doc-publish"
+  "@prj/blueprints/doc-promote"
+
+  // ============================================================
+  // 2. IAP 8 阶段工作流
+  // ============================================================
+
+  "─── IAP 8 阶段工作流 ───"
+
+  "@prj/domains/WorkOrchestrationContext"
+  "@prj/blueprints/dev-workflow"
+  "@prj/blueprints/add-cli-subcommand"
+  "@prj/blueprints/dsl-evolve"
+  "@prj/blueprints/fix-issue"
+  "@prj/blueprints/refactor-safe"
+  "@prj/blueprints/migrate-version"
+  "@prj/blueprints/release-cut"
+  "@prj/blueprints/explore-analyze-report"
+  "@prj/blueprints/git-workflow"
+
+  // ============================================================
+  // 3. Asset 生命周期（5 AssetKind + 演进 + 模板）
+  // ============================================================
+
+  "─── Asset 生命周期 ───"
+
+  "@prj/domains/AssetModeContext"
+  "@prj/domains/L0L3Context"
+
+  // ============================================================
+  // 4. IAP 三轴范式（intent/align/proof）
+  // ============================================================
+
+  "─── IAP 三轴范式 ───"
+
+  "@prj/domains/intent-align-context"
+  "@prj/domains/intent-domain"
+  "@prj/domains/align-domain"
+  "@prj/domains/proof-domain"
+  "@prj/domains/iap-error-context"
+
+  // ============================================================
+  // 5. 横切关切
+  // ============================================================
+
+  "─── 横切关切 ───"
+
+  "@prj/domains/MonorepoContext"
+  "@prj/domains/GrammarContext"
+  "@prj/domains/I18nContext"
+  "@prj/domains/CodeQualityContext"
+  "@prj/domains/SecurityContext"
+  "@prj/domains/TaintContext"
+  "@prj/domains/PoolContext"
+  "@prj/domains/config-domain"
+
+  // ============================================================
+  // 6. Skill 入口（AI Agent 工作流引导）
+  // ============================================================
+
+  "─── Skill 入口 ───"
+
+  "@oxn/skills/oxn-work"
+  "@oxn/skills/oxn-asset"
+}
