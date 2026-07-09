@@ -15,6 +15,7 @@ config.json
 
 # Global Domain slim 索引（AI 离线读；可由 oxn domain index 重建）
 .cache/
+!.openxenon/.archived/**/*.cache/  # 例外：归档区下的 .cache/ 视为归档内容
 issues/
 
 # Work 静态门禁卡（CLI 写；可由 oxn work validate 重建）
