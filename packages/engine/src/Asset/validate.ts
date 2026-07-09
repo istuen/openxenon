@@ -96,7 +96,7 @@ export function validateAssetReferences(projectRoot: string): DagValidationResul
  * 不解析 Langium AST（避免对 engine kernel 强依赖）
  */
 function extractReferencesFromOxn(content: string): string[] {
-  // 匹配 references = [...] (允许 [] 或 ["..."","..."])
+  // 匹配 references = [...] (允许 [] 或 ["..."","...""])
   const match = content.match(/references\s*=\s*\[([^\]]*)\]/m)
   if (!match?.[1]) return []
   const inner = match[1].trim()
@@ -109,4 +109,96 @@ function extractReferencesFromOxn(content: string): string[] {
     if (m[1]) refs.push(m[1])
   }
   return refs
+}
+
+// =============================================================================
+// v0.6.1-alpha.1 Asset Lifecycle: AssetPaper 4 字段强校验
+// =============================================================================
+
+export interface AssetPaper4Fields {
+  abstract: string | undefined
+  references: string[] | undefined
+  citations: number | undefined
+  /** auditTrail 可能不在所有 Asset 存在（roadmap 除外） */
+  auditTrail: string | undefined
+}
+
+export interface AssetPaperValidationResult {
+  ok: boolean
+  /** 缺失字段警告（fail-open 模式：仅 warn 不阻断） */
+  warnings: string[]
+  /** 4 字段实际值（debug 用） */
+  fields: AssetPaper4Fields
+}
+
+/**
+ * 校验 Asset 的 4 字段（abstract / references / citations / auditTrail）
+ *
+ * 设计哲学：fail-open（默认） — 仅 warn 不阻断，允许存量资产渐进修复
+ *              fail-closed (strict=true) — 缺失任何字段 → IAPError
+ *
+ * 字段提取用 regex（避免 Langium kernel 强依赖）：
+ * - abstract = "..."
+ * - references = ["..."] (允许空数组)
+ * - citations = N
+ * - // auditTrail: ... (注释形式)
+ *
+ * @param projectRoot OXN 项目根目录
+ * @param kind AssetKind
+ * @param name Asset name
+ * @param strict true = 缺失任意字段 → IAPError; false = 仅警告
+ * @returns 校验结果
+ */
+export async function validateAssetPaper4Fields(
+  projectRoot: string,
+  kind: AssetKind,
+  name: string,
+  strict: boolean = false,
+): Promise<AssetPaperValidationResult> {
+  const filePath = resolveAssetFile(projectRoot, kind, name, 'oxn')
+  if (!existsSync(filePath)) {
+    throw new IAPError('INFRA', 'PATH_CONFLICT', IAPAction.YIELD_TO_HUMAN, `Asset not found: ${filePath}`, {
+      kind,
+      name,
+      path: filePath,
+    })
+  }
+
+  const content = readFileSync(filePath, 'utf-8')
+
+  // Extract 4 fields via regex
+  const abstractMatch = content.match(/abstract\s*=\s*"((?:[^"\\]|\\.)*)"/m)
+  const abstract = abstractMatch?.[1]?.replace(/\\"/g, '"')
+  // references: 区分"未设置"与"显式 = []" — 搜 references\s*= 字段存在性
+  const hasReferencesField = /references\s*=\s*\[/.test(content)
+  const references = hasReferencesField ? extractReferencesFromOxn(content) : undefined
+  const citationsMatch = content.match(/citations\s*=\s*(\d+)/m)
+  const citations = citationsMatch?.[1] ? Number(citationsMatch[1]) : undefined
+  // auditTrail 在 .oxn 通常是注释形式 `// auditTrail: ...` 或 frontmatter
+  const auditTrailMatch = content.match(/\/\/\s*auditTrail\s*:\s*(.+)/m)
+  const auditTrail = auditTrailMatch?.[1]?.trim()
+
+  const fields: AssetPaper4Fields = { abstract, references, citations, auditTrail }
+
+  const warnings: string[] = []
+  if (!abstract) warnings.push(`abstract field missing (recommended: 1-line business boundary description)`)
+  if (references === undefined)
+    warnings.push(`references field missing (use references = ["X", "Y"] or references = [])`)
+  if (citations === undefined) warnings.push(`citations field missing (set initial value, e.g. citations = 0)`)
+  if (!auditTrail && kind !== 'roadmap')
+    warnings.push(`auditTrail comment missing (add // auditTrail: created by <name> at <time>)`)
+
+  const ok = warnings.length === 0
+
+  if (strict && warnings.length > 0) {
+    throw new IAPError(
+      'INTENT',
+      'INCOMPLETE_ASSET_PAPER',
+      IAPAction.YIELD_TO_HUMAN,
+      `Asset '${name}' (${kind}) has ${warnings.length} missing Asset Paper 4 fields: ${warnings.join('; ')}`,
+      { kind, name, missingFields: warnings },
+    )
+  }
+
+  return { ok, warnings, fields }
 }

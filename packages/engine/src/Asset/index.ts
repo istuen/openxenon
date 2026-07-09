@@ -9,7 +9,7 @@
  *   list({ kind: 'domain', projectRoot })
  */
 export { create } from './create'
-export { validate, validateAssetReferences } from './validate'
+export { validate, validateAssetReferences, validateAssetPaper4Fields } from './validate'
 export { list, listAll } from './list'
 export { checkAssetDAG } from './dag-validator'
 export { archive } from './archive'
@@ -40,6 +40,7 @@ export type {
   EvolveResult,
 } from './types'
 
+export type { AssetPaper4Fields, AssetPaperValidationResult } from './validate'
 export type { AssetNode, DagValidationResult } from './dag-validator'
 export type { AssetReferenceEntry } from './internal/reference-checker'
 export { isAssetReferenced, listAssetReferences } from './internal/reference-checker'

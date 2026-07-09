@@ -66,6 +66,7 @@ export type IAPErrorCode =
   | 'REFERENCE_PREFIX_INVALID' // v0.6.1 PR-2: Work 引用值非 `@md/...` 前缀格式（D-γ b 锁定）
   | 'ASSET_HAS_REFS' // v0.6.1-alpha.1: Asset 被其他资产引用，禁止 archive/delete
   | 'FORCE_REQUIRED' // v0.6.1-alpha.1: 删除 Asset 需要 --force flag
+  | 'INCOMPLETE_ASSET_PAPER' // v0.6.1-alpha.1: AssetPaper 4 字段不完整 (strict mode)
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

@@ -27,6 +27,7 @@ import {
   create,
   validate as validateAsset,
   validateAssetReferences,
+  validateAssetPaper4Fields,
   archive,
   deleteAsset,
   evolve,
@@ -324,12 +325,35 @@ const validateSubcommand = defineCommand({
         name,
         projectRoot,
       })
+
+      // PR-2: --strict mode adds AssetPaper 4 字段校验
+      let paperResult: { ok: boolean; warnings: string[] } | null = null
+      if (strict && result.ok) {
+        try {
+          paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, true)
+        } catch (err) {
+          return iapErrorToOutput(err, format)
+        }
+      } else if (result.ok) {
+        // fail-open: warn only
+        paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, false)
+      }
+
       return output(
         {
-          data: { ok: result.ok, errors: result.errors, strict },
-          human: result.ok
-            ? `✓ Asset '${name}' (${kind}) valid${strict ? ' (strict mode: 4 fields checked)' : ''}`
-            : `✗ Asset '${name}' (${kind}) invalid:\n${result.errors.map((e) => `  - ${e}`).join('\n')}`,
+          data: {
+            ok: result.ok && (paperResult?.ok ?? true),
+            errors: result.errors,
+            strict,
+            paperWarnings: paperResult?.warnings ?? [],
+          },
+          human:
+            result.ok && (paperResult?.ok ?? true)
+              ? `✓ Asset '${name}' (${kind}) valid${strict ? ' (strict mode: 4 fields enforced)' : ''}`
+              : `✗ Asset '${name}' (${kind}) invalid:\n${[
+                  ...result.errors.map((e) => `  - ${e}`),
+                  ...(paperResult?.warnings ?? []).map((w) => `  - ${w}`),
+                ].join('\n')}`,
         },
         format,
       )
