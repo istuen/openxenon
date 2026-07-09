@@ -149,6 +149,8 @@ const main = defineCommand({
     // ---- Intent entities ----
     domain: () => import('./commands/domain').then((m) => m.default),
     blueprint: () => import('./commands/blueprint').then((m) => m.default),
+    // ---- v0.6.x: scene-based Roadmap CLI (asset-kind=roadmap navigation) ----
+    roadmap: () => import('./commands/roadmap').then((m) => m.default),
 
     // ---- v0.6.1-alpha.1: Asset lifecycle (8 subcommands: list/show/create/validate/archive/delete/evolve)
     // ---- alias 兼容: oxn work create --type asset --asset-kind X 仍保留 (work.ts handleAssetModeCreate)
