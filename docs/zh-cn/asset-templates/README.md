@@ -74,5 +74,5 @@ See [`docs/en/asset-templates/`](../../en/asset-templates/README.md) for English
 
 - [Asset Paper Schema · 资产论文结构](../asset-paper.md) — 完整论文结构说明
 - [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
-- [ADR-0048 library/external 子目录方案](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0048-asset-library-external-scheme.md)
-- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0051-asset-paper-citation-network.md)
+- [ADR-0048 library/external 子目录方案](../../.openxenon/docs/adrs/0048-asset-library-external-scheme.md)
+- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../../.openxenon/docs/adrs/0051-asset-paper-citation-network.md)

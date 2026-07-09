@@ -5,10 +5,10 @@ type: minor
 rfc:
   - .openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md
 adr:
-  - .openxenon/forges/splits/archive/docs-tmp-era/decisions/0048-asset-library-external-scheme.md
-  - .openxenon/forges/splits/archive/docs-tmp-era/decisions/0049-work-context-md-replaces-memory.md
-  - .openxenon/forges/splits/archive/docs-tmp-era/decisions/0050-onboarding-via-starter-work.md
-  - .openxenon/forges/splits/archive/docs-tmp-era/decisions/0051-asset-paper-citation-network.md
+  - .openxenon/docs/adrs/0048-asset-library-external-scheme.md
+  - .openxenon/docs/adrs/0049-work-context-md-replaces-memory.md
+  - .openxenon/docs/adrs/0050-onboarding-via-starter-work.md
+  - .openxenon/docs/adrs/0051-asset-paper-citation-network.md
 ---
 
 # 0.6.3 — Asset Paper Schema + library/external 子目录
@@ -179,7 +179,7 @@ ExecErrorCode = {
 .openxenon/pools/sprints/v0.6.x-observability-roadmap/design/
 └── v0.6.3-asset-paper-schema-rfc.md  # 🆕 论文结构 RFC
 
-.openxenon/forges/splits/archive/docs-tmp-era/decisions/
+.openxenon/docs/adrs/
 ├── 0048-asset-library-external-scheme.md
 ├── 0049-work-context-md-replaces-memory.md
 ├── 0050-onboarding-via-starter-work.md
@@ -266,10 +266,10 @@ $ oxn work create w-update-axios-docs --type asset --asset-kind library
 ## 参考
 
 - [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
-- [ADR-0048 library/external 子目录](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0048-asset-library-external-scheme.md)
-- [ADR-0049 Work/context.md 取代 Memory](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0049-work-context-md-replaces-memory.md)
-- [ADR-0050 Onboarding via Starter Work](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0050-onboarding-via-starter-work.md)
-- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0051-asset-paper-citation-network.md)
+- [ADR-0048 library/external 子目录](../../.openxenon/docs/adrs/0048-asset-library-external-scheme.md)
+- [ADR-0049 Work/context.md 取代 Memory](../../.openxenon/docs/adrs/0049-work-context-md-replaces-memory.md)
+- [ADR-0050 Onboarding via Starter Work](../../.openxenon/docs/adrs/0050-onboarding-via-starter-work.md)
+- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../../.openxenon/docs/adrs/0051-asset-paper-citation-network.md)
 - [docs/zh-cn/asset-paper.md](../../docs/zh-cn/asset-paper.md) 论文结构 SSOT
 - [v0.7.x Memory RFC 反弹记录](../../.openxenon/pools/sprints/v0.7-emergence/design/2026-07-05-archive-v0.7.x-memory-rfc-superseded.md)
 - [v0.6.x Roadmap RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.x-roadmap-rfc.md)

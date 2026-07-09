@@ -6,7 +6,7 @@ rfc:
   - .openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md
 adr:
-  - .openxenon/forges/splits/archive/docs-tmp-era/decisions/0051-asset-paper-citation-network.md
+  - .openxenon/docs/adrs/0051-asset-paper-citation-network.md
 ---
 
 # 0.7.0 — Asset 影响图 + Hall v0.5 集成
@@ -203,5 +203,5 @@ $ open http://localhost:5173/hall/assets/payment-core/
 
 - [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md)
 - [v0.7 Emergence RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md)
-- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0051-asset-paper-citation-network.md)
+- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../../.openxenon/docs/adrs/0051-asset-paper-citation-network.md)
 - [docs/zh-cn/asset-paper.md](../../docs/zh-cn/asset-paper.md)

@@ -5,8 +5,8 @@ type: minor
 rfc:
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.8.0-term-upstream-dag-rfc.md
 adr:
-  - .openxenon/forges/sprints/archive/docs-tmp-era/decisions/0030-term-cross-reference-upstream-dag.md
-  - .openxenon/forges/sprints/archive/docs-tmp-era/decisions/0023-at-addressing-no-arrow-pointer.md
+  - .openxenon/docs/adrs/0030-term-cross-reference-upstream-dag.md
+  - .openxenon/docs/adrs/0023-at-addressing-no-arrow-pointer.md
 ---
 
 # 0.8.0 — Domain DSL 演进：`@term/X` 跨 term 寻址 + `@upstream` DAG
@@ -241,7 +241,7 @@ oxn domain impact Order
 ## 参考
 
 - [v0.8.0 @term/@upstream DAG RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.8.0-term-upstream-dag-rfc.md) 📝 Draft
-- [ADR-0030 `@term/X` + `@upstream` DAG](../../.openxenon/forges/sprints/archive/docs-tmp-era/decisions/0030-term-cross-reference-upstream-dag.md)
-- [ADR-0023 `@` 哲学 + `->` 否决](../../.openxenon/forges/sprints/archive/docs-tmp-era/decisions/0023-at-addressing-no-arrow-pointer.md)
+- [ADR-0030 `@term/X` + `@upstream` DAG](../../.openxenon/docs/adrs/0030-term-cross-reference-upstream-dag.md)
+- [ADR-0023 `@` 哲学 + `->` 否决](../../.openxenon/docs/adrs/0023-at-addressing-no-arrow-pointer.md)
 - [v0.7 Emergence RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md) §2.6 Asset 影响图
 - [v0.7+ Roadmap Overview](../../.openxenon/pools/sprints/v0.7-plus-roadmap/overview.md) §3 v0.8 阶段

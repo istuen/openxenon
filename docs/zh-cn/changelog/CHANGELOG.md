@@ -70,7 +70,7 @@ oxn domain validate <X> --no-langium
 > - P1: proof verify 加 frozen.json hash drift 检测
 
 
-> OpenXenon 变更日志。每条变更对应一个 git commit；详细 PR 列表见 `.openxenon/forges/sprints/EXECUTION-ORDER.md`。
+> OpenXenon 变更日志。每条变更对应一个 git commit；详细 PR 列表见 `.openxenon/pools/drafts/`。
 
 ## [0.3.0] - 2026-06-24
 

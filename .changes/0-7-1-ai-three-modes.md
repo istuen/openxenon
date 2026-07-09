@@ -5,7 +5,7 @@ type: minor
 rfc:
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.1-ai-three-modes-rfc.md
 adr:
-  - .openxenon/forges/sprints/archive/docs-tmp-era/decisions/0022-guided-adaptive-unmanaged-ai-modes.md
+  - .openxenon/docs/adrs/0022-guided-adaptive-unmanaged-ai-modes.md
 ---
 
 # 0.7.1 — AI 三模式分级：Guided / Adaptive / Unmanaged
@@ -158,4 +158,4 @@ oxn work run my-feature --mode adaptive
 - [v0.7.1 AI Three Modes RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7.1-ai-three-modes-rfc.md) 📝 Draft
 - [v0.7 Emergence RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md) §2.2 模式库（前置）
 - [v0.7+ Roadmap Overview](../../.openxenon/pools/sprints/v0.7-plus-roadmap/overview.md) §2 v0.7.1 阶段
-- [ADR-0022 Guided / Adaptive / Unmanaged](../../.openxenon/forges/sprints/archive/docs-tmp-era/decisions/0022-guided-adaptive-unmanaged-ai-modes.md)
+- [ADR-0022 Guided / Adaptive / Unmanaged](../../.openxenon/docs/adrs/0022-guided-adaptive-unmanaged-ai-modes.md)

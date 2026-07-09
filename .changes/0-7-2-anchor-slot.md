@@ -5,7 +5,7 @@ type: minor
 rfc:
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.2-anchor-slot-rfc.md
 adr:
-  - .openxenon/forges/sprints/archive/docs-tmp-era/decisions/0029-anchor-slot-doc-binding.md
+  - .openxenon/docs/adrs/0029-anchor-slot-doc-binding.md
 ---
 
 # 0.7.2 — Anchor / Slot 文档双向绑定
@@ -178,4 +178,4 @@ oxn domain validate MemberContext
 - [v0.7.2 Anchor/Slot RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7.2-anchor-slot-rfc.md) 📝 Draft
 - [v0.7 Emergence RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md) §2.6 Asset 影响图
 - [v0.7+ Roadmap Overview](../../.openxenon/pools/sprints/v0.7-plus-roadmap/overview.md) §2 v0.7.2 阶段
-- [ADR-0029 Anchor / Slot 文档绑定机制](../../.openxenon/forges/sprints/archive/docs-tmp-era/decisions/0029-anchor-slot-doc-binding.md)
+- [ADR-0029 Anchor / Slot 文档绑定机制](../../.openxenon/docs/adrs/0029-anchor-slot-doc-binding.md)

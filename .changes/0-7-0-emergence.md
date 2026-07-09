@@ -6,9 +6,9 @@ rfc:
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.0-infra-ports-rfc.md
 adr:
-  - .openxenon/forges/sprints/archive/docs-tmp-era/decisions/0006-three-phase-model.md
-  - .openxenon/forges/sprints/archive/docs-tmp-era/decisions/0007-loop-observation-three-dimensions.md
-  - .openxenon/forges/sprints/archive/docs-tmp-era/decisions/0028-resource-port-cache-port-work-snapshot.md
+  - .openxenon/docs/adrs/0006-three-phase-model.md
+  - .openxenon/docs/adrs/0007-loop-observation-three-dimensions.md
+  - .openxenon/docs/adrs/0028-resource-port-cache-port-work-snapshot.md
 ---
 
 # 0.7.0 — 涌现层骨架：Insight 工程化 + Hall v0.5 + Infra Ports 扩展

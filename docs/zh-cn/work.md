@@ -825,4 +825,4 @@ Work finalize → context.md 冻结（不再修改）
 - [CLI 参考](./cli.md) — 完整 oxn 命令清单
 - [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
 - [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
-- [ADR-0049 Work/context.md 取代 Memory L1](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0049-work-context-md-replaces-memory.md)
+- [ADR-0049 Work/context.md 取代 Memory L1](../../.openxenon/docs/adrs/0049-work-context-md-replaces-memory.md)
