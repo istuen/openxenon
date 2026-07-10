@@ -8,7 +8,7 @@ synced-at: 2026-07-08T13:52:19.197Z
 
 # Domain: AssetModeContext
 
-> Asset 生命周期 v0.6.x 限界上下文: 6 AssetKind (domain/blueprint/stack/roadmap/library/external) + Work Asset Mode (--type asset --asset-kind X) + Asset-Lifecycle (创建/演进/归档) + Asset-DAG (references 校验)
+> Asset 生命周期 v0.6.1-alpha.4 限界上下文: 5 AssetKind (domain/workflow/stack/blueprint/roadmap) + Work Asset Mode (--type asset --asset-kind X) + Asset-Lifecycle (创建/演进/归档) + Asset-DAG (references 校验) + 三边界框架 (Domain 业务 / Workflow 执行 / Stack 实现) + Blueprint 组合模板
 
 ## Terms
 
@@ -43,7 +43,7 @@ synced-at: 2026-07-08T13:52:19.197Z
 - desc: resolveAssetFile / resolveAssetDir / resolveAssetCandidates: 6 类资产路径解析;primary=v0.6 (assets/{kind}/) + fallback=v0.5 ({kinds}/)
 
 ### AssetCategoryWhitelist
-- desc: 6 AssetKind 的 H2 分类白名单: domain≠blueprint≠stack≠roadmap≠library≠external;混用 → E_MD_CATEGORY_UNKNOWN
+- desc: 5 AssetKind 的 H2 分类白名单: domain (Terms/Bans/Invariants/Externals) ≠ workflow (Props/Slots/Externals) ≠ stack (Runtimes/Linters/Tests/Externals) ≠ blueprint (Refs) ≠ roadmap (Scenes);混用 → E_MD_CATEGORY_UNKNOWN
 
 ### AssetFrontmatter
 - desc: Asset .md 格式的 YAML frontmatter: entity + version + name (+ references/citations);H1 实体 / H2 分类 / H3 实例
@@ -84,10 +84,10 @@ synced-at: 2026-07-08T13:52:19.197Z
 ## Invariants
 
 ### inv-1
-- value: 6 AssetKind 白名单不可混用: domain 的 H2 (Terms/Bans/Invariants) 与 blueprint 的 H2 (Props/Slots) 严格隔离;混用 → E_MD_CATEGORY_UNKNOWN
+- value: 5 AssetKind 白名单不可混用: domain 的 H2 (Terms/Bans/Invariants/Externals) 与 workflow 的 H2 (Props/Slots/Externals) 严格隔离;混用 → E_MD_CATEGORY_UNKNOWN
 
 ### inv-2
-- value: --type asset 必填 --asset-kind X;6 AssetKind 之外的值 → OXN_INVALID_ASSET_KIND (CLI 加载期拒绝)
+- value: --type asset 必填 --asset-kind X;5 AssetKind 之外的值 → OXN_INVALID_ASSET_KIND (CLI 加载期拒绝)
 
 ### inv-3
 - value: Asset 模式 (--type asset) 不走 task DAG;不写 .work / .run;只写 .openxenon/assets/{kinds}/{name}.oxn + .md 镜像
@@ -126,7 +126,7 @@ synced-at: 2026-07-08T13:52:19.197Z
 - value: 重复创建同 name 资产 → OXN_ASSET_EXISTS (PATH_CONFLICT);--force 覆盖;不静默合并
 
 ### inv-15
-- value: 6 AssetKind 编译器 (DomainCompiler/BlueprintCompiler/StackCompiler/RoadmapCompiler/LibraryCompiler/ExternalCompiler) 注册到 EntityRegistry 单例;不可重复注册
+- value: 5 AssetKind 编译器 (DomainCompiler/WorkflowCompiler/StackCompiler/BlueprintCompiler/RoadmapCompiler) 注册到 EntityRegistry 单例;LibraryCompiler/ExternalCompiler 已删除 (收敛为 ## Externals H2 category);不可重复注册
 
 ### inv-16
 - value: Asset 不与 Work 混用: 同一 .openxenon/ 目录下 Asset (.oxn) 与 Work (.work) 互不引用;Asset 通过 @prj 寻址被 Work 引用
