@@ -193,14 +193,28 @@ export function serializeWorkToOxn(ir: WorkIR, ts?: string): string {
   lines.push(indent(1, '}'))
   lines.push('')
 
-  // work-level ref pool (domain / blueprint)
+  // work-level ref pool (domain / blueprint / stack)
+  // v0.6.4: stack ref 在 MD 里有正式声明 (kind: stack)，但 OXL grammar 没有
+  //         StackRefDecl → serializer 把 stack 写到注释里保留信息，避免 .oxn parse 失败。
+  const stackRefsAsComment: string[] = []
   for (const ref of ir.refs) {
+    if (ref.kind === 'stack') {
+      stackRefsAsComment.push(`stack "${escapeString(ref.name)}" ref "${escapeString(ref.ref)}"`)
+      continue
+    }
     const refParts: string[] = []
     if (ref.alias) refParts.push(`as "${escapeString(ref.alias)}"`)
     refParts.push(`ref "${escapeString(ref.ref)}"`)
     lines.push(indent(1, `${ref.kind} "${escapeString(ref.name)}" ${refParts.join(' ')};`))
   }
   if (ir.refs.length > 0) lines.push('')
+
+  // Stack refs → comment block (与 DomainIR.stack 同样处理)
+  if (stackRefsAsComment.length > 0) {
+    lines.push(indent(1, '// ═══ Stack refs (Work-level; OXN 无 StackRefDecl grammar，下沉到 .md) ═══'))
+    for (const s of stackRefsAsComment) lines.push(indent(1, `// ${s}`))
+    lines.push('')
+  }
 
   // task declarations (每个 task 映射一个 task 块)
   for (const task of ir.tasks) {

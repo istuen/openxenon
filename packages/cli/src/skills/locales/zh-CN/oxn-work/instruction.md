@@ -11,14 +11,7 @@
 ## 范式
 D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
 
-## 执行
-1. 前置：项目已 `oxn init`，**所需 Asset（domain/blueprint/stack 等）已就绪** — 若需创建/修改 Asset，**请触发 `oxn-asset` Skill**（本 Skill 不管 Asset 生命周期）
-2. fork `assets/work-{explore,develop,fix,onboarding}.md` → 改名为 `work.oxn`
-3. 模板是完整 .md 示例，可被 `WorkCompiler.parse()` 直接解析（不是 OXL 代码块文档）
-4. 走 8 阶段：`references/8-phase-detail.md`
-5. 报错：`references/error-codes.md`
-
-## Blueprint 选择
+## 蓝图选择
 | 需求 | 模板（.md 含 OXN 代码块）→ Blueprint |
 |---|---|
 | 摸清/报告 | `assets/work-explore.md` → `explore-analyze-report` |
@@ -27,6 +20,37 @@ D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
 | 跨域 | `assets/work-onboarding.md` → `dev-workflow` (多 domain) |
 
 > v0.7+：Work 不再有 mode（task/explore/edit）；行为差异由 Blueprint slots/observe 承载。
+
+## 执行（v0.6.4 Roadmap-driven Asset 选取）
+
+1. **前置**：项目已 `oxn init`，所需 Asset 已就绪 — 若需创建/修改 Asset，**触发 `oxn-asset` Skill**。
+2. **查 Roadmap 确定可用 Asset**（人机主动，非自动推荐）：
+   - `oxn roadmap show oxn-system --scene <scene>` — 列出 scene 下的 Domain / Blueprint / Stack
+   - `oxn roadmap suggest --goal "<goal>" --scene <scene>` — 按关键词 jaccard 排序的候选
+3. **人机分析，从 suggest 结果挑选**：
+   - **Blueprint** — 1..N 个 pipeline（通常 1 个；多 blueprint 用于跨阶段不同流水线）
+   - **Domain** — 1..N 个（Work 级声明，提供全局词汇；Task 级只能选其中 1 个）
+   - **Stack** — 0..N 个（Work 级声明技术栈约束；不进 Task 层）
+4. **fork 模板 + 改 work.md**（或用 `oxn work create` 直传）：
+   ```bash
+   oxn work create <name> \
+     --blueprint <bp> \
+     [--blueprint <bp2>] \
+     --domain <d1> --domain <d2> \
+     [--stack <s1>] \
+     --goal "<goal>" \
+     [--constraints "c1" "c2"]
+   ```
+   或手动 `fork assets/work-{explore,develop,fix,onboarding}.md → work.md` 自编辑 `## Refs` + `## Context`。
+5. **走 8 阶段**：`references/8-phase-detail.md`
+6. **报错**：`references/error-codes.md`
+
+## 多 Asset 与 Tasks 的关系
+
+- **Work 级 `## Refs`**：声明 domain[] + blueprint[] + stack[] ref 池（多个）
+- **Task 级**：每个 task 在 `task.oxn` 内**单选** 1 blueprint + 1 domain（Work 级 ref 池的子集）
+- **新增 task 校验**：task 选的 blueprint/domain **必须**在 Work 级 ref 池内（`add-task` 报错 `not declared in work`）
+- **planLock 影响**：work 级多 ref 让 `domains.json` / `blueprints.json` slim 索引含 N 条 entry；hash 算法不变（hash 整个 .json）
 
 ## 错误
 `LOCK_NOT_FOUND`/`HASH_MISMATCH` → YIELD | `TASK_OXN_MISSING` → `add-task` | `ROUND_ALREADY_PASSED` → `work finalize`

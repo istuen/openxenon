@@ -474,6 +474,11 @@ const createSubcommand = defineCommand({
     force: { type: 'boolean', description: t('work.create.args.force') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
+    // v0.6.4: 多 Asset refs + goal/constraints 直传
+    domain: { type: 'string', array: true, description: 'Domain refs (1..N)，从 Roadmap suggest 选' },
+    stack: { type: 'string', array: true, description: 'Stack refs (Work 级声明；不进 Task)' },
+    goal: { type: 'string', description: 'Work goal (直接写入 Context.goal)' },
+    constraints: { type: 'string', array: true, description: 'Work constraints (直接写入 Context.constraints)' },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -484,6 +489,20 @@ const createSubcommand = defineCommand({
     const customOutputDir = ctx.args['output-dir'] as string | undefined
     const force = ctx.args.force === true
     const projectRoot = getProjectRoot()
+    // v0.6.4: 多 Asset refs + goal/constraints 直传参数
+    const domainArgs = (ctx.args.domain as string[] | string | undefined) ?? []
+    const domainNames = Array.isArray(domainArgs) ? domainArgs : [domainArgs]
+    const stackArgs = (ctx.args.stack as string[] | string | undefined) ?? []
+    const stackNames = Array.isArray(stackArgs) ? stackArgs : [stackArgs]
+    const goalArg = ctx.args.goal as string | undefined
+    const constraintsArgs = (ctx.args.constraints as string[] | string | undefined) ?? []
+    const constraintsArr = Array.isArray(constraintsArgs) ? constraintsArgs : [constraintsArgs]
+    const skeletonOptions = {
+      ...(goalArg !== undefined ? { goal: goalArg } : {}),
+      ...(domainNames.length > 0 ? { domainNames: domainNames.filter(Boolean) as string[] } : {}),
+      ...(stackNames.length > 0 ? { stackNames: stackNames.filter(Boolean) as string[] } : {}),
+      ...(constraintsArr.length > 0 ? { constraints: constraintsArr.filter(Boolean) as string[] } : {}),
+    }
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
     const autoSync = resolveAutoSync(config)
@@ -604,7 +623,13 @@ const createSubcommand = defineCommand({
             },
           )
         }
-        const workContent = renderWorkSkeleton(workName, resolvedBlueprintName, slots, assetFormat)
+        const workContent = renderWorkSkeleton(
+          workName,
+          resolvedBlueprintName,
+          slots,
+          assetFormat,
+          Object.keys(skeletonOptions).length > 0 ? skeletonOptions : undefined,
+        )
         writeFileSync(workFile, workContent, 'utf-8')
 
         // v0.5 Phase 3: auto-sync to other format
@@ -650,9 +675,17 @@ const createSubcommand = defineCommand({
                 slotCount: slots.length,
                 slots: slots.map((s) => s.name),
               },
+              // v0.6.4: 把传入的 Asset refs 回显给用户（便于核对）
+              declaredRefs: {
+                domains: domainNames.filter(Boolean),
+                stacks: stackNames.filter(Boolean),
+                blueprint: resolvedBlueprintName,
+              },
               files: { work: workFile },
               tasks: autoTasks,
-              nextStep: `Edit the task files, then run: oxn work validate ${workName} && oxn work lock ${workName} && oxn work run ${workName}`,
+              nextStep:
+                `Edit the task files, then run: oxn work validate ${workName} && oxn work lock ${workName} && oxn work run ${workName}\n` +
+                `  Tip: view Roadmap scene for related Assets: oxn roadmap show oxn-system --scene <scene>`,
             },
           },
           format,
@@ -678,6 +711,7 @@ const createSubcommand = defineCommand({
       'TODO-blueprint',
       [{ name: 'stage-1', align: 'TODO' }],
       assetFormat,
+      Object.keys(skeletonOptions).length > 0 ? skeletonOptions : undefined,
     )
     writeFileSync(workFileFinal, workOxnContent, 'utf-8')
 

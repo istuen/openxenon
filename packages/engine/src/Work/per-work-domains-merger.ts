@@ -25,7 +25,8 @@ import { URI } from 'langium'
 import { parseOxnReference } from '@openxenon/engine/oxl/scope/oxn-scope'
 import { createOxnParser } from '@openxenon/engine/oxl/langium-driver/oxn-services'
 import { isWorkDeclaration, isDomainRefDecl, isOXNDocument } from '@openxenon/engine/oxl/langium-driver/generated/ast'
-import { BOUNDARY_DIR, DOMAINS_DIR, WORK_DOMAINS_JSON } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, WORK_DOMAINS_JSON } from '@openxenon/engine/kernel'
+import { resolveAssetCandidates } from '@openxenon/engine/infra/paths'
 import { hashText } from './plan-hash'
 import { parseDomainSlim, type DomainIndexEntry } from '@openxenon/engine/oxl/compiler/domain-index-builder'
 
@@ -111,10 +112,17 @@ export function resolveDomainFile(
   name: string,
   projectRoot: string,
 ): { scope: '@oxn' | '@prj'; filePath: string } | null {
-  const domainsDir = join(projectRoot, BOUNDARY_DIR, DOMAINS_DIR)
+  // v0.6.4: 改用 resolveAssetCandidates 兼容 v0.5 (domains/) + v0.6 (assets/domains/) 双布局
+  // (per-work-blueprints-merger.ts 已在 v0.6.1-alpha.0 #3-4 迁完；domains 此处补齐)
+  const { primary: domPrimary, fallback: domFallback } = resolveAssetCandidates(projectRoot, 'domain')
   const candidates = (n: string): string[] => {
     const kebab = toKebab(n)
-    return [join(domainsDir, `${n}.oxn`), join(domainsDir, `${kebab}.oxn`)]
+    return [
+      join(domPrimary, `${n}.oxn`),
+      join(domPrimary, `${kebab}.oxn`),
+      join(domFallback, `${n}.oxn`),
+      join(domFallback, `${kebab}.oxn`),
+    ]
   }
 
   if (ref) {

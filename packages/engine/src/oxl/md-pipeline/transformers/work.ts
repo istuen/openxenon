@@ -35,10 +35,12 @@ export interface WorkTaskIR {
   parts: WorkPart[]
 }
 
-/** v0.4 Phase 2: work-level domain/blueprint ref (H3 under ## Refs) */
+/** v0.4 Phase 2: work-level domain/blueprint ref (H3 under ## Refs)
+ *  v0.6.4: 扩展 kind 联合类型，加 'stack'（Work 级声明，不进 Task）
+ */
 export interface WorkRef {
-  /** domain | blueprint */
-  kind: 'domain' | 'blueprint'
+  /** domain | blueprint | stack */
+  kind: 'domain' | 'blueprint' | 'stack'
   /** ref 逻辑名 (= H3 文本) */
   name: string
   /** 完整 URI 引用 (如 @prj/domains/X) */
@@ -142,7 +144,8 @@ function extractRefFromFields(name: string, fields: ListField[]): WorkRef | null
 
   const kind = kindField?.value
   const refUri = refField?.value
-  if (kind !== 'domain' && kind !== 'blueprint') return null
+  // v0.6.4: 扩展为支持 stack（在 Work 级的 ## Refs 可声明 kind: stack）
+  if (kind !== 'domain' && kind !== 'blueprint' && kind !== 'stack') return null
   if (typeof refUri !== 'string') return null
 
   const alias = typeof aliasField?.value === 'string' ? aliasField.value : null
