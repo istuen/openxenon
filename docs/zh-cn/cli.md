@@ -129,6 +129,61 @@ CLI 解析 Asset 时按以下顺序：
 
 ---
 
+## External 状态管理（v0.6.1-alpha.4）
+
+External inline 声明（Domain/Workflow/Stack body 内 `## Externals`）的可用性状态管理：
+
+### `oxn external check`
+
+扫描所有边界类型文件（Domain/Workflow/Stack）中的 `## Externals` 声明，检查每个 external 的 url/path 可达性，更新 `.openxenon/.cache/external-status.json`。
+
+```bash
+oxn external check              # 检查所有 external
+oxn external check --name "stripe-api"  # 只检查指定 external
+```
+
+**4 状态值**：
+- `available`：资源可达 / 文件存在
+- `unavailable`：资源不可达 / 文件不存在
+- `stale`：TTL 过期
+- `unknown`：尚未检测
+
+输出示例：
+
+```
+Scanned 3 externals:
+  available:   2
+  unavailable: 1
+  stale:       0
+
+  [available  ] domain::TestDomain::local-doc
+  [unavailable] domain::TestDomain::stripe-api — Unable to connect. Is the computer able to access the url?
+  [available  ] domain::TestDomain::invalid-kind
+```
+
+### `oxn external status`
+
+显示 `.openxenon/.cache/external-status.json` 当前所有 external 状态。
+
+```bash
+oxn external status             # human-readable
+oxn external status --json      # JSON 输出
+```
+
+### `oxn external mark`
+
+手动标记某条 external 的 status（不检查可达性）。
+
+```bash
+oxn external mark --name "stripe-api" --status stale --reason "API 维护中"
+```
+
+**status 取值**：`available` | `unavailable` | `stale` | `unknown`
+
+详见 [ADR-0056 External inline + 状态管理](./.openxenon/docs/adrs/0056-external-inline-and-status.md)。
+
+---
+
 ## 开发者命令
 
 | 命令 | 作用 |

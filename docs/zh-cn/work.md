@@ -243,18 +243,23 @@ RoundRecord {
 
 ```oxn
 work "my-feature" {
-  // Work 级声明（必须）：
-  domain "MemberContext"   ref "@prj/domains/MemberContext";
-  blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow";
+  // v0.6.1-alpha.3 起：Work 只引用 Blueprint（一个 ref），不再直接引用 domain + stack
+  // Blueprint 内部通过 ## Refs 组合 Domain + Workflow + Stack + Blueprint
+  blueprint "integrate-payment" ref "@prj/blueprints/integrate-payment";
+
+  // 向后兼容：仍可显式声明 domain + stack（可选，用于 Blueprint 未覆盖的边界）
+  domain "MemberContext" ref "@prj/domains/MemberContext";
 }
 
 task "step-1" {
-  // Task 级 inject（按需）：
+  // Task 级 inject：必须从 Work 级 RefPool 中选（Blueprint 或 Domain）
+  blueprint "integrate-payment";
   domain "MemberContext";
-  blueprint "dev-workflow";
   part "build" { skill_context = "..." }
 }
 ```
+
+> **v0.6.1-alpha.3 简化**：Work ## Refs 只接受 `kind: blueprint`。Domain + Workflow + Stack 通过 Blueprint 间接引用（[ADR-0055](./.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)）。
 
 ## 9.2 解析调用链
 
@@ -263,27 +268,31 @@ work.oxn 文本
   ↓
 createOxnParser() (Langium AST)
   ↓
-isWorkDeclaration + isDomainRefDecl + isBlueprintRefDecl
+isWorkDeclaration + isBlueprintRefDecl
   ↓
-parseOxnReference(ref) 解析 '@prj/domains/X' 或 '@oxn/domains/X'
+parseOxnReference(ref) 解析 '@prj/blueprints/X' 或 '@prj/workflows/X' 或 '@prj/domains/X'
   ↓
-resolveDomainFile(ref, name, projectRoot)  // per-work-domains-merger.ts:109
+resolveBlueprintFile(ref, name, projectRoot)  // per-work-blueprints-merger.ts:77
   ↓
-路径候选 (kebab-case + PascalCase):
-  1. .openxenon/assets/domains/<Name>.oxn    (v0.6 主路径)
-  2. .openxenon/assets/domains/<name>.oxn    (kebab-case)
-  3. fallback: .openxenon/domains/<Name>.oxn (v0.5 老布局)
-  4. fallback: .openxenon/domains/<name>.oxn
+路径候选 (优先 workflow 目录, blueprint 目录 fallback):
+  1. .openxenon/assets/workflows/<Name>.oxn   (v0.6.1-alpha.2 主路径, 优先)
+  2. .openxenon/assets/workflows/<name>.oxn   (kebab-case)
+  3. fallback: .openxenon/assets/blueprints/<Name>.oxn  (新组合模板)
+  4. fallback: .openxenon/blueprints/<Name>.oxn (v0.5 老布局)
   ↓
-readFileSync → Langium parse (per-work slim, regex 10× 快于 full parse)
+readFileSync → parseBlueprintSlim (regex 10× 快于 full parse)
   ↓
-PerWorkDomainsIndex {
-  declaredRefs: [ref1, ref2, ...]
-  domains: [{ name, scope: '@prj', file, status, description, termNames, banCount, invariantCount, ... }]
-  sourceHash: sha256(work.oxn)   // 用于 planLock 校验
+PerWorkBlueprintEntry {
+  name, scope, file, status, version, slots,
+  // 🆕 v0.6.1-alpha.3: Blueprint ## Refs 提取的 3 边界 + 嵌套 Blueprint
+  domainRefs:    [{ name, ref, scope, fileHash? }],
+  workflowRefs:  [{ name, ref, scope, fileHash? }],
+  stackRefs:     [{ name, ref, scope, fileHash? }],
+  nestedBlueprintRefs: [{ name, ref, scope }],
+  ref: '@prj/workflows/X'
 }
   ↓
-writeFileSync(works/<w>/.cache/domains.json)  (原子写)
+writeFileSync(works/<w>/blueprints.json)  (原子写)
 ```
 
 ## 9.3 解析失败处理
@@ -295,37 +304,45 @@ writeFileSync(works/<w>/.cache/domains.json)  (原子写)
 | ref 格式错 | 退到用 name 兜底（兼容老 work.oxn） |
 | 解析 fail 但 work 已锁 | run 时 diagnostics 写入 `.run/state.json`（PR-14c） |
 
-## 9.4 per-work slim 索引（`works/<w>/.cache/domains.json`）
+## 9.4 per-work slim 索引（`works/<w>/blueprints.json`）
+
+> **v0.6.1-alpha.3 起**：从 `domains.json`（仅 domain）扩展为 `blueprints.json`（blueprint 含 3 边界 transitive refs）。
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "workName": "my-feature",
-  "generatedAt": "2026-07-03T...",
+  "generatedAt": "2026-07-10T...",
   "projectRoot": "/proj",
   "sourceHash": "<sha256(work.oxn)>",
-  "declaredRefs": ["@prj/domains/MemberContext", "@prj/blueprints/dev-workflow"],
-  "domainCount": 1,
+  "declaredRefs": ["@prj/blueprints/integrate-payment"],
+  "blueprintCount": 1,
   "invalidCount": 0,
-  "domains": [
+  "blueprints": [
     {
-      "name": "MemberContext",
+      "name": "integrate-payment",
       "scope": "@prj",
-      "file": ".openxenon/assets/domains/MemberContext.oxn",
+      "file": ".openxenon/assets/blueprints/integrate-payment.md",
       "status": "ok",
-      "description": "会员限界上下文",
-      "termNames": ["Member", "Account", "Register"],
-      "banCount": 3,
-      "invariantCount": 2,
-      "ref": "@prj/domains/MemberContext"
+      "version": 1,
+      "slots": [...],
+      "errors": [],
+      "ref": "@prj/blueprints/integrate-payment",
+      // 🆕 Phase 1: Blueprint ## Refs 提取的 3 边界 + 嵌套 Blueprint
+      "domainRefs":    [{ "name": "PaymentContext", "ref": "@md/domains/PaymentContext", "scope": "@prj" }],
+      "workflowRefs":  [{ "name": "fix-issue",      "ref": "@md/workflows/fix-issue",      "scope": "@prj" }],
+      "stackRefs":     [{ "name": "node-ts",        "ref": "@md/stacks/node-ts",            "scope": "@prj" }],
+      "nestedBlueprintRefs": []
     }
   ]
 }
 ```
 
-**与全局 `.cache/domains.json` 区别**：
-- **全局**：扫 `.openxenon/assets/domains/` 全部 domain（AI 离线检索全局 DDD 词汇）
-- **per-work**：只扫 work.oxn 声明的 N 个 ref（task 隔离的 DDD 词汇视图）
+**与全局 `.cache/blueprints.json` 区别**：
+- **全局**：扫 `.openxenon/assets/blueprints/` 全部 blueprint（AI 离线检索全局）
+- **per-work**：只扫 work.oxn 声明的 N 个 blueprint ref（work 隔离的 boundary 视图）
+
+**Backward compat**：v0.6.1-alpha.1 及之前生成的 `.cache/domains.json` 仍存在（用于 diagnostic），但 Blueprint 解析合并到 `blueprints.json`。
 
 ---
 

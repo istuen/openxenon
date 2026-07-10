@@ -129,6 +129,42 @@ See [Intent](./intent.md) for full Domain + Blueprint syntax.
 
 ---
 
+## External status management (v0.6.1-alpha.4)
+
+Manage availability status of `## Externals` inline declarations in Domain/Workflow/Stack files:
+
+### `oxn external check`
+
+Scan all boundary files (Domain/Workflow/Stack) for `## Externals` declarations, check reachability of each external's url/path, update `.openxenon/.cache/external-status.json`.
+
+```bash
+oxn external check              # check all externals
+oxn external check --name "stripe-api"  # check specific external
+```
+
+**4 status values**: `available` / `unavailable` / `stale` / `unknown`
+
+### `oxn external status`
+
+Display current external status from `.openxenon/.cache/external-status.json`.
+
+```bash
+oxn external status             # human-readable
+oxn external status --json      # JSON output
+```
+
+### `oxn external mark`
+
+Manually mark an external's status (without reachability check).
+
+```bash
+oxn external mark --name "stripe-api" --status stale --reason "API maintenance"
+```
+
+See [ADR-0056 External Inline + Status](./.openxenon/docs/adrs/0056-external-inline-and-status.md).
+
+---
+
 ## Developer commands
 
 | Command | Effect |

@@ -4,18 +4,33 @@ title: 资产
 
 # 资产（E1 · 静态边界）
 
-> **Asset 是 OXN 的第一结构实体（E1）——工程师维护的硬约束边界**。Domain / Blueprint / Stack 三类资产构成 Work 引用的稳定参照系。
+> **Asset 是 OXN 的第一结构实体（E1）——工程师维护的硬约束边界**。Domain / Workflow / Stack 三类边界资产 + Blueprint 组合模板 + Roadmap 索引层构成 5 类型 Asset。
 > Asset 创建后在 planLock + content_hash 下冻结，**不被 Work 改写，只被 Work 引用**——这是 OXN 区别于 OpenSpec 的关键设计反转。
 
-## 1. 三类核心资产
+## 1. 三边界 + 组合模板（v0.6.1-alpha.4 三边界框架）
 
-| 资产 | 关心什么 | 约束硬度 | 示例 |
-|---|---|---|---|
-| **Domain** | 业务上"说什么 / 不能说什么" | term 强制使用、ban 禁止使用、invariant 机器校验 | `MemberContext` |
-| **Blueprint** | 技术上"分几步做、步间依赖" | slot DAG 无环校验、slot 对齐 Part、observe 探针 | `dev-workflow` |
-| **Stack** | 工程师对 AI 设定的技术环境约束 | v0.6 硬要求，Proof 阶段直接断言 | `tech-stack` |
+E1 Asset 的"边界类型"明确为 3 个，覆盖 IAP Intent 的三个正交维度：
 
-**关键边界**：三类资产**不互相引用**——Domain 不写 slot，Blueprint 不写 term。Work 在编排时才把三者绑在一起。
+| 边界类型 | 关心什么 | 约束硬度 | IAP 角色 | 示例 |
+|---|---|---|---|---|
+| **Domain** | 业务上"说什么 / 不能说什么" | term 强制使用、ban 禁止使用、invariant 机器校验 | Intent 的语义约束 | `MemberContext` |
+| **Workflow** | 技术上"分几步做、步间依赖"（slot DAG） | slot DAG 无环校验、slot 对齐 Part、observe 探针 | Intent 的结构约束 | `dev-workflow`、`fix-issue` |
+| **Stack** | 工程师对 AI 设定的技术环境约束 | v0.6 硬要求，Proof 阶段直接断言 | Intent 的环境约束 | `node-ts`、`bun-react-stack` |
+
+外加 2 类 AssetKind：
+
+| AssetKind | 角色 | 何时使用 |
+|---|---|---|
+| **Blueprint** | 组合模板（E1 Asset 内的隔离层） | 组合 Domain + Workflow + Stack + Blueprint，供 Work 一次性引用 |
+| **Roadmap** | meta 索引层（不参与 references DAG） | AI 路由入口（scene → asset） |
+
+**关键边界**：
+- 3 边界类型**不互相引用**（kind-isolation，references 仅同类型）
+- **Blueprint** 是唯一允许跨类型引用的 Asset 类型（通过 `## Refs` 引用 Domain + Workflow + Stack + Blueprint）
+- **Work 只引用 Blueprint**（一个 ref），Blueprint 内部组合 3 边界
+- **Roadmap** 是索引层，不出现在自身 scene 表中
+
+详见 [ADR-0054 三边界框架](./.openxenon/docs/adrs/0054-three-boundary-framework.md) + [ADR-0055 Blueprint 组合模板](./.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)。
 
 ## 2. Asset vs OpenSpec specs/（设计反转）
 
@@ -41,7 +56,7 @@ Asset 创建后立即进入三层不可变锁定：
 |---|---|---|
 | OS 层 | chmod 0o444（写前抬 0o644 → try/finally 回锁 0o444） | root 可绕过 |
 | 内容层 | `content_hash` = SHA-256（写入时计算，读取时校验） | 改内容 hash 对不上 |
-| WAL 层 | **planLock**（4 组件 hash：workOxn/workDomains/blueprints/tasks + allHash） | 锁后任何 .oxn 漂移 → IAP_ALIGN_LOCK_HASH_MISMATCH |
+| WAL 层 | **planLock**（v0.6.1-alpha.3 起 3 组件 hash：workOxn/blueprints/tasks + allHash；blueprintsHash 含 Blueprint + 3 边界 composite hash） | 锁后任何 .oxn 漂移 → IAP_ALIGN_LOCK_HASH_MISMATCH |
 
 三层锁确保 Asset 在被 Work 引用期间**绝对不可变**——Engine 在 Proof 阶段能直接断言"AI 是否越界修改了 ban 目录"。
 
@@ -193,26 +208,65 @@ Work 看到的是 `ArsenalResolver`（而非 `BuiltinArsenal` 直接引用）。
 - ❌ 在 L0 Kernel / L1 OXL 直接 `import { BUILTIN_PROBES } from '...'`——必须通过 Resolver 端口
 - ❌ 项目级资产尝试覆盖 builtin 时不同名命名（导致 resolver 看到两个实体）
 
-## 12. Blueprint Type 范式（ADR-0019）
+## 12. ~~Blueprint Type 范式（ADR-0019）~~ ⛔ Superseded
 
-Blueprint 通过 `type` 字段声明其语义类别：
+> **本节描述的 `type "task"|"plan"|"explore"` 字段已被废弃**。v0.6.1-alpha.0 P0 移除 builtin blueprint 模板的 `type` 字段，v0.6.1-alpha.4 三边界 RFC 正式标记 Superseded（[ADR-0052](./.openxenon/docs/adrs/0052-superseded-0019-blueprint-type-paradigm.md)）。
+>
+> **替代方案**：
+> - Blueprint 结构差异由 `slot` DAG 拓扑表达（linear task vs DAG plan）
+> - 行为差异（task/explore）由 Blueprint `observe` 探针的 `kind: warning`/`mandatory` 表达
+> - Work 模式（task/explore/edit）已废弃（v0.7+），行为完全由 Blueprint 承载
+>
+> 历史信息保留在 [ADR-0019](./.openxenon/docs/adrs/0019-blueprint-type-paradigm.md)，仅供追溯。
+
+## 12.1 External inline（`## Externals`）— v0.6.1-alpha.4
+
+每个边界类型（Domain/Workflow/Stack）可声明 `## Externals` H2 category 引用 OXN 系统外的资源。**Blueprint 不支持**（Blueprint 是纯组合层）。
+
+### 字段 schema
 
 ```oxl
-blueprint "my-feature" {
-  type "task"       // 单次执行单元（强制 Probe）
-  // type "plan"    // 多次 Round 编排（强制 Probe + Round）
-  // type "explore" // 探索性 work（Probe 警告级，非强制）
-  ...
-}
+### external-name
+- url: https://api.example.com/v1   # 或 path（互斥）
+- kind: rest-api                     # enum 6 值
+- ttl: 7d                            # 可选
+- auth: api-key                      # 可选
+- summary: ...                       # 可选
 ```
 
-| Type | 意图 | Proof 严格度 |
-|---|---|---|
-| `task` | 单次任务执行 | 强制 |
-| `plan` | 多 Round 编排 | 强制 |
-| `explore` | 探索（草稿 / 研究） | 警告 |
+### Kind enum（6 值，编译器强制）
 
-`type` 是 Blueprint **本身**的元数据，**不与 `slot` 混用**。Skill 根据 type 选择 round 策略。
+| kind | 用途 | 示例 |
+|---|---|---|
+| `rest-api` | REST API 端点 | `url: https://api.stripe.com/v1` |
+| `webhook` | Webhook 端点 | `url: https://api.stripe.com/webhooks` |
+| `documentation` | 文档（项目内或网络） | `path: ./docs/arch.md` 或 `url: https://react.dev/docs` |
+| `library` | 已索引的库文档 | `path: ./.openxenon/libraries/react-docs.md` |
+| `config` | 配置文件 | `path: ./.oxnrc` |
+| `service` | 外部服务（非 REST） | `url: grpc://...` |
+
+### 2 种引用 vs Internal references
+
+| 引用类型 | 机制 | 作用域 |
+|---|---|---|
+| **Internal** | frontmatter `references: []` | 同类型 Asset only（kind-isolated） |
+| **External** | `## Externals` H2 category | OXN 系统外（url 或 path） |
+
+### 状态管理
+
+External 声明是静态的（Asset 不可变），可用性状态是动态的。存储在 `.openxenon/.cache/external-status.json`（gitignore），不参与 Asset hash。
+
+**4 状态值**：`available` / `unavailable` / `stale` / `unknown`
+
+### CLI
+
+```bash
+oxn external check        # 扫描所有边界 + 检查可达性 + 更新状态
+oxn external status       # 显示所有 external 状态
+oxn external mark <name> --status <s> [--reason "..."]  # 手动标记
+```
+
+详见 [ADR-0056 External inline + 状态管理](./.openxenon/docs/adrs/0056-external-inline-and-status.md) + [ADR-0053 Superseded ADR-0048](./.openxenon/docs/adrs/0053-superseded-0048-library-external-scheme.md)（library/external Asset 类型收敛的史料）。
 
 ## 13. catalog.json 与 Probe 黑名单（ADR-0035）
 

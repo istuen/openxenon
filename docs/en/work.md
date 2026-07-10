@@ -20,9 +20,26 @@ Work (one complete IAP cycle)
 
 | Mode | Intent | Align | Proof |
 |---|---|---|---|
-| **Asset** | Select asset type | Fill + write | Syntax validate + planLock |
+| **Asset** | Select asset kind | Fill + write | Syntax validate + planLock |
 | **Develop** | Select boundary + goal | AI code (Round) | Run lint/test/build |
 | **Proof** | Declare probes | Prepare env | Run probes + frozen.json |
+
+> **v0.7+**: Work has no mode (task/explore/edit); behavior differences are carried by Blueprint slots/observe.
+
+## Work References Blueprint Only (v0.6.1-alpha.3)
+
+```oxn
+work "my-feature" {
+  // v0.6.1-alpha.3+: Work only references Blueprint (one ref)
+  // Blueprint internally composes Domain + Workflow + Stack + Blueprint via ## Refs
+  blueprint "integrate-payment" ref "@prj/blueprints/integrate-payment";
+
+  // Backward compat: explicit domain + stack refs (optional)
+  domain "MemberContext" ref "@prj/domains/MemberContext";
+}
+```
+
+**Work ## Refs** accepts only `kind: blueprint`. Domain/Workflow/Stack are indirectly referenced through Blueprint composition (see [ADR-0055 Blueprint Composition Template](./.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)).
 
 ## Round Multi-Round IAP Loop (v0.6 New)
 
