@@ -32,8 +32,8 @@
  * reference target 字符串应当是裸 Asset name（不包含 scope prefix）。
  */
 export interface AssetNode {
-  /** Asset kind: domain / blueprint / stack / roadmap / library / external */
-  kind: 'domain' | 'blueprint' | 'stack' | 'roadmap' | 'library' | 'external'
+  /** Asset kind: 🆕 v0.6.1-alpha.2: domain / workflow / stack / blueprint / roadmap (5 类型) */
+  kind: 'domain' | 'workflow' | 'stack' | 'blueprint' | 'roadmap'
   /** Asset name（kebab-case / PascalCase） */
   name: string
   /** 引用目标 Asset name 列表（裸名） */

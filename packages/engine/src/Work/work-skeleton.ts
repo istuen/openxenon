@@ -51,9 +51,8 @@ export function renderWorkSkeleton(
 
     // ## Refs 段：多 domain / blueprint / stack refs
     const domainRefs = options?.domainNames ?? []
-    const blueprintRefs = options?.blueprintNames && options.blueprintNames.length > 0
-      ? options.blueprintNames
-      : [blueprintName] // 默认行为：老调用方传 1 个 blueprint
+    const blueprintRefs =
+      options?.blueprintNames && options.blueprintNames.length > 0 ? options.blueprintNames : [blueprintName] // 默认行为：老调用方传 1 个 blueprint
     const stackRefs = options?.stackNames ?? []
 
     const refsEntries: string[] = []
@@ -65,10 +64,11 @@ export function renderWorkSkeleton(
       )
     }
     for (const b of blueprintRefs) {
+      // v0.6.1-alpha.3: Phase 1 — Work 引用 workflow（不是 blueprint）
       refsEntries.push(
         `### ${b}
 - kind: blueprint
-- ref: "@prj/blueprints/${b}"`,
+- ref: "@prj/workflows/${b}"`,
       )
     }
     for (const s of stackRefs) {
@@ -123,14 +123,14 @@ ${partEntries}
       ? options.constraints.map((c) => `      "${c}"`).join(',\n')
       : `      "TODO: 列出硬约束"`
 
-  const blueprintRefs = options?.blueprintNames && options.blueprintNames.length > 0
-    ? options.blueprintNames
-    : [blueprintName]
+  const blueprintRefs =
+    options?.blueprintNames && options.blueprintNames.length > 0 ? options.blueprintNames : [blueprintName]
   const domainRefs = options?.domainNames ?? []
   // stack refs intentionally dropped for OXN format (see comment above)
 
   const refsBlock = [
-    ...blueprintRefs.map((b) => `  blueprint "${b}" ref "@prj/blueprints/${b}";`),
+    // v0.6.1-alpha.3: Phase 1 — Work 引用 workflow（不是 blueprint）
+    ...blueprintRefs.map((b) => `  blueprint "${b}" ref "@prj/workflows/${b}";`),
     ...domainRefs.map((d) => `  domain "${d}" ref "@prj/domains/${d}";`),
   ].join('\n')
 

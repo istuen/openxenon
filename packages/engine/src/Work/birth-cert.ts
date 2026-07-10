@@ -40,10 +40,33 @@ export const DomainAssetEntrySchema = z.object({
 })
 export type DomainAssetEntry = z.infer<typeof DomainAssetEntrySchema>
 
+/**
+ * 🆕 v0.6.1-alpha.3: 边界资产 slim entry（domain / workflow / stack 共用）
+ * 在 Blueprint composition 模式下，Blueprint 的 ## Refs 引用这 3 种边界；
+ * 每个 boundaryRef 在 BirthCert 中记录 name + scope + fileHash。
+ */
+export const BoundaryRefEntrySchema = z.object({
+  name: z.string().min(1),
+  kind: z.enum(['domain', 'workflow', 'stack']).default('domain'),
+  scope: z.enum(['@oxn', '@prj']).default('@prj'),
+  version: z.number().int().min(1).default(1),
+  fileHash: z.string().regex(/^[0-9a-f]{64}$/, 'fileHash must be sha256 hex'),
+})
+export type BoundaryRefEntry = z.infer<typeof BoundaryRefEntrySchema>
+
+/**
+ * 🆕 v0.6.1-alpha.3 Phase 1: Blueprint asset entry 扩展，含 3 边界引用。
+ * 语义：Blueprint 不只是自身 fileHash，还通过 ## Refs 引用 3 边界；
+ * 这些边界 hash 在 planLock 中被 hash 进去（drift 检测）。
+ */
 export const BlueprintAssetEntrySchema = z.object({
   name: z.string().min(1),
   version: z.number().int().min(1).default(1),
   fileHash: z.string().regex(/^[0-9a-f]{64}$/, 'fileHash must be sha256 hex'),
+  // 🆕 Blueprint 组合的 3 边界 refs（从 Blueprint ## Refs 提取）
+  domainRefs: z.array(BoundaryRefEntrySchema).default([]),
+  workflowRefs: z.array(BoundaryRefEntrySchema).default([]),
+  stackRefs: z.array(BoundaryRefEntrySchema).default([]),
 })
 export type BlueprintAssetEntry = z.infer<typeof BlueprintAssetEntrySchema>
 
@@ -147,7 +170,15 @@ export interface CreateBirthCertParams {
   maxIterations?: number
   assets: {
     domains: Array<{ name: string; scope?: '@oxn' | '@prj'; version: number; fileHash: string }>
-    blueprints: Array<{ name: string; version: number; fileHash: string }>
+    blueprints: Array<{
+      name: string
+      version: number
+      fileHash: string
+      // 🆕 Phase 1: Blueprint 组合的 3 边界 refs（可选；work-validator 当前不填，per-work merger 已包含在 blueprints.json）
+      domainRefs?: BoundaryRefEntry[]
+      workflowRefs?: BoundaryRefEntry[]
+      stackRefs?: BoundaryRefEntry[]
+    }>
   }
   createdAt?: string
 }
@@ -174,6 +205,9 @@ export function createBirthCert(params: CreateBirthCertParams): BirthCert {
         name: b.name,
         version: b.version,
         fileHash: b.fileHash,
+        domainRefs: b.domainRefs ?? [],
+        workflowRefs: b.workflowRefs ?? [],
+        stackRefs: b.stackRefs ?? [],
       })),
     },
     planLock: null,

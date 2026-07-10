@@ -33,10 +33,10 @@
 
 import { readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import type { AssetKind } from '../infra/paths.js'
+import { ALL_ASSET_KINDS, type AssetKind } from '../infra/paths.js'
 import type { RoadmapLink, RoadmapParseResult, RoadmapScene } from './types.js'
 
-const VALID_KINDS: readonly AssetKind[] = ['domain', 'blueprint', 'stack', 'roadmap', 'library', 'external']
+const VALID_KINDS: readonly AssetKind[] = ALL_ASSET_KINDS
 
 /**
  * Parse a Roadmap .md file from disk.

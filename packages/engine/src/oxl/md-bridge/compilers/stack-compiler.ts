@@ -28,9 +28,10 @@ import type {
   ValidationError,
 } from '../entity-compiler.js'
 import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
-import { extractListFields } from '../../md-pipeline/utils.js'
+import { extractListFields, getScalar } from '../../md-pipeline/utils.js'
 import type { IntentEntityType } from '../pipeline.js'
 import { findLegacyIntentBlocks } from './_legacy-detect.js'
+import { validateExternal, type ExternalEntry } from './external-validate.js'
 
 /** Stack H2 分类白名单
  *
@@ -39,7 +40,7 @@ import { findLegacyIntentBlocks } from './_legacy-detect.js'
  * - Linters: 代码检查工具（biome / eslint / prettier 等）
  * - Tests: 测试工具（bun-test / vitest / jest 等）
  */
-const STACK_CATEGORIES = ['Runtimes', 'Linters', 'Tests'] as const
+const STACK_CATEGORIES = ['Runtimes', 'Linters', 'Tests', 'Externals'] as const
 type StackCategory = (typeof STACK_CATEGORIES)[number]
 
 interface StackItem {
@@ -264,6 +265,7 @@ export class StackCompiler implements EntityCompiler {
     }
 
     const h3Seen = new Map<string, { name: string; line: number }>()
+    const externals: ExternalEntry[] = []
     for (const ctx of contexts) {
       if (!ctx.h2 || !ctx.h3) continue
       const key = `${ctx.h2}::${ctx.h3}`
@@ -278,6 +280,25 @@ export class StackCompiler implements EntityCompiler {
       } else {
         h3Seen.set(key, { name: ctx.h3, line: ctx.h3Position?.line ?? 0 })
       }
+
+      // 🆕 Phase 2: External 校验
+      if (ctx.h2 === 'Externals') {
+        const fields = ctx.h3List ? extractListFields(ctx.h3List) : []
+        externals.push({
+          name: ctx.h3,
+          url: getScalar(fields, 'url'),
+          path: getScalar(fields, 'path'),
+          kind: getScalar(fields, 'kind') ?? '',
+          ttl: getScalar(fields, 'ttl'),
+          auth: getScalar(fields, 'auth'),
+          summary: getScalar(fields, 'summary'),
+        })
+      }
+    }
+
+    // 🆕 Phase 2: External entry 校验
+    for (const ext of externals) {
+      validateExternal(ext, errors)
     }
 
     return errors

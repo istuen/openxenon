@@ -10,7 +10,7 @@ import { URI } from 'langium'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 import { createOxnParser, isDomainDeclaration } from '@openxenon/engine/oxl'
 import { resolveAssetFile } from './internal/resolver'
-import { resolveAssetDir } from '@openxenon/engine/infra/paths'
+import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
 import type { ValidateInput, ValidateResult } from './types'
 import { checkAssetDAG, type AssetNode, type DagValidationResult } from './dag-validator.js'
@@ -66,7 +66,7 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
  * @returns DAG 校验结果
  */
 export function validateAssetReferences(projectRoot: string): DagValidationResult {
-  const kinds: AssetKind[] = ['domain', 'blueprint', 'stack', 'roadmap', 'library', 'external']
+  const kinds: readonly AssetKind[] = ALL_ASSET_KINDS
   const nodes: AssetNode[] = []
 
   for (const kind of kinds) {

@@ -27,6 +27,16 @@ export const SlotSlimSchema = z.object({
   observe: z.array(z.string()).default([]),
 })
 
+export const BoundaryRefSlimSchema = z.object({
+  name: z.string().min(1),
+  ref: z.string().min(1),
+  scope: z.enum(['@oxn', '@prj']).default('@prj'),
+  fileHash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
+})
+
 export const PerWorkBlueprintEntrySchema = z.object({
   name: z.string().min(1),
   scope: z.enum(['@oxn', '@prj']),
@@ -36,6 +46,12 @@ export const PerWorkBlueprintEntrySchema = z.object({
   slots: z.array(SlotSlimSchema).default([]),
   errors: z.array(z.string()).default([]),
   ref: z.string().min(1),
+  // 🆕 v0.6.1-alpha.3 Phase 1: Blueprint 组合的 3 边界 slim refs
+  domainRefs: z.array(BoundaryRefSlimSchema).default([]),
+  workflowRefs: z.array(BoundaryRefSlimSchema).default([]),
+  stackRefs: z.array(BoundaryRefSlimSchema).default([]),
+  // 🆕 嵌套 Blueprint ref（可组合）
+  nestedBlueprintRefs: z.array(BoundaryRefSlimSchema).default([]),
 })
 
 export const PerWorkBlueprintsIndexSchema = z.object({
@@ -79,11 +95,19 @@ export function resolveBlueprintFile(
   name: string,
   projectRoot: string,
 ): { scope: '@oxn' | '@prj'; filePath: string } | null {
-  // v0.6.1-alpha.0 #3-4: 用 resolveAssetCandidates 兼容 v0.5 (blueprints/) + v0.6 (assets/blueprints/) 双布局
+  // v0.6.1-alpha.3: Phase 1 — Work 的 "blueprint" 引用实际指 Workflow 目录（slots/deps/observe 模板）。
+  // 同时保留 v0.6.1-alpha.2 前的 blueprints/ 目录 fallback（兼容历史 work.oxn）。
+  const { primary: wfPrimary, fallback: wfFallback } = resolveAssetCandidates(projectRoot, 'workflow')
   const { primary: bpPrimary, fallback: bpFallback } = resolveAssetCandidates(projectRoot, 'blueprint')
   const candidates = (n: string): string[] => {
     const kebab = toKebab(n)
     return [
+      // 优先 workflow 目录（Phase 1 后的标准位置）
+      join(wfPrimary, `${n}.oxn`),
+      join(wfPrimary, `${kebab}.oxn`),
+      join(wfFallback, `${n}.oxn`),
+      join(wfFallback, `${kebab}.oxn`),
+      // blueprints 目录 fallback（兼容历史 work.oxn + 未来组合模板）
       join(bpPrimary, `${n}.oxn`),
       join(bpPrimary, `${kebab}.oxn`),
       join(bpFallback, `${n}.oxn`),
@@ -122,11 +146,22 @@ export interface ParsedBlueprintSlim {
   version: number
   slots: SlotSlim[]
   errors: string[]
+  // 🆕 v0.6.1-alpha.3 Phase 1: Blueprint 组合的 3 边界 refs + 嵌套 blueprint ref
+  domainRefs: Array<{ name: string; ref: string | null }>
+  workflowRefs: Array<{ name: string; ref: string | null }>
+  stackRefs: Array<{ name: string; ref: string | null }>
+  nestedBlueprintRefs: Array<{ name: string; ref: string | null }>
 }
 
 /**
  * 从 blueprint.oxn 内容提取 slim 字段。
  * 永远不抛错；错误累积在 result.errors。
+ *
+ * 🆕 v0.6.1-alpha.3 Phase 1: 同时提取 Blueprint body 内的 4 种 ref decl：
+ *   - domain "X" ref "..."    → domainRefs[]
+ *   - workflow "Y" ref "..."  → workflowRefs[]
+ *   - stack "Z" ref "..."     → stackRefs[]
+ *   - blueprint "W" ref "..." → nestedBlueprintRefs[]
  */
 export function parseBlueprintSlim(content: string): ParsedBlueprintSlim {
   const errors: string[] = []
@@ -152,11 +187,34 @@ export function parseBlueprintSlim(content: string): ParsedBlueprintSlim {
     slots.push(slots_)
   }
 
+  // 🆕 Phase 1: 提取 Blueprint body 内的 4 种 ref decl
+  const extractRefs = (kind: 'domain' | 'workflow' | 'stack' | 'blueprint') => {
+    const re = new RegExp(`^\\s*${kind}\\s+"([^"]+)"(?:\\s+ref\\s+"([^"]+)")?\\s*;`, 'gm')
+    const out: Array<{ name: string; ref: string | null }> = []
+    for (const m of content.matchAll(re)) {
+      out.push({ name: m[1]!, ref: m[2] ?? null })
+    }
+    return out
+  }
+  const domainRefs = extractRefs('domain')
+  const workflowRefs = extractRefs('workflow')
+  const stackRefs = extractRefs('stack')
+  const nestedBlueprintRefs = extractRefs('blueprint').filter((r) => r.name !== name) // 排除自引用
+
   if (!name) {
     errors.push('no `blueprint "X" { ... }` declaration found')
   }
 
-  return { name, version, slots, errors }
+  return {
+    name,
+    version,
+    slots,
+    errors,
+    domainRefs,
+    workflowRefs,
+    stackRefs,
+    nestedBlueprintRefs,
+  }
 }
 
 function parseSlotSlim(name: string, body: string, _errors: string[]): SlotSlim {
@@ -208,14 +266,15 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
   for (const d of declared) {
     if (seen.has(d.name)) continue
     seen.add(d.name)
-    uniqueRefs.push(d.ref ?? `@prj/blueprints/${d.name}`)
+    // v0.6.1-alpha.3: Phase 1 — 默认 ref 指向 workflows/（不是 blueprints/）
+    uniqueRefs.push(d.ref ?? `@prj/workflows/${d.name}`)
     uniqueDeclared.push(d)
   }
 
   const blueprints: PerWorkBlueprintEntry[] = []
   for (const decl of uniqueDeclared) {
     const resolved = resolveBlueprintFile(decl.ref, decl.name, projectRoot)
-    const refStr = decl.ref ?? `@prj/blueprints/${decl.name}`
+    const refStr = decl.ref ?? `@prj/workflows/${decl.name}`
 
     if (!resolved) {
       const errors: string[] = []
@@ -233,6 +292,10 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
         slots: [],
         errors,
         ref: refStr,
+        domainRefs: [],
+        workflowRefs: [],
+        stackRefs: [],
+        nestedBlueprintRefs: [],
       })
       continue
     }
@@ -250,11 +313,29 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
         slots: [],
         errors: [`read failed: ${err instanceof Error ? err.message : String(err)}`],
         ref: refStr,
+        domainRefs: [],
+        workflowRefs: [],
+        stackRefs: [],
+        nestedBlueprintRefs: [],
       })
       continue
     }
 
     const slim = parseBlueprintSlim(bpContent)
+    // 🆕 Phase 1: 把 Blueprint ## Refs 中的 3 边界 + 嵌套 Blueprint 转为 slim refs
+    // 每个 ref 标 scope（@oxn vs @prj）；fileHash 待 Phase 2 resolve 阶段补全（先占位）
+    const toSlim = (rs: Array<{ name: string; ref: string | null }>) =>
+      rs.map((r) => ({
+        name: r.name,
+        ref: r.ref ?? `@prj/workflows/${r.name}`, // 默认 ref 路径（Phase 1: workflows 优先）
+        scope: (r.ref?.startsWith('@oxn/') ? '@oxn' : '@prj') as '@oxn' | '@prj',
+      }))
+    const toBlueprintSlim = (rs: Array<{ name: string; ref: string | null }>) =>
+      rs.map((r) => ({
+        name: r.name,
+        ref: r.ref ?? `@prj/blueprints/${r.name}`, // Blueprint 默认 ref 路径
+        scope: (r.ref?.startsWith('@oxn/') ? '@oxn' : '@prj') as '@oxn' | '@prj',
+      }))
     blueprints.push({
       name: decl.name,
       scope: resolved.scope,
@@ -264,6 +345,10 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
       slots: slim.slots,
       errors: slim.errors,
       ref: refStr,
+      domainRefs: toSlim(slim.domainRefs),
+      workflowRefs: toSlim(slim.workflowRefs),
+      stackRefs: toSlim(slim.stackRefs),
+      nestedBlueprintRefs: toBlueprintSlim(slim.nestedBlueprintRefs),
     })
   }
 

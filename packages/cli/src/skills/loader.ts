@@ -9,8 +9,7 @@ import zhCnAssetVsWork from './locales/zh-CN/oxn-asset/references/asset-vs-work.
 import zhCnAssetDomain from './locales/zh-CN/oxn-asset/assets/domain.md' with { type: 'text' }
 import zhCnAssetBlueprint from './locales/zh-CN/oxn-asset/assets/blueprint.md' with { type: 'text' }
 import zhCnAssetStack from './locales/zh-CN/oxn-asset/assets/stack.md' with { type: 'text' }
-import zhCnAssetLibrary from './locales/zh-CN/oxn-asset/assets/library.md' with { type: 'text' }
-import zhCnAssetExternal from './locales/zh-CN/oxn-asset/assets/external.md' with { type: 'text' }
+import zhCnAssetWorkflow from './locales/zh-CN/oxn-asset/assets/workflow.md' with { type: 'text' }
 import zhCnWork from './locales/zh-CN/oxn-work/instruction.md' with { type: 'text' }
 import zhCnWork8Phase from './locales/zh-CN/oxn-work/references/8-phase-detail.md' with { type: 'text' }
 import zhCnWorkErrors from './locales/zh-CN/oxn-work/references/error-codes.md' with { type: 'text' }
@@ -30,8 +29,7 @@ import enAssetVsWork from './locales/en/oxn-asset/references/asset-vs-work.md' w
 import enAssetDomain from './locales/en/oxn-asset/assets/domain.md' with { type: 'text' }
 import enAssetBlueprint from './locales/en/oxn-asset/assets/blueprint.md' with { type: 'text' }
 import enAssetStack from './locales/en/oxn-asset/assets/stack.md' with { type: 'text' }
-import enAssetLibrary from './locales/en/oxn-asset/assets/library.md' with { type: 'text' }
-import enAssetExternal from './locales/en/oxn-asset/assets/external.md' with { type: 'text' }
+import enAssetWorkflow from './locales/en/oxn-asset/assets/workflow.md' with { type: 'text' }
 import enWork from './locales/en/oxn-work/instruction.md' with { type: 'text' }
 import enWork8Phase from './locales/en/oxn-work/references/8-phase-detail.md' with { type: 'text' }
 import enWorkErrors from './locales/en/oxn-work/references/error-codes.md' with { type: 'text' }
@@ -56,16 +54,17 @@ interface SkillMeta {
 }
 
 // v0.6 Skill 极简：2 个 Skill
-// - oxn-asset: Asset 生命周期（创建/修改/演进/删除），覆盖 5 种 AssetKind（domain/blueprint/stack/library/external）
+// - oxn-asset: Asset 生命周期（创建/修改/演进/删除），覆盖 5 种 AssetKind（domain/workflow/stack/blueprint/roadmap）
 // - oxn-work:  Work 编排 + 执行（4 子模式 explore/develop/fix/onboarding），引用 Asset 到 Tasks
 //
 // v0.6.1-alpha.0: 每个 Skill = 1 SKILL.md (≤200 tokens 目标) + 5 references/* + assets/* 模板
+// v0.6.1-alpha.4: 收敛 5 AssetKind；Workflow 从 Blueprint 改名；新 Blueprint 为组合模板
 const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
   'zh-CN': [
     {
       id: 'oxn-asset',
       description:
-        'Asset 生命周期管理（v0.6）— 创建/修改/演进/删除 domain / blueprint / stack / library / external。底层走 oxn work --type asset 模式。当用户需要建、改、删 Asset 时触发。不处理 Work 编排、任务执行、Proof 展示（那是 oxn-work）',
+        'Asset 生命周期管理（v0.6.1-alpha.4）— 创建/修改/演进/删除 domain / workflow / stack / blueprint / roadmap。底层走 oxn work --type asset 模式。当用户需要建、改、删 Asset 时触发。不处理 Work 编排、任务执行、Proof 展示（那是 oxn-work）',
     },
     {
       id: 'oxn-work',
@@ -77,7 +76,7 @@ const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
     {
       id: 'oxn-asset',
       description:
-        'Asset lifecycle management (v0.6) — create/modify/evolve/delete domain / blueprint / stack / library / external. Underlying oxn work --type asset mode. Triggered when user needs to create, modify, or delete Assets. Does NOT handle Work orchestration, task execution, or Proof display (that is oxn-work)',
+        'Asset lifecycle management (v0.6.1-alpha.4) — create/modify/evolve/delete domain / workflow / stack / blueprint / roadmap. Underlying oxn work --type asset mode. Triggered when user needs to create, modify, or delete Assets. Does NOT handle Work orchestration, task execution, or Proof display (that is oxn-work)',
     },
     {
       id: 'oxn-work',
@@ -100,10 +99,9 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
       ],
       assets: [
         { filename: 'domain.md', content: zhCnAssetDomain },
-        { filename: 'blueprint.md', content: zhCnAssetBlueprint },
+        { filename: 'workflow.md', content: zhCnAssetWorkflow },
         { filename: 'stack.md', content: zhCnAssetStack },
-        { filename: 'library.md', content: zhCnAssetLibrary },
-        { filename: 'external.md', content: zhCnAssetExternal },
+        { filename: 'blueprint.md', content: zhCnAssetBlueprint },
       ],
     },
     'oxn-work': {
@@ -135,10 +133,9 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
       ],
       assets: [
         { filename: 'domain.md', content: enAssetDomain },
-        { filename: 'blueprint.md', content: enAssetBlueprint },
+        { filename: 'workflow.md', content: enAssetWorkflow },
         { filename: 'stack.md', content: enAssetStack },
-        { filename: 'library.md', content: enAssetLibrary },
-        { filename: 'external.md', content: enAssetExternal },
+        { filename: 'blueprint.md', content: enAssetBlueprint },
       ],
     },
     'oxn-work': {

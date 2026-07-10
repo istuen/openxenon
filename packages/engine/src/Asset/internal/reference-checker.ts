@@ -17,7 +17,7 @@
 
 import { readFileSync, readdirSync, existsSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
-import { resolveAssetDir } from '@openxenon/engine/infra/paths'
+import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
 
 export interface AssetReferenceEntry {
@@ -32,7 +32,7 @@ export interface AssetReferenceEntry {
  * 返回反向引用索引：name → referencedBy[]
  */
 export function listAssetReferences(projectRoot: string): AssetReferenceEntry[] {
-  const kinds: AssetKind[] = ['domain', 'blueprint', 'stack', 'roadmap', 'library', 'external']
+  const kinds: AssetKind[] = [...ALL_ASSET_KINDS]
   const nodes: Array<{ kind: AssetKind; name: string; references: string[] }> = []
 
   for (const kind of kinds) {

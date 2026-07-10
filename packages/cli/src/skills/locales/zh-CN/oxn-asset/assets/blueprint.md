@@ -3,7 +3,7 @@ entity: blueprint
 version: 0.1.0
 name: <name>
 abstract: |
-  TODO: 一句话描述本技术流程的步骤与依赖。
+  TODO: 一句话描述本组合模板的边界组合（domain + workflow + stack）。
   TODO: 适用场景（2-3 行）
 references: []
 citations: 0
@@ -11,40 +11,26 @@ citations: 0
 
 # Blueprint: <name>
 
-> TODO: 一句话描述本技术流程
+> TODO: 一句话描述本组合模板的工作流程
 
-## Props
+## Refs
 
-### env
-- type: enum
-- values:
-  - dev
-  - staging
-  - prod
-- required: true
-- default: dev
+<!-- 示例：删除下方示例，添加你的 boundary refs -->
+<!-- 至少引用 1 个 Domain + 1 个 Workflow + 1 个 Stack -->
 
-### timeout
-- type: number
-- default: 60000
+### payment-domain
+- kind: domain
+- ref: @md/domains/PaymentContext
 
-## Slots
+### fix-issue-workflow
+- kind: workflow
+- ref: @md/workflows/fix-issue
 
-### analyze
-- deps: []
-- observe:
-  - fs-exists
-  - lint-check
+### node-stack
+- kind: stack
+- ref: @md/stacks/node-ts
 
-### implement
-- deps:
-  - analyze
-- observe:
-  - ts-compiles
-  - test-pass
-
-### verify
-- deps:
-  - implement
-- observe:
-  - test-pass
+<!-- 可选：嵌套 Blueprint（多层组合） -->
+<!-- ### base-setup-blueprint
+- kind: blueprint
+- ref: @md/blueprints/base-setup -->

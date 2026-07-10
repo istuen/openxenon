@@ -148,15 +148,13 @@ function detectEntityType(entity: { $type: string }): IntentEntityType {
     case 'DomainDeclaration':
       return 'domain'
     case 'BlueprintDeclaration':
+      // 🆕 v0.6.1-alpha.4 Phase 2: Langium 仍用 BlueprintDeclaration 关键字（语法未改）；
+      // 但 entity 名映射到新语义（组合模板）。执行模板走 WorkflowDeclaration 路径。
       return 'blueprint'
     case 'StackDeclaration':
       return 'stack'
     case 'RoadmapDeclaration':
       return 'roadmap'
-    case 'LibraryDeclaration':
-      return 'library'
-    case 'ExternalDeclaration':
-      return 'external'
     case 'WorkDeclaration':
       return 'work'
     case 'TaskDeclaration':

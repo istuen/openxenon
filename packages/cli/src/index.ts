@@ -149,6 +149,8 @@ const main = defineCommand({
     // ---- Intent entities ----
     domain: () => import('./commands/domain').then((m) => m.default),
     blueprint: () => import('./commands/blueprint').then((m) => m.default),
+    // ---- v0.6.1-alpha.4: External inline status (check/status/mark) ----
+    external: () => import('./commands/external').then((m) => m.externalCommand),
     // ---- v0.6.x: scene-based Roadmap CLI (asset-kind=roadmap navigation) ----
     roadmap: () => import('./commands/roadmap').then((m) => m.default),
 

@@ -39,18 +39,18 @@ describe('WorkOrchestrationContext.oxn 业务词汇验证 (v0.7+ Blueprint-drive
     expect(content).toContain('AssetShortCircuit')
     expect(content).toContain('--asset-kind')
     expect(content).toContain('handleAssetModeCreate')
-    // 不再出现 workTypeToMode
-    expect(content).not.toContain('workTypeToMode')
+    // v0.7+ Work 无 mode 调度（workTypeToMode 已删除；ban 段引用仅作"防止回潮"用）
+    const nonBanContent = content.replace(/ban\s*\{[\s\S]*?\}\s*;?/m, '')
+    expect(nonBanContent).not.toContain('workTypeToMode')
   })
 
-  test('3. domain 含 6 个 AssetKind 字符串 (domain/blueprint/stack/roadmap/library/external)', () => {
+  test('3. domain 含 5 个 AssetKind 字符串 (domain/workflow/stack/blueprint/roadmap) — v0.6.1-alpha.2 收敛', () => {
     const content = readDomain()
     expect(content).toContain('domain')
-    expect(content).toContain('blueprint')
+    expect(content).toContain('workflow')
     expect(content).toContain('stack')
+    expect(content).toContain('blueprint')
     expect(content).toContain('roadmap')
-    expect(content).toContain('library')
-    expect(content).toContain('external')
   })
 
   test('4. domain ban 列表禁 mode/workType 一切历史概念', () => {

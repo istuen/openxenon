@@ -119,6 +119,9 @@ export async function validateAndWriteArtifacts(params: {
     name: b.name,
     version: b.version,
     fileHash: hashFile(join(projectRoot, b.file)) ?? '',
+    domainRefs: [], // Phase 1: 已合并到 blueprints slim index；BirthCert 暂不重复存（drift 检测靠 blueprints.json）
+    workflowRefs: [],
+    stackRefs: [],
   }))
 
   for (const a of [...domainAssets, ...blueprintAssets]) {

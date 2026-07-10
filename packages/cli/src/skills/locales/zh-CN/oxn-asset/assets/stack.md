@@ -31,3 +31,15 @@ citations: 0
 ### bun-test
 - command: "bun test"
 - coverage: "@oxn/probes/test-pass"
+
+## Externals（v0.6.1-alpha.4 可选）
+
+> 当本 Stack 需要引用外部工具配置源（如 npm registry、Node.js 兼容性表）时，添加 `## Externals` section。
+> 6 值 kind enum：rest-api | webhook | documentation | library | config | service
+> url（网络）或 path（项目内）二选一。
+
+<!-- ### <external-name>
+- url: https://registry.npmjs.org
+- kind: service
+- ttl: 1d
+- summary: TODO -->

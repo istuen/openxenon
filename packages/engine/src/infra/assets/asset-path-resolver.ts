@@ -57,20 +57,30 @@ export function resolveAndDetectAssetDir(
   kind: Exclude<AssetKind, never>, // 限定为 AssetKind（不含 work/proof）
   config: ProjectConfig | null = null,
 ): ResolvedAssetPath {
-  if (kind !== 'domain' && kind !== 'blueprint' && kind !== 'stack') {
+  // 🆕 v0.6.1-alpha.2: 加入 workflow 5 kind 校验（删除 library/external）
+  if (kind !== 'domain' && kind !== 'workflow' && kind !== 'blueprint' && kind !== 'stack' && kind !== 'roadmap') {
     throw new IAPError(
       'INFRA',
       'KIND_UNSUPPORTED',
       IAPAction.YIELD_TO_HUMAN,
-      'Only domain / blueprint / stack are asset-dir configurable. Work / proof are process.',
+      'Only domain / workflow / blueprint / stack / roadmap are asset-dir configurable. Work / proof are process.',
       { kind },
     )
   }
 
   const boundary = join(projectRoot, BOUNDARY_DIR)
   const primary = resolveAssetDir(projectRoot, kind, config)
-  // fallback 旧布局：.openxenon/<plural>/（domains/blueprints/stack — v0.5 兼容）
-  const fallbackDir = kind === 'domain' ? 'domains' : kind === 'blueprint' ? 'blueprints' : 'stack'
+  // fallback 旧布局：.openxenon/<plural>/（domains/workflows/blueprints/stack/roadmaps — v0.5 兼容）
+  const fallbackDir =
+    kind === 'domain'
+      ? 'domains'
+      : kind === 'workflow'
+        ? 'workflows'
+        : kind === 'blueprint'
+          ? 'blueprints'
+          : kind === 'roadmap'
+            ? 'roadmaps'
+            : 'stack'
   const fallback = join(boundary, fallbackDir)
 
   const primaryExists = exists(primary)
@@ -128,7 +138,8 @@ export function migrateAssetsToV6Layout(
   dryRun = false,
 ): MigrateResult {
   const result: MigrateResult = { moved: [], skipped: [], configUpdated: false }
-  const kinds: Exclude<AssetKind, never>[] = ['domain', 'blueprint', 'stack']
+  // 🆕 v0.6.1-alpha.2: 加入 workflow + blueprint（5 类型） + roadmap
+  const kinds: Exclude<AssetKind, never>[] = ['domain', 'workflow', 'blueprint', 'stack', 'roadmap']
 
   for (const kind of kinds) {
     const resolved = resolveAndDetectAssetDir(projectRoot, kind, config)
@@ -174,9 +185,9 @@ export function migrateAssetsToV6Layout(
       changed = true
     } else {
       for (const kind of kinds) {
-        if (!config.assetDirs[kind as 'domain' | 'blueprint' | 'stack']) {
-          config.assetDirs[kind as 'domain' | 'blueprint' | 'stack'] =
-            DEFAULT_ASSET_DIRS[kind as 'domain' | 'blueprint' | 'stack']
+        if (!config.assetDirs[kind as 'domain' | 'workflow' | 'blueprint' | 'stack' | 'roadmap']) {
+          config.assetDirs[kind as 'domain' | 'workflow' | 'blueprint' | 'stack' | 'roadmap'] =
+            DEFAULT_ASSET_DIRS[kind as 'domain' | 'workflow' | 'blueprint' | 'stack' | 'roadmap']
           changed = true
         }
       }

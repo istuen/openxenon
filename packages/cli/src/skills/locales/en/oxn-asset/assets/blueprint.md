@@ -3,7 +3,7 @@ entity: blueprint
 version: 0.1.0
 name: <name>
 abstract: |
-  TODO: One-line description of this technical workflow's steps and dependencies.
+  TODO: One-line description of this composition template (domain + workflow + stack).
   TODO: Applicable scenarios (2-3 lines)
 references: []
 citations: 0
@@ -11,40 +11,26 @@ citations: 0
 
 # Blueprint: <name>
 
-> TODO: One-line description of this technical workflow
+> TODO: One-line description of this composition template's workflow
 
-## Props
+## Refs
 
-### env
-- type: enum
-- values:
-  - dev
-  - staging
-  - prod
-- required: true
-- default: dev
+<!-- Examples: delete below and add your boundary refs -->
+<!-- Must reference at least 1 Domain + 1 Workflow + 1 Stack -->
 
-### timeout
-- type: number
-- default: 60000
+### payment-domain
+- kind: domain
+- ref: @md/domains/PaymentContext
 
-## Slots
+### fix-issue-workflow
+- kind: workflow
+- ref: @md/workflows/fix-issue
 
-### analyze
-- deps: []
-- observe:
-  - fs-exists
-  - lint-check
+### node-stack
+- kind: stack
+- ref: @md/stacks/node-ts
 
-### implement
-- deps:
-  - analyze
-- observe:
-  - ts-compiles
-  - test-pass
-
-### verify
-- deps:
-  - implement
-- observe:
-  - test-pass
+<!-- Optional: nested Blueprint (multi-level composition) -->
+<!-- ### base-setup-blueprint
+- kind: blueprint
+- ref: @md/blueprints/base-setup -->

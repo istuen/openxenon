@@ -35,9 +35,9 @@ import {
   listAll,
   resolveArchivedAssetFile,
 } from '@openxenon/engine/Asset'
-import type { AssetKind } from '@openxenon/engine/infra/paths'
+import { ALL_ASSET_KINDS, type AssetKind } from '@openxenon/engine/infra/paths'
 
-const VALID_ASSET_KINDS = ['domain', 'blueprint', 'stack', 'roadmap', 'library', 'external'] as const
+const VALID_ASSET_KINDS = ALL_ASSET_KINDS
 type ValidAssetKind = (typeof VALID_ASSET_KINDS)[number]
 
 function getProjectRoot(): string {

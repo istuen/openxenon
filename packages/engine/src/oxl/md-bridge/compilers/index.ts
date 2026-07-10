@@ -1,12 +1,14 @@
 /**
- * md-bridge/compilers/index.ts — 8 个 EntityCompiler 注册入口 + barrel
+ * md-bridge/compilers/index.ts — EntityCompiler 注册入口 + barrel
  *
  * v0.3 改革 PR-A（feat/v0.3-t18-md-native-grammar）
  * v0.6.1-alpha.1 Batch 2: 扩展 5 → 8 个 compiler（+ stack / library / external）
+ * v0.6.1-alpha.4 Phase 2: library/external entity 类型删除 → 8 → 6 个 compiler
+ *   + 新建 workflow-compiler（Phase 0 改名的执行模板，原 blueprint slots/deps/observe）
  *
  * 角色：
  * - import 即注册（ESM 副作用）
- * - 8 个 registerEntityCompiler(new XxxCompiler()) 一次调用
+ * - 6 个 registerEntityCompiler(new XxxCompiler()) 一次调用
  * - barrel export 所有 compiler class
  *
  * 使用方必须 import 此文件以触发注册：
@@ -23,25 +25,23 @@
 
 import { registerEntityCompiler } from '../entity-registry.js'
 import { DomainCompiler } from './domain-compiler.js'
-import { BlueprintCompiler } from './blueprint-compiler.js'
-import { StackCompiler } from './stack-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
-import { RoadmapCompiler } from './roadmap-compiler.js' // 🆕 v0.6.1-alpha.1 (Asset 缺口全补 Phase 1)
-import { LibraryCompiler } from './library-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
-import { ExternalCompiler } from './external-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
+import { BlueprintCompiler } from './blueprint-compiler.js' // 🆕 Phase 2: 新语义（组合模板 ## Refs）
+import { WorkflowCompiler } from './workflow-compiler.js' // 🆕 v0.6.1-alpha.2/4: 原 blueprint 改名（执行模板 slots/deps/observe）
+import { StackCompiler } from './stack-compiler.js'
+import { RoadmapCompiler } from './roadmap-compiler.js'
 import { WorkCompiler } from './work-compiler.js'
 import { TaskCompiler } from './task-compiler.js'
 import { ProofCompiler } from './proof-compiler.js'
 
 // ========================
-// 副作用：注册 9 个 EntityCompiler（v0.6.1-alpha.1 Asset 缺口全补：+roadmap）
+// 副作用：注册 6 个 EntityCompiler（Phase 2 收敛：library/external 删除）
 // ========================
 
 registerEntityCompiler(new DomainCompiler())
-registerEntityCompiler(new BlueprintCompiler())
-registerEntityCompiler(new StackCompiler()) // 🆕 v0.6.1-alpha.1 Batch 2
-registerEntityCompiler(new RoadmapCompiler()) // 🆕 v0.6.1-alpha.1 (Asset 缺口全补 Phase 1)
-registerEntityCompiler(new LibraryCompiler()) // 🆕 v0.6.1-alpha.1 Batch 2
-registerEntityCompiler(new ExternalCompiler()) // 🆕 v0.6.1-alpha.1 Batch 2
+registerEntityCompiler(new BlueprintCompiler()) // 🆕 新语义：组合模板
+registerEntityCompiler(new WorkflowCompiler()) // 🆕 原 blueprint 改名
+registerEntityCompiler(new StackCompiler())
+registerEntityCompiler(new RoadmapCompiler())
 registerEntityCompiler(new WorkCompiler())
 registerEntityCompiler(new TaskCompiler())
 registerEntityCompiler(new ProofCompiler())
@@ -52,11 +52,12 @@ registerEntityCompiler(new ProofCompiler())
 
 export { DomainCompiler } from './domain-compiler.js'
 export { BlueprintCompiler } from './blueprint-compiler.js'
-export { StackCompiler } from './stack-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
-export { RoadmapCompiler } from './roadmap-compiler.js' // 🆕 v0.6.1-alpha.1 (Asset 缺口全补 Phase 1)
-export { LibraryCompiler } from './library-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
-export { ExternalCompiler } from './external-compiler.js' // 🆕 v0.6.1-alpha.1 Batch 2
+export { WorkflowCompiler } from './workflow-compiler.js' // 🆕 v0.6.1-alpha.4
+export { StackCompiler } from './stack-compiler.js'
+export { RoadmapCompiler } from './roadmap-compiler.js'
 export { WorkCompiler } from './work-compiler.js'
 export { TaskCompiler } from './task-compiler.js'
 export { ProofCompiler } from './proof-compiler.js'
 export type { VerdictType } from './proof-compiler.js'
+export { EXTERNAL_KINDS, validateExternal, validateExternals } from './external-validate.js'
+export type { ExternalKind, ExternalEntry } from './external-validate.js'

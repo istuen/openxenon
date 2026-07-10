@@ -54,15 +54,10 @@ export function detectAssetConflict(projectRoot: string, kind: AssetKind, name: 
  */
 export function resolveAssetFileFirst(
   projectRoot: string,
-  kind: Exclude<AssetKind, 'library' | 'external'>,
+  kind: AssetKind, // 🆕 v0.6.1-alpha.2: library/external 已删除，AssetKind 收敛为 5 类型
   name: string,
 ): string {
-  const candidates = resolveAssetFileCandidatesV61(
-    projectRoot,
-    kind as 'domain' | 'blueprint' | 'stack' | 'roadmap',
-    name,
-    null,
-  )
+  const candidates = resolveAssetFileCandidatesV61(projectRoot, kind, name, null)
   for (const p of candidates) {
     if (existsSync(p)) return p
   }

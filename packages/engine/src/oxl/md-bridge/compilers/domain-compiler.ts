@@ -33,6 +33,7 @@ import type {
 import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
 import { extractListFields, getScalar, getArray, type ListField } from '../../md-pipeline/utils.js'
 import type { IntentEntityType } from '../pipeline.js'
+import { validateExternal, type ExternalEntry } from './external-validate.js'
 
 /** Domain H2 分类白名单
  *
@@ -41,7 +42,7 @@ import type { IntentEntityType } from '../pipeline.js'
  *  - 与 Terms/Bans/Invariants 同级，语义上属于 Intent 约束
  *  - blueprint 通过 domain 引用自动继承；blueprint 不重复定义 Stack
  */
-const DOMAIN_CATEGORIES = ['Terms', 'Bans', 'Invariants', 'Stack'] as const
+const DOMAIN_CATEGORIES = ['Terms', 'Bans', 'Invariants', 'Stack', 'Externals'] as const
 type DomainCategory = (typeof DOMAIN_CATEGORIES)[number]
 
 /**
@@ -185,6 +186,7 @@ export class DomainCompiler implements EntityCompiler {
     const bans: Array<{ id: string; items: string[]; desc: string }> = []
     const invariants: Array<{ id: string; value: string; desc: string }> = []
     const stack: Array<{ id: string; name: string; fields: ListField[] }> = []
+    const externals: ExternalEntry[] = []
 
     let termIdx = 0
     let banIdx = 0
@@ -234,6 +236,11 @@ export class DomainCompiler implements EntityCompiler {
             fields,
           })
           break
+        case 'Externals':
+          // 🆕 v0.6.1-alpha.4 Phase 2: External inline 声明
+          // H3 = external name; list fields = url/path/kind/ttl/auth/summary
+          externals.push(parseExternalEntry(ctx.h3, fields))
+          break
       }
     }
 
@@ -245,6 +252,7 @@ export class DomainCompiler implements EntityCompiler {
       bans,
       invariants,
       stack,
+      externals,
       _counters: { termIdx, banIdx, invIdx, stackIdx },
     }
   }
@@ -296,6 +304,7 @@ export class DomainCompiler implements EntityCompiler {
 
     // 4. H3 唯一性检查（按 H2 分类内）
     const h3Seen = new Map<string, { name: string; line: number }>()
+    const externals: ExternalEntry[] = []
     for (const ctx of contexts) {
       if (!ctx.h2 || !ctx.h3) continue
       const key = `${ctx.h2}::${ctx.h3}`
@@ -310,6 +319,17 @@ export class DomainCompiler implements EntityCompiler {
       } else {
         h3Seen.set(key, { name: ctx.h3, line: ctx.h3Position?.line ?? 0 })
       }
+
+      // 🆕 Phase 2: External 校验（在 H3 唯一性检查后同步收集）
+      if (ctx.h2 === 'Externals') {
+        const fields = ctx.h3List ? extractListFields(ctx.h3List) : []
+        externals.push(parseExternalEntry(ctx.h3, fields))
+      }
+    }
+
+    // 5. 🆕 Phase 2: External entry 校验（kind enum + url/path 互斥）
+    for (const ext of externals) {
+      validateExternal(ext, errors)
     }
 
     return errors
@@ -367,6 +387,21 @@ function slugify(s: string): string {
       .replace(/^-+|-+$/g, '')
       .slice(0, 40) || 'unnamed'
   )
+}
+
+/**
+ * 🆕 v0.6.1-alpha.4 Phase 2: 从 H3 列表字段构造 ExternalEntry。
+ */
+function parseExternalEntry(name: string, fields: ListField[]): ExternalEntry {
+  return {
+    name,
+    url: getScalar(fields, 'url'),
+    path: getScalar(fields, 'path'),
+    kind: getScalar(fields, 'kind') ?? '',
+    ttl: getScalar(fields, 'ttl'),
+    auth: getScalar(fields, 'auth'),
+    summary: getScalar(fields, 'summary'),
+  }
 }
 
 /**

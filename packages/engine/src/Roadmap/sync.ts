@@ -20,11 +20,11 @@
 
 import { readFileSync, existsSync, writeFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import { resolveAssetDir, type AssetKind } from '../infra/paths.js'
+import { resolveAssetDir, ALL_ASSET_KINDS, type AssetKind } from '../infra/paths.js'
 import type { RoadmapLink, RoadmapScene } from './types.js'
 import { parseRoadmapMd } from './parser.js'
 
-const ALL_KINDS: readonly AssetKind[] = ['domain', 'blueprint', 'stack', 'roadmap', 'library', 'external']
+const ALL_KINDS: readonly AssetKind[] = ALL_ASSET_KINDS
 
 export interface SyncReport {
   /** Roadmap name */

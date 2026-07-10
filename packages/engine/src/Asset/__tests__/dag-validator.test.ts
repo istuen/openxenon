@@ -145,7 +145,7 @@ describe('checkAssetDAG 跨 AssetKind 引用', () => {
 })
 
 describe('validateAssetReferences 集成测试', () => {
-  test('13. 项目内扫 6 AssetKind .oxn + 提取 references + DAG 校验', () => {
+  test('13. 项目内扫 5 AssetKind .oxn + 提取 references + DAG 校验', () => {
     const tmp = mkdtempSync(join(tmpdir(), 'oxn-dag-test-'))
     mkdirSync(join(tmp, '.openxenon', 'assets', 'domains'), { recursive: true })
     mkdirSync(join(tmp, '.openxenon', 'assets', 'blueprints'), { recursive: true })

@@ -62,14 +62,13 @@ export interface ProjectConfig {
   assetRoot?: string
   /** v0.7: 运行时边界目录名（默认 '.openxenon'） */
   boundaryDir?: string
-  /** v0.6 PR-1: 每类 asset 的子目录（默认 {domain: 'domain', blueprint: 'blueprint', stack: 'stack'}） */
+  /** v0.6 PR-1: 每类 asset 的子目录（默认 {domain: 'domain', workflow: 'workflow', stack: 'stack'}） */
   assetDirs?: {
     domain?: string
-    blueprint?: string
+    workflow?: string // 🆕 v0.6.1-alpha.2: 原 blueprint 改名
     stack?: string
+    blueprint?: string // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
     roadmap?: string // 🆕 v0.6.1-alpha.1
-    library?: string // 🆕 v0.6.1-alpha.1 Batch 2
-    external?: string // 🆕 v0.6.1-alpha.1 Batch 2
   }
 }
 
@@ -77,14 +76,27 @@ export interface ProjectConfig {
 export const DEFAULT_ASSET_ROOT = 'assets'
 export const DEFAULT_ASSET_DIRS = {
   domain: 'domains',
-  blueprint: 'blueprints',
+  workflow: 'workflows', // 🆕 v0.6.1-alpha.2: 原 blueprint 改名
   stack: 'stack',
+  blueprint: 'blueprints', // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
   roadmap: 'roadmaps', // 🆕 v0.6.1-alpha.1
-  library: 'libraries', // 🆕 v0.6.1-alpha.1 Batch 2
-  external: 'externals', // 🆕 v0.6.1-alpha.1 Batch 2
 } as const
 
-export type AssetKind = 'domain' | 'blueprint' | 'stack' | 'roadmap' | 'library' | 'external' // 🆕 v0.6.1-alpha.1 Batch 2: library + external
+/**
+ * v0.6.1-alpha.2 SSOT: 全部 AssetKind（5 类型）。
+ * 收敛自原 6 类型（domain/blueprint/stack/roadmap/library/external）。
+ * library/external 在 v0.6.1-alpha.2 中被收敛：library 降级为 .md 文件，external 降级为边界内 inline 声明。
+ * 原 Blueprint (slots/deps/observe) 改名为 Workflow；新 Blueprint = 组合模板。
+ */
+export const ALL_ASSET_KINDS = [
+  'domain',
+  'workflow', // 🆕 v0.6.1-alpha.2: 原 blueprint 改名
+  'stack',
+  'blueprint', // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
+  'roadmap',
+] as const
+
+export type AssetKind = (typeof ALL_ASSET_KINDS)[number]
 
 /**
  * v0.6 PR-1 + v0.7: 解析单个 asset kind 的实际目录路径。
@@ -150,14 +162,17 @@ export function resolveAssetCandidates(
   const boundary = join(projectRoot, boundaryDir)
   const primary = resolveAssetDir(projectRoot, kind, config)
   // 旧布局 fallback：<boundaryDir>/<plural>/（domains/blueprints/stack/roadmaps）
+  // 🆕 v0.6.1-alpha.2: 加入 workflow（从原 blueprint 拆分）
   const fallbackDir =
     kind === 'domain'
       ? 'domains'
-      : kind === 'blueprint'
-        ? 'blueprints'
-        : kind === 'roadmap'
-          ? 'roadmaps' // 🆕 v0.6.1-alpha.1
-          : 'stack'
+      : kind === 'workflow'
+        ? 'workflows'
+        : kind === 'blueprint'
+          ? 'blueprints'
+          : kind === 'roadmap'
+            ? 'roadmaps'
+            : 'stack'
   const fallback = join(boundary, fallbackDir)
   return { primary, fallback }
 }
@@ -271,14 +286,14 @@ export function resolveAutoSync(config: ProjectConfig | null): boolean {
  *   4. `<fallback>/<name>.oxn`  — v0.5 layout .oxn（v0.5 legacy）
  *
  * @param projectRoot 项目根目录
- * @param entity domain | blueprint | stack | roadmap | library | external
+ * @param entity domain | workflow | blueprint | stack | roadmap (v0.6.1-alpha.2: 5 类型，library/external 已删除)
  * @param name asset 名（不含扩展名）
  * @param config 可选 project config
  * @returns 4 个候选路径，按优先级降序
  */
 export function resolveAssetFileCandidatesV61(
   projectRoot: string,
-  entity: Exclude<AssetKind, 'library' | 'external'>,
+  entity: AssetKind, // 🆕 v0.6.1-alpha.2: 收敛为 5 类型，不再 Exclude
   name: string,
   config: ProjectConfig | null = null,
 ): readonly string[] {
@@ -303,7 +318,7 @@ export function resolveAssetFileCandidatesV61(
  */
 export function resolveAssetWritePathV61(
   projectRoot: string,
-  entity: Exclude<AssetKind, 'library' | 'external'>,
+  entity: AssetKind, // 🆕 v0.6.1-alpha.2: 收敛为 5 类型
   name: string,
   config: ProjectConfig | null = null,
   format: 'md' | 'oxn' = 'md',

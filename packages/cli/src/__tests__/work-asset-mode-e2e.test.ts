@@ -83,22 +83,20 @@ describe('Asset Short Circuit --asset-kind (v0.7+ 已移除 --type)', () => {
     expect(content).toContain('stack "my-stack"')
   })
 
-  test('4. --asset-kind library 写 .openxenon/assets/libraries/<name>.oxn', async () => {
+  test('4. v0.6.1-alpha.4: --asset-kind library 已删除 → OXN_INVALID_ASSET_KIND', async () => {
     const r = await runCli(['work', 'create', 'my-library', '--asset-kind', 'library', '--json'])
-    expect(r.exitCode).toBe(0)
-    const assetPath = join(tmpDir, '.openxenon', 'assets', 'libraries', 'my-library.oxn')
-    expect(existsSync(assetPath)).toBe(true)
-    const content = readFileSync(assetPath, 'utf-8')
-    expect(content).toContain('library "my-library"')
+    expect(r.exitCode).not.toBe(0)
+    const json = JSON.parse(r.stdout)
+    expect(json.error.code).toBe('OXN_INVALID_ASSET_KIND')
+    expect(json.error.message).toContain('library')
   })
 
-  test('5. --asset-kind external 写 .openxenon/assets/externals/<name>.oxn', async () => {
+  test('5. v0.6.1-alpha.4: --asset-kind external 已删除 → OXN_INVALID_ASSET_KIND', async () => {
     const r = await runCli(['work', 'create', 'my-external', '--asset-kind', 'external', '--json'])
-    expect(r.exitCode).toBe(0)
-    const assetPath = join(tmpDir, '.openxenon', 'assets', 'externals', 'my-external.oxn')
-    expect(existsSync(assetPath)).toBe(true)
-    const content = readFileSync(assetPath, 'utf-8')
-    expect(content).toContain('external "my-external"')
+    expect(r.exitCode).not.toBe(0)
+    const json = JSON.parse(r.stdout)
+    expect(json.error.code).toBe('OXN_INVALID_ASSET_KIND')
+    expect(json.error.message).toContain('external')
   })
 
   test('6. --asset-kind invalid 抛 OXN_INVALID_ASSET_KIND', async () => {

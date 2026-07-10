@@ -38,11 +38,10 @@ import type { Root, RootContent } from 'mdast'
  */
 export type IntentEntityType =
   | 'domain'
-  | 'blueprint'
+  | 'workflow' // 🆕 v0.6.1-alpha.2 Phase 0: 原 blueprint 改名
   | 'stack'
+  | 'blueprint' // 🆕 v0.6.1-alpha.4 Phase 2: 新语义（组合模板 ## Refs）
   | 'roadmap'
-  | 'library'
-  | 'external'
   | 'work'
   | 'task'
   | 'proof'

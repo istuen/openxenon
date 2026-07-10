@@ -109,14 +109,13 @@ describe('oxn work create --type asset --asset-kind roadmap e2e', () => {
     expect(content).toContain('@prj/blueprints/dev-workflow')
   })
 
-  test('6. 6 AssetKind create 全部成功（domain/blueprint/stack/roadmap/library/external）', async () => {
+  test('6. 5 AssetKind create 全部成功（domain/workflow/stack/blueprint/roadmap）— v0.6.1-alpha.2 收敛', async () => {
     const kinds: Array<[string, string]> = [
       ['domain', 'MyDomain'],
-      ['blueprint', 'my-blueprint'],
+      ['workflow', 'my-workflow'],
       ['stack', 'my-stack'],
+      ['blueprint', 'my-blueprint'],
       ['roadmap', 'my-roadmap'],
-      ['library', 'my-library'],
-      ['external', 'my-external'],
     ]
     for (const [kind, name] of kinds) {
       const r = await runCli(['work', 'create', name, '--type', 'asset', '--asset-kind', kind, '--json'])
@@ -125,15 +124,13 @@ describe('oxn work create --type asset --asset-kind roadmap e2e', () => {
       const dir =
         kind === 'domain'
           ? 'domains'
-          : kind === 'blueprint'
-            ? 'blueprints'
+          : kind === 'workflow'
+            ? 'workflows'
             : kind === 'stack'
               ? 'stack'
-              : kind === 'roadmap'
-                ? 'roadmaps'
-                : kind === 'library'
-                  ? 'libraries'
-                  : 'externals'
+              : kind === 'blueprint'
+                ? 'blueprints'
+                : 'roadmaps'
       const assetPath = join(tmpDir, '.openxenon', 'assets', dir, `${name}.${ext}`)
       expect(existsSync(assetPath)).toBe(true)
     }

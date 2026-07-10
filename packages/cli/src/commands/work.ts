@@ -92,6 +92,7 @@ import {
   resolveAssetFormat,
   resolveAutoSync,
   resolveAssetDir,
+  ALL_ASSET_KINDS,
 } from '@openxenon/engine/infra/paths'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
@@ -387,7 +388,7 @@ const listSubcommand = defineCommand({
 // v0.7+：移除 `--type` 参数；`--asset-kind` 单独触发短路，无需 `--type asset` 前缀。
 // ---------------------------------------------------------------------------
 
-const VALID_ASSET_KINDS = ['domain', 'blueprint', 'stack', 'roadmap', 'library', 'external'] as const
+const VALID_ASSET_KINDS = ALL_ASSET_KINDS
 type ValidAssetKind = (typeof VALID_ASSET_KINDS)[number]
 
 interface AssetModeCreateInput {
@@ -538,13 +539,16 @@ const createSubcommand = defineCommand({
     // (projectRoot already declared above)
 
     if (customBlueprint || blueprintNameArg) {
-      // v0.6.1-alpha.0 #2-8: 用 config 解析 blueprint 路径（不再硬编码老路径）
+      // v0.6.1-alpha.3: Phase 1 — Work create 查 workflow 目录（slots/deps/observe 模板）。
+      // Phase 1 后 Blueprint = 组合模板；Work 用 Workflow 做 task 渲染。
       const config = readProjectConfig(projectRoot)
-      const bpAssetDir = resolveAssetDir(projectRoot, 'blueprint', config)
+      const wfAssetDir = resolveAssetDir(projectRoot, 'workflow', config)
       const defaultCandidates = blueprintNameArg
         ? [
-            join(bpAssetDir, `${blueprintNameArg}.oxn`),
-            join(bpAssetDir, blueprintNameArg, 'blueprint.oxn'),
+            join(wfAssetDir, `${blueprintNameArg}.oxn`),
+            join(wfAssetDir, blueprintNameArg, 'workflow.oxn'),
+            // v0.6.1-alpha.2 fallback（Phase 0 后的 blueprints/ 目录可能含新组合模板）
+            join(projectRoot, '.openxenon', 'assets', 'blueprints', `${blueprintNameArg}.oxn`),
             // v0.5 fallback
             join(projectRoot, '.openxenon', 'blueprints', `${blueprintNameArg}.oxn`),
             join(projectRoot, '.openxenon', 'blueprints', blueprintNameArg, 'blueprint.oxn'),

@@ -11,18 +11,18 @@ citations: 0
 
 # Domain: <name>
 
-> TODO: One-line description of this bounded context's business boundary
+> TODO: One-line description of this bounded context
 
 ## Terms
 
 ### Member
-- desc: Registered member entity with profile info + auth status
+- desc: Registered member entity with basic info + auth state
 
 ### Account
-- desc: Member's login credential, bound to Member.id
+- desc: Member's login credentials, bound to Member.id
 
 ### Order
-- desc: Order entity with line items + payment status
+- desc: Order entity with item list + payment state
 
 ## Bans
 
@@ -31,15 +31,30 @@ citations: 0
   - User
   - Customer
   - AccountHolder
-- desc: User, Customer, AccountHolder (use Member consistently)
+- desc: User, Customer, AccountHolder (unified as Member)
 
 ## Invariants
 
 ### inv-audit
-- value: All member state changes must be recorded in audit_log
+- value: Any member state change must be logged to audit_log
 
 ### inv-unique-email
-- value: Same email cannot register twice within a context
+- value: Same email cannot register twice in same context
 
 ### inv-idempotency
-- value: Payment API must be idempotent (idempotency_key)
+- value: Payment API must support idempotency (idempotency_key)
+
+## Externals (v0.6.1-alpha.4 optional)
+
+> When this Domain needs to reference OXN-external resources, add `## Externals` section.
+> 6-value kind enum: rest-api | webhook | documentation | library | config | service
+> url (network) or path (project-internal), choose one.
+
+<!-- Examples: delete below and add your externals -->
+
+<!-- ### payment-api
+- url: https://api.example.com/v1
+- kind: rest-api
+- ttl: 7d
+- auth: api-key
+- summary: TODO -->

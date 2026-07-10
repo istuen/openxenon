@@ -1,78 +1,156 @@
-# 5 AssetKind Quick Reference
+# 5 AssetKind Quick Reference (v0.6.1-alpha.4)
 
-> This file is the on-demand supplement to the `oxn-asset` Skill. Consult when selecting an AssetKind.
+> Load on demand from `oxn-asset` Skill. Consult when choosing AssetKind.
 
 ## 5 AssetKind Overview
 
-| AssetKind | Purpose | H2 Categories | Typical H3 Examples |
+| AssetKind | Purpose | H2 category whitelist | Typical H3 examples |
 |---|---|---|---|
-| **domain** | Business bounded context (DDD) | Terms / Bans / Invariants | Member, Account, Order |
-| **blueprint** | Technical workflow (slot DAG) | Props / Slots | env, timeout; build, test, verify |
-| **stack** | Tech stack constraints (runtime/linter/test) | Runtimes / Linters / Tests | typescript, biome, bun-test |
-| **library** | Documentation aggregation (external knowledge) | Sources | axios-docs, express-routing |
-| **external** | External resource links (API/service) | Links | payment-api, log-aggregator |
+| **domain** | Business bounded context (DDD) | Terms / Bans / Invariants / **Externals** (optional) | Member, Account, Order |
+| **workflow** | Execution flow (slot DAG, renamed from blueprint) | Props / Slots / **Externals** (optional) | env, timeout; build, test, verify |
+| **stack** | Tech stack constraints (runtime/linter/test) | Runtimes / Linters / Tests / **Externals** (optional) | typescript, biome, bun-test |
+| **blueprint** | Composition template (domain + workflow + stack) | **Refs** (cross-kind references) | integrate-payment, dev-standard |
+| **roadmap** | Navigation graph (scene → asset) | Scenes (sub: scene) | scene: doc, scene: dev |
 
-## Domain — Business Intent
+> **v0.6.1-alpha.4 convergence**:
+> - library/external Asset types removed (see ADR-0053)
+> - Original blueprint (execution template) renamed to **workflow**; new blueprint is composition template
+> - **External inline**: external resource references declared via `## Externals` H2 category inside boundary types
+
+## Domain — Business Intent (boundary type)
 
 **When to use**:
-- Project initialization (let AI generate starter Domain on `oxn init`)
+- Project initialization (oxn init generates starter Domain)
 - Cross-team vocabulary unification (term / ban / invariant)
-- Business boundary clarification (which business logic belongs to which context)
+- Business boundary clarification
 
-**Not applicable**:
-- Technical workflow (use blueprint)
+**Not suitable for**:
+- Technical flow (use workflow)
 - Toolchain constraints (use stack)
 
-## Blueprint — Technical Intent
+**Optional `## Externals`**: When Domain needs to reference external APIs (e.g., PaymentContext → Stripe API).
+
+## Workflow — Execution Intent (boundary type, renamed from Blueprint)
 
 **When to use**:
-- Standardized development workflow (dev / test / verify / ship)
+- Standardized dev flow (dev / test / verify / ship)
 - CI/CD pipeline templates
 - Multi-task DAG orchestration
 
-**Slot dependency graph must be acyclic**: `deps: [a, b]` means this slot depends on outputs from a and b.
+**Slot dependency graph must be acyclic**: `deps: [a, b]` means this slot depends on outputs of a and b.
 
-## Stack — Toolchain Constraints
+**Optional `## Externals`**: When Workflow references external toolchain docs.
+
+## Stack — Toolchain Constraints (boundary type)
 
 **When to use**:
 - Lock project runtime version (typescript >=5.0.0)
 - Lock lint/test tools (biome, bun-test)
 - Override `oxn init` auto-generated starter-stack
 
-**Relationship to Blueprint**: stack provides **environment**, blueprint provides **workflow**.
+**Relation to Workflow**: stack provides **environment**, workflow provides **flow**.
 
-## Library — Documentation Aggregation
+**Optional `## Externals`**: When Stack references external tool config sources.
 
-**When to use**:
-- Fetch external docs and generate AI-consumable .md
-- Third-party SDK docs (axios, express, react)
-- Internal wiki aggregation
-
-**Difference from External**: library = **pull in and consume**; external = **link to outside**.
-
-## External — External Resources
+## Blueprint — Composition Template (E1 Asset isolation layer)
 
 **When to use**:
-- Third-party API links (Stripe, GitHub)
-- External service addresses (log aggregator, monitoring)
-- Resources needing TTL refresh
+- Compose Domain + Workflow + Stack + other Blueprints into a reusable "recipe"
+- Work references one Blueprint, no need to select 3 boundaries separately
 
-**TTL semantics**: external older than ttl is considered stale and needs re-fetch.
+**Distinction from Workflow**:
+- Workflow = **how** (slot DAG flow template)
+- Blueprint = **what combination** (Domain + Workflow + Stack composition)
 
-## 5 AssetKind Relationship Diagram
+**Only H2 category**: `## Refs`
+
+```oxl
+blueprint "integrate-payment" {
+  abstract: Payment integration composition template
+
+  ## Refs
+  ### PaymentContext
+  - kind: domain
+  - ref: @md/domains/PaymentContext
+  ### fix-issue
+  - kind: workflow
+  - ref: @md/workflows/fix-issue
+  ### node-ts
+  - kind: stack
+  - ref: @md/stacks/node-ts
+}
+```
+
+**Forbidden**:
+- ❌ No `## Externals` inside Blueprint (Blueprint is pure composition; external refs come from composed Domain/Workflow/Stack)
+- ❌ Blueprint cannot form cycles via ref (DAG validation)
+
+## Roadmap — Navigation Graph (meta index)
+
+**When to use**:
+- AI Agent needs to quickly locate "which Asset to use"
+- Find Domain/Workflow/Stack/Blueprint by scene (doc/dev/debug/test/release/onboard)
+
+**Relation to Work**: Roadmap is AI routing entrypoint, **does NOT participate** in Work's references DAG (meta reference relation is independent).
+
+## External inline — boundary-internal external references (v0.6.1-alpha.4)
+
+Each boundary type (domain/workflow/stack) can declare `## Externals` H2 category. **Blueprint does NOT support**.
+
+### Complete schema
+
+```oxl
+### external-name
+- url: https://api.example.com/v1   # or path (mutually exclusive)
+- kind: rest-api                     # required, 6-value enum
+- ttl: 7d                            # optional
+- auth: api-key                      # optional
+- summary: ...                       # optional
+```
+
+### 6-value kind enum
+
+`rest-api` | `webhook` | `documentation` | `library` | `config` | `service`
+
+### url vs path mutual exclusion
+
+- `url`: network path (`https://api.example.com/v1`)
+- `path`: project-relative path (`./docs/architecture.md`)
+- **Choose one** (both → `E_MD_EXTERNAL_URL_PATH_CONFLICT`; neither → `E_MD_EXTERNAL_URL_PATH_REQUIRED`)
+
+### Status management
+
+External status stored in `.openxenon/.cache/external-status.json` (gitignore), **NOT part of** Asset content_hash.
+
+**4 status values**: `available` | `unavailable` | `stale` | `unknown`
+
+**Key format**: `<entity-type>::<entity-name>::<external-name>`
+
+### CLI
+
+```bash
+oxn external check              # scan + check reachability + update status
+oxn external status             # show all status
+oxn external mark --name "X" --status <s> [--reason "..."]
+```
+
+## 5 AssetKind + External inline relation diagram
 
 ```
-┌─────────────────────────────────────────────┐
-│  Stack (env)  ──→  Blueprint (workflow)     │
-│       │                    │                │
-│       └──→  Work refs ─────┘                │
-│                  │                          │
-│                  ▼                          │
-│            Domain (business boundary)       │
-│                  │                          │
-│                  ▼                          │
-│         Library + External (external knowledge) │
-└─────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│  3 boundary types (kind-isolated)                        │
+│  ├── Domain     ─┐                                       │
+│  │   │ Externals │─ external-status.json (independent)  │
+│  ├── Workflow   ─┤                                       │
+│  │   │ Externals │                                       │
+│  ├── Stack      ─┘                                       │
+│  │     │ Externals │                                     │
+│  └── (only these 3 have Externals)                       │
+│       │                                                   │
+│       ▼                                                   │
+│  Blueprint (composition, only ## Refs, no Externals)    │
+│       │                                                   │
+│       ▼                                                   │
+│  Work (instance)── references Blueprint (one ref)        │
+└────────────────────────────────────────────────────────┘
 ```
-
-Work references multiple AssetKinds via `--asset domain=X --asset blueprint=Y --asset stack=Z`.
