@@ -32,4 +32,4 @@ Engine 只看 `frozen.json`，这是不可妥协的架构边界。
 ## 参考
 
 - 源文件：`.openxenon/forges/sprints/archive/docs-tmp-era/2026-05-21-oxn-dsl-1.md`
-- v0.6 RFC：`.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-monorepo-packages.md`
+- v0.6 RFC：`.openxenon/pools/drafts/v0.6-monorepo-packages.md`

@@ -1,7 +1,7 @@
 # ADR 索引
 
-> **来源**：2026-07-04 docs-tmp-cleanup work 抽取 + 2026-07-09 doc-unify-layout 救援
-> **总计**：47 条 ADR（来自 v0.0 ~ v0.6.1-alpha.0 共 7 个版本的讨论记录）
+> **来源**：2026-07-04 docs-tmp-cleanup work 抽取 + 2026-07-09 doc-unify-layout 救援 + 2026-07-10 v0.6.1-alpha.4 ADR 追加
+> **总计**：43 条 ADR（来自 v0.0 ~ v0.6.1-alpha.4 共 8 个版本的讨论记录；另 8 条 0040-0047 已归档于 `2026-07-05-archive-0040-0047-memory-series-superseded.md`）
 > **位置**：`.openxenon/docs/adrs/`（对内-沉淀层，append-only）
 > **约定**：决策一旦记录不编辑不删除；被推翻时新 ADR 标记旧 ADR 为 Superseded
 
@@ -9,21 +9,21 @@
 
 | 状态 | 含义 | 数量 |
 |---|---|---|
-| ✅ **Adopted** | 已落 SSOT + 代码 | 18 |
-| 🟡 **Partially Adopted** | 部分已落，部分待办 | 6 |
-| 💡 **Proposed** | 待 v0.7+ 落地 | 10 |
+| ✅ **Adopted** | 已落 SSOT + 代码 | 24 |
+| 🟡 **Partially Adopted** | 部分已落，部分待办 | 5 |
+| 💡 **Proposed** | 待 v0.7+ 落地 | 9 |
 | ⛔ **Superseded** | 被推翻但有史料价值 | 5 |
 
 ## 主题分类索引
 
-### 1. OXL / Blueprint 哲学（5 条）
+### 1. OXL / Blueprint 哲学（8 条）
 
 | ADR | 标题 | 状态 |
 |---|---|---|
 | [0001](./0001-blueprint-props-funnel-effect.md) | Blueprint props 漏斗效应 + 三层默认值优先级 | ✅ Adopted |
 | [0002](./0002-probe-default-rules-five-level-priority.md) | Probe default 规则 + 五级参数优先级链 | ✅ Adopted |
 | [0003](./0003-runtime-isolation-frozen-naming.md) | 运行期隔离 + frozen 命名规则 | ✅ Adopted |
-| [0019](./0019-blueprint-type-paradigm.md) | Blueprint Type 范式（task/plan/explore） | ✅ Adopted |
+| [0019](./0019-blueprint-type-paradigm.md) | Blueprint Type 范式（task/plan/explore） | ⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发） |
 | [0021](./0021-intent-align-observe-keyword-separation.md) | Intent / Align / Observe 四关键字分离 | ✅ Adopted |
 
 ### 2. Kernel / L0 边界（6 条）
@@ -46,9 +46,9 @@
 | [0022](./0022-guided-adaptive-unmanaged-ai-modes.md) | Guided / Adaptive / Unmanaged 三模式 AI 执行 | 💡 Proposed |
 | [0031](./0031-proof-notary-not-judge.md) | Proof = 公证人 ≠ 裁判 | ✅ Adopted |
 | [0032](./0032-pi-vs-opencode-selection.md) | Pi vs OpenCode 选型最终结论 | ✅ Adopted |
-| [0033](./0033-iap-public-naming-disagreement.md) | IAP 对外命名分歧（Intent/Align/Verify vs "出证明"） | ⛔ Superseded |
+| [0033](./0033-iap-public-naming-disagreement.md) | IAP 对外命名分歧（Intent/Align/Verify vs "出证明"） | ⛔ Superseded（由 v0.6.1 命名统一触发） |
 
-### 4. Work / Asset（8 条）
+### 4. Work / Asset（9 条）
 
 | ADR | 标题 | 状态 |
 |---|---|---|
@@ -59,7 +59,11 @@
 | [0026](./0026-skill-three-partition-intent-align-proof.md) | Skills 三分（oxn-intent / oxn-align / oxn-proof） | 🟡 Partial |
 | [0027](./0027-domain-as-ssot-governance.md) | Domain 作为 SSOT 的工程化治理 | 🟡 Partial |
 | [0035](./0035-catalog-json-probe-excluded.md) | catalog.json + Probe-excluded 规则 | ✅ Adopted |
-| [0036](./0036-canonical-oxn-naming-superseded.md) | canonical.oxn 命名约定（已废除） | ⛔ Superseded |
+| [0036](./0036-canonical-oxn-naming-superseded.md) | canonical.oxn 命名约定（已废除） | ⛔ Superseded（详见 v0.6.1 changelog） |
+| [0048](./0048-asset-library-external-scheme.md) | library/external Asset 子目录方案 | ⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发） |
+| [0049](./0049-work-context-md-replaces-memory.md) | Work Context .md 取代 Memory 层 | ✅ Adopted |
+| [0050](./0050-onboarding-via-starter-work.md) | 通过 Starter Work 引导新用户 | ✅ Adopted |
+| [0051](./0051-asset-paper-citation-network.md) | Asset Paper 引用/引用网络方案 | ✅ Adopted |
 
 ### 5. Insight / Skill（5 条）
 
@@ -87,12 +91,12 @@
 |---|---|---|
 | [0006](./0006-three-phase-model.md) | 三相模型（静态结构 → Loop → 静态产物） | 💡 Proposed |
 | [0007](./0007-loop-observation-three-dimensions.md) | Loop 行为观测三维度（命令 + 规则 + 重试） | 💡 Proposed |
-| [0034](./0034-work-precise-block-not-daemon-cascade.md) | Work 前置精准阻断 vs Daemon 全局崩溃 | ⛔ Superseded |
+| [0034](./0034-work-precise-block-not-daemon-cascade.md) | Work 前置精准阻断 vs Daemon 全局崩溃 | ⛔ Superseded（由 v0.6 Daemon 重构触发） |
 | [0038](./0038-i18n-library-selection.md) | i18n 库选型（Paraglide vs typesafe-i18n vs i18next） | 🟡 Partial |
 
 ## ADR 落地状态一览
 
-### 已落 SSOT（18 条 · 标记 SSOT 已增补位置）
+### 已落 SSOT（14 条 · 标记 SSOT 已增补位置）
 
 | ADR | 落地位置（SSOT 增补） |
 |---|---|
@@ -105,14 +109,13 @@
 | 0011 | `docs/zh-cn/work.md` §证据链三件套 |
 | 0012 | `docs/zh-cn/core-concepts.md` §Main/Sub Agent |
 | 0014 | `docs/{zh-cn,en}/index.md` Motivation 段 |
-| 0019 | `docs/zh-cn/asset.md` §Blueprint Type 范式 |
 | 0021 | `docs/zh-cn/architecture.md` §四关键字 |
 | 0023 | `docs/zh-cn/glossary.md` §`@` 哲学 |
 | 0024 | `docs/zh-cn/work.md` §partId + atomic-write |
 | 0031 | `docs/zh-cn/proof.md` §Proof 公证人边界 |
 | 0035 | `docs/zh-cn/asset.md` §catalog.json |
 
-### 待办（10 条 Proposed · 进 v0.7+ RFC 子 PR）
+### 待办（8 条 Proposed · 进 v0.7+ RFC 子 PR）
 
 | ADR | 候选 sprint |
 |---|---|

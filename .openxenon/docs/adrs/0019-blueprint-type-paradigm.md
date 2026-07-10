@@ -2,7 +2,7 @@
 
 > **来源**：`docs_tmp/oxn-type-1.md`, `oxn-type-review-1.md` (2026-05-22)
 > **抽取日**：2026-07-04
-> **状态**：Adopted
+> **状态**：⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发；slot/part 语义替代 type 字段）
 > **影响层**：L1-OXL
 
 ## 决策

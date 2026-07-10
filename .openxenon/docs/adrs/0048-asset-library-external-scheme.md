@@ -2,7 +2,7 @@
 
 > **来源**：v0.6.3 Asset Paper Schema RFC §1.2
 > **抽取日**：2026-07-05
-> **状态**：Adopted
+> **状态**：⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发；library 降级为 .md、external 收敛为边界内 inline）
 > **影响层**：L1-Infra（Asset IO）+ L2-Engine（Asset lifecycle）
 
 ## 决策

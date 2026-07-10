@@ -32,4 +32,4 @@ v0.6 IAP 重构时提出"Loop 是 Work 与 Insight 的核心"，进一步抽象�
 ## 参考
 
 - 源文件：`.openxenon/forges/sprints/archive/docs-tmp-era/2026-07-02-refactor-4.md`
-- v0.6 RFC：`.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md`
+- v0.6 RFC：`.openxenon/docs/rfcs/v0.6-iap-refactor-rfc.md`

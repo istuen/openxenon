@@ -195,7 +195,7 @@ OpenXenon 现状：大量 `## 禁止` / `## 反模式` / "不要 X" 章节（如
 | `/grill-me` / `/grill-with-docs` | 无 | 需求澄清完全靠用户 |
 | `/tdd`（red-green-refactor）| Probe 是声明式契约（更严）| 缺 first-class 调试循环 |
 | `/diagnosing-bugs` | `work-fix` 模板 | 最弱的一块 |
-| `/triage` | 无 | 状态机在 `pools/sprints/`，未 surfaced |
+| `/triage` | 无 | 状态机在 `.openxenon/pools/`，未 surfaced |
 | `/to-spec` / `/to-tickets` | `oxn domain create` + `oxn blueprint create` | ticket 分解仍是手写 |
 | `/implement` + `/code-review` | `oxn-work` + IAPError | 缺 two-axis review |
 | `/improve-codebase-architecture` | L0-L3 宪法 + `bun scripts/validate-dependencies.ts` + `bun run lint` | **OpenXenon 更优**：连续架构守卫，不依赖 AI 主动跑 |
