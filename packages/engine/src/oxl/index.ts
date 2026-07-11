@@ -1,11 +1,7 @@
 // =============================================================================
 // Unified OXL barrel (v0.1-final)
 //
-// The unified grammar (see src/oxl/langium-driver/oxn.langium) defines:
-//   - Probe / Part / Blueprint — asset declarations (global directory)
-//   - Domain — DDD bounded context (term/ban/invariant)
-//   - Work — workspace orchestrator (resource pool + task DAG)
-//   - Task — align executor (domain/blueprint/part/probe declarations)
+// v0.7.0: Langium driver removed; all parsing is md-native
 // =============================================================================
 
 // --- Port/Contract API ---
@@ -59,149 +55,31 @@ export type { ValidationError, CoverageResult, TypeCheckResult } from './evaluat
 export type { CompiledBlueprint } from '@openxenon/engine/kernel/index'
 export type { FrozenBlueprint } from '@openxenon/engine/kernel/index'
 
-// --- Langium API ---
-export {
-  createOxnServices,
-  createOxnSharedServices,
-  getOxnServices,
-  getOxnSharedServices,
-  resetOxnServices,
-  createOxnParser,
-  OxnParser,
-  type OxnParseResult,
-} from './langium-driver/oxn-services'
-
-// --- OxlDriver 抽象（v0.3 Step 1.2 路线 C v3）---
-// 统一入口：langium + mdast 双 driver 切换
-// 默认 driver：langium（向后兼容 v0.2.0）
-// 切换方式：driverRegistry.setDefault('mdast') 或 OXL_DRIVER=mdast 环境变量
+// --- OxlDriver abstract (v0.7.0: mdast only, no langium) ---
 export type {
   OxlDriver,
   OxlDocument,
   OxlParseOptions,
-  OxlDriverName,
   OxlDriverMetadata,
   OxlAstElement,
 } from './contracts/oxl-driver'
 
-// v0.4 PR-C4: driverRegistry 迁出 md-bridge → driver.ts
-// compat: import { getActiveDriver, setActiveDriver } from './driver.js'
 export { MdastOxlDriver } from './md-bridge'
-export { LangiumOxlDriver } from './langium-driver/langium-oxl-driver'
 
-// --- AST types (v0.1-final grammar) ---
+// --- AST types (v0.7.0: md-native only, no langium) ---
+// AST types are now defined in md-pipeline/transformers
 export type {
-  OXNDocument,
-  WorkDeclaration,
-  WorkContext,
-  LoopPolicy,
-  PartDeclaration,
-  PartSkill,
-  ProbeDeclaration,
-  BlueprintDeclaration,
-  PartSlotDeclaration,
-  PartProbeDeclaration,
-  // v0.1-final DDD
-  DomainDeclaration,
-  TermBlock,
-  TermDecl,
-  BanBlock,
-  InvariantBlock,
-  InvariantDecl,
-  // v0.1-final Work
-  DomainRefDecl,
-  BlueprintRefDecl,
-  PartRefDecl,
-  ProbeRefDecl,
-  // v0.1-final Task
-  TaskDeclaration,
-  TaskPartDecl,
-  TaskProbeDecl,
-  TaskDeps,
-  // v0.1.2 Proof-First
-  ProofDeclaration,
-  ProofProbeDecl,
-  // v0.6.1-alpha.1: 新增 Stack + Roadmap
-  StackDeclaration,
-  RoadmapDeclaration,
-  RuntimeBlock,
-  LinterBlock,
-  TestBlock,
-  RoadmapLink,
-} from './langium-driver/generated/ast'
-
-// --- AST type guards ---
-export {
-  isWorkDeclaration,
-  isPartDeclaration,
-  isProbeDeclaration,
-  isBlueprintDeclaration,
-  isWorkContext,
-  isPartSkill,
-  // v0.1-final DDD
-  isDomainDeclaration,
-  isTaskDeclaration,
-  isDomainRefDecl,
-  isBlueprintRefDecl,
-  isPartRefDecl,
-  isProbeRefDecl,
-  isTaskPartDecl,
-  isTaskProbeDecl,
-  // v0.1.2 Proof-First
-  isProofDeclaration,
-  isProofProbeDecl,
-  // v0.6.1-alpha.1: 新增 Stack + Roadmap 类型 guards
-  isStackDeclaration,
-  isRoadmapDeclaration,
-  isRuntimeBlock,
-  isLinterBlock,
-  isTestBlock,
-  isRoadmapLink,
-} from './langium-driver/generated/ast'
+  DomainIR as DomainDeclaration,
+  BlueprintIR as BlueprintDeclaration,
+  WorkIR as WorkDeclaration,
+  TaskIR as TaskDeclaration,
+  ProofIR as ProofDeclaration,
+} from './md-pipeline/transformers'
 
 // =============================================================================
 // v0.0.28 兼容层：OpenXenon Language (OXL) 品牌升级
-// 历史 API 仍以 `Oxn*` 名字导出（@deprecated）；新代码请用 `Oxl*`
-// 计划下个版本（v0.1.x）批量移除
 // =============================================================================
 
-// =============================================================================
-// v0.6.1-alpha.1 兼容层：'version' / 'assetVersion' 字段同义
-// OXL 语法：'version = 1' 和 'assetVersion = 1' 都映射到 .version 字段
-// AST 只有一个 .version 字段（'assetVersion' 是 OXL 语法别名，编译时归一化到 .version）
-// 注意：PropKV 中的 'version' 字符串作为 key 是另一回事（RuntimeBlock 内的 props += PropKV）
-// =============================================================================
-import type {
-  BlueprintDeclaration,
-  DomainDeclaration,
-  StackDeclaration,
-  RoadmapDeclaration,
-} from './langium-driver/generated/ast'
-
-/** Blueprint version getter（'version' / 'assetVersion' 共享）*/
-export function getBlueprintVersion(b: BlueprintDeclaration): number | undefined {
-  return b.version
-}
-
-/** Domain version getter */
-export function getDomainVersion(d: DomainDeclaration): number | undefined {
-  return d.version
-}
-
-/** Stack version getter */
-export function getStackVersion(s: StackDeclaration): number | undefined {
-  return s.version
-}
-
-/** Roadmap version getter */
-export function getRoadmapVersion(r: RoadmapDeclaration): number | undefined {
-  return r.version
-}
-
-/** @deprecated brand upgrade: use OxlParser */
-export { createOxnParser as createOxlParser } from './langium-driver/oxn-services'
-/** @deprecated brand upgrade: use OxlAssetLoader */
-export { createOxnAssetLoader as createOxlAssetLoader } from './loader/oxn-loader'
 /** @deprecated brand upgrade: use OxlCompiler */
 export { createOxnCompiler as createOxlCompiler } from './compiler/blueprint-compiler'
 /** @deprecated brand upgrade: use OxlWorkspaceManager */

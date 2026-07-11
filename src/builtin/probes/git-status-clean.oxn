@@ -1,6 +1,0 @@
-probe "git-status-clean" align "GitStatusClean" {
-  scheme = "git://"
-  description = "检查 git status --porcelain 输出（等价于 git-clean 的别名，更显式）"
-  prop "path" { type = string; required = false; default = "." }
-  output { clean = boolean; dirtyFiles = list<string> }
-}

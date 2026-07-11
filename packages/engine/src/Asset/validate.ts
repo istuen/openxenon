@@ -4,6 +4,7 @@
  * Validates a Domain / Blueprint / Stack asset file via Langium parser.
  * v0.6.1-alpha.1 (Asset 缺口全补 Phase 2): 集成 checkAssetDAG —
  * Asset-to-Asset references 自环 / 循环 / 孤儿校验。
+ * v0.7.0: 默认读 .md 文件（.oxn 已废弃）。
  */
 import { readFileSync, existsSync, readdirSync } from '@openxenon/engine/infra/filesystem'
 import { URI } from 'langium'
@@ -55,8 +56,8 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
  * 校验项目内所有 Asset 的 references DAG（无环 + 无自环 + 无孤儿）
  *
  * 流程：
- * 1. 扫描 6 种 AssetKind 目录（domain / blueprint / stack / roadmap / library / external）
- * 2. regex 提取每个 .oxn 的 references[] 字段
+ * 1. 扫描 5 种 AssetKind 目录（domain / workflow / stack / blueprint / roadmap）
+ * 2. regex 提取每个 .md / .oxn 的 references[] 字段
  * 3. 调 checkAssetDAG 校验
  * 4. 返回结果（失败时不抛错，由调用方决定如何展示）
  *
@@ -72,12 +73,12 @@ export function validateAssetReferences(projectRoot: string): DagValidationResul
   for (const kind of kinds) {
     const dir = resolveAssetDir(projectRoot, kind, null)
     if (!existsSync(dir)) continue
-    const files = readdirSync(dir).filter((f) => f.endsWith('.oxn'))
+    const files = readdirSync(dir).filter((f) => f.endsWith('.md') || f.endsWith('.oxn'))
     for (const file of files) {
-      const name = file.replace(/\.oxn$/, '')
+      const name = file.replace(/\.(md|oxn)$/, '')
       const filePath = `${dir}/${file}`
       const content = readFileSync(filePath, 'utf-8')
-      const references = extractReferencesFromOxn(content)
+      const references = extractReferences(content)
       nodes.push({ kind, name, references })
     }
   }
@@ -86,29 +87,51 @@ export function validateAssetReferences(projectRoot: string): DagValidationResul
 }
 
 /**
- * 从 .oxn 内容中提取 references[] 字段（regex）
+ * 从 Asset 内容中提取 references[] 字段（regex）
  *
- * 支持 3 种语法形式：
- * - references = ["X", "Y"]
- * - references = ["X","Y"] (无空格)
- * - references = ["X"]
+ * 支持 3 种语法形式（.oxn 和 .md 通用）：
+ * - references = ["X", "Y"]          （.oxn 语法）
+ * - references = ["X","Y"]           （.oxn 语法，无空格）
+ * - references = ["X"]               （.oxn 语法）
+ * - - references: X                  （.md 列表项语法）
+ * - - references: [X, Y]             （.md 列表项语法）
  *
  * 不解析 Langium AST（避免对 engine kernel 强依赖）
  */
-function extractReferencesFromOxn(content: string): string[] {
-  // 匹配 references = [...] (允许 [] 或 ["..."","...""])
-  const match = content.match(/references\s*=\s*\[([^\]]*)\]/m)
-  if (!match?.[1]) return []
-  const inner = match[1].trim()
-  if (!inner) return []
-  // 提取 "..." 字符串字面量
-  const refs: string[] = []
-  const strRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g
-  let m: RegExpExecArray | null
-  while ((m = strRegex.exec(inner)) !== null) {
-    if (m[1]) refs.push(m[1])
+function extractReferences(content: string): string[] {
+  // .oxn 语法: references = [...]
+  const oxnMatch = content.match(/references\s*=\s*\[([^\]]*)\]/m)
+  if (oxnMatch?.[1]) {
+    const inner = oxnMatch[1].trim()
+    if (!inner) return []
+    const refs: string[] = []
+    const strRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g
+    let m: RegExpExecArray | null
+    while ((m = strRegex.exec(inner)) !== null) {
+      if (m[1]) refs.push(m[1])
+    }
+    return refs
   }
-  return refs
+
+  // .md 语法: - references: X 或 - references: [X, Y]
+  const mdMatch = content.match(/references:\s*(.+)/m)
+  if (mdMatch?.[1]) {
+    const value = mdMatch[1].trim()
+    // Array format: [X, Y]
+    const arrayMatch = value.match(/\[([^\]]*)\]/)
+    if (arrayMatch?.[1]) {
+      return arrayMatch[1]
+        .split(',')
+        .map((s) => s.trim().replace(/"/g, ''))
+        .filter(Boolean)
+    }
+    // Single value: X
+    if (value && !value.startsWith('[')) {
+      return [value.replace(/"/g, '')]
+    }
+  }
+
+  return []
 }
 
 // =============================================================================
@@ -155,7 +178,7 @@ export async function validateAssetPaper4Fields(
   name: string,
   strict: boolean = false,
 ): Promise<AssetPaperValidationResult> {
-  const filePath = resolveAssetFile(projectRoot, kind, name, 'oxn')
+  const filePath = resolveAssetFile(projectRoot, kind, name)
   if (!existsSync(filePath)) {
     throw new IAPError('INFRA', 'PATH_CONFLICT', IAPAction.YIELD_TO_HUMAN, `Asset not found: ${filePath}`, {
       kind,
@@ -166,16 +189,18 @@ export async function validateAssetPaper4Fields(
 
   const content = readFileSync(filePath, 'utf-8')
 
-  // Extract 4 fields via regex
-  const abstractMatch = content.match(/abstract\s*=\s*"((?:[^"\\]|\\.)*)"/m)
+  // Extract 4 fields via regex (support both .oxn and .md formats)
+  // .oxn: abstract = "..."  /  .md frontmatter: abstract: ...
+  const abstractMatch = content.match(/abstract\s*[=:]\s*"((?:[^"\\]|\\.)*)"/m)
   const abstract = abstractMatch?.[1]?.replace(/\\"/g, '"')
-  // references: 区分"未设置"与"显式 = []" — 搜 references\s*= 字段存在性
-  const hasReferencesField = /references\s*=\s*\[/.test(content)
-  const references = hasReferencesField ? extractReferencesFromOxn(content) : undefined
-  const citationsMatch = content.match(/citations\s*=\s*(\d+)/m)
+  // references: 区分"未设置"与"显式 = []" — 搜 references\s*= 或 references: 字段存在性
+  const hasReferencesField = /references\s*[=:]/m.test(content)
+  const references = hasReferencesField ? extractReferences(content) : undefined
+  // .oxn: citations = N  /  .md frontmatter: citations: N
+  const citationsMatch = content.match(/citations\s*[=:]\s*(\d+)/m)
   const citations = citationsMatch?.[1] ? Number(citationsMatch[1]) : undefined
-  // auditTrail 在 .oxn 通常是注释形式 `// auditTrail: ...` 或 frontmatter
-  const auditTrailMatch = content.match(/\/\/\s*auditTrail\s*:\s*(.+)/m)
+  // auditTrail: .oxn 注释形式 `// auditTrail: ...`，.md frontmatter `auditTrail: ...`
+  const auditTrailMatch = content.match(/(?:\/\/\s*|^\s*)auditTrail\s*:\s*(.+)/m)
   const auditTrail = auditTrailMatch?.[1]?.trim()
 
   const fields: AssetPaper4Fields = { abstract, references, citations, auditTrail }

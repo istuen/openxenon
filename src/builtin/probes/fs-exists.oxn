@@ -1,6 +1,0 @@
-probe "fs-exists" align "FsExists" {
-  scheme = "file://"
-  description = "检查指定 glob 模式的文件是否存在"
-  prop "pattern" { type = string; required = true }
-  output { exists = boolean }
-}

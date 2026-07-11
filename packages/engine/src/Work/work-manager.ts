@@ -11,12 +11,8 @@ import { BOUNDARY_DIR, TASK_OXN_FILE } from '@openxenon/engine/kernel'
 import { isBlueprintDeclaration, isDomainDeclaration, type BlueprintDeclaration } from '@openxenon/engine/oxl'
 import { renderWorkSkeleton } from './work-skeleton'
 import { isWorkStarted } from './dual-state-exec'
-import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
-import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
-import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
-import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
 import { parseOxnFile, validateWorkFile } from '@openxenon/engine/oxl/work-file-loader'
-import { resolveAssetPrimaryPath, resolveAssetAltPath } from '@openxenon/engine/infra/paths'
+import { resolveAssetPrimaryPath } from '@openxenon/engine/infra/paths'
 import type { AssetFormat } from '@openxenon/engine/infra/paths'
 
 function ensureDirectory(dir: string): void {
@@ -146,14 +142,11 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
 
       if (autoSync) {
         try {
-          if (assetFormat === 'oxn') {
-            const altResult = await compileOxnToMd(workContent, { entity: 'work', frontmatter: true })
-            writeFileSync(workAltPath, altResult.md, 'utf-8')
-          } else {
-            const { tree, frontmatter: fm } = parseMarkdown(workContent)
-            const ir = extractWorkIR(tree, fm)
-            const altContent = serializeWorkToOxn(ir)
-            writeFileSync(workAltPath, altContent, 'utf-8')
+          // v0.7.0+: autoSync creates .oxn alt for backward compatibility only
+          // when primary format is .md
+          if (assetFormat === 'md') {
+            // For now, skip alt file creation in v0.7.0
+            // TODO: implement md→oxn serialization if needed for backward compat
           }
         } catch {
           // autoSync failure does not block
@@ -186,7 +179,6 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
 
   // v0.7+：无 workType 子目录（不再有 mode）；works/<w>/ 统一布局
   const workFileFinal = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
-  const workAltFileFinal = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
   const workFileDir = join(workFileFinal, '..')
   if (!existsSync(workFileDir)) mkdirSync(workFileDir, { recursive: true })
   if (existsSync(workFileFinal)) {
@@ -203,14 +195,11 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
 
   if (autoSync) {
     try {
-      if (assetFormat === 'oxn') {
-        const altResult = await compileOxnToMd(workOxnContent, { entity: 'work', frontmatter: true })
-        writeFileSync(workAltFileFinal, altResult.md, 'utf-8')
-      } else {
-        const { tree, frontmatter: fm } = parseMarkdown(workOxnContent)
-        const ir = extractWorkIR(tree, fm)
-        const altContent = serializeWorkToOxn(ir)
-        writeFileSync(workAltFileFinal, altContent, 'utf-8')
+      // v0.7.0+: autoSync creates .oxn alt for backward compatibility only
+      // when primary format is .md
+      if (assetFormat === 'md') {
+        // For now, skip alt file creation in v0.7.0
+        // TODO: implement md→oxn serialization if needed for backward compat
       }
     } catch {
       // autoSync failure does not block
@@ -398,16 +387,8 @@ export function editTask(params: EditTaskParams): EditTaskResult {
   if (addDomain) {
     const workFile = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
     if (existsSync(workFile)) {
-      let workContent = readFileSync(workFile, 'utf-8')
-      if (workFile.endsWith('.md')) {
-        try {
-          const parsed = parseMarkdown(workContent)
-          const ir = extractWorkIR(parsed.tree, parsed.frontmatter)
-          workContent = serializeWorkToOxn(ir)
-        } catch {
-          // soft degradation: still use regex on original content
-        }
-      }
+      const workContent = readFileSync(workFile, 'utf-8')
+      // v0.7.0+: extract domain names directly from .md content using regex
       const allowed = Array.from(workContent.matchAll(/domain\s+"([^"]+)"/g)).map((m) => m[1]!)
       if (allowed.length > 0 && !allowed.includes(addDomain)) {
         throw new Error(`domain "${addDomain}" not declared in work "${workName}" (allowed: ${allowed.join(', ')})`)

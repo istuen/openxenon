@@ -1,7 +1,0 @@
-probe "git-clean" align "GitClean" {
-  scheme = "git://"
-  description = "检查当前 working tree 是否干净（无未提交改动）"
-  prop "path"      { type = string; required = false; default = "." }
-  prop "includeUntracked" { type = boolean; required = false; default = false }
-  output { clean = boolean; dirtyFiles = list<string> }
-}

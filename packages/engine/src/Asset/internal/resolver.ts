@@ -16,9 +16,10 @@ import { existsSync } from '@openxenon/engine/infra/filesystem'
 /**
  * 解析 asset 文件的完整路径（主路径优先，fallback 为后备）.
  *
- * v0.6.1 PR-3 保留向后兼容：默认 ext='oxn'，调用方可显式传 'md'。
+ * v0.7.0: 默认 ext='md'（.oxn 已废弃）。
+ * v0.6.1 PR-3: 保留向后兼容 ext 参数，调用方可显式传 'oxn'。
  */
-export function resolveAssetFile(projectRoot: string, kind: AssetKind, name: string, ext: string = 'oxn'): string {
+export function resolveAssetFile(projectRoot: string, kind: AssetKind, name: string, ext: string = 'md'): string {
   const dir = resolveAssetDir(projectRoot, kind, null)
   return join(dir, `${name}.${ext}`)
 }
@@ -30,7 +31,7 @@ export function resolveAssetFileCandidates(
   projectRoot: string,
   kind: AssetKind,
   name: string,
-  ext: string = 'oxn',
+  ext: string = 'md',
 ): { primary: string; fallback: string } {
   const { primary, fallback } = resolveAssetCandidates(projectRoot, kind, null)
   return {
@@ -42,7 +43,7 @@ export function resolveAssetFileCandidates(
 /**
  * 检测 asset 文件的主路径与 fallback 冲突.
  */
-export function detectAssetConflict(projectRoot: string, kind: AssetKind, name: string, ext: string = 'oxn'): boolean {
+export function detectAssetConflict(projectRoot: string, kind: AssetKind, name: string, ext: string = 'md'): boolean {
   const { primary, fallback } = resolveAssetFileCandidates(projectRoot, kind, name, ext)
   return existsSync(primary) && existsSync(fallback)
 }

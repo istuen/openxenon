@@ -1,6 +1,0 @@
-probe "shell_exec" align "ShellExec" {
-  scheme = "shell://"
-  description = "执行 shell 命令并返回结果"
-  prop "command" { type = string; required = true }
-  output { exit_code = number; stdout = string; stderr = string }
-}

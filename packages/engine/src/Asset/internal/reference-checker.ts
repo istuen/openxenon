@@ -5,10 +5,12 @@
  *
  * 与 dag-validator.ts 的区别：
  * - dag-validator: 给定 AssetNode[] 列表，做无环/自环/孤儿校验
- * - reference-checker (本文件): 扫所有 .oxn 文件，提取 references[] 字段，
+ * - reference-checker (本文件): 扫所有 .md / .oxn 文件，提取 references[] 字段，
  *   构建反向索引（哪个 Asset 被哪些 Asset 引用）
  *
  * 用于 archive/delete 前的"无引用校验"
+ *
+ * v0.7.0: 支持 .md 和 .oxn 双格式扫描。
  *
  * L0–L3 兼容性：
  * - L1-Infra 层
@@ -28,7 +30,7 @@ export interface AssetReferenceEntry {
 }
 
 /**
- * 扫所有 6 AssetKind 的 .oxn，提取 references[] 字段，
+ * 扫所有 5 AssetKind 的 .md / .oxn，提取 references[] 字段，
  * 返回反向引用索引：name → referencedBy[]
  */
 export function listAssetReferences(projectRoot: string): AssetReferenceEntry[] {
@@ -38,12 +40,12 @@ export function listAssetReferences(projectRoot: string): AssetReferenceEntry[] 
   for (const kind of kinds) {
     const dir = resolveAssetDir(projectRoot, kind, null)
     if (!existsSync(dir)) continue
-    const files = readdirSync(dir).filter((f) => f.endsWith('.oxn'))
+    const files = readdirSync(dir).filter((f) => f.endsWith('.md') || f.endsWith('.oxn'))
     for (const file of files) {
-      const name = file.replace(/\.oxn$/, '')
+      const name = file.replace(/\.(md|oxn)$/, '')
       const filePath = join(dir, file)
       const content = readFileSync(filePath, 'utf-8')
-      const references = extractReferencesFromOxn(content)
+      const references = extractReferences(content)
       nodes.push({ kind, name, references })
     }
   }
@@ -89,23 +91,47 @@ export function isAssetReferenced(
 }
 
 /**
- * 从 .oxn 内容提取 references[] 字段（与 validate.ts extractReferencesFromOxn 同实现）
+ * 从 Asset 内容提取 references[] 字段（regex）
  *
- * 提取 3 种语法形式：
- * - references = ["X", "Y"]
- * - references = ["X","Y"] (无空格)
- * - references = ["X"]
+ * 支持 3 种语法形式（.oxn 和 .md 通用）：
+ * - references = ["X", "Y"]          （.oxn 语法）
+ * - references = ["X","Y"]           （.oxn 语法，无空格）
+ * - references = ["X"]               （.oxn 语法）
+ * - - references: X                  （.md 列表项语法）
+ * - - references: [X, Y]             （.md 列表项语法）
  */
-function extractReferencesFromOxn(content: string): string[] {
-  const match = content.match(/references\s*=\s*\[([^\]]*)\]/m)
-  if (!match?.[1]) return []
-  const inner = match[1].trim()
-  if (!inner) return []
-  const refs: string[] = []
-  const strRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g
-  let m: RegExpExecArray | null
-  while ((m = strRegex.exec(inner)) !== null) {
-    if (m[1]) refs.push(m[1])
+function extractReferences(content: string): string[] {
+  // .oxn 语法: references = [...]
+  const oxnMatch = content.match(/references\s*=\s*\[([^\]]*)\]/m)
+  if (oxnMatch?.[1]) {
+    const inner = oxnMatch[1].trim()
+    if (!inner) return []
+    const refs: string[] = []
+    const strRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g
+    let m: RegExpExecArray | null
+    while ((m = strRegex.exec(inner)) !== null) {
+      if (m[1]) refs.push(m[1])
+    }
+    return refs
   }
-  return refs
+
+  // .md 语法: - references: X 或 - references: [X, Y]
+  const mdMatch = content.match(/references:\s*(.+)/m)
+  if (mdMatch?.[1]) {
+    const value = mdMatch[1].trim()
+    // Array format: [X, Y]
+    const arrayMatch = value.match(/\[([^\]]*)\]/)
+    if (arrayMatch?.[1]) {
+      return arrayMatch[1]
+        .split(',')
+        .map((s) => s.trim().replace(/"/g, ''))
+        .filter(Boolean)
+    }
+    // Single value: X
+    if (value && !value.startsWith('[')) {
+      return [value.replace(/"/g, '')]
+    }
+  }
+
+  return []
 }

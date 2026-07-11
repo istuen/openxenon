@@ -31,7 +31,6 @@
     "test": "bun test"
   },
   "dependencies": {
-    "langium": "^4.3.0",
     "remark-frontmatter": "^5.0.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",

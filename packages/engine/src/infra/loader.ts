@@ -33,6 +33,22 @@ export interface StandardAsset {
   content: string
 }
 
+/**
+ * 尝试读取文件，优先 .md，fallback .oxn
+ */
+function tryReadAssetFile(dir: string, name: string, subPath?: string): { content: string; path: string } | null {
+  const base = subPath ? join(dir, subPath) : dir
+  const mdPath = join(base, `${name}.md`)
+  if (existsSync(mdPath)) {
+    return { content: readFileSync(mdPath, 'utf-8'), path: mdPath }
+  }
+  const oxnPath = join(base, `${name}.oxn`)
+  if (existsSync(oxnPath)) {
+    return { content: readFileSync(oxnPath, 'utf-8'), path: oxnPath }
+  }
+  return null
+}
+
 export function scanArsenalStructure(
   boundary: string,
   type: AssetType,
@@ -57,19 +73,19 @@ export function scanArsenalStructure(
           const draftEntries = readdirSync(draftsPath, { withFileTypes: true })
           for (const draftEntry of draftEntries) {
             if (draftEntry.isDirectory()) {
-              const innerDraftFile = join(draftsPath, draftEntry.name, 'draft.oxn')
-              if (existsSync(innerDraftFile)) {
-                const content = readFileSync(innerDraftFile, 'utf-8')
+              // Try draft.md first, fallback draft.oxn
+              const result = tryReadAssetFile(draftsPath, 'draft', draftEntry.name)
+              if (result) {
                 assets.push({
                   name: draftEntry.name,
                   type,
                   state: 'draft',
-                  path: innerDraftFile,
-                  content,
+                  path: result.path,
+                  content: result.content,
                 })
               }
-            } else if (draftEntry.name.endsWith('.oxn')) {
-              const name = draftEntry.name.replace(/\.oxn$/, '')
+            } else if (draftEntry.name.endsWith('.md') || draftEntry.name.endsWith('.oxn')) {
+              const name = draftEntry.name.replace(/\.(md|oxn)$/, '')
               const filePath = join(draftsPath, draftEntry.name)
               const content = readFileSync(filePath, 'utf-8')
               assets.push({
@@ -83,15 +99,15 @@ export function scanArsenalStructure(
           }
         }
       } else if (stateFilter === 'canonical' || stateFilter === 'both' || !stateFilter) {
-        const canonicalFile = join(typePath, assetName, 'canonical.oxn')
-        if (existsSync(canonicalFile)) {
-          const content = readFileSync(canonicalFile, 'utf-8')
+        // Try canonical.md first, fallback canonical.oxn
+        const result = tryReadAssetFile(typePath, 'canonical', assetName)
+        if (result) {
           assets.push({
             name: assetName,
             type,
             state: 'canonical',
-            path: canonicalFile,
-            content,
+            path: result.path,
+            content: result.content,
           })
         }
       }
@@ -99,9 +115,10 @@ export function scanArsenalStructure(
       entry.name.endsWith('.yaml') ||
       entry.name.endsWith('.yml') ||
       entry.name.endsWith('.json') ||
+      entry.name.endsWith('.md') ||
       entry.name.endsWith('.oxn')
     ) {
-      const name = entry.name.replace(/\.(yaml|yml|json|oxn)$/, '')
+      const name = entry.name.replace(/\.(yaml|yml|json|md|oxn)$/, '')
       const filePath = join(typePath, entry.name)
       const content = readFileSync(filePath, 'utf-8')
       assets.push({
@@ -245,7 +262,7 @@ export function generateCompiledArtifact(assetPath: string, boundary: string): s
     assetPath
       .split('/')
       .pop()
-      ?.replace(/\.(yaml|oxn)$/, '') || 'unknown'
+      ?.replace(/\.(yaml|oxn|md)$/, '') || 'unknown'
   const compiledPath = join(cacheDir, `${name}.compiled.json`)
   writeFileSync(compiledPath, JSON.stringify(compiled, null, 2), 'utf-8')
 
@@ -286,32 +303,32 @@ export function loadStandardByName(
 
   if (type === 'blueprints') {
     if (stateFilter === 'canonical' || stateFilter === 'both') {
-      const canonicalPath = join(boundary, 'arsenal', type, name, 'canonical.oxn')
-      if (existsSync(canonicalPath)) {
-        const content = readFileSync(canonicalPath, 'utf-8')
-        return { name, type, state: 'canonical' as const, path: canonicalPath, content }
+      // Try canonical.md first, fallback canonical.oxn
+      const result = tryReadAssetFile(join(boundary, 'arsenal', type, name), 'canonical')
+      if (result) {
+        return { name, type, state: 'canonical' as const, path: result.path, content: result.content }
       }
     }
     if (stateFilter === 'draft' || stateFilter === 'both') {
-      const draftPath = join(boundary, 'arsenal', type, 'drafts', name, 'draft.oxn')
-      if (existsSync(draftPath)) {
-        const content = readFileSync(draftPath, 'utf-8')
-        return { name, type, state: 'draft' as const, path: draftPath, content }
+      // Try draft.md first, fallback draft.oxn
+      const result = tryReadAssetFile(join(boundary, 'arsenal', type, 'drafts', name), 'draft')
+      if (result) {
+        return { name, type, state: 'draft' as const, path: result.path, content: result.content }
       }
     }
   } else {
     if (stateFilter === 'canonical' || stateFilter === 'both') {
-      const flatPath = join(boundary, 'arsenal', type, `${name}.oxn`)
-      if (existsSync(flatPath)) {
-        const content = readFileSync(flatPath, 'utf-8')
-        return { name, type, state: 'canonical' as const, path: flatPath, content }
+      // Try <name>.md first, fallback <name>.oxn
+      const result = tryReadAssetFile(join(boundary, 'arsenal', type), name)
+      if (result) {
+        return { name, type, state: 'canonical' as const, path: result.path, content: result.content }
       }
     }
     if (stateFilter === 'draft' || stateFilter === 'both') {
-      const draftPath = join(boundary, 'arsenal', type, 'drafts', `${name}.oxn`)
-      if (existsSync(draftPath)) {
-        const content = readFileSync(draftPath, 'utf-8')
-        return { name, type, state: 'draft' as const, path: draftPath, content }
+      // Try drafts/<name>.md first, fallback drafts/<name>.oxn
+      const result = tryReadAssetFile(join(boundary, 'arsenal', type, 'drafts'), name)
+      if (result) {
+        return { name, type, state: 'draft' as const, path: result.path, content: result.content }
       }
     }
   }
@@ -330,21 +347,32 @@ export function resolveAssetPath(
     scope === 'global' ? resolveBoundary(scope) : projectBoundary ? projectBoundary : resolveBoundary('project')
 
   if (type === 'blueprints') {
-    const assetPath = join(boundary, 'arsenal', type, name, state === 'draft' ? 'draft.oxn' : 'canonical.oxn')
-    if (existsSync(assetPath)) return assetPath
+    const baseDir = join(boundary, 'arsenal', type, name)
+    const fileName = state === 'draft' ? 'draft' : 'canonical'
+    // Try .md first, fallback .oxn
+    const mdPath = join(baseDir, `${fileName}.md`)
+    if (existsSync(mdPath)) return mdPath
+    const oxnPath = join(baseDir, `${fileName}.oxn`)
+    if (existsSync(oxnPath)) return oxnPath
   } else {
-    // v1.1 fix-p1-architecture draft-path-consistency: 统一 draft 布局为
-    //   `drafts/<name>/draft.oxn` (sub-dir 风格, 与 scanArsenalStructure 主路径一致,
-    //   且允许未来装更多子资源如 invariants.yaml / tests/). 旧 flat 布局
-    //   `drafts/<name>.oxn` 保留为 fallback (向下兼容已有项目).
     if (state === 'draft') {
-      const subDirPath = join(boundary, 'arsenal', type, 'drafts', name, 'draft.oxn')
+      // Try drafts/<name>.md first, fallback drafts/<name>.oxn
+      const draftsDir = join(boundary, 'arsenal', type, 'drafts')
+      const subDirPath = join(draftsDir, name, 'draft.md')
       if (existsSync(subDirPath)) return subDirPath
-      const flatPath = join(boundary, 'arsenal', type, 'drafts', `${name}.oxn`)
+      const subDirOxnPath = join(draftsDir, name, 'draft.oxn')
+      if (existsSync(subDirOxnPath)) return subDirOxnPath
+      const flatPath = join(draftsDir, `${name}.md`)
       if (existsSync(flatPath)) return flatPath
+      const flatOxnPath = join(draftsDir, `${name}.oxn`)
+      if (existsSync(flatOxnPath)) return flatOxnPath
     } else {
-      const assetPath = join(boundary, 'arsenal', type, `${name}.oxn`)
-      if (existsSync(assetPath)) return assetPath
+      // Try <name>.md first, fallback <name>.oxn
+      const assetDir = join(boundary, 'arsenal', type)
+      const mdPath = join(assetDir, `${name}.md`)
+      if (existsSync(mdPath)) return mdPath
+      const oxnPath = join(assetDir, `${name}.oxn`)
+      if (existsSync(oxnPath)) return oxnPath
     }
   }
 

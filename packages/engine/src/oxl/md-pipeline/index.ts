@@ -105,19 +105,5 @@ export {
   type SyncMetadata,
 } from './sync-hash'
 
-// --- oxn-serializer (v0.4 Phase 2: IR → .oxn 反向编译) ---
-export { serializeDomainToOxn, serializeBlueprintToOxn, serializeWorkToOxn } from './oxn-serializer'
-
-// --- sync-validation (v0.4 Phase 2: 反向编译质量守卫) ---
-export {
-  validateOxnParseable,
-  verifyDomainRoundTrip,
-  verifyBlueprintRoundTrip,
-  verifyWorkRoundTrip,
-  diffDomainIR,
-  diffBlueprintIR,
-  diffWorkIR,
-  type LangiumValidationResult,
-  type RoundTripResult,
-  type SyncEntity,
-} from './sync-validation'
+// --- oxn-serializer (v0.4 Phase 2: IR → .oxn 反向编译, deprecated in v0.7) ---
+// export { serializeDomainToOxn, serializeBlueprintToOxn, serializeWorkToOxn } from './oxn-serializer'

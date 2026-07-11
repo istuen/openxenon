@@ -5,6 +5,8 @@
  * - 4 字段缺失检测（abstract / references / citations / auditTrail）
  * - strict 模式抛 IAPError
  * - fail-open 模式仅 warn
+ *
+ * v0.7.0: 测试使用 .md 文件（.oxn 已废弃）
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -29,14 +31,23 @@ describe('validateAssetPaper4Fields 4 字段校验', () => {
   test('1. 完整 4 字段 → ok=true + 0 warnings', async () => {
     setupProject()
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'domains', 'Complete.oxn'),
-      `domain "Complete" {
-  abstract = "完整业务边界"
-  references = []
-  citations = 0
-  // auditTrail: created at 2026-07-09
-  term { "T": "t" }
-}
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'Complete.md'),
+      `---
+entity: domain
+name: Complete
+abstract: "完整业务边界"
+references: []
+citations: 0
+auditTrail: "created at 2026-07-09"
+---
+
+# Domain: Complete
+
+## Terms
+
+### T
+
+t
 `,
     )
     const result = await validateAssetPaper4Fields(tmpDir, 'domain', 'Complete', false)
@@ -52,12 +63,19 @@ describe('validateAssetPaper4Fields 4 字段校验', () => {
   test('2. 缺 abstract → fail-open warn', async () => {
     setupProject()
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'domains', 'NoAbstract.oxn'),
-      `domain "NoAbstract" {
-  references = []
-  citations = 0
-  term { "T": "t" }
-}
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'NoAbstract.md'),
+      `---
+entity: domain
+name: NoAbstract
+---
+
+# Domain: NoAbstract
+
+## Terms
+
+### T
+
+t
 `,
     )
     const result = await validateAssetPaper4Fields(tmpDir, 'domain', 'NoAbstract', false)
@@ -69,11 +87,20 @@ describe('validateAssetPaper4Fields 4 字段校验', () => {
   test('3. 缺 references + citations → fail-open 多个 warn', async () => {
     setupProject()
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'domains', 'NoRefCit.oxn'),
-      `domain "NoRefCit" {
-  abstract = "test"
-  term { "T": "t" }
-}
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'NoRefCit.md'),
+      `---
+entity: domain
+name: NoRefCit
+abstract: test
+---
+
+# Domain: NoRefCit
+
+## Terms
+
+### T
+
+t
 `,
     )
     const result = await validateAssetPaper4Fields(tmpDir, 'domain', 'NoRefCit', false)
@@ -86,12 +113,19 @@ describe('validateAssetPaper4Fields 4 字段校验', () => {
   test('4. strict=true 缺 abstract → 抛 IAP_INTENT_INCOMPLETE_ASSET_PAPER', async () => {
     setupProject()
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'domains', 'Incomplete.oxn'),
-      `domain "Incomplete" {
-  references = []
-  citations = 0
-  term { "T": "t" }
-}
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'Incomplete.md'),
+      `---
+entity: domain
+name: Incomplete
+---
+
+# Domain: Incomplete
+
+## Terms
+
+### T
+
+t
 `,
     )
     try {

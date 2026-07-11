@@ -1,6 +1,0 @@
-probe "fs-not-exists" align "FsNotExists" {
-  scheme = "file://"
-  description = "检查指定 glob 模式的文件不存在"
-  prop "path" { type = string; required = true }
-  output { exists = boolean; matches = list<string> }
-}
