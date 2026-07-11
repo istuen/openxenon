@@ -83,11 +83,12 @@ const SIMPLE_TASK_OXN = (taskName: string) => `task "${taskName}" {
 `
 
 function setupProject(): void {
-  mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
-  mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
-  writeFileSync(join(tmpDir, '.openxenon', 'domains', 'domain-a.oxn'), DOMAIN_A)
-  writeFileSync(join(tmpDir, '.openxenon', 'domains', 'domain-b.oxn'), DOMAIN_B)
-  writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'blueprint-x.oxn'), BLUEPRINT_X)
+  // Phase B: 资产写在 assets/ 目录（primary path）
+  mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
+  mkdirSync(join(tmpDir, '.openxenon', 'assets', 'blueprints'), { recursive: true })
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-a.oxn'), DOMAIN_A)
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-b.oxn'), DOMAIN_B)
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'blueprints', 'blueprint-x.oxn'), BLUEPRINT_X)
 }
 
 function setupWork(workName: string, taskNames: string[]): void {
@@ -123,15 +124,14 @@ describe('oxn work validate (PR-6)', () => {
     const r = JSON.parse((await runCli(['work', 'validate', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
     expect(r.data.valid).toBe(true)
-    expect(r.data.assetCounts).toEqual({ domains: 2, blueprints: 1, tasks: 2 })
+    expect(r.data.assetCounts).toEqual({ blueprints: 1, tasks: 2 })
 
-    // 3 个产物文件全部存在
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', 'domains.json'))).toBe(true)
+    // Phase B: 2 个产物文件（domains.json 已删除）
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', 'blueprints.json'))).toBe(true)
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'))).toBe(true)
   })
 
-  test('.work 含 assets.domains（fileHash 64-hex）+ goal + constraints', async () => {
+  test('.work 含 assets.blueprints（fileHash 64-hex）+ goal + constraints', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a'])
@@ -143,8 +143,7 @@ describe('oxn work validate (PR-6)', () => {
     expect(cert.goal).toBe('test goal')
     expect(cert.constraints).toEqual(['c1', 'c2'])
     expect(cert.maxIterations).toBe(4)
-    expect(cert.assets.domains).toHaveLength(2)
-    expect(cert.assets.domains[0].fileHash).toMatch(/^[0-9a-f]{64}$/)
+    // Phase B: BirthCert V2 — no assets.domains (domains resolved via blueprint refs)
     expect(cert.assets.blueprints).toHaveLength(1)
     expect(cert.assets.blueprints[0].version).toBe(1)
     expect(cert.planLock).toBe(null)
@@ -164,41 +163,23 @@ describe('oxn work validate (PR-6)', () => {
 
   // ───────── 失败 path ─────────
 
-  test('domain ref 找不到 → 不写产物 + OXN_WORK_REFS_UNRESOLVED', async () => {
+  test('blueprint ref 找不到 → 不写产物 + OXN_WORK_REFS_UNRESOLVED', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a'])
-    // 删 domain-a 制造 ref 失踪
-    rmSync(join(tmpDir, '.openxenon', 'domains', 'domain-a.oxn'))
+    rmSync(join(tmpDir, '.openxenon', 'assets', 'blueprints', 'blueprint-x.oxn'))
 
     const r = JSON.parse((await runCli(['work', 'validate', 'demo', '--json'])).stdout)
-    // CLI 协议：output() 顶层永远是 {ok:true, data:{...}} 包壳（业务层 ok 在 data 里）
     expect(r.ok).toBe(true)
     expect(r.data.code).toBe('OXN_WORK_REFS_UNRESOLVED')
     expect(r.data.valid).toBe(false)
-    const unresolvedKinds = (r.data.unresolved as Array<{ kind: string; name: string }>).map(
-      (u) => `${u.kind}:${u.name}`,
-    )
-    expect(unresolvedKinds).toContain('domain:DomainA')
-
-    // 验证：3 个产物都不应被写
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', 'domains.json'))).toBe(false)
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', 'blueprints.json'))).toBe(false)
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'))).toBe(false)
-  })
-
-  test('blueprint ref 找不到 → 同上', async () => {
-    await initProject()
-    setupProject()
-    setupWork('demo', ['a'])
-    rmSync(join(tmpDir, '.openxenon', 'blueprints', 'blueprint-x.oxn'))
-
-    const r = JSON.parse((await runCli(['work', 'validate', 'demo', '--json'])).stdout)
-    expect(r.ok).toBe(true)
-    expect(r.data.code).toBe('OXN_WORK_REFS_UNRESOLVED')
     const unresolved = r.data.unresolved as Array<{ kind: string; name: string; reason: string }>
     expect(unresolved.some((u) => u.kind === 'blueprint' && u.name === 'BlueprintX')).toBe(true)
     expect(r.data.note).toContain('no artifacts written')
+
+    // 验证：产物都不应被写
+    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', 'blueprints.json'))).toBe(false)
+    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'))).toBe(false)
   })
 
   test('task.oxn 缺失 → 列入 unresolved', async () => {
@@ -217,7 +198,7 @@ describe('oxn work validate (PR-6)', () => {
 
   // ───────── lock 守卫 ─────────
 
-  test('lock 后 validate 拒绝覆盖 .work（但允许重写 domains.json/blueprints.json）', async () => {
+  test('lock 后 validate 拒绝覆盖 .work（但允许重写 blueprints.json）', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a'])
@@ -231,7 +212,6 @@ describe('oxn work validate (PR-6)', () => {
     cert.planLock = {
       lockedAt: '2026-06-08T00:00:00.000Z',
       workOxnHash: '0'.repeat(64),
-      workDomainsHash: '0'.repeat(64),
       blueprintsHash: '0'.repeat(64),
       tasksHash: '0'.repeat(64),
     }
@@ -251,31 +231,25 @@ describe('oxn work validate (PR-6)', () => {
 
   // ───────── idempotent ─────────
 
-  test('重复 validate 是幂等的（asset 数量稳定、fileHash 不变）', async () => {
+  test('重复 validate 是幂等的（blueprint 数量稳定、fileHash 不变）', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a'])
 
     const r1 = JSON.parse((await runCli(['work', 'validate', 'demo', '--json'])).stdout)
     const cert1 = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'), 'utf-8'))
-    const domainsJson1 = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', 'domains.json'), 'utf-8'))
 
     const r2 = JSON.parse((await runCli(['work', 'validate', 'demo', '--json'])).stdout)
     const cert2 = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'), 'utf-8'))
-    const domainsJson2 = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', 'domains.json'), 'utf-8'))
 
     expect(r1.ok).toBe(true)
     expect(r2.ok).toBe(true)
     // 资产数量稳定
-    expect(cert1.assets.domains.length).toBe(cert2.assets.domains.length)
     expect(cert1.assets.blueprints.length).toBe(cert2.assets.blueprints.length)
     // fileHash 不变（同内容）
-    expect(cert1.assets.domains[0].fileHash).toBe(cert2.assets.domains[0].fileHash)
     expect(cert1.assets.blueprints[0].fileHash).toBe(cert2.assets.blueprints[0].fileHash)
     // createdAt 保留（同一次 lock 前的 validate 不重置）
     expect(cert1.createdAt).toBe(cert2.createdAt)
-    // domain 内容稳定
-    expect(domainsJson1.domainCount).toBe(domainsJson2.domainCount)
   })
 
   // ───────── 错误守卫 ─────────

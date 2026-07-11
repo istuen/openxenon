@@ -4,7 +4,7 @@
 // 覆盖：
 //   1. happy path：V0 work-state/work-trace/work-frozen.json 存在 → migrate 落 V1
 //   2. happy path：task-level V0 文件也被迁移
-//   3. happy path：迁移后 .work / domains.json / blueprints.json 重新生成
+//   3. happy path：迁移后 .work / blueprints.json 重新生成
 //   4. happy path：迁移后 planLock=null，assets 含 fileHash
 //   5. 备份目录：works/<w>/.migrated-v0/<rel> 存在 V0 备份
 //   6. 幂等：第二次 migrate → already-v1 no-op
@@ -69,10 +69,10 @@ const BLUEPRINT_X = `blueprint "BlueprintX" {
 `
 
 function setupV0Project(): void {
-  mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
-  mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
-  writeFileSync(join(tmpDir, '.openxenon', 'domains', 'domain-a.oxn'), DOMAIN_A)
-  writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'blueprint-x.oxn'), BLUEPRINT_X)
+  mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
+  mkdirSync(join(tmpDir, '.openxenon', 'assets', 'blueprints'), { recursive: true })
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-a.oxn'), DOMAIN_A)
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'blueprints', 'blueprint-x.oxn'), BLUEPRINT_X)
 }
 
 function setupV0Work(workName: string, taskNames: string[]): void {
@@ -169,21 +169,19 @@ describe('oxn work migrate (PR-10)', () => {
     ).toBe(true)
   })
 
-  test('happy path：迁移后 .work / domains.json / blueprints.json 重新生成', async () => {
+  test('happy path：迁移后 .work / blueprints.json 重新生成', async () => {
     await initProject()
     setupV0Project()
     setupV0Work('demo', ['a'])
 
     const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
-    expect(r.data.artifactsWritten).toHaveLength(3)
+    expect(r.data.artifactsWritten).toHaveLength(2)
     expect(r.data.artifactsWritten.some((p: string) => p.endsWith('.work'))).toBe(true)
-    expect(r.data.artifactsWritten.some((p: string) => p.endsWith('domains.json'))).toBe(true)
     expect(r.data.artifactsWritten.some((p: string) => p.endsWith('blueprints.json'))).toBe(true)
 
-    // 3 个产物文件确实在
+    // 产物文件确实在
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'))).toBe(true)
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', 'domains.json'))).toBe(true)
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', 'blueprints.json'))).toBe(true)
   })
 
@@ -197,8 +195,7 @@ describe('oxn work migrate (PR-10)', () => {
     const cert = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'), 'utf-8'))
     expect(cert.kind).toBe('work-birth-cert')
     expect(cert.planLock).toBe(null)
-    expect(cert.assets.domains).toHaveLength(1)
-    expect(cert.assets.domains[0].fileHash).toMatch(/^[0-9a-f]{64}$/)
+    expect(cert.assets.domains).toBeUndefined()
     expect(cert.assets.blueprints).toHaveLength(1)
     expect(cert.assets.blueprints[0].fileHash).toMatch(/^[0-9a-f]{64}$/)
   })
@@ -327,10 +324,9 @@ describe('oxn work migrate (PR-10)', () => {
 //
 // 覆盖：
 //   1. happy path：所有 ref 解析 → diagnostics: []
-//   2. migrate 时 work.oxn 引用了不存在的 domain → diagnostics: [{type:domain, severity:warn}]
-//   3. migrate 时 work.oxn 引用了不存在的 blueprint → diagnostics: [{type:blueprint}]
-//   4. 多个 invalid ref：diagnostics 数组多元素
-//   5. diagnostics.severity="warn"（不入 IAPError 体系）
+//   2. migrate 时 work.oxn 引用了不存在的 blueprint → diagnostics: [{type:blueprint}]
+//   3. 多个 invalid blueprint ref：diagnostics 数组多元素
+//   4. diagnostics.severity="warn"（不入 IAPError 体系）
 // =============================================================================
 
 describe('work migrate diagnostics（PR-14d）', () => {
@@ -345,27 +341,11 @@ describe('work migrate diagnostics（PR-14d）', () => {
     expect(r.data.diagnostics).toEqual([])
   })
 
-  test('2. migrate 缺 domain：diagnostics: [{type:domain, severity:warn}]', async () => {
+  test('2. migrate 缺 blueprint：diagnostics: [{type:blueprint, severity:warn}]', async () => {
     await initProject()
-    // 故意不写 domain-a.oxn（setupV0Work 引用 DomainA 但文件不存在）
-    setupV0Work('demo', ['a'])
-
-    const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
-    expect(r.ok).toBe(true)
-    expect(r.data.diagnostics.length).toBeGreaterThanOrEqual(1)
-    const domDiag = r.data.diagnostics.find((d) => d.type === 'domain' && d.ref === '@prj/domains/domain-a')
-    expect(domDiag).toBeDefined()
-    expect(domDiag.severity).toBe('warn')
-    expect(domDiag.code).toBe('OXN_WORK_REFS_UNRESOLVED')
-    expect(domDiag.message).toContain('DomainA')
-    expect(domDiag.suggestion).toContain('DomainA')
-  })
-
-  test('3. migrate 缺 blueprint：diagnostics: [{type:blueprint, severity:warn}]', async () => {
-    await initProject()
-    // 写域文件但不写蓝图文件
-    mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'domains', 'domain-a.oxn'), DOMAIN_A)
+    // 写域文件但不写蓝图文件（Phase B: domain refs 不再诊断）
+    mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-a.oxn'), DOMAIN_A)
     // 故意不写 blueprint-x.oxn（setupV0Work 引用 BlueprintX）
     setupV0Work('demo', ['a'])
 
@@ -377,29 +357,29 @@ describe('work migrate diagnostics（PR-14d）', () => {
     expect(bpDiag.code).toBe('OXN_WORK_REFS_UNRESOLVED')
   })
 
-  test('4. 多个 invalid ref：diagnostics 数组多元素', async () => {
+  test('3. 多个 invalid blueprint ref：diagnostics 数组多元素', async () => {
     await initProject()
+    // 不写任何蓝图文件
     setupV0Work('demo', ['a'])
 
-    // 在 work.oxn 额外声明多个不存在的 ref（按 OXL grammar 顺序: domain → blueprint）
+    // 在 work.oxn 额外声明多个不存在的 blueprint ref
     const workOxnPath = join(tmpDir, '.openxenon', 'works', 'demo', 'work.oxn')
     const content = readFileSync(workOxnPath, 'utf-8')
     writeFileSync(
       workOxnPath,
       content.replace(
         'domain "DomainA" ref "@prj/domains/domain-a";\n  blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";',
-        'domain "DomainA" ref "@prj/domains/domain-a";\n  domain "GhostDom" ref "@prj/domains/ghostdom";\n  blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";\n  blueprint "GhostBP" ref "@prj/blueprints/ghostbp";',
+        'domain "DomainA" ref "@prj/domains/domain-a";\n  blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";\n  blueprint "GhostBP" ref "@prj/blueprints/ghostbp";',
       ),
     )
 
     const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
-    const types = r.data.diagnostics.map((d) => d.type)
-    expect(types.filter((t) => t === 'domain').length).toBeGreaterThanOrEqual(1)
-    expect(types.filter((t) => t === 'blueprint').length).toBeGreaterThanOrEqual(1)
+    const bpDiags = r.data.diagnostics.filter((d) => d.type === 'blueprint')
+    expect(bpDiags.length).toBeGreaterThanOrEqual(1)
   })
 
-  test('5. diagnostics.severity="warn"（不入 IAPError 体系）', async () => {
+  test('4. diagnostics.severity="warn"（不入 IAPError 体系）', async () => {
     await initProject()
     setupV0Project()
     setupV0Work('demo', ['a'])

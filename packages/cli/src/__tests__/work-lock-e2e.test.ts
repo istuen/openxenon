@@ -102,7 +102,7 @@ const HEX64 = /^[0-9a-f]{64}$/
 // ───────── happy path ─────────
 
 describe('oxn work lock / unlock (PR-7)', () => {
-  test('happy path：validate → lock → planLock 设上，4 组件 hash 64-hex', async () => {
+  test('happy path：validate → lock → planLock 设上，3 组件 hash 64-hex', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a', 'b'])
@@ -119,9 +119,9 @@ describe('oxn work lock / unlock (PR-7)', () => {
 
     const pl = r.data.planLock
     expect(pl.workOxnHash).toMatch(HEX64)
-    expect(pl.workDomainsHash).toMatch(HEX64)
     expect(pl.blueprintsHash).toMatch(HEX64)
     expect(pl.tasksHash).toMatch(HEX64)
+    // Phase B: workDomainsHash removed (3-component hash)
 
     // 验证 .work 真的更新
     const cert = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'), 'utf-8'))

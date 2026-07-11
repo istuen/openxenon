@@ -7,7 +7,7 @@
 //   3. .work planLock 完好 → run 正常通过
 //   4. lock 后改 work.oxn → run 抛 IAP_ALIGN_LOCK_HASH_MISMATCH (component=workOxn)
 //   5. lock 后改 task.oxn → run 抛 IAP_ALIGN_LOCK_HASH_MISMATCH (component=tasks)
-//   6. lock 后改 domains.json → run 抛 IAP_ALIGN_LOCK_HASH_MISMATCH (component=workDomains)
+//   6. lock 后改 blueprints.json → run 抛 IAP_ALIGN_LOCK_HASH_MISMATCH (component=blueprints)
 //   7. work 目录被删 → run 抛 IAP_ALIGN_WORK_REMOVED
 //   8. unlock → 改 → re-validate → re-lock → run 恢复正常
 //   9. 未 init → OXN_NO_PROJECT
@@ -68,10 +68,10 @@ const BLUEPRINT_X = `blueprint "BlueprintX" {
 `
 
 function setupProject(): void {
-  mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
-  mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
-  writeFileSync(join(tmpDir, '.openxenon', 'domains', 'domain-a.oxn'), DOMAIN_A)
-  writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'blueprint-x.oxn'), BLUEPRINT_X)
+  mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
+  mkdirSync(join(tmpDir, '.openxenon', 'assets', 'blueprints'), { recursive: true })
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-a.oxn'), DOMAIN_A)
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'blueprints', 'blueprint-x.oxn'), BLUEPRINT_X)
 }
 
 function setupWork(workName: string, taskNames: string[]): void {
@@ -173,24 +173,6 @@ describe('oxn work run lock 守卫 (PR-8)', () => {
     const r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
     expect(r.error.code).toBe('OXN_ALIGN_LOCK_HASH_MISMATCH')
     expect(r.error.context.component).toBe('tasks')
-  })
-
-  test('lock 后改 domains.json → HASH_MISMATCH component=workDomains', async () => {
-    await initProject()
-    setupProject()
-    setupWork('demo', ['a'])
-    await runCli(['work', 'validate', 'demo', '--json'])
-    await runCli(['work', 'lock', 'demo', '--json'])
-
-    // 改 domains.json
-    const domainsJsonPath = join(tmpDir, '.openxenon', 'works', 'demo', 'domains.json')
-    const dom = JSON.parse(readFileSync(domainsJsonPath, 'utf-8'))
-    dom.domains[0].description = 'TAMPERED'
-    writeFileSync(domainsJsonPath, JSON.stringify(dom, null, 2))
-
-    const r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
-    expect(r.error.code).toBe('OXN_ALIGN_LOCK_HASH_MISMATCH')
-    expect(r.error.context.component).toBe('workDomains')
   })
 
   test('lock 后改 blueprints.json → HASH_MISMATCH component=blueprints', async () => {
