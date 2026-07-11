@@ -140,3 +140,15 @@ synced-at: 2026-07-08T13:52:19.207Z
 
 ### inv-17
 - value: oxn work new 已在 v1.0 移除;CLI 拒绝 unknown command 'new' (不能是别名);统一用 oxn work create
+
+### inv-18 (v0.6.1-alpha.5 Phase A 新增)
+- value: Round 切换不重置 task 状态: passed 的 task 保留, failed/running 的回 pending 供工程师重跑或调整;roundHistory 不可丢 (finalize 保留所有 round 记录供 E4 Insight)
+
+### inv-19 (v0.6.1-alpha.5 Phase A 新增)
+- value: maxIterations 硬限制: oxn work next-round 在 currentRound >= maxIterations 时拒绝, 错误码 IAP_ALIGN_ROUND_MAX_EXCEEDED; 提示用户用 oxn work finalize 收口; 默认 maxIterations=3 (从 work.loopPolicy.maxIterations 读取)
+
+### inv-20 (v0.6.1-alpha.5 Phase A 新增)
+- value: Round 切换手动触发 (oxn work next-round --verdict FAILED), 不自动循环 (避免无限循环 + 便于人工调整 Intent); verdict FAIL 不自动触发新 Round
+
+### inv-21 (v0.6.1-alpha.5 Phase A 新增)
+- value: oxn work run 行为变更: state.status=pending/running 时允许重新调用 (re-run 自动重置 failed/running task → pending, passed 保留); state.status ∈ {passed, failed, error} (已收口) 时拒绝, 报 OXN_WORK_ALREADY_FINALIZED

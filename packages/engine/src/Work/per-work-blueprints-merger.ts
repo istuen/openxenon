@@ -17,7 +17,7 @@ import { z } from 'zod'
 import { parseOxnReference } from '@openxenon/engine/oxl/scope/oxn-scope'
 import { BOUNDARY_DIR, WORK_BLUEPRINTS_JSON } from '@openxenon/engine/kernel'
 import { resolveAssetCandidates } from '@openxenon/engine/infra/paths'
-import { hashText } from './plan-hash'
+import { hashText, hashFile } from './plan-hash'
 
 // ───────── Zod schema ─────────
 
@@ -29,12 +29,13 @@ export const SlotSlimSchema = z.object({
 
 export const BoundaryRefSlimSchema = z.object({
   name: z.string().min(1),
+  // 🆕 Phase B: kind 加 'blueprint'（nestedBlueprintRefs 使用）
+  kind: z.enum(['domain', 'stack', 'workflow', 'blueprint']).default('domain'),
   ref: z.string().min(1),
   scope: z.enum(['@oxn', '@prj']).default('@prj'),
-  fileHash: z
-    .string()
-    .regex(/^[0-9a-f]{64}$/)
-    .optional(),
+  version: z.number().int().min(1).default(1),
+  // 🆕 v0.6.1-alpha.4 Phase B.5: fileHash 必填（BoundaryRefEntry 一致；parseBlueprintSlim 真实计算）
+  fileHash: z.string().regex(/^[0-9a-f]{64}$/),
 })
 
 export const PerWorkBlueprintEntrySchema = z.object({
@@ -131,6 +132,30 @@ export function resolveBlueprintFile(
   return null
 }
 
+/**
+ * 🆕 v0.6.1-alpha.4 Phase B.5: 解析 Boundary 类型资产文件路径（domain/workflow/stack/blueprint）
+ * 用于 parseBlueprintSlim 输出的 3 边界 ref 计算真实 fileHash。
+ * 不抛错；文件不存在返回 null（fileHash 留空）。
+ */
+function resolveBoundaryAssetFile(
+  projectRoot: string,
+  kind: 'domain' | 'workflow' | 'stack' | 'blueprint',
+  name: string,
+): string | null {
+  // 🆕 Phase B: 检查 primary + fallback 两个路径（v0.6.1-alpha.2 兼容旧布局）
+  const { primary, fallback } = resolveAssetCandidates(projectRoot, kind, null)
+  const kebab = toKebab(name)
+  for (const dir of [primary, fallback]) {
+    for (const ext of ['.oxn', '.md']) {
+      for (const f of [`${name}${ext}`, `${kebab}${ext}`]) {
+        const fp = join(dir, f)
+        if (existsSync(fp)) return fp
+      }
+    }
+  }
+  return null
+}
+
 function toKebab(s: string): string {
   return s
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
@@ -200,6 +225,22 @@ export function parseBlueprintSlim(content: string): ParsedBlueprintSlim {
   const workflowRefs = extractRefs('workflow')
   const stackRefs = extractRefs('stack')
   const nestedBlueprintRefs = extractRefs('blueprint').filter((r) => r.name !== name) // 排除自引用
+
+  // 🆕 v0.6.1-alpha.4 Phase B.6: 强制约束 — MD-native blueprint 必须引用 1 Domain + 1 Workflow + 1 Stack
+  // 注意：.oxn 格式的 blueprint 不支持 domain/workflow/stack refs（Langium grammar 只有 slot），
+  // 所以此约束仅对含 `domain "X"` 或 `## Refs` 的内容生效。
+  const hasBoundaryRefs = domainRefs.length > 0 || workflowRefs.length > 0 || stackRefs.length > 0
+  if (errors.length === 0 && hasBoundaryRefs) {
+    if (domainRefs.length < 1) {
+      errors.push('E_MD_BLUEPRINT_MISSING_DOMAIN: Blueprint must reference at least 1 Domain')
+    }
+    if (workflowRefs.length < 1) {
+      errors.push('E_MD_BLUEPRINT_MISSING_WORKFLOW: Blueprint must reference at least 1 Workflow')
+    }
+    if (stackRefs.length < 1) {
+      errors.push('E_MD_BLUEPRINT_MISSING_STACK: Blueprint must reference at least 1 Stack')
+    }
+  }
 
   if (!name) {
     errors.push('no `blueprint "X" { ... }` declaration found')
@@ -322,20 +363,38 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
     }
 
     const slim = parseBlueprintSlim(bpContent)
-    // 🆕 Phase 1: 把 Blueprint ## Refs 中的 3 边界 + 嵌套 Blueprint 转为 slim refs
-    // 每个 ref 标 scope（@oxn vs @prj）；fileHash 待 Phase 2 resolve 阶段补全（先占位）
-    const toSlim = (rs: Array<{ name: string; ref: string | null }>) =>
-      rs.map((r) => ({
-        name: r.name,
-        ref: r.ref ?? `@prj/workflows/${r.name}`, // 默认 ref 路径（Phase 1: workflows 优先）
-        scope: (r.ref?.startsWith('@oxn/') ? '@oxn' : '@prj') as '@oxn' | '@prj',
-      }))
+    // 🆕 Phase 1 + B: 把 Blueprint ## Refs 中的 3 边界 + 嵌套 Blueprint 转为 slim refs
+    // Phase B.5: 真实计算 fileHash（resolve 每个 ref 对应文件 + hash）
+    const toSlim = (rs: Array<{ name: string; ref: string | null }>, kind: 'domain' | 'workflow' | 'stack') =>
+      rs.map((r) => {
+        const refStr =
+          r.ref ?? `@prj/${kind === 'workflow' ? 'workflows' : kind === 'domain' ? 'domains' : 'stack'}/${r.name}`
+        // 🆕 Phase B.5: 真实计算 ref 文件的 fileHash
+        const refFile = resolveBoundaryAssetFile(projectRoot, kind, r.name)
+        const fileHash = refFile ? hashFile(refFile) : null
+        return {
+          name: r.name,
+          kind,
+          ref: refStr,
+          scope: (r.ref?.startsWith('@oxn/') ? '@oxn' : '@prj') as '@oxn' | '@prj',
+          version: 1,
+          fileHash: fileHash ?? '', // 🆕 Phase B.5: fileHash 必填；ref 文件不存在则空字符串（drift 检测会捕获）
+        }
+      })
     const toBlueprintSlim = (rs: Array<{ name: string; ref: string | null }>) =>
-      rs.map((r) => ({
-        name: r.name,
-        ref: r.ref ?? `@prj/blueprints/${r.name}`, // Blueprint 默认 ref 路径
-        scope: (r.ref?.startsWith('@oxn/') ? '@oxn' : '@prj') as '@oxn' | '@prj',
-      }))
+      rs.map((r) => {
+        const refStr = r.ref ?? `@prj/blueprints/${r.name}`
+        const refFile = resolveBoundaryAssetFile(projectRoot, 'blueprint', r.name)
+        const fileHash = refFile ? hashFile(refFile) : null
+        return {
+          name: r.name,
+          kind: 'blueprint' as const,
+          ref: refStr,
+          scope: (r.ref?.startsWith('@oxn/') ? '@oxn' : '@prj') as '@oxn' | '@prj',
+          version: 1,
+          fileHash: fileHash ?? '',
+        }
+      })
     blueprints.push({
       name: decl.name,
       scope: resolved.scope,
@@ -345,9 +404,9 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
       slots: slim.slots,
       errors: slim.errors,
       ref: refStr,
-      domainRefs: toSlim(slim.domainRefs),
-      workflowRefs: toSlim(slim.workflowRefs),
-      stackRefs: toSlim(slim.stackRefs),
+      domainRefs: toSlim(slim.domainRefs, 'domain'),
+      workflowRefs: toSlim(slim.workflowRefs, 'workflow'),
+      stackRefs: toSlim(slim.stackRefs, 'stack'),
       nestedBlueprintRefs: toBlueprintSlim(slim.nestedBlueprintRefs),
     })
   }

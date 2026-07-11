@@ -66,16 +66,14 @@ import {
   getWorkMdPath,
   loadTaskState,
   loadWorkState,
+  saveWorkState,
   workStateExists,
   resolveWorkFilePath,
 } from '@openxenon/engine/Work/dual-state-io'
-import { resolveDomainFile } from '@openxenon/engine/Work/per-work-domains-merger'
+import { resetCurrentRoundTasks } from '@openxenon/engine/Work/dual-state-exec'
+// 🆕 v0.6.1-alpha.4 Phase B: 删除 resolveDomainFile import（Domain 引用走 Blueprint ## Refs 路径）
 import { resolveBlueprintFile } from '@openxenon/engine/Work/per-work-blueprints-merger'
-import {
-  buildDomainDiagnostic,
-  buildBlueprintDiagnostic,
-  type RefDiagnostic,
-} from '@openxenon/engine/oxl/compiler/ref-diagnostic'
+import { buildBlueprintDiagnostic, type RefDiagnostic } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import {
   applyPlanLock,
   clearPlanLock,
@@ -870,7 +868,7 @@ const validateSubcommand = defineCommand({
           errors: [],
           warnings: result.warnings,
           artifacts: {
-            domainsJson: a.domainsJsonPath,
+            // 🆕 Phase B: 删 domainsJson（Domain 引用走 Blueprint ## Refs）
             blueprintsJson: a.blueprintsJsonPath,
             workFile: a.workFilePath,
           },
@@ -878,11 +876,10 @@ const validateSubcommand = defineCommand({
         },
         human:
           `Work validate OK\n` +
-          `  Domain refs: ${a.assetCounts.domains} resolved\n` +
+          // 🆕 Phase B: 删 Domain refs 计数（Domain 引用走 Blueprint ## Refs）
           `  Blueprint refs: ${a.assetCounts.blueprints} resolved\n` +
           `  Task count:  ${a.assetCounts.tasks}\n` +
           `\n  Artifacts written:\n` +
-          `    - ${a.domainsJsonPath}\n` +
           `    - ${a.blueprintsJsonPath}\n` +
           `    - ${a.workFilePath}` +
           (result.warnings.length > 0 ? `\n\n  Warnings: ${result.warnings.join(' | ')}` : ''),
@@ -1547,15 +1544,39 @@ const runSubcommand = defineCommand({
       const work = result.work
       const inlineParts = result.parts ?? []
 
+      // 🆕 v0.6.1-alpha.5 Phase A.1: 允许 Round 2+ re-run（state.status=pending/running 时）
+      // 只有 state.status ∈ {passed, failed, error}（已收口）时才拒绝（避免重跑已结束 Work）
       if (workStateExists(projectRoot, workName)) {
-        return output(
-          errorJson(
-            'OXN_WORK_ALREADY_EXISTS',
-            `work "${workName}" already exists`,
-            'use `oxn work status <name>` to view',
-          ),
-          format,
-        )
+        const existingState = loadWorkState(projectRoot, workName)
+        if (existingState === null) {
+          // 状态文件存在但解析失败：罕见错误，回退到原行为
+          return output(
+            errorJson(
+              'OXN_WORK_ALREADY_EXISTS',
+              `work "${workName}" already exists`,
+              'use `oxn work status <name>` to view',
+            ),
+            format,
+          )
+        }
+        if (
+          existingState.status === 'passed' ||
+          existingState.status === 'failed' ||
+          existingState.status === 'error'
+        ) {
+          return output(
+            errorJson(
+              'OXN_WORK_ALREADY_FINALIZED',
+              `work "${workName}" already finalized (status=${existingState.status})`,
+              'use `oxn work status <name>` to view; finalized work cannot be re-run',
+            ),
+            format,
+          )
+        }
+        // Round 2+ re-run：重置当前 Round 的 task 状态为 pending（保留 passed 状态）
+        resetCurrentRoundTasks(existingState)
+        saveWorkState(projectRoot, workName, existingState)
+        // 不报错，继续 re-run 流程
       }
 
       ensureWorkDir(projectRoot, workName)
@@ -1588,15 +1609,8 @@ const runSubcommand = defineCommand({
       const maxIters = (work as { loopPolicy?: { maxIterations?: number } }).loopPolicy?.maxIterations ?? 3
 
       // PR-14c: 收集未解析的 ref diagnostics，持久化到 .run/state.json
+      // 🆕 v0.6.1-alpha.4 Phase B: 删除 domain ref 诊断（Domain 引用走 Blueprint ## Refs）
       const runDiagnostics: RefDiagnostic[] = []
-      for (const d of work.domains ?? []) {
-        if (!resolveDomainFile(d.ref ?? null, d.name, projectRoot)) {
-          const reason = d.ref?.startsWith('@oxn/')
-            ? '@oxn/ scope has no builtin domain registry (V1)'
-            : `domain file not found for ref "${d.ref ?? d.name}"`
-          runDiagnostics.push(buildDomainDiagnostic(d.name, d.ref ?? null, reason))
-        }
-      }
       for (const b of work.blueprints ?? []) {
         if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
           const reason = b.ref?.startsWith('@oxn/')
@@ -2183,7 +2197,7 @@ const contextSubcommand = defineCommand({
                 allHash: birthCertForHealth.cert.planLock.allHash ?? null,
                 components: {
                   workOxnHash: birthCertForHealth.cert.planLock.workOxnHash,
-                  workDomainsHash: birthCertForHealth.cert.planLock.workDomainsHash,
+                  // 🆕 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite 含 Blueprint + 3 边界）
                   blueprintsHash: birthCertForHealth.cert.planLock.blueprintsHash,
                   tasksHash: birthCertForHealth.cert.planLock.tasksHash,
                 },
@@ -2387,7 +2401,7 @@ const lockSubcommand = defineCommand({
           lockedAt: pl.lockedAt,
           planLock: {
             workOxnHash: pl.workOxnHash,
-            workDomainsHash: pl.workDomainsHash,
+            // 🆕 Phase B: 删 workDomainsHash
             blueprintsHash: pl.blueprintsHash,
             tasksHash: pl.tasksHash,
             allHash: pl.allHash,
@@ -2398,7 +2412,6 @@ const lockSubcommand = defineCommand({
   Locked at: ${pl.lockedAt}
   Components:
     - work.oxn:     ${pl.workOxnHash.slice(0, 16)}...
-    - domains.json: ${pl.workDomainsHash.slice(0, 16)}...
     - blueprints.json: ${pl.blueprintsHash.slice(0, 16)}...
     - tasks:        ${pl.tasksHash.slice(0, 16)}...
     - all:          ${pl.allHash?.slice(0, 16) ?? '(legacy)'}...

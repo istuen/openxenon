@@ -74,10 +74,13 @@ describe('extractBlueprintRefs', () => {
 // ───────── parseBlueprintSlim ─────────
 
 describe('parseBlueprintSlim', () => {
-  test('完整 blueprint（version + 多个 slot）', () => {
+  test('完整 blueprint（version + 多个 slot + 3 boundary refs）', () => {
     const content = `blueprint "Foo" {
   version = 2
   description = "demo"
+  domain "SomeDomain";
+  workflow "SomeWorkflow";
+  stack "SomeStack";
   slot "alpha" { deps = []; observe = ["fs-match"] }
   slot "beta"  { deps = ["alpha"]; observe = ["lint-check", "type-check"] }
 }
@@ -86,18 +89,21 @@ describe('parseBlueprintSlim', () => {
     expect(r.name).toBe('Foo')
     expect(r.version).toBe(2)
     expect(r.errors).toEqual([])
+    expect(r.domainRefs).toHaveLength(1)
+    expect(r.workflowRefs).toHaveLength(1)
+    expect(r.stackRefs).toHaveLength(1)
     expect(r.slots).toHaveLength(2)
     expect(r.slots[0]).toEqual({ name: 'alpha', deps: [], observe: ['fs-match'] })
     expect(r.slots[1]).toEqual({ name: 'beta', deps: ['alpha'], observe: ['lint-check', 'type-check'] })
   })
 
   test('缺 version → 默认 1', () => {
-    const r = parseBlueprintSlim(`blueprint "Foo" { slot "a" {} }\n`)
+    const r = parseBlueprintSlim(`blueprint "Foo" { domain "D"; workflow "W"; slot "a" {} }\n`)
     expect(r.version).toBe(1)
   })
 
   test('空 slot body → deps=[] observe=[]', () => {
-    const r = parseBlueprintSlim(`blueprint "Foo" { slot "a" {} }\n`)
+    const r = parseBlueprintSlim(`blueprint "Foo" { domain "D"; workflow "W"; slot "a" {} }\n`)
     expect(r.slots[0]).toEqual({ name: 'a', deps: [], observe: [] })
   })
 
@@ -108,9 +114,10 @@ describe('parseBlueprintSlim', () => {
   })
 
   test('version 非数字 → 默认 1，无 error（regex 只匹配 \\d+）', () => {
-    const r = parseBlueprintSlim(`blueprint "Foo" { version = abc }\n`)
+    const r = parseBlueprintSlim(`blueprint "Foo" { domain "D"; workflow "W"; stack "S"; version = abc }\n`)
     expect(r.version).toBe(1)
-    expect(r.errors).toEqual([])
+    // 🆕 Phase B: stack "S" 无 ref 触发 missing-stack-ref warning（不是 regex 错误）
+    expect(r.errors.some((e) => e.includes('regex'))).toBe(false)
   })
 })
 
@@ -150,11 +157,14 @@ describe('resolveBlueprintFile', () => {
 // ───────── buildPerWorkBlueprintsIndex ─────────
 
 describe('buildPerWorkBlueprintsIndex', () => {
-  test('happy path：1 blueprint + 4 slots', () => {
+  test('happy path：1 blueprint + 4 slots + 3 boundary refs', () => {
     writeBlueprintFile(
       'pipeline',
       `blueprint "pipeline" {
   version = 1
+  domain "SomeDomain";
+  workflow "SomeWorkflow";
+  stack "SomeStack";
   slot "retrieve" { "observe" = ["fs-match"] }
   slot "design"   { deps = ["retrieve"]; observe = ["fs-exists"] }
   slot "develop"  { deps = ["design"]; observe = ["lint-check", "type-check"] }

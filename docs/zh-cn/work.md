@@ -55,19 +55,30 @@ Work (一次完整 IAP 周期)
 
 **模板选择器**（`work-{explore,develop,fix,onboarding}.md`，Skill 包内）：是 AI 选 Blueprint 的辅助表，**不是引擎 mode**。模板直接 fork 改名即可。
 
-## 3. Round 多轮 IAP 循环（v0.6 新增）
+## 3. Round 多轮 IAP 循环（v0.6 新增，v0.6.1-alpha.5 修复缺陷）
 
 **OXN 相对 OpenSpec 的最大护城河**。OpenSpec 的工作流是单次线性 `propose → apply → archive`；OXN 的 Work 支持多轮 IAP 循环。
 
 ```
 Work (my-feature)
 ├── Round 1: intent + align + proof → verdict FAIL (type-check)
-│   └── oxn work next-round → 回到 Intent 调整
+│   └── oxn work next-round --verdict FAILED → 回到 Intent 调整
 ├── Round 2: intent(adjust) + align + proof → verdict FAIL (lint)
-│   └── oxn work next-round
+│   └── oxn work next-round --verdict FAILED
 ├── Round 3: intent(refine) + align + proof → verdict PASS
-└── oxn work finalize
+│   └── oxn work finalize --verdict PASSED
 ```
+
+**Round 2+ re-run 行为**（v0.6.1-alpha.5 Phase A.1 修复）：
+- ✅ `oxn work run <name>` 在 `state.status=pending/running` 时**允许**重新调用（不再报 `OXN_WORK_ALREADY_EXISTS`）
+- ✅ re-run 自动调用 `resetCurrentRoundTasks`：passed 的 task 保留，failed/running → pending
+- ❌ 仅当 `state.status ∈ {passed, failed, error}`（已收口）时拒绝，报 `OXN_WORK_ALREADY_FINALIZED`
+
+**maxIterations 硬限制**（v0.6.1-alpha.5 Phase A.2 新增）：
+- `oxn work next-round` 在 `currentRound >= maxIterations` 时拒绝
+- 错误码：`IAP_ALIGN_ROUND_MAX_EXCEEDED`
+- 提示用户用 `oxn work finalize` 收口
+- 默认 `maxIterations=3`（从 `work.loopPolicy.maxIterations` 读取）
 
 **v0.6 最小实现**：
 - Work 状态加 `currentRound` 字段

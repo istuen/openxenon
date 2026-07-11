@@ -117,8 +117,7 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     expect(v.data.workType).toBeUndefined() // v0.7+：workType 字段已删除
     expect(v.data.mode).toBeUndefined() // v0.7+：mode 字段已删除
 
-    // 3 个产物文件
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'lifecycle', 'domains.json'))).toBe(true)
+    // 🆕 Phase B: 产物文件（domains.json 已删；Domain refs 走 Blueprint ## Refs → blueprints.json 含 domainRefs）
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'lifecycle', 'blueprints.json'))).toBe(true)
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'lifecycle', '.work'))).toBe(true)
 
@@ -129,7 +128,8 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     expect(lk.data.planLock.workOxnHash).toMatch(/^[0-9a-f]{64}$/)
     expect(lk.data.planLock.allHash).toMatch(/^[0-9a-f]{64}$/)
     expect(Object.keys(lk.data.planLock).sort()).toEqual(
-      ['allHash', 'blueprintsHash', 'tasksHash', 'workDomainsHash', 'workOxnHash'].sort(),
+      // 🆕 Phase B: workDomainsHash 已删（3-component hash: workOxn + blueprints(composite) + tasks + allHash）
+      ['allHash', 'blueprintsHash', 'tasksHash', 'workOxnHash'].sort(),
     )
 
     // 阶段 3: context
@@ -156,7 +156,8 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     const workFile = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'lifecycle', '.work'), 'utf-8'))
     expect(workFile.planLock).not.toBe(null)
     expect(Object.keys(workFile.planLock).sort()).toEqual(
-      ['allHash', 'blueprintsHash', 'lockedAt', 'tasksHash', 'workDomainsHash', 'workOxnHash'].sort(),
+      // 🆕 Phase B: workDomainsHash 已删（3-component hash）
+      ['allHash', 'blueprintsHash', 'lockedAt', 'tasksHash', 'workOxnHash'].sort(),
     )
     // allHash 64-hex
     expect(workFile.planLock.allHash).toMatch(/^[0-9a-f]{64}$/)
@@ -192,7 +193,7 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     expect(allHash2).not.toBe(allHash1)
   })
 
-  test('4. 跑过的工作再次 run → OXN_WORK_ALREADY_EXISTS', async () => {
+  test('4. 跑过的工作再次 run → 允许 re-run（v0.6.1-alpha.5 Phase A.1 修复）', async () => {
     await initProject()
     setupProject()
     setupWork('lifecycle', ['a'])
@@ -201,11 +202,10 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
     const r1 = JSON.parse((await runCli(['work', 'run', 'lifecycle', '--json'])).stdout)
     expect(r1.ok).toBe(true)
 
-    // 再次 run 应报 already exists (v1.1 fix-p2-robustness output-data-overload:
-    // error 不再被外层 data 包装)
+    // 再次 run 应允许（Phase A.1: 修复了 Round 2+ re-run 报错的问题）
+    // 仅当 state.status ∈ {passed, failed, error}（已收口）时才报 OXN_WORK_ALREADY_FINALIZED
     const r2 = JSON.parse((await runCli(['work', 'run', 'lifecycle', '--json'])).stdout)
-    expect(r2.ok).toBe(false)
-    expect(r2.error.code).toBe('OXN_WORK_ALREADY_EXISTS')
+    expect(r2.ok).toBe(true) // ✅ Phase A.1 修复：re-run 允许
   })
 
   test('5. 锁后漂移 work.oxn → context 报 LOCK_HASH_MISMATCH', async () => {
@@ -294,6 +294,11 @@ describe('完整 work 生命周期 V1（PR-13）', () => {
 // 共享 single-slot blueprint + 单 task 'alpha' 的最小工程布局。
 // ─────────────────────────────────────────────────────────────
 
+const SINGLE_DOMAIN = `domain "SingleDomain" {
+  description = "single domain"
+}
+`
+
 const SINGLE_SLOT_BLUEPRINT = `blueprint "single" {
   assetVersion = 1
   description = "single slot"
@@ -303,7 +308,9 @@ const SINGLE_SLOT_BLUEPRINT = `blueprint "single" {
 
 async function setupSingleWorkWithRun(workName: string): Promise<void> {
   await initProject()
+  mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
   mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
+  writeFileSync(join(tmpDir, '.openxenon', 'domains', 'single-domain.oxn'), SINGLE_DOMAIN)
   writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'single.oxn'), SINGLE_SLOT_BLUEPRINT)
   await runCli(['work', 'create', workName, '--blueprint', 'single', '--json'])
   mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'alpha'), { recursive: true })

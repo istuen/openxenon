@@ -282,7 +282,7 @@ describe('probePlanPresence', () => {
   test('空 work → 全 false / 空 tasks', () => {
     const r = probePlanPresence(tmpDir, workName)
     expect(r.workOxn).toBe(false)
-    expect(r.domainsJson).toBe(false)
+    // 🆕 Phase B: 删 domainsJson（Domain refs 走 Blueprint ## Refs）
     expect(r.blueprintsJson).toBe(false)
     expect(r.tasks).toEqual([])
   })

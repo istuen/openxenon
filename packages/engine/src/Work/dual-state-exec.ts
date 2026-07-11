@@ -56,6 +56,7 @@ export type ExecErrorCode =
   | 'OXN_WORKSPACE_ALREADY_RUNNING'
   | 'OXN_WORK_NOT_STARTED'
   | 'OXN_ROUND_ALREADY_PASSED' // v0.6 PR-2: round 已通过，应调 finalize 而非 next-round
+  | 'IAP_ALIGN_ROUND_MAX_EXCEEDED' // 🆕 v0.6.1-alpha.5 Phase A.2: 超过 maxIterations 硬限制
 
 /** @deprecated v1.1 起走 IAPError 双轨制; 类名保留仅供类型推断/旧 import 路径, 不再 throw */
 export type ExecError = IAPError & { readonly oxnCode: ExecErrorCode }
@@ -503,6 +504,27 @@ export function nextRoundWork(params: NextRoundParams): NextRoundResult {
     )
   }
 
+  // 🆕 v0.6.1-alpha.5 Phase A.2: maxIterations 硬限制（避免无限 Round 循环）
+  // 先检查（PASSED 优先：PASSED 状态应走 finalize 而非 next-round）
+  const maxIterations = state.skillContext?.maxIterations ?? 3
+  if (state.currentRound >= maxIterations) {
+    throwExecError(
+      'ALIGN',
+      'IAP_ALIGN_ROUND_MAX_EXCEEDED',
+      `Work "${params.workName}" round ${state.currentRound} reached max iterations (${maxIterations}). ` +
+        `Use \`oxn work finalize\` to close the work.`,
+    )
+  }
+
+  // 若上一轮 PASSED，不应继续 next-round（应调 finalize）
+  if (params.verdict === 'PASSED') {
+    throwExecError(
+      'ALIGN',
+      'OXN_ROUND_ALREADY_PASSED',
+      `Work "${params.workName}" round ${state.currentRound} already PASSED. Run \`oxn work finalize\` instead of \`oxn work next-round\`.`,
+    )
+  }
+
   // 关闭当前 round
   const nowIso = new Date().toISOString()
   const closedRound: RoundRecord = {
@@ -521,15 +543,6 @@ export function nextRoundWork(params: NextRoundParams): NextRoundResult {
   } else {
     // 替换最后一条（避免 next-round 失败造成的 partially-closed 状态）
     state.roundHistory[state.roundHistory.length - 1] = closedRound
-  }
-
-  // 若上一轮 PASSED，不应继续 next-round（应调 finalize）
-  if (params.verdict === 'PASSED') {
-    throwExecError(
-      'ALIGN',
-      'OXN_ROUND_ALREADY_PASSED',
-      `Work "${params.workName}" round ${state.currentRound} already PASSED. Run \`oxn work finalize\` instead of \`oxn work next-round\`.`,
-    )
   }
 
   // 开启新 round
@@ -662,4 +675,24 @@ export function finalizeWork(params: FinalizeParams): FinalizeResult {
     totalRounds: state.roundHistory.length,
     finalizedAt: nowIso,
   }
+}
+
+/**
+ * 🆕 v0.6.1-alpha.5 Phase A.1: 重置当前 Round 的 task 状态。
+ *
+ * 用于 Round 2+ re-run 场景（work run 在 state.status=running 时可重新调用）：
+ * - 保留已 passed 的 task（passed 不可重跑）
+ * - failed → pending（重跑机会）
+ * - running → pending（避免状态卡死）
+ *
+ * @param state - 当前的 WorkspaceState（会被原地修改）
+ */
+export function resetCurrentRoundTasks(state: WorkspaceState): void {
+  for (const task of state.tasks) {
+    if (task.status === 'failed' || task.status === 'running') {
+      task.status = 'pending'
+    }
+    // passed 任务保留 passed（不重跑）
+  }
+  state.updatedAt = new Date().toISOString()
 }

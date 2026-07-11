@@ -172,7 +172,7 @@ export function resolveAssetCandidates(
           ? 'blueprints'
           : kind === 'roadmap'
             ? 'roadmaps'
-            : 'stack'
+            : 'stacks'
   const fallback = join(boundary, fallbackDir)
   return { primary, fallback }
 }

@@ -53,11 +53,7 @@ import {
 } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR, RUN_DIR, RUN_TASKS_SUBDIR, WORK_FILE } from '@openxenon/engine/kernel'
-import {
-  buildPerWorkDomainsIndex,
-  writePerWorkDomainsIndex,
-  getPerWorkDomainsJsonPath,
-} from './per-work-domains-merger'
+// 🆕 v0.6.1-alpha.4 Phase B: 删除 buildPerWorkDomainsIndex/writePerWorkDomainsIndex/getPerWorkDomainsJsonPath import
 import {
   buildPerWorkBlueprintsIndex,
   writePerWorkBlueprintsIndex,
@@ -262,13 +258,12 @@ async function regenerateV1Artifacts(
   const artifactsWritten: string[] = []
   const invalidRefs: InvalidRef[] = []
 
-  const domainsIdx = await buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
+  // 🆕 v0.6.1-alpha.4 Phase B: 删除 domainsIdx + domainsJsonPath 相关调用
+  // （Domain 引用走 Blueprint ## Refs 路径，由 per-work-blueprints-merger 统一处理）
   const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
-  const domainsJsonPath = getPerWorkDomainsJsonPath(projectRoot, workName)
   const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
-  await writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
   writePerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath, outPath: blueprintsJsonPath })
-  artifactsWritten.push(domainsJsonPath, blueprintsJsonPath)
+  artifactsWritten.push(blueprintsJsonPath)
 
   // 解析 work.oxn context
   const goalMatch = workContent.match(/goal\s*=\s*"((?:[^"\\]|\\.)*)"/)
@@ -280,23 +275,7 @@ async function regenerateV1Artifacts(
   const maxItersMatch = workContent.match(/max_iterations\s*=\s*(\d+)/)
   const maxIterations = maxItersMatch ? Number.parseInt(maxItersMatch[1]!, 10) : 3
 
-  // PR-14d: 收集无效 ref
-  for (const d of domainsIdx.domains) {
-    if (d.status === 'invalid') {
-      const ref = d.ref ?? d.name
-      const reason = ref.startsWith('@oxn/')
-        ? '@oxn/ scope has no builtin domain registry (V1)'
-        : (d.errors[0] ?? 'domain file not found')
-      invalidRefs.push({
-        code: 'OXN_WORK_REFS_UNRESOLVED',
-        severity: 'warn',
-        ref,
-        type: 'domain',
-        message: `Domain '${d.name}' declared but unresolved during migrate: ${reason}`,
-        suggestion: `Check domain name spelling, or run \`oxn domain create ${d.name}\``,
-      })
-    }
-  }
+  // 🆕 v0.6.1-alpha.4 Phase B: 删除 domains invalid ref 收集（Domain 引用走 Blueprint ## Refs 路径）
   for (const b of blueprintsIdx.blueprints) {
     if (b.status === 'invalid') {
       const ref = b.ref ?? b.name
@@ -314,14 +293,7 @@ async function regenerateV1Artifacts(
     }
   }
 
-  const domainAssets = domainsIdx.domains
-    .filter((d) => d.status === 'ok')
-    .map((d) => ({
-      name: d.name,
-      scope: d.scope,
-      version: 1,
-      fileHash: hashFile(join(projectRoot, d.file)) ?? '',
-    }))
+  // 🆕 v0.6.1-alpha.4 Phase B: 删 domainAssets 构造（Domain 引用走 Blueprint ## Refs）
   const blueprintAssets = blueprintsIdx.blueprints
     .filter((b) => b.status === 'ok')
     .map((b) => ({
@@ -335,7 +307,7 @@ async function regenerateV1Artifacts(
     goal,
     constraints,
     maxIterations,
-    assets: { domains: domainAssets, blueprints: blueprintAssets },
+    assets: { blueprints: blueprintAssets }, // 🆕 Phase B: 删 domains 字段
   })
   writeWorkFile(projectRoot, workName, cert)
   artifactsWritten.push(join(workDir, WORK_FILE))

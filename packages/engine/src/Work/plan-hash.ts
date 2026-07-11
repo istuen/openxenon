@@ -137,21 +137,20 @@ export function listTaskFiles(
 // ───────── Plan hash（顶层入口）─────────
 
 /**
- * Plan hash 4 组件 + 1 combined：
+ * Plan hash 3 组件 + 1 combined（v0.6.1-alpha.4 Phase B: 删 workDomainsHash）：
  *   - workOxnHash       work.oxn 自身
- *   - workDomainsHash   works/<w>/domains.json  （per-work slim；PR-3 写入）
- *   - blueprintsHash    works/<w>/blueprints.json （per-work slim；PR-3 写入）
+ *   - blueprintsHash    works/<w>/blueprints.json （per-work slim + composite boundary refs）
  *   - tasksHash         所有 tasks/<t>/task.oxn 的组合 hash（按 task 名排序）
- *   - allHash           上面 4 个的稳定组合（用同样顺序的 normalize 后字符串再 hash）
+ *   - allHash           上面 3 个的稳定组合（用同样顺序的 normalize 后字符串再 hash）
  *
  * 任何组件缺失 → hash 为 null；call 端用 Object.values(...).every(h => h) 判定完整性。
  */
 export interface PlanHash {
   workOxnHash: string | null
-  workDomainsHash: string | null
+  // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（Domain refs 走 Blueprint ## Refs → blueprintsHash composite）
   blueprintsHash: string | null
   tasksHash: string | null
-  /** 上面 4 个的组合 hash（缺一即 null） */
+  /** 上面 3 个的组合 hash（缺一即 null） */
   allHash: string | null
   /** 缺失/不可读的组件名（用于 AI 报告） */
   missing: string[]
@@ -159,7 +158,7 @@ export interface PlanHash {
 
 export function hashWorkPlan(projectRoot: string, workName: string): PlanHash {
   const workOxnHash = hashFile(getWorkOxnPath(projectRoot, workName))
-  const workDomainsHash = hashFile(getWorkDomainsJsonPath(projectRoot, workName))
+  // 🆕 Phase B: domains.json 不再生成（Domain refs 走 Blueprint ## Refs）
   const blueprintsHash = hashFile(getWorkBlueprintsJsonPath(projectRoot, workName))
 
   const taskFiles = listTaskFiles(projectRoot, workName)
@@ -173,23 +172,16 @@ export function hashWorkPlan(projectRoot: string, workName: string): PlanHash {
 
   const missing: string[] = []
   if (workOxnHash === null) missing.push('work.oxn')
-  if (workDomainsHash === null) missing.push('domains.json')
+  // 🆕 Phase B: 删 domains.json 检查
   if (blueprintsHash === null) missing.push('blueprints.json')
   missing.push(...missingTasks.map((t) => `tasks/${t}/task.oxn`))
 
   const allHash =
-    workOxnHash !== null && workDomainsHash !== null && blueprintsHash !== null && tasksHash !== null
-      ? hashPort.computeHash(
-          [
-            `work.oxn=${workOxnHash}`,
-            `domains.json=${workDomainsHash}`,
-            `blueprints.json=${blueprintsHash}`,
-            tasksHash,
-          ].join('\n'),
-        )
+    workOxnHash !== null && blueprintsHash !== null && tasksHash !== null
+      ? hashPort.computeHash([`work.oxn=${workOxnHash}`, `blueprints.json=${blueprintsHash}`, tasksHash].join('\n'))
       : null
 
-  return { workOxnHash, workDomainsHash, blueprintsHash, tasksHash, allHash, missing }
+  return { workOxnHash, blueprintsHash, tasksHash, allHash, missing }
 }
 
 // ───────── 单文件 hash 工具（直接暴露给 CLI 调试用）─────────
@@ -202,10 +194,10 @@ export function sha256Hex(text: string): string {
   return createHash('sha256').update(normalizeText(text)).digest('hex')
 }
 
-/** 静默探测：列出 works/<w>/ 下所有 4 个组件的实际状态 */
+/** 静默探测：列出 works/<w>/ 下所有组件的实际状态 */
 export interface PlanPresence {
   workOxn: boolean
-  domainsJson: boolean
+  // 🆕 Phase B: 删 domainsJson（Domain refs 走 Blueprint ## Refs）
   blueprintsJson: boolean
   tasks: Array<{ taskName: string; hasOxn: boolean }>
 }
@@ -213,7 +205,7 @@ export interface PlanPresence {
 export function probePlanPresence(projectRoot: string, workName: string): PlanPresence {
   return {
     workOxn: existsSync(getWorkOxnPath(projectRoot, workName)),
-    domainsJson: existsSync(getWorkDomainsJsonPath(projectRoot, workName)),
+    // 🆕 Phase B: 删 domainsJson 检查
     blueprintsJson: existsSync(getWorkBlueprintsJsonPath(projectRoot, workName)),
     tasks: listTaskFiles(projectRoot, workName).map((t) => ({
       taskName: t.taskName,

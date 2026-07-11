@@ -1,11 +1,7 @@
 import { join } from 'path'
 import type { WorkDeclaration } from '../oxl'
 import { getWorkOxnPath, getWorkGatePath } from './dual-state-io'
-import {
-  buildPerWorkDomainsIndex,
-  writePerWorkDomainsIndex,
-  getPerWorkDomainsJsonPath,
-} from './per-work-domains-merger'
+// 🆕 v0.6.1-alpha.4 Phase B: 删 buildPerWorkDomainsIndex/writePerWorkDomainsIndex/getPerWorkDomainsJsonPath import
 import {
   buildPerWorkBlueprintsIndex,
   writePerWorkBlueprintsIndex,
@@ -16,13 +12,12 @@ import {
   readWorkFile as readBirthCert,
   writeWorkFile,
   type BirthCert,
-  type DomainAssetEntry,
   type BlueprintAssetEntry,
 } from './birth-cert'
 import { hashFile } from './plan-hash'
 
 interface UnresolvedRef {
-  kind: 'domain' | 'blueprint'
+  kind: 'blueprint' // 🆕 Phase B: 删 domain（Domain 引用走 Blueprint ## Refs）
   name: string
   ref: string | null
   reason: string
@@ -31,10 +26,11 @@ interface UnresolvedRef {
 export interface ValidateArtifactsResult {
   ok: boolean
   artifacts?: {
-    domainsJsonPath: string
+    // 🆕 Phase B: 删 domainsJsonPath
     blueprintsJsonPath: string
     workFilePath: string
-    assetCounts: { domains: number; blueprints: number; tasks: number }
+    // 🆕 Phase B: 删 domains 计数
+    assetCounts: { blueprints: number; tasks: number }
   }
   unresolved?: UnresolvedRef[]
   warnings: string[]
@@ -50,20 +46,11 @@ export async function validateAndWriteArtifacts(params: {
   const warnings: string[] = []
 
   const workOxnPath = getWorkOxnPath(projectRoot, workName)
-  const domainsIdx = await buildPerWorkDomainsIndex({ projectRoot, workName, workOxnPath })
+  // 🆕 v0.6.1-alpha.4 Phase B: 删 buildPerWorkDomainsIndex 调用（Domain 引用走 Blueprint ## Refs）
   const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
 
   const unresolved: UnresolvedRef[] = []
-  for (const d of domainsIdx.domains) {
-    if (d.status === 'invalid') {
-      unresolved.push({
-        kind: 'domain',
-        name: d.name,
-        ref: d.ref,
-        reason: d.errors[0] ?? 'invalid',
-      })
-    }
-  }
+  // 🆕 Phase B: 删 domain invalid ref 收集（Domain 通过 Blueprint ## Refs 解析，drift 由 blueprint 覆盖）
   for (const b of blueprintsIdx.blueprints) {
     if (b.status === 'invalid') {
       unresolved.push({
@@ -87,9 +74,8 @@ export async function validateAndWriteArtifacts(params: {
     return { ok: false, unresolved, warnings }
   }
 
-  const domainsJsonPath = getPerWorkDomainsJsonPath(projectRoot, workName)
+  // 🆕 Phase B: 删 writePerWorkDomainsIndex 调用（不再写 domains.json）
   const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
-  await writePerWorkDomainsIndex({ projectRoot, workName, workOxnPath, outPath: domainsJsonPath })
   writePerWorkBlueprintsIndex({
     projectRoot,
     workName,
@@ -109,22 +95,19 @@ export async function validateAndWriteArtifacts(params: {
     }
   }
 
-  const domainAssets: DomainAssetEntry[] = domainsIdx.domains.map((d) => ({
-    name: d.name,
-    scope: d.scope,
-    version: 1,
-    fileHash: hashFile(join(projectRoot, d.file)) ?? '',
-  }))
+  // 🆕 Phase B: 删 domainAssets 构造（Domain 引用走 Blueprint ## Refs，由 blueprintAssets.domainRefs 携带）
   const blueprintAssets: BlueprintAssetEntry[] = blueprintsIdx.blueprints.map((b) => ({
     name: b.name,
     version: b.version,
     fileHash: hashFile(join(projectRoot, b.file)) ?? '',
-    domainRefs: [], // Phase 1: 已合并到 blueprints slim index；BirthCert 暂不重复存（drift 检测靠 blueprints.json）
-    workflowRefs: [],
-    stackRefs: [],
+    // 🆕 Phase B.5: 真实 fileHash 来自 parseBlueprintSlim（toSlim 调 resolveBoundaryAssetFile 算 hash）
+    domainRefs: b.domainRefs ?? [],
+    workflowRefs: b.workflowRefs ?? [],
+    stackRefs: b.stackRefs ?? [],
   }))
 
-  for (const a of [...domainAssets, ...blueprintAssets]) {
+  // 🆕 Phase B: 删 domainAssets 引用（仅 blueprintAssets 包含 Domain 引用 via blueprintAssets.domainRefs）
+  for (const a of [...blueprintAssets]) {
     if (!/^[0-9a-f]{64}$/.test(a.fileHash)) {
       return {
         ok: false,
@@ -142,7 +125,8 @@ export async function validateAndWriteArtifacts(params: {
     goal,
     constraints,
     maxIterations,
-    assets: { domains: domainAssets, blueprints: blueprintAssets },
+    // 🆕 Phase B: 删 assets.domains（Domain 引用完全由 Blueprint ## Refs 承担）
+    assets: { blueprints: blueprintAssets },
   })
   if (existing.ok) {
     cert.createdAt = existing.cert.createdAt
@@ -152,11 +136,11 @@ export async function validateAndWriteArtifacts(params: {
   return {
     ok: true,
     artifacts: {
-      domainsJsonPath,
+      // 🆕 Phase B: 删 domainsJsonPath（Domain 引用走 Blueprint ## Refs）
       blueprintsJsonPath,
       workFilePath: getWorkGatePath(projectRoot, workName),
       assetCounts: {
-        domains: domainAssets.length,
+        // 🆕 Phase B: 删 domains 计数（Domain 引用走 Blueprint ## Refs）
         blueprints: blueprintAssets.length,
         tasks: (work.tasks ?? []).length,
       },

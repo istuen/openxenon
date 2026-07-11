@@ -47,7 +47,8 @@ export type DomainAssetEntry = z.infer<typeof DomainAssetEntrySchema>
  */
 export const BoundaryRefEntrySchema = z.object({
   name: z.string().min(1),
-  kind: z.enum(['domain', 'workflow', 'stack']).default('domain'),
+  // 🆕 Phase B: kind 加 'blueprint'（nestedBlueprintRefs 使用）
+  kind: z.enum(['domain', 'workflow', 'stack', 'blueprint']).default('domain'),
   scope: z.enum(['@oxn', '@prj']).default('@prj'),
   version: z.number().int().min(1).default(1),
   fileHash: z.string().regex(/^[0-9a-f]{64}$/, 'fileHash must be sha256 hex'),
@@ -73,7 +74,7 @@ export type BlueprintAssetEntry = z.infer<typeof BlueprintAssetEntrySchema>
 export const PlanLockSchema = z.object({
   lockedAt: z.string().min(1),
   workOxnHash: z.string().regex(/^[0-9a-f]{64}$/),
-  workDomainsHash: z.string().regex(/^[0-9a-f]{64}$/),
+  // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite 包含 Blueprint + 3 边界）
   blueprintsHash: z.string().regex(/^[0-9a-f]{64}$/),
   tasksHash: z.string().regex(/^[0-9a-f]{64}$/),
   // PR-13: allHash 必填（v1.1 锁时必含；旧 v1.0 .work 无此字段兼容为 optional）
@@ -94,7 +95,7 @@ export const BirthCertSchema = z.object({
   constraints: z.array(z.string()).default([]),
   maxIterations: z.number().int().min(1).default(3),
   assets: z.object({
-    domains: z.array(DomainAssetEntrySchema).default([]),
+    // 🆕 v0.6.1-alpha.4 Phase B: 删 assets.domains[] 字段（Domain 引用完全由 Blueprint ## Refs 承担）
     blueprints: z.array(BlueprintAssetEntrySchema).default([]),
   }),
   planLock: PlanLockSchema.nullable().default(null),
@@ -169,12 +170,11 @@ export interface CreateBirthCertParams {
   constraints?: string[]
   maxIterations?: number
   assets: {
-    domains: Array<{ name: string; scope?: '@oxn' | '@prj'; version: number; fileHash: string }>
+    // 🆕 v0.6.1-alpha.4 Phase B: 删 domains 字段（Domain 引用完全由 Blueprint ## Refs 承担）
     blueprints: Array<{
       name: string
       version: number
       fileHash: string
-      // 🆕 Phase 1: Blueprint 组合的 3 边界 refs（可选；work-validator 当前不填，per-work merger 已包含在 blueprints.json）
       domainRefs?: BoundaryRefEntry[]
       workflowRefs?: BoundaryRefEntry[]
       stackRefs?: BoundaryRefEntry[]
@@ -195,16 +195,12 @@ export function createBirthCert(params: CreateBirthCertParams): BirthCert {
     constraints: params.constraints ?? [],
     maxIterations: params.maxIterations ?? 3,
     assets: {
-      domains: params.assets.domains.map((d) => ({
-        name: d.name,
-        scope: d.scope ?? '@prj',
-        version: d.version,
-        fileHash: d.fileHash,
-      })),
+      // 🆕 v0.6.1-alpha.4 Phase B: 删 assets.domains[] 字段（Domain 引用完全由 Blueprint ## Refs 承担）
       blueprints: params.assets.blueprints.map((b) => ({
         name: b.name,
         version: b.version,
         fileHash: b.fileHash,
+        // 🆕 Phase B.5: Blueprint 组合的 3 边界 refs 填入真实 fileHash（来自 parseBlueprintSlim + resolveBoundaryAssetFile）
         domainRefs: b.domainRefs ?? [],
         workflowRefs: b.workflowRefs ?? [],
         stackRefs: b.stackRefs ?? [],
@@ -220,7 +216,7 @@ export function createBirthCert(params: CreateBirthCertParams): BirthCert {
 export function applyPlanLock(cert: BirthCert, hash: PlanHash, lockedAt?: string): BirthCert {
   if (
     hash.workOxnHash === null ||
-    hash.workDomainsHash === null ||
+    // 🆕 Phase B: 删 workDomainsHash null check（Domain refs 走 Blueprint ## Refs）
     hash.blueprintsHash === null ||
     hash.tasksHash === null ||
     hash.allHash === null
@@ -233,7 +229,7 @@ export function applyPlanLock(cert: BirthCert, hash: PlanHash, lockedAt?: string
     planLock: {
       lockedAt: lockedAt ?? new Date().toISOString(),
       workOxnHash: hash.workOxnHash,
-      workDomainsHash: hash.workDomainsHash,
+      // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite）
       blueprintsHash: hash.blueprintsHash,
       tasksHash: hash.tasksHash,
       allHash: hash.allHash,
@@ -289,16 +285,7 @@ export function verifyPlanLock(projectRoot: string, workName: string, cert: Birt
       message: 'work.oxn has been modified after lock',
     }
   }
-  if (current.workDomainsHash !== null && current.workDomainsHash !== cert.planLock.workDomainsHash) {
-    return {
-      ok: false,
-      reason: 'hash-mismatch',
-      component: 'workDomains',
-      expected: cert.planLock.workDomainsHash,
-      actual: current.workDomainsHash,
-      message: 'works/<w>/domains.json has been modified after lock',
-    }
-  }
+  // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash drift 检查（Domain 引用完全由 Blueprint ## Refs 承担）
   if (current.blueprintsHash !== null && current.blueprintsHash !== cert.planLock.blueprintsHash) {
     return {
       ok: false,
@@ -340,17 +327,8 @@ export function checkAssetsDrift(
   resolveAssetPath: (kind: 'domain' | 'blueprint', name: string) => string | null,
 ): AssetDrift {
   const out: AssetDrift = { domain: [], blueprint: [] }
-  for (const d of cert.assets.domains) {
-    const filePath = resolveAssetPath('domain', d.name)
-    if (!filePath) {
-      out.domain.push({ name: d.name, expected: d.fileHash, actual: null })
-      continue
-    }
-    const current = hashFileOrNull(filePath)
-    if (current !== d.fileHash) {
-      out.domain.push({ name: d.name, expected: d.fileHash, actual: current })
-    }
-  }
+  // 🆕 v0.6.1-alpha.4 Phase B: cert.assets.domains 字段已删除（Domain drift 检查由 Blueprint ## Refs 承担）
+  // 🆕 v0.6.1-alpha.4 Phase B: AssetDrift.domain 数组保留但永远为空（向后兼容接口；Blueprint drift 由 blueprint drift 覆盖）
   for (const b of cert.assets.blueprints) {
     const filePath = resolveAssetPath('blueprint', b.name)
     if (!filePath) {

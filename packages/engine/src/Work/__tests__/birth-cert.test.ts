@@ -52,7 +52,7 @@ function makeHash64(input: string): string {
 
 // 64-hex stub（合法 fileHash）
 const HASH_A = makeHash64('domain-A-content')
-const HASH_B = makeHash64('domain-B-content')
+const _HASH_B = makeHash64('domain-B-content')
 const HASH_BP = makeHash64('blueprint-content')
 
 // ───────── Zod schema 验证 ─────────
@@ -68,7 +68,7 @@ describe('BirthCertSchema', () => {
       goal: '',
       constraints: [],
       maxIterations: 3,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
       planLock: null,
     }
     expect(BirthCertSchema.safeParse(cert).success).toBe(true)
@@ -83,7 +83,7 @@ describe('BirthCertSchema', () => {
       goal: '',
       constraints: [],
       maxIterations: 3,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
       planLock: null,
     }
     expect(BirthCertSchema.safeParse({ ...base, workName: 'foo' }).success).toBe(true)
@@ -93,7 +93,7 @@ describe('BirthCertSchema', () => {
     expect(BirthCertSchema.safeParse({ ...base, workName: '-foo' }).success).toBe(false) // leading dash
   })
 
-  test('fileHash 必须是 64-char hex', () => {
+  test('fileHash 必须是 64-char hex（blueprints）', () => {
     const base = {
       schemaVersion: 1,
       kind: 'work-birth-cert',
@@ -107,7 +107,7 @@ describe('BirthCertSchema', () => {
     expect(
       BirthCertSchema.safeParse({
         ...base,
-        assets: { domains: [{ name: 'A', scope: '@prj', version: 1, fileHash: HASH_A }], blueprints: [] },
+        assets: { blueprints: [{ name: 'A', scope: '@prj', version: 1, fileHash: HASH_A }] },
         planLock: null,
       }).success,
     ).toBe(true)
@@ -115,15 +115,15 @@ describe('BirthCertSchema', () => {
       BirthCertSchema.safeParse({
         ...base,
         assets: {
-          domains: [{ name: 'A', scope: '@prj', version: 1, fileHash: 'not-hex' }],
-          blueprints: [],
+          blueprints: [{ name: 'A', scope: '@prj', version: 1, fileHash: 'not-hex' }],
         },
         planLock: null,
       }).success,
     ).toBe(false)
   })
 
-  test('scope 必须是 @oxn | @prj', () => {
+  test('scope 必须是 @oxn | @prj（BoundaryRefEntrySchema）', () => {
+    // 🆕 Phase B: scope 校验在 BoundaryRefEntrySchema 上（Blueprint ## Refs 内部的 domain/workflow/stack scope）
     const base = {
       schemaVersion: 1,
       kind: 'work-birth-cert',
@@ -137,14 +137,32 @@ describe('BirthCertSchema', () => {
     expect(
       BirthCertSchema.safeParse({
         ...base,
-        assets: { domains: [{ name: 'A', scope: '@oxn', version: 1, fileHash: HASH_A }], blueprints: [] },
+        assets: {
+          blueprints: [
+            {
+              name: 'A',
+              version: 1,
+              fileHash: HASH_A,
+              domainRefs: [{ name: 'D', scope: '@prj' as const, version: 1, fileHash: HASH_A }],
+            },
+          ],
+        },
         planLock: null,
       }).success,
     ).toBe(true)
     expect(
       BirthCertSchema.safeParse({
         ...base,
-        assets: { domains: [{ name: 'A', scope: '@glo', version: 1, fileHash: HASH_A }], blueprints: [] }, // 历史作用域
+        assets: {
+          blueprints: [
+            {
+              name: 'A',
+              version: 1,
+              fileHash: HASH_A,
+              domainRefs: [{ name: 'D', scope: '@glo' as const, version: 1, fileHash: HASH_A }],
+            },
+          ],
+        },
         planLock: null,
       }).success,
     ).toBe(false)
@@ -160,7 +178,7 @@ describe('BirthCertSchema', () => {
       goal: '',
       constraints: [],
       maxIterations: 3,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
       planLock: null,
     }
     // 写入历史字段应当被 zod 默认剥除（strict mode 关闭）或被 BirthCertSchema 不再要求
@@ -200,7 +218,6 @@ describe('workFile I/O', () => {
       workName,
       goal: 'demo',
       assets: {
-        domains: [{ name: 'A', version: 1, fileHash: HASH_A }],
         blueprints: [{ name: 'B', version: 1, fileHash: HASH_BP }],
       },
     })
@@ -212,7 +229,7 @@ describe('workFile I/O', () => {
     expect(r.ok).toBe(true)
     if (r.ok) {
       expect(r.cert.workName).toBe(workName)
-      expect(r.cert.assets.domains[0]?.name).toBe('A')
+      expect(r.cert.assets.blueprints[0]?.name).toBe('B')
     }
   })
 
@@ -251,7 +268,7 @@ describe('createBirthCert', () => {
   test('最小参数（assets）', () => {
     const c = createBirthCert({
       workName,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
     })
     expect(c.schemaVersion).toBe(1)
     expect(c.kind).toBe('work-birth-cert')
@@ -261,26 +278,28 @@ describe('createBirthCert', () => {
     expect(c.planLock).toBe(null)
   })
 
-  test('scope 默认 @prj', () => {
+  test('scope 默认 @prj（BoundaryRefEntrySchema）', () => {
+    // 🆕 Phase B: scope 是 BoundaryRefEntry 上的字段（Blueprint ## Refs 内部的 domain/workflow/stack scope）
     const c = createBirthCert({
       workName,
-      assets: { domains: [{ name: 'A', version: 1, fileHash: HASH_A }], blueprints: [] },
+      assets: {
+        blueprints: [
+          {
+            name: 'A',
+            version: 1,
+            fileHash: HASH_A,
+            domainRefs: [{ name: 'D', scope: '@prj', version: 1, fileHash: HASH_A }],
+          },
+        ],
+      },
     })
-    expect(c.assets.domains[0]?.scope).toBe('@prj')
-  })
-
-  test('显式 scope=@oxn', () => {
-    const c = createBirthCert({
-      workName,
-      assets: { domains: [{ name: 'A', scope: '@oxn', version: 1, fileHash: HASH_A }], blueprints: [] },
-    })
-    expect(c.assets.domains[0]?.scope).toBe('@oxn')
+    expect(c.assets.blueprints[0]?.domainRefs[0]?.scope).toBe('@prj')
   })
 
   test('createdAt/updatedAt 自动填当前时间（可覆盖）', () => {
     const c = createBirthCert({
       workName,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
       createdAt: '2026-01-01T00:00:00.000Z',
     })
     expect(c.createdAt).toBe('2026-01-01T00:00:00.000Z')
@@ -294,12 +313,11 @@ describe('applyPlanLock / clearPlanLock', () => {
   test('applyPlanLock 设置 4 组件 hash + allHash + lockedAt', () => {
     const base = createBirthCert({
       workName,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
     })
     const HASH_ALL = HASH_A
     const hash = {
       workOxnHash: HASH_A,
-      workDomainsHash: HASH_B,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
       allHash: HASH_ALL,
@@ -309,7 +327,7 @@ describe('applyPlanLock / clearPlanLock', () => {
     expect(locked.planLock).not.toBe(null)
     expect(locked.planLock?.lockedAt).toBe('2026-06-08T01:00:00.000Z')
     expect(locked.planLock?.workOxnHash).toBe(HASH_A)
-    expect(locked.planLock?.workDomainsHash).toBe(HASH_B)
+
     expect(locked.planLock?.blueprintsHash).toBe(HASH_BP)
     expect(locked.planLock?.tasksHash).toBe(HASH_A)
     expect(locked.planLock?.allHash).toBe(HASH_ALL)
@@ -319,12 +337,11 @@ describe('applyPlanLock / clearPlanLock', () => {
   test('applyPlanLock 任一组件为 null → 抛错', () => {
     const base = createBirthCert({
       workName,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
     })
     expect(() =>
       applyPlanLock(base, {
         workOxnHash: null,
-        workDomainsHash: HASH_B,
         blueprintsHash: HASH_BP,
         tasksHash: HASH_A,
         allHash: null,
@@ -336,11 +353,10 @@ describe('applyPlanLock / clearPlanLock', () => {
   test('clearPlanLock 重置 planLock=null + 更新 updatedAt', () => {
     const base = createBirthCert({
       workName,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
     })
     const hash = {
       workOxnHash: HASH_A,
-      workDomainsHash: HASH_B,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
       allHash: HASH_A,
@@ -355,11 +371,10 @@ describe('applyPlanLock / clearPlanLock', () => {
   test('不可变：applyPlanLock 不修改原 cert', () => {
     const base = createBirthCert({
       workName,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
     })
     const hash = {
       workOxnHash: HASH_A,
-      workDomainsHash: HASH_B,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
       allHash: HASH_A,
@@ -375,12 +390,11 @@ describe('applyPlanLock / clearPlanLock', () => {
 describe('verifyPlanLock', () => {
   function setupLockedCert(params: {
     workOxnContent: string
-    domainsContent: string
     blueprintsContent: string
     tasks?: Array<{ name: string; content: string }>
   }): BirthCert {
     writeFileSync(getWorkOxnPath(tmpDir, workName), params.workOxnContent)
-    writeFileSync(getWorkDomainsJsonPath(tmpDir, workName), params.domainsContent)
+    // 🆕 Phase B: domains.json 不再生成（Domain 引用走 Blueprint ## Refs）
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), params.blueprintsContent)
     for (const t of params.tasks ?? []) {
       const dir = join(getWorkDir(tmpDir, workName), 'tasks', t.name)
@@ -389,7 +403,7 @@ describe('verifyPlanLock', () => {
     }
     const base = createBirthCert({
       workName,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
     })
     // 直接构造 planLock（避免依赖 hashWorkPlan 模块）
     // 注意：tasksHash 的计算公式必须与 plan-hash.ts 的 hashWorkPlan 完全一致
@@ -398,7 +412,6 @@ describe('verifyPlanLock', () => {
       planLock: {
         lockedAt: '2026-06-08T00:00:00.000Z',
         workOxnHash: hashText(params.workOxnContent),
-        workDomainsHash: hashText(params.domainsContent),
         blueprintsHash: hashText(params.blueprintsContent),
         tasksHash:
           (params.tasks ?? []).length === 0
@@ -417,7 +430,6 @@ describe('verifyPlanLock', () => {
   test('ok: 4 组件都未变', () => {
     const cert = setupLockedCert({
       workOxnContent: 'work A',
-      domainsContent: 'domains A',
       blueprintsContent: 'bp A',
       tasks: [{ name: 't1', content: 't1 content' }],
     })
@@ -428,7 +440,7 @@ describe('verifyPlanLock', () => {
   test('no-plan-lock: cert.planLock === null', () => {
     const cert = createBirthCert({
       workName,
-      assets: { domains: [], blueprints: [] },
+      assets: { blueprints: [] },
     })
     const r = verifyPlanLock(tmpDir, workName, cert)
     expect(r.ok).toBe(false)
@@ -438,7 +450,6 @@ describe('verifyPlanLock', () => {
   test('work-removed: work.oxn 缺失', () => {
     const cert = setupLockedCert({
       workOxnContent: 'work A',
-      domainsContent: 'd',
       blueprintsContent: 'b',
     })
     rmSync(getWorkOxnPath(tmpDir, workName))
@@ -450,7 +461,6 @@ describe('verifyPlanLock', () => {
   test('hash-mismatch: workOxn 改', () => {
     const cert = setupLockedCert({
       workOxnContent: 'A',
-      domainsContent: 'd',
       blueprintsContent: 'b',
     })
     writeFileSync(getWorkOxnPath(tmpDir, workName), 'A modified')
@@ -461,23 +471,11 @@ describe('verifyPlanLock', () => {
       expect(r.component).toBe('workOxn')
     }
   })
-
-  test('hash-mismatch: workDomains 改', () => {
-    const cert = setupLockedCert({
-      workOxnContent: 'A',
-      domainsContent: 'd1',
-      blueprintsContent: 'b',
-    })
-    writeFileSync(getWorkDomainsJsonPath(tmpDir, workName), 'd1 modified')
-    const r = verifyPlanLock(tmpDir, workName, cert)
-    expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.component).toBe('workDomains')
-  })
+  // 🆕 Phase B: hash-mismatch: workDomains 测试已删（domains.json 不再生成）
 
   test('hash-mismatch: blueprints 改', () => {
     const cert = setupLockedCert({
       workOxnContent: 'A',
-      domainsContent: 'd',
       blueprintsContent: 'b1',
     })
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), 'b1 modified')
@@ -489,7 +487,6 @@ describe('verifyPlanLock', () => {
   test('hash-mismatch: tasks 改', () => {
     const cert = setupLockedCert({
       workOxnContent: 'A',
-      domainsContent: 'd',
       blueprintsContent: 'b',
       tasks: [{ name: 't1', content: 't1 content' }],
     })
@@ -504,12 +501,12 @@ describe('verifyPlanLock', () => {
 // ───────── checkAssetsDrift ─────────
 
 describe('checkAssetsDrift', () => {
-  function makeCertWithAssets(domains: Array<{ name: string; fileHash: string }>): BirthCert {
+  // 🆕 v0.6.1-alpha.4 Phase B: 改用 blueprint refs 测试（cert.assets.domains 已删）
+  function makeCertWithAssets(blueprints: Array<{ name: string; fileHash: string }>): BirthCert {
     return createBirthCert({
       workName,
       assets: {
-        domains: domains.map((d) => ({ name: d.name, version: 1, fileHash: d.fileHash })),
-        blueprints: [],
+        blueprints: blueprints.map((b) => ({ name: b.name, version: 1, fileHash: b.fileHash })),
       },
     })
   }
@@ -519,7 +516,7 @@ describe('checkAssetsDrift', () => {
     writeFileSync(file, 'A content')
     const cert = makeCertWithAssets([{ name: 'A', fileHash: hashText('A content') }])
     const r = checkAssetsDrift(cert, (_k, n) => (n === 'A' ? file : null))
-    expect(r.domain).toEqual([])
+    expect(r.blueprint).toEqual([]) // 🆕 Phase B: cert.assets.domains 已删，drift 走 blueprint
   })
 
   test('文件改了 → expected/actual 都报告', () => {
@@ -527,16 +524,16 @@ describe('checkAssetsDrift', () => {
     writeFileSync(file, 'A content')
     const cert = makeCertWithAssets([{ name: 'A', fileHash: hashText('A OLD') }])
     const r = checkAssetsDrift(cert, (_k, n) => (n === 'A' ? file : null))
-    expect(r.domain).toHaveLength(1)
-    expect(r.domain[0]?.name).toBe('A')
-    expect(r.domain[0]?.expected).toBe(hashText('A OLD'))
-    expect(r.domain[0]?.actual).toBe(hashText('A content'))
+    expect(r.blueprint).toHaveLength(1)
+    expect(r.blueprint[0]?.name).toBe('A')
+    expect(r.blueprint[0]?.expected).toBe(hashText('A OLD'))
+    expect(r.blueprint[0]?.actual).toBe(hashText('A content'))
   })
 
   test('resolver 返回 null → 报告 actual:null（文件漂到删了）', () => {
     const cert = makeCertWithAssets([{ name: 'A', fileHash: HASH_A }])
     const r = checkAssetsDrift(cert, () => null)
-    expect(r.domain).toHaveLength(1)
-    expect(r.domain[0]?.actual).toBe(null)
+    expect(r.blueprint).toHaveLength(1)
+    expect(r.blueprint[0]?.actual).toBe(null)
   })
 })

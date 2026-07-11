@@ -2,15 +2,14 @@ import type { AssetFormat } from '../infra/paths'
 
 /**
  * v0.6.4: renderWorkSkeleton 增强
+ * v0.6.1-alpha.4 Phase B: 删 domainNames + stackNames（work ## Refs 只接受 blueprint）
  *
- * 老接口（保持向后兼容）：
+ * 老接口（保持向后兼容 — domainNames/stackNames 仍接受但被忽略）：
  *   renderWorkSkeleton(workName, blueprintName, slots, format)
  *
  * 新 options（work create CLI 通过 options 传入）：
  *   - goal?: string                  直接写入 Context.goal（不再是 TODO 占位）
- *   - domainNames?: string[]         work 级 domain refs（## Refs 下 kind: domain）
  *   - blueprintNames?: string[]      work 级 blueprint refs；如不传则 blueprintName 作为默认 1 个
- *   - stackNames?: string[]          work 级 stack refs（## Refs 下 kind: stack）
  *   - constraints?: string[]         写 Context.constraints（不再是 TODO 占位）
  *
  * 行为：
@@ -19,8 +18,10 @@ import type { AssetFormat } from '../infra/paths'
  */
 export interface RenderWorkSkeletonOptions {
   goal?: string
+  /** @deprecated v0.6.1-alpha.4 Phase B: Work ## Refs 只接受 blueprint；Domain/Stack 引用走 Blueprint ## Refs */
   domainNames?: string[]
   blueprintNames?: string[]
+  /** @deprecated v0.6.1-alpha.4 Phase B: Work ## Refs 只接受 blueprint；Stack 引用走 Blueprint ## Refs */
   stackNames?: string[]
   constraints?: string[]
 }
@@ -49,33 +50,19 @@ export function renderWorkSkeleton(
         ? options.constraints.map((c) => `  - ${c}`).join('\n')
         : '  - TODO: 列出硬约束'
 
-    // ## Refs 段：多 domain / blueprint / stack refs
-    const domainRefs = options?.domainNames ?? []
+    // ## Refs 段：v0.6.1-alpha.4 Phase B — 只生成 blueprint ref（domain/stack 通过 Blueprint ## Refs 组合）
+    // blueprintNames: work 引用 1..N 个 blueprint；如不传则 blueprintName 作为默认 1 个
+    // domainNames/stackNames: 已 deprecated，忽略（不生成 ## Refs 条目）
     const blueprintRefs =
       options?.blueprintNames && options.blueprintNames.length > 0 ? options.blueprintNames : [blueprintName] // 默认行为：老调用方传 1 个 blueprint
-    const stackRefs = options?.stackNames ?? []
 
     const refsEntries: string[] = []
-    for (const d of domainRefs) {
-      refsEntries.push(
-        `### ${d}
-- kind: domain
-- ref: "@prj/domains/${d}"`,
-      )
-    }
     for (const b of blueprintRefs) {
       // v0.6.1-alpha.3: Phase 1 — Work 引用 workflow（不是 blueprint）
       refsEntries.push(
         `### ${b}
 - kind: blueprint
 - ref: "@prj/workflows/${b}"`,
-      )
-    }
-    for (const s of stackRefs) {
-      refsEntries.push(
-        `### ${s}
-- kind: stack
-- ref: "@prj/stacks/${s}"`,
       )
     }
     const refsBlock = refsEntries.length > 0 ? `## Refs\n\n${refsEntries.join('\n\n')}\n\n` : ''
