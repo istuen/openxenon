@@ -66,15 +66,17 @@ skill_context           state.json 写权限
 
 ---
 
-## v1.1 8 阶段流程
+## v1.1 3 IAP 阶段流程
 
 ```
-create → add-task → validate → lock → run → submit → status
-                      │         │
-                      ▼         ▼
-                   .work    .work.planLock
-                静态门禁卡   4 组件 hash
+Intent (工程师主权)          Align (AI 主权)           Proof (Engine 主权)
+create → [add-task?] → lock   run → submit × N          finalize
+                │                                        │
+           .work.planLock                          .run/frozen.json
+           3 组件 hash                              终态快照
 ```
+
+> lock 内含 validate（语法+DAG+引用）；validate = lock --dry-run
 
 ---
 
@@ -90,7 +92,7 @@ create → add-task → validate → lock → run → submit → status
 
 ## 反模式 TOP 5
 
-1. **跳过 validate + lock 直接 run** → `IAP_ALIGN_LOCK_NOT_FOUND`
+1. **跳过 lock 直接 run** → `IAP_ALIGN_LOCK_NOT_FOUND`
 2. **lock 后修改 .oxn** → `IAP_ALIGN_LOCK_HASH_MISMATCH`
 3. **AI 直接写 frozen.json** → 绕过 Proof 轴
 4. **Domain 里写 slot** → Domain / Blueprint 正交

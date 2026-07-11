@@ -66,8 +66,8 @@ oxn init --ai codex      # 生成 Codex Skill
 |---|---|
 | `oxn work create <id> --blueprint <bp>` | 创建 Work 骨架（默认 .md）|
 | `oxn work add-task --work <w> --task-name <t> --blueprint <bp> [--domain <d>]` | 创建 Task |
-| `oxn work validate <w> [--json]` | 校验 work.oxn + 写 .work 门禁卡 |
-| `oxn work lock <w> [--json]` | 锁 work（planLock + 4 组件 hash） |
+| `oxn work validate <w> [--json]` | = `lock --dry-run`（向后兼容 alias） |
+| `oxn work lock <w> [--json]` | lock 内含 validate + 算 hash + 写 planLock |
 | `oxn work unlock <w>` | 解锁 work |
 | `oxn work run --work-file <path> [--json]` | 启动状态机 |
 | `oxn work submit --work <w> --task <t> [--json]` | 推进 task 内 part |
@@ -92,7 +92,7 @@ oxn init --ai codex      # 生成 Codex Skill
 | `oxn work migrate [--dry-run] [--work-name <w>]` | V0→V1 布局迁移 |
 | `oxn work resume --work-name <w>` | 恢复 work |
 
-见 [Align](./align.md) 了解 v1.1 8 阶段流程。
+见 [Work](./work.md) 了解 3 IAP 阶段流程。
 
 ---
 
@@ -292,4 +292,4 @@ oxn work status --work onboarding --json
 ## → 参考
 
 - [Quickstart](./quickstart.md) — Proof-First 入门
-- [Align](./align.md) — v1.1 8 阶段详解
+- [Work](./work.md) — 3 IAP 阶段详解

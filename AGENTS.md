@@ -118,8 +118,8 @@ bun test                    # bun test，约 130 秒，1959 个测试 / 148 文�
 
 ```
 pools/drafts/xxx-draft.md（散落，无格式）
-    ↓ oxn work create promote-xxx --type doc --blueprint doc-promote --domain DocEngineeringContext
-    ↓ validate → lock → run → submit → finalize
+    ↓ oxn work create promote-xxx --blueprint doc-promote
+    ↓ lock → run → submit → finalize
 .openxenon/docs/rfcs/xxx-rfc.md（确定性，不再改）
     ↓ 决策落地后
 .openxenon/docs/adrs/00XX-xxx.md（append-only）
@@ -191,7 +191,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 
 **新 dev/ 文档的添加流程**：
 
-1. 用 `oxn work create <name> --type doc --blueprint doc-promote` 走 IAP（template fill → validate → lock → run → submit → finalize）
+1. 用 `oxn work create <name> --blueprint doc-promote` 走 IAP（lock → run → submit → finalize）
 2. 落地后 `git add dev/<filename> && git commit -m "docs(dev): add <title>"`
 3. 更新 `dev/README.md`「当前内容」表 + 本段摘要
 
@@ -237,7 +237,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 
 **对应 changelog 片段**：`.changes/0-2-0-roadmap.md`（路线图占位，每个子分支 PR 合入时记得新增一条 changelog）
 
-**Work v1.1 流程**：每个子分支开工时按 `oxn-work` skill 8 阶段（init → migrate → create → add-task → validate → lock → run → submit）走完一轮。
+**Work v1.1 流程**：每个子分支开工时按 `oxn-work` skill 3 IAP 阶段（Intent → Align → Proof）走完一轮。
 
 ## v0.3 路线图扩展：MD-Native Grammar 改革（🟡 RFC 待拍板）
 
