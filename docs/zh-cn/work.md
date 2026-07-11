@@ -7,37 +7,39 @@ title: 工作
 > **Work 是 OXN 的第二结构实体（E2）——工程师与 AI 的动态协作空间**。Work 内部走 IAP 三阶段（Intent → Align → Proof），多轮 Round 循环直到 work 真正结束。
 > v0.6 把 Insight 从 Work 中独立为 E4 涌现层——Work 不再负责"总结"，只负责"交付"。
 
-## 1. IAP 三阶段
+## 1. IAP 三阶段实体
+
+> **v0.6.1 Phase D**：Work 从 9 阶段收敛为 **3 IAP 阶段实体**。阶段边界稳定（Intent / Align / Proof），子步骤可变（create / add-task / lock / run / submit / finalize）。
 
 ```
 Work (一次完整 IAP 周期)
-├── Intent 阶段 (工程师主权)
-│   1. 创建 work.oxn
-│   2. 分析 work 需要哪些 Asset 作为边界
-│   3. 选择引用 Asset (ref @prj/assets/...)
-│   4. 可以是探索、讨论然后落盘成文档（不一定要开发）
+├── Intent 阶段 (工程师主权)     ← 声明意图 + 选 Asset 边界 + 锁定不可变
+│   ├── create                  — 写 work.oxn + 自动生成 task 骨架
+│   ├── add-task (可选)         — 追加 task（大多已被 create 覆盖）
+│   └── lock                    — validate 内含 + 算 hash + 写 planLock
+│       ├── validate（内含）     — 语法校验 + task DAG 校验 + Asset 引用校验
+│       └── planLock            — 3 组件 hash (workOxn + blueprints + tasks)
 │
-├── Align 阶段 (AI 模型主权)
-│   1. 按 tasks 执行
-│   2. 每轮 Align 拆 N 个 Tasks（Round 概念）
-│   3. 落盘产物到项目文件系统
+├── Align 阶段 (AI 主权)        ← 多 Round 对齐执行 task
+│   ├── run                     — 启动状态机 + Round 初始化
+│   └── submit × N              — 推进 task part × N（AI 逐个执行）
 │
-├── Proof 阶段 (Engine 主权)
-│   1. 跑探针 (Probe)
-│   2. 产出 verdict
-│   3. verdict = FAIL → 逃逸机制触发 (block done)
+├── Proof 阶段 (Engine 主权)    ← 跑探针 + 写 verdict
+│   └── finalize                — 汇总 Round + 写 frozen.json + 标记终态
 │
 ├── (可选) Round 循环
-│   verdict = FAIL 或 intent 调整 → 回到 Intent 阶段 → 新一轮 Align
+│   verdict = FAIL 或 intent 调整 → next-round → 回到 Intent 阶段 → 新一轮 Align
 │
 └── finalize → 写 frozen.json
 ```
 
-**关键**：一次 Intent 不一定要开发——可以是探索、讨论然后落盘成文档。IAP 范式不做强制开发路径假设。
+**关键**：Intent 不一定要开发——可以是探索、讨论然后落盘成文档。IAP 范式不做强制开发路径假设。
+
+**lock 内含 validate**（v0.6.1 Phase D）：`oxn work lock` 先跑 validate（语法 + DAG + 引用校验），通过后再算 hash。`validate` 保留为 `lock --dry-run` 的 alias（向后兼容）。
 
 ## 2. 单一 Work 流程（Blueprint 驱动）
 
-**v0.7+ 收敛**：Work 不再有 mode（task/explore/edit/workType 已删除），所有编排差异由 Blueprint 承载。一套 8 阶段流程（init→migrate→create→add-task→validate→lock→run→submit→finalize）覆盖所有场景：
+**v0.7+ 收敛**：Work 不再有 mode（task/explore/edit/workType 已删除），所有编排差异由 Blueprint 承载。一套 3 IAP 阶段流程覆盖所有场景：
 
 | 场景 | 入口 | 选什么 |
 |---|---|---|
@@ -45,11 +47,9 @@ Work (一次完整 IAP 周期)
 | **单域开发** | `oxn work create <w> --blueprint dev-workflow` | Blueprint = `dev-workflow` |
 | **bug 修复** | `oxn work create <w> --blueprint fix-issue` | Blueprint = `fix-issue` |
 | **跨域编排** | `oxn work create <w> --blueprint dev-workflow` + 多 domain ref | Blueprint = `dev-workflow` (多 domain) |
-| **编辑 Asset** | `oxn work create <asset> --asset-kind X` | 不创建 Work，走 Asset Short Circuit |
+| **编辑 Asset** | `oxn work create <asset> --asset-kind X` | 走标准 Work 流程（Phase C） |
 
 **奥姆剃刀**：删 `mode`/`workType`/`workTypeToMode`/`EditTarget` 一切行为零影响的残留字段。Blueprint slots/deps/observe/props 已经表达了"开发/修复/探索/重构/单域/跨域"所有差异。
-
-**Asset Short Circuit**：`--asset-kind X` 单独触发，跳过 work.oxn 骨架，直接写 `.openxenon/assets/{kinds}/{name}.oxn`。这是 CLI 子命令级别的特化路由，**不是 Work mode**。
 
 **v0.6 调整**（仍生效）：Insight 从 "Work Mode D" 升为 E4 涌现层。Work 只负责交付，Insight 负责涌现。
 
@@ -106,17 +106,21 @@ oxn work run my-feature --json
 oxn work finalize my-feature --json
 ```
 
-## 4. 8 阶段流程
+## 4. 3 IAP 阶段流程（v0.6.1 Phase D）
 
 ```
-init → migrate → create → add-task → validate → lock → run → submit → finalize
-                                                │         │
-                                                ▼         ▼
-                                            .work      .work.planLock
-                                         静态门禁卡    4 组件 hash
+Intent (工程师主权)          Align (AI 主权)           Proof (Engine 主权)
+create → [add-task?] → lock   run → submit × N          finalize
+                │                                        │
+           .work.planLock                          .run/frozen.json
+           3 组件 hash                              终态快照
 ```
 
-所有 3 模式、所有 Round 都走这 8 阶段。每轮 Round 走完整 8 阶段流程。
+所有场景、所有 Round 都走这 3 IAP 阶段。每轮 Round 走完整 Intent → Align → Proof 流程。
+
+**lock 内含 validate**：`oxn work lock` 自动执行语法校验 + DAG 校验 + Asset 引用校验，通过后再算 hash。无需先跑 validate。
+
+**validate = lock --dry-run**：`oxn work validate` 保留为向后兼容 alias，等价于 `lock --dry-run`（只校验不锁）。
 
 ## 5. Intent 不一定开发
 
@@ -139,21 +143,21 @@ Intent 阶段可以是探索、讨论然后落盘成文档。与 Intent Pool 5 �
 
 ---
 
-# 7. 完整 8 阶段生命周期（v0.6.1-alpha.0 实现细节）
+# 7. 完整 3 IAP 阶段生命周期（v0.6.1 Phase D）
 
 ## 7.1 阶段-命令-落盘文件映射表
 
-| # | CLI 命令 | 引擎入口 | 落盘文件 | Lock 守卫 |
-|---|---|---|---|---|
-| 0 | `oxn work migrate <w>` | `work-migrator.ts` | `.migrated-v0/<rel>` 备份 + `.run/` 升 V1 | — |
-| 1 | `oxn work create <w> --blueprint <bp>` | `work-manager.ts` createSubcommand | `works/<w>/work.oxn`（0o444）+ `work.md`（镜像）+ `tasks/<slot>/task.oxn`（**v0.6.1-alpha.0 #3-3 自动生成**） | — |
-| 2 | `oxn work add-task <w> --task <t> ...` | `addTaskSubcommand`（line 728） | `works/<w>/tasks/<t>/task.oxn`（0o444） | NV-1: `.run/state.json` 存在 → 拒 |
-| 3 | `oxn work validate <w>` | `work-validator.ts` | `works/<w>/.work`（BirthCert，planLock=null）+ `.cache/domains.json` + `.cache/blueprints.json` | — |
-| 4 | `oxn work lock <w>` | `work-lock.ts` | 写 `.work.planLock`（4 组件 hash + allHash） | — |
-| 5 | `oxn work run <w>` | `runWork()`（`dual-state-exec.ts:93`） | `works/<w>/.run/state.json`（WorkspaceState）+ `.run/trace.jsonl` | ⚠ `readBirthCert` → `verifyPlanLock` 失配 → `OXN_ALIGN_LOCK_NOT_FOUND` / `IAP_ALIGN_LOCK_HASH_MISMATCH` |
-| 6 | `oxn work submit <w> --task <t>` | `submitTask()`（`dual-state-exec.ts:211`） | `works/<w>/.run/tasks/<t>/state.json` + 追加 `trace.jsonl` | ⚠ |
-| 7 | `oxn work next-round <w> --verdict <V>` | `nextRoundWork()`（`dual-state-exec.ts:496`） | 关闭当前 round + 开启 round+1；写 `roundHistory[]` | — |
-| 8 | `oxn work finalize <w> [--verdict <V>]` | `finalizeWork()`（`dual-state-exec.ts:608`，v0.6.1-alpha.0 #2-14 新增） | 标记 work 终态（passed/failed/error）+ 写 `frozen.json` | — |
+| IAP 阶段 | CLI 命令 | 引擎入口 | 落盘文件 |
+|---|---|---|---|
+| **Intent** | `oxn work create <w> --blueprint <bp>` | `work-manager.ts` createSubcommand | `works/<w>/work.oxn` + `work.md` + `tasks/<slot>/task.oxn`（自动生成） |
+| Intent | `oxn work add-task <w> --task <t> ...` | `addTaskSubcommand` | `works/<w>/tasks/<t>/task.oxn` |
+| Intent | `oxn work lock <w>` | `work-lock.ts` (内含 validate) | `.work`（BirthCert + planLock 3 组件 hash） |
+| Intent | `oxn work validate <w>` | `lock --dry-run` alias | `.work`（BirthCert，planLock=null） |
+| **Align** | `oxn work run <w>` | `runWork()` | `works/<w>/.run/state.json` + `.run/trace.jsonl` |
+| Align | `oxn work submit <w> --task <t>` | `submitTask()` | `works/<w>/.run/tasks/<t>/state.json` + `trace.jsonl` |
+| Align | `oxn work context <w> --task <t>` | `buildWorkContext()` | — (渲染 AI 上下文) |
+| Align | `oxn work next-round <w> --verdict <V>` | `nextRoundWork()` | 关闭当前 round + 开启 round+1 |
+| **Proof** | `oxn work finalize <w> [--verdict <V>]` | `finalizeWork()` | `.run/frozen.json`（终态快照） |
 
 ## 7.2 物理布局（V1 布局，v0.6.1-alpha.0）
 
@@ -182,12 +186,12 @@ Intent 阶段可以是探索、讨论然后落盘成文档。与 Intent Pool 5 �
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  Asset 三层锁（v0.6.1-alpha.0 #1-4）                                        │
+│  Asset 三层锁（v0.6.1 Phase B+D）                                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  OS 层        chmod 0o444（写前抬 0o644 → 写 → 立即回锁 0o444）         │
 │  内容层       content_hash = SHA-256（落盘时算，读取时校验）                │
-│  WAL 层       planLock 4 组件 hash: workOxn / workDomains / blueprints /   │
-│               tasks + allHash（v1.1 守卫）                                  │
+│  WAL 层       planLock 3 组件 hash: workOxnHash / blueprintsHash /        │
+│               tasksHash + allHash                                          │
 │  → 锁后任何 .oxn 漂移 → IAP_ALIGN_LOCK_HASH_MISMATCH 硬阻断                │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -357,24 +361,24 @@ writeFileSync(works/<w>/blueprints.json)  (原子写)
 
 ---
 
-# 10. IAP 三阶段 ↔ Work 命令映射
+# 10. IAP 三阶段 ↔ Work 命令映射（v0.6.1 Phase D）
 
 ```
 ┌─────────────┬───────────────────────────────────────────────────────────────┐
 │ IAP 轴      │ Work 实体映射                                                   │
 ├─────────────┼───────────────────────────────────────────────────────────────┤
 │ Intent      │ 1. oxn work create <w> --blueprint <bp>                       │
-│ (工程师)    │ 2. 选 asset 边界 (domain X ref @prj/...; blueprint Y)          │
-│             │ 3. 编辑 work.oxn + task.oxn                                    │
+│ (工程师)    │ 2. [add-task] 追加 task（可选）                                │
+│             │ 3. oxn work lock <w>  (validate 内含 + hash + planLock)       │
+│             │    ↪ lock --dry-run = validate（向后兼容）                     │
 ├─────────────┼───────────────────────────────────────────────────────────────┤
-│ Align       │ 1. oxn work lock <w>          (planLock 4 组件 hash)          │
-│ (AI 编排)   │ 2. oxn work run <w>           (启动状态机)                    │
-│             │ 3. oxn work submit <w> --task <t>  (推进 part)                │
-│             │ 4. oxn work context <w> --task <t>  (AI 读上下文)             │
+│ Align       │ 1. oxn work run <w>           (启动状态机)                    │
+│ (AI 编排)   │ 2. oxn work submit <w> --task <t>  (推进 part × N)           │
+│             │ 3. oxn work context <w> --task <t>  (AI 读上下文)             │
+│             │ 4. oxn work next-round <w> --verdict FAILED  (Round 循环)    │
 ├─────────────┼───────────────────────────────────────────────────────────────┤
-│ Proof       │ 1. oxn work status <w>         (查 .run/state.json)            │
-│ (Engine)    │ 2. oxn work finalize <w>       (写 .run/frozen.json)          │
-│             │ 3. 旁路: oxn proof run <p> (独立 proof 轴, 不走 work)         │
+│ Proof       │ 1. oxn work finalize <w> [--verdict V]  (收口 + frozen.json)  │
+│ (Engine)    │ 2. 旁路: oxn proof run <p> (独立 proof 轴, 不走 work)         │
 └─────────────┴───────────────────────────────────────────────────────────────┘
 ```
 
@@ -651,66 +655,64 @@ fs.renameSync(`${statePath}.tmp`, statePath)
 
 # 12. 完整 CLI 子命令清单（24 个）
 
-| 子命令 | 功能 | Lock 守卫 |
+| 子命令 | 功能 | IAP 阶段 |
 |---|---|---|
 | `list` | 列出所有 work | — |
-| `create <w> --blueprint <bp>` | 建 work + 自动 task 骨架（**v0.6.1-alpha.0 #3-3**） | — |
-| `migrate <w>` | V0 → V1 布局迁移 | — |
-| `validate <w>` | 解析 + 写 `.work` | — |
-| `compile <w>` | `.oxn` → `.md` 编译 | — |
-| `sync <w>` / `sync-md <w>` | 双轨同步 | — |
-| `migrate-md <w>` | `.md` → `.oxn` 迁移 | — |
-| `add-task <w> --task <t> ...` | 增 task | NV-1 |
+| `create <w> --blueprint <bp>` | 建 work + 自动生成 task 骨架 | Intent |
+| `migrate <w>` | V0 → V1 布局迁移 | 辅助 |
+| `validate <w>` | = `lock --dry-run`（向后兼容） | Intent |
+| `compile <w>` | `.oxn` → `.md` 编译 | 辅助 |
+| `sync <w>` / `sync-md <w>` | 双轨同步 | 辅助 |
+| `migrate-md <w>` | `.md` → `.oxn` 迁移 | 辅助 |
+| `add-task <w> --task <t> ...` | 增 task（Intent 可选子步骤） | Intent |
 | `list-task <w>` | 列 task | — |
 | `task-status <w> --task <t>` | 查 task 元信息 | — |
 | `verify-task-path --work <w> <path>` | 验 task 路径 | — |
-| `edit-task <w> --task <t> ...` | 改 task | NV-1 |
-| `delete-task <w> --task <t>` | 删 task | NV-1 |
-| `lock <w>` | 写 planLock | — |
-| `unlock <w>` | 清 planLock | — |
-| `run <w>` | 启动状态机 | ⚠ verifyPlanLock |
-| `submit <w> --task <t>` | 推进 task part | ⚠ |
-| `status <w>` | 读 `.run/state.json` | ⚠ |
-| `context <w> [--task <t>]` | 渲染 AI 上下文 | ⚠ (默认 lockCheck=true) |
-| `next-round <w> --verdict <V>` | 关闭/开启 round | — |
-| `finalize <w> [--verdict <V>]` | 收口 + 写终态 | — |
+| `edit-task <w> --task <t> ...` | 改 task | Intent |
+| `delete-task <w> --task <t>` | 删 task（仅 Intent 阶段） | Intent |
+| `lock <w>` | validate 内含 + hash + 写 planLock | Intent |
+| `unlock <w>` | 清 planLock | Intent |
+| `run <w>` | 启动状态机 | Align |
+| `submit <w> --task <t>` | 推进 task part | Align |
+| `status <w>` | 读 `.run/state.json` | — |
+| `context <w> [--task <t>]` | 渲染 AI 上下文 | Align |
+| `next-round <w> --verdict <V>` | 关闭/开启 round | Align |
+| `finalize <w> [--verdict <V>]` | 收口 + 写终态 | Proof |
 
 ---
 
 # 13. 反模式（扩展 §6）
 
-- ❌ 跳过 validate + lock 直接 run
+- ❌ 跳过 lock 直接 run（→ `IAP_ALIGN_LOCK_NOT_FOUND`）
 - ❌ lock 后修改 .oxn（→ `IAP_ALIGN_LOCK_HASH_MISMATCH`）
 - ❌ 先 submit 后 run
 - ❌ 把 Insight 当 Work 的一个 Mode（v0.6 Insight 已升为 E4 独立层）——Work 只负责交付，Insight 负责涌现
 - ❌ 把 Round 循环当自动机制——v0.6 手动触发
-- ❌ 不跳过 validate+lock 直接 run（v1.1 守卫抛 `IAP_ALIGN_LOCK_NOT_FOUND`）
+- ❌ 先跑 validate 再跑 lock（Phase D: lock 内含 validate，无需重复）
 - ❌ 不要绕过 lock 守卫跑生产（v1.1 planLock 是 OWNPASS 唯一凭证）
-- ❌ 不要在锁后修改 .oxn（v1.1 LOCK_HASH_MISMATCH 必触发）
 - ❌ `next-round --verdict PASSED`（已有 PASSED round 应改用 `finalize`）
-- ❌ 不修 planLock 后修改 .oxn（先 unlock → 改 → re-validate → re-lock）
+- ❌ 不修 planLock 后修改 .oxn（先 unlock → 改 → re-lock）
 
 ---
 
-# 14. 关键代码路径索引（v0.6.1-alpha.0）
+# 14. 关键代码路径索引（v0.6.1 Phase D）
 
 | 文件 | 角色 |
 |---|---|
 | `packages/engine/src/Work/index.ts` | 引擎层 API barrel |
 | `packages/engine/src/Work/birth-cert.ts` | `.work` BirthCert Zod schema + I/O + `verifyPlanLock` |
-| `packages/engine/src/Work/plan-hash.ts` | 4 组件 hash 计算（`hashWorkPlan`） |
+| `packages/engine/src/Work/plan-hash.ts` | 3 组件 hash 计算（`hashWorkPlan`） |
 | `packages/engine/src/Work/dual-state.ts` | WorkspaceState + TaskState + RoundRecord Zod schemas |
 | `packages/engine/src/Work/dual-state-io.ts` | 路径 + I/O（atomic write） |
 | `packages/engine/src/Work/dual-state-exec.ts` | `runWork` / `runTask` / `submitTask` / `nextRoundWork` / `finalizeWork` |
 | `packages/engine/src/Work/work-lock.ts` | lock / unlock 子命令 |
-| `packages/engine/src/Work/work-validator.ts` | validate 子命令 |
+| `packages/engine/src/Work/work-validator.ts` | validate 逻辑（被 lock 内含调用） |
 | `packages/engine/src/Work/work-manager.ts` | create + 模板生成 |
 | `packages/engine/src/Work/work-context-builder.ts` | IAP 渲染（`buildWorkContext` + `renderContextHuman`） |
-| `packages/engine/src/Work/per-work-domains-merger.ts` | per-work slim 索引（v0.6.1-alpha.0 #3-4 修复） |
-| `packages/engine/src/Work/per-work-blueprints-merger.ts` | 同上，blueprint 版本 |
+| `packages/engine/src/Work/per-work-blueprints-merger.ts` | per-work slim 索引（blueprint 含 3 边界 transitive refs） |
 | `packages/engine/src/Work/work-reporter.ts` | status 渲染 |
 | `packages/engine/src/Work/work-migrator.ts` | V0 → V1 迁移 |
-| `packages/cli/src/commands/work.ts` | 24 子命令 thin shell（3284 行） |
+| `packages/cli/src/commands/work.ts` | 24 子命令 thin shell |
 
 ---
 
