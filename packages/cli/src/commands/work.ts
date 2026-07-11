@@ -1,24 +1,24 @@
 // =============================================================================
 // `oxn work` — Work 编排与运行时
 //
-// 单一实体（Work）的完整生命周期，按"阶段"分组：
+// 单一实体（Work）的完整生命周期，按 IAP 三阶段分组：
 //
-//   Phase 1: Planning（仅读写 .oxn 图纸）
-//     list                            — 浏览所有 work
-//     create <name> --blueprint <bp>  — 写 works/<w>/work.oxn
-//     validate <name>                 — work.oxn 语法校验
+//   Intent (工程师主权):
+//     create <name> --blueprint <bp>  — 写 works/<w>/work.oxn + auto task skeleton
 //     add-task <name> --task <t> ...  — 写 works/<w>/tasks/<t>/task.oxn
-//     edit-task <name> --task <t> ... — 改 task.oxn 内容
-//     list-task <name>                — 列 task 子实体
-//     task-status <name> --task <t>   — 读 task.oxn 元信息
-//     verify-task-path --work <w> <p> — 验证手写 task.oxn 路径
-//     delete-task <name> --task <t>   — 删 task 目录（仅 P1）
+//     lock <name> [--dry-run]        — validate 内含 + hash + 写 planLock
+//     validate <name>                 — alias for lock --dry-run
 //
-//   Phase 2: Execution（驱动 .json 状态机）
+//   Align (AI 主权):
 //     run <name>                      — 启动状态机，落 .run/state.json
 //     submit <name> --task <t>        — 推进 task 内 part
-//     status <name>                   — 读 .run/state.json 进度
 //     context <name> --task <t>       — 渲染 AI 上下文
+//
+//   Proof (Engine 主权):
+//     finalize <name> [--verdict V]   — 收口 + 写 frozen.json
+//
+//   Auxiliary:
+//     list / migrate / status / unlock / next-round / compile / sync
 //
 // 命名范式: V1 布局（详见 kernel/constants.ts）
 //   - DSL 图纸: work.oxn / task.oxn
@@ -930,8 +930,7 @@ const validateSubcommand = defineCommand({
       return outputError({ code: 'OXN_WORK_VALIDATE_FAILED', message }, format)
     }
 
-    // ── 1.5 v1.1: work.oxn 内 `work "X"` 与目录名 <w> 一致性校验（macOS-safe）
-    // 与 oxn domain/blueprint validate 对称：CLI 硬阻断,目录式布局下用 assertDirNameConsistent。
+    // ── 1.5 v1.1: work.oxn 内 `work "X"` 与目录名 <w> 一致性校验（macOS-safe） ──
     const workDir = join(projectRoot, '.openxenon', 'works', workName)
     try {
       assertDirNameConsistent(work.name, workDir, 'work')
@@ -2469,17 +2468,144 @@ const lockSubcommand = defineCommand({
     name: { type: 'positional', required: true, description: t('work.args.workName') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
+    '--dry-run': { type: 'boolean', description: 'validate only, do not write planLock' },
   },
-  run(ctx) {
+  async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
+    const dryRun = ctx.args['dry-run'] === true
     const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
 
     if (!projectBoundaryExists()) {
       return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
-    // ── 1. 校验 .work 存在 ──
+    // ── 0.5 Phase D: 快速检查 — 已锁则拒绝（不需跑 validate） ──
+    const existingCert = readBirthCert(projectRoot, workName)
+    if (existingCert.ok && existingCert.cert.planLock !== null) {
+      return outputError(
+        {
+          code: 'OXN_WORK_LOCK_FAILED',
+          message: `work "${workName}" already locked`,
+          suggestion: t('work.unlockSuggestion', { workName }),
+          context: { lockedAt: existingCert.cert.planLock.lockedAt },
+        },
+        format,
+      )
+    }
+
+    // ── 0.6 Phase D: lock 内含 validate — 先解析 work.oxn + 校验 + 写 .work ──
+    const workFile = resolveWorkFilePath(projectRoot, workName, resolveAssetFormat(config))
+    if (!existsSync(workFile)) {
+      return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workFile}` }, format)
+    }
+
+    let work: WorkDeclaration
+    try {
+      const result = await validateWorkFile(workFile)
+      if (!result.ok || !result.work) {
+        const code = result.errors.some(
+          (e) => e.startsWith('[Parser]') || e.startsWith('[Lexer]') || e.includes('parse failed'),
+        )
+          ? 'OXN_WORK_VALIDATE_FAILED'
+          : 'OXN_NO_WORK'
+        return outputError({ code, message: result.errors.join('; ') }, format)
+      }
+      work = result.work
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      return outputError({ code: 'OXN_WORK_VALIDATE_FAILED', message }, format)
+    }
+
+    // v1.1: work.oxn 内 `work "X"` 与目录名 <w> 一致性校验
+    const workDir = join(projectRoot, '.openxenon', 'works', workName)
+    try {
+      assertDirNameConsistent(work.name, workDir, 'work')
+    } catch (err) {
+      if (err instanceof IAPError) {
+        return outputError(
+          {
+            code: err.name,
+            message: err.message,
+            ...(err.context?.suggestion !== undefined ? { suggestion: String(err.context.suggestion) } : {}),
+          },
+          format,
+        )
+      }
+      throw err
+    }
+
+    // 检查 task.oxn 是否都已建
+    const missingTaskOxn: string[] = []
+    for (const t of work.tasks ?? []) {
+      const tName = parsePartName(t.name)
+      if (!existsSync(getTaskOxnPath(projectRoot, workName, tName))) {
+        missingTaskOxn.push(tName)
+      }
+    }
+
+    // validate + 写 .work (BirthCert)
+    const validationResult = await validateAndWriteArtifacts({
+      projectRoot,
+      workName,
+      work,
+      missingTaskOxn,
+    })
+
+    if (!validationResult.ok) {
+      return output(
+        {
+          ok: false,
+          data: {
+            code: 'OXN_WORK_REFS_UNRESOLVED',
+            valid: false,
+            unresolved: validationResult.unresolved ?? [],
+            warnings: validationResult.warnings,
+            note: dryRun ? 'validate only (dry-run)' : 'lock failed: validate did not pass',
+          },
+          human:
+            `Work validate FAILED\n` +
+            `  Unresolved refs: ${(validationResult.unresolved ?? []).length}\n` +
+            (validationResult.unresolved ?? []).map((u) => `    - ${u.kind} "${u.name}": ${u.reason}`).join('\n') +
+            (validationResult.warnings.length > 0 ? `\n  Warnings: ${validationResult.warnings.join(' | ')}` : ''),
+        },
+        format,
+      )
+    }
+
+    // dry-run 模式：validate 通过即止，不写 planLock
+    if (dryRun) {
+      const a = validationResult.artifacts!
+      output(
+        {
+          ok: true,
+          data: {
+            workName,
+            valid: true,
+            dryRun: true,
+            warnings: validationResult.warnings,
+            artifacts: {
+              blueprintsJson: a.blueprintsJsonPath,
+              workFile: a.workFilePath,
+            },
+            assetCounts: a.assetCounts,
+          },
+          human:
+            `Work validate OK (dry-run)\n` +
+            `  Blueprint refs: ${a.assetCounts.blueprints} resolved\n` +
+            `  Task count:  ${a.assetCounts.tasks}\n` +
+            `\n  Artifacts written:\n` +
+            `    - ${a.blueprintsJsonPath}\n` +
+            `    - ${a.workFilePath}` +
+            (validationResult.warnings.length > 0 ? `\n\n  Warnings: ${validationResult.warnings.join(' | ')}` : ''),
+        },
+        format,
+      )
+      return
+    }
+
+    // ── 1. 重新读 .work（validate 已写，理应存在） ──
     const existing = readBirthCert(projectRoot, workName)
     if (!existing.ok) {
       const hint =
@@ -2496,20 +2622,7 @@ const lockSubcommand = defineCommand({
       )
     }
 
-    // ── 2. 校验 planLock === null ──
-    if (existing.cert.planLock !== null) {
-      return outputError(
-        {
-          code: 'OXN_WORK_LOCK_FAILED',
-          message: `work "${workName}" already locked`,
-          suggestion: t('work.unlockSuggestion', { workName }),
-          context: { lockedAt: existing.cert.planLock.lockedAt },
-        },
-        format,
-      )
-    }
-
-    // ── 3. 算 hash ──
+    // ── 2. 算 hash ──
     const hash = hashWorkPlan(projectRoot, workName)
     if (hash.allHash === null) {
       return outputError(
@@ -2522,7 +2635,7 @@ const lockSubcommand = defineCommand({
       )
     }
 
-    // ── 4. 写 planLock ──
+    // ── 3. 写 planLock ──
     const locked = applyPlanLock(existing.cert, hash)
     writeWorkFile(projectRoot, workName, locked)
 
@@ -2535,7 +2648,6 @@ const lockSubcommand = defineCommand({
           lockedAt: pl.lockedAt,
           planLock: {
             workOxnHash: pl.workOxnHash,
-            // 🆕 Phase B: 删 workDomainsHash
             blueprintsHash: pl.blueprintsHash,
             tasksHash: pl.tasksHash,
             allHash: pl.allHash,

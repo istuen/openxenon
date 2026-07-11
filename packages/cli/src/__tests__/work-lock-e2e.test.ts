@@ -138,23 +138,21 @@ describe('oxn work lock / unlock (PR-7)', () => {
     expect(r.error.code).toBe('OXN_NO_PROJECT')
   })
 
-  test('lock 之前没 validate → OXN_WORK_LOCK_FAILED + 提示 validate', async () => {
+  test('lock 内含 validate — 未 validate 直接 lock 也能成功（Phase D）', async () => {
     await initProject()
     setupProject()
-    setupWork('demo', ['a']) // 没跑 validate，所以没 .work
+    setupWork('demo', ['a']) // 没跑 validate，但 lock 会自动 validate
 
     const r = JSON.parse((await runCli(['work', 'lock', 'demo', '--json'])).stdout)
-    expect(r.ok).toBe(false)
-    expect(r.error.code).toBe('OXN_WORK_LOCK_FAILED')
-    expect(r.error.suggestion).toContain('oxn work validate')
+    expect(r.ok).toBe(true)
+    expect(r.data.planLock.allHash).toMatch(HEX64)
   })
 
   test('重复 lock → OXN_WORK_LOCK_FAILED + 提示先 unlock', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a'])
-    await runCli(['work', 'validate', 'demo', '--json'])
-    await runCli(['work', 'lock', 'demo', '--json'])
+    await runCli(['work', 'lock', 'demo', '--json']) // lock 内含 validate
 
     const r = JSON.parse((await runCli(['work', 'lock', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(false)
@@ -249,7 +247,7 @@ describe('oxn work lock / unlock (PR-7)', () => {
 
   // ───────── 异常 .work ─────────
 
-  test('.work schema 不合法时 lock 失败 + 详细 errors', async () => {
+  test('.work schema 不合法时 lock 自动修复（Phase D: validate 内含）', async () => {
     await initProject()
     setupProject()
     setupWork('demo', ['a'])
@@ -259,9 +257,9 @@ describe('oxn work lock / unlock (PR-7)', () => {
     const workFilePath = join(tmpDir, '.openxenon', 'works', 'demo', '.work')
     writeFileSync(workFilePath, JSON.stringify({ totally: 'wrong' }))
 
+    // Phase D: lock 内含 validate → 自动修复 .work → 成功
     const r = JSON.parse((await runCli(['work', 'lock', 'demo', '--json'])).stdout)
-    expect(r.ok).toBe(false)
-    expect(r.error.code).toBe('OXN_WORK_LOCK_FAILED')
-    expect(r.error.suggestion).toContain('schema')
+    expect(r.ok).toBe(true)
+    expect(r.data.planLock.allHash).toMatch(HEX64)
   })
 })
