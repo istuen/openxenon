@@ -91,12 +91,13 @@ import {
   resolveAutoSync,
   resolveAssetDir,
   ALL_ASSET_KINDS,
+  type AssetFormat,
 } from '@openxenon/engine/infra/paths'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
 import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import { migrateWorkToV1 } from '@openxenon/engine/Work/work-migrator'
-import { renderWorkSkeleton } from '@openxenon/engine/Work/work-skeleton'
+import { renderWorkSkeleton, type RenderWorkSkeletonOptions } from '@openxenon/engine/Work/work-skeleton'
 import { validateAndWriteArtifacts } from '@openxenon/engine/Work/work-validator'
 import { snapshotContext, makeReport, type DerivedWorkState } from '@openxenon/engine/Work/work-reporter'
 import { collectUnresolvedRefDiagnostics } from '@openxenon/engine/Work/work-diagnostics'
@@ -191,19 +192,6 @@ function validateWorkName(name: string): { valid: boolean; error?: string } {
     return { valid: false, error: 'Name must be kebab-case (lowercase letter, lowercase letters/numbers, hyphens)' }
   }
   if (name.endsWith('-')) return { valid: false, error: 'Name cannot end with hyphen' }
-  return { valid: true }
-}
-
-// v0.6.1-alpha.1 Batch 2: Asset names can be PascalCase (Domain) or kebab-case (other)
-function validateAssetName(name: string): { valid: boolean; error?: string } {
-  if (!name) return { valid: false, error: 'Name is required' }
-  if (name.length < 2) return { valid: false, error: 'Name too short (min 2 chars)' }
-  if (name.length > 64) return { valid: false, error: 'Name too long (max 64 chars)' }
-  // PascalCase: MemberContext (starts with uppercase letter)
-  // kebab-case: member-context (starts with lowercase letter)
-  if (!/^[A-Za-z][A-Za-z0-9-]*$/.test(name)) {
-    return { valid: false, error: 'Name must be PascalCase or kebab-case (letters/numbers/hyphens only)' }
-  }
   return { valid: true }
 }
 
@@ -378,73 +366,186 @@ const listSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
-// Asset Short Circuit (--asset-kind)
-//
-// 当 `oxn work create <name> --asset-kind <kind>` 调用时，
-// 走 Asset 创建流程（domain/blueprint/stack/library/external），
-// 内部调用 Asset/create.ts 的 create() 写 Asset 文件。
-// v0.7+：移除 `--type` 参数；`--asset-kind` 单独触发短路，无需 `--type asset` 前缀。
+// Asset Mode: --asset-kind 走标准 Work 流程（v0.6.1 Phase C）
 // ---------------------------------------------------------------------------
 
 const VALID_ASSET_KINDS = ALL_ASSET_KINDS
 type ValidAssetKind = (typeof VALID_ASSET_KINDS)[number]
 
-interface AssetModeCreateInput {
+interface CreateWorkWithAssetModeInput {
+  workName: string
   assetKind: string
-  name: string
+  blueprintName: string
+  domainName: string
   projectRoot: string
   format: 'human' | 'json' | 'yaml' | 'html' | 'md'
   force: boolean
+  assetFormat: AssetFormat
+  autoSync: boolean
+  skeletonOptions: RenderWorkSkeletonOptions
 }
 
-async function handleAssetModeCreate(input: AssetModeCreateInput): Promise<unknown> {
-  const { assetKind, name, projectRoot, format, force } = input
+/**
+ * 🆕 v0.6.1 Phase C: Asset 创建走标准 Work 流程。
+ * 自动选择 asset-create workflow 作为 Blueprint，Domain 为 AssetModeContext，
+ * 生成4个 task（choose-kind/fork-template/fill-content/validate-commit）。
+ */
+async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Promise<unknown> {
+  const {
+    workName,
+    assetKind,
+    blueprintName,
+    domainName,
+    projectRoot,
+    format,
+    force,
+    assetFormat,
+    autoSync,
+    skeletonOptions,
+  } = input
 
-  // Validate assetKind
-  if (!VALID_ASSET_KINDS.includes(assetKind as ValidAssetKind)) {
+  // 1. 解析 asset-create workflow（从 workflows/ 目录）
+  const config = readProjectConfig(projectRoot)
+  const wfAssetDir = resolveAssetDir(projectRoot, 'workflow', config)
+  const blueprintCandidates = [
+    join(wfAssetDir, `${blueprintName}.oxn`),
+    join(wfAssetDir, blueprintName, 'workflow.oxn'),
+    join(projectRoot, '.openxenon', 'assets', 'workflows', `${blueprintName}.oxn`),
+    // v0.6.1-alpha.2 fallback（兼容旧 blueprints/ 目录）
+    join(projectRoot, '.openxenon', 'assets', 'blueprints', `${blueprintName}.oxn`),
+    join(projectRoot, '.openxenon', 'blueprints', `${blueprintName}.oxn`),
+  ]
+  const absBlueprint = blueprintCandidates.find((p) => existsSync(p))
+  if (!absBlueprint) {
     return outputError(
       {
-        code: 'OXN_INVALID_ASSET_KIND',
-        message: `Invalid --asset-kind: '${assetKind}'`,
-        suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
+        code: 'OXN_FILE_NOT_FOUND',
+        message: `asset-create workflow not found: tried ${blueprintCandidates.join(', ')}`,
+        suggestion: 'ensure asset-create workflow exists in .openxenon/assets/workflows/',
       },
       format,
     )
   }
 
-  // Validate name (Asset names can be PascalCase or kebab-case)
-  const validation = validateAssetName(name)
-  if (!validation.valid) {
-    return outputError({ code: 'OXN_INVALID_ASSET_NAME', message: validation.error ?? 'invalid name' }, format)
-  }
-
-  // Dispatch to Asset module create()
-  const { create } = await import('@openxenon/engine/Asset/create')
-  const config = readProjectConfig(projectRoot)
-
   try {
-    const result = await create({
-      kind: assetKind as ValidAssetKind,
-      name,
-      projectRoot,
-      format: config?.assetFormat ?? 'oxn',
-      force,
-    })
+    const { doc } = await parseOxnFile(absBlueprint)
+    const blueprint = doc.entities.find(isBlueprintDeclaration) as BlueprintDeclaration | undefined
+    if (!blueprint?.name) {
+      return outputError(
+        { code: 'OXN_NO_BLUEPRINT', message: `No Blueprint declaration found in ${absBlueprint}` },
+        format,
+      )
+    }
+    if (blueprint.partSlots.length === 0) {
+      return outputError(
+        { code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${blueprint.name}" has no part slots` },
+        format,
+      )
+    }
+
+    const resolvedBlueprintName = parsePartName(blueprint.name)
+    const slots = blueprint.partSlots.map((s) => ({
+      name: parsePartName(s.name),
+      align: capitalize(parsePartName(s.name)),
+    }))
+
+    // 2. 创建 works/<workName>/ 目录
+    const outputDir = join(projectRoot, '.openxenon', 'works', workName)
+    if (!force && existsSync(outputDir)) {
+      return outputUserInputError('OXN_OUTPUT_DIR_EXISTS', `output directory already exists: ${outputDir}`, {
+        suggestion: 'use --force to overwrite',
+        format,
+      })
+    }
+    ensureDirectory(outputDir)
+
+    // 3. 生成 work.oxn（注入 asset-create blueprint + domain + goal）
+    const workPrimaryPath = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
+    const workAltPath = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
+    const workPrimaryDir = join(workPrimaryPath, '..')
+    const workAltDir = join(workAltPath, '..')
+    if (!existsSync(workPrimaryDir)) mkdirSync(workPrimaryDir, { recursive: true })
+    if (!existsSync(workAltDir)) mkdirSync(workAltDir, { recursive: true })
+
+    const workFile = workPrimaryPath
+    if (!force && existsSync(workFile)) {
+      return outputUserInputError(
+        'OXN_OUTPUT_FILE_EXISTS',
+        `${assetFormat === 'oxn' ? 'work.oxn' : 'work.md'} already exists in ${outputDir}`,
+        { suggestion: 'use --force to overwrite', format },
+      )
+    }
+
+    // 构造 skeleton options（注入 domain + goal）
+    const assetSkeletonOptions: RenderWorkSkeletonOptions = {
+      ...skeletonOptions,
+      goal: skeletonOptions.goal ?? `Create ${assetKind} Asset: ${workName.replace(/-asset-.*$/, '')}`,
+    }
+
+    const workContent = renderWorkSkeleton(
+      workName,
+      resolvedBlueprintName,
+      slots,
+      assetFormat,
+      Object.keys(assetSkeletonOptions).length > 0 ? assetSkeletonOptions : undefined,
+    )
+    writeFileSync(workFile, workContent, 'utf-8')
+
+    // 4. auto-sync to other format
+    if (autoSync) {
+      try {
+        if (assetFormat === 'oxn') {
+          const altResult = await compileOxnToMd(workContent, { entity: 'work', frontmatter: true })
+          writeFileSync(workAltPath, altResult.md, 'utf-8')
+        } else {
+          const { tree, frontmatter: fm } = parseMarkdown(workContent)
+          const ir = extractWorkIR(tree, fm)
+          const altContent = serializeWorkToOxn(ir)
+          writeFileSync(workAltPath, altContent, 'utf-8')
+        }
+      } catch {
+        // autoSync 失败不阻断主命令
+      }
+    }
+
+    // 5. 为每个 slot 生成 task.oxn 骨架
+    const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
+    for (const slot of slots) {
+      const t = writeTaskTemplate(projectRoot, workName, slot.name, resolvedBlueprintName, '')
+      autoTasks.push({
+        name: slot.name,
+        path: t.path,
+        status: t.written ? 'created' : 'exists',
+      })
+    }
+
     return output(
       {
+        ok: true,
         data: {
-          kind: assetKind,
-          name,
-          path: result.assetPath,
-          createdAt: result.createdAt,
+          workName,
+          outputDir,
+          blueprintPath: absBlueprint,
+          blueprint: {
+            name: resolvedBlueprintName,
+            version: blueprint.version ?? 1,
+            slotCount: slots.length,
+            slots: slots.map((s) => s.name),
+          },
+          assetKind,
+          domain: domainName,
+          files: { work: workFile },
+          tasks: autoTasks,
+          nextStep:
+            `Edit the task files, then run: oxn work validate ${workName} && oxn work lock ${workName} && oxn work run ${workName}\n` +
+            `  Asset will be created after all tasks pass through the IAP pipeline.`,
         },
-        human: `✓ Asset '${name}' (${assetKind}) created at ${result.assetPath}`,
       },
       format,
     )
   } catch (err) {
-    const errorMsg = err instanceof Error ? err.message : String(err)
-    return outputError({ code: 'OXN_ASSET_CREATE_FAILED', message: errorMsg }, format)
+    const message = err instanceof Error ? err.message : String(err)
+    return output(errorJson('OXN_DSL_PARSE_FAILED', message), format)
   }
 }
 
@@ -513,14 +614,47 @@ const createSubcommand = defineCommand({
       )
     }
 
-    // Asset Short Circuit: --asset-kind 直接走 Asset create（不创建 work）
+    // 🆕 v0.6.1 Phase C: --asset-kind 不再短路，走标准 Work 流程
+    // 自动选择 asset-create workflow 作为 Blueprint，Domain 为 AssetModeContext
     if (assetKindArg) {
-      return await handleAssetModeCreate({
+      if (!VALID_ASSET_KINDS.includes(assetKindArg as ValidAssetKind)) {
+        return outputError(
+          {
+            code: 'OXN_INVALID_ASSET_KIND',
+            message: `Invalid --asset-kind: '${assetKindArg}'`,
+            suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
+          },
+          format,
+        )
+      }
+      // work 名从 <name>-asset-<kind> 推导（自动转 kebab-case）
+      const baseName = workName.includes('-asset-') ? (workName.split('-asset-')[0] ?? workName) : workName
+      const assetWorkName = `${camelToKebab(baseName)}-asset-${camelToKebab(assetKindArg as string)}`
+      const assetWorkValidation = validateWorkName(assetWorkName)
+      if (!assetWorkValidation.valid) {
+        return outputError(
+          {
+            code: 'OXN_INVALID_WORK_NAME',
+            message: t('work.invalidId', { error: assetWorkValidation.error }),
+          },
+          format,
+        )
+      }
+      // 自动选择 asset-create workflow
+      const assetBlueprint = 'asset-create'
+      const assetDomain = 'AssetModeContext'
+      // 复用标准 Work 创建流程，注入 asset-create blueprint + domain
+      return await createWorkWithAssetMode({
+        workName: assetWorkName,
         assetKind: assetKindArg,
-        name: workName,
+        blueprintName: assetBlueprint,
+        domainName: assetDomain,
         projectRoot,
         format,
         force,
+        assetFormat,
+        autoSync,
+        skeletonOptions,
       })
     }
 

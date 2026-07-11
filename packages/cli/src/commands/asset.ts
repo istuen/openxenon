@@ -19,12 +19,8 @@
 import { defineCommand } from 'citty'
 import { join } from 'node:path'
 import { existsSync } from '@openxenon/engine/infra/filesystem'
-import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
-import { t } from '@openxenon/engine/infra/i18n'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
-import { readProjectConfig } from './project-config-io'
 import {
-  create,
   validate as validateAsset,
   validateAssetReferences,
   validateAssetPaper4Fields,
@@ -42,20 +38,6 @@ type ValidAssetKind = (typeof VALID_ASSET_KINDS)[number]
 
 function getProjectRoot(): string {
   return process.cwd()
-}
-
-function projectBoundaryExists(): boolean {
-  return existsSync(join(getProjectRoot(), BOUNDARY_DIR))
-}
-
-function validateAssetName(name: string): { valid: boolean; error?: string } {
-  if (!name) return { valid: false, error: 'Name is required' }
-  if (name.length < 2) return { valid: false, error: 'Name too short (min 2 chars)' }
-  if (name.length > 64) return { valid: false, error: 'Name too long (max 64 chars)' }
-  if (!/^[A-Za-z][A-Za-z0-9-]*$/.test(name)) {
-    return { valid: false, error: 'Name must be PascalCase or kebab-case (letters/numbers/hyphens only)' }
-  }
-  return { valid: true }
 }
 
 function iapErrorToOutput(err: unknown, format: 'human' | 'json' | 'yaml' | 'html' | 'md'): unknown {
@@ -186,7 +168,7 @@ const showSubcommand = defineCommand({
 // Subcommand: create
 // =============================================================================
 const createSubcommand = defineCommand({
-  meta: { name: 'create', description: 'Create a new Asset' },
+  meta: { name: 'create', description: 'Create a new Asset (alias for oxn work create --asset-kind)' },
   args: {
     name: { type: 'positional', required: true },
     kind: {
@@ -203,75 +185,33 @@ const createSubcommand = defineCommand({
     const name = ctx.args.name as string
     const kind = ctx.args.kind as string
     const force = ctx.args.force === true
-    const projectRoot = getProjectRoot()
 
-    if (!VALID_ASSET_KINDS.includes(kind as ValidAssetKind)) {
+    // 🆕 v0.6.1 Phase C: oxn asset create = oxn work create --asset-kind 的 alias
+    // 委托给 work create 子命令走标准 Work 流程（完整 IAP 闭环）
+    const args = ['work', 'create', name, '--asset-kind', kind]
+    if (force) args.push('--force')
+    if (ctx.args.json) args.push('--json')
+    if (ctx.args.yaml) args.push('--yaml')
+
+    const proc = Bun.spawn(['bun', join(import.meta.dirname, '..', 'index.ts'), ...args], {
+      cwd: process.cwd(),
+      env: { ...process.env, NO_COLOR: '1' },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    })
+    const stdout = await new Response(proc.stdout).text()
+    const exitCode = await proc.exited
+    // 透传 work create 的输出
+    if (exitCode !== 0) {
+      const stderr = await new Response(proc.stderr).text()
       return outputError(
-        {
-          code: 'OXN_INVALID_ASSET_KIND',
-          message: `Invalid --kind: '${kind}'`,
-          suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
-        },
+        { code: 'OXN_ASSET_CREATE_FAILED', message: stderr || stdout || `exit code ${exitCode}` },
         format,
       )
     }
-    const validation = validateAssetName(name)
-    if (!validation.valid) {
-      return outputError({ code: 'OXN_INVALID_ASSET_NAME', message: validation.error ?? 'invalid name' }, format)
-    }
-
-    if (!projectBoundaryExists()) {
-      return outputError(
-        { code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit'), suggestion: t('errors.initHint') },
-        format,
-      )
-    }
-
-    const config = readProjectConfig(projectRoot)
-    try {
-      const result = await create({
-        kind: kind as ValidAssetKind,
-        name,
-        projectRoot,
-        format: config?.assetFormat ?? 'oxn',
-        force,
-      })
-      // v0.6.x Roadmap integration: if oxn-system Roadmap exists, hint user to sync
-      // (Mode B: manual hint, not auto-sync — per user decision)
-      const roadmapHint = await maybeRoadmapSyncHint(projectRoot)
-      return output(
-        {
-          data: {
-            kind,
-            name,
-            path: result.assetPath,
-            createdAt: result.createdAt,
-            roadmapHint,
-          },
-          human:
-            `✓ Asset '${name}' (${kind}) created at ${result.assetPath}` + (roadmapHint ? `\n\n${roadmapHint}` : ''),
-        },
-        format,
-      )
-    } catch (err) {
-      return iapErrorToOutput(err, format)
-    }
+    return stdout
   },
 })
-
-/**
- * Check if `oxn-system` Roadmap exists; if yes, return a hint to run sync.
- * Returns null if no Roadmap or the asset itself is a Roadmap.
- */
-async function maybeRoadmapSyncHint(projectRoot: string): Promise<string | null> {
-  const roadmapPath = join(projectRoot, '.openxenon', 'assets', 'roadmaps', 'oxn-system.md')
-  if (!existsSync(roadmapPath)) return null
-  return (
-    `ℹ️  Detected Asset change. oxn-system Roadmap exists.\n` +
-    `   Run: oxn roadmap sync oxn-system --scene <scene>  to detect dangling links\n` +
-    `   Or:  oxn roadmap sync oxn-system                       to scan all scenes`
-  )
-}
 
 // =============================================================================
 // Subcommand: validate (PR-2: --strict + --check-dag --all)

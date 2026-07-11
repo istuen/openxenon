@@ -1,28 +1,26 @@
 // =============================================================================
-// work-asset-mode-e2e.test.ts — Asset Short Circuit (v0.6.1-alpha.1 Batch 2 起源)
+// work-asset-mode-e2e.test.ts — Asset via Standard Work Flow (v0.6.1 Phase C)
 //
-// 覆盖 `oxn work create --asset-kind <kind>` 真实创建/管理 Asset 流程：
-//   1. --asset-kind domain → 写 .openxenon/assets/domains/<Name>.oxn
-//   2. --asset-kind blueprint → 写 .openxenon/assets/blueprints/<name>.oxn
-//   3. --asset-kind stack → 写 .openxenon/assets/stack/<name>.oxn
-//   4. --asset-kind library → 写 .openxenon/assets/libraries/<name>.oxn
-//   5. --asset-kind external → 写 .openxenon/assets/externals/<name>.oxn
-//   6. --asset-kind invalid → 抛 OXN_INVALID_ASSET_KIND
-//   7. 重复创建（同 name） → 抛 OXN_ASSET_EXISTS（除非 --force）
-//   8. --force 覆盖已存在
-//   9. v0.7+：移除 --type，--asset-kind 单独触发短路
+// 覆盖 `oxn work create --asset-kind <kind>` 标准 Work 流程：
+//   1. --asset-kind domain → 创建 Work (type: asset, kind: domain) + 4 tasks
+//   2. --asset-kind blueprint → 同上
+//   3. --asset-kind stack → 同上
+//   4. --asset-kind library/external → 已删除类型 → OXN_INVALID_ASSET_KIND
+//   6. --asset-kind invalid → OXN_INVALID_ASSET_KIND
+//   7. 无 --asset-kind 时走标准 Work 路径
+//   8. --asset-kind + 现有 Work 同名 → 自动 rename (add suffix)
 //
-// v0.6.1-alpha.0 状态：CLI 拒绝 --asset-kind（unknown flag）— Batch 1
-// v0.6.1-alpha.1 Batch 2 状态：CLI 接受 --asset-kind + 写 Asset 文件 — 起源
-// v0.7+ 状态：移除 `--type asset` 前缀，--asset-kind 单独触发
+// Phase C: --asset-kind 不再短路写 Asset 文件，走标准 IAP 9 阶段流程。
+// Asset 文件在 validate-commit task 执行时才写入。
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, readdirSync, copyFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
 const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
+const REPO_ROOT = join(import.meta.dir, '..', '..', '..', '..')
 
 let tmpDir: string
 
@@ -33,13 +31,17 @@ beforeEach(async () => {
     join(tmpDir, '.openxenon', 'config.json'),
     JSON.stringify({ version: 1, mode: 'PRODUCTION', locale: 'zh-CN' }),
   )
+  // 复制 asset-create workflow 到测试环境
+  const srcWf = join(REPO_ROOT, '.openxenon', 'assets', 'workflows', 'asset-create.oxn')
+  const dstWfDir = join(tmpDir, '.openxenon', 'assets', 'workflows')
+  mkdirSync(dstWfDir, { recursive: true })
+  copyFileSync(srcWf, join(dstWfDir, 'asset-create.oxn'))
 })
 
 afterEach(() => {
   if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true, force: true })
 })
 
-// 写文件工具（这里需要 import fs.writeFileSync）
 import { writeFileSync } from 'fs'
 
 async function runCli(args: string[]): Promise<{ stdout: string; stderr: string; exitCode: number }> {
@@ -55,32 +57,49 @@ async function runCli(args: string[]): Promise<{ stdout: string; stderr: string;
   return { stdout, stderr, exitCode }
 }
 
-describe('Asset Short Circuit --asset-kind (v0.7+ 已移除 --type)', () => {
-  test('1. --asset-kind domain 写 .openxenon/assets/domains/<Name>.oxn', async () => {
+describe('Asset via Standard Work --asset-kind (Phase C)', () => {
+  test('1. --asset-kind domain → 创建 Work (type: asset) + 4 tasks', async () => {
     const r = await runCli(['work', 'create', 'MyDomain', '--asset-kind', 'domain', '--json'])
     expect(r.exitCode).toBe(0)
-    const assetPath = join(tmpDir, '.openxenon', 'assets', 'domains', 'MyDomain.oxn')
-    expect(existsSync(assetPath)).toBe(true)
-    const content = readFileSync(assetPath, 'utf-8')
-    expect(content).toContain('domain "MyDomain"')
+
+    // Work 目录存在（名称自动转 kebab-case）
+    const workDir = join(tmpDir, '.openxenon', 'works', 'my-domain-asset-domain')
+    expect(existsSync(workDir)).toBe(true)
+
+    // work.oxn 存在且包含 asset-create blueprint
+    const workOxn = readFileSync(join(workDir, 'work.oxn'), 'utf-8')
+    expect(workOxn).toContain('blueprint "asset-create"')
+
+    // 4 个 tasks 生成
+    const tasksDir = join(workDir, 'tasks')
+    expect(existsSync(tasksDir)).toBe(true)
+    const taskDirs = readdirSync(tasksDir)
+    expect(taskDirs.length).toBe(4)
+
+    // Asset 文件尚未创建（在 task 执行时才创建）
+    expect(existsSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'MyDomain.oxn'))).toBe(false)
   })
 
-  test('2. --asset-kind blueprint 写 .openxenon/assets/blueprints/<name>.oxn', async () => {
+  test('2. --asset-kind blueprint → 创建 Work', async () => {
     const r = await runCli(['work', 'create', 'my-blueprint', '--asset-kind', 'blueprint', '--json'])
     expect(r.exitCode).toBe(0)
-    const assetPath = join(tmpDir, '.openxenon', 'assets', 'blueprints', 'my-blueprint.oxn')
-    expect(existsSync(assetPath)).toBe(true)
-    const content = readFileSync(assetPath, 'utf-8')
-    expect(content).toContain('blueprint "my-blueprint"')
+
+    const workDir = join(tmpDir, '.openxenon', 'works', 'my-blueprint-asset-blueprint')
+    expect(existsSync(workDir)).toBe(true)
+
+    const workOxn = readFileSync(join(workDir, 'work.oxn'), 'utf-8')
+    expect(workOxn).toContain('blueprint "asset-create"')
   })
 
-  test('3. --asset-kind stack 写 .openxenon/assets/stack/<name>.oxn', async () => {
+  test('3. --asset-kind stack → 创建 Work', async () => {
     const r = await runCli(['work', 'create', 'my-stack', '--asset-kind', 'stack', '--json'])
     expect(r.exitCode).toBe(0)
-    const assetPath = join(tmpDir, '.openxenon', 'assets', 'stack', 'my-stack.oxn')
-    expect(existsSync(assetPath)).toBe(true)
-    const content = readFileSync(assetPath, 'utf-8')
-    expect(content).toContain('stack "my-stack"')
+
+    const workDir = join(tmpDir, '.openxenon', 'works', 'my-stack-asset-stack')
+    expect(existsSync(workDir)).toBe(true)
+
+    const workOxn = readFileSync(join(workDir, 'work.oxn'), 'utf-8')
+    expect(workOxn).toContain('blueprint "asset-create"')
   })
 
   test('4. v0.6.1-alpha.4: --asset-kind library 已删除 → OXN_INVALID_ASSET_KIND', async () => {
@@ -106,25 +125,32 @@ describe('Asset Short Circuit --asset-kind (v0.7+ 已移除 --type)', () => {
     expect(json.error.code).toBe('OXN_INVALID_ASSET_KIND')
   })
 
-  test('7. 重复创建同 name 抛 OXN_ASSET_CREATE_FAILED (PATH_CONFLICT)（无 --force）', async () => {
-    await runCli(['work', 'create', 'MyDomain', '--asset-kind', 'domain', '--json'])
-    const r2 = await runCli(['work', 'create', 'MyDomain', '--asset-kind', 'domain', '--json'])
-    expect(r2.exitCode).not.toBe(0)
-    const json = JSON.parse(r2.stdout)
-    expect(json.error.code).toBe('OXN_ASSET_CREATE_FAILED')
-    expect(json.error.message).toContain('already exists')
-  })
-
-  test('8. --force 覆盖已存在', async () => {
-    await runCli(['work', 'create', 'MyDomain', '--asset-kind', 'domain', '--json'])
-    const r2 = await runCli(['work', 'create', 'MyDomain', '--asset-kind', 'domain', '--force', '--json'])
-    expect(r2.exitCode).toBe(0)
-  })
-
-  test('9. 无 --asset-kind 时走 Work 编排路径（即使 --blueprint 不存在，不应创建 Asset）', async () => {
-    // 无 --asset-kind → 走 Work 路径；blueprint 不存在应失败，但关键是不应创建 Asset
+  test('7. 无 --asset-kind 时走标准 Work 路径（不创建 Asset）', async () => {
     await runCli(['work', 'create', 'feat-x', '--blueprint', 'nonexistent', '--json'])
     expect(existsSync(join(tmpDir, '.openxenon', 'assets', 'domains'))).toBe(false)
     expect(existsSync(join(tmpDir, '.openxenon', 'assets', 'blueprints'))).toBe(false)
+  })
+
+  test('8. --asset-kind domain + Work 同名 → 失败 (OXN_OUTPUT_DIR_EXISTS)', async () => {
+    // 第一次创建
+    const r1 = await runCli(['work', 'create', 'MyDomain', '--asset-kind', 'domain', '--json'])
+    expect(r1.exitCode).toBe(0)
+    const workDir1 = join(tmpDir, '.openxenon', 'works', 'my-domain-asset-domain')
+    expect(existsSync(workDir1)).toBe(true)
+
+    // 第二次创建同名 → 失败
+    const r2 = await runCli(['work', 'create', 'MyDomain', '--asset-kind', 'domain', '--json'])
+    expect(r2.exitCode).not.toBe(0)
+    const json = JSON.parse(r2.stdout)
+    expect(json.error.code).toBe('OXN_OUTPUT_DIR_EXISTS')
+  })
+
+  test('9. roadmap 类型 — 标准 Work 创建', async () => {
+    const r = await runCli(['work', 'create', 'my-roadmap', '--asset-kind', 'roadmap', '--json'])
+    expect(r.exitCode).toBe(0)
+    const workDir = join(tmpDir, '.openxenon', 'works', 'my-roadmap-asset-roadmap')
+    expect(existsSync(workDir)).toBe(true)
+    const workOxn = readFileSync(join(workDir, 'work.oxn'), 'utf-8')
+    expect(workOxn).toContain('blueprint "asset-create"')
   })
 })

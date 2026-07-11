@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test'
-import { mkdtempSync, writeFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, existsSync, mkdirSync, readFileSync, rmSync, copyFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoadmapCompiler } from '../compilers/roadmap-compiler.js'
@@ -65,7 +65,7 @@ roadmap "my-roadmap" {
   })
 })
 
-describe('oxn work create --type asset --asset-kind roadmap e2e', () => {
+describe('oxn work create --asset-kind roadmap e2e', () => {
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), 'oxn-roadmap-'))
     mkdirSync(join(tmpDir, '.openxenon'), { recursive: true })
@@ -73,6 +73,14 @@ describe('oxn work create --type asset --asset-kind roadmap e2e', () => {
       join(tmpDir, '.openxenon', 'config.json'),
       JSON.stringify({ version: 1, mode: 'PRODUCTION', locale: 'zh-CN' }),
     )
+    // Phase C: 复制 asset-create workflow 到测试环境
+    const repoRoot = join(process.cwd())
+    const srcWf = join(repoRoot, '.openxenon', 'assets', 'workflows', 'asset-create.oxn')
+    const dstWfDir = join(tmpDir, '.openxenon', 'assets', 'workflows')
+    mkdirSync(dstWfDir, { recursive: true })
+    if (existsSync(srcWf)) {
+      copyFileSync(srcWf, join(dstWfDir, 'asset-create.oxn'))
+    }
   })
 
   afterEach(() => {
@@ -93,23 +101,21 @@ describe('oxn work create --type asset --asset-kind roadmap e2e', () => {
     return { stdout, stderr, exitCode }
   }
 
-  test('5. roadmap CLI 创建成功 + 落 .openxenon/assets/roadmaps/<name>.oxn', async () => {
-    const r = await runCli(['work', 'create', 'my-roadmap', '--type', 'asset', '--asset-kind', 'roadmap', '--json'])
+  test('5. roadmap --asset-kind roadmap → 创建 Work（Phase C 标准流程）', async () => {
+    const r = await runCli(['work', 'create', 'my-roadmap', '--asset-kind', 'roadmap', '--json'])
     if (r.exitCode !== 0) {
       console.error('STDERR:', r.stderr)
       console.error('STDOUT:', r.stdout)
     }
     expect(r.exitCode).toBe(0)
-    const assetPath = join(tmpDir, '.openxenon', 'assets', 'roadmaps', 'my-roadmap.oxn')
-    expect(existsSync(assetPath)).toBe(true)
-    const content = readFileSync(assetPath, 'utf-8')
-    expect(content).toContain('roadmap "my-roadmap"')
-    expect(content).toContain('abstract =')
-    expect(content).toContain('@prj/domains/MemberContext')
-    expect(content).toContain('@prj/blueprints/dev-workflow')
+    // Phase C: --asset-kind 走标准 Work 流程，创建 Work 目录（不是直接创建 Asset 文件）
+    const workDir = join(tmpDir, '.openxenon', 'works', 'my-roadmap-asset-roadmap')
+    expect(existsSync(workDir)).toBe(true)
+    const workOxn = readFileSync(join(workDir, 'work.oxn'), 'utf-8')
+    expect(workOxn).toContain('blueprint "asset-create"')
   })
 
-  test('6. 5 AssetKind create 全部成功（domain/workflow/stack/blueprint/roadmap）— v0.6.1-alpha.2 收敛', async () => {
+  test('6. 5 AssetKind create 全部走标准 Work 流程 — v0.6.1 Phase C', async () => {
     const kinds: Array<[string, string]> = [
       ['domain', 'MyDomain'],
       ['workflow', 'my-workflow'],
@@ -118,26 +124,21 @@ describe('oxn work create --type asset --asset-kind roadmap e2e', () => {
       ['roadmap', 'my-roadmap'],
     ]
     for (const [kind, name] of kinds) {
-      const r = await runCli(['work', 'create', name, '--type', 'asset', '--asset-kind', kind, '--json'])
+      const r = await runCli(['work', 'create', name, '--asset-kind', kind, '--json'])
       expect(r.exitCode).toBe(0)
-      const ext = kind === 'domain' ? 'oxn' : 'oxn'
-      const dir =
-        kind === 'domain'
-          ? 'domains'
-          : kind === 'workflow'
-            ? 'workflows'
-            : kind === 'stack'
-              ? 'stack'
-              : kind === 'blueprint'
-                ? 'blueprints'
-                : 'roadmaps'
-      const assetPath = join(tmpDir, '.openxenon', 'assets', dir, `${name}.${ext}`)
-      expect(existsSync(assetPath)).toBe(true)
+      // Phase C: 每个 --asset-kind 都创建一个 Work 目录（名称含 -asset-<kind>）
+      const json = JSON.parse(r.stdout)
+      expect(json.ok).toBe(true)
+      expect(json.data.workName).toContain('-asset-')
+      expect(json.data.workName).toContain(kind)
+      // work.oxn 存在
+      const workOxnPath = join(json.data.outputDir, 'work.oxn')
+      expect(existsSync(workOxnPath)).toBe(true)
     }
   })
 
   test('7. VALID_ASSET_KINDS error message 包含 roadmap', async () => {
-    const r = await runCli(['work', 'create', 'x', '--type', 'asset', '--asset-kind', 'invalid', '--json'])
+    const r = await runCli(['work', 'create', 'x', '--asset-kind', 'invalid', '--json'])
     expect(r.exitCode).not.toBe(0)
     const json = JSON.parse(r.stdout)
     expect(json.error.code).toBe('OXN_INVALID_ASSET_KIND')

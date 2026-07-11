@@ -15,7 +15,7 @@
  */
 
 import { defineCommand } from 'citty'
-import { existsSync } from 'node:fs'
+import { existsSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
 import { parseRoadmapMd, suggestAssets, syncRoadmap } from '@openxenon/engine/Roadmap'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
