@@ -2,7 +2,7 @@
 
 ## Context
 
-v0.7.0 已将 Work 迁移为 MD-native（frontmatter + H1/H2/H3 + lists），但 Task、Proof、Domain 三个实体仍依赖 OXN 正则解析。MD-native 编译器（`task-compiler.ts`、`proof-compiler.ts`、`domain-compiler.ts`）已存在于 `md-bridge/compilers/`，但未接入 CLI 流程。`summary-extractors.ts` 中的 `readTaskFile()` 和 `readDomainFile()` 仍用 OXN 正则，无法正确解析 MD 文件。
+v0.6.1 已将 Work 迁移为 MD-native（frontmatter + H1/H2/H3 + lists），但 Task、Proof、Domain 三个实体仍依赖 OXN 正则解析。MD-native 编译器（`task-compiler.ts`、`proof-compiler.ts`、`domain-compiler.ts`）已存在于 `md-bridge/compilers/`，但未接入 CLI 流程。`summary-extractors.ts` 中的 `readTaskFile()` 和 `readDomainFile()` 仍用 OXN 正则，无法正确解析 MD 文件。
 
 ## 目标
 

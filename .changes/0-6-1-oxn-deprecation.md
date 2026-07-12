@@ -1,4 +1,4 @@
-# v0.7.0 — Langium Retirement & .oxn Deprecation
+# v0.6.1 — Langium Retirement & .oxn Deprecation
 
 ## Breaking Changes
 

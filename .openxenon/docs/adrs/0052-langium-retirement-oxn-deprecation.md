@@ -2,11 +2,11 @@
 
 ## 状态
 
-🟢 已实施（v0.7.0）
+🟢 已实施（v0.6.1）
 
 ## 背景
 
-v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md` 成为 canonical 格式，`.oxn` 仅作为 v0.6.x 向后兼容 fallback 保留。v0.7.0 需要彻底切割：删除 Langium 基础设施、移除全部 `.oxn` 文件、CLI 移除 `--oxn-legacy` flag。
+v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md` 成为 canonical 格式，`.oxn` 不再保留。v0.6.1 需要彻底切割：删除 Langium 基础设施、移除全部 `.oxn` 文件、CLI 移除 `--oxn-legacy` flag。
 
 **量化影响**：
 - 79 个 git-tracked `.oxn` 文件删除
@@ -30,7 +30,7 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 
 ### D11: 不做反向同步
 
-不实现 `.md → .oxn` 同步工具。v0.7.0 后 `.oxn` 文件不被解析，错误信息引导写 `.md`。
+不实现 `.md → .oxn` 同步工具。v0.6.1 后 `.oxn` 文件不被解析，错误信息引导写 `.md`。
 
 ## 实施
 
@@ -66,9 +66,9 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 - 用户不再困惑于两种格式
 
 **负面**：
-- v0.6.x 用户的 `.oxn` 文件在 v0.7.0 后无法解析
+- v0.6.x 用户的 `.oxn` 文件在 v0.6.1 后无法解析
 - 运行时产物（`.openxenon/works/`）中的 `.oxn` 文件被忽略（不影响核心功能）
 
 **缓解**：
-- v0.7.0 release notes 明确说明 breaking change
+- v0.6.1 release notes 明确说明 breaking change
 - `.md` 文件在 v0.6.1 已存在（双轨期间已生成）
