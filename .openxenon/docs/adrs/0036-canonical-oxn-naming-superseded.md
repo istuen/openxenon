@@ -3,6 +3,7 @@
 > **来源**：`docs_tmp/arsenal-oxn-2.md` (2026-05-21)
 > **抽取日**：2026-07-04
 > **状态**：Superseded（已用 blueprint.oxn + frozen.json 三件套替代）
+> **superseded-by**：blueprint.oxn + frozen.json 三件套（v0.6.1 正式替代 canonical.oxn）
 > **影响层**：E1 Asset
 
 ## 历史决策

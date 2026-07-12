@@ -79,57 +79,71 @@ export function readTaskFile(filePath: string): TaskFileSummary {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
 
-  const nameMatch = content.match(/task\s+"([^"]+)"/)
+  // v0.7.0+: MD-native format
+  // --- frontmatter ---
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/)
+  const fm = fmMatch?.[1] ?? ''
+  const nameMatch = fm.match(/^name:\s*(.+)$/m)
   if (!nameMatch) return null
+  const name = nameMatch[1]!.trim()
 
-  const domainMatch = content.match(/domain\s+"([^"]+)"/)
-  const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
+  // ## Refs section
+  const refsSection = content.match(/## Refs\n([\s\S]*?)(?=\n## |\n*$)/)
+  const refsText = refsSection?.[1] ?? ''
+  const blueprintMatch = refsText.match(/- blueprint:\s*(.+)$/m)
+  const domainMatch = refsText.match(/- domain:\s*(.+)$/m)
+  const depsMatch = refsText.match(/- deps:\s*\[(.+)\]/)
 
+  // ## Parts section
+  const partsSection = content.match(/## Parts\n([\s\S]*?)(?=\n## |\n*$)/)
+  const partsText = partsSection?.[1] ?? ''
   const parts: Array<{
     name: string
     skillContext?: string
     probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
   }> = []
-  const partBlocks = Array.from(content.matchAll(/part\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
+
+  const partBlocks = Array.from(partsText.matchAll(/### (.+)\n([\s\S]*?)(?=### |\n## |\n*$)/g))
   for (const m of partBlocks) {
-    const partName = m[1]!
+    const partName = m[1]!.trim()
     const partBody = m[2]!
+    const skillMatch = partBody.match(/- skill_context:\s*["']?([^"'\n]+)["']?/)
+    const skillContext = skillMatch?.[1]?.trim()
 
-    const skillMatch = partBody.match(/skill_context\s*=\s*"((?:[^"\\]|\\.)*)"/)
-    const skillContext = skillMatch ? skillMatch[1]!.replace(/\\"/g, '"') : undefined
-
+    // ## Probes section (per-part probes if any)
     const probes: Array<{ name: string; ref: string; params?: Record<string, string> }> = []
-    const probeBlocks = Array.from(partBody.matchAll(/probe\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
-    for (const pm of probeBlocks) {
-      const probeName = pm[1]!
-      const probeBody = pm[2]!
-      const refMatch = probeBody.match(/ref\s+"([^"]+)"/)
-      const ref = refMatch?.[1] ?? ''
-
-      const params: Record<string, string> = {}
-      const paramsBlock = probeBody.match(/params\s*=\s*\{([\s\S]*?)\}/)
-      if (paramsBlock) {
-        const paramMatches = paramsBlock[1]!.matchAll(/(\w+)\s*=\s*"([^"]*)"/g)
-        for (const p of paramMatches) {
-          params[p[1]!] = p[2]!
-        }
-      }
-
-      probes.push({ name: probeName, ref, ...(Object.keys(params).length > 0 ? { params } : {}) })
-    }
 
     parts.push({ name: partName, skillContext, probes })
   }
 
-  const depsMatch = content.match(/deps\s*=\s*\[([^\]]*)\]/)
-  const deps = depsMatch ? Array.from(depsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!) : []
+  // ## Probes section (top-level)
+  const probesSection = content.match(/## Probes\n([\s\S]*?)(?=\n## |\n*$)/)
+  const probesText = probesSection?.[1] ?? ''
+  // Attach top-level probes to first part if any
+  if (parts.length > 0 && probesText) {
+    const probeBlocks = Array.from(probesText.matchAll(/### (.+)\n([\s\S]*?)(?=### |\n## |\n*$)/g))
+    for (const pm of probeBlocks) {
+      const probeName = pm[1]!.trim()
+      const probeBody = pm[2]!
+      const refMatch = probeBody.match(/- ref:\s*(.+)$/m)
+      const ref = refMatch?.[1]?.trim() ?? ''
+      const paramsMatch = probeBody.match(/- params:\s*\{(.+)\}/)
+      const params: Record<string, string> = {}
+      if (paramsMatch) {
+        for (const p of paramsMatch[1]!.matchAll(/(\w+):\s*["']?([^"',\n]+)["']?/g)) {
+          params[p[1]!] = p[2]!.trim()
+        }
+      }
+      parts[0]!.probes.push({ name: probeName, ref, ...(Object.keys(params).length > 0 ? { params } : {}) })
+    }
+  }
 
   return {
-    name: nameMatch[1]!,
-    domain: domainMatch?.[1],
-    blueprint: blueprintMatch?.[1],
+    name,
+    domain: domainMatch?.[1]?.trim(),
+    blueprint: blueprintMatch?.[1]?.trim(),
     parts,
-    deps,
+    deps: depsMatch ? Array.from(depsMatch[1]!.matchAll(/["']?([^"',\s]+)["']?/g)).map((m) => m[1]!) : [],
   }
 }
 
@@ -197,4 +211,31 @@ export function readWorkFile(filePath: string): WorkFileSummary | null {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
   return readWorkFileFromText(content, filePath)
+}
+
+/**
+ * v0.7.0+: Convert WorkIR (from MD parser) directly to WorkFileSummary.
+ * Skips the OXN serialization round-trip.
+ */
+export function workIRToSummary(ir: {
+  name: string
+  context?: { goal?: string; constraints?: string[] }
+  refs?: Array<{ kind: string; name: string; ref: string }>
+  tasks?: Array<{ name: string; domain?: string | null; blueprint?: string | null; parts?: unknown[] }>
+}): WorkFileSummary {
+  return {
+    name: ir.name,
+    goal: ir.context?.goal,
+    constraints: ir.context?.constraints ?? [],
+    domains: (ir.refs ?? []).filter((r) => r.kind === 'domain').map((r) => ({ name: r.name, ref: r.ref })),
+    blueprints: (ir.refs ?? []).filter((r) => r.kind === 'blueprint').map((r) => ({ name: r.name, ref: r.ref })),
+    parts: (ir.refs ?? []).filter((r) => r.kind === 'stack').map((r) => ({ name: r.name, ref: r.ref })),
+    probes: [],
+    tasks: (ir.tasks ?? []).map((t) => ({
+      name: t.name,
+      domain: t.domain ?? undefined,
+      blueprint: t.blueprint ?? undefined,
+      deps: [],
+    })),
+  }
 }

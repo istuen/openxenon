@@ -5,20 +5,19 @@
 //   1. normalizeText：去 BOM / CRLF / 末尾空行
 //   2. hashText：相同内容 → 相同 hash；不同内容 → 不同 hash
 //   3. hashFile：文件存在/不存在
-//   4. listTaskFiles：稳定排序、跳过隐藏/无 task.oxn 的目录
+//   4. listTaskFiles：稳定排序、跳过隐藏/无 task.md 的目录
 //   5. hashWorkPlan：4 组件 + allHash，缺失组件为 null，missing[] 准确
 //   6. hashAssetList：按 name 排序
 //   7. probePlanPresence：探测 4 组件实际状态
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import {
   getWorkBlueprintsJsonPath,
-  getWorkDomainsJsonPath,
-  getWorkOxnPath,
+  getWorkMdPath,
   hashAssetList,
   hashFile,
   hashText,
@@ -114,31 +113,31 @@ describe('listTaskFiles', () => {
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'zebra'), { recursive: true })
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'alpha'), { recursive: true })
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'mike'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'zebra', 'task.oxn'), 'z')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'alpha', 'task.oxn'), 'a')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'mike', 'task.oxn'), 'm')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'zebra', 'task.md'), 'z')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'alpha', 'task.md'), 'a')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'mike', 'task.md'), 'm')
     const out = listTaskFiles(tmpDir, workName)
     expect(out.map((t) => t.taskName)).toEqual(['alpha', 'mike', 'zebra'])
   })
   test('跳过隐藏目录', () => {
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', '.hidden'), { recursive: true })
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'visible'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', '.hidden', 'task.oxn'), 'h')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'visible', 'task.oxn'), 'v')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', '.hidden', 'task.md'), 'h')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'visible', 'task.md'), 'v')
     const out = listTaskFiles(tmpDir, workName)
     expect(out.map((t) => t.taskName)).toEqual(['visible'])
   })
-  test('跳过无 task.oxn 的目录', () => {
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'no-oxn'), { recursive: true })
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'has-oxn'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'no-oxn', 'readme.md'), 'r')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'has-oxn', 'task.oxn'), 'h')
+  test('跳过无 task.md 的目录', () => {
+    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'no-md'), { recursive: true })
+    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'has-md'), { recursive: true })
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'no-md', 'readme.md'), 'r')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'has-md', 'task.md'), 'h')
     const out = listTaskFiles(tmpDir, workName)
-    expect(out.map((t) => t.taskName)).toEqual(['has-oxn'])
+    expect(out.map((t) => t.taskName)).toEqual(['has-md'])
   })
   test('hash 字段填入', () => {
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 't'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 't', 'task.oxn'), 'content')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 't', 'task.md'), 'content')
     const out = listTaskFiles(tmpDir, workName)
     expect(out[0]?.hash).toBe(hashText('content'))
   })
@@ -149,36 +148,32 @@ describe('listTaskFiles', () => {
 function writeTask(name: string, content: string): void {
   const dir = join(tmpDir, '.openxenon', 'works', workName, 'tasks', name)
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'task.oxn'), content)
+  writeFileSync(join(dir, 'task.md'), content)
 }
 
 describe('hashWorkPlan', () => {
   test('全 4 组件存在 → allHash 不为 null', () => {
-    writeFileSync(getWorkOxnPath(tmpDir, workName), 'work.oxn content')
-    writeFileSync(getWorkDomainsJsonPath(tmpDir, workName), '{}')
+    writeFileSync(getWorkMdPath(tmpDir, workName), 'work.md content')
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
     writeTask('a', 'task a')
     const r = hashWorkPlan(tmpDir, workName)
-    expect(r.workOxnHash).not.toBe(null)
-    expect(r.workDomainsHash).not.toBe(null)
+    expect(r.workMdHash).not.toBe(null)
     expect(r.blueprintsHash).not.toBe(null)
     expect(r.tasksHash).not.toBe(null)
     expect(r.allHash).not.toBe(null)
     expect(r.missing).toEqual([])
   })
 
-  test('work.oxn 缺失 → workOxnHash=null + missing 含 work.oxn', () => {
-    writeFileSync(getWorkDomainsJsonPath(tmpDir, workName), '{}')
+  test('work.md 缺失 → workMdHash=null + missing 含 work.md', () => {
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
     const r = hashWorkPlan(tmpDir, workName)
-    expect(r.workOxnHash).toBe(null)
-    expect(r.missing).toContain('work.oxn')
+    expect(r.workMdHash).toBe(null)
+    expect(r.missing).toContain('work.md')
     expect(r.allHash).toBe(null)
   })
 
   test('无 task 时 tasksHash=null 且 missing 不含 task（empty ≠ missing）', () => {
-    writeFileSync(getWorkOxnPath(tmpDir, workName), 'oxn')
-    writeFileSync(getWorkDomainsJsonPath(tmpDir, workName), '{}')
+    writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
     const r = hashWorkPlan(tmpDir, workName)
     expect(r.tasksHash).toBe(null)
@@ -187,15 +182,14 @@ describe('hashWorkPlan', () => {
   })
 
   test('稳定的 tasksHash（add 顺序无关）', () => {
-    writeFileSync(getWorkOxnPath(tmpDir, workName), 'oxn')
-    writeFileSync(getWorkDomainsJsonPath(tmpDir, workName), '{}')
+    writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
 
     writeTask('z', 'z')
     writeTask('a', 'a')
     const h1 = hashWorkPlan(tmpDir, workName).tasksHash
 
-    const aPath = join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'a', 'task.oxn')
+    const aPath = join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'a', 'task.md')
     writeFileSync(aPath, 'changed')
     const hChanged = hashWorkPlan(tmpDir, workName).tasksHash
     writeFileSync(aPath, 'a')
@@ -206,8 +200,7 @@ describe('hashWorkPlan', () => {
   })
 
   test('同 DAG 不同 add 顺序 → tasksHash 相同', () => {
-    writeFileSync(getWorkOxnPath(tmpDir, workName), 'oxn')
-    writeFileSync(getWorkDomainsJsonPath(tmpDir, workName), '{}')
+    writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
 
     writeTask('a', 'A')
@@ -228,13 +221,12 @@ describe('hashWorkPlan', () => {
   })
 
   test('1 改 1 → allHash 也变（组件联动）', () => {
-    writeFileSync(getWorkOxnPath(tmpDir, workName), 'oxn')
-    writeFileSync(getWorkDomainsJsonPath(tmpDir, workName), '{}')
+    writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
     writeTask('a', 'A')
     const h1 = hashWorkPlan(tmpDir, workName).allHash
 
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'a', 'task.oxn'), 'A2')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'a', 'task.md'), 'A2')
     const h2 = hashWorkPlan(tmpDir, workName).allHash
 
     expect(h1).not.toBe(h2)
@@ -281,17 +273,17 @@ describe('hashAssetList', () => {
 describe('probePlanPresence', () => {
   test('空 work → 全 false / 空 tasks', () => {
     const r = probePlanPresence(tmpDir, workName)
-    expect(r.workOxn).toBe(false)
+    expect(r.workMd).toBe(false)
     // 🆕 Phase B: 删 domainsJson（Domain refs 走 Blueprint ## Refs）
     expect(r.blueprintsJson).toBe(false)
     expect(r.tasks).toEqual([])
   })
 
-  test('有 task.oxn 但无 .work → 报告存在', () => {
+  test('有 task.md 但无 .work → 报告存在', () => {
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'x'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'x', 'task.oxn'), 'X')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'x', 'task.md'), 'X')
     const r = probePlanPresence(tmpDir, workName)
-    expect(r.tasks).toEqual([{ taskName: 'x', hasOxn: true }])
+    expect(r.tasks).toEqual([{ taskName: 'x', hasMd: true }])
   })
 })
 

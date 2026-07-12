@@ -3,7 +3,7 @@
 > **日期**：2026-06-23（v1.0） · 2026-07-08（v2.0）
 > **状态**：🟢 **v1.0 已拍板**（PR-A done, PR-B 完成 → v0.6.1 PR-1 done）
 >           🟢 **v2.0 已拍板**（v0.6.1 PR-2 done：Work 引用值锁 `@md/...` 前缀）
-> **基础**：[`md-ssot-system.md` v3.2](./md-ssot-system.md) · [`v0.3.0-roadmap.md` v3.2](./v0.3.0-roadmap.md) · [`intent-ssot-boundary.md` v1.0](./intent-ssot-boundary.md)
+> **基础**：[`md-ssot-system.md` v3.2](../../pools/drafts/_archive/2026-06/md-ssot-system.md) · [`v0.3.0-roadmap.md` v3.2](../../pools/drafts/_archive/2026-06/v0.3.0-roadmap.md) · [`intent-ssot-boundary.md` v1.0](../../pools/drafts/_archive/2026-06/intent-ssot-boundary.md)
 > **作者**：opencode（与 user 多轮对话协作）
 > **范围**：v0.3.0 阶段 2 → v0.6.1 PR-1+PR-2（已 done）· v0.7.0 切割（待）
 
@@ -1750,9 +1750,9 @@ bun scripts/migrate-domains-to-native-md.ts
 
 ## 15. 关联文档
 
-- **核心架构**：[`md-ssot-system.md` v3.2](./md-ssot-system.md)
-- **SSOT 边界**：[`intent-ssot-boundary.md` v1.0](./intent-ssot-boundary.md)
-- **路线图**：[`v0.3.0-roadmap.md` v3.2](./v0.3.0-roadmap.md)
+- **核心架构**：[`md-ssot-system.md` v3.2](../../pools/drafts/_archive/2026-06/md-ssot-system.md)
+- **SSOT 边界**：[`intent-ssot-boundary.md` v1.0](../../pools/drafts/_archive/2026-06/intent-ssot-boundary.md)
+- **路线图**：[`v0.3.0-roadmap.md` v3.2](../../pools/drafts/_archive/2026-06/v0.3.0-roadmap.md)
 - **实施报告**：[`arch-v0.3-implementation-report.md`](./arch-v0.3-implementation-report.md)
 - **Driver 抽象**：[`src/oxl/contracts/oxl-driver.ts`](../../../src/oxl/contracts/oxl-driver.ts)
 - **现有 Registry**：[`src/oxl/md-bridge/driver-registry.ts`](../../../src/oxl/md-bridge/driver-registry.ts)

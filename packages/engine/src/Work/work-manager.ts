@@ -179,13 +179,13 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
     throw new Error(`work "${workName}" already exists`)
   }
 
-  const workOxnContent = renderWorkSkeleton(
+  const workMdContent = renderWorkSkeleton(
     workName,
     'TODO-blueprint',
     [{ name: 'stage-1', align: 'TODO' }],
     assetFormat,
   )
-  writeFileSync(workFileFinal, workOxnContent, 'utf-8')
+  writeFileSync(workFileFinal, workMdContent, 'utf-8')
 
   if (autoSync) {
     try {
@@ -276,21 +276,24 @@ export async function addTaskToWork(params: AddTaskParams): Promise<AddTaskResul
     throw new Error(`domain "${domainName}" not declared in work "${workName}" (allowed: ${allowedDomains.join(', ')})`)
   }
 
-  const domainLine = domainName ? `  domain "${domainName}"` : ''
-  const template = `// Task: ${taskName} (work: ${workName}, blueprint: ${blueprintName})
-// Created by: oxn work add-task <name> --task ${taskName} --blueprint ${blueprintName} ${domainName ? `--domain ${domainName}` : ''}
-//
-// 任务执行：
-//   oxn work status <name>
-//   oxn work context <name> --task ${taskName}
+  const refsSection = [`- blueprint: ${blueprintName}`, domainName ? `- domain: ${domainName}` : '']
+    .filter(Boolean)
+    .join('\n')
 
-task "${taskName}" {
-  blueprint "${blueprintName}"
-${domainLine}
-  part "slot-name" {
-    skill_context = "TODO: 描述 AI 执行指令"
-  }
-}
+  const template = `---
+entity: task
+version: 0.3.0
+name: ${taskName}
+---
+
+# Task: ${taskName}
+
+## Parts
+### slot-name
+- skill_context: "TODO: 描述 AI 执行指令"
+
+## Refs
+${refsSection}
 `
   ensureDirectory(taskDir)
   writeFileSync(taskFile, template, 'utf-8')

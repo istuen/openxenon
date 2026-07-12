@@ -5,13 +5,12 @@ import {
   type WorkFileSummary,
   type DomainFileSummary,
   readWorkFile,
-  readWorkFileFromText,
+  workIRToSummary,
   readTaskFile,
   readDomainFile,
 } from '@openxenon/engine/oxl/summary-extractors'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
-import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import { getTaskOxnPath, getTaskStatePath, resolveWorkFilePath } from './dual-state-io'
 import { collectUnresolvedRefDiagnostics } from './work-diagnostics'
 import { readWorkFile as readBirthCert, verifyPlanLock } from './birth-cert'
@@ -88,8 +87,7 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
       const content = readFileSync(workFile, 'utf-8')
       const parsed = parseMarkdown(content)
       const ir = extractWorkIR(parsed.tree, parsed.frontmatter)
-      const synthesizedOxn = serializeWorkToOxn(ir)
-      work = readWorkFileFromText(synthesizedOxn, workFile)
+      work = workIRToSummary(ir)
     } catch (e) {
       throw new Error(`Failed to parse ${workFile}: ${e instanceof Error ? e.message : String(e)}`)
     }

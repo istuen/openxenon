@@ -3,6 +3,7 @@
 > **来源**：`docs_tmp/oxn-type-1.md`, `oxn-type-review-1.md` (2026-05-22)
 > **抽取日**：2026-07-04
 > **状态**：⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发；slot/part 语义替代 type 字段）
+> **superseded-by**：[ADR-0054](./0054-three-boundary-framework.md) / [ADR-0055](./0055-blueprint-as-composition-template.md)
 > **影响层**：L1-OXL
 
 ## 决策

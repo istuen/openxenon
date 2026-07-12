@@ -43,7 +43,7 @@ import {
 } from '@openxenon/engine/infra/filesystem'
 import { t } from '@openxenon/engine/infra/i18n'
 import { join } from 'path'
-import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, RUN_DIR, TASK_FILE, WORK_FILE_ENTRY, WORK_RUN_STATE_JSON } from '@openxenon/engine/kernel'
 import { assertDirNameConsistent } from '@openxenon/engine/kernel'
 import { IAPError } from '@openxenon/engine/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
@@ -98,7 +98,7 @@ import { isWorkStarted } from '@openxenon/engine/Work'
 import {
   readDomainFile,
   readTaskFile,
-  readWorkFileFromText,
+  workIRToSummary,
   readWorkFile,
   type WorkFileSummary,
   type DomainFileSummary,
@@ -134,7 +134,7 @@ function getWorkTaskDir(workName: string, taskName: string): string {
 }
 
 function getWorkTaskFile(workName: string, taskName: string): string {
-  return join(getWorkTaskDir(workName, taskName), TASK_OXN_FILE)
+  return join(getWorkTaskDir(workName, taskName), TASK_FILE)
 }
 
 function ensureDirectory(dir: string): void {
@@ -156,21 +156,24 @@ function writeTaskTemplate(
   if (existsSync(taskFile)) {
     return { written: false, path: taskFile, reason: 'exists' }
   }
-  const domainLine = domainName ? `  domain "${domainName}"` : ''
-  const template = `// Task: ${taskName} (work: ${workName}, blueprint: ${blueprintName})
-// Created by: oxn work add-task <name> --task ${taskName} --blueprint ${blueprintName} ${domainName ? `--domain ${domainName}` : ''}
-//
-// 任务执行：
-//   oxn work status <name>
-//   oxn work context <name> --task ${taskName}
+  const refsSection = [`- blueprint: ${blueprintName}`, domainName ? `- domain: ${domainName}` : '']
+    .filter(Boolean)
+    .join('\n')
 
-task "${taskName}" {
-  blueprint "${blueprintName}"
-${domainLine}
-  part "slot-name" {
-    skill_context = "TODO: 描述 AI 执行指令"
-  }
-}
+  const template = `---
+entity: task
+version: 0.3.0
+name: ${taskName}
+---
+
+# Task: ${taskName}
+
+## Parts
+### slot-name
+- skill_context: "TODO: 描述 AI 执行指令"
+
+## Refs
+${refsSection}
 `
   ensureDirectory(taskDir)
   writeFileSync(taskFile, template, 'utf-8')
@@ -309,7 +312,7 @@ const listSubcommand = defineCommand({
       status: string
       taskCount: number
       passedTasks: number
-      hasWorkOxn: boolean
+      hasWorkMd: boolean
       hasWorkState: boolean
     }> = []
 
@@ -318,7 +321,7 @@ const listSubcommand = defineCommand({
       const workDir = join(worksDir, workName)
       if (!existsSync(workDir)) continue
 
-      const hasWorkOxn = existsSync(join(workDir, WORK_OXN_FILE))
+      const hasWorkMd = existsSync(join(workDir, WORK_FILE_ENTRY))
       const hasWorkState = existsSync(join(workDir, RUN_DIR, WORK_RUN_STATE_JSON))
       let status = 'pending'
       let taskCount = 0
@@ -335,7 +338,7 @@ const listSubcommand = defineCommand({
           status = 'error'
         }
       }
-      works.push({ workName, status, taskCount, passedTasks, hasWorkOxn, hasWorkState })
+      works.push({ workName, status, taskCount, passedTasks, hasWorkMd, hasWorkState })
     }
 
     if (works.length === 0) {
@@ -347,7 +350,7 @@ const listSubcommand = defineCommand({
       .map(
         (w) =>
           `${w.workName}  status=${w.status}  tasks=${w.passedTasks}/${w.taskCount}  ` +
-          `[${w.hasWorkOxn ? 'oxn' : '_'},${w.hasWorkState ? 'state' : '_'}]`,
+          `[${w.hasWorkMd ? 'md' : '_'},${w.hasWorkState ? 'state' : '_'}]`,
       )
       .join('\n')
 
@@ -821,20 +824,20 @@ const createSubcommand = defineCommand({
       return outputError({ code: 'OXN_WORK_EXISTS', message: t('work.workExists', { workName }) }, format)
     }
 
-    const workOxnContent = renderWorkSkeleton(
+    const workMdContent = renderWorkSkeleton(
       workName,
       'TODO-blueprint',
       [{ name: 'stage-1', align: 'TODO' }],
       assetFormat,
       Object.keys(skeletonOptions).length > 0 ? skeletonOptions : undefined,
     )
-    writeFileSync(workFileFinal, workOxnContent, 'utf-8')
+    writeFileSync(workFileFinal, workMdContent, 'utf-8')
 
     // autoSync
     if (autoSync) {
       try {
         if (assetFormat === 'md') {
-          const { tree, frontmatter: fm } = parseMarkdown(workOxnContent)
+          const { tree, frontmatter: fm } = parseMarkdown(workMdContent)
           const ir = extractWorkIR(tree, fm)
           const { serializeWorkToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
           const altContent = serializeWorkToOxn(ir)
@@ -1184,7 +1187,7 @@ const listTaskSubcommand = defineCommand({
 
     const tasks = dirs
       .map((name) => {
-        const file = join(tasksDir, name, TASK_OXN_FILE)
+        const file = join(tasksDir, name, TASK_FILE)
         if (!existsSync(file)) return null
         const content = readFileSync(file, 'utf-8')
         const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
@@ -1289,9 +1292,9 @@ const verifyTaskPathSubcommand = defineCommand({
 
     // 2) 文件名必须是 task.md？
     const basename = filePath.split('/').pop()
-    if (basename !== TASK_OXN_FILE) {
+    if (basename !== TASK_FILE) {
       return outputError(
-        { code: 'OXN_INVALID_TASK_FILE', message: t('work.invalidTaskFile', { taskOxnFile: TASK_OXN_FILE, basename }) },
+        { code: 'OXN_INVALID_TASK_FILE', message: t('work.invalidTaskFile', { taskFile: TASK_FILE, basename }) },
         format,
       )
     }
@@ -1517,9 +1520,9 @@ const deleteTaskSubcommand = defineCommand({
     }
 
     if (keepState) {
-      const taskOxn = join(taskDir, TASK_OXN_FILE)
-      if (existsSync(taskOxn)) {
-        unlinkSync(taskOxn)
+      const taskFile = join(taskDir, TASK_FILE)
+      if (existsSync(taskFile)) {
+        unlinkSync(taskFile)
       }
     } else {
       rmSync(taskDir, { recursive: true, force: true })
@@ -2182,8 +2185,7 @@ const contextSubcommand = defineCommand({
         const content = readTextFile(workFile)
         const parsed = parseMarkdown(content)
         const ir = extractWorkIR(parsed.tree, parsed.frontmatter)
-        const synthesizedOxn = serializeWorkToOxn(ir)
-        work = readWorkFileFromText(synthesizedOxn, workFile)
+        work = workIRToSummary(ir)
       } catch (e) {
         return outputError(
           {

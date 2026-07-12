@@ -29,7 +29,7 @@ import {
   DOMAINS_DIR,
   PROOFS_DIR,
   safeValidateFrozenProof,
-  WORK_OXN_FILE,
+  WORK_FILE_ENTRY,
   WORK_RUN_TRACE_JSONL,
   RUN_TASKS_SUBDIR,
   RUN_DIR,
@@ -46,19 +46,21 @@ interface SlimDomain {
 }
 
 function parseSlimDomain(content: string, _fileName: string): SlimDomain | null {
-  const nameMatch = content.match(/domain\s+"([^"]+)"/)
-  if (!nameMatch?.[1]) return null
-  const name = nameMatch[1]
+  // MD-native: extract name from frontmatter or H1
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/)
+  const fm = fmMatch?.[1] ?? ''
+  const nameFm = fm.match(/^name:\s*(.+)$/m)
+  const nameH1 = content.match(/^# Domain:\s*(.+)$/m)
+  const name = nameFm?.[1]?.trim() ?? nameH1?.[1]?.trim()
+  if (!name) return null
 
   const invariants: Array<{ value: string }> = []
-  // 匹配 invariant { "..." [ "..." ] } 多行块
-  const invBlock = content.match(/invariant\s*\{([^}]+)\}/s)
-  if (invBlock?.[1]) {
-    const invContent = invBlock[1]
-    // 提取所有引号中的字符串
-    const quoted = invContent.match(/"([^"]+)"/g) ?? []
-    for (const q of quoted) {
-      const v = q.replace(/^"|"$/g, '').trim()
+  // MD format: ## Invariants section with list items
+  const invSection = content.match(/## Invariants?\n([\s\S]*?)(?=\n## |\n*$)/)
+  if (invSection?.[1]) {
+    const items = invSection[1].matchAll(/^- (.+)$/gm)
+    for (const m of items) {
+      const v = m[1]!.trim()
       if (v) invariants.push({ value: v })
     }
   }
@@ -73,26 +75,32 @@ interface SlimBlueprint {
 }
 
 function parseSlimBlueprint(content: string, _fileName: string): SlimBlueprint | null {
-  const nameMatch = content.match(/blueprint\s+"([^"]+)"/)
-  if (!nameMatch?.[1]) return null
-  const name = nameMatch[1]
+  // MD-native: extract name from frontmatter or H1
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/)
+  const fm = fmMatch?.[1] ?? ''
+  const nameFm = fm.match(/^name:\s*(.+)$/m)
+  const nameH1 = content.match(/^# Blueprint:\s*(.+)$/m)
+  const name = nameFm?.[1]?.trim() ?? nameH1?.[1]?.trim()
+  if (!name) return null
 
   const slots: Array<{ name: string; observe: string[] }> = []
-  // 匹配 slot "..." { ... observe = ["...", "..."] ... }
-  const slotRegex = /slot\s+"([^"]+)"\s*\{([^}]+)\}/gs
-  let match: RegExpExecArray | null
-  while ((match = slotRegex.exec(content)) !== null) {
-    const slotName = match[1]!
-    const slotBody = match[2]!
-    const observeList: string[] = []
-    const observeMatch = slotBody.match(/observe\s*=\s*\[([^\]]+)\]/)
-    if (observeMatch?.[1]) {
-      const quoted = observeMatch[1].match(/"([^"]+)"/g) ?? []
-      for (const q of quoted) {
-        observeList.push(q.replace(/^"|"$/g, '').trim())
+  // MD format: ## Slots section with ### slot-name and - observe: [...] list
+  const slotsSection = content.match(/## Slots\n([\s\S]*?)(?=\n## |\n*$)/)
+  if (slotsSection?.[1]) {
+    const slotBlocks = Array.from(slotsSection[1].matchAll(/### (.+)\n([\s\S]*?)(?=### |\n## |\n*$)/g))
+    for (const m of slotBlocks) {
+      const slotName = m[1]!.trim()
+      const slotBody = m[2]!
+      const observeList: string[] = []
+      const observeMatch = slotBody.match(/- observe:\s*\n((?:\s+- .+\n?)*)/)
+      if (observeMatch?.[1]) {
+        const items = observeMatch[1].matchAll(/^- (.+)$/gm)
+        for (const item of items) {
+          observeList.push(item[1]!.trim())
+        }
       }
+      slots.push({ name: slotName, observe: observeList })
     }
-    slots.push({ name: slotName, observe: observeList })
   }
   return { name, slots }
 }
@@ -113,25 +121,31 @@ function extractWorkInfo(
   _projectRoot: string,
   allProofNames: string[],
 ): WorkProofLink | null {
-  const workOxnPath = join(workDir, WORK_OXN_FILE)
-  if (!existsSync(workOxnPath)) return null
+  const workMdPath = join(workDir, WORK_FILE_ENTRY)
+  if (!existsSync(workMdPath)) return null
 
-  const content = readFileSync(workOxnPath, 'utf-8')
+  const content = readFileSync(workMdPath, 'utf-8')
 
-  // 提取 domain refs
+  // MD-native: extract refs from ## Refs section
+  const refsSection = content.match(/## Refs\n([\s\S]*?)(?=\n## |\n*$)/)
+  const refsText = refsSection?.[1] ?? ''
+
+  // Extract domain refs: - domain: Name @scope/domains/Name
   const domainRefs: string[] = []
-  const domainRegex = /domain\s+"([^"]+)"\s+ref\s+"@prj\/domains\/([^"]+)"/g
-  let dm: RegExpExecArray | null
-  while ((dm = domainRegex.exec(content)) !== null) {
-    domainRefs.push(_stripOxnExt(dm[2] ?? dm[1]!))
+  const domainItems = refsText.matchAll(/^- domain:\s*.+$/gm)
+  for (const m of domainItems) {
+    const refMatch = m[0].match(/@[^/\s]+\/domains\/([^.\s]+)/)
+    const nameMatch = m[0].match(/^- domain:\s*(\S+)/)
+    domainRefs.push(refMatch?.[1] ?? nameMatch?.[1] ?? '')
   }
 
-  // 提取 blueprint refs
+  // Extract blueprint refs: - blueprint: Name @scope/blueprints/Name
   const blueprintRefs: string[] = []
-  const bpRegex = /blueprint\s+"([^"]+)"\s+ref\s+"@prj\/blueprints\/([^"]+)"/g
-  let bm: RegExpExecArray | null
-  while ((bm = bpRegex.exec(content)) !== null) {
-    blueprintRefs.push(_stripOxnExt(bm[2] ?? bm[1]!))
+  const bpItems = refsText.matchAll(/^- blueprint:\s*.+$/gm)
+  for (const m of bpItems) {
+    const refMatch = m[0].match(/@[^/\s]+\/blueprints\/([^.\s]+)/)
+    const nameMatch = m[0].match(/^- blueprint:\s*(\S+)/)
+    blueprintRefs.push(refMatch?.[1] ?? nameMatch?.[1] ?? '')
   }
 
   // 策略 1：同名 proof
@@ -177,10 +191,6 @@ function extractWorkInfo(
   }
 
   return { workName, domainRefs, blueprintRefs, proofIds, traceEventCount }
-}
-
-function _stripOxnExt(s: string): string {
-  return s.replace(/\.(oxn|md)$/, '')
 }
 
 // ─── 顶层：组装 PipelineInput ─────────────────────────────────────────────────

@@ -31,7 +31,7 @@ import {
   type BirthCert,
 } from '../birth-cert'
 import { getWorkDir, hashText } from '../plan-hash'
-import { getWorkBlueprintsJsonPath, getWorkDomainsJsonPath, getWorkOxnPath } from '../plan-hash'
+import { getWorkBlueprintsJsonPath, getWorkMdPath } from '../plan-hash'
 
 let tmpDir: string
 let workName: string
@@ -317,7 +317,7 @@ describe('applyPlanLock / clearPlanLock', () => {
     })
     const HASH_ALL = HASH_A
     const hash = {
-      workOxnHash: HASH_A,
+      workMdHash: HASH_A,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
       allHash: HASH_ALL,
@@ -326,7 +326,7 @@ describe('applyPlanLock / clearPlanLock', () => {
     const locked = applyPlanLock(base, hash, '2026-06-08T01:00:00.000Z')
     expect(locked.planLock).not.toBe(null)
     expect(locked.planLock?.lockedAt).toBe('2026-06-08T01:00:00.000Z')
-    expect(locked.planLock?.workOxnHash).toBe(HASH_A)
+    expect(locked.planLock?.workMdHash).toBe(HASH_A)
 
     expect(locked.planLock?.blueprintsHash).toBe(HASH_BP)
     expect(locked.planLock?.tasksHash).toBe(HASH_A)
@@ -341,11 +341,11 @@ describe('applyPlanLock / clearPlanLock', () => {
     })
     expect(() =>
       applyPlanLock(base, {
-        workOxnHash: null,
+        workMdHash: null,
         blueprintsHash: HASH_BP,
         tasksHash: HASH_A,
         allHash: null,
-        missing: ['work.oxn'],
+        missing: ['work.md'],
       }),
     ).toThrow(/incomplete plan hash/)
   })
@@ -356,7 +356,7 @@ describe('applyPlanLock / clearPlanLock', () => {
       assets: { blueprints: [] },
     })
     const hash = {
-      workOxnHash: HASH_A,
+      workMdHash: HASH_A,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
       allHash: HASH_A,
@@ -374,7 +374,7 @@ describe('applyPlanLock / clearPlanLock', () => {
       assets: { blueprints: [] },
     })
     const hash = {
-      workOxnHash: HASH_A,
+      workMdHash: HASH_A,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
       allHash: HASH_A,
@@ -389,17 +389,17 @@ describe('applyPlanLock / clearPlanLock', () => {
 
 describe('verifyPlanLock', () => {
   function setupLockedCert(params: {
-    workOxnContent: string
+    workMdContent: string
     blueprintsContent: string
     tasks?: Array<{ name: string; content: string }>
   }): BirthCert {
-    writeFileSync(getWorkOxnPath(tmpDir, workName), params.workOxnContent)
+    writeFileSync(getWorkMdPath(tmpDir, workName), params.workMdContent)
     // 🆕 Phase B: domains.json 不再生成（Domain 引用走 Blueprint ## Refs）
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), params.blueprintsContent)
     for (const t of params.tasks ?? []) {
       const dir = join(getWorkDir(tmpDir, workName), 'tasks', t.name)
       mkdirSync(dir, { recursive: true })
-      writeFileSync(join(dir, 'task.oxn'), t.content)
+      writeFileSync(join(dir, 'task.md'), t.content)
     }
     const base = createBirthCert({
       workName,
@@ -411,7 +411,7 @@ describe('verifyPlanLock', () => {
       ...base,
       planLock: {
         lockedAt: '2026-06-08T00:00:00.000Z',
-        workOxnHash: hashText(params.workOxnContent),
+        workMdHash: hashText(params.workMdContent),
         blueprintsHash: hashText(params.blueprintsContent),
         tasksHash:
           (params.tasks ?? []).length === 0
@@ -429,7 +429,7 @@ describe('verifyPlanLock', () => {
 
   test('ok: 4 组件都未变', () => {
     const cert = setupLockedCert({
-      workOxnContent: 'work A',
+      workMdContent: 'work A',
       blueprintsContent: 'bp A',
       tasks: [{ name: 't1', content: 't1 content' }],
     })
@@ -447,35 +447,35 @@ describe('verifyPlanLock', () => {
     if (!r.ok) expect(r.reason).toBe('no-plan-lock')
   })
 
-  test('work-removed: work.oxn 缺失', () => {
+  test('work-removed: work.md 缺失', () => {
     const cert = setupLockedCert({
-      workOxnContent: 'work A',
+      workMdContent: 'work A',
       blueprintsContent: 'b',
     })
-    rmSync(getWorkOxnPath(tmpDir, workName))
+    rmSync(getWorkMdPath(tmpDir, workName))
     const r = verifyPlanLock(tmpDir, workName, cert)
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.reason).toBe('work-removed')
   })
 
-  test('hash-mismatch: workOxn 改', () => {
+  test('hash-mismatch: workMd 改', () => {
     const cert = setupLockedCert({
-      workOxnContent: 'A',
+      workMdContent: 'A',
       blueprintsContent: 'b',
     })
-    writeFileSync(getWorkOxnPath(tmpDir, workName), 'A modified')
+    writeFileSync(getWorkMdPath(tmpDir, workName), 'A modified')
     const r = verifyPlanLock(tmpDir, workName, cert)
     expect(r.ok).toBe(false)
     if (!r.ok) {
       expect(r.reason).toBe('hash-mismatch')
-      expect(r.component).toBe('workOxn')
+      expect(r.component).toBe('workMd')
     }
   })
   // 🆕 Phase B: hash-mismatch: workDomains 测试已删（domains.json 不再生成）
 
   test('hash-mismatch: blueprints 改', () => {
     const cert = setupLockedCert({
-      workOxnContent: 'A',
+      workMdContent: 'A',
       blueprintsContent: 'b1',
     })
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), 'b1 modified')
@@ -486,11 +486,11 @@ describe('verifyPlanLock', () => {
 
   test('hash-mismatch: tasks 改', () => {
     const cert = setupLockedCert({
-      workOxnContent: 'A',
+      workMdContent: 'A',
       blueprintsContent: 'b',
       tasks: [{ name: 't1', content: 't1 content' }],
     })
-    const tPath = join(getWorkDir(tmpDir, workName), 'tasks', 't1', 'task.oxn')
+    const tPath = join(getWorkDir(tmpDir, workName), 'tasks', 't1', 'task.md')
     writeFileSync(tPath, 't1 modified')
     const r = verifyPlanLock(tmpDir, workName, cert)
     expect(r.ok).toBe(false)

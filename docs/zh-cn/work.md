@@ -18,7 +18,7 @@ Work (一次完整 IAP 周期)
 │   ├── add-task (可选)         — 追加 task（大多已被 create 覆盖）
 │   └── lock                    — validate 内含 + 算 hash + 写 planLock
 │       ├── validate（内含）     — 语法校验 + task DAG 校验 + Asset 引用校验
-│       └── planLock            — 3 组件 hash (workOxn + blueprints + tasks)
+│       └── planLock            — 3 组件 hash (workMd + blueprints + tasks)
 │
 ├── Align 阶段 (AI 主权)        ← 多 Round 对齐执行 task
 │   ├── run                     — 启动状态机 + Round 初始化
@@ -136,7 +136,7 @@ Intent 阶段可以是探索、讨论然后落盘成文档。与 Intent Pool 5 �
 ## 6. 反模式
 
 - ❌ 跳过 validate + lock 直接 run
-- ❌ lock 后修改 .oxn
+- ❌ lock 后修改 work.md
 - ❌ 先 submit 后 run
 - ❌ 把 Insight 当 Work 的一个 Mode（v0.6 Insight 已升为 E4 独立层）——Work 只负责交付，Insight 负责涌现
 - ❌ 把 Round 循环当自动机制——v0.6 手动触发
@@ -189,9 +189,9 @@ Intent 阶段可以是探索、讨论然后落盘成文档。与 Intent Pool 5 �
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  OS 层        chmod 0o444（写前抬 0o644 → 写 → 立即回锁 0o444）         │
 │  内容层       content_hash = SHA-256（落盘时算，读取时校验）                │
-│  WAL 层       planLock 3 组件 hash: workOxnHash / blueprintsHash /        │
+│  WAL 层       planLock 3 组件 hash: workMdHash / blueprintsHash /            │
 │               tasksHash + allHash                                          │
-│  → 锁后任何 .oxn 漂移 → IAP_ALIGN_LOCK_HASH_MISMATCH 硬阻断                │
+│  → 锁后任何 work.md 漂移 → IAP_ALIGN_LOCK_HASH_MISMATCH 硬阻断              │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -253,24 +253,23 @@ RoundRecord {
 
 # 9. Asset → Work 引用解析链
 
-## 9.1 引用声明（work.oxn）
+## 9.1 引用声明（work.md）
 
-```oxn
-work "my-feature" {
-  // v0.6.1-alpha.3 起：Work 只引用 Blueprint（一个 ref），不再直接引用 domain + stack
-  // Blueprint 内部通过 ## Refs 组合 Domain + Workflow + Stack + Blueprint
-  blueprint "integrate-payment" ref "@prj/blueprints/integrate-payment";
+```md
+---
+name: my-feature
+---
 
-  // 向后兼容：仍可显式声明 domain + stack（可选，用于 Blueprint 未覆盖的边界）
-  domain "MemberContext" ref "@prj/domains/MemberContext";
-}
+## Context
 
-task "step-1" {
-  // Task 级 inject：必须从 Work 级 RefPool 中选（Blueprint 或 Domain）
-  blueprint "integrate-payment";
-  domain "MemberContext";
-  part "build" { skill_context = "..." }
-}
+- blueprint: integrate-payment @prj/blueprints/integrate-payment
+- domain: MemberContext @prj/domains/MemberContext
+
+## Task step-1
+
+- blueprint: integrate-payment
+- domain: MemberContext
+- part build: "..."
 ```
 
 > **v0.6.1-alpha.3 简化**：Work ## Refs 只接受 `kind: blueprint`。Domain + Workflow + Stack 通过 Blueprint 间接引用（[ADR-0055](./.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)）。
@@ -278,32 +277,27 @@ task "step-1" {
 ## 9.2 解析调用链
 
 ```
-work.oxn 文本
+work.md 文本
   ↓
-createOxnParser() (Langium AST)
+MD-native compiler (EntityCompiler)
   ↓
-isWorkDeclaration + isBlueprintRefDecl
+extractRefs() 提取 ## Context 下的 blueprint / domain 声明
   ↓
-parseOxnReference(ref) 解析 '@prj/blueprints/X' 或 '@prj/workflows/X' 或 '@prj/domains/X'
+resolveBlueprintFile(ref, name, projectRoot)  // per-work-blueprints-merger.ts
   ↓
-resolveBlueprintFile(ref, name, projectRoot)  // per-work-blueprints-merger.ts:77
-  ↓
-路径候选 (优先 workflow 目录, blueprint 目录 fallback):
-  1. .openxenon/assets/workflows/<Name>.oxn   (v0.6.1-alpha.2 主路径, 优先)
-  2. .openxenon/assets/workflows/<name>.oxn   (kebab-case)
-  3. fallback: .openxenon/assets/blueprints/<Name>.oxn  (新组合模板)
-  4. fallback: .openxenon/blueprints/<Name>.oxn (v0.5 老布局)
+路径候选:
+  1. .openxenon/assets/blueprints/<Name>.md   (主路径)
+  2. .openxenon/assets/workflows/<Name>.md    (v0.6 老布局兼容)
   ↓
 readFileSync → parseBlueprintSlim (regex 10× 快于 full parse)
   ↓
 PerWorkBlueprintEntry {
   name, scope, file, status, version, slots,
-  // 🆕 v0.6.1-alpha.3: Blueprint ## Refs 提取的 3 边界 + 嵌套 Blueprint
   domainRefs:    [{ name, ref, scope, fileHash? }],
   workflowRefs:  [{ name, ref, scope, fileHash? }],
   stackRefs:     [{ name, ref, scope, fileHash? }],
   nestedBlueprintRefs: [{ name, ref, scope }],
-  ref: '@prj/workflows/X'
+  ref: '@prj/blueprints/X'
 }
   ↓
 writeFileSync(works/<w>/blueprints.json)  (原子写)
@@ -315,7 +309,7 @@ writeFileSync(works/<w>/blueprints.json)  (原子写)
 |---|---|
 | `@oxn/...` builtin（v1） | `return null` → diagnostics 收集 → 标 invalid |
 | `@prj/...` 找不到文件 | `status='invalid' + errors[]`（**不阻断**，让 run 时报） |
-| ref 格式错 | 退到用 name 兜底（兼容老 work.oxn） |
+| ref 格式错 | 退到用 name 兜底（兼容老 work.md） |
 | 解析 fail 但 work 已锁 | run 时 diagnostics 写入 `.run/state.json`（PR-14c） |
 
 ## 9.4 per-work slim 索引（`works/<w>/blueprints.json`）
@@ -328,7 +322,7 @@ writeFileSync(works/<w>/blueprints.json)  (原子写)
   "workName": "my-feature",
   "generatedAt": "2026-07-10T...",
   "projectRoot": "/proj",
-  "sourceHash": "<sha256(work.oxn)>",
+  "sourceHash": "<sha256(work.md)>",
   "declaredRefs": ["@prj/blueprints/integrate-payment"],
   "blueprintCount": 1,
   "invalidCount": 0,
@@ -354,7 +348,7 @@ writeFileSync(works/<w>/blueprints.json)  (原子写)
 
 **与全局 `.cache/blueprints.json` 区别**：
 - **全局**：扫 `.openxenon/assets/blueprints/` 全部 blueprint（AI 离线检索全局）
-- **per-work**：只扫 work.oxn 声明的 N 个 blueprint ref（work 隔离的 boundary 视图）
+- **per-work**：只扫 work.md 声明的 N 个 blueprint ref（work 隔离的 boundary 视图）
 
 **Backward compat**：v0.6.1-alpha.1 及之前生成的 `.cache/domains.json` 仍存在（用于 diagnostic），但 Blueprint 解析合并到 `blueprints.json`。
 
@@ -399,11 +393,11 @@ buildWorkContext({ projectRoot, workName, taskName?, assetFormat, lockCheck })
   ↓
 [Lock Guard] readBirthCert + verifyPlanLock
   ↓
-work.oxn 读 + Langium parse → WorkFileSummary
+work.md 读 + MD parse → WorkFileSummary
   ↓
-[若 taskName 指定] tasks/<t>/task.oxn 读 → taskFileData { domain, blueprint, parts, deps }
+[若 taskName 指定] tasks/<t>/task.md 读 → taskFileData { domain, blueprint, parts, deps }
   ↓
-[inject domain 解析] 读 injected domain 的 .oxn → DomainFileSummary { language: { terms, ban, invariant } }
+[inject domain 解析] 读 injected domain 的 .md → DomainFileSummary { language: { terms, ban, invariant } }
   ↓
 [聚合 allowedLanguage] 合并所有 inject 域的 terms/ban/invariants
   ↓
@@ -527,7 +521,7 @@ loadWorkState (.run/state.json)
 saveWorkState
 appendWorkTrace(event='next-round', newRound, previousVerdict)
   ↓
-[Round 2 跑] 编辑 work.oxn → work lock → run → submit
+[Round 2 跑] 编辑 work.md → work lock → run → submit
   ↓
 verdict pass → finalize:
 oxn work finalize <w> --verdict PASSED --notes "..."
@@ -652,7 +646,7 @@ fs.renameSync(`${statePath}.tmp`, statePath)
 
 ---
 
-# 12. 完整 CLI 子命令清单（24 个）
+# 12. 完整 CLI 子命令清单（18 个）
 
 | 子命令 | 功能 | IAP 阶段 |
 |---|---|---|
@@ -660,9 +654,6 @@ fs.renameSync(`${statePath}.tmp`, statePath)
 | `create <w> --blueprint <bp>` | 建 work + 自动生成 task 骨架 | Intent |
 | `migrate <w>` | V0 → V1 布局迁移 | 辅助 |
 | `validate <w>` | = `lock --dry-run`（向后兼容） | Intent |
-| `compile <w>` | `.oxn` → `.md` 编译 | 辅助 |
-| `sync <w>` / `sync-md <w>` | 双轨同步 | 辅助 |
-| `migrate-md <w>` | `.md` → `.oxn` 迁移 | 辅助 |
 | `add-task <w> --task <t> ...` | 增 task（Intent 可选子步骤） | Intent |
 | `list-task <w>` | 列 task | — |
 | `task-status <w> --task <t>` | 查 task 元信息 | — |
@@ -683,14 +674,14 @@ fs.renameSync(`${statePath}.tmp`, statePath)
 # 13. 反模式（扩展 §6）
 
 - ❌ 跳过 lock 直接 run（→ `IAP_ALIGN_LOCK_NOT_FOUND`）
-- ❌ lock 后修改 .oxn（→ `IAP_ALIGN_LOCK_HASH_MISMATCH`）
+- ❌ lock 后修改 work.md（→ `IAP_ALIGN_LOCK_HASH_MISMATCH`）
 - ❌ 先 submit 后 run
 - ❌ 把 Insight 当 Work 的一个 Mode（v0.6 Insight 已升为 E4 独立层）——Work 只负责交付，Insight 负责涌现
 - ❌ 把 Round 循环当自动机制——v0.6 手动触发
 - ❌ 先跑 validate 再跑 lock（Phase D: lock 内含 validate，无需重复）
 - ❌ 不要绕过 lock 守卫跑生产（v1.1 planLock 是 OWNPASS 唯一凭证）
 - ❌ `next-round --verdict PASSED`（已有 PASSED round 应改用 `finalize`）
-- ❌ 不修 planLock 后修改 .oxn（先 unlock → 改 → re-lock）
+- ❌ 不修 planLock 后修改 work.md（先 unlock → 改 → re-lock）
 
 ---
 
@@ -742,9 +733,9 @@ createdAt: 1731628800000
 status: aligning
 currentRound: 3
 references:                        # 引用 Asset（不复制内容，只存指针）
-  - assets/domain/payment-core.oxn
-  - assets/stack/nodejs.oxn
-  - assets/library/axios-docs.oxn
+  - assets/domain/payment-core.md
+  - assets/stack/nodejs.md
+  - assets/library/axios-docs.md
 ---
 
 ## Intent
@@ -770,7 +761,7 @@ references:                        # 引用 Asset（不复制内容，只存指�
 
 ## Key Observations
 - 支付回调未使用 idempotency_key
-- 现有 fix 方案：参考 library/axios-docs.oxn §3.2
+- 现有 fix 方案：参考 library/axios-docs.md §3.2
 ```
 
 ### 12.3 KV Cache 提示词结构
@@ -794,9 +785,9 @@ references:                        # 引用 Asset（不复制内容，只存指�
 ```markdown
 ---
 references:
-  - assets/domain/payment-core.oxn
-  - assets/stack/nodejs.oxn
-  - assets/library/axios-docs.oxn
+  - assets/domain/payment-core.md
+  - assets/stack/nodejs.md
+  - assets/library/axios-docs.md
 ---
 
 # 不复制 Asset 内容，只引用

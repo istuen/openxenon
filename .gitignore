@@ -114,3 +114,7 @@ openspec/
 .claude/
 logseq/
 pages/
+
+# Archived completed works
+.openxenon/archived/works/*/
+

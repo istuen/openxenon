@@ -248,7 +248,7 @@ export type VerifyResult =
   | {
       ok: false
       reason: 'no-plan-lock' | 'work-removed' | 'hash-mismatch'
-      component?: 'workOxn' | 'workDomains' | 'blueprints' | 'tasks'
+      component?: 'workMd' | 'workDomains' | 'blueprints' | 'tasks'
       expected?: string
       actual?: string
       message: string
@@ -279,7 +279,7 @@ export function verifyPlanLock(projectRoot: string, workName: string, cert: Birt
     return {
       ok: false,
       reason: 'hash-mismatch',
-      component: 'workOxn',
+      component: 'workMd',
       expected: cert.planLock.workMdHash,
       actual: current.workMdHash,
       message: 'work.md has been modified after lock',

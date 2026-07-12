@@ -3,6 +3,7 @@
 > **来源**：`docs_tmp/probe-cli-1.md` (2026-06-14)
 > **抽取日**：2026-07-04
 > **状态**：Superseded → 已落实 Work 前置精准阻断
+> **superseded-by**：v0.6 Daemon 重构（Work 精准阻断已落地）
 > **影响层**：L1-Infra / Daemon
 
 ## 决策

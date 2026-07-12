@@ -3,6 +3,7 @@
 > **状态**：⛔ Superseded
 > **日期**：2026-07-10
 > **Supersedes**：[ADR-0048](./0048-asset-library-external-scheme.md)
+> **superseded-by**：[ADR-0054](./0054-three-boundary-framework.md) / [ADR-0055](./0055-blueprint-as-composition-template.md) / [ADR-0056](./0056-external-inline-and-status.md)（三边界框架取代了 library/external 独立类型）
 > **触发**：[三边界框架 + Blueprint 提升组合模板 RFC](../rfcs/three-boundary-blueprint-elevation-rfc.md)
 > **影响层**：L1-Infra（Asset IO）+ L2-Engine（Asset lifecycle）+ L3-CLI（编译器）
 

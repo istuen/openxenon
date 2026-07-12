@@ -1,7 +1,7 @@
 # .oxn ↔ .md 双向同步 RFC（v0.4 Phase 1+2 设计稿）
 
 > **日期**：2026-06-25
-> **状态**：🟡 **RFC 待 user 拍板**（v1.0 设计稿，Phase 1+2 实现前确认）
+> **状态**：⛔ **Superseded**（被 md-native-grammar-rfc.md v2.0 + oxn-deprecation-rfc.md 取代；.oxn 格式已废弃，双向同步不再需要）
 > **基础**：[v0.4-unify-md-rfc.md](./v0.4-unify-md-rfc.md) §3.1 · [work.md canonical 范式](#)
 > **作者**：opencode（与 user 协作，2026-06-25）
 > **范围**：Phase 1+2 命令骨架 + 冲突策略；Phase 3 仅规划（v0.5）

@@ -722,7 +722,7 @@ BirthCertSchema = z.object({
 | [ADR-0054 三边界框架](../.openxenon/docs/adrs/0054-three-boundary-framework.md) | ✅ Adopted | 3 边界正交维度 |
 | [ADR-0055 Blueprint 组合模板](../.openxenon/docs/adrs/0055-blueprint-as-composition-template.md) | ✅ Adopted | Blueprint ## Refs 引用 3 边界 — 本 RFC 完善 |
 | [ADR-0056 External inline + 状态管理](../.openxenon/docs/adrs/0056-external-inline-and-status.md) | ✅ Adopted | 边界内 inline 外部引用 |
-| 新 ADR-0057 | 📝 Draft | Work 统一模型：Asset 创建 + 引用收敛 + Round 改进（本文档）|
+| 新 ADR-0059 | 📝 Draft | Work 统一模型：Asset 创建 + 引用收敛 + Round 改进（本文档）|
 
 ---
 
