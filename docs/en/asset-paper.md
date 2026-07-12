@@ -22,7 +22,7 @@ title: Asset Paper Schema
 ## 2. Asset Paper Complete Template
 
 ```markdown
-<!-- assets/domain/payment-core.oxn -->
+<!-- assets/domain/payment-core.md -->
 ---
 type: domain
 id: payment-core
@@ -55,8 +55,8 @@ auditTrail:                          # Version history
 3. Ensure: Write TraceID to unified log
 
 # 3. References (Dependencies)
-See [stack-nodejs](../stack/nodejs.oxn) §3
-Constrained by [api-rest-standard](../blueprint/api-rest.oxn) error codes
+See [stack-nodejs](../stack/nodejs.md) §3
+Constrained by [api-rest-standard](../blueprint/api-rest.md) error codes
 ```
 
 ## 3. Schema Field Details (v0.6.3 extension)
@@ -136,7 +136,7 @@ auditTrail:
 
 ```bash
 $ oxn asset validate
-# 1. Scan .openxenon/assets/**.oxn
+# 1. Scan .openxenon/assets/**.md
 # 2. Parse each Asset's references[]
 # 3. Build reverse reference map
 # 4. Write each target Asset's citations
@@ -260,18 +260,18 @@ function impactRadius(asset: Asset): 'low' | 'medium' | 'high' | 'critical' {
 ├── blueprint/                       # Original
 ├── stack/                           # Original
 ├── library/                         # 🆕 External info aggregation (Work output)
-│   ├── axios-docs.oxn              # Axios official docs aggregation
-│   └── terraform-aws.oxn
+│   ├── axios-docs.md              # Axios official docs aggregation
+│   └── terraform-aws.md
 └── external/                        # 🆕 External reference pointers (no content)
-    ├── npm-deps.oxn                # URL + hash + ttl
-    └── github-issues.oxn
+    ├── npm-deps.md                # URL + hash + ttl
+    └── github-issues.md
 ```
 
 ### 7.2 `library/` vs `external/` Key Difference
 
 | Dimension | library/ | external/ |
 |---|---|---|
-| Content storage | AI-parsed then write to .oxn | Reference pointers only |
+| Content storage | AI-parsed then write to .md | Reference pointers only |
 | Use case | Frequently reused external knowledge | Temporary references |
 | Invalid detection | Engine validation | TTL expiry triggers fetch |
 | Size limit | < 50KB | No limit (pointer) |

@@ -2,7 +2,7 @@
 // `oxn proof` — Proof-First 入口（v0.1.3 PR-2）
 //
 // 5 子命令（与 README §4 字面一致）：
-//   create           — 创 .openxenon/proofs/<name>/proof.oxn 骨架
+//   create           — 创 .openxenon/proofs/<name>/proof.md 骨架
 //   probe list       — 列所有 probe（语义名 + 描述）★ AI 入口
 //   probe describe   — 详述单个 probe 的输入契约 ★ AI 入口
 //   probe add        — 追加 probe（语义名 + --input-json）★ AI 主操作
@@ -125,7 +125,7 @@ function getProofWorkHashPath(name: string): string {
 // 背景：v0.3.4 proof 验证 live work.md — AI 改了 work.md 后，proof 仍验证
 // "老 work.md + 新 frozen.json" 的不一致快照，证据稳定性弱。
 //
-// v0.4 修复：proof.oxn 注释含 `// proofs-target-work: <path>` 时，run 时：
+// v0.4 修复：proof.md 注释含 `// proofs-target-work: <path>` 时，run 时：
 //   1. 计算 work.md SHA-256 = H_live
 //   2. 读 work-hash.txt 中 H_prev（首次不存在）
 //   3. 一致 → 跳过拷贝（走 probe 流程）
@@ -138,15 +138,15 @@ function getProofWorkHashPath(name: string): string {
 // proof.md 不可变（0o444）；AI 改 work.md 不影响已存 proof.md；
 // 重新提交 proof 时做 hash 校验，原子写 (chmod 0o644 → write → chmod 0o444)。
 
-/** proof.oxn 头部注释中可识别的元数据键 */
+/** proof.md 头部注释中可识别的元数据键 */
 interface ProofMetadata {
-  /** work.md 路径（相对 proof.oxn 或绝对） */
+  /** work.md 路径（相对 proof.md 或绝对） */
   'proofs-target-work'?: string
   /** 历史遗留：proof frozen.json 路径（不参与快照机制） */
   'proofs-target-frozen'?: string
 }
 
-/** 从 proof.oxn 头部 `//` 注释中提取元数据 */
+/** 从 proof.md 头部 `//` 注释中提取元数据 */
 function parseProofMetadata(oxnPath: string): ProofMetadata {
   if (!existsSync(oxnPath)) return {}
   const content = readFileSync(oxnPath, 'utf-8')
@@ -169,10 +169,10 @@ function computeFileHash(filePath: string): string {
   return createHash('sha256').update(content).digest('hex')
 }
 
-/** 解析 proofs-target-work 路径：相对 proof.oxn 或绝对 */
+/** 解析 proofs-target-work 路径：相对 proof.md 或绝对 */
 function resolveWorkPath(proofOxnPath: string, target: string): string {
   if (target.startsWith('/')) return target
-  // 相对路径基于 proof.oxn 所在目录
+  // 相对路径基于 proof.md 所在目录
   const proofDir = join(proofOxnPath, '..')
   return join(proofDir, target)
 }
@@ -365,7 +365,7 @@ const createSubcommand = defineCommand({
 // Created by: oxn proof create ${name}
 //
 // 物理边界：
-//   - .openxenon/proofs/${name}/proof.oxn  — Probe 声明（你可编辑）
+//   - .openxenon/proofs/${name}/proof.md  — Probe 声明（你可编辑）
 //   - .openxenon/proofs/${name}/frozen.json — 判决书（不可手改，由 Core 独占）
 //
 // Workflow（语义化）：
@@ -381,7 +381,7 @@ proof "${name}" {
 `
     writeFileSync(oxnPath, template, 'utf-8')
 
-    // v1.1: 写入后回查 proof.oxn name ↔ 目录名 一致性（macOS-safe）
+    // v1.1: 写入后回查 proof.md name ↔ 目录名 一致性（macOS-safe）
     // Proof 没有独立 validate 子命令,在 create 阶段硬阻断。
     try {
       assertDirNameConsistent(name, dir, 'proof')
@@ -547,7 +547,7 @@ const probeAddSubcommand = defineCommand({
       throw err
     }
 
-    // 2. 写 proof.oxn（CLI 翻译后写内部 ref + 内部 param 名 — 这就是封装边界）
+    // 2. 写 proof.md（CLI 翻译后写内部 ref + 内部 param 名 — 这就是封装边界）
     const existing = readFileSync(oxnPath, 'utf-8')
     const probeName = (ctx.args.probeName as string) ?? nextProbeName(existing)
     const paramsEntries = Object.entries(translated.internalParams)
@@ -643,17 +643,17 @@ const runSubcommand = defineCommand({
     }
 
     // v0.4 PR-B (Q4-A): Phase 0.5 — work file 不可变快照
-    //   若 proof.oxn 含 `// proofs-target-work: <path>` 注释：
-    //     1. 计算 work file SHA-256 (v0.5 Phase 3: .oxn 或 .md 均可)
+    //   若 proof.md 含 `// proofs-target-work: <path>` 注释：
+    //     1. 计算 work file SHA-256 (v0.5 Phase 3: .md 均可)
     //     2. 对比 work-hash.txt: 一致 → 跳过；不一致 → 拷贝新快照 + 写新 hash
-    //   缺注释 → 跳过（兼容旧 proof.oxn）
+    //   缺注释 → 跳过（兼容旧 proof.md）
     //   work file 缺失 → 抛 E_PROOF_WORK_MISSING
     const snapshot = snapshotWorkMd(name, oxnPath)
     if (snapshot.status === 'error') {
       return outputUserInputError('OXN_PROOF_WORK_MISSING', snapshot.error ?? 'work file not found', {
         suggestion: snapshot.workPath
-          ? `check that \`// proofs-target-work: ${snapshot.workPath}\` points to existing work file (.oxn or .md)`
-          : 'add `// proofs-target-work: <path>` comment to proof.oxn header',
+          ? `check that \`// proofs-target-work: ${snapshot.workPath}\` points to existing work file (.md)`
+          : 'add `// proofs-target-work: <path>` comment to proof.md header',
         format,
       })
     }
@@ -786,7 +786,7 @@ const runSubcommand = defineCommand({
 //   - match      → 证据一致，proof 可信
 //   - drift      → work.md 已被 AI 改动，旧 proof.md 快照是当前唯一可信证据
 //   - no-snapshot → proof 从未 run 过
-//   - no-target  → proof.oxn 缺 `// proofs-target-work:` 注释（无快照机制）
+//   - no-target  → proof.md 缺 `// proofs-target-work:` 注释（无快照机制）
 //   - work-missing → 注释指向的 work.md 不存在
 //
 // 不会改任何文件（只读操作）。
@@ -846,7 +846,7 @@ const verifySubcommand = defineCommand({
             v.status === 'drift'
               ? 're-run `oxn proof run <name>` to refresh the snapshot'
               : v.status === 'work-missing'
-                ? 'check that proofs-target-work path in proof.oxn header points to existing work file (.oxn or .md)'
+                ? 'check that proofs-target-work path in proof.md header points to existing work file (.md)'
                 : 'run `oxn proof run <name>` to create initial snapshot',
         },
         format,

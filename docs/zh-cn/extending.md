@@ -110,9 +110,9 @@ bun run langium:generate
 ```
 src/builtin/
 ├── blueprints/
-│   └── git-workflow.oxn
+│   └── git-workflow.md
 ├── domains/
-│   └── ProgramContext.oxn
+│   └── ProgramContext.md
 └── probes/
     └── custom-probe.ts
 ```
@@ -141,7 +141,7 @@ src/builtin/
 
 **迁移指南（v0.7.0 准备）**：
 
-- 现有 `.oxn` 文件用 `oxn domain sync --all` / `oxn blueprint sync --all` 转 `.md`
+- 现有 `.md` 文件无需迁移（已是 canonical 格式）
 - 转完后用户代码不再需要 `import { URI } from 'langium'` — 删即可
 - 参考 [md-native-grammar-rfc.md](https://github.com/istuen/openxenon/blob/main/.openxenon/pools/sprints/v0.3-md-ssot/design/md-native-grammar-rfc.md) D9
 

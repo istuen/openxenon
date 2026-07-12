@@ -1,10 +1,11 @@
 /**
  * oxn-serializer.ts — v0.4 Phase 2 IR → .oxn 反向编译
  *
- * 把 md-pipeline extractXxxIR 的输出转为有效的 .oxn 文本（可被 langium parser 解析）。
+ * 把 md-pipeline extractXxxIR 的输出转为 .oxn 格式文本。
+ * v0.7.0 后 .oxn 已废弃，此文件仅保留供 v0.6.x 向后兼容参考。
  * 端到端不变量：
- *   1. 输出 .oxn 必通过 langium parse (不报语法错误)
- *   2. round-trip: serialize(extract(md)) → oxn → langium parse → IR ≈ 原 IR
+ *   1. 输出 .oxn 语法合法（不报解析错误）
+ *   2. round-trip: serialize(extract(md)) → oxn → parse → IR ≈ 原 IR
  *   3. 注释丢失可接受 (RFC §3.2 明确定义)
  *   4. 字段顺序稳定 (不依赖 IR 对象 key 枚举顺序)
  *

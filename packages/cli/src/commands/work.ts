@@ -4,8 +4,8 @@
 // 单一实体（Work）的完整生命周期，按 IAP 三阶段分组：
 //
 //   Intent (工程师主权):
-//     create <name> --blueprint <bp>  — 写 works/<w>/work.oxn + auto task skeleton
-//     add-task <name> --task <t> ...  — 写 works/<w>/tasks/<t>/task.oxn
+//     create <name> --blueprint <bp>  — 写 works/<w>/work.md + auto task skeleton
+//     add-task <name> --task <t> ...  — 写 works/<w>/tasks/<t>/task.md
 //     lock <name> [--dry-run]        — validate 内含 + hash + 写 planLock
 //     validate <name>                 — alias for lock --dry-run
 //
@@ -21,7 +21,7 @@
 //     list / migrate / status / unlock / next-round / compile / sync
 //
 // 命名范式: V1 布局（详见 kernel/constants.ts）
-//   - DSL 图纸: work.oxn / task.oxn
+//   - DSL 图纸: work.md / task.md
 //   - 静态门禁: .work
 //   - 运行时:  .run/state.json / .run/trace.jsonl / .run/frozen.json
 //              .run/tasks/<t>/state.json / .run/tasks/<t>/trace.jsonl / .run/tasks/<t>/frozen.json
@@ -143,7 +143,7 @@ function ensureDirectory(dir: string): void {
   }
 }
 
-// v0.6.1-alpha.0 #3-3: work create 后自动为 blueprint 每个 slot 生成 task.oxn 骨架
+// v0.6.1-alpha.0 #3-3: work create 后自动为 blueprint 每个 slot 生成 task.md 骨架
 function writeTaskTemplate(
   projectRoot: string,
   workName: string,
@@ -446,7 +446,7 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
     }
     ensureDirectory(outputDir)
 
-    // 3. 生成 work.oxn（注入 asset-create blueprint + domain + goal）
+    // 3. 生成 work.md（注入 asset-create blueprint + domain + goal）
     const workPrimaryPath = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
     const workAltPath = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
     const workPrimaryDir = join(workPrimaryPath, '..')
@@ -458,7 +458,7 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
     if (!force && existsSync(workFile)) {
       return outputUserInputError(
         'OXN_OUTPUT_FILE_EXISTS',
-        `${assetFormat === 'oxn' ? 'work.oxn' : 'work.md'} already exists in ${outputDir}`,
+        `${assetFormat === 'oxn' ? 'work.md' : 'work.md'} already exists in ${outputDir}`,
         { suggestion: 'use --force to overwrite', format },
       )
     }
@@ -493,7 +493,7 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
       }
     }
 
-    // 5. 为每个 slot 生成 task.oxn 骨架
+    // 5. 为每个 slot 生成 task.md 骨架
     const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
     for (const slot of slots) {
       const t = writeTaskTemplate(projectRoot, workName, slot.name, resolvedBlueprintName, '')
@@ -734,7 +734,7 @@ const createSubcommand = defineCommand({
         if (!force && existsSync(workFile)) {
           return outputUserInputError(
             'OXN_OUTPUT_FILE_EXISTS',
-            `${assetFormat === 'oxn' ? 'work.oxn' : 'work.md'} already exists in ${outputDir}`,
+            `${assetFormat === 'oxn' ? 'work.md' : 'work.md'} already exists in ${outputDir}`,
             {
               suggestion: 'use --force to overwrite',
               format,
@@ -765,7 +765,7 @@ const createSubcommand = defineCommand({
             // autoSync 失败不阻断主命令
           }
         }
-        // v0.6.1-alpha.0 #3-3: work create 自动为 blueprint 每个 slot 生成 task.oxn 骨架
+        // v0.6.1-alpha.0 #3-3: work create 自动为 blueprint 每个 slot 生成 task.md 骨架
         //   避免 work 锁后 run 报 "task X not found in work Y"。
         //   用户可继续手动 `add-task` 补 task 或 `--force` 覆盖。
         const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
@@ -811,7 +811,7 @@ const createSubcommand = defineCommand({
       }
     }
 
-    // 无 blueprint：写 .openxenon/works/<w>/work.oxn 简化骨架
+    // 无 blueprint：写 .openxenon/works/<w>/work.md 简化骨架
     // v0.7+：移除 workType 子目录（旧 mvp 路径），统一在 works/<w>/ 下
     const workFileFinal = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
     const workAltFileFinal = resolveAssetAltPath(projectRoot, 'work', workName, assetFormat)
@@ -907,7 +907,7 @@ const validateSubcommand = defineCommand({
       return outputError({ code: 'OXN_WORK_VALIDATE_FAILED', message }, format)
     }
 
-    // ── 1.5 v1.1: work.oxn 内 `work "X"` 与目录名 <w> 一致性校验（macOS-safe） ──
+    // ── 1.5 v1.1: work.md 内 `work "X"` 与目录名 <w> 一致性校验（macOS-safe） ──
     const workDir = join(projectRoot, '.openxenon', 'works', workName)
     try {
       assertDirNameConsistent(work.name, workDir, 'work')
@@ -925,7 +925,7 @@ const validateSubcommand = defineCommand({
       throw err
     }
 
-    // ── 2. 检查 task.oxn 是否都已建（沿用现有逻辑） ──
+    // ── 2. 检查 task.md 是否都已建（沿用现有逻辑） ──
     const missingTaskOxn: string[] = []
     for (const t of work.tasks ?? []) {
       const tName = parsePartName(t.name)
@@ -1000,7 +1000,7 @@ const validateSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
-// Subcommand: add-task (Phase 1: P1 守卫 + 写 task.oxn)
+// Subcommand: add-task (Phase 1: P1 守卫 + 写 task.md)
 // ---------------------------------------------------------------------------
 const addTaskSubcommand = defineCommand({
   meta: {
@@ -1077,7 +1077,7 @@ const addTaskSubcommand = defineCommand({
 
     const taskFile = getWorkTaskFile(workName, taskName)
     if (existsSync(taskFile) && !force) {
-      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.oxn already exists at ${taskFile}`, {
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.md already exists at ${taskFile}`, {
         suggestion: 'use --force to overwrite',
         format,
       })
@@ -1128,7 +1128,7 @@ const addTaskSubcommand = defineCommand({
 
     const writeResult = writeTaskTemplate(getProjectRoot(), workName, taskName, blueprintName, domainName)
     if (!writeResult.written && writeResult.reason === 'exists') {
-      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.oxn already exists at ${taskFile}`, {
+      return outputUserInputError('OXN_OUTPUT_FILE_EXISTS', `task.md already exists at ${taskFile}`, {
         suggestion: 'use --force to overwrite',
         format,
       })
@@ -1230,7 +1230,7 @@ const taskStatusSubcommand = defineCommand({
     const taskFile = getWorkTaskFile(workName, taskName)
 
     if (!existsSync(taskFile)) {
-      return outputError({ code: 'OXN_TASK_NOT_FOUND', message: `task.oxn not found at ${taskFile}` }, format)
+      return outputError({ code: 'OXN_TASK_NOT_FOUND', message: `task.md not found at ${taskFile}` }, format)
     }
 
     const content = readFileSync(taskFile, 'utf-8')
@@ -1262,7 +1262,7 @@ const taskStatusSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
-// Subcommand: verify-task-path — 提交手写后的 task.oxn 路径验证
+// Subcommand: verify-task-path — 提交手写后的 task.md 路径验证
 // ---------------------------------------------------------------------------
 const verifyTaskPathSubcommand = defineCommand({
   meta: { name: 'verify-task-path', description: t('work.verifyTaskPath.description') },
@@ -1287,7 +1287,7 @@ const verifyTaskPathSubcommand = defineCommand({
       return outputError({ code: 'OXN_PATH_NOT_FOUND', message: t('oxnCompile.notFound', { path: filePath }) }, format)
     }
 
-    // 2) 文件名必须是 task.oxn？
+    // 2) 文件名必须是 task.md？
     const basename = filePath.split('/').pop()
     if (basename !== TASK_OXN_FILE) {
       return outputError(
@@ -1386,7 +1386,7 @@ const editTaskSubcommand = defineCommand({
 
     const taskFile = getWorkTaskFile(workName, taskName)
     if (!existsSync(taskFile)) {
-      return outputError({ code: 'OXN_TASK_NOT_FOUND', message: `task.oxn not found at ${taskFile}` }, format)
+      return outputError({ code: 'OXN_TASK_NOT_FOUND', message: `task.md not found at ${taskFile}` }, format)
     }
     let content = readFileSync(taskFile, 'utf-8')
 
@@ -1397,7 +1397,7 @@ const editTaskSubcommand = defineCommand({
       )
       if (replaced === content) {
         return outputError(
-          { code: 'OXN_EDIT_NO_OBJECTIVE', message: 'task.oxn has no objective field; cannot update' },
+          { code: 'OXN_EDIT_NO_OBJECTIVE', message: 'task.md has no objective field; cannot update' },
           format,
         )
       }
@@ -1461,7 +1461,7 @@ const editTaskSubcommand = defineCommand({
 
     writeFileSync(taskFile, content, 'utf-8')
     output(
-      { ok: true, data: { workName, taskName, file: taskFile, edited: true }, human: `Edited task.oxn at ${taskFile}` },
+      { ok: true, data: { workName, taskName, file: taskFile, edited: true }, human: `Edited task.md at ${taskFile}` },
       format,
     )
   },
@@ -1576,13 +1576,13 @@ const runSubcommand = defineCommand({
     }
 
     try {
-      // PR-8: 锁守卫优先于 work.oxn 缺失检查——
-      //   若 work.oxn 缺失是因为 lock 后被删（不是初建），应报 WORK_REMOVED 而非 NOT_FOUND，
+      // PR-8: 锁守卫优先于 work.md 缺失检查——
+      //   若 work.md 缺失是因为 lock 后被删（不是初建），应报 WORK_REMOVED 而非 NOT_FOUND，
       //   语义更准（"你锁的计划被破坏了" vs "你这 work 根本不存在"）。
-      //   因此先调 lock 校验，再做 work.oxn 缺失检查。
+      //   因此先调 lock 校验，再做 work.md 缺失检查。
       const birthCert = readBirthCert(projectRoot, workName)
       if (birthCert.ok && birthCert.cert.planLock !== null) {
-        // 已有 planLock；再做 hash 校验（这一步会捕获 work.oxn 缺失 → work-removed）
+        // 已有 planLock；再做 hash 校验（这一步会捕获 work.md 缺失 → work-removed）
         const lockVerify = verifyPlanLock(projectRoot, workName, birthCert.cert)
         if (!lockVerify.ok) {
           const code =
@@ -1697,7 +1697,7 @@ const runSubcommand = defineCommand({
       const taskEntries = work.tasks ?? []
       const declaredTaskNames = taskEntries.map((t) => parsePartName(t.name))
 
-      // 校验 task.oxn 是否都已建
+      // 校验 task.md 是否都已建
       const missing: string[] = []
       for (const name of declaredTaskNames) {
         if (!existsSync(getTaskOxnPath(projectRoot, workName, name))) {
@@ -1708,7 +1708,7 @@ const runSubcommand = defineCommand({
         return output(
           errorJson(
             'OXN_TASK_OXN_MISSING',
-            `work "${workName}" declares ${declaredTaskNames.length} tasks but ${missing.length} task.oxn missing: ${missing.join(', ')}`,
+            `work "${workName}" declares ${declaredTaskNames.length} tasks but ${missing.length} task.md missing: ${missing.join(', ')}`,
             `create them with: oxn work add-task <name> --task <task> --blueprint <bp>`,
           ),
           format,
@@ -2108,14 +2108,14 @@ const contextSubcommand = defineCommand({
 
     const workFile = resolveWorkFilePath(root, workName, assetFormat)
 
-    // PR-9: context 与 run 对称 —— 锁守卫优先于 work.oxn 缺失检查
+    // PR-9: context 与 run 对称 —— 锁守卫优先于 work.md 缺失检查
     // 默认硬要求；--unlock-check 用于诊断 stale 计划
     let birthCertForHealth: { ok: boolean; cert?: BirthCert } | null = null
     if (!noLockCheck) {
       const birthCert = readBirthCert(root, workName)
       birthCertForHealth = birthCert
       if (birthCert.ok && birthCert.cert.planLock !== null) {
-        // 已有 planLock；先做 hash 校验（捕获 work.oxn 缺失 → work-removed）
+        // 已有 planLock；先做 hash 校验（捕获 work.md 缺失 → work-removed）
         const lockVerify = verifyPlanLock(root, workName, birthCert.cert)
         if (!lockVerify.ok) {
           const code =
@@ -2472,7 +2472,7 @@ const lockSubcommand = defineCommand({
       )
     }
 
-    // ── 0.6 Phase D: lock 内含 validate — 先解析 work.oxn + 校验 + 写 .work ──
+    // ── 0.6 Phase D: lock 内含 validate — 先解析 work.md + 校验 + 写 .work ──
     const workFile = resolveWorkFilePath(projectRoot, workName, resolveAssetFormat(config))
     if (!existsSync(workFile)) {
       return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workFile}` }, format)
@@ -2495,7 +2495,7 @@ const lockSubcommand = defineCommand({
       return outputError({ code: 'OXN_WORK_VALIDATE_FAILED', message }, format)
     }
 
-    // v1.1: work.oxn 内 `work "X"` 与目录名 <w> 一致性校验
+    // v1.1: work.md 内 `work "X"` 与目录名 <w> 一致性校验
     const workDir = join(projectRoot, '.openxenon', 'works', workName)
     try {
       assertDirNameConsistent(work.name, workDir, 'work')
@@ -2513,7 +2513,7 @@ const lockSubcommand = defineCommand({
       throw err
     }
 
-    // 检查 task.oxn 是否都已建
+    // 检查 task.md 是否都已建
     const missingTaskOxn: string[] = []
     for (const t of work.tasks ?? []) {
       const tName = parsePartName(t.name)
@@ -2634,7 +2634,7 @@ const lockSubcommand = defineCommand({
         human: `Work "${workName}" locked ✓
   Locked at: ${pl.lockedAt}
   Components:
-    - work.oxn:     ${pl.workOxnHash.slice(0, 16)}...
+    - work.md:     ${pl.workOxnHash.slice(0, 16)}...
     - blueprints.json: ${pl.blueprintsHash.slice(0, 16)}...
     - tasks:        ${pl.tasksHash.slice(0, 16)}...
     - all:          ${pl.allHash?.slice(0, 16) ?? '(legacy)'}...
@@ -2655,7 +2655,7 @@ const lockSubcommand = defineCommand({
 //   2. 校验 planLock !== null（未锁则报错，提示 lock 才是正常路径）
 //   3. 清 planLock → null；updatedAt 刷新
 //
-// 注意：unlock 后 work.oxn / domains.json / blueprints.json / tasks/*.oxn 可被自由修改。
+// 注意：unlock 后 work.md / domains.json / blueprints.json / tasks/*.oxn 可被自由修改。
 //       重新 lock 时会算新 hash；旧 planLock 丢失（仅 .work.updatedAt 留痕）。
 //
 const unlockSubcommand = defineCommand({
@@ -2711,14 +2711,14 @@ const unlockSubcommand = defineCommand({
           cleared: true,
           clearedAt: cleared.updatedAt,
           previousLockedAt: existing.cert.planLock.lockedAt,
-          nextStep: 'edit work.oxn / tasks/<t>/task.oxn as needed, then re-run `oxn work validate` and `oxn work lock`',
+          nextStep: 'edit work.md / tasks/<t>/task.md as needed, then re-run `oxn work validate` and `oxn work lock`',
         },
         human: `Work "${workName}" unlocked ✓
   Cleared at: ${cleared.updatedAt}
   Previous lock was at: ${existing.cert.planLock.lockedAt}
 
   Next:
-    1. Edit work.oxn / tasks/<t>/task.oxn as needed
+    1. Edit work.md / tasks/<t>/task.md as needed
     2. Re-run \`oxn work validate ${workName}\` to refresh domains.json / blueprints.json / .work
     3. Re-run \`oxn work lock ${workName}\` to lock the new plan`,
       },
@@ -2743,7 +2743,7 @@ const unlockSubcommand = defineCommand({
 //   5. 返回迁移报告
 //
 // 失败模式：
-//   - work.oxn 缺失：OXN_WORK_NOT_FOUND
+//   - work.md 缺失：OXN_WORK_NOT_FOUND
 //   - 既没 V0 也没 V1：OXN_WORK_NO_V0_LAYOUT（"纯 planning work，不需要迁移"）
 //   - 已 V1：kind=already-v1（no-op + warning 提示手动清理残留 V0）
 //

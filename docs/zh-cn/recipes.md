@@ -60,7 +60,7 @@ cat .openxenon/proofs/check-build/frozen.json
 oxn domain create MemberContext
 ```
 
-编辑 `.openxenon/domains/member-context.oxn`：
+编辑 `.openxenon/domains/member-context.md`：
 
 ```oxn
 domain "MemberContext" {
@@ -85,7 +85,7 @@ oxn domain validate MemberContext
 oxn blueprint create dev-workflow --slots build,test,verify
 ```
 
-编辑 `.openxenon/blueprints/dev-workflow.oxn`（可选设置 DAG 依赖）。
+编辑 `.openxenon/blueprints/dev-workflow.md`（可选设置 DAG 依赖）。
 
 ```bash
 oxn blueprint validate dev-workflow
@@ -97,7 +97,7 @@ oxn blueprint validate dev-workflow
 oxn work create develop-member --blueprint dev-workflow
 ```
 
-编辑 `work.oxn`，添加 domain ref 与 task：
+编辑 `work.md`，添加 domain ref 与 task：
 
 ```oxn
 work "develop-member" {

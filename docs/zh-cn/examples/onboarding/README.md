@@ -8,9 +8,9 @@
 
 ## 文件
 
-- `work.oxn` — Work 编排（声明 MemberContext + OrderContext 两个 domain ref）
-- `tasks/register-member/task.oxn` — 注册会员任务
-- `tasks/grant-welcome-bonus/task.oxn` — 发放欢迎福利任务
+- `work.md` — Work 编排（声明 MemberContext + OrderContext 两个 domain ref）
+- `tasks/register-member/task.md` — 注册会员任务
+- `tasks/grant-welcome-bonus/task.md` — 发放欢迎福利任务
 
 ## 跑通方式
 

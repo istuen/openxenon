@@ -8,8 +8,8 @@ Exploratory work: figure out the four sub-modules grammar / schema / validator /
 
 ## Files
 
-- `work.oxn` — Work orchestration
-- `tasks/explore-dsl/task.oxn` — Explore task
+- `work.md` — Work orchestration
+- `tasks/explore-dsl/task.md` — Explore task
 
 ## How to run
 

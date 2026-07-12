@@ -40,7 +40,7 @@ title: AI 协作者入口
 - 直接读/写 `.openxenon/works/*/tasks/*/frozen.json`
 - 修改 Domain 术语或 Blueprint 规则
 - 使用 `--force` 绕过 Proof
-- 在 lock 之后修改任何 `.oxn` 资产（触发 `IAP_ALIGN_LOCK_HASH_MISMATCH`）
+- 在 lock 之后修改任何 `.md` 资产（触发 `IAP_ALIGN_LOCK_HASH_MISMATCH`）
 
 ## 工作流
 

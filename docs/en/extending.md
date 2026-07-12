@@ -110,9 +110,9 @@ Package commonly used project-local Domain / Blueprint / Probe as built-in asset
 ```
 src/builtin/
 ├── blueprints/
-│   └── git-workflow.oxn
+│   └── git-workflow.md
 ├── domains/
-│   └── ProgramContext.oxn
+│   └── ProgramContext.md
 └── probes/
     └── custom-probe.ts
 ```
@@ -141,7 +141,7 @@ These assets are copied to `.openxenon/` on `oxn init`.
 
 **Migration guide (for v0.7.0 prep)**:
 
-- Convert existing `.oxn` files via `oxn domain sync --all` / `oxn blueprint sync --all`
+- Existing `.md` files need no migration (already canonical format)
 - After conversion, user code no longer needs `import { URI } from 'langium'` — safe to delete
 - See [md-native-grammar-rfc.md](https://github.com/istuen/openxenon/blob/main/.openxenon/pools/sprints/v0.3-md-ssot/design/md-native-grammar-rfc.md) D9
 

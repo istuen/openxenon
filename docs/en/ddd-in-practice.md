@@ -13,7 +13,7 @@ OpenXenon offers two levels of Domain abstraction:
 | Level | Type | Source | When to use |
 |---|---|---|---|
 | Program Domain | Programming concept glossary | OXN built-in `@oxn/domains/ProgramContext` | Solve technical problems; no business modeling needed |
-| Business Domain | Business bounded context | Engineer defines `.openxenon/domains/<name>.oxn` | Business complexity emerges; shared business language needed |
+| Business Domain | Business bounded context | Engineer defines `.openxenon/domains/<name>.md` | Business complexity emerges; shared business language needed |
 
 **Program Domain** covers: SourceFile / Module / Function / BuildArtifact / TestSuite / TestCase / Dependency / ConfigFile / EntryPoint / APIEndpoint, and other general programming concepts.
 
@@ -77,7 +77,7 @@ Each group is a candidate Domain.
 oxn domain create MemberContext
 ```
 
-Edit `.openxenon/domains/member-context.oxn`:
+Edit `.openxenon/domains/member-context.md`:
 
 ```oxn
 domain "MemberContext" {

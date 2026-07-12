@@ -8,8 +8,8 @@
 
 ## 文件
 
-- `work.oxn` — Work 编排
-- `tasks/register-member/task.oxn` — 注册会员任务（3 part：develop / test / verify）
+- `work.md` — Work 编排
+- `tasks/register-member/task.md` — 注册会员任务（3 part：develop / test / verify）
 
 ## 跑通方式
 

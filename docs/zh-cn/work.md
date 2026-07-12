@@ -14,7 +14,7 @@ title: 工作
 ```
 Work (一次完整 IAP 周期)
 ├── Intent 阶段 (工程师主权)     ← 声明意图 + 选 Asset 边界 + 锁定不可变
-│   ├── create                  — 写 work.oxn + 自动生成 task 骨架
+│   ├── create                  — 写 work.md + 自动生成 task 骨架
 │   ├── add-task (可选)         — 追加 task（大多已被 create 覆盖）
 │   └── lock                    — validate 内含 + 算 hash + 写 planLock
 │       ├── validate（内含）     — 语法校验 + task DAG 校验 + Asset 引用校验
@@ -95,7 +95,7 @@ oxn work submit my-feature --task t1 --json
 # verdict fail → 开启 Round 2
 oxn work next-round my-feature
 
-# 调整 Intent（编辑 work.oxn 加 invariant）
+# 调整 Intent（编辑 work.md 加 invariant）
 # ...
 
 # Round 2 跑
@@ -149,8 +149,8 @@ Intent 阶段可以是探索、讨论然后落盘成文档。与 Intent Pool 5 �
 
 | IAP 阶段 | CLI 命令 | 引擎入口 | 落盘文件 |
 |---|---|---|---|
-| **Intent** | `oxn work create <w> --blueprint <bp>` | `work-manager.ts` createSubcommand | `works/<w>/work.oxn` + `work.md` + `tasks/<slot>/task.oxn`（自动生成） |
-| Intent | `oxn work add-task <w> --task <t> ...` | `addTaskSubcommand` | `works/<w>/tasks/<t>/task.oxn` |
+| **Intent** | `oxn work create <w> --blueprint <bp>` | `work-manager.ts` createSubcommand | `works/<w>/work.md` + `tasks/<slot>/task.md`（自动生成） |
+| Intent | `oxn work add-task <w> --task <t> ...` | `addTaskSubcommand` | `works/<w>/tasks/<t>/task.md` |
 | Intent | `oxn work lock <w>` | `work-lock.ts` (内含 validate) | `.work`（BirthCert + planLock 3 组件 hash） |
 | Intent | `oxn work validate <w>` | `lock --dry-run` alias | `.work`（BirthCert，planLock=null） |
 | **Align** | `oxn work run <w>` | `runWork()` | `works/<w>/.run/state.json` + `.run/trace.jsonl` |
@@ -163,12 +163,11 @@ Intent 阶段可以是探索、讨论然后落盘成文档。与 Intent Pool 5 �
 
 ```
 .openxenon/works/<work-name>/
-├── work.oxn                       (0o444, source of truth)
-├── work.md                        (mirror, auto-synced)
+├── work.md                        (0o444, source of truth)
 ├── .work                          (0o444, BirthCert JSON, planLock 4 组件 hash)
 ├── tasks/
 │   └── <task-name>/
-│       └── task.oxn               (0o444)
+│       └── task.md                (0o444)
 ├── .cache/                        (per-work slim index)
 │   ├── domains.json               (slim, scope/version/fileHash)
 │   └── blueprints.json

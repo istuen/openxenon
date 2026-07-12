@@ -13,7 +13,7 @@ OpenXenon 提供两级 Domain 抽象：
 | 层级 | 类型 | 来源 | 何时用 |
 |---|---|---|---|
 | Program Domain | 编程概念词汇表 | OXN 内置 `@oxn/domains/ProgramContext` | 解决技术问题，不需要业务建模 |
-| Business Domain | 业务限界上下文 | 工程师定义 `.openxenon/domains/<name>.oxn` | 业务复杂度涌现，需要统一业务语言 |
+| Business Domain | 业务限界上下文 | 工程师定义 `.openxenon/domains/<name>.md` | 业务复杂度涌现，需要统一业务语言 |
 
 **Program Domain** 涵盖：SourceFile / Module / Function / BuildArtifact / TestSuite / TestCase / Dependency / ConfigFile / EntryPoint / APIEndpoint 等通用编程概念。
 
@@ -77,7 +77,7 @@ OpenXenon 提供两级 Domain 抽象：
 oxn domain create MemberContext
 ```
 
-编辑 `.openxenon/domains/member-context.oxn`：
+编辑 `.openxenon/domains/member-context.md`：
 
 ```oxn
 domain "MemberContext" {

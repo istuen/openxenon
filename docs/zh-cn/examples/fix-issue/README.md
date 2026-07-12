@@ -8,11 +8,11 @@
 
 ## 文件
 
-- `work.oxn` — Work 编排
-- `tasks/diagnose/task.oxn` — 诊断任务
-- `tasks/locate/task.oxn` — 定位任务
-- `tasks/fix/task.oxn` — 修复任务
-- `tasks/verify/task.oxn` — 验证任务
+- `work.md` — Work 编排
+- `tasks/diagnose/task.md` — 诊断任务
+- `tasks/locate/task.md` — 定位任务
+- `tasks/fix/task.md` — 修复任务
+- `tasks/verify/task.md` — 验证任务
 
 ## 跑通方式
 

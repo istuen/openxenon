@@ -59,8 +59,7 @@ oxn init --ai codex      # 生成 Codex Skill
 
 ### 生命周期
 
-> **v0.6.1+**：新 `oxn work create` 默认写 `works/<n>/work.md`（canonical .md），同时保留 `.oxn` 作 v0.6.x fallback；
-> 切回 .oxn 写：加 flag `--oxn-legacy`。
+> **v0.6.1+**：新 `oxn work create` 默认写 `works/<n>/work.md`（canonical .md）。
 
 | 命令 | 作用 |
 |---|---|
@@ -110,20 +109,15 @@ oxn init --ai codex      # 生成 Codex Skill
 
 | 命令 | 作用 |
 |---|---|
-| `oxn domain create <DomainName>` | 创建 Domain 骨架（默认 .md，可加 `--oxn-legacy`）|
+| `oxn domain create <DomainName>` | 创建 Domain 骨架（默认 .md）|
 | `oxn domain validate <DomainName>` | 校验 Domain |
 | `oxn domain list` | 列出所有 Domain |
-| `oxn domain sync --all` | **v0.6.1**：批量 .oxn → .md 同步（保留 .oxn 作 v0.6.x fallback）|
 
 ### Asset 路径查找（v0.6.1）
 
 CLI 解析 Asset 时按以下顺序：
-1. `<primary>/<name>.md`     — v0.6 canonical
-2. `<primary>/<name>.oxn`    — v0.6.x fallback（v0.7.0 切割）
-3. `<fallback>/<name>.md`   — v0.5 layout .md（如果存在）
-4. `<fallback>/<name>.oxn`  — v0.5 legacy（兼容期）
-
-观察 .oxn 数量：`bun run check:md-fallback`
+1. `<primary>/<name>.md`     — v0.6+ canonical
+2. `<fallback>/<name>.md`   — v0.5 layout .md（如果存在）
 
 见 [Intent](./intent.md) 了解 Domain + Blueprint 完整语法。
 
@@ -188,8 +182,8 @@ oxn external mark --name "stripe-api" --status stale --reason "API 维护中"
 
 | 命令 | 作用 |
 |---|---|
-| `oxn dev compile <file.oxn> [-o DIR]` | 编译 .oxn 文件 |
-| `oxn dev unpack <file.bundle.oxn> [-o DIR]` | 解包 bundle |
+| `oxn dev compile <file.md> [-o DIR]` | 编译 .md 文件 |
+| `oxn dev unpack <file.bundle.md> [-o DIR]` | 解包 bundle |
 | `oxn dev validate [--standard]` | 标准校验 |
 | `oxn dev migrate-yaml <file> [--all]` | YAML 迁移 |
 | `oxn dev promote <task-dir> [--as-new N]` | Promote 资产 |
@@ -224,7 +218,7 @@ oxn init --ai claude        # Claude Code Skill
   "error": {
     "type": "IAPError",
     "code": "IAP_ALIGN_LOCK_HASH_MISMATCH",
-    "message": "work.oxn 已漂移：hash 不匹配",
+    "message": "work.md 已漂移：hash 不匹配",
     "context": { "component": "workOxn", "locked": "...", "current": "..." },
     "action": "YIELD_TO_HUMAN"
   }
@@ -239,16 +233,16 @@ oxn init --ai claude        # Claude Code Skill
 |---|---|---|
 | `OXN_NO_PROJECT` | 项目未初始化 | `oxn init` |
 | `OXN_INVALID_NAME` | 名称格式错误 | 用 kebab-case / PascalCase |
-| `OXN_TASK_OXN_MISSING` | task.oxn 缺失 | `oxn work add-task` |
+| `OXN_TASK_OXN_MISSING` | task.md 缺失 | `oxn work add-task` |
 | `OXN_TASK_NOT_FOUND` | task 未找到 | 先 `oxn work run` |
-| `OXN_BLUEPRINT_NOT_IN_WORK` | blueprint 未在 work.oxn 声明 | 改 work.oxn |
-| `OXN_DOMAIN_NOT_IN_WORK` | domain 未在 work.oxn 声明 | 改 work.oxn |
-| `OXN_DSL_PARSE_FAILED` | .oxn 语法错误 | 看错误信息修正 |
+| `OXN_BLUEPRINT_NOT_IN_WORK` | blueprint 未在 work.md 声明 | 改 work.md |
+| `OXN_DOMAIN_NOT_IN_WORK` | domain 未在 work.md 声明 | 改 work.md |
+| `OXN_DSL_PARSE_FAILED` | .md 语法错误 | 看错误信息修正 |
 | `OXN_WORK_ALREADY_EXISTS` | 重复 run | 用 status 看现有 |
 | `OXN_WORK_NOT_FOUND` | work 未找到 | 确认 work 名 |
 | `IAP_ALIGN_LOCK_NOT_FOUND` | .work.planLock 缺失 | 先 `oxn work lock` |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | 锁后资产漂移 | 检查漂移源，或 unlock → 重锁 |
-| `IAP_ALIGN_WORK_REMOVED` | work.oxn 失踪 | YIELD_TO_HUMAN |
+| `IAP_ALIGN_WORK_REMOVED` | work.md 失踪 | YIELD_TO_HUMAN |
 
 ---
 

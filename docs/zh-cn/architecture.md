@@ -101,7 +101,7 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 | 模块 | 层级 | 职责 | 约束 |
 |---|---|---|---|
 | Kernel | L0 | 纯逻辑：IAP 状态机、探针调度、hash 校验、Verdict 判定 | 零 IO |
-| OXL | L1 | OpenXenon Language DSL：.oxn/.md 解析与序列化 | 不依赖 L2/L3 |
+| OXL | L1 | OpenXenon Language DSL：.md 解析与序列化 | 不依赖 L2/L3 |
 | Infra | L1 | 文件系统、进程、网络、探针执行 | 只回答事实，不判定 PASS/FAIL |
 
 > **纯洁性核法则**：Infra 不能绕过 L2 Engine 自我宣布完成 → L2 Engine 不能修改 L0 Kernel 规则 → L0 Kernel 不能直接执行 Task。
@@ -117,7 +117,7 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 ├── assets/blueprints/
 ├── assets/stack/
 ├── works/<w>/
-│   ├── work.oxn
+│   ├── work.md
 │   ├── round-1/                  ← v0.6 Round 快照
 │   ├── round-2/
 │   └── .run/{state,trace,frozen}.json
@@ -176,7 +176,7 @@ OXN 在 L0 Kernel / L1 OXL / L1 Infra 之间划定**七项核心不变量**，�
 
 ```ts
 // ✅ Engine / Kernel 调 frozen.json 时不关心源格式
-const frozen = readFrozenImmutable(path)  // 完全不知道是不是从 .oxn 编出来的
+const frozen = readFrozenImmutable(path)  // 完全不知道是不是从 .md 编出来的
 
 // ❌ 禁止：Engine 内根据源格式走不同代码路径
 if (sourceFormat === 'oxn') { ... } else if (sourceFormat === 'md') { ... }
@@ -186,8 +186,8 @@ if (sourceFormat === 'oxn') { ... } else if (sourceFormat === 'md') { ... }
 
 ### 9.2 frozen 命名约束
 
-- ✅ `frozen.json`（不带 `.yaml`/`.oxn`/`.md` 后缀）
-- ❌ `frozen.oxn.json` / `frozen.yaml.json`（暴露源格式）
+- ✅ `frozen.json`（不带 `.yaml`/`.md` 后缀）
+- ❌ `frozen.md.json` / `frozen.yaml.json`（暴露源格式）
 
 ### 9.3 ProbeObservation vs ProbeVerdict 二元公理（ADR-0008）
 

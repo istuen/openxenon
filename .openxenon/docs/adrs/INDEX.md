@@ -1,7 +1,7 @@
 # ADR 索引
 
-> **来源**：2026-07-04 docs-tmp-cleanup work 抽取 + 2026-07-09 doc-unify-layout 救援 + 2026-07-10 v0.6.1-alpha.4 ADR 追加
-> **总计**：43 条 ADR（来自 v0.0 ~ v0.6.1-alpha.4 共 8 个版本的讨论记录；另 8 条 0040-0047 已归档于 `2026-07-05-archive-0040-0047-memory-series-superseded.md`）
+> **来源**：2026-07-04 docs-tmp-cleanup work 抽取 + 2026-07-09 doc-unify-layout 救援 + 2026-07-10 v0.6.1-alpha.4 ADR 追加 + 2026-07-12 三边界框架 ADR 追加
+> **总计**：48 条 ADR（来自 v0.0 ~ v0.6.1 共 9 个版本的讨论记录；另 8 条 0040-0047 已归档于 `2026-07-05-archive-0040-0047-memory-series-superseded.md`）
 > **位置**：`.openxenon/docs/adrs/`（对内-沉淀层，append-only）
 > **约定**：决策一旦记录不编辑不删除；被推翻时新 ADR 标记旧 ADR 为 Superseded
 
@@ -9,10 +9,10 @@
 
 | 状态 | 含义 | 数量 |
 |---|---|---|
-| ✅ **Adopted** | 已落 SSOT + 代码 | 24 |
+| ✅ **Adopted** | 已落 SSOT + 代码 | 27 |
 | 🟡 **Partially Adopted** | 部分已落，部分待办 | 5 |
 | 💡 **Proposed** | 待 v0.7+ 落地 | 9 |
-| ⛔ **Superseded** | 被推翻但有史料价值 | 5 |
+| ⛔ **Superseded** | 被推翻但有史料价值 | 7 |
 
 ## 主题分类索引
 
@@ -24,6 +24,7 @@
 | [0002](./0002-probe-default-rules-five-level-priority.md) | Probe default 规则 + 五级参数优先级链 | ✅ Adopted |
 | [0003](./0003-runtime-isolation-frozen-naming.md) | 运行期隔离 + frozen 命名规则 | ✅ Adopted |
 | [0019](./0019-blueprint-type-paradigm.md) | Blueprint Type 范式（task/plan/explore） | ⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发） |
+| [0053](./0053-superseded-0048-library-external-scheme.md) | library/external Asset 类型收敛（Superseded ADR-0048） | ⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发） |
 | [0021](./0021-intent-align-observe-keyword-separation.md) | Intent / Align / Observe 四关键字分离 | ✅ Adopted |
 
 ### 2. Kernel / L0 边界（6 条）
@@ -64,6 +65,10 @@
 | [0049](./0049-work-context-md-replaces-memory.md) | Work Context .md 取代 Memory 层 | ✅ Adopted |
 | [0050](./0050-onboarding-via-starter-work.md) | 通过 Starter Work 引导新用户 | ✅ Adopted |
 | [0051](./0051-asset-paper-citation-network.md) | Asset Paper 引用/引用网络方案 | ✅ Adopted |
+| [0054](./0054-three-boundary-framework.md) | 三边界框架（Domain/Workflow/Stack 正交维度） | ✅ Adopted |
+| [0055](./0055-blueprint-as-composition-template.md) | Blueprint 提升为组合模板（E1 Asset 内的隔离层） | ✅ Adopted |
+| [0056](./0056-external-inline-and-status.md) | External inline 收敛 + 状态管理 | ✅ Adopted |
+| [0052](./0052-langium-retirement-oxn-deprecation.md) | Langium 退役 + .oxn 废弃（v0.7.0 切割） | ✅ Adopted |
 
 ### 5. Insight / Skill（5 条）
 
@@ -93,10 +98,11 @@
 | [0007](./0007-loop-observation-three-dimensions.md) | Loop 行为观测三维度（命令 + 规则 + 重试） | 💡 Proposed |
 | [0034](./0034-work-precise-block-not-daemon-cascade.md) | Work 前置精准阻断 vs Daemon 全局崩溃 | ⛔ Superseded（由 v0.6 Daemon 重构触发） |
 | [0038](./0038-i18n-library-selection.md) | i18n 库选型（Paraglide vs typesafe-i18n vs i18next） | 🟡 Partial |
+| [0052](./0052-langium-retirement-oxn-deprecation.md) | Langium Retirement & .oxn Deprecation | ✅ Adopted |
 
 ## ADR 落地状态一览
 
-### 已落 SSOT（14 条 · 标记 SSOT 已增补位置）
+### 已落 SSOT（17 条 · 标记 SSOT 已增补位置）
 
 | ADR | 落地位置（SSOT 增补） |
 |---|---|
@@ -114,6 +120,10 @@
 | 0024 | `docs/zh-cn/work.md` §partId + atomic-write |
 | 0031 | `docs/zh-cn/proof.md` §Proof 公证人边界 |
 | 0035 | `docs/zh-cn/asset.md` §catalog.json |
+| 0052 | `packages/engine/src/oxl/langium-driver/` 删除（Langium 退役） |
+| 0054 | `docs/zh-cn/asset.md` §三边界框架 + `docs/en/asset.md` |
+| 0055 | `docs/zh-cn/asset.md` §Blueprint 组合模板 |
+| 0052 | `docs/zh-cn/cli.md` + `docs/zh-cn/work.md` §Langium 退役 |
 
 ### 待办（8 条 Proposed · 进 v0.7+ RFC 子 PR）
 
@@ -160,5 +170,5 @@ superseded-by: null     # ADR-NNNN (如适用)
 
 - **抽取 work**：docs-tmp-cleanup
 - **抽取日**：2026-07-04
-- **讨论跨度**：2026-05-14 → 2026-07-03（50 天）
-- **涉及版本**：v0.0 → v0.6.1-alpha.0
+- **讨论跨度**：2026-05-14 → 2026-07-12（58 天）
+- **涉及版本**：v0.0 → v0.6.1

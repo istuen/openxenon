@@ -1,6 +1,6 @@
 # Examples
 
-> 4 个端到端 Work 案例，可直接 fork 改写。每个目录包含 work.oxn + tasks/*/task.oxn。
+> 4 个端到端 Work 案例，可直接 fork 改写。每个目录包含 work.md + tasks/*/task.md。
 
 | 目录 | 场景 | 模式 | 复杂度 |
 |---|---|---|---|

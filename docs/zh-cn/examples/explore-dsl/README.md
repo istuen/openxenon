@@ -8,8 +8,8 @@
 
 ## 文件
 
-- `work.oxn` — Work 编排
-- `tasks/explore-dsl/task.oxn` — 探索任务
+- `work.md` — Work 编排
+- `tasks/explore-dsl/task.md` — 探索任务
 
 ## 跑通方式
 

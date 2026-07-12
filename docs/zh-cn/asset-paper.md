@@ -22,7 +22,7 @@ title: 资产论文结构
 ## 2. Asset Paper 完整模板
 
 ```markdown
-<!-- assets/domain/payment-core.oxn -->
+<!-- assets/domain/payment-core.md -->
 ---
 type: domain
 id: payment-core
@@ -54,8 +54,8 @@ auditTrail:                          # 版本历史
 3. Ensure: 必须将 TraceID 写入统一日志
 
 # 3. References (依赖)
-参见 [stack-nodejs](../stack/nodejs.oxn) §3
-受 [api-rest-standard](../blueprint/api-rest.oxn) 错误码约束
+参见 [stack-nodejs](../stack/nodejs.md) §3
+受 [api-rest-standard](../blueprint/api-rest.md) 错误码约束
 ```
 
 ## 3. Schema 字段详解（v0.6.3 扩展）
@@ -135,7 +135,7 @@ auditTrail:
 
 ```bash
 $ oxn asset validate
-# 1. 扫 .openxenon/assets/**.oxn
+# 1. 扫 .openxenon/assets/**.md
 # 2. 解析每个 Asset 的 references[]
 # 3. 构建反向引用 map
 # 4. 写入每个 target Asset 的 citations
@@ -259,18 +259,18 @@ function impactRadius(asset: Asset): 'low' | 'medium' | 'high' | 'critical' {
 ├── blueprint/                       # 原
 ├── stack/                           # 原
 ├── library/                         # 🆕 外部信息聚合（Work 产出）
-│   ├── axios-docs.oxn              # Axios 官方文档聚合
-│   └── terraform-aws.oxn
+│   ├── axios-docs.md              # Axios 官方文档聚合
+│   └── terraform-aws.md
 └── external/                        # 🆕 外部引用指针（不存内容）
-    ├── npm-deps.oxn                # URL + hash + ttl
-    └── github-issues.oxn
+    ├── npm-deps.md                # URL + hash + ttl
+    └── github-issues.md
 ```
 
 ### 7.2 `library/` vs `external/` 关键区别
 
 | 维度 | library/ | external/ |
 |---|---|---|
-| 内容存储 | AI 解析后写入 .oxn | 仅引用指针 |
+| 内容存储 | AI 解析后写入 .md | 仅引用指针 |
 | 适用场景 | 频繁复用的外部知识 | 临时引用 |
 | 失效检测 | Engine 校验 | TTL 到期触发 fetch |
 | 大小限制 | < 50KB | 引用指针无大小 |

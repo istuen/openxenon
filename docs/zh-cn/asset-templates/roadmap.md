@@ -15,13 +15,13 @@ citations: 0
 
 ## Core
 
-- `domain/core.oxn` — 项目核心领域边界
-- `stack/nodejs.oxn` — 运行时环境约束
+- `domain/core.md` — 项目核心领域边界
+- `stack/nodejs.md` — 运行时环境约束
 
 ## OnDemand
 
-- `blueprint/dev-workflow.oxn` — 标准开发流程
-- `library/axios-docs.oxn` — Axios 文档聚合
+- `blueprint/dev-workflow.md` — 标准开发流程
+- `library/axios-docs.md` — Axios 文档聚合
 
 ## Recent
 

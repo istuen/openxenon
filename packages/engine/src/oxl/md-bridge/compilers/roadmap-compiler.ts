@@ -13,7 +13,7 @@
  * - 每个 H3 实例是一条 roadmap link（target 引用其他 Asset 路径）
  * - H3 内 scalar field：target（必填，引用其他 Asset）
  * - frontmatter 字段：abstract / citations（references 字段不参与 — grammar 已排除）
- * - Roadmap 不参与 Asset-to-Asset references DAG 校验（oxn.langium 注释锁定）
+ * - Roadmap 不参与 Asset-to-Asset references DAG 校验
  *
  * L0–L3 兼容性：
  * - L1-OXL 层（src/oxl/md-bridge/）

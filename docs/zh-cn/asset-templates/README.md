@@ -2,7 +2,7 @@
 
 > **本目录是 Asset Paper Schema 的 4 个模板**，配合 [v0.6.1-alpha.1](../../.openxenon/pools/sprints/v0.6.1-alpha.1/) 分支落地。
 > **v0.6.1-alpha.1 目标**：把 Asset 从"规则堆砌"升级为"论文式结构 + 引用机制"。
-> **v0.3+ 格式**：所有模板采用 MD-native 格式（`.md`），OXL（`.oxn`）仅用于工具内部。
+> **v0.3+ 格式**：所有模板采用 MD-native 格式（`.md`）。
 
 ## 4 个模板
 
@@ -59,7 +59,7 @@ oxn work lock my-work
 |---|---|---|
 | ✅ Batch 1 | 4 模板（骨架 + 1 示例）| v0.6.1-alpha.1 |
 | ✅ Batch 2 | AssetKind 扩展 + OXL grammar + Asset Paper 4 字段 schema | v0.6.1-alpha.1 |
-| 🔜 Batch 3 | MD-native 模板迁移（.oxn → .md）| v0.6.1-alpha.1 |
+| 🔜 Batch 3 | MD-native 模板迁移（.md 完成）| v0.6.1-alpha.1 |
 | 🔜 Batch 4 | 引用计数算法 + DAG 校验 | v0.6.1-alpha.1 |
 | 🔜 Batch 5 | CLI 扩展（`oxn asset graph` 等）| v0.6.1-alpha.1 |
 | 🔜 Batch 6 | 测试 + 文档 | v0.6.1-alpha.1 |

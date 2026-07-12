@@ -8,11 +8,11 @@ Fix a bug, with 4 tasks serially chained: "diagnose → locate → fix → verif
 
 ## Files
 
-- `work.oxn` — Work orchestration
-- `tasks/diagnose/task.oxn` — Diagnose task
-- `tasks/locate/task.oxn` — Locate task
-- `tasks/fix/task.oxn` — Fix task
-- `tasks/verify/task.oxn` — Verify task
+- `work.md` — Work orchestration
+- `tasks/diagnose/task.md` — Diagnose task
+- `tasks/locate/task.md` — Locate task
+- `tasks/fix/task.md` — Fix task
+- `tasks/verify/task.md` — Verify task
 
 ## How to run
 

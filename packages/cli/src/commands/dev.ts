@@ -5,7 +5,7 @@
 // 这些命令面向 DSL 作者与 OpenXenon 内部开发，不是日常 AI/工程师工作流的主入口。
 //
 // 子命令：
-//   unpack       — .bundle.oxn → 隔离目录
+//   unpack       — .bundle → 隔离目录
 //   migrate-yaml — YAML Blueprint → OXL
 // =============================================================================
 

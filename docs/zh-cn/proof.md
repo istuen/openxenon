@@ -20,8 +20,8 @@ OXN 的终极目标不是"spec 与实现一致"，而是**独立第三方对 AI 
   │                    │                       │
   ▼                    ▼                       ▼
 Intent                Align                   Proof
-Domain(.oxn)          Work(.oxn)             frozen.json
-Blueprint(.oxn)       Task → Artifact        Verdict (事实记录)
+Domain(.md)           Work(.md)              frozen.json
+Blueprint(.md)        Task → Artifact        Verdict (事实记录)
   │                    │                       │
   └────── 协作流水线 ──────┴────── 信任基座 ──────┘
 ```
@@ -46,7 +46,7 @@ Blueprint(.oxn)       Task → Artifact        Verdict (事实记录)
 
 ```
 .openxenon/proofs/<proof-name>/
-├── proof.oxn                      (0o644, 可编辑 — Probe 声明源)
+├── proof.md                       (0o644, 可编辑 — Probe 声明源)
 ├── frozen.json                    (0o444, 机器 SSOT — verdict 判决书)
 ├── verdict.md                     (0o444, 人类 SSOT — frozen.json 的可读视图)
 ├── .running.json                  (运行时暂存 — run 期间存在，结束后删除)
@@ -353,7 +353,7 @@ oxn proof verify check-deploy
 | `match` | 证据一致，proof 可信 | — |
 | `drift` | work.md 已被 AI 改动（旧 proof.md 快照是唯一可信证据） | `E_PROOF_WORKHASH_DRIFT` |
 | `no-snapshot` | proof 从未 run 过 | `E_PROOF_NO_SNAPSHOT` |
-| `no-target` | proof.oxn 缺 `// proofs-target-work:` 注释（无快照机制） | — |
+| `no-target` | proof.md 缺 `// proofs-target-work:` 注释（无快照机制） | — |
 | `work-missing` | 注释指向的 work.md 不存在 | `E_PROOF_WORK_MISSING` |
 
 ### 6.5 方式 5：`oxn proof list`（全局浏览）
@@ -370,7 +370,7 @@ oxn proof list --json     # 机器消费
 ## 7. Probe 执行链路（Infra + Kernel 分离）
 
 ```
-proof.oxn → proofProbesToIR() → ProofProbeIR { probeName, ref, params }
+proof.md → proofProbesToIR() → ProofProbeIR { probeName, ref, params }
                                      ↓
 runSubcommand (loop per probe)
                                      ↓
@@ -420,13 +420,13 @@ updateProbeStats → probe-stats.json (atomic)
 
 | 子命令 | 功能 |
 |---|---|
-| `create <name>` | 建 proof 空间（写 proof.oxn 模板） |
+| `create <name>` | 建 proof 空间（写 proof.md 模板） |
 | `list` | 列出所有 Proof |
-| `describe <name>` | 描述 proof.oxn 元信息 |
+| `describe <name>` | 描述 proof.md 元信息 |
 | `probe` (parent) | Probe 管理 sub-tree |
 | ├─ `probe list` | 列出可用 Probe catalog |
 | ├─ `probe describe <probe>` | 描述单个 Probe（输入/输出/示例） |
-| └─ `probe add <proof> <probe> --input-json` | 添加 Probe 到 proof.oxn |
+| └─ `probe add <proof> <probe> --input-json` | 添加 Probe 到 proof.md |
 | `run <name>` | 跑证明（生成 frozen.json + verdict.md + 更新 probe-stats.json） |
 | `verify <name>` | 验证 frozen.json hash + work.md 一致性 |
 | `show <name>` | 显示 verdict 详情（含 frozen.json + verdict.md 引用） |
@@ -435,10 +435,10 @@ updateProbeStats → probe-stats.json (atomic)
 
 ```
 Phase 0.5 (v0.4 PR-B Q4-A):
-  1. 读 proof.oxn 注释 '// proofs-target-work: <path>'
-  2. 计算 work file SHA-256 (work.md 或 work.oxn)
-  3. 对比 work-hash.txt: 一致 → 跳过；不一致 → 拷贝新快照 + 写新 hash
-  缺注释 → 跳过（兼容旧 proof.oxn）
+  1. 读 proof.md 注释 '// proofs-target-work: <path>'
+  2. 计算 work file SHA-256 (work.md)
+  ...
+  缺注释 → 跳过
   work file 缺失 → OXN_PROOF_WORK_MISSING
 
 Phase 1 (v0.1.3 PR-2):
@@ -465,7 +465,7 @@ Phase 4 (v0.1.2):
 
 | 错误码 | 触发 |
 |---|---|
-| `OXN_PROOF_PARSE_FAILED` | proof.oxn 解析失败 |
+| `OXN_PROOF_PARSE_FAILED` | proof.md 解析失败 |
 | `OXN_PROOF_EMPTY` | proof 无 probe 声明 |
 | `OXN_PROOF_WORK_MISSING` | `proofs-target-work` 指向不存在 |
 | `OXN_PROOF_NOT_FOUND` | proof 未创建 |

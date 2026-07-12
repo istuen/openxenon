@@ -50,10 +50,10 @@ skill_context           state.json 写权限
 
 ```
        Intent                    Align
-   Domain(.oxn)                Work(.oxn)
+   Domain(.md)                Work(.md)
         │                            │
         ▼                            ▼
-   Blueprint(.oxn)             Task → Artifact
+   Blueprint(.md)             Task → Artifact
         │   Probe标准               │  Artifact事实
         └────────────┬───────────────┘
                      │
@@ -86,14 +86,14 @@ create → [add-task?] → lock   run → submit × N          finalize
 |---|---|
 | `IAP_ALIGN_LOCK_NOT_FOUND` | 未调 `oxn work lock` |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | 锁后资产漂移 |
-| `IAP_ALIGN_WORK_REMOVED` | work.oxn 被删除 |
+| `IAP_ALIGN_WORK_REMOVED` | work.md 被删除 |
 
 ---
 
 ## 反模式 TOP 5
 
 1. **跳过 lock 直接 run** → `IAP_ALIGN_LOCK_NOT_FOUND`
-2. **lock 后修改 .oxn** → `IAP_ALIGN_LOCK_HASH_MISMATCH`
+2. **lock 后修改 .md** → `IAP_ALIGN_LOCK_HASH_MISMATCH`
 3. **AI 直接写 frozen.json** → 绕过 Proof 轴
 4. **Domain 里写 slot** → Domain / Blueprint 正交
 5. **把 ref 和 align 混为一谈** → `domain "X" ref "..."` 是 work 级声明，task 内 `domain "X"` 是 align

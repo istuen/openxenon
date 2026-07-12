@@ -21,7 +21,7 @@ OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemo
 | L0-Contract | `packages/engine/src/kernel/contracts/` | L0-Processor、L1、L2、L3 |
 | L0-Processor | `packages/engine/src/kernel/{processors,verdicts}/` | L1+（Kernel 是"兰姆达真空"：禁止 `fs` / `net` / `child_process` / `process.env` / `process.std*` / `EventEmitter`） |
 | L1-Infra | `packages/engine/src/infra/` | L0-Processor、L2-Work、L3 |
-| L1-OXL | `packages/engine/src/oxl/`（排除 `langium-driver/generated/`） | L0-Processor、L2、L3 |
+| L1-OXL | `packages/engine/src/oxl/` | L0-Processor、L2、L3 |
 | L2-Builtin | `src/builtin/`（残留，待迁入 engine） | L2-Work、L3 |
 | L2-Work | `packages/engine/src/{Work,Asset,Intent,Align,Proof,Insight,Pool}/` | L3 |
 | L3 | `packages/cli/src/{commands,skills}/` + `src/{daemon,watcher}/`（残留）+ `packages/engine/src/daemon.ts` | — |
@@ -32,13 +32,12 @@ ESLint 还阻止的相邻关系：`kernel↔infra`、`daemon↔cli`（仅 socket
 
 ```bash
 bun install --frozen-lockfile
-bun run langium:generate   # 重新生成 packages/engine/src/oxl/langium-driver/generated/ — 不要手动编辑
-bun run build               # = build:clean + langium:generate + build:dist (bun build --target=node --outdir dist)
+bun run build               # = build:clean + build:dist (bun build --target=node --outdir dist)
 bun run typecheck           # tsc --noEmit；tsconfig 启用了 noUncheckedIndexedAccess + verbatimModuleSyntax
 bun run check               # biome check src/ packages/  （格式 + 风格）
 bun run format              # biome format --write src/ packages/
 bun run lint                # eslint src/ packages/  （架构守卫；自动修复不安全，请谨慎使用）
-bun test                    # bun test，约 130 秒，1959 个测试 / 148 文件
+bun test                    # bun test，约 1487 个测试 / 119 文件
 ```
 
 `lefthook` 在 pre-commit 时执行 `biome-check` + `eslint-arch` + `typecheck`，在 pre-push 时执行 `bun test`（通过 `prepare` → `lefthook install` 安装）。
@@ -62,11 +61,10 @@ bun test                    # bun test，约 130 秒，1959 个测试 / 148 文�
 
 ## OXN DSL
 
-- 语法定义：`packages/engine/src/oxl/langium-driver/oxn.langium`
-- 配置：`langium-config.json` → 输出到 `packages/engine/src/oxl/langium-driver/generated/` 与 `syntaxes/oxn.tmLanguage.json`
-- VSCode 扩展：`oxn-vscode/`（自带 `oxn-dsl-0.1.0.vsix`；其内部的 `pnpm-lock.yaml` 仅用于该扩展）
-- `packages/engine/src/oxl/builtin/` 存放 **.oxn 源**资产；`src/builtin/` 存放运行时加载的 **已编译二进制** 资产——它们是源与产物的关系，并非重复。
-- 语法修改后必须运行 `bun run langium:generate`；不要手动编辑 `packages/engine/src/oxl/langium-driver/generated/*`（该目录在 `biome.json` `files.ignores` 中也已忽略）。
+- v0.7.0 后 `.oxn` (Langium) 格式已废弃，`.md` 是唯一 canonical 格式
+- 语法定义历史记录：`packages/engine/src/oxl/langium-driver/oxn.langium`（已删除）
+- VSCode 扩展：`oxn-vscode/`（支持 `.md` 语法高亮）
+- `src/builtin/` 存放运行时加载的 **.md** 资产（probes / blueprints）
 
 ## 仓库约定
 
@@ -139,7 +137,7 @@ pools/drafts/xxx-draft.md（散落，无格式）
 
 - 运行时数据：`.openxenon/{works,proofs}/`（已 gitignore，运行时产物）。
 - **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/{domains,blueprints,stack,roadmaps}/`（E1 Asset 边界，工程师维护，冻结后不可变，默认 gitignore 工程师按需 opt-in tracked）；`docs/{adrs,rfcs}/`（对内-沉淀，tracked）；`pools/{drafts,issues,journals,spikes}/`（对内-探索，tracked）；运行时产物 `works/ proofs/ .cache/ issues/` 已 gitignore。
-- IAP 资产：`.openxenon/assets/{domains,blueprints,stack}/`（v0.6 默认布局，业务声明 + AI 创作模板）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`；fallback 兼容老布局 `.openxenon/domains/`。
+- IAP 资产：`.openxenon/assets/{domains,blueprints,stack}/`（v0.7.0 布局，业务声明 + AI 创作模板，`.md` 格式）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
 - AI 可见的权威文档：`docs/zh-cn/index.md`（入口）、`docs/zh-cn/core-concepts.md`（IAP 范式）、`docs/zh-cn/insight.md`（Insight 层）、`docs/zh-cn/work.md`（Work 核心）、`docs/zh-cn/proof.md`（Proof 轴）、`docs/zh-cn/cli.md`（CLI 参考）、`docs/zh-cn/architecture.md`（架构）。
 - ADR 索引：`.openxenon/docs/adrs/INDEX.md`（45 条架构决策记录，append-only）。
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
@@ -229,7 +227,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 
 **已执行约束**（历史记录）：
 - 所有子分支从 `feat/v0.2-proof-engine` 派生
-- T10 → T11 串行（OXL grammar 两次 `langium:generate` 分两次 PR）
+- T10 → T11 串行（OXL grammar 两次生成分两次 PR）
 - T7 PoC 闸门：Bun `vm.SourceTextModule` PoC 通过（方案 A）
 - T15 spike 边界：不进入 main 分支；产出 `spike/probe-converge/README.md` 决策即可
 

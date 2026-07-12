@@ -48,10 +48,10 @@ skill_context              state.json write permission
 
 ```
        Intent axis               Align axis
-   Domain(.oxn)               Work(.oxn)
+   Domain(.md)                Work(.md)
         │                            │
         ▼                            ▼
-   Blueprint(.oxn)            Task → Artifact
+   Blueprint(.md)             Task → Artifact
         │   Probe standard       │  Artifact fact
         └────────────┬───────────────┘
                      │
@@ -83,14 +83,14 @@ create → add-task → validate → lock → run → submit → status
 |---|---|
 | `IAP_ALIGN_LOCK_NOT_FOUND` | `oxn work lock` was not called |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | Asset drift after lock |
-| `IAP_ALIGN_WORK_REMOVED` | work.oxn was deleted |
+| `IAP_ALIGN_WORK_REMOVED` | work.md was deleted |
 
 ---
 
 ## Top 5 anti-patterns
 
 1. **Skip validate + lock and run directly** → `IAP_ALIGN_LOCK_NOT_FOUND`
-2. **Modify `.oxn` after lock** → `IAP_ALIGN_LOCK_HASH_MISMATCH`
+2. **Modify `.md` after lock** → `IAP_ALIGN_LOCK_HASH_MISMATCH`
 3. **AI writes `frozen.json` directly** → bypasses the Proof axis
 4. **Put a slot in a Domain** → Domain / Blueprint must stay orthogonal
 5. **Confuse `ref` with `align`** → `domain "X" ref "..."` is work-level declaration; `domain "X"` inside a task is align

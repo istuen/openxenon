@@ -8,8 +8,8 @@ Implement the new-member registration feature + unit tests + end-to-end verifica
 
 ## Files
 
-- `work.oxn` — Work orchestration
-- `tasks/register-member/task.oxn` — Register member task (3 parts: develop / test / verify)
+- `work.md` — Work orchestration
+- `tasks/register-member/task.md` — Register member task (3 parts: develop / test / verify)
 
 ## How to run
 

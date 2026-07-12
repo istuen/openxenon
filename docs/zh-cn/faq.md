@@ -52,7 +52,7 @@ AI 通过 Skill 协议调用 CLI。详见 [Align](./align.md)。
 
 不能。frozen.json 是 OXN Engine 签发的检验报告，AI 和工程师都只能读。如果 AI 能改 frozen.json，Proof 轴就名存实亡。
 
-### lock 之后修改 work.oxn 会怎样？
+### lock 之后修改 work.md 会怎样？
 
 触发 `IAP_ALIGN_LOCK_HASH_MISMATCH`。需要 `oxn work unlock` → 修改 → `oxn work lock` 重新冻结。
 
@@ -78,7 +78,7 @@ Part = 执行步骤（AI 可见的 `skill_context`），Probe = 验收标准（A
 
 ### `OXN_TASK_OXN_MISSING`
 
-Task 声明在 work.oxn 中但对应的 task.oxn 不存在。运行 `oxn work add-task`。
+Task 声明在 work.md 中但对应的 task.md 不存在。运行 `oxn work add-task`。
 
 ### `OXN_WORK_ALREADY_EXISTS`
 
@@ -90,7 +90,7 @@ Work 已运行。先用 `oxn work status` 看当前状态。
 
 ### `IAP_ALIGN_LOCK_HASH_MISMATCH`
 
-锁后资产（.oxn 文件）被修改。确定修改合理后用 `oxn work unlock` → 重 `lock`。
+锁后资产（.md 文件）被修改。确定修改合理后用 `oxn work unlock` → 重 `lock`。
 
 完整错误码速查见 [CLI](./cli.md#错误码速查)。
 

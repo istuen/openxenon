@@ -7,10 +7,10 @@
 
 | Template | Path | Purpose | AssetKind |
 |---|---|---|---|
-| **Domain** | [`domain.oxn`](./domain.oxn) | Business bounded context (term / ban / invariant) | `domain` |
-| **Workflow** | [`workflow.oxn`](./workflow.oxn) | Technical workflow (slot DAG) | `workflow` (**renamed in v0.6.1-alpha.1**, was `blueprint`) |
-| **Stack** | [`stack.oxn`](./stack.oxn) | Tech stack constraints (runtime / linter / test) | `stack` |
-| **Roadmap** | [`roadmap.oxn`](./roadmap.oxn) | Asset navigation map (core / on-demand / recent changes) | `roadmap` (**new in v0.6.1-alpha.1**) |
+| **Domain** | [`domain.md`](./domain.md) | Business bounded context (term / ban / invariant) | `domain` |
+| **Workflow** | [`workflow.md`](./workflow.md) | Technical workflow (slot DAG) | `workflow` (**renamed in v0.6.1-alpha.1**, was `blueprint`) |
+| **Stack** | [`stack.md`](./stack.md) | Tech stack constraints (runtime / linter / test) | `stack` |
+| **Roadmap** | [`roadmap.md`](./roadmap.md) | Asset navigation map (core / on-demand / recent changes) | `roadmap` (**new in v0.6.1-alpha.1**) |
 
 ## 4-field Asset Paper Schema
 
@@ -32,11 +32,11 @@ Each template contains 4 **Asset Paper fields** (introduced in v0.6.1-alpha.1):
 
 ### 1. Copy template
 ```bash
-cp docs/en/asset-templates/domain.oxn .openxenon/assets/domain/MyDomain.oxn
+cp docs/en/asset-templates/domain.md .openxenon/assets/domain/MyDomain.md
 ```
 
 ### 2. Replace placeholders
-```oxn
+```markdown
 # Replace:
 - id: <name>          → id: MyDomain
 - version: 0.1.0      → version: 1.0.0

@@ -270,10 +270,9 @@ export function resolveAutoSync(config: ProjectConfig | null): boolean {
 }
 
 // =============================================================================
-// v0.6.1 PR-3: Asset canonical 翻转 + .md 优先 + .oxn fallback
+// v0.7.0: Asset canonical = .md（唯一格式）
 //
-// D-α c 锁定：v0.6.1 不删 .oxn；保留作 v0.6.x fallback；v0.7.0 切割。
-// 因此读路径按 4 级候选降序，CLI 选第一个存在的；写路径默认 .md（除非 --oxn-legacy）。
+// 读路径按 4 级候选降序，CLI 选第一个存在的；写路径固定 .md。
 // =============================================================================
 
 /**
@@ -281,7 +280,7 @@ export function resolveAutoSync(config: ProjectConfig | null): boolean {
  *
  * 顺序：
  *   1. `<primary>/<name>.md`     — v0.6 layout .md（canonical）
- *   2. `<primary>/<name>.oxn`    — v0.6 layout .oxn（v0.6.x fallback）
+ *   2. `<primary>/<name>.oxn`    — v0.6 layout .oxn（v0.7.0 已废弃，跳过）
  *   3. `<fallback>/<name>.md`   — v0.5 layout .md（如有）
  *   4. `<fallback>/<name>.oxn`  — v0.5 layout .oxn（v0.5 legacy）
  *
@@ -311,10 +310,9 @@ export function resolveAssetFileCandidatesV61(
 }
 
 /**
- * v0.6.1 PR-3: 返回 asset 默认写入路径（canonical = .md）。
+ * v0.7.0: 返回 asset 默认写入路径（canonical = .md，唯一格式）。
  *
- * 与读路径不同：写路径只产 1 个目标（默认 .md），不走 fallback。
- * CLI 通过 flag (--oxn-legacy) 切到 .oxn 写入。
+ * 与读路径不同：写路径只产 1 个目标（.md），不走 fallback。
  */
 export function resolveAssetWritePathV61(
   projectRoot: string,

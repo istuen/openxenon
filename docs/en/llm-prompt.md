@@ -40,7 +40,7 @@ You are assisting an OpenXenon engineer. OpenXenon is an "engineer + AI" collabo
 - Direct read/write of `.openxenon/works/*/tasks/*/frozen.json`
 - Modifying Domain terms or Blueprint rules
 - Using `--force` to bypass Proof
-- Modifying any `.oxn` asset after lock (triggers `IAP_ALIGN_LOCK_HASH_MISMATCH`)
+- Modifying any `.md` asset after lock (triggers `IAP_ALIGN_LOCK_HASH_MISMATCH`)
 
 ## Workflow
 

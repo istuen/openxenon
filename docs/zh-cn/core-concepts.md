@@ -98,6 +98,45 @@ L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v
 | AI Agent | E2 Align 阶段 | 跑对齐（执行 tasks、多轮 Round 对齐、落盘产物） | 不能越过 Asset 边界，不能修改 Asset |
 | OXN Engine | E3 Engine（Proof + Round） + E4 Insight | 出证明（跑探针、记录客观事实、产出 verdict） | 不评判代码质量、不修改 Asset、不替 AI 执行 |
 
+## 3.1 信任链——OpenXenon 的核心
+
+> **信任链是 OpenXenon Engine 的"能源"**——没有信任链，OXN 只是任务跟踪器，不是信任协作工具。
+
+OpenXenon 解决工程师与 AI Agent 的信任协作问题。AI 是概率性推理模型，其本身就是不确定性的。工程师信任 AI 一定会执行，但不信任 AI 执行在边界内。AI 不懂"信任"，只会通过概率推理执行，但信任 OpenXenon 提供的确定性内容（Asset、Work、Kernel）。
+
+```
+         工程师                    AI Agent
+        (确定性主体)              (概率性主体)
+            │                        │
+            │  不确定性的协作          │
+            │  ← 不可信任 →           │
+            │                        │
+            ▼                        ▼
+         OpenXenon（确定性层）
+         ┌─────────────────────┐
+         │  Asset (确定性边界)  │
+         │  Work (确定性结构)   │
+         │  Kernel (确定性验证) │
+         │  Proof (确定性证据)  │
+         └─────────────────────┘
+            │                        │
+            ▼                        ▼
+    工程师信任 OXN               AI 信任 OXN
+    "OXN 出示证据，               "OXN 提供确定性
+     告知 AI 执行了什么，           Asset/Work/Kernel，
+     哪些在边界内，                我能获取反馈，
+     哪些在边界外"                 推理方向是否在边界内，
+                                 但是否跨越依然是我自己处理"
+            │
+            ▼
+    工程师通过 OXN 信任 AI
+    "我知道 AI 一定会执行，
+     OXN 告诉我哪些可靠、
+     哪些不可靠"
+```
+
+工程师与 AI 原本是两个点协作，但这个协作充满不确定性导致不可信任。OpenXenon 加入后是分别跟两者建立信任协作，然后让工程师可以通过 OpenXenon 信任 AI。
+
 ## 4. IAP 协作流水线核心
 
 > **工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
@@ -122,7 +161,7 @@ L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v
 ```
 Work (一次完整 IAP 周期)
 ├── Intent 阶段 (工程师定意图)
-│   1. 创建 work.oxn
+│   1. 创建 work.md
 │   2. 分析 work 需要哪些 Asset 作为边界
 │   3. 选择引用 Asset (ref @prj/assets/...)
 │
@@ -144,11 +183,37 @@ Work (一次完整 IAP 周期)
 
 ## 6. E1 Asset — IAP 的硬约束边界
 
+### 6.1 三边界框架（ADR-0054）
+
+E1 Asset 的边界类型明确为 **3 个正交维度**：
+
+| 边界类型 | 约束内容 | IAP 角色 | 引用方式 |
+|---|---|---|---|
+| **Domain** | 词汇表（term）/ 禁用词（ban）/ 不变量（invariant） | 业务边界（语义约束） | Work 级多选，Task 级单选 |
+| **Workflow** | slots / deps / observe | 执行边界（结构约束） | Blueprint `## Refs` 引用 |
+| **Stack** | runtimes / linters / testers | 实现边界（环境约束） | Work 级声明，不进 Task |
+
+### 6.2 Blueprint 组合模板（ADR-0055）
+
+Blueprint 从"执行模板"提升为**组合模板**——E1 Asset 内的隔离层：
+
+- Work 只引用 Blueprint（单 ref），不再直接引用 3 边界
+- Blueprint 通过 `## Refs` 引用 Domain + Workflow + Stack + 其他 Blueprint
+- 单向依赖层级：`3 边界 → Blueprint → Work`（变更单向传播）
+
+### 6.3 AssetKind（v0.6.1）
+
+```ts
+type AssetKind = 'domain' | 'workflow' | 'stack' | 'blueprint' | 'roadmap'
+```
+
 | 资产 | 定义 | 约束硬度 |
 |---|---|---|
-| Domain | 业务词汇表（term）、禁令（ban）、不变量（invariant） | langium parse + term/ban 强校验 |
-| Blueprint | 技术流水线模板（slot 拓扑 + Probe 标准） | DAG 无环校验 + slot 对齐 |
+| Domain | 业务词汇表（term）、禁令（ban）、不变量（invariant） | parse + term/ban 强校验 |
+| Workflow | 执行模板（slot 拓扑 + Probe 标准）——原 Blueprint | DAG 无环校验 + slot 对齐 |
 | Stack | 技术环境约束（language/runtime/linter/test） | v0.6 硬要求，Proof 阶段直接断言 |
+| Blueprint | 组合模板——引用 Domain + Workflow + Stack | `## Refs` 校验（kind-isolation） |
+| Roadmap | 跨类型导航索引（meta 层） | scene 表校验 |
 
 **Asset vs OpenSpec specs/**：
 
@@ -310,6 +375,23 @@ Sub Agent (AI)
 | 失败处理 | 拒绝执行 | 记录并继续 |
 | 哲学 | "不该做的不能做" | "做了什么都被记住" |
 | AI 自主性 | 低（被约束） | 高（被信任 + 可审计） |
+
+## 13. 最小信任闭环（v0.6.1）
+
+> **v0.6.1 = 最小信任闭环**——信任链的四层确定性就位。
+
+信任链的每一层都需要确定性保障。v0.6.1 修复了四个信任链断裂点：
+
+| 确定性层 | 模块 | 信任职责 | v0.6.1 修复 |
+|---|---|---|---|
+| **确定性边界** | OXL + Asset | 工程师确定性地定义"可靠" | 三边界框架（ADR-0054/0055/0056） |
+| **确定性验证** | Kernel + Proof | OXN 出示真实验证结果 | A3：submit 真正执行 Probe（非合成占位符） |
+| **确定性证据** | Proof | 不可篡改的执行事实记录 | A1：finalizeWork 全路径写 frozen.json（含失败路径） |
+| **确定性记录** | Proof + Work | OXN 确定性地记录边界违反 | A2：接通 finalizeWorkDomains（记录而非阻止） |
+
+> **A2 的重新理解**：A2 不是"阻止 AI 跨越边界"——AI 是否跨越边界是 AI 自己的概率决策。A2 是"OXN 确定性地告知工程师 AI 跨越了边界"——Domain proof FAIL 时在 frozen.json 中记录"边界违反"。工程师看到证据后决定：调整边界（Asset evolve）还是接受（finalize with warning）。
+
+详见 [version-unification-rfc.md](../../.openxenon/docs/rfcs/version-unification-rfc.md)。
 
 ---
 

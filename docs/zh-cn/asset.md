@@ -56,7 +56,7 @@ Asset 创建后立即进入三层不可变锁定：
 |---|---|---|
 | OS 层 | chmod 0o444（写前抬 0o644 → try/finally 回锁 0o444） | root 可绕过 |
 | 内容层 | `content_hash` = SHA-256（写入时计算，读取时校验） | 改内容 hash 对不上 |
-| WAL 层 | **planLock**（v0.6.1-alpha.3 起 3 组件 hash：workOxn/blueprints/tasks + allHash；blueprintsHash 含 Blueprint + 3 边界 composite hash） | 锁后任何 .oxn 漂移 → IAP_ALIGN_LOCK_HASH_MISMATCH |
+| WAL 层 | **planLock**（v0.6.1-alpha.3 起 3 组件 hash：workOxn/blueprints/tasks + allHash；blueprintsHash 含 Blueprint + 3 边界 composite hash） | 锁后任何 .md 漂移 → IAP_ALIGN_LOCK_HASH_MISMATCH |
 
 三层锁确保 Asset 在被 Work 引用期间**绝对不可变**——Engine 在 Proof 阶段能直接断言"AI 是否越界修改了 ban 目录"。
 
@@ -126,11 +126,11 @@ Stack 定义在 Domain 的 `## Stack` H2 section 下。Proof 阶段直接断言�
 .openxenon/
 ├── config.json                   ← assetRoot + assetDirs
 ├── assets/
-│   ├── domain/<Name>.oxn         ← E1 Asset 默认路径
-│   ├── blueprint/<name>.oxn
-│   └── stack/<name>.oxn
+│   ├── domain/<Name>.md          ← E1 Asset 默认路径
+│   ├── blueprint/<name>.md
+│   └── stack/<name>.md
 ├── works/<w>/
-│   └── work.oxn                  ← ref @prj/assets/domains/MemberContext
+│   └── work.md                   ← ref @prj/assets/domains/MemberContext
 └── ...
 ```
 
@@ -149,7 +149,7 @@ oxn stack create ExampleStackDomain
 ```bash
 oxn work create MemberContext --type asset --asset-kind domain
 # → 走 8 阶段流程（validate → lock → run → finalize）
-# → .openxenon/assets/domains/MemberContext.oxn 正式入库
+# → .openxenon/assets/domains/MemberContext.md 正式入库
 ```
 
 Skill `oxn-work` 教学推荐严谨路径（可追溯、有 planLock）。
@@ -366,7 +366,7 @@ $ oxn asset validate --check-dag
 
 | 子目录 | 内容 | 大小限制 | 写入路径 |
 |---|---|---|---|
-| `library/` | AI 解析后写入 .oxn | < 50KB | 通过 Work |
+| `library/` | AI 解析后写入 .md | < 50KB | 通过 Work |
 | `external/` | 仅引用指针 | 无 | 手动 / 自动 fetch |
 
 ### 14.5 引用图渲染（v0.7.0 W11-12）

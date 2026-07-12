@@ -51,7 +51,7 @@ AI calls the CLI through the Skill protocol. See [Align](./align.md).
 
 No. `frozen.json` is the inspection report issued by the OXN Engine; both AI and engineers can only read it. If AI could modify `frozen.json`, the Proof axis would be a name in name only.
 
-### What if I modify work.oxn after lock?
+### What if I modify work.md after lock?
 
 It triggers `IAP_ALIGN_LOCK_HASH_MISMATCH`. You need `oxn work unlock` → edit → `oxn work lock` to re-freeze.
 
@@ -77,7 +77,7 @@ Project not initialized. Run `oxn init`.
 
 ### `OXN_TASK_OXN_MISSING`
 
-A Task is declared in work.oxn but the corresponding task.oxn does not exist. Run `oxn work add-task`.
+A Task is declared in work.md but the corresponding task.md does not exist. Run `oxn work add-task`.
 
 ### `OXN_WORK_ALREADY_EXISTS`
 
@@ -89,7 +89,7 @@ The work is not locked. Run `oxn work validate` → `oxn work lock`.
 
 ### `IAP_ALIGN_LOCK_HASH_MISMATCH`
 
-An asset (`.oxn` file) was modified after lock. After confirming the modification is justified, `oxn work unlock` → re-`lock`.
+An asset (`.md` file) was modified after lock. After confirming the modification is justified, `oxn work unlock` → re-`lock`.
 
 For the full error-code quick reference see [CLI](./cli.md#error-code-quick-reference).
 

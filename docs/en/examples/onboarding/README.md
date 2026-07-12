@@ -8,9 +8,9 @@ When a new member registers, we also need to operate on OrderContext — two bou
 
 ## Files
 
-- `work.oxn` — Work orchestration (declares MemberContext + OrderContext two domain refs)
-- `tasks/register-member/task.oxn` — Register member task
-- `tasks/grant-welcome-bonus/task.oxn` — Issue welcome bonus task
+- `work.md` — Work orchestration (declares MemberContext + OrderContext two domain refs)
+- `tasks/register-member/task.md` — Register member task
+- `tasks/grant-welcome-bonus/task.md` — Issue welcome bonus task
 
 ## How to run
 

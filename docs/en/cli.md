@@ -59,14 +59,13 @@ See [Proof](./proof.md) for the full Proof axis concept.
 
 ### Lifecycle
 
-> **v0.6.1+**: New `oxn work create` defaults to writing `works/<n>/work.md` (canonical .md), while keeping `.oxn` as v0.6.x fallback;
-> Add flag `--oxn-legacy` to revert to .oxn writes.
+> **v0.6.1+**: New `oxn work create` defaults to writing `works/<n>/work.md` (canonical .md).
 
 | Command | Effect |
 |---|---|
 | `oxn work create <id> --blueprint <bp>` | Create Work skeleton (default .md) |
 | `oxn work add-task --work <w> --task-name <t> --blueprint <bp> [--domain <d>]` | Create a Task |
-| `oxn work validate <w> [--json]` | Validate `work.oxn` + write `.work` gate card |
+| `oxn work validate <w> [--json]` | = `lock --dry-run` (backward-compat alias) |
 | `oxn work lock <w> [--json]` | Lock the work (planLock + 4-component hash) |
 | `oxn work unlock <w>` | Unlock the work |
 | `oxn work run --work-file <path> [--json]` | Start the state machine |
@@ -110,20 +109,15 @@ See [Align](./align.md) for the full v1.1 8-stage flow.
 
 | Command | Effect |
 |---|---|
-| `oxn domain create <DomainName>` | Create Domain skeleton (default .md, add `--oxn-legacy` for .oxn) |
+| `oxn domain create <DomainName>` | Create Domain skeleton (default .md) |
 | `oxn domain validate <DomainName>` | Validate Domain |
 | `oxn domain list` | List all Domains |
-| `oxn domain sync --all` | **v0.6.1**: Batch .oxn → .md sync (keeps .oxn as v0.6.x fallback) |
 
 ### Asset path resolution (v0.6.1)
 
 CLI resolves assets in this order:
-1. `<primary>/<name>.md`     — v0.6 canonical
-2. `<primary>/<name>.oxn`    — v0.6.x fallback (v0.7.0 cutover planned)
-3. `<fallback>/<name>.md`   — v0.5 layout .md (if exists)
-4. `<fallback>/<name>.oxn`  — v0.5 legacy (compat window)
-
-Monitor .oxn count: `bun run check:md-fallback`
+1. `<primary>/<name>.md`     — v0.6+ canonical
+2. `<fallback>/<name>.md`   — v0.5 layout .md (if exists)
 
 See [Intent](./intent.md) for full Domain + Blueprint syntax.
 
@@ -169,8 +163,8 @@ See [ADR-0056 External Inline + Status](./.openxenon/docs/adrs/0056-external-inl
 
 | Command | Effect |
 |---|---|
-| `oxn dev compile <file.oxn> [-o DIR]` | Compile a `.oxn` file |
-| `oxn dev unpack <file.bundle.oxn> [-o DIR]` | Unpack a bundle |
+| `oxn dev compile <file.md> [-o DIR]` | Compile a `.md` file |
+| `oxn dev unpack <file.bundle.md> [-o DIR]` | Unpack a bundle |
 | `oxn dev validate [--standard]` | Standard validation |
 | `oxn dev migrate-yaml <file> [--all]` | YAML migration |
 | `oxn dev promote <task-dir> [--as-new N]` | Promote assets |
@@ -205,7 +199,7 @@ When the CLI returns exit code 1, the JSON output is formatted as:
   "error": {
     "type": "IAPError",
     "code": "IAP_ALIGN_LOCK_HASH_MISMATCH",
-    "message": "work.oxn has drifted: hash mismatch",
+    "message": "work.md has drifted: hash mismatch",
     "context": { "component": "workOxn", "locked": "...", "current": "..." },
     "action": "YIELD_TO_HUMAN"
   }
@@ -220,16 +214,16 @@ When the CLI returns exit code 1, the JSON output is formatted as:
 |---|---|---|
 | `OXN_NO_PROJECT` | Project not initialized | `oxn init` |
 | `OXN_INVALID_NAME` | Bad name format | Use kebab-case / PascalCase |
-| `OXN_TASK_OXN_MISSING` | task.oxn missing | `oxn work add-task` |
+| `OXN_TASK_OXN_MISSING` | task.md missing | `oxn work add-task` |
 | `OXN_TASK_NOT_FOUND` | Task not found | First `oxn work run` |
-| `OXN_BLUEPRINT_NOT_IN_WORK` | Blueprint not declared in work.oxn | Edit work.oxn |
-| `OXN_DOMAIN_NOT_IN_WORK` | Domain not declared in work.oxn | Edit work.oxn |
-| `OXN_DSL_PARSE_FAILED` | .oxn syntax error | See error message and fix |
+| `OXN_BLUEPRINT_NOT_IN_WORK` | Blueprint not declared in work.md | Edit work.md |
+| `OXN_DOMAIN_NOT_IN_WORK` | Domain not declared in work.md | Edit work.md |
+| `OXN_DSL_PARSE_FAILED` | .md syntax error | See error message and fix |
 | `OXN_WORK_ALREADY_EXISTS` | Duplicate run | Use `status` to inspect |
 | `OXN_WORK_NOT_FOUND` | Work not found | Confirm the work name |
 | `IAP_ALIGN_LOCK_NOT_FOUND` | `.work.planLock` missing | First `oxn work lock` |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | Asset drift after lock | Inspect the drift source, or unlock → re-lock |
-| `IAP_ALIGN_WORK_REMOVED` | work.oxn missing | YIELD_TO_HUMAN |
+| `IAP_ALIGN_WORK_REMOVED` | work.md missing | YIELD_TO_HUMAN |
 
 ---
 
