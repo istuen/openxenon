@@ -18,6 +18,7 @@
  */
 
 import { createHash } from 'crypto'
+import * as fs from 'fs'
 import {
   readFileSync,
   writeFileSync,
@@ -143,8 +144,6 @@ export function getCachePath(rootDir: string, entity: 'domain' | 'blueprint' | '
   const configPath = join(rootDir, '.openxenon', 'config.json')
   let assetRoot = 'assets'
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs') as typeof import('fs')
     const raw = fs.readFileSync(configPath, 'utf-8')
     const config = JSON.parse(raw)
     if (config.assetRoot) assetRoot = config.assetRoot
@@ -166,8 +165,6 @@ export function getCacheMdPath(rootDir: string, entity: 'domain' | 'blueprint' |
   const configPath = join(rootDir, '.openxenon', 'config.json')
   let assetRoot = 'assets'
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require('fs') as typeof import('fs')
     const raw = fs.readFileSync(configPath, 'utf-8')
     const config = JSON.parse(raw)
     if (config.assetRoot) assetRoot = config.assetRoot
