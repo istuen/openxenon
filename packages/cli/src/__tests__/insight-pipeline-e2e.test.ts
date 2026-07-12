@@ -64,7 +64,7 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     const domainsDir = join(base, '.openxenon', 'domains')
     mkdirSync(domainsDir, { recursive: true })
     writeFileSync(
-      join(domainsDir, 'TestContext.oxn'),
+      join(domainsDir, 'TestContext.md'),
       `domain "TestContext" {
   description = "test"
   term { "Quality": "quality" }
@@ -78,7 +78,7 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     const bpsDir = join(base, '.openxenon', 'blueprints')
     mkdirSync(bpsDir, { recursive: true })
     writeFileSync(
-      join(bpsDir, 'test-bp.oxn'),
+      join(bpsDir, 'test-bp.md'),
       `blueprint "test-bp" {
   slot "build" { "observe" = ["shell-exec"] }
 }
@@ -90,7 +90,7 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     const worksDir = join(base, '.openxenon', 'works', 'test-work')
     mkdirSync(worksDir, { recursive: true })
     writeFileSync(
-      join(worksDir, 'work.oxn'),
+      join(worksDir, 'work.md'),
       `work "test-work" {
   context { goal = "test" }
   domain "TestContext" ref "@prj/domains/TestContext"
@@ -104,7 +104,7 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     const proofsDir = join(base, '.openxenon', 'proofs', 'test-work')
     mkdirSync(proofsDir, { recursive: true })
     writeFileSync(
-      join(proofsDir, 'proof.oxn'),
+      join(proofsDir, 'proof.md'),
       `proof "test-work" {
   probe "p1" { ref "@oxn/probes/shell-exec" params { command = "true", timeout = "5000" } }
 }`,
@@ -147,17 +147,17 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
 
     const domainsDir = join(base, '.openxenon', 'domains')
     mkdirSync(domainsDir, { recursive: true })
-    writeFileSync(join(domainsDir, 'TestContext.oxn'), `domain "TestContext" { invariant { "test" } }`, 'utf-8')
+    writeFileSync(join(domainsDir, 'TestContext.md'), `domain "TestContext" { invariant { "test" } }`, 'utf-8')
     const bpsDir = join(base, '.openxenon', 'blueprints')
     mkdirSync(bpsDir, { recursive: true })
-    writeFileSync(join(bpsDir, 'test-bp.oxn'), `blueprint "test-bp" { slot "build" { "observe" = [] } }`, 'utf-8')
+    writeFileSync(join(bpsDir, 'test-bp.md'), `blueprint "test-bp" { slot "build" { "observe" = [] } }`, 'utf-8')
 
     // 创建 2 个 work
     for (const w of ['w1', 'w2']) {
       const d = join(base, '.openxenon', 'works', w)
       mkdirSync(d, { recursive: true })
       writeFileSync(
-        join(d, 'work.oxn'),
+        join(d, 'work.md'),
         `work "${w}" { domain "TestContext" ref "@prj/domains/TestContext" blueprint "test-bp" ref "@prj/blueprints/test-bp" }`,
         'utf-8',
       )

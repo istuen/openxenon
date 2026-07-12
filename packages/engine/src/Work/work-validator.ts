@@ -1,6 +1,6 @@
 import { join } from 'path'
 import type { WorkDeclaration } from '../oxl'
-import { getWorkOxnPath, getWorkGatePath } from './dual-state-io'
+import { getWorkMdPath, getWorkGatePath } from './dual-state-io'
 // 🆕 v0.6.1-alpha.4 Phase B: 删 buildPerWorkDomainsIndex/writePerWorkDomainsIndex/getPerWorkDomainsJsonPath import
 import {
   buildPerWorkBlueprintsIndex,
@@ -45,9 +45,9 @@ export async function validateAndWriteArtifacts(params: {
   const { projectRoot, workName, work, missingTaskOxn } = params
   const warnings: string[] = []
 
-  const workOxnPath = getWorkOxnPath(projectRoot, workName)
+  const workMdPath = getWorkMdPath(projectRoot, workName)
   // 🆕 v0.6.1-alpha.4 Phase B: 删 buildPerWorkDomainsIndex 调用（Domain 引用走 Blueprint ## Refs）
-  const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
+  const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workMdPath })
 
   const unresolved: UnresolvedRef[] = []
   // 🆕 Phase B: 删 domain invalid ref 收集（Domain 通过 Blueprint ## Refs 解析，drift 由 blueprint 覆盖）
@@ -66,7 +66,7 @@ export async function validateAndWriteArtifacts(params: {
       kind: 'blueprint',
       name: t,
       ref: null,
-      reason: `task "${t}" declared in work.oxn but tasks/${t}/task.oxn missing`,
+      reason: `task "${t}" declared in work.md but tasks/${t}/task.md missing`,
     })
   }
 
@@ -79,7 +79,7 @@ export async function validateAndWriteArtifacts(params: {
   writePerWorkBlueprintsIndex({
     projectRoot,
     workName,
-    workOxnPath,
+    workMdPath,
     outPath: blueprintsJsonPath,
   })
 

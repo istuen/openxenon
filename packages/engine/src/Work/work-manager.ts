@@ -7,7 +7,7 @@ import {
   writeFileSync,
 } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { BOUNDARY_DIR, TASK_OXN_FILE } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, TASK_FILE } from '@openxenon/engine/kernel'
 import { renderWorkSkeleton } from './work-skeleton'
 import { isWorkStarted } from './dual-state-exec'
 import { resolveAssetPrimaryPath, resolveAssetAltPath } from '@openxenon/engine/infra/paths'
@@ -90,8 +90,6 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
       ? [
           join(projectRoot, '.openxenon', 'blueprints', `${blueprintDecl.name}.md`),
           join(projectRoot, '.openxenon', 'blueprints', blueprintDecl.name, 'blueprint.md'),
-          join(projectRoot, '.openxenon', 'blueprints', `${blueprintDecl.name}.oxn`),
-          join(projectRoot, '.openxenon', 'blueprints', blueprintDecl.name, 'blueprint.oxn'),
         ]
       : []
     const blueprintPath = blueprintDecl.file ? join(projectRoot, blueprintDecl.file) : null
@@ -136,19 +134,14 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
       if (!existsSync(workAltDir)) mkdirSync(workAltDir, { recursive: true })
       const workFile = workPrimaryPath
       if (!force && existsSync(workFile)) {
-        throw new Error(`${assetFormat === 'oxn' ? 'work.oxn' : 'work.md'} already exists in ${outputDir}`)
+        throw new Error(`work.md already exists in ${outputDir}`)
       }
       const workContent = renderWorkSkeleton(workName, resolvedBlueprintName, slots, assetFormat)
       writeFileSync(workFile, workContent, 'utf-8')
 
       if (autoSync) {
         try {
-          // v0.7.0+: autoSync creates .oxn alt for backward compatibility only
-          // when primary format is .md
-          if (assetFormat === 'md') {
-            // For now, skip alt file creation in v0.7.0
-            // TODO: implement md→oxn serialization if needed for backward compat
-          }
+          // v0.7.0+: .oxn format removed, no alt file needed
         } catch {
           // autoSync failure does not block
         }
@@ -196,12 +189,7 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
 
   if (autoSync) {
     try {
-      // v0.7.0+: autoSync creates .oxn alt for backward compatibility only
-      // when primary format is .md
-      if (assetFormat === 'md') {
-        // For now, skip alt file creation in v0.7.0
-        // TODO: implement md→oxn serialization if needed for backward compat
-      }
+      // v0.7.0+: .oxn format removed, no alt file needed
     } catch {
       // autoSync failure does not block
     }
@@ -255,9 +243,9 @@ export async function addTaskToWork(params: AddTaskParams): Promise<AddTaskResul
   }
 
   const taskDir = join(projectRoot, BOUNDARY_DIR, 'works', workName, 'tasks', taskName)
-  const taskFile = join(taskDir, TASK_OXN_FILE)
+  const taskFile = join(taskDir, TASK_FILE)
   if (existsSync(taskFile) && !force) {
-    throw new Error(`task.oxn already exists at ${taskFile}`)
+    throw new Error(`task.md already exists at ${taskFile}`)
   }
 
   let allowedBlueprints: string[] = []
@@ -345,9 +333,9 @@ export function editTask(params: EditTaskParams): EditTaskResult {
     throw new Error(`work "${workName}" is already running; cannot modify`)
   }
 
-  const taskFile = join(projectRoot, BOUNDARY_DIR, 'works', workName, 'tasks', taskName, TASK_OXN_FILE)
+  const taskFile = join(projectRoot, BOUNDARY_DIR, 'works', workName, 'tasks', taskName, TASK_FILE)
   if (!existsSync(taskFile)) {
-    throw new Error(`task.oxn not found at ${taskFile}`)
+    throw new Error(`task.md not found at ${taskFile}`)
   }
   let content = readFileSync(taskFile, 'utf-8')
 
@@ -357,7 +345,7 @@ export function editTask(params: EditTaskParams): EditTaskResult {
       `objective = "${newObjective.replace(/"/g, '\\"')}"`,
     )
     if (replaced === content) {
-      throw new Error('task.oxn has no objective field; cannot update')
+      throw new Error('task.md has no objective field; cannot update')
     }
     content = replaced
   }
@@ -445,9 +433,9 @@ export function deleteTask(params: DeleteTaskParams): DeleteTaskResult {
   }
 
   if (keepState) {
-    const taskOxn = join(taskDir, TASK_OXN_FILE)
-    if (existsSync(taskOxn)) {
-      unlinkSync(taskOxn)
+    const taskMd = join(taskDir, TASK_FILE)
+    if (existsSync(taskMd)) {
+      unlinkSync(taskMd)
     }
   } else {
     rmSync(taskDir, { recursive: true, force: true })

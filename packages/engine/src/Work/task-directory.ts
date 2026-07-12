@@ -1,7 +1,7 @@
 import { join } from 'path'
 
 export const TASK_DIR_NAME = 'tasks'
-export const TASK_BLUEPRINT_FILE = 'blueprint.oxn'
+export const TASK_BLUEPRINT_FILE = 'blueprint.md'
 export const TASK_TRACE_FILE = 'task-trace.jsonl'
 
 export interface TaskDirectory {

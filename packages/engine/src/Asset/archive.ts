@@ -2,9 +2,9 @@
  * Asset module — archive use case (v0.6.1-alpha.1 Asset Lifecycle 闭环)
  *
  * 归档 Asset：
- * 1. 读 Asset .oxn + .md 镜像
+ * 1. 读 Asset .md
  * 2. 校验无引用（孤儿才允许归档，被引用 → IAPError YIELD_TO_HUMAN）
- * 3. mv .oxn + .md → .openxenon/.archived/<kind>/X.oxn + X.md
+ * 3. mv .md → .openxenon/.archived/<kind>/X.md
  * 4. 写 metadata.json 记录归档原因 + 时间 + 引用方（应为空）
  * 5. planLock 仍可查（只读 — 归档资产不允许 run，但 planLock 卡片保留供审计）
  *
@@ -30,30 +30,28 @@ export async function archive(input: ArchiveInput): Promise<ArchiveResult> {
   const { kind, name, reason, projectRoot } = input
 
   // 1. 解析源路径（主路径 + fallback）
-  const sourceOxnPath = resolveAssetFile(projectRoot, kind, name, 'oxn')
   const sourceMdPath = resolveAssetFile(projectRoot, kind, name, 'md')
 
   // 2. 解析归档目标路径
-  const targetOxnPath = resolveArchivedAssetFile(projectRoot, kind, name, 'oxn')
   const targetMdPath = resolveArchivedAssetFile(projectRoot, kind, name, 'md')
   const targetMetaPath = resolveArchivedMetadataFile(projectRoot, kind, name)
 
   // 3. 幂等检查：已归档 → 返回 idempotent
-  if (existsSync(targetOxnPath) || existsSync(targetMdPath)) {
+  if (existsSync(targetMdPath)) {
     return {
       ok: true,
       idempotent: true,
-      archivedPath: targetOxnPath,
-      message: `Asset '${name}' (${kind}) is already archived at ${targetOxnPath}`,
+      archivedPath: targetMdPath,
+      message: `Asset '${name}' (${kind}) is already archived at ${targetMdPath}`,
     }
   }
 
   // 4. 检查源文件存在
-  if (!existsSync(sourceOxnPath) && !existsSync(sourceMdPath)) {
+  if (!existsSync(sourceMdPath)) {
     throw new IAPError('INFRA', 'PATH_CONFLICT', IAPAction.YIELD_TO_HUMAN, `Asset '${name}' (${kind}) not found`, {
       kind,
       name,
-      expectedPath: sourceOxnPath,
+      expectedPath: sourceMdPath,
     })
   }
 
@@ -71,12 +69,9 @@ export async function archive(input: ArchiveInput): Promise<ArchiveResult> {
   }
 
   // 6. 移动文件
-  const targetDir = join(targetOxnPath, '..')
+  const targetDir = join(targetMdPath, '..')
   if (!existsSync(targetDir)) {
     mkdirSync(targetDir, { recursive: true })
-  }
-  if (existsSync(sourceOxnPath)) {
-    renameSync(sourceOxnPath, targetOxnPath)
   }
   if (existsSync(sourceMdPath)) {
     renameSync(sourceMdPath, targetMdPath)
@@ -88,9 +83,8 @@ export async function archive(input: ArchiveInput): Promise<ArchiveResult> {
     name,
     reason,
     archivedAt: new Date().toISOString(),
-    archivedPath: targetOxnPath,
-    mdArchivedPath: targetMdPath,
-    originalPath: sourceOxnPath,
+    archivedPath: targetMdPath,
+    originalPath: sourceMdPath,
     referencesAtArchive: 0, // 由 step 5 校验保证
     planLockReadOnly: true,
   }
@@ -99,9 +93,9 @@ export async function archive(input: ArchiveInput): Promise<ArchiveResult> {
   return {
     ok: true,
     idempotent: false,
-    archivedPath: targetOxnPath,
+    archivedPath: targetMdPath,
     metadataPath: targetMetaPath,
-    message: `Asset '${name}' (${kind}) archived to ${targetOxnPath}`,
+    message: `Asset '${name}' (${kind}) archived to ${targetMdPath}`,
   }
 }
 

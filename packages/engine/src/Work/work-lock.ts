@@ -6,7 +6,7 @@ export interface LockResult {
   workName: string
   lockedAt: string
   planLock: {
-    workOxnHash: string
+    workMdHash: string
     blueprintsHash: string
     tasksHash: string
     allHash: string | null
@@ -37,7 +37,7 @@ export function lockWork(projectRoot: string, workName: string): LockResult {
     workName,
     lockedAt: pl.lockedAt,
     planLock: {
-      workOxnHash: pl.workOxnHash,
+      workMdHash: pl.workMdHash,
       // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite 含 Blueprint + 3 边界）
       blueprintsHash: pl.blueprintsHash,
       tasksHash: pl.tasksHash,

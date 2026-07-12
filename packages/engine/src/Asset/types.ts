@@ -99,7 +99,7 @@ export interface ArchiveResult {
   ok: boolean
   /** 幂等操作（资产已归档） */
   idempotent: boolean
-  /** 归档后 .oxn 路径 */
+  /** 归档后 .md 路径 */
   archivedPath: string
   /** 归档 metadata.json 路径 */
   metadataPath?: string

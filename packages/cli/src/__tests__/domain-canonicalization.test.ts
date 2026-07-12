@@ -39,9 +39,9 @@ describe('toKebab (规范化函数)', () => {
 })
 
 describe('assertNameFileConsistent (NAME_FILE_MISMATCH 防御)', () => {
-  test('匹配: MemberContext / member-context.oxn → 不抛错', () => {
+  test('匹配: MemberContext / member-context.md → 不抛错', () => {
     expect(() =>
-      assertNameFileConsistent('MemberContext', '/x/.openxenon/domains/member-context.oxn', 'domain'),
+      assertNameFileConsistent('MemberContext', '/x/.openxenon/domains/member-context.md', 'domain'),
     ).not.toThrow()
   })
 
@@ -49,7 +49,7 @@ describe('assertNameFileConsistent (NAME_FILE_MISMATCH 防御)', () => {
     expect(() =>
       assertNameFileConsistent(
         'planet-minigame-pipeline',
-        '/x/.openxenon/blueprints/planet-minigame-pipeline.oxn',
+        '/x/.openxenon/blueprints/planet-minigame-pipeline.md',
         'blueprint',
       ),
     ).not.toThrow()
@@ -58,14 +58,14 @@ describe('assertNameFileConsistent (NAME_FILE_MISMATCH 防御)', () => {
   test('匹配: snake_case 声明 vs kebab-case 文件', () => {
     // 规范化后等价
     expect(() =>
-      assertNameFileConsistent('wechat_minigame', '/x/.openxenon/domains/wechat-minigame.oxn', 'domain'),
+      assertNameFileConsistent('wechat_minigame', '/x/.openxenon/domains/wechat-minigame.md', 'domain'),
     ).not.toThrow()
   })
 
-  test('不匹配: MemberContext 声明 vs foo-bar.oxn 文件 → 抛 IAPError', () => {
+  test('不匹配: MemberContext 声明 vs foo-bar.md 文件 → 抛 IAPError', () => {
     let caught: unknown = null
     try {
-      assertNameFileConsistent('MemberContext', '/x/.openxenon/domains/foo-bar.oxn', 'domain')
+      assertNameFileConsistent('MemberContext', '/x/.openxenon/domains/foo-bar.md', 'domain')
     } catch (e) {
       caught = e
     }
@@ -76,11 +76,11 @@ describe('assertNameFileConsistent (NAME_FILE_MISMATCH 防御)', () => {
     expect(err.code).toBe('NAME_FILE_MISMATCH')
     expect(err.action).toBe('YIELD_TO_HUMAN')
     expect(err.message).toContain("'MemberContext'")
-    expect(err.message).toContain("'foo-bar.oxn'")
+    expect(err.message).toContain("'foo-bar.md'")
     expect(err.context).toEqual({
       entityType: 'domain',
       declared: 'MemberContext',
-      file: 'foo-bar.oxn',
+      file: 'foo-bar.md',
       normalized: 'member-context',
       suggestion: expect.stringContaining('Either rename the file'),
     })
@@ -89,7 +89,7 @@ describe('assertNameFileConsistent (NAME_FILE_MISMATCH 防御)', () => {
   test('不匹配: blueprint 实体类型也走相同检查', () => {
     let caught: unknown = null
     try {
-      assertNameFileConsistent('MyBlueprint', '/x/.openxenon/blueprints/other.oxn', 'blueprint')
+      assertNameFileConsistent('MyBlueprint', '/x/.openxenon/blueprints/other.md', 'blueprint')
     } catch (e) {
       caught = e
     }

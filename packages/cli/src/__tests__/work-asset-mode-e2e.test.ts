@@ -32,10 +32,10 @@ beforeEach(async () => {
     JSON.stringify({ version: 1, mode: 'PRODUCTION', locale: 'zh-CN' }),
   )
   // 复制 asset-create workflow 到测试环境
-  const srcWf = join(REPO_ROOT, '.openxenon', 'assets', 'workflows', 'asset-create.oxn')
+  const srcWf = join(REPO_ROOT, '.openxenon', 'assets', 'workflows', 'asset-create.md')
   const dstWfDir = join(tmpDir, '.openxenon', 'assets', 'workflows')
   mkdirSync(dstWfDir, { recursive: true })
-  copyFileSync(srcWf, join(dstWfDir, 'asset-create.oxn'))
+  copyFileSync(srcWf, join(dstWfDir, 'asset-create.md'))
 })
 
 afterEach(() => {

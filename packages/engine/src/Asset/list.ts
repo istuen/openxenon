@@ -10,14 +10,13 @@ export function list(input: ListInput): ListResult {
   if (!existsSync(dir)) {
     return { assets: [] }
   }
-  const files = readdirSync(dir).filter((f) => f.endsWith('.oxn') || f.endsWith('.md'))
+  const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
   const assets = files.map((f) => {
-    const ext = f.endsWith('.oxn') ? 'oxn' : 'md'
     return {
       kind: input.kind,
-      name: f.replace(/\.(oxn|md)$/, ''),
+      name: f.replace(/\.md$/, ''),
       path: `${dir}/${f}`,
-      format: ext as AssetFormat,
+      format: 'md' as AssetFormat,
     }
   })
   return { assets }

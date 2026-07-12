@@ -32,7 +32,7 @@ name: ${name}
 - value: TODO: business invariant rule 2
 `
   }
-  // v0.7.0+: .oxn format no longer supported, always return .md template
+  // v0.7.0+: always return .md template
   return `---
 entity: domain
 version: 0.3.0

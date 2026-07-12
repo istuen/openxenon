@@ -14,8 +14,8 @@
  *
  * Output: SyncReport (separate from --apply's actual modifications)
  *
- * Implementation note: Asset abstract extraction reads from .md (canonical) and falls
- * back to .oxn. Reads frontmatter abstract field.
+ * Implementation note: Asset abstract extraction reads from .md (canonical).
+ * Reads frontmatter abstract field.
  */
 
 import { readFileSync, existsSync, writeFileSync, readdirSync } from 'node:fs'
@@ -155,9 +155,9 @@ function scanAllAssets(projectRoot: string): ScannedAsset[] {
   for (const kind of ALL_KINDS) {
     const dir = resolveAssetDir(projectRoot, kind, null)
     if (!existsSync(dir)) continue
-    const files = readdirSync(dir).filter((f) => f.endsWith('.oxn') || f.endsWith('.md'))
+    const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
     for (const f of files) {
-      const name = f.replace(/\.(oxn|md)$/, '')
+      const name = f.replace(/\.md$/, '')
       const path = join(dir, f)
       out.push({ kind, name, path })
     }
@@ -166,7 +166,7 @@ function scanAllAssets(projectRoot: string): ScannedAsset[] {
 }
 
 /**
- * Read Asset abstract from .md frontmatter or .oxn content.
+ * Read Asset abstract from .md frontmatter.
  * Returns null if not found or asset doesn't exist.
  */
 function readAssetAbstract(projectRoot: string, kind: AssetKind, name: string): string | null {
@@ -175,12 +175,6 @@ function readAssetAbstract(projectRoot: string, kind: AssetKind, name: string): 
   const mdPath = join(dir, `${name}.md`)
   if (existsSync(mdPath)) {
     const abstract = extractAbstractFromMd(readFileSync(mdPath, 'utf-8'))
-    if (abstract) return abstract
-  }
-  // Fall back to .oxn
-  const oxnPath = join(dir, `${name}.oxn`)
-  if (existsSync(oxnPath)) {
-    const abstract = extractAbstractFromOxn(readFileSync(oxnPath, 'utf-8'))
     if (abstract) return abstract
   }
   return null
@@ -200,12 +194,6 @@ function extractAbstractFromMd(content: string): string | null {
       .join('\n')
       .trim() || null
   )
-}
-
-function extractAbstractFromOxn(content: string): string | null {
-  const match = content.match(/abstract\s*=\s*"((?:[^"\\]|\\.)*)"/m)
-  if (!match?.[1]) return null
-  return match[1].replace(/\\"/g, '"').trim()
 }
 
 function escapeRegex(s: string): string {

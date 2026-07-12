@@ -5,16 +5,16 @@
 //
 // V0 旧布局（PR-4 之前）：
 //   works/<w>/
-//     work.oxn
+//     work.md
 //     work-state.json / work-trace.jsonl / work-frozen.json   ← 根目录
 //     tasks/<t>/
-//       task.oxn
+//       task.md
 //       task-state.json / task-trace.jsonl / task-frozen.json ← task 子目录
 //
 // V1 新布局（PR-4 切换）：
 //   works/<w>/
-//     work.oxn                          [保留]
-//     tasks/<t>/task.oxn                [保留]
+//     work.md                           [保留]
+//     tasks/<t>/task.md                 [保留]
 //     .run/                             [新增]
 //       state.json / trace.jsonl / frozen.json
 //       tasks/<t>/
@@ -135,8 +135,8 @@ export function probeV0Layout(projectRoot: string, workName: string): ProbeV0Res
       hasAnyV0File = true
     } else {
       // 只记录 task-level 缺失（与 task 存在但文件缺失区分）
-      const taskOxn = join(tasksDir, f.taskName, 'task.oxn')
-      if (existsSync(taskOxn)) {
+      const taskMd = join(tasksDir, f.taskName, 'task.md')
+      if (existsSync(taskMd)) {
         missingV0Files.push(f.rel)
       }
     }
@@ -248,24 +248,24 @@ function restoreV0ToV1Paths(
 async function regenerateV1Artifacts(
   projectRoot: string,
   workName: string,
-  workOxnPath: string,
+  workMdPath: string,
 ): Promise<{
   artifactsWritten: string[]
   invalidRefs: InvalidRef[]
 }> {
   const workDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
-  const workContent = readFileSync(workOxnPath, 'utf-8')
+  const workContent = readFileSync(workMdPath, 'utf-8')
   const artifactsWritten: string[] = []
   const invalidRefs: InvalidRef[] = []
 
   // 🆕 v0.6.1-alpha.4 Phase B: 删除 domainsIdx + domainsJsonPath 相关调用
   // （Domain 引用走 Blueprint ## Refs 路径，由 per-work-blueprints-merger 统一处理）
-  const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath })
+  const blueprintsIdx = buildPerWorkBlueprintsIndex({ projectRoot, workName, workMdPath })
   const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
-  writePerWorkBlueprintsIndex({ projectRoot, workName, workOxnPath, outPath: blueprintsJsonPath })
+  writePerWorkBlueprintsIndex({ projectRoot, workName, workMdPath, outPath: blueprintsJsonPath })
   artifactsWritten.push(blueprintsJsonPath)
 
-  // 解析 work.oxn context
+  // 解析 work.md context
   const goalMatch = workContent.match(/goal\s*=\s*"((?:[^"\\]|\\.)*)"/)
   const goal = goalMatch?.[1]?.replace(/\\"/g, '"') ?? ''
   const constraintsMatch = workContent.match(/constraints\s*=\s*\[([^\]]*)\]/)
@@ -317,14 +317,14 @@ async function regenerateV1Artifacts(
 
 export async function migrateWorkToV1(projectRoot: string, workName: string): Promise<MigrateResult> {
   const workDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
-  const workOxnPath = join(workDir, 'work.oxn')
+  const workMdPath = join(workDir, 'work.md')
 
-  // ── 1. work.oxn 必须存在 ──
-  if (!existsSync(workOxnPath)) {
+  // ── 1. work.md 必须存在 ──
+  if (!existsSync(workMdPath)) {
     return {
       ok: false,
       kind: 'work-not-found',
-      message: `work.oxn not found at ${workOxnPath}`,
+      message: `work.md not found at ${workMdPath}`,
       warnings: [],
     }
   }
@@ -392,7 +392,7 @@ export async function migrateWorkToV1(projectRoot: string, workName: string): Pr
   let artifactsWritten: string[] = []
   let invalidRefs: InvalidRef[] = []
   try {
-    const r = await regenerateV1Artifacts(projectRoot, workName, workOxnPath)
+    const r = await regenerateV1Artifacts(projectRoot, workName, workMdPath)
     artifactsWritten = r.artifactsWritten
     invalidRefs = r.invalidRefs
   } catch (err) {

@@ -124,7 +124,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
 
   const taskOxnContent = readFileSync(taskOxnPath, 'utf-8')
 
-  // v0.7.0: parse task.oxn content via regex (Langium removed)
+  // v0.7.0: parse task.md content via regex (Langium removed)
   const slotBindings: OxnAssemblySlotBinding[] = []
   let extractedTaskId: string | undefined
   let blueprintName: string | undefined
@@ -135,7 +135,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
   const blueprintMatch = taskOxnContent.match(/blueprint\s+"([^"]+)"/)
   blueprintName = blueprintMatch?.[1]
 
-  // Extract slotBindings from task.oxn content using regex
+  // Extract slotBindings from task.md content using regex
   // Match: slot "name" { deps = [...] }
   const slotBindingRegex = /slot\s+"([^"]+)"\s*\{([^}]*)\}/g
   let match
@@ -149,7 +149,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
   }
 
   if (!extractedTaskId) {
-    throw new Error('Invalid task.oxn: missing task name')
+    throw new Error('Invalid task.md: missing task name')
   }
 
   let blueprintPath: string
@@ -169,7 +169,7 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
     })
     frozenFromTaskOxn = tempResult.frozen
   } else {
-    throw new Error('task.oxn must reference a blueprint. Add: blueprint "<name>"')
+    throw new Error('task.md must reference a blueprint. Add: blueprint "<name>"')
   }
 
   const frozenPath = join(taskDir, FROZEN_BLUEPRINT_JSON)
@@ -187,8 +187,8 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
 
       if (taskOxnHash !== frozenMetaHash) {
         throw new Error(
-          `Inconsistency detected: task.oxn has been modified since last submit. ` +
-            `Expected frozen.json to match task.oxn (hash: ${taskOxnHash}), ` +
+          `Inconsistency detected: task.md has been modified since last submit. ` +
+            `Expected frozen.json to match task.md (hash: ${taskOxnHash}), ` +
             `but it doesn't. Please resubmit with 'oxn work submit --work <w> --task ${taskId}'.`,
         )
       }

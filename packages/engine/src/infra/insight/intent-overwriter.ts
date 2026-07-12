@@ -1,7 +1,7 @@
 // =============================================================================
 // intent-overwriter.ts (v0.5 PR-D)
 //
-// L1-Infra 原子覆盖引擎 — 安全地修改 Intent 资产（Domain / Blueprint .oxn 文件）
+// L1-Infra 原子覆盖引擎 — 安全地修改 Intent 资产（Domain / Blueprint .md 文件）
 //
 // 流程：
 //   1. 读目标文件 → 解析当前 invariant/term/ban 块
@@ -141,7 +141,7 @@ export function overwriteIntent(input: OverwriteInput): OverwriteResult {
     }
   }
 
-  // 6. 维持 .oxn 文件可写（不 chmod）
+  // 6. 维持 .md 文件可写（不 chmod）
   return {
     path: targetPath,
     beforeHash,

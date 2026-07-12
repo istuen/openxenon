@@ -16,9 +16,9 @@
  * - cycleHint 包含完整循环路径（错误消息用）
  *
  * 限制：
- * - 不解析 .oxn 语法（由调用方提供 parsed references[]）
+ * - 不解析资产语法（由调用方提供 parsed references[]）
  * - 不验证 reference 字符串格式（@prj/ / @oxn/ — 由 reference-checker.ts 负责）
- * - 不参与 Roadmap（Roadmap 不含 references 字段，oxn.langium 注释锁定）
+ * - 不参与 Roadmap（Roadmap 不含 references 字段）
  *
  * L0–L3 兼容性：
  * - L1-Infra 层（src/engine/Asset/）

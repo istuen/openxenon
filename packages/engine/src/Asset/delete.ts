@@ -4,7 +4,7 @@
  * 硬删除 Asset（不归档，不可恢复，除非 git history）：
  * 1. 校验无引用（拒绝被引用资产删除）
  * 2. 校验 force flag（无 force → IAPError YIELD_TO_HUMAN）
- * 3. 物理删除 .oxn + .md + .metadata.json
+ * 3. 物理删除 .md + .metadata.json
  * 4. 写一条警告日志到 .openxenon/.archived/_delete-log.jsonl
  *
  * 限制：
@@ -87,7 +87,7 @@ export async function deleteAsset(input: DeleteInput): Promise<DeleteResult> {
     force,
   }
   const logPath = join(logDir, '_delete-log.jsonl')
-  appendFileSync(logPath, JSON.stringify(logEntry) + '\n', 'utf-8')
+  appendFileSync(logPath, `${JSON.stringify(logEntry)}\n`, 'utf-8')
 
   return {
     ok: true,

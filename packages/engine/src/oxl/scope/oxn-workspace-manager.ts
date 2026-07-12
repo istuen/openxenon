@@ -37,7 +37,7 @@ export interface OxnWorkspaceConfig {
 const DEFAULT_CONFIG: OxnWorkspaceConfig = {
   projectRoot: process.cwd(),
   globalRoot: join(homedir(), '.openxenon', 'arsenals'), // TODO(v1.1-path): 与 infra/paths.ts GLOBAL_ARSENAL_ROOT 重复
-  supportedExtensions: ['.yaml', '.yml', '.json', '.oxn'],
+  supportedExtensions: ['.yaml', '.yml', '.json', '.md'],
 }
 
 // ========================
@@ -87,9 +87,9 @@ function scanDirectory(dir: string, type: OxnAssetType): FileSystemAsset[] {
           content: readFileSync(canonicalFile, 'utf-8'),
         })
       }
-    } else if (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml') || entry.name.endsWith('.oxn')) {
+    } else if (entry.name.endsWith('.yaml') || entry.name.endsWith('.yml') || entry.name.endsWith('.md')) {
       // 扁平布局：<name>.yaml
-      const name = entry.name.replace(/\.(yaml|yml|oxn)$/, '')
+      const name = entry.name.replace(/\.(yaml|yml|md)$/, '')
       if (!seen.has(name)) {
         seen.add(name)
         assets.push({

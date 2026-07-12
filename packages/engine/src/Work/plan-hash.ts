@@ -1,7 +1,7 @@
 // =============================================================================
 // plan-hash.ts — PR-2
 //
-// 稳定 hash 工具：把 work 计划（work.oxn + 引用资产）算成可复算的 sha256 hex。
+// 稳定 hash 工具：把 work 计划（work.md + 引用资产）算成可复算的 sha256 hex。
 //
 // 用途：
 //   1. .work.planLock 字段：lock 时算 4 个组件 hash + 一个 combined hash；
@@ -11,7 +11,7 @@
 // 稳定性要求（关键）：
 //   - CRLF / LF 归一化（Windows 提交 → Linux CI 不漂）
 //   - 末尾空白 / BOM 不参与 hash
-//   - tasks/<t>/task.oxn 的 hash 顺序按 task 名排序（不同 add 顺序同 DAG 应同 hash）
+//   - tasks/<t>/task.md 的 hash 顺序按 task 名排序（不同 add 顺序同 DAG 应同 hash）
 //   - file 不存在 → hash 为 null（不是抛错）；调用方决定缺文件是 fail 还是 warn
 //
 // 复用 infra/hash 现有 HashPort，避免重复造轮子。
@@ -22,7 +22,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from '@openxenon/engi
 import { join, relative } from 'path'
 import { hashPort } from '@openxenon/engine/infra/hash'
 import { WORK_DOMAINS_JSON, WORK_BLUEPRINTS_JSON } from '@openxenon/engine/kernel'
-import { getWorkDir, getWorkOxnPath } from './dual-state-io'
+import { getWorkDir, getWorkMdPath } from './dual-state-io'
 
 // ───────── 文本 hash（归一化）─────────
 
@@ -32,7 +32,7 @@ import { getWorkDir, getWorkOxnPath } from './dual-state-io'
  *   - CRLF → LF
  *   - 末尾多余空行折叠（保留 1 个 LF）
  *
- * 这保证：同一 work.oxn 在不同 OS / 编辑器下 hash 一致。
+ * 这保证：同一 work.md 在不同 OS / 编辑器下 hash 一致。
  */
 export function normalizeText(text: string): string {
   let s = text
@@ -69,7 +69,7 @@ export function hashFile(filePath: string): string | null {
   }
 }
 
-// ───────── 路径工具（仅 per-work 新文件；work.oxn / tasks/<t>/ 复用 dual-state-io）─────────
+// ───────── 路径工具（仅 per-work 新文件；work.md / tasks/<t>/ 复用 dual-state-io）─────────
 
 export function getWorkDomainsJsonPath(projectRoot: string, workName: string): string {
   return join(getWorkDir(projectRoot, workName), WORK_DOMAINS_JSON)
@@ -80,17 +80,17 @@ export function getWorkBlueprintsJsonPath(projectRoot: string, workName: string)
 }
 
 /** Re-export：让消费方只需 import 一处 */
-export { getWorkDir, getWorkOxnPath } from './dual-state-io'
+export { getWorkDir, getWorkMdPath } from './dual-state-io'
 
 // ───────── 任务列表（稳定排序）─────────
 
 /**
- * 列出 work 下所有 task.oxn，按 task 名排序。
+ * 列出 work 下所有 task.md，按 task 名排序。
  * 排序保证：不同 add 顺序但同 DAG 的 hash 一致。
  *
  * 跳过：
  *   - 隐藏文件 / 目录
- *   - 无 task.oxn 的目录（不该被视作 task）
+ *   - 无 task.md 的目录（不该被视作 task）
  *   - 非目录条目
  */
 export function listTaskFiles(
@@ -122,12 +122,12 @@ export function listTaskFiles(
       continue
     }
     if (!isDir) continue
-    const taskOxn = join(dir, 'task.oxn')
-    if (!existsSync(taskOxn)) continue
+    const taskMd = join(dir, 'task.md')
+    if (!existsSync(taskMd)) continue
     out.push({
       taskName: name,
-      filePath: taskOxn,
-      hash: hashFile(taskOxn),
+      filePath: taskMd,
+      hash: hashFile(taskMd),
     })
   }
   out.sort((a, b) => a.taskName.localeCompare(b.taskName))
@@ -138,15 +138,15 @@ export function listTaskFiles(
 
 /**
  * Plan hash 3 组件 + 1 combined（v0.6.1-alpha.4 Phase B: 删 workDomainsHash）：
- *   - workOxnHash       work.oxn 自身
+ *   - workMdHash       work.md 自身
  *   - blueprintsHash    works/<w>/blueprints.json （per-work slim + composite boundary refs）
- *   - tasksHash         所有 tasks/<t>/task.oxn 的组合 hash（按 task 名排序）
+ *   - tasksHash         所有 tasks/<t>/task.md 的组合 hash（按 task 名排序）
  *   - allHash           上面 3 个的稳定组合（用同样顺序的 normalize 后字符串再 hash）
  *
  * 任何组件缺失 → hash 为 null；call 端用 Object.values(...).every(h => h) 判定完整性。
  */
 export interface PlanHash {
-  workOxnHash: string | null
+  workMdHash: string | null
   // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（Domain refs 走 Blueprint ## Refs → blueprintsHash composite）
   blueprintsHash: string | null
   tasksHash: string | null
@@ -157,7 +157,7 @@ export interface PlanHash {
 }
 
 export function hashWorkPlan(projectRoot: string, workName: string): PlanHash {
-  const workOxnHash = hashFile(getWorkOxnPath(projectRoot, workName))
+  const workMdHash = hashFile(getWorkMdPath(projectRoot, workName))
   // 🆕 Phase B: domains.json 不再生成（Domain refs 走 Blueprint ## Refs）
   const blueprintsHash = hashFile(getWorkBlueprintsJsonPath(projectRoot, workName))
 
@@ -171,17 +171,17 @@ export function hashWorkPlan(projectRoot: string, workName: string): PlanHash {
         : null
 
   const missing: string[] = []
-  if (workOxnHash === null) missing.push('work.oxn')
+  if (workMdHash === null) missing.push('work.md')
   // 🆕 Phase B: 删 domains.json 检查
   if (blueprintsHash === null) missing.push('blueprints.json')
-  missing.push(...missingTasks.map((t) => `tasks/${t}/task.oxn`))
+  missing.push(...missingTasks.map((t) => `tasks/${t}/task.md`))
 
   const allHash =
-    workOxnHash !== null && blueprintsHash !== null && tasksHash !== null
-      ? hashPort.computeHash([`work.oxn=${workOxnHash}`, `blueprints.json=${blueprintsHash}`, tasksHash].join('\n'))
+    workMdHash !== null && blueprintsHash !== null && tasksHash !== null
+      ? hashPort.computeHash([`work.md=${workMdHash}`, `blueprints.json=${blueprintsHash}`, tasksHash].join('\n'))
       : null
 
-  return { workOxnHash, blueprintsHash, tasksHash, allHash, missing }
+  return { workMdHash, blueprintsHash, tasksHash, allHash, missing }
 }
 
 // ───────── 单文件 hash 工具（直接暴露给 CLI 调试用）─────────
@@ -196,20 +196,20 @@ export function sha256Hex(text: string): string {
 
 /** 静默探测：列出 works/<w>/ 下所有组件的实际状态 */
 export interface PlanPresence {
-  workOxn: boolean
+  workMd: boolean
   // 🆕 Phase B: 删 domainsJson（Domain refs 走 Blueprint ## Refs）
   blueprintsJson: boolean
-  tasks: Array<{ taskName: string; hasOxn: boolean }>
+  tasks: Array<{ taskName: string; hasMd: boolean }>
 }
 
 export function probePlanPresence(projectRoot: string, workName: string): PlanPresence {
   return {
-    workOxn: existsSync(getWorkOxnPath(projectRoot, workName)),
+    workMd: existsSync(getWorkMdPath(projectRoot, workName)),
     // 🆕 Phase B: 删 domainsJson 检查
     blueprintsJson: existsSync(getWorkBlueprintsJsonPath(projectRoot, workName)),
     tasks: listTaskFiles(projectRoot, workName).map((t) => ({
       taskName: t.taskName,
-      hasOxn: t.hash !== null,
+      hasMd: t.hash !== null,
     })),
   }
 }
@@ -219,7 +219,7 @@ export function probePlanPresence(projectRoot: string, workName: string): PlanPr
 /**
  * 给 asset list（[{name, scope?, version, filePath}]）算组合 hash。
  * 用于 .work.assets.<type> 锁：把引用的 domain/blueprint 的当前文件 hash
- * 快照下来，将来如果 .oxn 改了但 work.oxn 没改，assets 就能警告"资产漂了"。
+ * 快照下来，将来如果资产改了但 work.md 没改，assets 就能警告"资产漂了"。
  */
 export function hashAssetList(
   assets: Array<{ name: string; scope?: string; version: number; filePath: string }>,

@@ -3,7 +3,7 @@
 //
 // 全局 Domain slim 索引构建器。
 //
-// 用途：扫 `.openxenon/domains/*.oxn`（递归子目录）→ 生成
+// 用途：扫 `.openxenon/domains/*.md`（递归子目录）→ 生成
 //       `.openxenon/.cache/domains.json`，slim 模式仅含
 //       name/file/description/termNames/banCount/invariantCount，
 //       供 AI 离线快速检索全局 DDD 词汇。
@@ -11,12 +11,9 @@
 // 设计取舍：
 //   - 用正则而非 langium 解析：slim 不需要完整 IR；regex 解析快 10×，
 //     且无副作用（langium 解析需要 services 初始化）。
-//   - 解析失败的 .oxn 仍记入索引（status=invalid + errors[]），不静默丢弃；
+//   - 解析失败的 .md 仍记入索引（status=invalid + errors[]），不静默丢弃；
 //     AI 可据此报告工程师修复。
-//   - 跳过非 .oxn 文件 / 子目录里的隐藏文件 (.DS_Store / .git 等)。
-//
-// 物理边界：见 intent-align-context.oxn「AI 可见与可操作区」与
-//          builtin-context.oxn「builtin 不依赖任何 @prj 资产」。
+//   - 跳过非 .md 文件 / 子目录里的隐藏文件 (.DS_Store / .git 等)。
 // =============================================================================
 
 import {
@@ -91,7 +88,7 @@ export function scanDomainFiles(domainsDir: string): ScanResult {
         continue
       }
       if (!isFile) continue
-      if (!name.endsWith('.oxn')) continue
+      if (!name.endsWith('.md')) continue
       out.push({ fullPath: full, relPath: relative(domainsDir, full) })
     }
   }
@@ -109,7 +106,7 @@ export interface ParseError {
 }
 
 /**
- * 从 .oxn 文件提取 slim 字段。永远不抛错——错误累积在 result.errors。
+ * 从 .md 文件提取 slim 字段。永远不抛错——错误累积在 result.errors。
  *
  * 字段：
  *   - name:        第一个 `domain "X"` 声明名（PascalCase / kebab 都接受）
@@ -126,7 +123,7 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
 
   if (!existsSync(filePath)) {
     return {
-      name: basename(filePath).replace(/\.oxn$/i, ''),
+      name: basename(filePath).replace(/\.md$/i, ''),
       file: relFile,
       status: 'invalid',
       errors: [`file not found: ${filePath}`],
@@ -141,7 +138,7 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
     content = readFileSync(filePath, 'utf-8')
   } catch (err) {
     return {
-      name: basename(filePath).replace(/\.oxn$/i, ''),
+      name: basename(filePath).replace(/\.md$/i, ''),
       file: relFile,
       status: 'invalid',
       errors: [`read failed: ${err instanceof Error ? err.message : String(err)}`],
@@ -155,7 +152,7 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
   if (!nameMatch) {
     errors.push('no `domain "X" { ... }` declaration found')
     return {
-      name: basename(filePath).replace(/\.oxn$/i, ''),
+      name: basename(filePath).replace(/\.md$/i, ''),
       file: relFile,
       status: 'invalid',
       errors,
@@ -168,7 +165,7 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
   // v1.1 NAME_FILE_MISMATCH 防御（macOS-safe 字符串比对）
   // 与 src/oxl/compiler/blueprint-index-builder.ts:194-199 模式一致：软检测
   // 累积到 errors[],status='invalid',不阻断索引构建。
-  const fileStem = basename(filePath).replace(/\.oxn$/i, '')
+  const fileStem = basename(filePath).replace(/\.md$/i, '')
   if (toKebab(nameMatch[1]!) !== toKebab(fileStem)) {
     errors.push(
       `NAME_FILE_MISMATCH: declared '${nameMatch[1]!}' (normalized: '${toKebab(nameMatch[1]!)}') ` +

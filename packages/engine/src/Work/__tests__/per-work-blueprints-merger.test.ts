@@ -25,14 +25,14 @@ import {
 
 let tmpDir: string
 let workName: string
-let workOxnPath: string
+let workMdPath: string
 
 beforeEach(() => {
   tmpDir = join(tmpdir(), `work-bp-merger-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
   workName = 'demo'
   mkdirSync(join(tmpDir, '.openxenon', 'works', workName), { recursive: true })
   mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
-  workOxnPath = join(tmpDir, '.openxenon', 'works', workName, 'work.oxn')
+  workMdPath = join(tmpDir, '.openxenon', 'works', workName, 'work.md')
 })
 
 afterEach(() => {
@@ -40,7 +40,7 @@ afterEach(() => {
 })
 
 function writeBlueprintFile(name: string, content: string): void {
-  writeFileSync(join(tmpDir, '.openxenon', 'blueprints', `${name}.oxn`), content)
+  writeFileSync(join(tmpDir, '.openxenon', 'blueprints', `${name}.md`), content)
 }
 
 // ───────── extractBlueprintRefs ─────────
@@ -129,20 +129,20 @@ describe('resolveBlueprintFile', () => {
     const r = resolveBlueprintFile('@prj/blueprints/foo', 'Foo', tmpDir)
     expect(r).toEqual({
       scope: '@prj',
-      filePath: join(tmpDir, '.openxenon/blueprints/foo.oxn'),
+      filePath: join(tmpDir, '.openxenon/blueprints/foo.md'),
     })
   })
 
   test('@prj/blueprints/X kebab 回退', () => {
     writeBlueprintFile('fix-issue', 'blueprint "fix-issue" {}')
     const r = resolveBlueprintFile('@prj/blueprints/fix-issue', 'fix-issue', tmpDir)
-    expect(r?.filePath).toBe(join(tmpDir, '.openxenon/blueprints/fix-issue.oxn'))
+    expect(r?.filePath).toBe(join(tmpDir, '.openxenon/blueprints/fix-issue.md'))
   })
 
   test('bare name', () => {
     writeBlueprintFile('foo', 'blueprint "Foo" {}')
     const r = resolveBlueprintFile(null, 'foo', tmpDir)
-    expect(r?.filePath).toBe(join(tmpDir, '.openxenon/blueprints/foo.oxn'))
+    expect(r?.filePath).toBe(join(tmpDir, '.openxenon/blueprints/foo.md'))
   })
 
   test('@oxn/ → null', () => {
@@ -173,13 +173,13 @@ describe('buildPerWorkBlueprintsIndex', () => {
 `,
     )
     writeFileSync(
-      workOxnPath,
+      workMdPath,
       `work "demo" {
   blueprint "pipeline" ref "@prj/blueprints/pipeline";
 }
 `,
     )
-    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workOxnPath })
+    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workMdPath })
     expect(idx.schemaVersion).toBe(1)
     expect(idx.blueprintCount).toBe(1)
     expect(idx.invalidCount).toBe(0)
@@ -195,37 +195,37 @@ describe('buildPerWorkBlueprintsIndex', () => {
   test('同 name 去重', () => {
     writeBlueprintFile('a', 'blueprint "X" { assetVersion = 1 slot "x" {} }')
     writeFileSync(
-      workOxnPath,
+      workMdPath,
       `work "demo" {
   blueprint "A" ref "@prj/blueprints/a";
   blueprint "A" ref "@prj/blueprints/a";
 }
 `,
     )
-    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workOxnPath })
+    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workMdPath })
     expect(idx.blueprintCount).toBe(1)
   })
 
   test('ref 找不到文件 → invalid + error', () => {
-    writeFileSync(workOxnPath, `work "demo" { blueprint "ghost" ref "@prj/blueprints/ghost"; }\n`)
-    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workOxnPath })
+    writeFileSync(workMdPath, `work "demo" { blueprint "ghost" ref "@prj/blueprints/ghost"; }\n`)
+    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workMdPath })
     expect(idx.blueprints[0]?.status).toBe('invalid')
     expect(idx.blueprints[0]?.errors[0]).toContain('not found')
   })
 
   test('@oxn/ scope → invalid + error', () => {
-    writeFileSync(workOxnPath, `work "demo" { blueprint "Foo" ref "@oxn/blueprints/foo"; }\n`)
-    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workOxnPath })
+    writeFileSync(workMdPath, `work "demo" { blueprint "Foo" ref "@oxn/blueprints/foo"; }\n`)
+    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workMdPath })
     expect(idx.blueprints[0]?.scope).toBe('@oxn')
     expect(idx.blueprints[0]?.status).toBe('invalid')
     expect(idx.blueprints[0]?.errors[0]).toContain('@oxn/')
   })
 
-  test('work.oxn 不存在 → 抛错', () => {
-    writeFileSync(workOxnPath, 'work "demo" {}\n')
-    rmSync(workOxnPath)
-    expect(() => buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workOxnPath })).toThrow(
-      /work.oxn not found/,
+  test('work.md 不存在 → 抛错', () => {
+    writeFileSync(workMdPath, 'work "demo" {}\n')
+    rmSync(workMdPath)
+    expect(() => buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workMdPath })).toThrow(
+      /work.md not found/,
     )
   })
 })
@@ -235,12 +235,12 @@ describe('buildPerWorkBlueprintsIndex', () => {
 describe('writePerWorkBlueprintsIndex / loadPerWorkBlueprintsIndex', () => {
   test('原子写 + 读回', () => {
     writeBlueprintFile('p', 'blueprint "P" { slot "x" {} }')
-    writeFileSync(workOxnPath, `work "demo" { blueprint "P" ref "@prj/blueprints/p"; }\n`)
+    writeFileSync(workMdPath, `work "demo" { blueprint "P" ref "@prj/blueprints/p"; }\n`)
     const outPath = getPerWorkBlueprintsJsonPath(tmpDir, workName)
     const _idx = writePerWorkBlueprintsIndex({
       projectRoot: tmpDir,
       workName,
-      workOxnPath,
+      workMdPath,
       outPath,
     })
     expect(existsSync(outPath)).toBe(true)

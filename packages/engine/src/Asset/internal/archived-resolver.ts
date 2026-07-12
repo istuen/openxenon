@@ -1,14 +1,13 @@
 /**
  * Asset/internal/archived-resolver.ts — v0.6.1-alpha.1 Asset Lifecycle
  *
- * 解析 .openxenon/.archived/<kind>/<name>.{oxn,md} 路径
+ * 解析 .openxenon/.archived/<kind>/<name>.md 路径
  *
  * 归档目录约定：
  * - 根：<projectRoot>/.openxenon/.archived/
  * - 按 kind 分目录：.archived/domains/ / .archived/blueprints/ / ...
- * - 每归档资产有 3 个文件：
- *   - <name>.oxn (canonical 归档资产)
- *   - <name>.md  (镜像)
+ * - 每归档资产有 2 个文件：
+ *   - <name>.md  (canonical 归档资产)
  *   - .metadata.json (归档原因 + 时间 + 引用方信息)
  *
  * L0–L3 兼容性：
@@ -33,10 +32,10 @@ const METADATA_BASENAME = 'metadata.json'
  * @param projectRoot OXN 项目根目录
  * @param kind Asset kind: domain / blueprint / stack / roadmap / library / external
  * @param name Asset name
- * @param ext 文件扩展名：'oxn' | 'md'
+ * @param ext 文件扩展名：'md'
  * @returns .openxenon/.archived/<kind>/<name>.<ext> 完整路径
  */
-export function resolveArchivedAssetFile(projectRoot: string, kind: string, name: string, ext: 'oxn' | 'md'): string {
+export function resolveArchivedAssetFile(projectRoot: string, kind: string, name: string, ext: 'md' = 'md'): string {
   return join(projectRoot, '.openxenon', ARCHIVED_DIR, `${kind}s`, `${name}.${ext}`)
 }
 
@@ -54,7 +53,7 @@ export function getArchivedAssetDir(projectRoot: string, kind: string): string {
 /**
  * 解析归档 metadata.json 路径
  *
- * 与 .oxn/.md 同级（不带子目录，flat 结构）
+ * 与 .md 同级（不带子目录，flat 结构）
  *
  * @returns .openxenon/.archived/<kind>s/<name>.metadata.json 完整路径
  */

@@ -53,11 +53,11 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
  *
  * 流程：
  * 1. 扫描 5 种 AssetKind 目录（domain / workflow / stack / blueprint / roadmap）
- * 2. regex 提取每个 .md / .oxn 的 references[] 字段
+ * 2. regex 提取每个 .md 的 references[] 字段
  * 3. 调 checkAssetDAG 校验
  * 4. 返回结果（失败时不抛错，由调用方决定如何展示）
  *
- * 注：Roadmap 不含 references 字段（oxn.langium 注释锁定），自动跳过。
+ * 注：Roadmap 不含 references 字段，自动跳过。
  *
  * @param projectRoot OXN 项目根目录（含 .openxenon/）
  * @returns DAG 校验结果
@@ -69,9 +69,9 @@ export function validateAssetReferences(projectRoot: string): DagValidationResul
   for (const kind of kinds) {
     const dir = resolveAssetDir(projectRoot, kind, null)
     if (!existsSync(dir)) continue
-    const files = readdirSync(dir).filter((f) => f.endsWith('.md') || f.endsWith('.oxn'))
+    const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
     for (const file of files) {
-      const name = file.replace(/\.(md|oxn)$/, '')
+      const name = file.replace(/\.md$/, '')
       const filePath = `${dir}/${file}`
       const content = readFileSync(filePath, 'utf-8')
       const references = extractReferences(content)
@@ -85,17 +85,17 @@ export function validateAssetReferences(projectRoot: string): DagValidationResul
 /**
  * 从 Asset 内容中提取 references[] 字段（regex）
  *
- * 支持 3 种语法形式（.oxn 和 .md 通用）：
- * - references = ["X", "Y"]          （.oxn 语法）
- * - references = ["X","Y"]           （.oxn 语法，无空格）
- * - references = ["X"]               （.oxn 语法）
+ * 支持 3 种语法形式：
+ * - references = ["X", "Y"]          （.oxn 语法，向后兼容）
+ * - references = ["X","Y"]           （.oxn 语法，无空格，向后兼容）
+ * - references = ["X"]               （.oxn 语法，向后兼容）
  * - - references: X                  （.md 列表项语法）
  * - - references: [X, Y]             （.md 列表项语法）
  *
  * 不解析 Langium AST（避免对 engine kernel 强依赖）
  */
 function extractReferences(content: string): string[] {
-  // .oxn 语法: references = [...]
+  // .oxn 语法（向后兼容）: references = [...]
   const oxnMatch = content.match(/references\s*=\s*\[([^\]]*)\]/m)
   if (oxnMatch?.[1]) {
     const inner = oxnMatch[1].trim()
@@ -185,17 +185,17 @@ export async function validateAssetPaper4Fields(
 
   const content = readFileSync(filePath, 'utf-8')
 
-  // Extract 4 fields via regex (support both .oxn and .md formats)
-  // .oxn: abstract = "..."  /  .md frontmatter: abstract: ...
+  // Extract 4 fields via regex (support .md format with .oxn backward compat)
+  // abstract: .md frontmatter: abstract: ...  /  .oxn legacy: abstract = "..."
   const abstractMatch = content.match(/abstract\s*[=:]\s*"((?:[^"\\]|\\.)*)"/m)
   const abstract = abstractMatch?.[1]?.replace(/\\"/g, '"')
   // references: 区分"未设置"与"显式 = []" — 搜 references\s*= 或 references: 字段存在性
   const hasReferencesField = /references\s*[=:]/m.test(content)
   const references = hasReferencesField ? extractReferences(content) : undefined
-  // .oxn: citations = N  /  .md frontmatter: citations: N
+  // .oxn legacy: citations = N  /  .md frontmatter: citations: N
   const citationsMatch = content.match(/citations\s*[=:]\s*(\d+)/m)
   const citations = citationsMatch?.[1] ? Number(citationsMatch[1]) : undefined
-  // auditTrail: .oxn 注释形式 `// auditTrail: ...`，.md frontmatter `auditTrail: ...`
+  // auditTrail: .md frontmatter `auditTrail: ...`
   const auditTrailMatch = content.match(/(?:\/\/\s*|^\s*)auditTrail\s*:\s*(.+)/m)
   const auditTrail = auditTrailMatch?.[1]?.trim()
 
@@ -203,7 +203,7 @@ export async function validateAssetPaper4Fields(
 
   const warnings: string[] = []
   if (!abstract) warnings.push(`abstract field missing (recommended: 1-line business boundary description)`)
-  // Roadmap grammar intentionally omits references field (asset-compiler/oxn.langium:285)
+  // Roadmap intentionally omits references field
   // Roadmap's "navigation" role is fulfilled by its own links[] (per grammar comment 2026-07-08).
   if (references === undefined && kind !== 'roadmap')
     warnings.push(`references field missing (use references = ["X", "Y"] or references = [])`)

@@ -3,7 +3,7 @@
  *
  * Roadmap = AssetKind=roadmap with 6 builtin scenes (doc/dev/debug/test/release/onboard).
  * Each scene contains a flat list of links (kind + name + description).
- * Roadmap lives at `.openxenon/assets/roadmaps/<name>.md` (canonical) or `.oxn` (source-of-truth).
+ * Roadmap lives at `.openxenon/assets/roadmaps/<name>.md` (canonical).
  *
  * Scope: project-specific (per user decision A). Does NOT participate in Asset references DAG.
  */

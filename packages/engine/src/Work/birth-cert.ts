@@ -8,7 +8,7 @@
 //
 // 关键设计：
 //   - assets: 资产锁（domain/blueprint 引用 + 版本 + 当前文件 hash），
-//     漂移即"资产版本变了但 work.oxn 没改"，是反常信号
+//     漂移即"资产版本变了但 work.md 没改"，是反常信号
 //   - planLock: 锁时算 4 组件 hash；后续 run/context/submit 都用 verifyPlanLock 校验
 //   - 不可变：planLock 设上后只能走 unlock → edit → re-validate → re-lock；
 //     verifyPlanLock 是唯一"判定被改"的途径，不靠 chmod（跨平台安全）
@@ -73,7 +73,7 @@ export type BlueprintAssetEntry = z.infer<typeof BlueprintAssetEntrySchema>
 
 export const PlanLockSchema = z.object({
   lockedAt: z.string().min(1),
-  workOxnHash: z.string().regex(/^[0-9a-f]{64}$/),
+  workMdHash: z.string().regex(/^[0-9a-f]{64}$/),
   // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite 包含 Blueprint + 3 边界）
   blueprintsHash: z.string().regex(/^[0-9a-f]{64}$/),
   tasksHash: z.string().regex(/^[0-9a-f]{64}$/),
@@ -215,7 +215,7 @@ export function createBirthCert(params: CreateBirthCertParams): BirthCert {
  */
 export function applyPlanLock(cert: BirthCert, hash: PlanHash, lockedAt?: string): BirthCert {
   if (
-    hash.workOxnHash === null ||
+    hash.workMdHash === null ||
     // 🆕 Phase B: 删 workDomainsHash null check（Domain refs 走 Blueprint ## Refs）
     hash.blueprintsHash === null ||
     hash.tasksHash === null ||
@@ -228,7 +228,7 @@ export function applyPlanLock(cert: BirthCert, hash: PlanHash, lockedAt?: string
     updatedAt: lockedAt ?? new Date().toISOString(),
     planLock: {
       lockedAt: lockedAt ?? new Date().toISOString(),
-      workOxnHash: hash.workOxnHash,
+      workMdHash: hash.workMdHash,
       // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite）
       blueprintsHash: hash.blueprintsHash,
       tasksHash: hash.tasksHash,
@@ -259,7 +259,7 @@ export type VerifyResult =
  *
  * 三种 fail 原因：
  *   - no-plan-lock    ：cert.planLock === null（未锁）
- *   - work-removed    ：work 目录被删 / work.oxn 失踪
+ *   - work-removed    ：work 目录被删 / work.md 失踪
  *   - hash-mismatch   ：work 已锁但内容被改，component 指明哪个文件
  */
 export function verifyPlanLock(projectRoot: string, workName: string, cert: BirthCert): VerifyResult {
@@ -268,21 +268,21 @@ export function verifyPlanLock(projectRoot: string, workName: string, cert: Birt
   }
   const current = hashWorkPlan(projectRoot, workName)
 
-  if (current.workOxnHash === null) {
+  if (current.workMdHash === null) {
     return {
       ok: false,
       reason: 'work-removed',
-      message: 'work.oxn not found (work directory may be deleted)',
+      message: 'work.md not found (work directory may be deleted)',
     }
   }
-  if (current.workOxnHash !== cert.planLock.workOxnHash) {
+  if (current.workMdHash !== cert.planLock.workMdHash) {
     return {
       ok: false,
       reason: 'hash-mismatch',
       component: 'workOxn',
-      expected: cert.planLock.workOxnHash,
-      actual: current.workOxnHash,
-      message: 'work.oxn has been modified after lock',
+      expected: cert.planLock.workMdHash,
+      actual: current.workMdHash,
+      message: 'work.md has been modified after lock',
     }
   }
   // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash drift 检查（Domain 引用完全由 Blueprint ## Refs 承担）
@@ -303,7 +303,7 @@ export function verifyPlanLock(projectRoot: string, workName: string, cert: Birt
       component: 'tasks',
       expected: cert.planLock.tasksHash,
       actual: current.tasksHash,
-      message: 'one or more tasks/<t>/task.oxn have been modified after lock',
+      message: 'one or more tasks/<t>/task.md have been modified after lock',
     }
   }
   return { ok: true }
@@ -313,9 +313,9 @@ export function verifyPlanLock(projectRoot: string, workName: string, cert: Birt
 
 /**
  * 校验 assets 锁：比较 .work.assets[].fileHash 与当前文件 hash。
- * 不一致 → 资产漂了（可能 work.oxn 没改但底层 .oxn 改了）。
+ * 不一致 → 资产漂了（可能 work.md 没改但底层资产改了）。
  *
- * 与 planLock 不同：planLock 防 work.oxn 改；assets 防依赖的 .oxn 改。
+ * 与 planLock 不同：planLock 防 work.md 改；assets 防依赖的资产改。
  */
 export interface AssetDrift {
   domain: Array<{ name: string; expected: string; actual: string | null }>

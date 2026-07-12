@@ -42,7 +42,7 @@ name: ${name}
 // Created by: oxn domain create ${name}
 //
 // DDD bounded context skeleton. After filling in term / ban / invariant,
-// reference it from work.oxn via:
+// reference it from work.md via:
 //   domain "${name}" ref "@prj/domains/${name}";
 
 domain "${name}" {
@@ -163,7 +163,7 @@ function createRoadmapTemplate(name: string): string {
 // Created by: oxn work create ${name} --type asset --asset-kind roadmap
 //
 // 路线图骨架。Roadmap 是简化版 Asset，仅含 links 分类
-// （不参与 references[] DAG 校验，oxn.langium 注释锁定）。
+// （不参与 references[] DAG 校验）。
 // link 语法：裸字符串 target (RoadmapLink 是 unnamed rule，无需前缀)
 // target 引用其他 Asset 路径（@prj/domains/X 或 @prj/blueprints/Y）
 

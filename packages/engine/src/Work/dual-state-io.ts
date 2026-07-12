@@ -5,11 +5,10 @@ import {
   WORK_FILE,
   RUN_DIR,
   RUN_TASKS_SUBDIR,
-  TASK_OXN_FILE,
+  TASK_FILE,
   TASK_RUN_FROZEN_JSON,
   TASK_RUN_STATE_JSON,
   TASK_RUN_TRACE_JSONL,
-  WORK_OXN_FILE,
   WORK_RUN_FROZEN_JSON,
   WORK_RUN_STATE_JSON,
   WORK_RUN_TRACE_JSONL,
@@ -23,7 +22,7 @@ import { type TaskState, TaskStateSchema, type WorkspaceState, WorkspaceStateSch
 // 路径约定（V1）：
 //
 //   work 根目录 (works/<work>/)
-//     work.oxn               [Intent]  图纸
+//     work.md                [Intent]  图纸
 //     .work                  [CLI]     静态门禁卡
 //     .run/state.json        [Align]   进度条
 //     .run/trace.jsonl       [Align]   日志流
@@ -34,7 +33,7 @@ import { type TaskState, TaskStateSchema, type WorkspaceState, WorkspaceStateSch
 //     trace.jsonl
 //     frozen.json
 //
-//   task 图纸：works/<work>/tasks/<task>/task.oxn  （planning 阶段产物，仍在原位）
+//   task 图纸：works/<work>/tasks/<task>/task.md  （planning 阶段产物，仍在原位）
 //
 // V0 → V1 迁移由 PR-10 `oxn work migrate` 处理（用户决策 M3：硬切 + 脚本）
 // =============================================================================
@@ -45,8 +44,9 @@ export function getWorkDir(projectRoot: string, workName: string): string {
   return join(projectRoot, BOUNDARY_DIR, 'works', workName)
 }
 
+/** @deprecated Use getWorkMdPath instead. Will be removed in v0.8. */
 export function getWorkOxnPath(projectRoot: string, workName: string): string {
-  return join(getWorkDir(projectRoot, workName), WORK_OXN_FILE)
+  return getWorkMdPath(projectRoot, workName)
 }
 
 export function getWorkRunDir(projectRoot: string, workName: string): string {
@@ -132,7 +132,7 @@ export function getTaskDir(projectRoot: string, workName: string, taskName: stri
 }
 
 export function getTaskOxnPath(projectRoot: string, workName: string, taskName: string): string {
-  return join(getWorkDir(projectRoot, workName), 'tasks', taskName, TASK_OXN_FILE)
+  return join(getWorkDir(projectRoot, workName), 'tasks', taskName, TASK_FILE)
 }
 
 export function getTaskStatePath(projectRoot: string, workName: string, taskName: string): string {
@@ -220,13 +220,9 @@ export function getTaskRunDir(projectRoot: string, workName: string, taskName: s
   return join(getWorkRunDir(projectRoot, workName), RUN_TASKS_SUBDIR, taskName)
 }
 
-export function resolveWorkFilePath(projectRoot: string, workName: string, assetFormat: string): string {
+export function resolveWorkFilePath(projectRoot: string, workName: string, _assetFormat: string): string {
   const worksDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
-  const primaryPath = join(worksDir, assetFormat === 'oxn' ? 'work.oxn' : 'work.md')
-  const altPath = join(worksDir, assetFormat === 'oxn' ? 'work.md' : 'work.oxn')
-  const legacyPath = getWorkOxnPath(projectRoot, workName)
+  const primaryPath = join(worksDir, 'work.md')
   if (existsSync(primaryPath)) return primaryPath
-  if (existsSync(altPath)) return altPath
-  if (existsSync(legacyPath)) return legacyPath
   return primaryPath
 }

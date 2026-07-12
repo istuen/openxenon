@@ -2,7 +2,7 @@
 // domain-index-builder.test.ts — PR-1 单元测试
 //
 // 覆盖：
-//   1. scanDomainFiles 递归扫 .oxn，跳过隐藏 / 非 .oxn
+//   1. scanDomainFiles 递归扫 .md，跳过隐藏 / 非 .md
 //   2. parseDomainSlim 提取 name/description/termNames/banCount/invariantCount
 //   3. parseDomainSlim 处理 parse error 优雅降级（status=invalid）
 //   4. parseDomainSlim 累加多 invariant 块
@@ -57,39 +57,39 @@ describe('scanDomainFiles', () => {
     expect(files).toEqual([])
   })
 
-  test('扫到 .oxn 文件', () => {
-    writeFileSync(join(domainsDir, 'foo.oxn'), 'domain "Foo" {}')
-    writeFileSync(join(domainsDir, 'bar.oxn'), 'domain "Bar" {}')
+  test('扫到 .md 文件', () => {
+    writeFileSync(join(domainsDir, 'foo.md'), 'domain "Foo" {}')
+    writeFileSync(join(domainsDir, 'bar.md'), 'domain "Bar" {}')
     const { files } = scanDomainFiles(domainsDir)
     expect(files).toHaveLength(2)
-    expect(files.map((f) => f.relPath).sort()).toEqual(['bar.oxn', 'foo.oxn'])
+    expect(files.map((f) => f.relPath).sort()).toEqual(['bar.md', 'foo.md'])
   })
 
   test('递归子目录', () => {
     const sub = join(domainsDir, 'sub', 'nested')
     mkdirSync(sub, { recursive: true })
-    writeFileSync(join(domainsDir, 'top.oxn'), 'domain "Top" {}')
-    writeFileSync(join(sub, 'deep.oxn'), 'domain "Deep" {}')
+    writeFileSync(join(domainsDir, 'top.md'), 'domain "Top" {}')
+    writeFileSync(join(sub, 'deep.md'), 'domain "Deep" {}')
     const { files } = scanDomainFiles(domainsDir)
     expect(files).toHaveLength(2)
-    expect(files.map((f) => f.relPath).sort()).toEqual(['sub/nested/deep.oxn', 'top.oxn'])
+    expect(files.map((f) => f.relPath).sort()).toEqual(['sub/nested/deep.md', 'top.md'])
   })
 
   test('跳过隐藏文件与目录', () => {
-    writeFileSync(join(domainsDir, 'visible.oxn'), 'domain "Visible" {}')
-    writeFileSync(join(domainsDir, '.hidden.oxn'), 'domain "Hidden" {}')
+    writeFileSync(join(domainsDir, 'visible.md'), 'domain "Visible" {}')
+    writeFileSync(join(domainsDir, '.hidden.md'), 'domain "Hidden" {}')
     mkdirSync(join(domainsDir, '.git'))
-    writeFileSync(join(domainsDir, '.git', 'should-skip.oxn'), 'domain "Skip" {}')
+    writeFileSync(join(domainsDir, '.git', 'should-skip.md'), 'domain "Skip" {}')
     const { files } = scanDomainFiles(domainsDir)
-    expect(files.map((f) => f.relPath)).toEqual(['visible.oxn'])
+    expect(files.map((f) => f.relPath)).toEqual(['visible.md'])
   })
 
-  test('跳过非 .oxn 文件', () => {
-    writeFileSync(join(domainsDir, 'good.oxn'), 'domain "Good" {}')
-    writeFileSync(join(domainsDir, 'readme.md'), '# not a domain')
+  test('跳过非 .md 文件', () => {
+    writeFileSync(join(domainsDir, 'good.md'), 'domain "Good" {}')
+    writeFileSync(join(domainsDir, 'readme.txt'), '# not a domain')
     writeFileSync(join(domainsDir, 'data.json'), '{}')
     const { files } = scanDomainFiles(domainsDir)
-    expect(files.map((f) => f.relPath)).toEqual(['good.oxn'])
+    expect(files.map((f) => f.relPath)).toEqual(['good.md'])
   })
 })
 
@@ -97,7 +97,7 @@ describe('scanDomainFiles', () => {
 
 describe('parseDomainSlim', () => {
   test('完整 Domain（description + 3 terms + 2 ban + 2 invariant）', () => {
-    const file = join(domainsDir, 'MemberContext.oxn')
+    const file = join(domainsDir, 'MemberContext.md')
     writeFileSync(
       file,
       `domain "MemberContext" {
@@ -111,7 +111,7 @@ describe('parseDomainSlim', () => {
     )
     const result = parseDomainSlim(file, tmpDir)
     expect(result.name).toBe('MemberContext')
-    expect(result.file).toBe('domains/MemberContext.oxn')
+    expect(result.file).toBe('domains/MemberContext.md')
     expect(result.status).toBe('ok')
     expect(result.description).toBe('会员限界上下文')
     expect(result.termNames).toEqual(['Member', 'Tier'])
@@ -121,7 +121,7 @@ describe('parseDomainSlim', () => {
   })
 
   test('空 Domain（无 term/ban/invariant）', () => {
-    const file = join(domainsDir, 'Empty.oxn')
+    const file = join(domainsDir, 'Empty.md')
     writeFileSync(file, `domain "Empty" {}\n`)
     const result = parseDomainSlim(file, tmpDir)
     expect(result.name).toBe('Empty')
@@ -132,7 +132,7 @@ describe('parseDomainSlim', () => {
   })
 
   test('v0.1.1: 多个 invariant 块累加', () => {
-    const file = join(domainsDir, 'Multi.oxn')
+    const file = join(domainsDir, 'Multi.md')
     writeFileSync(
       file,
       `domain "Multi" {
@@ -146,7 +146,7 @@ describe('parseDomainSlim', () => {
   })
 
   test('无 description 字段（可选）', () => {
-    const file = join(domainsDir, 'NoDesc.oxn')
+    const file = join(domainsDir, 'NoDesc.md')
     writeFileSync(file, `domain "NoDesc" { term { "X": "x" } }\n`)
     const result = parseDomainSlim(file, tmpDir)
     expect(result.name).toBe('NoDesc')
@@ -154,7 +154,7 @@ describe('parseDomainSlim', () => {
   })
 
   test('无 domain 声明 → status=invalid', () => {
-    const file = join(domainsDir, 'Broken.oxn')
+    const file = join(domainsDir, 'Broken.md')
     writeFileSync(file, `// nothing here\n`)
     const result = parseDomainSlim(file, tmpDir)
     expect(result.status).toBe('invalid')
@@ -162,8 +162,8 @@ describe('parseDomainSlim', () => {
   })
 
   // v1.1 PR-fix-domain-name-consistency: NAME_FILE_MISMATCH 软检测
-  test('NAME_FILE_MISMATCH 防御: declared "DevWorkflow" vs file "dev-workflow.oxn"（PascalCase 文件名，规范化后一致）→ status=ok', () => {
-    const file = join(domainsDir, 'dev-workflow.oxn')
+  test('NAME_FILE_MISMATCH 防御: declared "DevWorkflow" vs file "dev-workflow.md"（PascalCase 文件名，规范化后一致）→ status=ok', () => {
+    const file = join(domainsDir, 'dev-workflow.md')
     writeFileSync(file, `domain "DevWorkflow" { description = "test" }\n`)
     const result = parseDomainSlim(file, tmpDir)
     expect(result.status).toBe('ok')
@@ -171,8 +171,8 @@ describe('parseDomainSlim', () => {
     expect(result.errors).toEqual([])
   })
 
-  test('NAME_FILE_MISMATCH 触发: declared "Foo" vs file "bar.oxn"（规范化后不一致）→ status=invalid + errors 含 NAME_FILE_MISMATCH', () => {
-    const file = join(domainsDir, 'bar.oxn')
+  test('NAME_FILE_MISMATCH 触发: declared "Foo" vs file "bar.md"（规范化后不一致）→ status=invalid + errors 含 NAME_FILE_MISMATCH', () => {
+    const file = join(domainsDir, 'bar.md')
     writeFileSync(file, `domain "Foo" { description = "test" }\n`)
     const result = parseDomainSlim(file, tmpDir)
     expect(result.status).toBe('invalid')
@@ -181,8 +181,8 @@ describe('parseDomainSlim', () => {
     expect(result.errors.some((e) => e.includes("does not match file 'bar'"))).toBe(true)
   })
 
-  test('NAME_FILE_MISMATCH 一致: snake_case 声明 "wechat_minigame" vs kebab 文件 "wechat-minigame.oxn" → status=ok', () => {
-    const file = join(domainsDir, 'wechat-minigame.oxn')
+  test('NAME_FILE_MISMATCH 一致: snake_case 声明 "wechat_minigame" vs kebab 文件 "wechat-minigame.md" → status=ok', () => {
+    const file = join(domainsDir, 'wechat-minigame.md')
     writeFileSync(file, `domain "wechat_minigame" { description = "test" }\n`)
     const result = parseDomainSlim(file, tmpDir)
     expect(result.status).toBe('ok')
@@ -191,15 +191,15 @@ describe('parseDomainSlim', () => {
   })
 
   test('文件不存在 → status=invalid + file 路径仍记录', () => {
-    const file = join(domainsDir, 'Missing.oxn')
+    const file = join(domainsDir, 'Missing.md')
     const result = parseDomainSlim(file, tmpDir)
     expect(result.status).toBe('invalid')
-    expect(result.file).toBe('domains/Missing.oxn')
+    expect(result.file).toBe('domains/Missing.md')
     expect(result.errors[0]).toContain('file not found')
   })
 
   test('term 块内含 ":" 但 key 为空字符串时被忽略（regex 强制至少 1 个非引号字符）', () => {
-    const file = join(domainsDir, 'Edge.oxn')
+    const file = join(domainsDir, 'Edge.md')
     writeFileSync(
       file,
       `domain "Edge" {
@@ -212,7 +212,7 @@ describe('parseDomainSlim', () => {
   })
 
   test('description 含转义引号 \\" 应还原', () => {
-    const file = join(domainsDir, 'Esc.oxn')
+    const file = join(domainsDir, 'Esc.md')
     writeFileSync(file, `domain "Esc" { description = "say \\"hi\\"" }\n`)
     const result = parseDomainSlim(file, tmpDir)
     expect(result.description).toBe('say "hi"')
@@ -233,11 +233,11 @@ describe('buildDomainIndex', () => {
 
   test('3 个 domain 完整索引', () => {
     writeFileSync(
-      join(domainsDir, 'a.oxn'),
+      join(domainsDir, 'a.md'),
       `domain "A" { description = "alpha"; term { "X": "x" }; ban { "y" }; invariant { "z" } }`,
     )
-    writeFileSync(join(domainsDir, 'b.oxn'), `domain "B" { term { "M": "m" } }`)
-    writeFileSync(join(domainsDir, 'c.oxn'), `domain "C" {}`)
+    writeFileSync(join(domainsDir, 'b.md'), `domain "B" { term { "M": "m" } }`)
+    writeFileSync(join(domainsDir, 'c.md'), `domain "C" {}`)
 
     const idx = buildDomainIndex({ projectRoot: tmpDir, domainsDir, generatedAt: '2026-06-08T00:00:00.000Z' })
     expect(idx.domainCount).toBe(3)
@@ -250,12 +250,12 @@ describe('buildDomainIndex', () => {
   })
 
   test('混合 ok + invalid：invalid 仍记入索引', () => {
-    writeFileSync(join(domainsDir, 'good.oxn'), `domain "Good" {}`)
-    writeFileSync(join(domainsDir, 'bad.oxn'), `// no domain decl`)
+    writeFileSync(join(domainsDir, 'good.md'), `domain "Good" {}`)
+    writeFileSync(join(domainsDir, 'bad.md'), `// no domain decl`)
     const idx = buildDomainIndex({ projectRoot: tmpDir, domainsDir })
     expect(idx.domainCount).toBe(2)
     expect(idx.domains.find((d) => d.name === 'Good')?.status).toBe('ok')
-    expect(idx.domains.find((d) => d.file === 'domains/bad.oxn')?.status).toBe('invalid')
+    expect(idx.domains.find((d) => d.file === 'domains/bad.md')?.status).toBe('invalid')
   })
 })
 
@@ -263,7 +263,7 @@ describe('buildDomainIndex', () => {
 
 describe('writeDomainIndex / loadDomainIndex', () => {
   test('writeDomainIndex 原子写：产生 .json 文件 + 内容合法', () => {
-    writeFileSync(join(domainsDir, 'x.oxn'), `domain "X" {}`)
+    writeFileSync(join(domainsDir, 'x.md'), `domain "X" {}`)
     const outPath = join(cacheDir, 'domains.json')
     const idx = writeDomainIndex({ projectRoot: tmpDir, domainsDir, outPath })
     expect(existsSync(outPath)).toBe(true)
@@ -297,7 +297,7 @@ describe('writeDomainIndex / loadDomainIndex', () => {
   })
 
   test('Zod schema round-trip: build → write → load → re-validate', () => {
-    writeFileSync(join(domainsDir, 'a.oxn'), `domain "A" { term { "X": "x" } }`)
+    writeFileSync(join(domainsDir, 'a.md'), `domain "A" { term { "X": "x" } }`)
     const idx = writeDomainIndex({ projectRoot: tmpDir, domainsDir, outPath: join(cacheDir, 'd.json') })
     const reloaded = loadDomainIndex(join(cacheDir, 'd.json'))
     expect(reloaded).toEqual(idx)

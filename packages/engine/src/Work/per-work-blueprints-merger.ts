@@ -1,7 +1,7 @@
 // =============================================================================
 // work-blueprints-merger.ts — PR-3
 //
-// 把 work.oxn 中声明的 blueprint ref 列表 → 合并成 per-work `blueprints.json`（slim）。
+// 把 work.md 中声明的 blueprint ref 列表 → 合并成 per-work `blueprints.json`（slim）。
 //
 // slim 内容：name / version / slots[{name, deps, observe}] / sourceHash
 //   - 不展开 prop 列表（决策不需要）
@@ -97,22 +97,22 @@ export function resolveBlueprintFile(
   projectRoot: string,
 ): { scope: '@oxn' | '@prj'; filePath: string } | null {
   // v0.6.1-alpha.3: Phase 1 — Work 的 "blueprint" 引用实际指 Workflow 目录（slots/deps/observe 模板）。
-  // 同时保留 v0.6.1-alpha.2 前的 blueprints/ 目录 fallback（兼容历史 work.oxn）。
+  // 同时保留 v0.6.1-alpha.2 前的 blueprints/ 目录 fallback（兼容历史 work.md）。
   const { primary: wfPrimary, fallback: wfFallback } = resolveAssetCandidates(projectRoot, 'workflow')
   const { primary: bpPrimary, fallback: bpFallback } = resolveAssetCandidates(projectRoot, 'blueprint')
   const candidates = (n: string): string[] => {
     const kebab = toKebab(n)
     return [
       // 优先 workflow 目录（Phase 1 后的标准位置）
-      join(wfPrimary, `${n}.oxn`),
-      join(wfPrimary, `${kebab}.oxn`),
-      join(wfFallback, `${n}.oxn`),
-      join(wfFallback, `${kebab}.oxn`),
-      // blueprints 目录 fallback（兼容历史 work.oxn + 未来组合模板）
-      join(bpPrimary, `${n}.oxn`),
-      join(bpPrimary, `${kebab}.oxn`),
-      join(bpFallback, `${n}.oxn`),
-      join(bpFallback, `${kebab}.oxn`),
+      join(wfPrimary, `${n}.md`),
+      join(wfPrimary, `${kebab}.md`),
+      join(wfFallback, `${n}.md`),
+      join(wfFallback, `${kebab}.md`),
+      // blueprints 目录 fallback（兼容历史 work.md + 未来组合模板）
+      join(bpPrimary, `${n}.md`),
+      join(bpPrimary, `${kebab}.md`),
+      join(bpFallback, `${n}.md`),
+      join(bpFallback, `${kebab}.md`),
     ]
   }
 
@@ -146,11 +146,9 @@ function resolveBoundaryAssetFile(
   const { primary, fallback } = resolveAssetCandidates(projectRoot, kind, null)
   const kebab = toKebab(name)
   for (const dir of [primary, fallback]) {
-    for (const ext of ['.oxn', '.md']) {
-      for (const f of [`${name}${ext}`, `${kebab}${ext}`]) {
-        const fp = join(dir, f)
-        if (existsSync(fp)) return fp
-      }
+    for (const f of [`${name}.md`, `${kebab}.md`]) {
+      const fp = join(dir, f)
+      if (existsSync(fp)) return fp
     }
   }
   return null
@@ -164,7 +162,7 @@ function toKebab(s: string): string {
     .toLowerCase()
 }
 
-// ───────── blueprint.oxn → slim 解析（regex-only）─────────
+// ───────── blueprint.md → slim 解析（regex-only）─────────
 
 export interface ParsedBlueprintSlim {
   name: string | null
@@ -179,7 +177,7 @@ export interface ParsedBlueprintSlim {
 }
 
 /**
- * 从 blueprint.oxn 内容提取 slim 字段。
+ * 从 blueprint.md 内容提取 slim 字段。
  * 永远不抛错；错误累积在 result.errors。
  *
  * 🆕 v0.6.1-alpha.3 Phase 1: 同时提取 Blueprint body 内的 4 种 ref decl：
@@ -227,7 +225,7 @@ export function parseBlueprintSlim(content: string): ParsedBlueprintSlim {
   const nestedBlueprintRefs = extractRefs('blueprint').filter((r) => r.name !== name) // 排除自引用
 
   // 🆕 v0.6.1-alpha.4 Phase B.6: 强制约束 — MD-native blueprint 必须引用 1 Domain + 1 Workflow + 1 Stack
-  // 注意：.oxn 格式的 blueprint 不支持 domain/workflow/stack refs（Langium grammar 只有 slot），
+  // 注意：.oxn 格式的 blueprint 已废弃（v0.7.0），仅 .md 格式支持 domain/workflow/stack refs。
   // 所以此约束仅对含 `domain "X"` 或 `## Refs` 的内容生效。
   const hasBoundaryRefs = domainRefs.length > 0 || workflowRefs.length > 0 || stackRefs.length > 0
   if (errors.length === 0 && hasBoundaryRefs) {
@@ -285,19 +283,19 @@ function parseSlotSlim(name: string, body: string, _errors: string[]): SlotSlim 
 export interface BuildPerWorkBlueprintsOptions {
   projectRoot: string
   workName: string
-  workOxnPath: string
+  workMdPath: string
   /** 覆盖 generatedAt（测试用） */
   generatedAt?: string
 }
 
 export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptions): PerWorkBlueprintsIndex {
-  const { projectRoot, workName, workOxnPath } = options
+  const { projectRoot, workName, workMdPath } = options
   const generatedAt = options.generatedAt ?? new Date().toISOString()
 
-  if (!existsSync(workOxnPath)) {
-    throw new Error(`work.oxn not found at ${workOxnPath}`)
+  if (!existsSync(workMdPath)) {
+    throw new Error(`work.md not found at ${workMdPath}`)
   }
-  const content = readFileSync(workOxnPath, 'utf-8')
+  const content = readFileSync(workMdPath, 'utf-8')
   const sourceHash = hashText(content)
   const declared = extractBlueprintRefs(content)
 

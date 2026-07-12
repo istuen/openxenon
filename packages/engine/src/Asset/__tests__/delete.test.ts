@@ -25,19 +25,19 @@ function setupProject(): void {
 describe('Asset.deleteAsset() 删除', () => {
   test('1. 孤儿 + --force → 物理删除 + 写审计 log', async () => {
     setupProject()
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.oxn'), 'domain "A" { term { "T": "t" } }\n')
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.md'), 'domain "A" { term { "T": "t" } }\n')
 
     const result = await deleteAsset({ kind: 'domain', name: 'A', force: true, projectRoot: tmpDir })
 
     expect(result.ok).toBe(true)
-    expect(existsSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.oxn'))).toBe(false)
+    expect(existsSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.md'))).toBe(false)
     expect(result.logPath).toBeTruthy()
     rmSync(tmpDir, { recursive: true, force: true })
   })
 
   test('2. 孤儿无 --force → 抛 IAPError FORCE_REQUIRED', async () => {
     setupProject()
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.oxn'), 'domain "A" { term { "T": "t" } }\n')
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.md'), 'domain "A" { term { "T": "t" } }\n')
 
     expect(deleteAsset({ kind: 'domain', name: 'A', force: false, projectRoot: tmpDir })).rejects.toThrow(
       /requires --force/,
@@ -47,9 +47,9 @@ describe('Asset.deleteAsset() 删除', () => {
 
   test('3. 被引用 Asset + --force → 仍拒绝（ASSET_HAS_REFS 优先）', async () => {
     setupProject()
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.oxn'), 'domain "A" { term { "T": "t" } }\n')
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.md'), 'domain "A" { term { "T": "t" } }\n')
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'domains', 'B.oxn'),
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'B.md'),
       `domain "B" {
   references = ["A"]
   term { "T": "t" }

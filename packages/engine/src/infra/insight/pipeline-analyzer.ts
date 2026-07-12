@@ -4,8 +4,8 @@
 // L1-Infra IO：跨 subsystems 数据加载，组装 PipelineInput 供 L0 compute。
 //
 // 扫描来源：
-//   - domains/*.md (fallback *.oxn)  → 提取 name + invariants（slim regex 解析）
-//   - blueprints/*.md (fallback *.oxn) → 提取 name + slots[*].observe（slim regex 解析）
+//   - domains/*.md  → 提取 name + invariants（slim regex 解析）
+//   - blueprints/*.md → 提取 name + slots[*].observe（slim regex 解析）
 //   - works/*/         → 提取 domainRefs / blueprintRefs / proof 关联
 //   - proofs/*/frozen.json → proof verdict + probe summary
 //
@@ -19,7 +19,7 @@
 //   2. 备选：扫描 works/<w>/.run/frozen.json 下 work-domains-frozen.json
 //   3. 末选：works/<w>/.run/tasks/*/frozen.json（per-task proof）
 //
-// v0.7.0: domains/blueprints 扫描优先 .md，fallback .oxn。
+// v0.7.0: domains/blueprints 扫描 .md only.
 // =============================================================================
 
 import { join } from 'path'
@@ -188,13 +188,13 @@ function _stripOxnExt(s: string): string {
 export function scanPipelineInput(projectRoot: string): PipelineScanResult {
   const boundary = join(projectRoot, BOUNDARY_DIR)
 
-  // 1. 扫描 domains（.md 优先，fallback .oxn）
+  // 1. 扫描 domains（.md only）
   const domains: SlimDomain[] = []
   const domainsDir = join(boundary, DOMAINS_DIR)
   if (existsSync(domainsDir)) {
     try {
       for (const entry of readdirSync(domainsDir)) {
-        if (!entry.endsWith('.md') && !entry.endsWith('.oxn')) continue
+        if (!entry.endsWith('.md')) continue
         const path = join(domainsDir, entry)
         const content = readFileSync(path, 'utf-8')
         const domain = parseSlimDomain(content, entry)
@@ -205,13 +205,13 @@ export function scanPipelineInput(projectRoot: string): PipelineScanResult {
     }
   }
 
-  // 2. 扫描 blueprints（.md 优先，fallback .oxn）
+  // 2. 扫描 blueprints（.md only）
   const blueprints: SlimBlueprint[] = []
   const blueprintsDir = join(boundary, BLUEPRINTS_DIR)
   if (existsSync(blueprintsDir)) {
     try {
       for (const entry of readdirSync(blueprintsDir)) {
-        if (!entry.endsWith('.md') && !entry.endsWith('.oxn')) continue
+        if (!entry.endsWith('.md')) continue
         const path = join(blueprintsDir, entry)
         const content = readFileSync(path, 'utf-8')
         const bp = parseSlimBlueprint(content, entry)

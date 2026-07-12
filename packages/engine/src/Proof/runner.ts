@@ -16,7 +16,7 @@ import { getProbeHandler, hasProbeHandler, type ProbeContext } from '@openxenon/
 import { judge } from '@openxenon/engine/kernel'
 import type { FrozenProofProbeResult } from '@openxenon/engine/kernel'
 
-/** 内存中的 proof.oxn 解析结果 */
+/** 内存中的 proof.md 解析结果 */
 export interface ProofProbeIR {
   probeName: string
   ref: string

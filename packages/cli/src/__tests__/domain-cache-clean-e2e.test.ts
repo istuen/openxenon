@@ -63,7 +63,7 @@ function seedDomain(name: string): { oxnPath: string; hashPath: string; mdHashPa
   const domainsDir = join(tmpDir, '.openxenon', 'assets', 'domains')
   const cacheDir = join(domainsDir, '.cache')
   mkdirSync(cacheDir, { recursive: true })
-  const oxnPath = join(domainsDir, `${name}.oxn`)
+  const oxnPath = join(domainsDir, `${name}.md`)
   writeFileSync(
     oxnPath,
     `domain "${name}" {\n  term { "TODO_Term": "TODO" }\n  ban { "TODO_BannedTerm" }\n  invariant { "TODO" }\n}\n`,

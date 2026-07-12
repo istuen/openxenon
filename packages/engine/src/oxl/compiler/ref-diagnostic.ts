@@ -1,7 +1,7 @@
 // =============================================================================
 // ref-diagnostic.ts — PR-14
 //
-// 共享诊断条目：work.oxn 引用了不存在的 Domain/Blueprint 时，产出的软警告条目。
+// 共享诊断条目：work.md 引用了不存在的 Domain/Blueprint 时，产出的软警告条目。
 //
 // 与 IAPError 字典 v1.1 的关系（命名空间物理隔离）：
 //   - IAPError = 硬阻断 + action: YIELD_TO_HUMAN（AI 必须 yield）

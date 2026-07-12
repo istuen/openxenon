@@ -128,8 +128,8 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     if (taskDomain) {
       const kebab = camelToKebab(taskDomain)
       const candidates = [
-        join(root, BOUNDARY_DIR, 'domains', `${taskDomain}.oxn`),
-        join(root, BOUNDARY_DIR, 'domains', `${kebab}.oxn`),
+        join(root, BOUNDARY_DIR, 'domains', `${taskDomain}.md`),
+        join(root, BOUNDARY_DIR, 'domains', `${kebab}.md`),
       ]
       for (const path of candidates) {
         const domData = readDomainFile(path)

@@ -214,7 +214,7 @@ export function migrateSingleFile(yamlPath: string, outputPath?: string): Migrat
 
     const oxnContent = yamlToOxnBlueprint(parsed)
 
-    const destPath = outputPath || yamlPath.replace(/\.(yaml|yml|json)$/, '.oxn')
+    const destPath = outputPath || yamlPath.replace(/\.(yaml|yml|json)$/, '.md')
     const destDir = dirname(destPath)
     if (!existsSync(destDir)) {
       mkdirSync(destDir, { recursive: true })

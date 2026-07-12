@@ -70,14 +70,14 @@ const BLUEPRINT = `blueprint "LifecycleBP" {
 function setupProject(): void {
   mkdirSync(join(tmpDir, '.openxenon', 'domains'), { recursive: true })
   mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
-  writeFileSync(join(tmpDir, '.openxenon', 'domains', 'lifecycle-domain.oxn'), DOMAIN)
-  writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'lifecycle-bp.oxn'), BLUEPRINT)
+  writeFileSync(join(tmpDir, '.openxenon', 'domains', 'lifecycle-domain.md'), DOMAIN)
+  writeFileSync(join(tmpDir, '.openxenon', 'blueprints', 'lifecycle-bp.md'), BLUEPRINT)
 }
 
 function setupWork(workName: string, taskNames: string[]): void {
   mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks'), { recursive: true })
   writeFileSync(
-    join(tmpDir, '.openxenon', 'works', workName, 'work.oxn'),
+    join(tmpDir, '.openxenon', 'works', workName, 'work.md'),
     `work "${workName}" {
   context {
     goal = "PR-13 lifecycle test";
@@ -92,7 +92,7 @@ ${taskNames.map((t) => `  task "${t}" { blueprint "LifecycleBP" }`).join('\n')}
   for (const t of taskNames) {
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', t), { recursive: true })
     writeFileSync(
-      join(tmpDir, '.openxenon', 'works', workName, 'tasks', t, 'task.oxn'),
+      join(tmpDir, '.openxenon', 'works', workName, 'tasks', t, 'task.md'),
       `task "${t}" {
   part "alpha" { skill_context = "do ${t}" }
 }
@@ -134,7 +134,7 @@ describe('NV-1 / NV-2 守卫', () => {
     await initProject()
     mkdirSync(join(tmpDir, '.openxenon', 'blueprints'), { recursive: true })
     writeFileSync(
-      join(tmpDir, '.openxenon', 'blueprints', 'single.oxn'),
+      join(tmpDir, '.openxenon', 'blueprints', 'single.md'),
       `blueprint "single" {
   assetVersion = 1
   description = "single slot"
@@ -145,7 +145,7 @@ describe('NV-1 / NV-2 守卫', () => {
     await runCli(['work', 'create', 'single', '--blueprint', 'single', '--json'])
     mkdirSync(join(tmpDir, '.openxenon', 'works', 'single', 'tasks', 'alpha'), { recursive: true })
     writeFileSync(
-      join(tmpDir, '.openxenon', 'works', 'single', 'tasks', 'alpha', 'task.oxn'),
+      join(tmpDir, '.openxenon', 'works', 'single', 'tasks', 'alpha', 'task.md'),
       `task "alpha" {
   blueprint "single"
   part "build" { skill_context = "test" }

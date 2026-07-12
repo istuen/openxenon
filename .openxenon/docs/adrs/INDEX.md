@@ -1,7 +1,7 @@
 # ADR 索引
 
 > **来源**：2026-07-04 docs-tmp-cleanup work 抽取 + 2026-07-09 doc-unify-layout 救援 + 2026-07-10 v0.6.1-alpha.4 ADR 追加 + 2026-07-12 三边界框架 ADR 追加
-> **总计**：48 条 ADR（来自 v0.0 ~ v0.6.1 共 9 个版本的讨论记录；另 8 条 0040-0047 已归档于 `2026-07-05-archive-0040-0047-memory-series-superseded.md`）
+> **总计**：50 条 ADR（来自 v0.0 ~ v0.6.1 共 9 个版本的讨论记录；另 8 条 0040-0047 已归档于 `2026-07-05-archive-0040-0047-memory-series-superseded.md`）
 > **位置**：`.openxenon/docs/adrs/`（对内-沉淀层，append-only）
 > **约定**：决策一旦记录不编辑不删除；被推翻时新 ADR 标记旧 ADR 为 Superseded
 
@@ -9,10 +9,10 @@
 
 | 状态 | 含义 | 数量 |
 |---|---|---|
-| ✅ **Adopted** | 已落 SSOT + 代码 | 27 |
+| ✅ **Adopted** | 已落 SSOT + 代码 | 30 |
 | 🟡 **Partially Adopted** | 部分已落，部分待办 | 5 |
 | 💡 **Proposed** | 待 v0.7+ 落地 | 9 |
-| ⛔ **Superseded** | 被推翻但有史料价值 | 7 |
+| ⛔ **Superseded** | 被推翻但有史料价值 | 6 |
 
 ## 主题分类索引
 
@@ -48,6 +48,8 @@
 | [0031](./0031-proof-notary-not-judge.md) | Proof = 公证人 ≠ 裁判 | ✅ Adopted |
 | [0032](./0032-pi-vs-opencode-selection.md) | Pi vs OpenCode 选型最终结论 | ✅ Adopted |
 | [0033](./0033-iap-public-naming-disagreement.md) | IAP 对外命名分歧（Intent/Align/Verify vs "出证明"） | ⛔ Superseded（由 v0.6.1 命名统一触发） |
+| [0057](./0057-trust-chain-core-model.md) | 信任链——OpenXenon 的核心模型（工程师↔OXN↔AI 三方拓扑） | ✅ Adopted |
+| [0058](./0058-minimum-trust-closure.md) | 最小信任闭环（v0.6.1 Scope = 四层确定性） | ✅ Adopted |
 
 ### 4. Work / Asset（9 条）
 
@@ -68,7 +70,6 @@
 | [0054](./0054-three-boundary-framework.md) | 三边界框架（Domain/Workflow/Stack 正交维度） | ✅ Adopted |
 | [0055](./0055-blueprint-as-composition-template.md) | Blueprint 提升为组合模板（E1 Asset 内的隔离层） | ✅ Adopted |
 | [0056](./0056-external-inline-and-status.md) | External inline 收敛 + 状态管理 | ✅ Adopted |
-| [0052](./0052-langium-retirement-oxn-deprecation.md) | Langium 退役 + .oxn 废弃（v0.7.0 切割） | ✅ Adopted |
 
 ### 5. Insight / Skill（5 条）
 
@@ -102,7 +103,7 @@
 
 ## ADR 落地状态一览
 
-### 已落 SSOT（17 条 · 标记 SSOT 已增补位置）
+### 已落 SSOT（19 条 · 标记 SSOT 已增补位置）
 
 | ADR | 落地位置（SSOT 增补） |
 |---|---|
@@ -120,10 +121,11 @@
 | 0024 | `docs/zh-cn/work.md` §partId + atomic-write |
 | 0031 | `docs/zh-cn/proof.md` §Proof 公证人边界 |
 | 0035 | `docs/zh-cn/asset.md` §catalog.json |
-| 0052 | `packages/engine/src/oxl/langium-driver/` 删除（Langium 退役） |
+| 0052 | `packages/engine/src/oxl/langium-driver/` 删除 + `docs/zh-cn/cli.md` + `docs/zh-cn/work.md` §Langium 退役 |
 | 0054 | `docs/zh-cn/asset.md` §三边界框架 + `docs/en/asset.md` |
 | 0055 | `docs/zh-cn/asset.md` §Blueprint 组合模板 |
-| 0052 | `docs/zh-cn/cli.md` + `docs/zh-cn/work.md` §Langium 退役 |
+| 0057 | `docs/zh-cn/core-concepts.md` §3.1 信任链 |
+| 0058 | `docs/zh-cn/core-concepts.md` §13 最小信任闭环 |
 
 ### 待办（8 条 Proposed · 进 v0.7+ RFC 子 PR）
 

@@ -26,9 +26,8 @@
  * | domain | Foo | Foo description |
  * ```
  *
- * Note: roadmap-compiler.ts (oxl/md-bridge) is the .oxn-based path. This parser is the
- *       direct .md-based path for AI Agent consumption (no Langium round-trip needed
- *       since .oxn is deprecated in v0.7).
+ * Note: roadmap-compiler.ts (oxl/md-bridge) was the .oxn-based path (deprecated in v0.7).
+ *       This parser is the .md-based path for AI Agent consumption.
  */
 
 import { readFileSync, existsSync } from 'node:fs'

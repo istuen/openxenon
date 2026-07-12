@@ -33,7 +33,7 @@ name: ${name}
 ${mdSlots}
 `
   }
-  // v0.7.0+: .oxn format no longer supported, always return .md template
+  // v0.7.0+: always return .md template
   const slotNames: string[] = []
   for (const line of slotsBlock.split('\n')) {
     const m = line.match(/^ {2}slot "([^"]+)" \{/)

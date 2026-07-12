@@ -3,7 +3,7 @@
 //
 // 4 子命令：
 //   create         — 在 .openxenon/blueprints/ 生成新 blueprint 骨架
-//   validate       — 解析 .oxn + 验签 + 落 .cache/blueprints.json 索引
+//   validate       — 解析 .md + 验签 + 落 .cache/blueprints.json 索引
 //   list           — 读 .cache/blueprints.json 索引（AI 全局检索入口）
 //                    索引缺失时降级到 dir 扫描（向后兼容老项目）
 //   index          — 手动重建全局 slim 索引 → .openxenon/.cache/blueprints.json
@@ -166,17 +166,11 @@ const createSubcommand = defineCommand({
     const template = blueprintCreateTemplate(name, slotBlocks.join('\n\n'), slotsArg, assetFormat)
     writeFileSync(primaryPath, template, 'utf-8')
 
-    // v0.7.0: auto-sync to .oxn alt for backward compatibility when primary is .md
+    // v0.7.0: .oxn format removed
     if (autoSync) {
       void (async () => {
         try {
-          if (assetFormat === 'md') {
-            const { tree, frontmatter: fm } = parseMarkdown(template)
-            const ir = extractBlueprintIR(tree, fm)
-            const { serializeBlueprintToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
-            const altContent = serializeBlueprintToOxn(ir)
-            writeFileSync(altPath, altContent, 'utf-8')
-          }
+          // v0.7.0: .oxn format removed, no alt file needed
         } catch {
           // autoSync 失败不阻断主命令
         }
@@ -217,17 +211,12 @@ const validateSubcommand = defineCommand({
   },
   args: {
     name: { type: 'positional', required: true, description: t('blueprint.validate.name') },
-    '--no-langium': {
-      type: 'boolean',
-      description: 'v0.6.1 PR-4 (D-β c): 强制走 mdast 路径；如文件是 .oxn 则报错',
-    },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const name = ctx.args.name as string
-    const noLangium = ctx.args['--no-langium'] === true
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
@@ -246,18 +235,6 @@ const validateSubcommand = defineCommand({
     const primaryPath = resolveAssetPrimaryPath(projectRoot, 'blueprint', name, assetFormat, config)
     const altPath = resolveAssetAltPath(projectRoot, 'blueprint', name, assetFormat, config)
     const bpPath = existsSync(primaryPath) ? primaryPath : existsSync(altPath) ? altPath : primaryPath
-
-    // v0.6.1 PR-4 (D-β c): --no-langium 标志强制走 mdast 路径
-    if (noLangium && bpPath.endsWith('.oxn')) {
-      return outputError(
-        {
-          code: 'OXN_NO_LANGIUM_REJECTED',
-          message: `--no-langium specified but file is .oxn: ${bpPath}. Run \`oxn blueprint sync ${name}\` to convert to .md, then re-validate.`,
-          suggestion: 'drop --no-langium flag or migrate .oxn → .md first',
-        },
-        format,
-      )
-    }
 
     const result = await validateBlueprint(bpPath)
     if (!result.ok) {
@@ -451,8 +428,8 @@ const listSubcommand = defineCommand({
         const fullPath = join(currentDir, entry.name)
         if (entry.isDirectory()) {
           walk(fullPath, prefix ? `${prefix}/${entry.name}` : entry.name)
-        } else if (entry.isFile() && entry.name.endsWith('.oxn')) {
-          const stem = entry.name.replace(/\.oxn$/, '')
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
+          const stem = entry.name.replace(/\.md$/, '')
           blueprints.push(prefix ? `${prefix}/${stem}` : stem)
         }
       }
@@ -477,7 +454,7 @@ const listSubcommand = defineCommand({
 // ---------------------------------------------------------------------------
 // Subcommand: index (PR-X)
 //
-// 扫 `.openxenon/blueprints/*.oxn`（含子目录）→ 落 `.openxenon/.cache/blueprints.json`
+// 扫 `.openxenon/blueprints/*.md`（含子目录）→ 落 `.openxenon/.cache/blueprints.json`
 // slim 模式：name/file/description/version/slotNames/propCount；不展开 slot DAG 详情
 // （那是 per-work blueprints.json 的事，PR-3 引入）。
 //

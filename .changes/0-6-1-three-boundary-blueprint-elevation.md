@@ -4,7 +4,7 @@
 > **日期**：2026-07-10
 > **作者**：opencode + user（协作）
 > **关联 RFC**：[三边界框架 + Blueprint 提升组合模板 RFC](../pools/drafts/three-boundary-blueprint-elevation-rfc.md)
-> **关联 ADR**：[0052 Superseded ADR-0019](../docs/adrs/0052-superseded-0019-blueprint-type-paradigm.md), [0053 Superseded ADR-0048](../docs/adrs/0053-superseded-0048-library-external-scheme.md), [0054 三边界框架](../docs/adrs/0054-three-boundary-framework.md), [0055 Blueprint 组合模板](../docs/adrs/0055-blueprint-as-composition-template.md), [0056 External inline](../docs/adrs/0056-external-inline-and-status.md)
+> **关联 ADR**：[0019 Superseded](../docs/adrs/0019-blueprint-type-paradigm.md)（Blueprint Type 范式废弃）, [0053 Superseded ADR-0048](../docs/adrs/0053-superseded-0048-library-external-scheme.md), [0054 三边界框架](../docs/adrs/0054-three-boundary-framework.md), [0055 Blueprint 组合模板](../docs/adrs/0055-blueprint-as-composition-template.md), [0056 External inline](../docs/adrs/0056-external-inline-and-status.md)
 
 ## 概述
 
@@ -91,7 +91,7 @@ oxn external mark <name> --status <s> [--reason "..."]  # 手动标记
 
 | ADR | 状态 | 主题 |
 |---|---|---|
-| 0052 | ⛔ Superseded | Superseded ADR-0019（Blueprint Type 字段废弃正式记录） |
+| 0019 | ⛔ Superseded | Blueprint Type 范式废弃正式记录（由 ADR-0054~0056 触发） |
 | 0053 | ⛔ Superseded | Superseded ADR-0048（library/external Asset 类型收敛正式记录） |
 | 0054 | ✅ Adopted | 三边界框架（Domain/Workflow/Stack 正交维度） |
 | 0055 | ✅ Adopted | Blueprint 提升为组合模板（E1 Asset 内的隔离层） |
@@ -99,7 +99,7 @@ oxn external mark <name> --status <s> [--reason "..."]  # 手动标记
 
 ## ADR-0019 / ADR-0048 正式废弃记录
 
-- **ADR-0019**（Blueprint Type 范式）：v0.6.1-alpha.0 已移除 `type "task"` 字段但 ADR 未标 Superseded；本次由 ADR-0052 正式记录废弃状态
+- **ADR-0019**（Blueprint Type 范式）：v0.6.1-alpha.0 已移除 `type "task"` 字段但 ADR 未标 Superseded；本次由 ADR-0054~0056 的采纳正式记录废弃状态
 - **ADR-0048**（library/ + external/）：本次由 ADR-0053 正式记录 Superseded
 
 ## Breaking Changes

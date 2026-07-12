@@ -1,7 +1,7 @@
 /**
  * archive.test.ts — v0.6.1-alpha.1 Asset Lifecycle
  *
- * 验证 archive() 函数：move .oxn + .md 到 .archived/ + metadata.json
+ * 验证 archive() 函数：move .md 到 .archived/ + metadata.json
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -27,7 +27,7 @@ describe('Asset.archive() 归档', () => {
   test('1. archive 孤儿 Asset → 移到 .archived/ + 写 metadata.json', async () => {
     setupProject()
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'domains', 'MyDomain.oxn'),
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'MyDomain.md'),
       'domain "MyDomain" { term { "T": "t" } }\n',
     )
 
@@ -40,8 +40,8 @@ describe('Asset.archive() 归档', () => {
 
     expect(result.ok).toBe(true)
     expect(result.idempotent).toBe(false)
-    expect(existsSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'MyDomain.oxn'))).toBe(false)
-    expect(existsSync(resolveArchivedAssetFile(tmpDir, 'domain', 'MyDomain', 'oxn'))).toBe(true)
+    expect(existsSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'MyDomain.md'))).toBe(false)
+    expect(existsSync(resolveArchivedAssetFile(tmpDir, 'domain', 'MyDomain', 'md'))).toBe(true)
 
     const metaPath = resolveArchivedMetadataFile(tmpDir, 'domain', 'MyDomain')
     expect(existsSync(metaPath)).toBe(true)
@@ -53,8 +53,7 @@ describe('Asset.archive() 归档', () => {
 
   test('2. archive 同时移 .md 镜像', async () => {
     setupProject()
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.oxn'), 'domain "A" { term { "T": "t" } }\n')
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.md'), '# Domain: A\n')
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.md'), 'domain "A" { term { "T": "t" } }\n')
 
     const result = await archive({
       kind: 'domain',
@@ -70,9 +69,9 @@ describe('Asset.archive() 归档', () => {
 
   test('3. archive 被引用 Asset → 抛 IAPError', async () => {
     setupProject()
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.oxn'), 'domain "A" { term { "T": "t" } }\n')
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.md'), 'domain "A" { term { "T": "t" } }\n')
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'domains', 'B.oxn'),
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'B.md'),
       `domain "B" {
   references = ["A"]
   term { "T": "t" }
@@ -108,7 +107,7 @@ describe('Asset.archive() 归档', () => {
 
   test('5. archive 已归档 Asset → idempotent=true 不报错', async () => {
     setupProject()
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.oxn'), 'domain "A" { term { "T": "t" } }\n')
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'A.md'), 'domain "A" { term { "T": "t" } }\n')
 
     const first = await archive({ kind: 'domain', name: 'A', reason: 'r1', projectRoot: tmpDir })
     expect(first.ok).toBe(true)

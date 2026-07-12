@@ -39,7 +39,7 @@ import { findLegacyIntentBlocks } from './_legacy-detect.js'
  * - Links: 指向其他 Asset 的引用列表（target: string）
  *
  * 注意：Roadmap 不含 Themes/Milestones/Risks 等复杂 H2 分类
- * RoadmapDeclaration AST 仅含 links[] 字段（oxn.langium:281-294）
+ * RoadmapDeclaration AST 仅含 links[] 字段
  */
 const ROADMAP_CATEGORIES = ['Links'] as const
 type RoadmapCategory = (typeof ROADMAP_CATEGORIES)[number]

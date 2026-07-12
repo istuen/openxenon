@@ -71,15 +71,15 @@ const BLUEPRINT_X = `blueprint "BlueprintX" {
 function setupV0Project(): void {
   mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
   mkdirSync(join(tmpDir, '.openxenon', 'assets', 'blueprints'), { recursive: true })
-  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-a.oxn'), DOMAIN_A)
-  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'blueprints', 'blueprint-x.oxn'), BLUEPRINT_X)
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-a.md'), DOMAIN_A)
+  writeFileSync(join(tmpDir, '.openxenon', 'assets', 'blueprints', 'blueprint-x.md'), BLUEPRINT_X)
 }
 
 function setupV0Work(workName: string, taskNames: string[]): void {
   const workDir = join(tmpDir, '.openxenon', 'works', workName)
   mkdirSync(join(workDir, 'tasks'), { recursive: true })
   writeFileSync(
-    join(workDir, 'work.oxn'),
+    join(workDir, 'work.md'),
     `work "${workName}" {
   context { goal = "test"; constraints = ["c1"]; } loop_policy { max_iterations = 3; }
 
@@ -101,7 +101,7 @@ ${taskNames.map((t) => `  task "${t}" { blueprint "BlueprintX" }`).join('\n')}
     const taskDir = join(workDir, 'tasks', t)
     mkdirSync(taskDir, { recursive: true })
     writeFileSync(
-      join(taskDir, 'task.oxn'),
+      join(taskDir, 'task.md'),
       `task "${t}" { blueprint "BlueprintX" part "alpha" { skill_context = "do ${t}" } }
 `,
     )
@@ -235,7 +235,7 @@ describe('oxn work migrate (PR-10)', () => {
     const workDir = join(tmpDir, '.openxenon', 'works', 'pure-planning')
     mkdirSync(join(workDir, 'tasks', 't'), { recursive: true })
     writeFileSync(
-      join(workDir, 'work.oxn'),
+      join(workDir, 'work.md'),
       `work "pure-planning" {
   context { goal = "x" }
   domain "DomainA" ref "@prj/domains/domain-a";
@@ -245,7 +245,7 @@ describe('oxn work migrate (PR-10)', () => {
 `,
     )
     writeFileSync(
-      join(workDir, 'tasks', 't', 'task.oxn'),
+      join(workDir, 'tasks', 't', 'task.md'),
       `task "t" { blueprint "BlueprintX" part "alpha" { skill_context = "x" } }
 `,
     )
@@ -315,7 +315,7 @@ describe('work migrate diagnostics（PR-14d）', () => {
     await initProject()
     // 写域文件但不写蓝图文件（Phase B: domain refs 不再诊断）
     mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-a.oxn'), DOMAIN_A)
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'domain-a.md'), DOMAIN_A)
     // 故意不写 blueprint-x.oxn（setupV0Work 引用 BlueprintX）
     setupV0Work('demo', ['a'])
 
@@ -333,10 +333,10 @@ describe('work migrate diagnostics（PR-14d）', () => {
     setupV0Work('demo', ['a'])
 
     // 在 work.oxn 额外声明多个不存在的 blueprint ref
-    const workOxnPath = join(tmpDir, '.openxenon', 'works', 'demo', 'work.oxn')
-    const content = readFileSync(workOxnPath, 'utf-8')
+    const workMdPath = join(tmpDir, '.openxenon', 'works', 'demo', 'work.md')
+    const content = readFileSync(workMdPath, 'utf-8')
     writeFileSync(
-      workOxnPath,
+      workMdPath,
       content.replace(
         'domain "DomainA" ref "@prj/domains/domain-a";\n  blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";',
         'domain "DomainA" ref "@prj/domains/domain-a";\n  blueprint "BlueprintX" ref "@prj/blueprints/blueprint-x";\n  blueprint "GhostBP" ref "@prj/blueprints/ghostbp";',

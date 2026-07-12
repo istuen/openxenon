@@ -2,7 +2,7 @@
 // PipelineInsight Schema (v0.5 PR-C)
 //
 // Intent → Work → Proof 全链结构化洞察。
-// 数据源：domains/*.oxn + blueprints/*.oxn + works/*/ + proofs/*/frozen.json
+// 数据源：domains/*.md + blueprints/*.md + works/*/ + proofs/*/frozen.json
 //
 // 3 维分析：
 //   1. invariantEffectiveness: Domain invariant 在多 work/proof 中的命中率

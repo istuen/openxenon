@@ -2,7 +2,7 @@
  * Asset module — evolve use case (v0.6.1-alpha.1 Asset Lifecycle 闭环)
  *
  * 演进 Asset（创建新版本，旧版不变）：
- * 1. 读旧 .oxn + .md
+ * 1. 读旧 .md
  * 2. 复制内容到 newName（如果 newName 不存在）
  * 3. 旧版 auditTrail 加新项：`evolved to <newName> at <time>`
  * 4. 新版 auditTrail 加新项：`evolved from <oldName> at <time>`
@@ -60,7 +60,7 @@ export async function evolve(input: EvolveInput): Promise<EvolveResult> {
     )
   }
 
-  // 2. 读旧 .oxn
+  // 2. 读旧 .md
   const oldContent = readFileSync(oldOxnPath, 'utf-8')
   const now = new Date().toISOString()
 
@@ -98,7 +98,7 @@ export async function evolve(input: EvolveInput): Promise<EvolveResult> {
 }
 
 /**
- * 在 .oxn 内容末尾追加 auditTrail 项（带注释前缀避免 parser 干扰）
+ * 在 .md 内容末尾追加 auditTrail 项（带注释前缀避免 parser 干扰）
  */
 function appendAuditTrail(content: string, entry: string): string {
   // 如果已有 auditTrail 段（comment 形式），追加

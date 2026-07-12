@@ -36,7 +36,7 @@ export interface SuggestionDraft {
 }
 
 function inferTargetFromDomain(domainName: string): string {
-  return `.openxenon/domains/${domainName}.oxn`
+  return `.openxenon/domains/${domainName}.md`
 }
 
 function slugify(s: string): string {

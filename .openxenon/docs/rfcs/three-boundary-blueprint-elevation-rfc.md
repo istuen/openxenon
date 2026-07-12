@@ -2,11 +2,11 @@
 
 > **日期**：2026-07-10（v1.0 Draft）
 > **状态**：🟢 v1.0 拍板（v0.6.1-alpha.2 ~ v0.6.1-alpha.4 三阶段实施完成；Phase 3 收尾完成 ADR 处置 + 文档同步）
-> **基础**：v0.6 IAP 架构重构 RFC · v0.3 MD-Native Grammar RFC · [ADR-0020 Intent-Align 统一矩阵](./.openxenon/docs/adrs/0020-intent-align-unified-matrix.md) · [ADR-0048 library/external 子目录](./.openxenon/docs/adrs/0048-asset-library-external-scheme.md)（被 Superseded）
+> **基础**：v0.6 IAP 架构重构 RFC · v0.3 MD-Native Grammar RFC · [ADR-0020 Intent-Align 统一矩阵](../adrs/0020-intent-align-unified-matrix.md) · [ADR-0048 library/external 子目录](../adrs/0048-asset-library-external-scheme.md)（被 Superseded）
 > **作者**：opencode（与 user 协作，2026-07-10）
 > **范围**：E1 Asset 类型体系重构 + Blueprint 语义提升 + External 收敛 + Work 引用模型简化
 > **语法基础**：MD-native（H1/H2/H3 + nested list），非 Langium `.oxn`。本 RFC 中所有示例均为 MD-native 格式。
-> **关联 ADR**：[0052 Superseded ADR-0019](./.openxenon/docs/adrs/0052-superseded-0019-blueprint-type-paradigm.md) · [0053 Superseded ADR-0048](./.openxenon/docs/adrs/0053-superseded-0048-library-external-scheme.md) · [0054 三边界框架](./.openxenon/docs/adrs/0054-three-boundary-framework.md) · [0055 Blueprint 组合模板](./.openxenon/docs/adrs/0055-blueprint-as-composition-template.md) · [0056 External inline](./.openxenon/docs/adrs/0056-external-inline-and-status.md)
+> **关联 ADR**：[0019 Superseded](../adrs/0019-blueprint-type-paradigm.md) · [0053 Superseded ADR-0048](../adrs/0053-superseded-0048-library-external-scheme.md) · [0054 三边界框架](../adrs/0054-three-boundary-framework.md) · [0055 Blueprint 组合模板](../adrs/0055-blueprint-as-composition-template.md) · [0056 External inline](../adrs/0056-external-inline-and-status.md)
 > **Changelog**：`.changes/0-6-1-three-boundary-blueprint-elevation.md`
 
 ---
@@ -1219,6 +1219,6 @@ Phase 3 (ADR + 文档 + Roadmap, 收尾)
 - [ADR-0020](../../docs/adrs/0020-intent-align-unified-matrix.md) — Intent-Align 统一矩阵
 - [ADR-0048](../../docs/adrs/0048-asset-library-external-scheme.md) — library/external 子目录（将被 Superseded）
 - [ADR-0051](../../docs/adrs/0051-asset-paper-citation-network.md) — Asset-as-Paper 论文结构
-- [2026-07-10 kind-isolation journal](../journals/2026-07-10-references-kind-isolation.md) — kind-isolation 原则确立
+- [2026-07-10 kind-isolation journal](../../pools/journals/2026-07-10-references-kind-isolation.md) — kind-isolation 原则确立
 - [v0.6.3 Asset Paper Schema RFC](../../docs/rfcs/v0.6.3-asset-paper-schema-rfc.md) — Library/External 设计原始 RFC
 - [ADR-0040~0047 Memory Series Superseded](../../docs/adrs/2026-07-05-archive-0040-0047-memory-series-superseded.md) — Memory 层反弹记录

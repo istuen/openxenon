@@ -20,7 +20,7 @@ import { z } from 'zod'
 
 /** 单条证据：probe 观测到的事实 + 推导的结论 */
 export const EvidenceSchema = z.object({
-  /** proof.oxn 中声明的 probe 名（如 'p1'） */
+  /** proof.md 中声明的 probe 名（如 'p1'） */
   probe: z.string(),
   /** 语义类型（如 'fs-exists' / 'shell-exec'） */
   probeType: z.string(),

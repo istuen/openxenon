@@ -28,11 +28,11 @@ function listRoadmaps(): string[] {
   const root = join(getProjectRoot(), '.openxenon', 'assets', 'roadmaps')
   if (!existsSync(root)) return []
   const { readdirSync } = require('node:fs') as typeof import('node:fs')
-  // Dedupe: .md + .oxn share same name; prefer .md (canonical v0.6.1 PR-3)
+  // List .md roadmaps
   const seen = new Set<string>()
   const out: string[] = []
-  for (const f of readdirSync(root).filter((f: string) => f.endsWith('.md') || f.endsWith('.oxn'))) {
-    const name = f.replace(/\.(md|oxn)$/, '')
+  for (const f of readdirSync(root).filter((f: string) => f.endsWith('.md'))) {
+    const name = f.replace(/\.md$/, '')
     if (!seen.has(name)) {
       seen.add(name)
       out.push(name)

@@ -6,8 +6,8 @@
  *   - suggestAssets: scene-scoped jaccard keyword suggest
  *   - syncRoadmap: detect dangling/outdated links (dry-run by default)
  *
- * Replaces deprecated .oxn-based path (oxn.langium:281-294) for AI Agent
- * consumption (no Langium round-trip needed since .oxn is deprecated in v0.7).
+ * Replaces deprecated .oxn-based path for AI Agent
+ * consumption.
  */
 
 export { parseRoadmapMd, parseRoadmapMdContent } from './parser.js'

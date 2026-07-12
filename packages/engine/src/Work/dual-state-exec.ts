@@ -426,7 +426,7 @@ export function getWorkStatusSnapshot(
 }
 
 // =============================================================================
-// 校验：work.oxn 声明的 task 是否都已建 task.oxn
+// 校验：work.md 声明的 task 是否都已建 task.md
 // =============================================================================
 
 export function validateTasksPresent(
@@ -451,7 +451,7 @@ export function isWorkStarted(projectRoot: string, workName: string): boolean {
 }
 
 // =============================================================================
-// no-op probe (v0.1 保持状态机可观察，v0.2 接 task.oxn observe)
+// no-op probe (v0.1 保持状态机可观察，v0.2 接 task.md observe)
 // =============================================================================
 
 export function runNoopProbe(partName: string, partAlign: string): { probe: string; passed: boolean; output: unknown } {

@@ -50,40 +50,40 @@ describe('toKebab (L0-Contract)', () => {
 describe('assertNameFileConsistent (L0-Contract, 文件式布局)', () => {
   test('domain: PascalCase 声明 vs kebab 文件 → 不抛错（规范化后一致）', () => {
     expect(() =>
-      assertNameFileConsistent('MemberContext', '/p/.openxenon/domains/member-context.oxn', 'domain'),
+      assertNameFileConsistent('MemberContext', '/p/.openxenon/domains/member-context.md', 'domain'),
     ).not.toThrow()
   })
 
   test('blueprint: 已是 kebab-case → 不抛错', () => {
     expect(() =>
-      assertNameFileConsistent('fix-issue', '/p/.openxenon/blueprints/fix-issue.oxn', 'blueprint'),
+      assertNameFileConsistent('fix-issue', '/p/.openxenon/blueprints/fix-issue.md', 'blueprint'),
     ).not.toThrow()
   })
 
   test('work: 目录式布局不在 assertNameFileConsistent 适用范围（应使用 assertDirNameConsistent）', () => {
-    // 这里测的是「同名抛错」: work.oxn basename 是 'work',声明 'fix-domain-name',toKebab 不一致 → 抛错
+    // 这里测的是「同名抛错」: work.md basename 是 'work',声明 'fix-domain-name',toKebab 不一致 → 抛错
     // 这是预期的:work/proof 必须用 assertDirNameConsistent
     expect(() =>
-      assertNameFileConsistent('fix-domain-name', '/p/.openxenon/works/fix-domain-name/work.oxn', 'work'),
+      assertNameFileConsistent('fix-domain-name', '/p/.openxenon/works/fix-domain-name/work.md', 'work'),
     ).toThrow(IAPError)
   })
 
   test('proof: 目录式布局不在 assertNameFileConsistent 适用范围（应使用 assertDirNameConsistent）', () => {
     expect(() =>
-      assertNameFileConsistent('check-deploy', '/p/.openxenon/proofs/check-deploy/proof.oxn', 'proof'),
+      assertNameFileConsistent('check-deploy', '/p/.openxenon/proofs/check-deploy/proof.md', 'proof'),
     ).toThrow(IAPError)
   })
 
   test('snake_case 声明 vs kebab 文件 → 不抛错', () => {
     expect(() =>
-      assertNameFileConsistent('wechat_minigame', '/p/.openxenon/domains/wechat-minigame.oxn', 'domain'),
+      assertNameFileConsistent('wechat_minigame', '/p/.openxenon/domains/wechat-minigame.md', 'domain'),
     ).not.toThrow()
   })
 
   test('不匹配 → 抛 IAPError NAME_FILE_MISMATCH', () => {
     let caught: unknown = null
     try {
-      assertNameFileConsistent('Foo', '/p/.openxenon/domains/bar.oxn', 'domain')
+      assertNameFileConsistent('Foo', '/p/.openxenon/domains/bar.md', 'domain')
     } catch (e) {
       caught = e
     }
@@ -94,17 +94,17 @@ describe('assertNameFileConsistent (L0-Contract, 文件式布局)', () => {
     expect(err.code).toBe('NAME_FILE_MISMATCH')
     expect(err.action).toBe('YIELD_TO_HUMAN')
     expect(err.message).toContain("'Foo'")
-    expect(err.message).toContain("'bar.oxn'")
+    expect(err.message).toContain("'bar.md'")
     expect(err.context?.entityType).toBe('domain')
     expect(err.context?.declared).toBe('Foo')
-    expect(err.context?.file).toBe('bar.oxn')
+    expect(err.context?.file).toBe('bar.md')
     expect(err.context?.normalized).toBe('foo')
   })
 
   test('blueprint 不匹配时 entityType=blueprint', () => {
     let caught: unknown = null
     try {
-      assertNameFileConsistent('MyBP', '/p/.openxenon/blueprints/other.oxn', 'blueprint')
+      assertNameFileConsistent('MyBP', '/p/.openxenon/blueprints/other.md', 'blueprint')
     } catch (e) {
       caught = e
     }
@@ -113,11 +113,11 @@ describe('assertNameFileConsistent (L0-Contract, 文件式布局)', () => {
   })
 
   test('path 含特殊字符（macOS APFS case-insensitive 模拟） → 走字符串归一，不依赖 fs lookup', () => {
-    // 文件路径含 MemberContext.oxn (PascalCase)
+    // 文件路径含 MemberContext.md (PascalCase)
     // 声明 kebab-case member-context
     // toKebab 后等价 → 不抛错
     expect(() =>
-      assertNameFileConsistent('member-context', '/p/.openxenon/domains/MemberContext.oxn', 'domain'),
+      assertNameFileConsistent('member-context', '/p/.openxenon/domains/MemberContext.md', 'domain'),
     ).not.toThrow()
   })
 })

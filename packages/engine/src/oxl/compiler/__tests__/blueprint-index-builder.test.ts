@@ -2,7 +2,7 @@
 // blueprint-index-builder.test.ts — PR-X 单元测试
 //
 // 覆盖：
-//   1. scanBlueprintFiles 递归扫 .oxn，跳过隐藏 / 非 .oxn
+//   1. scanBlueprintFiles 递归扫 .md，跳过隐藏 / 非 .md
 //   2. parseBlueprintSlim 提取 name/description/version/slotNames/propCount
 //   3. parseBlueprintSlim 处理 parse error 优雅降级（status=invalid）
 //   4. parseBlueprintSlim NAME_FILE_MISMATCH 防御（declared vs file stem）
@@ -60,39 +60,39 @@ describe('scanBlueprintFiles', () => {
     expect(files).toEqual([])
   })
 
-  test('扫到 .oxn 文件', () => {
-    writeFileSync(join(blueprintsDir, 'foo.oxn'), 'blueprint "foo" {}')
-    writeFileSync(join(blueprintsDir, 'bar.oxn'), 'blueprint "bar" {}')
+  test('扫到 .md 文件', () => {
+    writeFileSync(join(blueprintsDir, 'foo.md'), 'blueprint "foo" {}')
+    writeFileSync(join(blueprintsDir, 'bar.md'), 'blueprint "bar" {}')
     const { files } = scanBlueprintFiles(blueprintsDir)
     expect(files).toHaveLength(2)
-    expect(files.map((f) => f.relPath).sort()).toEqual(['bar.oxn', 'foo.oxn'])
+    expect(files.map((f) => f.relPath).sort()).toEqual(['bar.md', 'foo.md'])
   })
 
   test('递归子目录', () => {
     const sub = join(blueprintsDir, 'sub', 'nested')
     mkdirSync(sub, { recursive: true })
-    writeFileSync(join(blueprintsDir, 'top.oxn'), 'blueprint "top" {}')
-    writeFileSync(join(sub, 'deep.oxn'), 'blueprint "deep" {}')
+    writeFileSync(join(blueprintsDir, 'top.md'), 'blueprint "top" {}')
+    writeFileSync(join(sub, 'deep.md'), 'blueprint "deep" {}')
     const { files } = scanBlueprintFiles(blueprintsDir)
     expect(files).toHaveLength(2)
-    expect(files.map((f) => f.relPath).sort()).toEqual(['sub/nested/deep.oxn', 'top.oxn'])
+    expect(files.map((f) => f.relPath).sort()).toEqual(['sub/nested/deep.md', 'top.md'])
   })
 
   test('跳过隐藏文件与目录', () => {
-    writeFileSync(join(blueprintsDir, 'visible.oxn'), 'blueprint "visible" {}')
-    writeFileSync(join(blueprintsDir, '.hidden.oxn'), 'blueprint "hidden" {}')
+    writeFileSync(join(blueprintsDir, 'visible.md'), 'blueprint "visible" {}')
+    writeFileSync(join(blueprintsDir, '.hidden.md'), 'blueprint "hidden" {}')
     mkdirSync(join(blueprintsDir, '.git'))
-    writeFileSync(join(blueprintsDir, '.git', 'should-skip.oxn'), 'blueprint "skip" {}')
+    writeFileSync(join(blueprintsDir, '.git', 'should-skip.md'), 'blueprint "skip" {}')
     const { files } = scanBlueprintFiles(blueprintsDir)
-    expect(files.map((f) => f.relPath)).toEqual(['visible.oxn'])
+    expect(files.map((f) => f.relPath)).toEqual(['visible.md'])
   })
 
-  test('跳过非 .oxn 文件', () => {
-    writeFileSync(join(blueprintsDir, 'good.oxn'), 'blueprint "good" {}')
-    writeFileSync(join(blueprintsDir, 'readme.md'), '# not a blueprint')
+  test('跳过非 .md 文件', () => {
+    writeFileSync(join(blueprintsDir, 'good.md'), 'blueprint "good" {}')
+    writeFileSync(join(blueprintsDir, 'readme.txt'), '# not a blueprint')
     writeFileSync(join(blueprintsDir, 'data.json'), '{}')
     const { files } = scanBlueprintFiles(blueprintsDir)
-    expect(files.map((f) => f.relPath)).toEqual(['good.oxn'])
+    expect(files.map((f) => f.relPath)).toEqual(['good.md'])
   })
 })
 
@@ -100,7 +100,7 @@ describe('scanBlueprintFiles', () => {
 
 describe('parseBlueprintSlim', () => {
   test('完整 Blueprint（description + version + 2 slots + 2 props）', () => {
-    const file = join(blueprintsDir, 'dev-workflow.oxn')
+    const file = join(blueprintsDir, 'dev-workflow.md')
     writeFileSync(
       file,
       `blueprint "dev-workflow" {
@@ -115,7 +115,7 @@ describe('parseBlueprintSlim', () => {
     )
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.name).toBe('dev-workflow')
-    expect(result.file).toBe('.openxenon/blueprints/dev-workflow.oxn')
+    expect(result.file).toBe('.openxenon/blueprints/dev-workflow.md')
     expect(result.status).toBe('ok')
     expect(result.description).toBe('通用开发流水线')
     expect(result.version).toBe(1)
@@ -125,7 +125,7 @@ describe('parseBlueprintSlim', () => {
   })
 
   test('空 Blueprint（无 description/version/slot/prop）', () => {
-    const file = join(blueprintsDir, 'empty.oxn')
+    const file = join(blueprintsDir, 'empty.md')
     writeFileSync(file, `blueprint "empty" {}\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.name).toBe('empty')
@@ -137,14 +137,14 @@ describe('parseBlueprintSlim', () => {
   })
 
   test('version 缺省时默认 1', () => {
-    const file = join(blueprintsDir, 'nover.oxn')
+    const file = join(blueprintsDir, 'nover.md')
     writeFileSync(file, `blueprint "nover" { description = "no version" }\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.version).toBe(1)
   })
 
   test('version 非数字 → errors 标注但仍记入 version=1', () => {
-    const file = join(blueprintsDir, 'badver.oxn')
+    const file = join(blueprintsDir, 'badver.md')
     writeFileSync(file, `blueprint "badver" { version = "abc" }\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.errors).toContain('invalid version: abc')
@@ -152,14 +152,14 @@ describe('parseBlueprintSlim', () => {
   })
 
   test('version 合法 > 1（如 v=2）', () => {
-    const file = join(blueprintsDir, 'v2.oxn')
+    const file = join(blueprintsDir, 'v2.md')
     writeFileSync(file, `blueprint "v2" { version = 2; description = "v2 blueprint" }\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.version).toBe(2)
   })
 
-  test('NAME_FILE_MISMATCH 防御：declared "DevWorkflow" vs file "dev-workflow.oxn"（PascalCase 文件名）', () => {
-    const file = join(blueprintsDir, 'dev-workflow.oxn')
+  test('NAME_FILE_MISMATCH 防御：declared "DevWorkflow" vs file "dev-workflow.md"（PascalCase 文件名）', () => {
+    const file = join(blueprintsDir, 'dev-workflow.md')
     writeFileSync(file, `blueprint "DevWorkflow" { version = 1; description = "x" }\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.name).toBe('DevWorkflow')
@@ -167,8 +167,8 @@ describe('parseBlueprintSlim', () => {
     expect(result.errors).toEqual([]) // declared 'DevWorkflow'.toKebab() === file 'dev-workflow'.toKebab() → 一致
   })
 
-  test('NAME_FILE_MISMATCH 触发：declared "Foo" vs file "bar.oxn"', () => {
-    const file = join(blueprintsDir, 'bar.oxn')
+  test('NAME_FILE_MISMATCH 触发：declared "Foo" vs file "bar.md"', () => {
+    const file = join(blueprintsDir, 'bar.md')
     writeFileSync(file, `blueprint "Foo" { version = 1 }\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.status).toBe('invalid')
@@ -177,7 +177,7 @@ describe('parseBlueprintSlim', () => {
   })
 
   test('无 blueprint 声明 → status=invalid', () => {
-    const file = join(blueprintsDir, 'broken.oxn')
+    const file = join(blueprintsDir, 'broken.md')
     writeFileSync(file, `// nothing here\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.status).toBe('invalid')
@@ -185,15 +185,15 @@ describe('parseBlueprintSlim', () => {
   })
 
   test('文件不存在 → status=invalid + file 路径仍记录', () => {
-    const file = join(blueprintsDir, 'missing.oxn')
+    const file = join(blueprintsDir, 'missing.md')
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.status).toBe('invalid')
-    expect(result.file).toBe('.openxenon/blueprints/missing.oxn')
+    expect(result.file).toBe('.openxenon/blueprints/missing.md')
     expect(result.errors[0]).toContain('file not found')
   })
 
   test('description 含换行 → errors 标注', () => {
-    const file = join(blueprintsDir, 'multiline.oxn')
+    const file = join(blueprintsDir, 'multiline.md')
     writeFileSync(file, `blueprint "multiline" { description = "line1\nline2" }\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.status).toBe('invalid')
@@ -201,14 +201,14 @@ describe('parseBlueprintSlim', () => {
   })
 
   test('description 含转义引号 \\" 应还原', () => {
-    const file = join(blueprintsDir, 'esc.oxn')
+    const file = join(blueprintsDir, 'esc.md')
     writeFileSync(file, `blueprint "esc" { description = "say \\"hi\\"" }\n`)
     const result = parseBlueprintSlim(file, tmpDir)
     expect(result.description).toBe('say "hi"')
   })
 
   test('slot 名列表按文本顺序', () => {
-    const file = join(blueprintsDir, 'order.oxn')
+    const file = join(blueprintsDir, 'order.md')
     writeFileSync(
       file,
       `blueprint "order" {
@@ -223,7 +223,7 @@ describe('parseBlueprintSlim', () => {
   })
 
   test('prop 多行展开为 propCount', () => {
-    const file = join(blueprintsDir, 'props.oxn')
+    const file = join(blueprintsDir, 'props.md')
     writeFileSync(
       file,
       `blueprint "props" {
@@ -253,14 +253,14 @@ describe('buildBlueprintIndex', () => {
 
   test('3 个 blueprint 完整索引', () => {
     writeFileSync(
-      join(blueprintsDir, 'a.oxn'),
+      join(blueprintsDir, 'a.md'),
       `blueprint "a" { description = "alpha"; version = 1; slot "s1" { deps = [] } }`,
     )
     writeFileSync(
-      join(blueprintsDir, 'b.oxn'),
+      join(blueprintsDir, 'b.md'),
       `blueprint "b" { version = 2; prop "p" { type = string }; slot "s" { deps = [] } }`,
     )
-    writeFileSync(join(blueprintsDir, 'c.oxn'), `blueprint "c" {}`)
+    writeFileSync(join(blueprintsDir, 'c.md'), `blueprint "c" {}`)
 
     const idx = buildBlueprintIndex({ projectRoot: tmpDir, blueprintsDir, generatedAt: '2026-06-08T00:00:00.000Z' })
     expect(idx.blueprintCount).toBe(3)
@@ -276,12 +276,12 @@ describe('buildBlueprintIndex', () => {
   })
 
   test('混合 ok + invalid：invalid 仍记入索引', () => {
-    writeFileSync(join(blueprintsDir, 'good.oxn'), `blueprint "good" {}`)
-    writeFileSync(join(blueprintsDir, 'bad.oxn'), `// no blueprint decl`)
+    writeFileSync(join(blueprintsDir, 'good.md'), `blueprint "good" {}`)
+    writeFileSync(join(blueprintsDir, 'bad.md'), `// no blueprint decl`)
     const idx = buildBlueprintIndex({ projectRoot: tmpDir, blueprintsDir })
     expect(idx.blueprintCount).toBe(2)
     expect(idx.blueprints.find((b) => b.name === 'good')?.status).toBe('ok')
-    expect(idx.blueprints.find((b) => b.file === '.openxenon/blueprints/bad.oxn')?.status).toBe('invalid')
+    expect(idx.blueprints.find((b) => b.file === '.openxenon/blueprints/bad.md')?.status).toBe('invalid')
   })
 })
 
@@ -289,7 +289,7 @@ describe('buildBlueprintIndex', () => {
 
 describe('writeBlueprintIndex / loadBlueprintIndex', () => {
   test('writeBlueprintIndex 原子写：产生 .json 文件 + .tmp 已清理', () => {
-    writeFileSync(join(blueprintsDir, 'x.oxn'), `blueprint "x" {}`)
+    writeFileSync(join(blueprintsDir, 'x.md'), `blueprint "x" {}`)
     const outPath = join(cacheDir, 'blueprints.json')
     const idx = writeBlueprintIndex({ projectRoot: tmpDir, blueprintsDir, outPath })
     expect(existsSync(outPath)).toBe(true)
@@ -323,7 +323,7 @@ describe('writeBlueprintIndex / loadBlueprintIndex', () => {
   })
 
   test('Zod schema round-trip: build → write → load → re-validate', () => {
-    writeFileSync(join(blueprintsDir, 'a.oxn'), `blueprint "a" { version = 1; description = "x" }`)
+    writeFileSync(join(blueprintsDir, 'a.md'), `blueprint "a" { version = 1; description = "x" }`)
     const idx = writeBlueprintIndex({ projectRoot: tmpDir, blueprintsDir, outPath: join(cacheDir, 'b.json') })
     const reloaded = loadBlueprintIndex(join(cacheDir, 'b.json'))
     expect(reloaded).toEqual(idx)

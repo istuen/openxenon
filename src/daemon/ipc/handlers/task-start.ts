@@ -30,7 +30,7 @@ async function handleTaskStart(request: Request, projectPath: string): Promise<R
     const trace = readTaskTrace({
       root: taskDir,
       taskId,
-      blueprintPath: join(taskDir, 'blueprint.oxn'),
+      blueprintPath: join(taskDir, 'blueprint.md'),
       tracePath: join(taskDir, 'task-trace.jsonl'),
     })
 

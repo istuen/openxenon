@@ -46,7 +46,7 @@ import { domainCreateTemplate, autoRebuildDomainIndex } from '@openxenon/engine/
 //   - CLI 只提供脚手架 (create) + 校验 (validate) + 列表 (list)
 //   - 不补 append-term / add-prop 等"累积式"命令 —— 那是设计选择
 //     （图纸需全局视野，CLI 累加易破坏 term/ban/invariant 的内部一致性）
-//   - 内容创作请用 $EDITOR 直填 .oxn
+//   - 内容创作请用 $EDITOR 直填 .md
 // =============================================================================
 
 function getProjectRoot(): string {
@@ -153,22 +153,13 @@ const createSubcommand = defineCommand({
     const template = domainCreateTemplate(name, assetFormat)
 
     writeFileSync(primaryPath, template, 'utf-8')
-    // v0.6.1-alpha.0 #1-4: 立即锁 0o444（planLock 守卫前提）— 工程师无法绕过 .oxn 文件
+    // v0.6.1-alpha.0 #1-4: 立即锁 0o444（planLock 守卫前提）— 工程师无法绕过 .md 文件
     chmodSync(primaryPath, 0o444)
 
-    // v0.7.0: auto-sync removed (Langium removed; .md is canonical)
+    // v0.7.0: auto-sync removed (.md is canonical)
     if (autoSync) {
       try {
-        // Generate backward-compatible .oxn copy if primary is .md
-        if (assetFormat === 'md') {
-          const { tree, frontmatter: fm } = parseMarkdown(template)
-          const ir = extractDomainIR(tree, fm)
-          // Serialize to .oxn for backward compatibility
-          const { serializeDomainToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
-          const altContent = serializeDomainToOxn(ir)
-          writeFileSync(altPath, altContent, 'utf-8')
-          chmodSync(altPath, 0o444)
-        }
+        // v0.7.0: .oxn format removed, no alt file needed
       } catch {
         // autoSync 失败不阻断主命令
       }
@@ -176,7 +167,7 @@ const createSubcommand = defineCommand({
 
     // v1.1: 写入后回查 AST name 与文件名一致性（macOS-safe NAME_FILE_MISMATCH 硬阻断）。
     // 模板字符串由 name 插值生成,正常情况下两者一致；此处作为防御性检查,
-    // 防止未来模板或 path 逻辑漂移导致写入"name=X"的 .oxn 但落盘到 stem=Y。
+    // 防止未来模板或 path 逻辑漂移导致写入"name=X"的 .md 但落盘到 stem=Y。
     assertNameFileConsistent(name, primaryPath, 'domain')
 
     output(
@@ -193,7 +184,7 @@ const createSubcommand = defineCommand({
       format,
     )
 
-    // PR-1: create 后静默重建全局索引（只把新增的 .oxn 文件纳入；TODO 占位也会被记录）
+    // PR-1: create 后静默重建全局索引（只把新增的 .md 文件纳入；TODO 占位也会被记录）
     const rebuild = autoRebuildDomainIndex(getProjectRoot())
     if (!rebuild.ok) {
       console.error(`Warning: domain index rebuild failed: ${rebuild.error}`)
@@ -234,7 +225,7 @@ const validateSubcommand = defineCommand({
       )
     }
     // v0.5 Phase 3: 路径由 config.assetFormat 决定（默认 oxn），但若主格式不存在,
-    // 自动 fall back 到 alt 格式 (向后兼容老 .oxn-only 项目)
+    // 自动 fall back 到 alt 格式 (向后兼容老项目)
     const kebab = name
       .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
       .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
@@ -248,11 +239,11 @@ const validateSubcommand = defineCommand({
         ? primaryPath
         : existsSync(altPath)
           ? altPath
-          : existsSync(join(getDomainsDir(), `${kebab}.oxn`))
-            ? join(getDomainsDir(), `${kebab}.oxn`)
+          : existsSync(join(getDomainsDir(), `${kebab}.md`))
+            ? join(getDomainsDir(), `${kebab}.md`)
             : primaryPath // 默认指向主格式,validate 时报 OXN_FILE_NOT_FOUND
 
-    // v0.7.0: .oxn files no longer supported (Langium removed)
+    // v0.7.0: .oxn files no longer supported
     if (filePath.endsWith('.oxn')) {
       return outputError(
         {
@@ -281,7 +272,7 @@ const validateSubcommand = defineCommand({
     const domainName = ir.name
 
     // v1.0.2: 字符串级规范化校验（macOS-safe）
-    // 防止声明名 'MemberContext' 与文件 'member-context.oxn' 在 case-insensitive
+    // 防止声明名 'MemberContext' 与文件 'member-context.md' 在 case-insensitive
     // 文件系统（macOS APFS / Windows NTFS）上"假匹配"——Linux CI 才会暴露。
     try {
       assertNameFileConsistent(domainName, filePath, 'domain')
@@ -404,7 +395,7 @@ const listSubcommand = defineCommand({
         const relPath = prefix ? `${prefix}/${entry.name}` : entry.name
         if (entry.isDirectory()) {
           walk(fullPath, relPath)
-        } else if (entry.isFile() && entry.name.endsWith('.oxn')) {
+        } else if (entry.isFile() && entry.name.endsWith('.md')) {
           fileEntries.push({ fullPath, relPath })
         }
       }
@@ -439,7 +430,7 @@ const listSubcommand = defineCommand({
 // Subcommand: index (PR-1)
 // ---------------------------------------------------------------------------
 //
-// 扫 `.openxenon/domains/*.oxn`（含子目录）→ 落 `.openxenon/.cache/domains.json`
+// 扫 `.openxenon/domains/*.md`（含子目录）→ 落 `.openxenon/.cache/domains.json`
 // slim 模式：name/file/desc/termNames + 计数；不展开 term 的 desc 与 ban/invariant 文本
 // （slim 是 AI 全局检索入口；展开版由 per-work domains.json 提供，PR-2/3 引入）。
 //

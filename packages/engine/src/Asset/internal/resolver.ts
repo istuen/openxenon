@@ -2,7 +2,7 @@
  * Asset module — internal path resolver (v0.6 PR-5a + v0.6.1 PR-3)
  *
  * 复用 PR-1 的 resolveAssetDir/resolveAndDetectAssetDir 并封装为 Asset 专用 helper。
- * v0.6.1 PR-3 增量：resolveAssetFileFirst 函数，按 .md 优先 .oxn fallback 解析实际读取路径。
+ * v0.7.0: .oxn removed, .md is the only format.
  */
 import { join } from 'path'
 import {
@@ -16,8 +16,7 @@ import { existsSync } from '@openxenon/engine/infra/filesystem'
 /**
  * 解析 asset 文件的完整路径（主路径优先，fallback 为后备）.
  *
- * v0.7.0: 默认 ext='md'（.oxn 已废弃）。
- * v0.6.1 PR-3: 保留向后兼容 ext 参数，调用方可显式传 'oxn'。
+ * v0.7.0: Only .md format supported.
  */
 export function resolveAssetFile(projectRoot: string, kind: AssetKind, name: string, ext: string = 'md'): string {
   const dir = resolveAssetDir(projectRoot, kind, null)

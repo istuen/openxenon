@@ -403,6 +403,10 @@ Sub Agent (AI)
 - [Architecture](./architecture.md) — Engine L0-L3 分层
 - [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper + 引用计数 + DAG（v0.6.3+）
 - [Glossary](./glossary.md) — 完整术语表
+- [三边界框架 RFC](../../.openxenon/pools/drafts/three-boundary-blueprint-elevation-rfc.md) — Domain/Workflow/Stack + Blueprint 提升
+- [版本统一 RFC](../../.openxenon/docs/rfcs/version-unification-rfc.md) — 信任链叙事 + v0.6.1 最小信任闭环
+- [ADR-0054 三边界框架](../../.openxenon/docs/adrs/0054-three-boundary-framework.md)
+- [ADR-0055 Blueprint 组合模板](../../.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)
 - [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
 - [v0.6 Service 层设计稿](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-service-layer-design.md)
 - [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft

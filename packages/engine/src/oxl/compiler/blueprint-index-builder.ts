@@ -3,7 +3,7 @@
 //
 // 全局 Blueprint slim 索引构建器。
 //
-// 用途：扫 `.openxenon/blueprints/*.oxn`（递归子目录）→ 生成
+// 用途：扫 `.openxenon/blueprints/*.md`（递归子目录）→ 生成
 //       `.openxenon/.cache/blueprints.json`，slim 模式仅含
 //       name/file/description/version/slotNames/propCount，
 //       供 AI 离线快速检索全局 blueprint 元数据。
@@ -127,7 +127,7 @@ export function scanBlueprintFiles(blueprintsDir: string): ScanResult {
         continue
       }
       if (!isFile) continue
-      if (!name.endsWith('.oxn')) continue
+      if (!name.endsWith('.md')) continue
       out.push({ fullPath: full, relPath: relative(blueprintsDir, full) })
     }
   }
@@ -139,7 +139,7 @@ export function scanBlueprintFiles(blueprintsDir: string): ScanResult {
 // ───────── 单文件 slim 解析（regex-only）─────────
 
 /**
- * 从 .oxn 文件提取 slim 字段。永远不抛错——错误累积在 result.errors。
+ * 从 .md 文件提取 slim 字段。永远不抛错——错误累积在 result.errors。
  *
  * 字段：
  *   - name:        第一个 `blueprint "X"` 声明名（PascalCase / kebab 都接受）
@@ -157,7 +157,7 @@ export function scanBlueprintFiles(blueprintsDir: string): ScanResult {
 export function parseBlueprintSlim(filePath: string, projectRoot: string): BlueprintIndexEntry {
   const relFile = relative(projectRoot, filePath)
   const errors: string[] = []
-  const fileStem = basename(filePath).replace(/\.oxn$/i, '')
+  const fileStem = basename(filePath).replace(/\.md$/i, '')
 
   if (!existsSync(filePath)) {
     return {

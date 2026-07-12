@@ -68,7 +68,7 @@ async function initProject(): Promise<void> {
 function writeDomain(name: string, content: string): void {
   const dir = join(realpathSync(tmpDir), '.openxenon', 'domains')
   mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, `${name}.oxn`), content, 'utf-8')
+  writeFileSync(join(dir, `${name}.md`), content, 'utf-8')
 }
 
 describe('oxn pool review/approve/reject (v0.5 PR-D)', () => {
@@ -119,7 +119,7 @@ describe('oxn pool review/approve/reject (v0.5 PR-D)', () => {
     raw.metadata = {
       target: 'domain',
       targetName: 'TestContext',
-      targetPath: '.openxenon/domains/TestContext.oxn',
+      targetPath: '.openxenon/domains/TestContext.md',
       kind: 'add-invariant',
       patch: 'invariant {\n  "C1: test rule"\n}',
       source: 'unit-test',
@@ -127,7 +127,7 @@ describe('oxn pool review/approve/reject (v0.5 PR-D)', () => {
     chmodSync(frozenPath, 0o644)
     writeFileSync(frozenPath, JSON.stringify(raw, null, 2), 'utf-8')
 
-    const targetPath = join(realpathSync(tmpDir), '.openxenon', 'domains', 'TestContext.oxn')
+    const targetPath = join(realpathSync(tmpDir), '.openxenon', 'domains', 'TestContext.md')
     const beforeContent = readFileSync(targetPath, 'utf-8')
 
     const r2 = await runCli(['pool', 'approve', 'add-invariant-test', '--json'])
@@ -163,14 +163,14 @@ describe('oxn pool review/approve/reject (v0.5 PR-D)', () => {
     raw.metadata = {
       target: 'domain',
       targetName: 'TestContext',
-      targetPath: '.openxenon/domains/TestContext.oxn',
+      targetPath: '.openxenon/domains/TestContext.md',
       kind: 'add-invariant',
       patch: 'invariant {\n  "C1: dry run test"\n}',
     }
     chmodSync(frozenPath, 0o644)
     writeFileSync(frozenPath, JSON.stringify(raw, null, 2), 'utf-8')
 
-    const targetPath = join(realpathSync(tmpDir), '.openxenon', 'domains', 'TestContext.oxn')
+    const targetPath = join(realpathSync(tmpDir), '.openxenon', 'domains', 'TestContext.md')
     const beforeContent = readFileSync(targetPath, 'utf-8')
 
     const r = await runCli(['pool', 'approve', 'dry-run-test', '--dry-run', '--json'])
@@ -210,7 +210,7 @@ describe('oxn pool review/approve/reject (v0.5 PR-D)', () => {
     raw.metadata = {
       target: 'domain',
       targetName: 'NonExistent',
-      targetPath: '.openxenon/domains/NonExistent.oxn',
+      targetPath: '.openxenon/domains/NonExistent.md',
       kind: 'add-invariant',
       patch: 'invariant { "x" }',
     }

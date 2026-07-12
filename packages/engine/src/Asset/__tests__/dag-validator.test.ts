@@ -145,7 +145,7 @@ describe('checkAssetDAG 跨 AssetKind 引用', () => {
 })
 
 describe('validateAssetReferences 集成测试', () => {
-  test('13. 项目内扫 5 AssetKind .oxn + 提取 references + DAG 校验', () => {
+  test('13. 项目内扫 5 AssetKind .md + 提取 references + DAG 校验', () => {
     const tmp = mkdtempSync(join(tmpdir(), 'oxn-dag-test-'))
     mkdirSync(join(tmp, '.openxenon', 'assets', 'domains'), { recursive: true })
     mkdirSync(join(tmp, '.openxenon', 'assets', 'blueprints'), { recursive: true })
@@ -155,7 +155,7 @@ describe('validateAssetReferences 集成测试', () => {
     )
     // domain A 引用 domain B (合法)
     writeFileSync(
-      join(tmp, '.openxenon', 'assets', 'domains', 'A.oxn'),
+      join(tmp, '.openxenon', 'assets', 'domains', 'A.md'),
       `domain "A" {
   references = ["B"]
   term { "T": "t" }
@@ -163,7 +163,7 @@ describe('validateAssetReferences 集成测试', () => {
 `,
     )
     writeFileSync(
-      join(tmp, '.openxenon', 'assets', 'domains', 'B.oxn'),
+      join(tmp, '.openxenon', 'assets', 'domains', 'B.md'),
       `domain "B" {
   term { "T": "t" }
 }
@@ -171,7 +171,7 @@ describe('validateAssetReferences 集成测试', () => {
     )
     // blueprint C 自环
     writeFileSync(
-      join(tmp, '.openxenon', 'assets', 'blueprints', 'C.oxn'),
+      join(tmp, '.openxenon', 'assets', 'blueprints', 'C.md'),
       `blueprint "C" {
   references = ["C"]
   slot "s1" { deps = [] }
@@ -197,7 +197,7 @@ describe('validateAssetReferences 集成测试', () => {
     if (existsSync(tmp)) rmSync(tmp, { recursive: true, force: true })
   })
 
-  test('15. .oxn 无 references 字段 → 空 references 数组 → ok=true', () => {
+  test('15. .md 无 references 字段 → 空 references 数组 → ok=true', () => {
     const tmp = mkdtempSync(join(tmpdir(), 'oxn-dag-noref-'))
     mkdirSync(join(tmp, '.openxenon', 'assets', 'domains'), { recursive: true })
     writeFileSync(
@@ -205,7 +205,7 @@ describe('validateAssetReferences 集成测试', () => {
       JSON.stringify({ version: 1, mode: 'PRODUCTION', locale: 'zh-CN' }),
     )
     writeFileSync(
-      join(tmp, '.openxenon', 'assets', 'domains', 'Solo.oxn'),
+      join(tmp, '.openxenon', 'assets', 'domains', 'Solo.md'),
       `domain "Solo" {
   term { "T": "t" }
 }

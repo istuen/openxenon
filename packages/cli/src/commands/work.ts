@@ -398,12 +398,12 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
   const config = readProjectConfig(projectRoot)
   const wfAssetDir = resolveAssetDir(projectRoot, 'workflow', config)
   const blueprintCandidates = [
-    join(wfAssetDir, `${blueprintName}.oxn`),
-    join(wfAssetDir, blueprintName, 'workflow.oxn'),
-    join(projectRoot, '.openxenon', 'assets', 'workflows', `${blueprintName}.oxn`),
+    join(wfAssetDir, `${blueprintName}.md`),
+    join(wfAssetDir, blueprintName, 'workflow.md'),
+    join(projectRoot, '.openxenon', 'assets', 'workflows', `${blueprintName}.md`),
     // v0.6.1-alpha.2 fallback（兼容旧 blueprints/ 目录）
-    join(projectRoot, '.openxenon', 'assets', 'blueprints', `${blueprintName}.oxn`),
-    join(projectRoot, '.openxenon', 'blueprints', `${blueprintName}.oxn`),
+    join(projectRoot, '.openxenon', 'assets', 'blueprints', `${blueprintName}.md`),
+    join(projectRoot, '.openxenon', 'blueprints', `${blueprintName}.md`),
   ]
   const absBlueprint = blueprintCandidates.find((p) => existsSync(p))
   if (!absBlueprint) {
@@ -662,13 +662,13 @@ const createSubcommand = defineCommand({
       const wfAssetDir = resolveAssetDir(projectRoot, 'workflow', config)
       const defaultCandidates = blueprintNameArg
         ? [
-            join(wfAssetDir, `${blueprintNameArg}.oxn`),
-            join(wfAssetDir, blueprintNameArg, 'workflow.oxn'),
+            join(wfAssetDir, `${blueprintNameArg}.md`),
+            join(wfAssetDir, blueprintNameArg, 'workflow.md'),
             // v0.6.1-alpha.2 fallback（Phase 0 后的 blueprints/ 目录可能含新组合模板）
-            join(projectRoot, '.openxenon', 'assets', 'blueprints', `${blueprintNameArg}.oxn`),
+            join(projectRoot, '.openxenon', 'assets', 'blueprints', `${blueprintNameArg}.md`),
             // v0.5 fallback
-            join(projectRoot, '.openxenon', 'blueprints', `${blueprintNameArg}.oxn`),
-            join(projectRoot, '.openxenon', 'blueprints', blueprintNameArg, 'blueprint.oxn'),
+            join(projectRoot, '.openxenon', 'blueprints', `${blueprintNameArg}.md`),
+            join(projectRoot, '.openxenon', 'blueprints', blueprintNameArg, 'blueprint.md'),
           ]
         : []
       const blueprintPath = customBlueprint ? join(projectRoot, customBlueprint) : null
@@ -754,7 +754,7 @@ const createSubcommand = defineCommand({
         if (autoSync) {
           try {
             if (assetFormat === 'md') {
-              // .md → .oxn
+              // v0.7.0: .oxn format removed
               const { tree, frontmatter: fm } = parseMarkdown(workContent)
               const ir = extractWorkIR(tree, fm)
               const { serializeWorkToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
@@ -1642,7 +1642,7 @@ const runSubcommand = defineCommand({
       if (!existsSync(filePath)) {
         return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work file not found at ${filePath}` }, format)
       }
-      // v0.5 Phase 3: .md 走 md-pipeline 路径, .oxn 走 langium 解析
+      // v0.5 Phase 3: .md 走 md-pipeline 路径
       const result = await validateWorkFile(filePath)
       if (!result.ok || !result.work) {
         const code = result.errors.some(
@@ -2174,8 +2174,8 @@ const contextSubcommand = defineCommand({
     if (!existsSync(workFile)) {
       return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workFile}` }, format)
     }
-    // v0.5 Phase 3: .md 走 md-pipeline 路径 (parseMarkdown → extractWorkIR → serializeWorkToOxn)
-    //   然后用 readWorkFile 在合成的 .oxn 文本上做正则摘要。
+    // v0.5 Phase 3: .md 走 md-pipeline 路径 (parseMarkdown → extractWorkIR)
+    //   然后用 readWorkFile 在合成的 .md 文本上做正则摘要。
     let work: WorkFileSummary | null = null
     if (workFile.endsWith('.md')) {
       try {
@@ -2229,8 +2229,8 @@ const contextSubcommand = defineCommand({
       if (taskDomain) {
         const kebab = camelToKebab(taskDomain)
         const candidates = [
-          join(root, BOUNDARY_DIR, 'domains', `${taskDomain}.oxn`),
-          join(root, BOUNDARY_DIR, 'domains', `${kebab}.oxn`),
+          join(root, BOUNDARY_DIR, 'domains', `${taskDomain}.md`),
+          join(root, BOUNDARY_DIR, 'domains', `${kebab}.md`),
         ]
         for (const path of candidates) {
           const domData = readDomainFile(path)
@@ -2306,7 +2306,7 @@ const contextSubcommand = defineCommand({
                 lockedAt: birthCertForHealth.cert.planLock.lockedAt,
                 allHash: birthCertForHealth.cert.planLock.allHash ?? null,
                 components: {
-                  workOxnHash: birthCertForHealth.cert.planLock.workOxnHash,
+                  workMdHash: birthCertForHealth.cert.planLock.workMdHash,
                   // 🆕 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite 含 Blueprint + 3 边界）
                   blueprintsHash: birthCertForHealth.cert.planLock.blueprintsHash,
                   tasksHash: birthCertForHealth.cert.planLock.tasksHash,
@@ -2428,7 +2428,7 @@ function renderContextHuman(c: {
 //   1. 校验 .work 存在（PR-6 validate 后才有；否则提示先 validate）
 //   2. 校验 .work.planLock === null（已锁则报错，提示先 unlock）
 //   3. 算 hashWorkPlan() → 4 组件 hash
-//   4. 写 .work.planLock = { lockedAt, workOxnHash, workDomainsHash, blueprintsHash, tasksHash }
+//   4. 写 .work.planLock = { lockedAt, workMdHash, workDomainsHash, blueprintsHash, tasksHash }
 //   5. 返回 planLock 详情
 //
 // 失败模式（统一 OXN_WORK_LOCK_FAILED）：
@@ -2624,7 +2624,7 @@ const lockSubcommand = defineCommand({
           workName,
           lockedAt: pl.lockedAt,
           planLock: {
-            workOxnHash: pl.workOxnHash,
+            workMdHash: pl.workMdHash,
             blueprintsHash: pl.blueprintsHash,
             tasksHash: pl.tasksHash,
             allHash: pl.allHash,
@@ -2634,7 +2634,7 @@ const lockSubcommand = defineCommand({
         human: `Work "${workName}" locked ✓
   Locked at: ${pl.lockedAt}
   Components:
-    - work.md:     ${pl.workOxnHash.slice(0, 16)}...
+    - work.md:     ${pl.workMdHash.slice(0, 16)}...
     - blueprints.json: ${pl.blueprintsHash.slice(0, 16)}...
     - tasks:        ${pl.tasksHash.slice(0, 16)}...
     - all:          ${pl.allHash?.slice(0, 16) ?? '(legacy)'}...
@@ -2655,7 +2655,7 @@ const lockSubcommand = defineCommand({
 //   2. 校验 planLock !== null（未锁则报错，提示 lock 才是正常路径）
 //   3. 清 planLock → null；updatedAt 刷新
 //
-// 注意：unlock 后 work.md / domains.json / blueprints.json / tasks/*.oxn 可被自由修改。
+// 注意：unlock 后 work.md / domains.json / blueprints.json / tasks/*.md 可被自由修改。
 //       重新 lock 时会算新 hash；旧 planLock 丢失（仅 .work.updatedAt 留痕）。
 //
 const unlockSubcommand = defineCommand({

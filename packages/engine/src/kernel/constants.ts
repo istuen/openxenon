@@ -12,22 +12,29 @@ export const DOMAIN_INDEX_JSON = 'domains.json'
 export const BLUEPRINT_INDEX_JSON = 'blueprints.json'
 
 export const BLUEPRINT_FILE = 'blueprint.yaml'
-export const BLUEPRINT_OXN_FILE = 'blueprint.oxn'
+/** @deprecated Use BLUEPRINT_FILE instead. Will be removed in v0.8. */
+export const BLUEPRINT_OXN_FILE = BLUEPRINT_FILE
 export const FROZEN_BLUEPRINT_JSON = 'blueprint.frozen.json'
 export const ASSEMBLY_JSON = 'blueprint.assembly.json'
-export const TASK_OXN_FILE = 'task.oxn'
-export const WORK_OXN_FILE = 'work.oxn'
+export const TASK_FILE = 'task.md'
+/** @deprecated Use TASK_FILE instead. Will be removed in v0.8. */
+export const TASK_OXN_FILE = TASK_FILE
+export const WORK_FILE_ENTRY = 'work.md'
+/** @deprecated Use WORK_FILE_ENTRY instead. Will be removed in v0.8. */
+export const WORK_OXN_FILE = WORK_FILE_ENTRY
 export const TASK_TRACE_FILE = 'task-trace.jsonl'
 export const CONFIG_FILE = 'config.json'
 export const CANONICAL_FILE = 'canonical.yaml'
 
 // Proof 空间（v0.1.2 Proof-First 入口）
-//   .openxenon/proofs/<name>/proof.oxn   — Probe 声明
+//   .openxenon/proofs/<name>/proof.md   — Probe 声明
 //   .openxenon/proofs/<name>/frozen.json — 判决书（不可篡改）
 //   .openxenon/proofs/<name>/verdict.md  — 人类可读结案文档（v0.5 PR-A）
 //   .openxenon/proofs/<name>/proof.md   — work.md 不可变快照（v0.4 PR-B Q4-A）
 //   .openxenon/proofs/<name>/work-hash.txt — work.md 副本的 SHA-256（v0.4 PR-B Q4-A）
-export const PROOF_OXN_FILE = 'proof.oxn'
+export const PROOF_FILE = 'proof.md'
+/** @deprecated Use PROOF_FILE instead. Will be removed in v0.8. */
+export const PROOF_OXN_FILE = PROOF_FILE
 export const PROOF_FROZEN_JSON = 'frozen.json'
 export const PROOF_VERDICT_MD = 'verdict.md'
 export const PROOF_MD_FILE = 'proof.md'
@@ -44,7 +51,7 @@ export const MAX_PROOF_RUNS = 1000
 // Work 空间运行时文件命名范式（V1 — PR-4 切换）
 //
 //   works/<w>/
-//     work.oxn                                    [Intent] 图纸
+//     work.md                                     [Intent] 图纸
 //     .work                                       [CLI]    静态门禁卡（PR-2）
 //     .run/                                       [CLI]    动态运行时
 //       state.json                                [Align]  进度条
@@ -60,7 +67,7 @@ export const MAX_PROOF_RUNS = 1000
 //       → 抛 IAP_ALIGN_WORK_LAYOUT_LEGACY（PR-11）；用户跑 `oxn work migrate <name>`（PR-10）
 //
 // 命名约定：路径含 scope（.run/）→ 文件名去 entity 前缀（state/trace/frozen）
-//           task.oxn / work.oxn 例外：图纸，无 aspect 后缀
+//           task.md / work.md 例外：图纸，无 aspect 后缀
 // =============================================================================
 
 // PR-2: Work 静态门禁卡（CLI 写、AI 读禁改；记录出生证明 + 资产锁 + planLock）

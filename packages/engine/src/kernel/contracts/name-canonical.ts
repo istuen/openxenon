@@ -35,8 +35,8 @@ import { IAPAction, IAPError } from './iap-error'
  * 例: "MemberContext" → "member-context"; "wechat_minigame" → "wechat-minigame"
  *
  * 与原 src/cli/domain.ts:toKebab 完全相同 —— 字符串归一不依赖文件系统。
- * macOS APFS / Windows NTFS 默认 case-insensitive 会假命中（"MemberContext.oxn"
- * 与 "member-context.oxn" 同一 inode），故必须用字符串比对而非 fs lookup。
+ * macOS APFS / Windows NTFS 默认 case-insensitive 会假命中（"MemberContext.md"
+ * 与 "member-context.md" 同一 inode），故必须用字符串比对而非 fs lookup。
  */
 export function toKebab(s: string): string {
   return s
@@ -53,9 +53,9 @@ export function toKebab(s: string): string {
 /**
  * v1.0.2 NAME_FILE_MISMATCH 防御（文件式布局）。
  *
- * 用法：domain / blueprint 这类 **.oxn 文件**与 entity name 的比对。
+ * 用法：domain / blueprint 这类 **.md 文件**与 entity name 的比对。
  *   - declared: AST 内的 `domain "X"` 或 `blueprint "X"` 中的 X
- *   - filePath: .oxn 文件的绝对或相对路径
+ *   - filePath: .md 文件的绝对或相对路径
  *   - entityType: 用于错误上下文与未来扩展
  *
  * 行为：declared 与 basename(filePath) 去后缀后,两者过 toKebab 归一比对。
@@ -66,8 +66,8 @@ export function assertNameFileConsistent(
   filePath: string,
   entityType: 'domain' | 'blueprint' | 'work' | 'proof',
 ): void {
-  // v0.5 Phase 3: 支持 .oxn 和 .md 两种扩展名 (assetFormat 决定)
-  const fileStem = basename(filePath).replace(/\.(oxn|md)$/i, '')
+  // v0.7.0: only .md supported
+  const fileStem = basename(filePath).replace(/\.md$/i, '')
   const fileBase = basename(filePath) // 含扩展名, 用于错误消息
   const declaredNorm = toKebab(declared)
   const fileNorm = toKebab(fileStem)
@@ -83,7 +83,7 @@ export function assertNameFileConsistent(
         file: fileBase,
         normalized: declaredNorm,
         suggestion:
-          `Either rename the file to '${declaredNorm}.oxn' (or .md), ` +
+          `Either rename the file to '${declaredNorm}.md', ` +
           `or change the declared name to match the file. ` +
           `OXN does not enforce casing style, only canonicalization consistency.`,
       },
@@ -98,9 +98,9 @@ export function assertNameFileConsistent(
 /**
  * v1.1 NAME_FILE_MISMATCH 防御（目录式布局）。
  *
- * 用法：work / proof 这类 **目录式**布局（works/<w>/work.oxn 与 proofs/<p>/proof.oxn）。
+ * 用法：work / proof 这类 **目录式**布局（works/<w>/work.md 与 proofs/<p>/proof.md）。
  *   - declared: AST 内的 `work "X"` 或 `proof "X"` 中的 X
- *   - dirPath: 所在目录的绝对或相对路径（work.oxn/proof.oxn 的 parent dir）
+ *   - dirPath: 所在目录的绝对或相对路径（work.md/proof.md 的 parent dir）
  *   - entityType: 用于错误上下文
  *
  * 行为：declared 与 basename(dirPath) 过 toKebab 归一比对。

@@ -35,12 +35,12 @@ export function getProjectBoundaryPath(projectRoot: string): string {
 export type SkillAdapterIdLiteral = 'opencode' | 'claude' | 'agents'
 
 // v0.5 Phase 3 + v0.6.1 PR-3: asset format choice. CLI reads/writes the chosen format as the
-// "primary" source. The other format is auto-synced (when `autoSync` is true) on
-// every write.
+// "primary" source.
 //
-// v0.6.1+: Default = 'md' — D-α c 锁定（v0.6.1 不删 .oxn，留作 v0.6.x fallback）；
-//            v0.7.0 切割时 .oxn 全删，'md' 成为唯一 canonical。
-// v0.5.x:  Default = 'oxn' — 向后兼容 v0.4 users。
+// v0.7.0: .oxn format removed. 'md' is the only canonical format.
+// v0.6.1+: Default = 'md' — D-α c 锁定。
+// v0.5.x:  Default = 'oxn' — 向后兼容 v0.4 users（已废弃）。
+/** @deprecated 'oxn' format is removed in v0.7. Only 'md' is supported. */
 export type AssetFormat = 'oxn' | 'md'
 
 export interface ProjectConfig {
@@ -193,8 +193,7 @@ export function resolveHallRoot(scope: Scope, cwd?: string): string {
 // v0.5 Phase 3: asset path resolution by configured format
 //
 // `resolveAssetPrimaryPath` returns the path for the configured primary format
-// (`.oxn` or `.md`). `resolveAssetAltPath` returns the path for the other
-// format. Used by all CLI create/validate/run code paths.
+// (`.md`). `resolveAssetAltPath` returns the path for the other format.
 // =============================================================================
 
 /** 4 entity types that have both .oxn + .md representations */
@@ -203,10 +202,10 @@ export type AssetEntityKind = 'domain' | 'blueprint' | 'work' | 'proof'
 /**
  * v0.5 Phase 3 + v0.6 PR-1: resolve the primary path for an asset based on configured format.
  *
- * - `domain X` → `.openxenon/assets/domain/X.oxn` (v0.6 默认) or `.openxenon/domains/X.oxn` (v0.5 fallback)
- * - `blueprint X` → `.openxenon/assets/blueprint/X.oxn` 或 fallback
- * - `work X` → `.openxenon/works/X/work.oxn` (不参与 assetDir 配置 — work 是流程而非资产)
- * - `proof X` → `.openxenon/proofs/X/proof.oxn` (不参与 assetDir 配置 — proof 是流程而非资产)
+ * - `domain X` → `.openxenon/assets/domain/X.md`
+ * - `blueprint X` → `.openxenon/assets/blueprint/X.md`
+ * - `work X` → `.openxenon/works/X/work.md`
+ * - `proof X` → `.openxenon/proofs/X/proof.md`
  *
  * config 控制：
  *   - assetRoot (默认 'assets')
@@ -220,25 +219,22 @@ export function resolveAssetPrimaryPath(
   config: ProjectConfig | null = null,
 ): string {
   if (entity === 'work') {
-    // .openxenon/works/<name>/{work.oxn|work.md}
-    return join(projectRoot, BOUNDARY_DIR, 'works', name, format === 'oxn' ? 'work.oxn' : 'work.md')
+    return join(projectRoot, BOUNDARY_DIR, 'works', name, 'work.md')
   }
   if (entity === 'proof') {
-    // .openxenon/proofs/<name>/{proof.oxn|proof.md}
-    return join(projectRoot, BOUNDARY_DIR, 'proofs', name, format === 'oxn' ? 'proof.oxn' : 'proof.md')
+    return join(projectRoot, BOUNDARY_DIR, 'proofs', name, 'proof.md')
   }
   // domain / blueprint / stack: v0.6 asset 路径布局
   // 默认 `assets/<kind>/`，config 可自定义
   if (entity === 'domain' || entity === 'blueprint' || entity === 'stack') {
     const baseDir = resolveAssetDir(projectRoot, entity, config)
-    const ext = format === 'oxn' ? 'oxn' : 'md'
     // 旧布局别名：domain-md / blueprint-md
     if (config === null && format === 'md') {
       const boundary = join(projectRoot, BOUNDARY_DIR)
       const legacyDir = entity === 'domain' ? 'domains-md' : 'blueprints-md'
-      return join(boundary, legacyDir, `${name}.${ext}`)
+      return join(boundary, legacyDir, `${name}.md`)
     }
-    return join(baseDir, `${name}.${ext}`)
+    return join(baseDir, `${name}.md`)
   }
   // 不应该到这里
   throw new Error(`Unsupported entity: ${entity}`)
@@ -257,8 +253,7 @@ export function resolveAssetAltPath(
 }
 
 /** v0.5 Phase 3 + v0.6.1 PR-3: helper — get the asset format with default fallback.
- *  v0.6.1+: 默认 'md'（D-α c 锁定）
- *  v0.5.x:  默认 'oxn'
+ *  v0.7.0: Always returns 'md'.
  */
 export function resolveAssetFormat(config: ProjectConfig | null): AssetFormat {
   return config?.assetFormat ?? 'md'
@@ -276,19 +271,17 @@ export function resolveAutoSync(config: ProjectConfig | null): boolean {
 // =============================================================================
 
 /**
- * v0.6.1 PR-3: 列出 asset 文件的 4 级候选路径（按优先级降序）
+ * v0.6.1 PR-3: 列出 asset 文件的候选路径（按优先级降序）
  *
  * 顺序：
  *   1. `<primary>/<name>.md`     — v0.6 layout .md（canonical）
- *   2. `<primary>/<name>.oxn`    — v0.6 layout .oxn（v0.7.0 已废弃，跳过）
- *   3. `<fallback>/<name>.md`   — v0.5 layout .md（如有）
- *   4. `<fallback>/<name>.oxn`  — v0.5 layout .oxn（v0.5 legacy）
+ *   2. `<fallback>/<name>.md`   — v0.5 layout .md（如有）
  *
  * @param projectRoot 项目根目录
  * @param entity domain | workflow | blueprint | stack | roadmap (v0.6.1-alpha.2: 5 类型，library/external 已删除)
  * @param name asset 名（不含扩展名）
  * @param config 可选 project config
- * @returns 4 个候选路径，按优先级降序
+ * @returns 候选路径，按优先级降序
  */
 export function resolveAssetFileCandidatesV61(
   projectRoot: string,
@@ -300,12 +293,8 @@ export function resolveAssetFileCandidatesV61(
   return [
     // 1. .md primary（v0.6 canonical）
     join(primary, `${name}.md`),
-    // 2. .oxn primary（v0.6 layout fallback — D-α c 锁定）
-    join(primary, `${name}.oxn`),
-    // 3. .md fallback（v0.5 layout .md 同步产物）
+    // 2. .md fallback（v0.5 layout .md 同步产物）
     join(fallback, `${name}.md`),
-    // 4. .oxn fallback（v0.5 legacy）
-    join(fallback, `${name}.oxn`),
   ] as const
 }
 
@@ -319,7 +308,7 @@ export function resolveAssetWritePathV61(
   entity: AssetKind, // 🆕 v0.6.1-alpha.2: 收敛为 5 类型
   name: string,
   config: ProjectConfig | null = null,
-  format: 'md' | 'oxn' = 'md',
+  format: 'md' = 'md',
 ): string {
   const baseDir = resolveAssetDir(projectRoot, entity, config)
   return join(baseDir, `${name}.${format}`)

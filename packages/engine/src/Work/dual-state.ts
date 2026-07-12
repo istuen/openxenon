@@ -3,11 +3,11 @@ import { z } from 'zod'
 // =============================================================================
 // v0.1 DDD 双层状态机
 //
-// 层级 1: WorkspaceState (work.oxn 级)
+// 层级 1: WorkspaceState (work.md 级)
 //   - 范围：整个 work 编排
 //   - 内容：work 名 + 上下文 + 任务 DAG 整体状态 + 所有 task 的轻量索引
 //
-// 层级 2: TaskState (task.oxn 级)
+// 层级 2: TaskState (task.md 级)
 //   - 范围：单个 task 的执行
 //   - 内容：blueprint + injects + slot 状态机 + probe 结果
 //
@@ -51,7 +51,7 @@ export const WorkspaceStateSchema = z.object({
   blueprints: z.array(z.string()).default([]),
   // 任务 DAG 索引（不存储详细执行，只存状态）
   tasks: z.array(WorkspaceTaskIndexSchema).default([]),
-  // 可选 skill context（从 work.oxn 复制而来，便于离线读取）
+  // 可选 skill context（从 work.md 复制而来，便于离线读取）
   skillContext: z
     .object({
       overallGoal: z.string().default(''),
@@ -173,7 +173,7 @@ export const TaskStateSchema = z.object({
     maxIterations: z.number().int().min(1),
   }),
   partExecutions: z.array(TaskPartExecutionSchema).default([]),
-  // 可选 skill context (从 task.oxn context 块)
+  // 可选 skill context (从 task.md context 块)
   skillContext: z
     .object({
       objective: z.string().default(''),

@@ -142,7 +142,7 @@ const showSubcommand = defineCommand({
     const asset = result.assets.find((a) => a.name === name)
     if (!asset) {
       // 检查归档
-      const archivedPath = resolveArchivedAssetFile(projectRoot, kind, name, 'oxn')
+      const archivedPath = resolveArchivedAssetFile(projectRoot, kind, name, 'md')
       if (existsSync(archivedPath)) {
         return output(
           {
