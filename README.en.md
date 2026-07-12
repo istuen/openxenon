@@ -9,7 +9,6 @@
 >
 > [中文版](./README.md) · [Full Documentation](./docs/en/index.md) · [AI Collaborator Entry](./docs/en/llm-prompt.md)
 
-[![npm version](https://img.shields.io/npm/v/@istuen/openxenon)](https://www.npmjs.com/package/@istuen/openxenon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 
@@ -37,11 +36,13 @@ OpenXenon is still imperfect at this stage, but I hope it can help engineers foc
 ### Install
 
 ```bash
-npm install -g @istuen/openxenon   # or pnpm / bun
+git clone https://github.com/istuen/openxenon.git
+cd openxenon
+bun install
 oxn --version
 ```
 
-The repository source is the dev base for `dist/cli.js`, **not** the user install path. v0.6+ uses a Monorepo (packages/engine + packages/cli); developers should `git clone` + `bun install`. Regular users should use `npm install -g` above.
+> The repository is the dev base. v0.5+ is no longer published to npm. Developers should `git clone` + `bun install` for local development. Build via `bun run build` to produce `dist/cli.js`.
 
 ### Path A — Direct CLI
 
@@ -171,11 +172,11 @@ openxenon/
 | Version | Goal | Status |
 |---|---|---|
 | **v0.1.8** | IAP paradigm / closed loop / self-bootstrap | ✓ released on npm |
-| **v0.2.0** | Proof First / Infra Probe | ✓ released |
-| **v0.3.0** | MD-Native assets / Daemon | ✓ released |
-| **v0.4.0** | OXL 1.3 + three-layer architecture | ✓ released |
-| **v0.5.0** | Proof Insight Loop | ✓ released |
-| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo dual-package** | ✓ **released** ([PR #3](https://github.com/istuen/openxenon/pull/3)) |
+| **v0.2.0** | Proof First / Infra Probe | ✓ released on npm |
+| **v0.3.0** | MD-Native assets / Daemon | ✓ released on npm |
+| **v0.4.0** | OXL 1.3 + three-layer architecture | ✓ released on npm |
+| **v0.5.0** | Proof Insight Loop | ✓ released on npm (v0.5+ npm publishing paused) |
+| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo dual-package** | ✓ released on npm (v0.5+ npm publishing paused) |
 
 > v0.6 is an **architectural reshape** release: from the IAP three-axis narrative to E1-E4 four structural entities + L0-L3 engineering layers + a Monorepo dual-package layout (`packages/engine` + `packages/cli`). See the [v0.6 IAP Refactor RFC](./.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md) and [Changelog](./.changes/0-6-0-iap-refactor.md).
 >

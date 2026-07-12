@@ -2,7 +2,6 @@
 
 [English](./README.en.md) [简体中文](./README.md)
 
-[![npm version](https://img.shields.io/npm/v/@istuen/openxenon)](https://www.npmjs.com/package/@istuen/openxenon)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
 
@@ -29,11 +28,13 @@ OpenXenon 旨在为工程师与 AI 模型的协作，建立更好的**信任基�
 ### 安装
 
 ```bash
-npm install -g @istuen/openxenon
+git clone https://github.com/istuen/openxenon.git
+cd openxenon
+bun install
 ```
 
 > [!TIP]
-> 仓库 v0.6+ 是 Monorepo 双包（packages/engine + packages/cli），dist/cli.js 是 npm 发布产物。开发请走 git clone + bun install；普通用户请走 `npm install -g` 路径，**不是**用户安装路径。
+> 仓库 v0.5+ 起不再发布到 npm。需要 git clone + bun install 本地开发。`dist/cli.js` 是 Bun 编译产物，可通过 `bun run build` 构建。
 
 
 ### 在项目注入 OpenXenon 空间与 Skills
@@ -135,11 +136,11 @@ openxenon/
 | 版本 | 目标 | 状态 |
 |---|---|---|
 | **v0.1.8** | IAP 范式 / 打造闭环 / 自举实践 | ✓ 已发布 npm |
-| **v0.2.0** | Proof First / Infra Probe | ✓ 已发布 |
-| **v0.3.0** | MD-Native 资产 / Daemon | ✓ 已发布 |
-| **v0.4.0** | OXL 1.3 + 三层架构 | ✓ 已发布 |
-| **v0.5.0** | Proof Insight Loop | ✓ 已发布 |
-| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo 双包** | ✓ **已发布** ([PR #3](https://github.com/istuen/openxenon/pull/3)) |
+| **v0.2.0** | Proof First / Infra Probe | ✓ 已发布 npm |
+| **v0.3.0** | MD-Native 资产 / Daemon | ✓ 已发布 npm |
+| **v0.4.0** | OXL 1.3 + 三层架构 | ✓ 已发布 npm |
+| **v0.5.0** | Proof Insight Loop | ✓ 已发布 npm（v0.5+ 暂停 npm 发布）|
+| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo 双包** | ✓ 已发布 npm（v0.5+ 暂停 npm 发布）|
 
 > v0.6 是**架构重塑**版：从 IAP 三轴叙事重构为 E1-E4 四结构实体 + L0-L3 工程分层 + Monorepo 双包（`packages/engine` + `packages/cli`）。详见 [v0.6 IAP Refactor RFC](./.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md) 与 [Changelog](./.changes/0-6-0-iap-refactor.md)。
 >
