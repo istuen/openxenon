@@ -13,10 +13,6 @@ export { createOxnCompiler } from './compiler/blueprint-compiler'
 export { createOxnWorkspaceManager } from './scope/oxn-workspace-manager'
 export { createOxnAssetLoader } from './loader/oxn-loader'
 
-export { registerOxnValidators } from './validator/oxn-validation'
-export { validateWorkTaskReference } from './validator/slot-reference-validator'
-export { validateTaskAlign } from './validator/intent-align-validator'
-
 // --- Schema types ---
 export type {
   OxnAssemblyIR,
@@ -84,11 +80,9 @@ export type {
 export { createOxnCompiler as createOxlCompiler } from './compiler/blueprint-compiler'
 /** @deprecated brand upgrade: use OxlWorkspaceManager */
 export { createOxnWorkspaceManager as createOxlWorkspaceManager } from './scope/oxn-workspace-manager'
-/** @deprecated brand upgrade: use OxlValidatorRegistry */
-export { registerOxnValidators as registerOxlValidators } from './validator/oxn-validation'
 /** @deprecated brand upgrade: use OxlIR */
 export type { OxnAssemblyIR as OxlAssemblyIR } from './schemas/oxn-assembly.schema'
-/** @deprecated brand upgrade: use OxlAssetType */
+/** @deprecated brand upgrade: use OxlScope */
 export type {
   OxnAssetType as OxlAssetType,
   OxnScope as OxlScope,

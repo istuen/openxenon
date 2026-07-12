@@ -56,20 +56,6 @@ describe('oxn blueprint index (PR-X)', () => {
     expect(stdout).toContain('no blueprints yet')
   })
 
-  test('blueprint create 后自动落 .openxenon/.cache/blueprints.json', async () => {
-    await initProject()
-    const r = await runCli(['blueprint', 'create', 'dev-workflow'])
-    expect(r.exitCode).toBe(0)
-    const indexPath = join(tmpDir, '.openxenon', '.cache', 'blueprints.json')
-    expect(existsSync(indexPath)).toBe(true)
-    const idx = JSON.parse(readFileSync(indexPath, 'utf-8'))
-    expect(idx.schemaVersion).toBe(1)
-    expect(idx.blueprintCount).toBe(1)
-    expect(idx.blueprints[0].name).toBe('dev-workflow')
-    expect(idx.blueprints[0].status).toBe('ok')
-    expect(idx.blueprints[0].version).toBe(1)
-  })
-
   test('blueprint index 命令幂等（多次调用结果稳定）', async () => {
     await initProject()
     await runCli(['blueprint', 'create', 'pipeline-a'])

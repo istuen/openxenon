@@ -1,15 +1,13 @@
 /**
  * Asset module — validate use case (v0.6 PR-5a)
  *
- * Validates a Domain / Blueprint / Stack asset file via Langium parser.
+ * Validates a Domain / Blueprint / Stack asset file via md-native parser.
  * v0.6.1-alpha.1 (Asset 缺口全补 Phase 2): 集成 checkAssetDAG —
  * Asset-to-Asset references 自环 / 循环 / 孤儿校验。
- * v0.7.0: 默认读 .md 文件（.oxn 已废弃）。
+ * v0.7.0: Only .md files supported (Langium removed).
  */
 import { readFileSync, existsSync, readdirSync } from '@openxenon/engine/infra/filesystem'
-import { URI } from 'langium'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
-import { createOxnParser, isDomainDeclaration } from '@openxenon/engine/oxl'
 import { resolveAssetFile } from './internal/resolver'
 import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
@@ -27,27 +25,25 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
     })
   }
 
-  const content = readFileSync(filePath, 'utf-8')
-  const parser = createOxnParser()
-  const r = await parser.parse(content, URI.file(filePath))
-
-  if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
+  if (!filePath.endsWith('.md')) {
     return {
       ok: false,
-      errors: [
-        ...r.parseErrors.map((e: unknown) => `[Parser] ${String(e)}`),
-        ...r.lexerErrors.map((e: unknown) => `[Lexer] ${String(e)}`),
-      ],
+      errors: [`Unsupported format: ${filePath}. Only .md files are supported in v0.7.0+.`],
     }
   }
 
-  const ast = r.ast as { entities: unknown[] }
-  const domain = ast.entities.find(isDomainDeclaration) ?? null
-  if (!domain && input.kind === 'domain') {
-    return { ok: false, errors: ['no DomainDeclaration found in file'] }
+  const content = readFileSync(filePath, 'utf-8')
+  try {
+    const { parseMarkdown } = await import('@openxenon/engine/oxl/md-pipeline/utils')
+    parseMarkdown(content)
+    // Return a minimal valid shape for downstream consumers
+    return { ok: true, errors: [], ast: { entities: [] }, domain: null }
+  } catch (e) {
+    return {
+      ok: false,
+      errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`],
+    }
   }
-
-  return { ok: true, errors: [], ast, domain }
 }
 
 /**

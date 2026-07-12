@@ -73,12 +73,5 @@ describe('v0.6.1 PR-4: builtin assets .md 加载测试（mdast 路径）', () =>
     test('3 builtin blueprints .md 文件存在', () => {
       expect(listMd(BUILTIN_BLUEPRINTS_DIR).length).toBe(3)
     })
-
-    test('builtin probes/blueprints .oxn 同步保留作 v0.6.x fallback', () => {
-      const probeOxn = readdirSync(BUILTIN_PROBES_DIR).filter((f) => f.endsWith('.oxn'))
-      const bpOxn = readdirSync(BUILTIN_BLUEPRINTS_DIR).filter((f) => f.endsWith('.oxn'))
-      expect(probeOxn.length).toBe(15)
-      expect(bpOxn.length).toBe(3)
-    })
   })
 })

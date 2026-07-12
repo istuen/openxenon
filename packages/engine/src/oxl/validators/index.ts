@@ -1,10 +1,9 @@
 // =============================================================================
-// validators/index.ts (v0.2 Sprint 5b T10)
+// validators/index.ts
 //
-// 出口 OXL validators
+// Export OXL validators (v0.7.0: Langium validators removed)
 // =============================================================================
 
-export { validateProbeSchemes, type ProbeSchemeError, type ValidateProbeSchemesResult } from './probe-validator'
 export { validateDagTopology, topologicalSort, type DagNode, type DagValidationResult } from './blueprint-dag'
 export {
   type ProbeNamespace,

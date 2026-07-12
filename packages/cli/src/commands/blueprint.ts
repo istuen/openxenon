@@ -18,16 +18,9 @@ import { defineCommand } from 'citty'
 import { t } from '@openxenon/engine/infra/i18n'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { URI } from 'langium'
 import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 import { IAPError } from '@openxenon/engine/errors'
 import { assertNameFileConsistent } from '@openxenon/engine/kernel'
-import {
-  createOxnParser,
-  isBlueprintDeclaration,
-  type BlueprintDeclaration,
-  type OXNDocument,
-} from '@openxenon/engine/oxl'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import {
   resolveAssetPrimaryPath,
@@ -37,19 +30,8 @@ import {
   resolveAssetDir,
 } from '@openxenon/engine/infra/paths'
 import { readProjectConfig } from './project-config-io'
-import { compileOxnToMd } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractBlueprintIR } from '@openxenon/engine/oxl/md-pipeline/transformers/blueprint.js'
-import { serializeBlueprintToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
-import {
-  computeSha256,
-  readSyncMetadata,
-  composeSyncContent,
-  writeCacheSha,
-  getCachePath,
-  getCacheMdPath,
-} from '@openxenon/engine/oxl/md-pipeline/sync-hash.js'
-import { validateOxnParseable, verifyBlueprintRoundTrip } from '@openxenon/engine/oxl/md-pipeline/sync-validation.js'
 import { blueprintCreateTemplate } from '@openxenon/engine/Asset/blueprint-manager'
 import {
   autoRebuildBlueprintIndex,
@@ -74,78 +56,24 @@ function projectBoundaryExists(): boolean {
   return existsSync(join(getProjectRoot(), BOUNDARY_DIR))
 }
 
+// v0.7.0: Only .md files are supported (Langium removed)
+
 async function validateBlueprint(blueprintPath: string): Promise<{
   ok: boolean
-  ast?: OXNDocument
+  ir?: import('@openxenon/engine/oxl/md-pipeline/transformers/blueprint').BlueprintIR
   errors: string[]
 }> {
   if (!existsSync(blueprintPath)) {
     return { ok: false, errors: [`blueprint file not found: ${blueprintPath}`] }
   }
-  // v0.5 Phase 3: .md 走 md-pipeline 路径
-  if (blueprintPath.endsWith('.md')) {
-    return validateBlueprintFromMd(blueprintPath)
-  }
   const content = readFileSync(blueprintPath, 'utf-8')
-  const parser = createOxnParser()
-  const r = await parser.parse(content, URI.file(blueprintPath))
-  if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
-    return {
-      ok: false,
-      errors: [...r.parseErrors.map((e) => `[Parser] ${e}`), ...r.lexerErrors.map((e) => `[Lexer] ${e}`)],
-    }
-  }
-  const ast = r.ast as OXNDocument
-  const hasBlueprint = ast.entities.some(isBlueprintDeclaration)
-  if (!hasBlueprint) {
-    return {
-      ok: false,
-      ast,
-      errors: ['no BlueprintDeclaration found in file'],
-    }
-  }
-  return { ok: true, ast, errors: [] }
-}
-
-/**
- * v0.5 Phase 3: 验证 .md blueprint (走 md-pipeline)
- */
-async function validateBlueprintFromMd(blueprintPath: string): Promise<{
-  ok: boolean
-  ast?: OXNDocument
-  errors: string[]
-}> {
-  const content = readFileSync(blueprintPath, 'utf-8')
-  let ir: import('@openxenon/engine/oxl/md-pipeline/transformers/blueprint').BlueprintIR
   try {
     const { tree, frontmatter: fm } = parseMarkdown(content)
-    ir = extractBlueprintIR(tree, fm)
+    const ir = extractBlueprintIR(tree, fm)
+    return { ok: true, ir, errors: [] }
   } catch (e) {
-    return {
-      ok: false,
-      errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`],
-    }
+    return { ok: false, errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`] }
   }
-  // IR → 临时 .oxn → 走 langium 拿到 AST (给 blueprintAstToIr 用)
-  const oxnContent = serializeBlueprintToOxn(ir)
-  const parser = createOxnParser()
-  const r = await parser.parse(oxnContent, URI.file(`${blueprintPath}.oxn`))
-  if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
-    return {
-      ok: false,
-      errors: [...r.parseErrors.map((e) => `[Parser] ${e}`), ...r.lexerErrors.map((e) => `[Lexer] ${e}`)],
-    }
-  }
-  const ast = r.ast as OXNDocument
-  const hasBlueprint = ast.entities.some(isBlueprintDeclaration)
-  if (!hasBlueprint) {
-    return {
-      ok: false,
-      ast,
-      errors: ['no BlueprintDeclaration derived from md'],
-    }
-  }
-  return { ok: true, ast, errors: [] }
 }
 
 // ---------------------------------------------------------------------------
@@ -238,18 +166,14 @@ const createSubcommand = defineCommand({
     const template = blueprintCreateTemplate(name, slotBlocks.join('\n\n'), slotsArg, assetFormat)
     writeFileSync(primaryPath, template, 'utf-8')
 
-    // v0.5 Phase 3: 自动 sync 到另一种格式
+    // v0.7.0: auto-sync to .oxn alt for backward compatibility when primary is .md
     if (autoSync) {
       void (async () => {
         try {
-          if (assetFormat === 'oxn') {
-            // .oxn → .md
-            const altResult = await compileOxnToMd(template, { entity: 'blueprint', frontmatter: true })
-            writeFileSync(altPath, altResult.md, 'utf-8')
-          } else {
-            // .md → .oxn
+          if (assetFormat === 'md') {
             const { tree, frontmatter: fm } = parseMarkdown(template)
             const ir = extractBlueprintIR(tree, fm)
+            const { serializeBlueprintToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
             const altContent = serializeBlueprintToOxn(ir)
             writeFileSync(altPath, altContent, 'utf-8')
           }
@@ -346,13 +270,13 @@ const validateSubcommand = defineCommand({
         format,
       )
     }
-    // v0.1: AST → IR 映射（干掉 cyclic JSON）。langium AST 节点带 $container 父引用。
-    const blueprint = result.ast?.entities.find(isBlueprintDeclaration)
-    const ir = blueprint ? blueprintAstToIr(blueprint) : null
+    // v0.7.0: IR is extracted directly from .md (Langium removed)
+    const ir = result.ir ?? null
 
     // v0.6.1-alpha.0 #1-13: slot DAG 环检测（硬阻断）
     if (ir) {
-      const cycle = findDagCycle(ir.deps)
+      const depsMap = Object.fromEntries(ir.slots.map((s) => [s.name, s.deps]))
+      const cycle = findDagCycle(depsMap)
       if (cycle) {
         return outputError(
           {
@@ -411,30 +335,7 @@ const validateSubcommand = defineCommand({
   },
 })
 
-/**
- * v0.1: 把 langium AST 节点映射为可 JSON 序列化的纯对象 IR。
- * 消除 `$container` 父引用导致的 cyclic structures 错误。
- */
-function blueprintAstToIr(blueprint: BlueprintDeclaration): {
-  name: string
-  version?: number
-  slots: string[]
-  deps: Record<string, string[]>
-  props: Array<{ name: string; type: string; required?: boolean; default?: unknown }>
-} {
-  return {
-    name: blueprint.name,
-    version: blueprint.version ?? 1,
-    slots: blueprint.partSlots.map((s) => s.name),
-    deps: Object.fromEntries(blueprint.partSlots.map((s) => [s.name, s.deps])),
-    props: blueprint.props.map((p) => ({
-      name: p.name,
-      type: typeof p.type === 'string' ? p.type : 'complex',
-      ...(p.required ? { required: p.required.value } : {}),
-      ...(p.default ? { default: p.default.value } : {}),
-    })),
-  }
-}
+// v0.7.0: blueprintAstToIr removed (Langium removed; IR used directly from md-pipeline)
 
 /**
  * v0.6.1-alpha.0 #1-13: 检测 slot DAG 是否含循环。
@@ -667,423 +568,6 @@ const indexSubcommand = defineCommand({
   },
 })
 
-// ---------------------------------------------------------------------------
-// Subcommand: compile (v0.3.0 — 把 .oxn 重编译为 v0.3 canonical 纯 MD .md)
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// Subcommand: sync (v0.4 Phase 1 — .oxn → .md 自动同步)
-// ---------------------------------------------------------------------------
-const syncSubcommand = defineCommand({
-  meta: {
-    name: 'sync',
-    description: '[v0.4 Phase 1] Sync .oxn → .md: regenerate .md only when .oxn changed',
-  },
-  args: {
-    name: { type: 'positional', required: false },
-    all: { type: 'boolean' },
-    'dry-run': { type: 'boolean' },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const all = ctx.args.all === true
-    const dryRun = ctx.args['dry-run'] === true
-    const singleName = ctx.args.name as string | undefined
-    const projectRoot = getProjectRoot()
-
-    if (!all && !singleName) {
-      return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
-    }
-
-    const blueprintsDir = resolveAssetDir(projectRoot, 'blueprint', readProjectConfig(projectRoot))
-    let names: string[]
-    if (all) {
-      if (!existsSync(blueprintsDir)) {
-        return outputError({ code: 'OXN_NO_PROJECT', message: 'no .openxenon/blueprints/' }, format)
-      }
-      names = readdirSync(blueprintsDir)
-        .filter((f) => f.endsWith('.oxn'))
-        .map((f) => f.slice(0, -'.oxn'.length))
-    } else {
-      names = [singleName as string]
-    }
-
-    const results: Array<{
-      name: string
-      status: 'updated' | 'unchanged' | 'error'
-      oxnSha?: string
-      mdSha?: string
-      error?: string
-    }> = []
-
-    for (const name of names) {
-      const oxnPath = join(blueprintsDir, `${name}.oxn`)
-      const mdPath = join(projectRoot, BOUNDARY_DIR, 'blueprints-md', `${name}.md`)
-      const cachePath = getCachePath(projectRoot, 'blueprint', name)
-
-      if (!existsSync(oxnPath)) {
-        results.push({ name, status: 'error', error: `.oxn not found: ${oxnPath}` })
-        continue
-      }
-
-      const oxnContent = readFileSync(oxnPath, 'utf-8')
-      const oxnSha = computeSha256(oxnContent)
-
-      const prevMeta = existsSync(mdPath) ? readSyncMetadata(mdPath) : null
-      const prevOxnSha = prevMeta?.oxnSourceSha
-
-      if (prevOxnSha === oxnSha && existsSync(mdPath)) {
-        results.push({ name, status: 'unchanged', oxnSha, mdSha: prevMeta?.mdSelfSha })
-        continue
-      }
-
-      if (dryRun) {
-        results.push({ name, status: 'updated', oxnSha })
-        continue
-      }
-
-      let result
-      try {
-        result = await compileOxnToMd(oxnContent, { entity: 'blueprint', frontmatter: true })
-      } catch (err) {
-        results.push({ name, status: 'error', error: err instanceof Error ? err.message : String(err) })
-        continue
-      }
-
-      const mdDir = join(projectRoot, BOUNDARY_DIR, 'blueprints-md')
-      if (!existsSync(mdDir)) mkdirSync(mdDir, { recursive: true })
-
-      const finalContent = composeSyncContent(result.md, {
-        oxnSourceSha: oxnSha,
-        syncedAt: new Date().toISOString(),
-      })
-      const mdSha = computeSha256(finalContent)
-
-      writeFileSync(mdPath, finalContent, 'utf-8')
-      writeCacheSha(cachePath, mdSha)
-
-      results.push({ name, status: 'updated', oxnSha, mdSha })
-    }
-
-    const summary = {
-      total: results.length,
-      updated: results.filter((r) => r.status === 'updated').length,
-      unchanged: results.filter((r) => r.status === 'unchanged').length,
-      error: results.filter((r) => r.status === 'error').length,
-      dryRun,
-    }
-
-    output(
-      {
-        ok: summary.error === 0,
-        data: { ...summary, results },
-        human:
-          `blueprint sync ${all ? '--all' : names.length === 1 ? `<${names[0]}>` : `${names.length} items`}` +
-          (dryRun ? ' (dry-run)' : '') +
-          `\n  total:     ${summary.total}\n  updated:   ${summary.updated}\n  unchanged: ${summary.unchanged}\n  error:     ${summary.error}` +
-          (summary.error > 0
-            ? '\n\nFailed:\n' +
-              results
-                .filter((r) => r.status === 'error')
-                .map((r) => `  - ${r.name}: ${r.error}`)
-                .join('\n')
-            : ''),
-      },
-      format,
-    )
-  },
-})
-
-// ---------------------------------------------------------------------------
-// Subcommand: sync-md (v0.4 Phase 2 — .md → .oxn 反向同步)
-// ---------------------------------------------------------------------------
-const syncMdSubcommand = defineCommand({
-  meta: {
-    name: 'sync-md',
-    description: '[v0.4 Phase 2] Reverse sync .md → .oxn: regenerate .oxn when .md changed',
-  },
-  args: {
-    name: { type: 'positional', required: false },
-    all: { type: 'boolean' },
-    'dry-run': { type: 'boolean' },
-    'no-chain': { type: 'boolean' },
-    'oxn-priority': { type: 'boolean' },
-    'no-roundtrip': { type: 'boolean' },
-    'no-parse-check': { type: 'boolean' },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const all = ctx.args.all === true
-    const dryRun = ctx.args['dry-run'] === true
-    const noChain = ctx.args.chain === false
-    const oxnPriority = ctx.args['oxn-priority'] === true
-    const noRoundtrip = ctx.args.roundtrip === false
-    const noParseCheck = ctx.args['parse-check'] === false
-    const singleName = ctx.args.name as string | undefined
-    const projectRoot = getProjectRoot()
-
-    if (!all && !singleName) {
-      return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
-    }
-
-    const mdDir = join(projectRoot, BOUNDARY_DIR, 'blueprints-md')
-    const oxnDir = resolveAssetDir(projectRoot, 'blueprint', readProjectConfig(projectRoot))
-    let names: string[]
-    if (all) {
-      if (!existsSync(mdDir)) {
-        return outputError({ code: 'OXN_NO_PROJECT', message: 'no .openxenon/blueprints-md/' }, format)
-      }
-      names = readdirSync(mdDir)
-        .filter((f) => f.endsWith('.md'))
-        .map((f) => f.slice(0, -'.md'.length))
-    } else {
-      names = [singleName as string]
-    }
-
-    const results: Array<{
-      name: string
-      status: 'updated' | 'unchanged' | 'error' | 'oxn-wins'
-      mdSha?: string
-      oxnSha?: string
-      error?: string
-      errorCode?: string
-    }> = []
-
-    for (const name of names) {
-      const mdPath = join(mdDir, `${name}.md`)
-      const oxnPath = join(oxnDir, `${name}.oxn`)
-      const mdCachePath = getCacheMdPath(projectRoot, 'blueprint', name)
-
-      if (!existsSync(mdPath)) {
-        results.push({ name, status: 'error', error: `.md not found: ${mdPath}` })
-        continue
-      }
-
-      const mdContent = readFileSync(mdPath, 'utf-8')
-      const shaMdCurrent = computeSha256(mdContent)
-
-      // conflict: .oxn-priority
-      const oxnExists = existsSync(oxnPath)
-      const oxnSha = oxnExists ? computeSha256(readFileSync(oxnPath, 'utf-8')) : ''
-      const oxnPrevSha = oxnExists ? readSyncMetadata(mdPath)?.oxnSourceSha : undefined
-      const bothChanged = oxnExists && oxnPrevSha && oxnPrevSha !== oxnSha
-      if (bothChanged && oxnPriority) {
-        try {
-          const oxnRaw = readFileSync(oxnPath, 'utf-8')
-          const mdResult = await compileOxnToMd(oxnRaw, { entity: 'blueprint', frontmatter: true })
-          const finalContent = composeSyncContent(mdResult.md, {
-            oxnSourceSha: oxnSha,
-            syncedAt: new Date().toISOString(),
-          })
-          const mdSha = computeSha256(finalContent)
-          writeFileSync(mdPath, finalContent, 'utf-8')
-          writeCacheSha(getCachePath(projectRoot, 'blueprint', name), mdSha)
-          writeFileSync(mdCachePath, `${mdSha}\n`, 'utf-8')
-        } catch (err) {
-          results.push({ name, status: 'error', error: `oxn-priority sync: ${String(err)}` })
-          continue
-        }
-        results.push({ name, status: 'oxn-wins', mdSha: shaMdCurrent, oxnSha })
-        continue
-      }
-
-      if (existsSync(mdCachePath)) {
-        const shaMdPrev = readFileSync(mdCachePath, 'utf-8').trim()
-        if (shaMdCurrent === shaMdPrev) {
-          results.push({ name, status: 'unchanged', mdSha: shaMdCurrent })
-          continue
-        }
-      }
-
-      if (dryRun) {
-        results.push({ name, status: 'updated', mdSha: shaMdCurrent })
-        continue
-      }
-
-      let tree, frontmatter
-      try {
-        const parsed = parseMarkdown(mdContent)
-        tree = parsed.tree
-        frontmatter = parsed.frontmatter
-      } catch (err) {
-        results.push({ name, status: 'error', error: `md parse: ${String(err)}` })
-        continue
-      }
-
-      let ir
-      try {
-        ir = extractBlueprintIR(tree, frontmatter)
-      } catch (err) {
-        results.push({ name, status: 'error', error: `IR extract: ${String(err)}` })
-        continue
-      }
-
-      const oxnContent = serializeBlueprintToOxn(ir)
-      const oxnShaNew = computeSha256(oxnContent)
-
-      if (!noParseCheck) {
-        const parseResult = await validateOxnParseable(oxnContent)
-        if (!parseResult.ok) {
-          results.push({
-            name,
-            status: 'error',
-            error: `langium parse failed: ${parseResult.errors[0]}`,
-            errorCode: 'E_SYNC_LANGIUM_VALIDATION_FAILED',
-          })
-          continue
-        }
-      }
-
-      if (!noRoundtrip) {
-        const rtResult = await verifyBlueprintRoundTrip(ir, oxnContent)
-        if (!rtResult.ok) {
-          results.push({
-            name,
-            status: 'error',
-            error: `round-trip loss: ${rtResult.lostFields.join(', ')}`,
-            errorCode: 'E_SYNC_ROUND_TRIP_LOSS',
-          })
-          continue
-        }
-      }
-
-      if (!existsSync(oxnDir)) mkdirSync(oxnDir, { recursive: true })
-      writeFileSync(oxnPath, oxnContent, 'utf-8')
-
-      if (!noChain && existsSync(oxnPath)) {
-        try {
-          const oxnRaw = readFileSync(oxnPath, 'utf-8')
-          const mdResult = await compileOxnToMd(oxnRaw, { entity: 'blueprint', frontmatter: true })
-          const finalContent = composeSyncContent(mdResult.md, {
-            oxnSourceSha: oxnShaNew,
-            syncedAt: new Date().toISOString(),
-          })
-          const mdSha = computeSha256(finalContent)
-          writeFileSync(mdPath, finalContent, 'utf-8')
-          writeCacheSha(getCachePath(projectRoot, 'blueprint', name), mdSha)
-        } catch {
-          // chained sync fails silently
-        }
-      }
-
-      const cacheDir2 = join(mdDir, '.cache')
-      if (!existsSync(cacheDir2)) mkdirSync(cacheDir2, { recursive: true })
-      const finalMdSha = existsSync(mdPath) ? computeSha256(readFileSync(mdPath, 'utf-8')) : shaMdCurrent
-      writeFileSync(mdCachePath, `${finalMdSha}\n`, 'utf-8')
-
-      results.push({ name, status: 'updated', mdSha: finalMdSha, oxnSha: oxnShaNew })
-    }
-
-    const summary = {
-      total: results.length,
-      updated: results.filter((r) => r.status === 'updated').length,
-      unchanged: results.filter((r) => r.status === 'unchanged').length,
-      error: results.filter((r) => r.status === 'error').length,
-      dryRun,
-      noChain,
-    }
-
-    output(
-      {
-        ok: summary.error === 0,
-        data: { ...summary, results },
-        human:
-          `blueprint sync-md ${all ? '--all' : `<${names[0]}>`}` +
-          (dryRun ? ' (dry-run)' : '') +
-          `\n  total:     ${summary.total}\n  updated:   ${summary.updated}\n  unchanged: ${summary.unchanged}\n  error:     ${summary.error}`,
-      },
-      format,
-    )
-  },
-})
-
-// ---------------------------------------------------------------------------
-// Subcommand: compile
-// ---------------------------------------------------------------------------
-
-const compileSubcommand = defineCommand({
-  meta: {
-    name: 'compile',
-    description: t('blueprint.compile.description'),
-  },
-  args: {
-    name: { type: 'positional', required: true, description: t('blueprint.compile.name') },
-    'file-path': { type: 'string', description: t('blueprint.compile.filePath') },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const name = ctx.args.name as string
-    const customPath = ctx.args['file-path'] as string | undefined
-
-    const filePath = customPath
-      ? join(getProjectRoot(), customPath)
-      : join(resolveAssetDir(getProjectRoot(), 'blueprint', readProjectConfig(getProjectRoot())), `${name}.oxn`)
-
-    if (!existsSync(filePath)) {
-      return outputUserInputError('OXN_FILE_NOT_FOUND', `blueprint .oxn not found: ${filePath}`, {
-        suggestion: `run \`oxn blueprint create ${name}\` first, then edit + compile`,
-        format,
-      })
-    }
-
-    const oxnContent = readFileSync(filePath, 'utf-8')
-
-    let result
-    try {
-      result = await compileOxnToMd(oxnContent, {
-        entity: 'blueprint',
-        frontmatter: true,
-      })
-    } catch (err) {
-      return outputError(
-        {
-          code: 'OXN_BLUEPRINT_COMPILE_FAILED',
-          message: err instanceof Error ? err.message : String(err),
-          suggestion: 'check `oxn blueprint validate <name>` for structural errors before compile',
-        },
-        format,
-      )
-    }
-
-    const mdPath = join(getProjectRoot(), BOUNDARY_DIR, 'blueprints-md', `${result.name}.md`)
-    const mdDir = join(getProjectRoot(), BOUNDARY_DIR, 'blueprints-md')
-    if (!existsSync(mdDir)) {
-      mkdirSync(mdDir, { recursive: true })
-    }
-    writeFileSync(mdPath, result.md, 'utf-8')
-
-    output(
-      {
-        ok: true,
-        data: {
-          name: result.name,
-          source: filePath,
-          target: mdPath,
-          contentHash: result.contentHash,
-          warnings: [],
-        },
-        human: `Compiled ${result.name}
-  source: ${filePath}
-  target: ${mdPath}
-  bytes:  ${result.md.length}
-  hash:   ${result.contentHash.slice(0, 16)}...`,
-      },
-      format,
-    )
-
-    // PR-1: compile 成功后静默重建全局索引
-    const rebuild = autoRebuildBlueprintIndex(getProjectRoot())
-    if (!rebuild.ok) {
-      console.error(`Warning: blueprint index rebuild failed: ${rebuild.error}`)
-    }
-  },
-})
-
 const blueprintCommand = defineCommand({
   meta: {
     name: 'blueprint',
@@ -1094,9 +578,6 @@ const blueprintCommand = defineCommand({
     validate: validateSubcommand,
     list: listSubcommand,
     index: indexSubcommand,
-    compile: compileSubcommand,
-    sync: syncSubcommand,
-    'sync-md': syncMdSubcommand,
   },
   run() {
     // No-op（与 oxn domain 对齐）

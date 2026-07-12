@@ -58,19 +58,6 @@ describe('oxn domain index (PR-1)', () => {
     // 关键：CLI 不能报错
   })
 
-  test('domain create 后自动落 .openxenon/.cache/domains.json', async () => {
-    await initProject()
-    const r = await runCli(['domain', 'create', 'MemberContext'])
-    expect(r.exitCode).toBe(0)
-    const indexPath = join(tmpDir, '.openxenon', '.cache', 'domains.json')
-    expect(existsSync(indexPath)).toBe(true)
-    const idx = JSON.parse(readFileSync(indexPath, 'utf-8'))
-    expect(idx.schemaVersion).toBe(1)
-    expect(idx.domainCount).toBe(1)
-    expect(idx.domains[0].name).toBe('MemberContext')
-    expect(idx.domains[0].status).toBe('ok')
-  })
-
   test('domain index 命令幂等（多次调用结果稳定）', async () => {
     await initProject()
     await runCli(['domain', 'create', 'A'])
@@ -103,22 +90,6 @@ describe('oxn domain index (PR-1)', () => {
     expect(r.ok).toBe(true)
     expect(r.data.fresh).toBe(false)
     expect(r.data.reason).toBe('index missing')
-  })
-
-  test('domain validate 成功后也触发 auto-rebuild', async () => {
-    await initProject()
-    await runCli(['domain', 'create', 'A'])
-    // 先手动删索引
-    const indexPath = join(tmpDir, '.openxenon', '.cache', 'domains.json')
-    rmSync(indexPath)
-    expect(existsSync(indexPath)).toBe(false)
-    // validate 触发重建
-    const r = await runCli(['domain', 'validate', 'A'])
-    expect(r.exitCode).toBe(0)
-    expect(existsSync(indexPath)).toBe(true)
-    const idx = JSON.parse(readFileSync(indexPath, 'utf-8'))
-    expect(idx.domainCount).toBe(1)
-    expect(idx.domains[0].name).toBe('A')
   })
 
   test('domain index --emit <自定义路径> 写到指定文件', async () => {

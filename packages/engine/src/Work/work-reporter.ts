@@ -1,4 +1,4 @@
-import type { WorkContext } from '../oxl'
+import type { OxnWorkContext } from '../oxl'
 
 export type WorkStatus = 'pending' | 'running' | 'passed' | 'failed' | 'error'
 
@@ -55,7 +55,7 @@ export interface DerivedWorkState {
 }
 
 export function snapshotContext(
-  ctx: WorkContext | undefined,
+  ctx: OxnWorkContext | undefined,
   maxIters: number,
   loopPolicy: { maxIterations?: number } | undefined,
 ): DerivedSkillContext {

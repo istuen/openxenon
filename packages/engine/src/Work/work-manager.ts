@@ -8,12 +8,13 @@ import {
 } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import { BOUNDARY_DIR, TASK_OXN_FILE } from '@openxenon/engine/kernel'
-import { isBlueprintDeclaration, isDomainDeclaration, type BlueprintDeclaration } from '@openxenon/engine/oxl'
 import { renderWorkSkeleton } from './work-skeleton'
 import { isWorkStarted } from './dual-state-exec'
-import { parseOxnFile, validateWorkFile } from '@openxenon/engine/oxl/work-file-loader'
-import { resolveAssetPrimaryPath } from '@openxenon/engine/infra/paths'
+import { resolveAssetPrimaryPath, resolveAssetAltPath } from '@openxenon/engine/infra/paths'
 import type { AssetFormat } from '@openxenon/engine/infra/paths'
+import { type BlueprintIR, extractBlueprintIR } from '@openxenon/engine/oxl/md-pipeline/transformers/blueprint.js'
+import { type WorkIR, extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
+import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 
 function ensureDirectory(dir: string): void {
   if (!existsSync(dir)) {
@@ -87,6 +88,8 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
   if (blueprintDecl?.name || blueprintDecl?.file) {
     const defaultCandidates = blueprintDecl.name
       ? [
+          join(projectRoot, '.openxenon', 'blueprints', `${blueprintDecl.name}.md`),
+          join(projectRoot, '.openxenon', 'blueprints', blueprintDecl.name, 'blueprint.md'),
           join(projectRoot, '.openxenon', 'blueprints', `${blueprintDecl.name}.oxn`),
           join(projectRoot, '.openxenon', 'blueprints', blueprintDecl.name, 'blueprint.oxn'),
         ]
@@ -104,19 +107,17 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
       absBlueprint = found
     }
     try {
-      const { doc } = await parseOxnFile(absBlueprint)
-      const blueprint = doc.entities.find(isBlueprintDeclaration) as BlueprintDeclaration | undefined
-      if (!blueprint) {
-        throw new Error(`No Blueprint declaration found in ${absBlueprint}`)
-      }
+      const blueprintContent = readFileSync(absBlueprint, 'utf-8')
+      const { tree, frontmatter } = parseMarkdown(blueprintContent)
+      const blueprint: BlueprintIR = extractBlueprintIR(tree, frontmatter)
       if (!blueprint.name) {
-        throw new Error('Blueprint has no name')
+        throw new Error(`No Blueprint name found in ${absBlueprint}`)
       }
-      if (blueprint.partSlots.length === 0) {
+      if (blueprint.slots.length === 0) {
         throw new Error(`Blueprint "${blueprint.name}" has no part slots`)
       }
       const resolvedBlueprintName = parsePartName(blueprint.name)
-      const slots = blueprint.partSlots.map((s) => ({
+      const slots = blueprint.slots.map((s) => ({
         name: parsePartName(s.name),
         align: capitalize(parsePartName(s.name)),
       }))
@@ -159,7 +160,7 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
         blueprintPath: absBlueprint,
         blueprint: {
           name: resolvedBlueprintName,
-          version: blueprint.version ?? 1,
+          version: Number(blueprint.version) || 1,
           slotCount: slots.length,
           slots: slots.map((s) => s.name),
         },
@@ -262,19 +263,19 @@ export async function addTaskToWork(params: AddTaskParams): Promise<AddTaskResul
   let allowedBlueprints: string[] = []
   let allowedDomains: string[] = []
   try {
-    const validated = await validateWorkFile(workFile)
-    if (validated.ok && validated.doc) {
-      allowedBlueprints = validated.doc.entities
-        .filter(isBlueprintDeclaration)
-        .map((bp) => bp.name)
-        .filter((n): n is string => typeof n === 'string' && n.length > 0)
-      allowedDomains = validated.doc.entities
-        .filter(isDomainDeclaration)
-        .map((d) => d.name)
-        .filter((n): n is string => typeof n === 'string' && n.length > 0)
-    }
+    const workContent = readFileSync(workFile, 'utf-8')
+    const { tree, frontmatter } = parseMarkdown(workContent)
+    const work: WorkIR = extractWorkIR(tree, frontmatter)
+    allowedBlueprints = work.refs
+      .filter((r) => r.kind === 'blueprint')
+      .map((r) => r.name)
+      .filter((n) => n.length > 0)
+    allowedDomains = work.refs
+      .filter((r) => r.kind === 'domain')
+      .map((r) => r.name)
+      .filter((n) => n.length > 0)
   } catch {
-    // soft degradation: AST parse failure does not block add-task
+    // soft degradation: md parse failure does not block add-task
   }
 
   if (allowedBlueprints.length > 0 && !allowedBlueprints.includes(blueprintName)) {

@@ -2,7 +2,6 @@ import type { Blueprint, CompiledBlueprint, HashPort } from '@openxenon/engine/k
 import { computeContentHash } from '@openxenon/engine/kernel/index'
 import { type DagNode, validateDagTopology } from '@openxenon/engine/oxl/validators/blueprint-dag'
 import type { IOxnCompiler } from '../contracts/oxn-compiler-port'
-import { createOxnServices } from '../langium-driver/oxn-services'
 
 export interface CompileContext {
   taskId: string
@@ -191,7 +190,7 @@ function renderTemplates(part: Record<string, unknown>, ctx: CompileContext): Re
 
 export class OxnCompiler implements IOxnCompiler {
   constructor(private readonly hashPort: HashPort) {
-    createOxnServices()
+    // v0.7.0: Langium services removed
   }
 
   compile(raw: Blueprint, ctx: CompileContext): CompiledBlueprint {

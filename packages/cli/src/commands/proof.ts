@@ -38,7 +38,6 @@ import {
 import { createHash } from 'crypto'
 import { join } from 'path'
 import { t } from '@openxenon/engine/infra/i18n'
-import { URI } from 'langium'
 import {
   BOUNDARY_DIR,
   CACHE_DIR,
@@ -50,13 +49,8 @@ import {
   PROOF_VERDICT_MD,
   PROOF_WORK_HASH_FILE,
 } from '@openxenon/engine/kernel'
-import {
-  createOxnParser,
-  isProofDeclaration,
-  type OXNDocument,
-  type ProofDeclaration,
-  type ProofProbeDecl,
-} from '@openxenon/engine/oxl'
+import type { ProofDeclaration } from '@openxenon/engine/oxl'
+import type { ProofProbeIR as ProofProbeDecl } from '@openxenon/engine/oxl/md-pipeline/transformers/proof'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import { executeProbe, type ProofProbeIR } from '@openxenon/engine/Proof/runner'
 import {
@@ -292,7 +286,7 @@ function verifyWorkHash(proofName: string, proofOxnPath: string): VerifyResult {
 }
 
 // ---------------------------------------------------------------------------
-// proof.oxn 解析（Langium → IR）
+// proof file 解析（md-native → IR）
 // ---------------------------------------------------------------------------
 
 async function parseProofFile(filePath: string): Promise<{
@@ -304,50 +298,26 @@ async function parseProofFile(filePath: string): Promise<{
     return { ok: false, errors: [`proof file not found: ${filePath}`] }
   }
   const content = readFileSync(filePath, 'utf-8')
-  const parser = createOxnParser()
-  const r = await parser.parse(content, URI.file(filePath))
-  if (r.parseErrors.length > 0 || r.lexerErrors.length > 0) {
-    return {
-      ok: false,
-      errors: [...r.parseErrors.map((e) => `[Parser] ${e}`), ...r.lexerErrors.map((e) => `[Lexer] ${e}`)],
-    }
+  try {
+    const { parseMarkdown } = await import('@openxenon/engine/oxl/md-pipeline/utils')
+    const { extractProofIR } = await import('@openxenon/engine/oxl/md-pipeline/transformers/proof')
+    const parsed = parseMarkdown(content)
+    const proof = extractProofIR(parsed.tree, parsed.frontmatter)
+    return { ok: true, proof, errors: [] }
+  } catch (e) {
+    return { ok: false, errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`] }
   }
-  const ast = r.ast as OXNDocument
-  const proof = ast.entities.find(isProofDeclaration)
-  if (!proof) {
-    return { ok: false, errors: ['no ProofDeclaration found in file'] }
-  }
-  return { ok: true, proof, errors: [] }
 }
 
-/** proof.oxn 里的 ref/params → 内部 IR（用于 runner） */
+/** proof IR probes → runner IR (v0.7.0: params already in correct format) */
 function proofProbesToIR(proof: ProofDeclaration): ProofProbeIR[] {
   return (proof.probes ?? []).map((p: ProofProbeDecl) => {
-    const params: Record<string, unknown> = {}
-    if (p.params) {
-      for (const pair of p.params.pairs) {
-        params[pair.key] = literalToString(pair.value)
-      }
-    }
     return {
-      probeName: p.name,
+      probeName: p.probeName,
       ref: p.ref,
-      params,
+      params: p.params ?? {},
     }
   })
-}
-
-function literalToString(value: unknown): string {
-  if (typeof value === 'string') return value
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  if (value && typeof value === 'object' && '$cstNode' in (value as Record<string, unknown>)) {
-    const text = (value as { $cstNode: { text: string } }).$cstNode.text
-    if (text.length >= 2 && text[0] === '"' && text[text.length - 1] === '"') {
-      return text.slice(1, -1)
-    }
-    return text
-  }
-  return String(value)
 }
 
 // ---------------------------------------------------------------------------

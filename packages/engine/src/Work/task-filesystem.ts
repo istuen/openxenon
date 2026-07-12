@@ -1,10 +1,6 @@
 import { appendFileSync, existsSync, readFileSync, renameSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { URI } from 'langium'
-// v0.1-final: task.oxn 直接通过 Langium AST 解析（不再走 bundle）
-// 保留 generateOxnAssembly 导入供未来 batch 验证使用
-// import { generateOxnAssembly } from '@openxenon/engine/oxl/generator/oxn-generator'
-import { createOxnServices, resetOxnServices } from '@openxenon/engine/oxl/langium-driver/oxn-services'
+// v0.7.0: Langium removed; using regex-based parsing
 import { ensureDirectory } from '@openxenon/engine/infra/filesystem'
 import { type ProbeContext, type ProbeResult, probeHandlers } from '@openxenon/engine/infra/probes'
 import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON, TASKS_DIR, TASK_OXN_FILE } from '@openxenon/engine/kernel'
@@ -128,61 +124,28 @@ export function taskSubmit(taskId: string, cwd: string, params?: Record<string, 
 
   const taskOxnContent = readFileSync(taskOxnPath, 'utf-8')
 
-  // Parse task.oxn with Langium to extract slotBindings
+  // v0.7.0: parse task.oxn content via regex (Langium removed)
   const slotBindings: OxnAssemblySlotBinding[] = []
   let extractedTaskId: string | undefined
   let blueprintName: string | undefined
 
-  try {
-    const services = createOxnServices()
-    const shared = services.shared
-    shared.ServiceRegistry.register(services)
+  const taskNameMatch = taskOxnContent.match(/task\s+"([^"]+)"/)
+  extractedTaskId = taskNameMatch?.[1]
+  // v0.1: 只支持 blueprint "name" 语法（旧的 use "@prj/blueprints/name" 已废弃）
+  const blueprintMatch = taskOxnContent.match(/blueprint\s+"([^"]+)"/)
+  blueprintName = blueprintMatch?.[1]
 
-    const factory = shared.workspace.LangiumDocumentFactory
-    const uri = URI.file(taskOxnPath)
-    const doc = factory.fromString(taskOxnContent, uri, undefined)
-
-    if (doc.parseResult?.value && doc.state > 1) {
-      // v0.1-final: task.oxn 是一个独立 task 实体（含 blueprint + parts）
-      const taskNode = (doc.parseResult.value as any).entities?.find((e: any) => e.$type === 'TaskDeclaration')
-      if (taskNode) {
-        extractedTaskId = taskNode.name
-        blueprintName = taskNode.blueprint
-        for (const part of taskNode.parts ?? []) {
-          slotBindings.push({
-            slot: part.name,
-            props: {},
-            probeBindings: [],
-          })
-        }
-      }
-    } else {
-      throw new Error(
-        `Parse state ${doc.state}, lexer errors: ${doc.parseResult?.lexerErrors?.length}, parser errors: ${doc.parseResult?.parserErrors?.length}`,
-      )
-    }
-    resetOxnServices()
-  } catch (_err) {
-    resetOxnServices()
-    // Fallback to regex parsing if Langium fails
-    const taskNameMatch = taskOxnContent.match(/task\s+"([^"]+)"/)
-    extractedTaskId = taskNameMatch?.[1]
-    // v0.1: 只支持 blueprint "name" 语法（旧的 use "@prj/blueprints/name" 已废弃）
-    const blueprintMatch = taskOxnContent.match(/blueprint\s+"([^"]+)"/)
-    blueprintName = blueprintMatch?.[1]
-
-    // Extract slotBindings from task.oxn content using regex fallback
-    // Match: slot "name" { deps = [...] }
-    const slotBindingRegex = /slot\s+"([^"]+)"\s*\{([^}]*)\}/g
-    let match
-    while ((match = slotBindingRegex.exec(taskOxnContent)) !== null) {
-      const slotName = match[1] ?? ''
-      slotBindings.push({
-        slot: slotName,
-        props: {},
-        probeBindings: [],
-      })
-    }
+  // Extract slotBindings from task.oxn content using regex
+  // Match: slot "name" { deps = [...] }
+  const slotBindingRegex = /slot\s+"([^"]+)"\s*\{([^}]*)\}/g
+  let match
+  while ((match = slotBindingRegex.exec(taskOxnContent)) !== null) {
+    const slotName = match[1] ?? ''
+    slotBindings.push({
+      slot: slotName,
+      props: {},
+      probeBindings: [],
+    })
   }
 
   if (!extractedTaskId) {

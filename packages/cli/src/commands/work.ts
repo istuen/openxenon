@@ -38,7 +38,6 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
-  statSync,
   unlinkSync,
   writeFileSync,
 } from '@openxenon/engine/infra/filesystem'
@@ -48,22 +47,16 @@ import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSO
 import { assertDirNameConsistent } from '@openxenon/engine/kernel'
 import { IAPError } from '@openxenon/engine/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
-import {
-  isBlueprintDeclaration,
-  type BlueprintDeclaration,
-  isDomainDeclaration,
-  type PartDeclaration,
-  type WorkDeclaration,
-} from '@openxenon/engine/oxl'
+import type { WorkDeclaration } from '@openxenon/engine/oxl'
+import { extractBlueprintIR } from '@openxenon/engine/oxl/md-pipeline/transformers/blueprint.js'
+import type { WorkPart } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
 import { runTask, runWork, submitTask, nextRoundWork } from '@openxenon/engine/Work'
 import {
   ensureWorkDir,
   getTaskOxnPath,
   getTaskStatePath,
-  getWorkOxnPath,
   getWorksDir,
   getTasksDir,
-  getWorkMdPath,
   loadTaskState,
   loadWorkState,
   saveWorkState,
@@ -110,7 +103,7 @@ import {
   type WorkFileSummary,
   type DomainFileSummary,
 } from '@openxenon/engine/oxl/summary-extractors'
-import { parseOxnFile, validateWorkFile } from '@openxenon/engine/oxl/work-file-loader'
+import { validateWorkFile } from '@openxenon/engine/oxl/work-file-loader'
 
 // ---------------------------------------------------------------------------
 // 报告层类型（来自 engine/work-reporter）
@@ -238,7 +231,7 @@ function readTextFile(filePath: string): string {
 
 async function buildPartSpecs(
   work: WorkDeclaration,
-  inlineParts: PartDeclaration[],
+  inlineParts: WorkPart[],
 ): Promise<
   Array<{
     partName: string
@@ -246,7 +239,7 @@ async function buildPartSpecs(
     skill: { lifecycle: string; objective: string; acceptance: string[]; guidance?: string }
   }>
 > {
-  const inlineByName = new Map<string, PartDeclaration>()
+  const inlineByName = new Map<string, WorkPart>()
   for (const p of inlineParts) inlineByName.set(parsePartName(p.name), p)
 
   const taskEntries = work.tasks ?? []
@@ -257,9 +250,7 @@ async function buildPartSpecs(
   }> = []
   for (const task of taskEntries) {
     const partName = parsePartName(task.name)
-    // v0.3 follow-up: task.blueprint 在 body[] 内
-    const taskBody = (task.body ?? []) as Array<{ $type: string; blueprint?: string }>
-    const taskBlueprint = taskBody.find((el) => el.$type === 'TaskBlueprintField')?.blueprint
+    const taskBlueprint = task.blueprint ?? ''
     specs.push({
       partName,
       align: taskBlueprint ?? '',
@@ -272,10 +263,9 @@ async function buildPartSpecs(
       partName: parsePartName(p.name),
       align: '',
       skill: {
-        lifecycle: p.skill?.lifecycle ?? 'code',
-        objective: p.skill?.objective ?? '',
-        acceptance: p.skill?.acceptance ?? [],
-        ...(p.skill?.guidance !== undefined ? { guidance: p.skill.guidance } : {}),
+        lifecycle: 'code',
+        objective: p.skillContext ?? '',
+        acceptance: [],
       },
     }))
   }
@@ -428,23 +418,20 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
   }
 
   try {
-    const { doc } = await parseOxnFile(absBlueprint)
-    const blueprint = doc.entities.find(isBlueprintDeclaration) as BlueprintDeclaration | undefined
-    if (!blueprint?.name) {
+    const parsed = parseMarkdown(readFileSync(absBlueprint, 'utf-8'))
+    const bp = extractBlueprintIR(parsed.tree, parsed.frontmatter)
+    if (!bp?.name) {
       return outputError(
         { code: 'OXN_NO_BLUEPRINT', message: `No Blueprint declaration found in ${absBlueprint}` },
         format,
       )
     }
-    if (blueprint.partSlots.length === 0) {
-      return outputError(
-        { code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${blueprint.name}" has no part slots` },
-        format,
-      )
+    if ((bp.slots ?? []).length === 0) {
+      return outputError({ code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${bp.name}" has no part slots` }, format)
     }
 
-    const resolvedBlueprintName = parsePartName(blueprint.name)
-    const slots = blueprint.partSlots.map((s) => ({
+    const resolvedBlueprintName = parsePartName(bp.name)
+    const slots = (bp.slots ?? []).map((s) => ({
       name: parsePartName(s.name),
       align: capitalize(parsePartName(s.name)),
     }))
@@ -494,12 +481,10 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
     // 4. auto-sync to other format
     if (autoSync) {
       try {
-        if (assetFormat === 'oxn') {
-          const altResult = await compileOxnToMd(workContent, { entity: 'work', frontmatter: true })
-          writeFileSync(workAltPath, altResult.md, 'utf-8')
-        } else {
+        if (assetFormat === 'md') {
           const { tree, frontmatter: fm } = parseMarkdown(workContent)
           const ir = extractWorkIR(tree, fm)
+          const { serializeWorkToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
           const altContent = serializeWorkToOxn(ir)
           writeFileSync(workAltPath, altContent, 'utf-8')
         }
@@ -528,7 +513,7 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
           blueprintPath: absBlueprint,
           blueprint: {
             name: resolvedBlueprintName,
-            version: blueprint.version ?? 1,
+            version: bp.version ?? '',
             slotCount: slots.length,
             slots: slots.map((s) => s.name),
           },
@@ -709,25 +694,22 @@ const createSubcommand = defineCommand({
         absBlueprint = found
       }
       try {
-        const { doc } = await parseOxnFile(absBlueprint)
-        const blueprint = doc.entities.find(isBlueprintDeclaration) as BlueprintDeclaration | undefined
-        if (!blueprint) {
+        const parsed = parseMarkdown(readFileSync(absBlueprint, 'utf-8'))
+        const bp = extractBlueprintIR(parsed.tree, parsed.frontmatter)
+        if (!bp?.name) {
           return outputError(
             { code: 'OXN_NO_BLUEPRINT', message: `No Blueprint declaration found in ${absBlueprint}` },
             format,
           )
         }
-        if (!blueprint.name) {
-          return outputError({ code: 'OXN_INVALID_BLUEPRINT', message: 'Blueprint has no name' }, format)
-        }
-        if (blueprint.partSlots.length === 0) {
+        if ((bp.slots ?? []).length === 0) {
           return outputError(
-            { code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${blueprint.name}" has no part slots` },
+            { code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${bp.name}" has no part slots` },
             format,
           )
         }
-        const resolvedBlueprintName = parsePartName(blueprint.name)
-        const slots = blueprint.partSlots.map((s) => ({
+        const resolvedBlueprintName = parsePartName(bp.name)
+        const slots = (bp.slots ?? []).map((s) => ({
           name: parsePartName(s.name),
           align: capitalize(parsePartName(s.name)),
         }))
@@ -771,14 +753,11 @@ const createSubcommand = defineCommand({
         // v0.5 Phase 3: auto-sync to other format
         if (autoSync) {
           try {
-            if (assetFormat === 'oxn') {
-              // .oxn → .md
-              const altResult = await compileOxnToMd(workContent, { entity: 'work', frontmatter: true })
-              writeFileSync(workAltPath, altResult.md, 'utf-8')
-            } else {
+            if (assetFormat === 'md') {
               // .md → .oxn
               const { tree, frontmatter: fm } = parseMarkdown(workContent)
               const ir = extractWorkIR(tree, fm)
+              const { serializeWorkToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
               const altContent = serializeWorkToOxn(ir)
               writeFileSync(workAltPath, altContent, 'utf-8')
             }
@@ -807,7 +786,7 @@ const createSubcommand = defineCommand({
               blueprintPath: absBlueprint,
               blueprint: {
                 name: resolvedBlueprintName,
-                version: blueprint.version ?? 1,
+                version: bp.version ?? '',
                 slotCount: slots.length,
                 slots: slots.map((s) => s.name),
               },
@@ -854,12 +833,10 @@ const createSubcommand = defineCommand({
     // autoSync
     if (autoSync) {
       try {
-        if (assetFormat === 'oxn') {
-          const altResult = await compileOxnToMd(workOxnContent, { entity: 'work', frontmatter: true })
-          writeFileSync(workAltFileFinal, altResult.md, 'utf-8')
-        } else {
+        if (assetFormat === 'md') {
           const { tree, frontmatter: fm } = parseMarkdown(workOxnContent)
           const ir = extractWorkIR(tree, fm)
+          const { serializeWorkToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
           const altContent = serializeWorkToOxn(ir)
           writeFileSync(workAltFileFinal, altContent, 'utf-8')
         }
@@ -996,7 +973,7 @@ const validateSubcommand = defineCommand({
         ok: true,
         data: {
           workName,
-          blueprintRef: work.blueprints?.[0]?.name,
+          blueprintRef: work.refs?.find((r) => r.kind === 'blueprint')?.name,
           valid: true,
           errors: [],
           warnings: result.warnings,
@@ -1112,14 +1089,15 @@ const addTaskSubcommand = defineCommand({
       // v1.1 fix-p1-architecture parseoxn-migration: 改用 Langium AST 提取声明名,
       // 避免 regex 误匹配注释/字符串字面量。v0.5 Phase 3: validateWorkFile 支持 .md
       const validated = await validateWorkFile(workFile)
-      if (validated.ok && validated.doc) {
-        allowedBlueprints = validated.doc.entities
-          .filter(isBlueprintDeclaration)
-          .map((bp) => bp.name)
+      if (validated.ok && validated.work) {
+        const refs = validated.work.refs ?? []
+        allowedBlueprints = refs
+          .filter((r) => r.kind === 'blueprint')
+          .map((r) => r.name)
           .filter((n): n is string => typeof n === 'string' && n.length > 0)
-        allowedDomains = validated.doc.entities
-          .filter(isDomainDeclaration)
-          .map((d) => d.name)
+        allowedDomains = refs
+          .filter((r) => r.kind === 'domain')
+          .map((r) => r.name)
           .filter((n): n is string => typeof n === 'string' && n.length > 0)
       }
     } catch {
@@ -1675,7 +1653,7 @@ const runSubcommand = defineCommand({
         return outputError({ code, message: result.errors.join('; ') }, format)
       }
       const work = result.work
-      const inlineParts = result.parts ?? []
+      const inlineParts = (result.work.tasks ?? []).flatMap((t) => t.parts ?? [])
 
       // 🆕 v0.6.1-alpha.5 Phase A.1: 允许 Round 2+ re-run（state.status=pending/running 时）
       // 只有 state.status ∈ {passed, failed, error}（已收口）时才拒绝（避免重跑已结束 Work）
@@ -1714,8 +1692,8 @@ const runSubcommand = defineCommand({
 
       ensureWorkDir(projectRoot, workName)
 
-      const blueprintNames = (work.blueprints ?? []).map((u) => u.name)
-      const domainNames = (work.domains ?? []).map((u) => u.name)
+      const blueprintNames = (work.refs ?? []).filter((r) => r.kind === 'blueprint').map((r) => r.name)
+      const domainNames = (work.refs ?? []).filter((r) => r.kind === 'domain').map((r) => r.name)
       const taskEntries = work.tasks ?? []
       const declaredTaskNames = taskEntries.map((t) => parsePartName(t.name))
 
@@ -1744,12 +1722,13 @@ const runSubcommand = defineCommand({
       // PR-14c: 收集未解析的 ref diagnostics，持久化到 .run/state.json
       // 🆕 v0.6.1-alpha.4 Phase B: 删除 domain ref 诊断（Domain 引用走 Blueprint ## Refs）
       const runDiagnostics: RefDiagnostic[] = []
-      for (const b of work.blueprints ?? []) {
-        if (!resolveBlueprintFile(b.ref ?? null, b.name, projectRoot)) {
-          const reason = b.ref?.startsWith('@oxn/')
+      for (const r of work.refs ?? []) {
+        if (r.kind !== 'blueprint') continue
+        if (!resolveBlueprintFile(r.ref ?? null, r.name, projectRoot)) {
+          const reason = r.ref?.startsWith('@oxn/')
             ? '@oxn/ scope has no builtin blueprint registry (V1)'
-            : `blueprint file not found for ref "${b.ref ?? b.name}"`
-          runDiagnostics.push(buildBlueprintDiagnostic(b.name, b.ref ?? null, reason))
+            : `blueprint file not found for ref "${r.ref ?? r.name}"`
+          runDiagnostics.push(buildBlueprintDiagnostic(r.name, r.ref ?? null, reason))
         }
       }
       // 持久化时只接受 'warn' severity（state.json schema 锁死；'error' 仅用于 in-flight）
@@ -1761,9 +1740,7 @@ const runSubcommand = defineCommand({
         blueprintNames,
         domainNames,
         tasks: taskEntries.map((t) => {
-          // v0.3 follow-up: task.blueprint 在 body[] 内
-          const tBody = (t.body ?? []) as Array<{ $type: string; blueprint?: string }>
-          const tBlueprint = tBody.find((el) => el.$type === 'TaskBlueprintField')?.blueprint
+          const tBlueprint = t.blueprint ?? ''
           return {
             taskName: parsePartName(t.name),
             blueprint: tBlueprint ?? blueprintNames[0] ?? '',
@@ -3067,573 +3044,6 @@ const migrateSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
-// Subcommand: compile (v0.4 PR-B Q5 foundation)
-//
-// 把 work.oxn (langium source) 编译为 v0.3 MD canonical 格式 (work.md).
-// 输出位置: .openxenon/works/<w>/work.md
-// v0.4 Q5 路径: 后续 PR 把 work.oxn 改名为 work.md (单文件), tasks/ 目录全删.
-// 当前 PR 仅提供 compile 命令作为基础, 28 works 全量迁移留待后续 PR.
-// ---------------------------------------------------------------------------
-
-import { compileOxnToMd, DecompilerParseError } from '@openxenon/engine/oxl/md-bridge/oxl-md-decompiler.js'
-import {
-  computeSha256,
-  readSyncMetadata,
-  composeSyncContent,
-  writeCacheSha,
-  getCachePath,
-  getCacheMdPath,
-} from '@openxenon/engine/oxl/md-pipeline/sync-hash.js'
-import { validateOxnParseable, verifyWorkRoundTrip } from '@openxenon/engine/oxl/md-pipeline/sync-validation.js'
-
-// ---------------------------------------------------------------------------
-// Subcommand: sync (v0.4 Phase 1 — work.oxn → work.md 自动同步)
-// ---------------------------------------------------------------------------
-const syncSubcommand = defineCommand({
-  meta: {
-    name: 'sync',
-    description: '[v0.4 Phase 1] Sync work.oxn → work.md: regenerate only when .oxn changed',
-  },
-  args: {
-    name: { type: 'positional', required: false },
-    all: { type: 'boolean' },
-    'dry-run': { type: 'boolean' },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const all = ctx.args.all === true
-    const dryRun = ctx.args['dry-run'] === true
-    const singleName = ctx.args.name as string | undefined
-    const projectRoot = getProjectRoot()
-
-    if (!all && !singleName) {
-      return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
-    }
-
-    const worksDir = join(projectRoot, BOUNDARY_DIR, 'works')
-    let names: string[]
-    if (all) {
-      if (!existsSync(worksDir)) {
-        return outputError({ code: 'OXN_NO_PROJECT', message: 'no .openxenon/works/' }, format)
-      }
-      names = readdirSync(worksDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
-        .map((d) => d.name)
-    } else {
-      names = [singleName as string]
-    }
-
-    const results: Array<{
-      name: string
-      status: 'updated' | 'unchanged' | 'error'
-      oxnSha?: string
-      mdSha?: string
-      error?: string
-    }> = []
-
-    for (const name of names) {
-      const oxnPath = join(worksDir, name, 'work.oxn')
-      const mdPath = join(worksDir, name, 'work.md')
-      const cachePath = getCachePath(projectRoot, 'work', name)
-
-      if (!existsSync(oxnPath)) {
-        results.push({ name, status: 'error', error: `work.oxn not found: ${oxnPath}` })
-        continue
-      }
-
-      const oxnContent = readFileSync(oxnPath, 'utf-8')
-      const oxnSha = computeSha256(oxnContent)
-
-      const prevMeta = existsSync(mdPath) ? readSyncMetadata(mdPath) : null
-      const prevOxnSha = prevMeta?.oxnSourceSha
-
-      if (prevOxnSha === oxnSha && existsSync(mdPath)) {
-        results.push({ name, status: 'unchanged', oxnSha, mdSha: prevMeta?.mdSelfSha })
-        continue
-      }
-
-      if (dryRun) {
-        results.push({ name, status: 'updated', oxnSha })
-        continue
-      }
-
-      let result
-      try {
-        result = await compileOxnToMd(oxnContent, { entity: 'work', frontmatter: true })
-      } catch (err) {
-        results.push({ name, status: 'error', error: err instanceof Error ? err.message : String(err) })
-        continue
-      }
-
-      const finalContent = composeSyncContent(result.md, {
-        oxnSourceSha: oxnSha,
-        syncedAt: new Date().toISOString(),
-      })
-      const mdSha = computeSha256(finalContent)
-
-      writeFileSync(mdPath, finalContent, 'utf-8')
-      writeCacheSha(cachePath, mdSha)
-
-      results.push({ name, status: 'updated', oxnSha, mdSha })
-    }
-
-    const summary = {
-      total: results.length,
-      updated: results.filter((r) => r.status === 'updated').length,
-      unchanged: results.filter((r) => r.status === 'unchanged').length,
-      error: results.filter((r) => r.status === 'error').length,
-      dryRun,
-    }
-
-    output(
-      {
-        ok: summary.error === 0,
-        data: { ...summary, results },
-        human:
-          `work sync ${all ? '--all' : names.length === 1 ? `<${names[0]}>` : `${names.length} items`}` +
-          (dryRun ? ' (dry-run)' : '') +
-          `\n  total:     ${summary.total}\n  updated:   ${summary.updated}\n  unchanged: ${summary.unchanged}\n  error:     ${summary.error}` +
-          (summary.error > 0
-            ? '\n\nFailed:\n' +
-              results
-                .filter((r) => r.status === 'error')
-                .map((r) => `  - ${r.name}: ${r.error}`)
-                .join('\n')
-            : ''),
-      },
-      format,
-    )
-  },
-})
-
-// ---------------------------------------------------------------------------
-// Subcommand: sync-md (v0.4 Phase 2 — work.md → work.oxn 反向同步)
-// ---------------------------------------------------------------------------
-const syncMdSubcommand = defineCommand({
-  meta: {
-    name: 'sync-md',
-    description: '[v0.4 Phase 2] Reverse sync work.md → work.oxn',
-  },
-  args: {
-    name: { type: 'positional', required: false },
-    all: { type: 'boolean' },
-    'dry-run': { type: 'boolean' },
-    'no-chain': { type: 'boolean' },
-    'oxn-priority': { type: 'boolean' },
-    'no-roundtrip': { type: 'boolean' },
-    'no-parse-check': { type: 'boolean' },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const all = ctx.args.all === true
-    const dryRun = ctx.args['dry-run'] === true
-    const noChain = ctx.args.chain === false
-    const oxnPriority = ctx.args['oxn-priority'] === true
-    const noRoundtrip = ctx.args.roundtrip === false
-    const noParseCheck = ctx.args['parse-check'] === false
-    const singleName = ctx.args.name as string | undefined
-    const projectRoot = getProjectRoot()
-
-    if (!all && !singleName) {
-      return outputError({ code: 'OXN_SYNC_ARGS_MISSING', message: 'either <name> or --all is required' }, format)
-    }
-
-    const worksDir = join(projectRoot, BOUNDARY_DIR, 'works')
-    let names: string[]
-    if (all) {
-      if (!existsSync(worksDir)) {
-        return outputError({ code: 'OXN_NO_PROJECT', message: 'no .openxenon/works/' }, format)
-      }
-      names = readdirSync(worksDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
-        .map((d) => d.name)
-    } else {
-      names = [singleName as string]
-    }
-
-    const results: Array<{
-      name: string
-      status: 'updated' | 'unchanged' | 'error' | 'oxn-wins'
-      mdSha?: string
-      oxnSha?: string
-      error?: string
-      errorCode?: string
-    }> = []
-
-    for (const name of names) {
-      const mdPath = join(worksDir, name, 'work.md')
-      const oxnPath = join(worksDir, name, 'work.oxn')
-      const mdCachePath = getCacheMdPath(projectRoot, 'work', name)
-
-      if (!existsSync(mdPath)) {
-        results.push({ name, status: 'error', error: `work.md not found: ${mdPath}` })
-        continue
-      }
-
-      const mdContent = readFileSync(mdPath, 'utf-8')
-      const shaMdCurrent = computeSha256(mdContent)
-
-      // conflict: .oxn-priority
-      const oxnExists = existsSync(oxnPath)
-      const oxnSha = oxnExists ? computeSha256(readFileSync(oxnPath, 'utf-8')) : ''
-      const oxnPrevSha = oxnExists ? readSyncMetadata(mdPath)?.oxnSourceSha : undefined
-      const bothChanged = oxnExists && oxnPrevSha && oxnPrevSha !== oxnSha
-      if (bothChanged && oxnPriority) {
-        try {
-          const oxnRaw = readFileSync(oxnPath, 'utf-8')
-          const mdResult = await compileOxnToMd(oxnRaw, { entity: 'work', frontmatter: true })
-          const finalContent = composeSyncContent(mdResult.md, {
-            oxnSourceSha: oxnSha,
-            syncedAt: new Date().toISOString(),
-          })
-          const mdSha = computeSha256(finalContent)
-          writeFileSync(mdPath, finalContent, 'utf-8')
-          writeCacheSha(getCachePath(projectRoot, 'work', name), mdSha)
-          writeFileSync(mdCachePath, `${mdSha}\n`, 'utf-8')
-        } catch (err) {
-          results.push({ name, status: 'error', error: `oxn-priority sync: ${String(err)}` })
-          continue
-        }
-        results.push({ name, status: 'oxn-wins', mdSha: shaMdCurrent, oxnSha })
-        continue
-      }
-
-      if (existsSync(mdCachePath)) {
-        const shaMdPrev = readFileSync(mdCachePath, 'utf-8').trim()
-        if (shaMdCurrent === shaMdPrev) {
-          results.push({ name, status: 'unchanged', mdSha: shaMdCurrent })
-          continue
-        }
-      }
-
-      if (dryRun) {
-        results.push({ name, status: 'updated', mdSha: shaMdCurrent })
-        continue
-      }
-
-      let tree, frontmatter
-      try {
-        const parsed = parseMarkdown(mdContent)
-        tree = parsed.tree
-        frontmatter = parsed.frontmatter
-      } catch (err) {
-        results.push({ name, status: 'error', error: `md parse: ${String(err)}` })
-        continue
-      }
-
-      let ir
-      try {
-        ir = extractWorkIR(tree, frontmatter)
-      } catch (err) {
-        results.push({ name, status: 'error', error: `IR extract: ${String(err)}` })
-        continue
-      }
-
-      const oxnContent = serializeWorkToOxn(ir)
-      const oxnShaNew = computeSha256(oxnContent)
-
-      if (!noParseCheck) {
-        const parseResult = await validateOxnParseable(oxnContent)
-        if (!parseResult.ok) {
-          results.push({
-            name,
-            status: 'error',
-            error: `langium parse failed: ${parseResult.errors[0]}`,
-            errorCode: 'E_SYNC_LANGIUM_VALIDATION_FAILED',
-          })
-          continue
-        }
-      }
-
-      if (!noRoundtrip) {
-        const rtResult = await verifyWorkRoundTrip(ir, oxnContent)
-        if (!rtResult.ok) {
-          results.push({
-            name,
-            status: 'error',
-            error: `round-trip loss: ${rtResult.lostFields.join(', ')}`,
-            errorCode: 'E_SYNC_ROUND_TRIP_LOSS',
-          })
-          continue
-        }
-      }
-
-      writeFileSync(oxnPath, oxnContent, 'utf-8')
-
-      if (!noChain && existsSync(oxnPath)) {
-        try {
-          const oxnRaw = readFileSync(oxnPath, 'utf-8')
-          const mdResult = await compileOxnToMd(oxnRaw, { entity: 'work', frontmatter: true })
-          const finalContent = composeSyncContent(mdResult.md, {
-            oxnSourceSha: oxnShaNew,
-            syncedAt: new Date().toISOString(),
-          })
-          const mdSha = computeSha256(finalContent)
-          writeFileSync(mdPath, finalContent, 'utf-8')
-          writeCacheSha(getCachePath(projectRoot, 'work', name), mdSha)
-        } catch {
-          // chained sync fails silently
-        }
-      }
-
-      const finalMdSha = existsSync(mdPath) ? computeSha256(readFileSync(mdPath, 'utf-8')) : shaMdCurrent
-      writeFileSync(mdCachePath, `${finalMdSha}\n`, 'utf-8')
-
-      results.push({ name, status: 'updated', mdSha: finalMdSha, oxnSha: oxnShaNew })
-    }
-
-    const summary = {
-      total: results.length,
-      updated: results.filter((r) => r.status === 'updated').length,
-      unchanged: results.filter((r) => r.status === 'unchanged').length,
-      'oxn-wins': results.filter((r) => r.status === 'oxn-wins').length,
-      error: results.filter((r) => r.status === 'error').length,
-      dryRun,
-      oxnPriority,
-    }
-
-    output(
-      {
-        ok: summary.error === 0,
-        data: { ...summary, results },
-        human:
-          `work sync-md ${all ? '--all' : `<${names[0]}>`}` +
-          (dryRun ? ' (dry-run)' : '') +
-          (oxnPriority ? ' (oxn-priority)' : '') +
-          `\n  total:     ${summary.total}\n  updated:   ${summary.updated}\n  unchanged: ${summary.unchanged}\n  oxn-wins:  ${summary['oxn-wins']}\n  error:     ${summary.error}` +
-          (summary.error > 0
-            ? '\n\nFailed:\n' +
-              results
-                .filter((r) => r.status === 'error')
-                .map((r) => `  - ${r.name}: [${r.errorCode ?? 'ERROR'}] ${r.error}`)
-                .join('\n')
-            : ''),
-      },
-      format,
-    )
-  },
-})
-
-const compileSubcommand = defineCommand({
-  meta: {
-    name: 'compile',
-    description:
-      'Compile work.oxn → work.md (v0.3 MD canonical format). Foundation for v0.4 Q5 single-work-file refactor.',
-  },
-  args: {
-    name: { type: 'positional', required: true, description: t('work.args.workName') },
-    'output-path': {
-      type: 'string',
-      description: 'Output .md path (default: works/<w>/work.md, relative to project root)',
-    },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const workName = ctx.args.name as string
-    const projectRoot = getProjectRoot()
-    const outputPath = (ctx.args['output-path'] as string | undefined) ?? getWorkMdPath(projectRoot, workName)
-
-    const workOxnPath = getWorkOxnPath(projectRoot, workName)
-    if (!existsSync(workOxnPath)) {
-      return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work.oxn not found at: ${workOxnPath}` }, format)
-    }
-
-    const oxnContent = readFileSync(workOxnPath, 'utf-8')
-
-    try {
-      const result = await compileOxnToMd(oxnContent, { entity: 'work' })
-      const outputDir = join(outputPath, '..')
-      if (!existsSync(outputDir)) {
-        mkdirSync(outputDir, { recursive: true })
-      }
-      writeFileSync(outputPath, result.md, 'utf-8')
-
-      output(
-        {
-          ok: true,
-          data: {
-            workName,
-            outputPath,
-            entity: result.entity,
-            contentHash: result.contentHash,
-            mdBytes: result.md.length,
-          },
-          human:
-            `Compiled work.oxn → work.md\n` +
-            `  work:    ${workName}\n` +
-            `  output:  ${outputPath}\n` +
-            `  size:    ${result.md.length} bytes\n` +
-            `  hash:    ${result.contentHash.slice(0, 16)}...`,
-        },
-        format,
-      )
-    } catch (e) {
-      if (e instanceof DecompilerParseError) {
-        return outputError(
-          {
-            code: 'OXN_WORK_COMPILE_FAILED',
-            message: `work.oxn parse failed: ${e.message}`,
-            suggestion: 'check work.oxn syntax (langium grammar)',
-          },
-          format,
-        )
-      }
-      throw e
-    }
-  },
-})
-
-// ---------------------------------------------------------------------------
-// Subcommand: migrate-md (v0.4 PR-B.5)
-//
-// 安全版 work.oxn → work.md 迁移:
-//   1. 调 compileOxnToMd 生成 .openxenon/works/<w>/work.md
-//   2. 不动 work.oxn (work.ts 仍读 work.oxn, 继续工作)
-//   3. 不动 tasks/<n>/task.oxn (是 v0.3 期间 add-task 生成的占位符, 但保留)
-//   4. 支持 --all 批量处理所有 28+ works
-//
-// 为什么"安全版" (不动 work.oxn / tasks/)?
-//   - work.ts 当前所有命令都通过 getWorkOxnPath() 读 work.oxn
-//   - 全量改名 (work.oxn → work.md) 会让 v0.3.4 工作流断裂
-//   - 后续 PR-C1 (unified-native) 会把 work.ts 改成读 work.md, 那时才删 work.oxn
-//   - 现在生成的 work.md 是 v0.3 canonical 视图, 与 work.oxn langium 源并存
-//
-// 批处理报告 (--all 模式):
-//   - 28 works: success / skip (无 work.oxn) / error
-//   - 写入 log 到 .openxenon/works/.migrate-md.log
-// ---------------------------------------------------------------------------
-
-interface MigrateResult {
-  workName: string
-  status: 'compiled' | 'skipped' | 'error'
-  mdPath?: string
-  bytes?: number
-  error?: string
-}
-
-const migrateMdSubcommand = defineCommand({
-  meta: {
-    name: 'migrate-md',
-    description:
-      'Generate work.md (MD canonical) from work.oxn for one work (or --all). Safe: does not touch work.oxn or tasks/.',
-  },
-  args: {
-    name: { type: 'positional', required: false, description: 'Work name (omit if --all)' },
-    all: { type: 'boolean', description: 'Migrate all 28+ works under .openxenon/works/' },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const projectRoot = getProjectRoot()
-    const all = ctx.args.all === true
-    const workName = ctx.args.name as string | undefined
-
-    if (!all && !workName) {
-      return outputError(
-        {
-          code: 'OXN_MIGRATE_MD_ARGS_MISSING',
-          message: 'either <name> or --all is required',
-          suggestion: 'run `oxn work migrate-md <name>` or `oxn work migrate-md --all`',
-        },
-        format,
-      )
-    }
-
-    const works = all
-      ? readdirSync(join(projectRoot, BOUNDARY_DIR, 'works')).filter((n) => {
-          const full = join(projectRoot, BOUNDARY_DIR, 'works', n)
-          try {
-            return statSync(full).isDirectory() && !n.startsWith('.')
-          } catch {
-            return false
-          }
-        })
-      : [workName as string]
-
-    const results: MigrateResult[] = []
-    for (const w of works) {
-      const workOxnPath = join(projectRoot, BOUNDARY_DIR, 'works', w, WORK_OXN_FILE)
-      if (!existsSync(workOxnPath)) {
-        results.push({ workName: w, status: 'skipped', error: 'work.oxn not found' })
-        continue
-      }
-      try {
-        const oxnContent = readFileSync(workOxnPath, 'utf-8')
-        const mdResult = await compileOxnToMd(oxnContent, { entity: 'work' })
-        const mdPath = join(projectRoot, BOUNDARY_DIR, 'works', w, 'work.md')
-        writeFileSync(mdPath, mdResult.md, 'utf-8')
-        results.push({
-          workName: w,
-          status: 'compiled',
-          mdPath,
-          bytes: mdResult.md.length,
-        })
-      } catch (e) {
-        results.push({
-          workName: w,
-          status: 'error',
-          error: e instanceof Error ? e.message : String(e),
-        })
-      }
-    }
-
-    // 写批处理 log
-    const logPath = join(projectRoot, BOUNDARY_DIR, 'works', '.migrate-md.log')
-    const logLines = [
-      `# v0.4 PR-B.5 migrate-md log — ${new Date().toISOString()}`,
-      `# works processed: ${results.length}`,
-      `#   compiled: ${results.filter((r) => r.status === 'compiled').length}`,
-      `#   skipped:  ${results.filter((r) => r.status === 'skipped').length}`,
-      `#   error:    ${results.filter((r) => r.status === 'error').length}`,
-      '',
-      ...results.map((r) => {
-        const status = r.status.toUpperCase().padEnd(9)
-        const bytes = r.bytes !== undefined ? ` (${r.bytes} bytes)` : ''
-        return `[${status}] ${r.workName}${bytes}${r.error ? ` — ${r.error}` : ''}`
-      }),
-    ]
-    writeFileSync(logPath, `${logLines.join('\n')}\n`, 'utf-8')
-
-    const summary = {
-      total: results.length,
-      compiled: results.filter((r) => r.status === 'compiled').length,
-      skipped: results.filter((r) => r.status === 'skipped').length,
-      error: results.filter((r) => r.status === 'error').length,
-      logPath,
-    }
-
-    output(
-      {
-        ok: summary.error === 0,
-        data: { ...summary, results },
-        human:
-          `migrate-md ${all ? '--all' : `<${workName}>`}\n` +
-          `  total:    ${summary.total}\n` +
-          `  compiled: ${summary.compiled}\n` +
-          `  skipped:  ${summary.skipped}\n` +
-          `  error:    ${summary.error}\n` +
-          `  log:      ${summary.logPath}\n` +
-          (summary.error > 0
-            ? '\nFailed works:\n' +
-              results
-                .filter((r) => r.status === 'error')
-                .map((r) => `  - ${r.workName}: ${r.error}`)
-                .join('\n')
-            : ''),
-      },
-      format,
-    )
-  },
-})
-
-// ---------------------------------------------------------------------------
 // Top-level command
 // ---------------------------------------------------------------------------
 export default defineCommand({
@@ -3645,10 +3055,6 @@ export default defineCommand({
     list: listSubcommand,
     create: createSubcommand,
     validate: validateSubcommand,
-    compile: compileSubcommand,
-    'migrate-md': migrateMdSubcommand,
-    sync: syncSubcommand,
-    'sync-md': syncMdSubcommand,
     'add-task': addTaskSubcommand,
     'list-task': listTaskSubcommand,
     'task-status': taskStatusSubcommand,

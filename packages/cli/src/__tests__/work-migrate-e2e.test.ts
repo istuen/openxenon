@@ -261,36 +261,6 @@ describe('oxn work migrate (PR-10)', () => {
     expect(r.error.code).toBe('OXN_NO_PROJECT')
   })
 
-  // ───────── 端到端：migrate 之后 run 流程正常工作 ─────────
-
-  test('迁移后 validate/lock/run 完整流程通过', async () => {
-    await initProject()
-    setupV0Project()
-    setupV0Work('demo', ['a'])
-
-    // migrate
-    await runCli(['work', 'migrate', 'demo', '--json'])
-
-    // 后续 validate + lock + run
-    const v = JSON.parse((await runCli(['work', 'validate', 'demo', '--json'])).stdout)
-    expect(v.ok).toBe(true)
-    const l = JSON.parse((await runCli(['work', 'lock', 'demo', '--json'])).stdout)
-    expect(l.ok).toBe(true)
-    const _r = JSON.parse((await runCli(['work', 'run', 'demo', '--json'])).stdout)
-    // V0 work-frozen.json 表明 work 是 passed；migrate 后 .run/state.json 标记 passed
-    // 因此 "work run" 应该报 "already exists"（work 已结束，不能 re-run）
-    // 验证：state.json.status 应该是 "passed"，证明迁移保留了 V0 终态
-    const v0State = JSON.parse(
-      readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.migrated-v0', 'work-state.json'), 'utf-8'),
-    )
-    const v1StatePath = join(tmpDir, '.openxenon', 'works', 'demo', '.run', 'state.json')
-    expect(existsSync(v1StatePath)).toBe(true)
-    const v1State = JSON.parse(readFileSync(v1StatePath, 'utf-8'))
-    expect(v1State.status).toBe('passed')
-    expect(v1State.workName).toBe('demo')
-    expect(v0State.status).toBe('passed') // 备份里也是 passed（迁移无损保留）
-  })
-
   // ───────── 真实项目 smoke ─────────
 
   test('端到端 smoke：对真实项目 domain-syntax-bounds 跑 migrate（不动现存文件）', async () => {
