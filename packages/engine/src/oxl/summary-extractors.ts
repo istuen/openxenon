@@ -11,6 +11,16 @@ export type WorkFileSummary = {
   tasks: Array<{ name: string; domain?: string; blueprint?: string; deps: string[] }>
 }
 
+export type ExternalEntry = {
+  name: string
+  url?: string | null
+  path?: string | null
+  kind: string
+  ttl?: string | null
+  auth?: string | null
+  summary?: string | null
+}
+
 export type DomainFileSummary = {
   name: string
   description?: string
@@ -19,6 +29,7 @@ export type DomainFileSummary = {
     ban: string[]
     invariant: string[]
   }
+  externals?: ExternalEntry[]
 } | null
 
 export type TaskFileSummary = {
@@ -37,41 +48,105 @@ export function readDomainFile(filePath: string): DomainFileSummary {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
 
-  const nameMatch = content.match(/domain\s+"([^"]+)"/)
+  // .md format: "# Domain: X" or .oxn format: 'domain "X"'
+  const nameMatch = content.match(/^# Domain:\s*(.+)$/m) ?? content.match(/domain\s+"([^"]+)"/)
   if (!nameMatch) return null
+  const name = (nameMatch[1] ?? nameMatch[0] ?? '').trim()
 
-  const descMatch = content.match(/description\s*=\s*"((?:[^"\\]|\\.)*)"/)
+  // .md blockquote "> ..." or .oxn 'description = "..."'
+  const descMatch = content.match(/^>\s*(.+)$/m) ?? content.match(/description\s*=\s*"((?:[^"\\]|\\.)*)"/)
 
-  const termBlock = content.match(/term\s*\{([\s\S]*?)\}/)
+  // Parse ## Terms section (H3 entries with - desc: ...)
   const terms: Array<{ name: string; desc: string }> = []
-  if (termBlock) {
-    const termMatches = termBlock[1]!.matchAll(/"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)
-    for (const m of termMatches) {
-      terms.push({ name: m[1]!, desc: m[2]!.replace(/\\"/g, '"') })
+  const termsSection = content.match(/## Terms\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (termsSection) {
+    const termBlocks = termsSection[1]!.matchAll(/^### (.+)$\n([\s\S]*?)(?=\n### |\n## |\n# |$)/gm)
+    for (const m of termBlocks) {
+      const termName = m[1]!.trim()
+      const descMatch = m[2]!.match(/- desc:\s*(.+)$/m)
+      if (descMatch) terms.push({ name: termName, desc: descMatch[1]!.trim() })
     }
   }
 
-  const banBlock = content.match(/ban\s*\{([\s\S]*?)\}/)
+  // Parse .oxn format fallback: term { "X": "Y" }
+  if (terms.length === 0) {
+    const termBlock = content.match(/term\s*\{([\s\S]*?)\}/)
+    if (termBlock) {
+      const termMatches = termBlock[1]!.matchAll(/"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)
+      for (const m of termMatches) {
+        terms.push({ name: m[1]!, desc: m[2]!.replace(/\\"/g, '"') })
+      }
+    }
+  }
+
+  // Parse ## Bans section (H3 entries with - items: / - desc:)
   const ban: string[] = []
-  if (banBlock) {
-    const banMatches = banBlock[1]!.matchAll(/"([^"]+)"/g)
-    for (const m of banMatches) {
-      ban.push(m[1]!)
+  const bansSection = content.match(/## Bans\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (bansSection) {
+    const banDescs = bansSection[1]!.matchAll(/- desc:\s*(.+)$/gm)
+    for (const m of banDescs) {
+      ban.push(m[1]!.trim())
     }
   }
 
+  // Parse .oxn format fallback: ban { "X" }
+  if (ban.length === 0) {
+    const banBlock = content.match(/ban\s*\{([\s\S]*?)\}/)
+    if (banBlock) {
+      const banMatches = banBlock[1]!.matchAll(/"([^"]+)"/g)
+      for (const m of banMatches) {
+        ban.push(m[1]!)
+      }
+    }
+  }
+
+  // Parse ## Invariants section (H3 entries with - value:)
   const invariant: string[] = []
-  for (const invBlock of content.matchAll(/invariant\s*\{([\s\S]*?)\}/g)) {
-    const invMatches = invBlock[1]!.matchAll(/"([^"]+)"/g)
-    for (const m of invMatches) {
-      invariant.push(m[1]!)
+  const invSection = content.match(/## Invariants\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (invSection) {
+    const invValues = invSection[1]!.matchAll(/- value:\s*(.+)$/gm)
+    for (const m of invValues) {
+      invariant.push(m[1]!.trim())
+    }
+  }
+
+  // Parse .oxn format fallback: invariant { "X" }
+  if (invariant.length === 0) {
+    for (const invBlock of content.matchAll(/invariant\s*\{([\s\S]*?)\}/g)) {
+      const invMatches = invBlock[1]!.matchAll(/"([^"]+)"/g)
+      for (const m of invMatches) {
+        invariant.push(m[1]!)
+      }
+    }
+  }
+
+  // Parse ## Externals section (H3 entries with - url/path/kind/summary)
+  const externals: ExternalEntry[] = []
+  const extSection = content.match(/## Externals\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (extSection) {
+    const blocks = extSection[1]!.split(/\n(?=### )/)
+    for (const block of blocks) {
+      if (!block.startsWith('### ')) continue
+      const lines = block.split('\n')
+      const extName = lines[0]!.replace(/^### /, '').trim()
+      const body = lines.slice(1).join('\n')
+      const stripQuotes = (s: string | undefined): string | null =>
+        s === undefined ? null : s.trim().replace(/^"(.*)"$/, '$1')
+      const url = stripQuotes(body.match(/- url:\s*(.+)$/m)?.[1])
+      const path = stripQuotes(body.match(/- path:\s*(.+)$/m)?.[1])
+      const kind = stripQuotes(body.match(/- kind:\s*(.+)$/m)?.[1]) ?? ''
+      const ttl = stripQuotes(body.match(/- ttl:\s*(.+)$/m)?.[1])
+      const auth = stripQuotes(body.match(/- auth:\s*(.+)$/m)?.[1])
+      const summary = stripQuotes(body.match(/- summary:\s*(.+)$/m)?.[1])
+      externals.push({ name: extName, url, path, kind, ttl, auth, summary })
     }
   }
 
   return {
-    name: nameMatch[1]!,
-    ...(descMatch ? { description: descMatch[1]!.replace(/\\"/g, '"') } : {}),
+    name,
+    ...(descMatch ? { description: descMatch[1]!.trim() } : {}),
     ...(terms.length > 0 || ban.length > 0 || invariant.length > 0 ? { language: { terms, ban, invariant } } : {}),
+    ...(externals.length > 0 ? { externals } : {}),
   }
 }
 
@@ -79,71 +154,120 @@ export function readTaskFile(filePath: string): TaskFileSummary {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
 
-  // v0.7.0+: MD-native format
-  // --- frontmatter ---
+  // .md format: '# Task: X' + frontmatter, or .oxn format: 'task "X" { ... }'
+  const isMd = content.startsWith('---') || /^# Task:/m.test(content)
+
+  if (isMd) {
+    return readTaskFileMd(content)
+  }
+  return readTaskFileOxn(content)
+}
+
+/** 解析 MD-native task.md（frontmatter + H1 + ## Parts / ## Refs） */
+function readTaskFileMd(content: string): TaskFileSummary {
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---/)
-  const fm = fmMatch?.[1] ?? ''
-  const nameMatch = fm.match(/^name:\s*(.+)$/m)
-  if (!nameMatch) return null
-  const name = nameMatch[1]!.trim()
+  let fmName: string | undefined
+  if (fmMatch) {
+    for (const line of fmMatch[1]!.split('\n')) {
+      const kv = line.match(/^name:\s*(.+)$/)
+      if (kv) fmName = kv[1]!.trim()
+    }
+  }
 
-  // ## Refs section
-  const refsSection = content.match(/## Refs\n([\s\S]*?)(?=\n## |\n*$)/)
-  const refsText = refsSection?.[1] ?? ''
-  const blueprintMatch = refsText.match(/- blueprint:\s*(.+)$/m)
-  const domainMatch = refsText.match(/- domain:\s*(.+)$/m)
-  const depsMatch = refsText.match(/- deps:\s*\[(.+)\]/)
+  const nameMatch = content.match(/^# Task:\s*(.+)$/m)
+  const name = fmName ?? nameMatch?.[1]?.trim()
+  if (!name) return null
 
-  // ## Parts section
-  const partsSection = content.match(/## Parts\n([\s\S]*?)(?=\n## |\n*$)/)
-  const partsText = partsSection?.[1] ?? ''
+  // ## Refs: - blueprint: X / - domain: Y
+  let blueprint: string | undefined
+  let domain: string | undefined
+  const refsSection = content.match(/## Refs\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (refsSection) {
+    blueprint = refsSection[1]!.match(/- blueprint:\s*(.+)$/m)?.[1]?.trim()
+    domain = refsSection[1]!.match(/- domain:\s*(.+)$/m)?.[1]?.trim()
+  }
+
+  // ## Parts: ### <part> + - skill_context: ... + inline - probe: ...
   const parts: Array<{
     name: string
     skillContext?: string
     probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
   }> = []
+  const partsSection = content.match(/## Parts\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (partsSection) {
+    const partBlocks = partsSection[1]!.split(/\n(?=### )/)
+    for (const block of partBlocks) {
+      if (!block.startsWith('### ')) continue
+      const lines = block.split('\n')
+      const partName = lines[0]!.replace(/^### /, '').trim()
+      const body = lines.slice(1).join('\n')
+      const skillContext = body.match(/- skill_context:\s*(.+)$/m)?.[1]?.trim()
 
-  const partBlocks = Array.from(partsText.matchAll(/### (.+)\n([\s\S]*?)(?=### |\n## |\n*$)/g))
+      const probes: Array<{ name: string; ref: string; params?: Record<string, string> }> = []
+      for (const pm of body.matchAll(/- probe:\s*(\S+)/g)) {
+        probes.push({ name: pm[1]!, ref: '' })
+      }
+
+      parts.push({ name: partName, ...(skillContext ? { skillContext } : {}), probes })
+    }
+  }
+
+  return { name, ...(domain ? { domain } : {}), ...(blueprint ? { blueprint } : {}), parts, deps: [] }
+}
+
+/** 解析 .oxn legacy task 语法（v0.6.x fallback） */
+function readTaskFileOxn(content: string): TaskFileSummary {
+  const nameMatch = content.match(/task\s+"([^"]+)"/)
+  if (!nameMatch) return null
+
+  const domainMatch = content.match(/domain\s+"([^"]+)"/)
+  const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
+
+  const parts: Array<{
+    name: string
+    skillContext?: string
+    probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
+  }> = []
+  const partBlocks = Array.from(content.matchAll(/part\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
   for (const m of partBlocks) {
-    const partName = m[1]!.trim()
+    const partName = m[1]!
     const partBody = m[2]!
-    const skillMatch = partBody.match(/- skill_context:\s*["']?([^"'\n]+)["']?/)
-    const skillContext = skillMatch?.[1]?.trim()
 
-    // ## Probes section (per-part probes if any)
+    const skillMatch = partBody.match(/skill_context\s*=\s*"((?:[^"\\]|\\.)*)"/)
+    const skillContext = skillMatch ? skillMatch[1]!.replace(/\\"/g, '"') : undefined
+
     const probes: Array<{ name: string; ref: string; params?: Record<string, string> }> = []
+    const probeBlocks = Array.from(partBody.matchAll(/probe\s+"([^"]+)"\s*\{([\s\S]*?)\}/g))
+    for (const pm of probeBlocks) {
+      const probeName = pm[1]!
+      const probeBody = pm[2]!
+      const refMatch = probeBody.match(/ref\s+"([^"]+)"/)
+      const ref = refMatch?.[1] ?? ''
+
+      const params: Record<string, string> = {}
+      const paramsBlock = probeBody.match(/params\s*=\s*\{([\s\S]*?)\}/)
+      if (paramsBlock) {
+        const paramMatches = paramsBlock[1]!.matchAll(/(\w+)\s*=\s*"([^"]*)"/g)
+        for (const p of paramMatches) {
+          params[p[1]!] = p[2]!
+        }
+      }
+
+      probes.push({ name: probeName, ref, ...(Object.keys(params).length > 0 ? { params } : {}) })
+    }
 
     parts.push({ name: partName, skillContext, probes })
   }
 
-  // ## Probes section (top-level)
-  const probesSection = content.match(/## Probes\n([\s\S]*?)(?=\n## |\n*$)/)
-  const probesText = probesSection?.[1] ?? ''
-  // Attach top-level probes to first part if any
-  if (parts.length > 0 && probesText) {
-    const probeBlocks = Array.from(probesText.matchAll(/### (.+)\n([\s\S]*?)(?=### |\n## |\n*$)/g))
-    for (const pm of probeBlocks) {
-      const probeName = pm[1]!.trim()
-      const probeBody = pm[2]!
-      const refMatch = probeBody.match(/- ref:\s*(.+)$/m)
-      const ref = refMatch?.[1]?.trim() ?? ''
-      const paramsMatch = probeBody.match(/- params:\s*\{(.+)\}/)
-      const params: Record<string, string> = {}
-      if (paramsMatch) {
-        for (const p of paramsMatch[1]!.matchAll(/(\w+):\s*["']?([^"',\n]+)["']?/g)) {
-          params[p[1]!] = p[2]!.trim()
-        }
-      }
-      parts[0]!.probes.push({ name: probeName, ref, ...(Object.keys(params).length > 0 ? { params } : {}) })
-    }
-  }
+  const depsMatch = content.match(/deps\s*=\s*\[([^\]]*)\]/)
+  const deps = depsMatch ? Array.from(depsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!) : []
 
   return {
-    name,
-    domain: domainMatch?.[1]?.trim(),
-    blueprint: blueprintMatch?.[1]?.trim(),
+    name: nameMatch[1]!,
+    domain: domainMatch?.[1],
+    blueprint: blueprintMatch?.[1],
     parts,
-    deps: depsMatch ? Array.from(depsMatch[1]!.matchAll(/["']?([^"',\s]+)["']?/g)).map((m) => m[1]!) : [],
+    deps,
   }
 }
 
@@ -211,31 +335,4 @@ export function readWorkFile(filePath: string): WorkFileSummary | null {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
   return readWorkFileFromText(content, filePath)
-}
-
-/**
- * v0.7.0+: Convert WorkIR (from MD parser) directly to WorkFileSummary.
- * Skips the OXN serialization round-trip.
- */
-export function workIRToSummary(ir: {
-  name: string
-  context?: { goal?: string; constraints?: string[] }
-  refs?: Array<{ kind: string; name: string; ref: string }>
-  tasks?: Array<{ name: string; domain?: string | null; blueprint?: string | null; parts?: unknown[] }>
-}): WorkFileSummary {
-  return {
-    name: ir.name,
-    goal: ir.context?.goal,
-    constraints: ir.context?.constraints ?? [],
-    domains: (ir.refs ?? []).filter((r) => r.kind === 'domain').map((r) => ({ name: r.name, ref: r.ref })),
-    blueprints: (ir.refs ?? []).filter((r) => r.kind === 'blueprint').map((r) => ({ name: r.name, ref: r.ref })),
-    parts: (ir.refs ?? []).filter((r) => r.kind === 'stack').map((r) => ({ name: r.name, ref: r.ref })),
-    probes: [],
-    tasks: (ir.tasks ?? []).map((t) => ({
-      name: t.name,
-      domain: t.domain ?? undefined,
-      blueprint: t.blueprint ?? undefined,
-      deps: [],
-    })),
-  }
 }

@@ -72,10 +72,13 @@ function extractProbeFromFields(name: string, fields: ListField[]): ProofProbeIR
   const refField = fields.find((f) => f.key === 'ref')
   const paramsField = fields.find((f) => f.key === 'params')
 
-  // params 是嵌套 list, 这里简化为 { raw: '...' }
+  // params 是嵌套 list (- params: / - key: value), 解析为 key-value 对象
   const params: Record<string, unknown> = {}
-  if (paramsField) {
-    params._raw = paramsField.raw
+  if (paramsField && Array.isArray(paramsField.value)) {
+    for (const entry of paramsField.value) {
+      const m = String(entry).match(/^([\w-]+):\s*(.*)$/)
+      if (m) params[m[1]!] = m[2]!.trim()
+    }
   }
 
   return {

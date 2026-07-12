@@ -131,12 +131,9 @@ export function getTaskDir(projectRoot: string, workName: string, taskName: stri
   return join(getWorkDir(projectRoot, workName), RUN_DIR, RUN_TASKS_SUBDIR, taskName)
 }
 
-export function getTaskMdPath(projectRoot: string, workName: string, taskName: string): string {
+export function getTaskOxnPath(projectRoot: string, workName: string, taskName: string): string {
   return join(getWorkDir(projectRoot, workName), 'tasks', taskName, TASK_FILE)
 }
-
-/** @deprecated Use getTaskMdPath instead. Will be removed in v0.8. */
-export const getTaskOxnPath = getTaskMdPath
 
 export function getTaskStatePath(projectRoot: string, workName: string, taskName: string): string {
   return join(getTaskDir(projectRoot, workName, taskName), TASK_RUN_STATE_JSON)

@@ -179,13 +179,13 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
     throw new Error(`work "${workName}" already exists`)
   }
 
-  const workMdContent = renderWorkSkeleton(
+  const workOxnContent = renderWorkSkeleton(
     workName,
     'TODO-blueprint',
     [{ name: 'stage-1', align: 'TODO' }],
     assetFormat,
   )
-  writeFileSync(workFileFinal, workMdContent, 'utf-8')
+  writeFileSync(workFileFinal, workOxnContent, 'utf-8')
 
   if (autoSync) {
     try {
@@ -342,55 +342,40 @@ export function editTask(params: EditTaskParams): EditTaskResult {
   }
   let content = readFileSync(taskFile, 'utf-8')
 
+  const ensureRefs = (c: string): string => {
+    if (/^## Refs/m.test(c)) return c
+    return `${c.replace(/\n+$/, '')}\n\n## Refs\n`
+  }
+  const setRef = (c: string, key: string, value: string): string => {
+    c = ensureRefs(c)
+    const re = new RegExp(`^- ${key}:.*$`, 'm')
+    if (re.test(c)) return c.replace(re, `- ${key}: ${value}`)
+    return c.replace(/(## Refs\n)/, `$1- ${key}: ${value}\n`)
+  }
+  const appendRef = (c: string, key: string, value: string): string => {
+    c = ensureRefs(c)
+    return c.replace(/(## Refs\n)/, `$1- ${key}: ${value}\n`)
+  }
+
   if (newObjective !== undefined) {
-    const replaced = content.replace(
-      /objective\s*=\s*"((?:[^"\\]|\\.)*)"/,
-      `objective = "${newObjective.replace(/"/g, '\\"')}"`,
-    )
-    if (replaced === content) {
-      throw new Error('task.md has no objective field; cannot update')
-    }
-    content = replaced
+    content = setRef(content, 'objective', `"${newObjective.replace(/"/g, '\\"')}"`)
   }
 
   if (addConstraint) {
-    const newConstraint = addConstraint.replace(/"/g, '\\"')
-    const re = /(constraints\s*=\s*\[)([^\]]*?)(\])/m
-    if (re.test(content)) {
-      content = content.replace(re, (_m, head: string, body: string, tail: string) => {
-        if (body.trim() === '') {
-          return `${head}"${newConstraint}"${tail}`
-        }
-        const newBody =
-          body.trimEnd().endsWith(',') || body.trimEnd() === ''
-            ? `${body} "${newConstraint}",`
-            : `${body}, "${newConstraint}",`
-        return `${head}${newBody} ${tail}`
-      })
-    } else {
-      content = content.replace(
-        /(context\s*\{)([^}]*?)(\})/m,
-        (_m, head: string, body: string, tail: string) =>
-          `${head}\n    constraints = ["${newConstraint}"];${body}${tail}`,
-      )
-    }
+    content = appendRef(content, 'constraint', `"${addConstraint.replace(/"/g, '\\"')}"`)
   }
 
   if (addDomain) {
     const workFile = resolveAssetPrimaryPath(projectRoot, 'work', workName, assetFormat)
     if (existsSync(workFile)) {
       const workContent = readFileSync(workFile, 'utf-8')
-      // v0.7.0+: extract domain names directly from .md content using regex
-      const allowed = Array.from(workContent.matchAll(/domain\s+"([^"]+)"/g)).map((m) => m[1]!)
+      // v0.7.0: work.md 不直载 domain（domain 在 Blueprint ## Refs）; 兼容旧 .oxn 工作流
+      const allowed = Array.from(workContent.matchAll(/- domain:\s*(\S+)/g)).map((m) => m[1]!)
       if (allowed.length > 0 && !allowed.includes(addDomain)) {
         throw new Error(`domain "${addDomain}" not declared in work "${workName}" (allowed: ${allowed.join(', ')})`)
       }
     }
-    if (/\bblueprint\b/.test(content)) {
-      content = content.replace(/(blueprint\s+"[^"]+"\s*;)/, `$1\n  domain "${addDomain}";`)
-    } else {
-      content = content.replace(/(task\s+"[^"]+"\s*\{)/, `$1\n  domain "${addDomain}";`)
-    }
+    content = setRef(content, 'domain', addDomain)
   }
 
   writeFileSync(taskFile, content, 'utf-8')

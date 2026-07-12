@@ -80,7 +80,7 @@ export function getWorkBlueprintsJsonPath(projectRoot: string, workName: string)
 }
 
 /** Re-export：让消费方只需 import 一处 */
-export { getWorkDir, getWorkMdPath, getWorkOxnPath } from './dual-state-io'
+export { getWorkDir, getWorkMdPath } from './dual-state-io'
 
 // ───────── 任务列表（稳定排序）─────────
 

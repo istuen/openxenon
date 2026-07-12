@@ -43,7 +43,7 @@ import {
 } from '@openxenon/engine/infra/filesystem'
 import { t } from '@openxenon/engine/infra/i18n'
 import { join } from 'path'
-import { BOUNDARY_DIR, RUN_DIR, TASK_FILE, WORK_FILE_ENTRY, WORK_RUN_STATE_JSON } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '@openxenon/engine/kernel'
 import { assertDirNameConsistent } from '@openxenon/engine/kernel'
 import { IAPError } from '@openxenon/engine/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
@@ -98,7 +98,7 @@ import { isWorkStarted } from '@openxenon/engine/Work'
 import {
   readDomainFile,
   readTaskFile,
-  workIRToSummary,
+  readWorkFileFromText,
   readWorkFile,
   type WorkFileSummary,
   type DomainFileSummary,
@@ -134,7 +134,7 @@ function getWorkTaskDir(workName: string, taskName: string): string {
 }
 
 function getWorkTaskFile(workName: string, taskName: string): string {
-  return join(getWorkTaskDir(workName, taskName), TASK_FILE)
+  return join(getWorkTaskDir(workName, taskName), TASK_OXN_FILE)
 }
 
 function ensureDirectory(dir: string): void {
@@ -312,7 +312,7 @@ const listSubcommand = defineCommand({
       status: string
       taskCount: number
       passedTasks: number
-      hasWorkMd: boolean
+      hasWorkOxn: boolean
       hasWorkState: boolean
     }> = []
 
@@ -321,7 +321,7 @@ const listSubcommand = defineCommand({
       const workDir = join(worksDir, workName)
       if (!existsSync(workDir)) continue
 
-      const hasWorkMd = existsSync(join(workDir, WORK_FILE_ENTRY))
+      const hasWorkOxn = existsSync(join(workDir, WORK_OXN_FILE))
       const hasWorkState = existsSync(join(workDir, RUN_DIR, WORK_RUN_STATE_JSON))
       let status = 'pending'
       let taskCount = 0
@@ -338,7 +338,7 @@ const listSubcommand = defineCommand({
           status = 'error'
         }
       }
-      works.push({ workName, status, taskCount, passedTasks, hasWorkMd, hasWorkState })
+      works.push({ workName, status, taskCount, passedTasks, hasWorkOxn, hasWorkState })
     }
 
     if (works.length === 0) {
@@ -350,7 +350,7 @@ const listSubcommand = defineCommand({
       .map(
         (w) =>
           `${w.workName}  status=${w.status}  tasks=${w.passedTasks}/${w.taskCount}  ` +
-          `[${w.hasWorkMd ? 'md' : '_'},${w.hasWorkState ? 'state' : '_'}]`,
+          `[${w.hasWorkOxn ? 'oxn' : '_'},${w.hasWorkState ? 'state' : '_'}]`,
       )
       .join('\n')
 
@@ -824,20 +824,20 @@ const createSubcommand = defineCommand({
       return outputError({ code: 'OXN_WORK_EXISTS', message: t('work.workExists', { workName }) }, format)
     }
 
-    const workMdContent = renderWorkSkeleton(
+    const workOxnContent = renderWorkSkeleton(
       workName,
       'TODO-blueprint',
       [{ name: 'stage-1', align: 'TODO' }],
       assetFormat,
       Object.keys(skeletonOptions).length > 0 ? skeletonOptions : undefined,
     )
-    writeFileSync(workFileFinal, workMdContent, 'utf-8')
+    writeFileSync(workFileFinal, workOxnContent, 'utf-8')
 
     // autoSync
     if (autoSync) {
       try {
         if (assetFormat === 'md') {
-          const { tree, frontmatter: fm } = parseMarkdown(workMdContent)
+          const { tree, frontmatter: fm } = parseMarkdown(workOxnContent)
           const ir = extractWorkIR(tree, fm)
           const { serializeWorkToOxn } = await import('@openxenon/engine/oxl/md-pipeline/oxn-serializer')
           const altContent = serializeWorkToOxn(ir)
@@ -1187,16 +1187,15 @@ const listTaskSubcommand = defineCommand({
 
     const tasks = dirs
       .map((name) => {
-        const file = join(tasksDir, name, TASK_FILE)
+        const file = join(tasksDir, name, TASK_OXN_FILE)
         if (!existsSync(file)) return null
-        const content = readFileSync(file, 'utf-8')
-        const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
-        const domainMatch = content.match(/domain\s+"([^"]+)"/)
+        const data = readTaskFile(file)
+        if (!data) return null
         return {
           name,
           file,
-          blueprint: blueprintMatch?.[1],
-          domain: domainMatch?.[1],
+          blueprint: data.blueprint,
+          domain: data.domain,
         }
       })
       .filter((t) => t !== null)
@@ -1236,13 +1235,10 @@ const taskStatusSubcommand = defineCommand({
       return outputError({ code: 'OXN_TASK_NOT_FOUND', message: `task.md not found at ${taskFile}` }, format)
     }
 
-    const content = readFileSync(taskFile, 'utf-8')
-    const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
-    const blueprint = blueprintMatch?.[1]
-    const domainMatch = content.match(/domain\s+"([^"]+)"/)
-    const domain = domainMatch?.[1]
-    const taskNameMatch = content.match(/task\s+"([^"]+)"/)
-    const parsedName = taskNameMatch?.[1]
+    const data = readTaskFile(taskFile)
+    const blueprint = data?.blueprint
+    const domain = data?.domain
+    const parsedName = data?.name
 
     output(
       {
@@ -1292,9 +1288,9 @@ const verifyTaskPathSubcommand = defineCommand({
 
     // 2) 文件名必须是 task.md？
     const basename = filePath.split('/').pop()
-    if (basename !== TASK_FILE) {
+    if (basename !== TASK_OXN_FILE) {
       return outputError(
-        { code: 'OXN_INVALID_TASK_FILE', message: t('work.invalidTaskFile', { taskFile: TASK_FILE, basename }) },
+        { code: 'OXN_INVALID_TASK_FILE', message: t('work.invalidTaskFile', { taskOxnFile: TASK_OXN_FILE, basename }) },
         format,
       )
     }
@@ -1313,13 +1309,12 @@ const verifyTaskPathSubcommand = defineCommand({
     }
 
     // 4) 解析基本信息
-    const content = readFileSync(filePath, 'utf-8')
-    const taskNameMatch = content.match(/task\s+"([^"]+)"/)
-    const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
-    const domainMatch = content.match(/domain\s+"([^"]+)"/)
-    const partCount = (content.match(/part\s+"[^"]+"/g) ?? []).length
+    const data = readTaskFile(filePath)
+    const taskName = data?.name ?? '(unknown)'
+    const blueprint = data?.blueprint
+    const domain = data?.domain
+    const partCount = data?.parts.length ?? 0
 
-    const taskName = taskNameMatch?.[1] ?? '(unknown)'
     const taskDirName = filePath.split('/').slice(-2, -1)[0]
 
     output(
@@ -1330,16 +1325,16 @@ const verifyTaskPathSubcommand = defineCommand({
           path: filePath,
           taskName,
           taskDirName,
-          blueprint: blueprintMatch?.[1],
-          domain: domainMatch?.[1],
+          blueprint,
+          domain,
           partCount,
         },
         human: t('work.verifyTaskPath.passed', {
           workName,
           taskName,
           taskDirName,
-          blueprint: blueprintMatch?.[1] ?? '(none)',
-          domain: domainMatch?.[1] ?? '(none)',
+          blueprint: blueprint ?? '(none)',
+          domain: domain ?? '(none)',
           partCount,
           filePath,
         }),
@@ -1393,40 +1388,27 @@ const editTaskSubcommand = defineCommand({
     }
     let content = readFileSync(taskFile, 'utf-8')
 
+    const ensureRefs = (c: string): string => {
+      if (/^## Refs/m.test(c)) return c
+      return `${c.replace(/\n+$/, '')}\n\n## Refs\n`
+    }
+    const setRef = (c: string, key: string, value: string): string => {
+      c = ensureRefs(c)
+      const re = new RegExp(`^- ${key}:.*$`, 'm')
+      if (re.test(c)) return c.replace(re, `- ${key}: ${value}`)
+      return c.replace(/(## Refs\n)/, `$1- ${key}: ${value}\n`)
+    }
+    const appendRef = (c: string, key: string, value: string): string => {
+      c = ensureRefs(c)
+      return c.replace(/(## Refs\n)/, `$1- ${key}: ${value}\n`)
+    }
+
     if (newObjective !== undefined) {
-      const replaced = content.replace(
-        /objective\s*=\s*"((?:[^"\\]|\\.)*)"/,
-        `objective = "${newObjective.replace(/"/g, '\\"')}"`,
-      )
-      if (replaced === content) {
-        return outputError(
-          { code: 'OXN_EDIT_NO_OBJECTIVE', message: 'task.md has no objective field; cannot update' },
-          format,
-        )
-      }
-      content = replaced
+      content = setRef(content, 'objective', `"${newObjective.replace(/"/g, '\\"')}"`)
     }
 
     if (addConstraint) {
-      const newConstraint = addConstraint.replace(/"/g, '\\"')
-      const re = /(constraints\s*=\s*\[)([^\]]*?)(\])/m
-      if (re.test(content)) {
-        content = content.replace(re, (_m, head, body, tail) => {
-          if (body.trim() === '') {
-            return `${head}"${newConstraint}"${tail}`
-          }
-          const newBody =
-            body.trimEnd().endsWith(',') || body.trimEnd() === ''
-              ? `${body} "${newConstraint}",`
-              : `${body}, "${newConstraint}",`
-          return `${head}${newBody} ${tail}`
-        })
-      } else {
-        content = content.replace(
-          /(context\s*\{)([^}]*?)(\})/m,
-          (_m, head, body, tail) => `${head}\n    constraints = ["${newConstraint}"];${body}${tail}`,
-        )
-      }
+      content = appendRef(content, 'constraint', `"${addConstraint.replace(/"/g, '\\"')}"`)
     }
 
     if (addDomain) {
@@ -1455,11 +1437,7 @@ const editTaskSubcommand = defineCommand({
           )
         }
       }
-      if (/\bblueprint\b/.test(content)) {
-        content = content.replace(/(blueprint\s+"[^"]+"\s*;)/, `$1\n  domain "${addDomain}";`)
-      } else {
-        content = content.replace(/(task\s+"[^"]+"\s*\{)/, `$1\n  domain "${addDomain}";`)
-      }
+      content = setRef(content, 'domain', addDomain)
     }
 
     writeFileSync(taskFile, content, 'utf-8')
@@ -1520,9 +1498,9 @@ const deleteTaskSubcommand = defineCommand({
     }
 
     if (keepState) {
-      const taskFile = join(taskDir, TASK_FILE)
-      if (existsSync(taskFile)) {
-        unlinkSync(taskFile)
+      const taskOxn = join(taskDir, TASK_OXN_FILE)
+      if (existsSync(taskOxn)) {
+        unlinkSync(taskOxn)
       }
     } else {
       rmSync(taskDir, { recursive: true, force: true })
@@ -1758,16 +1736,12 @@ const runSubcommand = defineCommand({
 
       for (const taskName of declaredTaskNames) {
         const taskOxnPath = getTaskOxnPath(projectRoot, workName, taskName)
-        const content = readFileSync(taskOxnPath, 'utf-8')
-        const blueprintMatch = content.match(/blueprint\s+"([^"]+)"/)
-        const blueprint = blueprintMatch?.[1] ?? blueprintNames[0] ?? ''
-        const injects = Array.from(content.matchAll(/inject\s+"([^"]+)"/g)).map((m) => m[1]!)
-        const slotNames = Array.from(content.matchAll(/part\s+"([^"]+)"\s*\{/g)).map((m) => m[1]!)
-        const objectiveMatch = content.match(/objective\s*=\s*"((?:[^"\\]|\\.)*)"/)
-        const constraintsMatch = content.match(/constraints\s*=\s*\[([^\]]*)\]/)
-        const constraints = constraintsMatch
-          ? Array.from(constraintsMatch[1]!.matchAll(/"([^"]+)"/g)).map((m) => m[1]!)
-          : []
+        const data = readTaskFile(taskOxnPath)
+        const blueprint = data?.blueprint ?? blueprintNames[0] ?? ''
+        const injects: string[] = []
+        const slotNames = data?.parts.map((p) => p.name) ?? []
+        const objective = data?.parts[0]?.skillContext
+        const constraints: string[] = []
 
         runTask({
           projectRoot,
@@ -1776,7 +1750,7 @@ const runSubcommand = defineCommand({
           blueprint,
           injects,
           partNames: slotNames,
-          objective: objectiveMatch?.[1]?.replace(/\\"/g, '"'),
+          objective,
           constraints,
         })
       }
@@ -2178,24 +2152,21 @@ const contextSubcommand = defineCommand({
       return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workFile}` }, format)
     }
     // v0.5 Phase 3: .md 走 md-pipeline 路径 (parseMarkdown → extractWorkIR)
-    //   然后用 readWorkFile 在合成的 .md 文本上做正则摘要。
+    //   然后用 readWorkFileFromText 在合成的 oxn 文本上做正则摘要。
+    //   MD 合成失败（legacy .oxn 工作流: 无 frontmatter name）→ 回退直读 oxn（RFC D11 fallback）
     let work: WorkFileSummary | null = null
     if (workFile.endsWith('.md')) {
       try {
         const content = readTextFile(workFile)
         const parsed = parseMarkdown(content)
         const ir = extractWorkIR(parsed.tree, parsed.frontmatter)
-        work = workIRToSummary(ir)
-      } catch (e) {
-        return outputError(
-          {
-            code: 'OXN_DSL_PARVE_FAILED',
-            message: `Failed to parse ${workFile}: ${e instanceof Error ? e.message : String(e)}`,
-          },
-          format,
-        )
+        const synthesizedOxn = serializeWorkToOxn(ir)
+        work = readWorkFileFromText(synthesizedOxn, workFile)
+      } catch {
+        work = null
       }
-    } else {
+    }
+    if (!work) {
       work = readWorkFile(workFile)
     }
     if (!work) {
@@ -2333,6 +2304,35 @@ const contextSubcommand = defineCommand({
       )
     }
 
+    // 🆕 External injection: collect Domain externals at Work level (metadata only; AI reads content during Intent)
+    const domainExternals: Array<{ domainName: string; externals: NonNullable<DomainFileSummary>['externals'] }> = []
+    for (const d of work.domains) {
+      const kebab = camelToKebab(d.name)
+      const candidates = [
+        join(root, BOUNDARY_DIR, 'domains', `${d.name}.md`),
+        join(root, BOUNDARY_DIR, 'domains', `${kebab}.md`),
+      ]
+      for (const path of candidates) {
+        const domData = readDomainFile(path)
+        if (domData?.externals && domData.externals.length > 0) {
+          domainExternals.push({ domainName: d.name, externals: domData.externals })
+          break
+        }
+      }
+    }
+
+    const externalsHuman =
+      domainExternals.length > 0
+        ? `\n  External References (read during Intent):\n${domainExternals
+            .map(
+              (de) =>
+                `    ${de.domainName}:\n${(de.externals ?? [])
+                  .map((e) => `      - ${e.name} (${e.kind || 'unknown'}): ${e.path ?? e.url ?? '(no location)'}`)
+                  .join('\n')}`,
+            )
+            .join('\n')}`
+        : ''
+
     return output(
       {
         ok: true,
@@ -2349,13 +2349,14 @@ const contextSubcommand = defineCommand({
           probes: work.probes,
           tasks: work.tasks,
           diagnostics,
+          ...(domainExternals.length > 0 ? { domainExternals } : {}),
         },
         human: `Work ${workName} (no --task specified, returning workspace-level context)
   Domains:    ${work.domains.map((d) => d.name).join(', ')}
   Blueprints: ${work.blueprints.map((b) => b.name).join(', ')}
   Parts:      ${work.parts.map((p) => p.name).join(', ')}
   Probes:     ${work.probes.map((p) => p.name).join(', ')}
-  Tasks:      ${work.tasks.length}
+  Tasks:      ${work.tasks.length}${externalsHuman}
   ${t('work.context.taskLevelHint')}${diagnostics.length > 0 ? `\n  ⚠ Diagnostics: ${diagnostics.length} unresolved ref(s)\n${diagnostics.map((d) => `    - [${d.type}] ${d.ref}: ${d.message}`).join('\n')}` : ''}`,
       },
       format,

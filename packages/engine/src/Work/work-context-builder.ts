@@ -4,13 +4,15 @@ import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
 import {
   type WorkFileSummary,
   type DomainFileSummary,
+  type ExternalEntry,
   readWorkFile,
-  workIRToSummary,
+  readWorkFileFromText,
   readTaskFile,
   readDomainFile,
 } from '@openxenon/engine/oxl/summary-extractors'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
+import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import { getTaskOxnPath, getTaskStatePath, resolveWorkFilePath } from './dual-state-io'
 import { collectUnresolvedRefDiagnostics } from './work-diagnostics'
 import { readWorkFile as readBirthCert, verifyPlanLock } from './birth-cert'
@@ -53,6 +55,7 @@ export interface WorkContextResult {
   parts?: unknown[]
   probes?: unknown[]
   tasks?: unknown[]
+  domainExternals?: Array<{ domainName: string; externals: ExternalEntry[] }>
 }
 
 export function buildWorkContext(params: WorkContextBuilderParams): WorkContextResult {
@@ -87,7 +90,8 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
       const content = readFileSync(workFile, 'utf-8')
       const parsed = parseMarkdown(content)
       const ir = extractWorkIR(parsed.tree, parsed.frontmatter)
-      work = workIRToSummary(ir)
+      const synthesizedOxn = serializeWorkToOxn(ir)
+      work = readWorkFileFromText(synthesizedOxn, workFile)
     } catch (e) {
       throw new Error(`Failed to parse ${workFile}: ${e instanceof Error ? e.message : String(e)}`)
     }
@@ -202,6 +206,22 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     return context
   }
 
+  const domainExternals: Array<{ domainName: string; externals: ExternalEntry[] }> = []
+  for (const d of work.domains) {
+    const kebab = camelToKebab(d.name)
+    const candidates = [
+      join(root, BOUNDARY_DIR, 'domains', `${d.name}.md`),
+      join(root, BOUNDARY_DIR, 'domains', `${kebab}.md`),
+    ]
+    for (const p of candidates) {
+      const domData = readDomainFile(p)
+      if (domData?.externals && domData.externals.length > 0) {
+        domainExternals.push({ domainName: d.name, externals: domData.externals })
+        break
+      }
+    }
+  }
+
   return {
     workspace: workName,
     workContext: {
@@ -216,6 +236,7 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     parts: work.parts as unknown[],
     probes: work.probes as unknown[],
     tasks: work.tasks as unknown[],
+    ...(domainExternals.length > 0 ? { domainExternals } : {}),
   }
 }
 
@@ -236,6 +257,7 @@ export function renderContextHuman(c: {
   parts?: unknown[]
   probes?: unknown[]
   tasks?: unknown[]
+  domainExternals?: Array<{ domainName: string; externals: ExternalEntry[] }>
 }): string {
   const lines: string[] = []
   lines.push(`# Context for ${c.workspace}${c.task ? ` / ${c.task}` : ''}`)
@@ -277,6 +299,20 @@ export function renderContextHuman(c: {
     lines.push('## Task Parts')
     for (const p of c.taskParts) {
       lines.push(`  - ${p.name}${p.skillContext ? `: ${p.skillContext}` : ''}`)
+    }
+  }
+  if (c.domainExternals && c.domainExternals.length > 0) {
+    lines.push('')
+    lines.push('## External References (read during Intent)')
+    lines.push('> AI: for kind=adr, read the path/url content and distill constraints into task.md.')
+    lines.push('> Other kinds (library/rest-api/...) are pointers — read on demand.')
+    for (const de of c.domainExternals) {
+      lines.push(`  ${de.domainName} Domain:`)
+      for (const ext of de.externals) {
+        const loc = ext.path ?? ext.url ?? '(no location)'
+        const sum = ext.summary ? ` — ${ext.summary}` : ''
+        lines.push(`    - ${ext.name} (${ext.kind || 'unknown'}): ${loc}${sum}`)
+      }
     }
   }
   if (c.diagnostics.length > 0) {

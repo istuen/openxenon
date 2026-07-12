@@ -78,12 +78,12 @@ export interface DeclaredBlueprintRef {
   ref: string | null
 }
 
-export function extractBlueprintRefs(workMdContent: string): DeclaredBlueprintRef[] {
+export function extractBlueprintRefs(workOxnContent: string): DeclaredBlueprintRef[] {
   const out: DeclaredBlueprintRef[] = []
   // 不要求行首（允许 `work "x" { blueprint "Y" ref "Z"; }` 内联）
   // 用 `;` 终止符做 disambiguate：task 内的 `blueprint "Z"` 无 `;` 不会误匹配
   const re = /blueprint\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g
-  for (const m of workMdContent.matchAll(re)) {
+  for (const m of workOxnContent.matchAll(re)) {
     out.push({ name: m[1]!, ref: m[2] ?? null })
   }
   return out

@@ -361,23 +361,19 @@ const createSubcommand = defineCommand({
       })
     }
 
-    const template = `// Proof: ${name}
-// Created by: oxn proof create ${name}
-//
-// 物理边界：
-//   - .openxenon/proofs/${name}/proof.md  — Probe 声明（你可编辑）
-//   - .openxenon/proofs/${name}/frozen.json — 判决书（不可手改，由 Core 独占）
-//
-// Workflow（语义化）：
-//   1. 查可用 probe：     oxn proof probe list
-//   2. 查 probe 详情：   oxn proof probe describe <name>
-//   3. 追加 probe：      oxn proof probe add ${name} <name> --input-json '{"key":"value"}'
-//   4. 跑证明：          oxn proof run ${name}
-//   5. 读 verdict：      oxn proof show ${name}
+    const template = `---
+entity: proof
+version: 0.7.0
+name: ${name}
+---
 
-proof "${name}" {
-  description = "TODO: 一句话描述这个 proof 验收什么"
-}
+# Proof: ${name}
+
+## Description
+### primary
+- value: TODO: 一句话描述这个 proof 验收什么
+
+## Probes
 `
     writeFileSync(oxnPath, template, 'utf-8')
 
@@ -551,18 +547,15 @@ const probeAddSubcommand = defineCommand({
     const existing = readFileSync(oxnPath, 'utf-8')
     const probeName = (ctx.args.probeName as string) ?? nextProbeName(existing)
     const paramsEntries = Object.entries(translated.internalParams)
-      .map(([k, v]) => `      ${k} = "${escapeString(String(v))}"`)
-      .join(',\n')
+      .map(([k, v]) => `  - ${k}: ${String(v)}`)
+      .join('\n')
 
-    const newBlock = `  probe "${probeName}" {
-    ref "${translated.internalRef}"
-    params {
+    const newBlock = `### ${probeName}
+- ref: ${translated.internalRef}
+- params:
 ${paramsEntries}
-    }
-  }
 `
-    const lastBrace = existing.lastIndexOf('}')
-    const updated = existing.slice(0, lastBrace) + newBlock + existing.slice(lastBrace)
+    const updated = `${existing.replace(/\n+$/, '')}\n\n${newBlock}`
     writeFileSync(oxnPath, updated, 'utf-8')
 
     output(
@@ -584,17 +577,13 @@ ${paramsEntries}
 })
 
 function nextProbeName(content: string): string {
-  const matches = content.match(/probe "p(\d+)"/g) ?? []
+  const matches = content.match(/^### p(\d+)/gm) ?? []
   let max = 0
   for (const m of matches) {
     const n = Number(m.match(/p(\d+)/)?.[1] ?? '0')
     if (n > max) max = n
   }
   return `p${max + 1}`
-}
-
-function escapeString(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
 const probeSubcommand = defineCommand({

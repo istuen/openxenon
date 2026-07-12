@@ -65,23 +65,11 @@ describe('oxn insight --pipeline (v0.5 PR-C)', () => {
     mkdirSync(domainsDir, { recursive: true })
     writeFileSync(
       join(domainsDir, 'TestContext.md'),
-      `---
-entity: domain
-version: 0.3.0
-name: TestContext
----
-
-# Domain: TestContext
-
-> test
-
-## Terms
-
-### Quality
-- desc: quality
-
-## Invariants
-- Shell 命令必须参数化
+      `domain "TestContext" {
+  description = "test"
+  term { "Quality": "quality" }
+  invariant { "Shell 命令必须参数化" }
+}
 `,
       'utf-8',
     )
@@ -91,19 +79,9 @@ name: TestContext
     mkdirSync(bpsDir, { recursive: true })
     writeFileSync(
       join(bpsDir, 'test-bp.md'),
-      `---
-entity: blueprint
-version: 0.3.0
-name: test-bp
----
-
-# Blueprint: test-bp
-
-## Slots
-
-### build
-- observe:
-  - shell-exec
+      `blueprint "test-bp" {
+  slot "build" { "observe" = ["shell-exec"] }
+}
 `,
       'utf-8',
     )
@@ -113,28 +91,11 @@ name: test-bp
     mkdirSync(worksDir, { recursive: true })
     writeFileSync(
       join(worksDir, 'work.md'),
-      `---
-entity: work
-version: 0.3.0
-name: test-work
----
-
-# Work: test-work
-
-## Context
-
-### primary
-- goal: test
-
-## Refs
-
-### TestContext
-- kind: domain
-- ref: "@prj/domains/TestContext"
-
-### test-bp
-- kind: blueprint
-- ref: "@prj/blueprints/test-bp"
+      `work "test-work" {
+  context { goal = "test" }
+  domain "TestContext" ref "@prj/domains/TestContext"
+  blueprint "test-bp" ref "@prj/blueprints/test-bp"
+}
 `,
       'utf-8',
     )
