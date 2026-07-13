@@ -483,7 +483,7 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
     writeFileSync(workFile, workContent, 'utf-8')
 
     // 4. auto-sync to other format
-    if (autoSync) {
+    if (autoSync && workPrimaryPath !== workAltPath) {
       try {
         if (assetFormat === 'md') {
           const { tree, frontmatter: fm } = parseMarkdown(workContent)
@@ -755,7 +755,8 @@ const createSubcommand = defineCommand({
         writeFileSync(workFile, workContent, 'utf-8')
 
         // v0.5 Phase 3: auto-sync to other format
-        if (autoSync) {
+        // v0.7+：work 实体 workAltPath === workPrimaryPath (work.md)，跳过 alt 写入避免覆盖 MD 内容
+        if (autoSync && workPrimaryPath !== workAltPath) {
           try {
             if (assetFormat === 'md') {
               // v0.7.0: .oxn format removed
@@ -835,7 +836,8 @@ const createSubcommand = defineCommand({
     writeFileSync(workFileFinal, workOxnContent, 'utf-8')
 
     // autoSync
-    if (autoSync) {
+    // v0.7+：work 实体 workAltFileFinal === workFileFinal (work.md)，跳过 alt 写入避免覆盖 MD 内容
+    if (autoSync && workFileFinal !== workAltFileFinal) {
       try {
         if (assetFormat === 'md') {
           const { tree, frontmatter: fm } = parseMarkdown(workOxnContent)

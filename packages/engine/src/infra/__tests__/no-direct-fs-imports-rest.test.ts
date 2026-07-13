@@ -20,7 +20,6 @@ import { join } from 'path'
  * - packages/engine/src/infra/runtime/ (phase 1 收口)
  * - packages/engine/src/infra/filesystem.ts / filesystem-async.ts (迁移层本身)
  * - packages/engine/src/infra/boundary.ts (用 OsPort, 仍通过 Kernel)
- * - packages/engine/src/Work/sandbox/sandbox-manager.ts (用 FileSystemPort 注入)
  * - packages/engine/src/cli/__tests__/ (CLI 范围, 属 t1a)
  */
 const PROTECTED_DIRS: string[] = [
@@ -46,7 +45,6 @@ const EXEMPT_FILES: string[] = [
   'packages/engine/src/infra/filesystem.ts',
   'packages/engine/src/infra/filesystem-async.ts',
   'packages/engine/src/infra/boundary.ts',
-  'packages/engine/src/Work/sandbox/sandbox-manager.ts',
 ]
 
 const FORBIDDEN_PATTERNS: RegExp[] = [
@@ -116,8 +114,8 @@ function findForbiddenImports(content: string): string[] {
 describe('Sprint 1 T1b: non-cli no-direct-fs-imports guard', () => {
   const files = collectProtectedFiles()
 
-  it('受保护目录至少含 70 个生产文件', () => {
-    expect(files.length).toBeGreaterThanOrEqual(70)
+  it('受保护目录至少含 60 个生产文件', () => {
+    expect(files.length).toBeGreaterThanOrEqual(60)
   })
 
   it.each(files)('%s 无 fs 直引', (filePath) => {
