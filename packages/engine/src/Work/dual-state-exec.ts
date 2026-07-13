@@ -36,6 +36,8 @@ import {
   saveWorkState,
 } from './dual-state-io'
 import { IAPError, IAPAction, type IAPAxis } from '@openxenon/engine/kernel'
+import { readTaskFile } from '@openxenon/engine/oxl/summary-extractors'
+import { executeProbe, type ProofProbeIR } from '@openxenon/engine/Proof/runner'
 
 // =============================================================================
 // 错误码 (v1.1 fix-p1-architecture: 走 IAPError 双轨制, 不再自定义 class)
@@ -300,6 +302,12 @@ export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
           status: t.status,
           completedAt: t.completedAt ?? null,
         })),
+        finalVerdict: 'PASSED',
+        totalRounds: workState.roundHistory.length,
+        roundHistory: workState.roundHistory,
+        taskFrozenPaths: workState.tasks
+          .map((t) => getTaskFrozenPath(params.projectRoot, params.workName, t.taskName))
+          .filter((p) => existsSync(p)),
       })
     }
   }
@@ -330,6 +338,80 @@ export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
   }
 }
 
+/**
+ * v0.6.1-alpha.5 Phase A.3: submitTask 接入真实 Probe 执行（闭合 ADR-0058 D2 验证层）
+ *
+ * 与 submitTask（sync，合成 state-machine 假结果）不同：本函数在推进 part 状态机之后，
+ * 从 task.md 读取真实 probe 声明（顶层 ## Probes 或 part 内联 - probe: @oxn/probes/...），
+ * 调 Proof/runner.executeProbe 执行，用真实 FrozenProofProbeResult 覆盖 probeResults，
+ * 并在 task 终态时重写 .run/tasks/<t>/frozen.json 写入真实 verdict。
+ *
+ * 信任后果：Engine 的公证权就位——"OXN Engine 出证明"不再是谎言。
+ */
+export async function submitTaskWithProbes(params: SubmitTaskParams): Promise<SubmitTaskResult> {
+  // 1. 推进 part 状态机（sync，保留合成占位，稍后覆盖）
+  const base = submitTask({ ...params, runProbes: false })
+
+  // 2. 收集 task.md 中的真实 probe 声明
+  const taskFile = getTaskOxnPath(params.projectRoot, params.workName, params.taskName)
+  const decls = collectTaskProbeDecls(existsSync(taskFile) ? readTaskFile(taskFile) : null)
+  if (decls.length === 0) {
+    return base // 无真实 probe → 退回合成行为
+  }
+
+  // 3. 并发执行所有真实 probe
+  const realResults = await Promise.all(
+    decls.map(async (d) => {
+      const ir: ProofProbeIR = {
+        probeName: d.name,
+        ref: d.ref ?? `@oxn/probes/${d.name}`,
+        params: d.params ?? {},
+      }
+      const r = await executeProbe(ir, { projectRoot: params.projectRoot })
+      return {
+        probe: d.name,
+        passed: r.passed,
+        output: r.output,
+        errorMessage: r.errorMessage,
+        durationMs: r.durationMs,
+      }
+    }),
+  )
+
+  // 4. task 终态 → 重写 frozen.json 写入真实 verdict
+  if (base.frozen) {
+    writeTaskFrozen(params.projectRoot, params.workName, params.taskName, {
+      taskName: params.taskName,
+      workName: params.workName,
+      blueprint: base.taskState.blueprint,
+      completedAt: new Date().toISOString(),
+      trace: base.taskState.completedParts,
+      probeResults: realResults.map((p) => ({
+        probe: p.probe,
+        passed: p.passed,
+        output: p.output,
+      })),
+    })
+  }
+
+  return { ...base, probeResults: realResults }
+}
+
+/** 从 TaskFileSummary 收集真实 probe 声明（顶层 ## Probes + part 内联带 ref 的 probe） */
+function collectTaskProbeDecls(
+  task: import('@openxenon/engine/oxl/summary-extractors').TaskFileSummary | null,
+): import('@openxenon/engine/oxl/summary-extractors').TaskProbeDecl[] {
+  if (!task) return []
+  const decls: import('@openxenon/engine/oxl/summary-extractors').TaskProbeDecl[] = []
+  if (task.probes) decls.push(...task.probes)
+  for (const p of task.parts) {
+    for (const pr of p.probes) {
+      if (pr.ref) decls.push({ name: pr.name, ref: pr.ref, ...(pr.params ? { params: pr.params } : {}) })
+    }
+  }
+  return decls
+}
+
 // =============================================================================
 // frozen.json writers
 // =============================================================================
@@ -347,6 +429,21 @@ interface WorkFrozenSnapshot {
   workName: string
   completedAt: string
   tasks: Array<{ taskName: string; status: WorkspaceTaskStatus; completedAt: string | null }>
+  /** A1 (D3): 最终裁决（PASSED/FAILED/INCONCLUSIVE/PENDING） */
+  finalVerdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING'
+  /** A1 (D3): round 总数 */
+  totalRounds: number
+  /** A1 (D3): 所有 round 摘要（含每轮 verdict/failures） */
+  roundHistory: RoundRecord[]
+  /** A1 (D3): 每个 task frozen.json 路径索引 */
+  taskFrozenPaths: string[]
+  /** A2 (D4): 边界违反记录（finalizeWorkDomains 注入；无则省略） */
+  boundaryViolations?: Array<{
+    domain: string
+    invariant: string
+    verdict: string
+    failureMessage?: string
+  }>
 }
 
 function writeTaskFrozen(projectRoot: string, workName: string, taskName: string, snapshot: TaskFrozenSnapshot): void {
@@ -609,6 +706,13 @@ export interface FinalizeParams {
   /** 最终裁决（默认用最后 closed round 的 verdict） */
   verdict?: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
   notes?: string
+  /** A2 (D4): 由调用方预计算的 Domain 边界违反记录（finalizeWorkDomains 结果注入） */
+  boundaryViolations?: Array<{
+    domain: string
+    invariant: string
+    verdict: string
+    failureMessage?: string
+  }>
 }
 
 export interface FinalizeResult {
@@ -659,6 +763,30 @@ export function finalizeWork(params: FinalizeParams): FinalizeResult {
   }
   state.updatedAt = nowIso
   saveWorkState(params.projectRoot, params.workName, state)
+
+  // A1 (D3): 写 work-level .run/frozen.json（含所有 round 摘要 + task frozen 索引）
+  // 失败路径（verdict=FAILED/INCONCLUSIVE）也写，使 Insight pipeline 可读失败工作
+  const taskFrozenPaths: string[] = []
+  for (const t of state.tasks) {
+    const p = getTaskFrozenPath(params.projectRoot, params.workName, t.taskName)
+    if (existsSync(p)) taskFrozenPaths.push(p)
+  }
+  writeWorkFrozen(params.projectRoot, params.workName, {
+    workName: params.workName,
+    completedAt: nowIso,
+    tasks: state.tasks.map((t) => ({
+      taskName: t.taskName,
+      status: t.status,
+      completedAt: t.completedAt ?? null,
+    })),
+    finalVerdict,
+    totalRounds: state.roundHistory.length,
+    roundHistory: state.roundHistory,
+    taskFrozenPaths,
+    ...(params.boundaryViolations && params.boundaryViolations.length > 0
+      ? { boundaryViolations: params.boundaryViolations }
+      : {}),
+  })
 
   // 写 trace
   appendWorkTrace(params.projectRoot, params.workName, {

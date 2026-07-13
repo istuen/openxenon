@@ -50,7 +50,7 @@ import { getFormatFromArgs, output, outputError, outputUserInputError } from './
 import type { WorkDeclaration } from '@openxenon/engine/oxl'
 import { extractBlueprintIR } from '@openxenon/engine/oxl/md-pipeline/transformers/blueprint.js'
 import type { WorkPart } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
-import { runTask, runWork, submitTask, nextRoundWork } from '@openxenon/engine/Work'
+import { runTask, runWork, submitTask, submitTaskWithProbes, nextRoundWork } from '@openxenon/engine/Work'
 import {
   ensureWorkDir,
   getTaskOxnPath,
@@ -96,14 +96,15 @@ import { snapshotContext, makeReport, type DerivedWorkState } from '@openxenon/e
 import { collectUnresolvedRefDiagnostics } from '@openxenon/engine/Work/work-diagnostics'
 import { isWorkStarted } from '@openxenon/engine/Work'
 import {
-  readDomainFile,
   readTaskFile,
   readWorkFileFromText,
   readWorkFile,
+  readDomainFile,
   type WorkFileSummary,
   type DomainFileSummary,
 } from '@openxenon/engine/oxl/summary-extractors'
 import { validateWorkFile } from '@openxenon/engine/oxl/work-file-loader'
+import { finalizeWorkDomains } from '@openxenon/engine/infra/frozen/work-domains'
 
 // ---------------------------------------------------------------------------
 // 报告层类型（来自 engine/work-reporter）
@@ -1851,12 +1852,19 @@ const submitSubcommand = defineCommand({
     }
 
     try {
-      const result = submitTask({
-        projectRoot,
-        workName,
-        taskName,
-        runProbes,
-      })
+      const result = runProbes
+        ? await submitTaskWithProbes({
+            projectRoot,
+            workName,
+            taskName,
+            runProbes,
+          })
+        : submitTask({
+            projectRoot,
+            workName,
+            taskName,
+            runProbes,
+          })
 
       const probeResults: Array<{
         probe: string
@@ -2859,6 +2867,51 @@ const nextRoundSubcommand = defineCommand({
 //   - 写 trace event
 //   - finalize 不强制要求最后一轮 PASSED（允许「失败收档」语义）
 // =============================================================================
+
+/**
+ * A2 (D4): 收集 Work 引用 Domain 的 invariant，构造 DomainProofInput[]。
+ * 从 work.md ## Refs 提取 kind:domain 的 domain → 读每个 Domain.md 的 ## Invariants。
+ */
+function collectWorkDomainProofs(
+  projectRoot: string,
+  workName: string,
+  assetFormat: string,
+): Array<{ domain: string; invariant: string }> {
+  const workFile = resolveWorkFilePath(projectRoot, workName, assetFormat)
+  if (!existsSync(workFile)) return []
+  const content = readFileSync(workFile, 'utf-8')
+
+  const refsSection = content.match(/## Refs\n([\s\S]*?)(?=\n## |\n# |$)/)
+  const domains: string[] = []
+  if (refsSection) {
+    for (const block of refsSection[1]!.split(/\n(?=### )/)) {
+      if (!block.startsWith('### ')) continue
+      const name = block.replace(/^### /, '').trim()
+      const kind = block.match(/- kind:\s*(\S+)/)?.[1]
+      if (kind === 'domain') domains.push(name)
+    }
+  }
+
+  const inputs: Array<{ domain: string; invariant: string }> = []
+  for (const d of domains) {
+    const candidates = [
+      join(projectRoot, BOUNDARY_DIR, 'domains', `${d}.md`),
+      join(projectRoot, BOUNDARY_DIR, 'domains', d.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase(), 'domain.md'),
+    ]
+    for (const p of candidates) {
+      if (!existsSync(p)) continue
+      const dom = readDomainFile(p)
+      if (dom?.language?.invariant) {
+        for (const inv of dom.language.invariant) {
+          inputs.push({ domain: d, invariant: inv })
+        }
+      }
+      break
+    }
+  }
+  return inputs
+}
+
 const finalizeSubcommand = defineCommand({
   meta: {
     name: 'finalize',
@@ -2871,6 +2924,8 @@ const finalizeSubcommand = defineCommand({
       description: '最终裁决：PASSED | FAILED | INCONCLUSIVE（默认沿用最后一轮 verdict）',
     },
     '--notes': { type: 'string', description: '收口备注' },
+    '--force': { type: 'boolean', description: '忽略 Domain proof 硬阻断，仍记录边界违反并收口' },
+    '--dry-run': { type: 'boolean', description: '仅评估 Domain proof，不写 frozen.json' },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
@@ -2879,6 +2934,8 @@ const finalizeSubcommand = defineCommand({
     const workName = ctx.args.name as string
     const verdictRaw = ctx.args.verdict as string | undefined
     const notes = (ctx.args as Record<string, unknown>).notes as string | undefined
+    const force = ctx.args.force === true
+    const dryRun = ctx.args['dry-run'] === true
     const projectRoot = getProjectRoot()
 
     let verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | undefined
@@ -2900,6 +2957,70 @@ const finalizeSubcommand = defineCommand({
       return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
     }
 
+    // A2 (D4): 收集 Work 引用 Domain 的 invariant → 评估 Domain proof（边界违反记录）
+    const domainProofs = collectWorkDomainProofs(
+      projectRoot,
+      workName,
+      resolveAssetFormat(readProjectConfig(projectRoot)),
+    )
+
+    // dry-run：仅评估 Domain proof（若有），输出结果，绝不写 frozen.json / 收口
+    if (dryRun) {
+      if (domainProofs.length === 0) {
+        return output(
+          {
+            ok: true,
+            data: { workName, dryRun: true, domainProofs: [], overallVerdict: 'PASS' },
+            human: `Work "${workName}" dry-run: no domain invariants declared (no-op)`,
+          },
+          format,
+        )
+      }
+      try {
+        const res = await finalizeWorkDomains(workName, projectRoot, domainProofs, true)
+        return output(
+          {
+            ok: true,
+            data: {
+              workName,
+              dryRun: true,
+              domainProofs: res.node.domainProofs,
+              overallVerdict: res.node.overallVerdict,
+            },
+            human: `Work "${workName}" dry-run: ${res.node.domainProofs.length} domain proof(s), overall=${res.node.overallVerdict}`,
+          },
+          format,
+        )
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        return output(errorJson('OXN_FINALIZE_DRYRUN_FAILED', message), format)
+      }
+    }
+
+    let boundaryViolations:
+      | Array<{ domain: string; invariant: string; verdict: string; failureMessage?: string }>
+      | undefined
+    if (domainProofs.length > 0) {
+      try {
+        const res = await finalizeWorkDomains(workName, projectRoot, domainProofs, force)
+        boundaryViolations = res.node.domainProofs.map((e) => ({
+          domain: e.domain,
+          invariant: e.invariant,
+          verdict: e.verdict,
+          ...(e.failureMessage ? { failureMessage: e.failureMessage } : {}),
+        }))
+      } catch (err) {
+        // Domain proof FAIL/MANUAL/INCONCLUSIVE 且无 --force → 拒绝收口（OXN_FINALIZE_REJECTED）
+        if (err instanceof IAPError) {
+          const ctx = err.context as { oxnCode?: unknown } | undefined
+          const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
+          return outputError({ code: oxnCode, message: err.message }, format)
+        }
+        const message = err instanceof Error ? err.message : String(err)
+        return output(errorJson('OXN_FINALIZE_REJECTED', message), format)
+      }
+    }
+
     try {
       const { finalizeWork } = await import('@openxenon/engine/Work/dual-state-exec')
       const result = finalizeWork({
@@ -2907,6 +3028,7 @@ const finalizeSubcommand = defineCommand({
         workName,
         ...(verdict ? { verdict } : {}),
         ...(notes ? { notes } : {}),
+        ...(boundaryViolations ? { boundaryViolations } : {}),
       })
       output(
         {
@@ -2916,6 +3038,7 @@ const finalizeSubcommand = defineCommand({
             finalVerdict: result.finalVerdict,
             totalRounds: result.totalRounds,
             finalizedAt: result.finalizedAt,
+            boundaryViolations: boundaryViolations ?? [],
             workspace: result.workspace,
           },
           human: renderFinalizeHuman(result),

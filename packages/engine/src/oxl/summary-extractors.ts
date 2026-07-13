@@ -32,6 +32,12 @@ export type DomainFileSummary = {
   externals?: ExternalEntry[]
 } | null
 
+export type TaskProbeDecl = {
+  name: string
+  ref?: string
+  params?: Record<string, string>
+}
+
 export type TaskFileSummary = {
   name: string
   domain?: string
@@ -41,6 +47,8 @@ export type TaskFileSummary = {
     skillContext?: string
     probes: Array<{ name: string; ref: string; params?: Record<string, string> }>
   }>
+  /** 顶层 ## Probes 段声明的真实 probe（带 ref + params），供 submit --run-probes 执行 */
+  probes?: TaskProbeDecl[]
   deps: string[]
 } | null
 
@@ -205,14 +213,48 @@ function readTaskFileMd(content: string): TaskFileSummary {
 
       const probes: Array<{ name: string; ref: string; params?: Record<string, string> }> = []
       for (const pm of body.matchAll(/- probe:\s*(\S+)/g)) {
-        probes.push({ name: pm[1]!, ref: '' })
+        const raw = pm[1]!
+        // 支持内联 ref：`- probe: @oxn/probes/shell-exec` 或 `- probe: name`（ref 留空待 catalog 解析）
+        if (raw.startsWith('@oxn/probes/') || raw.startsWith('@oxn/probe/')) {
+          probes.push({ name: raw.replace(/^@oxn\/probes?\//, ''), ref: raw })
+        } else {
+          probes.push({ name: raw, ref: '' })
+        }
       }
 
       parts.push({ name: partName, ...(skillContext ? { skillContext } : {}), probes })
     }
   }
 
-  return { name, ...(domain ? { domain } : {}), ...(blueprint ? { blueprint } : {}), parts, deps: [] }
+  // 顶层 ## Probes 段：声明真实 probe（带 ref + params），供 submit --run-probes 执行
+  const probes: TaskProbeDecl[] = []
+  const probesSection = content.match(/## Probes\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (probesSection) {
+    const probeBlocks = probesSection[1]!.split(/\n(?=### )/)
+    for (const block of probeBlocks) {
+      if (!block.startsWith('### ')) continue
+      const lines = block.split('\n')
+      const probeName = lines[0]!.replace(/^### /, '').trim()
+      const body = lines.slice(1).join('\n')
+      const ref = body.match(/- ref:\s*(\S+)/m)?.[1]?.trim()
+      const params: Record<string, string> = {}
+      for (const p of body.matchAll(/- params:\s*\n((?:\s+- \S+:\s*.+\n?)+)/g)) {
+        for (const pl of p[1]!.matchAll(/- (\S+):\s*(.+)$/gm)) {
+          params[pl[1]!] = pl[2]!.trim()
+        }
+      }
+      probes.push({ name: probeName, ...(ref ? { ref } : {}), ...(Object.keys(params).length > 0 ? { params } : {}) })
+    }
+  }
+
+  return {
+    name,
+    ...(domain ? { domain } : {}),
+    ...(blueprint ? { blueprint } : {}),
+    parts,
+    ...(probes.length > 0 ? { probes } : {}),
+    deps: [],
+  }
 }
 
 /** 解析 .oxn legacy task 语法（v0.6.x fallback） */

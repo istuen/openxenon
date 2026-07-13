@@ -54,7 +54,7 @@ function scanAllExternals(projectRoot: string): ParsedExternal[] {
       const entityName = file.replace(/\.md$/, '')
       // 找 ## Externals section（使用 indexOf 切片 + matchAll 替代 lookahead 在 EOF 处失效）
       const marker = '## Externals'
-      const idx = content.indexOf(marker + '\n')
+      const idx = content.indexOf(`${marker}\n`)
       if (idx === -1) continue
       const after = content.slice(idx + marker.length + 1)
       // 到下一个 ## 之前结束
@@ -151,7 +151,7 @@ export const externalCommand = defineCommand({
             '',
             ...summary.results.map(
               (r) =>
-                `  [${r.status.padEnd(11)}] ${r.entityType}::${r.entityName}::${r.externalName}${r.error ? ' — ' + r.error : ''}`,
+                `  [${r.status.padEnd(11)}] ${r.entityType}::${r.entityName}::${r.externalName}${r.error ? ` — ${r.error}` : ''}`,
             ),
           ]
           console.log(lines.join('\n'))
@@ -175,7 +175,7 @@ export const externalCommand = defineCommand({
           console.log(`External status (${entries.length} entries):`)
           for (const e of entries) {
             console.log(
-              `  [${e.status.padEnd(11)}] ${e.key} (lastChecked: ${e.lastChecked}${e.error ? ', error: ' + e.error : ''})`,
+              `  [${e.status.padEnd(11)}] ${e.key} (lastChecked: ${e.lastChecked}${e.error ? `, error: ${e.error}` : ''})`,
             )
           }
         }
