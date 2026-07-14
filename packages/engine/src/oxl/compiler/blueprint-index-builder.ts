@@ -186,6 +186,12 @@ export function parseBlueprintSlim(filePath: string, projectRoot: string): Bluep
     }
   }
 
+  // 🆕 v0.7: 优先识别 .md 格式（canonical）；.oxn 解析作为 fallback
+  const isMdFormat = /^---\n/m.test(content) || /## (Use|Boundaries)\b/m.test(content)
+  if (isMdFormat) {
+    return parseBlueprintSlimMdFormat(content, fileStem, relFile, errors)
+  }
+
   // name + NAME_FILE_MISMATCH 防御
   const nameMatch = content.match(/^\s*blueprint\s+"([^"]+)"\s*\{/m)
   if (!nameMatch) {
@@ -243,6 +249,72 @@ export function parseBlueprintSlim(filePath: string, projectRoot: string): Bluep
   if (description?.includes('\n')) {
     errors.push('description spans multiple lines (likely parse issue)')
   }
+
+  return {
+    name: declared,
+    file: relFile,
+    status: errors.length > 0 ? 'invalid' : 'ok',
+    ...(description !== undefined ? { description } : {}),
+    version,
+    slotNames,
+    propCount,
+    errors,
+  }
+}
+
+/**
+ * 🆕 v0.7: 解析 .md 格式 Blueprint（frontmatter + ## Use + ## Boundaries）
+ */
+function parseBlueprintSlimMdFormat(
+  content: string,
+  fileStem: string,
+  relFile: string,
+  errors: string[],
+): BlueprintIndexEntry {
+  // name + version from frontmatter
+  const fmNameMatch = content.match(/^---\n[\s\S]*?name:\s*([^\n]+)/m)
+  const declared = fmNameMatch?.[1]?.trim() ?? fileStem
+  if (fmNameMatch && toKebab(declared) !== toKebab(fileStem)) {
+    errors.push(
+      `NAME_FILE_MISMATCH: declared '${declared}' (normalized: '${toKebab(declared)}') ` +
+        `does not match file '${fileStem}' (normalized: '${toKebab(fileStem)}')`,
+    )
+  }
+  if (!fmNameMatch) {
+    errors.push('no `entity: blueprint` declaration with name found in frontmatter')
+  }
+
+  let version = 1
+  // 🆕 v0.7: .md 格式 version 是 semver（如 "0.7.0"），只校验非空；integer 校验留给 .oxn
+  const verMatch = content.match(/^---\n[\s\S]*?version:\s*([^\n]+)/m)
+  if (verMatch) {
+    const verStr = verMatch[1]!.trim()
+    if (verStr.length > 0) {
+      // 提取主版本号作为 version 字段（如 "0.7.0" → 0；"1.2.3" → 1；fallback → 1）
+      const major = Number.parseInt(verStr.split('.')[0] ?? '', 10)
+      if (Number.isFinite(major) && major >= 1) version = major
+      // 0.x 版本（pre-1.0）仍归为 1（schema 要求 min 1）
+      else if (Number.isFinite(major) && major === 0) version = 1
+    }
+  }
+
+  // description (blockquote 紧跟 H1)
+  const descMatch = content.match(/^# Blueprint:[^\n]*\n\n>\s*([^\n]+)/m)
+  const description = descMatch?.[1]?.trim()
+
+  // slotNames from ## Boundaries（每个 boundary 当作一个 slot）
+  const slotNames: string[] = []
+  const boundariesMatch = content.match(/## Boundaries\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (boundariesMatch) {
+    for (const block of (boundariesMatch[1] ?? '').split(/\n(?=### )/)) {
+      if (!block.startsWith('### ')) continue
+      const name_ = block.split('\n', 1)[0]?.replace(/^### /, '').trim() ?? ''
+      if (name_) slotNames.push(name_)
+    }
+  }
+
+  // 🆕 v0.7: Blueprint 移除 Props（v0.7 设计决定）；propCount 恒为 0
+  const propCount = 0
 
   return {
     name: declared,

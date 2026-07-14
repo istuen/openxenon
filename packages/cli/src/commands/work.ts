@@ -64,7 +64,7 @@ import {
   resolveWorkFilePath,
 } from '@openxenon/engine/Work/dual-state-io'
 import { resetCurrentRoundTasks } from '@openxenon/engine/Work/dual-state-exec'
-// 🆕 v0.6.1-alpha.4 Phase B: 删除 resolveDomainFile import（Domain 引用走 Blueprint ## Refs 路径）
+// 🆕 v0.6.1-alpha.4 Phase B: 删除 resolveDomainFile import（Domain 引用走 Blueprint ## Use 路径）
 import { resolveBlueprintFile } from '@openxenon/engine/Work/per-work-blueprints-merger'
 import { buildBlueprintDiagnostic, type RefDiagnostic } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import {
@@ -990,7 +990,7 @@ const validateSubcommand = defineCommand({
           errors: [],
           warnings: result.warnings,
           artifacts: {
-            // 🆕 Phase B: 删 domainsJson（Domain 引用走 Blueprint ## Refs）
+            // 🆕 Phase B: 删 domainsJson（Domain 引用走 Blueprint ## Use）
             blueprintsJson: a.blueprintsJsonPath,
             workFile: a.workFilePath,
           },
@@ -998,7 +998,7 @@ const validateSubcommand = defineCommand({
         },
         human:
           `Work validate OK\n` +
-          // 🆕 Phase B: 删 Domain refs 计数（Domain 引用走 Blueprint ## Refs）
+          // 🆕 Phase B: 删 Domain refs 计数（Domain 引用走 Blueprint ## Use）
           `  Blueprint refs: ${a.assetCounts.blueprints} resolved\n` +
           `  Task count:  ${a.assetCounts.tasks}\n` +
           `\n  Artifacts written:\n` +
@@ -1710,7 +1710,7 @@ const runSubcommand = defineCommand({
       const maxIters = (work as { loopPolicy?: { maxIterations?: number } }).loopPolicy?.maxIterations ?? 3
 
       // PR-14c: 收集未解析的 ref diagnostics，持久化到 .run/state.json
-      // 🆕 v0.6.1-alpha.4 Phase B: 删除 domain ref 诊断（Domain 引用走 Blueprint ## Refs）
+      // 🆕 v0.6.1-alpha.4 Phase B: 删除 domain ref 诊断（Domain 引用走 Blueprint ## Use）
       const runDiagnostics: RefDiagnostic[] = []
       for (const r of work.refs ?? []) {
         if (r.kind !== 'blueprint') continue
@@ -2878,7 +2878,7 @@ const nextRoundSubcommand = defineCommand({
 
 /**
  * A2 (D4): 收集 Work 引用 Domain 的 invariant，构造 DomainProofInput[]。
- * 从 work.md ## Refs 提取 kind:domain 的 domain → 读每个 Domain.md 的 ## Invariants。
+ * 从 work.md ## Use 提取 kind:domain 的 domain → 读每个 Domain.md 的 ## Invariants。
  */
 function collectWorkDomainProofs(
   projectRoot: string,
@@ -2889,7 +2889,7 @@ function collectWorkDomainProofs(
   if (!existsSync(workFile)) return []
   const content = readFileSync(workFile, 'utf-8')
 
-  const refsSection = content.match(/## Refs\n([\s\S]*?)(?=\n## |\n# |$)/)
+  const refsSection = content.match(/## Use\n([\s\S]*?)(?=\n## |\n# |$)/)
   const domains: string[] = []
   if (refsSection) {
     for (const block of refsSection[1]!.split(/\n(?=### )/)) {

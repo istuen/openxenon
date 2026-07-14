@@ -8,7 +8,7 @@
  * - Props 删除（设计决定）
  */
 
-import type { Root } from 'mdast'
+import type { Root, Heading, Text } from 'mdast'
 import { collectHeadingContexts, collectListFields, type ListField, extractYamlFromTree } from '../utils'
 
 // ========================
@@ -68,21 +68,78 @@ export function extractBlueprintIR(root: Root, frontmatter: Record<string, unkno
   let useIdx = 0
   let boundaryIdx = 0
 
+  // 🆕 v0.7: 显式扫描 `## Use` 段（不依赖 collectHeadingContexts 的 H3 要求）
+  //   支持 3 种格式：
+  //   A：## Use + ### name + - kind / - ref（每个 ref 一个 H3）
+  //   B：## Use + - kind / - ref（list under H2，无 H3）
+  for (let i = 0; i < root.children.length; i++) {
+    const child = root.children[i]
+    if (child?.type !== 'heading') continue
+    const h = child as { depth: number; children?: Array<{ type: string; value?: string }> }
+    if (h.depth !== 2) continue
+    const text = (h.children ?? [])
+      .filter((c) => c.type === 'text')
+      .map((c) => c.value ?? '')
+      .join('')
+    if (text !== 'Use') continue
+    useIdx++
+
+    // 找 ## Use 段下的内容（直到下一个 ## 标题）
+    let j = i + 1
+    const sectionChildren = []
+    while (j < root.children.length) {
+      const next = root.children[j]
+      if (next?.type === 'heading') {
+        const nh = next as { depth: number }
+        if (nh.depth <= 2) break
+      }
+      sectionChildren.push(next)
+      j++
+    }
+
+    // 格式 A：## Use + ### name H3 + - kind / - ref
+    const h3Items = sectionChildren.filter((c): c is Heading => c?.type === 'heading' && c.depth === 3)
+    if (h3Items.length > 0) {
+      // 格式 A：处理每个 H3
+      for (const h3 of h3Items) {
+        const h3Text =
+          h3.children
+            ?.filter((c): c is Text => c?.type === 'text')
+            .map((c: Text) => c.value)
+            .join('') ?? ''
+        // 找 H3 后的 list
+        const h3Idx = sectionChildren.indexOf(h3)
+        let h3List = null
+        for (let k = h3Idx + 1; k < sectionChildren.length; k++) {
+          const c = sectionChildren[k]
+          if (c && 'type' in c && c.type === 'list') {
+            h3List = c
+            break
+          }
+        }
+        if (h3List) {
+          const fields = collectListFields(h3List as unknown as import('mdast').List)
+          extractUseEntry(h3Text, fields, use)
+        }
+      }
+    } else {
+      // 格式 B：直接处理 list
+      const listNode = sectionChildren.find((c): c is import('mdast').List => c?.type === 'list')
+      if (listNode) {
+        const fields = collectListFields(listNode)
+        extractUseEntryFromList(fields, use)
+      }
+    }
+  }
+
   for (const ctx of contexts) {
-    if (!ctx.h2 || !ctx.h3) continue
+    if (!ctx.h2) continue
     if (!BLUEPRINT_CATEGORIES.includes(ctx.h2 as BlueprintCategory)) continue
 
-    const fields = ctx.h3List ? collectListFields(ctx.h3List) : []
-
-    switch (ctx.h2 as BlueprintCategory) {
-      case 'Use':
-        useIdx++
-        extractUseEntry(ctx.h3, fields, use)
-        break
-      case 'Boundaries':
-        boundaryIdx++
-        boundaries.push(extractBoundary(ctx.h3, fields))
-        break
+    if (ctx.h2 === 'Boundaries' && ctx.h3) {
+      boundaryIdx++
+      const fields = ctx.h3List ? collectListFields(ctx.h3List) : []
+      boundaries.push(extractBoundary(ctx.h3, fields))
     }
   }
 
@@ -108,15 +165,51 @@ export function extractBlueprintIR(root: Root, frontmatter: Record<string, unkno
  */
 function extractUseEntry(name: string, fields: ListField[], use: BlueprintUse): void {
   // 从 fields 找 kind → ref 的映射
+  // ref 值可能是 "name @prj/..." 形式（name + ref 合并）或单独的 "@prj/..." 形式
+  // 策略：取 value 的最后一个 token 作为 ref（处理空格分隔的合并形式）
   for (const f of fields) {
-    if (f.key === 'domain' && typeof f.value === 'string') {
-      use.domain.push({ name, ref: f.value })
-    } else if (f.key === 'workflow' && typeof f.value === 'string') {
-      use.workflow.push({ name, ref: f.value })
-    } else if (f.key === 'stack' && typeof f.value === 'string') {
-      use.stack.push({ name, ref: f.value })
+    if (typeof f.value !== 'string') continue
+    const ref = extractRefFromValue(f.value)
+    if (f.key === 'domain') {
+      use.domain.push({ name, ref })
+    } else if (f.key === 'workflow') {
+      use.workflow.push({ name, ref })
+    } else if (f.key === 'stack') {
+      use.stack.push({ name, ref })
     }
   }
+}
+
+/**
+ * 🆕 v0.7: 解析 ## Use 下的 list（无 ### H3 时直接处理 list）
+ * 格式 B：- domain: ref\n- workflow: ref\n- stack: ref
+ * name 取 kind 名（如 domain）
+ */
+function extractUseEntryFromList(fields: ListField[], use: BlueprintUse): void {
+  for (const f of fields) {
+    if (typeof f.value !== 'string') continue
+    const ref = extractRefFromValue(f.value)
+    if (f.key === 'domain') {
+      use.domain.push({ name: 'domain', ref })
+    } else if (f.key === 'workflow') {
+      use.workflow.push({ name: 'workflow', ref })
+    } else if (f.key === 'stack') {
+      use.stack.push({ name: 'stack', ref })
+    }
+  }
+}
+
+/** 从 - kind: value 提取 ref：
+ *   - "@prj/blueprints/foo" → "@prj/blueprints/foo"（单独 ref 形式）
+ *   - "name @prj/blueprints/foo" → "@prj/blueprints/foo"（name + ref 合并形式）
+ *   - "" → ""（空 ref）
+ */
+function extractRefFromValue(value: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ''
+  // 检查是否以 @ 开头（这是 ref 形式）
+  const lastToken = trimmed.split(/\s+/).at(-1) ?? ''
+  return lastToken
 }
 
 function extractBoundary(name: string, fields: ListField[]): BlueprintBoundary {

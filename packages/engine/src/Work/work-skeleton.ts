@@ -2,7 +2,8 @@ import type { AssetFormat } from '../infra/paths'
 
 /**
  * v0.6.4: renderWorkSkeleton 增强
- * v0.6.1-alpha.4 Phase B: 删 domainNames + stackNames（work ## Refs 只接受 blueprint）
+ * v0.6.1-alpha.4 Phase B: 删 domainNames + stackNames（work ## Use 只接受 blueprint）
+ * v0.7: ## Use 替代 ## Refs（语义是"使用模板来源"）
  *
  * 老接口（保持向后兼容 — domainNames/stackNames 仍接受但被忽略）：
  *   renderWorkSkeleton(workName, blueprintName, slots, format)
@@ -18,10 +19,10 @@ import type { AssetFormat } from '../infra/paths'
  */
 export interface RenderWorkSkeletonOptions {
   goal?: string
-  /** @deprecated v0.6.1-alpha.4 Phase B: Work ## Refs 只接受 blueprint；Domain/Stack 引用走 Blueprint ## Refs */
+  /** @deprecated v0.6.1-alpha.4 Phase B: Work ## Use 只接受 blueprint；Domain/Stack 引用走 Blueprint ## Use */
   domainNames?: string[]
   blueprintNames?: string[]
-  /** @deprecated v0.6.1-alpha.4 Phase B: Work ## Refs 只接受 blueprint；Stack 引用走 Blueprint ## Refs */
+  /** @deprecated v0.6.1-alpha.4 Phase B: Work ## Use 只接受 blueprint；Stack 引用走 Blueprint ## Use */
   stackNames?: string[]
   constraints?: string[]
 }

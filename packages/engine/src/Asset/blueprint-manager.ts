@@ -17,7 +17,8 @@ export function blueprintCreateTemplate(
       const m = line.match(/^ {2}slot "([^"]+)" \{/)
       if (m) slotNames.push(m[1]!)
     }
-    const mdSlots = slotNames.map((slotName) => `### ${slotName}\n- deps: []`).join('\n\n')
+    // 🆕 v0.7: ## Boundaries 替代 ## Slots（与 Blueprint 设计对齐）
+    const mdSlots = slotNames.map((slotName) => `### ${slotName}\n- observe: []\n- deps: []`).join('\n\n')
     return `---
 entity: blueprint
 version: 0.3.0
@@ -28,7 +29,7 @@ name: ${name}
 
 > TODO: one-line description of what this blueprint does
 
-## Slots
+## Boundaries
 
 ${mdSlots}
 `
@@ -39,7 +40,8 @@ ${mdSlots}
     const m = line.match(/^ {2}slot "([^"]+)" \{/)
     if (m) slotNames.push(m[1]!)
   }
-  const mdSlots = slotNames.map((slotName) => `### ${slotName}\n- deps: []`).join('\n\n')
+  // 🆕 v0.7: ## Boundaries 替代 ## Slots
+  const mdSlots = slotNames.map((slotName) => `### ${slotName}\n- observe: []\n- deps: []`).join('\n\n')
   return `---
 entity: blueprint
 version: 0.3.0
@@ -50,7 +52,7 @@ name: ${name}
 
 > TODO: one-line description of what this blueprint does
 
-## Slots
+## Boundaries
 
 ${mdSlots}
 `

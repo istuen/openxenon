@@ -69,6 +69,38 @@ describe('extractBlueprintRefs', () => {
     const r = extractBlueprintRefs('work "demo" { blueprint "Foo" ref "@prj/blueprints/foo"; }\n')
     expect(r).toEqual([{ name: 'Foo', ref: '@prj/blueprints/foo' }])
   })
+
+  // 🆕 v0.7: .md 格式（## Use 段）支持
+  test('.md ## Use 段提取单 ref', () => {
+    const md = `## Use\n### foo\n- kind: blueprint\n- ref: @prj/blueprints/foo\n`
+    expect(extractBlueprintRefs(md)).toEqual([{ name: 'foo', ref: '@prj/blueprints/foo' }])
+  })
+
+  test('.md ## Use 段提取多 ref（保留顺序）', () => {
+    const md = `## Use\n### a\n- kind: blueprint\n- ref: @prj/blueprints/a\n\n### b\n- kind: blueprint\n- ref: @prj/blueprints/b\n`
+    expect(extractBlueprintRefs(md).map((r) => r.name)).toEqual(['a', 'b'])
+  })
+
+  test('.md ## Use 段只 kind=blueprint 的 ref 被提取（其他 kind 跳过）', () => {
+    const md = `## Use\n### bp1\n- kind: blueprint\n- ref: @prj/blueprints/bp1\n\n### d1\n- kind: domain\n- ref: @prj/domains/d1\n\n### bp2\n- kind: blueprint\n- ref: @prj/blueprints/bp2\n`
+    expect(extractBlueprintRefs(md).map((r) => r.name)).toEqual(['bp1', 'bp2'])
+  })
+
+  test('.md ## Use 段无 ref 字段 → ref=null', () => {
+    // 包含 - ref: 行但 value 为空（显式 ref 缺失）
+    const md = `## Use\n### foo\n- kind: blueprint\n- ref:\n`
+    expect(extractBlueprintRefs(md)).toEqual([{ name: 'foo', ref: null }])
+  })
+
+  test('.md 无 ## Use 段 → 空数组', () => {
+    expect(extractBlueprintRefs(`# Work: demo\n## Context\n- goal: g\n`)).toEqual([])
+  })
+
+  test('.oxn 格式优先于 .md（避免重复）', () => {
+    // 同时有 .oxn 和 .md 时，优先用 .oxn
+    const mixed = `work "demo" {\n  blueprint "Foo" ref "@prj/blueprints/foo";\n}\n## Use\n### bar\n- kind: blueprint\n- ref: @prj/blueprints/bar\n`
+    expect(extractBlueprintRefs(mixed).map((r) => r.name)).toEqual(['Foo'])
+  })
 })
 
 // ───────── parseBlueprintSlim ─────────
@@ -118,6 +150,143 @@ describe('parseBlueprintSlim', () => {
     expect(r.version).toBe(1)
     // 🆕 Phase B: stack "S" 无 ref 触发 missing-stack-ref warning（不是 regex 错误）
     expect(r.errors.some((e) => e.includes('regex'))).toBe(false)
+  })
+
+  // 🆕 v0.7: .md 格式（## Use + ## Boundaries）支持
+  test('.md 格式：完整 Blueprint（frontmatter + Use + Boundaries）', () => {
+    const md = `---
+entity: blueprint
+version: 2
+name: ci-pipeline
+---
+
+# Blueprint: ci-pipeline
+
+## Use
+### payment-domain
+- kind: domain
+- ref: @md/domains/PaymentContext
+### fix-issue-workflow
+- kind: workflow
+- ref: @md/workflows/fix-issue
+### node-stack
+- kind: stack
+- ref: @md/stacks/node-ts
+
+## Boundaries
+
+### build
+- refs:
+  - domain: payment-domain
+  - workflow: fix-issue-workflow
+  - stack: node-stack
+- observe:
+  - fs-exists
+  - ts-compiles
+- deps: []
+
+### test
+- refs:
+  - domain: payment-domain
+  - workflow: fix-issue-workflow
+  - stack: node-stack
+- observe:
+  - test-pass
+- deps:
+  - build
+`
+    const r = parseBlueprintSlim(md)
+    expect(r.name).toBe('ci-pipeline')
+    expect(r.version).toBe(2)
+    expect(r.errors).toEqual([])
+    // Use 段
+    expect(r.domainRefs.map((d) => d.name)).toEqual(['payment-domain'])
+    expect(r.workflowRefs.map((w) => w.name)).toEqual(['fix-issue-workflow'])
+    expect(r.stackRefs.map((s) => s.name)).toEqual(['node-stack'])
+    // Boundaries 段 → slots
+    expect(r.slots).toHaveLength(2)
+    expect(r.slots[0]?.name).toBe('build')
+    expect(r.slots[0]?.deps).toEqual([])
+    expect(r.slots[0]?.observe).toEqual(['fs-exists', 'ts-compiles'])
+    expect(r.slots[1]?.name).toBe('test')
+    expect(r.slots[1]?.deps).toEqual(['build'])
+    expect(r.slots[1]?.observe).toEqual(['test-pass'])
+  })
+
+  test('.md 格式：缺 Use 段 → 触发 3 boundary 缺失错误', () => {
+    const md = `---
+entity: blueprint
+version: 1
+name: empty
+---
+
+# Blueprint: empty
+
+## Boundaries
+
+### b1
+- observe: []
+- deps: []
+`
+    const r = parseBlueprintSlim(md)
+    expect(r.name).toBe('empty')
+    expect(r.errors).toContain('E_MD_BLUEPRINT_MISSING_DOMAIN: Blueprint must reference at least 1 Domain')
+    expect(r.errors).toContain('E_MD_BLUEPRINT_MISSING_WORKFLOW: Blueprint must reference at least 1 Workflow')
+    expect(r.errors).toContain('E_MD_BLUEPRINT_MISSING_STACK: Blueprint must reference at least 1 Stack')
+  })
+
+  test('.md 格式：嵌套 Blueprint ref（排除自引用）', () => {
+    const md = `---
+entity: blueprint
+version: 1
+name: outer
+---
+
+# Blueprint: outer
+
+## Use
+### outer
+- kind: blueprint
+- ref: @prj/blueprints/outer
+### inner
+- kind: blueprint
+- ref: @prj/blueprints/inner
+### d
+- kind: domain
+- ref: @prj/domains/D
+
+## Boundaries
+### b1
+- observe: []
+- deps: []
+`
+    const r = parseBlueprintSlim(md)
+    expect(r.nestedBlueprintRefs.map((b) => b.name)).toEqual(['inner'])
+    // domain 也必须有（1 个）
+    expect(r.domainRefs.map((d) => d.name)).toEqual(['d'])
+  })
+
+  test('.md 格式：缺 frontmatter.name → error', () => {
+    const md = `# Blueprint: no-name
+
+## Use
+### d
+- kind: domain
+- ref: @prj/domains/D
+### w
+- kind: workflow
+- ref: @prj/workflows/W
+### s
+- kind: stack
+- ref: @prj/stacks/S
+
+## Boundaries
+### b1
+- observe: []
+- deps: []
+`
+    const r = parseBlueprintSlim(md)
+    expect(r.errors).toContain('no `entity: blueprint` declaration with name found in frontmatter')
   })
 })
 
@@ -227,6 +396,69 @@ describe('buildPerWorkBlueprintsIndex', () => {
     expect(() => buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workMdPath })).toThrow(
       /work.md not found/,
     )
+  })
+
+  // 🆕 v0.7: .md 格式 work.md 端到端
+  test('.md work.md：## Use 段提取 blueprint ref', () => {
+    writeBlueprintFile(
+      'pipeline',
+      `---
+entity: blueprint
+version: 1
+name: pipeline
+---
+
+# Blueprint: pipeline
+
+## Use
+### d1
+- kind: domain
+- ref: @prj/domains/D
+### w1
+- kind: workflow
+- ref: @prj/workflows/W
+### s1
+- kind: stack
+- ref: @prj/stacks/S
+
+## Boundaries
+### b1
+- observe: []
+- deps: []
+`,
+    )
+    writeFileSync(
+      workMdPath,
+      `---
+entity: work
+name: demo
+---
+
+# Work: demo
+
+## Use
+
+### pipeline
+- kind: blueprint
+- ref: "@prj/blueprints/pipeline"
+
+## Tasks
+### t1
+- blueprint: pipeline
+- part: implement
+`,
+    )
+    const idx = buildPerWorkBlueprintsIndex({ projectRoot: tmpDir, workName, workMdPath })
+    expect(idx.blueprintCount).toBe(1)
+    expect(idx.invalidCount).toBe(0)
+    expect(idx.declaredRefs).toEqual(['@prj/blueprints/pipeline'])
+    const bp = idx.blueprints[0]
+    expect(bp?.name).toBe('pipeline')
+    expect(bp?.domainRefs.map((d) => d.name)).toEqual(['d1'])
+    expect(bp?.workflowRefs.map((w) => w.name)).toEqual(['w1'])
+    expect(bp?.stackRefs.map((s) => s.name)).toEqual(['s1'])
+    expect(bp?.slots).toHaveLength(1)
+    expect(bp?.slots[0]?.name).toBe('b1')
   })
 })
 

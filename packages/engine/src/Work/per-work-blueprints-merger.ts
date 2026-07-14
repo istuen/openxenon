@@ -8,6 +8,10 @@
 //   - 不展开 slot 的 description（也不需要；slim 哲学）
 //   - 不递归 part/probe 内容（那是 Proof 轴的事）
 //
+// 🆕 v0.7: 同时支持 .oxn 和 .md 格式（.oxn 兼容 + .md canonical）
+//   - .oxn: `blueprint "X" ref "Y";` 在 work body 内
+//   - .md:  `## Use` 段下 `### name` + `- kind: blueprint` + `- ref: @prj/...`
+//
 // 与 work-domains-merger 对称设计。
 // =============================================================================
 
@@ -78,13 +82,44 @@ export interface DeclaredBlueprintRef {
   ref: string | null
 }
 
-export function extractBlueprintRefs(workOxnContent: string): DeclaredBlueprintRef[] {
+/**
+ * 🆕 v0.7: 同时支持 .oxn 和 .md 格式
+ *   - .oxn: `blueprint "X" ref "Y";` 在 work body 内（向后兼容）
+ *   - .md:  `## Use` 段下 `### name` + `- kind: blueprint` + `- ref: @prj/...`（canonical）
+ *
+ * 优先匹配 .oxn（如匹配到 ref，fall-through 到 .md 避免重复）；
+ * 仅 .oxn 没匹配到 ref 时尝试 .md（避免 .oxn 段被误识别为 .md）。
+ */
+export function extractBlueprintRefs(workContent: string): DeclaredBlueprintRef[] {
+  // 1️⃣ 优先 .oxn 格式：blueprint "X" ref "Y";
   const out: DeclaredBlueprintRef[] = []
-  // 不要求行首（允许 `work "x" { blueprint "Y" ref "Z"; }` 内联）
-  // 用 `;` 终止符做 disambiguate：task 内的 `blueprint "Z"` 无 `;` 不会误匹配
-  const re = /blueprint\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g
-  for (const m of workOxnContent.matchAll(re)) {
+  const oxnRe = /blueprint\s+"([^"]+)"(?:\s+ref\s+"([^"]+)")?\s*;/g
+  for (const m of workContent.matchAll(oxnRe)) {
     out.push({ name: m[1]!, ref: m[2] ?? null })
+  }
+  if (out.length > 0) return out
+
+  // 2️⃣ .md 格式：## Use 段下 ### name + - kind: blueprint + - ref: @prj/...
+  const useMatch = workContent.match(/## Use\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (!useMatch) return out
+  const useBody = useMatch[1] ?? ''
+  // 按 ### 切分 H3 块
+  for (const block of useBody.split(/\n(?=### )/)) {
+    if (!block.startsWith('### ')) continue
+    // H3 名称 = ### 后到第一个换行符之前的内容
+    const name = block.split('\n', 1)[0]?.replace(/^### /, '').trim() ?? ''
+    if (!name) continue
+    const kind = block.match(/- kind:\s*(\S+)/)?.[1]
+    if (kind !== 'blueprint') continue
+    // ref 提取：兼容 "- ref: value" 和 "- ref:"（无 value）两种格式
+    // 取 - ref: 后整行的最后一个 token（去引号）
+    const refLineMatch = block.match(/- ref:\s*([^\n]*)/)
+    if (!refLineMatch) continue
+    const refValue = refLineMatch[1]!.trim()
+    // 去可选引号 + 取最后一个 token（处理 "name @prj/..." 合并形式）
+    const refClean = refValue.replace(/^["']|["']$/g, '')
+    const refLast = refClean.split(/\s+/).at(-1) ?? ''
+    out.push({ name, ref: refLast || null })
   }
   return out
 }
@@ -180,13 +215,172 @@ export interface ParsedBlueprintSlim {
  * 从 blueprint.md 内容提取 slim 字段。
  * 永远不抛错；错误累积在 result.errors。
  *
- * 🆕 v0.6.1-alpha.3 Phase 1: 同时提取 Blueprint body 内的 4 种 ref decl：
- *   - domain "X" ref "..."    → domainRefs[]
- *   - workflow "Y" ref "..."  → workflowRefs[]
- *   - stack "Z" ref "..."     → stackRefs[]
- *   - blueprint "W" ref "..." → nestedBlueprintRefs[]
+ * 🆕 v0.7: 同时支持 .oxn 和 .md 格式
+ *   - .oxn: `blueprint "X" { ... }` body（向后兼容）
+ *   - .md:  `## Use` + `## Boundaries`（canonical）
+ *
+ * 优先识别 .oxn（向后兼容）；若 .oxn 解析失败或不存在，fallback 到 .md 解析。
  */
 export function parseBlueprintSlim(content: string): ParsedBlueprintSlim {
+  // 🆕 v0.7: 优先尝试 .md 格式（canonical）；.oxn 解析作为 fallback
+  // 判断依据：frontmatter `---` 开头 或 包含 `## Use`/`## Boundaries` 段
+  const isMdFormat = /^---\n/m.test(content) || /## (Use|Boundaries)\b/m.test(content)
+  if (isMdFormat) {
+    return parseBlueprintSlimFromMd(content)
+  }
+  return parseBlueprintSlimFromOxn(content)
+}
+
+/**
+ * 🆕 v0.7: 解析 .md 格式 Blueprint
+ *   - `## Use` 段：### name + - kind: domain/workflow/stack/blueprint + - ref: @prj/...
+ *   - `## Boundaries` 段：### name + - refs / - observe / - deps
+ *
+ * 为了与 .oxn 解析结果兼容：
+ *   - slots[] ← boundaries[]（每个 boundary 当作一个 slot，name 沿用）
+ *   - domainRefs / workflowRefs / stackRefs / nestedBlueprintRefs ← from `## Use`
+ */
+function parseBlueprintSlimFromMd(content: string): ParsedBlueprintSlim {
+  const errors: string[] = []
+
+  // 1️⃣ name + version（frontmatter）
+  const name = content.match(/^---\n[\s\S]*?name:\s*([^\n]+)/m)?.[1]?.trim() ?? null
+  const versionStr = content.match(/^---\n[\s\S]*?version:\s*([^\n]+)/m)?.[1]?.trim()
+  let version = 1
+  if (versionStr) {
+    // 🆕 v0.7: .md 格式 version 是 semver（如 "0.7.0"），提取主版本号；schema 要求 min 1
+    const major = Number.parseInt(versionStr.split('.')[0] ?? '', 10)
+    if (Number.isFinite(major) && major >= 1) version = major
+    else if (Number.isFinite(major) && major === 0) version = 1 // 0.x 归 1
+    // invalid version 不再报错（.md 格式支持 semver）
+  }
+
+  // 2️⃣ 提取 `## Use` 段 → domainRefs / workflowRefs / stackRefs / nestedBlueprintRefs
+  // 🆕 v0.7: 兼容两种格式
+  //   A：## Use + ### name H3 + - kind / - ref（每个 ref 一个 H3）
+  //   B：## Use + - kind / - ref（list under H2，无 H3）
+  const useMatch = content.match(/## Use\n([\s\S]*?)(?=\n## |\n# |$)/)
+  const domainRefs: Array<{ name: string; ref: string | null }> = []
+  const workflowRefs: Array<{ name: string; ref: string | null }> = []
+  const stackRefs: Array<{ name: string; ref: string | null }> = []
+  const nestedBlueprintRefs: Array<{ name: string; ref: string | null }> = []
+  if (useMatch) {
+    const useBody = useMatch[1] ?? ''
+    // 检测是否有 ### H3
+    const hasH3 = /^### /m.test(useBody)
+    if (hasH3) {
+      // 格式 A：每个 ### H3 是一个 ref
+      for (const block of useBody.split(/\n(?=### )/)) {
+        if (!block.startsWith('### ')) continue
+        const n = block.split('\n', 1)[0]?.replace(/^### /, '').trim() ?? ''
+        if (!n) continue
+        const kind = block.match(/- kind:\s*(\S+)/)?.[1]
+        const refLineMatch = block.match(/- ref:\s*([^\n]+)/)
+        let ref: string | null = null
+        if (refLineMatch) {
+          const refValue = refLineMatch[1]!.trim()
+          const refClean = refValue.replace(/^["']|["']$/g, '')
+          const refLast = refClean.split(/\s+/).at(-1) ?? ''
+          ref = refLast || null
+        }
+        if (kind === 'domain') domainRefs.push({ name: n, ref })
+        else if (kind === 'workflow') workflowRefs.push({ name: n, ref })
+        else if (kind === 'stack') stackRefs.push({ name: n, ref })
+        else if (kind === 'blueprint' && n !== name) nestedBlueprintRefs.push({ name: n, ref })
+      }
+    } else {
+      // 格式 B：直接解析 list
+      // 按换行分割，每行 `- kind: ref`
+      for (const line of useBody.split('\n')) {
+        const m = line.match(/^-\s*(\w+):\s*(.+)$/)
+        if (!m) continue
+        const kind = m[1]!
+        const refValue = m[2]!.trim()
+        const refClean = refValue.replace(/^["']|["']$/g, '')
+        const refLast = refClean.split(/\s+/).at(-1) ?? ''
+        const ref = refLast || null
+        if (kind === 'domain') domainRefs.push({ name: kind, ref })
+        else if (kind === 'workflow') workflowRefs.push({ name: kind, ref })
+        else if (kind === 'stack') stackRefs.push({ name: kind, ref })
+        else if (kind === 'blueprint' && kind !== name) nestedBlueprintRefs.push({ name: kind, ref })
+      }
+    }
+  }
+
+  // 3️⃣ 提取 `## Boundaries` 段 → slots[]（每个 boundary 当作一个 slot）
+  const slots: SlotSlim[] = []
+  const boundariesMatch = content.match(/## Boundaries\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (boundariesMatch) {
+    for (const block of (boundariesMatch[1] ?? '').split(/\n(?=### )/)) {
+      if (!block.startsWith('### ')) continue
+      // H3 名称 = ### 后到第一个换行符之前的内容
+      const name_ = block.split('\n', 1)[0]?.replace(/^### /, '').trim() ?? ''
+      if (!name_) continue
+      // 解析 deps / observe 列表（多行或数组形式）
+      // 列表项格式：- item 或 - "item"（引号可选）
+      // 关键：列表项必须以"  -"或"- "开头，且不能有":"（避免捕获下一个字段如"deps: []"）
+      function parseListField(fieldName: string): string[] {
+        // 多行列表：- deps:\n  - a\n  - b
+        const multilineMatch = block.match(new RegExp(`- ${fieldName}:\\s*\\n((?:\\s+-\\s+[^:\\n]+\\n?)+)`))
+        if (multilineMatch) {
+          const items: string[] = []
+          for (const m of multilineMatch[1]!.matchAll(/\s+-\s+"?([^"\n]+)"?/g)) {
+            items.push(m[1]!.trim())
+          }
+          return items
+        }
+        // 数组形式：- deps: ["a", "b"] 或 - deps: []
+        const arrayMatch = block.match(new RegExp(`- ${fieldName}:\\s*\\[([^\\]]*)\\]`))
+        if (arrayMatch) {
+          const items: string[] = []
+          for (const m of arrayMatch[1]!.matchAll(/"([^"]+)"/g)) {
+            items.push(m[1]!)
+          }
+          return items
+        }
+        return []
+      }
+      slots.push({
+        name: name_,
+        deps: parseListField('deps'),
+        observe: parseListField('observe'),
+      })
+    }
+  }
+
+  // 4️⃣ 强制约束：MD-native blueprint 必须引用 1 Domain + 1 Workflow + 1 Stack
+  if (errors.length === 0) {
+    if (domainRefs.length < 1) {
+      errors.push('E_MD_BLUEPRINT_MISSING_DOMAIN: Blueprint must reference at least 1 Domain')
+    }
+    if (workflowRefs.length < 1) {
+      errors.push('E_MD_BLUEPRINT_MISSING_WORKFLOW: Blueprint must reference at least 1 Workflow')
+    }
+    if (stackRefs.length < 1) {
+      errors.push('E_MD_BLUEPRINT_MISSING_STACK: Blueprint must reference at least 1 Stack')
+    }
+  }
+
+  if (!name) {
+    errors.push('no `entity: blueprint` declaration with name found in frontmatter')
+  }
+
+  return {
+    name,
+    version,
+    slots,
+    errors,
+    domainRefs,
+    workflowRefs,
+    stackRefs,
+    nestedBlueprintRefs,
+  }
+}
+
+/**
+ * 解析 .oxn 格式 Blueprint（向后兼容）
+ */
+function parseBlueprintSlimFromOxn(content: string): ParsedBlueprintSlim {
   const errors: string[] = []
 
   const nameMatch = content.match(/^\s*blueprint\s+"([^"]+)"\s*\{/m)
@@ -210,7 +404,7 @@ export function parseBlueprintSlim(content: string): ParsedBlueprintSlim {
     slots.push(slots_)
   }
 
-  // 🆕 Phase 1: 提取 Blueprint body 内的 4 种 ref decl
+  // 提取 Blueprint body 内的 4 种 ref decl
   const extractRefs = (kind: 'domain' | 'workflow' | 'stack' | 'blueprint') => {
     const re = new RegExp(`^\\s*${kind}\\s+"([^"]+)"(?:\\s+ref\\s+"([^"]+)")?\\s*;`, 'gm')
     const out: Array<{ name: string; ref: string | null }> = []
@@ -222,11 +416,8 @@ export function parseBlueprintSlim(content: string): ParsedBlueprintSlim {
   const domainRefs = extractRefs('domain')
   const workflowRefs = extractRefs('workflow')
   const stackRefs = extractRefs('stack')
-  const nestedBlueprintRefs = extractRefs('blueprint').filter((r) => r.name !== name) // 排除自引用
+  const nestedBlueprintRefs = extractRefs('blueprint').filter((r) => r.name !== name)
 
-  // 🆕 v0.6.1-alpha.4 Phase B.6: 强制约束 — MD-native blueprint 必须引用 1 Domain + 1 Workflow + 1 Stack
-  // 注意：.oxn 格式的 blueprint 已废弃（v0.7.0），仅 .md 格式支持 domain/workflow/stack refs。
-  // 所以此约束仅对含 `domain "X"` 或 `## Refs` 的内容生效。
   const hasBoundaryRefs = domainRefs.length > 0 || workflowRefs.length > 0 || stackRefs.length > 0
   if (errors.length === 0 && hasBoundaryRefs) {
     if (domainRefs.length < 1) {
