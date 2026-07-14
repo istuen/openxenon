@@ -6,22 +6,23 @@ Manage the full Asset lifecycle: create / modify / evolve / delete / query. Cove
 
 Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop).
 
-> **v0.6.1-alpha.4 changes**: AssetKind 6→5; original blueprint renamed **workflow**; new **Blueprint** = composition template; External converged to boundary `## Externals`; External status independent index.
+> **v0.6.1-alpha.4 changes**: AssetKind 6→5; original blueprint renamed **workflow**; new **Blueprint** = composition template (uses `## Use` to reference 3 boundaries + `## Boundaries` for orchestration).
+>
+> **v0.7+ removes External**: external resources declared via Asset Paper Schema `references: [{ url }]` field; no `## Externals` H2 category.
 
 ## Hard rules
 - Asset creation triggers planLock; modification must go through `oxn work create --type asset` (v0.6.3+ hard-block)
 - `references[]` DAG validation: no circular deps (same-kind isolation; cross-kind via Blueprint composition)
 - `abstract` / `references` / `citations` / `auditTrail` 4 fields must be complete
 - 5 AssetKind H2 category whitelists **must not mix**
-- **External inline**: `url` OR `path` (mutually exclusive); `kind` ∈ 6-value enum
-- External status changes **do NOT** participate in Asset content_hash
+- **External resources**: declared via Asset Paper Schema `references: [{ url }]` field (no `## Externals`)
 
 ## Paradigm quick reference (three boundaries)
-- **Domain** = business boundary (term/ban/invariant + optional ## Externals)
-- **Workflow** = execution boundary (slot DAG + optional ## Externals)
-- **Stack** = environment boundary (runtime/linter/test + optional ## Externals)
-- **Blueprint** = composition template (`## Refs`; **NO ## Externals**)
-- **Roadmap** = navigation graph (scene → Domain/Workflow/Stack/Blueprint)
+- **Domain** = business boundary (term/ban/invariant)
+- **Workflow** = execution boundary (slot DAG with desc only)
+- **Stack** = environment boundary (tools list)
+- **Blueprint** = composition template (`## Use` references 3 boundaries + `## Boundaries` orchestration units)
+- **Roadmap** = cross-kind navigation index
 
 ## Execution
 1. **Choose AssetKind**: see `references/asset-kind-reference.md`
@@ -34,18 +35,17 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 ## Template selection (v0.6.1-alpha.4)
 | AssetKind | Template | Core H2 |
 |---|---|---|
-| domain | `assets/domain.md` | Terms / Bans / Invariants / **Externals** |
-| workflow | `assets/workflow.md` | Props / Slots / **Externals** |
-| stack | `assets/stack.md` | Runtimes / Linters / Tests / **Externals** |
-| blueprint | `assets/blueprint.md` | **Refs** |
+| domain | `assets/domain.md` | Terms / Bans / Invariants |
+| workflow | `assets/workflow.md` | Slots (desc only) |
+| stack | `assets/stack.md` | Tools |
+| blueprint | `assets/blueprint.md` | Use / Boundaries |
 | roadmap | `assets/roadmap.md` | Scenes |
 
-> **External detail + kind enum + status + CLI**: see `references/asset-kind-reference.md` + `references/asset-creation.md`
+> **Template detail**: see `references/asset-kind-reference.md` + `references/asset-creation.md`
 
 ## Key error codes
 - `IAP_ASSET_PATH_CONFLICT` / `IAP_ALIGN_LOCK_HASH_MISMATCH` → YIELD_TO_HUMAN
 - `E_MD_DUPLICATE_H3` / `E_MD_CATEGORY_UNKNOWN` → fix H3/H2 naming
-- `E_MD_EXTERNAL_KIND_INVALID` / `_URL_PATH_CONFLICT` / `_URL_PATH_REQUIRED` → fix External fields
 
 ## Forbidden
 - Don't write deprecated syntax: `noun` / `verb` / `domain_rules` / `expectation` / `rule`
@@ -54,7 +54,7 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 - Don't mix Asset mode and Work mode (Asset mode has no task DAG)
 - Don't delete referenced Assets (run `oxn asset archive` first)
 - Don't create library/external Asset types (removed in v0.6.1-alpha.4)
-- Don't declare External in Blueprint (Blueprint is pure composition layer)
+- Don't declare External in Blueprint (Blueprint is pure composition layer; external refs come from composed boundaries)
 
 ## Roadmap routing
 

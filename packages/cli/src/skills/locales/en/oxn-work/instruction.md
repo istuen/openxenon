@@ -41,13 +41,13 @@ D=Business Intent | B=Tech Intent | W=Align orchestration | T=Align execution
      --goal "<goal>" \
      [--constraints "c1" "c2"]
    ```
-   Or manually `fork assets/work-{explore,develop,fix,onboarding}.md → work.md` and edit `## Refs` + `## Context` by hand.
+    Or manually `fork assets/work-{explore,develop,fix,onboarding}.md → work.md` and edit `## Use` + `## Context` by hand.
 5. **Run 8 phases**: `references/8-phase-detail.md`
 6. **Errors**: `references/error-codes.md`
 
 ## Multiple Assets and Tasks relationship
 
-- **Work-level `## Refs`**: declare `domain[]` + `blueprint[]` + `stack[]` ref pool (N items)
+- **Work-level `## Use`**: declare `domain[]` + `blueprint[]` + `stack[]` ref pool (N items)
 - **Task-level**: each task picks **single** 1 blueprint + 1 domain in `task.oxn` (subset of Work-level ref pool)
 - **add-task validation**: task's chosen blueprint/domain **must** exist in Work-level ref pool (`add-task` errors with `not declared in work`)
 - **planLock impact**: Work-level multi-refs cause `domains.json` / `blueprints.json` slim index to contain N entries; hash algorithm unchanged (hash the whole .json file)
