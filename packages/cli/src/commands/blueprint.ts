@@ -250,15 +250,15 @@ const validateSubcommand = defineCommand({
     // v0.7.0: IR is extracted directly from .md (Langium removed)
     const ir = result.ir ?? null
 
-    // v0.6.1-alpha.0 #1-13: slot DAG 环检测（硬阻断）
+    // 🆕 v0.7: boundary DAG 环检测（替代 slot DAG）
     if (ir) {
-      const depsMap = Object.fromEntries(ir.slots.map((s) => [s.name, s.deps]))
+      const depsMap = Object.fromEntries(ir.boundaries.map((b) => [b.name, b.deps]))
       const cycle = findDagCycle(depsMap)
       if (cycle) {
         return outputError(
           {
             code: 'OXN_BLUEPRINT_DAG_CYCLE',
-            message: `blueprint ${name} has a cycle in slot deps: ${cycle.join(' → ')}`,
+            message: `blueprint ${name} has a cycle in boundary deps: ${cycle.join(' → ')}`,
             suggestion:
               'remove the cycle to make the DAG acyclic; use `oxn blueprint compile` to see the resolved order',
           },
@@ -300,12 +300,12 @@ const validateSubcommand = defineCommand({
         data: {
           name,
           path: bpPath,
-          slotCount: ir?.slots.length ?? 0,
-          slots: ir?.slots ?? [],
-          props: ir?.props ?? [],
+          boundaryCount: ir?.boundaries.length ?? 0,
+          boundaries: ir?.boundaries ?? [],
+          use: ir?.use ?? { domain: [], workflow: [], stack: [] },
           version: ir?.version ?? 1,
         },
-        human: `Blueprint ${name} is valid (${ir?.slots.length ?? 0} slots, ${ir?.props.length ?? 0} props).`,
+        human: `Blueprint ${name} is valid (${ir?.boundaries.length ?? 0} boundaries, ${(ir?.use?.domain.length ?? 0) + (ir?.use?.workflow.length ?? 0) + (ir?.use?.stack.length ?? 0)} use refs).`,
       },
       format,
     )

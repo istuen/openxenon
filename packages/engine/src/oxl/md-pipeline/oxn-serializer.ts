@@ -125,46 +125,38 @@ export function serializeBlueprintToOxn(ir: BlueprintIR, ts?: string): string {
     lines.push(indent(1, `description = "${escapeString(ir.description)}"`))
   }
 
-  // prop declarations
-  for (const prop of ir.props) {
-    const parts: string[] = []
-    parts.push(`type = ${prop.type}`)
-    if (prop.values.length > 0) {
-      parts.push(`values = [${prop.values.map((v) => `"${escapeString(v)}"`).join(', ')}]`)
+  // 🆕 v0.7: use 段（引用三边界）
+  if (ir.use) {
+    for (const d of ir.use.domain) {
+      lines.push(indent(1, `domain "${escapeString(d.name)}" ref "${escapeString(d.ref)}";`))
     }
-    if (prop.required) parts.push('required = true')
-    if (prop.default !== null && prop.default !== undefined) {
-      const dq = formatDefaultValue(prop.type, prop.default)
-      parts.push(`default = ${dq}`)
+    for (const w of ir.use.workflow) {
+      lines.push(indent(1, `workflow "${escapeString(w.name)}" ref "${escapeString(w.ref)}";`))
     }
-    lines.push(indent(1, `prop "${escapeString(prop.name)}" { ${parts.join('; ')} }`))
+    for (const s of ir.use.stack) {
+      lines.push(indent(1, `stack "${escapeString(s.name)}" ref "${escapeString(s.ref)}";`))
+    }
   }
-  if (ir.props.length > 0) lines.push('')
+  if (ir.use.domain.length || ir.use.workflow.length || ir.use.stack.length) lines.push('')
 
-  // slot declarations
-  for (const slot of ir.slots) {
-    lines.push(indent(1, `slot "${escapeString(slot.name)}" {`))
-    if (slot.deps.length > 0) {
-      lines.push(indent(2, `deps = [${slot.deps.map((d) => `"${escapeString(d)}"`).join(', ')}]`))
+  // 🆕 v0.7: boundary declarations（替代 slot declarations）
+  for (const boundary of ir.boundaries) {
+    lines.push(indent(1, `boundary "${escapeString(boundary.name)}" {`))
+    if (boundary.refs.length > 0) {
+      const refsStr = boundary.refs.map((r) => `${r.kind} "${escapeString(r.ref)}"`).join(', ')
+      lines.push(indent(2, `refs = [${refsStr}]`))
     }
-    if (slot.observe.length > 0) {
-      lines.push(indent(2, `observe = [${slot.observe.map((o) => `"${escapeString(o)}"`).join(', ')}]`))
+    if (boundary.observe.length > 0) {
+      lines.push(indent(2, `observe = [${boundary.observe.map((o) => `"${escapeString(o)}"`).join(', ')}]`))
+    }
+    if (boundary.deps.length > 0) {
+      lines.push(indent(2, `deps = [${boundary.deps.map((d) => `"${escapeString(d)}"`).join(', ')}]`))
     }
     lines.push(indent(1, '}'))
   }
 
   lines.push('}')
   return `${lines.join('\n')}\n`
-}
-
-/** 格式化 default 值: 保留 NUMBER / BooleanLiteral / STRING 原样 */
-function formatDefaultValue(type: string, raw: string): string {
-  const v = raw.trim()
-  if (type === 'string') return `"${escapeString(v)}"`
-  if (type === 'number' && /^-?\d+(\.\d+)?$/.test(v)) return v
-  if (type === 'boolean' && (v === 'true' || v === 'false')) return v
-  // fallback: 字符串
-  return `"${escapeString(v)}"`
 }
 
 // ========================================================================

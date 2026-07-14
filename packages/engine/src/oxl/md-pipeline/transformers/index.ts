@@ -55,8 +55,8 @@ export {
   BLUEPRINT_CATEGORIES,
   type BlueprintCategory,
   type BlueprintIR,
-  type BlueprintProp,
-  type BlueprintSlot,
+  type BlueprintUse,
+  type BlueprintBoundary,
 } from './blueprint'
 
 export {

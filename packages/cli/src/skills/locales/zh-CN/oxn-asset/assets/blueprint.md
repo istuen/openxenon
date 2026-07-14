@@ -2,35 +2,56 @@
 entity: blueprint
 version: 0.1.0
 name: <name>
-abstract: |
-  TODO: 一句话描述本组合模板的边界组合（domain + workflow + stack）。
-  TODO: 适用场景（2-3 行）
-references: []
-citations: 0
 ---
 
 # Blueprint: <name>
 
-> TODO: 一句话描述本组合模板的工作流程
+> TODO: 一句话描述本编排模板的边界组合（domain + workflow + stack）
 
-## Refs
+## Use
 
 <!-- 示例：删除下方示例，添加你的 boundary refs -->
 <!-- 至少引用 1 个 Domain + 1 个 Workflow + 1 个 Stack -->
 
 ### payment-domain
-- kind: domain
-- ref: @md/domains/PaymentContext
+- domain: @md/domains/PaymentContext
 
 ### fix-issue-workflow
-- kind: workflow
-- ref: @md/workflows/fix-issue
+- workflow: @md/workflows/fix-issue
 
 ### node-stack
-- kind: stack
-- ref: @md/stacks/node-ts
+- stack: @md/stacks/node-ts
 
-<!-- 可选：嵌套 Blueprint（多层组合） -->
-<!-- ### base-setup-blueprint
-- kind: blueprint
-- ref: @md/blueprints/base-setup -->
+## Boundaries
+
+<!-- 每个 boundary 是一个编排单元，引用边界 + 声明可用 Probe + deps -->
+
+### build
+- refs:
+  - domain: payment-domain
+  - workflow: fix-issue-workflow
+  - stack: node-stack
+- observe:
+  - ts-compiles
+  - fs-exists
+- deps: []
+
+### test
+- refs:
+  - domain: payment-domain
+  - workflow: fix-issue-workflow
+  - stack: node-stack
+- observe:
+  - test-pass
+  - lint-check
+- deps:
+  - build
+
+### deploy
+- refs:
+  - workflow: fix-issue-workflow
+  - stack: node-stack
+- observe:
+  - fs-exists
+- deps:
+  - test

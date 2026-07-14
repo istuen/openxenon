@@ -1,16 +1,19 @@
 /**
  * md-bridge/compilers/stack-compiler.ts — Stack EntityCompiler 实现
  *
- * v0.6.1-alpha.1 Batch 2
+ * v0.7 重构（PR-1）：
+ * - H2 分类白名单：Tools（合并 Runtimes / Linters / Tests）
+ * - 删除 Externals（external 并入 frontmatter references）
+ * - StackItem 保持 name + props 结构，无 role 分类
  *
  * 角色：
- * - 编译：Langium StackDeclaration → .md（H1 Stack + ## Runtimes/Linters/Tests + ### 实例 + 列表）
- * - 解析：mdast → 业务对象（runtimes / linters / testers）
+ * - 编译：StackDeclaration → .md（H1 Stack + ## Tools + ### 实例 + 列表）
+ * - 解析：mdast → 业务对象（tools）
  * - 校验：H1 + H2 白名单 + H3 唯一性
  *
  * 关键不变量：
- * - H2 分类白名单：Runtimes / Linters / Tests
- * - 每个 H3 实例是 runtime/linter/test 名字（如 typescript、biome、bun-test）
+ * - H2 分类白名单：Tools
+ * - 每个 H3 实例是一个 tool 名（如 typescript / biome / bun-test）
  * - H3 内 key-value 列表（version / config / command 等）
  * - frontmatter Asset Paper 4 字段：abstract / references / citations
  *
@@ -31,16 +34,12 @@ import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
 import { extractListFields, getScalar } from '../../md-pipeline/utils.js'
 import type { IntentEntityType } from '../pipeline.js'
 import { findLegacyIntentBlocks } from './_legacy-detect.js'
-import { validateExternal, type ExternalEntry } from './external-validate.js'
 
 /** Stack H2 分类白名单
  *
- * v0.6.1-alpha.1：与 OXL grammar 对齐
- * - Runtimes: 运行时（typescript / node / python 等）
- * - Linters: 代码检查工具（biome / eslint / prettier 等）
- * - Tests: 测试工具（bun-test / vitest / jest 等）
+ * v0.7 重构：合并 Runtimes / Linters / Tests 为 Tools（无 role 分类）
  */
-const STACK_CATEGORIES = ['Runtimes', 'Linters', 'Tests', 'Externals'] as const
+const STACK_CATEGORIES = ['Tools'] as const
 type StackCategory = (typeof STACK_CATEGORIES)[number]
 
 interface StackItem {
@@ -64,15 +63,8 @@ export class StackCompiler implements EntityCompiler {
       references?: string[]
       citations?: number
       descriptions?: Array<{ value?: string }>
-      runtimes?: Array<{
-        name: string
-        props?: Array<{ name: string; $type: string }>
-      }>
-      linters?: Array<{
-        name: string
-        props?: Array<{ name: string; $type: string }>
-      }>
-      testers?: Array<{
+      // 🆕 v0.7: tools 合并 runtimes + linters + testers
+      tools?: Array<{
         name: string
         props?: Array<{ name: string; $type: string }>
       }>
@@ -127,25 +119,14 @@ export class StackCompiler implements EntityCompiler {
       }
     }
 
-    // 渲染 runtime / linter / test 块
-    const blockRenderers: Array<{
-      key: 'runtimes' | 'linters' | 'testers'
-      heading: StackCategory
-    }> = [
-      { key: 'runtimes', heading: 'Runtimes' },
-      { key: 'linters', heading: 'Linters' },
-      { key: 'testers', heading: 'Tests' },
-    ]
-
-    for (const { key, heading } of blockRenderers) {
-      const blocks = decl[key]
-      if (!blocks || blocks.length === 0) continue
-      sections.push(`## ${heading}`)
+    // ## Tools（合并所有 tool 类型）
+    if (decl.tools && decl.tools.length > 0) {
+      sections.push('## Tools')
       sections.push('')
-      for (const block of blocks) {
-        sections.push(`### ${block.name}`)
-        if (block.props) {
-          for (const p of block.props) {
+      for (const tool of decl.tools) {
+        sections.push(`### ${tool.name}`)
+        if (tool.props) {
+          for (const p of tool.props) {
             sections.push(`- ${p.name}: "TODO"`)
           }
         }
@@ -167,7 +148,6 @@ export class StackCompiler implements EntityCompiler {
   parse(input: ParseInput): Record<string, unknown> {
     const { mdast, frontmatter } = input
 
-    // v0.6.1 PR-1: 安全网移除，无条件抛 E_MD_DEPRECATED_SYNTAX
     const legacy = findLegacyIntentBlocks(mdast)
     if (legacy.length > 0) {
       throw new Error(
@@ -178,9 +158,8 @@ export class StackCompiler implements EntityCompiler {
 
     const contexts = extractHeadingContexts(mdast)
 
-    const runtimes: StackItem[] = []
-    const linters: StackItem[] = []
-    const testers: StackItem[] = []
+    // 🆕 v0.7: tools 合并 runtimes + linters + testers
+    const tools: StackItem[] = []
 
     for (const ctx of contexts) {
       if (!ctx.h2 || !ctx.h3) continue
@@ -196,16 +175,8 @@ export class StackCompiler implements EntityCompiler {
       }
 
       const item: StackItem = { name: ctx.h3, props }
-      switch (ctx.h2 as StackCategory) {
-        case 'Runtimes':
-          runtimes.push(item)
-          break
-        case 'Linters':
-          linters.push(item)
-          break
-        case 'Tests':
-          testers.push(item)
-          break
+      if (ctx.h2 === 'Tools') {
+        tools.push(item)
       }
     }
 
@@ -216,9 +187,7 @@ export class StackCompiler implements EntityCompiler {
       abstract: typeof frontmatter.abstract === 'string' ? frontmatter.abstract : undefined,
       references: Array.isArray(frontmatter.references) ? (frontmatter.references as string[]) : [],
       citations: typeof frontmatter.citations === 'number' ? frontmatter.citations : 0,
-      runtimes,
-      linters,
-      testers,
+      tools,
     }
   }
 
@@ -265,7 +234,6 @@ export class StackCompiler implements EntityCompiler {
     }
 
     const h3Seen = new Map<string, { name: string; line: number }>()
-    const externals: ExternalEntry[] = []
     for (const ctx of contexts) {
       if (!ctx.h2 || !ctx.h3) continue
       const key = `${ctx.h2}::${ctx.h3}`
@@ -280,25 +248,6 @@ export class StackCompiler implements EntityCompiler {
       } else {
         h3Seen.set(key, { name: ctx.h3, line: ctx.h3Position?.line ?? 0 })
       }
-
-      // 🆕 Phase 2: External 校验
-      if (ctx.h2 === 'Externals') {
-        const fields = ctx.h3List ? extractListFields(ctx.h3List) : []
-        externals.push({
-          name: ctx.h3,
-          url: getScalar(fields, 'url'),
-          path: getScalar(fields, 'path'),
-          kind: getScalar(fields, 'kind') ?? '',
-          ttl: getScalar(fields, 'ttl'),
-          auth: getScalar(fields, 'auth'),
-          summary: getScalar(fields, 'summary'),
-        })
-      }
-    }
-
-    // 🆕 Phase 2: External entry 校验
-    for (const ext of externals) {
-      validateExternal(ext, errors)
     }
 
     return errors

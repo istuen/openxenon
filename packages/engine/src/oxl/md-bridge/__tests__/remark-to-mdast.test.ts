@@ -121,7 +121,9 @@ version: 0.3.0
   })
 
   describe('parseBlueprintMd', () => {
-    test('解析标准 Blueprint', () => {
+    test('解析标准 Blueprint (Props/Slots → v0.6.1 兼容)', () => {
+      // 注: parseBlueprintMd 是 v0.3 轻量解析器，仅识别 Props/Slots H2
+      //  v0.7 的 Use/Boundaries 由 BlueprintCompiler 解析
       const md = `---
 entity: blueprint
 version: 1.0.0
@@ -138,18 +140,11 @@ version: 1.0.0
 
 ### slot-1
 - deps: []
-
-## Probes
-
-### probe-1
-- type: shell-exec
-- command: bun test
 `
       const r = parseBlueprintMd(md)
       expect(r.name).toBe('dev-workflow')
       expect(r.props).toHaveLength(1)
       expect(r.slots).toHaveLength(1)
-      expect(r.probes).toHaveLength(1)
     })
   })
 

@@ -430,14 +430,15 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
         format,
       )
     }
-    if ((bp.slots ?? []).length === 0) {
-      return outputError({ code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${bp.name}" has no part slots` }, format)
+    // 🆕 v0.7: Blueprint Boundaries 替代 Slots
+    if ((bp.boundaries ?? []).length === 0) {
+      return outputError({ code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${bp.name}" has no boundaries` }, format)
     }
 
     const resolvedBlueprintName = parsePartName(bp.name)
-    const slots = (bp.slots ?? []).map((s) => ({
-      name: parsePartName(s.name),
-      align: capitalize(parsePartName(s.name)),
+    const boundaries = (bp.boundaries ?? []).map((b) => ({
+      name: parsePartName(b.name),
+      align: capitalize(parsePartName(b.name)),
     }))
 
     // 2. 创建 works/<workName>/ 目录
@@ -476,7 +477,7 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
     const workContent = renderWorkSkeleton(
       workName,
       resolvedBlueprintName,
-      slots,
+      boundaries,
       assetFormat,
       Object.keys(assetSkeletonOptions).length > 0 ? assetSkeletonOptions : undefined,
     )
@@ -497,12 +498,12 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
       }
     }
 
-    // 5. 为每个 slot 生成 task.md 骨架
+    // 5. 为每个 boundary 生成 task.md 骨架
     const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
-    for (const slot of slots) {
-      const t = writeTaskTemplate(projectRoot, workName, slot.name, resolvedBlueprintName, '')
+    for (const boundary of boundaries) {
+      const t = writeTaskTemplate(projectRoot, workName, boundary.name, resolvedBlueprintName, '')
       autoTasks.push({
-        name: slot.name,
+        name: boundary.name,
         path: t.path,
         status: t.written ? 'created' : 'exists',
       })
@@ -518,8 +519,8 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
           blueprint: {
             name: resolvedBlueprintName,
             version: bp.version ?? '',
-            slotCount: slots.length,
-            slots: slots.map((s) => s.name),
+            boundaryCount: boundaries.length,
+            boundaries: boundaries.map((b) => b.name),
           },
           assetKind,
           domain: domainName,
@@ -706,16 +707,16 @@ const createSubcommand = defineCommand({
             format,
           )
         }
-        if ((bp.slots ?? []).length === 0) {
+        if ((bp.boundaries ?? []).length === 0) {
           return outputError(
-            { code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${bp.name}" has no part slots` },
+            { code: 'OXN_INVALID_BLUEPRINT', message: `Blueprint "${bp.name}" has no boundaries` },
             format,
           )
         }
         const resolvedBlueprintName = parsePartName(bp.name)
-        const slots = (bp.slots ?? []).map((s) => ({
-          name: parsePartName(s.name),
-          align: capitalize(parsePartName(s.name)),
+        const boundaries = (bp.boundaries ?? []).map((b) => ({
+          name: parsePartName(b.name),
+          align: capitalize(parsePartName(b.name)),
         }))
         const outputDir = customOutputDir
           ? join(projectRoot, customOutputDir)
@@ -748,7 +749,7 @@ const createSubcommand = defineCommand({
         const workContent = renderWorkSkeleton(
           workName,
           resolvedBlueprintName,
-          slots,
+          boundaries,
           assetFormat,
           Object.keys(skeletonOptions).length > 0 ? skeletonOptions : undefined,
         )
@@ -770,14 +771,14 @@ const createSubcommand = defineCommand({
             // autoSync 失败不阻断主命令
           }
         }
-        // v0.6.1-alpha.0 #3-3: work create 自动为 blueprint 每个 slot 生成 task.md 骨架
+        // 🆕 v0.7: work create 自动为 blueprint 每个 boundary 生成 task.md 骨架
         //   避免 work 锁后 run 报 "task X not found in work Y"。
         //   用户可继续手动 `add-task` 补 task 或 `--force` 覆盖。
         const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
-        for (const slot of slots) {
-          const t = writeTaskTemplate(projectRoot, workName, slot.name, resolvedBlueprintName, '')
+        for (const boundary of boundaries) {
+          const t = writeTaskTemplate(projectRoot, workName, boundary.name, resolvedBlueprintName, '')
           autoTasks.push({
-            name: slot.name,
+            name: boundary.name,
             path: t.path,
             status: t.written ? 'created' : 'exists',
           })
@@ -792,8 +793,8 @@ const createSubcommand = defineCommand({
               blueprint: {
                 name: resolvedBlueprintName,
                 version: bp.version ?? '',
-                slotCount: slots.length,
-                slots: slots.map((s) => s.name),
+                boundaryCount: boundaries.length,
+                boundaries: boundaries.map((b) => b.name),
               },
               // v0.6.4: 把传入的 Asset refs 回显给用户（便于核对）
               declaredRefs: {

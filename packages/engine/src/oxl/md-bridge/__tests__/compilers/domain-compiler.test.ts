@@ -177,69 +177,23 @@ describe('DomainCompiler.validate', () => {
     expect(dup).toBeUndefined()
   })
 
-  // ─── v0.4 PR-A: Stack H2 软推荐 ───
-  test('## Stack 分类被接受（不在 E_MD_CATEGORY_UNKNOWN 之列）', () => {
-    const root = parseMd('# Domain: Test\n\n## Stack\n\n### runtime\n\n- language: typescript\n- runtime: bun\n')
+  // ─── v0.7: Stack 已从 Domain 移除（v0.4 PR-A 软推荐已废弃） ───
+  test('## Stack 分类被拒绝（不属于 Domain 合法 H2）', () => {
+    const root = parseMd('# Domain: Test\n\n## Stack\n\n### runtime\n\n- language: typescript\n')
     const frontmatter = { entity: 'domain', name: 'Test' }
     const errors = compiler.validate({ mdast: root, frontmatter })
     const unknown = errors.find((e) => e.code === 'E_MD_CATEGORY_UNKNOWN')
-    expect(unknown).toBeUndefined()
+    expect(unknown).toBeDefined()
   })
 
-  test('## Stack 与 ## Terms 共存合法', () => {
+  test('## Terms / ## Bans / ## Invariants 共存合法', () => {
     const root = parseMd(
-      '# Domain: Test\n\n## Terms\n\n### Member\n\n- desc: business\n\n## Stack\n\n### runtime\n\n- language: typescript\n',
+      '# Domain: Test\n\n## Terms\n\n### Member\n\n- desc: business\n\n## Bans\n\n### forbidden\n\n- items:\n  - foo\n\n## Invariants\n\n### inv-1\n\n- value: rule\n',
     )
     const frontmatter = { entity: 'domain', name: 'Test' }
     const errors = compiler.validate({ mdast: root, frontmatter })
     const fatal = errors.filter((e) => e.severity === 'error')
     expect(fatal).toEqual([])
-  })
-})
-
-describe('DomainCompiler.parse — Stack 子结构 (v0.4 PR-A)', () => {
-  const compiler = new DomainCompiler()
-
-  test('parse 提取 ## Stack → stack[] 含 H3 + fields', () => {
-    const md = `---
-entity: domain
-version: 0.3.0
-name: TestDomain
----
-# Domain: TestDomain
-
-## Stack
-### runtime
-- language: typescript
-- runtime: bun
-- version: ">=1.1.0"
-
-### linter
-- tool: biome
-- config: biome.json
-`
-    const root = parseMd(md)
-    const frontmatter = { entity: 'domain', version: '0.3.0', name: 'TestDomain' }
-    const result = compiler.parse({ mdast: root, frontmatter }) as {
-      stack: Array<{ id: string; name: string; fields: Array<{ key: string; value: unknown }> }>
-    }
-    expect(result.stack).toBeDefined()
-    expect(result.stack).toHaveLength(2)
-
-    const runtime = result.stack.find((s) => s.name === 'runtime')
-    expect(runtime).toBeDefined()
-    expect(runtime?.id).toBe('stack-runtime')
-
-    const linter = result.stack.find((s) => s.name === 'linter')
-    expect(linter).toBeDefined()
-    expect(linter?.fields.find((f) => f.key === 'tool')?.value).toBe('biome')
-  })
-
-  test('parse: 缺 ## Stack → stack[] 为空数组（软推荐）', () => {
-    const root = parseMd(SAMPLE_DOMAIN)
-    const frontmatter = { entity: 'domain', version: '0.3.0', name: 'TestDomain' }
-    const result = compiler.parse({ mdast: root, frontmatter }) as { stack: unknown[] }
-    expect(result.stack).toEqual([])
   })
 })
 

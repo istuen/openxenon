@@ -43,16 +43,3 @@ citations: 0
 
 ### inv-idempotency
 - value: 支付接口必须具备幂等性（idempotency_key）
-
-## Externals（v0.6.1-alpha.4 可选）
-
-> 当本 Domain 需要引用 OXN 系统外的资源时，添加 `## Externals` section。
-> 6 值 kind enum：rest-api | webhook | documentation | library | config | service
-> url（网络）或 path（项目内）二选一。
-
-<!-- ### <external-name>
-- url: https://api.example.com/v1
-- kind: rest-api
-- ttl: 7d
-- auth: api-key
-- summary: TODO -->

@@ -3,16 +3,20 @@
  *
  * v0.3 改革 PR-A（feat/v0.3-t18-md-native-grammar）
  * v0.6.1 PR-2：D-γ b 锁定，Work 引用值用 `@md/<scope>/<name>` 前缀格式
+ * v0.7 重构（PR-1）：
+ * - H2 分类白名单：Context / Use / Tasks（Use 替代 Refs）
+ * - Use: 引用 Blueprint（Work 只引用 Blueprint，不再直接引用 Workflow）
  *
  * 角色：
- * - 编译：Langium WorkDeclaration → .md（## Context / ## Tasks + ### 实例 + 嵌套 part/probe 列表）
- * - 解析：mdast → 业务对象（context / tasks）
+ * - 编译：Langium WorkDeclaration → .md（## Context / ## Use / ## Tasks + ### 实例 + 嵌套 part/probe 列表）
+ * - 解析：mdast → 业务对象（context / use / tasks）
  * - 校验：H1 + H2 白名单 + H3 唯一性
  *
  * 关键不变量：
- * - H2 分类白名单：Context / Tasks
+ * - H2 分类白名单：Context / Use / Tasks
  * - Context 字段：goal / max_iterations / constraints
- * - Task 字段：blueprint / domain（强制 `@md/...` 前缀，D-γ b）/ 嵌套 part（含 skill_context + probe）
+ * - Use: 引用 Blueprint（@md/blueprints/<name>）
+ * - Task 字段：blueprint / boundary / 嵌套 part
  *
  * L0–L3 兼容性：
  * - L1-OXL 层（src/oxl/md-bridge/）
@@ -32,8 +36,11 @@ import { parseMdRef } from '../parse-md-ref.js'
 import type { IntentEntityType } from '../pipeline.js'
 import type { List } from 'mdast'
 
-/** Work H2 分类白名单 */
-const WORK_CATEGORIES = ['Context', 'Tasks'] as const
+/** Work H2 分类白名单
+ *
+ * v0.7：增加 Use（替代 Refs）
+ */
+const WORK_CATEGORIES = ['Context', 'Use', 'Tasks'] as const
 type WorkCategory = (typeof WORK_CATEGORIES)[number]
 
 export class WorkCompiler implements EntityCompiler {
@@ -111,7 +118,7 @@ export class WorkCompiler implements EntityCompiler {
       sections.push('')
     }
 
-    // ## Refs (v0.4 Phase 2 — work-level domain/blueprint ref 池)
+    // ## Use (v0.7 — 替代 Refs，引用 Blueprint)
     const domains = (decl.domains ?? []) as Array<{
       $type?: string
       name?: string
@@ -125,7 +132,7 @@ export class WorkCompiler implements EntityCompiler {
       alias?: string
     }>
     if (domains.length > 0 || blueprints.length > 0) {
-      sections.push('## Refs')
+      sections.push('## Use')
       sections.push('')
       for (const d of domains) {
         sections.push(`### ${d.name ?? 'unnamed'}`)

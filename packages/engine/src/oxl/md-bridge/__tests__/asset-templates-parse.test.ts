@@ -75,11 +75,9 @@ describe('workflow 模板（AssetKind 2/5，v0.6.1-alpha.4，原 blueprint 改�
     const compiler = new WorkflowCompiler()
     const result = compiler.parse({ mdast, frontmatter, options: {} }) as {
       entity: string
-      props: Array<{ name: string; type: string }>
-      slots: Array<{ name: string; deps: string[]; observe: string[] }>
+      slots: Array<{ name: string; desc: string }>
     }
     expect(result.entity).toBe('workflow')
-    expect(result.props.length).toBeGreaterThanOrEqual(1)
     expect(result.slots.length).toBeGreaterThanOrEqual(1)
   })
 })
@@ -92,14 +90,10 @@ describe('stack 模板（AssetKind 3/5）', () => {
     const compiler = new StackCompiler()
     const result = compiler.parse({ mdast, frontmatter, options: {} }) as {
       entity: string
-      runtimes: Array<{ name: string; props: Record<string, string> }>
-      linters: Array<{ name: string; props: Record<string, string> }>
-      testers: Array<{ name: string; props: Record<string, string> }>
+      tools: Array<{ name: string; props: Record<string, string> }>
     }
     expect(result.entity).toBe('stack')
-    expect(result.runtimes.length).toBeGreaterThanOrEqual(1)
-    expect(result.linters.length).toBeGreaterThanOrEqual(1)
-    expect(result.testers.length).toBeGreaterThanOrEqual(1)
+    expect(result.tools.length).toBeGreaterThanOrEqual(1)
   })
 })
 

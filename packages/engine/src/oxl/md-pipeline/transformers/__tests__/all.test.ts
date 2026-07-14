@@ -111,39 +111,39 @@ name: dev-workflow
 
 > TS 项目通用开发流程
 
-## Props
-### timeout
-- type: number
-- required: true
-- default: 60000
+## Use
+### my-domain
+- domain: @md/domains/MyDomain
 
-### env
-- type: enum
-- values:
-  - dev
-  - prod
+### my-workflow
+- workflow: @md/workflows/MyWorkflow
 
-## Slots
+### my-stack
+- stack: @md/stacks/MyStack
+
+## Boundaries
 ### build
+- observe:
+  - fs-exists
 - deps: []
 
 ### verify
-- deps:
-  - build
 - observe:
   - tests-pass
+- deps:
+  - build
 `
 
-describe('v0.4 PR-C2: extractBlueprintIR', () => {
-  test('提取 Props + Slots', () => {
+describe('v0.7: extractBlueprintIR', () => {
+  test('提取 Use + Boundaries', () => {
     const { tree: root, frontmatter } = parseMarkdown(SAMPLE_BLUEPRINT)
     const ir = extractBlueprintIR(root, frontmatter)
     expect(ir.entity).toBe('blueprint')
-    expect(ir.props).toHaveLength(2)
-    expect(ir.props[0]?.name).toBe('timeout')
-    expect(ir.props[0]?.type).toBe('number')
-    expect(ir.slots).toHaveLength(2)
-    expect(ir.slots[1]?.deps).toEqual(['build'])
+    expect(ir.use.domain).toHaveLength(1)
+    expect(ir.use.workflow).toHaveLength(1)
+    expect(ir.use.stack).toHaveLength(1)
+    expect(ir.boundaries).toHaveLength(2)
+    expect(ir.boundaries[1]?.deps).toEqual(['build'])
   })
 
   test('description 来自 H1 (去除 "Blueprint: name" 前缀)', () => {
@@ -303,7 +303,7 @@ describe('v0.4 PR-C2: 5 plugins composition', () => {
     const t = extractTaskIR(root, frontmatter)
     const p = extractProofIR(root, frontmatter)
     expect(d.terms).toEqual([])
-    expect(b.slots).toEqual([])
+    expect(b.boundaries).toEqual([])
     expect(w.tasks).toEqual([])
     expect(t.parts).toEqual([])
     expect(p.probes).toEqual([])

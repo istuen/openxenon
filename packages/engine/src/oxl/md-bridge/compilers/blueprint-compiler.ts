@@ -1,17 +1,16 @@
 /**
  * md-bridge/compilers/blueprint-compiler.ts — Blueprint EntityCompiler 实现
  *
- * v0.3 改革 PR-A（feat/v0.3-t18-md-native-grammar）
+ * v0.7 重构（PR-1）：
+ * - H2 分类白名单：Use / Boundaries（替代 Props / Slots）
+ * - Props 已删除（设计决定）
+ * - Use: 引用三边界（domain / workflow / stack），替代 Refs
+ * - Boundaries: 编排单元（refs + observe + deps）
  *
  * 角色：
- * - 编译：Langium BlueprintDeclaration → .md（## Props / ## Slots + ### 实例 + 嵌套列表）
- * - 解析：mdast → 业务对象（props / slots）
+ * - 编译：BlueprintDeclaration → .md（## Use / ## Boundaries + ### 实例 + 嵌套列表）
+ * - 解析：mdast → 业务对象（use + boundaries）
  * - 校验：H1 + H2 白名单 + H3 唯一性
- *
- * 关键不变量：
- * - H2 分类白名单：Props / Slots
- * - Prop 字段：type / values / required / default
- * - Slot 字段：deps（数组）/ observe（数组）
  *
  * L0–L3 兼容性：
  * - L1-OXL 层（src/oxl/md-bridge/）
@@ -30,14 +29,14 @@ import { extractListFields, getScalar, getArray, type ListField } from '../../md
 import type { IntentEntityType } from '../pipeline.js'
 
 /** Blueprint H2 分类白名单 */
-const BLUEPRINT_CATEGORIES = ['Props', 'Slots'] as const
+const BLUEPRINT_CATEGORIES = ['Use', 'Boundaries'] as const
 type BlueprintCategory = (typeof BLUEPRINT_CATEGORIES)[number]
 
 export class BlueprintCompiler implements EntityCompiler {
   readonly entityType: IntentEntityType = 'blueprint'
 
   // ====================
-  // compile（PR-B 完整实现；PR-A 仅占位）
+  // compile
   // ====================
 
   compile(input: CompileInput): CompileOutput {
@@ -46,13 +45,18 @@ export class BlueprintCompiler implements EntityCompiler {
       name?: string
       descriptions?: Array<{ value?: string }>
       version?: number
-      props?: Array<{
+      // 🆕 v0.7: use + boundaries 替代 props + partSlots
+      use?: {
+        domain?: Array<{ name: string; ref: string }>
+        workflow?: Array<{ name: string; ref: string }>
+        stack?: Array<{ name: string; ref: string }>
+      }
+      boundaries?: Array<{
         name: string
-        type?: unknown
-        required?: { value?: unknown }
-        default?: { value?: unknown }
+        refs?: Array<{ kind: 'domain' | 'workflow' | 'stack'; ref: string }>
+        observe?: string[]
+        deps?: string[]
       }>
-      partSlots?: Array<{ name: string; deps?: string[]; observe?: Array<{ observes: string[] }> }>
     }
 
     if (decl?.$type !== 'BlueprintDeclaration') {
@@ -89,64 +93,47 @@ export class BlueprintCompiler implements EntityCompiler {
       }
     }
 
-    // ## Props
-    if (decl.props && decl.props.length > 0) {
-      sections.push('## Props')
+    // ## Use（引用三边界）
+    if (decl.use && (decl.use.domain?.length || decl.use.workflow?.length || decl.use.stack?.length)) {
+      sections.push('## Use')
       sections.push('')
-      for (const prop of decl.props) {
-        const typeName = extractTypeName(prop.type)
-        sections.push(`### ${prop.name}`)
-        sections.push(`- type: ${typeName}`)
-        // enum 类型：- values: [a, b, c] → 改为缩进列表表达
-        if (typeName.startsWith('enum(')) {
-          const enumType = prop.type as { values?: string[] }
-          if (enumType.values && enumType.values.length > 0) {
-            sections.push(`- values:`)
-            for (const v of enumType.values) {
-              sections.push(`  - ${v}`)
-            }
-          }
-        }
-        // required 修饰符：value 是 BooleanLiteral AST 节点
-        if (prop.required?.value) {
-          if (typeof prop.required.value === 'object' && '$type' in (prop.required.value as object)) {
-            // 通过 $cstNode.text 提取原始文本
-            const cstText = (prop.required.value as { $cstNode?: { text?: string } }).$cstNode?.text
-            if (cstText === 'true') sections.push('- required: true')
-          } else if (prop.required.value === true) {
-            sections.push('- required: true')
-          }
-        }
-        if (prop.default !== undefined) {
-          const defaultStr = expressionToString(prop.default.value)
-          if (defaultStr) sections.push(`- default: ${defaultStr}`)
-        }
+      const allUseEntries = [
+        ...(decl.use.domain ?? []).map((e) => ({ kind: 'domain' as const, ...e })),
+        ...(decl.use.workflow ?? []).map((e) => ({ kind: 'workflow' as const, ...e })),
+        ...(decl.use.stack ?? []).map((e) => ({ kind: 'stack' as const, ...e })),
+      ]
+      for (const entry of allUseEntries) {
+        sections.push(`### ${entry.name}`)
+        sections.push(`- ${entry.kind}: ${entry.ref}`)
         sections.push('')
       }
     }
 
-    // ## Slots
-    if (decl.partSlots && decl.partSlots.length > 0) {
-      sections.push('## Slots')
+    // ## Boundaries（编排单元）
+    if (decl.boundaries && decl.boundaries.length > 0) {
+      sections.push('## Boundaries')
       sections.push('')
-      for (const slot of decl.partSlots) {
-        sections.push(`### ${slot.name}`)
-        if (!slot.deps || slot.deps.length === 0) {
-          sections.push('- deps: []')
-        } else {
-          sections.push('- deps:')
-          for (const dep of slot.deps) {
-            sections.push(`  - ${dep}`)
+      for (const b of decl.boundaries) {
+        sections.push(`### ${b.name}`)
+        if (b.refs && b.refs.length > 0) {
+          sections.push('- refs:')
+          for (const r of b.refs) {
+            sections.push(`  - ${r.kind}: ${r.ref}`)
           }
         }
-        const observe = (slot.observe ?? []).flatMap((o) => o.observes)
-        if (observe.length === 0) {
-          sections.push('- observe: []')
-        } else {
+        if (b.observe && b.observe.length > 0) {
           sections.push('- observe:')
-          for (const o of observe) {
+          for (const o of b.observe) {
             sections.push(`  - ${o}`)
           }
+        }
+        if (b.deps && b.deps.length > 0) {
+          sections.push('- deps:')
+          for (const d of b.deps) {
+            sections.push(`  - ${d}`)
+          }
+        } else {
+          sections.push('- deps: []')
         }
         sections.push('')
       }
@@ -178,8 +165,17 @@ export class BlueprintCompiler implements EntityCompiler {
 
     const contexts = extractHeadingContexts(mdast)
 
-    const props: Array<{ name: string; type: string; values: string[]; required: boolean; default: string | null }> = []
-    const slots: Array<{ name: string; deps: string[]; observe: string[] }> = []
+    const use = {
+      domain: [] as Array<{ name: string; ref: string }>,
+      workflow: [] as Array<{ name: string; ref: string }>,
+      stack: [] as Array<{ name: string; ref: string }>,
+    }
+    const boundaries: Array<{
+      name: string
+      refs: Array<{ kind: string; ref: string }>
+      observe: string[]
+      deps: string[]
+    }> = []
 
     for (const ctx of contexts) {
       if (!ctx.h2 || !ctx.h3) continue
@@ -188,22 +184,53 @@ export class BlueprintCompiler implements EntityCompiler {
       const fields = ctx.h3List ? extractListFields(ctx.h3List) : []
 
       switch (ctx.h2 as BlueprintCategory) {
-        case 'Props':
-          props.push({
-            name: ctx.h3,
-            type: getScalar(fields, 'type') ?? 'string',
-            values: parseValuesField(fields),
-            required: getScalar(fields, 'required') === 'true',
-            default: getScalar(fields, 'default') ?? null,
-          })
+        case 'Use': {
+          // ### <name> / - domain: X @path / - workflow: Y / - stack: Z
+          for (const f of fields) {
+            if (f.key === 'domain' && typeof f.value === 'string') {
+              use.domain.push({ name: ctx.h3, ref: f.value })
+            } else if (f.key === 'workflow' && typeof f.value === 'string') {
+              use.workflow.push({ name: ctx.h3, ref: f.value })
+            } else if (f.key === 'stack' && typeof f.value === 'string') {
+              use.stack.push({ name: ctx.h3, ref: f.value })
+            }
+          }
           break
-        case 'Slots':
-          slots.push({
-            name: ctx.h3,
-            deps: getArray(fields, 'deps'),
-            observe: getArray(fields, 'observe'),
-          })
+        }
+        case 'Boundaries': {
+          const refs: Array<{ kind: string; ref: string }> = []
+          const observe: string[] = []
+          const deps: string[] = []
+          for (const f of fields) {
+            if (f.key === 'refs') {
+              // refs 可能是嵌套 list（数组）或 scalar 字符串
+              if (Array.isArray(f.value)) {
+                for (const v of f.value as string[]) {
+                  const m = String(v).match(/^(\w+):\s*(.+)$/)
+                  if (m) refs.push({ kind: m[1]!, ref: m[2]!.trim() })
+                }
+              } else if (typeof f.value === 'string' && f.value.length > 0 && f.value !== '[]') {
+                // 兼容 scalar 形式
+                const m = f.value.match(/^(\w+):\s*(.+)$/)
+                if (m) refs.push({ kind: m[1]!, ref: m[2]!.trim() })
+              }
+            } else if (f.key === 'observe') {
+              if (Array.isArray(f.value)) {
+                observe.push(...(f.value as string[]))
+              } else if (typeof f.value === 'string' && f.value.length > 0 && f.value !== '[]') {
+                observe.push(f.value)
+              }
+            } else if (f.key === 'deps') {
+              if (Array.isArray(f.value)) {
+                deps.push(...(f.value as string[]))
+              } else if (typeof f.value === 'string' && f.value.length > 0 && f.value !== '[]') {
+                deps.push(f.value)
+              }
+            }
+          }
+          boundaries.push({ name: ctx.h3, refs, observe, deps })
           break
+        }
       }
     }
 
@@ -211,8 +238,8 @@ export class BlueprintCompiler implements EntityCompiler {
       entity: 'blueprint',
       name: typeof frontmatter.name === 'string' ? frontmatter.name : '',
       version: typeof frontmatter.version === 'string' ? frontmatter.version : '0.3.0',
-      props,
-      slots,
+      use,
+      boundaries,
     }
   }
 
@@ -286,93 +313,6 @@ export class BlueprintCompiler implements EntityCompiler {
 
 function isBlueprintCategory(cat: string): cat is BlueprintCategory {
   return (BLUEPRINT_CATEGORIES as readonly string[]).includes(cat)
-}
-
-function extractTypeName(typeRef: unknown): string {
-  if (typeRef === undefined || typeRef === null) return 'string'
-  if (typeof typeRef === 'string') return typeRef
-  const t = typeRef as {
-    $type?: string
-    values?: string[]
-    container?: string
-    inner?: unknown
-    $cstNode?: { text?: string }
-  }
-  // TypeReference 包装节点（PrimitiveType 经 Langium 包装后）
-  if (t.$type === 'TypeReference') {
-    const cstText = t.$cstNode?.text
-    if (cstText) return cstText
-    return 'string'
-  }
-  if (t.$type === 'EnumType' && t.values) {
-    return `enum(${t.values.join('|')})`
-  }
-  if (t.$type === 'GenericType' && t.container) {
-    return `${t.container}<${extractTypeName(t.inner)}>`
-  }
-  if (t.$type === 'AnyTypeRef' || t.$type === 'AnyType') {
-    return 'any'
-  }
-  return 'string'
-}
-
-/**
- * 提取 Expression 的可读字符串表示
- *
- * Langium 对 PrimitiveType literal 的处理是「lossy」：LiteralExpr 节点本身不存 value，
- * 实际值存在 $cstNode.text（CST 原文）。这里通过 $cstNode 取回原文。
- */
-function expressionToString(expr: unknown): string {
-  if (expr === null || expr === undefined) return ''
-  if (typeof expr === 'string') return expr
-  if (typeof expr === 'number' || typeof expr === 'boolean') return String(expr)
-  if (typeof expr !== 'object') return String(expr)
-
-  const e = expr as { $type?: string; value?: unknown; $cstNode?: { text?: string } }
-  // TemplateString（v0.2 支持 "包含 ${var} 模板"）
-  if (e.$type === 'TemplateString' && typeof e.value === 'string') {
-    return e.value
-  }
-  // LiteralExpr：fallback 到 CST 原文
-  if (e.$type === 'LiteralExpr') {
-    const text = e.$cstNode?.text
-    if (text !== undefined) {
-      if (text.length >= 2 && text.startsWith('"') && text.endsWith('"')) {
-        return text.slice(1, -1)
-      }
-      return text
-    }
-  }
-  // VariableRef（不展开，仅显示 ref 路径）
-  if (e.$type === 'VariableRef') {
-    const qn = (expr as { path?: { name?: string; segments?: string[] } }).path
-    if (qn) {
-      return qn.segments?.length ? `${qn.name}.${qn.segments.join('.')}` : (qn.name ?? '')
-    }
-  }
-  return String(expr)
-}
-
-/**
- * 解析 values 字段（"- values: [dev, staging, prod]" 形式）
- * - 优先用数组形式（嵌套 list）
- * - fallback 用字符串形式（"[dev, staging, prod]"）按 "," 分割
- */
-function parseValuesField(fields: ListField[]): string[] {
-  const arr = getArray(fields, 'values')
-  if (arr.length > 0) return arr
-  const scalar = getScalar(fields, 'values')
-  if (scalar) {
-    // 去掉首尾的 [ ]
-    const cleaned = scalar.replace(/^\[|]$/g, '').trim()
-    if (cleaned) {
-      return cleaned
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
-    }
-  }
-  return []
 }
 
 /**

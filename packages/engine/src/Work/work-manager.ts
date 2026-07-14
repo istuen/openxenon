@@ -70,7 +70,7 @@ export interface CreateWorkResult {
   workName: string
   outputDir?: string
   blueprintPath?: string
-  blueprint?: { name: string; version: number; slotCount: number; slots: string[] }
+  blueprint?: { name: string; version: number; boundaryCount: number; boundaries: string[] }
   files: { work: string }
   nextStep?: string
 }
@@ -111,13 +111,14 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
       if (!blueprint.name) {
         throw new Error(`No Blueprint name found in ${absBlueprint}`)
       }
-      if (blueprint.slots.length === 0) {
-        throw new Error(`Blueprint "${blueprint.name}" has no part slots`)
+      // 🆕 v0.7: Blueprint Boundaries 替代 Slots
+      if (blueprint.boundaries.length === 0) {
+        throw new Error(`Blueprint "${blueprint.name}" has no boundaries`)
       }
       const resolvedBlueprintName = parsePartName(blueprint.name)
-      const slots = blueprint.slots.map((s) => ({
-        name: parsePartName(s.name),
-        align: capitalize(parsePartName(s.name)),
+      const boundaries = blueprint.boundaries.map((b) => ({
+        name: parsePartName(b.name),
+        align: capitalize(parsePartName(b.name)),
       }))
       const outputDir = customOutputDir
         ? join(projectRoot, customOutputDir)
@@ -136,7 +137,8 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
       if (!force && existsSync(workFile)) {
         throw new Error(`work.md already exists in ${outputDir}`)
       }
-      const workContent = renderWorkSkeleton(workName, resolvedBlueprintName, slots, assetFormat)
+      // 🆕 v0.7: 传 boundaries（替代 slots）给 work-skeleton
+      const workContent = renderWorkSkeleton(workName, resolvedBlueprintName, boundaries, assetFormat)
       writeFileSync(workFile, workContent, 'utf-8')
 
       if (autoSync) {
@@ -154,11 +156,11 @@ export async function createWork(params: CreateWorkParams): Promise<CreateWorkRe
         blueprint: {
           name: resolvedBlueprintName,
           version: Number(blueprint.version) || 1,
-          slotCount: slots.length,
-          slots: slots.map((s) => s.name),
+          boundaryCount: boundaries.length,
+          boundaries: boundaries.map((b) => b.name),
         },
         files: { work: workFile },
-        nextStep: `Edit the file, then run: oxn work add-task <name> --task <slot> --blueprint ${resolvedBlueprintName}\n  oxn work run <name>`,
+        nextStep: `Edit the file, then run: oxn work add-task <name> --boundary <name> --blueprint ${resolvedBlueprintName}\n  oxn work run <name>`,
       }
     } catch (err) {
       if (err instanceof Error && err.message.startsWith('blueprint')) throw err

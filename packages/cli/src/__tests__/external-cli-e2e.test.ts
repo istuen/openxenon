@@ -229,118 +229,22 @@ name: TestDomain
   })
 })
 
-describe('5. External kind enum 校验（compiler validate）', () => {
-  test('Domain 含无效 kind → validate 报 E_MD_EXTERNAL_KIND_INVALID', async () => {
-    mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
-    writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'domains', 'InvalidDomain.md'),
-      `---
-entity: domain
-version: 0.3.0
-name: InvalidDomain
----
-# Domain: InvalidDomain
-
-## Externals
-### bad-api
-- url: https://example.com
-- kind: invalid-kind-type
-`,
-    )
-    // 通过直接调用 domain-compiler 的 validate 单元测试
-    const { DomainCompiler } = await import('@openxenon/engine/oxl/md-bridge/compilers/domain-compiler.js')
-    const content = readFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'InvalidDomain.md'), 'utf-8')
-    const { mdast, frontmatter } = parseMdWithFrontmatter(content)
-    const compiler = new DomainCompiler()
-    const errors = compiler.validate({ mdast, frontmatter, filePath: '', options: {} })
-    const kindErr = errors.find((e: any) => e.code === 'E_MD_EXTERNAL_KIND_INVALID')
-    expect(kindErr).toBeDefined()
-    expect(kindErr?.message).toContain('invalid-kind-type')
-  })
-
-  test('Domain 含有效 kind（6 个全合法）→ validate 不报 kind 错', async () => {
-    const validKinds = ['rest-api', 'webhook', 'documentation', 'library', 'config', 'service']
-    const { DomainCompiler } = await import('@openxenon/engine/oxl/md-bridge/compilers/domain-compiler.js')
-    const compiler = new DomainCompiler()
-    for (const kind of validKinds) {
-      const content = `---
-entity: domain
-version: 0.3.0
-name: Test${kind}
----
-# Domain: Test${kind}
-
-## Externals
-### ext-${kind}
-- url: https://example.com
-- kind: ${kind}
-`
-      const { mdast, frontmatter } = parseMdWithFrontmatter(content)
-      const errors = compiler.validate({ mdast, frontmatter, filePath: '', options: {} })
-      const kindErr = errors.find((e: any) => e.code === 'E_MD_EXTERNAL_KIND_INVALID')
-      expect(kindErr).toBeUndefined()
-    }
+// 🆕 v0.7: 旧的 ## Externals H2 已从 Domain 移除（external 并入 frontmatter references）
+//   下列测试块已废弃，仅保留以防误删
+describe.skip('5. External kind enum 校验（compiler validate，已废弃）', () => {
+  test.skip('Domain 含无效 kind → validate 报 E_MD_EXTERNAL_KIND_INVALID', async () => {
+    // v0.7 废弃：## Externals H2 从 Domain 移除
   })
 })
 
-describe('6. url/path 互斥校验', () => {
-  test('同时有 url + path → E_MD_EXTERNAL_URL_PATH_CONFLICT', async () => {
-    const { DomainCompiler } = await import('@openxenon/engine/oxl/md-bridge/compilers/domain-compiler.js')
-    const content = `---
-entity: domain
-version: 0.3.0
-name: ConflictDomain
----
-# Domain: ConflictDomain
-
-## Externals
-### conflict-ext
-- url: https://example.com
-- path: ./local.md
-- kind: documentation
-`
-    const { mdast, frontmatter } = parseMdWithFrontmatter(content)
-    const compiler = new DomainCompiler()
-    const errors = compiler.validate({ mdast, frontmatter, filePath: '', options: {} })
-    const conflictErr = errors.find((e: any) => e.code === 'E_MD_EXTERNAL_URL_PATH_CONFLICT')
-    expect(conflictErr).toBeDefined()
+// 🆕 v0.7: 旧的 ## Externals H2 已从 Domain 移除（external 并入 frontmatter references）
+//   下列测试块已废弃，仅保留以防误删
+describe.skip('6. url/path 互斥校验（已废弃）', () => {
+  test.skip('同时有 url + path → E_MD_EXTERNAL_URL_PATH_CONFLICT', async () => {
+    // v0.7 废弃：## Externals H2 从 Domain 移除
   })
 
-  test('缺 url 和 path → E_MD_EXTERNAL_URL_PATH_REQUIRED', async () => {
-    const { DomainCompiler } = await import('@openxenon/engine/oxl/md-bridge/compilers/domain-compiler.js')
-    const content = `---
-entity: domain
-version: 0.3.0
-name: MissingDomain
----
-# Domain: MissingDomain
-
-## Externals
-### missing-ext
-- kind: documentation
-`
-    const { mdast, frontmatter } = parseMdWithFrontmatter(content)
-    const compiler = new DomainCompiler()
-    const errors = compiler.validate({ mdast, frontmatter, filePath: '', options: {} })
-    const missingErr = errors.find((e: any) => e.code === 'E_MD_EXTERNAL_URL_PATH_REQUIRED')
-    expect(missingErr).toBeDefined()
+  test.skip('缺 url 和 path → E_MD_EXTERNAL_URL_PATH_REQUIRED', async () => {
+    // v0.7 废弃：## Externals H2 从 Domain 移除
   })
 })
-
-// Helper: parse .md with frontmatter
-import { unified } from 'unified'
-import remarkParse from 'remark-parse'
-import remarkFrontmatter from 'remark-frontmatter'
-
-function parseMdWithFrontmatter(content: string): { mdast: any; frontmatter: Record<string, unknown> } {
-  const tree = unified().use(remarkParse).use(remarkFrontmatter, ['yaml']).parse(content)
-  const fm: Record<string, unknown> = {}
-  const yamlNode = tree.children.find((c: { type: string }) => c.type === 'yaml')
-  if (yamlNode && 'value' in yamlNode) {
-    for (const line of (yamlNode as { value: string }).value.split('\n')) {
-      const m = line.match(/^(\w+):\s*(.*)$/)
-      if (m?.[1] && m[2] !== undefined) fm[m[1]] = m[2]
-    }
-  }
-  return { mdast: tree, frontmatter: fm }
-}

@@ -1,7 +1,7 @@
 /**
  * src/oxl/md-bridge/__tests__/compilers/blueprint-compiler.test.ts
  *
- * Blueprint EntityCompiler 测试
+ * Blueprint EntityCompiler 测试（v0.7 重构后）
  */
 
 import { describe, test, expect, beforeAll } from 'bun:test'
@@ -16,36 +16,45 @@ function parseMd(md: string): Root {
 
 const SAMPLE_BLUEPRINT = `---
 entity: blueprint
-version: 0.3.0
+version: 0.1.0
 name: ci-pipeline
 ---
 # Blueprint: ci-pipeline
 
 > CI 流水线
 
-## Props
-### env
-- type: enum
-- values: [dev, staging, prod]
-- required: true
-- default: dev
+## Use
 
-### region
-- type: string
-- default: us-west
+### payment-domain
+- domain: @md/domains/PaymentContext
 
-## Slots
+### fix-issue-workflow
+- workflow: @md/workflows/fix-issue
+
+### node-stack
+- stack: @md/stacks/node-ts
+
+## Boundaries
+
 ### build
-- deps: []
+- refs:
+  - domain: payment-domain
+  - workflow: fix-issue-workflow
+  - stack: node-stack
 - observe:
   - fs-exists
   - ts-compiles
+- deps: []
 
 ### test
-- deps:
-  - build
+- refs:
+  - domain: payment-domain
+  - workflow: fix-issue-workflow
+  - stack: node-stack
 - observe:
   - test-pass
+- deps:
+  - build
 `
 
 describe('BlueprintCompiler.parse', () => {
@@ -55,31 +64,36 @@ describe('BlueprintCompiler.parse', () => {
 
   beforeAll(() => {
     root = parseMd(SAMPLE_BLUEPRINT)
-    frontmatter = { entity: 'blueprint', version: '0.3.0', name: 'ci-pipeline' }
+    frontmatter = { entity: 'blueprint', version: '0.1.0', name: 'ci-pipeline' }
   })
 
-  test('解析 props（type/values/required/default）', () => {
+  test('解析 use（domain/workflow/stack 引用）', () => {
     const result = compiler.parse({ mdast: root, frontmatter }) as {
-      props: Array<{ name: string; type: string; values: string[]; required: boolean; default: string | null }>
+      use: { domain: unknown[]; workflow: unknown[]; stack: unknown[] }
     }
-    expect(result.props).toHaveLength(2)
-    expect(result.props[0]?.name).toBe('env')
-    expect(result.props[0]?.type).toBe('enum')
-    expect(result.props[0]?.values).toEqual(['dev', 'staging', 'prod'])
-    expect(result.props[0]?.required).toBe(true)
-    expect(result.props[0]?.default).toBe('dev')
+    expect(result.use.domain).toHaveLength(1)
+    expect(result.use.workflow).toHaveLength(1)
+    expect(result.use.stack).toHaveLength(1)
+    expect((result.use.domain[0] as { name: string }).name).toBe('payment-domain')
+    expect((result.use.workflow[0] as { name: string }).name).toBe('fix-issue-workflow')
+    expect((result.use.stack[0] as { name: string }).name).toBe('node-stack')
   })
 
-  test('解析 slots（deps/observe）', () => {
+  test('解析 boundaries（refs/observe/deps）', () => {
     const result = compiler.parse({ mdast: root, frontmatter }) as {
-      slots: Array<{ name: string; deps: string[]; observe: string[] }>
+      boundaries: Array<{
+        name: string
+        refs: Array<{ kind: string; ref: string }>
+        observe: string[]
+        deps: string[]
+      }>
     }
-    expect(result.slots).toHaveLength(2)
-    expect(result.slots[0]?.name).toBe('build')
-    expect(result.slots[0]?.deps).toEqual([])
-    expect(result.slots[0]?.observe).toEqual(['fs-exists', 'ts-compiles'])
-    expect(result.slots[1]?.name).toBe('test')
-    expect(result.slots[1]?.deps).toEqual(['build'])
+    expect(result.boundaries).toHaveLength(2)
+    expect(result.boundaries[0]?.name).toBe('build')
+    expect(result.boundaries[0]?.observe).toEqual(['fs-exists', 'ts-compiles'])
+    expect(result.boundaries[0]?.deps).toEqual([])
+    expect(result.boundaries[1]?.name).toBe('test')
+    expect(result.boundaries[1]?.deps).toEqual(['build'])
   })
 
   test('返 entity = blueprint', () => {
@@ -108,7 +122,7 @@ describe('BlueprintCompiler.validate', () => {
   })
 
   test('H1 不匹配 frontmatter.name 报 E_MD_H1_MISMATCH', () => {
-    const root = parseMd('# Blueprint: Wrong\n\n## Slots\n')
+    const root = parseMd('# Blueprint: Wrong\n\n## Boundaries\n')
     const frontmatter = { entity: 'blueprint', name: 'Right' }
     const errors = compiler.validate({ mdast: root, frontmatter })
     const mismatch = errors.find((e) => e.code === 'E_MD_H1_MISMATCH')
@@ -124,25 +138,33 @@ describe('BlueprintCompiler.compile', () => {
       $type: 'BlueprintDeclaration',
       name: 'ci-pipeline',
       descriptions: [{ value: 'CI 流水线' }],
-      props: [
+      use: {
+        domain: [{ name: 'payment-domain', ref: '@md/domains/PaymentContext' }],
+        workflow: [{ name: 'fix-issue-workflow', ref: '@md/workflows/fix-issue' }],
+        stack: [{ name: 'node-stack', ref: '@md/stacks/node-ts' }],
+      },
+      boundaries: [
         {
-          name: 'env',
-          type: { $type: 'EnumType', values: ['dev', 'staging'] },
-          required: { value: true },
-          default: { value: 'dev' },
+          name: 'build',
+          refs: [{ kind: 'domain' as const, ref: 'payment-domain' }],
+          observe: ['ts-compiles'],
+          deps: [],
         },
-      ],
-      partSlots: [
-        { name: 'build', deps: [], observe: [{ observes: ['fs-exists'] }] },
-        { name: 'test', deps: ['build'], observe: [] },
+        {
+          name: 'test',
+          refs: [{ kind: 'domain' as const, ref: 'payment-domain' }],
+          observe: ['test-pass'],
+          deps: ['build'],
+        },
       ],
     }
     const result = compiler.compile({ decl })
     expect(result.name).toBe('ci-pipeline')
     expect(result.md).toContain('# Blueprint: ci-pipeline')
-    expect(result.md).toContain('## Props')
-    expect(result.md).toContain('### env')
-    expect(result.md).toContain('## Slots')
+    expect(result.md).toContain('## Use')
+    expect(result.md).toContain('## Boundaries')
     expect(result.md).toContain('### build')
+    expect(result.md).toContain('- observe:')
+    expect(result.md).toContain('- deps:')
   })
 })

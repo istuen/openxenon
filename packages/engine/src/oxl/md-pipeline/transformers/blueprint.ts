@@ -1,5 +1,11 @@
 /**
- * md-pipeline/transformers/blueprint.ts — v0.4 PR-C2 unified-native Blueprint 抽取
+ * md-pipeline/transformers/blueprint.ts — Blueprint 抽取
+ *
+ * v0.7 重构（PR-1）：
+ * - H2 分类从 Props/Slots 改为 Use/Boundaries
+ * - Use: 引用三边界（domain/workflow/stack），替代 Refs
+ * - Boundaries: 编排单元，替代 Slots（带 refs + observe + deps）
+ * - Props 删除（设计决定）
  */
 
 import type { Root } from 'mdast'
@@ -9,25 +15,34 @@ import { collectHeadingContexts, collectListFields, type ListField, extractYamlF
 // Blueprint H2 分类白名单
 // ========================
 
-export const BLUEPRINT_CATEGORIES = ['Props', 'Slots'] as const
+export const BLUEPRINT_CATEGORIES = ['Use', 'Boundaries'] as const
 export type BlueprintCategory = (typeof BLUEPRINT_CATEGORIES)[number]
 
 // ========================
 // Blueprint IR 类型
 // ========================
 
-export interface BlueprintProp {
-  name: string
-  type: string
-  values: string[]
-  required: boolean
-  default: string | null
+/**
+ * Blueprint ## Use 段：引用三边界 Asset
+ * 每个 kind 对应一个引用列表（如 domain: [{name, ref}, ...]）
+ */
+export interface BlueprintUse {
+  domain: Array<{ name: string; ref: string }>
+  workflow: Array<{ name: string; ref: string }>
+  stack: Array<{ name: string; ref: string }>
 }
 
-export interface BlueprintSlot {
+/**
+ * Blueprint ## Boundaries 段的一个编排单元
+ * - refs: 引用哪些边界（domain/workflow/stack）
+ * - observe: 可用 Probe 类型列表
+ * - deps: 依赖的其他 Boundary 名
+ */
+export interface BlueprintBoundary {
   name: string
-  deps: string[]
+  refs: Array<{ kind: 'domain' | 'workflow' | 'stack'; ref: string }>
   observe: string[]
+  deps: string[]
 }
 
 export interface BlueprintIR {
@@ -35,9 +50,9 @@ export interface BlueprintIR {
   name: string
   version: string
   description: string
-  props: BlueprintProp[]
-  slots: BlueprintSlot[]
-  _counters: { propIdx: number; slotIdx: number }
+  use: BlueprintUse
+  boundaries: BlueprintBoundary[]
+  _counters: { useIdx: number; boundaryIdx: number }
 }
 
 // ========================
@@ -47,11 +62,11 @@ export interface BlueprintIR {
 export function extractBlueprintIR(root: Root, frontmatter: Record<string, unknown> = {}): BlueprintIR {
   const contexts = collectHeadingContexts(root)
 
-  const props: BlueprintProp[] = []
-  const slots: BlueprintSlot[] = []
+  const use: BlueprintUse = { domain: [], workflow: [], stack: [] }
+  const boundaries: BlueprintBoundary[] = []
 
-  let propIdx = 0
-  let slotIdx = 0
+  let useIdx = 0
+  let boundaryIdx = 0
 
   for (const ctx of contexts) {
     if (!ctx.h2 || !ctx.h3) continue
@@ -60,13 +75,13 @@ export function extractBlueprintIR(root: Root, frontmatter: Record<string, unkno
     const fields = ctx.h3List ? collectListFields(ctx.h3List) : []
 
     switch (ctx.h2 as BlueprintCategory) {
-      case 'Props':
-        propIdx++
-        props.push(extractProp(ctx.h3, fields))
+      case 'Use':
+        useIdx++
+        extractUseEntry(ctx.h3, fields, use)
         break
-      case 'Slots':
-        slotIdx++
-        slots.push(extractSlot(ctx.h3, fields))
+      case 'Boundaries':
+        boundaryIdx++
+        boundaries.push(extractBoundary(ctx.h3, fields))
         break
     }
   }
@@ -77,39 +92,67 @@ export function extractBlueprintIR(root: Root, frontmatter: Record<string, unkno
   return {
     entity: 'blueprint',
     name: typeof frontmatter.name === 'string' ? frontmatter.name : '',
-    // v0.4.1: version 可能为 number (来自 frontmatter 解析) 或 string
     version: frontmatter.version !== undefined && frontmatter.version !== null ? String(frontmatter.version) : '0.1.0',
     description,
-    props,
-    slots,
-    _counters: { propIdx, slotIdx },
+    use,
+    boundaries,
+    _counters: { useIdx, boundaryIdx },
   }
 }
 
-function extractProp(name: string, fields: ListField[]): BlueprintProp {
-  const typeField = fields.find((f) => f.key === 'type')
-  const valuesField = fields.find((f) => f.key === 'values')
-  const requiredField = fields.find((f) => f.key === 'required')
-  const defaultField = fields.find((f) => f.key === 'default')
-
-  return {
-    name,
-    type: typeof typeField?.value === 'string' ? typeField.value : 'string',
-    values: Array.isArray(valuesField?.value) ? (valuesField.value as string[]) : [],
-    required: requiredField?.value === 'true' || requiredField?.value === '1',
-    default: typeof defaultField?.value === 'string' ? defaultField.value : null,
+/**
+ * 解析 ## Use 下的 H3 条目
+ * 格式：
+ *   ### <name>
+ *   - domain: <name> @path/ref    ← 或 - workflow: - stack:
+ */
+function extractUseEntry(name: string, fields: ListField[], use: BlueprintUse): void {
+  // 从 fields 找 kind → ref 的映射
+  for (const f of fields) {
+    if (f.key === 'domain' && typeof f.value === 'string') {
+      use.domain.push({ name, ref: f.value })
+    } else if (f.key === 'workflow' && typeof f.value === 'string') {
+      use.workflow.push({ name, ref: f.value })
+    } else if (f.key === 'stack' && typeof f.value === 'string') {
+      use.stack.push({ name, ref: f.value })
+    }
   }
 }
 
-function extractSlot(name: string, fields: ListField[]): BlueprintSlot {
-  const depsField = fields.find((f) => f.key === 'deps')
-  const observeField = fields.find((f) => f.key === 'observe')
+function extractBoundary(name: string, fields: ListField[]): BlueprintBoundary {
+  const refs: Array<{ kind: 'domain' | 'workflow' | 'stack'; ref: string }> = []
+  const observe: string[] = []
+  const deps: string[] = []
 
-  return {
-    name,
-    deps: Array.isArray(depsField?.value) ? (depsField.value as string[]) : [],
-    observe: Array.isArray(observeField?.value) ? (observeField.value as string[]) : [],
+  for (const f of fields) {
+    if (f.key === 'kind' && typeof f.value === 'string') {
+      // - kind: domain@path/ref  格式（兼容 work 的 kind+ref 风格）
+      const m = f.value.match(/^(\w+)@(.+)$/)
+      if (m) {
+        const kind = m[1] as 'domain' | 'workflow' | 'stack'
+        if (['domain', 'workflow', 'stack'].includes(kind)) {
+          refs.push({ kind, ref: m[2]! })
+        }
+      }
+    } else if (f.key === 'ref' && typeof f.value === 'string') {
+      // 简化格式：- ref: <kind>:<path>
+      // 当前未使用，留作扩展
+    } else if (f.key === 'observe') {
+      if (Array.isArray(f.value)) {
+        observe.push(...(f.value as string[]))
+      } else if (typeof f.value === 'string') {
+        observe.push(f.value)
+      }
+    } else if (f.key === 'deps') {
+      if (Array.isArray(f.value)) {
+        deps.push(...(f.value as string[]))
+      } else if (typeof f.value === 'string') {
+        deps.push(f.value)
+      }
+    }
   }
+
+  return { name, refs, observe, deps }
 }
 
 function extractH1Description(root: Root): string {

@@ -108,35 +108,41 @@ name: E2EDomain
     expect(result.invariants).toHaveLength(1)
   })
 
-  test('blueprint: 解析 props / slots', () => {
+  test('blueprint: 解析 use / boundaries', () => {
     const md = `---
 entity: blueprint
-version: 0.3.0
+version: 0.1.0
 name: e2e-bp
 ---
 # Blueprint: e2e-bp
 
-## Props
-### env
-- type: enum
-- values: [dev, prod]
-- required: true
+## Use
+### my-domain
+- domain: @md/domains/MyDomain
 
-## Slots
+### my-workflow
+- workflow: @md/workflows/MyWorkflow
+
+### my-stack
+- stack: @md/stacks/MyStack
+
+## Boundaries
 ### build
-- deps: []
 - observe:
   - fs-exists
+- deps: []
 `
     const { mdast, frontmatter } = parseMdWithFrontmatter(md)
     const compiler = getEntityCompiler('blueprint')
     const result = compiler.parse({ mdast, frontmatter }) as {
-      props: Array<{ name: string; type: string; required: boolean }>
-      slots: Array<{ name: string; deps: string[]; observe: string[] }>
+      use: { domain: unknown[]; workflow: unknown[]; stack: unknown[] }
+      boundaries: Array<{ name: string; observe: string[]; deps: string[] }>
     }
-    expect(result.props[0]?.type).toBe('enum')
-    expect(result.props[0]?.required).toBe(true)
-    expect(result.slots[0]?.observe).toEqual(['fs-exists'])
+    expect(result.use.domain).toHaveLength(1)
+    expect(result.use.workflow).toHaveLength(1)
+    expect(result.use.stack).toHaveLength(1)
+    expect(result.boundaries[0]?.observe).toEqual(['fs-exists'])
+    expect(result.boundaries[0]?.deps).toEqual([])
   })
 
   test('work: 解析 context + tasks 含嵌套 part/probe', () => {
