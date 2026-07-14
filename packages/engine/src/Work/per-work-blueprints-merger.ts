@@ -305,15 +305,15 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
   for (const d of declared) {
     if (seen.has(d.name)) continue
     seen.add(d.name)
-    // v0.6.1-alpha.3: Phase 1 — 默认 ref 指向 workflows/（不是 blueprints/）
-    uniqueRefs.push(d.ref ?? `@prj/workflows/${d.name}`)
+    // v0.7: 默认 ref 指向 blueprints/（Work 引用 Blueprint）
+    uniqueRefs.push(d.ref ?? `@prj/blueprints/${d.name}`)
     uniqueDeclared.push(d)
   }
 
   const blueprints: PerWorkBlueprintEntry[] = []
   for (const decl of uniqueDeclared) {
     const resolved = resolveBlueprintFile(decl.ref, decl.name, projectRoot)
-    const refStr = decl.ref ?? `@prj/workflows/${decl.name}`
+    const refStr = decl.ref ?? `@prj/blueprints/${decl.name}`
 
     if (!resolved) {
       const errors: string[] = []

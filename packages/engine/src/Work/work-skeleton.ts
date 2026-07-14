@@ -58,14 +58,18 @@ export function renderWorkSkeleton(
 
     const refsEntries: string[] = []
     for (const b of blueprintRefs) {
-      // v0.6.1-alpha.3: Phase 1 — Work 引用 workflow（不是 blueprint）
+      // v0.7: Work 引用 Blueprint（kind: blueprint, ref 指向 @prj/blueprints/）
       refsEntries.push(
         `### ${b}
 - kind: blueprint
-- ref: "@prj/workflows/${b}"`,
+- ref: "@prj/blueprints/${b}"`,
       )
     }
-    const refsBlock = refsEntries.length > 0 ? `## Refs\n\n${refsEntries.join('\n\n')}\n\n` : ''
+    // 🆕 v0.7: ## Use 替代 ## Refs（语义是"使用模板来源"）
+    const refsBlock = refsEntries.length > 0 ? `## Use\n\n${refsEntries.join('\n\n')}\n\n` : ''
+
+    // 🆕 v0.7: 空 boundaries 列表不生成 ## Tasks 段
+    const tasksBlock = partEntries ? `## Tasks\n\n${partEntries}\n` : ''
 
     return `---
 entity: work
@@ -88,10 +92,7 @@ ${constraintLines}
 ### primary
 - max_iterations: 3
 
-${refsBlock}## Tasks
-
-${partEntries}
-`
+${refsBlock}${tasksBlock}`
   }
 
   // OXN 格式（非 canonical；保留用于 v0.6.x 兼容）
@@ -116,8 +117,8 @@ ${partEntries}
   // stack refs intentionally dropped for OXN format (see comment above)
 
   const refsBlock = [
-    // v0.6.1-alpha.3: Phase 1 — Work 引用 workflow（不是 blueprint）
-    ...blueprintRefs.map((b) => `  blueprint "${b}" ref "@prj/workflows/${b}";`),
+    // v0.7: Work 引用 Blueprint（ref 指向 @prj/blueprints/）
+    ...blueprintRefs.map((b) => `  blueprint "${b}" ref "@prj/blueprints/${b}";`),
     ...domainRefs.map((d) => `  domain "${d}" ref "@prj/domains/${d}";`),
   ].join('\n')
 

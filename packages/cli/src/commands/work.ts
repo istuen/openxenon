@@ -144,20 +144,25 @@ function ensureDirectory(dir: string): void {
   }
 }
 
-// v0.6.1-alpha.0 #3-3: work create 后自动为 blueprint 每个 slot 生成 task.md 骨架
+// 🆕 v0.7: work create 后自动为 blueprint 每个 boundary 生成 task.md 骨架
 function writeTaskTemplate(
   projectRoot: string,
   workName: string,
   taskName: string,
   blueprintName: string,
   domainName: string,
+  boundaryName?: string,
 ): { written: boolean; path: string; reason?: 'exists' } {
   const taskDir = getTaskDir(projectRoot, workName, taskName)
   const taskFile = getWorkTaskFile(workName, taskName)
   if (existsSync(taskFile)) {
     return { written: false, path: taskFile, reason: 'exists' }
   }
-  const refsSection = [`- blueprint: ${blueprintName}`, domainName ? `- domain: ${domainName}` : '']
+  const refsSection = [
+    `- blueprint: ${blueprintName}`,
+    boundaryName ? `- boundary: ${boundaryName}` : '',
+    domainName ? `- domain: ${domainName}` : '',
+  ]
     .filter(Boolean)
     .join('\n')
 
@@ -170,7 +175,7 @@ name: ${taskName}
 # Task: ${taskName}
 
 ## Parts
-### slot-name
+### implement
 - skill_context: "TODO: 描述 AI 执行指令"
 
 ## Refs
@@ -498,10 +503,10 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
       }
     }
 
-    // 5. 为每个 boundary 生成 task.md 骨架
+    // 5. 为每个 boundary 生成 task.md 骨架（🆕 v0.7 传 boundary 名字）
     const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
     for (const boundary of boundaries) {
-      const t = writeTaskTemplate(projectRoot, workName, boundary.name, resolvedBlueprintName, '')
+      const t = writeTaskTemplate(projectRoot, workName, boundary.name, resolvedBlueprintName, '', boundary.name)
       autoTasks.push({
         name: boundary.name,
         path: t.path,
@@ -776,7 +781,7 @@ const createSubcommand = defineCommand({
         //   用户可继续手动 `add-task` 补 task 或 `--force` 覆盖。
         const autoTasks: Array<{ name: string; path: string; status: 'created' | 'exists' }> = []
         for (const boundary of boundaries) {
-          const t = writeTaskTemplate(projectRoot, workName, boundary.name, resolvedBlueprintName, '')
+          const t = writeTaskTemplate(projectRoot, workName, boundary.name, resolvedBlueprintName, '', boundary.name)
           autoTasks.push({
             name: boundary.name,
             path: t.path,
