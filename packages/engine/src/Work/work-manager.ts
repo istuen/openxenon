@@ -291,7 +291,7 @@ name: ${taskName}
 # Task: ${taskName}
 
 ## Parts
-### slot-name
+### implement
 - skill_context: "TODO: 描述 AI 执行指令"
 
 ## Refs

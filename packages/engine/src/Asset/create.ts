@@ -63,11 +63,11 @@ domain "${name}" {
 }
 
 /**
- * 🆕 v0.6.1-alpha.2: Workflow 模板（原 Blueprint 改名）。
- * 语义不变：## Props + ## Slots。entity: workflow。
+ * v0.7+ canonical: Workflow = 执行边界，输出 ## Slots 下 ### <name> + - desc: 字段。
+ * 移除 ## Props 中的 deps / observe（v0.6 残留）；删除 ## Externals 段。
  */
 function createWorkflowTemplate(name: string, format: AssetFormat, slots?: string[]): string {
-  const slotList = slots?.length ? slots : ['build', 'test', 'verify']
+  const slotList = slots?.length ? slots : ['analyze', 'implement', 'verify']
   const slotBlocks = slotList.map((s) => `  slot "${s}" { deps = [] }`).join('\n')
   if (format === 'md') {
     return `---
@@ -78,10 +78,11 @@ name: ${name}
 
 # Workflow: ${name}
 
-> TODO: one-line description of the technical pipeline
+> TODO: one-line description of this execution flow
 
 ## Slots
-${slotList.map((s) => `\n### ${s}\n- deps: []`).join('\n')}
+
+${slotList.map((s) => `### ${s}\n- desc: TODO: ${s} 阶段要做什么`).join('\n\n')}
 `
   }
   return `// Workflow: ${name}
@@ -94,8 +95,9 @@ ${slotBlocks}
 }
 
 /**
- * 🆕 v0.6.1-alpha.2: 新 Blueprint = 组合模板（## Refs 引用 domain + workflow + stack + blueprint）。
- * 不再有 Props/Slots——组合的是其他 Asset。
+ * v0.7+ canonical: Blueprint = 组合模板，输出 ## Use 段（kind: domain/workflow/stack）
+ * + ## Boundaries 段（### <boundary> with refs/observe/deps）。
+ * 不再有 ## Refs / ## Props / ## Slots。
  */
 function createBlueprintTemplate(name: string, format: AssetFormat): string {
   if (format === 'md') {
@@ -108,9 +110,9 @@ abstract: TODO: one-line description of this composition template
 
 # Blueprint: ${name}
 
-> 组合模板：声明此工作所需的 Domain + Workflow + Stack + Blueprint 边界组合
+> 组合模板：声明此工作所需的 Domain + Workflow + Stack 边界组合
 
-## Refs
+## Use
 ### domain-1
 - kind: domain
 - ref: @md/domains/YourDomain
@@ -120,8 +122,30 @@ abstract: TODO: one-line description of this composition template
 ### stack-1
 - kind: stack
 - ref: @md/stacks/YourStack
+
+## Boundaries
+
+### build
+- refs:
+  - domain: domain-1
+  - workflow: workflow-1
+  - stack: stack-1
+- observe:
+  - ts-compiles
+- deps: []
+
+### test
+- refs:
+  - domain: domain-1
+  - workflow: workflow-1
+  - stack: stack-1
+- observe:
+  - test-pass
+- deps:
+  - build
 `
   }
+  // .oxn fallback（保留向后兼容）
   return `// Blueprint: ${name}
 blueprint "${name}" {
   abstract = "TODO: one-line description of this composition template"
@@ -133,28 +157,36 @@ blueprint "${name}" {
 `
 }
 
+/**
+ * v0.7+ canonical: Stack = 环境边界，输出 ## Tools 段（### <tool> with version / config / command）。
+ * 删除 v0.6 的 ## Runtimes / ## Linters / ## Tests / ## Externals 旧段；Stack 极简，
+ * 只保留 .md 单一格式。
+ */
 function createStackTemplate(name: string): string {
-  return `// Stack: ${name}
-// Created by: oxn work create ${name} --type asset --asset-kind stack
-//
-// 技术栈约束骨架。runtime / linter / test 三类约束。
+  return `---
+entity: stack
+version: 0.3.0
+name: ${name}
+abstract: TODO: one-line description of the tech stack
+---
 
-stack "${name}" {
-  description = "TODO: one-line description of the technical environment constraints"
+# Stack: ${name}
 
-  runtime "typescript" {
-    version = ">=5.0.0"
-  }
+> TODO: one-line description of this tech stack
 
-  linter "biome" {
-    config = "biome.json"
-  }
+## Tools
 
-  test "bun-test" {
-    command = "bun test"
-    coverage = "@oxn/probes/test-pass"
-  }
-}
+### typescript
+- version: ">=5.0.0"
+
+### node
+- version: ">=20.0.0"
+
+### biome
+- config: "biome.json"
+
+### bun-test
+- command: "bun test"
 `
 }
 
@@ -206,14 +238,15 @@ export async function create(input: CreateInput): Promise<CreateResult> {
       content = createDomainTemplate(input.name, format)
       break
     case 'blueprint':
-      // 🆕 v0.6.1-alpha.2: 新 Blueprint = 组合模板（## Refs 引用 domain + workflow + stack + blueprint）
+      // v0.7+ canonical: Blueprint 输出 ## Use + ## Boundaries 段
       content = createBlueprintTemplate(input.name, format)
       break
     case 'workflow':
-      // 🆕 v0.6.1-alpha.2: 原 blueprint 改名（## Props + ## Slots）
+      // v0.7+ canonical: Workflow 输出 ## Slots 下 ### <slot> + - desc 字段
       content = createWorkflowTemplate(input.name, format, input.slots)
       break
     case 'stack':
+      // v0.7+ canonical: Stack 输出 ## Tools 段（极简 .md 单一格式）
       content = createStackTemplate(input.name)
       break
     case 'roadmap':
