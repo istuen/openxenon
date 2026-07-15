@@ -6,7 +6,7 @@
  * - strict 模式抛 IAPError
  * - fail-open 模式仅 warn
  *
- * v0.7.0: 测试使用 .md 文件（.oxn 已废弃）
+ * 测试使用 .md canonical 资产（v0.7.0 起 .oxn 视为废弃输入）
  */
 
 import { describe, test, expect } from 'bun:test'

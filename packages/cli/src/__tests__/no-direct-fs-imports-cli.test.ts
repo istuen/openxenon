@@ -1,27 +1,16 @@
 import { describe, expect, it } from 'bun:test'
-import { readdirSync, readFileSync, statSync } from 'fs'
 import { join } from 'path'
+import { findForbiddenImports, readFileSync, readdirSync, statSync } from './helpers/no-direct-fs'
 
 const COMMANDS_DIR = join(import.meta.dir, '..', 'commands')
 
 /**
- * 守护：src/cli/*.ts 不得直引 'fs' / 'node:fs' / 'fs/promises' / 'node:fs/promises'
- * 必须走 src/infra/filesystem 或 src/infra/filesystem-async
+ * 守护：packages/cli/src/commands/*.ts 不得直引 'fs' / 'node:fs' / 'fs/promises' / 'node:fs/promises'
+ * 必须走 packages/engine/src/infra/filesystem 或 filesystem-async
  *
  * v0.2 Sprint 1 T1a: 22 个 cli 文件迁完后加入此 guard
  * 背景: lint 的 no-restricted-imports 规则仅在 L0 / Daemon 启用, L3-CLI 仍可直引
  */
-const FORBIDDEN_PATTERNS: RegExp[] = [
-  /from\s+['"]fs['"]/,
-  /from\s+['"]node:fs['"]/,
-  /from\s+['"]fs\/promises['"]/,
-  /from\s+['"]node:fs\/promises['"]/,
-]
-
-function findForbiddenImports(content: string): string[] {
-  return FORBIDDEN_PATTERNS.filter((p) => p.test(content)).map((p) => p.source)
-}
-
 describe('packages/cli/src/commands/* no-direct-fs-imports guard', () => {
   const allEntries = readdirSync(COMMANDS_DIR)
   const tsFiles = allEntries.filter((f) => f.endsWith('.ts') && !f.includes('__tests__'))
@@ -31,7 +20,6 @@ describe('packages/cli/src/commands/* no-direct-fs-imports guard', () => {
   })
 
   it('38 个生产文件应被本 guard 覆盖 (Sprint 5 迁移范围)', () => {
-    // 38 = src/cli/* 全部子命令文件 (不含 index.ts, render/*)
     expect(tsFiles.length).toBeGreaterThanOrEqual(38)
   })
 

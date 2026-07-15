@@ -96,8 +96,9 @@ describe('extractBlueprintRefs', () => {
     expect(extractBlueprintRefs(`# Work: demo\n## Context\n- goal: g\n`)).toEqual([])
   })
 
-  test('.oxn 格式优先于 .md（避免重复）', () => {
-    // 同时有 .oxn 和 .md 时，优先用 .oxn
+  test('向后兼容：同时有 .oxn + .md 时优先 .oxn（v0.7 起 .oxn 移除 → T19 移除本测试）', () => {
+    // 同时有 .oxn 和 .md 时，优先用 .oxn。该行为是 v0.6.x 的 .oxn→.md 迁移兼容 shim，
+    // 待 v0.7.0 触发 E_MD_DEPRECATED_SYNTAX 后删除（见 ssumary-extractors / roadmap RFC）。
     const mixed = `work "demo" {\n  blueprint "Foo" ref "@prj/blueprints/foo";\n}\n## Use\n### bar\n- kind: blueprint\n- ref: @prj/blueprints/bar\n`
     expect(extractBlueprintRefs(mixed).map((r) => r.name)).toEqual(['Foo'])
   })

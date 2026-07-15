@@ -512,7 +512,7 @@ describe('checkAssetsDrift', () => {
   }
 
   test('无漂移：hash 与文件匹配', () => {
-    const file = join(tmpDir, 'fake-A.oxn')
+    const file = join(tmpDir, 'fake-A.md')
     writeFileSync(file, 'A content')
     const cert = makeCertWithAssets([{ name: 'A', fileHash: hashText('A content') }])
     const r = checkAssetsDrift(cert, (_k, n) => (n === 'A' ? file : null))
@@ -520,7 +520,7 @@ describe('checkAssetsDrift', () => {
   })
 
   test('文件改了 → expected/actual 都报告', () => {
-    const file = join(tmpDir, 'fake-A.oxn')
+    const file = join(tmpDir, 'fake-A.md')
     writeFileSync(file, 'A content')
     const cert = makeCertWithAssets([{ name: 'A', fileHash: hashText('A OLD') }])
     const r = checkAssetsDrift(cert, (_k, n) => (n === 'A' ? file : null))

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { readdirSync, readFileSync, statSync } from 'fs'
-import { join } from 'path'
+import { findForbiddenImports, fileExists, readFileSync, walkTs } from './helpers/no-direct-fs'
 
 /**
  * 守护: Sprint 1 T1b 迁移的非 cli 生产文件不得直引 fs / node:fs / fs/promises / node:fs/promises
@@ -20,7 +19,7 @@ import { join } from 'path'
  * - packages/engine/src/infra/runtime/ (phase 1 收口)
  * - packages/engine/src/infra/filesystem.ts / filesystem-async.ts (迁移层本身)
  * - packages/engine/src/infra/boundary.ts (用 OsPort, 仍通过 Kernel)
- * - packages/engine/src/cli/__tests__/ (CLI 范围, 属 t1a)
+ * - packages/cli/src/__tests__/ (CLI 范围, 属 t1a)
  */
 const PROTECTED_DIRS: string[] = [
   'packages/engine/src/infra/probes',
@@ -47,15 +46,6 @@ const EXEMPT_FILES: string[] = [
   'packages/engine/src/infra/boundary.ts',
 ]
 
-const FORBIDDEN_PATTERNS: RegExp[] = [
-  /from\s+['"]fs['"]/,
-  /from\s+['"]node:fs['"]/,
-  /from\s+['"]fs\/promises['"]/,
-  /from\s+['"]node:fs\/promises['"]/,
-]
-
-const _REPO_ROOT = join(import.meta.dir, '..', '..', '..')
-
 function isProtected(filePath: string): boolean {
   if (EXEMPT_FILES.includes(filePath)) return false
   if (PROTECTED_FILES.includes(filePath)) return true
@@ -64,51 +54,15 @@ function isProtected(filePath: string): boolean {
 
 function collectProtectedFiles(): string[] {
   const result: string[] = []
-  // protected files (single)
   for (const f of PROTECTED_FILES) {
-    if (exists(f)) result.push(f)
+    if (fileExists(f)) result.push(f)
   }
-  // protected dirs (recursive)
   for (const dir of PROTECTED_DIRS) {
-    walk(dir, result)
+    for (const f of walkTs(dir)) {
+      if (isProtected(f)) result.push(f)
+    }
   }
   return result
-}
-
-function exists(p: string): boolean {
-  try {
-    return statSync(p).isFile()
-  } catch {
-    return false
-  }
-}
-
-function walk(dir: string, out: string[]): void {
-  let entries: string[]
-  try {
-    entries = readdirSync(dir)
-  } catch {
-    return
-  }
-  for (const entry of entries) {
-    const full = join(dir, entry)
-    let st
-    try {
-      st = statSync(full)
-    } catch {
-      continue
-    }
-    if (st.isDirectory()) {
-      if (entry === '__tests__' || entry === 'node_modules' || entry === '.git') continue
-      walk(full, out)
-    } else if (st.isFile() && entry.endsWith('.ts') && !entry.endsWith('.test.ts')) {
-      out.push(full)
-    }
-  }
-}
-
-function findForbiddenImports(content: string): string[] {
-  return FORBIDDEN_PATTERNS.filter((p) => p.test(content)).map((p) => p.source)
 }
 
 describe('Sprint 1 T1b: non-cli no-direct-fs-imports guard', () => {

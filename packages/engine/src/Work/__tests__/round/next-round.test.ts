@@ -13,7 +13,7 @@ beforeEach(() => {
   tmp = join(tmpdir(), `oxn-round-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
   mkdirSync(tmp, { recursive: true })
   mkdirSync(join(tmp, BOUNDARY_DIR, 'works', 'test-work', '.run'), { recursive: true })
-  // minimal work.oxn for OXN existence check
+  // minimal work fixture for OXN existence check (v0.7 起 .md canonical，.oxn 仅 compat fallback)
   writeFileSync(join(tmp, BOUNDARY_DIR, 'works', 'test-work', WORK_OXN_FILE), 'work "test-work" {}\n')
 })
 

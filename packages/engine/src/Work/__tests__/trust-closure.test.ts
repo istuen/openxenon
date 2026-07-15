@@ -1,11 +1,10 @@
 // =============================================================================
-// trust-closure.test.ts — ADR-0058 D2/D3/D4 闭合测试 + v0.6.1 信任链闭环
+// trust-closure.test.ts — ADR-0058 D2/D3/D4 闭合测试
 //
 // 覆盖本次会话实现的三层确定性闭环：
 //   A3 (D2): submitTaskWithProbes 调真实 executeProbe 写入 probeResults
 //   A1 (D3): finalizeWork 写 work-level frozen.json（含 roundHistory + taskFrozenPaths）
 //   A2 (D4): boundaryViolations 注入 frozen.json
-//   v0.6.1: verdict.md 生成 + evidence-collector + collectWorkDomainProofs
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
@@ -13,8 +12,6 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import { finalizeWork, submitTaskWithProbes, runWork, runTask } from '../dual-state-exec'
-import { collectEvidence, writeWorkVerdictMd } from '@openxenon/engine/Proof'
-import { collectWorkDomainProofs } from '@openxenon/engine/infra/frozen/work-domains'
 
 let tmpDir: string
 const workName = 'closure-test'
@@ -215,182 +212,5 @@ describe('finalizeWork frozen.json (A1 / D3)', () => {
     const frozenPath = join(tmpDir, '.openxenon', 'works', workName, '.run', 'frozen.json')
     const frozen = JSON.parse(readFileSync(frozenPath, 'utf-8'))
     expect(frozen.boundaryViolations).toEqual(violations)
-  })
-})
-
-// ───────── v0.6.1: verdict.md 信任链闭环 ─────────
-
-describe('verdict.md 信任链闭环 (v0.6.1)', () => {
-  test('finalizeWork 生成 verdict.md 文件', () => {
-    runWork({
-      projectRoot: tmpDir,
-      workName,
-      blueprintNames: ['test-bp'],
-      domainNames: [],
-      tasks: [{ taskName: 'task-a', blueprint: 'test-bp', injects: [] }],
-    })
-    runTask({
-      projectRoot: tmpDir,
-      workName,
-      taskName: 'task-a',
-      blueprint: 'test-bp',
-      injects: [],
-      partNames: ['p1'],
-    })
-
-    finalizeWork({
-      projectRoot: tmpDir,
-      workName,
-      verdict: 'PASSED',
-    })
-
-    const verdictPath = join(tmpDir, '.openxenon', 'works', workName, '.run', 'verdict.md')
-    expect(existsSync(verdictPath)).toBe(true)
-  })
-
-  test('verdict.md 包含信任链节点和 content_hash', () => {
-    runWork({
-      projectRoot: tmpDir,
-      workName,
-      blueprintNames: ['test-bp'],
-      domainNames: [],
-      tasks: [{ taskName: 'task-a', blueprint: 'test-bp', injects: [] }],
-    })
-    runTask({
-      projectRoot: tmpDir,
-      workName,
-      taskName: 'task-a',
-      blueprint: 'test-bp',
-      injects: [],
-      partNames: ['p1'],
-    })
-
-    finalizeWork({
-      projectRoot: tmpDir,
-      workName,
-      verdict: 'PASSED',
-    })
-
-    const verdictPath = join(tmpDir, '.openxenon', 'works', workName, '.run', 'verdict.md')
-    const content = readFileSync(verdictPath, 'utf-8')
-
-    // 检查信任链节点
-    expect(content).toContain('# Verdict:')
-    expect(content).toContain('## Work')
-    expect(content).toContain('## Tasks & Probes')
-    expect(content).toContain('## Boundary Violations')
-    expect(content).toContain('## Summary')
-    expect(content).toContain('content_hash:')
-  })
-})
-
-// ───────── evidence-collector 测试 ─────────
-
-describe('evidence-collector', () => {
-  test('collectEvidence 读取 Work 证据', () => {
-    runWork({
-      projectRoot: tmpDir,
-      workName,
-      blueprintNames: ['test-bp'],
-      domainNames: [],
-      tasks: [{ taskName: 'task-a', blueprint: 'test-bp', injects: [] }],
-    })
-    runTask({
-      projectRoot: tmpDir,
-      workName,
-      taskName: 'task-a',
-      blueprint: 'test-bp',
-      injects: [],
-      partNames: ['p1'],
-    })
-
-    const evidence = collectEvidence(tmpDir, workName)
-    expect(evidence).toBeDefined()
-    expect(evidence.work).toBeDefined()
-    expect(evidence.taskEvidence).toBeDefined()
-    expect(evidence.boundaryViolations).toEqual([])
-  })
-})
-
-// ───────── collectWorkDomainProofs 测试 ─────────
-
-describe('collectWorkDomainProofs', () => {
-  test('从 work.md ## Use 提取 domain 引用', () => {
-    const worksDir = join(tmpDir, '.openxenon', 'works', workName)
-    mkdirSync(worksDir, { recursive: true })
-    writeFileSync(
-      join(worksDir, 'work.md'),
-      `---
-entity: work
-version: 0.7.0
-name: ${workName}
----
-
-# Work: ${workName}
-
-## Context
-- goal: test goal
-
-## Use
-### test-domain
-- kind: domain
-- ref: @prj/domains/test-domain
-
-### test-bp
-- kind: blueprint
-- ref: @prj/blueprints/test-bp
-`,
-    )
-
-    // 创建 domain 文件（含 invariants）
-    const domainsDir = join(tmpDir, '.openxenon', 'domains')
-    mkdirSync(domainsDir, { recursive: true })
-    writeFileSync(
-      join(domainsDir, 'test-domain.md'),
-      `---
-entity: domain
-version: 0.7.0
-name: test-domain
----
-
-# Domain: test-domain
-
-## Invariants
-### invariant-1
-- value: test invariant
-`,
-    )
-
-    const result = collectWorkDomainProofs(tmpDir, workName, 'md')
-    expect(result.length).toBe(1)
-    expect(result[0]!.domain).toBe('test-domain')
-    expect(result[0]!.invariant).toBe('test invariant')
-  })
-
-  test('无 domain 引用时返回空数组', () => {
-    const worksDir = join(tmpDir, '.openxenon', 'works', workName)
-    mkdirSync(worksDir, { recursive: true })
-    writeFileSync(
-      join(worksDir, 'work.md'),
-      `---
-entity: work
-version: 0.7.0
-name: ${workName}
----
-
-# Work: ${workName}
-
-## Context
-- goal: test goal
-
-## Use
-### test-bp
-- kind: blueprint
-- ref: @prj/blueprints/test-bp
-`,
-    )
-
-    const result = collectWorkDomainProofs(tmpDir, workName, 'md')
-    expect(result.length).toBe(0)
   })
 })

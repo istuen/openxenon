@@ -5,18 +5,13 @@
 //   Phase 1: work-domains.draft.json (0o644, 评估所有 invariants)
 //   Phase 2: atomic rename → work-domains-frozen.json + chmod 0o444
 //   hardBlocked flag + overallVerdict
-//
-// v0.6.1: 新增 collectWorkDomainProofs（从 CLI 移回 Engine）
 // =============================================================================
 
 import { chmod, mkdir, rename, unlink, writeFile } from '../filesystem-async'
 import { join } from 'node:path'
-import { readFileSync, existsSync } from '../filesystem'
-import { IAPError, IAPAction, BOUNDARY_DIR } from '@openxenon/engine/kernel/index'
+import { IAPError, IAPAction } from '@openxenon/engine/kernel/index'
 import { evaluateDomainProof } from './domain-proof-evaluator'
 import type { DomainProofEval } from './domain-proof-evaluator'
-import { resolveWorkFilePath } from '@openxenon/engine/Work/dual-state-io'
-import { readDomainFile } from '@openxenon/engine/oxl/summary-extractors'
 
 export interface WorkDomainsFrozen {
   workId: string
@@ -165,52 +160,4 @@ function computeOverall(evals: DomainProofEval[]): 'PASS' | 'FAIL' | 'INCONCLUSI
   if (evals.some((e) => e.verdict === 'FAIL')) return 'FAIL'
   if (evals.some((e) => e.verdict === 'MANUAL_PENDING' || e.verdict === 'INCONCLUSIVE')) return 'INCONCLUSIVE'
   return 'PASS'
-}
-
-/**
- * 🆕 v0.6.1: 收集 Work 引用 Domain 的 invariant，构造 DomainProofInput[]。
- * 从 work.md ## Use 提取 kind:domain 的 domain → 读每个 Domain.md 的 ## Invariants。
- *
- * 原位于 CLI（work.ts:2883），因 Engine 通用性需要移回 Engine。
- */
-export function collectWorkDomainProofs(
-  projectRoot: string,
-  workName: string,
-  assetFormat: string,
-): Array<{ domain: string; invariant: string }> {
-  const workFile = resolveWorkFilePath(projectRoot, workName, assetFormat)
-  if (!existsSync(workFile)) return []
-  const content = readFileSync(workFile, 'utf-8')
-
-  const refsSection = content.match(/## Use\n([\s\S]*?)(?=\n## |\n# |$)/)
-  const domains: string[] = []
-  if (refsSection) {
-    for (const block of refsSection[1]!.split(/\n(?=### )/)) {
-      if (!block.startsWith('### ')) continue
-      // 提取第一行作为 name（去掉 ### 前缀）
-      const firstLine = block.split('\n')[0] ?? ''
-      const name = firstLine.replace(/^### /, '').trim()
-      const kind = block.match(/- kind:\s*(\S+)/)?.[1]
-      if (kind === 'domain') domains.push(name)
-    }
-  }
-
-  const inputs: Array<{ domain: string; invariant: string }> = []
-  for (const d of domains) {
-    const candidates = [
-      join(projectRoot, BOUNDARY_DIR, 'domains', `${d}.md`),
-      join(projectRoot, BOUNDARY_DIR, 'domains', d.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase(), 'domain.md'),
-    ]
-    for (const p of candidates) {
-      if (!existsSync(p)) continue
-      const dom = readDomainFile(p)
-      if (dom?.language?.invariant) {
-        for (const inv of dom.language.invariant) {
-          inputs.push({ domain: d, invariant: inv })
-        }
-      }
-      break
-    }
-  }
-  return inputs
 }

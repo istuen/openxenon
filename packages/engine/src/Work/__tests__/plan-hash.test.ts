@@ -242,8 +242,8 @@ describe('hashAssetList', () => {
   })
 
   test('同 name 列表不同顺序 → 相同 hash（排序）', () => {
-    const f1 = join(tmpDir, 'a.oxn')
-    const f2 = join(tmpDir, 'b.oxn')
+    const f1 = join(tmpDir, 'a.md')
+    const f2 = join(tmpDir, 'b.md')
     writeFileSync(f1, 'A')
     writeFileSync(f2, 'B')
 
@@ -259,7 +259,7 @@ describe('hashAssetList', () => {
   })
 
   test('fileHash 变化（文件改了）→ hash 变', () => {
-    const f = join(tmpDir, 'a.oxn')
+    const f = join(tmpDir, 'a.md')
     writeFileSync(f, 'A')
     const h1 = hashAssetList([{ name: 'A', version: 1, filePath: f }])
     writeFileSync(f, 'A2')

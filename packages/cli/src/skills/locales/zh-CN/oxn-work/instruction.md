@@ -41,13 +41,13 @@ D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
      --goal "<goal>" \
      [--constraints "c1" "c2"]
    ```
-    或手动 `fork assets/work-{explore,develop,fix,onboarding}.md → work.md` 自编辑 `## Use` + `## Context`。
+   或手动 `fork assets/work-{explore,develop,fix,onboarding}.md → work.md` 自编辑 `## Refs` + `## Context`。
 5. **走 8 阶段**：`references/8-phase-detail.md`
 6. **报错**：`references/error-codes.md`
 
 ## 多 Asset 与 Tasks 的关系
 
-- **Work 级 `## Use`**：声明 domain[] + blueprint[] + stack[] ref 池（多个）
+- **Work 级 `## Refs`**：声明 domain[] + blueprint[] + stack[] ref 池（多个）
 - **Task 级**：每个 task 在 `task.oxn` 内**单选** 1 blueprint + 1 domain（Work 级 ref 池的子集）
 - **新增 task 校验**：task 选的 blueprint/domain **必须**在 Work 级 ref 池内（`add-task` 报错 `not declared in work`）
 - **planLock 影响**：work 级多 ref 让 `domains.json` / `blueprints.json` slim 索引含 N 条 entry；hash 算法不变（hash 整个 .json）

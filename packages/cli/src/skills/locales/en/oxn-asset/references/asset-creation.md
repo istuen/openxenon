@@ -6,12 +6,12 @@
 
 ### Step 1: Choose AssetKind + Template
 
-Select from `assets/` directory (5 AssetKind):
-- `assets/domain.md` — Terms / Bans / Invariants
-- `assets/workflow.md` — Slots (desc only)
-- `assets/stack.md` — Tools
-- `assets/blueprint.md` — Use + Boundaries (composition)
-- `assets/roadmap.md` — Scenes
+Select from `assets/` directory:
+- `assets/domain.md` — 5 H3 terms + 1 `forbidden-constructs` H3 + 3 inv-* H3
+- `assets/blueprint.md` — 2 prop H3 + 3 slot H3 (with deps / observe)
+- `assets/stack.md` — 2 runtime + 1 linter + 1 test
+- `assets/library.md` — N source H3
+- `assets/external.md` — N link H3
 
 ### Step 2: Fork the Template
 
@@ -24,10 +24,10 @@ cp docs/en/asset-templates/domain.md /tmp/MyDomain.md
 
 Each template has **minimum examples**, modify accordingly:
 - Domain: term name + desc, ban name + items, invariant name + value
-- Workflow: slot name + desc (desc only; deps/observe orchestrated by Blueprint)
-- Stack: tool name + version/config/command
-- Blueprint: ref name + kind + ref (kind ∈ domain/workflow/stack/blueprint)
-- Roadmap: scene name + description
+- Blueprint: prop name + type/values/required/default, slot name + deps/observe
+- Stack: runtime name + version, linter name + config, test name + command/coverage
+- Library: source name + url/version/fetched/summary
+- External: link name + url/kind/ttl/auth/summary
 
 ### Step 4: Write to Disk (CLI triggers Work mode)
 
@@ -36,7 +36,7 @@ Each template has **minimum examples**, modify accordingly:
 oxn work create MyDomain --type asset --asset-kind domain --json
 
 # Or fast-path CLI (bypasses IAP, only v0.6.1-alpha.0)
-oxn asset create MyDomain --kind domain
+oxn domain create MyDomain
 ```
 
 ### Step 5: Auto Sync

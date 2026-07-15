@@ -1,24 +1,18 @@
 /**
- * src/oxl/md-bridge/__tests__/compilers/domain-compiler.test.ts
+ * packages/engine/src/oxl/md-bridge/__tests__/compilers/domain-compiler.test.ts
  *
  * Domain EntityCompiler 测试
  *
  * 覆盖：
  * - parse: 纯 MD 解析（terms / bans / invariants）
  * - validate: H1/H2/H3 校验
- * - compile: Langium AST → .md（PR-B 完整实现）
+ * - compile: MDAST → in-memory Domain entity（v0.7 MD-native 路径）
  */
 
 import { describe, test, expect, beforeAll } from 'bun:test'
-import { unified } from 'unified'
-import remarkParse from 'remark-parse'
 import type { Root } from 'mdast'
 import { DomainCompiler } from '../../compilers/domain-compiler.js'
-
-/** 工具：MD 字符串 → mdast Root */
-function parseMd(md: string): Root {
-  return unified().use(remarkParse).parse(md) as Root
-}
+import { parseMd } from '../helpers/parse-md.js'
 
 const SAMPLE_DOMAIN = `---
 entity: domain

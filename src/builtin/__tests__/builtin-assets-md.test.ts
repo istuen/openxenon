@@ -9,9 +9,8 @@
  *   - H1 = `# Probe: <name>` 或 `# Blueprint: <name>`
  *   - 各 section (Alignment, Scheme, Props, Output for probe / Version, Slots for blueprint) 存在
  *
- * 与现有 builtin-*.test.ts 的关系：
- *   - 现有 .oxn test 持续 run via Langium（v0.6.x 兼容）
- *   - 新 .md test 跑 mdast 路径（v0.7.0 cutover 准备）
+ * 历史备注：v0.6.x 早期版本用 .oxn + Langium 解析 builtin assets；
+ * 现已完全切到 .md + mdast 管线，无 Langium 残留依赖。
  */
 
 import { describe, expect, test } from 'bun:test'

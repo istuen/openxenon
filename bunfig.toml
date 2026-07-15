@@ -9,39 +9,55 @@
 #   - concurrentTestGlob: any test file matching this glob runs concurrently
 #     WITHIN that file (per-test concurrency). The bulk of our suite is pure
 #     logic (kernel/dsl/work/daemon/schema/errors/skills locales) and is safe.
-#   - E2E files (src/cli/__tests__/*-e2e.test.ts) and cross-layer integration
-#     tests (tests/integration/**) are deliberately NOT in the glob, so they
-#     stay serial — they share `/tmp/oxn-…` and the real `.openxenon/` index,
-#     and concurrent `Bun.spawn` calls have historically caused work-migrate-e2e
-#     to flake.
+#   - E2E files (packages/cli/src/__tests__/*-e2e.test.ts) and cross-layer
+#     integration tests (tests/integration/**) are deliberately NOT in the
+#     glob, so they stay serial — they share `/tmp/oxn-…` and the real
+#     `.openxenon/` index, and concurrent `Bun.spawn` calls have historically
+#     caused work-migrate-e2e to flake.
 #
 # Test layout (Y scheme — tests reflect architecture boundary, not source):
-#   - src/<mod>/__tests__/      module unit tests
-#   - tests/architectural/      L0-L3 constitutional guards
-#   - tests/integration/        cross-layer integration (L0+L1+L3)
-#   - src/cli/__tests__/        E2E black-box CLI tests
+#   - packages/engine/src/<mod>/__tests__/  module unit tests
+#   - packages/cli/src/__tests__/           CLI tests + E2E (latter not in glob)
+#   - src/{daemon,builtin}/__tests__/       residual pre-monorepo modules
+#   - oxn-vscode/__tests__/                 VSCode grammar
+#   - scripts/__tests__/                    validation scripts
+#   - tests/architectural/                  L0-L3 constitutional guards
+#   - tests/integration/                    cross-layer integration (not in glob)
 #
-# Verified: 2025-12, after H1-H5 + M2 + Y-scheme regroup. Wall ~50s → 45s.
+# Verified: 2026-01, after monorepo regroup (v0.6.1). Globs repointed from
+# pre-monorepo `src/` paths to real `packages/` locations; per-test
+# concurrency restored.
 # =============================================================================
 
 [test]
 
-# Pure unit / integration / schema / langium parser / skill-content tests:
+# Pure unit / integration / schema / md-bridge compiler / skill-content tests:
 # these are isolated and safe to run concurrently within a file.
+#
+# Note on CLI tests: `packages/cli/src/__tests__/` mixes pure-unit files
+# (config-loader, domain-canonicalization, iap-error-dictionary-v1_1, …)
+# with CLI E2E black-box files (*-e2e.test.ts) that spawn the `oxn` binary
+# and share `.openxenon/` FS state. Bun's concurrentTestGlob syntax (basic
+# fnmatch, no extglob negation) cannot exclude the E2E subset. So the whole
+# CLI dir stays serial by default (no glob entry). The bulk of speedup comes
+# from the engine (~85 files), which is the primary suite.
+#
+# Note on helpers in `__tests__/helpers/`: `run-cli.ts`, `parse-md.ts` are
+# NOT test files — Bun skips them since `.test.ts` suffix is required.
 concurrentTestGlob = [
-  "src/core/errors/__tests__/**",
-  "src/oxl/__tests__/**",
-  "src/oxl/compiler/__tests__/**",
-  "packages/engine/src/Work/__tests__/**",
-  "src/skills/**",
-  "src/cli/__tests__/task-filesystem.test.ts",
+  # Engine (L0–L2) — broad pattern matches every engine test file at any depth
+  "packages/engine/src/**/*.test.ts",
+  # Residual pre-monorepo modules
   "src/daemon/__tests__/**",
-  "src/kernel/__tests__/**",
+  "src/builtin/__tests__/**",
+  # Tooling
+  "oxn-vscode/__tests__/**",
+  "scripts/__tests__/**",
   "tests/architectural/**",
 ]
 
-# E2E tests in src/cli/__tests__/ (work-*-e2e.test.ts etc) and cross-layer
-# integration tests in tests/integration/ deliberately omitted so they
+# E2E tests (packages/cli/src/__tests__/*-e2e.test.ts) and cross-layer
+# integration tests (tests/integration/**) deliberately omitted so they
 # default to serial execution.
 
 # Retry once on failure: absorbs the historical work-migrate-e2e:320 flake

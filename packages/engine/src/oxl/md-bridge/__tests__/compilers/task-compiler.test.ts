@@ -3,14 +3,9 @@
  */
 
 import { describe, test, expect, beforeAll } from 'bun:test'
-import { unified } from 'unified'
-import remarkParse from 'remark-parse'
 import type { Root } from 'mdast'
 import { TaskCompiler } from '../../compilers/task-compiler.js'
-
-function parseMd(md: string): Root {
-  return unified().use(remarkParse).parse(md) as Root
-}
+import { parseMd } from '../helpers/parse-md.js'
 
 const SAMPLE_TASK = `---
 entity: task

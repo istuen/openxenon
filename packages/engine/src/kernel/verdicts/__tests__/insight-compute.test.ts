@@ -20,7 +20,7 @@ import {
   buildProbeStatsView,
   detectEmergentPatterns,
   computeInsightFromInputs,
-} from '../../verdicts/insight-compute'
+} from '../insight-compute'
 import { safeValidateInsight } from '../../schemas/insight-schema'
 import { emptyProbeStats, type ProbeStats } from '../../schemas/probe-stats-schema'
 import type { FrozenProof } from '../../schemas/proof-schema'

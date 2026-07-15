@@ -79,8 +79,6 @@ export const RUN_DIR = '.run'
 export const WORK_RUN_STATE_JSON = 'state.json'
 export const WORK_RUN_TRACE_JSONL = 'trace.jsonl'
 export const WORK_RUN_FROZEN_JSON = 'frozen.json'
-// 🆕 v0.6.1: Work 级 verdict.md（人类可读 Proof 证明，chmod 0o444 不可篡改）
-export const WORK_RUN_VERDICT_MD = 'verdict.md'
 
 // PR-3: per-work slim 索引（AI 决策用；CLI 写）
 export const WORK_DOMAINS_JSON = 'domains.json'
