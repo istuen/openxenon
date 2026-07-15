@@ -16,7 +16,8 @@ config.json
 # Global Domain slim 索引（AI 离线读；可由 oxn domain index 重建）
 .cache/
 !.openxenon/.archived/**/*.cache/  # 例外：归档区下的 .cache/ 视为归档内容
-issues/
+# 注：历史 .openxenon/issues/ 已废弃（v0.3 时代旧路径），pools/issues/ 现 tracked
+# 原 `issues/` 行过宽匹配到 .openxenon/pools/issues/，已于 2026-07-15 pool-audit-D4 删除
 
 # Work 静态门禁卡（CLI 写；可由 oxn work validate 重建）
 .work
