@@ -13,6 +13,9 @@ import {
   WORK_RUN_STATE_JSON,
   WORK_RUN_TRACE_JSONL,
 } from '@openxenon/engine/kernel'
+
+/** 🆕 v0.6.1: Work 级 verdict.md 文件名 */
+const WORK_RUN_VERDICT_MD = 'verdict.md'
 import { IAPError, IAPAction } from '@openxenon/engine/kernel'
 import { type TaskState, TaskStateSchema, type WorkspaceState, WorkspaceStateSchema } from './dual-state'
 
@@ -63,6 +66,11 @@ export function getWorkTracePath(projectRoot: string, workName: string): string 
 
 export function getWorkFrozenPath(projectRoot: string, workName: string): string {
   return join(getWorkRunDir(projectRoot, workName), WORK_RUN_FROZEN_JSON)
+}
+
+/** 🆕 v0.6.1: Work 级 verdict.md 路径 */
+export function getWorkVerdictPath(projectRoot: string, workName: string): string {
+  return join(getWorkRunDir(projectRoot, workName), WORK_RUN_VERDICT_MD)
 }
 
 export function ensureWorkDir(projectRoot: string, workName: string): string {

@@ -11,8 +11,7 @@
 // 命名范式：详见 kernel/constants.ts V1 布局
 // =============================================================================
 
-import { existsSync, mkdirSync, renameSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
-import { dirname } from 'path'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import {
   createInitialTaskState,
   createInitialWorkspaceState,
@@ -36,7 +35,10 @@ import {
   saveWorkState,
 } from './dual-state-io'
 import { IAPError, IAPAction, type IAPAxis } from '@openxenon/engine/kernel'
+import { readWorkFile } from './birth-cert'
+import { writeFrozenImmutable, type FrozenXenonMetaBase } from '@openxenon/engine/infra/frozen/immutable'
 import { readTaskFile } from '@openxenon/engine/oxl/summary-extractors'
+import { collectEvidence, writeWorkVerdictMd } from '@openxenon/engine/Proof'
 import { executeProbe, type ProofProbeIR } from '@openxenon/engine/Proof/runner'
 
 // =============================================================================
@@ -207,6 +209,8 @@ export interface SubmitTaskResult {
     output?: unknown
     errorMessage?: string
     durationMs?: number
+    /** 从 Probe params 提取的产物路径（artifacts） */
+    artifact?: string
   }>
   frozen: boolean
 }
@@ -259,11 +263,20 @@ export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
       blueprint: taskState.blueprint,
       completedAt: new Date().toISOString(),
       trace: taskState.completedParts,
-      probeResults: probeResults.map((p) => ({
-        probe: p.probe,
-        passed: p.passed,
-        output: p.output,
-      })),
+      probeResults: probeResults.map((p) => {
+        // 🆕 节点 3：从 Probe params 提取 artifact（产物路径）
+        const artifact = extractArtifactFromOutput(p.output)
+        return {
+          probeName: p.probe,
+          ref: extractRefFromOutput(p.output),
+          verdict: p.passed ? 'PASSED' : 'FAILED',
+          passed: p.passed,
+          output: p.output,
+          errorMessage: p.errorMessage,
+          durationMs: p.durationMs ?? 0,
+          artifact,
+        }
+      }),
     })
   } else {
     taskState.status = 'running'
@@ -294,13 +307,20 @@ export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
     saveWorkState(params.projectRoot, params.workName, workState)
 
     if (workFrozen) {
+      // 读 BirthCert 获取 goal / blueprint / planLockHash
+      const birthCertResult = readWorkFile(params.projectRoot, params.workName)
+      const birthCert = birthCertResult.ok ? birthCertResult.cert : null
       writeWorkFrozen(params.projectRoot, params.workName, {
         workName: params.workName,
+        goal: birthCert?.goal ?? '',
+        blueprint: birthCert?.assets?.blueprints?.[0]?.name ?? '',
+        planLockHash: birthCert?.planLock?.allHash ?? '',
         completedAt: new Date().toISOString(),
         tasks: workState.tasks.map((t) => ({
           taskName: t.taskName,
           status: t.status,
           completedAt: t.completedAt ?? null,
+          probes: [],
         })),
         finalVerdict: 'PASSED',
         totalRounds: workState.roundHistory.length,
@@ -386,11 +406,20 @@ export async function submitTaskWithProbes(params: SubmitTaskParams): Promise<Su
       blueprint: base.taskState.blueprint,
       completedAt: new Date().toISOString(),
       trace: base.taskState.completedParts,
-      probeResults: realResults.map((p) => ({
-        probe: p.probe,
-        passed: p.passed,
-        output: p.output,
-      })),
+      probeResults: realResults.map((p) => {
+        // 🆕 节点 3：从 Probe params 提取 artifact（产物路径）
+        const artifact = extractArtifactFromOutput(p.output)
+        return {
+          probeName: p.probe,
+          ref: extractRefFromOutput(p.output),
+          verdict: p.passed ? 'PASSED' : 'FAILED',
+          passed: p.passed,
+          output: p.output,
+          errorMessage: p.errorMessage,
+          durationMs: p.durationMs,
+          artifact,
+        }
+      }),
     })
   }
 
@@ -412,6 +441,48 @@ function collectTaskProbeDecls(
   return decls
 }
 
+/**
+ * 🆕 节点 3：从 Probe 执行结果（output.observation）提取 ref（如 @oxn/probes/fs-exists）。
+ */
+function extractRefFromOutput(output: unknown): string {
+  if (!output || typeof output !== 'object') return ''
+  const obj = output as Record<string, unknown>
+  // FrozenProofProbeResult.output 是 { observation, verdict }，observation 含 ref
+  if (obj.observation && typeof obj.observation === 'object') {
+    const obs = obj.observation as Record<string, unknown>
+    if (typeof obs.ref === 'string') return obs.ref
+  }
+  return ''
+}
+
+/**
+ * 🆕 节点 3：从 Probe 执行结果（output.observation）提取 artifact（产物路径）。
+ *
+ * 不同 Probe 的产物在 output.observation 中的字段不同：
+ *   - fs-exists / fs-not-exists / fs-content-match / fs-parseable：params.path → observation.output
+ *   - shell-exec：params.command
+ *   - ts-compiles / lint-check / test-pass：params.path
+ */
+function extractArtifactFromOutput(output: unknown): string | undefined {
+  if (!output || typeof output !== 'object') return undefined
+  const obj = output as Record<string, unknown>
+  if (obj.observation && typeof obj.observation === 'object') {
+    const obs = obj.observation as Record<string, unknown>
+    // fs-* Probe：observation.output 是命中路径数组（files[]）或单个路径
+    if (Array.isArray(obs.output) && obs.output.length > 0) {
+      return String(obs.output[0])
+    }
+    if (typeof obs.output === 'string') {
+      return obs.output
+    }
+    // shell-exec Probe：observation.command
+    if (typeof obs.command === 'string') {
+      return obs.command
+    }
+  }
+  return undefined
+}
+
 // =============================================================================
 // frozen.json writers
 // =============================================================================
@@ -422,13 +493,40 @@ interface TaskFrozenSnapshot {
   blueprint: string
   completedAt: string
   trace: string[]
-  probeResults: Array<{ probe: string; passed: boolean; output?: unknown }>
+  probeResults: Array<{
+    probeName: string
+    ref: string
+    verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+    passed: boolean
+    output?: unknown
+    errorMessage?: string
+    durationMs: number
+    artifact?: string // 从 Probe params 提取的产物路径
+  }>
 }
 
 interface WorkFrozenSnapshot {
   workName: string
+  // 🆕 节点 1：Intent 信任链
+  goal: string
+  blueprint: string
+  // 🆕 节点 2：planLock 哈希
+  planLockHash: string
   completedAt: string
-  tasks: Array<{ taskName: string; status: WorkspaceTaskStatus; completedAt: string | null }>
+  tasks: Array<{
+    taskName: string
+    status: WorkspaceTaskStatus
+    completedAt: string | null
+    probes: Array<{
+      probeName: string
+      ref: string
+      verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+      passed: boolean
+      errorMessage?: string
+      durationMs: number
+      artifact?: string
+    }>
+  }>
   /** A1 (D3): 最终裁决（PASSED/FAILED/INCONCLUSIVE/PENDING） */
   finalVerdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING'
   /** A1 (D3): round 总数 */
@@ -448,24 +546,26 @@ interface WorkFrozenSnapshot {
 
 function writeTaskFrozen(projectRoot: string, workName: string, taskName: string, snapshot: TaskFrozenSnapshot): void {
   const path = getTaskFrozenPath(projectRoot, workName, taskName)
-  writeFrozen(path, snapshot)
+  writeFrozenImmutable(
+    path,
+    snapshot as unknown as Record<string, unknown>,
+    (_body: unknown, hash: string): FrozenXenonMetaBase => ({
+      frozen_at: snapshot.completedAt,
+      content_hash: hash,
+    }),
+  )
 }
 
 function writeWorkFrozen(projectRoot: string, workName: string, snapshot: WorkFrozenSnapshot): void {
   const path = getWorkFrozenPath(projectRoot, workName)
-  writeFrozen(path, snapshot)
-}
-
-function writeFrozen(path: string, snapshot: unknown): void {
-  // v1.1 fix-p3-refactor path-dirname: 改用 dirname(path) 替代 substring+lastIndexOf('/'),
-  // 兼容 Windows 路径分隔符 (path.sep 在 win32 是 '\\', POSIX 是 '/')
-  const dir = dirname(path)
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true })
-  }
-  const tmpPath = `${path}.tmp`
-  writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), 'utf-8')
-  renameSync(tmpPath, path)
+  writeFrozenImmutable(
+    path,
+    snapshot as unknown as Record<string, unknown>,
+    (_body: unknown, hash: string): FrozenXenonMetaBase => ({
+      frozen_at: snapshot.completedAt,
+      content_hash: hash,
+    }),
+  )
 }
 
 // =============================================================================
@@ -771,14 +871,59 @@ export function finalizeWork(params: FinalizeParams): FinalizeResult {
     const p = getTaskFrozenPath(params.projectRoot, params.workName, t.taskName)
     if (existsSync(p)) taskFrozenPaths.push(p)
   }
+
+  // 🆕 节点 1+2：从 BirthCert 读 goal / planLockHash / blueprint（trust chain）
+  const birthCertResult = readWorkFile(params.projectRoot, params.workName)
+  const birthCert = birthCertResult.ok ? birthCertResult.cert : null
+  const goal = birthCert?.goal ?? state.skillContext?.overallGoal ?? ''
+  const blueprint = birthCert?.assets?.blueprints?.[0]?.name ?? ''
+  const planLockHash = birthCert?.planLock?.allHash ?? ''
+
+  // 🆕 节点 3：从每个 Task 的 frozen.json 读 probes 嵌入 Work frozen
+  const tasksWithProbes = state.tasks.map((t) => {
+    const p = getTaskFrozenPath(params.projectRoot, params.workName, t.taskName)
+    if (!existsSync(p)) {
+      return {
+        taskName: t.taskName,
+        status: t.status,
+        completedAt: t.completedAt ?? null,
+        probes: [],
+      }
+    }
+    try {
+      const taskFrozenRaw = JSON.parse(readFileSync(p, 'utf-8'))
+      const probeResults = (taskFrozenRaw.probeResults ?? []) as Array<Record<string, unknown>>
+      return {
+        taskName: t.taskName,
+        status: t.status,
+        completedAt: t.completedAt ?? null,
+        probes: probeResults.map((pr) => ({
+          probeName: String(pr.probeName ?? ''),
+          ref: String(pr.ref ?? ''),
+          verdict: (pr.verdict ?? 'FAILED') as 'PASSED' | 'FAILED' | 'INCONCLUSIVE',
+          passed: Boolean(pr.passed),
+          errorMessage: typeof pr.errorMessage === 'string' ? pr.errorMessage : undefined,
+          durationMs: Number(pr.durationMs ?? 0),
+          artifact: typeof pr.artifact === 'string' ? pr.artifact : undefined,
+        })),
+      }
+    } catch {
+      return {
+        taskName: t.taskName,
+        status: t.status,
+        completedAt: t.completedAt ?? null,
+        probes: [],
+      }
+    }
+  })
+
   writeWorkFrozen(params.projectRoot, params.workName, {
     workName: params.workName,
+    goal,
+    blueprint,
+    planLockHash,
     completedAt: nowIso,
-    tasks: state.tasks.map((t) => ({
-      taskName: t.taskName,
-      status: t.status,
-      completedAt: t.completedAt ?? null,
-    })),
+    tasks: tasksWithProbes,
     finalVerdict,
     totalRounds: state.roundHistory.length,
     roundHistory: state.roundHistory,
@@ -787,6 +932,21 @@ export function finalizeWork(params: FinalizeParams): FinalizeResult {
       ? { boundaryViolations: params.boundaryViolations }
       : {}),
   })
+
+  // 🆕 节点 5：写 verdict.md（人类可读 Proof 证明，不可篡改）
+  // verdict 写入失败不影响主流程（frozen.json 已写）
+  try {
+    const evidence = collectEvidence(params.projectRoot, params.workName)
+    // 合并 boundaryViolations（来自 finalizeWorkDomains 结果）
+    if (params.boundaryViolations && params.boundaryViolations.length > 0) {
+      evidence.boundaryViolations = params.boundaryViolations
+    }
+    writeWorkVerdictMd(params.projectRoot, params.workName, evidence)
+  } catch (err) {
+    // verdict.md 写失败仅 stderr warning，不阻断主流程
+    const message = err instanceof Error ? err.message : String(err)
+    process.stderr.write(`warning: verdict.md write failed: ${message}\n`)
+  }
 
   // 写 trace
   appendWorkTrace(params.projectRoot, params.workName, {
