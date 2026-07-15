@@ -76,6 +76,7 @@ import {
   type BirthCert,
 } from '@openxenon/engine/Work/birth-cert'
 import { hashWorkPlan } from '@openxenon/engine/Work/plan-hash'
+import { collectWorkDomainProofs } from '@openxenon/engine/infra/frozen/work-domains'
 import { readProjectConfig } from './project-config-io'
 import {
   resolveAssetPrimaryPath,
@@ -2875,50 +2876,6 @@ const nextRoundSubcommand = defineCommand({
 //   - 写 trace event
 //   - finalize 不强制要求最后一轮 PASSED（允许「失败收档」语义）
 // =============================================================================
-
-/**
- * A2 (D4): 收集 Work 引用 Domain 的 invariant，构造 DomainProofInput[]。
- * 从 work.md ## Use 提取 kind:domain 的 domain → 读每个 Domain.md 的 ## Invariants。
- */
-function collectWorkDomainProofs(
-  projectRoot: string,
-  workName: string,
-  assetFormat: string,
-): Array<{ domain: string; invariant: string }> {
-  const workFile = resolveWorkFilePath(projectRoot, workName, assetFormat)
-  if (!existsSync(workFile)) return []
-  const content = readFileSync(workFile, 'utf-8')
-
-  const refsSection = content.match(/## Use\n([\s\S]*?)(?=\n## |\n# |$)/)
-  const domains: string[] = []
-  if (refsSection) {
-    for (const block of refsSection[1]!.split(/\n(?=### )/)) {
-      if (!block.startsWith('### ')) continue
-      const name = block.replace(/^### /, '').trim()
-      const kind = block.match(/- kind:\s*(\S+)/)?.[1]
-      if (kind === 'domain') domains.push(name)
-    }
-  }
-
-  const inputs: Array<{ domain: string; invariant: string }> = []
-  for (const d of domains) {
-    const candidates = [
-      join(projectRoot, BOUNDARY_DIR, 'domains', `${d}.md`),
-      join(projectRoot, BOUNDARY_DIR, 'domains', d.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase(), 'domain.md'),
-    ]
-    for (const p of candidates) {
-      if (!existsSync(p)) continue
-      const dom = readDomainFile(p)
-      if (dom?.language?.invariant) {
-        for (const inv of dom.language.invariant) {
-          inputs.push({ domain: d, invariant: inv })
-        }
-      }
-      break
-    }
-  }
-  return inputs
-}
 
 const finalizeSubcommand = defineCommand({
   meta: {
