@@ -6,6 +6,14 @@ oxn-source-sha: cdbd4e6d426c157f258838f406da45dc6026ce83457ccd29595195850d5c8268
 synced-at: 2026-07-08T13:52:19.201Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-engine-domain`](./oxn-engine-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W3).
+     terms 已迁移（OXL / Langium / ProbeDeclaration / InvariantDecl / WorkDeclaration /
+     DomainProofRef / TaskDeps / Scheme / Parser / AST / Validator）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: GrammarContext
 
 > OXL DSL 语法限界上下文: ProbeDeclaration/InvariantDecl/WorkDeclaration/DomainProofRef + Langium 生成管道 + scheme 字段

@@ -6,6 +6,17 @@ oxn-source-sha: 6b2ac20c799c0e1c6ff78bb94fb187be84e8e08bc3805af8dd2334d304b18001
 synced-at: 2026-07-08T13:52:19.209Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-cli-domain`](./oxn-cli-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W2).
+     terms 已迁移（Skill / SkillAdapter / AdaptersRoot / MultiToolCompilation /
+     EnabledAdapter / DisabledAdapter / DefaultAdapter / ConfigSchema / LeaderMode /
+     ProjectConfig / ProjectBoundary / ProjectMode / ConfigMigration / SSOT /
+     EmbeddedSkill / SkillLoader / SkillRenderer / SkillAdapterId / ReferenceFile /
+     SkillContent / OXnConfig）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: config-domain
 
 > Config 轴统一词汇：OXN 项目级配置 + 多 AI 助手 Skill 分发配置；与 Intent/Align/Proof 三轴通过 IAP context_map 显式连接（不互相 include）

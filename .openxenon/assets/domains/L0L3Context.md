@@ -6,6 +6,14 @@ oxn-source-sha: 2d3b6d3ff99ac3325bb86f09309bc490f351ee2e3cf00ae5af9cbec7ab34e80a
 synced-at: 2026-07-08T13:52:19.203Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-engine-domain`](./oxn-engine-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W3).
+     terms 已迁移（Layer / SubLayer / Kernel / Foundation / Module / Runtime /
+     Port / Builtin / ContextMap / Constitution / Violation）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: L0L3Context
 
 > OpenXenon 元域限界上下文：约束 L0-L3 四层架构的核心词汇、禁用词与业务不变量

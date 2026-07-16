@@ -6,6 +6,16 @@ oxn-source-sha: ca786ba86600aaf2e37cb1718cedeeb3079fadaf2138effcad2aaf8d440f5afd
 synced-at: 2026-07-08T13:52:19.210Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-cli-domain`](./oxn-cli-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W2).
+     terms 已迁移（IAPError / OXNCrash / IAPErrorCode / OXNCrashCode / IAPAxis /
+     IAPAction / Context / Channel / ExitCode / TopCatch / CliInputError）。
+     注意：Probe / Catalog / Verdict / FrozenJson / Signature / Kernel / Infra /
+     Daemon 等 Proof/Engine 轴 term 归属 oxn-engine-domain（W3）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: IAPErrorContext
 
 > IAP 错误码体系限界上下文 v1.1：定义 8 IAPError + 3 OXNCrash；锁定 ALIGN 轴 lock 边界守卫的 3 个新增错误码；禁止 v0.0 残留错误码回归；规定 exit code 契约（1=业务流阻断、2=引擎崩溃）与 stdout/stderr 通道分离

@@ -6,6 +6,15 @@ oxn-source-sha: 5a92734901cb162e48a6a812966ffc0c4237a76bc838916045b1280d87449bad
 synced-at: 2026-07-08T13:52:19.202Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-cli-domain`](./oxn-cli-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W2).
+     terms 已迁移（Locale / ZhCN / En / I18nKey / TFunction / ResolveLocale /
+     DefaultLocale / LocaleBundle / TranslationArgs / ConfigLocale / LocaleFallback /
+     I18nNamespace / SkillLocale / DocLocale / LocaleAudit）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: I18nContext
 
 > i18n 国际化限界上下文: zh-CN/en 双语 + locale 协议 + t() 翻译函数 + resolveLocale 解析;config.locale (ProjectConfig) 是唯一权威 locale 源;CLI 默认 human 模式按 locale 选文案

@@ -6,6 +6,15 @@ oxn-source-sha: 570912b00ee729c53de52071693f89c1df9e34a0ed88d6716612994320b1c5e7
 synced-at: 2026-07-08T13:52:19.204Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-engine-domain`](./oxn-engine-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W3).
+     terms 已迁移（Monorepo / PackageCli / PackageEngine / Barrel / EntityLayer /
+     CodeLayer / EngineInternal / SocketBridge / Worktree / BuiltinAsset /
+     LayeredNarrative / OXNPackageScope）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: MonorepoContext
 
 > v0.6 双包 Monorepo 限界上下文：packages/cli (L3 薄调用层) + packages/engine (L1-L2 业务实现)；E1-E4 实体四层 + L0-L3 代码四层双层叙事；cli↔daemon socket 互隔离 + engine barrel 入口约束

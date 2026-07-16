@@ -6,6 +6,15 @@ oxn-source-sha: da22730fcf222638ddc5e700cc4abe1941dfae58fabdcdc65c2616314c5638de
 synced-at: 2026-07-08T13:52:19.199Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-engine-domain`](./oxn-engine-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W3).
+     terms 已迁移（Daemon / Startup / StepPipeline / Step / Escape /
+     TraceArchiver / Watcher / Supervisor / CircuitBreaker / PIDFile / Log /
+     DaemonStop / DaemonRestart / DaemonLogs / DaemonKill）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: DaemonContext
 
 > Daemon 守护进程限界上下文: 进程生命周期 + Proof 驱动 step pipeline + escape 逃逸 + trace archiver

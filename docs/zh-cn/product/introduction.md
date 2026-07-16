@@ -10,6 +10,10 @@ title: 介绍
 >
 > 工程师信任 AI Agent 在边界内的执行成果。
 
+> **术语权威源**：本文档中的核心词汇（OpenXenon / OXN CLI / OXN Engine）以
+> [Layer 0 顶层 Domain](../../.openxenon/assets/domains/oxn-domain.md) 为唯一权威源。
+> 详见 [`oxn-domain`](../../.openxenon/assets/domains/oxn-domain.md)。
+
 ## What —— 是什么
 
 OpenXenon 是一款**轻量级人机协作工具**。它用 IAP 范式（Intent–Align–Proof）构建的 OXN Engine，驱动"工程师 ↔ AI Agent ↔ OXN Engine"协作流水线运转。

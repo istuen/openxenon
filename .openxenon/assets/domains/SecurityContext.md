@@ -6,6 +6,14 @@ oxn-source-sha: 5ecd72eeea7ae1590c4444d9d389c9d1fa2e62dc75ba22d92d2ca54bf9ec1418
 synced-at: 2026-07-08T13:52:19.205Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-engine-domain`](./oxn-engine-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W3).
+     terms 已迁移（ReDoS / SafeRegex / ShellInjection / ArgvArray / ShellEscape /
+     PathTraversal / Boundary / Sandbox / Timeout）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: SecurityContext
 
 > 源代码侧的安全防护限界上下文：ReDoS 防护、Shell 注入拦截、路径穿越防御、资源超时保护

@@ -6,6 +6,15 @@ oxn-source-sha: f02f24bbe16b7dddb01fb6287906e821907652cbc86e0a04f9db0ed7b14b9d8d
 synced-at: 2026-07-08T13:52:19.211Z
 ---
 
+<!-- v0.7 MIGRATION BANNER · 2026-07-16
+     This Domain has been migrated to [`oxn-cli-domain`](./oxn-cli-domain.md)
+     as part of v0.7 domain hierarchy restructure (RFC W2).
+     terms 已迁移（Command / SubCommand / Arg / OutputFormat / ErrorCode /
+     Skill / Grammar / Schema / Validator / Compiler / AST / IR / Entity /
+     SourceFile / Module / TestCase / Package / BuildArtifact / APIEndpoint）。
+     文件保留供历史审计，不接受新 term 添加。W8 收尾时删除。
+-->
+
 # Domain: IntentDomain
 
 > Intent 轴统一词汇：CLI 入口、OXL 自身、Program 业务概念三件套的合并域；与 align-domain / proof-domain 通过 IAP 三轴分工隔离

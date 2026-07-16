@@ -132,6 +132,8 @@ export default defineConfig({
                 { text: '架构总览', link: '/zh-cn/dev/architecture.html' },
                 { text: 'Monorepo 双包', link: '/zh-cn/dev/monorepo.html' },
                 { text: 'L0-L3 宪法', link: '/zh-cn/dev/l0-l3-constitution.html' },
+                { text: 'OXN CLI 开发者手册', link: '/zh-cn/dev/oxn-cli.html' },
+                { text: 'OXN Engine 开发者手册', link: '/zh-cn/dev/oxn-engine.html' },
               ],
             },
             {
