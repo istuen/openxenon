@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/roadmap.html
 title: 路线图
 ---
 

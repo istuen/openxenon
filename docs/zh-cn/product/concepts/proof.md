@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/proof.html
 title: 证明
 ---
 
@@ -136,14 +138,14 @@ FrozenProofProbeResult {
       "output": {
         "observation": {
           "probeType": "fs_exists",
-          "output": "/Users/issac/tmp/oxn-v060-test/.openxenon/config.json",
+          "output": "/Users/issac/tmp/oxn-v060-test../../../../.openxenon/config.json",
           "executedAt": 1782963018440
         },
         "verdict": {
           "passed": true,
           "verdict": "PASS",
           "message": "fs-exists: hit 1 file(s) >= expected 1",
-          "actual": ["/Users/issac/tmp/oxn-v060-test/.openxenon/config.json"],
+          "actual": ["/Users/issac/tmp/oxn-v060-test../../../../.openxenon/config.json"],
           "params": { "pattern": ".openxenon/config.json" },
           "duration": 1782963018440
         }
@@ -306,7 +308,7 @@ oxn proof show check-deploy
 
 ```
 ⚠️ Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json
-📄 Human-readable verdict: /Users/issac/tmp/oxn-v060-test/.openxenon/proofs/check-deploy/verdict.md
+📄 Human-readable verdict: /Users/issac/tmp/oxn-v060-test../../../../.openxenon/proofs/check-deploy/verdict.md
 
 Proof: check-deploy
 Verdict: ✅ PASSED (1/1)
@@ -567,10 +569,10 @@ OXL 编译期校验 required 字段**必须**在五级链中有显式来源，�
 
 ## → 参考
 
-- [Core Concepts](./core-concepts.md) — E1-E4 完整概念
+- [Core Concepts](./iap-paradigm.md) — E1-E4 完整概念
 - [Asset](./asset.md) — E1 硬约束边界
 - [Work](./work.md) — E2 Work 生命周期（Proof 在 Work 内的位置）
 - [Insight](./insight.md) — E4 涌现层（消费 frozen.json + probe-stats.json）
-- [Architecture](./architecture.md) — Engine L0-L3 分层（Probe 在 L1-Infra / L0-Kernel）
-- [CLI 参考](./cli.md) — `oxn proof` 完整命令清单
-- [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
+- [Architecture](../../dev/architecture.md) — Engine L0-L3 分层（Probe 在 L1-Infra / L0-Kernel）
+- [CLI 参考](./reference/cli-user-guide.md) — `oxn proof` 完整命令清单
+- [v0.6 RFC](../../../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)

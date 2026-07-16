@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/work.html
 title: 工作
 ---
 
@@ -272,7 +274,7 @@ name: my-feature
 - part build: "..."
 ```
 
-> **v0.6.1-alpha.3 简化**：Work ## Refs 只接受 `kind: blueprint`。Domain + Workflow + Stack 通过 Blueprint 间接引用（[ADR-0055](./.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)）。
+> **v0.6.1-alpha.3 简化**：Work ## Refs 只接受 `kind: blueprint`。Domain + Workflow + Stack 通过 Blueprint 间接引用（[ADR-0055](../../../../.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)）。
 
 ## 9.2 解析调用链
 
@@ -838,13 +840,13 @@ Work finalize → context.md 冻结（不再修改）
 
 ## → 参考
 
-- [Core Concepts](./core-concepts.md) — E1-E4 完整概念
+- [Core Concepts](./iap-paradigm.md) — E1-E4 完整概念
 - [Asset](./asset.md) — E1 硬约束边界（Asset 创建与锁）
 - [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper 论文结构 + 引用计数 + DAG
 - [Proof](./proof.md) — E3 Engine 独立公证（frozen.json / verdict.md）
 - [Insight](./insight.md) — E4 涌现层
-- [Architecture](./architecture.md) — Engine L0-L3 分层
-- [CLI 参考](./cli.md) — 完整 oxn 命令清单
-- [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
-- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
-- [ADR-0049 Work/context.md 取代 Memory L1](../../.openxenon/docs/adrs/0049-work-context-md-replaces-memory.md)
+- [Architecture](../../dev/architecture.md) — Engine L0-L3 分层
+- [CLI 参考](./reference/cli-user-guide.md) — 完整 oxn 命令清单
+- [v0.6 RFC](../../../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
+- [v0.6.3 Asset Paper Schema RFC](../../../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
+- [ADR-0049 Work/context.md 取代 Memory L1](../../../../.openxenon/docs/adrs/0049-work-context-md-replaces-memory.md)

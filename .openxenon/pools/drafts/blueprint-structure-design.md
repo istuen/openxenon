@@ -585,6 +585,7 @@ Domain（独立 Asset）       Workflow（独立 Asset）      Stack（独立 As
 | Asset Paper Schema（references + citations） | `docs/zh-cn/asset-paper.md` §2-3 |
 
 ### 文档链接
+<!-- boundary:ignore -->
 - [Asset](../../docs/zh-cn/asset.md) — E1 边界资产
 - [Work](../../docs/zh-cn/work.md) — E2 协作空间 + Round + IAP
 - [Asset Paper Schema](../../docs/zh-cn/asset-paper.md) — Asset-as-Paper + 引用计数 + DAG

@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/cli.html
 title: CLI 参考
 ---
 
@@ -20,7 +22,7 @@ title: CLI 参考
 | 范围 | 用法 | 作用 |
 |---|---|---|
 | 项目级 | `oxn <command>` | 操作当前项目 `.openxenon/` |
-| 全局 | `oxn global <command>` | 操作 `~/.openxenon/`（跨项目共享） |
+| 全局 | `oxn global <command>` | 操作 `~../../../../.openxenon/`（跨项目共享） |
 
 > AI agent 应使用项目级命令。全局命令主要为工程师使用。
 
@@ -91,7 +93,7 @@ oxn init --ai codex      # 生成 Codex Skill
 | `oxn work migrate [--dry-run] [--work-name <w>]` | V0→V1 布局迁移 |
 | `oxn work resume --work-name <w>` | 恢复 work |
 
-见 [Work](./work.md) 了解 3 IAP 阶段流程。
+见 [Work](../concepts/work.md) 了解 3 IAP 阶段流程。
 
 ---
 
@@ -174,7 +176,7 @@ oxn external mark --name "stripe-api" --status stale --reason "API 维护中"
 
 **status 取值**：`available` | `unavailable` | `stale` | `unknown`
 
-详见 [ADR-0056 External inline + 状态管理](./.openxenon/docs/adrs/0056-external-inline-and-status.md)。
+详见 [ADR-0056 External inline + 状态管理](../../../../.openxenon/docs/adrs/0056-external-inline-and-status.md)。
 
 ---
 
@@ -285,5 +287,5 @@ oxn work status --work onboarding --json
 
 ## → 参考
 
-- [Quickstart](./quickstart.md) — Proof-First 入门
-- [Work](./work.md) — 3 IAP 阶段详解
+- [Quickstart](../quickstart.md) — Proof-First 入门
+- [Work](../concepts/work.md) — 3 IAP 阶段详解

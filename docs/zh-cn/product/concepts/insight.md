@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/insight.html
 title: 洞察
 ---
 
@@ -177,10 +179,10 @@ v0.7.0+ 增量（Phase B）：
 
 ## → 参考
 
-- [Core Concepts](./core-concepts.md) — E1-E4 完整概念 + 整体论
-- [Architecture](./architecture.md) — Engine L0-L3 分层
+- [Core Concepts](./iap-paradigm.md) — E1-E4 完整概念 + 整体论
+- [Architecture](../../dev/architecture.md) — Engine L0-L3 分层
 - [Asset](./asset.md) — E1 硬约束边界
 - [Work](./work.md) — E2 动态协作 + Round + IAP
 - [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper + 引用计数 + DAG
-- [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
-- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
+- [v0.6 RFC](../../../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
+- [v0.6.3 Asset Paper Schema RFC](../../../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft

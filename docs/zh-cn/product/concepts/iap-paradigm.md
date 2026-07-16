@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/core-concepts.html
 title: 核心概念
 ---
 
@@ -240,7 +242,7 @@ OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 > **纯洁性核法则**：Infra 不能绕过 Engine 自我宣布完成 → Engine 不能修改 Kernel 规则 → Kernel 不能直接执行 Task。
 > **Kernel 确定性**：Proof 之所以硬，是因为 Kernel 保持纯逻辑零副作用。任何概率性、模糊性、不确定性数学模型一律归属 Insight 模块，不得进入 Proof 决策路径。
 
-详见 [Architecture](./architecture.md)。
+详见 [Architecture](../../dev/architecture.md)。
 
 ## 8. E4 Insight — 涌现层（1+1>2）
 
@@ -391,7 +393,7 @@ Sub Agent (AI)
 
 > **A2 的重新理解**：A2 不是"阻止 AI 跨越边界"——AI 是否跨越边界是 AI 自己的概率决策。A2 是"OXN 确定性地告知工程师 AI 跨越了边界"——Domain proof FAIL 时在 frozen.json 中记录"边界违反"。工程师看到证据后决定：调整边界（Asset evolve）还是接受（finalize with warning）。
 
-详见 [version-unification-rfc.md](../../.openxenon/docs/rfcs/version-unification-rfc.md)。
+详见 [version-unification-rfc.md](../../../../.openxenon/docs/rfcs/version-unification-rfc.md)。
 
 ---
 
@@ -400,13 +402,13 @@ Sub Agent (AI)
 - [Asset · E1 硬约束边界 SSOT](./asset.md)
 - [Work · E2 动态协作 IAP 核心 SSOT](./work.md)
 - [Insight · E4 涌现层 SSOT](./insight.md)
-- [Architecture](./architecture.md) — Engine L0-L3 分层
+- [Architecture](../../dev/architecture.md) — Engine L0-L3 分层
 - [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper + 引用计数 + DAG（v0.6.3+）
-- [Glossary](./glossary.md) — 完整术语表
-- [三边界框架 RFC](../../.openxenon/pools/drafts/three-boundary-blueprint-elevation-rfc.md) — Domain/Workflow/Stack + Blueprint 提升
-- [版本统一 RFC](../../.openxenon/docs/rfcs/version-unification-rfc.md) — 信任链叙事 + v0.6.1 最小信任闭环
-- [ADR-0054 三边界框架](../../.openxenon/docs/adrs/0054-three-boundary-framework.md)
-- [ADR-0055 Blueprint 组合模板](../../.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)
-- [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
-- [v0.6 Service 层设计稿](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-service-layer-design.md)
-- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
+- [Glossary](../reference/glossary.md) — 完整术语表
+- [三边界框架 RFC](../../../../.openxenon/pools/drafts/three-boundary-blueprint-elevation-rfc.md) — Domain/Workflow/Stack + Blueprint 提升
+- [版本统一 RFC](../../../../.openxenon/docs/rfcs/version-unification-rfc.md) — 信任链叙事 + v0.6.1 最小信任闭环
+- [ADR-0054 三边界框架](../../../../.openxenon/docs/adrs/0054-three-boundary-framework.md)
+- [ADR-0055 Blueprint 组合模板](../../../../.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)
+- [v0.6 RFC](../../../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
+- [v0.6 Service 层设计稿](../../../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-service-layer-design.md)
+- [v0.6.3 Asset Paper Schema RFC](../../../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft

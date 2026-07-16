@@ -39,6 +39,7 @@
     "check:mdast": "bun run scripts/parse-mdast.ts",
     "check:md-fallback": "bun run scripts/check-md-fallback-stats.ts",
     "check:no-langium": "bun run scripts/check-no-new-langium-usage.ts",
+    "docs:boundary": "bun scripts/check-doc-boundary.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"

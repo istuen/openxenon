@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/asset.html
 title: 资产
 ---
 
@@ -30,7 +32,7 @@ E1 Asset 的"边界类型"明确为 3 个，覆盖 IAP Intent 的三个正交维
 - **Work 只引用 Blueprint**（一个 ref），Blueprint 内部组合 3 边界
 - **Roadmap** 是索引层，不出现在自身 scene 表中
 
-详见 [ADR-0054 三边界框架](./.openxenon/docs/adrs/0054-three-boundary-framework.md) + [ADR-0055 Blueprint 组合模板](./.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)。
+详见 [ADR-0054 三边界框架](../../../../.openxenon/docs/adrs/0054-three-boundary-framework.md) + [ADR-0055 Blueprint 组合模板](../../../../.openxenon/docs/adrs/0055-blueprint-as-composition-template.md)。
 
 ## 2. Asset vs OpenSpec specs/（设计反转）
 
@@ -210,14 +212,14 @@ Work 看到的是 `ArsenalResolver`（而非 `BuiltinArsenal` 直接引用）。
 
 ## 12. ~~Blueprint Type 范式（ADR-0019）~~ ⛔ Superseded
 
-> **本节描述的 `type "task"|"plan"|"explore"` 字段已被废弃**。v0.6.1-alpha.0 P0 移除 builtin blueprint 模板的 `type` 字段，v0.6.1-alpha.4 三边界 RFC 正式标记 Superseded（[ADR-0052](./.openxenon/docs/adrs/0052-superseded-0019-blueprint-type-paradigm.md)）。
+> **本节描述的 `type "task"|"plan"|"explore"` 字段已被废弃**。v0.6.1-alpha.0 P0 移除 builtin blueprint 模板的 `type` 字段，v0.6.1-alpha.4 三边界 RFC 正式标记 Superseded（[ADR-0052](../../../../.openxenon/docs/adrs/0052-superseded-0019-blueprint-type-paradigm.md)）。
 >
 > **替代方案**：
 > - Blueprint 结构差异由 `slot` DAG 拓扑表达（linear task vs DAG plan）
 > - 行为差异（task/explore）由 Blueprint `observe` 探针的 `kind: warning`/`mandatory` 表达
 > - Work 模式（task/explore/edit）已废弃（v0.7+），行为完全由 Blueprint 承载
 >
-> 历史信息保留在 [ADR-0019](./.openxenon/docs/adrs/0019-blueprint-type-paradigm.md)，仅供追溯。
+> 历史信息保留在 [ADR-0019](../../../../.openxenon/docs/adrs/0019-blueprint-type-paradigm.md)，仅供追溯。
 
 ## 12.1 External inline（`## Externals`）— v0.6.1-alpha.4
 
@@ -241,7 +243,7 @@ Work 看到的是 `ArsenalResolver`（而非 `BuiltinArsenal` 直接引用）。
 | `rest-api` | REST API 端点 | `url: https://api.stripe.com/v1` |
 | `webhook` | Webhook 端点 | `url: https://api.stripe.com/webhooks` |
 | `documentation` | 文档（项目内或网络） | `path: ./docs/arch.md` 或 `url: https://react.dev/docs` |
-| `library` | 已索引的库文档 | `path: ./.openxenon/libraries/react-docs.md` |
+| `library` | 已索引的库文档 | `path: ../../../../.openxenon/libraries/react-docs.md` |
 | `config` | 配置文件 | `path: ./.oxnrc` |
 | `service` | 外部服务（非 REST） | `url: grpc://...` |
 
@@ -266,7 +268,7 @@ oxn external status       # 显示所有 external 状态
 oxn external mark <name> --status <s> [--reason "..."]  # 手动标记
 ```
 
-详见 [ADR-0056 External inline + 状态管理](./.openxenon/docs/adrs/0056-external-inline-and-status.md) + [ADR-0053 Superseded ADR-0048](./.openxenon/docs/adrs/0053-superseded-0048-library-external-scheme.md)（library/external Asset 类型收敛的史料）。
+详见 [ADR-0056 External inline + 状态管理](../../../../.openxenon/docs/adrs/0056-external-inline-and-status.md) + [ADR-0053 Superseded ADR-0048](../../../../.openxenon/docs/adrs/0053-superseded-0048-library-external-scheme.md)（library/external Asset 类型收敛的史料）。
 
 ## 13. catalog.json 与 Probe 黑名单（ADR-0035）
 
@@ -394,9 +396,9 @@ $ oxn asset impact payment-core
 
 ## → 参考
 
-- [Core Concepts](./core-concepts.md) — E1-E4 完整概念
+- [Core Concepts](./iap-paradigm.md) — E1-E4 完整概念
 - [Work](./work.md) — E2 动态协作 + IAP + Round
 - [Insight](./insight.md) — E4 涌现层
 - [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper 论文结构 + 引用计数 + DAG
-- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
-- [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
+- [v0.6.3 Asset Paper Schema RFC](../../../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
+- [v0.6 RFC](../../../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)

@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/glossary.html
 title: 术语表
 ---
 

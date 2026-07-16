@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/architecture.html
 title: 架构
 ---
 
@@ -15,7 +17,7 @@ title: 架构
 | E3 Engine | 独立验证主权基座 | OXN | L0-L2 全部 |
 | E4 Insight | 涌现层（1+1>2） | AI 推理 | `service/Insight/`（v0.6 哲学占位） |
 
-详见 [Core Concepts](./core-concepts.md)。
+详见 [Core Concepts](../product/concepts/iap-paradigm.md)。
 
 ## 2. L0-L3 工程分层
 
@@ -92,7 +94,7 @@ packages/engine/src/           ← L2 Engine 物理位置
 - 纯函数式导出：`export async function create(input): Promise<output>`
 - 无类、无状态、无 DI 容器
 
-详见 [v0.6 Service 层设计稿](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-service-layer-design.md)。
+详见 [v0.6 Service 层设计稿](../../../.openxenon/docs/rfcs/v0.6-iap-refactor-rfc.md) §3 L2 Engine 物理位置。
 
 ## 4. Runtime 三模块（L0-L1 约束）
 
@@ -278,8 +280,8 @@ export type { OxnIR, OxnValidationResult } from './ir-types.js'
 
 ## → 参考
 
-- [Core Concepts](./core-concepts.md) — E1-E4 + L0-L3 完整概念
-- [Asset](./asset.md) — E1 硬约束边界
-- [Work](./work.md) — E2 动态协作 + IAP + Round
-- [Insight](./insight.md) — E4 涌现层
-- [v0.6 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md)
+- [Core Concepts](../product/concepts/iap-paradigm.md) — E1-E4 + L0-L3 完整概念
+- [Asset](../product/concepts/asset.md) — E1 硬约束边界
+- [Work](../product/concepts/work.md) — E2 动态协作 + IAP + Round
+- [Insight](../product/concepts/insight.md) — E4 涌现层
+- [v0.6 RFC](../../../.openxenon/docs/rfcs/v0.6-iap-refactor-rfc.md)

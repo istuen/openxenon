@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/asset-paper.html
 title: 资产论文结构
 ---
 
@@ -361,11 +363,11 @@ ExecErrorCode = {
 
 ## → 参考
 
-- [Core Concepts](./core-concepts.md) §11 Asset 论文结构
+- [Core Concepts](./iap-paradigm.md) §11 Asset 论文结构
 - [Asset · E1 硬约束边界](./asset.md) §14 Asset 论文结构
 - [Work · E2 IAP 核心](./work.md) §12 Work context.md 设计
-- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
-- [ADR-0048 ~ 0051 系列](../../.openxenon/docs/adrs/INDEX.md)
-- [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
-- [v0.7 Emergence RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md) ✅ Approved
-- [Asset 模板库](./asset-templates/README.md) — Domain / Workflow / Stack / Roadmap 4 模板（v0.6.1-alpha.1 落地）
+- [v0.6.3 Asset Paper Schema RFC](../../../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
+- [ADR-0048 ~ 0051 系列](../../../../.openxenon/docs/adrs/INDEX.md)
+- [v0.6.3 Asset Paper Schema RFC](../../../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
+- [v0.7 Emergence RFC](../../../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md) ✅ Approved
+- [Asset 模板库](../reference/asset-templates/README.md) — Domain / Workflow / Stack / Roadmap 4 模板（v0.6.1-alpha.1 落地）

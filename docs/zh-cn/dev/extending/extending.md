@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/extending.html
 title: 扩展
 ---
 
@@ -149,4 +151,4 @@ src/builtin/
 
 - 旧文档：[Probe 开发指南](./guides/probe-development.md)（旧 SSOT）
 - 旧文档：[OXN DSL 参考](./reference/oxn-dsl.md)（旧 SSOT）
-- [Architecture](./architecture.md) — L0-L3 分层中扩展点的物理归属
+- [Architecture](../architecture.md) — L0-L3 分层中扩展点的物理归属

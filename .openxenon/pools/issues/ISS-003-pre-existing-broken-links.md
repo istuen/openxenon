@@ -128,6 +128,7 @@ git grep -l "iap-paradigm.md" docs/  # 已合并到 document.md
 
 - **修复 commit**：`ab6cdce`（审计时顺手修复）
 - **导致破损的 commit**：`9aa4ba0`（docs 激进清理）
+<!-- boundary:ignore -->
 - **宪法文档**：[`docs/architecture/l0-l3-constitution.md`](../../docs/architecture/l0-l3-constitution.md) §7.2.1 C-7（无）
 
 ---

@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/llm-prompt.html
 title: AI 协作者入口
 ---
 
@@ -20,10 +22,10 @@ title: AI 协作者入口
 
 ## 必读章节
 
-1. **[Core Concepts](./core-concepts.md)** — 必读，理解 IAP 三轴
+1. **[Core Concepts](./concepts/iap-paradigm.md)** — 必读，理解 IAP 三轴
 2. **[Quickstart](./quickstart.md)** — 看一次，但不要复现
 3. **[Align](./align.md)** — AI 协作协议
-4. **[CLI](./cli.md)** — CLI 白名单
+4. **[CLI](./reference/cli-user-guide.md)** — CLI 白名单
 
 ## CLI 白名单
 
@@ -54,7 +56,7 @@ title: AI 协作者入口
 
 - Verdict PASS → 进入下一 part 或结束 task
 - Verdict FAIL → 读 frozen.json 的 expected/actual，修复后重跑
-- `IAPError` → 查看 [CLI §错误码速查](./cli.md#错误码速查)
+- `IAPError` → 查看 [CLI §错误码速查](./reference/cli-user-guide.md#错误码速查)
 - `IAP_ALIGN_LOCK_HASH_MISMATCH` → 锁后资产漂移，报告工程师退回
 
 ## 输出格式

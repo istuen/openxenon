@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/iap-cheatsheet.html
 title: IAP 速记卡
 ---
 

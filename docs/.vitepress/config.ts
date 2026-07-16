@@ -11,21 +11,13 @@ export default defineConfig({
   head: [['link', { rel: 'stylesheet', href: '/.vitepress/theme/custom.css' }]],
 
   // 站点结构（VitePress 对称 prefix i18n 模式）：
-  //   docs/index.md         → /openxenon/            （中文首页 = 介绍内容，root 路径）
-  //   docs/zh-cn/foo.md     → /openxenon/zh-cn/foo.html  （中文其他 15 章 + examples/）
-  //   docs/en/foo.md        → /openxenon/en/foo.html     （英文 16 占位 + examples/）
+  //   docs/zh-cn/index.md              → /openxenon/zh-cn/           （门户页）
+  //   docs/zh-cn/product/*.md          → /openxenon/zh-cn/product/   （产品手册）
+  //   docs/zh-cn/dev/*.md              → /openxenon/zh-cn/dev/       （开发手册）
+  //   docs/en/*.md                     → /openxenon/en/              （英文站，本轮不动）
   // 旧 SSOT 子目录（core/architecture/reference/...）在 srcExclude 排除
   srcDir: '.',
-  srcExclude: [
-    'core/**',
-    'architecture/**',
-    'reference/**',
-    'guides/**',
-    'design/**',
-    'horizon/**',
-    'changelog/**',
-    '_archive/**',
-  ],
+  srcExclude: ['core/**', 'architecture/**', 'reference/**', 'guides/**', 'design/**', 'horizon/**', '_archive/**'],
 
   markdown: {
     config: (md) => {
@@ -33,36 +25,42 @@ export default defineConfig({
     },
   },
 
-  // v0.1.0 起步阶段：链接到旧 docs/{core,architecture,reference,guides,...} 的
-  // 引用为有意为之（保留历史跳转）。
+  // 忽略死链规则（旧 docs/{core,architecture,reference,...} 子目录 + .openxenon/ 跳出链接）
   ignoreDeadLinks: [
     /^\.\/architecture\//,
     /^\.\/reference\//,
     /^\.\/guides\//,
     /^\.\/design\//,
     /^\.\/horizon\//,
-    /^\.\/changelog\//,
     /^\.\/core\//,
     /^\.\/intent/,
     /^\.\/align/,
     /^\.\/proof/,
     /^\.\/.*\.oxn$/,
+    /^\.\/changelog\//,
     /^\.\.\/architecture\//,
     /^\.\.\/reference\//,
     /^\.\.\/guides\//,
     /^\.\.\/design\//,
     /^\.\.\/horizon\//,
-    /^\.\.\/changelog\//,
     /^\.\.\/core\//,
     /^\.\.\/README/,
+    /^\.\/zh-cn\/llm-prompt/, // redirectFrom 旧路径误报
     // v0.6 RFC links 跳出 srcDir (docs/) 指向仓库根 .openxenon/ — pre-existing pattern, accept
-    /^\.\/\.\.\/\.openxenon\//, // ./../../.openxenon/ (form B: dot-slash + 2 dots — actual VitePress form)
-    /^\.\/\.\.\/\.\.\/\.openxenon\//, // ./../../../.openxenon/ (form C, in development/)
-    /^\.\/\.\.\/\.\.\/\.\.\/\.openxenon\//, // ./../../../../.openxenon/ (form D)
-    /^\.\.\/\.openxenon\//, // ../../.openxenon/ (form A — alternate, bare)
-    // development/v0.6-release-guide.md pre-existing links (not yet authored)
-    /^\.\/\.\.\/v0\.7-hall-migration-plan/, // v0.7 RFC, not yet exist (after VitePress normalize: ./../v0.7-...)
-    /^\.\/\.\.\/\.\.\/\.\.\/\.\.\/\.openxenon\/..\/0-6-0-iap-refactor/, // malformed path in v0.6-release-guide.md (development/, 5 levels up: 4 ..'s + .openxenon)
+    /\.\.+\/\.openxenon\//, // 匹配任意 ../ 数量的 .openxenon/ 链接
+    // pools/ 中的 RFC 路径（历史路径，部分 RFC 已迁到 rfcs/）
+    /\.\.+\/\.openxenon\/pools\/sprints\//,
+    // dev/ 文件引用 AGENTS.md（路径正确但 VitePress 误报）
+    /\.\.+\/AGENTS/,
+    // EN 站点文件引用（本轮未重构 EN，预存在死链）
+    /\/en\//,
+    // dev/extending 路径误报
+    /\.\.+\/dev\/extending/,
+    // EN 站点文件所有死链（本轮未重构 EN，全部忽略）
+    // ./.openxenon/docs/adrs/ 路径（EN 文件引用 ADR）
+    /^\.\/\.openxenon\/docs\/adrs\//,
+    // ./domain ./workflow ./stack ./roadmap（EN asset-templates 引用）
+    /^\.\/(domain|workflow|stack|roadmap)$/,
   ],
 
   // VitePress 标准 i18n：两个 locale 都用 prefix（对称结构，天然支持同页切换）
@@ -77,60 +75,94 @@ export default defineConfig({
       description: '轻量级人机协作工具 — 工程师信任 AI Agent 在边界内的执行成果',
       themeConfig: {
         nav: [
-          { text: '首页', link: '/zh-cn/index.html' },
-          { text: '快速开始', link: '/zh-cn/quickstart.html' },
-          { text: 'AI 入口', link: '/zh-cn/llm-prompt.html' },
+          { text: '首页', link: '/zh-cn/' },
+          { text: '产品手册', link: '/zh-cn/product/' },
+          { text: '开发手册', link: '/zh-cn/dev/' },
+          { text: '快速开始', link: '/zh-cn/product/quickstart.html' },
+          { text: 'AI 入口', link: '/zh-cn/product/ai-entry.html' },
         ],
         sidebar: {
-          '/zh-cn/': [
+          '/zh-cn/product/': [
             {
-              text: '开始',
+              text: '介绍与开始',
               items: [
-                { text: '介绍', link: '/zh-cn/index.html' },
-                { text: '快速开始', link: '/zh-cn/quickstart.html' },
+                { text: '产品手册首页', link: '/zh-cn/product/' },
+                { text: '介绍', link: '/zh-cn/product/introduction.html' },
+                { text: '快速开始', link: '/zh-cn/product/quickstart.html' },
+                { text: 'AI 协作者入口', link: '/zh-cn/product/ai-entry.html' },
+                { text: '常见问题', link: '/zh-cn/product/faq.html' },
+                { text: '路线图', link: '/zh-cn/product/roadmap.html' },
               ],
             },
             {
-              text: '范式与核心概念',
-              items: [{ text: '核心概念', link: '/zh-cn/core-concepts.html' }],
-            },
-            {
-              text: 'OXN 四结构实体（v0.6）',
+              text: '范式与实体（E1-E4）',
               items: [
-                { text: 'Asset · E1 静态边界', link: '/zh-cn/asset.html' },
-                { text: 'Work · E2 动态协作', link: '/zh-cn/work.html' },
-                { text: 'Proof · E3 独立公证', link: '/zh-cn/proof.html' },
-                { text: 'Insight · E4 涌现层', link: '/zh-cn/insight.html' },
+                { text: 'IAP 范式与信任链', link: '/zh-cn/product/concepts/iap-paradigm.html' },
+                { text: 'Asset · E1', link: '/zh-cn/product/concepts/asset.html' },
+                { text: 'Work · E2', link: '/zh-cn/product/concepts/work.html' },
+                { text: 'Proof · E3', link: '/zh-cn/product/concepts/proof.html' },
+                { text: 'Insight · E4', link: '/zh-cn/product/concepts/insight.html' },
+                { text: 'Asset Paper', link: '/zh-cn/product/concepts/asset-paper.html' },
               ],
             },
             {
               text: '实战',
               items: [
-                { text: '实战案例', link: '/zh-cn/recipes.html' },
-                { text: 'DDD 实战', link: '/zh-cn/ddd-in-practice.html' },
+                { text: '实战案例', link: '/zh-cn/product/practice/recipes.html' },
+                { text: 'DDD 实战', link: '/zh-cn/product/practice/ddd-in-practice.html' },
+                { text: '端到端示例', link: '/zh-cn/product/practice/examples/' },
               ],
             },
             {
-              text: '参考',
+              text: '用户参考',
               items: [
-                { text: 'CLI 参考', link: '/zh-cn/cli.html' },
-                { text: '架构', link: '/zh-cn/architecture.html' },
-                { text: '扩展', link: '/zh-cn/extending.html' },
-                { text: '路线图', link: '/zh-cn/roadmap.html' },
+                { text: 'CLI 用户指南', link: '/zh-cn/product/reference/cli-user-guide.html' },
+                { text: '术语表', link: '/zh-cn/product/reference/glossary.html' },
+                { text: 'IAP 速记卡', link: '/zh-cn/product/reference/iap-cheatsheet.html' },
+                { text: 'Asset 模板库', link: '/zh-cn/product/reference/asset-templates/' },
+              ],
+            },
+          ],
+          '/zh-cn/dev/': [
+            {
+              text: '开发总览',
+              items: [
+                { text: '开发手册首页', link: '/zh-cn/dev/' },
+                { text: '入门（环境+仓库）', link: '/zh-cn/dev/getting-started.html' },
+                { text: '架构总览', link: '/zh-cn/dev/architecture.html' },
+                { text: 'Monorepo 双包', link: '/zh-cn/dev/monorepo.html' },
+                { text: 'L0-L3 宪法', link: '/zh-cn/dev/l0-l3-constitution.html' },
               ],
             },
             {
-              text: '附录',
+              text: '概念与机制',
               items: [
-                { text: '术语表', link: '/zh-cn/glossary.html' },
-                { text: 'IAP 速记卡', link: '/zh-cn/iap-cheatsheet.html' },
-                { text: '常见问题', link: '/zh-cn/faq.html' },
+                { text: '三层文档守门', link: '/zh-cn/dev/three-tier-docs.html' },
+                { text: 'AI 协作工作流', link: '/zh-cn/dev/ai-collaboration.html' },
+              ],
+            },
+            {
+              text: '扩展点',
+              items: [
+                { text: '扩展总览', link: '/zh-cn/dev/extending/' },
+                { text: '自定义 Probe', link: '/zh-cn/dev/extending/custom-probe.html' },
+                { text: '自定义 Part', link: '/zh-cn/dev/extending/custom-part.html' },
+                { text: 'DSL 扩展', link: '/zh-cn/dev/extending/dsl-extension.html' },
+                { text: 'Skill 编写', link: '/zh-cn/dev/extending/skill-authoring.html' },
+              ],
+            },
+            {
+              text: '工程实践',
+              items: [
+                { text: '测试策略', link: '/zh-cn/dev/testing.html' },
+                { text: '发布流程', link: '/zh-cn/dev/releasing.html' },
+                { text: '调试指南', link: '/zh-cn/dev/debugging.html' },
+                { text: '代码规范', link: '/zh-cn/dev/conventions.html' },
               ],
             },
           ],
-          '/zh-cn/llm-prompt/': [
-            { text: 'AI 协作者', items: [{ text: 'llm-prompt', link: '/zh-cn/llm-prompt.html' }] },
-          ],
+          // 旧 /zh-cn/ 路径的 sidebar 保留为空（redirectFrom 处理重定向）
+          '/zh-cn/': [],
         },
       },
     },

@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/recipes.html
 title: 实战案例
 ---
 

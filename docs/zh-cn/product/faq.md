@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/faq.html
 title: 常见问题
 ---
 
@@ -92,7 +94,7 @@ Work 已运行。先用 `oxn work status` 看当前状态。
 
 锁后资产（.md 文件）被修改。确定修改合理后用 `oxn work unlock` → 重 `lock`。
 
-完整错误码速查见 [CLI](./cli.md#错误码速查)。
+完整错误码速查见 [CLI](./reference/cli-user-guide.md#错误码速查)。
 
 ---
 
@@ -100,7 +102,7 @@ Work 已运行。先用 `oxn work status` 看当前状态。
 
 ### 如何自定义 Probe？
 
-在 Part 内联声明，或用 `ref` 引用自定义探针。详见 [Extending](./extending.md)。
+在 Part 内联声明，或用 `ref` 引用自定义探针。详见 [Extending](../../dev/extending/custom-probe.html)。
 
 ### 如何集成 CI？
 
@@ -129,4 +131,4 @@ oxn work migrate <work-name>
 
 ### 废弃了哪些术语？
 
-`noun` → `term`，`verb` → 已删除，`domain_rules` → `invariant`，`expectation` / `rule` → Probe 承载，`stage` → `slot`，`@glo` → `@prj`。完整列表见 [Glossary](./glossary.md)。
+`noun` → `term`，`verb` → 已删除，`domain_rules` → `invariant`，`expectation` / `rule` → Probe 承载，`stage` → `slot`，`@glo` → `@prj`。完整列表见 [Glossary](./reference/glossary.md)。

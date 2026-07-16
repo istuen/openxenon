@@ -112,6 +112,7 @@ if (
 ## 7. 相关引用
 
 - **修复 commit**：`ab6cdce` `docs(architecture): L0-L3 宪法沉淀（OXN 元域聚合根） + 一致性审计修复`
+<!-- boundary:ignore -->
 - **宪法文档**：[`docs/architecture/l0-l3-constitution.md`](../../docs/architecture/l0-l3-constitution.md) §4 依赖规则
 - **CI workflow**：[`.github/workflows/validate-deps.yml`](../../.github/workflows/validate-deps.yml)
 - **相关 issue**：[ISS-002](./ISS-002-l0-to-l3-reverse-dependency.md)（IAPError 反向依赖）

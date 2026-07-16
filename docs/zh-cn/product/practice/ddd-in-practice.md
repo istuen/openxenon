@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/ddd-in-practice.html
 title: DDD 实战
 ---
 
@@ -181,4 +183,4 @@ work "NewUserOnboarding" {
 
 - [Intent](./intent.md) — Domain 完整语法
 - [Recipes](./recipes.md) — 跨域编排完整示例
-- [Architecture](./architecture.md) — L0-L3 分层中 Domain 的物理归属
+- [Architecture](../../dev/architecture.md) — L0-L3 分层中 Domain 的物理归属

@@ -12,6 +12,9 @@ pre-commit:
     heading-skeleton:
       glob: "**/*.md"
       run: bun scripts/check-heading-skeleton.ts .openxenon/forges/ .openxenon/pools/
+    doc-boundary:
+      glob: "**/*.md"
+      run: bun scripts/check-doc-boundary.ts
 
 pre-push:
   commands:

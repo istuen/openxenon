@@ -1,4 +1,6 @@
 ---
+redirectFrom:
+  - /zh-cn/quickstart.html
 title: 快速开始
 ---
 
@@ -17,7 +19,7 @@ Proof-First 是 IAP 范式中 **Proof 轴的独立运作模式**——工程师�
 
 Proof-First 解决了 IAP 的冷启动问题：不需要先说服你学 Domain + Blueprint，只需要你用 Probe 抓住一次 AI 假完成，价值就成立。重复使用的痛点会自然驱动你升级到完整 IAP。
 
-见 [Core Concepts](./core-concepts.md) 了解完整 IAP 范式设计原理。
+见 [Core Concepts](./concepts/iap-paradigm.md) 了解完整 IAP 范式设计原理。
 
 ## How —— 怎么用
 
