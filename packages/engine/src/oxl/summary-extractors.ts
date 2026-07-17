@@ -1,4 +1,6 @@
 import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
+import { parseMarkdown } from './md-pipeline/utils'
+import { extractDomainIR } from './md-pipeline/transformers/domain'
 
 export type WorkFileSummary = {
   name: string
@@ -52,109 +54,140 @@ export type TaskFileSummary = {
   deps: string[]
 } | null
 
+/**
+ * 🆕 v0.7.3 P2 (RFC §4 P2 phased landing + ADR-0061 §D7):
+ * 重写为 mdast-based 实现：
+ *   - .md 走 parseMarkdown + extractDomainIR（修 ## Terms: 后缀 + multiline - desc: | 两个 bug）
+ *   - .oxn 保留 regex fallback（向后兼容 v0.6.x legacy work）
+ *   - Externals 仍走 regex（extractDomainIR 不覆盖）
+ */
 export function readDomainFile(filePath: string): DomainFileSummary {
   if (!existsSync(filePath)) return null
   const content = readFileSync(filePath, 'utf-8')
 
-  // .md format: "# Domain: X" or .oxn format: 'domain "X"'
-  const nameMatch = content.match(/^# Domain:\s*(.+)$/m) ?? content.match(/domain\s+"([^"]+)"/)
-  if (!nameMatch) return null
-  const name = (nameMatch[1] ?? nameMatch[0] ?? '').trim()
+  const isMd = content.startsWith('---') || /^# Domain:/m.test(content)
+  const isOxn = /^domain\s+"/m.test(content)
 
-  // .md blockquote "> ..." or .oxn 'description = "..."'
-  const descMatch = content.match(/^>\s*(.+)$/m) ?? content.match(/description\s*=\s*"((?:[^"\\]|\\.)*)"/)
+  if (isMd && !isOxn) {
+    return readDomainFileMd(content)
+  }
+  return readDomainFileOxn(content)
+}
 
-  // Parse ## Terms section (H3 entries with - desc: ...)
-  const terms: Array<{ name: string; desc: string }> = []
-  const termsSection = content.match(/## Terms\n([\s\S]*?)(?=\n## |\n# |$)/)
-  if (termsSection) {
-    const termBlocks = termsSection[1]!.matchAll(/^### (.+)$\n([\s\S]*?)(?=\n### |\n## |\n# |$)/gm)
-    for (const m of termBlocks) {
-      const termName = m[1]!.trim()
-      const descMatch = m[2]!.match(/- desc:\s*(.+)$/m)
-      if (descMatch) terms.push({ name: termName, desc: descMatch[1]!.trim() })
-    }
+/** .md 格式：parseMarkdown + extractDomainIR（v0.7.3 P2） */
+function readDomainFileMd(content: string): DomainFileSummary {
+  let tree
+  let frontmatter: Record<string, unknown> = {}
+  try {
+    const parsed = parseMarkdown(content)
+    tree = parsed.tree
+    frontmatter = parsed.frontmatter
+  } catch {
+    return null
   }
 
-  // Parse .oxn format fallback: term { "X": "Y" }
-  if (terms.length === 0) {
-    const termBlock = content.match(/term\s*\{([\s\S]*?)\}/)
-    if (termBlock) {
-      const termMatches = termBlock[1]!.matchAll(/"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)
-      for (const m of termMatches) {
-        terms.push({ name: m[1]!, desc: m[2]!.replace(/\\"/g, '"') })
-      }
-    }
-  }
+  const ir = extractDomainIR(tree, frontmatter)
 
-  // Parse ## Bans section (H3 entries with - items: / - desc:)
+  // 名称优先级：frontmatter.name > H1 抽取 > ir.name
+  const h1NameMatch = content.match(/^# Domain:\s*(.+)$/m)
+  const h1Name = h1NameMatch?.[1]?.trim() ?? ''
+  const name = (typeof frontmatter.name === 'string' && frontmatter.name) || h1Name || ir.name || ''
+  if (!name) return null
+
+  const terms: Array<{ name: string; desc: string }> = ir.terms.map((t) => ({
+    name: t.name,
+    desc: t.desc,
+  }))
+
+  // Bans 注入：items + desc 全部归入 ban[]（语义：ban = 完整禁用列表，含项名 + 文字描述）
+  //   - 旧 regex parser 只捕获 - desc: 单行；新 parser 把 items + desc 都暴露
+  //   - 兼容：旧格式（无 items）→ ban = [desc]（去重：itemsFromItemsList=false 时不再额外推 desc）
   const ban: string[] = []
-  const bansSection = content.match(/## Bans\n([\s\S]*?)(?=\n## |\n# |$)/)
-  if (bansSection) {
-    const banDescs = bansSection[1]!.matchAll(/- desc:\s*(.+)$/gm)
-    for (const m of banDescs) {
-      ban.push(m[1]!.trim())
+  for (const b of ir.bans) {
+    if (b.itemsFromItemsList && b.items.length > 0) {
+      ban.push(...b.items)
+    }
+    if (b.desc) {
+      ban.push(b.desc)
     }
   }
 
-  // Parse .oxn format fallback: ban { "X" }
-  if (ban.length === 0) {
-    const banBlock = content.match(/ban\s*\{([\s\S]*?)\}/)
-    if (banBlock) {
-      const banMatches = banBlock[1]!.matchAll(/"([^"]+)"/g)
-      for (const m of banMatches) {
-        ban.push(m[1]!)
-      }
-    }
-  }
+  // Invariants 注入：value 优先（与原 parser 行为一致）
+  const invariant: string[] = ir.invariants.map((iv) => iv.value || iv.desc).filter((v): v is string => Boolean(v))
 
-  // Parse ## Invariants section (H3 entries with - value:)
-  const invariant: string[] = []
-  const invSection = content.match(/## Invariants\n([\s\S]*?)(?=\n## |\n# |$)/)
-  if (invSection) {
-    const invValues = invSection[1]!.matchAll(/- value:\s*(.+)$/gm)
-    for (const m of invValues) {
-      invariant.push(m[1]!.trim())
-    }
-  }
+  // Externals 仍走 regex（extractDomainIR 不覆盖；保留原 parser 行为）
+  const externals = parseDomainExternals(content)
 
-  // Parse .oxn format fallback: invariant { "X" }
-  if (invariant.length === 0) {
-    for (const invBlock of content.matchAll(/invariant\s*\{([\s\S]*?)\}/g)) {
-      const invMatches = invBlock[1]!.matchAll(/"([^"]+)"/g)
-      for (const m of invMatches) {
-        invariant.push(m[1]!)
-      }
-    }
+  return {
+    name,
+    ...(ir.description ? { description: ir.description } : {}),
+    ...(terms.length > 0 || ban.length > 0 || invariant.length > 0 ? { language: { terms, ban, invariant } } : {}),
+    ...(externals.length > 0 ? { externals } : {}),
   }
+}
 
-  // Parse ## Externals section (H3 entries with - url/path/kind/summary)
+/** 抽取 ## Externals 段（H3 条目 + url/path/kind/ttl/auth/summary）——保留原 regex parser */
+function parseDomainExternals(content: string): ExternalEntry[] {
   const externals: ExternalEntry[] = []
   const extSection = content.match(/## Externals\n([\s\S]*?)(?=\n## |\n# |$)/)
-  if (extSection) {
-    const blocks = extSection[1]!.split(/\n(?=### )/)
-    for (const block of blocks) {
-      if (!block.startsWith('### ')) continue
-      const lines = block.split('\n')
-      const extName = lines[0]!.replace(/^### /, '').trim()
-      const body = lines.slice(1).join('\n')
-      const stripQuotes = (s: string | undefined): string | null =>
-        s === undefined ? null : s.trim().replace(/^"(.*)"$/, '$1')
-      const url = stripQuotes(body.match(/- url:\s*(.+)$/m)?.[1])
-      const path = stripQuotes(body.match(/- path:\s*(.+)$/m)?.[1])
-      const kind = stripQuotes(body.match(/- kind:\s*(.+)$/m)?.[1]) ?? ''
-      const ttl = stripQuotes(body.match(/- ttl:\s*(.+)$/m)?.[1])
-      const auth = stripQuotes(body.match(/- auth:\s*(.+)$/m)?.[1])
-      const summary = stripQuotes(body.match(/- summary:\s*(.+)$/m)?.[1])
-      externals.push({ name: extName, url, path, kind, ttl, auth, summary })
+  if (!extSection) return externals
+  const blocks = extSection[1]!.split(/\n(?=### )/)
+  for (const block of blocks) {
+    if (!block.startsWith('### ')) continue
+    const lines = block.split('\n')
+    const extName = lines[0]!.replace(/^### /, '').trim()
+    const body = lines.slice(1).join('\n')
+    const stripQuotes = (s: string | undefined): string | null =>
+      s === undefined ? null : s.trim().replace(/^"(.*)"$/, '$1')
+    const url = stripQuotes(body.match(/- url:\s*(.+)$/m)?.[1])
+    const path = stripQuotes(body.match(/- path:\s*(.+)$/m)?.[1])
+    const kind = stripQuotes(body.match(/- kind:\s*(.+)$/m)?.[1]) ?? ''
+    const ttl = stripQuotes(body.match(/- ttl:\s*(.+)$/m)?.[1])
+    const auth = stripQuotes(body.match(/- auth:\s*(.+)$/m)?.[1])
+    const summary = stripQuotes(body.match(/- summary:\s*(.+)$/m)?.[1])
+    externals.push({ name: extName, url, path, kind, ttl, auth, summary })
+  }
+  return externals
+}
+
+/** .oxn 格式：保留原 regex parser（向后兼容 v0.6.x legacy work） */
+function readDomainFileOxn(content: string): DomainFileSummary {
+  const nameMatch = content.match(/domain\s+"([^"]+)"/)
+  if (!nameMatch) return null
+  const name = nameMatch[1]!.trim()
+
+  const descMatch = content.match(/description\s*=\s*"((?:[^"\\]|\\.)*)"/)
+
+  const terms: Array<{ name: string; desc: string }> = []
+  const termBlock = content.match(/term\s*\{([\s\S]*?)\}/)
+  if (termBlock) {
+    const termMatches = termBlock[1]!.matchAll(/"([^"]+)"\s*:\s*"((?:[^"\\]|\\.)*)"/g)
+    for (const m of termMatches) {
+      terms.push({ name: m[1]!, desc: m[2]!.replace(/\\"/g, '"') })
+    }
+  }
+
+  const ban: string[] = []
+  const banBlock = content.match(/ban\s*\{([\s\S]*?)\}/)
+  if (banBlock) {
+    const banMatches = banBlock[1]!.matchAll(/"([^"]+)"/g)
+    for (const m of banMatches) {
+      ban.push(m[1]!)
+    }
+  }
+
+  const invariant: string[] = []
+  for (const invBlock of content.matchAll(/invariant\s*\{([\s\S]*?)\}/g)) {
+    const invMatches = invBlock[1]!.matchAll(/"([^"]+)"/g)
+    for (const m of invMatches) {
+      invariant.push(m[1]!)
     }
   }
 
   return {
     name,
-    ...(descMatch ? { description: descMatch[1]!.trim() } : {}),
+    ...(descMatch ? { description: descMatch[1]!.replace(/\\"/g, '"') } : {}),
     ...(terms.length > 0 || ban.length > 0 || invariant.length > 0 ? { language: { terms, ban, invariant } } : {}),
-    ...(externals.length > 0 ? { externals } : {}),
   }
 }
 

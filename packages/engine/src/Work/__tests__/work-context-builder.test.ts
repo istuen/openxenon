@@ -240,7 +240,7 @@ describe('buildWorkContext — v0.7.3 P1: BlueprintIR + Domain language 注入',
       blueprintDomainContent:
         `# Domain: TrustChain\n> 信任链核心模型\n\n` +
         `## Terms\n### trust-chain\n- desc: 三方信任关系\n### proof\n- desc: 不变量证明\n\n` +
-        `## Bans\n- desc: fake-proof\n- desc: bypass-trust\n\n` +
+        `## Bans\n### forbidden\n- items:\n  - fake-proof\n  - bypass-trust\n- desc: 禁止构造\n\n` +
         `## Invariants\n### inv-1\n- value: 信任链必须可追溯\n`,
     })
     const ctx = buildWorkContext({ projectRoot: tmpDir, workName, assetFormat: 'md', lockCheck: false })
@@ -253,6 +253,8 @@ describe('buildWorkContext — v0.7.3 P1: BlueprintIR + Domain language 注入',
     expect(entry?.fileHash).toHaveLength(64)
     expect(entry?.language?.terms.map((t) => t.name)).toEqual(['trust-chain', 'proof'])
     expect(entry?.language?.ban).toContain('fake-proof')
+    expect(entry?.language?.ban).toContain('bypass-trust')
+    expect(entry?.language?.ban).toContain('禁止构造')
     expect(entry?.language?.invariant).toContain('信任链必须可追溯')
   })
 

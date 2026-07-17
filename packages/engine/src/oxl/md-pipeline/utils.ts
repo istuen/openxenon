@@ -186,7 +186,8 @@ export function collectListFields(list: List): ListField[] {
       | undefined
     if (!firstText) continue
     const raw = firstText.value
-    const m = raw.match(/^([\w-]+):\s*(.*)$/)
+    // 🆕 v0.7.3 P2: 用 's' flag 让 . 匹配 newline（支持 multiline - desc: | YAML block scalar）
+    const m = raw.match(/^([\w-]+):\s*(.*)$/s)
     if (!m) continue
     const [, key, value] = m as unknown as [string, string, string]
     // 嵌套 list 作为 array value
@@ -209,9 +210,16 @@ export function collectListFields(list: List): ListField[] {
       fields.push({ key, value: arr, raw })
     } else {
       // 剥首尾引号 (兼容 YAML 风格的 "value" / 'value')
-      const trimmed = value.trim()
-      const stripped = trimmed.replace(/^["']|["']$/g, '')
-      fields.push({ key, value: stripped || null, raw })
+      let trimmed = value.trim()
+      // 🆕 v0.7.3 P2: 支持 YAML block scalar 标记 `|` `|-` `>+`
+      //   `- desc: |\n  line1\n  line2` → "line1\nline2"
+      if (/^[|>][+-]?$/.test(trimmed.split('\n')[0] ?? '')) {
+        const lines = trimmed.split('\n').slice(1)
+        trimmed = lines.join('\n').trim()
+      } else {
+        trimmed = trimmed.replace(/^["']|["']$/g, '')
+      }
+      fields.push({ key, value: trimmed || null, raw })
     }
   }
   return fields
@@ -243,23 +251,74 @@ export function parseMarkdown(content: string): { tree: Root; frontmatter: Recor
   }
 }
 
-/** 从 mdast 提取 yaml frontmatter (简单 key: value 解析, 不引入 js-yaml) */
+/**
+ * 从 mdast 提取 yaml frontmatter (简单 key: value 解析, 不引入 js-yaml)
+ *
+ * v0.7.1+ 扩展支持：
+ *   - inline array `key: []` / `key: [a, b, c]`
+ *   - block sequence `key:\n  - a\n  - b`
+ *   - 标量 `key: value` / `key: "string"` / `key: true|false` / `key: 123`
+ *
+ * 不支持（仍未支持的 YAML 特性，如需要请改用 js-yaml）：
+ *   - 嵌套 map（key: \n  sub: v）
+ *   - block scalar `key: |` 多行字符串
+ *   -锚点 / 别名 / 引用
+ */
 export function extractYamlFromTree(tree: Root): Record<string, unknown> {
   const fm: Record<string, unknown> = {}
   for (const child of tree.children) {
-    if (child.type === 'yaml') {
-      const value = (child as { value: string }).value
-      for (const line of value.split('\n')) {
-        const m = line.match(/^([\w-]+):\s*(.*)$/)
-        if (m) {
-          const v = m[2]!.trim()
-          // 简单类型推断
-          if (v === 'true') fm[m[1]!] = true
-          else if (v === 'false') fm[m[1]!] = false
-          else if (/^\d+$/.test(v)) fm[m[1]!] = Number(v)
-          else fm[m[1]!] = v.replace(/^["']|["']$/g, '')
-        }
+    if (child.type !== 'yaml') continue
+    const value = (child as { value: string }).value
+    const lines = value.split('\n')
+    let i = 0
+    while (i < lines.length) {
+      const line = lines[i]!
+      const m = line.match(/^([\w-]+):\s*(.*)$/)
+      if (!m) {
+        i++
+        continue
       }
+      const key = m[1]!
+      const v = m[2]!.trim()
+
+      // inline array: `key: []` or `key: [a, b, "c"]`
+      if (v.startsWith('[') && v.endsWith(']')) {
+        const inner = v.slice(1, -1).trim()
+        fm[key] = inner === '' ? [] : inner.split(',').map((s) => s.trim().replace(/^["']|["']$/g, ''))
+        i++
+        continue
+      }
+
+      // block sequence: `key:` 后续行 `\s+- item`
+      if (v === '') {
+        const items: string[] = []
+        let j = i + 1
+        while (j < lines.length) {
+          const nextLine = lines[j]!
+          const seqMatch = nextLine.match(/^\s+-\s+(.*)$/)
+          if (seqMatch) {
+            items.push(seqMatch[1]!.trim().replace(/^["']|["']$/g, ''))
+            j++
+          } else {
+            break
+          }
+        }
+        if (items.length > 0) {
+          fm[key] = items
+          i = j
+          continue
+        }
+        fm[key] = ''
+        i++
+        continue
+      }
+
+      // scalar
+      if (v === 'true') fm[key] = true
+      else if (v === 'false') fm[key] = false
+      else if (/^\d+$/.test(v)) fm[key] = Number(v)
+      else fm[key] = v.replace(/^["']|["']$/g, '')
+      i++
     }
   }
   return fm

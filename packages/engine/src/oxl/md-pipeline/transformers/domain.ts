@@ -44,6 +44,8 @@ export interface DomainTerm {
 export interface DomainBan {
   id: string
   items: string[]
+  /** v0.7.3 P2: 标记 items 是否来自真实 `- items:` 列表（true）vs fallback 从 - desc: 派生（false） */
+  itemsFromItemsList: boolean
   desc: string
 }
 
@@ -102,13 +104,16 @@ export function extractDomainIR(root: Root, frontmatter: Record<string, unknown>
 
   for (const ctx of contexts) {
     if (!ctx.h2 || !ctx.h3) continue
-    if (!DOMAIN_CATEGORIES.includes(ctx.h2 as DomainCategory)) continue
+    // 🆕 v0.7.3 P2: support `## Terms: <Group>` style headings
+    // (extract category prefix from "Terms: Work" → "Terms")
+    const categoryPrefix = (ctx.h2.split(':')[0] ?? '').trim() as DomainCategory
+    if (!DOMAIN_CATEGORIES.includes(categoryPrefix)) continue
 
     const fields = ctx.h3List ? collectListFields(ctx.h3List) : []
     const descField = fields.find((f) => f.key === 'desc')
     const desc = typeof descField?.value === 'string' ? descField.value : ''
 
-    switch (ctx.h2 as DomainCategory) {
+    switch (categoryPrefix) {
       case 'Terms':
         termIdx++
         terms.push({
@@ -119,11 +124,15 @@ export function extractDomainIR(root: Root, frontmatter: Record<string, unknown>
         break
       case 'Bans':
         banIdx++
-        bans.push({
-          id: `ban-${banIdx}`,
-          items: extractBanItems(fields, desc),
-          desc,
-        })
+        {
+          const { items, itemsFromItemsList } = extractBanItems(fields, desc)
+          bans.push({
+            id: `ban-${banIdx}`,
+            items,
+            itemsFromItemsList,
+            desc,
+          })
+        }
         break
       case 'Invariants':
         invIdx++
@@ -157,18 +166,18 @@ export function extractDomainIR(root: Root, frontmatter: Record<string, unknown>
   }
 }
 
-function extractBanItems(fields: ListField[], desc: string): string[] {
-  const itemsField = fields.find((f) => f.key === 'items')
-  if (Array.isArray(itemsField?.value)) {
-    return itemsField.value as string[]
-  }
-  return desc ? desc.split(',').map((s) => s.trim()) : []
-}
-
 function extractFirstFieldValue(fields: ListField[], fallback: string): string {
   const valueField = fields.find((f) => f.key === 'value')
   if (typeof valueField?.value === 'string') return valueField.value
   return fallback
+}
+
+function extractBanItems(fields: ListField[], desc: string): { items: string[]; itemsFromItemsList: boolean } {
+  const itemsField = fields.find((f) => f.key === 'items')
+  if (Array.isArray(itemsField?.value)) {
+    return { items: itemsField.value as string[], itemsFromItemsList: true }
+  }
+  return { items: desc ? desc.split(',').map((s) => s.trim()) : [], itemsFromItemsList: false }
 }
 
 /**

@@ -184,3 +184,101 @@ describe('readDomainFile — .oxn fallback', () => {
     expect(d?.externals).toBeUndefined()
   })
 })
+
+// ───────── 🆕 v0.7.3 P2: ## Terms: 后缀 + multiline - desc: | + - items: 列表 修复 ─────────
+
+describe('readDomainFile — v0.7.3 P2: ## Terms: 后缀 + multiline + items 修复', () => {
+  test('## Terms: <Group> 后缀 → 全部 terms 被捕获（不只 Terms 组）', () => {
+    const p = writeDomain(
+      `# Domain: OxnWorkDomain\n> OXN Work 业务领域\n\n` +
+        `## Terms: Work\n\n### Work\n- desc: Work 是 E2 人机协作的工作空间。\n### Task\n- desc: Align 执行单元。\n\n` +
+        `## Terms: Other\n\n### OtherTerm\n- desc: 其他组 term。\n`,
+    )
+    const d = readDomainFile(p)
+    expect(d?.language?.terms.map((t) => t.name)).toEqual(['Work', 'Task', 'OtherTerm'])
+    expect(d?.language?.terms).toContainEqual({ name: 'Work', desc: 'Work 是 E2 人机协作的工作空间。' })
+    expect(d?.language?.terms).toContainEqual({ name: 'OtherTerm', desc: '其他组 term。' })
+  })
+
+  test('multiline - desc: | (YAML block scalar) → 多行文本被合并为单 desc', () => {
+    const p = writeDomain(
+      `# Domain: OxnEngineDomain\n> 引擎域\n\n` +
+        `## Bans\n\n### forbidden-constructs\n` +
+        `- items:\n  - TypeScriptGrammar\n  - HandWrittenParser\n` +
+        `- desc: |\n  禁用旧术语（L2Domain/Tier/Stratum/ArsenalPromote 等历史版本残留）。\n  Monorepo 禁用 monolithic-{cli,engine}。\n  Daemon 禁用 CrashLoop/ForkDaemon。\n`,
+    )
+    const d = readDomainFile(p)
+    expect(d?.language?.ban).toContain('TypeScriptGrammar')
+    expect(d?.language?.ban).toContain('HandWrittenParser')
+    // multiline desc 应被合并为单个 ban 条目（包含全部 3 行）
+    const multiLineBan = d?.language?.ban.find((b) => b.includes('禁用旧术语'))
+    expect(multiLineBan).toBeDefined()
+    expect(multiLineBan).toContain('Monorepo 禁用')
+    expect(multiLineBan).toContain('Daemon 禁用')
+  })
+
+  test('- items: 列表 → 全部 ban items 被展开为 ban 数组元素', () => {
+    const p = writeDomain(
+      `# Domain: OxnWorkDomain\n> OXN Work 业务领域\n\n` +
+        `## Bans\n\n### forbidden-constructs\n` +
+        `- items:\n  - WorkV0Layout\n  - V0Bypass\n  - BypassLock\n  - BypassValidate\n  - BypassMigrate\n` +
+        `- desc: 禁止的 Work 模式\n`,
+    )
+    const d = readDomainFile(p)
+    expect(d?.language?.ban).toEqual(
+      expect.arrayContaining(['WorkV0Layout', 'V0Bypass', 'BypassLock', 'BypassValidate', 'BypassMigrate']),
+    )
+    expect(d?.language?.ban.length).toBeGreaterThanOrEqual(5)
+  })
+
+  test('集成：## Terms: 后缀 + multiline - desc: | + - items: 在同一文件', () => {
+    const p = writeDomain(
+      `# Domain: Mixed\n> 综合域\n\n` +
+        `## Terms: GroupA\n\n### a1\n- desc: a1 desc。\n### a2\n- desc: |\n  a2 第一行。\n  a2 第二行。\n\n` +
+        `## Terms: GroupB\n\n### b1\n- desc: b1 desc。\n\n` +
+        `## Bans\n\n### bans1\n- items:\n  - X1\n  - X2\n- desc: |\n  ban 第一行。\n  ban 第二行。\n\n` +
+        `## Invariants\n\n### inv-1\n- value: 集成验证\n`,
+    )
+    const d = readDomainFile(p)
+    expect(d?.language?.terms.map((t) => t.name)).toEqual(['a1', 'a2', 'b1'])
+    expect(d?.language?.terms.find((t) => t.name === 'a2')?.desc).toContain('a2 第二行')
+    expect(d?.language?.ban).toContain('X1')
+    expect(d?.language?.ban).toContain('X2')
+    expect(d?.language?.ban.find((b) => b.includes('ban 第一行'))).toBeDefined()
+    expect(d?.language?.invariant).toEqual(['集成验证'])
+  })
+
+  test('regression: 7 active domains readDomainFile 后 terms/bans/invariants 关键字段不空', () => {
+    const realDomains = [
+      'oxn-domain',
+      'oxn-engine-domain',
+      'oxn-cli-domain',
+      'oxn-work-domain',
+      'oxn-asset-domain',
+      'oxn-proof-domain',
+      'oxn-insight-domain',
+    ]
+    // Test file path: packages/engine/src/oxl/__tests__/summary-extractors.test.ts
+    // → ../../../.. → repo root → .openxenon/assets/domains/
+    const domainsDir = join(import.meta.dir, '../../../../../.openxenon/assets/domains')
+    for (const name of realDomains) {
+      const path = join(domainsDir, `${name}.md`)
+      const d = readDomainFile(path)
+      expect(d).not.toBeNull()
+      expect(d?.name).toBeTruthy()
+      // 7 active domains 都应有 terms（root oxn-domain 16+ term, 其他 9-16）
+      expect(d?.language?.terms.length).toBeGreaterThan(0)
+      // 大部分 domains 应有 bans（oxn-domain 暂无 Bans 段，但 6/7 都非空）
+      // invariants 也都非空（4-30 不等）
+      expect(d?.language?.invariant.length).toBeGreaterThan(0)
+    }
+    // 6/7 domains 应有 bans（oxn-domain 是 root，无 Bans 段）
+    let domainsWithBans = 0
+    for (const name of realDomains) {
+      const path = join(domainsDir, `${name}.md`)
+      const d = readDomainFile(path)
+      if ((d?.language?.ban.length ?? 0) > 0) domainsWithBans++
+    }
+    expect(domainsWithBans).toBeGreaterThanOrEqual(6)
+  })
+})

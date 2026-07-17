@@ -8,11 +8,12 @@ adr:
   - .openxenon/docs/adrs/0061-data-flow-contract.md
 ---
 
-# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2）
+# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2）
 
-> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2** 落地：
-> P0 = ADR-0061 立法 + RFC 定稿；P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）。
-> P2-P8 渐进落地（mdast 切换 + 多视角 + DAG 校验 + Stack 注入 + deprecation warn + ADR 状态更新）
+> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2** 落地：
+> P0 = ADR-0061 立法 + RFC 定稿；P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）；
+> P2 = readDomainFile regex → mdast 切换，修 ## Terms: 后缀 + multiline - desc: | 两个 parser bug。
+> P3-P8 渐进落地（多视角 + DAG 校验 + Stack 注入 + deprecation warn + ADR 状态更新）
 > 将在后续 alpha.3 / beta.1 / GA 各 changelog 记录。
 
 ## P0 核心交付
@@ -44,7 +45,7 @@ adr:
 | Phase | 内容 | 版本 | 状态 |
 |---|---|---|---|
 | P1 | `work-context-builder.ts` 读 `blueprints.json`，注入 `BlueprintIR` + 边界 Domain IR | v0.7.3-alpha.2 | ✅ 已落 |
-| P2 | Domain 注入路径 regex → mdast 切换 | v0.7.3-alpha.2 | ⏳ 待启动 |
+| P2 | Domain 注入路径 regex → mdast 切换 | v0.7.3-alpha.2 | ✅ 已落 |
 | P3 | Task 多 Domain 主/背景视角注入；`## Allowed Language` 渲染格式升级 | v0.7.3-alpha.3 | ⏳ 待启动 |
 | P4 | Boundary.observe 与 Task.probes lock 期校验 | v0.7.3-alpha.3 | ⏳ 待启动 |
 | P5 | Workflow.slot DAG 与 Task.deps DAG 闭包校验 | v0.7.3-beta.1 | ⏳ 待启动 |
@@ -93,7 +94,50 @@ adr:
 ### 已知边界
 
 - P1 仅修复 engine `work-context-builder.ts` + CLI `work context`；不涉及 task-level F3（F3 是 P3 范围）
-- `oxn-domain terms=[]` 现象源于 `readDomainFile` 解析 bug（RFC §1 §2.3 注；P2 修）
+- `oxn-domain terms=[]` 现象源于 `readDomainFile` 解析 bug（RFC §1 §2.3 注；P2 已修）
+
+## P2 alpha.2 核心交付
+
+### 修复点（RFC §1 §2.3 注）
+
+- **`readDomainFile` 改走 mdast-based extractor**
+  - `packages/engine/src/oxl/summary-extractors.ts` 重写为 `parseMarkdown()` + `extractDomainIR()` 实现
+  - 保留 `.oxn` 格式 regex fallback（向后兼容 v0.6.x legacy work）
+  - Externals 仍走 regex（extractDomainIR 不覆盖）
+
+- **`packages/engine/src/oxl/md-pipeline/transformers/domain.ts` 升级**
+  - `extractDomainIR` 支持 `## Terms: <Group>` 后缀（RFC §1 §2.3 标注的 parser bug #1）
+  - DomainBan 新增 `itemsFromItemsList` 标志区分真实 `- items:` 列表 vs `- desc:` fallback
+  - `collectListFields` 支持 YAML block scalar `|` `|-` `>+`（multiline `- desc: |`）
+
+- **`packages/engine/src/oxl/md-pipeline/utils.ts` 升级**
+  - `collectListFields` regex 加 `'s'` flag 让 `.` 匹配 newline（支持 multiline desc）
+  - YAML block scalar 标记 `|` `|-` `>+` 识别 + 剥除首行（保留正文）
+
+### 修复的 3 个 parser bug（RFC §1 §2.3 注）
+
+| Bug | 修复前 | 修复后 |
+|---|---|---|
+| `## Terms: <Group>` 后缀 | regex `## Terms\n` 不匹配 `## Terms: Work`，全部 0 个 term | extractDomainIR 支持后缀，7 active domain 平均 12+ terms |
+| multiline `- desc: \|` | regex `.+` 不跨行，只捕获 `\|` | 跨行捕获 + YAML block scalar 识别，desc 完整 |
+| `- items:` 列表 | 完全忽略 | 完整展开为 ban 数组（oxn-work-domain 18 forbidden-constructs → 25 ban entries） |
+
+### 测试覆盖
+
+- 5 个新测试 in `packages/engine/src/oxl/__tests__/summary-extractors.test.ts`：
+  - `## Terms: <Group>` 后缀 → 全部 terms 被捕获（多组）
+  - multiline `- desc: |` → 多行文本合并为单 desc
+  - `- items:` 列表 → ban items 展开
+  - 集成：Terms: 后缀 + multiline + items 同一文件
+  - regression：7 active domain 真实文件 readDomainFile 后关键字段不空
+
+### 验收门槛
+
+- `bun test`：1543 pass / 3 skip / **0 fail**（P1 测试同步更新为新格式）
+- `bun run typecheck`：全绿
+- `bun run lint`：全绿
+- `bun scripts/validate-dependencies.ts`：violations=0
+- `oxn work context v073-ideal-data-flow --json` 的 `domainLanguages[oxn-domain].language.terms` 不再为空（实测 16 terms）
 
 ## 验收门槛
 
