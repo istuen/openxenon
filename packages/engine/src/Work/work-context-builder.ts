@@ -41,6 +41,10 @@ export interface WorkContextBuilderParams {
   assetFormat: AssetFormat
   lockCheck?: boolean
   statePath?: string
+  /** 🆕 v0.7.3 P3 (RFC §4 + ADR-0061 §D1+D2 + §5.1 token 预算):
+   *  - 'full' (default): 多 Domain 主/背景视角注入；termViews 聚合 + 块状渲染
+   *  - 'lean': 单 Domain 模式（保留向后兼容路径；skip background domain load） */
+  contextMode?: 'full' | 'lean'
 }
 
 /**
@@ -91,6 +95,18 @@ export interface DomainLanguageEntry {
   language: NonNullable<DomainFileSummary>['language']
 }
 
+/**
+ * 🆕 v0.7.3 P3 (RFC §4 + ADR-0061 §D2):
+ * 多视角 term 视图。同名 term 从多个 Domain 视角聚合；每个 term 包含 main + 0..N 背景视图。
+ *   - isMain=true: 主对齐视角（来自 task.domain）
+ *   - isMain=false: 背景视角（来自 Blueprint.use.domain[] 派生）
+ *   - isNameOnly=true: term 名仅出现于背景视角，未被 main 视角采纳（节省 token）
+ */
+export interface TermView {
+  name: string
+  views: Array<{ domain: string; desc: string; isMain: boolean; isNameOnly: boolean }>
+}
+
 export interface WorkContextResult {
   workspace: string
   task?: string
@@ -99,8 +115,26 @@ export interface WorkContextResult {
   taskStatus?: string
   workContext: { overallGoal: string; constraints: string[] }
   taskContext?: { deps: string[] }
-  injectedDomains: Array<{ name: string; description?: string; language?: unknown }>
-  allowedLanguage?: { mustUseTerms: Array<{ name: string; desc: string }>; banned: string[]; invariants: string[] }
+  injectedDomains: Array<{
+    name: string
+    description?: string
+    language?: unknown
+    /** 🆕 v0.7.3 P3 (ADR-0061 §D1): 标注视角角色 */
+    role?: 'main' | 'background'
+  }>
+  allowedLanguage?: {
+    mustUseTerms: Array<{ name: string; desc: string }>
+    banned: string[]
+    invariants: string[]
+    /** 🆕 v0.7.3 P3 (ADR-0061 §D2): 多视角 term 视图聚合 */
+    termViews?: TermView[]
+    /** 🆕 v0.7.3 P3: 主对齐 Domain 名 */
+    mainDomain?: string
+    /** 🆕 v0.7.3 P3: 背景 Domain 名列表（token 预算剪裁后） */
+    backgroundDomains?: string[]
+    /** 🆕 v0.7.3 P3 (ADR-0061 §5.1 token 预算缓解): 是否 lean 模式 */
+    contextMode?: 'full' | 'lean'
+  }
   taskParts?: Array<{ name: string; skillContext?: string; probes: Array<{ name: string; ref: string }> }>
   isolationNotice?: string
   lockHealth?: unknown
@@ -222,8 +256,9 @@ export function loadDomainLanguagesFromBlueprint(
  * 🆕 v0.7.3 P1 helper: 解析 boundary asset 的实际文件路径
  *   - 与 per-work-blueprints-merger.resolveBoundaryAssetFile 行为一致
  *   - 但不在私有域 → 暴露给 work-context-builder 复用
+ *   - 🆕 v0.7.3 P3: 改为 export（CLI 的 task-level 域加载也复用）
  */
-function findBoundaryAssetFile(
+export function findBoundaryAssetFile(
   projectRoot: string,
   kind: 'domain' | 'workflow' | 'stack' | 'blueprint',
   name: string,
@@ -237,6 +272,108 @@ function findBoundaryAssetFile(
     }
   }
   return null
+}
+
+/**
+ * 🆕 v0.7.3 P3 (RFC §5.1 token 预算缓解 + ADR-0061 §D1+D2):
+ * 聚合同名 term 的多 Domain 视角视图。
+ *
+ * 规则：
+ *   - 主对齐视角（main）: 全部 term + desc
+ *   - 背景视角（backgrounds）:
+ *     - 前 maxBackgroundFull 个满注入（仅同名 term 的 desc）
+ *     - 其余背景 Domain 仅 term name 列表（无 desc，节省 token）
+ *
+ * 返回值：
+ *   - termViews: 每个同名 term 聚合为一项；views 含 main + 0..N 背景
+ *   - backgroundDomains: 实际加载的背景 Domain 名列表（含 full + name-only）
+ *
+ * 空 main language: 返回 { termViews: [], backgroundDomains: [] }
+ * 空 backgrounds: 返回仅 main 视图
+ */
+export function buildTermViews(
+  mainLang: NonNullable<DomainFileSummary>['language'] | null | undefined,
+  backgrounds: DomainLanguageEntry[],
+  options: { maxBackgroundFull?: number } = {},
+): { termViews: TermView[]; backgroundDomains: string[] } {
+  const maxBgFull = options.maxBackgroundFull ?? 3
+  const termMap = new Map<string, TermView>()
+
+  // 1) 主对齐视角：全部 term + desc
+  if (mainLang?.terms) {
+    for (const t of mainLang.terms) {
+      termMap.set(t.name, {
+        name: t.name,
+        views: [{ domain: 'main', desc: t.desc, isMain: true, isNameOnly: false }],
+      })
+    }
+  }
+
+  // 2) 背景视角：分两类
+  const fullBgs = backgrounds.slice(0, maxBgFull)
+  const nameOnlyBgs = backgrounds.slice(maxBgFull)
+
+  for (const bg of fullBgs) {
+    if (!bg.language?.terms) continue
+    for (const t of bg.language.terms) {
+      const existing = termMap.get(t.name)
+      if (existing) {
+        existing.views.push({
+          domain: bg.name,
+          desc: t.desc,
+          isMain: false,
+          isNameOnly: false,
+        })
+      } else {
+        // 背景视角有但 main 没有的 term（仅 nameOnly 占位）
+        termMap.set(t.name, {
+          name: t.name,
+          views: [{ domain: bg.name, desc: t.desc, isMain: false, isNameOnly: false }],
+        })
+      }
+    }
+  }
+
+  // 3) 剩余背景 Domain：仅 term name 列表（无 desc，nameOnly=true）
+  for (const bg of nameOnlyBgs) {
+    if (!bg.language?.terms) continue
+    for (const t of bg.language.terms) {
+      const existing = termMap.get(t.name)
+      if (existing) {
+        existing.views.push({ domain: bg.name, desc: '', isMain: false, isNameOnly: true })
+      }
+    }
+  }
+
+  return {
+    termViews: Array.from(termMap.values()),
+    backgroundDomains: backgrounds.map((b) => b.name),
+  }
+}
+
+/**
+ * 🆕 v0.7.3 P3 helper: 把 loaded DomainLanguageEntry[] 拆成 main + backgrounds
+ *   - main: name 与 taskDomain 匹配的第一个 entry
+ *   - backgrounds: 其余（保持 Blueprint.use.domain[] 声明顺序）
+ *   - 无 taskDomain 或匹配失败 → main=null, backgrounds=全部
+ */
+export function partitionBackgroundDomains(
+  loadedEntries: DomainLanguageEntry[],
+  taskDomain: string | undefined,
+): { main: DomainLanguageEntry | null; backgrounds: DomainLanguageEntry[] } {
+  if (!taskDomain) return { main: null, backgrounds: loadedEntries }
+  let mainIdx = -1
+  for (let i = 0; i < loadedEntries.length; i++) {
+    if (loadedEntries[i]!.name === taskDomain) {
+      mainIdx = i
+      break
+    }
+  }
+  if (mainIdx === -1) return { main: null, backgrounds: loadedEntries }
+  return {
+    main: loadedEntries[mainIdx]!,
+    backgrounds: loadedEntries.filter((_, i) => i !== mainIdx),
+  }
 }
 
 export function buildWorkContext(params: WorkContextBuilderParams): WorkContextResult {
@@ -307,20 +444,59 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
       }
     }
 
-    const injectedDomains: Array<{ name: string; data: NonNullable<DomainFileSummary> }> = []
+    // 🆕 v0.7.3 P3: contextMode 默认 'full'（多视角）；'lean' 走单 Domain 老路径
+    const contextMode: 'full' | 'lean' = params.contextMode ?? 'full'
+
+    const injectedDomains: Array<{ name: string; data: NonNullable<DomainFileSummary>; role: 'main' | 'background' }> =
+      []
     if (taskDomain) {
-      const kebab = camelToKebab(taskDomain)
-      const candidates = [
-        join(root, BOUNDARY_DIR, 'domains', `${taskDomain}.md`),
-        join(root, BOUNDARY_DIR, 'domains', `${kebab}.md`),
-      ]
-      for (const path of candidates) {
-        const domData = readDomainFile(path)
+      // 🆕 v0.7.3 P3: 用 findBoundaryAssetFile 而非硬编码 .openxenon/domains/
+      //   - 旧 path 只命中 .archived 或老布局；新 path 优先 .openxenon/assets/domains/
+      const filePath = findBoundaryAssetFile(root, 'domain', taskDomain)
+      if (filePath) {
+        const domData = readDomainFile(filePath)
         if (domData) {
-          injectedDomains.push({ name: taskDomain, data: domData })
-          break
+          injectedDomains.push({ name: taskDomain, data: domData, role: 'main' })
         }
       }
+    }
+
+    // 🆕 v0.7.3 P3 (D1+D2 prep): full mode 加载 Blueprint 边界 Domain languages + 派生 background
+    let termViews: TermView[] = []
+    let backgroundDomainNames: string[] = []
+    let mainLang: NonNullable<DomainFileSummary>['language'] | null = null
+
+    if (contextMode === 'full') {
+      // main language 从已加载的 injectedDomains[0] 取
+      mainLang = injectedDomains[0]?.data.language ?? null
+
+      // 加载 Blueprint 边界 Domain languages
+      const perWorkBpIdx = loadPerWorkBlueprints(root, workName)
+      const blueprintIR = perWorkBpIdx ? summarizeBlueprints(perWorkBpIdx) : null
+      const allLoaded = blueprintIR ? loadDomainLanguagesFromBlueprint(blueprintIR, root) : []
+
+      // 拆 main + backgrounds
+      const partition = partitionBackgroundDomains(allLoaded, taskDomain)
+      const backgrounds = partition.backgrounds
+
+      // 把 background languages 注入到 injectedDomains（role='background'）
+      for (const bg of backgrounds) {
+        if (!bg.language) continue
+        injectedDomains.push({
+          name: bg.name,
+          data: {
+            name: bg.name,
+            description: '',
+            language: bg.language,
+          },
+          role: 'background',
+        })
+      }
+
+      // 聚合 termViews（main + backgrounds + name-only 4+）
+      const result = buildTermViews(mainLang, backgrounds, { maxBackgroundFull: 3 })
+      termViews = result.termViews
+      backgroundDomainNames = result.backgroundDomains
     }
 
     const allowedTerms: Array<{ name: string; desc: string }> = []
@@ -360,8 +536,9 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
       taskContext: {
         deps: taskDeps,
       },
-      injectedDomains: injectedDomains.map(({ name, data }) => ({
+      injectedDomains: injectedDomains.map(({ name, data, role }) => ({
         name,
+        role,
         ...(data.description ? { description: data.description } : {}),
         ...(data.language
           ? {
@@ -377,6 +554,16 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
         mustUseTerms: allowedTerms,
         banned,
         invariants,
+        ...(contextMode === 'full' && termViews.length > 0
+          ? {
+              termViews,
+              mainDomain: taskDomain,
+              backgroundDomains: backgroundDomainNames,
+              contextMode: 'full' as const,
+            }
+          : contextMode === 'lean'
+            ? { contextMode: 'lean' as const }
+            : {}),
       },
       taskParts,
       isolationNotice: 'Work context is isolated — task-level view only',
@@ -442,8 +629,22 @@ export function renderContextHuman(c: {
   taskStatus?: string
   workContext: { overallGoal: string; constraints: string[] }
   taskContext?: { deps: string[] }
-  injectedDomains: Array<{ name: string; description?: string; language?: unknown }>
-  allowedLanguage?: { mustUseTerms: Array<{ name: string; desc: string }>; banned: string[]; invariants: string[] }
+  injectedDomains: Array<{
+    name: string
+    description?: string
+    language?: unknown
+    role?: 'main' | 'background'
+  }>
+  allowedLanguage?: {
+    mustUseTerms: Array<{ name: string; desc: string }>
+    banned: string[]
+    invariants: string[]
+    /** 🆕 v0.7.3 P3 (D2): 多视角 term 视图 */
+    termViews?: TermView[]
+    mainDomain?: string
+    backgroundDomains?: string[]
+    contextMode?: 'full' | 'lean'
+  }
   taskParts?: Array<{ name: string; skillContext?: string; probes: Array<{ name: string; ref: string }> }>
   diagnostics: RefDiagnostic[]
   domains?: unknown[]
@@ -474,7 +675,8 @@ export function renderContextHuman(c: {
   lines.push('')
   lines.push('## Injected Domains (isolated)')
   for (const d of c.injectedDomains) {
-    lines.push(`  - ${d.name}${d.description ? `: ${d.description}` : ''}`)
+    const roleTag = d.role ? ` [${d.role}]` : ''
+    lines.push(`  - ${d.name}${roleTag}${d.description ? `: ${d.description}` : ''}`)
     if (d.language) {
       const lang = d.language as { terms?: unknown[]; ban?: unknown[]; invariant?: unknown[] }
       if (lang.terms && lang.terms.length > 0) {
@@ -488,6 +690,69 @@ export function renderContextHuman(c: {
       }
     }
   }
+
+  // 🆕 v0.7.3 P3 (D2): 多视角 ## Allowed Language 块状渲染
+  if (c.allowedLanguage) {
+    const al = c.allowedLanguage
+    const isFullMode = al.contextMode === 'full' && al.termViews && al.termViews.length > 0
+    if (isFullMode) {
+      lines.push('')
+      lines.push('## Allowed Language (multi-view)')
+      lines.push(
+        `> Main view: \`${al.mainDomain ?? '(unknown)'}\` · Background views: ${(al.backgroundDomains ?? []).map((d) => '`' + d + '`').join(', ') || '(none)'}`,
+      )
+      lines.push(`> Token budget: 前 3 个 background 满注入（同名 term desc），其余仅 term 名列表`)
+      lines.push('')
+      lines.push('### Terms')
+      for (const tv of al.termViews ?? []) {
+        lines.push(`#### ${tv.name}`)
+        for (const v of tv.views) {
+          const mainTag = v.isMain ? ' [main]' : ''
+          const nameOnlyTag = v.isNameOnly ? ' [name-only]' : ''
+          const domainLabel = v.isMain ? `${al.mainDomain ?? 'main'}` : v.domain
+          if (v.isNameOnly) {
+            lines.push(`- [${domainLabel}${mainTag}${nameOnlyTag}] (no description)`)
+          } else {
+            lines.push(`- [${domainLabel}${mainTag}] ${v.desc}`)
+          }
+        }
+      }
+      if (al.banned.length > 0) {
+        lines.push('')
+        lines.push('### Bans')
+        for (const b of al.banned) lines.push(`- ${b}`)
+      }
+      if (al.invariants.length > 0) {
+        lines.push('')
+        lines.push('### Invariants')
+        for (const iv of al.invariants) lines.push(`- ${iv}`)
+      }
+    } else {
+      // 🆕 v0.7.3 P3 (BWC): lean 模式 / 老 schema 渲染
+      if (al.contextMode === 'lean') {
+        lines.push('')
+        lines.push('## Allowed Language (lean mode)')
+      } else {
+        lines.push('')
+        lines.push('## Allowed Language')
+      }
+      if (al.mustUseTerms.length > 0) {
+        lines.push('### Terms')
+        for (const t of al.mustUseTerms) lines.push(`- ${t.name}: ${t.desc}`)
+      }
+      if (al.banned.length > 0) {
+        lines.push('')
+        lines.push('### Bans')
+        for (const b of al.banned) lines.push(`- ${b}`)
+      }
+      if (al.invariants.length > 0) {
+        lines.push('')
+        lines.push('### Invariants')
+        for (const iv of al.invariants) lines.push(`- ${iv}`)
+      }
+    }
+  }
+
   if (c.taskParts && c.taskParts.length > 0) {
     lines.push('')
     lines.push('## Task Parts')

@@ -8,12 +8,14 @@ adr:
   - .openxenon/docs/adrs/0061-data-flow-contract.md
 ---
 
-# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2）
+# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3）
 
-> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2** 落地：
-> P0 = ADR-0061 立法 + RFC 定稿；P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）；
-> P2 = readDomainFile regex → mdast 切换，修 ## Terms: 后缀 + multiline - desc: | 两个 parser bug。
-> P3-P8 渐进落地（多视角 + DAG 校验 + Stack 注入 + deprecation warn + ADR 状态更新）
+> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3** 落地：
+> P0 = ADR-0061 立法 + RFC 定稿；
+> P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）；
+> P2 = readDomainFile regex → mdast 切换，修 ## Terms: 后缀 + multiline - desc: | 两个 parser bug；
+> P3 = D1 + D2 多视角 term 视图（Task 多 Domain 主/背景视角 + 块状渲染 + token 预算缓解）。
+> P4-P8 渐进落地（DAG 校验 + Stack 注入 + deprecation warn + ADR 状态更新）
 > 将在后续 alpha.3 / beta.1 / GA 各 changelog 记录。
 
 ## P0 核心交付
@@ -46,7 +48,7 @@ adr:
 |---|---|---|---|
 | P1 | `work-context-builder.ts` 读 `blueprints.json`，注入 `BlueprintIR` + 边界 Domain IR | v0.7.3-alpha.2 | ✅ 已落 |
 | P2 | Domain 注入路径 regex → mdast 切换 | v0.7.3-alpha.2 | ✅ 已落 |
-| P3 | Task 多 Domain 主/背景视角注入；`## Allowed Language` 渲染格式升级 | v0.7.3-alpha.3 | ⏳ 待启动 |
+| P3 | Task 多 Domain 主/背景视角注入；`## Allowed Language` 渲染格式升级 | v0.7.3-alpha.3 | ✅ 已落 |
 | P4 | Boundary.observe 与 Task.probes lock 期校验 | v0.7.3-alpha.3 | ⏳ 待启动 |
 | P5 | Workflow.slot DAG 与 Task.deps DAG 闭包校验 | v0.7.3-beta.1 | ⏳ 待启动 |
 | P6 | Stack.tools 注入 ProbeRunner | v0.7.3-beta.1 | ⏳ 待启动 |
@@ -138,6 +140,82 @@ adr:
 - `bun run lint`：全绿
 - `bun scripts/validate-dependencies.ts`：violations=0
 - `oxn work context v073-ideal-data-flow --json` 的 `domainLanguages[oxn-domain].language.terms` 不再为空（实测 16 terms）
+
+## P3 alpha.3 核心交付
+
+### 决策落地（ADR-0061 §D1 + §D2）
+
+**D1 - Task 多 Domain 主/背景视角注入**：
+- 保持 TaskIR schema 不变（task.domain 仍是单值字段 = 主对齐视角）
+- Blueprint.use.domain[] 派生 background Domains（除 taskDomain 外）
+- Background Domain 加载 language（terms/bans/invariants）
+- 同名 term 聚合：每个 main term 找 background 同 name term，附加视图
+
+**D2 - 多视角 term 注入格式（块状 + 视角标注）**：
+- `## Allowed Language (multi-view)` 段渲染升级
+- 每个同名 term 聚合为 H4 子节
+- 子节下按 Domain 视角列多行：`[Domain名]` 行内前缀 + desc
+- Main 视角标注 `isMain=true` + `[main]` 标签
+- nameOnly 标注 `isNameOnly=true` + `[name-only]` 标签
+
+**Token 预算缓解（RFC §5.1）**：
+- 前 3 个 background Domain 满注入（terms + bans + invariants 全文）
+- 4+ background Domain 仅 term name 列表（不附 desc）
+- 背景视角仅注入与主视角同名 term 的 desc
+
+**CLI `--context-mode` flag**：
+- `--context-mode full`（默认）：多视角 + termViews 聚合
+- `--context-mode lean`：单 Domain 模式（保留 compat 路径）
+
+### 代码改动
+
+| 文件 | 内容 |
+|---|---|
+| `packages/engine/src/Work/work-context-builder.ts` | contextMode param + TermView 类型 + termViews 字段 + buildTermViews helper + partitionBackgroundDomains helper + 渲染升级 + findBoundaryAssetFile export |
+| `packages/cli/src/commands/work.ts` | `--context-mode` flag + 镜像 engine 修复 + renderContextHuman 升级 + 任务级主 Domain 路径修复（`.openxenon/domains/` → `.openxenon/assets/domains/`）|
+| `packages/engine/src/Work/__tests__/work-context-builder.test.ts` | +11 测试（buildTermViews × 5 / partitionBackgroundDomains × 3 / 渲染 × 3）|
+
+### 修复的 pre-existing 路径 bug
+
+- `findBoundaryAssetFile` 改用 `resolveAssetCandidates`（兼容 v0.7 primary `assets/domains/` + v0.6 fallback `domains/`）
+- 老代码 hardcoded `.openxenon/domains/`，导致任务级主 Domain 永远加载失败（即使文件存在）
+- P3 fix: task-level 主 Domain 现在能正确加载 → injectedDomains 含 main role + role tag 出现在 human 渲染中
+
+### 验收门槛
+
+- `bun test`：1554 pass / 3 skip / **0 fail**
+- `bun run typecheck`：全绿
+- `bun run lint`：全绿
+- `bun scripts/validate-dependencies.ts`：violations=0
+- `oxn work context --task p0-rfc-finalize --context-mode full --json`：
+  - `injectedDomains`：2 entries（main + background）
+  - `allowedLanguage.contextMode: 'full'`
+  - `allowedLanguage.termViews`：25 项（10 main + 15 background 独有）
+  - multi-view term 例：`Asset` term 同时有 main + background 视图
+- `oxn work context --task p0-rfc-finalize --context-mode lean --json`：
+  - `injectedDomains`：1 entry（仅 main）
+  - `allowedLanguage.contextMode: 'lean'`
+  - `allowedLanguage.termViews`：undefined（BWC preserved）
+
+### human 渲染对比
+
+**Full mode**:
+```
+## Allowed Language (multi-view)
+> Main view: `oxn-asset-domain` · Background views: `oxn-domain`
+> Token budget: 前 3 个 background 满注入（同名 term desc），其余仅 term 名列表
+### Terms
+#### Asset
+- [oxn-asset-domain [main]] Asset 是 E1 工程师定义边界的资产；...
+- [oxn-domain] 工程师的资产，定义 AI Agent 工作时需要遵守的边界。具体领域见
+```
+
+**Lean mode**:
+```
+## Allowed Language (lean mode)
+Terms (must use): Asset, AssetKind, AssetMode, ...
+Banned: ignoreAssetLock, directWriteOxn, ...
+```
 
 ## 验收门槛
 

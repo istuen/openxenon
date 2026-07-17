@@ -70,6 +70,10 @@ import {
   loadPerWorkBlueprints,
   summarizeBlueprints,
   loadDomainLanguagesFromBlueprint,
+  buildTermViews,
+  partitionBackgroundDomains,
+  findBoundaryAssetFile,
+  type TermView,
 } from '@openxenon/engine/Work/work-context-builder'
 import { buildBlueprintDiagnostic, type RefDiagnostic } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import {
@@ -2089,6 +2093,14 @@ const contextSubcommand = defineCommand({
       default: false,
       description: t('work.status.args.skipLockCheck'),
     },
+    /** 🆕 v0.7.3 P3 (ADR-0061 §D1+D2 + §5.1 token 预算缓解):
+     *  - full (默认): 多 Domain 主/背景视角注入 + 块状 termViews 渲染
+     *  - lean: 单 Domain 老路径（向后兼容；skip 背景 domain 加载） */
+    'context-mode': {
+      type: 'string',
+      default: 'full',
+      description: t('work.context.args.contextMode'),
+    },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
@@ -2100,6 +2112,9 @@ const contextSubcommand = defineCommand({
     const emitMdPath = ctx.args['emit-md'] as string | undefined
     const lockCheck = ctx.args['unlock-check'] !== true
     const noLockCheck = !lockCheck
+    // 🆕 v0.7.3 P3: contextMode flag (full|lean)
+    const rawContextMode = String(ctx.args['context-mode'] ?? 'full')
+    const contextMode: 'full' | 'lean' = rawContextMode === 'lean' ? 'lean' : 'full'
     const root = getProjectRoot()
     const config = readProjectConfig(root)
     const assetFormat = resolveAssetFormat(config)
@@ -2219,20 +2234,51 @@ const contextSubcommand = defineCommand({
         }
       }
 
-      const injectedDomains: Array<{ name: string; data: NonNullable<DomainFileSummary> }> = []
+      const injectedDomains: Array<{
+        name: string
+        data: NonNullable<DomainFileSummary>
+        role: 'main' | 'background'
+      }> = []
       if (taskDomain) {
-        const kebab = camelToKebab(taskDomain)
-        const candidates = [
-          join(root, BOUNDARY_DIR, 'domains', `${taskDomain}.md`),
-          join(root, BOUNDARY_DIR, 'domains', `${kebab}.md`),
-        ]
-        for (const path of candidates) {
-          const domData = readDomainFile(path)
+        // 🆕 v0.7.3 P3: 用 findBoundaryAssetFile 而非硬编码 .openxenon/domains/
+        //   - 旧 path 只命中 .archived 或老布局；新 path 优先 .openxenon/assets/domains/
+        const filePath = findBoundaryAssetFile(root, 'domain', taskDomain)
+        if (filePath) {
+          const domData = readDomainFile(filePath)
           if (domData) {
-            injectedDomains.push({ name: taskDomain, data: domData })
-            break
+            injectedDomains.push({ name: taskDomain, data: domData, role: 'main' })
           }
         }
+      }
+
+      // 🆕 v0.7.3 P3: full mode 加载 background Domain languages + 聚合 termViews
+      let termViews: TermView[] = []
+      let backgroundDomainNames: string[] = []
+      const mainLang = injectedDomains[0]?.data.language ?? null
+
+      if (contextMode === 'full') {
+        const perWorkBpIdx = loadPerWorkBlueprints(root, workName)
+        const blueprintIR = perWorkBpIdx ? summarizeBlueprints(perWorkBpIdx) : null
+        const allLoaded = blueprintIR ? loadDomainLanguagesFromBlueprint(blueprintIR, root) : []
+        const partition = partitionBackgroundDomains(allLoaded, taskDomain)
+        const backgrounds = partition.backgrounds
+
+        for (const bg of backgrounds) {
+          if (!bg.language) continue
+          injectedDomains.push({
+            name: bg.name,
+            data: {
+              name: bg.name,
+              description: '',
+              language: bg.language,
+            },
+            role: 'background',
+          })
+        }
+
+        const result = buildTermViews(mainLang, backgrounds, { maxBackgroundFull: 3 })
+        termViews = result.termViews
+        backgroundDomainNames = result.backgroundDomains
       }
 
       const allowedTerms: Array<{ name: string; desc: string }> = []
@@ -2272,8 +2318,9 @@ const contextSubcommand = defineCommand({
         taskContext: {
           deps: taskDeps,
         },
-        injectedDomains: injectedDomains.map(({ name, data }) => ({
+        injectedDomains: injectedDomains.map(({ name, data, role }) => ({
           name,
+          role,
           ...(data.description ? { description: data.description } : {}),
           ...(data.language
             ? {
@@ -2289,6 +2336,16 @@ const contextSubcommand = defineCommand({
           mustUseTerms: allowedTerms,
           banned,
           invariants,
+          ...(contextMode === 'full' && termViews.length > 0
+            ? {
+                termViews,
+                mainDomain: taskDomain,
+                backgroundDomains: backgroundDomainNames,
+                contextMode: 'full' as const,
+              }
+            : contextMode === 'lean'
+              ? { contextMode: 'lean' as const }
+              : {}),
         },
         taskParts,
         isolationNotice: t('work.isolationNotice'),
@@ -2402,8 +2459,20 @@ function renderContextHuman(c: {
   taskStatus: string
   workContext: { overallGoal: string; constraints: string[] }
   taskContext: { deps: string[] }
-  injectedDomains: Array<{ name: string; description?: string; language?: unknown }>
-  allowedLanguage: { mustUseTerms: Array<{ name: string; desc: string }>; banned: string[]; invariants: string[] }
+  injectedDomains: Array<{ name: string; description?: string; language?: unknown; role?: 'main' | 'background' }>
+  allowedLanguage: {
+    mustUseTerms: Array<{ name: string; desc: string }>
+    banned: string[]
+    invariants: string[]
+    /** 🆕 v0.7.3 P3 (D2): 多视角 term 视图 */
+    termViews?: Array<{
+      name: string
+      views: Array<{ domain: string; desc: string; isMain: boolean; isNameOnly: boolean }>
+    }>
+    mainDomain?: string
+    backgroundDomains?: string[]
+    contextMode?: 'full' | 'lean'
+  }
   taskParts: Array<{ name: string; skillContext?: string; probes: Array<{ name: string; ref: string }> }>
   isolationNotice: string
 }): string {
@@ -2428,24 +2497,66 @@ function renderContextHuman(c: {
   lines.push('')
   lines.push('## Injected Domains (isolated)')
   for (const d of c.injectedDomains) {
-    lines.push(`### ${d.name}`)
+    const roleTag = d.role ? ` [${d.role}]` : ''
+    lines.push(`### ${d.name}${roleTag}`)
     if (d.description) lines.push(d.description)
     const lang = d.language as { terms?: Array<{ name: string }> } | undefined
     if (lang?.terms && lang.terms.length > 0) {
       lines.push(`Terms: ${lang.terms.map((t) => t.name).join(', ')}`)
     }
   }
-  lines.push('')
-  lines.push('## Allowed Language')
-  lines.push(`Terms (must use): ${c.allowedLanguage.mustUseTerms.map((t) => t.name).join(', ') || '(none)'}`)
-  if (c.allowedLanguage.banned.length > 0) {
-    lines.push(`Banned:          ${c.allowedLanguage.banned.join(', ')}`)
-  }
-  if (c.allowedLanguage.invariants.length > 0) {
+  // 🆕 v0.7.3 P3 (D2): 多视角 ## Allowed Language 块状渲染
+  const al = c.allowedLanguage
+  const isFullMode = al.contextMode === 'full' && al.termViews && al.termViews.length > 0
+  if (isFullMode) {
     lines.push('')
-    lines.push('## Invariants')
-    for (const inv of c.allowedLanguage.invariants) {
-      lines.push(`- ${inv}`)
+    lines.push('## Allowed Language (multi-view)')
+    lines.push(
+      `> Main view: \`${al.mainDomain ?? '(unknown)'}\` · Background views: ${(al.backgroundDomains ?? []).map((d) => '`' + d + '`').join(', ') || '(none)'}`,
+    )
+    lines.push('> Token budget: 前 3 个 background 满注入（同名 term desc），其余仅 term 名列表')
+    lines.push('')
+    lines.push('### Terms')
+    for (const tv of al.termViews ?? []) {
+      lines.push(`#### ${tv.name}`)
+      for (const v of tv.views) {
+        const mainTag = v.isMain ? ' [main]' : ''
+        const nameOnlyTag = v.isNameOnly ? ' [name-only]' : ''
+        const domainLabel = v.isMain ? `${al.mainDomain ?? 'main'}` : v.domain
+        if (v.isNameOnly) {
+          lines.push(`- [${domainLabel}${mainTag}${nameOnlyTag}] (no description)`)
+        } else {
+          lines.push(`- [${domainLabel}${mainTag}] ${v.desc}`)
+        }
+      }
+    }
+    if (al.banned.length > 0) {
+      lines.push('')
+      lines.push('### Bans')
+      for (const b of al.banned) lines.push(`- ${b}`)
+    }
+    if (al.invariants.length > 0) {
+      lines.push('')
+      lines.push('### Invariants')
+      for (const iv of al.invariants) lines.push(`- ${iv}`)
+    }
+  } else {
+    lines.push('')
+    if (al.contextMode === 'lean') {
+      lines.push('## Allowed Language (lean mode)')
+    } else {
+      lines.push('## Allowed Language')
+    }
+    lines.push(`Terms (must use): ${al.mustUseTerms.map((t) => t.name).join(', ') || '(none)'}`)
+    if (al.banned.length > 0) {
+      lines.push(`Banned:          ${al.banned.join(', ')}`)
+    }
+    if (al.invariants.length > 0) {
+      lines.push('')
+      lines.push('## Invariants')
+      for (const inv of al.invariants) {
+        lines.push(`- ${inv}`)
+      }
     }
   }
   lines.push('')
