@@ -7,7 +7,7 @@
 //   create <name> --kind X            创建 Asset
 //   validate <name>                   校验单个 Asset
 //   validate --check-dag --all        全项目 DAG 校验
-//   archive <name> --reason Y        归档 (move 到 .archived/)
+//   archive <name> --reason Y        归档 (move 到 .archived/assets/<kind>s/)
 //   delete <name> --force            硬删 (force + 无引用)
 //   evolve <name> --new-name Z       演进 (创建新版本，auditTrail 引用旧版)
 //
@@ -326,7 +326,7 @@ const validateSubcommand = defineCommand({
 // Subcommand: archive
 // =============================================================================
 const archiveSubcommand = defineCommand({
-  meta: { name: 'archive', description: 'Archive Asset (move to .archived/)' },
+  meta: { name: 'archive', description: 'Archive Asset (move to .archived/assets/<kind>s/)' },
   args: {
     name: { type: 'positional', required: true },
     kind: {

@@ -8,6 +8,10 @@ synced-at: 2026-07-08T13:52:19.207Z
 
 # Domain: WorkOrchestrationContext
 
+> **🔁 迁移公告（v0.7 RFC W5）**：本 Domain 已被
+> [`oxn-work-domain`](./oxn-work-domain.md) 聚合合并。
+> Layer 2 E2 SSOT 见新 Domain；本文件保留供追溯，W8 收尾删除。
+
 > Work v1.1 3 IAP 阶段实体编排限界上下文: Intent(create/add-task/lock) → Align(run/submit) → Proof(finalize);PlanLock 3 组件 hash 守卫 + BirthCert 静态门禁卡;lock 内含 validate(语法+DAG+引用)
 
 ## Terms

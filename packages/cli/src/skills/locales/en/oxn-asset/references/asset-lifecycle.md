@@ -11,7 +11,7 @@ oxn asset archive MemberContext --reason "Business boundary merged into Identity
 ```
 
 Effects:
-- Asset `.oxn` / `.md` moved to `.openxenon/.archived/<kind>/<name>.oxn`
+- Asset `.oxn` / `.md` moved to `.openxenon/.archived/assets/<kind>s/<name>.oxn`
 - `metadata` records archive reason, archive time, original citations
 - planLock still queryable (read-only)
 

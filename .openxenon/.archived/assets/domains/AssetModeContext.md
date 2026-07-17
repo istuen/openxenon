@@ -8,6 +8,10 @@ synced-at: 2026-07-08T13:52:19.197Z
 
 # Domain: AssetModeContext
 
+> **🔁 迁移公告（v0.7 RFC W4）**：本 Domain 已被
+> [`oxn-asset-domain`](./oxn-asset-domain.md) 聚合合并。
+> Layer 2 E1 SSOT 见新 Domain；本文件保留供追溯，W8 收尾删除。
+
 > Asset 生命周期 v0.6.1-alpha.4 限界上下文: 5 AssetKind (domain/workflow/stack/blueprint/roadmap) + Work Asset Mode (--type asset --asset-kind X) + Asset-Lifecycle (创建/演进/归档) + Asset-DAG (references 校验) + 三边界框架 (Domain 业务 / Workflow 执行 / Stack 实现) + Blueprint 组合模板
 
 ## Terms

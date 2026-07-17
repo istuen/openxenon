@@ -1,9 +1,9 @@
 # ADR 索引
 
-> **来源**：2026-07-04 docs-tmp-cleanup work 抽取 + 2026-07-09 doc-unify-layout 救援 + 2026-07-10 v0.6.1-alpha.4 ADR 追加 + 2026-07-12 三边界框架 ADR 追加
-> **总计**：50 条 ADR（来自 v0.0 ~ v0.6.1 共 9 个版本的讨论记录；另 8 条 0040-0047 已归档于 `2026-07-05-archive-0040-0047-memory-series-superseded.md`）
-> **位置**：`.openxenon/docs/adrs/`（对内-沉淀层，append-only）
-> **约定**：决策一旦记录不编辑不删除；被推翻时新 ADR 标记旧 ADR 为 Superseded
+> **来源**：2026-07-04 docs-tmp-cleanup work 抽取 + 2026-07-09 doc-unify-layout 救援 + 2026-07-10 v0.6.1-alpha.4 ADR 追加 + 2026-07-12 三边界框架 ADR 追加 + 2026-07-17 archive-mirror-structure Superseded 段抽出
+> **总计**：46 条活跃 ADR（来自 v0.0 ~ v0.7 共 9 个版本的讨论记录）+ **6 条 Superseded 已归档**（详见 `.archived/docs/adrs/`）+ 8 条 0040-0047 已归档于 `2026-07-05-archive-0040-0047-memory-series-superseded.md`
+> **位置**：`.openxenon/docs/adrs/`（对内-沉淀层，append-only）+ `.openxenon/.archived/docs/adrs/`（Superseded 历史归档）
+> **约定**：决策一旦记录不编辑不删除；被推翻时新 ADR 标记旧 ADR 为 Superseded；Superseded ADR 在 v0.6.1-alpha.4 起物理归档到 `.archived/`
 
 ## 状态图例
 
@@ -12,7 +12,32 @@
 | ✅ **Adopted** | 已落 SSOT + 代码 | 30 |
 | 🟡 **Partially Adopted** | 部分已落，部分待办 | 5 |
 | 💡 **Proposed** | 待 v0.7+ 落地 | 9 |
-| ⛔ **Superseded** | 被推翻但有史料价值 | 6 |
+| ⛔ **Superseded** | 被推翻（v0.6.1-alpha.4 起归档到 `.archived/docs/adrs/`） | 6 |
+
+## 已归档 Superseded (2026-07-17 archive-mirror-structure 抽出)
+
+| ADR | 标题 | 归档位置 |
+|---|---|---|
+| 0019 | Blueprint Type 范式 | [`.archived/docs/adrs/0019-blueprint-type-paradigm.md`](../../.archived/docs/adrs/0019-blueprint-type-paradigm.md) |
+| 0033 | IAP 对外命名分歧 | [`.archived/docs/adrs/0033-iap-public-naming-disagreement.md`](../../.archived/docs/adrs/0033-iap-public-naming-disagreement.md) |
+| 0034 | Work 前置精准阻断 vs Daemon 全局崩溃 | [`.archived/docs/adrs/0034-work-precise-block-not-daemon-cascade.md`](../../.archived/docs/adrs/0034-work-precise-block-not-daemon-cascade.md) |
+| 0036 | canonical.oxn 命名约定(已废除) | [`.archived/docs/adrs/0036-canonical-oxn-naming-superseded.md`](../../.archived/docs/adrs/0036-canonical-oxn-naming-superseded.md) |
+| 0048 | library/external Asset 子目录方案 | [`.archived/docs/adrs/0048-asset-library-external-scheme.md`](../../.archived/docs/adrs/0048-asset-library-external-scheme.md) |
+| 0053 | Superseded ADR-0048 墓碑 | [`.archived/docs/adrs/0053-superseded-0048-library-external-scheme.md`](../../.archived/docs/adrs/0053-superseded-0048-library-external-scheme.md) |
+
+> 物理归档约定:从 `.openxenon/docs/adrs/` mv 到 `.openxenon/.archived/docs/adrs/`,保留原文件名以维持编号可追溯。原 INDEX 描述(主题分类)已从本索引删除；新 ADR 引用 Superceded 决策时使用 `.archived/docs/adrs/00XX-*.md` 相对链接。
+
+## 主题分类索引
+> 仅含 46 条活跃 ADR；⛔ Superseded 已移至"已归档 Superseded"段。
+
+### 1. OXL / Blueprint 哲学（6 条活跃）
+
+| ADR | 标题 | 状态 |
+|---|---|---|
+| [0001](./0001-blueprint-props-funnel-effect.md) | Blueprint props 漏斗效应 + 三层默认值优先级 | ✅ Adopted |
+| [0002](./0002-probe-default-rules-five-level-priority.md) | Probe default 规则 + 五级参数优先级链 | ✅ Adopted |
+| [0003](./0003-runtime-isolation-frozen-naming.md) | 运行期隔离 + frozen 命名规则 | ✅ Adopted |
+| [0021](./0021-intent-align-observe-keyword-separation.md) | Intent / Align / Observe 四关键字分离 | ✅ Adopted |
 
 ## 主题分类索引
 
@@ -23,8 +48,6 @@
 | [0001](./0001-blueprint-props-funnel-effect.md) | Blueprint props 漏斗效应 + 三层默认值优先级 | ✅ Adopted |
 | [0002](./0002-probe-default-rules-five-level-priority.md) | Probe default 规则 + 五级参数优先级链 | ✅ Adopted |
 | [0003](./0003-runtime-isolation-frozen-naming.md) | 运行期隔离 + frozen 命名规则 | ✅ Adopted |
-| [0019](./0019-blueprint-type-paradigm.md) | Blueprint Type 范式（task/plan/explore） | ⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发） |
-| [0053](./0053-superseded-0048-library-external-scheme.md) | library/external Asset 类型收敛（Superseded ADR-0048） | ⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发） |
 | [0021](./0021-intent-align-observe-keyword-separation.md) | Intent / Align / Observe 四关键字分离 | ✅ Adopted |
 
 ### 2. Kernel / L0 边界（6 条）
@@ -47,7 +70,6 @@
 | [0022](./0022-guided-adaptive-unmanaged-ai-modes.md) | Guided / Adaptive / Unmanaged 三模式 AI 执行 | 💡 Proposed |
 | [0031](./0031-proof-notary-not-judge.md) | Proof = 公证人 ≠ 裁判 | ✅ Adopted |
 | [0032](./0032-pi-vs-opencode-selection.md) | Pi vs OpenCode 选型最终结论 | ✅ Adopted |
-| [0033](./0033-iap-public-naming-disagreement.md) | IAP 对外命名分歧（Intent/Align/Verify vs "出证明"） | ⛔ Superseded（由 v0.6.1 命名统一触发） |
 | [0057](./0057-trust-chain-core-model.md) | 信任链——OpenXenon 的核心模型（工程师↔OXN↔AI 三方拓扑） | ✅ Adopted |
 | [0058](./0058-minimum-trust-closure.md) | 最小信任闭环（v0.6.1 Scope = 四层确定性） | ✅ Adopted |
 
@@ -62,8 +84,6 @@
 | [0026](./0026-skill-three-partition-intent-align-proof.md) | Skills 三分（oxn-intent / oxn-align / oxn-proof） | 🟡 Partial |
 | [0027](./0027-domain-as-ssot-governance.md) | Domain 作为 SSOT 的工程化治理 | 🟡 Partial |
 | [0035](./0035-catalog-json-probe-excluded.md) | catalog.json + Probe-excluded 规则 | ✅ Adopted |
-| [0036](./0036-canonical-oxn-naming-superseded.md) | canonical.oxn 命名约定（已废除） | ⛔ Superseded（详见 v0.6.1 changelog） |
-| [0048](./0048-asset-library-external-scheme.md) | library/external Asset 子目录方案 | ⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发） |
 | [0049](./0049-work-context-md-replaces-memory.md) | Work Context .md 取代 Memory 层 | ✅ Adopted |
 | [0050](./0050-onboarding-via-starter-work.md) | 通过 Starter Work 引导新用户 | ✅ Adopted |
 | [0051](./0051-asset-paper-citation-network.md) | Asset Paper 引用/引用网络方案 | ✅ Adopted |
@@ -91,13 +111,20 @@
 | [0029](./0029-anchor-slot-doc-binding.md) | Anchor / Slot 文档绑定机制（待办） | 💡 Proposed |
 | [0030](./0030-term-cross-reference-upstream-dag.md) | `@term/X` 跨 term 寻址 + `@upstream` DAG（待办） | 💡 Proposed |
 
-### 7. 历史 / 命名（4 条）
+### 7. Domain 词汇架构（3 条）
+
+| ADR | 标题 | 状态 |
+|---|---|---|
+| [0059](./0059-domain-reference-model-v2.md) | Domain 引用模型 v2（references DAG + MD 链接代替 composes） | ✅ Adopted |
+| [0060](./0060-domain-vocabulary-boundary.md) | Domain 词汇边界（What/How 判据 + 引用规则） | ✅ Adopted |
+| [0052](./0052-langium-retirement-oxn-deprecation.md) | Langium 退役（作为 D2 实现词汇反复印证的案例） | ✅ Adopted |
+
+### 8. 历史 / 命名（4 条）
 
 | ADR | 标题 | 状态 |
 |---|---|---|
 | [0006](./0006-three-phase-model.md) | 三相模型（静态结构 → Loop → 静态产物） | 💡 Proposed |
 | [0007](./0007-loop-observation-three-dimensions.md) | Loop 行为观测三维度（命令 + 规则 + 重试） | 💡 Proposed |
-| [0034](./0034-work-precise-block-not-daemon-cascade.md) | Work 前置精准阻断 vs Daemon 全局崩溃 | ⛔ Superseded（由 v0.6 Daemon 重构触发） |
 | [0038](./0038-i18n-library-selection.md) | i18n 库选型（Paraglide vs typesafe-i18n vs i18next） | 🟡 Partial |
 | [0052](./0052-langium-retirement-oxn-deprecation.md) | Langium Retirement & .oxn Deprecation | ✅ Adopted |
 

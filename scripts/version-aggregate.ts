@@ -83,8 +83,8 @@ export function aggregateChangelog(options: AggregateOptions = {}): AggregatedCh
 
   for (const filePath of allFiles) {
     if (!filePath.endsWith('.md')) continue
-    // 跳过 _archive 目录
-    if (filePath.includes('/_archive/')) {
+    // 跳过 _archive 与 .archived 目录
+    if (filePath.includes('/_archive/') || filePath.includes('/.archived/')) {
       skipped.push({ path: filePath, reason: 'archived' })
       continue
     }

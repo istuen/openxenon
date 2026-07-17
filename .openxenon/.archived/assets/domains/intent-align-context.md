@@ -8,6 +8,10 @@ synced-at: 2026-07-08T13:52:19.211Z
 
 # Domain: IntentAlignContext
 
+> **🔁 迁移公告（v0.7 RFC W5）**：本 Domain 已被
+> [`oxn-work-domain`](./oxn-work-domain.md) 与 [`oxn-proof-domain`](./oxn-proof-domain.md)
+> 拆分聚合。本文件保留供追溯，W8 收尾删除。
+
 > IAP 范式限界上下文：定义 Intent / Align / Proof 三轴的主导权分离、跨轴生产权链、Proof 不可绕过的硬约束
 
 ## Terms

@@ -8,6 +8,10 @@ synced-at: 2026-07-08T13:52:19.205Z
 
 # Domain: PoolContext
 
+> **🔁 迁移公告（v0.7 RFC W7）**：本 Domain 已被
+> [`oxn-insight-domain`](./oxn-insight-domain.md) 聚合合并。
+> Layer 2 E4 SSOT 见新 Domain；本文件保留供追溯，W8 收尾删除。
+
 > Intent Pool v3 限界上下文: 5 类池 (research/design/issue/audit/journal) + pool-writer + heading-skeleton + forges/ 弃用迁移
 
 ## Terms

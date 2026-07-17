@@ -1,5 +1,5 @@
 /**
- * Asset module — delete use case (v0.6.1-alpha.1 Asset Lifecycle 闭环)
+ * Asset module — delete use case (v0.6.1-alpha.4 Asset Lifecycle 闭环)
  *
  * 硬删除 Asset（不归档，不可恢复，除非 git history）：
  * 1. 校验无引用（拒绝被引用资产删除）

@@ -8,6 +8,10 @@ synced-at: 2026-07-08T13:52:19.212Z
 
 # Domain: ProofDomain
 
+> **🔁 迁移公告（v0.7 RFC W6）**：本 Domain 已被
+> [`oxn-proof-domain`](./oxn-proof-domain.md) 聚合合并。
+> Layer 2 E3 SSOT 见新 Domain；本文件保留供追溯，W8 收尾删除。
+
 > Proof 轴统一词汇：Builtin 资产 (@oxn 探针/零件) + Core Engine Runtime 模块 (Kernel/Infra/Daemon) + 判决书 (frozen.json) 的合并域；IAPError 11 错误码字典在 iap-error-context.oxn 独立维护
 
 ## Terms

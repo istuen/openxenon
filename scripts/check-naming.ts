@@ -139,8 +139,8 @@ function checkFileName(fileName: string, fullPath: string): NamingIssue[] {
     return [] // OK
   }
 
-  // 2. DEPRECATED 文档（必须在 _archive/ 目录）
-  if (fullPath.includes('/_archive/') && fileName.endsWith('-deprecated.md')) {
+  // 2. DEPRECATED 文档（必须在 _archive/ 或 .openxenon/.archived/ 目录）
+  if ((fullPath.includes('/_archive/') || fullPath.includes('/.archived/')) && fileName.endsWith('-deprecated.md')) {
     return [] // OK
   }
 

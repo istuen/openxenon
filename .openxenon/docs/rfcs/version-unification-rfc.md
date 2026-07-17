@@ -13,7 +13,7 @@
 
 ### 0.1 版本冲突
 
-v0.6.x observability 路线图（`.openxenon/docs/rfcs/_archive/v0.6.x-roadmap-rfc.md`，✅ Approved 2026-07-01）规划了 5 个 release：
+v0.6.x observability 路线图（`.openxenon/.archived/docs/rfcs/v0.6.x-roadmap-rfc.md`，✅ Approved 2026-07-01）规划了 5 个 release：
 
 | 路线图规划 | 主题 |
 |---|---|
@@ -390,7 +390,7 @@ v0.8 外部信息流在 v0.6.1 信任链基础上构建——External inline 基
 
 | # | 文档 | 操作 | 状态 |
 |---|---|---|---|
-| 1 | `.openxenon/docs/rfcs/_archive/v0.6.x-roadmap-rfc.md` | 头部标记 Superseded | ✅ 已执行 |
+| 1 | `.openxenon/.archived/docs/rfcs/v0.6.x-roadmap-rfc.md` | 头部标记 Superseded | ✅ 已执行 |
 | 2 | `.openxenon/pools/drafts/v0.6.x-observability-roadmap-sprint-plan.md` | 头部标记 Superseded | ✅ 已执行 |
 | 3 | `.openxenon/pools/drafts/v0.6.x-observability-roadmap-changelog.md` | 头部标记 Superseded | ✅ 已执行 |
 
@@ -471,7 +471,7 @@ v0.8 外部信息流在 v0.6.1 信任链基础上构建——External inline 基
 
 ## 参考
 
-- [v0.6.x Roadmap RFC（已被 Superseded）](../../docs/rfcs/_archive/v0.6.x-roadmap-rfc.md)
+- [v0.6.x Roadmap RFC（已被 Superseded）](../../../.archived/docs/rfcs/v0.6.x-roadmap-rfc.md)
 - [三边界框架 RFC](./three-boundary-blueprint-elevation-rfc.md)
 - [v0.7+ Roadmap Overview](./v0.7-plus-roadmap-overview.md)
 - [ADR-0019 Blueprint Type 范式（已被 Superseded）](../../docs/adrs/0019-blueprint-type-paradigm.md)

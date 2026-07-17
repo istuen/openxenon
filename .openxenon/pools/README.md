@@ -24,20 +24,25 @@ pools/drafts/xxx-draft.md（散落，无格式）
 .openxenon/docs/adrs/00XX-xxx.md（append-only）
 ```
 
-## 当前状态（2026-07-15 pools 审计后）
+## 当前状态（2026-07-17 archive-mirror-structure 后）
 
 | 目录 | 当前内容数 | 备注 |
 |---|---|---|
-| `drafts/` | 3 个活跃 + 53 归档（v0.7+/superceded 类） | 见 `drafts/_archive/` |
+| `drafts/` | 6 个活跃 | 53 篇历史 drafts 已迁 `.archived/pools/drafts/`(含 `2026-06/` 月份目录) |
 | `issues/` | 3 个 | ISS-001/002/003 全部 ✅ Fixed 并已关闭 |
-| `journals/` | 2 个活跃 + 3 归档（v0.3 时代 forges/ 路径全失效） | 见 `journals/_archive/` |
-| `spikes/` | 1 个（probe-converge，从 drafts/_archive/2026-06/ 修复归位） | 历史 spike |
+| `journals/` | 2 个活跃 | 4 篇历史 journals 已迁 `.archived/pools/journals/` |
+| `spikes/` | 1 个（probe-converge，从 `.archived/pools/drafts/2026-06/` 修复归位） | 历史 spike |
 
 **pools-audit-D4（2026-07-15）** 已完成：
 - A：53 篇 drafts/_archive + 2 篇 rfcs/_archive + 1 篇 docs/_archive 提交归档
 - B：ISS-002 重写为 ✅ Fixed（依据 commit `140f9f5` 重新审计 L0→L3 反向依赖已消除）
 - C：3 篇 v0.3 journals 移入 `journals/_archive/`
 - D：spikes/ 双层目录错位（`spikes/spikes/probe-converge/`）修复为单层 + 归位顶层
+
+**archive-mirror-structure（2026-07-17）** 已完成：
+- 把 D4 的 4 处 `_archive/` 子目录彻底清空迁移到 `.archived/pools/{drafts,journals}/`(共 57 篇)
+- `.archived/pools/` 镜像 active 结构:空目录占位 `issues/` + `spikes/`
+- 后续历史文档归档统一走 `.archived/`,不再用 `_archive/` 内嵌
 
 ## 约定
 

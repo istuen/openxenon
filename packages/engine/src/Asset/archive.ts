@@ -1,10 +1,10 @@
 /**
- * Asset module — archive use case (v0.6.1-alpha.1 Asset Lifecycle 闭环)
+ * Asset module — archive use case (v0.6.1-alpha.4 Asset Lifecycle 闭环)
  *
  * 归档 Asset：
  * 1. 读 Asset .md
  * 2. 校验无引用（孤儿才允许归档，被引用 → IAPError YIELD_TO_HUMAN）
- * 3. mv .md → .openxenon/.archived/<kind>/X.md
+ * 3. mv .md → .openxenon/.archived/assets/<kind>s/X.md
  * 4. 写 metadata.json 记录归档原因 + 时间 + 引用方（应为空）
  * 5. planLock 仍可查（只读 — 归档资产不允许 run，但 planLock 卡片保留供审计）
  *

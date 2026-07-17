@@ -8,6 +8,10 @@ synced-at: 2026-07-08T13:52:19.206Z
 
 # Domain: TaintContext
 
+> **🔁 迁移公告（v0.7 RFC W6）**：本 Domain 已被
+> [`oxn-proof-domain`](./oxn-proof-domain.md) 聚合合并（Taint 完整体系）。
+> Layer 2 E3 SSOT 见新 Domain；本文件保留供追溯，W8 收尾删除。
+
 > Probe Signal Taint v2 限界上下文: 12 项信号污损标记 + 3 IO 原语 + ProviderRegistry + 沙箱验证 + Daemon 冷加载
 
 ## Terms

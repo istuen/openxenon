@@ -8,6 +8,10 @@ synced-at: 2026-07-08T13:52:19.208Z
 
 # Domain: AlignDomain
 
+> **🔁 迁移公告（v0.7 RFC W5）**：本 Domain 已被
+> [`oxn-work-domain`](./oxn-work-domain.md) 聚合合并。
+> Layer 2 E2 SSOT 见新 Domain；本文件保留供追溯，W8 收尾删除。
+
 > Align 轴统一词汇 v1.1：Work 沙盒生命周期 + Skill 项目级编译分发 + IAP Align 段（Slot/Part/Probe/RefPool）的合并域；含 v1.1 lock 边界守卫术语（BirthCert/PlanLock/AssetHash）
 
 ## Terms

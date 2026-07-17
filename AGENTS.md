@@ -1,6 +1,6 @@
 # AGENTS.md
 
-OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 Langium 的 OXN DSL。包管理器为 **Bun**（锁文件 `bun.lock`）。仓库本地的 OpenCode 技能（v0.6.1 起共 2 个 Skill：`oxn-asset` 管 Asset 生命周期、`oxn-work` 管 Work 编排与执行；源在 `packages/cli/src/skills/locales/`，编译产物到 `.opencode/skills/`，不 git 追踪）与 opsx 命令（`.opencode/command/opsx-*.md`）属于工作流的一部分。
+OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 **md-pipeline** 的 OXN DSL（v0.7 起纯 MD，Langium 已退役，见 ADR-0052）。包管理器为 **Bun**（锁文件 `bun.lock`）。仓库本地的 OpenCode 技能（v0.6.1 起共 2 个 Skill：`oxn-asset` 管 Asset 生命周期、`oxn-work` 管 Work 编排与执行；源在 `packages/cli/src/skills/locales/`，编译产物到 `.opencode/skills/`，不 git 追踪）与 opsx 命令（`.opencode/command/opsx-*.md`）属于工作流的一部分。
 
 **v0.6 架构重构**：OXN 从"IAP 三轴叙事"重构为"E1-E4 四结构实体 + L0-L3 工程分层"双层叙事。代码从 `src/` 单包拆为 `packages/cli` + `packages/engine` 双包 Monorepo——CLI 是薄组合调用层，Engine 承载全部业务实现（L2 `` DDD 模块化：`Asset/Intent/Align/Proof/Insight/Pool` + `daemon.ts`）。详见 [v0.6 RFC + Monorepo + Service 设计](.openxenon/pools/sprints/v0.6-iap-refactor/design/) 与 [changelog](.changes/0-6-0-iap-refactor.md)。
 
@@ -24,7 +24,7 @@ OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemo
 | L1-OXL | `packages/engine/src/oxl/` | L0-Processor、L2、L3 |
 | L2-Builtin | `src/builtin/`（残留，待迁入 engine） | L2-Work、L3 |
 | L2-Work | `packages/engine/src/{Work,Asset,Intent,Align,Proof,Insight,Pool}/` | L3 |
-| L3 | `packages/cli/src/{commands,skills}/` + `src/{daemon,watcher}/`（残留）+ `packages/engine/src/daemon.ts` | — |
+| L3 | `packages/cli/src/{commands,skills}/` + `src/{daemon,watcher}/`（残留，待迁入 packages/engine）+ `packages/engine/src/daemon.ts`（待迁移，目前 daemon 物理在根 src/daemon/） | — |
 
 ESLint 还阻止的相邻关系：`kernel↔infra`、`daemon↔cli`（仅 socket 通信）、`cli↔daemon`（仅 socket 通信）、`infra↔{daemon,cli}`，`daemon` 不允许直接 `import fs`（必须走 Infra）。`__tests__/` 下的测试文件在依赖脚本中豁免（参见 `isInTestsDirectory`）。
 
@@ -139,7 +139,7 @@ pools/drafts/xxx-draft.md（散落，无格式）
 - **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/{domains,blueprints,stack,roadmaps}/`（E1 Asset 边界，工程师维护，冻结后不可变，默认 gitignore 工程师按需 opt-in tracked）；`docs/{adrs,rfcs}/`（对内-沉淀，tracked）；`pools/{drafts,issues,journals,spikes}/`（对内-探索，tracked）；运行时产物 `works/ proofs/ .cache/ issues/` 已 gitignore。
 - IAP 资产：`.openxenon/assets/{domains,blueprints,stack}/`（v0.7.0 布局，业务声明 + AI 创作模板，`.md` 格式）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
 - AI 可见的权威文档：`docs/zh-cn/index.md`（入口）、`docs/zh-cn/core-concepts.md`（IAP 范式）、`docs/zh-cn/insight.md`（Insight 层）、`docs/zh-cn/work.md`（Work 核心）、`docs/zh-cn/proof.md`（Proof 轴）、`docs/zh-cn/cli.md`（CLI 参考）、`docs/zh-cn/architecture.md`（架构）。
-- ADR 索引：`.openxenon/docs/adrs/INDEX.md`（45 条架构决策记录，append-only）。
+- ADR 索引：`.openxenon/docs/adrs/INDEX.md`（46 条活跃 + 6 条 Superseded 归档于 `.archived/docs/adrs/`,append-only）。
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
