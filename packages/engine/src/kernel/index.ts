@@ -38,6 +38,7 @@ export type {
   ProbeStrategy,
   ProbeVerdict,
   ProbeDefinition,
+  StackToolInfo,
 } from './contracts/probe-port'
 
 // ───────── 协议层：错误契约（IAP 范式异常体系）─────────

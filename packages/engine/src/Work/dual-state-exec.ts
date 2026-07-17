@@ -35,9 +35,10 @@ import {
   saveTaskState,
   saveWorkState,
 } from './dual-state-io'
-import { IAPError, IAPAction, type IAPAxis } from '@openxenon/engine/kernel'
+import { IAPError, IAPAction, type IAPAxis, type StackToolInfo } from '@openxenon/engine/kernel'
 import { readTaskFile } from '@openxenon/engine/oxl/summary-extractors'
 import { executeProbe, type ProofProbeIR } from '@openxenon/engine/Proof/runner'
+import { buildWorkContext } from './work-context-builder'
 
 // =============================================================================
 // 错误码 (v1.1 fix-p1-architecture: 走 IAPError 双轨制, 不再自定义 class)
@@ -359,6 +360,23 @@ export async function submitTaskWithProbes(params: SubmitTaskParams): Promise<Su
     return base // 无真实 probe → 退回合成行为
   }
 
+  // 🆕 v0.7.3 P6 (ADR-0061 §D5): 从 work-context 加载 stackTools 透传给 ProbeRunner
+  //   - lock 前/老 Work / 无 Blueprint → 退回 undefined（向后兼容）
+  //   - work-context-builder 内部已处理 lock hash drift
+  let stackTools: StackToolInfo[] | undefined
+  try {
+    const ctx = buildWorkContext({
+      projectRoot: params.projectRoot,
+      workName: params.workName,
+      taskName: params.taskName,
+      assetFormat: 'md', // v0.7.3 默认 .md（向后兼容）
+      lockCheck: false, // submit 流程不阻塞 lock 检查（前面已 verifyPlanLock 过）
+    })
+    stackTools = ctx.stackTools
+  } catch {
+    stackTools = undefined // 兼容 lock hash drift / 老 Work 缺 blueprints.json
+  }
+
   // 3. 并发执行所有真实 probe
   const realResults = await Promise.all(
     decls.map(async (d) => {
@@ -367,7 +385,10 @@ export async function submitTaskWithProbes(params: SubmitTaskParams): Promise<Su
         ref: d.ref ?? `@oxn/probes/${d.name}`,
         params: d.params ?? {},
       }
-      const r = await executeProbe(ir, { projectRoot: params.projectRoot })
+      const r = await executeProbe(ir, {
+        projectRoot: params.projectRoot,
+        ...(stackTools ? { stackTools } : {}),
+      })
       return {
         probe: d.name,
         passed: r.passed,

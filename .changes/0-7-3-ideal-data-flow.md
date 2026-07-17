@@ -8,17 +8,18 @@ adr:
   - .openxenon/docs/adrs/0061-data-flow-contract.md
 ---
 
-# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1）
+# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1）
 
-> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1** 落地：
+> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1** 落地：
 > P0 = ADR-0061 立法 + RFC 定稿；
 > P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）；
 > P2 = readDomainFile regex → mdast 切换，修 ## Terms: 后缀 + multiline - desc: | 两个 parser bug；
 > P3 = D1 + D2 多视角 term 视图（Task 多 Domain 主/背景视角 + 块状渲染 + token 预算缓解）；
 > P4 = D3 Boundary.observe 与 Task.probes lock 期 hard-check（F4 part 1 + D3）；
 > P5 = D4 Workflow.slot DAG 与 Task.deps DAG 闭包校验（F4 part 2 + D4）；
-> P6-P8 渐进落地（Stack 注入 + deprecation warn + ADR 状态更新）
-> 将在后续 beta.1 / GA 各 changelog 记录。
+> P6 = D5 Stack.tools 注入 Probe runtime（F4 part 3 + D5）；
+> P7-P8 渐进落地（deprecation warn + ADR 状态更新）
+> 将在后续 GA 各 changelog 记录。
 
 ## P0 核心交付
 
@@ -53,6 +54,7 @@ adr:
 | P3 | Task 多 Domain 主/背景视角注入；`## Allowed Language` 渲染格式升级 | v0.7.3-alpha.3 | ✅ 已落 |
 | P4 | Boundary.observe 与 Task.probes lock 期校验 | v0.7.3-alpha.3 | ✅ 已落 |
 | P5 | Workflow slot DAG 与 Task deps DAG 闭包校验 | v0.7.3-beta.1 | ✅ 已落 |
+| P6 | Stack.tools 注入 Probe runtime | v0.7.3-beta.1 | ✅ 已落 |
 | P5 | Workflow.slot DAG 与 Task.deps DAG 闭包校验 | v0.7.3-beta.1 | ⏳ 待启动 |
 | P6 | Stack.tools 注入 ProbeRunner | v0.7.3-beta.1 | ⏳ 待启动 |
 | P7 | Work `## Refs` 旧 `kind: domain` deprecation warn | v0.7.3 | ⏳ 待启动 |
@@ -280,6 +282,44 @@ Terms (must use): Asset, AssetKind, AssetMode, ...
 - 真实场景：当前 9 tasks deps 全在 slot 闭包 → validate 通过；lock 成功
 - **escape hatch E2E**：同样违规 deps + `--skip-workflow-dag-check` flag → validate OK
 - 修复 pre-existing bug：`p0-rfc-finalize` 原 `deps: [compass]` 是 P5 之前漏掉的 DAG 违规（compass 是 design 的下游，违反闭包），P5 落地时同步修正为 `deps: []`
+
+## P6 beta.1 核心交付
+
+### 决策落地（ADR-0061 §D5）
+
+**D5 - Stack.tools 注入 Probe runtime（采纳 a）**：
+- `work-context-builder` 从 `Blueprint.use.stack` 加载 Stack .md → 提取 tools
+- 注入到 `WorkContextResult.stackTools` (类型：Kernel.StackToolInfo[])
+- `ProofRunner.executeProbe` 透传 `stackTools` 到 `ProbeContext.stackTools`
+- `submitTaskWithProbes` 内部加载 stackTools（向后兼容：lock 前/老 Work 退回 undefined）
+- renderContextHuman 展示 stackTools 列表（CLI + engine 双向对齐）
+- 决策边界（P6 不引入）：
+  - 不改 L1 probe handlers 行为（shell-exec / lint-check / ts-compiles 仅 data plumbing）
+  - 不引入新 hash 字段（PlanLock 4 组件公式不变）
+  - 不改 stack .md schema（仍 version / command / config / role / desc 5 字段）
+
+### 代码改动
+
+| 文件 | 内容 |
+|---|---|
+| `packages/engine/src/kernel/contracts/probe-port.ts` | + `StackToolInfo` interface（name + version/command/config/role/desc 可选）；`ProbeContextBase.stackTools?: StackToolInfo[]` |
+| `packages/engine/src/kernel/index.ts` | re-export `StackToolInfo` |
+| `packages/engine/src/Work/work-context-builder.ts` | + `loadStackToolsFromBlueprint` + private `parseStackTools` 轻量版解析器；`WorkContextResult.stackTools?`；task-level / work-level branch 都注入；renderContextHuman 加 `## Stack Tools` 块 |
+| `packages/engine/src/Proof/runner.ts` | `executeProbe` 把 `context.stackTools` 透传到 `ProbeContext.stackTools`（length>0 才注入，避免空 entry） |
+| `packages/engine/src/Work/dual-state-exec.ts` | `submitTaskWithProbes` 内部 `buildWorkContext(lockCheck=false)` 加载 stackTools；try-catch 兜底（lock hash drift / 老 Work → undefined） |
+| `packages/cli/src/commands/work.ts` | CLI mirror 加 stackTools 字段（task-level + work-level branch）+ renderContextHuman 加 `## Stack Tools` 块 |
+| `packages/engine/src/Work/__tests__/work-context-builder.test.ts` | + 9 测试（loadStackToolsFromBlueprint × 5：解析 / 文件缺失 / 无 stackRefs / parse 失败 / 多 BP 去重；buildWorkContext × 4：含 stackTools / 渲染 / 无 stack → 省略 / 无 stackRefs → 省略）|
+| `packages/engine/src/Proof/__tests__/runner.test.ts`（新建）| + 4 测试（stackTools 透传 / 缺省 undefined / 空数组不注入 / projectRoot 同步）|
+
+### 验收门槛
+
+- `bun test`：**1611 pass / 3 skip / 0 fail**（+13 新测试）
+- `bun run typecheck`：全绿
+- `bun run lint`：全绿
+- `bun scripts/validate-dependencies.ts`：violations=0
+- E2E：`oxn work context v073-ideal-data-flow --task p0-rfc-finalize --context-mode full` → 输出含 `## Stack Tools (8)`（bun / typescript / eslint / biome / bun-test / vitepress / lefthook / validate-deps）
+- E2E JSON：`oxn work context ... --json` → data.stackTools 数组长度=8，每项含 name + version + command + config + role
+- 端到端：mock probe handler 在 ProofRunner 测试中收到完整 stackTools（ctx.stackTools.length=2）
 
 ## 验收门槛
 

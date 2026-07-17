@@ -39,6 +39,32 @@ export interface ProbeVerdict {
 
 export interface ProbeContextBase {
   projectRoot: string
+  /** 🆕 v0.7.3 P6 (ADR-0061 §D5): Stack tools runtime injection
+   *   - work-context-builder 从 Blueprint.use.stack 加载
+   *   - ProbeRunner 透传到 ProbeContext
+   *   - L1 probe handlers 可读取 stackTools 按 tool.name 匹配派生 env 元数据
+   *     (version / command / config / role)
+   *   - 缺省 undefined（无 Stack 注入场景）
+   */
+  stackTools?: StackToolInfo[]
+}
+
+/**
+ * 🆕 v0.7.3 P6 (RFC v0.7.3 §2.3 + ADR-0061 §D5):
+ * Stack tool 的最小可消费快照。从 .md Stack 文件的 `### tool-name` 段提取的 key-value props。
+ *
+ * 设计要点：
+ *   - 定义在 L0-Contract（Kernel），L0-Processor / L1 / L2 / L3 都可 import
+ *   - L0 不依赖 L2 Stack Asset —— 此处只是数据契约，不引入 Asset 层实体
+ *   - Probe handler 可按 `tool.name` 匹配（如 'bun' / 'typescript'）做 merge
+ */
+export interface StackToolInfo {
+  name: string
+  version?: string
+  command?: string
+  config?: string
+  role?: string
+  desc?: string
 }
 
 export interface ProbeDefinition {

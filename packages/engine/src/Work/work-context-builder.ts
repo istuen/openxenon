@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { BOUNDARY_DIR } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, type StackToolInfo } from '@openxenon/engine/kernel'
 import {
   type WorkFileSummary,
   type DomainFileSummary,
@@ -149,6 +149,13 @@ export interface WorkContextResult {
   blueprintIR?: BlueprintIRSummary
   /** 🆕 v0.7.3 P1 (F2 fix): Blueprint 边界 Domain 的 language 注入（D1+D2 主/背景视角的预备） */
   domainLanguages?: DomainLanguageEntry[]
+  /** 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5): Blueprint.use.stack 加载的 StackTool 列表
+   *   - 来源：Blueprint.stackRefs[].name → 解析 .openxenon/assets/stack/<name>.md
+   *   - 形状：每项 { name, version?, command?, config?, role?, desc? }
+   *   - 消费者：ProofRunner.executeProbe 透传给 ProbeContext.stackTools
+   *   - L1 probe handlers 可按 tool.name 匹配做 env metadata merge
+   */
+  stackTools?: StackToolInfo[]
 }
 
 /**
@@ -272,6 +279,86 @@ export function findBoundaryAssetFile(
     }
   }
   return null
+}
+
+/**
+ * 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5):
+ * 从 Blueprint.stackRefs[] 加载 Stack 文件并提取 tools。
+ *   - 解析 .md → 提取 H3 under `## Tools` 段的 key-value props
+ *   - 字段映射：version / command / config / role / desc
+ *   - 文件不存在 / 解析失败 → 跳过该 entry（drift 由 birth-cert 承担）
+ *   - 同名 Stack 时按 Blueprint 顺序去重（first wins）
+ */
+export function loadStackToolsFromBlueprint(blueprintIR: BlueprintIRSummary, projectRoot: string): StackToolInfo[] {
+  const out: StackToolInfo[] = []
+  const seen = new Set<string>()
+  for (const bp of blueprintIR.blueprints) {
+    for (const ref of bp.stackRefs) {
+      if (seen.has(ref.name)) continue
+      seen.add(ref.name)
+      const filePath = findBoundaryAssetFile(projectRoot, 'stack', ref.name)
+      if (!filePath) continue
+      const tools = parseStackTools(filePath)
+      if (tools) out.push(...tools)
+    }
+  }
+  return out
+}
+
+/**
+ * 🆕 v0.7.3 P6 helper: 解析 Stack .md 文件的 `## Tools` 段为 StackToolInfo[]
+ *   - 与 stack-compiler.ts:148-191 parse() 行为一致（轻量版，避免 import L1-OXL）
+ *   - 返回 null 表示解析失败（drift 由 caller 决定如何处理）
+ */
+function parseStackTools(filePath: string): StackToolInfo[] | null {
+  if (!existsSync(filePath)) return null
+  let content: string
+  try {
+    content = readFileSync(filePath, 'utf-8')
+  } catch {
+    return null
+  }
+  const parsed = parseMarkdown(content)
+  const lines = content.split('\n')
+  const out: StackToolInfo[] = []
+  let currentTool: StackToolInfo | null = null
+
+  for (const line of lines) {
+    // H3 tool 段开始（### bun / ### typescript / ...）
+    const h3 = line.match(/^###\s+(\S+)\s*$/)
+    if (h3) {
+      if (currentTool) out.push(currentTool)
+      currentTool = { name: h3[1]! }
+      continue
+    }
+    if (!currentTool) continue
+    // 跳过 H2 边界（## Tools → 下一段）
+    if (line.match(/^##\s+/)) {
+      // 新的 H2 段可能仍在当前 tool 下；不要 reset，让后续 ### 重置
+      continue
+    }
+    // 解析 `- key: value`
+    const li = line.match(/^\s*-\s+(\w[\w-]*)\s*:\s*(.*)$/)
+    if (!li) continue
+    const key = li[1]!.toLowerCase()
+    let value = li[2]!.trim()
+    // 去除尾随注释（如 "bun.lock（权威锁文件）" → "bun.lock" + desc="权威锁文件"）
+    const descIdx = value.search(/[（(]/)
+    if (descIdx >= 0) {
+      // 保留 desc 作为父字段（不拆分到子字段）；Stack tool 只关心 5 个字段
+      value = value.slice(0, descIdx).trim()
+    }
+    if (key === 'version') currentTool.version = value
+    else if (key === 'command') currentTool.command = value
+    else if (key === 'config') currentTool.config = value
+    else if (key === 'role') currentTool.role = value
+    else if (key === 'desc') currentTool.desc = value
+    // 其他 key 暂忽略（如 abstract 等）
+  }
+  if (currentTool) out.push(currentTool)
+  // 防止 unused 警告
+  void parsed
+  return out
 }
 
 /**
@@ -465,6 +552,7 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     let termViews: TermView[] = []
     let backgroundDomainNames: string[] = []
     let mainLang: NonNullable<DomainFileSummary>['language'] | null = null
+    let stackTools: StackToolInfo[] = []
 
     if (contextMode === 'full') {
       // main language 从已加载的 injectedDomains[0] 取
@@ -497,6 +585,9 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
       const result = buildTermViews(mainLang, backgrounds, { maxBackgroundFull: 3 })
       termViews = result.termViews
       backgroundDomainNames = result.backgroundDomains
+
+      // 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5): 加载 StackTool 列表
+      stackTools = blueprintIR ? loadStackToolsFromBlueprint(blueprintIR, root) : []
     }
 
     const allowedTerms: Array<{ name: string; desc: string }> = []
@@ -569,6 +660,7 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
       isolationNotice: 'Work context is isolated — task-level view only',
       lockHealth: { status: 'unknown' },
       diagnostics,
+      ...(stackTools.length > 0 ? { stackTools } : {}),
     }
 
     return context
@@ -601,6 +693,11 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
   //   - Domain 文件找不到 / hash 不一致 → 跳过该条目
   const domainLanguages = blueprintIR ? loadDomainLanguagesFromBlueprint(blueprintIR, root) : []
 
+  // 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5): 从 Blueprint.use.stack 加载 StackTool 列表
+  //   - 注入到 WorkContextResult.stackTools（ProofRunner 透传给 ProbeContext）
+  //   - Stack 文件找不到 → 跳过该 entry
+  const stackTools = blueprintIR ? loadStackToolsFromBlueprint(blueprintIR, root) : []
+
   return {
     workspace: workName,
     workContext: {
@@ -618,6 +715,7 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     ...(domainExternals.length > 0 ? { domainExternals } : {}),
     ...(blueprintIR ? { blueprintIR } : {}),
     ...(domainLanguages.length > 0 ? { domainLanguages } : {}),
+    ...(stackTools.length > 0 ? { stackTools } : {}),
   }
 }
 
@@ -653,6 +751,8 @@ export function renderContextHuman(c: {
   probes?: unknown[]
   tasks?: unknown[]
   domainExternals?: Array<{ domainName: string; externals: ExternalEntry[] }>
+  /** 🆕 v0.7.3 P6 (ADR-0061 §D5): Stack tools 列表 */
+  stackTools?: Array<{ name: string; version?: string; command?: string; config?: string; role?: string }>
 }): string {
   const lines: string[] = []
   lines.push(`# Context for ${c.workspace}${c.task ? ` / ${c.task}` : ''}`)
@@ -779,6 +879,21 @@ export function renderContextHuman(c: {
     lines.push(`## Diagnostics (${c.diagnostics.length} unresolved ref(s))`)
     for (const d of c.diagnostics) {
       lines.push(`  - [${d.type}] ${d.ref}: ${d.message}`)
+    }
+  }
+  // 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5): Stack tools 列表
+  if (c.stackTools && c.stackTools.length > 0) {
+    lines.push('')
+    lines.push(`## Stack Tools (${c.stackTools.length})`)
+    lines.push('> Probe runtime metadata; merge into ProbeContext.stackTools for env injection.')
+    for (const t of c.stackTools) {
+      const meta: string[] = []
+      if (t.version) meta.push(`v=${t.version}`)
+      if (t.command) meta.push(`cmd=${t.command}`)
+      if (t.config) meta.push(`config=${t.config}`)
+      if (t.role) meta.push(`role=${t.role}`)
+      const tag = meta.length > 0 ? ` (${meta.join(' | ')})` : ''
+      lines.push(`  - ${t.name}${tag}`)
     }
   }
   return lines.join('\n')

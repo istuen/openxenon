@@ -70,11 +70,13 @@ import {
   loadPerWorkBlueprints,
   summarizeBlueprints,
   loadDomainLanguagesFromBlueprint,
+  loadStackToolsFromBlueprint,
   buildTermViews,
   partitionBackgroundDomains,
   findBoundaryAssetFile,
   type TermView,
 } from '@openxenon/engine/Work/work-context-builder'
+import type { StackToolInfo } from '@openxenon/engine/kernel'
 import { buildBlueprintDiagnostic, type RefDiagnostic } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import {
   applyPlanLock,
@@ -2279,6 +2281,7 @@ const contextSubcommand = defineCommand({
       // 🆕 v0.7.3 P3: full mode 加载 background Domain languages + 聚合 termViews
       let termViews: TermView[] = []
       let backgroundDomainNames: string[] = []
+      let stackTools: StackToolInfo[] = [] // 🆕 v0.7.3 P6 (ADR-0061 §D5)
       const mainLang = injectedDomains[0]?.data.language ?? null
 
       if (contextMode === 'full') {
@@ -2304,6 +2307,9 @@ const contextSubcommand = defineCommand({
         const result = buildTermViews(mainLang, backgrounds, { maxBackgroundFull: 3 })
         termViews = result.termViews
         backgroundDomainNames = result.backgroundDomains
+
+        // 🆕 v0.7.3 P6 (ADR-0061 §D5): 加载 StackTool 列表（CLI mirror 与 engine 对齐）
+        stackTools = blueprintIR ? loadStackToolsFromBlueprint(blueprintIR, root) : []
       }
 
       const allowedTerms: Array<{ name: string; desc: string }> = []
@@ -2390,6 +2396,7 @@ const contextSubcommand = defineCommand({
               }
             : { status: 'unknown' },
         diagnostics,
+        ...(stackTools && stackTools.length > 0 ? { stackTools } : {}),
       }
 
       if (emitMdPath) {
@@ -2431,6 +2438,9 @@ const contextSubcommand = defineCommand({
     // 🆕 v0.7.3 P1 (F2 fix): from Blueprint boundary refs load Domain languages
     const domainLanguages = blueprintIR ? loadDomainLanguagesFromBlueprint(blueprintIR, root) : []
 
+    // 🆕 v0.7.3 P6 (ADR-0061 §D5): from Blueprint.use.stack load StackTool 列表
+    const stackTools = blueprintIR ? loadStackToolsFromBlueprint(blueprintIR, root) : []
+
     const externalsHuman =
       domainExternals.length > 0
         ? `\n  External References (read during Intent):\n${domainExternals
@@ -2462,6 +2472,7 @@ const contextSubcommand = defineCommand({
           ...(domainExternals.length > 0 ? { domainExternals } : {}),
           ...(blueprintIR ? { blueprintIR } : {}),
           ...(domainLanguages.length > 0 ? { domainLanguages } : {}),
+          ...(stackTools.length > 0 ? { stackTools } : {}),
         },
         human: `Work ${workName} (no --task specified, returning workspace-level context)
   Domains:    ${work.domains.map((d) => d.name).join(', ')}
@@ -2500,6 +2511,8 @@ function renderContextHuman(c: {
   }
   taskParts: Array<{ name: string; skillContext?: string; probes: Array<{ name: string; ref: string }> }>
   isolationNotice: string
+  /** 🆕 v0.7.3 P6 (ADR-0061 §D5): Stack tools 列表（CLI mirror 与 engine 对齐） */
+  stackTools?: Array<{ name: string; version?: string; command?: string; config?: string; role?: string }>
 }): string {
   const lines: string[] = []
   lines.push(`# Context for ${c.workspace} / ${c.task}`)
@@ -2586,6 +2599,21 @@ function renderContextHuman(c: {
   }
   lines.push('')
   lines.push(`## ${c.isolationNotice}`)
+  // 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5): Stack tools 列表
+  if (c.stackTools && c.stackTools.length > 0) {
+    lines.push('')
+    lines.push(`## Stack Tools (${c.stackTools.length})`)
+    lines.push('> Probe runtime metadata; merge into ProbeContext.stackTools for env injection.')
+    for (const t of c.stackTools) {
+      const meta: string[] = []
+      if (t.version) meta.push(`v=${t.version}`)
+      if (t.command) meta.push(`cmd=${t.command}`)
+      if (t.config) meta.push(`config=${t.config}`)
+      if (t.role) meta.push(`role=${t.role}`)
+      const tag = meta.length > 0 ? ` (${meta.join(' | ')})` : ''
+      lines.push(`  - ${t.name}${tag}`)
+    }
+  }
   return lines.join('\n')
 }
 

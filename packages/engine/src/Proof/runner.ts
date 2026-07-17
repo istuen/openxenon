@@ -54,6 +54,11 @@ export function resolveProbeKind(ref: string): string | null {
  *   3. Infra.execute(params, ctx) → ProbeObservation
  *   4. Kernel.judge(observation, params) → ProbeVerdict
  *   5. 转换为 FrozenProofProbeResult
+ *
+ * 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5):
+ *   - context.stackTools 透传到 ProbeContext.stackTools
+ *   - L1 probe handlers (shell-exec / lint-check / ts-compiles) 可按 tool.name 匹配做 env metadata merge
+ *   - 缺省 undefined → 兼容老调用（dual-state-exec / proof.ts 不传 stackTools 时不影响行为）
  */
 export async function executeProbe(
   probe: ProofProbeIR,
@@ -62,6 +67,8 @@ export async function executeProbe(
   const start = Date.now()
   const ctx: ProbeContext = {
     projectRoot: context?.projectRoot ?? process.cwd(),
+    // 🆕 v0.7.3 P6 (ADR-0061 §D5): 仅当 stackTools 非空数组时透传（避免无意义 entry）
+    ...(context?.stackTools && context.stackTools.length > 0 ? { stackTools: context.stackTools } : {}),
   }
 
   const kind = resolveProbeKind(probe.ref)
