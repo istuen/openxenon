@@ -68,6 +68,7 @@ export type IAPErrorCode =
   | 'FORCE_REQUIRED' // v0.6.1-alpha.1: 删除 Asset 需要 --force flag
   | 'INCOMPLETE_ASSET_PAPER' // v0.6.1-alpha.1: AssetPaper 4 字段不完整 (strict mode)
   | 'PROBE_OUT_OF_BOUNDARY' // 🆕 v0.7.3 P4 (ADR-0061 §D3): Task probe 不在 Blueprint slot.observe[] 中
+  | 'TASK_DAG_VIOLATES_SLOT' // 🆕 v0.7.3 P5 (ADR-0061 §D4): Task.deps 不在 Blueprint slot DAG 拓扑闭包内
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

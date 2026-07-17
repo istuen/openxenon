@@ -3,7 +3,7 @@
  */
 
 import type { Root } from 'mdast'
-import { collectHeadingContexts, collectListFields, type ListField, extractYamlFromTree } from '../utils'
+import { collectHeadingContexts, collectListFields, getArray, type ListField, extractYamlFromTree } from '../utils'
 
 // ========================
 // Work H2 分类白名单
@@ -34,6 +34,8 @@ export interface WorkTaskIR {
   domain: string | null
   /** 🆕 v0.7.3 P4 (ADR-0061 §D3): Task 对齐的 Blueprint slot 名（boundary = slot name） */
   boundary: string | null
+  /** 🆕 v0.7.3 P5 (ADR-0061 §D4): Task 依赖的其他 Task 名或 Blueprint slot 名 */
+  deps: string[]
   parts: WorkPart[]
 }
 
@@ -221,6 +223,7 @@ function extractTaskFromFields(name: string, fields: ListField[]): WorkTaskIR {
     blueprint: typeof blueprintField?.value === 'string' ? blueprintField.value : null,
     domain: typeof domainField?.value === 'string' ? domainField.value : null,
     boundary: typeof boundaryField?.value === 'string' ? boundaryField.value : null,
+    deps: getArray(fields, 'deps') ?? [],
     parts,
   }
 }

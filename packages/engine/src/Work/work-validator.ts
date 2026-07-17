@@ -35,6 +35,29 @@ export interface ProbeBoundaryViolation {
   allowedObserved: string[]
 }
 
+/**
+ * 🆕 v0.7.3 P5 (RFC §4 P5 + ADR-0061 §D4):
+ * Task DAG ⊆ Blueprint slot DAG 拓扑闭包校验的违规项。
+ *
+ * 语义：
+ *   - task A 在 boundary slot S_a
+ *   - task A.deps[i] 引用 dep D（task 名或 slot 名）
+ *   - 解析 D → slot S_d
+ *   - 若 S_d ∉ ancestors(S_a) ∪ {S_a} → 违规
+ */
+export interface DagClosureViolation {
+  taskName: string
+  /** Task 对齐的 slot（boundary），空字符串表示 task 无 boundary */
+  boundary: string
+  /** dep 名（task 名或 slot 名） */
+  depName: string
+  /** dep 解析到的 slot 名（unknown 时为空字符串） */
+  depResolvedSlot: string
+  /** 任务 slot 的祖先集合（slot DAG 拓扑闭包） */
+  taskSlotAncestors: string[]
+  reason: 'dep_unknown' | 'dep_slot_not_in_task_slot_closure' | 'task_has_no_boundary'
+}
+
 export interface ValidateArtifactsResult {
   ok: boolean
   artifacts?: {
@@ -203,13 +226,178 @@ export function collectAndThrowProbeBoundaryViolations(
   )
 }
 
+// =============================================================================
+// 🆕 v0.7.3 P5 (RFC §4 P5 + ADR-0061 §D4):
+//   Task DAG ⊆ Blueprint slot DAG 拓扑闭包校验
+// =============================================================================
+
+/**
+ * 🆕 v0.7.3 P5:
+ * 从 blueprints index 构建 slot DAG：slotName → direct deps（合并所有 Blueprint）。
+ * 多个 Blueprint 同名 slot 时，最后一个 Blueprint 覆盖（实践中 Blueprint 各自有独立命名空间）。
+ */
+export function buildSlotDAG(blueprintsIdx: PerWorkBlueprintsIndex): Map<string, string[]> {
+  const dag = new Map<string, string[]>()
+  for (const bp of blueprintsIdx.blueprints) {
+    for (const s of bp.slots) {
+      dag.set(s.name, [...s.deps])
+    }
+  }
+  return dag
+}
+
+/**
+ * 🆕 v0.7.3 P5:
+ * 计算 slot 的所有祖先（slot DAG 拓扑闭包，DFS 防环）。
+ * - ancestors(S) = { S' : 存在 S→S1→...→S' 的路径, S' ≠ S }
+ * - 不含 S 自身（语义：A 的祖先不含 A）。
+ * - 检测到环 → 不死循环（visited 守护）
+ */
+export function computeSlotAncestors(slotName: string, slotDag: Map<string, string[]>): Set<string> {
+  const ancestors = new Set<string>()
+  const visited = new Set<string>()
+  const stack = [slotName]
+  while (stack.length > 0) {
+    const cur = stack.pop()!
+    if (visited.has(cur)) continue
+    visited.add(cur)
+    const deps = slotDag.get(cur) ?? []
+    for (const d of deps) {
+      // 排除自身（A 不应是 A 的祖先）
+      if (d === slotName) continue
+      if (!ancestors.has(d)) {
+        ancestors.add(d)
+        stack.push(d)
+      }
+    }
+  }
+  return ancestors
+}
+
+/**
+ * 🆕 v0.7.3 P5 (ADR-0061 §D4):
+ * 校验 work 所有 task 的 deps 是否符合 slot DAG 拓扑闭包约束。
+ *
+ * 规则：
+ *   - dep 可能是 task 名（解析到该 task 的 boundary slot）
+ *   - dep 也可能是 slot 名（直接用）
+ *   - task 的 deps[i] 解析到的 slot S_d 必须 ∈ ancestors(task.boundary) ∪ {task.boundary}
+ *     （同 slot 内的 task 可互相依赖；跨 slot 必须严格遵守 slot DAG）
+ *
+ * 返回：
+ *   - 全通过 → { ok: true }
+ *   - 任一违规 → { ok: false, violations }
+ *   - 无 boundary / 无 deps 的 task → 跳过（不产生违规）
+ */
+export function checkTaskDepsClosure(
+  work: WorkDeclaration,
+  blueprintsIdx: PerWorkBlueprintsIndex,
+): { ok: true } | { ok: false; violations: DagClosureViolation[] } {
+  const slotDag = buildSlotDAG(blueprintsIdx)
+
+  // task name → task slot name (via boundary)
+  const taskSlotMap = new Map<string, string>()
+  for (const t of work.tasks ?? []) {
+    const tn = (t as { name: string }).name
+    const tb = (t as { boundary?: string }).boundary
+    if (tb) taskSlotMap.set(tn, tb)
+  }
+  // slot name → self（让 deps 可直接引用 slot 名）
+  for (const slotName of slotDag.keys()) {
+    taskSlotMap.set(slotName, slotName)
+  }
+
+  const violations: DagClosureViolation[] = []
+  for (const t of work.tasks ?? []) {
+    const tn = (t as { name: string }).name
+    const tb = (t as { boundary?: string }).boundary
+    const deps = (t as { deps?: string[] }).deps ?? []
+
+    if (deps.length === 0) continue
+    if (!tb) {
+      // task 有 deps 但无 boundary → 无法判断依赖闭包
+      violations.push({
+        taskName: tn,
+        boundary: '',
+        depName: deps[0]!,
+        depResolvedSlot: '',
+        taskSlotAncestors: [],
+        reason: 'task_has_no_boundary',
+      })
+      continue
+    }
+
+    const ancestors = computeSlotAncestors(tb, slotDag)
+    const validSlots = new Set<string>([...ancestors, tb])
+
+    for (const dep of deps) {
+      const depSlot = taskSlotMap.get(dep)
+      if (!depSlot) {
+        violations.push({
+          taskName: tn,
+          boundary: tb,
+          depName: dep,
+          depResolvedSlot: '',
+          taskSlotAncestors: [...ancestors],
+          reason: 'dep_unknown',
+        })
+        continue
+      }
+      if (!validSlots.has(depSlot)) {
+        violations.push({
+          taskName: tn,
+          boundary: tb,
+          depName: dep,
+          depResolvedSlot: depSlot,
+          taskSlotAncestors: [...ancestors],
+          reason: 'dep_slot_not_in_task_slot_closure',
+        })
+      }
+    }
+  }
+
+  if (violations.length === 0) return { ok: true }
+  return { ok: false, violations }
+}
+
+/**
+ * 🆕 v0.7.3 P5 (ADR-0061 §D4):
+ * 收集 work 所有 task DAG 闭包违规；至少 1 violation → throw IAPError(INTENT, TASK_DAG_VIOLATES_SLOT)。
+ *
+ * 跳过机制（escape hatch）：
+ *   - opts.skip === true → 整个函数跳过（无 throw），便于历史 Work 渐进迁移
+ *   - CLI 通过 `--skip-workflow-dag-check` flag 传递
+ */
+export function collectAndThrowDagClosureViolations(
+  work: WorkDeclaration,
+  blueprintsIdx: PerWorkBlueprintsIndex,
+  opts?: { skip?: boolean },
+): void {
+  if (opts?.skip) return
+
+  const result = checkTaskDepsClosure(work, blueprintsIdx)
+  if (result.ok) return
+
+  throw new IAPError(
+    'INTENT',
+    'TASK_DAG_VIOLATES_SLOT',
+    IAPAction.YIELD_TO_HUMAN,
+    `Task DAG must be subset of Workflow slot DAG topological closure: ${result.violations.length} violation(s). ` +
+      'Each task.deps must resolve to a slot in the task boundary slot ancestors (or itself). ' +
+      'Use --skip-workflow-dag-check to bypass this check (legacy works only).',
+    { violations: result.violations, skipped: opts?.skip ?? false },
+  )
+}
+
 export async function validateAndWriteArtifacts(params: {
   projectRoot: string
   workName: string
   work: WorkDeclaration
   missingTaskOxn: string[]
+  /** 🆕 v0.7.3 P5 (ADR-0061 §D4): escape hatch，跳过 Workflow slot DAG 闭包校验 */
+  skipDagCheck?: boolean
 }): Promise<ValidateArtifactsResult> {
-  const { projectRoot, workName, work, missingTaskOxn } = params
+  const { projectRoot, workName, work, missingTaskOxn, skipDagCheck } = params
   const warnings: string[] = []
 
   const workMdPath = getWorkMdPath(projectRoot, workName)
@@ -245,6 +433,11 @@ export async function validateAndWriteArtifacts(params: {
   //   任一 probe 不在 observe → throw IAPError (YIELD_TO_HUMAN)
   //   阻塞 artifacts 写入（lock 必须先通过）
   collectAndThrowProbeBoundaryViolations(work, projectRoot, workName, blueprintsIdx)
+
+  // 🆕 v0.7.3 P5 (ADR-0061 §D4): Task DAG ⊆ Workflow slot DAG 拓扑闭包 hard-check
+  //   task.deps 必须 ∈ task.boundary 的祖先集合 ∪ {boundary 自身}
+  //   escape hatch: skipDagCheck=true 时跳过（仅供历史 Work 渐进迁移）
+  collectAndThrowDagClosureViolations(work, blueprintsIdx, { skip: skipDagCheck })
 
   // 🆕 Phase B: 删 writePerWorkDomainsIndex 调用（不再写 domains.json）
   const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)

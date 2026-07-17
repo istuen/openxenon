@@ -8,15 +8,16 @@ adr:
   - .openxenon/docs/adrs/0061-data-flow-contract.md
 ---
 
-# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3）
+# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1）
 
-> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3** 落地：
+> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1** 落地：
 > P0 = ADR-0061 立法 + RFC 定稿；
 > P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）；
 > P2 = readDomainFile regex → mdast 切换，修 ## Terms: 后缀 + multiline - desc: | 两个 parser bug；
 > P3 = D1 + D2 多视角 term 视图（Task 多 Domain 主/背景视角 + 块状渲染 + token 预算缓解）；
-> P4 = D3 Boundary.observe 与 Task.probes lock 期 hard-check（F4 part 1 + D3）。
-> P5-P8 渐进落地（DAG 校验 + Stack 注入 + deprecation warn + ADR 状态更新）
+> P4 = D3 Boundary.observe 与 Task.probes lock 期 hard-check（F4 part 1 + D3）；
+> P5 = D4 Workflow.slot DAG 与 Task.deps DAG 闭包校验（F4 part 2 + D4）；
+> P6-P8 渐进落地（Stack 注入 + deprecation warn + ADR 状态更新）
 > 将在后续 beta.1 / GA 各 changelog 记录。
 
 ## P0 核心交付
@@ -51,6 +52,7 @@ adr:
 | P2 | Domain 注入路径 regex → mdast 切换 | v0.7.3-alpha.2 | ✅ 已落 |
 | P3 | Task 多 Domain 主/背景视角注入；`## Allowed Language` 渲染格式升级 | v0.7.3-alpha.3 | ✅ 已落 |
 | P4 | Boundary.observe 与 Task.probes lock 期校验 | v0.7.3-alpha.3 | ✅ 已落 |
+| P5 | Workflow slot DAG 与 Task deps DAG 闭包校验 | v0.7.3-beta.1 | ✅ 已落 |
 | P5 | Workflow.slot DAG 与 Task.deps DAG 闭包校验 | v0.7.3-beta.1 | ⏳ 待启动 |
 | P6 | Stack.tools 注入 ProbeRunner | v0.7.3-beta.1 | ⏳ 待启动 |
 | P7 | Work `## Refs` 旧 `kind: domain` deprecation warn | v0.7.3 | ⏳ 待启动 |
@@ -244,6 +246,40 @@ Terms (must use): Asset, AssetKind, AssetMode, ...
 - `bun run lint`：全绿
 - 端到端测试：故意注入 `- probe: @oxn/probes/forbidden-probe` → `oxn work validate` 返回 `code: IAP_INTENT_PROBE_OUT_OF_BOUNDARY` + 详细 violations
 - 真实场景：当前 9 tasks 全部无 probe → validate 通过；lock 成功
+
+## P5 beta.1 核心交付
+
+### 决策落地（ADR-0061 §D4）
+
+**D4 - Workflow.slot DAG 与 Task.deps DAG 闭包校验**：
+- task.deps[i] 可引用其他 task 名（解析到该 task 的 boundary slot）或直接引用 slot 名
+- 解析后的 slot 必须 ∈ task.boundary 的祖先闭包 ∪ {boundary 自身}
+- 同 slot 内 task 互相依赖 → 通过（validSlots 包含自身）
+- lock 期校验失败 → `throw IAPError(INTENT, TASK_DAG_VIOLATES_SLOT, YIELD_TO_HUMAN, ...)`
+- CLI 输出 JSON `code: IAP_INTENT_TASK_DAG_VIOLATES_SLOT` + 详细 violations
+- **escape hatch**：`--skip-workflow-dag-check` flag 跳过 DAG 闭包校验（供历史 Work 渐进迁移）
+
+### 代码改动
+
+| 文件 | 内容 |
+|---|---|
+| `packages/engine/src/oxl/md-pipeline/transformers/work.ts` | WorkTaskIR 加 `deps: string[]` 字段；extractTaskFromFields 用 `getArray(fields, 'deps')` 提取 |
+| `packages/engine/src/oxl/md-pipeline/utils.ts` | `getArray` 加 inline 数组语法解析 `[a, b, c]`（之前只支持嵌套 list） |
+| `packages/engine/src/kernel/contracts/iap-error.ts` | + `TASK_DAG_VIOLATES_SLOT` IAPErrorCode |
+| `packages/engine/src/Work/work-validator.ts` | + 4 helpers（`buildSlotDAG` / `computeSlotAncestors` / `checkTaskDepsClosure` / `collectAndThrowDagClosureViolations`）；validateAndWriteArtifacts 加 `skipDagCheck?: boolean` param |
+| `packages/cli/src/commands/work.ts` | validate subcommand 加 `--skip-workflow-dag-check` flag |
+| `packages/engine/src/Work/__tests__/work-validator.test.ts` | + 21 测试（buildSlotDAG × 3 / computeSlotAncestors × 6 / checkTaskDepsClosure × 8 / collectAndThrow × 4）|
+
+### 验收门槛
+
+- `bun test`：**1598 pass / 3 skip / 0 fail**（新增 21 测试）
+- `bun run typecheck`：全绿
+- `bun run lint`：全绿
+- `bun scripts/validate-dependencies.ts`：violations=0
+- 端到端测试：故意注入 `deps: [p4-boundary-observe-check, compass, nonexistent-task]` → `oxn work validate` 返回 `code: IAP_INTENT_TASK_DAG_VIOLATES_SLOT` + 2 violations（1 个 dep_slot_not_in_task_slot_closure + 1 个 dep_unknown）
+- 真实场景：当前 9 tasks deps 全在 slot 闭包 → validate 通过；lock 成功
+- **escape hatch E2E**：同样违规 deps + `--skip-workflow-dag-check` flag → validate OK
+- 修复 pre-existing bug：`p0-rfc-finalize` 原 `deps: [compass]` 是 P5 之前漏掉的 DAG 违规（compass 是 design 的下游，违反闭包），P5 落地时同步修正为 `deps: []`
 
 ## 验收门槛
 

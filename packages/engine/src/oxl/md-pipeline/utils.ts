@@ -163,11 +163,21 @@ export function getScalar(fields: ListField[], key: string): string | null {
 export function getArray(fields: ListField[], key: string): string[] {
   const f = fields.find((x) => x.key === key)
   if (!f) return []
-  // 只有当 value 是 string[] (数组) 且首项是 string 时才返回
-  // 否则返回 [] (保持旧 API 行为, e.g. "- deps: []" → deps=[])
+  // 1) 嵌套 list（arr 来自 collectListFields 的 visit）
   if (Array.isArray(f.value) && f.value.length > 0 && typeof f.value[0] === 'string') {
     return f.value as string[]
   }
+  // 2) inline 数组语法 `key: [a, b, c]`（v0.7.3 P5 工作项 task.deps 场景）
+  if (typeof f.value === 'string') {
+    const m = f.value.match(/^\s*\[(.*)\]\s*$/)
+    if (m) {
+      return m[1]!
+        .split(',')
+        .map((s) => s.trim().replace(/^["']|["']$/g, ''))
+        .filter(Boolean)
+    }
+  }
+  // 3) 空 inline / 标量 → []
   return []
 }
 

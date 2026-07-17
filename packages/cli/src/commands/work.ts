@@ -893,6 +893,11 @@ const validateSubcommand = defineCommand({
     name: { type: 'positional', required: true, description: t('work.args.workName') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
+    // 🆕 v0.7.3 P5 (ADR-0061 §D4): escape hatch —— 跳过 Workflow slot DAG 闭包校验
+    '--skip-workflow-dag-check': {
+      type: 'boolean',
+      description: 'Skip Workflow slot DAG closure check (legacy works only).',
+    },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args)
@@ -900,6 +905,8 @@ const validateSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
+    // 🆕 v0.7.3 P5 (ADR-0061 §D4): escape hatch (citty strips leading "--")
+    const skipDagCheck = Boolean(ctx.args['skip-workflow-dag-check'])
 
     if (!projectBoundaryExists()) {
       return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
@@ -963,9 +970,11 @@ const validateSubcommand = defineCommand({
         workName,
         work,
         missingTaskOxn,
+        // 🆕 v0.7.3 P5 (ADR-0061 §D4): escape hatch 透传
+        skipDagCheck,
       })
     } catch (err) {
-      // 🆕 v0.7.3 P4 (ADR-0061 §D3): probe 越界 IAPError
+      // 🆕 v0.7.3 P4 (ADR-0061 §D3) + P5 (ADR-0061 §D4): IAPError 统一捕获
       if (err instanceof IAPError) {
         return outputError(
           {
