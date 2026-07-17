@@ -66,6 +66,11 @@ import {
 import { resetCurrentRoundTasks } from '@openxenon/engine/Work/dual-state-exec'
 // 🆕 v0.6.1-alpha.4 Phase B: 删除 resolveDomainFile import（Domain 引用走 Blueprint ## Use 路径）
 import { resolveBlueprintFile } from '@openxenon/engine/Work/per-work-blueprints-merger'
+import {
+  loadPerWorkBlueprints,
+  summarizeBlueprints,
+  loadDomainLanguagesFromBlueprint,
+} from '@openxenon/engine/Work/work-context-builder'
 import { buildBlueprintDiagnostic, type RefDiagnostic } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import {
   applyPlanLock,
@@ -2337,6 +2342,13 @@ const contextSubcommand = defineCommand({
       }
     }
 
+    // 🆕 v0.7.3 P1 (F1 fix): load per-work blueprints.json → BlueprintIR snapshot
+    const perWorkBpIdx = loadPerWorkBlueprints(root, workName)
+    const blueprintIR = perWorkBpIdx ? summarizeBlueprints(perWorkBpIdx) : undefined
+
+    // 🆕 v0.7.3 P1 (F2 fix): from Blueprint boundary refs load Domain languages
+    const domainLanguages = blueprintIR ? loadDomainLanguagesFromBlueprint(blueprintIR, root) : []
+
     const externalsHuman =
       domainExternals.length > 0
         ? `\n  External References (read during Intent):\n${domainExternals
@@ -2366,6 +2378,8 @@ const contextSubcommand = defineCommand({
           tasks: work.tasks,
           diagnostics,
           ...(domainExternals.length > 0 ? { domainExternals } : {}),
+          ...(blueprintIR ? { blueprintIR } : {}),
+          ...(domainLanguages.length > 0 ? { domainLanguages } : {}),
         },
         human: `Work ${workName} (no --task specified, returning workspace-level context)
   Domains:    ${work.domains.map((d) => d.name).join(', ')}

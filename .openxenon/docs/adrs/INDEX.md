@@ -90,6 +90,7 @@
 | [0054](./0054-three-boundary-framework.md) | 三边界框架（Domain/Workflow/Stack 正交维度） | ✅ Adopted |
 | [0055](./0055-blueprint-as-composition-template.md) | Blueprint 提升为组合模板（E1 Asset 内的隔离层） | ✅ Adopted |
 | [0056](./0056-external-inline-and-status.md) | External inline 收敛 + 状态管理 | ✅ Adopted |
+| [0061](./0061-data-flow-contract.md) | Blueprint → Work → Task 数据流契约（runtime 闭环 + 多视角 + DAG + Stack 注入） | ✅ Adopted |
 
 ### 5. Insight / Skill（5 条）
 
@@ -153,6 +154,7 @@
 | 0055 | `docs/zh-cn/asset.md` §Blueprint 组合模板 |
 | 0057 | `docs/zh-cn/core-concepts.md` §3.1 信任链 |
 | 0058 | `docs/zh-cn/core-concepts.md` §13 最小信任闭环 |
+| 0061 | v0.7.3 P1-P8 渐进落地（`docs/zh-cn/work.md` 数据流段） |
 
 ### 待办（8 条 Proposed · 进 v0.7+ RFC 子 PR）
 

@@ -18,6 +18,13 @@ import { collectUnresolvedRefDiagnostics } from './work-diagnostics'
 import { readWorkFile as readBirthCert, verifyPlanLock } from './birth-cert'
 import type { RefDiagnostic } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import type { AssetFormat } from '@openxenon/engine/infra/paths'
+import {
+  type PerWorkBlueprintsIndex,
+  type PerWorkBlueprintEntry,
+  loadPerWorkBlueprintsIndex,
+  getPerWorkBlueprintsJsonPath,
+} from './per-work-blueprints-merger'
+import { resolveAssetCandidates } from '@openxenon/engine/infra/paths'
 
 function camelToKebab(s: string): string {
   return s
@@ -34,6 +41,54 @@ export interface WorkContextBuilderParams {
   assetFormat: AssetFormat
   lockCheck?: boolean
   statePath?: string
+}
+
+/**
+ * 🆕 v0.7.3 P1 (RFC v0.7.3 §2.1 + ADR-0061 §D7):
+ * BlueprintIR 摘要：从 per-work blueprints.json 反序列化的最小可消费快照。
+ *   - 不含 Blueprint 原始文件全文（那是 Asset 层）
+ *   - 含 slots / 3 边界 refs（足够 Task runtime 决策）
+ *   - schemaVersion 留给未来演进
+ */
+export interface BlueprintIRSummary {
+  schemaVersion: number
+  workName: string
+  generatedAt: string
+  sourceHash: string
+  declaredRefs: string[]
+  blueprints: Array<{
+    name: string
+    scope: string
+    file: string
+    status: string
+    version: number
+    slots: Array<{ name: string; deps: string[]; observe: string[] }>
+    errors: string[]
+    ref: string
+    domainRefs: Array<{ name: string; kind: string; ref: string; scope: string; version: number; fileHash: string }>
+    workflowRefs: Array<{ name: string; kind: string; ref: string; scope: string; version: number; fileHash: string }>
+    stackRefs: Array<{ name: string; kind: string; ref: string; scope: string; version: number; fileHash: string }>
+    nestedBlueprintRefs: Array<{
+      name: string
+      kind: string
+      ref: string
+      scope: string
+      version: number
+      fileHash: string
+    }>
+  }>
+}
+
+/**
+ * 🆕 v0.7.3 P1 (RFC v0.7.3 §2.1 + ADR-0061 §D1+D2 prep):
+ * Blueprint 边界 Domain 的 language 注入单元。F2 修复：把 work ## Refs 的 language 丢失问题收敛到 Blueprint 边界 refs。
+ */
+export interface DomainLanguageEntry {
+  name: string
+  scope: string
+  ref: string
+  fileHash: string
+  language: NonNullable<DomainFileSummary>['language']
 }
 
 export interface WorkContextResult {
@@ -56,6 +111,132 @@ export interface WorkContextResult {
   probes?: unknown[]
   tasks?: unknown[]
   domainExternals?: Array<{ domainName: string; externals: ExternalEntry[] }>
+  /** 🆕 v0.7.3 P1 (F1 fix): 从 per-work blueprints.json 反序列化的 BlueprintIR 摘要 */
+  blueprintIR?: BlueprintIRSummary
+  /** 🆕 v0.7.3 P1 (F2 fix): Blueprint 边界 Domain 的 language 注入（D1+D2 主/背景视角的预备） */
+  domainLanguages?: DomainLanguageEntry[]
+}
+
+/**
+ * 🆕 v0.7.3 P1 (RFC §1 F1 fix):
+ * 加载 per-work blueprints.json（lock 期生成）。
+ *   - 文件不存在返回 null（向后兼容：lock 前或老 Work）
+ *   - 解析失败返回 null（drift 检测由 birth-cert 承担；此处只读不修）
+ */
+export function loadPerWorkBlueprints(projectRoot: string, workName: string): PerWorkBlueprintsIndex | null {
+  const path = getPerWorkBlueprintsJsonPath(projectRoot, workName)
+  return loadPerWorkBlueprintsIndex(path)
+}
+
+/**
+ * 🆕 v0.7.3 P1: 把 PerWorkBlueprintsIndex 压缩为 BlueprintIRSummary
+ * （仅保留 context 消费方需要的字段；排除 raw 元数据如 projectRoot）。
+ */
+export function summarizeBlueprints(idx: PerWorkBlueprintsIndex): BlueprintIRSummary {
+  const slimEntry = (e: PerWorkBlueprintEntry) => ({
+    name: e.name,
+    scope: e.scope,
+    file: e.file,
+    status: e.status,
+    version: e.version,
+    slots: e.slots.map((s) => ({ name: s.name, deps: [...s.deps], observe: [...s.observe] })),
+    errors: [...e.errors],
+    ref: e.ref,
+    domainRefs: e.domainRefs.map((r) => ({
+      name: r.name,
+      kind: r.kind,
+      ref: r.ref,
+      scope: r.scope,
+      version: r.version,
+      fileHash: r.fileHash,
+    })),
+    workflowRefs: e.workflowRefs.map((r) => ({
+      name: r.name,
+      kind: r.kind,
+      ref: r.ref,
+      scope: r.scope,
+      version: r.version,
+      fileHash: r.fileHash,
+    })),
+    stackRefs: e.stackRefs.map((r) => ({
+      name: r.name,
+      kind: r.kind,
+      ref: r.ref,
+      scope: r.scope,
+      version: r.version,
+      fileHash: r.fileHash,
+    })),
+    nestedBlueprintRefs: e.nestedBlueprintRefs.map((r) => ({
+      name: r.name,
+      kind: r.kind,
+      ref: r.ref,
+      scope: r.scope,
+      version: r.version,
+      fileHash: r.fileHash,
+    })),
+  })
+  return {
+    schemaVersion: idx.schemaVersion,
+    workName: idx.workName,
+    generatedAt: idx.generatedAt,
+    sourceHash: idx.sourceHash,
+    declaredRefs: [...idx.declaredRefs],
+    blueprints: idx.blueprints.map(slimEntry),
+  }
+}
+
+/**
+ * 🆕 v0.7.3 P1 (F2 fix):
+ * 从 Blueprint domainRefs[] 加载 boundary Domain 的 language。
+ *   - 解析 Domain 文件 → readDomainFile
+ *   - 找不到文件 → 跳过（lock hash 已捕获；这里不阻断）
+ *   - 文件 hash 与 Blueprint 记录不一致 → 跳过（drift 留给 verifyPlanLock）
+ */
+export function loadDomainLanguagesFromBlueprint(
+  blueprintIR: BlueprintIRSummary,
+  projectRoot: string,
+): DomainLanguageEntry[] {
+  const out: DomainLanguageEntry[] = []
+  const seen = new Set<string>()
+  for (const bp of blueprintIR.blueprints) {
+    for (const ref of bp.domainRefs) {
+      if (seen.has(ref.ref)) continue
+      seen.add(ref.ref)
+      const filePath = findBoundaryAssetFile(projectRoot, 'domain', ref.name)
+      if (!filePath) continue
+      const dom = readDomainFile(filePath)
+      if (!dom?.language) continue
+      out.push({
+        name: ref.name,
+        scope: ref.scope,
+        ref: ref.ref,
+        fileHash: ref.fileHash,
+        language: dom.language,
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * 🆕 v0.7.3 P1 helper: 解析 boundary asset 的实际文件路径
+ *   - 与 per-work-blueprints-merger.resolveBoundaryAssetFile 行为一致
+ *   - 但不在私有域 → 暴露给 work-context-builder 复用
+ */
+function findBoundaryAssetFile(
+  projectRoot: string,
+  kind: 'domain' | 'workflow' | 'stack' | 'blueprint',
+  name: string,
+): string | null {
+  const { primary, fallback } = resolveAssetCandidates(projectRoot, kind, null)
+  const kebab = camelToKebab(name)
+  for (const dir of [primary, fallback]) {
+    for (const f of [`${name}.md`, `${kebab}.md`]) {
+      const fp = join(dir, f)
+      if (existsSync(fp)) return fp
+    }
+  }
+  return null
 }
 
 export function buildWorkContext(params: WorkContextBuilderParams): WorkContextResult {
@@ -222,6 +403,17 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     }
   }
 
+  // 🆕 v0.7.3 P1 (F1 fix): load per-work blueprints.json + summarize as BlueprintIR
+  //   - 缺失 → 不注入 blueprintIR（向后兼容：老 Work / lock 前）
+  //   - 解析失败 → 不注入（drift 由 birth-cert 承担）
+  const perWorkBpIdx = loadPerWorkBlueprints(root, workName)
+  const blueprintIR = perWorkBpIdx ? summarizeBlueprints(perWorkBpIdx) : undefined
+
+  // 🆕 v0.7.3 P1 (F2 fix): 从 Blueprint 边界 refs 加载 Domain language
+  //   - Blueprint 不存在 → 不注入 domainLanguages（向后兼容）
+  //   - Domain 文件找不到 / hash 不一致 → 跳过该条目
+  const domainLanguages = blueprintIR ? loadDomainLanguagesFromBlueprint(blueprintIR, root) : []
+
   return {
     workspace: workName,
     workContext: {
@@ -237,6 +429,8 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     probes: work.probes as unknown[],
     tasks: work.tasks as unknown[],
     ...(domainExternals.length > 0 ? { domainExternals } : {}),
+    ...(blueprintIR ? { blueprintIR } : {}),
+    ...(domainLanguages.length > 0 ? { domainLanguages } : {}),
   }
 }
 
