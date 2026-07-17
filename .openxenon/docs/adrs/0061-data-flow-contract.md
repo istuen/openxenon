@@ -16,11 +16,27 @@ related:
 
 # ADR-0061: Blueprint → Work → Task 数据流契约
 
-> **状态**：🟢 Accepted（v0.7.3 P0 落地，P1-P8 渐进落地）
+> **状态**：✅ Accepted + **P0-P8 全落地 (v0.7.3 GA, 2026-07-17)**
 > **日期**：2026-07-17
 > **来源**：[v0.7.3-ideal-data-flow-rfc §2 + §3](../../rfcs/v0.7.3-ideal-data-flow-rfc.md)
 > **影响层**：L2-Work（`packages/engine/src/Work/`）+ L2-Proof（`packages/engine/src/Proof/`）+ L1-OXL（`packages/engine/src/oxl/summary-extractors.ts`）
 > **承接 Work**：[`v073-ideal-data-flow`](../../../works/v073-ideal-data-flow/work.md)
+
+### Runtime Implementation Status (2026-07-17)
+
+本 ADR 7 项决策 D1-D7 全部 runtime 落地，Work `v073-ideal-data-flow` 9 个 phase task 全部 passed + frozen：
+
+| Decision | 含义 | Runtime 落点 | Phase |
+|---|---|---|---|
+| **D1** | Task.domain 主/背景视角 | `work-context-builder.ts:360 partitionBackgroundDomains` + `renderContextHuman` main tag | P3 alpha.3 |
+| **D2** | 多 Domain 同名 term 块状 + `[Domain]` 标注 | `buildTermViews` + renderContextHuman `[Domain] [main]`/`[background]`/`[name-only]` | P3 alpha.3 |
+| **D3** | Boundary.observe vs Task.probes lock-check | `checkTaskProbesAgainstBoundary` + `collectAndThrowProbeBoundaryViolations` (IAPError) | P4 alpha.3 |
+| **D4** | Workflow.slot DAG vs Task.deps DAG 闭包 | `buildSlotDAG` + `computeSlotAncestors` + `checkTaskDepsClosure` (IAPError) | P5 beta.1 |
+| **D5** | Stack.tools 注入 Probe runtime | `loadStackToolsFromBlueprint` + `ProbeContextBase.stackTools` + `executeProbe` 透传 | P6 beta.1 |
+| **D6** | `## Refs` legacy `kind: domain` 软警告 | `detectLegacyDomainRefs` + `OXN_WORK_LEGACY_DOMAIN_REF` (软警告) | P7 GA |
+| **D7** | PlanLock hash 公式不动 + work-context-builder 读 blueprints.json | `loadPerWorkBlueprints` + `summarizeBlueprints` + `loadDomainLanguagesFromBlueprint` | P1 alpha.2 |
+
+依据：[v0.7.3 理想态数据流 RFC §4 Phased Landing](../../rfcs/v0.7.3-ideal-data-flow-rfc.md) + [changelog](../../changes/0-7-3-ideal-data-flow.md)
 
 ## 背景
 

@@ -151,10 +151,11 @@
 | 0035 | `docs/zh-cn/asset.md` §catalog.json |
 | 0052 | `packages/engine/src/oxl/langium-driver/` 删除 + `docs/zh-cn/cli.md` + `docs/zh-cn/work.md` §Langium 退役 |
 | 0054 | `docs/zh-cn/asset.md` §三边界框架 + `docs/en/asset.md` |
-| 0055 | `docs/zh-cn/asset.md` §Blueprint 组合模板 |
+| 0055 | `docs/zh-cn/asset.md` §Blueprint 组合模板 + **runtime 注入 v0.7.3 P1** |
 | 0057 | `docs/zh-cn/core-concepts.md` §3.1 信任链 |
 | 0058 | `docs/zh-cn/core-concepts.md` §13 最小信任闭环 |
-| 0061 | v0.7.3 P1-P8 渐进落地（`docs/zh-cn/work.md` 数据流段） |
+| 0060 | **runtime 多视角注入 v0.7.3 P3**（D4/D8 纸面规范 → 落地） |
+| 0061 | v0.7.3 **P1-P8 全落地 (GA)** — D1-D7 全部 runtime 闭环 |
 
 ### 待办（8 条 Proposed · 进 v0.7+ RFC 子 PR）
 

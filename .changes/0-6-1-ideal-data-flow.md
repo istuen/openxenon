@@ -1,5 +1,5 @@
 ---
-version: 0.7.3
+version: 0.6.1
 date: 2026-07-17
 type: minor
 rfc:
@@ -8,9 +8,9 @@ adr:
   - .openxenon/docs/adrs/0061-data-flow-contract.md
 ---
 
-# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1 + P7 GA）
+# 0.6.1 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1 + P7 GA + P8 GA）✅
 
-> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1 + P7 GA** 落地：
+> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1 + P7 GA + P8 GA** 全部 9 phase 落地：
 > P0 = ADR-0061 立法 + RFC 定稿；
 > P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）；
 > P2 = readDomainFile regex → mdast 切换，修 ## Terms: 后缀 + multiline - desc: | 两个 parser bug；
@@ -19,8 +19,9 @@ adr:
 > P5 = D4 Workflow.slot DAG 与 Task.deps DAG 闭包校验（F4 part 2 + D4）；
 > P6 = D5 Stack.tools 注入 Probe runtime（F4 part 3 + D5）；
 > P7 = D6 Work `## Refs` 旧 `kind: domain` 软警告（不阻断 lock，为 v0.8.0 硬阻断预留窗口）；
-> P8 = ADR-0055/0060 runtime 状态标注更新
-> 将在 P8 落地后合并 v0.7.3 GA changelog。
+> P8 = ADR-0055 §D2 / ADR-0060 §D4 / ADR-0060 §D8 标注 runtime 已实现（移除纸面规范标记）。
+>
+> **v0.7.3 RFC v0.7.3-ideal-data-flow 全部 9 phase 落地**，7 个决策 D1-D7 全部 runtime 闭环。
 
 ## P0 核心交付
 
@@ -39,7 +40,7 @@ adr:
 ### ADR INDEX 更新
 
 - `.openxenon/docs/adrs/INDEX.md` §4 Work/Asset 分类追加 ADR-0061 条目
-- ADR 落地状态表追加 ADR-0061 行（v0.7.3 P1-P8 渐进落地，指向 `docs/zh-cn/work.md` 数据流段）
+- ADR 落地状态表追加 ADR-0061 行（v0.6.1 P1-P8 渐进落地，指向 `docs/zh-cn/work.md` 数据流段）
 
 ## 承接 Work
 
@@ -57,6 +58,7 @@ adr:
 | P5 | Workflow slot DAG 与 Task deps DAG 闭包校验 | v0.7.3-beta.1 | ✅ 已落 |
 | P6 | Stack.tools 注入 Probe runtime | v0.7.3-beta.1 | ✅ 已落 |
 | P7 | Work `## Refs` 旧 `kind: domain` 软警告 | v0.7.3-GA | ✅ 已落 |
+| P8 | ADR-0055 §D2 / ADR-0060 §D4 / ADR-0060 §D8 runtime 状态标注 | v0.7.3-GA | ✅ 已落 |
 | P5 | Workflow.slot DAG 与 Task.deps DAG 闭包校验 | v0.7.3-beta.1 | ⏳ 待启动 |
 | P6 | Stack.tools 注入 ProbeRunner | v0.7.3-beta.1 | ⏳ 待启动 |
 | P7 | Work `## Refs` 旧 `kind: domain` deprecation warn | v0.7.3 | ⏳ 待启动 |
@@ -328,7 +330,7 @@ Terms (must use): Asset, AssetKind, AssetMode, ...
 ### 决策落地（ADR-0061 §D6）
 
 **D6 - Work `## Refs` 兼容性：旧 `kind: domain` deprecation warn**：
-- v0.7.3 lock 期：检测到 Work `## Refs` 中 `kind: domain` 触发 `OXN_WORK_LEGACY_DOMAIN_REF` 软警告（不阻断 lock，记录到 warnings + structured diagnostics）
+- v0.6.1 lock 期：检测到 Work `## Refs` 中 `kind: domain` 触发 `OXN_WORK_LEGACY_DOMAIN_REF` 软警告（不阻断 lock，记录到 warnings + structured diagnostics）
 - v0.8.0 升级为硬阻断（本 RFC 不实现）
 - 给历史 Work 一个 migrate 窗口
 
@@ -346,9 +348,58 @@ Terms (must use): Asset, AssetKind, AssetMode, ...
 - `bun run typecheck`：全绿
 - `bun run lint`：全绿
 - `bun scripts/validate-dependencies.ts`：violations=0
-- E2E：临时 work `.openxenon/works/test-legacy-ref-warn/work.md`（`## Refs` + `### TrustChain-LegacyProbe - kind: domain`） → `oxn work validate` 返回 `ok=true` + warning `OXN_WORK_LEGACY_DOMAIN_REF: ref "TrustChain-LegacyProbe" (@prj/domains/TrustChain) uses deprecated "kind: domain" (ADR-0055 §D2). v0.7.3 only warns; v0.8.0 will hard-block. Move to Blueprint ## Use ...`
+- E2E：临时 work `.openxenon/works/test-legacy-ref-warn/work.md`（`## Refs` + `### TrustChain-LegacyProbe - kind: domain`） → `oxn work validate` 返回 `ok=true` + warning `OXN_WORK_LEGACY_DOMAIN_REF: ref "TrustChain-LegacyProbe" (@prj/domains/TrustChain) uses deprecated "kind: domain" (ADR-0055 §D2). v0.6.1 only warns; v0.8.0 will hard-block. Move to Blueprint ## Use ...`
 - E2E JSON：data.legacyDomainRefs 数组含 1 条 entry（refName + ref + suggestion）
 - 真实场景：当前 v073-ideal-data-flow work 用 `## Use` 语法 → 无 warning；artifacts 正常写入
+
+## P8 GA 核心交付
+
+### 决策落地（RFC §5.4 ADR 一致性）
+
+**ADR-0055 §D2 / ADR-0060 §D4 / ADR-0060 §D8 标注 runtime 已实现（移除纸面规范标记）**：
+
+| ADR | § | 纸面规范 → runtime 落点 | 落地 phase |
+|---|---|---|---|
+| ADR-0055 | D2 Blueprint IR runtime 消费 | `work-context-builder.ts:160 loadPerWorkBlueprints` 读 `blueprints.json` → `BlueprintIRSummary` 注入 `WorkContextResult.blueprintIR` | P1 alpha.2 |
+| ADR-0060 | D4 同名特性词多域共存 | `buildTermViews` 聚合同名 term 多 Domain 视角 + `## Allowed Language (multi-view)` 块状结构 | P3 alpha.3 |
+| ADR-0060 | D8 Domain 视角隔离 | `renderContextHuman` 强制 `[Domain 名]` 行内前缀标注（`[main]`/`[background]`/`[name-only]`） | P3 alpha.3 |
+
+### 代码改动（仅文档，零代码）
+
+| 文件 | 内容 |
+|---|---|
+| `.openxenon/docs/adrs/0055-blueprint-as-composition-template.md` | 顶部状态从 "✅ Adopted" → "✅ Adopted + Runtime 已实现（v0.6.1 P1）"；加 Runtime Implementation Status 段（4 项决策逐项标注落点） |
+| `.openxenon/docs/adrs/0060-domain-vocabulary-boundary.md` | §D4 顶部加 "Runtime Implementation Status: ✅ Implemented (v0.6.1 P3 多视角 term 注入)"；§D8 顶部加 "Runtime Implementation Status: ✅ Implemented (v0.6.1 P3 [Domain] 标注)" |
+| `.openxenon/docs/adrs/0061-data-flow-contract.md` | 顶部状态从 "P0-P8 渐进落地" → "✅ P0-P8 全落地 (v0.7.3 GA)"；加 7 项决策 D1-D7 runtime 落点对照表 |
+| `.openxenon/docs/adrs/INDEX.md` | §ADR 落地状态一览 表更新 0055/0060/0061 行注脚（runtime 注入 / 多视角 / P1-P8 全落地）|
+
+### 验收门槛
+
+- `bun run typecheck`：全绿（无代码改动）
+- `bun run lint`：全绿
+- `bun scripts/validate-dependencies.ts`：violations=0
+- `bun scripts/check-doc-boundary.ts`：✅ 0 violations
+- `bun scripts/check-heading-skeleton.ts`：✅ 0 violations
+- 人工 review 4 个 ADR 文件改动一致性：D1-D7 全闭环证据链（每个 D 都有具体落点 + phase 标注）
+
+## v0.7.3 RFC 全 9 Phase 收尾总结
+
+| Phase | 决策 | 版本 | 测试增量 | 累计测试 |
+|---|---|---|---|---|
+| P0 | RFC + ADR-0061 立法 | alpha.1 | +2 fixture | 1577 |
+| P1 | F1+F2 修复 + D7 BlueprintIR + Domain language | alpha.2 | +6 | 1577 |
+| P2 | mdast extraction + ## Terms: 后缀 + multiline desc | alpha.2 | +5 | 1577 |
+| P3 | D1+D2 multi-view term | alpha.3 | +11 | 1577 |
+| P4 | D3 probe boundary check | alpha.3 | +20 | 1598 |
+| P5 | D4 DAG closure check | beta.1 | +21 | 1611 |
+| P6 | D5 Stack tools injection | beta.1 | +13 | 1611 |
+| P7 | D6 legacy `kind: domain` warn | GA | +10 | 1621 |
+| P8 | ADR status annotation | GA | 0 (docs only) | 1621 |
+
+**F1-F4 四个 broken points 全部修复**（P1+F1, P1+F2, P2+parser bugs, P3+D2+token budget, P4+F4 part 1, P5+F4 part 2, P6+F4 part 3）。
+**D1-D7 七项决策全部 runtime 落地**（P3+P3+P4+P5+P6+P7+P1）。
+
+Work `v073-ideal-data-flow` 13 个 task 全部 passed + frozen（含 4 个 placeholder task discuss/explore/design/compass + p0-p8 9 个真实 phase task）。
 
 ## 验收门槛
 
