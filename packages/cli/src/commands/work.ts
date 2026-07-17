@@ -956,12 +956,28 @@ const validateSubcommand = defineCommand({
     }
 
     // ── 3. PR-6: 写 artifacts（解析 + 落 3 文件） ──
-    const result = await validateAndWriteArtifacts({
-      projectRoot,
-      workName,
-      work,
-      missingTaskOxn,
-    })
+    let result: Awaited<ReturnType<typeof validateAndWriteArtifacts>>
+    try {
+      result = await validateAndWriteArtifacts({
+        projectRoot,
+        workName,
+        work,
+        missingTaskOxn,
+      })
+    } catch (err) {
+      // 🆕 v0.7.3 P4 (ADR-0061 §D3): probe 越界 IAPError
+      if (err instanceof IAPError) {
+        return outputError(
+          {
+            code: err.name,
+            message: err.message,
+            context: err.context,
+          },
+          format,
+        )
+      }
+      throw err
+    }
 
     if (!result.ok) {
       const code =

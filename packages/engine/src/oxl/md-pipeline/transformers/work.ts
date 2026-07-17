@@ -32,6 +32,8 @@ export interface WorkTaskIR {
   name: string
   blueprint: string | null
   domain: string | null
+  /** 🆕 v0.7.3 P4 (ADR-0061 §D3): Task 对齐的 Blueprint slot 名（boundary = slot name） */
+  boundary: string | null
   parts: WorkPart[]
 }
 
@@ -160,6 +162,7 @@ function extractRefFromFields(name: string, fields: ListField[]): WorkRef | null
 function extractTaskFromFields(name: string, fields: ListField[]): WorkTaskIR {
   const blueprintField = fields.find((f) => f.key === 'blueprint')
   const domainField = fields.find((f) => f.key === 'domain')
+  const boundaryField = fields.find((f) => f.key === 'boundary')
 
   const parts: WorkPart[] = []
   for (let i = 0; i < fields.length; i++) {
@@ -217,6 +220,7 @@ function extractTaskFromFields(name: string, fields: ListField[]): WorkTaskIR {
     name,
     blueprint: typeof blueprintField?.value === 'string' ? blueprintField.value : null,
     domain: typeof domainField?.value === 'string' ? domainField.value : null,
+    boundary: typeof boundaryField?.value === 'string' ? boundaryField.value : null,
     parts,
   }
 }
