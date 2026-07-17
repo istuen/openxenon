@@ -1025,6 +1025,10 @@ const validateSubcommand = defineCommand({
           valid: true,
           errors: [],
           warnings: result.warnings,
+          // 🆕 v0.7.3 P7 (ADR-0061 §D6): legacy domain ref 条目（structured）
+          ...(result.legacyDomainRefs && result.legacyDomainRefs.length > 0
+            ? { legacyDomainRefs: result.legacyDomainRefs }
+            : {}),
           artifacts: {
             // 🆕 Phase B: 删 domainsJson（Domain 引用走 Blueprint ## Use）
             blueprintsJson: a.blueprintsJsonPath,

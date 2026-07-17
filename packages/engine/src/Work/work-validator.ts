@@ -36,6 +36,24 @@ export interface ProbeBoundaryViolation {
 }
 
 /**
+ * 🆕 v0.7.3 P7 (RFC §4 P7 + ADR-0061 §D6):
+ * Work `## Refs` 旧 `kind: domain` 软警告条目。
+ *
+ * 语义：
+ *   - ADR-0055 已规定 Work `## Refs` 只接受 `kind: blueprint`
+ *   - v0.7.3 检测到 `kind: domain` 触发 `OXN_WORK_LEGACY_DOMAIN_REF` 软警告（不阻断 lock）
+ *   - v0.8.0 升级为硬阻断（本 RFC 不实现）
+ */
+export interface LegacyDomainRef {
+  /** ref 名 (= H3 文本) */
+  refName: string
+  /** 完整 URI 引用 (如 @prj/domains/X) */
+  ref: string | null
+  /** 迁移建议（指向 Blueprint ## Use） */
+  suggestion: string
+}
+
+/**
  * 🆕 v0.7.3 P5 (RFC §4 P5 + ADR-0061 §D4):
  * Task DAG ⊆ Blueprint slot DAG 拓扑闭包校验的违规项。
  *
@@ -70,6 +88,8 @@ export interface ValidateArtifactsResult {
   unresolved?: UnresolvedRef[]
   /** 🆕 v0.7.3 P4 (ADR-0061 §D3): probe 越界 violations（不阻断 lock，仅记录） */
   probeViolations?: ProbeBoundaryViolation[]
+  /** 🆕 v0.7.3 P7 (ADR-0061 §D6): Work `## Refs` 旧 `kind: domain` 软警告条目 */
+  legacyDomainRefs?: LegacyDomainRef[]
   warnings: string[]
 }
 
@@ -389,6 +409,52 @@ export function collectAndThrowDagClosureViolations(
   )
 }
 
+// =============================================================================
+// 🆕 v0.7.3 P7 (RFC §4 P7 + ADR-0061 §D6):
+//   Work `## Refs` 旧 `kind: domain` deprecation warn（不阻断 lock）
+// =============================================================================
+
+/**
+ * 🆕 v0.7.3 P7 (ADR-0061 §D6):
+ * 检测 Work `## Refs` 中的 legacy `kind: domain` 条目。
+ *   - ADR-0055 已规定 Work `## Refs` 只接受 `kind: blueprint`
+ *   - v0.7.3 软警告（不阻断 lock）；v0.8.0 升级为硬阻断（本 RFC 不实现）
+ *   - 返回每条 legacy ref 的 refName / ref / suggestion
+ *   - 空 refs 或无 legacy → 返回 []
+ *
+ * Note：此 helper 仅看 `work.refs[]`（Work 级 Refs），不影响 task 级 `domain` 字段
+ * （task 级 domain 是当前合法字段；ADR-0055 §D2 仅限制 Work 级 refs 格式）
+ */
+export function detectLegacyDomainRefs(work: WorkDeclaration): LegacyDomainRef[] {
+  const refs = (work as { refs?: Array<{ kind?: string; name?: string; ref?: string }> }).refs ?? []
+  const out: LegacyDomainRef[] = []
+  for (const r of refs) {
+    if (r.kind !== 'domain') continue
+    out.push({
+      refName: r.name ?? '(unknown)',
+      ref: typeof r.ref === 'string' ? r.ref : null,
+      suggestion:
+        'Move to Blueprint ## Use ## X - kind: domain - ref: ' +
+        (typeof r.ref === 'string' ? r.ref : (r.name ?? '...')),
+    })
+  }
+  return out
+}
+
+/**
+ * 🆕 v0.7.3 P7 (ADR-0061 §D6):
+ * 把 legacy domain refs 列表转换为 warning 字符串数组。
+ *   - 格式：`OXN_WORK_LEGACY_DOMAIN_REF: <refName> "kind: domain" is deprecated since v0.6.1; v0.8.0 will hard-block. <suggestion>`
+ *   - 0 legacy → 返回 []
+ */
+export function legacyDomainRefsToWarnings(entries: LegacyDomainRef[]): string[] {
+  return entries.map(
+    (e) =>
+      `OXN_WORK_LEGACY_DOMAIN_REF: ref "${e.refName}"${e.ref ? ` (${e.ref})` : ''} uses deprecated "kind: domain" (ADR-0055 §D2). ` +
+      `v0.7.3 only warns; v0.8.0 will hard-block. ${e.suggestion}`,
+  )
+}
+
 export async function validateAndWriteArtifacts(params: {
   projectRoot: string
   workName: string
@@ -438,6 +504,12 @@ export async function validateAndWriteArtifacts(params: {
   //   task.deps 必须 ∈ task.boundary 的祖先集合 ∪ {boundary 自身}
   //   escape hatch: skipDagCheck=true 时跳过（仅供历史 Work 渐进迁移）
   collectAndThrowDagClosureViolations(work, blueprintsIdx, { skip: skipDagCheck })
+
+  // 🆕 v0.7.3 P7 (ADR-0061 §D6): Work ## Refs 旧 kind: domain 软警告
+  //   - 不阻断 artifacts 写入（仅 push warning + structured entry）
+  //   - v0.8.0 升级为 hard-block（本 RFC 不实现）
+  const legacyDomainRefs = detectLegacyDomainRefs(work)
+  for (const w of legacyDomainRefsToWarnings(legacyDomainRefs)) warnings.push(w)
 
   // 🆕 Phase B: 删 writePerWorkDomainsIndex 调用（不再写 domains.json）
   const blueprintsJsonPath = getPerWorkBlueprintsJsonPath(projectRoot, workName)
@@ -511,5 +583,6 @@ export async function validateAndWriteArtifacts(params: {
       },
     },
     warnings,
+    ...(legacyDomainRefs.length > 0 ? { legacyDomainRefs } : {}),
   }
 }

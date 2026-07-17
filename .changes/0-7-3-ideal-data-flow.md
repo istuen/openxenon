@@ -8,9 +8,9 @@ adr:
   - .openxenon/docs/adrs/0061-data-flow-contract.md
 ---
 
-# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1）
+# 0.7.3 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1 + P7 GA）
 
-> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1** 落地：
+> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1 + P7 GA** 落地：
 > P0 = ADR-0061 立法 + RFC 定稿；
 > P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）；
 > P2 = readDomainFile regex → mdast 切换，修 ## Terms: 后缀 + multiline - desc: | 两个 parser bug；
@@ -18,8 +18,9 @@ adr:
 > P4 = D3 Boundary.observe 与 Task.probes lock 期 hard-check（F4 part 1 + D3）；
 > P5 = D4 Workflow.slot DAG 与 Task.deps DAG 闭包校验（F4 part 2 + D4）；
 > P6 = D5 Stack.tools 注入 Probe runtime（F4 part 3 + D5）；
-> P7-P8 渐进落地（deprecation warn + ADR 状态更新）
-> 将在后续 GA 各 changelog 记录。
+> P7 = D6 Work `## Refs` 旧 `kind: domain` 软警告（不阻断 lock，为 v0.8.0 硬阻断预留窗口）；
+> P8 = ADR-0055/0060 runtime 状态标注更新
+> 将在 P8 落地后合并 v0.7.3 GA changelog。
 
 ## P0 核心交付
 
@@ -55,6 +56,7 @@ adr:
 | P4 | Boundary.observe 与 Task.probes lock 期校验 | v0.7.3-alpha.3 | ✅ 已落 |
 | P5 | Workflow slot DAG 与 Task deps DAG 闭包校验 | v0.7.3-beta.1 | ✅ 已落 |
 | P6 | Stack.tools 注入 Probe runtime | v0.7.3-beta.1 | ✅ 已落 |
+| P7 | Work `## Refs` 旧 `kind: domain` 软警告 | v0.7.3-GA | ✅ 已落 |
 | P5 | Workflow.slot DAG 与 Task.deps DAG 闭包校验 | v0.7.3-beta.1 | ⏳ 待启动 |
 | P6 | Stack.tools 注入 ProbeRunner | v0.7.3-beta.1 | ⏳ 待启动 |
 | P7 | Work `## Refs` 旧 `kind: domain` deprecation warn | v0.7.3 | ⏳ 待启动 |
@@ -320,6 +322,33 @@ Terms (must use): Asset, AssetKind, AssetMode, ...
 - E2E：`oxn work context v073-ideal-data-flow --task p0-rfc-finalize --context-mode full` → 输出含 `## Stack Tools (8)`（bun / typescript / eslint / biome / bun-test / vitepress / lefthook / validate-deps）
 - E2E JSON：`oxn work context ... --json` → data.stackTools 数组长度=8，每项含 name + version + command + config + role
 - 端到端：mock probe handler 在 ProofRunner 测试中收到完整 stackTools（ctx.stackTools.length=2）
+
+## P7 GA 核心交付
+
+### 决策落地（ADR-0061 §D6）
+
+**D6 - Work `## Refs` 兼容性：旧 `kind: domain` deprecation warn**：
+- v0.7.3 lock 期：检测到 Work `## Refs` 中 `kind: domain` 触发 `OXN_WORK_LEGACY_DOMAIN_REF` 软警告（不阻断 lock，记录到 warnings + structured diagnostics）
+- v0.8.0 升级为硬阻断（本 RFC 不实现）
+- 给历史 Work 一个 migrate 窗口
+
+### 代码改动
+
+| 文件 | 内容 |
+|---|---|
+| `packages/engine/src/Work/work-validator.ts` | + `LegacyDomainRef` interface + `detectLegacyDomainRefs(work)` + `legacyDomainRefsToWarnings(entries)`；`ValidateArtifactsResult.legacyDomainRefs?`；validateAndWriteArtifacts 调用 helper（不阻断 artifacts 写入）|
+| `packages/cli/src/commands/work.ts` | validate subcommand 输出含 `legacyDomainRefs` 结构化字段（无新 CLI 代码；透传 result.legacyDomainRefs）|
+| `packages/engine/src/Work/__tests__/work-validator.test.ts` | + 10 测试（detectLegacyDomainRefs × 7：空/缺省/无 legacy/1 个/多 个/ref 缺省/stack 不触发；legacyDomainRefsToWarnings × 3：空/1 个/多 个）|
+
+### 验收门槛
+
+- `bun test`：**1621 pass / 3 skip / 0 fail**（+10 新测试）
+- `bun run typecheck`：全绿
+- `bun run lint`：全绿
+- `bun scripts/validate-dependencies.ts`：violations=0
+- E2E：临时 work `.openxenon/works/test-legacy-ref-warn/work.md`（`## Refs` + `### TrustChain-LegacyProbe - kind: domain`） → `oxn work validate` 返回 `ok=true` + warning `OXN_WORK_LEGACY_DOMAIN_REF: ref "TrustChain-LegacyProbe" (@prj/domains/TrustChain) uses deprecated "kind: domain" (ADR-0055 §D2). v0.7.3 only warns; v0.8.0 will hard-block. Move to Blueprint ## Use ...`
+- E2E JSON：data.legacyDomainRefs 数组含 1 条 entry（refName + ref + suggestion）
+- 真实场景：当前 v073-ideal-data-flow work 用 `## Use` 语法 → 无 warning；artifacts 正常写入
 
 ## 验收门槛
 
