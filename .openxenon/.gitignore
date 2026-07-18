@@ -1,7 +1,7 @@
 # .openxenon/.gitignore — 工程工作台运行时产物
-# 三层文档规则见 AGENTS.md「文档 SSOT 规则」
-#   tracked：docs/adrs/, docs/rfcs/, pools/{drafts,issues,journals,spikes}/, assets/（工程师按需 opt-in）
-#   ignored：works/, proofs/, .cache/, issues/, *-state.json, *-trace.jsonl, *-frozen.json
+# 三层文档规则见 AGENTS.md「文档三层架构（v0.7 重构）」
+#   tracked：drafts/, drafts/rfc/（ADR/RFC 暂存）, assets/（工程师按需 opt-in）
+#   ignored：works/, proofs/, .cache/, *-state.json, *-trace.jsonl, *-frozen.json
 
 # Runtime state (not for Git; personal/sandbox data)
 works/

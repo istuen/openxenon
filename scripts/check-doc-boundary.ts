@@ -1,20 +1,23 @@
 #!/usr/bin/env bun
 /**
- * check-doc-boundary — 文档三层守门
+ * check-doc-boundary — 文档三层守门（v0.7 重构）
  *
- * 规则矩阵（禁反向引用）：
- *   docs/zh-cn/product/*  → 禁止  .openxenon/**
- *   docs/zh-cn/dev/*      → 禁止  .openxenon/pools/**
- *   .openxenon/docs/*     → 禁止  docs/zh-cn/product/**
- *   .openxenon/pools/*    → 禁止  .openxenon/docs/** + docs/zh-cn/**
+ * 规则矩阵（v0.7 topic-first）：
+ *   docs/product/{zh-cn,en}/*  → 禁止  .openxenon/**
+ *   docs/dev/{zh-cn,en}/*       → 禁止  .openxenon/drafts/**
+ *   docs/rfc/{zh-cn,en}/*       → 禁止  .openxenon/drafts/**
+ *   .openxenon/drafts/rfc/*     → 禁止  docs/product/**
+ *   .openxenon/drafts/*         → 禁止  .openxenon/drafts/rfc/**
  *
  * 允许：
- *   dev/ → product/、.openxenon/docs/{adrs,rfcs}/
- *   product/ → dev/（脚注引用）、同 product/ 内部
- *   adrs/ → 其他 adrs/、rfcs/、docs/zh-cn/dev/
+ *   docs/{product,dev,rfc}/ 同树互引
+ *   .openxenon/drafts/ → docs/（仅通过 promote workflow，不在路径上禁止）
+ *   .openxenon/drafts/rfc/ → docs/dev/（探索引用沉淀）
  *
  * 跳过规则：
  *   docs/_archive/**
+ *   docs/.vitepress/**
+ *   .openxenon/.archived/**
  *   包含 '<!-- boundary:ignore -->' 注释的段落
  */
 
@@ -37,32 +40,39 @@ interface BoundaryRule {
 
 const RULES: BoundaryRule[] = [
   {
-    name: 'dev-no-pools',
-    description: 'dev/ 不可引用 .openxenon/pools/',
-    sourcePattern: /^docs\/zh-cn\/dev\//,
-    targetPattern: /^\.openxenon\/pools\//,
-    message: '开发手册不可引用动态文稿（.openxenon/pools/）',
+    name: 'product-no-openxenon',
+    description: 'product/ 不可引用 .openxenon/',
+    sourcePattern: /^docs\/product\//,
+    targetPattern: /^\.openxenon\//,
+    message: '产品手册不可引用 .openxenon/ 内部（严格隔离）',
   },
   {
-    name: 'openxenon-docs-no-product',
-    description: '.openxenon/docs/ 不可反向引用 docs/zh-cn/product/',
-    sourcePattern: /^\.openxenon\/docs\//,
-    targetPattern: /^docs\/zh-cn\/product\//,
-    message: '内部手册不可反向引用产品手册',
+    name: 'dev-no-drafts',
+    description: 'dev/ 不可引用 .openxenon/drafts/',
+    sourcePattern: /^docs\/dev\//,
+    targetPattern: /^\.openxenon\/drafts\//,
+    message: '开发手册不可引用 .openxenon/drafts/ 内部（仅 docs/rfc/ 可互引）',
   },
   {
-    name: 'pools-no-docs',
-    description: '.openxenon/pools/ 不可引用 docs/zh-cn/',
-    sourcePattern: /^\.openxenon\/pools\//,
-    targetPattern: /^docs\/zh-cn\//,
-    message: '动态文稿不可引用文档手册',
+    name: 'rfc-no-drafts-isolated',
+    description: 'docs/rfc/ 不可引用 .openxenon/drafts/rfc/（drafts/rfc/ 待审视，不混进 rfc/）',
+    sourcePattern: /^docs\/rfc\//,
+    targetPattern: /^\.openxenon\/drafts\/rfc\//,
+    message: 'docs/rfc/ 已 accepted 的 OXP 不引用 drafts/rfc/ 待审视文档',
   },
   {
-    name: 'pools-no-openxenon-docs',
-    description: '.openxenon/pools/ 不可引用 .openxenon/docs/',
-    sourcePattern: /^\.openxenon\/pools\//,
-    targetPattern: /^\.openxenon\/docs\//,
-    message: '动态文稿不可引用内部手册',
+    name: 'drafts-no-rfc',
+    description: '.openxenon/drafts/（非 rfc/ 子目录） 不可引用 .openxenon/drafts/rfc/',
+    sourcePattern: /^\.openxenon\/drafts\/(?!rfc\/)/,
+    targetPattern: /^\.openxenon\/drafts\/rfc\//,
+    message: '项目工作草稿不可引用 ADR/RFC 暂存区',
+  },
+  {
+    name: 'drafts-rfc-no-assets',
+    description: '.openxenon/drafts/rfc/ 不可引用 .openxenon/assets/ 直接（Domain 是 vocabulary，应通过 docs/）',
+    sourcePattern: /^\.openxenon\/drafts\/rfc\//,
+    targetPattern: /^\.openxenon\/assets\//,
+    message: 'ADR/RFC 暂存不应直接引用项目资产（应通过 docs/ 概念页）',
   },
 ]
 
@@ -71,7 +81,8 @@ const RULES: BoundaryRule[] = [
 function resolveRelativePath(sourceFile: string, link: string): string | null {
   // 绝对路径
   if (link.startsWith('/')) {
-    return relative(ROOT, join(ROOT, 'docs', link.slice(1)))
+    const cleaned = link.replace(/^\.html$/, '')
+    return relative(ROOT, join(ROOT, 'docs', cleaned.slice(1)))
   }
   // 相对路径
   const sourceDir = join(sourceFile, '..')
@@ -86,11 +97,6 @@ function extractLinks(content: string): string[] {
   let match
   while ((match = linkRegex.exec(content)) !== null) {
     links.push(match[2]!)
-  }
-  // import "path"
-  const importRegex = /import\s+.*?from\s+['"]([^'"]+)['"]/g
-  while ((match = importRegex.exec(content)) !== null) {
-    links.push(match[1]!)
   }
   return links
 }
@@ -109,8 +115,10 @@ function scanFile(filePath: string): Violation[] {
   const violations: Violation[] = []
   const relativePath = relative(ROOT, filePath)
 
-  // 跳过 _archive
-  if (relativePath.includes('_archive')) return violations
+  // 跳过 _archive 与 .vitepress 与 .archived
+  if (relativePath.includes('_archive') || relativePath.startsWith('docs/.vitepress/')) {
+    return violations
+  }
 
   const content = readFileSync(filePath, 'utf-8')
   const lines = content.split('\n')
@@ -136,6 +144,10 @@ function scanFile(filePath: string): Violation[] {
       const targetPath = resolveRelativePath(filePath, link)
       if (!targetPath) continue
 
+      // 跳过 _archive 目标
+      if (targetPath.includes('_archive')) continue
+      if (targetPath.includes('.archived')) continue
+
       for (const rule of RULES) {
         if (rule.sourcePattern.test(relativePath) && rule.targetPattern.test(targetPath)) {
           violations.push({
@@ -155,14 +167,24 @@ function scanFile(filePath: string): Violation[] {
 
 function scanDirectory(dir: string): Violation[] {
   const violations: Violation[] = []
-  const entries = readdirSync(dir)
+  let entries: string[]
+  try {
+    entries = readdirSync(dir)
+  } catch {
+    return violations
+  }
 
   for (const entry of entries) {
     const fullPath = join(dir, entry)
-    const stat = statSync(fullPath)
+    let stat
+    try {
+      stat = statSync(fullPath)
+    } catch {
+      continue
+    }
 
     if (stat.isDirectory()) {
-      if (entry === '_archive' || entry === 'node_modules') continue
+      if (entry === '_archive' || entry === 'node_modules' || entry === '.vitepress') continue
       violations.push(...scanDirectory(fullPath))
     } else if (entry.endsWith('.md')) {
       violations.push(...scanFile(fullPath))
@@ -177,22 +199,18 @@ function scanDirectory(dir: string): Violation[] {
 function main() {
   const violations: Violation[] = []
 
-  // 扫描 docs/zh-cn/
-  const zhCnDir = join(DOC_ROOT, 'zh-cn')
-  if (statSync(zhCnDir).isDirectory()) {
-    violations.push(...scanDirectory(zhCnDir))
+  // 扫描 docs/{product,dev,rfc}/
+  for (const topic of ['product', 'dev', 'rfc']) {
+    const topicDir = join(DOC_ROOT, topic)
+    if (statExists(topicDir)) {
+      violations.push(...scanDirectory(topicDir))
+    }
   }
 
-  // 扫描 .openxenon/docs/
-  const adrsDir = join(OPENXENON_ROOT, 'docs')
-  if (statSync(adrsDir).isDirectory()) {
-    violations.push(...scanDirectory(adrsDir))
-  }
-
-  // 扫描 .openxenon/pools/
-  const poolsDir = join(OPENXENON_ROOT, 'pools')
-  if (statSync(poolsDir).isDirectory()) {
-    violations.push(...scanDirectory(poolsDir))
+  // 扫描 .openxenon/drafts/（含 rfc/）
+  const draftsDir = join(OPENXENON_ROOT, 'drafts')
+  if (statExists(draftsDir)) {
+    violations.push(...scanDirectory(draftsDir))
   }
 
   if (violations.length === 0) {
@@ -210,6 +228,15 @@ function main() {
   }
 
   process.exit(1)
+}
+
+function statExists(p: string): boolean {
+  try {
+    statSync(p)
+    return true
+  } catch {
+    return false
+  }
 }
 
 main()

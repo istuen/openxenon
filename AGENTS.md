@@ -82,64 +82,89 @@ bun test                    # bun test，约 1487 个测试 / 119 文件
   - **正确维护流**：修改 `instruction.md` → 跑 `bun run packages/cli/src/index.ts init -f` → `.opencode/skills/` 自动重建
   - **错误反模式**：不要手动编 `.opencode/skills/<skill>/SKILL.md`——下次 `init -f` 会从 SSOT 覆盖你的修改
 
-## 文档三层架构
+## 文档三层架构（v0.7 重构）
 
-> **判据**：受众是外部用户 → `docs/`；受众是贡献者且需长期保留 → `.openxenon/docs/`（确定性）；受众是贡献者且流动 → `.openxenon/pools/`（探索）；受众是 OXN Engine → `.openxenon/{works,proofs}/`（运行时）。
+> **判据**：受众是外部用户 → `docs/`（topic-first：product|dev|rfc）；受众是贡献者且需长期保留 → `docs/rfc/`（沉淀）；受众是 OXN 开发 → `.openxenon/drafts/`（流动）；项目资产 → `.openxenon/assets/`；运行时 → `.openxenon/{works,proofs}/`。
 
-### 1. 对外文档（确定性 SSOT，tracked）
+### 1. 对外文档 — `docs/`（topic-first SSOT，tracked）
 
-- `docs/zh-cn/*.md`（中文首发）+ `docs/en/*.md`（英文）。双语对称 prefix 结构（inv-2），不使用根平铺。
-- 旧 `docs/{core,architecture,reference,guides,design,horizon,changelog,development}/` 已归档到 `docs/_archive/`，不再作对外引用源（inv-10）。
-- 新增概念 / 命令 / Probe：先在 `docs/zh-cn/` 找到归属章节，若没有则新建；同步在 `docs/en/` 建对应英文页。
-- AI 协作者使用 `docs/zh-cn/llm-prompt.md` 作为入口。
+```
+docs/
+├── product/{zh-cn,en}/   ← 产品与使用手册
+├── dev/{zh-cn,en}/       ← 开发手册（贡献者）
+└── rfc/{zh-cn,en}/       ← 决策记录（OXP Proposal 机制）
+```
+
+- **topic-first**：先按主题（product/dev/rfc）后按语言（zh-cn/en），不再按语言平铺。
+- **rfc/ 内含历史 ADR**：v0.7 前 ADR 迁移至 `docs/rfc/OXP-XXXX-xxx.md`，统一编号。
+- 默认中文为主（zh-cn/）；rfc/ 暂无英文版本。
 - 章内统一模板：What → Why → How → 参考。
+- 旧 `docs/_archive/` 保留历史归档（不再作对外引用源，inv-10）。
 
-### 2. 对内-沉淀文档（确定性，tracked）
+### 2. 对内-开发文档 — `.openxenon/drafts/`（流动，tracked）
 
-- `.openxenon/docs/adrs/` — ADR（架构决策记录，**append-only**：不编辑不删除，被推翻时新 ADR 标记旧 ADR 为 Superseded）。
-- `.openxenon/docs/rfcs/` — 已定稿 RFC（确定性，定稿后不再改）。
-- 跨章跳转用相对路径 + 锚链：`[ADR-0012](../../.openxenon/docs/adrs/0012-main-sub-agent-audit-chain.md)`
+- `.openxenon/drafts/` — 项目工作草稿（替代原 pools/）
+  - `drafts/rfc/` — OXP Proposal 暂存与历史 ADR 归档（待审视归属）
+  - `drafts/*.md` — 工作草稿（探索、审计、设计初稿）
+- 流动层：可自由编辑/删除
+- 提升通道：promote 走对应 Blueprint → `docs/product/` / `docs/dev/` / `docs/rfc/` / `.openxenon/assets/`
 
-### 3. 对内-探索文档（流动，tracked）
+### 3. 项目资产 — `.openxenon/assets/`（边界，冻结后不可变）
 
-- `.openxenon/pools/drafts/` — 探索性设计、未定稿 RFC、审计报告。
-- `.openxenon/pools/issues/` — 工程问题记录（ISS-*）。
-- `.openxenon/pools/journals/` — session 日志（人工复盘、E2E 验证记录）。
-- `.openxenon/pools/spikes/` — spike 决策记录。
-- pools/ 内容可自由编辑/删除；定稿后通过 `doc-promote` Work 提升到 `.openxenon/docs/`。
+- `.openxenon/assets/{domains,workflows,stacks,blueprints,roadmaps}/`（E1 Asset）
+- v0.7.0 布局，业务声明 + AI 创作模板，`.md` 格式
+- `assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`
 
-### 4. 版本 changelog（tracked）
+### 4. 运行时数据 — `.openxenon/{works,proofs}/`
+
+- 已 gitignore，IAP 执行产物（works + proofs）
+
+### 5. 版本 changelog（tracked）
 
 - `.changes/` — 按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
-### RFC 生命周期（promote 走 Work）
+### OXP 生命周期（promote 走 Work）
 
 ```
-pools/drafts/xxx-draft.md（散落，无格式）
-    ↓ oxn work create promote-xxx --blueprint doc-promote
+.openxenon/drafts/xxx-draft.md（散落，无格式）
+    ↓ oxn work create promote-xxx --blueprint doc-rfc-workflow
     ↓ lock → run → submit → finalize
-.openxenon/docs/rfcs/xxx-rfc.md（确定性，不再改）
-    ↓ 决策落地后
-.openxenon/docs/adrs/00XX-xxx.md（append-only）
+docs/rfc/zh-cn/OXP-00XX-xxx.md（accepted 后核心冻结，仅可追加 errata 段）
 ```
+
+### 4 条 Promote 工作流
+
+```
+.openxenon/drafts/xxx.md
+    │
+    ├── asset-workflow      → .openxenon/assets/{kind}/xxx.md
+    ├── doc-prod-workflow   → docs/product/{zh-cn,en}/xxx.md
+    ├── doc-dev-workflow    → docs/dev/{zh-cn,en}/xxx.md
+    └── doc-rfc-workflow    → docs/rfc/zh-cn/OXP-XXXX-xxx.md
+```
+
+### 引用规则（v0.7 简化）
+
+1. `docs/` 内部互引 ✅（product↔dev↔rfc 同树，跨语言需走相对路径）
+2. `docs/` → `.openxenon/` ❌（严格隔离）
+3. `.openxenon/drafts/` → `docs/` ✅（仅通过 promote workflow）
+4. `.openxenon/assets/` → `docs/` ❌（边界不依赖手册）
 
 ## 文档站点
 
-- 站点生成器：VitePress，源在 `docs/zh-cn/*.md` + `docs/en/*.md`，配置在 `docs/.vitepress/config.ts`
+- 站点生成器：VitePress，源在 `docs/{product,dev,rfc}/{zh-cn,en}/`，配置在 `docs/.vitepress/config.ts`
 - 部署：GitHub Pages 部署到 `https://istuen.github.io/openxenon/`
 - `config.ts` 只描述 nav 顺序与分组，**不写内容**
-- 新增章节：先在 `docs/zh-cn/`（及 `docs/en/`）创建 .md，再在 `config.ts` 添加 sidebar 条目
-- 部署触发：仅 main 分支 push 或手动 `workflow_dispatch` 触发部署；feat/* 推时仅 build 验证编译
-- Pages 启用由仓库管理员手动一次性操作（Settings → Pages → Source: "GitHub Actions"）
+- 门户页 `docs/index.md` 自动重定向到 `docs/product/zh-cn/`
 - 本地预览：`bun run docs:dev`（http://localhost:5173）；本地构建：`bun run docs:build`
 
 ## 快速导览
 
 - 运行时数据：`.openxenon/{works,proofs}/`（已 gitignore，运行时产物）。
-- **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/{domains,blueprints,stack,roadmaps}/`（E1 Asset 边界，工程师维护，冻结后不可变，默认 gitignore 工程师按需 opt-in tracked）；`docs/{adrs,rfcs}/`（对内-沉淀，tracked）；`pools/{drafts,issues,journals,spikes}/`（对内-探索，tracked）；运行时产物 `works/ proofs/ .cache/ issues/` 已 gitignore。
+- **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/`（E1 Asset 边界）；`drafts/`（探索稿 + 历史 ADR/RFC）；运行时 `works/ proofs/ .cache/` 已 gitignore。
 - IAP 资产：`.openxenon/assets/{domains,blueprints,stack}/`（v0.7.0 布局，业务声明 + AI 创作模板，`.md` 格式）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
-- AI 可见的权威文档：`docs/zh-cn/index.md`（入口）、`docs/zh-cn/core-concepts.md`（IAP 范式）、`docs/zh-cn/insight.md`（Insight 层）、`docs/zh-cn/work.md`（Work 核心）、`docs/zh-cn/proof.md`（Proof 轴）、`docs/zh-cn/cli.md`（CLI 参考）、`docs/zh-cn/architecture.md`（架构）。
-- ADR 索引：`.openxenon/docs/adrs/INDEX.md`（46 条活跃 + 6 条 Superseded 归档于 `.archived/docs/adrs/`,append-only）。
+- AI 可见的权威文档：`docs/product/zh-cn/introduction.html`（入口）、`docs/product/zh-cn/concepts/iap-paradigm.html`（IAP 范式）、`docs/product/zh-cn/concepts/insight.html`（Insight 层）、`docs/product/zh-cn/concepts/work.html`（Work 核心）、`docs/product/zh-cn/concepts/proof.html`（Proof 轴）、`docs/product/zh-cn/reference/cli-user-guide.html`（CLI 参考）、`docs/dev/zh-cn/architecture.html`（架构）。
+- ADR/RFC 索引：`.openxenon/drafts/rfc/INDEX.md`（v0.7 暂存状态，待逐个审视归属）。
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
