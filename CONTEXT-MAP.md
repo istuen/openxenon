@@ -1,7 +1,10 @@
 # Context Map
 
-> OpenXenon 是一个多 context 词汇架构：7 个 Domain .md 文件共同构成项目术语权威源。
+> OpenXenon 是一个多 context 词汇架构：8 个 Domain .md 文件共同构成项目术语权威源。
 > 本文件是入口索引；各 Domain 文件是各 context 的精确定义。
+>
+> **v0.7 新增**：OxnProjectDomain（项目工程元层）—— 定义文档三情态分离（Asset / RFC / Doc）、
+> 内置 Asset 两层机制（`@oxn/` + `@prj/`）、自举种子豁免（src/builtin/）。
 
 ## Contexts
 
@@ -14,6 +17,7 @@
 | **OxnProofDomain** | [.openxenon/assets/domains/oxn-proof-domain.md](./.openxenon/assets/domains/oxn-proof-domain.md) | Proof 业务领域；Probe + Trace + 客观事实采集 |
 | **OxnInsightDomain** | [.openxenon/assets/domains/oxn-insight-domain.md](./.openxenon/assets/domains/oxn-insight-domain.md) | Insight 业务领域；涌现层 + 跨 Work 模式 |
 | **OxnCliDomain** | [.openxenon/assets/domains/oxn-cli-domain.md](./.openxenon/assets/domains/oxn-cli-domain.md) | OXN CLI 领域；命令 + i18n + Skill |
+| **OxnProjectDomain** | [.openxenon/assets/domains/oxn-project-domain.md](./.openxenon/assets/domains/oxn-project-domain.md) | OXN 项目工程领域（v0.7+）；文档三情态 + 内置 Asset 两层 + 自举种子豁免 |
 
 ## Relationships
 
@@ -32,7 +36,10 @@ OxnWorkDomain                   │
     ├─────► OxnProofDomain ────┘
     │
     ▼
-OxnInsightDomain（reference 全部 6 个 context）
+OxnInsightDomain（reference 全部 6 个业务 context）
+
+OxnProjectDomain（v0.7+，reference oxn-domain + oxn-engine-domain + oxn-asset-domain，
+                单向补父域未说的元层词汇；不向下引用其他子域）
 ```
 
 - **OxnDomain → 所有子 Domain**：单向引用，root 不被引用
@@ -40,6 +47,7 @@ OxnInsightDomain（reference 全部 6 个 context）
 - **OxnAssetDomain → OxnCliDomain**：CLI 消费 Asset 类型
 - **OxnWorkDomain → OxnAssetDomain + OxnProofDomain**：Work 编排 Asset + 产出 Proof
 - **OxnInsightDomain → 全部 6 个 context**：Insight 涌现层跨 Work 推理，消费所有 context
+- **OxnProjectDomain → oxn-domain/oxn-engine-domain/oxn-asset-domain**：项目工程元层，引用父域 + 资产相关子域；自身不被任何子域引用（避免环形依赖）
 
 ## 核心术语锐化（来自 2026-07-21 / 07-22 / 07-23 grilling session）
 

@@ -253,6 +253,7 @@ export default defineConfig({
                 { text: '证明术语', link: '/glossary/zh-cn/proof-terms.html' },
                 { text: '洞察术语', link: '/glossary/zh-cn/insight-terms.html' },
                 { text: 'CLI 术语', link: '/glossary/zh-cn/cli-terms.html' },
+                { text: '工程术语', link: '/glossary/zh-cn/project-terms.html' },
               ],
             },
           ],

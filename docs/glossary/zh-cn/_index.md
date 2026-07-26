@@ -21,6 +21,7 @@ synced-at: 2026-07-22
 | [证明术语](./proof-terms) | Proof/Probe/ProbeOutcome/outcome/Report/Frozen/Trace（OxnProofDomain 抽取） |
 | [洞察术语](./insight-terms) | Insight、跨 Proof 累积、审计追踪（OxnInsightDomain 抽取） |
 | [CLI 术语](./cli-terms) | 命令/参数/i18n/Skill/配置（OxnCliDomain 抽取） |
+| [工程术语](./project-terms) | OXN 项目工程元层：文档三情态 / 内置 Asset 两层 / 自举种子豁免 / RFC 演进策略（OxnProjectDomain 抽取，v0.7+） |
 
 ## 按字母速查（合并）
 
