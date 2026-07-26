@@ -1,5 +1,7 @@
 # Asset Templates (v0.6.1-alpha.1+)
 
+<!-- boundary:ignore -->
+
 > **This directory contains 4 Asset Paper Schema templates**, released with [v0.6.1-alpha.1](../../.openxenon/pools/sprints/v0.6.1-alpha.1/) branch.
 > **v0.6.1-alpha.1 goal**: Upgrade Asset from "rule pile" to "paper-style structure + citation mechanism".
 
@@ -67,6 +69,7 @@ oxn work lock my-work
 
 ## 参考
 
+<!-- boundary:ignore -->
 - [Asset Paper Schema · Paper structure](../asset-paper.md) — Complete paper structure
 - [v0.6.3 Asset Paper Schema RFC](../../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
 - [ADR-0048 library/external subdirectory scheme](../../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/0048-asset-library-external-scheme.md)

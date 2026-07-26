@@ -413,14 +413,26 @@ Phase 6 (验证, ~0.5d)
 
 | Phase | 状态 | 完成日期 | 备注 |
 |---|---|---|---|
-| -1 Commit | ⏳ 未开始 | — | — |
-| 0 oxn-project-domain | ⏳ 未开始 | — | — |
-| 1 RFC 格式 | ⏳ 未开始 | — | — |
-| 2 ADR→RFC | ⏳ 未开始 | — | — |
-| 3 废除 OXP | ⏳ 未开始 | — | — |
-| 4 Registry | ⏳ 未开始 | — | — |
-| 5 文档同步 | ⏳ 未开始 | — | — |
-| 6 验证 | ⏳ 未开始 | — | — |
+| -1 Commit | ✅ 完成 | 2026-07-26 | 5 commits（Phase 0/2/3/4/5） |
+| 0 oxn-project-domain | ✅ 完成 | 2026-07-26 | 9 Term（superset） |
+| 1 RFC 格式 | ✅ 完成 | 2026-07-26 | RFC frontmatter + 模板 + Blueprint v0.2 |
+| 2 ADR→RFC | ✅ 完成 | 2026-07-26 | 12 RFC 落盘（1751 行） |
+| 3 废除 OXP | ✅ 完成 | 2026-07-26 | 3 删 + 72 归档 + README 重写 |
+| 4 Registry | ✅ 完成 | 2026-07-26 | .md 加载 + stale path 修复 |
+| 5 文档同步 | ✅ 完成 | 2026-07-26 | 见 `rfc-migration-remediation-plan.md` 收尾修复 |
+| 6 验证 | ✅ 完成 | 2026-07-26 | 6 项验证全过 |
+
+---
+
+## 收尾修复
+
+Phase 0-6 已完成。grilling #7 发现 10 个深层次问题由收尾修复处理：
+
+- **G1+G3+G10**：54 死链 + 48 失效 frontmatter + Accepted 语义矛盾 → RFC 降回 Proposed → 镜像 ADR 到 `docs/adrs/` → 修链接 → 加 Errata → 升 Accepted v1.0.1
+- **G2**：Boundary checker 3 盲区（B1 YAML 扫描 + B2 targetPattern 去 `^` + B3 取消 `.archived` 隐式豁免）
+- **G4-G7**：README + glossary frontmatter 格式修复 + three-tier-docs.md 6 处 OXP→RFC + oxn-system.md doc scene 缺 domain + master plan 进度表
+
+详见 [`.openxenon/drafts/rfc-migration-remediation-plan.md`](./rfc-migration-remediation-plan.md)。
 
 ---
 

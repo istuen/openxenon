@@ -2,15 +2,15 @@
 entity: rfc
 id: RFC-0008
 theme: naming-evolution
-version: 1.0.0
+version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
 superseded-by: ~
 related:
-  - ADR-0066: .openxenon/drafts/rfc/0066-terminology-simplification.md
-  - ADR-0071: .openxenon/drafts/rfc/0071-abolish-audit-trail.md
-  - ADR-0080: .openxenon/drafts/rfc/0080-error-terminology-unification-and-governance.md
+  - ADR-0066: docs/adrs/0066-terminology-simplification.md
+  - ADR-0071: docs/adrs/0071-abolish-audit-trail.md
+  - ADR-0080: docs/adrs/0080-error-terminology-unification-and-governance.md
 synced-at: 2026-07-26
 ---
 
@@ -138,12 +138,18 @@ Probe 的验证结果（COMPLETED / DEVIATED / INCONCLUSIVE / MANUAL_PENDING）�
 
 ## 相关决策
 
-- [ADR-0066](../../.openxenon/drafts/rfc/0066-terminology-simplification.md) — 术语精简立法（2026-07-21）
-- [ADR-0071](../../.openxenon/drafts/rfc/0071-abolish-audit-trail.md) — 废除 auditTrail（2026-07-23）
-- [ADR-0080](../../.openxenon/drafts/rfc/0080-error-terminology-unification-and-governance.md) — 错误与冲突处理术语统一（2026-07-23）
-- [ADR-0081](../../.openxenon/drafts/rfc/0081-oxn-unified-error-framework.md) — 类型层被取代（ADR-0080 superseded-by）
+- [ADR-0066](../../adrs/0066-terminology-simplification.md) — 术语精简立法（2026-07-21）
+- [ADR-0071](../../adrs/0071-abolish-audit-trail.md) — 废除 auditTrail（2026-07-23）
+- [ADR-0080](../../adrs/0080-error-terminology-unification-and-governance.md) — 错误与冲突处理术语统一（2026-07-23）
+- [ADR-0081](../../adrs/0081-oxn-unified-error-framework.md) — 类型层被取代（ADR-0080 superseded-by）
 - [OXP-0001（已删除）](./README.md) — 内容已合并入本 RFC；OXP 文件于 2026-07-26 Phase 3 删除
 
 ## Errata
+
+### v1.0.1 (2026-07-26)
+
+- **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
+- **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
+- **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0008 Accepted 起冻结。

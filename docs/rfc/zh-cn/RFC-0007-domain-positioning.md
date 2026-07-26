@@ -2,22 +2,22 @@
 entity: rfc
 id: RFC-0007
 theme: domain-positioning
-version: 1.0.0
+version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
 superseded-by: ~
 related:
-  - ADR-0059: .openxenon/drafts/rfc/0059-domain-reference-model-v2.md
-  - ADR-0060: .openxenon/drafts/rfc/0060-domain-vocabulary-boundary.md
-  - ADR-0068: .openxenon/drafts/rfc/0068-daemon-responsibility-boundary.md
-  - ADR-0069: .openxenon/drafts/rfc/0069-asset-bootstrap-completeness.md
-  - ADR-0070: .openxenon/drafts/rfc/0070-glossary-domain-sync.md
-  - ADR-0072: .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
-  - ADR-0073: .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
-  - ADR-0077: .openxenon/drafts/rfc/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md
-  - ADR-0078: .openxenon/drafts/rfc/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md
-  - ADR-0079: .openxenon/drafts/rfc/0079-asset-is-ontology-formal-reasoning-deferred.md
+  - ADR-0059: docs/adrs/0059-domain-reference-model-v2.md
+  - ADR-0060: docs/adrs/0060-domain-vocabulary-boundary.md
+  - ADR-0068: docs/adrs/0068-daemon-responsibility-boundary.md
+  - ADR-0069: docs/adrs/0069-asset-bootstrap-completeness.md
+  - ADR-0070: docs/adrs/0070-glossary-domain-sync.md
+  - ADR-0072: docs/adrs/0072-oxn-as-referent-for-nondeterministic-agent.md
+  - ADR-0073: docs/adrs/0073-oxn-implementation-boundary-criteria.md
+  - ADR-0077: docs/adrs/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md
+  - ADR-0078: docs/adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md
+  - ADR-0079: docs/adrs/0079-asset-is-ontology-formal-reasoning-deferred.md
 synced-at: 2026-07-26
 ---
 
@@ -241,18 +241,24 @@ Domain（SSOT）  ──manual review──>  Glossary（外部手册可见）
 
 ## 相关决策
 
-- [ADR-0059](../../.openxenon/drafts/rfc/0059-domain-reference-model-v2.md) — Domain 引用模型 v2（2026-07-16）
-- [ADR-0060](../../.openxenon/drafts/rfc/0060-domain-vocabulary-boundary.md) — Domain 词汇边界（2026-07-17）
-- [ADR-0068](../../.openxenon/drafts/rfc/0068-daemon-responsibility-boundary.md) — Daemon 职责边界（2026-07-21）
-- [ADR-0069](../../.openxenon/drafts/rfc/0069-asset-bootstrap-completeness.md) — Asset 自举完整性（2026-07-22）
-- [ADR-0070](../../.openxenon/drafts/rfc/0070-glossary-domain-sync.md) — Glossary ↔ Domain 同步（2026-07-22）
-- [ADR-0072](../../.openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md) — OXN 参照系定位（2026-07-23）
-- [ADR-0073](../../.openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md) — 四轴判据（2026-07-23）
-- [ADR-0077](../../.openxenon/drafts/rfc/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md) — Utility + Goal→Boundary（2026-07-23）
-- [ADR-0078](../../.openxenon/drafts/rfc/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md) — LLM knowledge-full（2026-07-23）
-- [ADR-0079](../../.openxenon/drafts/rfc/0079-asset-is-ontology-formal-reasoning-deferred.md) — Asset 是 Ontology（2026-07-23）
+- [ADR-0059](../../adrs/0059-domain-reference-model-v2.md) — Domain 引用模型 v2（2026-07-16）
+- [ADR-0060](../../adrs/0060-domain-vocabulary-boundary.md) — Domain 词汇边界（2026-07-17）
+- [ADR-0068](../../adrs/0068-daemon-responsibility-boundary.md) — Daemon 职责边界（2026-07-21）
+- [ADR-0069](../../adrs/0069-asset-bootstrap-completeness.md) — Asset 自举完整性（2026-07-22）
+- [ADR-0070](../../adrs/0070-glossary-domain-sync.md) — Glossary ↔ Domain 同步（2026-07-22）
+- [ADR-0072](../../adrs/0072-oxn-as-referent-for-nondeterministic-agent.md) — OXN 参照系定位（2026-07-23）
+- [ADR-0073](../../adrs/0073-oxn-implementation-boundary-criteria.md) — 四轴判据（2026-07-23）
+- [ADR-0077](../../adrs/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md) — Utility + Goal→Boundary（2026-07-23）
+- [ADR-0078](../../adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md) — LLM knowledge-full（2026-07-23）
+- [ADR-0079](../../adrs/0079-asset-is-ontology-formal-reasoning-deferred.md) — Asset 是 Ontology（2026-07-23）
 - [OXP-0003（已删除）](./README.md) — 内容已合并入本 RFC；OXP 文件于 2026-07-26 Phase 3 删除
 
 ## Errata
+
+### v1.0.1 (2026-07-26)
+
+- **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
+- **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
+- **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0007 Accepted 起冻结。

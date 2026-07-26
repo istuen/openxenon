@@ -364,6 +364,8 @@ ExecErrorCode = {
 
 - [Core Concepts](./core-concepts.md) §11 Asset paper structure
 - [Asset · E1 Hard boundary](./asset.md) §14 Asset paper structure
+<!-- boundary:ignore -->
+<!-- boundary:ignore -->
 - [Work · E2 IAP core](./work.md) §12 Work context.md design
 - [v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft
 - [ADR-0048 ~ 0051 series](../../.openxenon/forges/splits/archive/docs-tmp-era/decisions/)

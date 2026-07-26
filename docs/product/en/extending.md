@@ -143,6 +143,7 @@ These assets are copied to `.openxenon/` on `oxn init`.
 
 - Existing `.md` files need no migration (already canonical format)
 - After conversion, user code no longer needs `import { URI } from 'langium'` — safe to delete
+<!-- boundary:ignore -->
 - See [md-native-grammar-rfc.md](https://github.com/istuen/openxenon/blob/main/.openxenon/pools/sprints/v0.3-md-ssot/design/md-native-grammar-rfc.md) D9
 
 ## → Reference

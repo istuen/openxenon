@@ -2,20 +2,20 @@
 entity: rfc
 id: RFC-0003
 theme: ai-collaboration
-version: 1.0.0
+version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
 superseded-by: ~
 related:
-  - ADR-0012: .openxenon/drafts/rfc/0012-main-sub-agent-audit-chain.md
-  - ADR-0020: .openxenon/drafts/rfc/0020-intent-align-unified-matrix.md
-  - ADR-0031: .openxenon/drafts/rfc/0031-proof-notary-not-judge.md
-  - ADR-0032: .openxenon/drafts/rfc/0032-pi-vs-opencode-selection.md
-  - ADR-0057: .openxenon/drafts/rfc/0057-trust-chain-core-model.md
-  - ADR-0058: .openxenon/drafts/rfc/0058-minimum-trust-closure.md
-  - ADR-0067: .openxenon/drafts/rfc/0067-no-judgment-principle.md
-  - ADR-0076: .openxenon/drafts/rfc/0076-adversarial-ownership-and-cross-llm-referent.md
+  - ADR-0012: docs/adrs/0012-main-sub-agent-audit-chain.md
+  - ADR-0020: docs/adrs/0020-intent-align-unified-matrix.md
+  - ADR-0031: docs/adrs/0031-proof-notary-not-judge.md
+  - ADR-0032: docs/adrs/0032-pi-vs-opencode-selection.md
+  - ADR-0057: docs/adrs/0057-trust-chain-core-model.md
+  - ADR-0058: docs/adrs/0058-minimum-trust-closure.md
+  - ADR-0067: docs/adrs/0067-no-judgment-principle.md
+  - ADR-0076: docs/adrs/0076-adversarial-ownership-and-cross-llm-referent.md
 synced-at: 2026-07-26
 ---
 
@@ -191,16 +191,22 @@ OXN 只记录客观事实，不评判"合格不合格"。判定权归工程师�
 
 ## 相关决策
 
-- [ADR-0012](../../.openxenon/drafts/rfc/0012-main-sub-agent-audit-chain.md) — 审计链哲学（2026-05-27）
-- [ADR-0020](../../.openxenon/drafts/rfc/0020-intent-align-unified-matrix.md) — Intent/Align 矩阵（2026-06-04）
-- [ADR-0031](../../.openxenon/drafts/rfc/0031-proof-notary-not-judge.md) — Proof 公证人 ≠ 裁判（2026-07-02）
-- [ADR-0032](../../.openxenon/drafts/rfc/0032-pi-vs-opencode-selection.md) — OpenCode 选型（2026-07-02）
-- [ADR-0057](../../.openxenon/drafts/rfc/0057-trust-chain-core-model.md) — TrustChain → 观测链（Superseded by 0066）
-- [ADR-0058](../../.openxenon/drafts/rfc/0058-minimum-trust-closure.md) — 最小信任闭环（2026-07-12）
-- [ADR-0067](../../.openxenon/drafts/rfc/0067-no-judgment-principle.md) — 彻底不判贯彻（2026-07-21）
-- [ADR-0076](../../.openxenon/drafts/rfc/0076-adversarial-ownership-and-cross-llm-referent.md) — 对抗关系归属（2026-07-23）
+- [ADR-0012](../../adrs/0012-main-sub-agent-audit-chain.md) — 审计链哲学（2026-05-27）
+- [ADR-0020](../../adrs/0020-intent-align-unified-matrix.md) — Intent/Align 矩阵（2026-06-04）
+- [ADR-0031](../../adrs/0031-proof-notary-not-judge.md) — Proof 公证人 ≠ 裁判（2026-07-02）
+- [ADR-0032](../../adrs/0032-pi-vs-opencode-selection.md) — OpenCode 选型（2026-07-02）
+- [ADR-0057](../../adrs/0057-trust-chain-core-model.md) — TrustChain → 观测链（Superseded by 0066）
+- [ADR-0058](../../adrs/0058-minimum-trust-closure.md) — 最小信任闭环（2026-07-12）
+- [ADR-0067](../../adrs/0067-no-judgment-principle.md) — 彻底不判贯彻（2026-07-21）
+- [ADR-0076](../../adrs/0076-adversarial-ownership-and-cross-llm-referent.md) — 对抗关系归属（2026-07-23）
 - [OXP-0002（已删除）](./README.md) — 内容已合并入本 RFC；OXP 文件于 2026-07-26 Phase 3 删除
 
 ## Errata
+
+### v1.0.1 (2026-07-26)
+
+- **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
+- **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
+- **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0003 Accepted 起冻结。

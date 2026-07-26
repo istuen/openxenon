@@ -389,7 +389,7 @@ describe('Translation layer (AI inputs → Infra params)', () => {
     expect(r.internalParams).toEqual({ command: 'bun test', timeout: 60000 })
   })
 
-  test('fs-exists 缺 path → IAPError (PROOF/INFRA_FAIL)', () => {
+  test('fs-exists 缺 path → IAPError (PROOF/INFRA_FAIL_PROBE_CATALOG)', () => {
     try {
       translateProbeInputs('fs-exists', {})
       expect(true).toBe(false) // 不应到达
@@ -397,14 +397,14 @@ describe('Translation layer (AI inputs → Infra params)', () => {
       expect(isIAPError(err)).toBe(true)
       const e = err as IAPError
       expect(e.axis).toBe('PROOF')
-      expect(e.code).toBe('INFRA_FAIL')
+      expect(e.code).toBe('INFRA_FAIL_PROBE_CATALOG')
       expect(e.action).toBe(IAPAction.YIELD_TO_HUMAN)
-      expect(e.name).toBe('IAP_PROOF_INFRA_FAIL')
+      expect(e.name).toBe('INFRA_FAIL_PROBE_CATALOG')
       expect(e.context).toMatchObject({ probe: 'fs-exists', input: 'path', reason: 'input_missing' })
     }
   })
 
-  test('fs-exists path 类型错（number）→ IAPError (PROOF/INFRA_FAIL)', () => {
+  test('fs-exists path 类型错（number）→ IAPError (PROOF/INFRA_FAIL_PROBE_CATALOG)', () => {
     try {
       translateProbeInputs('fs-exists', { path: 42 })
       expect(true).toBe(false) // 不应到达
@@ -412,7 +412,7 @@ describe('Translation layer (AI inputs → Infra params)', () => {
       expect(isIAPError(err)).toBe(true)
       const e = err as IAPError
       expect(e.axis).toBe('PROOF')
-      expect(e.code).toBe('INFRA_FAIL')
+      expect(e.code).toBe('INFRA_FAIL_PROBE_CATALOG')
       expect(e.context).toMatchObject({
         probe: 'fs-exists',
         input: 'path',
@@ -423,14 +423,14 @@ describe('Translation layer (AI inputs → Infra params)', () => {
     }
   })
 
-  test('unknown probe → IAPError (PROOF/INFRA_FAIL, reason: unknown_semantic_name)', () => {
+  test('unknown probe → IAPError (PROOF/INFRA_FAIL_PROBE_CATALOG, reason: unknown_semantic_name)', () => {
     try {
       translateProbeInputs('does-not-exist', {})
       expect(true).toBe(false) // 不应到达
     } catch (err) {
       expect(isIAPError(err)).toBe(true)
       const e = err as IAPError
-      expect(e.name).toBe('IAP_PROOF_INFRA_FAIL')
+      expect(e.name).toBe('INFRA_FAIL_PROBE_CATALOG')
       expect(e.context).toMatchObject({ probe: 'does-not-exist', reason: 'unknown_semantic_name' })
     }
   })

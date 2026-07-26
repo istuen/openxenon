@@ -2,7 +2,7 @@
 entity: rfc
 id: RFC-0010
 theme: frozen-errata
-version: 1.0.0
+version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
@@ -51,6 +51,12 @@ RFC `status: Accepted` 后，正文段（摘要 / 决策要点 / 影响范围 / 
 
 <修正说明——为什么需要补充、原决策哪里需要澄清、影响哪些读者。>
 
+### v1.0.1 (2026-07-26)
+
+- **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
+- **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
+- **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
+
 > 本段用于后续追加修正说明。核心决策自 RFC-XXXX Accepted 起冻结。
 ```
 
@@ -75,7 +81,7 @@ superseded-by: RFC-YYYY
 
 | status | 含义 |
 |---|---|
-| `Draft` | 起草中（仅存于 `.openxenon/drafts/rfc/`，未 promote） |
+| `Draft` | 起草中（未 promote 到 `docs/rfc/zh-cn/`，仍在工程师工作草稿区） |
 | `Proposed` | 提交评审（已走 IAP gather 阶段，待 validate） |
 | `Accepted` | 已接受（核心冻结，仅可追加 errata 段） |
 | `Superseded` | 已被新 RFC 取代（指向 `superseded-by`） |

@@ -2,15 +2,15 @@
 entity: rfc
 id: RFC-0001
 theme: oxl-philosophy
-version: 1.0.0
+version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
 superseded-by: ~
 related:
-  - ADR-0001: .openxenon/drafts/rfc/0001-blueprint-props-funnel-effect.md
-  - ADR-0021: .openxenon/drafts/rfc/0021-intent-align-observe-keyword-separation.md
-  - ADR-0052: .openxenon/drafts/rfc/0052-langium-retirement-oxn-deprecation.md
+  - ADR-0001: docs/adrs/0001-blueprint-props-funnel-effect.md
+  - ADR-0021: docs/adrs/0021-intent-align-observe-keyword-separation.md
+  - ADR-0052: docs/adrs/0052-langium-retirement-oxn-deprecation.md
 synced-at: 2026-07-26
 ---
 
@@ -90,10 +90,16 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 
 ## 相关决策
 
-- [ADR-0001](../../.openxenon/drafts/rfc/0001-blueprint-props-funnel-effect.md) — Props 漏斗效应（2026-05-19）
-- [ADR-0021](../../.openxenon/drafts/rfc/0021-intent-align-observe-keyword-separation.md) — 四关键字分离（2026-05-29）
-- [ADR-0052](../../.openxenon/drafts/rfc/0052-langium-retirement-oxn-deprecation.md) — Langium 退役 + `.oxn` 废除（2026-07-21）
+- [ADR-0001](../../adrs/0001-blueprint-props-funnel-effect.md) — Props 漏斗效应（2026-05-19）
+- [ADR-0021](../../adrs/0021-intent-align-observe-keyword-separation.md) — 四关键字分离（2026-05-29）
+- [ADR-0052](../../adrs/0052-langium-retirement-oxn-deprecation.md) — Langium 退役 + `.oxn` 废除（2026-07-21）
 
 ## Errata
+
+### v1.0.1 (2026-07-26)
+
+- **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
+- **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
+- **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0001 Accepted 起冻结。

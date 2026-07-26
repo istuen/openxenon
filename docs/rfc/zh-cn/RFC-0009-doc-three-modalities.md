@@ -2,7 +2,7 @@
 entity: rfc
 id: RFC-0009
 theme: doc-three-modalities
-version: 1.0.0
+version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
@@ -89,5 +89,11 @@ OXN 项目文档按"情态"分三类——**Asset（定义性）** / **RFC（规
 - [RFC-0012](./RFC-0012-bootstrap-exemption.md) — 自举种子豁免（meta）
 
 ## Errata
+
+### v1.0.1 (2026-07-26)
+
+- **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
+- **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
+- **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0009 Accepted 起冻结。

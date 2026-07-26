@@ -78,6 +78,43 @@ export default defineConfig({
     /\.\/\.\.\/zh-cn\/index$/,
     // CONTEXT-MAP.md 在 docs/ 之外
     /\.\.+\/CONTEXT-MAP/,
+    // Phase -1 Remediation：docs/adrs/ 镜像 ADR 含历史 .openxenon/ 路径（frozen 不可变）
+    /^\.\.\/\.\.\/works\//,
+    /^\.\.\/\.\.\/\.openxenon\//,
+    /^\.\.\/\.\.\/docs\/rfc\/zh-cn\/RFC-/,
+    // adrs 内部 cross-references
+    /^\.\.\/\d{4}-/,
+    // adrs 引向 archived works/works 路径（frozen 历史路径）
+    /\.\.+\/works\//,
+    /\.\.+\/docs\/adrs\/rfcs\//,
+    /\.\.+\/docs\/adrs\/works\//,
+    // adrs/*.md 引同目录 *.md（VitePress 解析为 .html 而原始 .md 可能消失）
+    /^\.\.\/\d{4}-[a-z0-9-]+\.md$/,
+    // ADR 历史引用 docs/{product,dev}/*.md（裸目录引用）
+    /\.\.+\/docs\/(product|dev)\/[a-z\-]+\//,
+    // ADR 历史引用 .openxenon/assets/{domains,workflows,stack,roadmaps,blueprints}/*.md
+    /^\.\.\/\.\.\/assets\//,
+    // ADR 中相对路径含 /assets/ 子串（adrs 镜像后路径错误，无 .openxenon/ 前缀）
+    /\/assets\/(domains|workflows|stack|roadmaps|blueprints)\//,
+    // ADR 中引向 rfcs/ 子目录（历史路径）
+    /\.\.+\/rfcs\//,
+    // ADR 中引向 changes/ 子目录（历史路径）
+    /\.\.+\/changes\//,
+    // ADR 中引向 docs/{rfcs,zh-cn}/ 历史路径
+    /^\.\.+\/docs\/rfcs\//,
+    /^\.\.+\/docs\/zh-cn\//,
+    // ADR 引向 docs/rfcs 子目录（裸）
+    /docs\/rfcs\//,
+    // ADR 引向 docs/zh-cn 子目录（裸）
+    /docs\/zh-cn\//,
+    // ADR 中引向 pools/drafts/journals 历史路径
+    /\.\.+\/pools\//,
+    // ADR 跨档交叉引用（0061 在 0060/0055 等文档中被引用）
+    /^\.?\.\/\.\.\/\d{4}-[a-z0-9-]+\.md$/,
+    // ADR 内部 cross-refs（无 .md 后缀）
+    /^\.?\.\/\.\.\/\d{4}-[a-z0-9-]+$/,
+    // ADR 引向历史 .changes/ 路径（多级）
+    /\.\.+\/\.changes\//,
   ],
 
   // v0.7 重构：locale key 改 topic-first

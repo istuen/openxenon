@@ -2,25 +2,25 @@
 entity: rfc
 id: RFC-0004
 theme: work-asset
-version: 1.0.0
+version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
 superseded-by: ~
 related:
-  - ADR-0004: .openxenon/drafts/rfc/0004-arsenal-resolver-priority-chain.md
-  - ADR-0005: .openxenon/drafts/rfc/0005-strategic-correction-running-time-isolation.md
-  - ADR-0024: .openxenon/drafts/rfc/0024-partid-primary-key-atomic-write.md
-  - ADR-0025: .openxenon/drafts/rfc/0025-task-sandbox-local-vs-namespace.md
-  - ADR-0035: .openxenon/drafts/rfc/0035-catalog-json-probe-excluded.md
-  - ADR-0049: .openxenon/drafts/rfc/0049-work-context-md-replaces-memory.md
-  - ADR-0050: .openxenon/drafts/rfc/0050-onboarding-via-starter-work.md
-  - ADR-0051: .openxenon/drafts/rfc/0051-asset-paper-citation-network.md
-  - ADR-0054: .openxenon/drafts/rfc/0054-three-boundary-framework.md
-  - ADR-0055: .openxenon/drafts/rfc/0055-blueprint-as-composition-template.md
-  - ADR-0056: .openxenon/drafts/rfc/0056-external-inline-and-status.md
-  - ADR-0061: .openxenon/drafts/rfc/0061-data-flow-contract.md
-  - ADR-0075: .openxenon/drafts/rfc/0075-round-loop-as-ai-search-record.md
+  - ADR-0004: docs/adrs/0004-arsenal-resolver-priority-chain.md
+  - ADR-0005: docs/adrs/0005-strategic-correction-running-time-isolation.md
+  - ADR-0024: docs/adrs/0024-partid-primary-key-atomic-write.md
+  - ADR-0025: docs/adrs/0025-task-sandbox-local-vs-namespace.md
+  - ADR-0035: docs/adrs/0035-catalog-json-probe-excluded.md
+  - ADR-0049: docs/adrs/0049-work-context-md-replaces-memory.md
+  - ADR-0050: docs/adrs/0050-onboarding-via-starter-work.md
+  - ADR-0051: docs/adrs/0051-asset-paper-citation-network.md
+  - ADR-0054: docs/adrs/0054-three-boundary-framework.md
+  - ADR-0055: docs/adrs/0055-blueprint-as-composition-template.md
+  - ADR-0056: docs/adrs/0056-external-inline-and-status.md
+  - ADR-0061: docs/adrs/0061-data-flow-contract.md
+  - ADR-0075: docs/adrs/0075-round-loop-as-ai-search-record.md
 synced-at: 2026-07-26
 ---
 
@@ -250,20 +250,26 @@ ADR-0061 7 项决策 D1-D7 全部 runtime 落地（v0.7.3 GA）：
 
 ## 相关决策
 
-- [ADR-0004](../../.openxenon/drafts/rfc/0004-arsenal-resolver-priority-chain.md) — ArsenalResolver 优先级链（2026-05-26）
-- [ADR-0005](../../.openxenon/drafts/rfc/0005-strategic-correction-running-time-isolation.md) — 运行期隔离宪法（2026-05-21）
-- [ADR-0024](../../.openxenon/drafts/rfc/0024-partid-primary-key-atomic-write.md) — partId 主键 + atomic-write（2026-05-21）
-- [ADR-0025](../../.openxenon/drafts/rfc/0025-task-sandbox-local-vs-namespace.md) — Task 沙箱豁免（2026-05-22）
-- [ADR-0035](../../.openxenon/drafts/rfc/0035-catalog-json-probe-excluded.md) — catalog.json + Probe-excluded（2026-05-28）
-- [ADR-0049](../../.openxenon/drafts/rfc/0049-work-context-md-replaces-memory.md) — context.md 取代 Memory（2026-07-05）
-- [ADR-0050](../../.openxenon/drafts/rfc/0050-onboarding-via-starter-work.md) — Onboarding via Starter Work（2026-07-05）
-- [ADR-0051](../../.openxenon/drafts/rfc/0051-asset-paper-citation-network.md) — Asset Paper 4→3 字段（2026-07-05）
-- [ADR-0054](../../.openxenon/drafts/rfc/0054-three-boundary-framework.md) — 三边界框架（2026-07-10）
-- [ADR-0055](../../.openxenon/drafts/rfc/0055-blueprint-as-composition-template.md) — Blueprint 组合模板（2026-07-10）
-- [ADR-0056](../../.openxenon/drafts/rfc/0056-external-inline-and-status.md) — External inline（2026-07-10）
-- [ADR-0061](../../.openxenon/drafts/rfc/0061-data-flow-contract.md) — 数据流契约 P0-P8（2026-07-17）
-- [ADR-0075](../../.openxenon/drafts/rfc/0075-round-loop-as-ai-search-record.md) — Round loop AI 搜索行为（2026-07-23）
+- [ADR-0004](../../adrs/0004-arsenal-resolver-priority-chain.md) — ArsenalResolver 优先级链（2026-05-26）
+- [ADR-0005](../../adrs/0005-strategic-correction-running-time-isolation.md) — 运行期隔离宪法（2026-05-21）
+- [ADR-0024](../../adrs/0024-partid-primary-key-atomic-write.md) — partId 主键 + atomic-write（2026-05-21）
+- [ADR-0025](../../adrs/0025-task-sandbox-local-vs-namespace.md) — Task 沙箱豁免（2026-05-22）
+- [ADR-0035](../../adrs/0035-catalog-json-probe-excluded.md) — catalog.json + Probe-excluded（2026-05-28）
+- [ADR-0049](../../adrs/0049-work-context-md-replaces-memory.md) — context.md 取代 Memory（2026-07-05）
+- [ADR-0050](../../adrs/0050-onboarding-via-starter-work.md) — Onboarding via Starter Work（2026-07-05）
+- [ADR-0051](../../adrs/0051-asset-paper-citation-network.md) — Asset Paper 4→3 字段（2026-07-05）
+- [ADR-0054](../../adrs/0054-three-boundary-framework.md) — 三边界框架（2026-07-10）
+- [ADR-0055](../../adrs/0055-blueprint-as-composition-template.md) — Blueprint 组合模板（2026-07-10）
+- [ADR-0056](../../adrs/0056-external-inline-and-status.md) — External inline（2026-07-10）
+- [ADR-0061](../../adrs/0061-data-flow-contract.md) — 数据流契约 P0-P8（2026-07-17）
+- [ADR-0075](../../adrs/0075-round-loop-as-ai-search-record.md) — Round loop AI 搜索行为（2026-07-23）
 
 ## Errata
+
+### v1.0.1 (2026-07-26)
+
+- **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
+- **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
+- **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0004 Accepted 起冻结。

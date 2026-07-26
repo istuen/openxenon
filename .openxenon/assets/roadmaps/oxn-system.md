@@ -1,11 +1,12 @@
 ---
 entity: roadmap
-version: 2
+version: 3
 name: oxn-system
 abstract: |
   OpenXenon scene-based routing: 6 builtin scenes (doc / dev / debug / test / release / onboard) map goals to Domain + Workflow + Blueprint (composition). AI Agent reads this Roadmap + calls oxn roadmap suggest --goal --scene to locate relevant Assets.
+  v0.7+：文档按三情态分离（Asset/RFC/Doc），RFC 体系取代旧 ADR + OXP 双层；8 个 Domain + 12 RFC（8 主题 + 4 meta）为 AI 必读。
 oxn-source-sha: pending
-synced-at: 2026-07-22
+synced-at: 2026-07-26
 ---
 
 # Roadmap: oxn-system
@@ -14,7 +15,9 @@ synced-at: 2026-07-22
 > AI Agent: `oxn roadmap suggest --goal "<goal>" --scene <scene>` for ranked matches.
 > After Asset create/edit: `oxn roadmap sync oxn-system --scene <scene> --dry-run` (manual hint, NOT auto-sync).
 >
-> 当前自举范围（2026-07-22）：**dev** 和 **doc** 是 2 个能自举跑起来的 scene；其余 4 个（debug/test/release/onboard）作为导航存在，引用已收敛到活跃 `oxn-*-domain`。
+> 当前自举范围（2026-07-26 v0.7 Phase 5）：**dev** 和 **doc** 是 2 个能自举跑起来的 scene；其余 4 个（debug/test/release/onboard）作为导航存在，引用已收敛到活跃 `oxn-*-domain` + 12 RFC。
+>
+> **v0.7+ 文档架构**：RFC（规定性，12 个）取代旧 ADR + OXP 双层；详见 [RFC-0009 文档三情态分离](../../../../docs/rfc/zh-cn/RFC-0009-doc-three-modalities.html)。
 
 ## Scenes
 
@@ -26,11 +29,12 @@ synced-at: 2026-07-22
 | domain | oxn-domain | 顶层词汇边界 + 产品定位 + IAP 三阶段 |
 | domain | oxn-asset-domain | Asset 生命周期 + 5 类 AssetKind + Paper 结构 |
 | domain | oxn-cli-domain | CLI + i18n + Skill + VitePress 站点配置 |
+| domain | oxn-project-domain | 工程术语：RFC + Built-in Asset + 三情态（v0.7+ 新增，定义 OXN 自身工程元词汇） |
 | workflow | doc-author | 通用文档撰写流水线（6 slot） |
 | workflow | doc-publish | Doc site build + GitHub Pages deploy |
 | blueprint | doc-prod-workflow | 产品手册撰写组合模板 |
 | blueprint | doc-dev-workflow | 开发手册撰写组合模板 |
-| blueprint | doc-rfc-workflow | RFC/ADR 提升组合模板（drafts → docs/rfc） |
+| blueprint | doc-rfc-workflow | RFC 提升组合模板 v0.2（drafts → docs/rfc/zh-cn/RFC-XXXX-<theme>.md，OXP 废除） |
 
 ### scene: dev
 > Scenario: modify code, add CLI subcommand, evolve Asset.

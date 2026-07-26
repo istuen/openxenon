@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * check-doc-boundary — 文档三层守门（v0.7 重构 + v0.7.4 Phase 5 扩展）
+ * check-doc-boundary — 文档三层守门（v0.7 重构 + v0.7.4 Phase 5 + v0.7.4-remediation Step 3）
  *
  * 规则矩阵（v0.7 topic-first）：
  *   docs/product/{zh-cn,en}/*  → 禁止  .openxenon/**
@@ -14,12 +14,21 @@
  *   docs/{product,dev,rfc}/ 同树互引
  *   .openxenon/drafts/ → docs/（仅通过 promote workflow，不在路径上禁止）
  *   .openxenon/drafts/rfc/ → docs/dev/（探索引用沉淀）
+ *   docs/rfc/ → docs/adrs/（RFC related 段引用 ADR 镜像）
+ *
+ * 扫描范围：
+ *   - body markdown 链接 [text](url)（v0.7 原生）
+ *   - frontmatter `related:` 字段内的 ADR/Asset 引用路径（Step 3 B1）
  *
  * 跳过规则：
  *   docs/_archive/**
  *   docs/.vitepress/**
- *   .openxenon/.archived/**
  *   包含 '<!-- boundary:ignore -->' 注释的段落
+ *
+ * v0.7.4-remediation：
+ *   - B1：新增 frontmatter YAML 扫描（related 字段）
+ *   - B2：targetPattern 去 `^` 锚点（避免错误相对路径致 false negative）
+ *   - B3：取消 `.archived` 隐式豁免（统一所有规则对 .archived 的检查一致性）
  */
 
 import { readFileSync, readdirSync, statSync } from 'fs'
@@ -44,42 +53,42 @@ const RULES: BoundaryRule[] = [
     name: 'product-no-openxenon',
     description: 'product/ 不可引用 .openxenon/',
     sourcePattern: /^docs\/product\//,
-    targetPattern: /^\.openxenon\//,
+    targetPattern: /\.openxenon\//,
     message: '产品手册不可引用 .openxenon/ 内部（严格隔离）',
   },
   {
     name: 'dev-no-drafts',
     description: 'dev/ 不可引用 .openxenon/drafts/',
     sourcePattern: /^docs\/dev\//,
-    targetPattern: /^\.openxenon\/drafts\//,
+    targetPattern: /\.openxenon\/drafts\//,
     message: '开发手册不可引用 .openxenon/drafts/ 内部（仅 docs/rfc/ 可互引）',
   },
   {
     name: 'dev-no-assets',
     description: 'dev/ 不可引用 .openxenon/assets/',
     sourcePattern: /^docs\/dev\//,
-    targetPattern: /^\.openxenon\/assets\//,
+    targetPattern: /\.openxenon\/assets\//,
     message: '开发手册不可直接引用 .openxenon/assets/（Domain 是 vocabulary，应通过 docs/glossary/）',
   },
   {
     name: 'rfc-no-drafts-isolated',
     description: 'docs/rfc/ 不可引用 .openxenon/drafts/rfc/（drafts/rfc/ 待审视，不混进 rfc/）',
     sourcePattern: /^docs\/rfc\//,
-    targetPattern: /^\.openxenon\/drafts\/rfc\//,
+    targetPattern: /\.openxenon\/drafts\/rfc\//,
     message: 'docs/rfc/ 已 accepted 的 OXP 不引用 drafts/rfc/ 待审视文档',
   },
   {
     name: 'drafts-no-rfc',
     description: '.openxenon/drafts/（非 rfc/ 子目录） 不可引用 .openxenon/drafts/rfc/',
     sourcePattern: /^\.openxenon\/drafts\/(?!rfc\/)/,
-    targetPattern: /^\.openxenon\/drafts\/rfc\//,
+    targetPattern: /\.openxenon\/drafts\/rfc\//,
     message: '项目工作草稿不可引用 ADR/RFC 暂存区',
   },
   {
     name: 'drafts-rfc-no-assets',
     description: '.openxenon/drafts/rfc/ 不可引用 .openxenon/assets/ 直接（Domain 是 vocabulary，应通过 docs/）',
     sourcePattern: /^\.openxenon\/drafts\/rfc\//,
-    targetPattern: /^\.openxenon\/assets\//,
+    targetPattern: /\.openxenon\/assets\//,
     message: 'ADR/RFC 暂存不应直接引用项目资产（应通过 docs/ 概念页）',
   },
 ]
@@ -109,6 +118,41 @@ function extractLinks(content: string): string[] {
   return links
 }
 
+/**
+ * 提取 frontmatter `related:` 字段内的所有路径（Step 3 B1）
+ *
+ * 格式：
+ *   ```yaml
+ *   ---
+ *   related:
+ *     - ADR-0001: docs/adrs/0001-blueprint-props-funnel-effect.md
+ *     - ADR-0021: docs/adrs/0021-...
+ *   ---
+ *   ```
+ *
+ * 提取每行 `: ` 后面的路径值。
+ */
+function extractFrontmatterRefs(content: string): string[] {
+  const refs: string[] = []
+  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/)
+  if (!fmMatch) return refs
+
+  const fm = fmMatch[1]!
+  // 匹配 "  - ADR-XXXX: <path>" 或 "  - <key>: <path>" 行
+  const pathRegex = /:\s*(.+)$/gm
+  let match
+  while ((match = pathRegex.exec(fm)) !== null) {
+    const value = match[1]!.trim()
+    // 过滤无路径值（如 `: ---` 或 `: null`）
+    if (!value || value === '~' || value === 'null' || value.startsWith('[')) continue
+    // 只保留看起来像路径的值
+    if (value.match(/^[a-zA-Z0-9_\-./]+\.(md|html)$/) || value.startsWith('./') || value.startsWith('../')) {
+      refs.push(value)
+    }
+  }
+  return refs
+}
+
 // ─── 扫描 ──────────────────────────────────────────────────
 
 interface Violation {
@@ -123,7 +167,7 @@ function scanFile(filePath: string): Violation[] {
   const violations: Violation[] = []
   const relativePath = relative(ROOT, filePath)
 
-  // 跳过 _archive 与 .vitepress 与 .archived
+  // 跳过 _archive 与 .vitepress
   if (relativePath.includes('_archive') || relativePath.startsWith('docs/.vitepress/')) {
     return violations
   }
@@ -133,6 +177,35 @@ function scanFile(filePath: string): Violation[] {
 
   // 检查是否被 boundary:ignore 注释豁免
   let ignoreUntilNextHeading = false
+
+  // ── Step 3 B1：扫描 frontmatter `related:` 字段内的 ADR 路径 ──
+  const frontmatterRefs = extractFrontmatterRefs(content)
+  if (frontmatterRefs.length > 0) {
+    // 找到 frontmatter `related:` 字段所在行号（大致估算）
+    let relatedStartLine = 1
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i]!.match(/^related:\s*$/)) {
+        relatedStartLine = i + 1
+        break
+      }
+    }
+    for (const ref of frontmatterRefs) {
+      const targetPath = resolveRelativePath(filePath, ref)
+      if (!targetPath) continue
+
+      for (const rule of RULES) {
+        if (rule.sourcePattern.test(relativePath) && rule.targetPattern.test(targetPath)) {
+          violations.push({
+            file: relativePath,
+            line: relatedStartLine,
+            rule: rule.name,
+            message: rule.message + '（frontmatter related）',
+            link: ref,
+          })
+        }
+      }
+    }
+  }
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
@@ -154,7 +227,6 @@ function scanFile(filePath: string): Violation[] {
 
       // 跳过 _archive 目标
       if (targetPath.includes('_archive')) continue
-      if (targetPath.includes('.archived')) continue
 
       for (const rule of RULES) {
         if (rule.sourcePattern.test(relativePath) && rule.targetPattern.test(targetPath)) {

@@ -1,6 +1,5 @@
 ---
 title: 证明术语
----
 synced-at: 2026-07-22
 source: oxn-proof-domain.md
 ---

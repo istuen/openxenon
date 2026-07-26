@@ -2,20 +2,20 @@
 entity: rfc
 id: RFC-0002
 theme: kernel-l0
-version: 1.0.0
+version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
 superseded-by: ~
 related:
-  - ADR-0002: .openxenon/drafts/rfc/0002-probe-default-rules-five-level-priority.md
-  - ADR-0003: .openxenon/drafts/rfc/0003-runtime-isolation-frozen-naming.md
-  - ADR-0008: .openxenon/drafts/rfc/0008-probe-observation-vs-verdict.md
-  - ADR-0009: .openxenon/drafts/rfc/0009-architectural-guard-tests-trace-before-state.md
-  - ADR-0010: .openxenon/drafts/rfc/0010-path-port-injection.md
-  - ADR-0011: .openxenon/drafts/rfc/0011-evidence-chain-triple.md
-  - ADR-0013: .openxenon/drafts/rfc/0013-no-langium-type-leak-acl.md
-  - ADR-0037: .openxenon/drafts/rfc/0037-part-resolver-moved-to-l2-work.md
+  - ADR-0002: docs/adrs/0002-probe-default-rules-five-level-priority.md
+  - ADR-0003: docs/adrs/0003-runtime-isolation-frozen-naming.md
+  - ADR-0008: docs/adrs/0008-probe-observation-vs-verdict.md
+  - ADR-0009: docs/adrs/0009-architectural-guard-tests-trace-before-state.md
+  - ADR-0010: docs/adrs/0010-path-port-injection.md
+  - ADR-0011: docs/adrs/0011-evidence-chain-triple.md
+  - ADR-0013: docs/adrs/0013-no-langium-type-leak-acl.md
+  - ADR-0037: docs/adrs/0037-part-resolver-moved-to-l2-work.md
 synced-at: 2026-07-26
 ---
 
@@ -190,15 +190,21 @@ Work (L2)    ──→ DSL (L1) + Kernel (L0) + Arsenal (L2-Builtin)
 
 ## 相关决策
 
-- [ADR-0002](../../.openxenon/drafts/rfc/0002-probe-default-rules-five-level-priority.md) — Probe default + 五级优先级链（2026-05-19）
-- [ADR-0003](../../.openxenon/drafts/rfc/0003-runtime-isolation-frozen-naming.md) — 运行期隔离（2026-05-20）
-- [ADR-0008](../../.openxenon/drafts/rfc/0008-probe-observation-vs-verdict.md) — 二元公理（2026-05-26）
-- [ADR-0009](../../.openxenon/drafts/rfc/0009-architectural-guard-tests-trace-before-state.md) — 架构守护测试（2026-05-28）
-- [ADR-0010](../../.openxenon/drafts/rfc/0010-path-port-injection.md) — PathPort 注入（2026-05-26）
-- [ADR-0011](../../.openxenon/drafts/rfc/0011-evidence-chain-triple.md) — 证据链三件套（2026-05-27）
-- [ADR-0013](../../.openxenon/drafts/rfc/0013-no-langium-type-leak-acl.md) — Langium 类型隔离 ACL（2026-05-28）
-- [ADR-0037](../../.openxenon/drafts/rfc/0037-part-resolver-moved-to-l2-work.md) — part-resolver 迁 L2（2026-05-26）
+- [ADR-0002](../../adrs/0002-probe-default-rules-five-level-priority.md) — Probe default + 五级优先级链（2026-05-19）
+- [ADR-0003](../../adrs/0003-runtime-isolation-frozen-naming.md) — 运行期隔离（2026-05-20）
+- [ADR-0008](../../adrs/0008-probe-observation-vs-verdict.md) — 二元公理（2026-05-26）
+- [ADR-0009](../../adrs/0009-architectural-guard-tests-trace-before-state.md) — 架构守护测试（2026-05-28）
+- [ADR-0010](../../adrs/0010-path-port-injection.md) — PathPort 注入（2026-05-26）
+- [ADR-0011](../../adrs/0011-evidence-chain-triple.md) — 证据链三件套（2026-05-27）
+- [ADR-0013](../../adrs/0013-no-langium-type-leak-acl.md) — Langium 类型隔离 ACL（2026-05-28）
+- [ADR-0037](../../adrs/0037-part-resolver-moved-to-l2-work.md) — part-resolver 迁 L2（2026-05-26）
 
 ## Errata
+
+### v1.0.1 (2026-07-26)
+
+- **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
+- **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
+- **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0002 Accepted 起冻结。
