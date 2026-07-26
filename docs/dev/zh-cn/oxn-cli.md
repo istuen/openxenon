@@ -106,7 +106,7 @@ oxn domain list --json
 ## OXL 解析链路
 
 ```
-.oxn 源文件
+.md 源文件
   ↓ Langium 解析（Grammar）
 AST (抽象语法树)
   ↓ Entity Compiler（Compiler / EntityCompiler 单例）
@@ -136,4 +136,4 @@ AssemblyIR（IR）
 - [OXN 顶层 Domain · oxn-domain](../../../.openxenon/assets/domains/oxn-domain.md)
 - [OXN CLI Domain · oxn-cli-domain](../../../.openxenon/assets/domains/oxn-cli-domain.md)（本文档 SSOT）
 - [架构总览 · architecture.md](./architecture.md)
-- [v0.7 Domain 三层架构 RFC · v0.7-domain-hierarchy-restructure-rfc.md](../../.openxenon/docs/rfcs/v0.7-domain-hierarchy-restructure-rfc.md)（W2 部分）
+- [v0.7 Domain 三层架构 RFC · v0.7-domain-hierarchy-restructure-rfc.md](../../../.openxenon/drafts/rfc/v0.7-domain-hierarchy-restructure-rfc.md)（W2 部分）

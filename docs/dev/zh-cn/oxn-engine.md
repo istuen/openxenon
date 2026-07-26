@@ -22,7 +22,7 @@ title: OXN Engine 开发者手册
 ## Why —— 设计原则
 
 1. **L0 Kernel 真空**：纯函数零 IO；只接受 Infra 通过 Port 暴露的观测结果；禁止 fs/net/process.env/EventEmitter
-2. **Kernel/Infra 司法/行政分离**：Kernel 只做 PASS/FAIL 判定，Infra 只回答事实（不能给自己盖章）
+2. **Kernel/Infra 司法/行政分离**：Kernel 只做 COMPLETED/DEVIATED 判定，Infra 只回答事实（不能给自己盖章）
 3. **Daemon 不能立法**：Daemon 不能修改 Kernel 规则（司法不能立法）；Infra 不能行政（不能自己宣布 Work 完成）
 4. **OXL/Langium 唯一权威**：src/oxl/generated/ 由 langium:generate 自动生成，绝对不可手工编辑
 5. **Engine 沙箱铁律**：所有用户路径必须 resolve 后在 Sandbox 之内；外部命令必须 timeout；spawn 必须 argv 数组
@@ -72,14 +72,14 @@ packages/engine/
 
 | 角色 | 职责 | 不能做 |
 |---|---|---|
-| **Kernel**（司法） | PASS/FAIL 判定 | 不能 fs / 不能执行 Task |
-| **Infra**（行政） | 回答事实（IO） | 不能 PASS/FAIL / 不能宣布完成 |
-| **Daemon**（守卫） | 生命周期 + Probe FAIL 阻止 | 不能修改 Kernel 规则 |
+| **Kernel**（司法） | COMPLETED/DEVIATED 判定 | 不能 fs / 不能执行 Task |
+| **Infra**（行政） | 回答事实（IO） | 不能判定 COMPLETED/DEVIATED / 不能宣布完成 |
+| **Daemon**（守卫） | 生命周期 + Probe DEVIATED 阻止 | 不能修改 Kernel 规则 |
 
 ## OXL 解析链路
 
 ```
-.oxn 源文件 (用户/AI 创作)
+.md 源文件 (用户/AI 创作)
   ↓ Langium Parser（自动生成）
 AST（自动生成）
   ↓ OXL 实体声明
@@ -102,7 +102,7 @@ ProbeDeclaration / InvariantDecl / WorkDeclaration / DomainProofRef / TaskDeps
 Startup (cold-load + warnings)
   ↓
 Daemon 主循环
-  ├── Watcher 检测 .oxn 资产漂移 → validate + lock 守卫
+  ├── Watcher 检测 .md 资产漂移 → validate + lock 守卫
   ├── Supervisor 管理子进程（健康检查 + 自动重启）
   ├── StepPipeline 增量式 Proof 驱动（rollback on failure）
   ├── CircuitBreaker 防雪崩
@@ -150,4 +150,4 @@ packages/cli ↔ packages/daemon
 - [L0-L3 宪法 · l0-l3-constitution.md](./l0-l3-constitution.md)
 - [Monorepo 双包 · monorepo.md](./monorepo.md)
 - [架构总览 · architecture.md](./architecture.md)
-- [v0.7 Domain 三层架构 RFC · v0.7-domain-hierarchy-restructure-rfc.md](../../.openxenon/docs/rfcs/v0.7-domain-hierarchy-restructure-rfc.md)（W3 部分）
+- [v0.7 Domain 三层架构 RFC · v0.7-domain-hierarchy-restructure-rfc.md](../../../.openxenon/drafts/rfc/v0.7-domain-hierarchy-restructure-rfc.md)（W3 部分）

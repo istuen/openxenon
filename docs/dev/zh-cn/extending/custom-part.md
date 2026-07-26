@@ -35,5 +35,5 @@ interface PartPort {
 
 ## 参考
 
-- [ADR-0024 PartId 主键 + atomic-write](../../../.openxenon/docs/adrs/0024-partid-primary-key-atomic-write.md)
-- [ADR-0025 Task 沙箱豁免](../../../.openxenon/docs/adrs/0025-task-sandbox-local-vs-namespace.md)
+- [ADR-0024 PartId 主键 + atomic-write](../../../.openxenon/drafts/rfc/0024-partid-primary-key-atomic-write.md)
+- [ADR-0025 Task 沙箱豁免](../../../.openxenon/drafts/rfc/0025-task-sandbox-local-vs-namespace.md)

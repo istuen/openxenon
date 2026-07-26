@@ -35,5 +35,5 @@ PropertyType: STRING | TermRef;  // v0.8.0: STRING | '@term/'ID
 
 ## 参考
 
-- [ADR-0052 Langium 退役](../../../.openxenon/docs/adrs/0052-langium-retirement-oxn-deprecation.md)
-- [v0.7 Emergence RFC §OXL](../../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md)
+- [ADR-0052 Langium 退役](../../../.openxenon/drafts/rfc/0052-langium-retirement-oxn-deprecation.md)
+- [v0.7 Emergence RFC §OXL](../../../.openxenon/drafts/rfc/v0.7-emergence-rfc.md)

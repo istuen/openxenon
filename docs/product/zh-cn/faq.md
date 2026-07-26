@@ -12,13 +12,17 @@ title: 常见问题
 
 OpenXenon 不替代 AI 编码工具。它是在 AI 完成代码后**独立验证结果**的引擎。Copilot 帮你写代码，OXN 帮你证明代码对了。
 
+### OXN 会评判 AI 的工作是否合格吗？
+
+**彻底不判**。OXN 验证 AI Agent 的执行结果（ProbeOutcome 三态：COMPLETED / DEVIATED / INCONCLUSIVE），不评判执行内容的好坏。判定权归工程师，基于 outcome 聚合结构（各状态 Probe 数量）自行判定。
+
 ### 一定要先学 Domain + Blueprint 才能用吗？
 
 不需要。入口是 [Proof-First](./quickstart.md)：直接 `oxn proof create` → `oxn proof probe add` → `oxn proof run`，5 分钟跑通。
 
-### IAP 范式是强制的吗？可以只用 Proof 轴吗？
+### IAP 范式是强制的吗？可以只用 Proof 吗？
 
-可以。`oxn proof` 系列命令是 Proof 轴独立运作，不依赖 Domain / Blueprint。详见 [Quickstart](./quickstart.md)。
+可以。`oxn proof` 系列命令是 E3 Proof 独立运作，不依赖 Domain / Blueprint。详见 [Quickstart](./quickstart.md)。
 
 ### Domain 和 Blueprint 有什么区别？
 
@@ -44,7 +48,7 @@ oxn init --ai opencode   # OpenCode Skill
 oxn init --ai codex      # Codex Skill
 ```
 
-AI 通过 Skill 协议调用 CLI。详见 [Align](./align.md)。
+AI 通过 Skill 协议调用 CLI。详见 Work 协作协议。
 
 ---
 
@@ -52,7 +56,7 @@ AI 通过 Skill 协议调用 CLI。详见 [Align](./align.md)。
 
 ### frozen.json 能改吗？
 
-不能。frozen.json 是 OXN Engine 签发的检验报告，AI 和工程师都只能读。如果 AI 能改 frozen.json，Proof 轴就名存实亡。
+不能。frozen.json 是 OXN Engine 签发的检验报告，AI 和工程师都只能读。如果 AI 能改 frozen.json，Proof 就名存实亡。
 
 ### lock 之后修改 work.md 会怎样？
 
@@ -60,7 +64,7 @@ AI 通过 Skill 协议调用 CLI。详见 [Align](./align.md)。
 
 ### 有多少个内置 Probe？
 
-11 个：`fs-exists`、`fs-not-exists`、`fs-content-match`、`fs-parseable`、`shell-exec`、`test-pass`、`ts-compiles`、`lint-check`、`deps-resolved`、`http-responds`、`file-exports`。详见 [Proof](./proof.md)。
+11 个：`fs-exists`、`fs-not-exists`、`fs-content-match`、`fs-parseable`、`shell-exec`、`test-pass`、`ts-compiles`、`lint-check`、`deps-resolved`、`http-responds`、`file-exports`。详见 [Proof](./concepts/proof.md)。
 
 ### Work 和 Task 的关系？
 
@@ -102,7 +106,7 @@ Work 已运行。先用 `oxn work status` 看当前状态。
 
 ### 如何自定义 Probe？
 
-在 Part 内联声明，或用 `ref` 引用自定义探针。详见 [Extending](../../dev/extending/custom-probe.html)。
+在 Part 内联声明，或用 `ref` 引用自定义探针。详见 [Extending](/dev/zh-cn/extending/custom-probe.html)。
 
 ### 如何集成 CI？
 

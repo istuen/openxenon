@@ -254,6 +254,6 @@ work "explore-dsl" {
 
 ## → 参考
 
-- [Intent](./intent.md) — Domain + Blueprint 怎么创建
-- [Align](./align.md) — v1.1 8 阶段流程详解
+- [Asset](../concepts/asset.md) — Domain + Blueprint 怎么创建
+- [Work](../concepts/work.md) — 3 IAP 阶段流程详解
 - [DDD in Practice](./ddd-in-practice.md) — 何时升级到 Business Domain

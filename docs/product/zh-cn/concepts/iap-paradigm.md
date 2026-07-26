@@ -6,7 +6,7 @@ title: 核心概念
 
 # 核心概念
 
-> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
+> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
 >
 > **OXN 由 4 个结构实体（E1-E4）加 L0-L3 工程实现构建而成**。E1-E4 定义 OXN 的哲学边界，L0-L3 描述代码的依赖方向。物理目录用各自名称（`kernel/`、`oxl/`、`infra/`、`Asset/`、`Intent/`、`cli/`、`daemon/` 等），不直接对应 E 或 L。
 
@@ -37,7 +37,7 @@ title: 核心概念
 │  IAP 三阶段 + Round 多轮循环                                        │
 │  Intent（工程师声明意图 + 选 Asset 边界）                           │
 │  Align（AI 多轮对齐，Round × N → 每轮拆 M 个 Tasks）               │
-│  Proof（Engine 独立验证 → verdict）                                │
+│  Proof（Engine 独立验证 → outcome）                                │
 │  工程师 ↔ AI 共建                                                  │
 └────────────────────────┬──────────────────────────────────────────┘
                          │ ref 引用（不被改写）
@@ -55,7 +55,7 @@ title: 核心概念
 |---|---|---|---|
 | **E1 Asset** | 静态边界 | 工程师 | `service/Asset/` |
 | **E2 Work** | 动态协作 | 工程师 ↔ AI Agent | `service/Intent/` + `service/Align/` |
-| **E3 Engine** | 独立公证（控制结构） | OXN Engine | L0-L2 全部（含 IAP 范式执行） |
+| **E3 Engine** | 独立验证记录（控制结构） | OXN Engine | L0-L2 全部（含 IAP 范式执行，记录 ProbeOutcome） |
 | **E4 Insight** | 涌现 | AI 推理 | `packages/engine/src/Insight/`（v0.6 哲学占位，v0.7+ 涌现推理） |
 
 ## 2. L0-L3 工程实现（概念层）
@@ -64,7 +64,7 @@ L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v
 
 | 层级 | 物理位置 | 备注 |
 |---|---|---|
-| L0 Kernel | `packages/engine/src/kernel/` | 类型/常量/verdicts/catalog (Lambda 真空) |
+| L0 Kernel | `packages/engine/src/kernel/` | 类型/常量/verdicts/catalog (Lambda 真空) — ProbeOutcome 三态判定 |
 | L1 OXL+Infra | `packages/engine/src/oxl/` + `packages/engine/src/infra/` | DSL 解析 + 文件系统 + socket + frozen |
 | L2 Engine (DDD) | `packages/engine/src/{Asset,Intent,Align,Proof,Insight,Pool,Work}/` | 6+1 模块, 纯函数导出 |
 | L3 Tools | `packages/cli/src/commands/` + `src/daemon/` + `packages/cli/src/skills/` | CLI 薄壳 + 守护进程 + AI Skills |
@@ -86,7 +86,7 @@ L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v
 ├────────────────────────────────────────────────────────┤
 │  L0: Logic Kernel (逻辑内核层)                           │
 │      纯逻辑、零 IO：状态冻结、frozen.json 原子读写        │
-│      Schema / Contract / Verdict / Processor            │
+│      Schema / Contract / ProbeOutcome / Processor                   │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -98,54 +98,50 @@ L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v
 |---|---|---|---|
 | 工程师 | E1 Asset + E2 Intent 阶段 | 定意图（维护资产库、创建 work、选择边界、决定合格判定） | 不能把"工作是否合格"的判定权让渡给 AI |
 | AI Agent | E2 Align 阶段 | 跑对齐（执行 tasks、多轮 Round 对齐、落盘产物） | 不能越过 Asset 边界，不能修改 Asset |
-| OXN Engine | E3 Engine（Proof + Round） + E4 Insight | 出证明（跑探针、记录客观事实、产出 verdict） | 不评判代码质量、不修改 Asset、不替 AI 执行 |
+| OXN Engine | E3 Engine（Proof + Round） + E4 Insight | 出证明（跑探针、记录客观事实、产出 outcome） | 不评判代码质量、不修改 Asset、不替 AI 执行 |
 
-## 3.1 信任链——OpenXenon 的核心
+## 3.1 边界与证据——OpenXenon 的核心
 
-> **信任链是 OpenXenon Engine 的"能源"**——没有信任链，OXN 只是任务跟踪器，不是信任协作工具。
+> **OXN 为协作提供边界与证据**——没有边界与证据，OXN 只是任务跟踪器。
 
-OpenXenon 解决工程师与 AI Agent 的信任协作问题。AI 是概率性推理模型，其本身就是不确定性的。工程师信任 AI 一定会执行，但不信任 AI 执行在边界内。AI 不懂"信任"，只会通过概率推理执行，但信任 OpenXenon 提供的确定性内容（Asset、Work、Kernel）。
+OpenXenon 解决工程师与 AI Agent 的协作可观测性问题。AI 是概率性推理模型，其执行天然存在不确定性（同样的输入可能产生不同输出，AI 无法证明自己做了什么）。OXN 不评判 AI 是否"合格"，而是提供两层支持让工程师基于事实决策：
 
 ```
-         工程师                    AI Agent
-        (确定性主体)              (概率性主体)
-            │                        │
-            │  不确定性的协作          │
-            │  ← 不可信任 →           │
-            │                        │
-            ▼                        ▼
-         OpenXenon（确定性层）
-         ┌─────────────────────┐
-         │  Asset (确定性边界)  │
-         │  Work (确定性结构)   │
-         │  Kernel (确定性验证) │
-         │  Proof (确定性证据)  │
-         └─────────────────────┘
-            │                        │
-            ▼                        ▼
-    工程师信任 OXN               AI 信任 OXN
-    "OXN 出示证据，               "OXN 提供确定性
-     告知 AI 执行了什么，           Asset/Work/Kernel，
-     哪些在边界内，                我能获取反馈，
-     哪些在边界外"                 推理方向是否在边界内，
-                                 但是否跨越依然是我自己处理"
-            │
-            ▼
-    工程师通过 OXN 信任 AI
-    "我知道 AI 一定会执行，
-     OXN 告诉我哪些可靠、
-     哪些不可靠"
+         工程师                              AI Agent
+        (判定主体)                          (执行主体)
+            │                                  │
+            │  定义边界                         │  走通道
+            │  (Asset)                         │  (Work)
+            ▼                                  ▼
+         OpenXenon（观测层）
+         ┌─────────────────────────┐
+         │  Asset (环境约束)        │  ← 工程师定义 AI 工作环境
+         │  Work (执行通道)         │  ← AI 走 OXN 的执行路径
+         │  Kernel (纯逻辑验证)     │  ← 零 IO，客观结果
+         │  Proof (过程证据)        │  ← 不可篡改事实记录
+         └─────────────────────────┘
+            │                                  │
+            ▼                                  ▼
+    工程师基于证据判定                      AI 不"信任"OXN
+    "OXN 记录了 AI 执行了什么，              只消费 OXN 注入的
+     哪些完成了、哪些偏离了、                  context（Asset 边界 +
+     哪些未完成；                              Skill 指导）+ 走通道
+     我来判断是否合格"                          执行任务
 ```
 
-工程师与 AI 原本是两个点协作，但这个协作充满不确定性导致不可信任。OpenXenon 加入后是分别跟两者建立信任协作，然后让工程师可以通过 OpenXenon 信任 AI。
+**核心原则**：
+1. **OXN 只记录事实，不评判合格**——AI 概率决策，OXN 不假装能判定"对错"
+2. **判定权归工程师**——工程师基于 outcome 聚合结构（各状态 Probe 数量）自行判断
+3. **软契约诚实**——AI 通过 OXN 走的部分才有证据；不走 = 通道外，工程师自负
+4. **AI 不"信任"OXN**——AI 是概率模型，不存在"信任"概念，只消费 OXN context
 
 ## 4. IAP 协作流水线核心
 
-> **工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
+> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
 
-- **工程师**：定意图（边界 + 蓝图）；负责"工作是否合格"的最终判定（基于 Asset 对照 Proof）
+- **工程师**：定意图（边界 + 蓝图）；负责"工作是否合格"的最终判定（基于 outcome 聚合结构）
 - **AI Agent**：跑对齐；在 Asset 边界内自由发挥；不得修改 Asset
-- **OXN Engine**：出证明；记录客观事实（脚本退出码、测试覆盖率、文件路径等）；不评判好坏
+- **OXN Engine**：出证据；记录客观事实（ProbeOutcome COMPLETED/DEVIATED/INCONCLUSIVE）；不评判好坏
 - **Insight（E4）**：行为特征观测（v0.6 哲学占位，v0.7+ 涌现推理）；不评判代码质量；不得自动回写 Asset（必须经过 review/approve 闸门）
 
 ## 5. E2 Work — IAP 范式的最小完整单元
@@ -168,15 +164,15 @@ Work (一次完整 IAP 周期)
 │   3. 选择引用 Asset (ref @prj/assets/...)
 │
 ├── Align 阶段 (AI Agent 跑对齐) — Round 多轮对齐
-│   ├── Round 1: 拆 N 个 Tasks → 执行 → Proof → verdict
-│   ├── verdict fail? → 回到 Intent 调整 → Round 2
-│   ├── verdict fail? → 回到 Intent 调整 → Round 3
+│   ├── Round 1: 拆 N 个 Tasks → 执行 → Proof → outcome
+│   ├── outcome DEVIATED? → 回到 Intent 调整 → Round 2
+│   ├── outcome DEVIATED? → 回到 Intent 调整 → Round 3
 │   └── ...
 │
 ├── Proof 阶段 (OXN Engine 出证明)
 │   1. 跑探针 (Probe) — 记录客观事实（脚本退出码、覆盖率、文件路径）
-│   2. 产出 verdict（PASSED / FAILED / INCONCLUSIVE 三态 — 是事实记录，非合格判定）
-│   3. 工程师基于 Asset + Proof 决定合格与否（若 FAIL 则 block done）
+│   2. 产出 outcome（COMPLETED / DEVIATED / INCONCLUSIVE 三态 — 是事实记录，非合格判定）
+│   3. 工程师基于 Asset + Proof 决定合格与否（若 DEVIATED 则 block done）
 │
 └── work finalize → 写 frozen.json → 可供 E4 Insight 消费
 ```
@@ -228,7 +224,7 @@ type AssetKind = 'domain' | 'workflow' | 'stack' | 'blueprint' | 'roadmap'
 
 详见 [Asset](./asset.md)。
 
-## 7. E3 Engine — 独立公证基座
+## 7. E3 Engine — 独立验证记录基座
 
 OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 
@@ -236,8 +232,8 @@ OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 |---|---|---|---|
 | L3 | CLI / Skills / Daemon | 工具与应用入口 | 不能绕过 Engine 直接读写 frozen.json |
 | L2 | Asset / Intent / Align / Proof / Insight / Pool | IAP 业务逻辑（DDD 模块化） | 不直接 IO，通过 L1 Infra Port 调用 |
-| L1 | OXL（DSL 编译）+ Infra（探针/文件系统） | 语言解析 + OS/硬件级操作 | 只回答事实，不做 PASS/FAIL 判定 |
-| L0 | Kernel | 纯逻辑内核：状态冻结、Schema/Contract/Verdict | 零 IO，**严禁引入概率性数学模型（PID/ESN/突变论）** |
+| L1 | OXL（DSL 编译）+ Infra（探针/文件系统） | 语言解析 + OS/硬件级操作 | 只回答事实，不做 COMPLETED/DEVIATED 判定 |
+| L0 | Kernel | 纯逻辑内核：状态冻结、Schema/Contract/ProbeOutcome | 零 IO，**严禁引入概率性数学模型（PID/ESN/突变论）** |
 
 > **纯洁性核法则**：Infra 不能绕过 Engine 自我宣布完成 → Engine 不能修改 Kernel 规则 → Kernel 不能直接执行 Task。
 > **Kernel 确定性**：Proof 之所以硬，是因为 Kernel 保持纯逻辑零副作用。任何概率性、模糊性、不确定性数学模型一律归属 Insight 模块，不得进入 Proof 决策路径。
@@ -250,7 +246,7 @@ OXN Engine 是 IAP 范式的执行主体。Engine 内部按 L0-L3 分层：
 
 | 前三层（还原论侧） | E4 Insight（整体论侧） |
 |---|---|
-| Asset 可拆解为 term/ban/invariant | 不可还原——无法从单个 verdict 反推出"该废弃某 Domain" |
+| Asset 可拆解为 term/ban/invariant | 不可还原——无法从单个 outcome 反推出"该废弃某 Domain" |
 | Work 可拆解为 Round/Task | 只能综合推理——跨多 Work 的互动模式才能涌现新认知 |
 | Engine 可拆解为模块 | AI 推理涌现，非 Engine 规则计算 |
 
@@ -313,7 +309,7 @@ Phase 3: 静态产物（frozen.json · E3 + Insight · E4）— 引用计数
 |---|---|---|---|
 | **1. 静态结构（论文本体）** | 工程师 | 相对静止的"论文" | Domain / Blueprint / Stack + abstract/references[] |
 | **2. Loop（论文被引用）** | 工程师 ↔ AI | 物质运动 | trace.jsonl（NDJSON 事件流） |
-| **3. 静态产物（引用计数）** | OXN Engine | 物质再次静止 | frozen.json + verdict.md + citations 字段 |
+| **3. 静态产物（引用计数）** | OXN Engine | 物质再次静止 | frozen.json + outcome.md + citations 字段 |
 
 ### 11.2 Asset 论文结构（v0.6.3 新增 · 完整见 asset-paper.md）
 
@@ -355,7 +351,7 @@ Engine (OXN) — Main Agent
    ↓ 调 Sub Agent（AI）执行 Align
 Sub Agent (AI)
    ↓ 写 trace.jsonl / state.json（自描述）
-   ↓ Engine 公证（不评判对错，只记录"发生了什么"）
+   ↓ Engine 记录（不评判对错，只记录"发生了什么"）
 ```
 
 ### 12.1 反模式（否决）
@@ -367,7 +363,7 @@ Sub Agent (AI)
 
 - ✅ 不阻碍 AI 发挥，但保留事后审计能力
 - ✅ "AI 行为可解释" 通过 trace 而非 schema 限制
-- ✅ slogan：**"OpenXenon 不生产代码，只生产信任"**
+- ✅ slogan：**"OpenXenon 为协作提供边界与证据"**
 
 ### 12.3 与传统"沙箱"的区别
 
@@ -378,11 +374,11 @@ Sub Agent (AI)
 | 哲学 | "不该做的不能做" | "做了什么都被记住" |
 | AI 自主性 | 低（被约束） | 高（被信任 + 可审计） |
 
-## 13. 最小信任闭环（v0.6.1）
+## 13. 最小闭环（v0.6.1）
 
-> **v0.6.1 = 最小信任闭环**——信任链的四层确定性就位。
+> **v0.6.1 = 最小闭环**——协作通道的四层确定性就位。
 
-信任链的每一层都需要确定性保障。v0.6.1 修复了四个信任链断裂点：
+协作通道的每一层都需要确定性保障。v0.6.1 修复了四个协作通道断裂点：
 
 | 确定性层 | 模块 | 信任职责 | v0.6.1 修复 |
 |---|---|---|---|
@@ -391,7 +387,7 @@ Sub Agent (AI)
 | **确定性证据** | Proof | 不可篡改的执行事实记录 | A1：finalizeWork 全路径写 frozen.json（含失败路径） |
 | **确定性记录** | Proof + Work | OXN 确定性地记录边界违反 | A2：接通 finalizeWorkDomains（记录而非阻止） |
 
-> **A2 的重新理解**：A2 不是"阻止 AI 跨越边界"——AI 是否跨越边界是 AI 自己的概率决策。A2 是"OXN 确定性地告知工程师 AI 跨越了边界"——Domain proof FAIL 时在 frozen.json 中记录"边界违反"。工程师看到证据后决定：调整边界（Asset evolve）还是接受（finalize with warning）。
+> **A2 的重新理解**：A2 不是"阻止 AI 跨越边界"——AI 是否跨越边界是 AI 自己的概率决策。A2 是"OXN 确定性地告知工程师 AI 跨越了边界"——Domain proof DEVIATED 时在 frozen.json 中记录"边界违反"。工程师看到证据后决定：调整边界（Asset evolve）还是接受（finalize with warning）。
 
 详见 version-unification-rfc.md。
 
@@ -406,7 +402,7 @@ Sub Agent (AI)
 - [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper + 引用计数 + DAG（v0.6.3+）
 - [Glossary](../reference/glossary.md) — 完整术语表
 - 三边界框架 RFC — Domain/Workflow/Stack + Blueprint 提升
-- 版本统一 RFC — 信任链叙事 + v0.6.1 最小信任闭环
+- 版本统一 RFC — 协作通道叙事 + v0.6.1 最小闭环
 - ADR-0054 三边界框架
 - ADR-0055 Blueprint 组合模板
 - v0.6 RFC

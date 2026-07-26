@@ -37,10 +37,10 @@ interface ProbePort {
 
 1. 在 `packages/engine/src/infra/probes/` 下新建文件
 2. 实现 `ProbePort` 接口
-3. 在 `packages/engine/src/kernel/verdicts/probe-catalog.ts` 注册
+3. 在 `packages/engine/src/kernel/verdicts/catalog.ts` 注册
 4. 编写测试：`packages/engine/src/infra/probes/__tests__/<name>.test.ts`
 
 ## 参考
 
 - [AGENTS.md §Probes 拆分](../../../AGENTS.md#仓库约定) — verdicts ↔ probes 对偶
-- [ADR-0008 ProbeObservation vs ProbeVerdict](../../../.openxenon/docs/adrs/0008-probe-observation-vs-verdict.md)
+- [ADR-0008 ProbeObservation vs ProbeOutcome](../../../.openxenon/drafts/rfc/0008-probe-observation-vs-verdict.md)

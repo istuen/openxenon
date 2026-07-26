@@ -53,7 +53,7 @@ oxn init --ai codex      # 生成 Codex Skill
 | `oxn proof list` | 列出所有 Proof |
 | `oxn proof show <name>` | 查看指定 Proof 详情 |
 
-见 [Proof](./proof.md) 了解 Proof 轴完整概念。
+见 [Proof](../concepts/proof.md) 了解 E3 Proof 完整概念。
 
 ---
 
@@ -121,7 +121,7 @@ CLI 解析 Asset 时按以下顺序：
 1. `<primary>/<name>.md`     — v0.6+ canonical
 2. `<fallback>/<name>.md`   — v0.5 layout .md（如果存在）
 
-见 [Intent](./intent.md) 了解 Domain + Blueprint 完整语法。
+见 [Asset](../concepts/asset.md) 了解 Domain + Blueprint 完整语法。
 
 ---
 

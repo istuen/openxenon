@@ -4,18 +4,18 @@ redirectFrom:
 title: 证明
 ---
 
-# 证明（E3 · Engine 独立公证）
+# 证明（E3 · Engine 独立验证记录）
 
-> **Proof 是 OXN 的第三结构实体（E3）——OXN Engine 的独立公证**，由 `frozen.json`（机器 SSOT）+ `verdict.md`（人类 SSOT）+ `probe-stats.json`（全局索引）三层证据构成。
+> **Proof 是 OXN 的第三结构实体（E3）——OXN Engine 的独立验证记录**，由 `frozen.json`（机器 SSOT）+ `outcome.md`（人类 SSOT）+ `probe-stats.json`（全局索引）三层证据构成。
 > v0.6 起 `oxn proof` 是独立子命令（不再依赖 `oxn work finalize` 触发），但 Proof 仍可在 Work 内作为 Proof 模式（Align 阶段的探针断言）。
 
-> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
+> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
 
 ## 1. Proof 概念
 
 ### 1.1 哲学边界
 
-OXN 的终极目标不是"spec 与实现一致"，而是**独立第三方对 AI Agent 工作结果做不可篡改的客观公证**：
+OXN 的终极目标不是"spec 与实现一致"，而是**独立第三方对 AI Agent 工作结果做不可篡改的客观记录**：
 
 ```
 工程师                AI Agent              OXN Engine
@@ -23,12 +23,12 @@ OXN 的终极目标不是"spec 与实现一致"，而是**独立第三方对 AI 
   ▼                    ▼                       ▼
 Intent                Align                   Proof
 Domain(.md)           Work(.md)              frozen.json
-Blueprint(.md)        Task → Artifact        Verdict (事实记录)
+Blueprint(.md)        Task → Artifact        Outcome (事实记录)
   │                    │                       │
-  └────── 协作流水线 ──────┴────── 信任基座 ──────┘
+  └────── 协作流水线 ──────┴────── 证据基座 ──────┘
 ```
 
-> **Proof = 公证人，不是裁判**。OXN Engine 记录"发生了什么"（脚本退出码、测试覆盖率、文件路径等客观事实），不评判"工作合格不合格"。"合格"判定属于工程师——基于 Asset 与 Proof 的对照。
+> **Proof = 客观事实记录，不是裁判**。OXN Engine 记录"发生了什么"（脚本退出码、测试覆盖率、文件路径等客观事实），不评判"工作合格不合格"。"合格"判定属于工程师——基于 Asset 与 Proof 的对照。
 
 ### 1.2 关键不变量
 
@@ -38,8 +38,8 @@ Blueprint(.md)        Task → Artifact        Verdict (事实记录)
    - 内容层：`_xenon_meta.content_hash` = SHA-256（self-excluding 协议）
    - 验证层：`oxn proof verify` 可重新比对 hash
 3. **机器 + 人类双 SSOT**：
-   - `frozen.json`（uppercase verdict：PASSED / FAILED / INCONCLUSIVE —— **探针运行结果客观记录**，非质量判定）
-   - `verdict.md`（lowercase 友好：pass / fail / inconclusive —— frozen.json 的可读视图）
+   - `frozen.json`（uppercase outcome：COMPLETED / DEVIATED / INCONCLUSIVE —— **探针运行结果客观记录**，非质量判定）
+   - `outcome.md`（lowercase 友好：pass / fail / inconclusive —— frozen.json 的可读视图）
    - 两者同步写、同步锁、含 cross-reference hash
 
 ---
@@ -49,8 +49,8 @@ Blueprint(.md)        Task → Artifact        Verdict (事实记录)
 ```
 .openxenon/proofs/<proof-name>/
 ├── proof.md                       (0o644, 可编辑 — Probe 声明源)
-├── frozen.json                    (0o444, 机器 SSOT — verdict 判决书)
-├── verdict.md                     (0o444, 人类 SSOT — frozen.json 的可读视图)
+├── frozen.json                    (0o444, 机器 SSOT — outcome 证明记录)
+├── outcome.md                     (0o444, 人类 SSOT — frozen.json 的可读视图)
 ├── .running.json                  (运行时暂存 — run 期间存在，结束后删除)
 ├── proof.md                       (v0.4 PR-B Q4-A — work.md 不可变快照)
 └── work-hash.txt                  (proof.md 的 SHA-256)
@@ -69,7 +69,7 @@ domain.invariant { script = "..." | manual = "..." | scope = "work/domain/projec
                                                           ↓
                                           evaluateDomainProof(domain, invariant, ...)
                                                           ↓
-                                          PASS / FAIL / INCONCLUSIVE / MANUAL_PENDING
+                                          COMPLETED / DEVIATED / INCONCLUSIVE / MANUAL_PENDING
 ```
 
 ---
@@ -82,7 +82,7 @@ domain.invariant { script = "..." | manual = "..." | scope = "work/domain/projec
 FrozenProof {
   name: string
   runAt: string (ISO 8601)
-  verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'  // 3-state（uppercase）
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'  // 3-state（uppercase）
   totalCount: number
   passedCount: number
   failedCount: number
@@ -96,9 +96,9 @@ FrozenProof {
 FrozenProofProbeResult {
   probeName: string
   ref: string                       // 形如 '@oxn/probes/fs-exists'
-  verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'  // 3-state
-  passed: boolean                   // 兼容字段（PASSED → true）
-  output: unknown                   // ProbeObservation + ProbeVerdict
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'  // 3-state
+  passed: boolean                   // 兼容字段（COMPLETED → true）
+  output: unknown                   // ProbeObservation + ProbeOutcome
   errorMessage?: string
   durationMs: number
   interferenceFlags?: InterferenceFlag[]  // 12 enum (YELLOW flag 透传)
@@ -125,7 +125,7 @@ FrozenProofProbeResult {
 {
   "name": "check-deploy",
   "runAt": "2026-07-02T03:30:18.441Z",
-  "verdict": "PASSED",
+  "outcome": "COMPLETED",
   "totalCount": 1,
   "passedCount": 1,
   "failedCount": 0,
@@ -133,7 +133,7 @@ FrozenProofProbeResult {
     {
       "probeName": "p1",
       "ref": "@oxn/probes/fs-exists",
-      "verdict": "PASSED",
+      "outcome": "COMPLETED",
       "passed": true,
       "output": {
         "observation": {
@@ -141,9 +141,9 @@ FrozenProofProbeResult {
           "output": "/Users/issac/tmp/oxn-v060-test../../../../.openxenon/config.json",
           "executedAt": 1782963018440
         },
-        "verdict": {
+        "outcome": {
           "passed": true,
-          "verdict": "PASS",
+          "outcome": "COMPLETED",
           "message": "fs-exists: hit 1 file(s) >= expected 1",
           "actual": ["/Users/issac/tmp/oxn-v060-test../../../../.openxenon/config.json"],
           "params": { "pattern": ".openxenon/config.json" },
@@ -162,24 +162,24 @@ FrozenProofProbeResult {
 
 ### 3.4 3 态命名分层
 
-| 视图层 | verdict 大小写 | 例 | 说明 |
+| 视图层 | outcome 大小写 | 例 | 说明 |
 |---|---|---|---|
-| **Kernel ProbeVerdict**（接口契约） | uppercase（无 -ED） | `PASS` / `FAIL` / `INCONCLUSIVE` | Kernel 层纯函数判定 |
-| **frozen.json**（机器 SSOT） | uppercase（带 -ED） | `PASSED` / `FAILED` / `INCONCLUSIVE` | JSON Schema 枚举值惯例 |
-| **verdict.md**（人类 SSOT） | lowercase | `pass` / `fail` / `inconclusive` | 平易近人 |
+| **Kernel ProbeOutcome**（接口契约） | uppercase（无 -ED） | `COMPLETED` / `DEVIATED` / `INCONCLUSIVE` | Kernel 层纯函数判定 |
+| **frozen.json**（机器 SSOT） | uppercase（带 -ED） | `COMPLETED` / `DEVIATED` / `INCONCLUSIVE` | JSON Schema 枚举值惯例 |
+| **outcome.md**（人类 SSOT） | lowercase | `pass` / `fail` / `inconclusive` | 平易近人 |
 
-**映射边界**：`buildFrozenProof` 在 compile/run 边界做转换（`ProbeVerdict.PASS` → `verdict: 'PASSED'`）。
+**映射边界**：`buildFrozenProof` 在 compile/run 边界做转换（`ProbeOutcome.outcome` → `outcome: 'COMPLETED'`）。
 
 ---
 
-## 4. verdict.md (人类 SSOT)
+## 4. outcome.md (人类 SSOT)
 
 ### 4.1 完整示例
 
 ```markdown
 ---
 proof_id: check-deploy
-verdict: PASSED
+outcome: COMPLETED
 run_at: 2026-07-02T03:30:18.441Z
 frozen_hash: 1ef96e6c1c5ab3e4a88a28dd374212e749fd21ea6300b3155ff947d1a6780477
 probe_count: 1
@@ -190,22 +190,22 @@ content_hash: a6a8f7a98a8c343e405c207e09e442c8c72f7156f1e27547156035db7d975870
 
 # Proof: check-deploy
 
-> **Verdict**: ✅ PASSED (1/1 probes passed)
+> **Outcome**: ✅ COMPLETED (1/1 probes passed)
 > **Run at**: 2026-07-02T03:30:18.441Z
 > **Frozen**: `frozen.json` (SHA-256: `1ef96e6c1c5ab3e4a88a28dd374212e749fd21ea6300b3155ff947d1a6780477`)
 
 ## Evidence
 
-- ✅ **p1** `@oxn/probes/fs-exists` `.openxenon/config.json` (PASSED, 1ms)
+- ✅ **p1** `@oxn/probes/fs-exists` `.openxenon/config.json` (COMPLETED, 1ms)
 
-## Verdict Summary
+## Outcome Summary
 
 | Metric | Value |
 |--------|-------|
 | Total probes | 1 |
 | Passed | 1 |
 | Failed | 0 |
-| **Overall verdict** | **PASSED** |
+| **Overall outcome** | **COMPLETED** |
 
 ## Interference
 
@@ -217,12 +217,12 @@ _(none detected)_
 | 字段 | 含义 |
 |---|---|
 | `proof_id` | proof 名（与目录名 / frozen.json `name` 一致） |
-| `verdict` | 3-state（PASSED/FAILED/INCONCLUSIVE）—— **探针运行结果客观记录，非"工作合格"判定** |
+| `outcome` | 3-state（COMPLETED/DEVIATED/INCONCLUSIVE）—— **探针运行结果客观记录，非"工作合格"判定** |
 | `run_at` | ISO 8601 时间戳 |
 | `frozen_hash` | 交叉引用 `frozen.json` 的 `_xenon_meta.content_hash` |
 | `probe_count` / `passed_count` / `failed_count` | 聚合统计 |
 | `inconclusive_count` | 仅当 > 0 时出现 |
-| `content_hash` | verdict.md 自身的 SHA-256（self-excluding 协议） |
+| `content_hash` | outcome.md 自身的 SHA-256（self-excluding 协议） |
 
 ### 4.3 签名协议
 
@@ -290,10 +290,10 @@ writeProbeStatsToFile(statsPath, updated)
 
 ## 6. 工程师查阅的 5 种方式
 
-### 6.1 方式 1：直接读 `verdict.md`（最简）
+### 6.1 方式 1：直接读 `outcome.md`（最简）
 
 ```bash
-cat .openxenon/proofs/check-deploy/verdict.md
+cat .openxenon/proofs/check-deploy/outcome.md
 ```
 
 **优势**：人类可读，含 emoji + 表格 + cross-reference frozen.json。
@@ -307,24 +307,24 @@ oxn proof show check-deploy
 输出示例（`renderShowHuman`，含 TTY 色彩降级）：
 
 ```
-⚠️ Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json
-📄 Human-readable verdict: /Users/issac/tmp/oxn-v060-test../../../../.openxenon/proofs/check-deploy/verdict.md
+⚠️ Warning: .running.json residue found — last run may have crashed; outcome from previous frozen.json
+📄 Human-readable outcome: /Users/issac/tmp/oxn-v060-test../../../../.openxenon/proofs/check-deploy/outcome.md
 
 Proof: check-deploy
-Verdict: ✅ PASSED (1/1)
+Outcome: ✅ COMPLETED (1/1)
 Run at: 2026-07-02T03:30:18.441Z
 Signature: 1ef96e6c1c5ab3e4a88a28dd374212e749fd21ea6300b3155ff947d1a6780477
 
 Probes:
-  ✅ p1 (@oxn/probes/fs-exists) — PASSED, 1ms
+  ✅ p1 (@oxn/probes/fs-exists) — COMPLETED, 1ms
 ```
 
 **特性**：
-- **TTY 彩色**：PASSED=绿 / INCONCLUSIVE=黄 / FAILED=红
+- **TTY 彩色**：COMPLETED=绿 / INCONCLUSIVE=黄 / DEVIATED=红
 - **非 TTY**：仅 emoji（管道 `| cat` 仍可读）
 - **emoji 与色彩互为冗余**：TTY / 非 TTY 都可一眼区分
 - **⚠️ 检测 .running.json 残留**：防上次 run 崩溃
-- **📄 提示 verdict.md 路径**
+- **📄 提示 outcome.md 路径**
 
 ### 6.3 方式 3：`oxn proof show --json`（机器视图）
 
@@ -332,7 +332,7 @@ Probes:
 oxn proof show check-deploy --json
 ```
 
-返回结构化 JSON（含 `signatureValid` / `inProgress` / `hasVerdict` / `verdictPath`），供 dashboard / CI 消费。
+返回结构化 JSON（含 `signatureValid` / `inProgress` / `hasOutcome` / `outcomePath`），供 dashboard / CI 消费。
 
 ### 6.4 方式 4：`oxn proof verify <name>`（证据完整性检查）
 
@@ -365,7 +365,7 @@ oxn proof list            # human-readable
 oxn proof list --json     # 机器消费
 ```
 
-列出所有 Proof + verdict + 概要。
+列出所有 Proof + outcome + 概要。
 
 ---
 
@@ -388,13 +388,13 @@ executeProbe(ir, context)
                                      ↓
 Infra: executeObservation() → 物理观测 (e.g. fs.stat)
                                      ↓
-Kernel: judge() → ProbeVerdict (3-state PASS/FAIL/INCONCLUSIVE)
-                                     ↓
-FrozenProofProbeResult { probeName, ref, verdict, passed, output, durationMs }
-                                     ↓
+Kernel: judge() → ProbeOutcome (3-state COMPLETED/DEVIATED/INCONCLUSIVE)
+                                      ↓
+FrozenProofProbeResult { probeName, ref, outcome, passed, output, durationMs }
+                                      ↓
 buildFrozenProof → frozen.json (chmod 0o444)
-                                     ↓
-writeVerdictMd → verdict.md (chmod 0o444)
+                                      ↓
+writeVerdictMd → outcome.md (chmod 0o444)
                                      ↓
 updateProbeStats → probe-stats.json (atomic)
 ```
@@ -429,9 +429,9 @@ updateProbeStats → probe-stats.json (atomic)
 | ├─ `probe list` | 列出可用 Probe catalog |
 | ├─ `probe describe <probe>` | 描述单个 Probe（输入/输出/示例） |
 | └─ `probe add <proof> <probe> --input-json` | 添加 Probe 到 proof.md |
-| `run <name>` | 跑证明（生成 frozen.json + verdict.md + 更新 probe-stats.json） |
+| `run <name>` | 跑证明（生成 frozen.json + outcome.md + 更新 probe-stats.json） |
 | `verify <name>` | 验证 frozen.json hash + work.md 一致性 |
-| `show <name>` | 显示 verdict 详情（含 frozen.json + verdict.md 引用） |
+| `show <name>` | 显示 outcome 详情（含 frozen.json + outcome.md 引用） |
 
 ### 8.1 run 子命令详细流程
 
@@ -455,8 +455,8 @@ Phase 2:
   → unlink .running.json (失败保留, 供 list/show 检测)
 
 Phase 3.5 (v0.5 PR-A):
-  writeVerdictMd → verdict.md (chmod 0o444)
-  失败 → stderr warning (不阻断)
+  writeVerdictMd → outcome.md (chmod 0o444)
+   失败 → stderr warning (不阻断)
 
 Phase 4 (v0.1.2):
   updateProbeStats → probe-stats.json (atomic)
@@ -484,8 +484,8 @@ Phase 4 (v0.1.2):
 - ❌ AI / 工程师手改 `frozen.json`（OS 层 0o444 拦不住 root，但 hash 失配 `E_PROOF_HASH_DRIFT`）
 - ❌ `oxn proof run` 不带 work file 引用（无快照机制，verify 报 `no-target`）
 - ❌ 用 `oxn proof run` 跑非 Probe 类型的"验收"（probe 必须用 `infra/probes/` catalog）
-- ❌ 把 `verdict.md` 当成"可二次修改的人类文档"——它是 frozen.json 的 deterministic render
-- ❌ 在 `INCONCLUSIVE` 状态下宣称 PASS（必须 re-run 直至 3-state 收敛）
+- ❌ 把 `outcome.md` 当成"可二次修改的人类文档"——它是 frozen.json 的 deterministic render
+- ❌ 在 `INCONCLUSIVE` 状态下宣称 COMPLETED（必须 re-run 直至 3-state 收敛）
 
 ---
 
@@ -510,15 +510,15 @@ Phase 4 (v0.1.2):
 
 OXL 编译期校验 required 字段**必须**在五级链中有显式来源，否则编译报错。
 
-## 11. Proof = 公证人 ≠ 裁判（ADR-0031）
+## 11. Proof = 客观事实记录 ≠ 裁判（ADR-0031）
 
-### 11.1 公证人做什么
+### 11.1 客观事实记录做什么
 
 - ✅ 记录"发生了什么"（命令 / 退出码 / stdout / stderr）
 - ✅ 在 hash 校验基础上证明"数据未被篡改"
-- ✅ 输出可重现的 verdict（基于已定义规则）
+- ✅ 输出可重现的 outcome（基于已定义规则）
 
-### 11.2 公证人不做什么
+### 11.2 客观事实记录不做什么
 
 - ❌ 评判"代码质量" / "设计好坏"
 - ❌ 预测"未来风险"
@@ -529,10 +529,10 @@ OXL 编译期校验 required 字段**必须**在五级链中有显式来源，�
 | 决策 | 归属 |
 |---|---|
 | 代码是否合并 | 工程师（或 PR reviewer AI） |
-| Probe 是否失败 | 公证人（仅基于事实判定） |
+| Probe 是否失败 | 客观事实记录（仅基于事实判定） |
 | 业务是否正确 | 人类 |
 
-> slogan 印证：**OpenXenon 不生产代码，只生产信任。**
+> slogan 印证：**OpenXenon 为协作提供边界与证据。**
 
 ### 11.4 与 E4 Insight 的边界
 
@@ -574,5 +574,5 @@ OXL 编译期校验 required 字段**必须**在五级链中有显式来源，�
 - [Work](./work.md) — E2 Work 生命周期（Proof 在 Work 内的位置）
 - [Insight](./insight.md) — E4 涌现层（消费 frozen.json + probe-stats.json）
 - [Architecture](../../../dev/zh-cn/architecture.html) — Engine L0-L3 分层（Probe 在 L1-Infra / L0-Kernel）
-- [CLI 参考](./reference/cli-user-guide.md) — `oxn proof` 完整命令清单
+- [CLI 参考](../reference/cli-user-guide.md) — `oxn proof` 完整命令清单
 - v0.6 RFC

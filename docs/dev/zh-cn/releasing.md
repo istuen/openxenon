@@ -34,9 +34,9 @@ version: 0.6.1
 date: 2026-07-15
 type: patch
 rfc:
-  - .openxenon/docs/rfcs/xxx.md
+  - .openxenon/drafts/rfc/xxx.md
 adr:
-  - .openxenon/docs/adrs/0057-xxx.md
+  - .openxenon/drafts/rfc/0057-xxx.md
 ---
 
 # 0.6.1 — 文档三层守门 + docs/zh-cn 结构重构

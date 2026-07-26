@@ -8,13 +8,13 @@ title: IAP 速记卡
 
 > 三大法则速记卡。一页可打印。
 
-> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
+> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
 
 ---
 
 ## IAP 协作流水线（核心法则）
 
-> **三方各司其职，OXN 出证明，工程师定信任。**
+> **三方各司其职，OXN 记录事实，工程师判定合格。**
 
 - 工程师定意图：维护 Asset（Domain / Blueprint / Stack），不写实现代码
 - AI Agent 跑对齐：在 Asset 边界内编排 Work / Task / Part，但不得修改边界
@@ -29,7 +29,7 @@ title: IAP 速记卡
 | 模块 | 能做 | 不能做 |
 |---|---|---|
 | Kernel | 纯逻辑校验 | 执行 IO / 改规则 / **引入概率性数学模型** |
-| Infra | 观测事实 | 做 PASS/FAIL 判定 |
+| Infra | 观测事实 | 做 COMPLETED/DEVIATED 判定 |
 | Daemon | 管理运行时 | 修改 Kernel 规则 |
 
 ---
@@ -60,8 +60,8 @@ skill_context           state.json 写权限
         └────────────┬───────────────┘
                      │
                      ▼
-                 Proof
-              Proof(Verdict)
+                  Proof
+               Proof(Outcome)
                      │
                      └──▶ Intent 演化（P → I 反馈）
 ```
@@ -96,6 +96,6 @@ create → [add-task?] → lock   run → submit × N          finalize
 
 1. **跳过 lock 直接 run** → `IAP_ALIGN_LOCK_NOT_FOUND`
 2. **lock 后修改 .md** → `IAP_ALIGN_LOCK_HASH_MISMATCH`
-3. **AI 直接写 frozen.json** → 绕过 Proof 轴
+3. **AI 直接写 frozen.json** → 绕过 E3 Proof
 4. **Domain 里写 slot** → Domain / Blueprint 正交
 5. **把 ref 和 align 混为一谈** → `domain "X" ref "..."` 是 work 级声明，task 内 `domain "X"` 是 align

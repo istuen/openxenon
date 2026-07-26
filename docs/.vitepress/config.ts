@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'OpenXenon',
-  description: '轻量级人机协作工具 — 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明',
+  description: '工程师与 AI Agent 协作工具，为协作提供边界与证据',
   cleanUrls: false,
   base: '/openxenon/',
   lastUpdated: true,
@@ -15,7 +15,7 @@ export default defineConfig({
   //   docs/product/zh-cn/*.md                    → /openxenon/product/zh-cn/   （产品手册 · 中文）
   //   docs/product/en/*.md                       → /openxenon/product/en/      （Product Manual）
   //   docs/dev/zh-cn/*.md                        → /openxenon/dev/zh-cn/       （开发手册 · 中文）
-  //   docs/rfc/zh-cn/*.md                        → /openxenon/rfc/zh-cn/       （决策记录 · 中文）
+  //   docs/rfc/zh-cn/*.md                        → /openxenon/rfc/zh-cn/       （规范 (RFC) · 中文）
   // 旧子目录（core/architecture/reference/...）在 srcExclude 排除
   srcDir: '.',
   srcExclude: [
@@ -72,6 +72,12 @@ export default defineConfig({
     /^\.\.\/\.openxenon\/pools\//,
     // asset-templates 引用的 .md
     /^\.\/(domain|workflow|stack|roadmap)$/,
+    // _index.md 目录页：VitePress 死链检查器将 / 解析为 /index
+    /\/glossary\/zh-cn\/index$/,
+    /\/glossary\/zh-cn\/$/,
+    /\.\/\.\.\/zh-cn\/index$/,
+    // CONTEXT-MAP.md 在 docs/ 之外
+    /\.\.+\/CONTEXT-MAP/,
   ],
 
   // v0.7 重构：locale key 改 topic-first
@@ -80,13 +86,14 @@ export default defineConfig({
       label: '产品手册',
       lang: 'zh-CN',
       link: '/product/zh-cn/',
-      title: 'OpenXenon · 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明',
-      description: '轻量级人机协作工具 — 工程师信任 AI Agent 在边界内的执行成果',
+      title: 'OpenXenon · 工程师与 AI Agent 协作工具',
+      description: '为协作提供边界与证据',
       themeConfig: {
         nav: [
           { text: '产品手册', link: '/product/zh-cn/' },
           { text: '开发手册', link: '/dev/zh-cn/' },
-          { text: '决策记录', link: '/rfc/zh-cn/' },
+          { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
+          { text: '术语表', link: '/glossary/zh-cn/' },
           { text: '快速开始', link: '/product/zh-cn/quickstart.html' },
           { text: 'AI 入口', link: '/product/zh-cn/ai-entry.html' },
         ],
@@ -106,7 +113,8 @@ export default defineConfig({
             {
               text: '范式与实体（E1-E4）',
               items: [
-                { text: 'IAP 范式与信任链', link: '/product/zh-cn/concepts/iap-paradigm.html' },
+                { text: 'IAP 范式与三方协作', link: '/product/zh-cn/concepts/iap-paradigm.html' },
+                { text: 'OpenXenon 协作生命周期', link: '/product/zh-cn/concepts/lifecycle.html' },
                 { text: 'Asset · E1', link: '/product/zh-cn/concepts/asset.html' },
                 { text: 'Work · E2', link: '/product/zh-cn/concepts/work.html' },
                 { text: 'Proof · E3', link: '/product/zh-cn/concepts/proof.html' },
@@ -126,7 +134,6 @@ export default defineConfig({
               text: '用户参考',
               items: [
                 { text: 'CLI 用户指南', link: '/product/zh-cn/reference/cli-user-guide.html' },
-                { text: '术语表', link: '/product/zh-cn/reference/glossary.html' },
                 { text: 'IAP 速记卡', link: '/product/zh-cn/reference/iap-cheatsheet.html' },
                 { text: 'Asset 模板库', link: '/product/zh-cn/reference/asset-templates/' },
               ],
@@ -145,7 +152,8 @@ export default defineConfig({
         nav: [
           { text: '产品手册', link: '/product/zh-cn/' },
           { text: '开发手册', link: '/dev/zh-cn/' },
-          { text: '决策记录', link: '/rfc/zh-cn/' },
+          { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
+          { text: '术语表', link: '/glossary/zh-cn/' },
         ],
         sidebar: {
           '/dev/zh-cn/': [
@@ -192,22 +200,60 @@ export default defineConfig({
       },
     },
     '/rfc/zh-cn/': {
-      label: '决策记录',
+      label: '规范 (RFC)',
       lang: 'zh-CN',
       link: '/rfc/zh-cn/',
-      title: 'OpenXenon · 决策记录',
-      description: 'OXN 开发决策的 OXP Proposal 归档',
+      title: 'OpenXenon · 规范',
+      description: 'OXN 开发规范（RFC）归档',
       themeConfig: {
         nav: [
           { text: '产品手册', link: '/product/zh-cn/' },
           { text: '开发手册', link: '/dev/zh-cn/' },
-          { text: '决策记录', link: '/rfc/zh-cn/' },
+          { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
+          { text: '术语表', link: '/glossary/zh-cn/' },
         ],
         sidebar: {
           '/rfc/zh-cn/': [
             {
-              text: '决策记录',
-              items: [{ text: 'OXP 索引', link: '/rfc/zh-cn/' }],
+              text: '规范 (RFC)',
+              items: [
+                { text: 'OXP 索引', link: '/rfc/zh-cn/' },
+                { text: 'OXP-0001 术语精简', link: '/rfc/zh-cn/OXP-0001-terminology-simplification.html' },
+                { text: 'OXP-0002 彻底不判贯彻', link: '/rfc/zh-cn/OXP-0002-no-judgment-principle.html' },
+                { text: 'OXP-0003 Daemon 职责边界', link: '/rfc/zh-cn/OXP-0003-daemon-responsibility-boundary.html' },
+              ],
+            },
+          ],
+        },
+      },
+    },
+    '/glossary/zh-cn/': {
+      label: '术语表',
+      lang: 'zh-CN',
+      link: '/glossary/zh-cn/',
+      title: 'OpenXenon · 术语表',
+      description: 'OpenXenon 外部手册引用术语的统一汇集地',
+      themeConfig: {
+        nav: [
+          { text: '产品手册', link: '/product/zh-cn/' },
+          { text: '开发手册', link: '/dev/zh-cn/' },
+          { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
+          { text: '术语表', link: '/glossary/zh-cn/' },
+        ],
+        sidebar: {
+          '/glossary/zh-cn/': [
+            {
+              text: '术语表',
+              items: [
+                { text: '总入口', link: '/glossary/zh-cn/' },
+                { text: '核心术语', link: '/glossary/zh-cn/core-terms.html' },
+                { text: '引擎术语', link: '/glossary/zh-cn/engine-terms.html' },
+                { text: '资产术语', link: '/glossary/zh-cn/asset-terms.html' },
+                { text: '工作术语', link: '/glossary/zh-cn/work-terms.html' },
+                { text: '证明术语', link: '/glossary/zh-cn/proof-terms.html' },
+                { text: '洞察术语', link: '/glossary/zh-cn/insight-terms.html' },
+                { text: 'CLI 术语', link: '/glossary/zh-cn/cli-terms.html' },
+              ],
             },
           ],
         },
@@ -217,7 +263,7 @@ export default defineConfig({
       label: 'Product Manual',
       lang: 'en-US',
       link: '/product/en/',
-      title: 'OpenXenon · Engineers define intent, AI Agents run alignment, OXN Engine emits proof',
+      title: 'OpenXenon · Collaboration tool for engineers and AI agents',
       description: 'Lightweight human–AI collaboration tool — engineers trust AI Agents within boundaries',
       themeConfig: {
         nav: [
@@ -283,8 +329,8 @@ export default defineConfig({
     siteTitle: 'OpenXenon',
     search: { provider: 'local' },
     socialLinks: [{ icon: 'github', link: 'https://github.com/istuen/openxenon' }],
-    footer: {
-      message: 'OpenXenon · 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明',
+      footer: {
+      message: 'OpenXenon · 工程师与 AI Agent 协作工具，为协作提供边界与证据',
       copyright: `MIT License · ${new Date().getFullYear()}`,
     },
   },

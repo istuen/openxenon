@@ -54,4 +54,4 @@ SSOT：packages/cli/src/skills/locales/{zh-CN,en}/<skill>/instruction.md
 
 - [AGENTS.md §CLI 架构](../../../AGENTS.md#cli-架构oxn) — 三档 exit 完整逻辑
 - [AGENTS.md §Skill 工作流](../../../AGENTS.md#仓库约定) — SSOT → 编译 → 分发完整链路
-- [ADR-0012 Main/Sub Agent 审计链](../../../.openxenon/docs/adrs/0012-main-sub-agent-audit-chain.md)
+- [ADR-0012 Main/Sub Agent 审计链](../../../.openxenon/drafts/rfc/0012-main-sub-agent-audit-chain.md)

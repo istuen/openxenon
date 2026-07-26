@@ -58,7 +58,7 @@ OpenXenon 提供两级 Domain 抽象：
 - 同一个 term 在 team 里出现 3 种说法（"User" / "Customer" / "Member" 混用）
 - AI 写的代码里出现了你不希望看到的词
 - Blueprint 的 `skill_context` 写了太多业务解释
-- Probe FAIL 不是因为代码错，而是因为 AI "理解错了业务意图"
+- Probe DEVIATED 不是因为代码错，而是因为 AI "理解错了业务意图"
 
 ### 升级步骤
 
@@ -151,7 +151,7 @@ oxn domain validate MemberContext
 oxn proof run check-domain-compliance
 ```
 
-v0.2 将引入 `language-ban-checker` Probe，直接在代码中扫描 ban 词并 FAIL。
+v0.2 将引入 `language-ban-checker` Probe，直接在代码中扫描 ban 词并 DEVIATED。
 
 ---
 
@@ -181,6 +181,6 @@ work "NewUserOnboarding" {
 
 ## → 参考
 
-- [Intent](./intent.md) — Domain 完整语法
+- [Asset](../concepts/asset.md) — Domain 完整语法
 - [Recipes](./recipes.md) — 跨域编排完整示例
 - [Architecture](../../../dev/zh-cn/architecture.html) — L0-L3 分层中 Domain 的物理归属

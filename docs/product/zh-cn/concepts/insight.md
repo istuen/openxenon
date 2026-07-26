@@ -16,12 +16,12 @@ OXN 前三层（E1 Asset + E2 Work + E3 Engine）无论怎么精细组合，本�
 
 涌现的本质定义：**当许多个体相互作用后产生了大的整体，而这个整体展现了构成它的个体所不具备的新特性**。
 
-OXN 里的"个体"就是那些 term、ban、verdict、frozen.json——它们是离散的、局部的、可还原的。真正的"涌现"是：
+OXN 里的"个体"就是那些 term、ban、outcome、frozen.json——它们是离散的、局部的、可还原的。真正的"涌现"是：
 - 跨多个 Work、跨多轮 IAP、跨多种 Asset 互动后
 - AI 推理出"某个 Domain 该废弃了"
 - "某种 Blueprint 模式在反复失败"
 - "某个 Stack 约束正在成为瓶颈"
-- **这些结论无法从任何单个 Work 的 verdict 里读出来，只能从整体的互动模式里涌现**
+- **这些结论无法从任何单个 Work 的 outcome 里读出来，只能从整体的互动模式里涌现**
 
 这就是为什么 Insight 必须由 AI 去做"涌现推理"而不是 Engine 用规则算出来——规则计算是还原论，AI 推理才是整体论的综合集成。
 
@@ -73,10 +73,10 @@ OpenSpec 的 `archive` 是还原论的终点——它把 change 的 delta 合并
 
 ```
 Work (多轮 IAP)
-├── Round 1: intent + align + proof → verdict A
-├── Round 2: intent(adjust) + align + proof → verdict B
+├── Round 1: intent + align + proof → outcome A
+├── Round 2: intent(adjust) + align + proof → outcome B
 ├── ...
-└── Round N: PASS → finalize
+└── Round N: COMPLETED → finalize
     ↓
    E4 Insight（涌现推理 — v0.7+）
     ↓
@@ -121,7 +121,7 @@ Insight 本身不持久化报告——每次动态计算。资产级建议可写
 ## 6. 反模式（v0.6 之后禁止）
 
 - ❌ 把 Insight 当自动修复工具——Insight 只推理建议，不自动修改 Asset
-- ❌ 从单个 Work verdict 反推 Asset 改进——涌现必须从整体互动模式综合推理
+- ❌ 从单个 Work outcome 反推 Asset 改进——涌现必须从整体互动模式综合推理
 - ❌ 用 Engine 规则计算 Insight——Insight 是 AI 推理，不是规则引擎
 - ❌ 跨 Work Insight 推理当前就调用（v0.6 未实装跨 Work 能力）
 
@@ -129,7 +129,7 @@ Insight 本身不持久化报告——每次动态计算。资产级建议可写
 
 | 维度 | v0.5（废弃） | v0.6 |
 |---|---|---|
-| 哲学定位 | 跨 proof 涌现模式（Proof 轴延伸） | **E4 涌现层**（高于前三层，整体论） |
+| 哲学定位 | 跨 proof 涌现模式（E3 Proof 延伸） | **E4 涌现层**（高于前三层，整体论） |
 | 在 Work 中的角色 | Work 的一个 Mode（`--type insight`） | **独立顶层实体**（不从属于 Work） |
 | 产出 | proof emergent patterns | 跨 Work 综合推理 + 资产级建议 |
 | 执行主体 | Engine 规则计算 | AI 推理涌现 |

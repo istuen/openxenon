@@ -38,7 +38,7 @@ title: 架构
 │      物理目录: packages/engine/src/infra/        │
 ├────────────────────────────────────────────────────────┤
 │  L0: Kernel (逻辑内核层)                                 │
-│      纯逻辑零 IO: Schema / Contract / Verdict / Processor│
+│      纯逻辑零 IO: Schema / Contract / ProbeOutcome / Processor│
 │      物理目录: packages/engine/src/kernel/            │
 └────────────────────────────────────────────────────────┘
 ```
@@ -74,7 +74,7 @@ packages/engine/src/           ← L2 Engine 物理位置
 │   ├── index.ts
 │   ├── create.ts / list.ts / describe.ts / list-probes.ts
 │   ├── add-probe.ts / run.ts / dry-run.ts
-│   ├── show.ts / verify.ts / render-verdict.ts
+│   ├── show.ts / verify.ts / verdict-writer.ts
 │
 ├── Insight/                              ← E4 Insight 涌现层
 │   ├── index.ts
@@ -94,7 +94,7 @@ packages/engine/src/           ← L2 Engine 物理位置
 - 纯函数式导出：`export async function create(input): Promise<output>`
 - 无类、无状态、无 DI 容器
 
-详见 [v0.6 Service 层设计稿](../../../.openxenon/docs/rfcs/v0.6-iap-refactor-rfc.md) §3 L2 Engine 物理位置。
+详见 [v0.6 Service 层设计稿](../../../.openxenon/.archived/docs/rfcs/v0.6-iap-refactor-rfc.md) §3 L2 Engine 物理位置。
 
 ## 4. Runtime 三模块（L0-L1 约束）
 
@@ -102,9 +102,9 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 
 | 模块 | 层级 | 职责 | 约束 |
 |---|---|---|---|
-| Kernel | L0 | 纯逻辑：IAP 状态机、探针调度、hash 校验、Verdict 判定 | 零 IO |
+| Kernel | L0 | 纯逻辑：IAP 状态机、探针调度、hash 校验、ProbeOutcome 判定 | 零 IO |
 | OXL | L1 | OpenXenon Language DSL：.md 解析与序列化 | 不依赖 L2/L3 |
-| Infra | L1 | 文件系统、进程、网络、探针执行 | 只回答事实，不判定 PASS/FAIL |
+| Infra | L1 | 文件系统、进程、网络、探针执行 | 只回答事实，不判定 COMPLETED/DEVIATED |
 
 > **纯洁性核法则**：Infra 不能绕过 L2 Engine 自我宣布完成 → L2 Engine 不能修改 L0 Kernel 规则 → L0 Kernel 不能直接执行 Task。
 
@@ -170,7 +170,7 @@ L3 CLI → L2 Engine（DDD 模块化调用）
 
 ## 9. L0-L1 Runtime 不变量
 
-OXN 在 L0 Kernel / L1 OXL / L1 Infra 之间划定**七项核心不变量**，确保 Engine 始终是公证人（不评判）+ Kernel 始终真空（无 IO）。
+OXN 在 L0 Kernel / L1 OXL / L1 Infra 之间划定**七项核心不变量**，确保 Engine 始终记录事实（不评判）+ Kernel 始终真空（无 IO）。
 
 ### 9.1 运行期隔离 + frozen 命名（ADR-0003）
 
@@ -191,14 +191,14 @@ if (sourceFormat === 'oxn') { ... } else if (sourceFormat === 'md') { ... }
 - ✅ `frozen.json`（不带 `.yaml`/`.md` 后缀）
 - ❌ `frozen.md.json` / `frozen.yaml.json`（暴露源格式）
 
-### 9.3 ProbeObservation vs ProbeVerdict 二元公理（ADR-0008）
+### 9.3 ProbeObservation vs ProbeOutcome 二元公理（ADR-0008）
 
 Kernel 内两类数据严格区分：
 
 | 类型 | 含义 | 所在层 | 谁生成 |
 |---|---|---|---|
 | `ProbeObservation` | 物理事实（exitCode、stdout、stderr） | L1 Infra | Probe 执行器 |
-| `ProbeVerdict` | 业务判定（PASS / FAIL / ERROR） | L0 Kernel | Processor |
+| `ProbeOutcome` | 业务判定（COMPLETED / DEVIATED / INCONCLUSIVE） | L0 Kernel | Processor |
 
 关键不变量：
 
@@ -284,4 +284,4 @@ export type { OxnIR, OxnValidationResult } from './ir-types.js'
 - [Asset](../../product/zh-cn/concepts/asset.html) — E1 硬约束边界
 - [Work](../../product/zh-cn/concepts/work.html) — E2 动态协作 + IAP + Round
 - [Insight](../../product/zh-cn/concepts/insight.html) — E4 涌现层
-- [v0.6 RFC](../../../.openxenon/docs/rfcs/v0.6-iap-refactor-rfc.md)
+- [v0.6 RFC](../../../.openxenon/.archived/docs/rfcs/v0.6-iap-refactor-rfc.md)

@@ -45,11 +45,11 @@ OpenXenon 内置 11 个 Probe，涵盖最常见的验证需求：
 一个 Probe 由两部分组成：
 
 1. **物理观测**（Infra 层）：执行实际的 IO 操作
-2. **纯函数判定**（Kernel 层）：根据观测结果给出 Pass/Fail
+2. **纯函数判定**（Kernel 层）：根据观测结果给出 COMPLETED/DEVIATED
 
 ```
 观测函数（Infra）        →    判定函数（Kernel）
-fs.glob("dist/**/*.js")  →    found.length > 0 → PASS
+fs.glob("dist/**/*.js")  →    found.length > 0 → COMPLETED
 ```
 
 ### 内联 Probe（推荐）
@@ -145,7 +145,7 @@ src/builtin/
 
 - 现有 `.md` 文件无需迁移（已是 canonical 格式）
 - 转完后用户代码不再需要 `import { URI } from 'langium'` — 删即可
-- 参考 [md-native-grammar-rfc.md](https://github.com/istuen/openxenon/blob/main/.openxenon/pools/sprints/v0.3-md-ssot/design/md-native-grammar-rfc.md) D9
+- 参考 [md-native-grammar-rfc.md](https://github.com/istuen/openxenon/blob/main/.openxenon/.archived/docs/rfcs/md-native-grammar-rfc.md) D9
 
 ## → 参考
 

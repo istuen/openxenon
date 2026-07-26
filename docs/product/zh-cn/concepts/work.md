@@ -26,11 +26,11 @@ Work (一次完整 IAP 周期)
 │   ├── run                     — 启动状态机 + Round 初始化
 │   └── submit × N              — 推进 task part × N（AI 逐个执行）
 │
-├── Proof 阶段 (Engine 主权)    ← 跑探针 + 写 verdict
+├── Proof 阶段 (Engine 主权)    ← 跑探针 + 写 outcome
 │   └── finalize                — 汇总 Round + 写 frozen.json + 标记终态
 │
 ├── (可选) Round 循环
-│   verdict = FAIL 或 intent 调整 → next-round → 回到 Intent 阶段 → 新一轮 Align
+│   outcome = DEVIATED 或 intent 调整 → next-round → 回到 Intent 阶段 → 新一轮 Align
 │
 └── finalize → 写 frozen.json
 ```
@@ -63,12 +63,12 @@ Work (一次完整 IAP 周期)
 
 ```
 Work (my-feature)
-├── Round 1: intent + align + proof → verdict FAIL (type-check)
-│   └── oxn work next-round --verdict FAILED → 回到 Intent 调整
-├── Round 2: intent(adjust) + align + proof → verdict FAIL (lint)
-│   └── oxn work next-round --verdict FAILED
-├── Round 3: intent(refine) + align + proof → verdict PASS
-│   └── oxn work finalize --verdict PASSED
+├── Round 1: intent + align + proof → outcome DEVIATED (type-check)
+│   └── oxn work next-round --outcome DEVIATED → 回到 Intent 调整
+├── Round 2: intent(adjust) + align + proof → outcome DEVIATED (lint)
+│   └── oxn work next-round --outcome DEVIATED
+├── Round 3: intent(refine) + align + proof → outcome COMPLETED
+│   └── oxn work finalize --outcome COMPLETED
 ```
 
 **Round 2+ re-run 行为**（v0.6.1-alpha.5 Phase A.1 修复）：
@@ -94,7 +94,7 @@ Work (my-feature)
 oxn work run my-feature --json
 oxn work submit my-feature --task t1 --json
 
-# verdict fail → 开启 Round 2
+# outcome DEVIATED → 开启 Round 2
 oxn work next-round my-feature
 
 # 调整 Intent（编辑 work.md 加 invariant）
@@ -158,8 +158,8 @@ Intent 阶段可以是探索、讨论然后落盘成文档。与 Intent Pool 5 �
 | **Align** | `oxn work run <w>` | `runWork()` | `works/<w>/.run/state.json` + `.run/trace.jsonl` |
 | Align | `oxn work submit <w> --task <t>` | `submitTask()` | `works/<w>/.run/tasks/<t>/state.json` + `trace.jsonl` |
 | Align | `oxn work context <w> --task <t>` | `buildWorkContext()` | — (渲染 AI 上下文) |
-| Align | `oxn work next-round <w> --verdict <V>` | `nextRoundWork()` | 关闭当前 round + 开启 round+1 |
-| **Proof** | `oxn work finalize <w> [--verdict <V>]` | `finalizeWork()` | `.run/frozen.json`（终态快照） |
+| Align | `oxn work next-round <w> --outcome <V>` | `nextRoundWork()` | 关闭当前 round + 开启 round+1 |
+| **Proof** | `oxn work finalize <w> [--outcome <V>]` | `finalizeWork()` | `.run/frozen.json`（终态快照） |
 
 ## 7.2 物理布局（V1 布局，v0.6.1-alpha.0）
 
@@ -212,7 +212,7 @@ Intent 阶段可以是探索、讨论然后落盘成文档。与 Intent Pool 5 �
 | `tasks` | WorkspaceTaskIndex[] | 任务 DAG 索引 |
 | `skillContext` | object | overallGoal + constraints + maxIterations |
 | `currentRound` | number | 当前活跃 round 编号（1-based） |
-| `roundHistory` | RoundRecord[] | 已结束 round 快照（含 verdict + failures） |
+| `roundHistory` | RoundRecord[] | 已结束 round 快照（含 outcome + failures） |
 | `diagnostics` | array? | PR-14c 软警告（域/蓝图 lock 后被删等） |
 
 **状态转换**：
@@ -245,7 +245,7 @@ RoundRecord {
   round: 1-based
   startedAt: ISO 8601
   endedAt?: ISO 8601
-  verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING'
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'PENDING'
   failures: string[]   // 失败 task 名列表
   notes?: string
 }
@@ -370,9 +370,9 @@ writeFileSync(works/<w>/blueprints.json)  (原子写)
 │ Align       │ 1. oxn work run <w>           (启动状态机)                    │
 │ (AI 编排)   │ 2. oxn work submit <w> --task <t>  (推进 part × N)           │
 │             │ 3. oxn work context <w> --task <t>  (AI 读上下文)             │
-│             │ 4. oxn work next-round <w> --verdict FAILED  (Round 循环)    │
+│             │ 4. oxn work next-round <w> --outcome DEVIATED  (Round 循环)    │
 ├─────────────┼───────────────────────────────────────────────────────────────┤
-│ Proof       │ 1. oxn work finalize <w> [--verdict V]  (收口 + frozen.json)  │
+│ Proof       │ 1. oxn work finalize <w> [--outcome V]  (收口 + frozen.json)  │
 │ (Engine)    │ 2. 旁路: oxn proof run <p> (独立 proof 轴, 不走 work)         │
 └─────────────┴───────────────────────────────────────────────────────────────┘
 ```
@@ -482,7 +482,7 @@ RoundRecord {
   round: 1-based
   startedAt: ISO 8601
   endedAt?: ISO 8601
-  verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING'
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'PENDING'
   failures: string[]  // 失败 task 名
   notes?: string
 }
@@ -499,54 +499,54 @@ oxn work run <w> (首次)
   ↓
 runWork()  → createInitialWorkspaceState(...)
   ↓
-roundHistory = [{ round: 1, verdict: 'PENDING' }]
+roundHistory = [{ round: 1, outcome: 'PENDING' }]
 currentRound = 1
   ↓
 [Round 1 跑] oxn work submit × N → work 状态 passed/failed
-  ↓
-verdict fail → 工程师开 Round 2:
-oxn work next-round <w> --verdict FAILED --failures t1,t2
-  ↓
-nextRoundWork({ projectRoot, workName, verdict: 'FAILED', failures: [...] })
+   ↓
+outcome DEVIATED → 工程师开 Round 2:
+oxn work next-round <w> --outcome DEVIATED --failures t1,t2
+   ↓
+nextRoundWork({ projectRoot, workName, outcome: 'DEVIATED', failures: [...] })
   ↓
 loadWorkState (.run/state.json)
   ↓
 关闭当前 round:
   roundHistory.last.endedAt = now
-  roundHistory.last.verdict = 'FAILED'
+  roundHistory.last.outcome = 'DEVIATED'
   roundHistory.last.failures = ['t1', 't2']
   ↓
 开新 round:
   currentRound += 1
-  roundHistory.push({ round: 2, verdict: 'PENDING', startedAt: now })
+  roundHistory.push({ round: 2, outcome: 'PENDING', startedAt: now })
   ↓
 saveWorkState
 appendWorkTrace(event='next-round', newRound, previousVerdict)
   ↓
 [Round 2 跑] 编辑 work.md → work lock → run → submit
   ↓
-verdict pass → finalize:
-oxn work finalize <w> --verdict PASSED --notes "..."
-  ↓
+outcome COMPLETED → finalize:
+oxn work finalize <w> --outcome COMPLETED --notes "..."
+   ↓
 finalizeWork() 关闭最后 round + 设 work.status = 'passed'
   ↓
 写 .run/frozen.json (WorkFrozenSnapshot)
-appendWorkTrace(event='finalize', finalVerdict, totalRounds)
+appendWorkTrace(event='finalize', finalOutcome, totalRounds)
 ```
 
 ## 11.3 Round 错误码
 
 | 错误码 | 触发 |
 |---|---|
-| `OXN_ROUND_VERDICT_INVALID` | `--verdict` 不是 PASSED/FAILED/INCONCLUSIVE |
-| `OXN_ROUND_ALREADY_PASSED` | `next-round --verdict PASSED` 时已有 round PASSED（提示用 `finalize`） |
+| `OXN_ROUND_OUTCOME_INVALID` | `--outcome` 不是 COMPLETED/DEVIATED/INCONCLUSIVE |
+| `OXN_ROUND_ALREADY_PASSED` | `next-round --outcome COMPLETED` 时已有 round COMPLETED（提示用 `finalize`） |
 
 ## 11.4 Round 关键约束
 
 1. **手动触发** — 没有 auto-loop，避免无限循环
 2. **per-round 快照** — Round 1 / Round 2 不破坏 `.run/state.json`
 3. **roundHistory 不可丢** — finalize 保留所有历史供 E4 Insight 消费
-4. **verdict 终态映射** — `finalize` 时 `verdict === 'PASSED' ? 'passed' : 'failed' / 'error'`
+4. **outcome 终态映射** — `finalize` 时 `outcome === 'COMPLETED' ? 'passed' : 'failed' / 'error'`
 
 ---
 
@@ -567,7 +567,7 @@ works/<work-name>/
 
 | 文件 | 角色 | 写入时机 | 可变 |
 |---|---|---|---|
-| `frozen.json` | 公证（Work 起始 / 终态不可变快照） | `work lock` / `work finalize` | 否 |
+| `frozen.json` | 记录（Work 起始 / 终态不可变快照） | `work lock` / `work finalize` | 否 |
 | `trace.jsonl` | 历史（所有事件追加流） | 每次状态变更 | append-only |
 | `state.json` | 现状（最近一次的派生态） | 每次 trace 之后 | 是（来自 trace 重放） |
 
@@ -668,8 +668,8 @@ fs.renameSync(`${statePath}.tmp`, statePath)
 | `submit <w> --task <t>` | 推进 task part | Align |
 | `status <w>` | 读 `.run/state.json` | — |
 | `context <w> [--task <t>]` | 渲染 AI 上下文 | Align |
-| `next-round <w> --verdict <V>` | 关闭/开启 round | Align |
-| `finalize <w> [--verdict <V>]` | 收口 + 写终态 | Proof |
+| `next-round <w> --outcome <V>` | 关闭/开启 round | Align |
+| `finalize <w> [--outcome <V>]` | 收口 + 写终态 | Proof |
 
 ---
 
@@ -682,7 +682,7 @@ fs.renameSync(`${statePath}.tmp`, statePath)
 - ❌ 把 Round 循环当自动机制——v0.6 手动触发
 - ❌ 先跑 validate 再跑 lock（Phase D: lock 内含 validate，无需重复）
 - ❌ 不要绕过 lock 守卫跑生产（v1.1 planLock 是 OWNPASS 唯一凭证）
-- ❌ `next-round --verdict PASSED`（已有 PASSED round 应改用 `finalize`）
+- ❌ `next-round --outcome COMPLETED`（已有 COMPLETED round 应改用 `finalize`）
 - ❌ 不修 planLock 后修改 work.md（先 unlock → 改 → re-lock）
 
 ---
@@ -843,10 +843,10 @@ Work finalize → context.md 冻结（不再修改）
 - [Core Concepts](./iap-paradigm.md) — E1-E4 完整概念
 - [Asset](./asset.md) — E1 硬约束边界（Asset 创建与锁）
 - [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper 论文结构 + 引用计数 + DAG
-- [Proof](./proof.md) — E3 Engine 独立公证（frozen.json / verdict.md）
+- [Proof](./proof.md) — E3 Engine 独立验证记录（frozen.json / outcome.md）
 - [Insight](./insight.md) — E4 涌现层
 - [Architecture](../../../dev/zh-cn/architecture.html) — Engine L0-L3 分层
-- [CLI 参考](./reference/cli-user-guide.md) — 完整 oxn 命令清单
+- [CLI 参考](../reference/cli-user-guide.md) — 完整 oxn 命令清单
 - v0.6 RFC
 - v0.6.3 Asset Paper Schema RFC 📝 Draft
 - ADR-0049 Work/context.md 取代 Memory L1

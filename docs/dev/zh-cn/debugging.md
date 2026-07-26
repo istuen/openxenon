@@ -20,14 +20,14 @@ oxn work status <work> --json
 
 **修复**：`oxn work unlock <work>` → 修改 → `oxn work lock <work>`。
 
-### `E_PROBE_FAILED`
+### Probe outcome `DEVIATED`
 
-**原因**：Probe 运行失败（脚本退出码非 0）。
+**原因**：Probe 运行偏离预期（脚本退出码非 0）。
 
 ```bash
 # 查看 Probe 详情
 oxn proof show <proof> --json
-# → 检查 probe-results 中的 error 字段
+# → 检查 probe-results 中的 outcome 字段
 ```
 
 ### `E_FROZEN_HASH_MISMATCH`
@@ -61,5 +61,5 @@ oxn status
 ## 参考
 
 - [AGENTS.md §错误类型定义](../../../AGENTS.md#cli-架构oxn) — IAPError / OXNCrash / isCliInputError
-- [ADR-0031 Proof = 公证人 ≠ 裁判](../../../.openxenon/docs/adrs/0031-proof-notary-not-judge.md)
+- [ADR-0031 Proof 记录事实 ≠ 裁判](../../../.openxenon/drafts/rfc/0031-proof-notary-not-judge.md)
 - [AGENTS.md §开发者操作指南 §调试](../../../AGENTS.md#开发者操作指南)
