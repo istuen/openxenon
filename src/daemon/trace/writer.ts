@@ -48,7 +48,7 @@ export function writePartComplete(taskDir: TaskDirectory, taskId: string, partId
 
 export function createProbeResult(
   probeType: string,
-  result: 'PASSED' | 'FAILED',
+  result: 'COMPLETED' | 'DEVIATED',
   output?: string,
   error?: string,
   params?: Record<string, unknown>,
@@ -58,7 +58,7 @@ export function createProbeResult(
 ): {
   probeType: string
   params: Record<string, unknown>
-  result: 'PASSED' | 'FAILED'
+  result: 'COMPLETED' | 'DEVIATED'
   actual?: unknown
   failureMessage?: string
   duration: number
@@ -84,7 +84,7 @@ export function writeProbeResult(
   taskId: string,
   partId: string,
   probeType: string,
-  result: 'PASSED' | 'FAILED',
+  result: 'COMPLETED' | 'DEVIATED',
   output?: string,
   error?: string,
   params?: Record<string, unknown>,

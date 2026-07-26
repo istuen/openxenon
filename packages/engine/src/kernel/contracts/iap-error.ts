@@ -31,23 +31,23 @@ export type IAPAxis = 'INTENT' | 'ALIGN' | 'PROOF' | 'INFRA'
  * 错误码字典 —— TypeScript 字符串字面量联合。
  * 编译器拒绝拼写错误 + IDE 自动补全合法值。
  *
- * v1.0.2 字典（9 项中的 6 项，剩余 3 项属 OXNCrash）：
- *   PROOF (2):   INFRA_FAIL, CRASH
- *   ALIGN (1):   CHECKLIST_MISSING              ← v0.1: 类型已就位，throw site 留 v0.2
- *   INTENT (3):  UNDEFINED_TERM, NAME_FILE_MISMATCH  ← NAME_FILE_MISMATCH 是 macOS-safe
+ * INFRA_FAIL 子码（4 个，ADR-0080 §D4d）：
+ *   INFRA_FAIL_STATE_LOAD    — ALIGN: Work/Task state.json 加载失败
+ *   INFRA_FAIL_FROZEN_WRITE  — PROOF: frozen.json 写入失败
+ *   INFRA_FAIL_PROBE_CATALOG — PROOF: Probe catalog 未知/输入缺失/类型不匹配
+ *   INFRA_FAIL_INSIGHT_TARGET — INFRA: Insight 目标文件不存在
  *
- * 历史变更（v1.0.1 → v1.0.2）：
- *   - 移除 'TIMEOUT' | 'MISMATCH'（ALIGN 轴业务结果，走 Verdict: FAIL 通道而非异常）
- *   - 移除 'SLOT_CONFLICT'（僵尸码，validate 阶段走档 3 用户输入错通道）
- *   - 新增 'CHECKLIST_MISSING'（part.intent_checklist 必填对齐机制）
- *   - 新增 'NAME_FILE_MISMATCH'（macOS APFS case-insensitive 跨平台防御）
+ * 裸码 INFRA_FAIL 为 deprecated fallback（ADR-0080 §D4d），新代码必须使用子码。
  *
- * 字典收敛原则（双轨制 IAPError + OXNCrash）：
- *   - IAPError 6 个：只保留"必须被看到"的真异常（结构性违规）
- *   - Verdict: FAIL 走 frozen.json.verdict 通道（业务结果，AI 自己改）
- *   - OXNCrash 3 个：引擎崩溃，人类消费，AI 永远不看
+ * FINALIZE_BLOCKED（ADR-0080 §D4e）：
+ *   PROOF 轴强制机制——finalize 因验证结果（DEVIATED/MANUAL_PENDING/INCONCLUSIVE）未通过而阻断。
+ *   context.outcome 携带具体验证结果类型。
  */
 export type IAPErrorCode =
+  | 'INFRA_FAIL_STATE_LOAD'
+  | 'INFRA_FAIL_FROZEN_WRITE'
+  | 'INFRA_FAIL_PROBE_CATALOG'
+  | 'INFRA_FAIL_INSIGHT_TARGET'
   | 'INFRA_FAIL'
   | 'CRASH'
   | 'CHECKLIST_MISSING'
@@ -61,14 +61,15 @@ export type IAPErrorCode =
   | 'PROBE_MISSING'
   | 'PROBE_FIX_UNAVAILABLE'
   | 'INGEST_SCHEMA_INVALID'
-  | 'PATH_CONFLICT' // v0.6 PR-1: Asset 路径冲突（v0.6 主路径 + v0.5 旧布局同时存在）
-  | 'KIND_UNSUPPORTED' // v0.6 PR-1: Asset kind 不支持（如 work/proof 不参与 assetDir 配置）
-  | 'REFERENCE_PREFIX_INVALID' // v0.6.1 PR-2: Work 引用值非 `@md/...` 前缀格式（D-γ b 锁定）
-  | 'ASSET_HAS_REFS' // v0.6.1-alpha.1: Asset 被其他资产引用，禁止 archive/delete
-  | 'FORCE_REQUIRED' // v0.6.1-alpha.1: 删除 Asset 需要 --force flag
-  | 'INCOMPLETE_ASSET_PAPER' // v0.6.1-alpha.1: AssetPaper 4 字段不完整 (strict mode)
-  | 'PROBE_OUT_OF_BOUNDARY' // 🆕 v0.7.3 P4 (ADR-0061 §D3): Task probe 不在 Blueprint slot.observe[] 中
-  | 'TASK_DAG_VIOLATES_SLOT' // 🆕 v0.7.3 P5 (ADR-0061 §D4): Task.deps 不在 Blueprint slot DAG 拓扑闭包内
+  | 'PATH_CONFLICT'
+  | 'KIND_UNSUPPORTED'
+  | 'REFERENCE_PREFIX_INVALID'
+  | 'ASSET_HAS_REFS'
+  | 'FORCE_REQUIRED'
+  | 'INCOMPLETE_ASSET_PAPER'
+  | 'PROBE_OUT_OF_BOUNDARY'
+  | 'TASK_DAG_VIOLATES_SLOT'
+  | 'FINALIZE_BLOCKED'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown
@@ -78,7 +79,9 @@ export interface IAPErrorContext {
  * IAPError: IAP 业务流异常
  *   - 抛出者：src/{intent,align,proof}/ 任意模块
  *   - 消费者：CLI（exit 1 + JSON stdout）→ AI Skill
- *   - 错误名格式：`IAP_<AXIS>_<CODE>`（如 `IAP_PROOF_INFRA_FAIL`）
+ *   - 错误名格式：
+ *     - 常规码：`IAP_<AXIS>_<CODE>`（如 `IAP_PROOF_PROBE_CORRUPTED`）
+ *     - INFRA_FAIL 子码：`INFRA_FAIL_<SPECIFIC>`（如 `INFRA_FAIL_STATE_LOAD`，不带 IAP_ 前缀）
  */
 export class IAPError extends Error {
   public readonly name: string
@@ -93,9 +96,9 @@ export class IAPError extends Error {
     this.code = code
     this.action = action
     this.context = context
-    // 错误名格式: IAP_<AXIS>_<CODE> —— 出现在 stack trace + JSON 输出中
-    this.name = `IAP_${axis}_${code}` as const
-    // 保持原型链正确（stack trace 中 instanceof 检测）
+    // INFRA_FAIL 子码：name = code 本身（如 INFRA_FAIL_STATE_LOAD），不走 IAP_<AXIS>_<CODE> 拼接
+    // 常规码：name = IAP_<AXIS>_<CODE>（如 IAP_PROOF_PROBE_CORRUPTED）
+    this.name = code.startsWith('INFRA_FAIL_') ? code : (`IAP_${axis}_${code}` as const)
     Object.setPrototypeOf(this, IAPError.prototype)
   }
 }

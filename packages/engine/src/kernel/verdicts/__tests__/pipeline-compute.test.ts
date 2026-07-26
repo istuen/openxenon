@@ -57,9 +57,9 @@ describe('computePipelineInsightFromInputs invariantEffectiveness', () => {
           proofs: [
             {
               proofId: 'fix-cmd',
-              verdict: 'FAILED',
+              outcome: 'DEVIATED',
               runAt: '2026-01-01T00:00:00Z',
-              probeSummary: [{ probeType: 'shell-exec', verdict: 'FAILED', target: '/bin/risky' }],
+              probeSummary: [{ probeType: 'shell-exec', outcome: 'DEVIATED', target: '/bin/risky' }],
             },
           ],
           traceEventCount: 0,
@@ -86,27 +86,27 @@ describe('computePipelineInsightFromInputs invariantEffectiveness', () => {
           proofs: [
             {
               proofId: 'r1',
-              verdict: 'PASSED',
+              outcome: 'COMPLETED',
               runAt: '2026-01-01T00:00:00Z',
-              probeSummary: [{ probeType: 'lint-check', verdict: 'PASSED' }],
+              probeSummary: [{ probeType: 'lint-check', outcome: 'COMPLETED' }],
             },
             {
               proofId: 'r2',
-              verdict: 'PASSED',
+              outcome: 'COMPLETED',
               runAt: '2026-01-02T00:00:00Z',
-              probeSummary: [{ probeType: 'lint-check', verdict: 'PASSED' }],
+              probeSummary: [{ probeType: 'lint-check', outcome: 'COMPLETED' }],
             },
             {
               proofId: 'r3',
-              verdict: 'PASSED',
+              outcome: 'COMPLETED',
               runAt: '2026-01-03T00:00:00Z',
-              probeSummary: [{ probeType: 'lint-check', verdict: 'PASSED' }],
+              probeSummary: [{ probeType: 'lint-check', outcome: 'COMPLETED' }],
             },
             {
               proofId: 'r4',
-              verdict: 'PASSED',
+              outcome: 'COMPLETED',
               runAt: '2026-01-04T00:00:00Z',
-              probeSummary: [{ probeType: 'lint-check', verdict: 'FAILED' }],
+              probeSummary: [{ probeType: 'lint-check', outcome: 'DEVIATED' }],
             },
           ],
           traceEventCount: 0,
@@ -132,9 +132,9 @@ describe('computePipelineInsightFromInputs invariantEffectiveness', () => {
           proofs: [
             {
               proofId: 'm1',
-              verdict: 'PASSED',
+              outcome: 'COMPLETED',
               runAt: '2026-01-01T00:00:00Z',
-              probeSummary: [{ probeType: 'ts-compiles', verdict: 'PASSED' }],
+              probeSummary: [{ probeType: 'ts-compiles', outcome: 'COMPLETED' }],
             },
           ],
           traceEventCount: 0,
@@ -174,11 +174,11 @@ describe('computePipelineInsightFromInputs invariantEffectiveness', () => {
           proofs: [
             {
               proofId: 'p1',
-              verdict: 'FAILED',
+              outcome: 'DEVIATED',
               runAt: 't',
               probeSummary: [
-                { probeType: 'lint-check', verdict: 'PASSED' },
-                { probeType: 'shell-exec', verdict: 'FAILED' },
+                { probeType: 'lint-check', outcome: 'COMPLETED' },
+                { probeType: 'shell-exec', outcome: 'DEVIATED' },
               ],
             },
           ],
@@ -204,12 +204,12 @@ describe('computePipelineInsightFromInputs intentCoverageGaps', () => {
         {
           name: 'p1',
           runAt: 't',
-          verdict: 'PASSED',
+          outcome: 'COMPLETED',
           totalCount: 1,
           passedCount: 1,
           failedCount: 0,
           probes: [
-            { probeName: 'a', ref: '@oxn/probes/deps-resolved', verdict: 'PASSED', passed: true, durationMs: 1 },
+            { probeName: 'a', ref: '@oxn/probes/deps-resolved', outcome: 'COMPLETED', passed: true, durationMs: 1 },
           ],
           _xenon_meta: { frozen_at: 't', content_hash: 'h' },
         },
@@ -229,11 +229,13 @@ describe('computePipelineInsightFromInputs intentCoverageGaps', () => {
         {
           name: 'p1',
           runAt: 't',
-          verdict: 'PASSED',
+          outcome: 'COMPLETED',
           totalCount: 1,
           passedCount: 1,
           failedCount: 0,
-          probes: [{ probeName: 'a', ref: '@oxn/probes/ts-compiles', verdict: 'PASSED', passed: true, durationMs: 1 }],
+          probes: [
+            { probeName: 'a', ref: '@oxn/probes/ts-compiles', outcome: 'COMPLETED', passed: true, durationMs: 1 },
+          ],
           _xenon_meta: { frozen_at: 't', content_hash: 'h' },
         },
       ],
@@ -269,9 +271,9 @@ describe('computePipelineInsightFromInputs workProofTraces', () => {
           proofs: [
             {
               proofId: 'my-work',
-              verdict: 'FAILED',
+              outcome: 'DEVIATED',
               runAt: 't',
-              probeSummary: [{ probeType: 'lint-check', verdict: 'FAILED' }],
+              probeSummary: [{ probeType: 'lint-check', outcome: 'DEVIATED' }],
             },
           ],
           traceEventCount: 42,

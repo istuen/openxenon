@@ -46,7 +46,7 @@ export function parseCrossProofArgs(args: CrossProofCliArgs): CrossProofFilter &
 
 export function renderInsightHuman(insight: Insight): string {
   const lines: string[] = []
-  lines.push(`=== Insight: ${insight.proofId} (${insight.proof.verdict}) ===`)
+  lines.push(`=== Insight: ${insight.proofId} (${insight.proof.outcome}) ===`)
   lines.push(`Run at: ${insight.proof.runAt}`)
   lines.push('')
 
@@ -152,7 +152,7 @@ export function renderCrossProofHuman(
       const targetStr = e.target ? ` \`${e.target}\`` : ' (no target)'
       const seqStr = e.sequence
         .slice(-5)
-        .map((s) => (s.verdict === 'PASSED' ? '✅' : s.verdict === 'INCONCLUSIVE' ? '⚠️' : '❌'))
+        .map((s) => (s.outcome === 'COMPLETED' ? '✅' : s.outcome === 'INCONCLUSIVE' ? '⚠️' : '❌'))
         .join('')
       lines.push(
         `  ${e.probeType}${targetStr}: total=${e.total} (P${e.passedCount}/F${e.failedCount}/I${e.inconclusiveCount}) last5=${seqStr}`,
@@ -236,7 +236,7 @@ export function renderPipelineHuman(insight: PipelineInsight): string {
     lines.push('  (no work-proof traces)')
   } else {
     for (const trace of insight.workProofTraces) {
-      const proofStr = trace.proofs.map((p) => `${p.verdict === 'PASSED' ? '✅' : '❌'} ${p.proofId}`).join(', ')
+      const proofStr = trace.proofs.map((p) => `${p.outcome === 'COMPLETED' ? '✅' : '❌'} ${p.proofId}`).join(', ')
       lines.push(`  ${trace.workName}: ${proofStr}`)
     }
   }
@@ -316,11 +316,11 @@ export function computePipelineInsightData(projectRoot: string, workFilter?: str
           if (!fp) return null
           return {
             proofId: fp.name,
-            verdict: fp.verdict,
+            outcome: fp.outcome,
             runAt: fp.runAt,
             probeSummary: fp.probes.map((p) => ({
               probeType: resolveTypeNameSimple(p.ref),
-              verdict: p.verdict,
+              outcome: p.outcome,
               ...(extractTargetFromProbe(p) !== undefined ? { target: extractTargetFromProbe(p) } : {}),
             })),
           }

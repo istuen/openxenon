@@ -4,11 +4,11 @@ export type TaskStatus =
   | 'CONFIRMED'
   | 'RUNNING'
   | 'COMPLETED'
-  | 'FAILED'
+  | 'DEVIATED'
   | 'ESCAPED'
   | 'TERMINATED'
 
-export type StepStatus = 'PENDING' | 'RUNNING' | 'PASSED' | 'FAILED'
+export type StepStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'DEVIATED'
 
 export type BlueprintStatus = 'DRAFT' | 'CANONICAL' | 'SAMPLE' | 'ABANDONED'
 

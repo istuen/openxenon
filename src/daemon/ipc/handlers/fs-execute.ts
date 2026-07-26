@@ -75,7 +75,7 @@ async function handleExecuteTask(
     trace = writeTaskStart(taskDir, payload.task_id, payload.blueprint.name)
   }
 
-  if (trace.status === 'COMPLETED' || trace.status === 'FAILED') {
+  if (trace.status === 'COMPLETED' || trace.status === 'DEVIATED') {
     return new Response(
       JSON.stringify({
         taskId: payload.task_id,
@@ -107,18 +107,18 @@ async function handleExecuteTask(
       partState.probes.push(probeResult)
     }
 
-    const allProbesPassed = partState.probes.every((p) => p.result === 'PASSED')
-    partState.status = allProbesPassed ? 'PASSED' : 'FAILED'
+    const allProbesPassed = partState.probes.every((p) => p.result === 'COMPLETED')
+    partState.status = allProbesPassed ? 'COMPLETED' : 'DEVIATED'
     writePartComplete(taskDir, payload.task_id, part.id, partState.status)
   }
 
-  const allPassed = Array.from(trace.parts.values()).every((s) => s.status === 'PASSED')
-  writeTaskStatus(taskDir, payload.task_id, allPassed ? 'COMPLETED' : 'FAILED')
+  const allPassed = Array.from(trace.parts.values()).every((s) => s.status === 'COMPLETED')
+  writeTaskStatus(taskDir, payload.task_id, allPassed ? 'COMPLETED' : 'DEVIATED')
 
   return new Response(
     JSON.stringify({
       taskId: payload.task_id,
-      status: allPassed ? 'COMPLETED' : 'FAILED',
+      status: allPassed ? 'COMPLETED' : 'DEVIATED',
       partsCount: payload.blueprint.parts.length,
       message: allPassed ? 'Task completed successfully' : 'Task failed',
     }),
@@ -166,13 +166,13 @@ async function handleExecuteStep(
     }
   }
 
-  writePartComplete(taskDir, payload.task_id, payload.step_id, 'PASSED')
+  writePartComplete(taskDir, payload.task_id, payload.step_id, 'COMPLETED')
 
   return new Response(
     JSON.stringify({
       taskId: payload.task_id,
       stepId: payload.step_id,
-      status: 'PASSED',
+      status: 'COMPLETED',
       message: 'Step executed successfully',
     }),
     {
@@ -197,7 +197,7 @@ function handleVerifyStep(payload: DaemonPayload, taskDir: ReturnType<typeof get
     return notFound(`Part not found: ${payload.step_id}`)
   }
 
-  const allProbesPassed = part.probes.every((p) => p.result === 'PASSED')
+  const allProbesPassed = part.probes.every((p) => p.result === 'COMPLETED')
 
   return new Response(
     JSON.stringify({
@@ -225,7 +225,7 @@ async function executeProbe(probeType: string, pattern: string, projectRoot: str
       if (colonIndex === -1) {
         return {
           probeType,
-          result: 'FAILED',
+          result: 'DEVIATED',
           error: 'fs_content_match requires file:regex format',
           executedAt: Date.now(),
         }
@@ -246,7 +246,7 @@ async function executeProbe(probeType: string, pattern: string, projectRoot: str
 
   const handler = getProbeHandler(actualType)
   if (!handler) {
-    return { probeType, result: 'FAILED', error: `Unknown probe type: ${probeType}`, executedAt: Date.now() }
+    return { probeType, result: 'DEVIATED', error: `Unknown probe type: ${probeType}`, executedAt: Date.now() }
   }
 
   const context = { projectRoot }
@@ -254,17 +254,17 @@ async function executeProbe(probeType: string, pattern: string, projectRoot: str
   try {
     const result = (await handler(params, context)) as InfraProbeResult
     const definition: ProbeDefinition = { type: actualType, params }
-    const verdict = evaluateProbe(definition, result)
+    const outcome = evaluateProbe(definition, result)
 
     return {
       ...result,
-      result: verdict.passed ? 'PASSED' : 'FAILED',
+      result: outcome.passed ? 'COMPLETED' : 'DEVIATED',
       executedAt: Date.now(),
     }
   } catch (error) {
     return {
       probeType,
-      result: 'FAILED',
+      result: 'DEVIATED',
       error: error instanceof Error ? error.message : String(error),
       executedAt: Date.now(),
     }

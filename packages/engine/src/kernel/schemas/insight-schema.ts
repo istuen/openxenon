@@ -26,7 +26,7 @@ export const EvidenceSchema = z.object({
   probeType: z.string(),
   /** 探测目标：fs-exists 是 path，shell-exec 是 command */
   target: z.string().optional(),
-  /** 观测到的事实（来自 frozen.output.verdict.message 或 verdict.actual） */
+  /** 观测到的事实（来自 frozen.output.outcome.message 或 outcome.actual） */
   fact: z.string(),
   /** 由 fact 推导的结论（PASSED → '满足验收'；FAILED → '验收未通过 + reason'） */
   conclusion: z.string(),
@@ -87,7 +87,7 @@ export const InsightSchema = z.object({
   /** 第一层：本 proof 的 verdict 与证据 */
   proof: z.object({
     name: z.string(),
-    verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
+    outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE']),
     runAt: z.string(),
     evidenceChain: z.array(EvidenceSchema),
   }),

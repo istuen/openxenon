@@ -37,7 +37,7 @@ interface SetupOpts {
 }
 
 async function setupWorkFixture(opts: SetupOpts = {}): Promise<void> {
-  const { taskDeps = [], taskProbes = [], taskBoundary = 'design', legacyDomainRef = null } = opts
+  const { taskDeps = [], taskProbes = [], taskBoundary = 'dev', legacyDomainRef = null } = opts
 
   await env.initProject()
 
@@ -126,7 +126,7 @@ describe('P4 (D3) — probe vs Blueprint slot observe[] hard-check', () => {
     expect(body.error.context.violations).toHaveLength(1)
     expect(body.error.context.violations[0]).toMatchObject({
       taskName: 'step1',
-      boundary: 'design',
+      boundary: 'dev',
       probeName: 'forbidden-probe',
       allowedObserved: ['lint-check', 'ts-compiles'],
     })
@@ -145,9 +145,9 @@ describe('P4 (D3) — probe vs Blueprint slot observe[] hard-check', () => {
 
 describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
   test('合法 dep（同 slot 内 task 互依）→ validate 成功', async () => {
-    // design slot 的 deps=['explore']，deps=[] 表示在设计 phase 内（自己依赖自己允许）
+    // dev slot 的 deps=[]，deps=[] 表示在 dev phase 内（自己依赖自己允许）
     await setupWorkFixture({
-      taskBoundary: 'design',
+      taskBoundary: 'dev',
       taskDeps: [], // 同 slot 边界，无外部依赖
     })
     const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
@@ -155,11 +155,11 @@ describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
     expect(JSON.parse(r.stdout).ok).toBe(true)
   })
 
-  test('越界 dep（引用 design 的下游 slot）→ exit 1 + code IAP_INTENT_TASK_DAG_VIOLATES_SLOT', async () => {
-    // design 边界，deps=['compass'] — compass 是 design 的下游（不在祖先闭包）
+  test('越界 dep（引用 dev 的下游 slot）→ exit 1 + code IAP_INTENT_TASK_DAG_VIOLATES_SLOT', async () => {
+    // dev 边界，deps=['doc'] — doc 是 dev 的下游（不在祖先闭包）
     await setupWorkFixture({
-      taskBoundary: 'design',
-      taskDeps: ['compass'],
+      taskBoundary: 'dev',
+      taskDeps: ['doc'],
     })
     const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
     expect(r.exitCode).toBe(1)
@@ -169,16 +169,16 @@ describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
     expect(body.error.context.violations).toHaveLength(1)
     expect(body.error.context.violations[0]).toMatchObject({
       taskName: 'step1',
-      boundary: 'design',
-      depName: 'compass',
-      depResolvedSlot: 'compass',
+      boundary: 'dev',
+      depName: 'doc',
+      depResolvedSlot: 'doc',
       reason: 'dep_slot_not_in_task_slot_closure',
     })
   })
 
   test('越界 dep（unknown 名）→ exit 1 + dep_unknown', async () => {
     await setupWorkFixture({
-      taskBoundary: 'design',
+      taskBoundary: 'dev',
       taskDeps: ['nonexistent-task-name'],
     })
     const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
@@ -190,8 +190,8 @@ describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
 
   test('escape hatch: --skip-workflow-dag-check 跳过 DAG check → validate 成功', async () => {
     await setupWorkFixture({
-      taskBoundary: 'design',
-      taskDeps: ['compass'], // 正常情况会触发 violation
+      taskBoundary: 'dev',
+      taskDeps: ['doc'], // 正常情况会触发 violation
     })
     const r = await env.runCli(['work', 'validate', 'p457-fixture', '--skip-workflow-dag-check', '--json'])
     expect(r.exitCode).toBe(0)

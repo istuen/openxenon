@@ -3,7 +3,7 @@
 //
 // 覆盖：
 //   1. evidenceChainFromFrozen — PASSED/FAILED 的 fact + conclusion
-//   2. evidenceChainFromFrozen — 从 verdict.params 抽 target
+//   2. evidenceChainFromFrozen — 从 outcome.params 抽 target
 //   3. evidenceChainFromFrozen — unknown ref 走 fallback
 //   4. buildProbeStatsView — overallPassRate 计算正确
 //   5. buildProbeStatsView — consecutiveFailsByTarget 只列 fail > 0
@@ -43,7 +43,7 @@ function makeFrozen(
   return {
     name,
     runAt,
-    verdict: allPassed ? 'PASSED' : 'FAILED',
+    outcome: allPassed ? 'COMPLETED' : 'DEVIATED',
     totalCount: probes.length,
     passedCount: probes.filter((p) => p.passed).length,
     failedCount: probes.filter((p) => !p.passed).length,
@@ -54,7 +54,7 @@ function makeFrozen(
       ...(p.errorMessage ? { errorMessage: p.errorMessage } : {}),
       output: {
         observation: { probeType: 'mock', executedAt: 0 },
-        verdict: {
+        outcome: {
           passed: p.passed,
           message: p.message ?? (p.passed ? 'mock pass' : 'mock fail'),
           ...(p.params ? { params: p.params } : {}),
@@ -268,19 +268,19 @@ describe('detectEmergentPatterns', () => {
       {
         proofId: 'a',
         timestamp: 't',
-        verdict: 'PASSED',
+        outcome: 'COMPLETED',
         probeSummary: [{ type: 'fs-exists', target: './x', passed: true }],
       },
       {
         proofId: 'b',
         timestamp: 't',
-        verdict: 'PASSED',
+        outcome: 'COMPLETED',
         probeSummary: [{ type: 'fs-exists', target: './x', passed: true }],
       },
       {
         proofId: 'c',
         timestamp: 't',
-        verdict: 'FAILED',
+        outcome: 'DEVIATED',
         probeSummary: [{ type: 'fs-exists', target: './x', passed: false }],
       },
     ]
@@ -312,13 +312,13 @@ describe('detectEmergentPatterns', () => {
       {
         proofId: 'a',
         timestamp: 't',
-        verdict: 'PASSED',
+        outcome: 'COMPLETED',
         probeSummary: [{ type: 'fs-exists', target: './x', passed: true }],
       },
       {
         proofId: 'b',
         timestamp: 't',
-        verdict: 'PASSED',
+        outcome: 'COMPLETED',
         probeSummary: [{ type: 'fs-exists', target: './x', passed: true }],
       },
     ]
@@ -339,13 +339,13 @@ describe('detectEmergentPatterns', () => {
       {
         proofId: 'a',
         timestamp: 't',
-        verdict: 'FAILED',
+        outcome: 'DEVIATED',
         probeSummary: [{ type: 'fs-exists', target: './missing.js', passed: false }],
       },
       {
         proofId: 'b',
         timestamp: 't',
-        verdict: 'FAILED',
+        outcome: 'DEVIATED',
         probeSummary: [{ type: 'fs-exists', target: './missing.js', passed: false }],
       },
     ]
@@ -371,7 +371,7 @@ describe('detectEmergentPatterns', () => {
 describe('computeInsightFromInputs', () => {
   test('顶层入口 + schema 校验通过', () => {
     const stats = emptyProbeStats('/p')
-    stats.proofRuns = [{ proofId: 'p', timestamp: 't', verdict: 'PASSED', probeSummary: [] }]
+    stats.proofRuns = [{ proofId: 'p', timestamp: 't', outcome: 'COMPLETED', probeSummary: [] }]
     const frozen = makeFrozen('p', 't', [
       {
         probeName: 'p1',
@@ -382,7 +382,7 @@ describe('computeInsightFromInputs', () => {
     ])
     const insight = computeInsightFromInputs('/p', 'p', frozen, stats)
     expect(insight.proofId).toBe('p')
-    expect(insight.proof.verdict).toBe('PASSED')
+    expect(insight.proof.outcome).toBe('COMPLETED')
     expect(insight.proof.evidenceChain.length).toBe(1)
     expect(insight.meta.dataSources).toEqual(['frozen.json', 'probe-stats.json'])
 

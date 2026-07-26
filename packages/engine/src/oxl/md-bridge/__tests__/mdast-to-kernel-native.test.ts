@@ -230,11 +230,11 @@ name: e2e-p
     const { mdast, frontmatter } = parseMdWithFrontmatter(md)
     const compiler = getEntityCompiler('proof')
     const result = compiler.parse({ mdast, frontmatter }) as {
-      verdicts: Array<{ type: string }>
+      outcomes: Array<{ type: string }>
       runtime: { probes_run: number }
     }
-    expect(result.verdicts[0]?.type).toBe('pass')
-    expect(result.verdicts[1]?.type).toBe('inconclusive')
+    expect(result.outcomes[0]?.type).toBe('pass')
+    expect(result.outcomes[1]?.type).toBe('inconclusive')
     expect(result.runtime.probes_run).toBe(2)
   })
 })

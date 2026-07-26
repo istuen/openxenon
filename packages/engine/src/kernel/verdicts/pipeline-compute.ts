@@ -43,11 +43,11 @@ export interface WorkInput {
   /** if we have associated proofs from same-named proof dir */
   proofs: Array<{
     proofId: string
-    verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+    outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
     runAt: string
     probeSummary: Array<{
       probeType: string
-      verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+      outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
       target?: string
     }>
   }>
@@ -124,7 +124,7 @@ function computeInvariantEffectiveness(input: PipelineInput): InvariantEffective
           totalProofs++
           let proofHadFailure = false
           for (const ps of proof.probeSummary) {
-            if (probeTypes.includes(ps.probeType) && ps.verdict !== 'PASSED') {
+            if (probeTypes.includes(ps.probeType) && ps.outcome !== 'COMPLETED') {
               proofHadFailure = true
               break
             }
@@ -206,11 +206,11 @@ function computeWorkProofTraces(input: PipelineInput): WorkProofTrace[] {
       blueprints: w.blueprintRefs,
       proofs: w.proofs.map((p) => ({
         proofId: p.proofId,
-        verdict: p.verdict,
+        outcome: p.outcome,
         runAt: p.runAt,
         probeSummary: p.probeSummary.map((ps) => ({
           probeType: ps.probeType,
-          verdict: ps.verdict,
+          outcome: ps.outcome,
           target: ps.target,
         })),
       })),

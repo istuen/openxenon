@@ -39,7 +39,7 @@ describe('nextRoundWork maxIterations hard limit (Phase A.2)', () => {
     const result = nextRoundWork({
       projectRoot: tmp,
       workName: 'test-work',
-      verdict: 'FAILED',
+      outcome: 'DEVIATED',
       failures: [],
     })
     expect(result.workspace.currentRound).toBe(2)
@@ -54,12 +54,12 @@ describe('nextRoundWork maxIterations hard limit (Phase A.2)', () => {
       tasks: [],
     })
     // Round 1 → 2
-    nextRoundWork({ projectRoot: tmp, workName: 'test-work', verdict: 'FAILED', failures: [] })
+    nextRoundWork({ projectRoot: tmp, workName: 'test-work', outcome: 'DEVIATED', failures: [] })
     // Round 2 → 3
     const result = nextRoundWork({
       projectRoot: tmp,
       workName: 'test-work',
-      verdict: 'FAILED',
+      outcome: 'DEVIATED',
       failures: [],
     })
     expect(result.workspace.currentRound).toBe(3)
@@ -74,9 +74,9 @@ describe('nextRoundWork maxIterations hard limit (Phase A.2)', () => {
       tasks: [],
     })
     // Round 1 → 2
-    nextRoundWork({ projectRoot: tmp, workName: 'test-work', verdict: 'FAILED', failures: [] })
+    nextRoundWork({ projectRoot: tmp, workName: 'test-work', outcome: 'DEVIATED', failures: [] })
     // Round 2 → 3
-    nextRoundWork({ projectRoot: tmp, workName: 'test-work', verdict: 'FAILED', failures: [] })
+    nextRoundWork({ projectRoot: tmp, workName: 'test-work', outcome: 'DEVIATED', failures: [] })
 
     // Round 3 → 4 应被 maxIterations=3 拒绝
     let err: any
@@ -84,7 +84,7 @@ describe('nextRoundWork maxIterations hard limit (Phase A.2)', () => {
       nextRoundWork({
         projectRoot: tmp,
         workName: 'test-work',
-        verdict: 'FAILED',
+        outcome: 'DEVIATED',
         failures: [],
       })
     } catch (e: any) {

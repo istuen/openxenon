@@ -558,8 +558,8 @@ export interface TranslatedProbe {
  *   4. 应用 inputMap 翻译 key 名
  *
  * 错误契约（v1.0 双轨制）：
- *   抛 `IAPError('PROOF', 'INFRA_FAIL', YIELD_TO_HUMAN, ...)`，CLI 顶层 catch
- *   转成 `{code: 'IAP_PROOF_INFRA_FAIL', axis, action, context, message}` 输出。
+ *   抛 `IAPError('PROOF', 'INFRA_FAIL_PROBE_CATALOG', YIELD_TO_HUMAN, ...)`，CLI 顶层 catch
+ *   转成 `{code: 'INFRA_FAIL_PROBE_CATALOG', axis, action, context, message}` 输出。
  *   4 个老 OXN_PROBE_* 码（UNKNOWN / INPUT_MISSING / INPUT_TYPE / INPUT_UNKNOWN）
  *   合并为 1 个 IAPError（语义统一为"Probe Infra 跑不到，AI 检查输入"）；
  *   具体原因走 `context.reason` 字段。
@@ -569,7 +569,7 @@ export function translateProbeInputs(semanticName: string, inputs: Record<string
   if (!entry) {
     throw new IAPError(
       'PROOF',
-      'INFRA_FAIL',
+      'INFRA_FAIL_PROBE_CATALOG',
       IAPAction.YIELD_TO_HUMAN,
       `unknown probe: ${semanticName}. Run \`oxn proof probe list\` to see available probes.`,
       { probe: semanticName, reason: 'unknown_semantic_name' },
@@ -585,7 +585,7 @@ export function translateProbeInputs(semanticName: string, inputs: Record<string
       if (inputDef.required) {
         throw new IAPError(
           'PROOF',
-          'INFRA_FAIL',
+          'INFRA_FAIL_PROBE_CATALOG',
           IAPAction.YIELD_TO_HUMAN,
           `probe "${semanticName}" requires input "${inputDef.name}" (${inputDef.description})`,
           {
@@ -602,7 +602,7 @@ export function translateProbeInputs(semanticName: string, inputs: Record<string
     if (inputDef.type === 'string' && typeof raw !== 'string') {
       throw new IAPError(
         'PROOF',
-        'INFRA_FAIL',
+        'INFRA_FAIL_PROBE_CATALOG',
         IAPAction.YIELD_TO_HUMAN,
         `probe "${semanticName}" input "${inputDef.name}" must be string, got ${typeof raw}`,
         {
@@ -617,7 +617,7 @@ export function translateProbeInputs(semanticName: string, inputs: Record<string
     if (inputDef.type === 'number' && typeof raw !== 'number') {
       throw new IAPError(
         'PROOF',
-        'INFRA_FAIL',
+        'INFRA_FAIL_PROBE_CATALOG',
         IAPAction.YIELD_TO_HUMAN,
         `probe "${semanticName}" input "${inputDef.name}" must be number, got ${typeof raw}`,
         {
@@ -632,7 +632,7 @@ export function translateProbeInputs(semanticName: string, inputs: Record<string
     if (inputDef.type === 'boolean' && typeof raw !== 'boolean') {
       throw new IAPError(
         'PROOF',
-        'INFRA_FAIL',
+        'INFRA_FAIL_PROBE_CATALOG',
         IAPAction.YIELD_TO_HUMAN,
         `probe "${semanticName}" input "${inputDef.name}" must be boolean, got ${typeof raw}`,
         {

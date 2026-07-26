@@ -31,11 +31,11 @@ afterEach(() => {
 describe('FrozenProof schema 3-state shape (T5)', () => {
   test('case 1: 读老 frozen.json (无 verdict 字段) — 验签 OK (backward compat)', () => {
     const path = join(tmpDir, 'legacy.json')
-    // v0.1.x 时代 frozen.json: verdict='PASSED'/'FAILED' 2 态, 无 interferenceFlags, probes 无 verdict 字段
+    // v0.1.x 时代 frozen.json: verdict='COMPLETED'/'DEVIATED' 2 态, 无 interferenceFlags, probes 无 verdict 字段
     const legacyBody = {
       name: 'legacy',
       runAt: '2025-12-01T00:00:00.000Z',
-      verdict: 'PASSED',
+      outcome: 'COMPLETED',
       totalCount: 1,
       passedCount: 1,
       failedCount: 0,
@@ -59,7 +59,7 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
     // 期望: schema 验证可能 fail (probes 缺 verdict 字段), 但验签逻辑本身必须接受老文件
     // 注: 该 case 在 v0.2 T5 实施后已变为"fail with reason 包含 'verdict'", 作为 schema breaking 记录
     // 真正的 backward compat 由 T7 PoC 阶段的 migration shim 提供, 本 case 只断言验签层
-    expect(r.reason === undefined || r.reason.includes('PASSED') || r.reason.includes('verdict')).toBe(true)
+    expect(r.reason === undefined || r.reason.includes('COMPLETED') || r.reason.includes('verdict')).toBe(true)
   })
 
   test('case 2: 写新格式 (3-state verdict + interferenceFlags) → 验签 OK', () => {
@@ -71,7 +71,7 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
           probeName: 'p1',
           ref: '@oxn/probe/fs-exists',
           passed: true,
-          verdict: 'PASSED',
+          outcome: 'COMPLETED',
           durationMs: 5,
           interferenceFlags: ['symlink'],
         },
@@ -80,8 +80,8 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
     writeFrozenProof(path, frozen)
     const r = readFrozenProof(path)
     expect(r.ok).toBe(true)
-    expect(r.frozen?.verdict).toBe('PASSED')
-    expect(r.frozen?.probes[0].verdict).toBe('PASSED')
+    expect(r.frozen?.outcome).toBe('COMPLETED')
+    expect(r.frozen?.probes[0].outcome).toBe('COMPLETED')
     expect(r.frozen?.probes[0].interferenceFlags).toEqual(['symlink'])
   })
 
@@ -94,7 +94,7 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
           probeName: 'p1',
           ref: '@oxn/probe/fs-exists',
           passed: false,
-          verdict: 'INCONCLUSIVE',
+          outcome: 'INCONCLUSIVE',
           durationMs: 5,
           errorMessage: 'permission denied (sandbox)',
           interferenceFlags: ['sandbox_violation', 'permission_denied'],
@@ -104,10 +104,10 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
     writeFrozenProof(path, frozen)
     const r = readFrozenProof(path)
     expect(r.ok).toBe(true)
-    expect(r.frozen?.verdict).toBe('INCONCLUSIVE')
+    expect(r.frozen?.outcome).toBe('INCONCLUSIVE')
     expect(r.frozen?.passedCount).toBe(0)
     expect(r.frozen?.failedCount).toBe(0)
-    expect(r.frozen?.probes[0].verdict).toBe('INCONCLUSIVE')
+    expect(r.frozen?.probes[0].outcome).toBe('INCONCLUSIVE')
     expect(r.frozen?.probes[0].interferenceFlags).toContain('sandbox_violation')
   })
 
@@ -123,7 +123,7 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
           probeName: 'p1',
           ref: '@oxn/probe/fs-exists',
           passed: true,
-          verdict: 'PASSED',
+          outcome: 'COMPLETED',
           durationMs: 5,
         },
       ],
@@ -155,7 +155,7 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
             probeName: 'p1',
             ref: 'r',
             passed: true,
-            verdict: 'PASSED',
+            outcome: 'COMPLETED',
             durationMs: 1,
           },
         ],
@@ -175,7 +175,7 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
             probeName: 'p1',
             ref: 'r',
             passed: true,
-            verdict: 'PASSED',
+            outcome: 'COMPLETED',
             durationMs: 1,
             interferenceFlags: ['cache_path'],
           },

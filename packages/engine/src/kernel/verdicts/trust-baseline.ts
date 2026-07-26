@@ -13,7 +13,7 @@
  */
 
 import type { InterferenceFlag } from '../contracts/io-primitive'
-import type { ProbeVerdict } from '../contracts/probe-port'
+import type { ProbeOutcome } from '../contracts/probe-port'
 
 /**
  * 12 项 flag 的硬编码基线映射
@@ -41,20 +41,20 @@ export const TRUST_BASELINE: Readonly<Record<InterferenceFlag, 'RED' | 'YELLOW'>
  * - 仅 YELLOW flag → 透传 + 记录
  * - 无 flag → 走 normalJudge() 原 strategy
  */
-export function applyTrustBaseline(flags: readonly InterferenceFlag[], normalJudge: () => ProbeVerdict): ProbeVerdict {
+export function applyTrustBaseline(flags: readonly InterferenceFlag[], normalJudge: () => ProbeOutcome): ProbeOutcome {
   const redFlags = flags.filter((f) => TRUST_BASELINE[f] === 'RED')
   if (redFlags.length > 0) {
     return {
-      verdict: 'INCONCLUSIVE',
+      outcome: 'INCONCLUSIVE',
       passed: false,
       message: `signal tainted by ${redFlags.length} red flag(s): ${redFlags.join(', ')}`,
       failureMessage: `INCONCLUSIVE: ${redFlags.join(', ')} — YIELD_TO_HUMAN required`,
       actual: { redFlags, allFlags: [...flags] },
     }
   }
-  const verdict = normalJudge()
+  const outcome = normalJudge()
   if (flags.length > 0) {
-    return { ...verdict, interferenceFlags: [...flags] }
+    return { ...outcome, interferenceFlags: [...flags] }
   }
-  return verdict
+  return outcome
 }

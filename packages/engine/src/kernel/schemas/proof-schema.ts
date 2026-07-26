@@ -6,11 +6,11 @@
 // 写权独占: 仅有 src/cli/proof-frozen-writer.ts 可以写，AI / 工程师禁手改
 //
 // v0.2 T5 变化:
-//   - FrozenProofProbeResult 加 verdict: 3 态 ('PASSED'|'FAILED'|'INCONCLUSIVE') 必填
+//   - FrozenProofProbeResult 加 outcome: 3 态 ('COMPLETED'|'DEVIATED'|'INCONCLUSIVE') 必填
 //   - FrozenProofProbeResult 加 interferenceFlags?: InterferenceFlag[] 可选
-//   - FrozenProof.verdict 改 3 态
+//   - FrozenProof.outcome 改 3 态
 //   - 老 frozen.json (无 verdict/inference 字段) 读取时容错:
-//     verdict 默认 'PASSED' + interferenceFlags 默认 []
+//     verdict 默认 'COMPLETED' + interferenceFlags 默认 []
 // =============================================================================
 
 import { z } from 'zod'
@@ -36,7 +36,7 @@ export const FrozenProofProbeResultSchema = z.object({
   probeName: z.string().min(1),
   ref: z.string().min(1),
   // v0.2 T5: verdict 三态（必填）— PASSED / FAILED / INCONCLUSIVE
-  verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
+  outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE']),
   // 保留兼容字段：PASSED → true, FAILED/INCONCLUSIVE → false
   passed: z.boolean(),
   output: z.unknown().optional(),
@@ -59,7 +59,7 @@ export const FrozenProofSchema = z.object({
   name: z.string().min(1),
   runAt: z.string().min(1),
   // v0.2 T5: verdict 三态（必填）— PASSED / FAILED / INCONCLUSIVE
-  verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
+  outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE']),
   totalCount: z.number().int().min(0),
   passedCount: z.number().int().min(0),
   failedCount: z.number().int().min(0),

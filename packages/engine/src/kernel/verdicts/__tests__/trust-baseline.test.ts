@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { applyTrustBaseline, TRUST_BASELINE } from '../trust-baseline'
-import type { ProbeVerdict } from '../../contracts/probe-port'
+import type { ProbeOutcome } from '../../contracts/probe-port'
 
 /**
  * v0.2 T4 Probe Signal Taint v2 PR-1: trust-baseline 单元测试
@@ -15,9 +15,9 @@ import type { ProbeVerdict } from '../../contracts/probe-port'
 
 // ───────── helper: 构造一个 fake normalJudge ─────────
 
-function makeNormalJudge(passed = true, message = 'fake normalJudge'): () => ProbeVerdict {
+function makeNormalJudge(passed = true, message = 'fake normalJudge'): () => ProbeOutcome {
   return () => ({
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     passed,
     message,
   })
@@ -28,8 +28,8 @@ describe('TRUST_BASELINE 配置契约', () => {
     const allFlags = Object.keys(TRUST_BASELINE) as Array<keyof typeof TRUST_BASELINE>
     expect(allFlags).toHaveLength(12)
     for (const flag of allFlags) {
-      const verdict = TRUST_BASELINE[flag]
-      expect(['RED', 'YELLOW']).toContain(verdict)
+      const outcome = TRUST_BASELINE[flag]
+      expect(['RED', 'YELLOW']).toContain(outcome)
     }
   })
 
@@ -64,7 +64,7 @@ describe('applyTrustBaseline - flag 处理', () => {
   it('无 flag 透传：走 normalJudge，结果不变', () => {
     const judge = makeNormalJudge(true, 'original pass')
     const v = applyTrustBaseline([], judge)
-    expect(v.verdict).toBe('PASS')
+    expect(v.outcome).toBe('COMPLETED')
     expect(v.passed).toBe(true)
     expect(v.message).toBe('original pass')
     expect(v.interferenceFlags).toBeUndefined()
@@ -73,7 +73,7 @@ describe('applyTrustBaseline - flag 处理', () => {
   it('YELLOW flag 透传：verdict 透传 + interferenceFlags 记录', () => {
     const judge = makeNormalJudge(true, 'cdn cached pass')
     const v = applyTrustBaseline(['cdn_cache'], judge)
-    expect(v.verdict).toBe('PASS')
+    expect(v.outcome).toBe('COMPLETED')
     expect(v.passed).toBe(true)
     expect(v.message).toBe('cdn cached pass')
     expect(v.interferenceFlags).toEqual(['cdn_cache'])
@@ -82,7 +82,7 @@ describe('applyTrustBaseline - flag 处理', () => {
   it('多 YELLOW flags 全部记录', () => {
     const judge = makeNormalJudge(false, 'original fail')
     const v = applyTrustBaseline(['cdn_cache', 'cache_path'], judge)
-    expect(v.verdict).toBe('FAIL')
+    expect(v.outcome).toBe('DEVIATED')
     expect(v.passed).toBe(false)
     expect(v.interferenceFlags).toEqual(['cdn_cache', 'cache_path'])
   })
@@ -90,7 +90,7 @@ describe('applyTrustBaseline - flag 处理', () => {
   it('单 RED flag 短路：verdict = INCONCLUSIVE, passed: false', () => {
     const judge = makeNormalJudge(true, 'normalJudge 不应被调用')
     const v = applyTrustBaseline(['waf_detected'], judge)
-    expect(v.verdict).toBe('INCONCLUSIVE')
+    expect(v.outcome).toBe('INCONCLUSIVE')
     expect(v.passed).toBe(false)
     expect(v.message).toContain('signal tainted by 1 red flag(s): waf_detected')
     expect(v.failureMessage).toContain('INCONCLUSIVE: waf_detected — YIELD_TO_HUMAN required')
@@ -99,7 +99,7 @@ describe('applyTrustBaseline - flag 处理', () => {
   it('多 RED flags 短路：message 含全部 flag', () => {
     const judge = makeNormalJudge()
     const v = applyTrustBaseline(['waf_detected', 'just_modified'], judge)
-    expect(v.verdict).toBe('INCONCLUSIVE')
+    expect(v.outcome).toBe('INCONCLUSIVE')
     expect(v.message).toContain('signal tainted by 2 red flag(s)')
     expect(v.message).toContain('waf_detected')
     expect(v.message).toContain('just_modified')
@@ -108,7 +108,7 @@ describe('applyTrustBaseline - flag 处理', () => {
   it('混合 YELLOW + RED：RED 优先（短路）', () => {
     const judge = makeNormalJudge()
     const v = applyTrustBaseline(['cdn_cache', 'network_timeout'], judge)
-    expect(v.verdict).toBe('INCONCLUSIVE')
+    expect(v.outcome).toBe('INCONCLUSIVE')
     // RED flag 应在 message 中
     expect(v.message).toContain('network_timeout')
   })
@@ -116,13 +116,13 @@ describe('applyTrustBaseline - flag 处理', () => {
   it('未知 flag（"unknown"）：默认 RED 短路', () => {
     const judge = makeNormalJudge()
     const v = applyTrustBaseline(['unknown'], judge)
-    expect(v.verdict).toBe('INCONCLUSIVE')
+    expect(v.outcome).toBe('INCONCLUSIVE')
   })
 
   it('sandbox_violation flag（PR-4 触发）→ RED', () => {
     const judge = makeNormalJudge()
     const v = applyTrustBaseline(['sandbox_violation'], judge)
-    expect(v.verdict).toBe('INCONCLUSIVE')
+    expect(v.outcome).toBe('INCONCLUSIVE')
     expect(v.failureMessage).toContain('sandbox_violation')
   })
 
@@ -131,7 +131,7 @@ describe('applyTrustBaseline - flag 处理', () => {
     const v = applyTrustBaseline(['permission_denied' as never], judge)
     // permission_denied 不在 TRUST_BASELINE 12 项中（父文档笔误 "permission denied"），
     // 走 unknown fallback → RED
-    expect(v.verdict).toBe('INCONCLUSIVE')
+    expect(v.outcome).toBe('INCONCLUSIVE')
   })
 
   it('actual 字段含 redFlags + allFlags', () => {
@@ -148,7 +148,7 @@ describe('applyTrustBaseline - 透传路径（AC-2 守护）', () => {
   it('无 flag + normalJudge 失败：返回 FAIL（非 INCONCLUSIVE）', () => {
     const judge = makeNormalJudge(false, 'real fail')
     const v = applyTrustBaseline([], judge)
-    expect(v.verdict).toBe('FAIL')
+    expect(v.outcome).toBe('DEVIATED')
     expect(v.passed).toBe(false)
     expect(v.message).toBe('real fail')
   })
@@ -156,7 +156,7 @@ describe('applyTrustBaseline - 透传路径（AC-2 守护）', () => {
   it('YELLOW + normalJudge 成功：返回 PASS + 记录 flag', () => {
     const judge = makeNormalJudge(true, 'symlinked pass')
     const v = applyTrustBaseline(['symlink'], judge)
-    expect(v.verdict).toBe('PASS')
+    expect(v.outcome).toBe('COMPLETED')
     expect(v.passed).toBe(true)
     expect(v.message).toBe('symlinked pass')
     expect(v.interferenceFlags).toEqual(['symlink'])
@@ -164,9 +164,9 @@ describe('applyTrustBaseline - 透传路径（AC-2 守护）', () => {
 
   it('normalJudge 不被调用当 RED flag 存在', () => {
     let called = false
-    const judge = (): ProbeVerdict => {
+    const judge = (): ProbeOutcome => {
       called = true
-      return { verdict: 'PASS', passed: true, message: 'should not run' }
+      return { outcome: 'COMPLETED', passed: true, message: 'should not run' }
     }
     applyTrustBaseline(['waf_detected'], judge)
     expect(called).toBe(false)

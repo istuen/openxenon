@@ -4,7 +4,7 @@
 // 物理观测：调 git status --porcelain
 // 判定：行数 == 0 → clean: true
 // 注：本文件只做"git 物理观测"，不做 PASS/FAIL 判定
-//     PASS/FAIL 由 src/kernel/verdicts/verdict.ts 的 gitCleanStrategy 判定
+//     PASS/FAIL 由 src/kernel/verdicts/outcome.ts 的 gitCleanStrategy 判定
 // =============================================================================
 
 import { isWorkingTreeClean, type GitResult } from '../git/workspace'

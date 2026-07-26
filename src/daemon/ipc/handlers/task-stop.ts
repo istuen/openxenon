@@ -39,13 +39,13 @@ async function handleTaskStop(request: Request, projectPath: string): Promise<Re
       radarClock.stopMonitor(taskId, currentPart.partId)
     }
 
-    writeTaskStatus(taskDir, taskId, 'FAILED')
+    writeTaskStatus(taskDir, taskId, 'DEVIATED')
 
     return new Response(
       JSON.stringify({
         status: 'stopped',
         taskId: taskId,
-        taskStatus: 'FAILED',
+        taskStatus: 'DEVIATED',
         killedProcesses: currentPart ? 1 : 0,
       }),
       {

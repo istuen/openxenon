@@ -21,7 +21,7 @@ export interface PartTrace {
 export interface ProbeResult {
   probeType: string
   params: Record<string, unknown>
-  result: 'PASSED' | 'FAILED'
+  result: 'COMPLETED' | 'DEVIATED'
   actual?: unknown
   failureMessage?: string
   duration: number
@@ -68,7 +68,7 @@ export interface ProbeResultEvent {
   partId: string
   probeType: string
   params?: Record<string, unknown>
-  result: 'PASSED' | 'FAILED'
+  result: 'COMPLETED' | 'DEVIATED'
   actual?: unknown
   failureMessage?: string
   duration?: number

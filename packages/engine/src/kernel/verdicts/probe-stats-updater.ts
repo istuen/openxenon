@@ -112,7 +112,7 @@ export function updateProbeStats(stats: ProbeStats, frozen: FrozenProof): ProbeS
   const newRun: ProbeRunRecord = {
     proofId: frozen.name,
     timestamp: frozen.runAt,
-    verdict: frozen.verdict,
+    outcome: frozen.outcome,
     probeSummary,
   }
   proofRuns.push(newRun)

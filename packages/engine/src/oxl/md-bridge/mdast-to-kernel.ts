@@ -326,7 +326,7 @@ function convertProofToCompiled(pipelineResult: PipelineOutput, ctx: MdastToKern
   const hash = computeHash(ctx.content)
   const proofName = String(pipelineResult.frontmatter.name ?? 'unnamed-proof')
   const ref = `@prj/proof/${proofName}`
-  const verdict = String(pipelineResult.frontmatter.verdict ?? 'INCONCLUSIVE')
+  const outcome = String(pipelineResult.frontmatter.outcome ?? 'INCONCLUSIVE')
 
   return {
     id: `proof-${slugify(proofName)}`,
@@ -338,7 +338,7 @@ function convertProofToCompiled(pipelineResult: PipelineOutput, ctx: MdastToKern
         id: 'proof-result',
         name: 'proof-result',
         deps: [],
-        params: { verdict },
+        params: { outcome },
         probes: [],
       },
     ],

@@ -139,7 +139,7 @@ name: task-no-probe
 // ───────── A1 (D3): finalizeWork 写 work-level frozen.json ─────────
 
 describe('finalizeWork frozen.json (A1 / D3)', () => {
-  test('finalizeWork 写 .run/frozen.json 含 finalVerdict + roundHistory + taskFrozenPaths', () => {
+  test('finalizeWork 写 .run/frozen.json 含 finalOutcome + roundHistory + taskFrozenPaths', () => {
     runWork({
       projectRoot: tmpDir,
       workName,
@@ -163,14 +163,14 @@ describe('finalizeWork frozen.json (A1 / D3)', () => {
     finalizeWork({
       projectRoot: tmpDir,
       workName,
-      verdict: 'PASSED',
+      outcome: 'COMPLETED',
     })
 
     const frozenPath = join(tmpDir, '.openxenon', 'works', workName, '.run', 'frozen.json')
     expect(existsSync(frozenPath)).toBe(true)
     const frozen = JSON.parse(readFileSync(frozenPath, 'utf-8'))
     expect(frozen.workName).toBe(workName)
-    expect(frozen.finalVerdict).toBe('PASSED')
+    expect(frozen.finalOutcome).toBe('COMPLETED')
     expect(frozen.totalRounds).toBeGreaterThan(0)
     expect(Array.isArray(frozen.roundHistory)).toBe(true)
     expect(Array.isArray(frozen.taskFrozenPaths)).toBe(true)
@@ -198,14 +198,14 @@ describe('finalizeWork frozen.json (A1 / D3)', () => {
       {
         domain: 'test-domain',
         invariant: 'invariant-1',
-        verdict: 'FAIL',
+        outcome: 'DEVIATED',
         failureMessage: 'simulated boundary violation',
       },
     ]
     finalizeWork({
       projectRoot: tmpDir,
       workName,
-      verdict: 'FAILED',
+      outcome: 'DEVIATED',
       boundaryViolations: violations,
     })
 

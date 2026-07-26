@@ -10,14 +10,14 @@
 // v0.3.0 Q1 决策（3 态命名大小写分层）：
 // - canonical .md（人类阅读 SSOT）：lowercase  `pass` / `fail` / `inconclusive`
 // - frozen.json（机器内核）：           uppercase  `PASSED` / `FAILED` / `INCONCLUSIVE`
-// - Kernel ProbeVerdict（接口契约）：    uppercase  `PASS` / `FAIL` / `INCONCLUSIVE`（无 -ED）
+// - Kernel ProbeOutcome（接口契约）：    uppercase  `PASS` / `FAIL` / `INCONCLUSIVE`（无 -ED）
 // - 映射在 buildFrozenProof 的 verdict 字段统一做：
-//     ProbeVerdict.PASS      → verdict: 'PASSED'
-//     ProbeVerdict.FAIL      → verdict: 'FAILED'
-//     ProbeVerdict.INCONCLUSIVE → verdict: 'INCONCLUSIVE'
+//     ProbeOutcome.PASS      → outcome: 'COMPLETED'
+//     ProbeOutcome.FAIL      → outcome: 'DEVIATED'
+//     ProbeOutcome.INCONCLUSIVE → outcome: 'INCONCLUSIVE'
 //   反向读 .md 时 src/oxl/md-bridge/compilers/proof-compiler.ts:parse()：
 //     lowercase 'pass' → 直接保留
-//     uppercase 'PASS' / 'PASSED' → 静默降级为 'inconclusive'（避免歧义）
+//     uppercase 'COMPLETED' / 'COMPLETED' → 静默降级为 'inconclusive'（避免歧义）
 //
 // 理由（SSOT 分层）：canonical .md 面向人（lowercase 平易近人），
 //                    frozen.json 面向机（uppercase + 过去分词是 JSON Schema 枚举值惯例）。
@@ -48,29 +48,29 @@ export function buildFrozenProof(params: WriteFrozenProofParams): FrozenProofBod
   // 容错补全: 老 caller / 老 test fixture 只传 passed, 缺 verdict; 按 passed 推断二态后,
   // 再由 proof-runner.ts 提供的 3-state verdict 覆盖(若有)
   const normalizedProbes: FrozenProofProbeResult[] = params.probes.map((p) => {
-    const inferred: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' =
-      (p.verdict as 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | undefined) ?? (p.passed ? 'PASSED' : 'FAILED')
-    return { ...p, verdict: inferred }
+    const inferred: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' =
+      (p.outcome as 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | undefined) ?? (p.passed ? 'COMPLETED' : 'DEVIATED')
+    return { ...p, outcome: inferred }
   })
 
   const passedCount = normalizedProbes.filter((p) => p.passed).length
-  const inconclusiveCount = normalizedProbes.filter((p) => p.verdict === 'INCONCLUSIVE').length
+  const inconclusiveCount = normalizedProbes.filter((p) => p.outcome === 'INCONCLUSIVE').length
   const failedCount = totalCount - passedCount - inconclusiveCount
 
   // 三态聚合:任一 INCONCLUSIVE → 整体 INCONCLUSIVE; 否则全 PASSED → PASSED; 其余 FAILED
-  const verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' =
+  const outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' =
     totalCount === 0
-      ? 'FAILED'
+      ? 'DEVIATED'
       : inconclusiveCount > 0
         ? 'INCONCLUSIVE'
         : passedCount === totalCount
-          ? 'PASSED'
-          : 'FAILED'
+          ? 'COMPLETED'
+          : 'DEVIATED'
 
   return {
     name: params.name,
     runAt: params.runAt ?? new Date().toISOString(),
-    verdict,
+    outcome,
     totalCount,
     passedCount,
     failedCount,

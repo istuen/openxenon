@@ -16,7 +16,7 @@
  * Q1 决策（v0.3.0 锁死）：3 态命名分层
  * - canonical .md（人类阅读）：lowercase `pass` / `fail` / `inconclusive`
  * - frozen.json（机器内核）：uppercase `PASSED` / `FAILED` / `INCONCLUSIVE`
- * - Kernel ProbeVerdict：uppercase `PASS` / `FAIL` / `INCONCLUSIVE`（无 -ED）
+ * - Kernel ProbeOutcome：uppercase `PASS` / `FAIL` / `INCONCLUSIVE`（无 -ED）
  * - 映射边界在 src/cli/proof-frozen-writer.ts 与 oxn proof compile/run
  *
  * Q2 决策（v0.3.0 锁死）：`probes_failed` 必须拒绝（数据冗余是万恶之源）
@@ -92,10 +92,10 @@ export class ProofCompiler implements EntityCompiler {
     sections.push(`# Proof: ${name}`)
     sections.push('')
 
-    if (decl.verdicts && decl.verdicts.length > 0) {
+    if (decl.outcomes && decl.outcomes.length > 0) {
       sections.push('## Verdicts')
       sections.push('')
-      for (const v of decl.verdicts) {
+      for (const v of decl.outcomes) {
         // v0.3.0 canonical 形式（用户定稿）：H3 扁平 + 键值对列表
         // - H3 标题 = 探针名（不带 state 后缀）
         // - 第一行 `- type: pass|fail|inconclusive` 单独字段
@@ -153,7 +153,7 @@ export class ProofCompiler implements EntityCompiler {
 
     const contexts = extractHeadingContexts(mdast)
 
-    const verdicts: Array<{
+    const outcomes: Array<{
       name: string
       type: VerdictType
       value: string
@@ -194,7 +194,7 @@ export class ProofCompiler implements EntityCompiler {
           // value / note：优先 H4 note（兼容老 form），其次 `- value:` 字段
           const valueText = extractNoteText(ctx.h4Sections ?? []) ?? getScalar(fields, 'value') ?? ''
 
-          verdicts.push({
+          outcomes.push({
             name: stripVerdictStateFromTitle(ctx.h3),
             type,
             artifact,
@@ -226,7 +226,7 @@ export class ProofCompiler implements EntityCompiler {
         typeof frontmatter['proofs-target-frozen'] === 'string'
           ? (frontmatter['proofs-target-frozen'] as string)
           : undefined,
-      verdicts,
+      outcomes,
       runtime,
     }
   }

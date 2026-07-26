@@ -65,7 +65,7 @@ export type ExecErrorCode =
 export type ExecError = IAPError & { readonly oxnCode: ExecErrorCode }
 
 export function throwExecError(axis: IAPAxis, oxnCode: ExecErrorCode, message: string): never {
-  const err = new IAPError(axis, 'INFRA_FAIL', IAPAction.AUTONOMOUS_RETRY, message, { oxnCode })
+  const err = new IAPError(axis, 'INFRA_FAIL_STATE_LOAD', IAPAction.AUTONOMOUS_RETRY, message, { oxnCode })
   ;(err as IAPError & { oxnCode: ExecErrorCode }).oxnCode = oxnCode
   throw err
 }
@@ -303,7 +303,7 @@ export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
           status: t.status,
           completedAt: t.completedAt ?? null,
         })),
-        finalVerdict: 'PASSED',
+        finalOutcome: 'COMPLETED',
         totalRounds: workState.roundHistory.length,
         roundHistory: workState.roundHistory,
         taskFrozenPaths: workState.tasks
@@ -451,7 +451,7 @@ interface WorkFrozenSnapshot {
   completedAt: string
   tasks: Array<{ taskName: string; status: WorkspaceTaskStatus; completedAt: string | null }>
   /** A1 (D3): 最终裁决（PASSED/FAILED/INCONCLUSIVE/PENDING） */
-  finalVerdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING'
+  finalOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'PENDING'
   /** A1 (D3): round 总数 */
   totalRounds: number
   /** A1 (D3): 所有 round 摘要（含每轮 verdict/failures） */
@@ -462,7 +462,7 @@ interface WorkFrozenSnapshot {
   boundaryViolations?: Array<{
     domain: string
     invariant: string
-    verdict: string
+    outcome: string
     failureMessage?: string
   }>
 }
@@ -594,8 +594,8 @@ export function runNoopProbe(partName: string, partAlign: string): { probe: stri
 export interface NextRoundParams {
   projectRoot: string
   workName: string
-  /** 本轮最终 verdict（调用方从 frozen.json.verdict 读取后传入） */
-  verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+  /** 本轮最终 verdict（调用方从 frozen.json.outcome 读取后传入） */
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
   /** 本轮失败的 task 名列表（调用方从 taskState 收集） */
   failures?: string[]
   /** 可选本轮总结 */
@@ -607,7 +607,7 @@ export interface NextRoundResult {
   /** 新开的 round 编号 */
   round: number
   /** 上一轮（即本函数关闭的）的 verdict */
-  previousVerdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+  previousOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
   /** roundHistory 长度（含已关闭的上一轮） */
   historyLength: number
 }
@@ -635,7 +635,7 @@ export function nextRoundWork(params: NextRoundParams): NextRoundResult {
   }
 
   // 若上一轮 PASSED，不应继续 next-round（应调 finalize）
-  if (params.verdict === 'PASSED') {
+  if (params.outcome === 'COMPLETED') {
     throwExecError(
       'ALIGN',
       'OXN_ROUND_ALREADY_PASSED',
@@ -649,7 +649,7 @@ export function nextRoundWork(params: NextRoundParams): NextRoundResult {
     round: state.currentRound,
     startedAt: state.roundHistory.at(-1)?.startedAt ?? state.createdAt,
     endedAt: nowIso,
-    verdict: params.verdict,
+    outcome: params.outcome,
     failures: params.failures ?? [],
     ...(params.notes ? { notes: params.notes } : {}),
   }
@@ -668,7 +668,7 @@ export function nextRoundWork(params: NextRoundParams): NextRoundResult {
   state.roundHistory.push({
     round: state.currentRound,
     startedAt: nowIso,
-    verdict: 'PENDING',
+    outcome: 'PENDING',
     failures: [],
   })
 
@@ -678,14 +678,14 @@ export function nextRoundWork(params: NextRoundParams): NextRoundResult {
     event: 'next-round',
     workName: params.workName,
     newRound: state.currentRound,
-    previousVerdict: params.verdict,
+    previousOutcome: params.outcome,
     at: nowIso,
   })
 
   return {
     workspace: state,
     round: state.currentRound,
-    previousVerdict: params.verdict,
+    previousOutcome: params.outcome,
     historyLength: state.roundHistory.length,
   }
 }
@@ -724,21 +724,21 @@ export function getRoundStatus(projectRoot: string, workName: string): RoundStat
 export interface FinalizeParams {
   projectRoot: string
   workName: string
-  /** 最终裁决（默认用最后 closed round 的 verdict） */
-  verdict?: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+  /** 最终裁决（默认用最后 closed round 的 outcome） */
+  outcome?: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
   notes?: string
   /** A2 (D4): 由调用方预计算的 Domain 边界违反记录（finalizeWorkDomains 结果注入） */
   boundaryViolations?: Array<{
     domain: string
     invariant: string
-    verdict: string
+    outcome: string
     failureMessage?: string
   }>
 }
 
 export interface FinalizeResult {
   workspace: WorkspaceState
-  finalVerdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING'
+  finalOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'PENDING'
   totalRounds: number
   finalizedAt: string
 }
@@ -757,26 +757,26 @@ export function finalizeWork(params: FinalizeParams): FinalizeResult {
 
   // 关闭当前 active round（若有）
   const lastRecord = state.roundHistory.at(-1)
-  let finalVerdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | 'PENDING' = 'PENDING'
+  let finalOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'PENDING' = 'PENDING'
 
   if (lastRecord && !lastRecord.endedAt) {
-    const verdict = params.verdict ?? 'FAILED' // 默认 FAILED（用户主动收口）
+    const outcome = params.outcome ?? 'DEVIATED' // 默认 DEVIATED（用户主动收口）
     state.roundHistory[state.roundHistory.length - 1] = {
       ...lastRecord,
       endedAt: nowIso,
-      verdict,
+      outcome,
       ...(params.notes ? { notes: params.notes } : {}),
     }
-    finalVerdict = verdict
+    finalOutcome = outcome
   } else if (lastRecord) {
     // 最后一条已 endedAt
-    finalVerdict = lastRecord.verdict
+    finalOutcome = lastRecord.outcome
   }
 
   // 标记 work 终态
-  if (finalVerdict === 'PASSED') {
+  if (finalOutcome === 'COMPLETED') {
     state.status = 'passed'
-  } else if (finalVerdict === 'FAILED') {
+  } else if (finalOutcome === 'DEVIATED') {
     state.status = 'failed'
   } else {
     // INCONCLUSIVE / PENDING → 用 'error'（未达 PASSED 状态但已收口）
@@ -800,7 +800,7 @@ export function finalizeWork(params: FinalizeParams): FinalizeResult {
       status: t.status,
       completedAt: t.completedAt ?? null,
     })),
-    finalVerdict,
+    finalOutcome,
     totalRounds: state.roundHistory.length,
     roundHistory: state.roundHistory,
     taskFrozenPaths,
@@ -813,14 +813,14 @@ export function finalizeWork(params: FinalizeParams): FinalizeResult {
   appendWorkTrace(params.projectRoot, params.workName, {
     event: 'finalize',
     workName: params.workName,
-    finalVerdict,
+    finalOutcome,
     totalRounds: state.roundHistory.length,
     at: nowIso,
   })
 
   return {
     workspace: state,
-    finalVerdict,
+    finalOutcome,
     totalRounds: state.roundHistory.length,
     finalizedAt: nowIso,
   }

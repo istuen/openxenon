@@ -33,7 +33,7 @@ describe('nextRoundWork (v0.6 PR-2)', () => {
     expect(state.currentRound).toBe(1)
     expect(state.roundHistory.length).toBe(1)
     expect(state.roundHistory[0]?.round).toBe(1)
-    expect(state.roundHistory[0]?.verdict).toBe('PENDING')
+    expect(state.roundHistory[0]?.outcome).toBe('PENDING')
   })
 
   it('opens round 2 after failed round 1', () => {
@@ -47,16 +47,16 @@ describe('nextRoundWork (v0.6 PR-2)', () => {
     const result = nextRoundWork({
       projectRoot: tmp,
       workName: 'test-work',
-      verdict: 'FAILED',
+      outcome: 'DEVIATED',
       failures: ['t1'],
     })
     expect(result.round).toBe(2)
-    expect(result.previousVerdict).toBe('FAILED')
+    expect(result.previousOutcome).toBe('DEVIATED')
     expect(result.historyLength).toBe(2)
     expect(result.workspace.currentRound).toBe(2)
-    expect(result.workspace.roundHistory[0]?.verdict).toBe('FAILED')
+    expect(result.workspace.roundHistory[0]?.outcome).toBe('DEVIATED')
     expect(result.workspace.roundHistory[0]?.endedAt).toBeDefined()
-    expect(result.workspace.roundHistory[1]?.verdict).toBe('PENDING')
+    expect(result.workspace.roundHistory[1]?.outcome).toBe('PENDING')
   })
 
   it('rejects PASSED verdict with OXN_ROUND_ALREADY_PASSED', () => {
@@ -71,7 +71,7 @@ describe('nextRoundWork (v0.6 PR-2)', () => {
       nextRoundWork({
         projectRoot: tmp,
         workName: 'test-work',
-        verdict: 'PASSED',
+        outcome: 'COMPLETED',
       }),
     ).toThrow(/OXN_ROUND_ALREADY_PASSED|PASSED/)
   })
@@ -84,14 +84,14 @@ describe('nextRoundWork (v0.6 PR-2)', () => {
       blueprintNames: [],
       tasks: [],
     })
-    nextRoundWork({ projectRoot: tmp, workName: 'test-work', verdict: 'FAILED' })
-    nextRoundWork({ projectRoot: tmp, workName: 'test-work', verdict: 'FAILED' })
+    nextRoundWork({ projectRoot: tmp, workName: 'test-work', outcome: 'DEVIATED' })
+    nextRoundWork({ projectRoot: tmp, workName: 'test-work', outcome: 'DEVIATED' })
     const status = getRoundStatus(tmp, 'test-work')
     expect(status?.currentRound).toBe(3)
     expect(status?.totalRounds).toBe(3)
-    expect(status?.history[0]?.verdict).toBe('FAILED')
-    expect(status?.history[1]?.verdict).toBe('FAILED')
-    expect(status?.history[2]?.verdict).toBe('PENDING')
+    expect(status?.history[0]?.outcome).toBe('DEVIATED')
+    expect(status?.history[1]?.outcome).toBe('DEVIATED')
+    expect(status?.history[2]?.outcome).toBe('PENDING')
   })
 
   it('persists state.json across reloads', () => {
@@ -102,7 +102,7 @@ describe('nextRoundWork (v0.6 PR-2)', () => {
       blueprintNames: [],
       tasks: [],
     })
-    nextRoundWork({ projectRoot: tmp, workName: 'test-work', verdict: 'FAILED' })
+    nextRoundWork({ projectRoot: tmp, workName: 'test-work', outcome: 'DEVIATED' })
     // Simulate reload from disk
     const reloaded = loadWorkState(tmp, 'test-work')
     expect(reloaded?.currentRound).toBe(2)
@@ -120,7 +120,7 @@ describe('nextRoundWork (v0.6 PR-2)', () => {
     const result = nextRoundWork({
       projectRoot: tmp,
       workName: 'test-work',
-      verdict: 'FAILED',
+      outcome: 'DEVIATED',
       failures: ['t1'],
       notes: 'typecheck failed in t1',
     })

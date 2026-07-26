@@ -36,7 +36,7 @@ export const RoundRecordSchema = z.object({
   round: z.number().int().min(1),
   startedAt: z.string(),
   endedAt: z.string().optional(),
-  verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE', 'PENDING']),
+  outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE', 'PENDING']),
   failures: z.array(z.string()).default([]), // probe 失败 task 名列表
   notes: z.string().optional(),
 })
@@ -129,7 +129,7 @@ export function createInitialWorkspaceState(params: {
       {
         round: 1,
         startedAt: now,
-        verdict: 'PENDING',
+        outcome: 'PENDING',
         failures: [],
       },
     ],

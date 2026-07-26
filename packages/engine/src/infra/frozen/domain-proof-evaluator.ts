@@ -4,10 +4,10 @@
 
 import { spawn } from 'child_process'
 
-export type DomainProofVerdict = 'PASS' | 'FAIL' | 'INCONCLUSIVE' | 'MANUAL_PENDING'
+export type DomainProofOutcome = 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'MANUAL_PENDING'
 
 export interface DomainProofEval {
-  verdict: DomainProofVerdict
+  outcome: DomainProofOutcome
   failureMessage?: string
   evaluatedAt: number
 }
@@ -30,7 +30,7 @@ export async function evaluateDomainProof(
   // manual 优先判定
   if (manual) {
     return {
-      verdict: 'MANUAL_PENDING',
+      outcome: 'MANUAL_PENDING',
       failureMessage: `invariant "${invariant}" in domain "${domain}" requires manual assessment: ${manual}`,
       evaluatedAt: now,
     }
@@ -39,7 +39,7 @@ export async function evaluateDomainProof(
   // project scope → v2.0 标 MANUAL_PENDING
   if (scope === 'project') {
     return {
-      verdict: 'MANUAL_PENDING',
+      outcome: 'MANUAL_PENDING',
       failureMessage: `invariant "${invariant}" has scope=project (v2.1+ via oxn proof audit)`,
       evaluatedAt: now,
     }
@@ -52,7 +52,7 @@ export async function evaluateDomainProof(
 
   // 缺 script 也缺 manual → 无法评估
   return {
-    verdict: 'MANUAL_PENDING',
+    outcome: 'MANUAL_PENDING',
     failureMessage: `invariant "${invariant}" in domain "${domain}" has no script or manual — cannot evaluate`,
     evaluatedAt: now,
   }
@@ -76,23 +76,23 @@ function evaluateScript(_domain: string, invariant: string, script: string): Pro
       const now = Date.now()
       if (signal === 'SIGTERM' || code === null) {
         resolve({
-          verdict: 'INCONCLUSIVE',
+          outcome: 'INCONCLUSIVE',
           failureMessage: `invariant "${invariant}" script timed out (30s): ${script}`,
           evaluatedAt: now,
         })
         return
       }
       if (code === 0) {
-        resolve({ verdict: 'PASS', evaluatedAt: now })
+        resolve({ outcome: 'COMPLETED', evaluatedAt: now })
       } else if (code === 1) {
         resolve({
-          verdict: 'FAIL',
+          outcome: 'DEVIATED',
           failureMessage: `invariant "${invariant}" script exit 1: ${stderr || stdout || script}`,
           evaluatedAt: now,
         })
       } else {
         resolve({
-          verdict: 'INCONCLUSIVE',
+          outcome: 'INCONCLUSIVE',
           failureMessage: `invariant "${invariant}" script exit ${code}: ${stderr || stdout || script}`,
           evaluatedAt: now,
         })
@@ -101,7 +101,7 @@ function evaluateScript(_domain: string, invariant: string, script: string): Pro
 
     child.on('error', (err) => {
       resolve({
-        verdict: 'INCONCLUSIVE',
+        outcome: 'INCONCLUSIVE',
         failureMessage: `invariant "${invariant}" script exec error: ${err.message}`,
         evaluatedAt: Date.now(),
       })

@@ -1,17 +1,17 @@
 // =============================================================================
 // Proof Verdict .md Writer (v0.5 PR-A)
 //
-// 写 .openxenon/proofs/<name>/verdict.md：
+// 写 .openxenon/proofs/<name>/outcome.md：
 //   1. buildVerdictMd 构造 body（含 YAML frontmatter）
 //   2. writeVerdictMd 写盘 + chmod 0o444 + SHA-256 content_hash 签名
 //
 // 与 frozen.json 的关系：
 //   - frozen.json 保持机器 SSOT（已有）
-//   - verdict.md 是人类消费的"视图"，两者 chmod 0o444 同时产出
-//   - verdict.md frontmatter 含 frozen_hash 字段，交叉引用 frozen.json 的 SHA-256
-//   - verdict.md frontmatter 含 content_hash 字段，签名自身（详见 §签名协议）
+//   - outcome.md 是人类消费的"视图"，两者 chmod 0o444 同时产出
+//   - outcome.md frontmatter 含 frozen_hash 字段，交叉引用 frozen.json 的 SHA-256
+//   - outcome.md frontmatter 含 content_hash 字段，签名自身（详见 §签名协议）
 //
-// 写权独占：本模块是 verdict.md 的**唯一**合法写路径（AI / 工程师禁手改）。
+// 写权独占：本模块是 outcome.md 的**唯一**合法写路径（AI / 工程师禁手改）。
 //
 // 设计参考：v0.5-proof-insight-loop RFC §PR-A
 // =============================================================================
@@ -35,7 +35,7 @@ import type { FrozenProof, FrozenProofProbeResult } from '@openxenon/engine/kern
 // 与 frozen.json 的 _xenon_meta 设计哲学一致：hash 是内容的指纹，self-excluding。
 // ──────────────────────────────────────────────────────────────────────────────
 
-/** verdict.md body（含 YAML frontmatter） */
+/** outcome.md body（含 YAML frontmatter） */
 export type VerdictMdBody = string
 
 /** buildVerdictMd 的入参：直接复用 FrozenProof，零额外信息 */
@@ -45,12 +45,12 @@ export type BuildVerdictMdParams = FrozenProof
 const CONTENT_HASH_PLACEHOLDER = '__PLACEHOLDER__'
 
 /**
- * 从 FrozenProof 构造 verdict.md body（含 YAML frontmatter）。
+ * 从 FrozenProof 构造 outcome.md body（含 YAML frontmatter）。
  *
  * 格式：
  *   ---
  *   proof_id: <name>
- *   verdict: PASSED|FAILED|INCONCLUSIVE
+ *   outcome: PASSED|FAILED|INCONCLUSIVE
  *   run_at: <ISO 8601>
  *   frozen_hash: <sha256 of frozen.json body>
  *   probe_count: N
@@ -62,13 +62,13 @@ const CONTENT_HASH_PLACEHOLDER = '__PLACEHOLDER__'
  *   <markdown body>
  */
 export function buildVerdictMd(frozen: FrozenProof): VerdictMdBody {
-  const inconclusiveCount = frozen.probes.filter((p) => p.verdict === 'INCONCLUSIVE').length
+  const inconclusiveCount = frozen.probes.filter((p) => p.outcome === 'INCONCLUSIVE').length
 
   // 第一遍：构造不含真实 content_hash 的 frontmatter + body
   const frontmatterLines = [
     '---',
     `proof_id: ${escapeYaml(frozen.name)}`,
-    `verdict: ${frozen.verdict}`,
+    `outcome: ${frozen.outcome}`,
     `run_at: ${escapeYaml(frozen.runAt)}`,
     `frozen_hash: ${frozen._xenon_meta.content_hash}`,
     `probe_count: ${frozen.totalCount}`,
@@ -86,9 +86,9 @@ export function buildVerdictMd(frozen: FrozenProof): VerdictMdBody {
   bodyLines.push('')
   bodyLines.push(`# Proof: ${frozen.name}`)
   bodyLines.push('')
-  const verdictIcon = frozen.verdict === 'PASSED' ? '✅' : frozen.verdict === 'INCONCLUSIVE' ? '⚠️' : '❌'
+  const outcomeIcon = frozen.outcome === 'COMPLETED' ? '✅' : frozen.outcome === 'INCONCLUSIVE' ? '⚠️' : '❌'
   bodyLines.push(
-    `> **Verdict**: ${verdictIcon} ${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount} probes passed)`,
+    `> **Verdict**: ${outcomeIcon} ${frozen.outcome} (${frozen.passedCount}/${frozen.totalCount} probes passed)`,
   )
   bodyLines.push(`> **Run at**: ${frozen.runAt}`)
   bodyLines.push(`> **Frozen**: \`frozen.json\` (SHA-256: \`${frozen._xenon_meta.content_hash}\`)`)
@@ -99,7 +99,7 @@ export function buildVerdictMd(frozen: FrozenProof): VerdictMdBody {
   bodyLines.push('')
   for (const probe of frozen.probes) {
     const target = extractTarget(probe)
-    const icon = probe.verdict === 'PASSED' ? '✅' : probe.verdict === 'INCONCLUSIVE' ? '⚠️' : '❌'
+    const icon = probe.outcome === 'COMPLETED' ? '✅' : probe.outcome === 'INCONCLUSIVE' ? '⚠️' : '❌'
     const targetStr = target ? ` \`${target}\`` : ''
     const errLine = probe.errorMessage ? `\n  - error: ${probe.errorMessage}` : ''
     const flagsLine =
@@ -107,7 +107,7 @@ export function buildVerdictMd(frozen: FrozenProof): VerdictMdBody {
         ? `\n  - flags: ${probe.interferenceFlags.join(', ')}`
         : ''
     bodyLines.push(
-      `- ${icon} **${probe.probeName}** \`${probe.ref}\`${targetStr} (${probe.verdict}, ${probe.durationMs}ms)${errLine}${flagsLine}`,
+      `- ${icon} **${probe.probeName}** \`${probe.ref}\`${targetStr} (${probe.outcome}, ${probe.durationMs}ms)${errLine}${flagsLine}`,
     )
   }
   bodyLines.push('')
@@ -123,7 +123,7 @@ export function buildVerdictMd(frozen: FrozenProof): VerdictMdBody {
   if (inconclusiveCount > 0) {
     bodyLines.push(`| Inconclusive | ${inconclusiveCount} |`)
   }
-  bodyLines.push(`| **Overall verdict** | **${frozen.verdict}** |`)
+  bodyLines.push(`| **Overall verdict** | **${frozen.outcome}** |`)
   bodyLines.push('')
 
   // Interference section
@@ -197,14 +197,14 @@ function escapeYaml(s: string): string {
 }
 
 /**
- * 写 verdict.md 到磁盘（不可篡改）。
+ * 写 outcome.md 到磁盘（不可篡改）。
  *   1. buildVerdictMd 构造 body（含 content_hash 签名）
  *   2. 写盘 + chmod 0o444
  *
- * 注：与 frozen.json 的写盘流程独立。verdict.md 写失败**不影响** frozen.json 已写入的主流程。
+ * 注：与 frozen.json 的写盘流程独立。outcome.md 写失败**不影响** frozen.json 已写入的主流程。
  */
-export function writeVerdictMd(verdictPath: string, frozen: FrozenProof): void {
-  const dir = dirname(verdictPath)
+export function writeVerdictMd(outcomePath: string, frozen: FrozenProof): void {
+  const dir = dirname(outcomePath)
   if (!existsSync(dir)) {
     mkdirSync(dir, { recursive: true })
   }
@@ -212,18 +212,18 @@ export function writeVerdictMd(verdictPath: string, frozen: FrozenProof): void {
   const body = buildVerdictMd(frozen)
 
   // 与 frozen.json 相同的写盘模式：若已存在且 mode=0o444，先抬位再写
-  if (existsSync(verdictPath)) {
+  if (existsSync(outcomePath)) {
     try {
-      chmodSync(verdictPath, 0o644)
+      chmodSync(outcomePath, 0o644)
     } catch {
       /* ignore */
     }
   }
   try {
-    writeFileSync(verdictPath, body, { mode: FROZEN_FILE_MODE })
+    writeFileSync(outcomePath, body, { mode: FROZEN_FILE_MODE })
   } finally {
     try {
-      chmodSync(verdictPath, FROZEN_FILE_MODE)
+      chmodSync(outcomePath, FROZEN_FILE_MODE)
     } catch {
       /* ignore */
     }
@@ -231,7 +231,7 @@ export function writeVerdictMd(verdictPath: string, frozen: FrozenProof): void {
 }
 
 /**
- * 读 verdict.md + 校验 content_hash 完整性。
+ * 读 outcome.md + 校验 content_hash 完整性。
  *   - 文件存在 + signature 匹配 → ok=true
  *   - signature 不匹配 → ok=false + reason="signature mismatch"（被篡改）
  *   - 解析失败 / 文件不存在 → ok=false + reason
@@ -246,18 +246,18 @@ export interface ReadVerdictMdResult {
   reason?: string
 }
 
-export function readVerdictMd(verdictPath: string): ReadVerdictMdResult {
-  if (!existsSync(verdictPath)) {
+export function readVerdictMd(outcomePath: string): ReadVerdictMdResult {
+  if (!existsSync(outcomePath)) {
     return {
       ok: false,
       body: null,
       contentHash: null,
       frozenHash: null,
-      reason: `verdict.md not found: ${verdictPath}`,
+      reason: `outcome.md not found: ${outcomePath}`,
     }
   }
 
-  const content = readFileSync(verdictPath, 'utf-8')
+  const content = readFileSync(outcomePath, 'utf-8')
 
   // 解析 frontmatter
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
@@ -267,7 +267,7 @@ export function readVerdictMd(verdictPath: string): ReadVerdictMdResult {
       body: null,
       contentHash: null,
       frozenHash: null,
-      reason: 'verdict.md frontmatter not found',
+      reason: 'outcome.md frontmatter not found',
     }
   }
   const fmBody = fmMatch[1] ?? ''
@@ -283,7 +283,7 @@ export function readVerdictMd(verdictPath: string): ReadVerdictMdResult {
       body: null,
       contentHash: null,
       frozenHash,
-      reason: 'verdict.md content_hash not found in frontmatter',
+      reason: 'outcome.md content_hash not found in frontmatter',
     }
   }
 

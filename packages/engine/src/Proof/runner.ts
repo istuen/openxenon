@@ -3,7 +3,7 @@
 //
 // IAP 三轴分离兑现：
 //   - Infra (L1 src/infra/probes/): 物理观测 — fs-exists / shell-exec 等
-//   - Kernel (L0 src/kernel/verdicts/verdict.ts): 纯函数判定
+//   - Kernel (L0 src/kernel/verdicts/outcome.ts): 纯函数判定
 //   - catalog (L0.5 src/kernel/verdicts/catalog.ts): 语义层翻译（AI ↔ internal）
 //   - proof-runner (Align 编排): 拿 internalRef → 调 Infra → 调 Kernel
 //
@@ -52,7 +52,7 @@ export function resolveProbeKind(ref: string): string | null {
  *   1. resolveProbeKind(ref) → kind（路由失败抛 ProbeNotFound）
  *   2. getProbeHandler(kind) → Infra handler（物理观测）
  *   3. Infra.execute(params, ctx) → ProbeObservation
- *   4. Kernel.judge(observation, params) → ProbeVerdict
+ *   4. Kernel.judge(observation, params) → ProbeOutcome
  *   5. 转换为 FrozenProofProbeResult
  *
  * 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5):
@@ -76,7 +76,7 @@ export async function executeProbe(
     return {
       probeName: probe.probeName,
       ref: probe.ref,
-      verdict: 'FAILED',
+      outcome: 'DEVIATED',
       passed: false,
       errorMessage: `unknown probe ref: ${probe.ref} (no Infra handler)`,
       durationMs: Date.now() - start,
@@ -87,7 +87,7 @@ export async function executeProbe(
     return {
       probeName: probe.probeName,
       ref: probe.ref,
-      verdict: 'FAILED',
+      outcome: 'DEVIATED',
       passed: false,
       errorMessage: `no Infra handler for kind: ${kind}`,
       durationMs: Date.now() - start,
@@ -101,22 +101,22 @@ export async function executeProbe(
     return {
       probeName: probe.probeName,
       ref: probe.ref,
-      verdict: 'FAILED',
+      outcome: 'DEVIATED',
       passed: false,
       errorMessage: `Infra exception: ${err instanceof Error ? err.message : String(err)}`,
       durationMs: Date.now() - start,
     }
   }
 
-  const verdict = judge(observation, probe.params)
+  const outcome = judge(observation, probe.params)
 
   return {
     probeName: probe.probeName,
     ref: probe.ref,
-    verdict: verdict.verdict === 'INCONCLUSIVE' ? 'INCONCLUSIVE' : verdict.passed ? 'PASSED' : 'FAILED',
-    passed: verdict.passed,
-    output: { observation, verdict },
-    errorMessage: verdict.passed ? undefined : (verdict.failureMessage ?? verdict.message),
+    outcome: outcome.outcome === 'INCONCLUSIVE' ? 'INCONCLUSIVE' : outcome.passed ? 'COMPLETED' : 'DEVIATED',
+    passed: outcome.passed,
+    output: { observation, outcome },
+    errorMessage: outcome.passed ? undefined : (outcome.failureMessage ?? outcome.message),
     durationMs: Date.now() - start,
   }
 }

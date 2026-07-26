@@ -2,12 +2,12 @@ import type {
   ProbeObservation,
   ProbeResult,
   ProbeStrategy,
-  ProbeVerdict,
+  ProbeOutcome,
   ProbeDefinition,
 } from '@openxenon/engine/kernel'
 import { PROBE_VERDICT_STRATEGIES } from '@openxenon/engine/kernel'
 
-export type { ProbeObservation, ProbeResult, ProbeVerdict, ProbeDefinition }
+export type { ProbeObservation, ProbeResult, ProbeOutcome, ProbeDefinition }
 export type { ProbeStrategy }
 
 // v1.1 verdict-unify: 不再本地定义, 改从 L0-Kernel 注册表重导出。
@@ -23,14 +23,14 @@ export class ProbeEvaluator {
     this.strategies = { ...defaultStrategies, ...strategies }
   }
 
-  evaluate(observation: ProbeObservation, params: Record<string, unknown>): ProbeVerdict {
+  evaluate(observation: ProbeObservation, params: Record<string, unknown>): ProbeOutcome {
     const hasResult = 'result' in observation && observation.result !== undefined
     if (hasResult) {
       const obs = observation as ProbeResult
-      const passed = obs.result === 'PASSED'
+      const passed = obs.result === 'COMPLETED'
       return {
         passed,
-        verdict: passed ? 'PASS' : 'FAIL',
+        outcome: passed ? 'COMPLETED' : 'DEVIATED',
         message: passed ? 'OK' : obs.error || 'Failed',
       }
     }
@@ -39,62 +39,62 @@ export class ProbeEvaluator {
     if (!strategy) {
       return {
         passed: false,
-        verdict: 'FAIL',
+        outcome: 'DEVIATED',
         message: `Unknown probe type: ${observation.probeType}`,
       }
     }
     return strategy(observation, params)
   }
 
-  reduceResults(observations: ProbeObservation[], policy: 'AND' | 'OR'): ProbeVerdict {
+  reduceResults(observations: ProbeObservation[], policy: 'AND' | 'OR'): ProbeOutcome {
     if (observations.length === 0) {
-      return { passed: false, verdict: 'FAIL', message: 'No probes executed' }
+      return { passed: false, outcome: 'DEVIATED', message: 'No probes executed' }
     }
 
-    const verdicts = observations.map((obs) => {
+    const outcomes = observations.map((obs) => {
       const strategy = this.strategies[obs.probeType]
       if (!strategy) {
-        return { passed: false, verdict: 'FAIL', message: `Unknown probe type: ${obs.probeType}` }
+        return { passed: false, outcome: 'DEVIATED', message: `Unknown probe type: ${obs.probeType}` }
       }
       return strategy(obs, {})
     })
 
     if (policy === 'AND') {
-      const allPassed = verdicts.every((v) => v.passed)
+      const allPassed = outcomes.every((v) => v.passed)
       if (allPassed) {
-        return { passed: true, verdict: 'PASS', message: 'All probes passed' }
+        return { passed: true, outcome: 'COMPLETED', message: 'All probes passed' }
       }
-      const failed = verdicts.filter((v) => !v.passed)
+      const failed = outcomes.filter((v) => !v.passed)
       return {
         passed: false,
-        verdict: 'FAIL',
-        message: `${failed.length}/${verdicts.length} probes failed`,
+        outcome: 'DEVIATED',
+        message: `${failed.length}/${outcomes.length} probes failed`,
       }
     }
 
     if (policy === 'OR') {
-      const somePassed = verdicts.some((v) => v.passed)
+      const somePassed = outcomes.some((v) => v.passed)
       if (somePassed) {
-        const passed = verdicts.filter((v) => v.passed)
+        const passed = outcomes.filter((v) => v.passed)
         return {
           passed: true,
-          verdict: 'PASS',
-          message: `${passed.length}/${verdicts.length} probes passed`,
+          outcome: 'COMPLETED',
+          message: `${passed.length}/${outcomes.length} probes passed`,
         }
       }
       return {
         passed: false,
-        verdict: 'FAIL',
+        outcome: 'DEVIATED',
         message: 'All probes failed',
       }
     }
 
-    return { passed: false, verdict: 'FAIL', message: `Unknown policy: ${policy}` }
+    return { passed: false, outcome: 'DEVIATED', message: `Unknown policy: ${policy}` }
   }
 
-  reduceStageVerdict(observations: ProbeObservation[], policy: 'AND' | 'OR'): 'PASSED' | 'FAILED' {
-    const verdict = this.reduceResults(observations, policy)
-    return verdict.passed ? 'PASSED' : 'FAILED'
+  reduceStageVerdict(observations: ProbeObservation[], policy: 'AND' | 'OR'): 'COMPLETED' | 'DEVIATED' {
+    const outcome = this.reduceResults(observations, policy)
+    return outcome.passed ? 'COMPLETED' : 'DEVIATED'
   }
 }
 
@@ -104,7 +104,7 @@ export function evaluateProbe(
   definition: ProbeDefinition,
   observation: ProbeObservation,
   evaluator: ProbeEvaluator = defaultEvaluator,
-): ProbeVerdict {
+): ProbeOutcome {
   return evaluator.evaluate(observation, definition.params)
 }
 
@@ -112,7 +112,7 @@ export function reduceProbeResults(
   observations: ProbeObservation[],
   policy: 'AND' | 'OR',
   evaluator: ProbeEvaluator = defaultEvaluator,
-): ProbeVerdict {
+): ProbeOutcome {
   return evaluator.reduceResults(observations, policy)
 }
 
@@ -120,6 +120,6 @@ export function reduceStageVerdict(
   observations: ProbeObservation[],
   policy: 'AND' | 'OR',
   evaluator: ProbeEvaluator = defaultEvaluator,
-): 'PASSED' | 'FAILED' {
+): 'COMPLETED' | 'DEVIATED' {
   return evaluator.reduceStageVerdict(observations, policy)
 }

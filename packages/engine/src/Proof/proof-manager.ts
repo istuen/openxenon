@@ -43,19 +43,19 @@ export function renderVerdictHuman(
   name: string,
   frozen: NonNullable<ReturnType<typeof readFrozenProof>['frozen']>,
   projectRoot: string,
-  verdictPath: string | null = null,
+  outcomePath: string | null = null,
   verdictWritten: boolean = false,
 ): string {
   const lines: string[] = []
-  lines.push(`Proof "${name}" verdict: ${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount})`)
+  lines.push(`Proof "${name}" outcome: ${frozen.outcome} (${frozen.passedCount}/${frozen.totalCount})`)
   for (const p of frozen.probes) {
     const icon = p.passed ? '✅' : '❌'
     lines.push(`  ${icon} ${p.probeName} (${p.ref}) — ${p.durationMs}ms`)
   }
   lines.push(`\nProof saved: ${join(getProofDir(projectRoot, name), PROOF_FROZEN_JSON)}`)
   lines.push(`Read-only: ${isFrozenFileReadOnly(join(getProofDir(projectRoot, name), PROOF_FROZEN_JSON))}`)
-  if (verdictWritten && verdictPath) {
-    lines.push(`Verdict doc: ${verdictPath}`)
+  if (verdictWritten && outcomePath) {
+    lines.push(`Verdict doc: ${outcomePath}`)
   }
   return lines.join('\n')
 }

@@ -180,7 +180,7 @@ describe('md-bridge/reference-checker', () => {
     })
 
     test('内部 .openxenon/proofs/ → proof', () => {
-      const r = parseReferenceTarget('.openxenon/proofs/feature-x/verdict.md')
+      const r = parseReferenceTarget('.openxenon/proofs/feature-x/outcome.md')
       expect(r.kind).toBe('proof')
     })
 

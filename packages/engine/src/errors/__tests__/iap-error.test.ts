@@ -109,6 +109,21 @@ describe('IAPError (轨道 1: 业务流)', () => {
     // 类型上 readonly，运行时也确认（对象引用还是同一个）
     expect(err.context).toBe(ctx)
   })
+
+  test('INFRA_FAIL_ 子码 name 不带 IAP_ 前缀（如 INFRA_FAIL_STATE_LOAD）', () => {
+    const err = new IAPError('ALIGN', 'INFRA_FAIL_STATE_LOAD', IAPAction.YIELD_TO_HUMAN, 'state load failed')
+    expect(err.name).toBe('INFRA_FAIL_STATE_LOAD')
+    expect(err.axis).toBe('ALIGN')
+    expect(err.code).toBe('INFRA_FAIL_STATE_LOAD')
+  })
+
+  test('FINALIZE_BLOCKED name = IAP_PROOF_FINALIZE_BLOCKED', () => {
+    const err = new IAPError('PROOF', 'FINALIZE_BLOCKED', IAPAction.YIELD_TO_HUMAN, 'finalize blocked', {
+      outcome: 'DEVIATED',
+    })
+    expect(err.name).toBe('IAP_PROOF_FINALIZE_BLOCKED')
+    expect(err.code).toBe('FINALIZE_BLOCKED')
+  })
 })
 
 // -----------------------------------------------------------------------------

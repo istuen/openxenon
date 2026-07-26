@@ -66,13 +66,13 @@ export const WorkProofTraceSchema = z.object({
   proofs: z.array(
     z.object({
       proofId: z.string(),
-      verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
+      outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE']),
       runAt: z.string(),
       /** probe 摘要 */
       probeSummary: z.array(
         z.object({
           probeType: z.string(),
-          verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
+          outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE']),
           target: z.string().optional(),
         }),
       ),

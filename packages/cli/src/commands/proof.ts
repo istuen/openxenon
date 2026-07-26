@@ -657,7 +657,7 @@ const runSubcommand = defineCommand({
     const runningBody = {
       name,
       runAt: new Date().toISOString(),
-      verdict: 'FAILED' as 'FAILED' | 'PASSED',
+      outcome: 'DEVIATED' as 'DEVIATED' | 'COMPLETED',
       totalCount: probeIRs.length,
       passedCount: 0,
       failedCount: probeIRs.length,
@@ -682,7 +682,7 @@ const runSubcommand = defineCommand({
             runningPath,
             totalCount: runningBody.totalCount,
             failedCount: runningBody.failedCount,
-            verdict: 'FAILED',
+            outcome: 'DEVIATED',
           },
           human: `Dry run: wrote ${runningPath} (${runningBody.totalCount} probes pending).\nProbes were NOT executed; no frozen.json written.`,
         },
@@ -711,20 +711,20 @@ const runSubcommand = defineCommand({
     const readBack = readFrozenProof(frozenPath)
     const frozen = readBack.frozen
 
-    // v0.5 PR-A: Phase 3.5 — 写 verdict.md（人类可读结案文档）
-    //   与 frozen.json 同时 chmod 0o444；frozen.json 已写入后再写 verdict.md
-    //   verdict.md 写失败**不影响** frozen.json 已写入的主流程（仅 stderr warning）
+    // v0.5 PR-A: Phase 3.5 — 写 outcome.md（人类可读结案文档）
+    //   与 frozen.json 同时 chmod 0o444；frozen.json 已写入后再写 outcome.md
+    //   outcome.md 写失败**不影响** frozen.json 已写入的主流程（仅 stderr warning）
     let verdictWritten = false
-    let verdictPath: string | null = null
-    let verdictError: string | null = null
+    let outcomePath: string | null = null
+    let outcomeError: string | null = null
     if (frozen) {
-      verdictPath = getProofVerdictPath(name)
+      outcomePath = getProofVerdictPath(name)
       try {
-        writeVerdictMd(verdictPath, frozen)
+        writeVerdictMd(outcomePath, frozen)
         verdictWritten = true
       } catch (e) {
-        verdictError = e instanceof Error ? e.message : String(e)
-        process.stderr.write(`warning: verdict.md write failed: ${verdictError}\n`)
+        outcomeError = e instanceof Error ? e.message : String(e)
+        process.stderr.write(`warning: outcome.md write failed: ${outcomeError}\n`)
       }
     }
 
@@ -748,18 +748,18 @@ const runSubcommand = defineCommand({
         ok: true,
         data: {
           name,
-          verdict: frozen?.verdict ?? 'FAILED',
+          outcome: frozen?.outcome ?? 'DEVIATED',
           totalCount: frozen?.totalCount ?? 0,
           passedCount: frozen?.passedCount ?? 0,
           failedCount: frozen?.failedCount ?? 0,
           frozenPath,
-          verdictPath,
+          outcomePath,
           verdictWritten,
-          verdictError,
+          outcomeError,
           readOnly: isFrozenFileReadOnly(frozenPath),
         },
         human: frozen
-          ? renderVerdictHuman(name, frozen, getProjectRoot(), verdictPath, verdictWritten)
+          ? renderVerdictHuman(name, frozen, getProjectRoot(), outcomePath, verdictWritten)
           : 'frozen write failed',
       },
       format,
@@ -882,7 +882,7 @@ const listSubcommand = defineCommand({
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const proofsDir = getProofsDir()
-    const proofs: Array<{ name: string; hasFrozen: boolean; frozenVerdict?: string; inProgress?: boolean }> = []
+    const proofs: Array<{ name: string; hasFrozen: boolean; frozenOutcome?: string; inProgress?: boolean }> = []
 
     if (existsSync(proofsDir)) {
       for (const entry of readdirSync(proofsDir)) {
@@ -892,12 +892,12 @@ const listSubcommand = defineCommand({
         const runningPath = join(dir, PROOF_RUNNING_JSON)
         const hasFrozen = existsSync(frozenPath)
         const inProgress = existsSync(runningPath)
-        let frozenVerdict: string | undefined
+        let frozenOutcome: string | undefined
         if (hasFrozen) {
           const r = readFrozenProof(frozenPath)
-          if (r.ok && r.frozen) frozenVerdict = r.frozen.verdict
+          if (r.ok && r.frozen) frozenOutcome = r.frozen.outcome
         }
-        proofs.push({ name: entry, hasFrozen, frozenVerdict, inProgress })
+        proofs.push({ name: entry, hasFrozen, frozenOutcome, inProgress })
       }
     }
 
@@ -911,8 +911,8 @@ const listSubcommand = defineCommand({
                 .map((p) => {
                   // v0.1.3 PR-2: in-progress 优先于 frozen verdict 标记
                   if (p.inProgress) return `  - ${p.name} [in-progress]`
-                  const verdict = p.frozenVerdict ? ` [${p.frozenVerdict}]` : ' [no run yet]'
-                  return `  - ${p.name}${verdict}`
+                  const outcome = p.frozenOutcome ? ` [${p.frozenOutcome}]` : ' [no run yet]'
+                  return `  - ${p.name}${outcome}`
                 })
                 .join('\n')}`
             : 'No proofs registered. Run `oxn proof create <name>` to create one.',
@@ -938,7 +938,7 @@ const showSubcommand = defineCommand({
     const name = ctx.args.name as string
     const frozenPath = getProofFrozenPath(name)
     const runningPath = getProofRunningPath(name)
-    const verdictPath = getProofVerdictPath(name)
+    const outcomePath = getProofVerdictPath(name)
     const r = readFrozenProof(frozenPath)
 
     if (!r.ok || !r.frozen) {
@@ -953,14 +953,14 @@ const showSubcommand = defineCommand({
     // 不阻断读 frozen.json，但显眼提示数据可能 stale
     const inProgress = existsSync(runningPath)
 
-    // v0.5 PR-A: 检测 verdict.md 是否存在（用于提示人类消费者）
-    const hasVerdict = existsSync(verdictPath)
+    // v0.5 PR-A: 检测 outcome.md 是否存在（用于提示人类消费者）
+    const hasVerdict = existsSync(outcomePath)
 
     output(
       {
         ok: true,
-        data: { ...r.frozen, signatureValid: true, inProgress, hasVerdict, verdictPath },
-        human: renderShowHuman(r.frozen, inProgress, hasVerdict ? verdictPath : null),
+        data: { ...r.frozen, signatureValid: true, inProgress, hasVerdict, outcomePath },
+        human: renderShowHuman(r.frozen, inProgress, hasVerdict ? outcomePath : null),
       },
       format,
     )
@@ -970,16 +970,16 @@ const showSubcommand = defineCommand({
 function renderShowHuman(
   frozen: import('@openxenon/engine/kernel/schemas/proof-schema').FrozenProof,
   inProgress: boolean = false,
-  verdictPath: string | null = null,
+  outcomePath: string | null = null,
 ): string {
   const lines: string[] = []
   if (inProgress) {
     lines.push(`⚠️ Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json`)
     lines.push('')
   }
-  // v0.5 PR-A: 提示 verdict.md 可读
-  if (verdictPath) {
-    lines.push(`📄 Human-readable verdict: ${verdictPath}`)
+  // v0.5 PR-A: 提示 outcome.md 可读
+  if (outcomePath) {
+    lines.push(`📄 Human-readable outcome: ${outcomePath}`)
     lines.push('')
   }
   // v0.2 T5: 3-state verdict 展示 (PASSED/FAILED/INCONCLUSIVE) + 色彩降级
@@ -987,29 +987,29 @@ function renderShowHuman(
   //  - 非 TTY / --no-color: 仅 emoji 区分
   //  emoji 与色彩互为冗余: 管道 (| cat) 仍可读, TTY 仍可一眼区分
   const ttyColor = process.stdout.isTTY === true
-  const verdictIcon = frozen.verdict === 'PASSED' ? '✅' : frozen.verdict === 'INCONCLUSIVE' ? '⚠️ ' : '❌'
-  let verdictText = `${frozen.verdict} (${frozen.passedCount}/${frozen.totalCount}`
-  if (frozen.verdict === 'INCONCLUSIVE') {
-    verdictText += `, INCONCLUSIVE probes`
+  const outcomeIcon = frozen.outcome === 'COMPLETED' ? '✅' : frozen.outcome === 'INCONCLUSIVE' ? '⚠️ ' : '❌'
+  let outcomeText = `${frozen.outcome} (${frozen.passedCount}/${frozen.totalCount}`
+  if (frozen.outcome === 'INCONCLUSIVE') {
+    outcomeText += `, INCONCLUSIVE probes`
   }
-  verdictText += ')'
+  outcomeText += ')'
   if (ttyColor) {
     const colorCode =
-      frozen.verdict === 'PASSED' ? '\u001b[32m' : frozen.verdict === 'INCONCLUSIVE' ? '\u001b[33m' : '\u001b[31m'
-    verdictText = `${colorCode}${verdictText}\u001b[0m`
+      frozen.outcome === 'COMPLETED' ? '\u001b[32m' : frozen.outcome === 'INCONCLUSIVE' ? '\u001b[33m' : '\u001b[31m'
+    outcomeText = `${colorCode}${outcomeText}\u001b[0m`
   }
   lines.push(`Proof: ${frozen.name}`)
-  lines.push(`Verdict: ${verdictIcon} ${verdictText}`)
+  lines.push(`Verdict: ${outcomeIcon} ${outcomeText}`)
   lines.push(`Run at: ${frozen.runAt}`)
   lines.push(`Signature: ${frozen._xenon_meta.content_hash}`)
   lines.push('')
   lines.push('Probes:')
   for (const p of frozen.probes) {
-    const icon = p.verdict === 'PASSED' ? '✅' : p.verdict === 'INCONCLUSIVE' ? '⚠️ ' : '❌'
+    const icon = p.outcome === 'COMPLETED' ? '✅' : p.outcome === 'INCONCLUSIVE' ? '⚠️ ' : '❌'
     const err = p.errorMessage ? ` — ${p.errorMessage}` : ''
     const flags =
       p.interferenceFlags && p.interferenceFlags.length > 0 ? ` [flags: ${p.interferenceFlags.join(', ')}]` : ''
-    lines.push(`  ${icon} ${p.probeName} (${p.ref}) — ${p.verdict}, ${p.durationMs}ms${err}${flags}`)
+    lines.push(`  ${icon} ${p.probeName} (${p.ref}) — ${p.outcome}, ${p.durationMs}ms${err}${flags}`)
   }
   return lines.join('\n')
 }

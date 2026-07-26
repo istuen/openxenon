@@ -66,7 +66,7 @@ describe('buildVerdictMd frontmatter', () => {
     const frozenPath = join(tmpDir, 't1-shape.json')
     const body = buildFrozenProof({
       name: 'check-deploy',
-      probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 10 }],
+      probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 10 }],
     })
     writeFrozenProof(frozenPath, body)
     const r = readFrozenProof(frozenPath)
@@ -76,7 +76,7 @@ describe('buildVerdictMd frontmatter', () => {
 
     expect(md).toMatch(/^---\n/)
     expect(md).toMatch(/proof_id: check-deploy/)
-    expect(md).toMatch(/verdict: PASSED/)
+    expect(md).toMatch(/outcome: COMPLETED/)
     expect(md).toMatch(/run_at: /)
     expect(md).toMatch(/frozen_hash: [a-f0-9]{64}/)
     expect(md).toMatch(/probe_count: 1/)
@@ -92,14 +92,16 @@ describe('buildVerdictMd frontmatter', () => {
       path,
       buildFrozenProof({
         name: 'p-fail',
-        probes: [{ probeName: 'p1', ref: 'r', passed: false, verdict: 'FAILED', durationMs: 5, errorMessage: 'boom' }],
+        probes: [
+          { probeName: 'p1', ref: 'r', passed: false, outcome: 'DEVIATED', durationMs: 5, errorMessage: 'boom' },
+        ],
       }),
     )
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
     const md = buildVerdictMd(r.frozen)
     expect(md).toMatch(/❌/)
-    expect(md).toMatch(/verdict: FAILED/)
+    expect(md).toMatch(/outcome: DEVIATED/)
     expect(md).toMatch(/error: boom/)
   })
 
@@ -114,7 +116,7 @@ describe('buildVerdictMd frontmatter', () => {
             probeName: 'p1',
             ref: 'r',
             passed: false,
-            verdict: 'INCONCLUSIVE',
+            outcome: 'INCONCLUSIVE',
             durationMs: 5,
             interferenceFlags: ['waf_detected'],
           },
@@ -125,7 +127,7 @@ describe('buildVerdictMd frontmatter', () => {
     if (!r.frozen) throw new Error('no frozen')
     const md = buildVerdictMd(r.frozen)
     expect(md).toMatch(/⚠️/)
-    expect(md).toMatch(/verdict: INCONCLUSIVE/)
+    expect(md).toMatch(/outcome: INCONCLUSIVE/)
     expect(md).toMatch(/inconclusive_count: 1/)
     expect(md).toMatch(/waf_detected/)
   })
@@ -137,8 +139,8 @@ describe('buildVerdictMd frontmatter', () => {
       buildFrozenProof({
         name: 'all-pass',
         probes: [
-          { probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 1 },
-          { probeName: 'p2', ref: 'r2', passed: true, verdict: 'PASSED', durationMs: 2 },
+          { probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 1 },
+          { probeName: 'p2', ref: 'r2', passed: true, outcome: 'COMPLETED', durationMs: 2 },
         ],
       }),
     )
@@ -160,7 +162,7 @@ describe('buildVerdictMd sections', () => {
       path,
       buildFrozenProof({
         name: 'sections',
-        probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 5 }],
+        probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 5 }],
       }),
     )
     const r = readFrozenProof(path)
@@ -169,7 +171,7 @@ describe('buildVerdictMd sections', () => {
     expect(md).toMatch(/## Evidence/)
     expect(md).toMatch(/## Verdict Summary/)
     expect(md).toMatch(/\| Metric \| Value \|/)
-    expect(md).toMatch(/\| \*\*Overall verdict\*\* \| \*\*PASSED\*\* \|/)
+    expect(md).toMatch(/\| \*\*Overall verdict\*\* \| \*\*COMPLETED\*\* \|/)
     expect(md).toMatch(/## Interference/)
     expect(md).toMatch(/_\(none detected\)_/)
   })
@@ -181,12 +183,12 @@ describe('buildVerdictMd sections', () => {
       buildFrozenProof({
         name: 'evidence',
         probes: [
-          { probeName: 'p1', ref: '@oxn/probes/ts-compiles', passed: true, verdict: 'PASSED', durationMs: 12 },
+          { probeName: 'p1', ref: '@oxn/probes/ts-compiles', passed: true, outcome: 'COMPLETED', durationMs: 12 },
           {
             probeName: 'p2',
             ref: '@oxn/probes/test-pass',
             passed: false,
-            verdict: 'FAILED',
+            outcome: 'DEVIATED',
             durationMs: 8,
             errorMessage: '1 test failed',
           },
@@ -196,8 +198,8 @@ describe('buildVerdictMd sections', () => {
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
     const md = buildVerdictMd(r.frozen)
-    expect(md).toMatch(/- ✅ \*\*p1\*\* `@oxn\/probes\/ts-compiles` \(PASSED, 12ms\)/)
-    expect(md).toMatch(/- ❌ \*\*p2\*\* `@oxn\/probes\/test-pass` \(FAILED, 8ms\)/)
+    expect(md).toMatch(/- ✅ \*\*p1\*\* `@oxn\/probes\/ts-compiles` \(COMPLETED, 12ms\)/)
+    expect(md).toMatch(/- ❌ \*\*p2\*\* `@oxn\/probes\/test-pass` \(DEVIATED, 8ms\)/)
     expect(md).toMatch(/error: 1 test failed/)
   })
 
@@ -212,7 +214,7 @@ describe('buildVerdictMd sections', () => {
             probeName: 'p1',
             ref: 'r',
             passed: true,
-            verdict: 'PASSED',
+            outcome: 'COMPLETED',
             durationMs: 1,
             interferenceFlags: ['cdn_cache', 'waf_detected'],
           },
@@ -220,7 +222,7 @@ describe('buildVerdictMd sections', () => {
             probeName: 'p2',
             ref: 'r',
             passed: true,
-            verdict: 'PASSED',
+            outcome: 'COMPLETED',
             durationMs: 1,
             interferenceFlags: ['waf_detected', 'cache_path'],
           },
@@ -254,7 +256,7 @@ describe('content_hash integrity', () => {
       path,
       buildFrozenProof({
         name: 'hash-test',
-        probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 1 }],
+        probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 1 }],
       }),
     )
     const r = readFrozenProof(path)
@@ -277,7 +279,7 @@ describe('content_hash integrity', () => {
       path,
       buildFrozenProof({
         name: 'fh',
-        probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 1 }],
+        probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 1 }],
       }),
     )
     const r = readFrozenProof(path)
@@ -298,39 +300,39 @@ describe('writeVerdictMd disk write', () => {
   test('写盘后文件存在 + mode=0o444', () => {
     const proofDir = join(tmpDir, 'proofs', 'check-deploy')
     const frozenPath = join(proofDir, 'frozen.json')
-    const verdictPath = join(proofDir, 'verdict.md')
+    const outcomePath = join(proofDir, 'outcome.md')
     writeFrozenProof(
       frozenPath,
       buildFrozenProof({
         name: 'check-deploy',
-        probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 5 }],
+        probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 5 }],
       }),
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(verdictPath, r.frozen)
+    writeVerdictMd(outcomePath, r.frozen)
 
-    expect(existsSync(verdictPath)).toBe(true)
-    const stat = statSync(verdictPath)
+    expect(existsSync(outcomePath)).toBe(true)
+    const stat = statSync(outcomePath)
     expect(stat.mode & 0o777).toBe(FROZEN_FILE_MODE)
   })
 
   test('覆盖场景：先 chmod 0o644 再写 → 最终 mode=0o444', () => {
     const proofDir = join(tmpDir, 'proofs', 'check-deploy-2')
     const frozenPath = join(proofDir, 'frozen.json')
-    const verdictPath = join(proofDir, 'verdict.md')
+    const outcomePath = join(proofDir, 'outcome.md')
     writeFrozenProof(
       frozenPath,
       buildFrozenProof({
         name: 'check-deploy-2',
-        probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 5 }],
+        probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 5 }],
       }),
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(verdictPath, r.frozen)
-    writeVerdictMd(verdictPath, r.frozen)
-    const stat = statSync(verdictPath)
+    writeVerdictMd(outcomePath, r.frozen)
+    writeVerdictMd(outcomePath, r.frozen)
+    const stat = statSync(outcomePath)
     expect(stat.mode & 0o777).toBe(FROZEN_FILE_MODE)
   })
 })
@@ -343,79 +345,79 @@ describe('readVerdictMd signature', () => {
   test('正常写盘 → readVerdictMd ok=true', () => {
     const proofDir = join(tmpDir, 'proofs', 'check-deploy-3')
     const frozenPath = join(proofDir, 'frozen.json')
-    const verdictPath = join(proofDir, 'verdict.md')
+    const outcomePath = join(proofDir, 'outcome.md')
     writeFrozenProof(
       frozenPath,
       buildFrozenProof({
         name: 'check-deploy-3',
-        probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 5 }],
+        probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 5 }],
       }),
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(verdictPath, r.frozen)
+    writeVerdictMd(outcomePath, r.frozen)
 
-    const v = readVerdictMd(verdictPath)
+    const v = readVerdictMd(outcomePath)
     expect(v.ok).toBe(true)
     expect(v.contentHash).toMatch(/^[a-f0-9]{64}$/)
     expect(v.frozenHash).toBe(r.frozen._xenon_meta.content_hash)
   })
 
-  test('篡改 verdict.md 内容 → readVerdictMd ok=false + reason=signature mismatch', () => {
+  test('篡改 outcome.md 内容 → readVerdictMd ok=false + reason=signature mismatch', () => {
     const proofDir = join(tmpDir, 'proofs', 'check-deploy-4')
     const frozenPath = join(proofDir, 'frozen.json')
-    const verdictPath = join(proofDir, 'verdict.md')
+    const outcomePath = join(proofDir, 'outcome.md')
     writeFrozenProof(
       frozenPath,
       buildFrozenProof({
         name: 'check-deploy-4',
-        probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 5 }],
+        probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 5 }],
       }),
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(verdictPath, r.frozen)
+    writeVerdictMd(outcomePath, r.frozen)
 
-    chmodSync(verdictPath, 0o644)
-    const original = readFileSync(verdictPath, 'utf-8')
+    chmodSync(outcomePath, 0o644)
+    const original = readFileSync(outcomePath, 'utf-8')
     const tampered = original.replace('Total probes | 1', 'Total probes | 99')
-    writeFileSync(verdictPath, tampered, 'utf-8')
-    chmodSync(verdictPath, FROZEN_FILE_MODE)
+    writeFileSync(outcomePath, tampered, 'utf-8')
+    chmodSync(outcomePath, FROZEN_FILE_MODE)
 
-    const v = readVerdictMd(verdictPath)
+    const v = readVerdictMd(outcomePath)
     expect(v.ok).toBe(false)
     expect(v.reason).toMatch(/signature mismatch/)
   })
 
   test('文件不存在 → ok=false + reason=not found', () => {
-    const v = readVerdictMd(join(tmpDir, 'proofs', 'no-such', 'verdict.md'))
+    const v = readVerdictMd(join(tmpDir, 'proofs', 'no-such', 'outcome.md'))
     expect(v.ok).toBe(false)
     expect(v.reason).toMatch(/not found/)
   })
 })
 
 // -----------------------------------------------------------------------------
-// T6: 独立产出（verdict.md 写失败不影响 frozen.json）
+// T6: 独立产出（outcome.md 写失败不影响 frozen.json）
 // -----------------------------------------------------------------------------
 
-describe('verdict.md independent of frozen.json', () => {
-  test('删 verdict.md → frozen.json 仍可读', () => {
+describe('outcome.md independent of frozen.json', () => {
+  test('删 outcome.md → frozen.json 仍可读', () => {
     const proofDir = join(tmpDir, 'proofs', 'ind')
     const frozenPath = join(proofDir, 'frozen.json')
-    const verdictPath = join(proofDir, 'verdict.md')
+    const outcomePath = join(proofDir, 'outcome.md')
     writeFrozenProof(
       frozenPath,
       buildFrozenProof({
         name: 'ind',
-        probes: [{ probeName: 'p1', ref: 'r', passed: true, verdict: 'PASSED', durationMs: 5 }],
+        probes: [{ probeName: 'p1', ref: 'r', passed: true, outcome: 'COMPLETED', durationMs: 5 }],
       }),
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(verdictPath, r.frozen)
+    writeVerdictMd(outcomePath, r.frozen)
 
-    chmodSync(verdictPath, 0o644)
-    rmSync(verdictPath)
+    chmodSync(outcomePath, 0o644)
+    rmSync(outcomePath)
 
     const f = readFrozenProof(frozenPath)
     expect(f.ok).toBe(true)

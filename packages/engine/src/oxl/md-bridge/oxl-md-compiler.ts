@@ -353,7 +353,7 @@ function compileProof(
   lines.push('')
 
   lines.push(`proof "${result.name}" {`)
-  lines.push(`${indent}// Auto-generated from verdict.md`)
+  lines.push(`${indent}// Auto-generated from outcome.md`)
   lines.push('}')
 
   return lines.join('\n')

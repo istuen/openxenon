@@ -20,12 +20,12 @@ import type { FrozenProof, FrozenProofProbeResult } from '../schemas/proof-schem
 import type { ProbeStats } from '../schemas/probe-stats-schema'
 import type { Evidence, EmergentPattern, Insight, ProbeStatsView, ProbeTypeStatsView } from '../schemas/insight-schema'
 
-/** 从 frozen probe 的 output.verdict 抽 fact（优先 message，fallback 到 actual 序列化） */
+/** 从 frozen probe 的 output.outcome 抽 fact（优先 message，fallback 到 actual 序列化） */
 function extractFact(probe: FrozenProofProbeResult): string {
-  const output = probe.output as { verdict?: { message?: string; actual?: unknown } } | undefined
-  const verdict = output?.verdict
-  if (verdict?.message) return verdict.message
-  if (verdict?.actual !== undefined) return JSON.stringify(verdict.actual)
+  const output = probe.output as { outcome?: { message?: string; actual?: unknown } } | undefined
+  const outcome = output?.outcome
+  if (outcome?.message) return outcome.message
+  if (outcome?.actual !== undefined) return JSON.stringify(outcome.actual)
   return probe.errorMessage ?? '(no detail)'
 }
 
@@ -165,7 +165,7 @@ export function detectEmergentPatterns(stats: ProbeStats, thisFrozen: FrozenProo
   // 统计 (probeType + target) 在多少个独立 proofRuns 中都失败
   const failClusterMap: Record<string, { proofIds: Set<string>; occurrences: number }> = {}
   for (const run of stats.proofRuns) {
-    if (run.verdict !== 'FAILED') continue
+    if (run.outcome !== 'DEVIATED') continue
     for (const s of run.probeSummary) {
       if (s.passed || !s.target) continue
       const key = `${s.type}\x00${s.target}`
@@ -212,7 +212,7 @@ export function computeInsightFromInputs(
     generatedAt: new Date().toISOString(),
     proof: {
       name: frozen.name,
-      verdict: frozen.verdict,
+      outcome: frozen.outcome,
       runAt: frozen.runAt,
       evidenceChain: evidenceChainFromFrozen(frozen),
     },

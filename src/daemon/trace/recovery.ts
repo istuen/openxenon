@@ -173,7 +173,7 @@ export class RecoveryManager {
       const stateContent = readFileSync(statePath, 'utf-8')
       const state = JSON.parse(stateContent)
 
-      if (state.status === 'COMPLETED' || state.status === 'FAILED') {
+      if (state.status === 'COMPLETED' || state.status === 'DEVIATED') {
         daemonLogger.warn(`Cannot retry task with status ${state.status}`)
         return false
       }

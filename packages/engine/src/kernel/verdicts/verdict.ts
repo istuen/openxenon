@@ -4,7 +4,7 @@
 // 纯洁性约束（IAP 三轴分离）：
 //   - 本模块零 IO：fs.* / net.* / child_process / process.cwd() 都不允许
 //   - 只接受 Infra 物理观测（ProbeObservation）作为输入
-//   - 输出 ProbeVerdict（passed + message + actual + params）
+//   - 输出 ProbeOutcome（passed + message + actual + params）
 //
 // 设计：策略注册表。每个 probe 类型对应一个纯函数策略。
 //   fs_exists     → "命中文件数 >= expected (默认 1) → PASS"
@@ -20,7 +20,7 @@
 // 新增策略只需往 STRATEGIES 加一条，无需改 infra。
 // =============================================================================
 
-import type { ProbeObservation, ProbeStrategy, ProbeVerdict } from '../contracts/probe-port'
+import type { ProbeObservation, ProbeStrategy, ProbeOutcome } from '../contracts/probe-port'
 import { applyTrustBaseline } from './trust-baseline'
 
 /** 把 expected 归一化为 number（默认 1，用于 fs_exists 命中数阈值） */
@@ -49,7 +49,7 @@ const fsExistsStrategy: ProbeStrategy = (observation, params) => {
   const passed = hits.length >= expected
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `fs-exists: hit ${hits.length} file(s) >= expected ${expected}`
       : `fs-exists: hit ${hits.length} file(s) < expected ${expected}`,
@@ -66,7 +66,7 @@ const fsNotExistsStrategy: ProbeStrategy = (observation, params) => {
   const passed = hits.length === 0
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed ? 'fs-not-exists: no matching file' : `fs-not-exists: found ${hits.length} matching file(s)`,
     actual: hits,
     params,
@@ -107,7 +107,7 @@ const fsMatchStrategy: ProbeStrategy = (observation, params) => {
   const expectedStr = expectedAsString(params.expected ?? params.pattern ?? pattern)
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `fs-match: matched "${pattern ?? expectedStr ?? ''}"`
       : `fs-match: ${observation.error ?? (pattern ? `pattern not found` : 'no match')}`,
@@ -123,7 +123,7 @@ const shellExecStrategy: ProbeStrategy = (observation, params) => {
   const passed = observation.exitCode === 0
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `shell-exec: exit 0`
       : `shell-exec: exit ${observation.exitCode ?? 'unknown'}${observation.error ? ` (${observation.error})` : ''}`,
@@ -156,7 +156,7 @@ const execOutputMatchStrategy: ProbeStrategy = (observation, params) => {
   const passed = longEnough && containsPattern && !observation.error
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `exec-output-match: output length ${output.trim().length} >= ${minLength}${pattern ? `, contains "${pattern}"` : ''}`
       : `exec-output-match: ${observation.error ?? (pattern ? `output missing pattern "${pattern}"` : `output too short (${output.trim().length} < ${minLength})`)}`,
@@ -188,7 +188,7 @@ const fsParseableStrategy: ProbeStrategy = (observation, params) => {
   const passed = parsed && !observation.error
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `fs-parseable: ${format ?? 'parsed'} valid${topLevelKeys ? ` (${topLevelKeys.length} keys)` : ''}`
       : `fs-parseable: ${observation.error ?? 'parse failed'}`,
@@ -224,7 +224,7 @@ const testPassStrategy: ProbeStrategy = (observation, params) => {
   const ok = passed && !observation.error
   return {
     passed: ok,
-    verdict: ok ? 'PASS' : 'FAIL',
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
     message: ok
       ? `test-pass: all tests passed${summary ? ` (${summary.passed}/${summary.total})` : ''}`
       : `test-pass: ${observation.error ?? (summary ? `${summary.failed} failed` : 'tests failed')}`,
@@ -262,7 +262,7 @@ const depsResolvedStrategy: ProbeStrategy = (observation, params) => {
   const passed = missing.length === 0 && !observation.error
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `deps-resolved: all ${declaredCount} deps resolved${lockfilePath ? ` via ${lockfilePath}` : ''}`
       : `deps-resolved: ${missing.length} missing: ${missing.slice(0, 3).join(', ')}${missing.length > 3 ? '...' : ''}`,
@@ -294,7 +294,7 @@ const tsCompilesStrategy: ProbeStrategy = (observation, params) => {
   const ok = passed && !observation.error
   return {
     passed: ok,
-    verdict: ok ? 'PASS' : 'FAIL',
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
     message: ok
       ? `ts-compiles: type check passed`
       : `ts-compiles: ${errorCount !== undefined ? `${errorCount} error(s)` : (observation.error ?? 'type check failed')}`,
@@ -330,7 +330,7 @@ const lintCheckStrategy: ProbeStrategy = (observation, params) => {
   const ok = passed && !observation.error
   return {
     passed: ok,
-    verdict: ok ? 'PASS' : 'FAIL',
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
     message: ok
       ? `lint-check: no issues`
       : `lint-check: ${issueCount !== undefined ? `${issueCount} issue(s)` : (observation.error ?? 'lint failed')}`,
@@ -366,7 +366,7 @@ const httpRespondsStrategy: ProbeStrategy = (observation, params) => {
   const ok = passed && !observation.error
   return {
     passed: ok,
-    verdict: ok ? 'PASS' : 'FAIL',
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
     message: ok
       ? `http-responds: status ${status} === expected ${expectedStatus} (${durationMs ?? '?'}ms)`
       : `http-responds: ${observation.error ?? `status ${status} !== expected ${expectedStatus}`}`,
@@ -399,7 +399,7 @@ const fileExportsStrategy: ProbeStrategy = (observation, params) => {
   const passed = exports.length > 0 && !observation.error
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `file-exports: ${exportCount} exports found${exports.length > 0 ? ` (e.g. ${exports.slice(0, 3).join(', ')})` : ''}`
       : `file-exports: ${observation.error ?? 'no exports found'}`,
@@ -431,7 +431,7 @@ const gitCleanStrategy: ProbeStrategy = (observation, params) => {
   const passed = clean && !observation.error
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `git-clean: working tree clean`
       : `git-clean: ${dirtyFiles.length} dirty file(s)${dirtyFiles.length > 0 ? ` (e.g. ${dirtyFiles.slice(0, 3).join(', ')})` : ''}`,
@@ -455,7 +455,7 @@ const gitBranchExistsStrategy: ProbeStrategy = (observation, params) => {
   const passed = exists && !observation.error
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `git-branch-exists: branch "${params.branch ?? ''}" found`
       : `git-branch-exists: branch "${params.branch ?? ''}" not found`,
@@ -484,7 +484,7 @@ const gitStatusCleanStrategy: ProbeStrategy = (observation, params) => {
   const passed = clean && !observation.error
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed ? `git-status-clean: working tree clean` : `git-status-clean: ${dirtyFiles.length} dirty file(s)`,
     actual: { clean, dirtyFiles },
     params,
@@ -528,7 +528,7 @@ const gitMergeFeasibleStrategy: ProbeStrategy = (observation, params) => {
   const passed = (status === 'can_ff_merge' || status === 'can_merge_clean') && !observation.error
   return {
     passed,
-    verdict: passed ? 'PASS' : 'FAIL',
+    outcome: passed ? 'COMPLETED' : 'DEVIATED',
     message: passed
       ? `git-merge-feasible: ${status}`
       : `git-merge-feasible: ${status}${conflictFiles.length > 0 ? ` (${conflictFiles.length} conflict file(s))` : ''}`,
@@ -590,13 +590,13 @@ export function getVerdictStrategy(observationType: string): ProbeStrategy | nul
 }
 
 /** Kernel 入口：根据 observationType 路由到对应纯函数 strategy */
-export function judge(observation: ProbeObservation, params: Record<string, unknown>): ProbeVerdict {
+export function judge(observation: ProbeObservation, params: Record<string, unknown>): ProbeOutcome {
   const flags = observation.interference?.flags ?? []
   return applyTrustBaseline(flags, () => {
     const strategy = getVerdictStrategy(observation.probeType)
     if (!strategy) {
       return {
-        verdict: 'FAIL',
+        outcome: 'DEVIATED',
         passed: false,
         message: `no verdict strategy for probe type: ${observation.probeType}`,
         params,
@@ -606,7 +606,7 @@ export function judge(observation: ProbeObservation, params: Record<string, unkn
     const v = strategy(observation, params)
     return {
       ...v,
-      verdict: v.passed ? 'PASS' : 'FAIL',
+      outcome: v.passed ? 'COMPLETED' : 'DEVIATED',
     }
   })
 }

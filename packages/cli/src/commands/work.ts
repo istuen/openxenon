@@ -2953,7 +2953,7 @@ const unlockSubcommand = defineCommand({
 // v0.6 PR-2: `oxn work next-round <name>` — 关闭当前 round + 开启下一轮
 //
 // 行为：
-//   - 读取本轮 verdict（从 frozen.json.verdict）+ 失败 task 列表
+//   - 读取本轮 verdict（从 frozen.json.outcome）+ 失败 task 列表
 //   - 关闭当前 round（追加到 roundHistory，标记 endedAt + verdict + failures）
 //   - 若 verdict=PASSED → 抛 OXN_ROUND_ALREADY_PASSED（提示用 finalize 而非 next-round）
 //   - 开启新 round（currentRound++，追加 PENDING 记录）
@@ -2969,7 +2969,7 @@ const nextRoundSubcommand = defineCommand({
   },
   args: {
     name: { type: 'positional', required: true, description: t('work.args.workName') },
-    '--verdict': {
+    '--outcome': {
       type: 'string',
       required: true,
       description: '本轮 verdict：PASSED | FAILED | INCONCLUSIVE',
@@ -2985,23 +2985,23 @@ const nextRoundSubcommand = defineCommand({
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
-    const verdictRaw = ctx.args.verdict as string
+    const outcomeRaw = ctx.args.outcome as string
     const failuresRaw = (ctx.args as Record<string, unknown>).failures as string | undefined
     const notes = (ctx.args as Record<string, unknown>).notes as string | undefined
     const projectRoot = getProjectRoot()
 
     // 验证 verdict
-    if (verdictRaw !== 'PASSED' && verdictRaw !== 'FAILED' && verdictRaw !== 'INCONCLUSIVE') {
+    if (outcomeRaw !== 'COMPLETED' && outcomeRaw !== 'DEVIATED' && outcomeRaw !== 'INCONCLUSIVE') {
       return outputError(
         {
-          code: 'OXN_ROUND_VERDICT_INVALID',
-          message: `invalid --verdict: ${verdictRaw}`,
+          code: 'OXN_ROUND_OUTCOME_INVALID',
+          message: `invalid --outcome: ${outcomeRaw}`,
           suggestion: 'valid values: PASSED | FAILED | INCONCLUSIVE',
         },
         format,
       )
     }
-    const verdict = verdictRaw as 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+    const outcome = outcomeRaw as 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
 
     if (!projectBoundaryExists()) {
       return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
@@ -3018,7 +3018,7 @@ const nextRoundSubcommand = defineCommand({
       const result = nextRoundWork({
         projectRoot,
         workName,
-        verdict,
+        outcome,
         failures,
         ...(notes ? { notes } : {}),
       })
@@ -3028,7 +3028,7 @@ const nextRoundSubcommand = defineCommand({
           data: {
             workName,
             round: result.round,
-            previousVerdict: result.previousVerdict,
+            previousOutcome: result.previousOutcome,
             historyLength: result.historyLength,
             workspace: result.workspace,
           },
@@ -3109,7 +3109,7 @@ const finalizeSubcommand = defineCommand({
   },
   args: {
     name: { type: 'positional', required: true, description: t('work.args.workName') },
-    '--verdict': {
+    '--outcome': {
       type: 'string',
       description: '最终裁决：PASSED | FAILED | INCONCLUSIVE（默认沿用最后一轮 verdict）',
     },
@@ -3122,25 +3122,25 @@ const finalizeSubcommand = defineCommand({
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
-    const verdictRaw = ctx.args.verdict as string | undefined
+    const outcomeRaw = ctx.args.outcome as string | undefined
     const notes = (ctx.args as Record<string, unknown>).notes as string | undefined
     const force = ctx.args.force === true
     const dryRun = ctx.args['dry-run'] === true
     const projectRoot = getProjectRoot()
 
-    let verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' | undefined
-    if (verdictRaw) {
-      if (verdictRaw !== 'PASSED' && verdictRaw !== 'FAILED' && verdictRaw !== 'INCONCLUSIVE') {
+    let outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | undefined
+    if (outcomeRaw) {
+      if (outcomeRaw !== 'COMPLETED' && outcomeRaw !== 'DEVIATED' && outcomeRaw !== 'INCONCLUSIVE') {
         return outputError(
           {
-            code: 'OXN_ROUND_VERDICT_INVALID',
-            message: `invalid --verdict: ${verdictRaw}`,
+            code: 'OXN_ROUND_OUTCOME_INVALID',
+            message: `invalid --outcome: ${outcomeRaw}`,
             suggestion: 'valid values: PASSED | FAILED | INCONCLUSIVE',
           },
           format,
         )
       }
-      verdict = verdictRaw
+      outcome = outcomeRaw
     }
 
     if (!projectBoundaryExists()) {
@@ -3160,7 +3160,7 @@ const finalizeSubcommand = defineCommand({
         return output(
           {
             ok: true,
-            data: { workName, dryRun: true, domainProofs: [], overallVerdict: 'PASS' },
+            data: { workName, dryRun: true, domainProofs: [], overallOutcome: 'COMPLETED' },
             human: `Work "${workName}" dry-run: no domain invariants declared (no-op)`,
           },
           format,
@@ -3175,9 +3175,9 @@ const finalizeSubcommand = defineCommand({
               workName,
               dryRun: true,
               domainProofs: res.node.domainProofs,
-              overallVerdict: res.node.overallVerdict,
+              overallOutcome: res.node.overallOutcome,
             },
-            human: `Work "${workName}" dry-run: ${res.node.domainProofs.length} domain proof(s), overall=${res.node.overallVerdict}`,
+            human: `Work "${workName}" dry-run: ${res.node.domainProofs.length} domain proof(s), overall=${res.node.overallOutcome}`,
           },
           format,
         )
@@ -3188,7 +3188,7 @@ const finalizeSubcommand = defineCommand({
     }
 
     let boundaryViolations:
-      | Array<{ domain: string; invariant: string; verdict: string; failureMessage?: string }>
+      | Array<{ domain: string; invariant: string; outcome: string; failureMessage?: string }>
       | undefined
     if (domainProofs.length > 0) {
       try {
@@ -3196,7 +3196,7 @@ const finalizeSubcommand = defineCommand({
         boundaryViolations = res.node.domainProofs.map((e) => ({
           domain: e.domain,
           invariant: e.invariant,
-          verdict: e.verdict,
+          outcome: e.outcome,
           ...(e.failureMessage ? { failureMessage: e.failureMessage } : {}),
         }))
       } catch (err) {
@@ -3216,7 +3216,7 @@ const finalizeSubcommand = defineCommand({
       const result = finalizeWork({
         projectRoot,
         workName,
-        ...(verdict ? { verdict } : {}),
+        ...(outcome ? { outcome } : {}),
         ...(notes ? { notes } : {}),
         ...(boundaryViolations ? { boundaryViolations } : {}),
       })
@@ -3225,7 +3225,7 @@ const finalizeSubcommand = defineCommand({
           ok: true,
           data: {
             workName,
-            finalVerdict: result.finalVerdict,
+            finalOutcome: result.finalOutcome,
             totalRounds: result.totalRounds,
             finalizedAt: result.finalizedAt,
             boundaryViolations: boundaryViolations ?? [],
@@ -3248,13 +3248,13 @@ const finalizeSubcommand = defineCommand({
 })
 
 function renderFinalizeHuman(result: {
-  finalVerdict: string
+  finalOutcome: string
   totalRounds: number
   workspace: { workName: string }
 }): string {
   return [
     `Work ${result.workspace.workName} finalized ✓`,
-    `  Final verdict: ${result.finalVerdict}`,
+    `  Final outcome: ${result.finalOutcome}`,
     `  Total rounds: ${result.totalRounds}`,
   ].join('\n')
 }
@@ -3262,7 +3262,7 @@ function renderFinalizeHuman(result: {
 function renderNextRoundHuman(result: ReturnType<typeof nextRoundWork>): string {
   const lines: string[] = [
     `Work ${result.workspace.workName}: new round ${result.round} opened`,
-    `  Previous verdict: ${result.previousVerdict}`,
+    `  Previous outcome: ${result.previousOutcome}`,
     `  History length: ${result.historyLength} (1 active + ${result.historyLength - 1} closed)`,
   ]
   return lines.join('\n')

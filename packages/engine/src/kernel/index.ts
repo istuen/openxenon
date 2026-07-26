@@ -36,7 +36,7 @@ export type {
   ProbeResult,
   ProbeContextBase,
   ProbeStrategy,
-  ProbeVerdict,
+  ProbeOutcome,
   ProbeDefinition,
   StackToolInfo,
 } from './contracts/probe-port'

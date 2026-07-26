@@ -9,24 +9,24 @@ export interface ProbeObservation {
 }
 
 export interface ProbeResult extends ProbeObservation {
-  result: 'PASSED' | 'FAILED'
+  result: 'COMPLETED' | 'DEVIATED'
   params?: Record<string, unknown>
   actual?: unknown
   failureMessage?: string
   duration?: number
 }
 
-export type ProbeStrategy = (observation: ProbeObservation, params: Record<string, unknown>) => ProbeVerdict
+export type ProbeStrategy = (observation: ProbeObservation, params: Record<string, unknown>) => ProbeOutcome
 
-export interface ProbeVerdict {
+export interface ProbeOutcome {
   /**
-   * v0.2 T4: verdict 三态（必填）
-   * - PASS: 命中
-   * - FAIL: 未命中
+   * ProbeOutcome 三态（ADR-0066/0067）
+   * - COMPLETED: 探测完成
+   * - DEVIATED: 偏离预期
    * - INCONCLUSIVE: 信号污染（任一 RED flag 短路返回）
    */
-  verdict: 'PASS' | 'FAIL' | 'INCONCLUSIVE'
-  /** 保留兼容字段：PASS / INCONCLUSIVE 都映射 passed: false（除 PASS 仍 passed: true） */
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
+  /** 保留兼容字段：COMPLETED → true, DEVIATED/INCONCLUSIVE → false */
   passed: boolean
   message: string
   actual?: unknown

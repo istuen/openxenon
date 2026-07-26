@@ -63,11 +63,11 @@ export async function executePart(part: Part, options: ExecutorOptions): Promise
       if (!handler) {
         probeResults.push({
           probeType: probe.type,
-          result: 'FAILED',
+          result: 'DEVIATED',
           error: `Unknown probe type: ${probe.type}`,
           executedAt: Date.now(),
         })
-        hallEmitter.emitProbeResult(options.taskId, partId, probe.type, 'FAILED')
+        hallEmitter.emitProbeResult(options.taskId, partId, probe.type, 'DEVIATED')
         continue
       }
 
@@ -90,11 +90,11 @@ export async function executePart(part: Part, options: ExecutorOptions): Promise
       } catch (error) {
         probeResults.push({
           probeType: probe.type,
-          result: 'FAILED',
+          result: 'DEVIATED',
           error: error instanceof Error ? error.message : String(error),
           executedAt: Date.now(),
         })
-        hallEmitter.emitProbeResult(options.taskId, partId, probe.type, 'FAILED')
+        hallEmitter.emitProbeResult(options.taskId, partId, probe.type, 'DEVIATED')
       }
     }
   } finally {
@@ -102,16 +102,16 @@ export async function executePart(part: Part, options: ExecutorOptions): Promise
     processManager.remove(options.taskId, partId)
   }
 
-  const verdict = reduceProbeResults(probeResults, 'AND')
+  const outcome = reduceProbeResults(probeResults, 'AND')
 
-  if (verdict.passed) {
+  if (outcome.passed) {
     hallEmitter.emitPartCompleted(options.taskId, partId, name, { probeCount: probeResults.length })
   } else {
     hallEmitter.emitPartFailed(options.taskId, partId, name, { probeCount: probeResults.length })
   }
 
   return {
-    success: verdict.passed,
+    success: outcome.passed,
     partId,
     partName: name,
     probeResults,

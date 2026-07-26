@@ -135,7 +135,7 @@ describe('RecoveryManager', () => {
       recoveryManager.createRecoveryPoint(taskId, 'stage-1')
       writeFileSync(
         join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'),
-        JSON.stringify({ status: 'FAILED' }),
+        JSON.stringify({ status: 'DEVIATED' }),
       )
       const success = recoveryManager.retry(taskId)
       expect(success).toBe(false)

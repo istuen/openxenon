@@ -16,8 +16,8 @@ export function taskTraceToHtml(options: TaskTraceRendererOptions): string {
   const taskDuration = state.completedAt ? state.completedAt - state.startedAt : Date.now() - state.startedAt
 
   const parts = Array.from(state.parts.values())
-  const failedProbes = parts.flatMap((s) => s.probes.filter((p) => p.result === 'FAILED'))
-  const overallStatus = state.status === 'COMPLETED' && failedProbes.length === 0 ? 'PASSED' : 'FAILED'
+  const failedProbes = parts.flatMap((s) => s.probes.filter((p) => p.result === 'DEVIATED'))
+  const overallStatus = state.status === 'COMPLETED' && failedProbes.length === 0 ? 'COMPLETED' : 'DEVIATED'
 
   return renderHtmlDocument({
     title: `Task Report: ${taskId}`,
@@ -303,7 +303,7 @@ function renderTaskTraceHead(): string {
 interface TaskTraceBodyOptions {
   taskId: string
   taskName: string
-  status: 'PASSED' | 'FAILED'
+  status: 'COMPLETED' | 'DEVIATED'
   duration: number
   startedAt: number
   parts: PartState[]
@@ -385,7 +385,7 @@ function renderPartCard(part: PartState): string {
 
 interface ProbeResult {
   probeType: string
-  result: 'PASSED' | 'FAILED'
+  result: 'COMPLETED' | 'DEVIATED'
   output?: string
   error?: string
 }

@@ -246,11 +246,11 @@ async function runPipelineMode(args: Record<string, unknown>, format: OutputForm
           if (!fp) return null
           return {
             proofId: fp.name,
-            verdict: fp.verdict,
+            outcome: fp.outcome,
             runAt: fp.runAt,
             probeSummary: fp.probes.map((p) => ({
               probeType: p.ref.replace(/^@oxn\/probes?\//, '') || p.ref,
-              verdict: p.verdict,
+              outcome: p.outcome,
             })),
           }
         })

@@ -50,7 +50,7 @@ function readFrozenBody(frozenPath: string): ImprovementSuggestion {
   if (!v.success) {
     throw new IAPError(
       'INFRA',
-      'INFRA_FAIL',
+      'INFRA_FAIL_STATE_LOAD',
       IAPAction.YIELD_TO_HUMAN,
       `audit pool frozen.json schema invalid: ${v.error.issues.map((i) => i.message).join('; ')}`,
       { component: 'pool-approve', frozenPath },
@@ -118,7 +118,7 @@ export default defineCommand({
       if (e instanceof IAPError) throw e
       throw new IAPError(
         'INFRA',
-        'INFRA_FAIL',
+        'INFRA_FAIL_FROZEN_WRITE',
         IAPAction.YIELD_TO_HUMAN,
         `Failed to apply patch: ${e instanceof Error ? e.message : String(e)}`,
         { component: 'pool-approve', slug, targetPath },
@@ -132,7 +132,7 @@ export default defineCommand({
       } catch (e) {
         throw new IAPError(
           'INFRA',
-          'INFRA_FAIL',
+          'INFRA_FAIL_FROZEN_WRITE',
           IAPAction.YIELD_TO_HUMAN,
           `Patch applied but failed to update frozen.json: ${e instanceof Error ? e.message : String(e)}`,
           { component: 'pool-approve', slug },

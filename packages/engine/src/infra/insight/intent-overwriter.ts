@@ -57,10 +57,16 @@ export interface OverwriteResult {
  */
 function assertTargetExists(path: string): void {
   if (!existsSync(path)) {
-    throw new IAPError('INFRA', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Target file not found: ${path}`, {
-      component: 'intent-overwriter',
-      targetPath: path,
-    })
+    throw new IAPError(
+      'INFRA',
+      'INFRA_FAIL_INSIGHT_TARGET',
+      IAPAction.YIELD_TO_HUMAN,
+      `Target file not found: ${path}`,
+      {
+        component: 'intent-overwriter',
+        targetPath: path,
+      },
+    )
   }
 }
 

@@ -125,7 +125,7 @@ function makeFrozen(
   return {
     name,
     runAt,
-    verdict: probes.every((p) => p.passed) ? 'PASSED' : 'FAILED',
+    outcome: probes.every((p) => p.passed) ? 'COMPLETED' : 'DEVIATED',
     totalCount: probes.length,
     passedCount: probes.filter((p) => p.passed).length,
     failedCount: probes.filter((p) => !p.passed).length,
@@ -133,7 +133,7 @@ function makeFrozen(
       probeName: p.probeName,
       ref: p.ref,
       passed: p.passed,
-      output: p.params ? { verdict: { passed: p.passed, message: 'mock', params: p.params } } : undefined,
+      output: p.params ? { outcome: { passed: p.passed, message: 'mock', params: p.params } } : undefined,
       durationMs: 1,
     })),
     _xenon_meta: { frozen_at: runAt, content_hash: 'a'.repeat(64) },
@@ -151,7 +151,7 @@ describe('updateProbeStats', () => {
     expect(r.probes['fs-exists'].failCount).toBe(0)
     expect(r.probes['fs-exists'].targets['./dist/index.js'].consecutiveFails).toBe(0)
     expect(r.proofRuns.length).toBe(1)
-    expect(r.proofRuns[0]?.verdict).toBe('PASSED')
+    expect(r.proofRuns[0]?.outcome).toBe('COMPLETED')
   })
 
   test('连续失败累加 consecutiveFails', () => {

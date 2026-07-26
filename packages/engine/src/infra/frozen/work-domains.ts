@@ -4,7 +4,7 @@
 // L2 frozen.json 二阶段原子写入:
 //   Phase 1: work-domains.draft.json (0o644, 评估所有 invariants)
 //   Phase 2: atomic rename → work-domains-frozen.json + chmod 0o444
-//   hardBlocked flag + overallVerdict
+//   hardBlocked flag + overallOutcome
 // =============================================================================
 
 import { chmod, mkdir, rename, unlink, writeFile } from '../filesystem-async'
@@ -19,12 +19,17 @@ export interface WorkDomainsFrozen {
   domainProofs: Array<{
     domain: string
     invariant: string
-    verdict: string
+    outcome: string
     failureMessage?: string
     evaluatedAt: number
   }>
-  overallVerdict: 'PASS' | 'FAIL' | 'INCONCLUSIVE'
+  overallOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
   hardBlocked: boolean
+  forceUsed: boolean
+  forceDetails?: {
+    blockedOutcomes: Array<'DEVIATED' | 'MANUAL_PENDING' | 'INCONCLUSIVE'>
+    forcedAt: number
+  }
 }
 
 export interface FinalizeResult {
@@ -58,7 +63,18 @@ export async function finalizeWorkDomains(
     domainProofs.map((ref) => evaluateDomainProof(ref.domain, ref.invariant, ref.script, ref.manual, ref.scope)),
   )
 
-  const overallVerdict = computeOverall(evaluations)
+  const overallOutcome = computeOverall(evaluations)
+
+  const failCount = evaluations.filter((e) => e.outcome === 'DEVIATED').length
+  const manualCount = evaluations.filter((e) => e.outcome === 'MANUAL_PENDING').length
+  const inconclusiveCount = evaluations.filter((e) => e.outcome === 'INCONCLUSIVE').length
+
+  const blockedOutcomes: Array<'DEVIATED' | 'MANUAL_PENDING' | 'INCONCLUSIVE'> = []
+  if (failCount > 0) blockedOutcomes.push('DEVIATED')
+  if (manualCount > 0) blockedOutcomes.push('MANUAL_PENDING')
+  if (inconclusiveCount > 0) blockedOutcomes.push('INCONCLUSIVE')
+
+  const forceUsed = force === true && blockedOutcomes.length > 0
 
   const node: WorkDomainsFrozen = {
     workId,
@@ -66,23 +82,21 @@ export async function finalizeWorkDomains(
     domainProofs: domainProofs.map((ref, i) => ({
       domain: ref.domain,
       invariant: ref.invariant,
-      verdict: evaluations[i]!.verdict,
+      outcome: evaluations[i]!.outcome,
       failureMessage: evaluations[i]!.failureMessage,
       evaluatedAt: evaluations[i]!.evaluatedAt,
     })),
-    overallVerdict,
-    hardBlocked: overallVerdict !== 'PASS',
+    overallOutcome,
+    hardBlocked: overallOutcome !== 'COMPLETED',
+    forceUsed,
+    ...(forceUsed ? { forceDetails: { blockedOutcomes, forcedAt: Date.now() } } : {}),
   }
 
   // 写 draft
   await writeFile(draftPath, JSON.stringify(node, null, 2), { mode: 0o644 })
 
-  // 硬阻断检查
+  // 硬阻断检查（--force 绕过时跳过）
   if (!force) {
-    const failCount = evaluations.filter((e) => e.verdict === 'FAIL').length
-    const manualCount = evaluations.filter((e) => e.verdict === 'MANUAL_PENDING').length
-    const inconclusiveCount = evaluations.filter((e) => e.verdict === 'INCONCLUSIVE').length
-
     if (failCount > 0) {
       // 删 draft
       try {
@@ -92,11 +106,11 @@ export async function finalizeWorkDomains(
       }
       throw new IAPError(
         'PROOF',
-        'INFRA_FAIL',
+        'FINALIZE_BLOCKED',
         IAPAction.YIELD_TO_HUMAN,
         `Work "${workId}" domain proofs FAILED (${failCount} FAIL). ` +
           `Re-run with --force to override (NOT RECOMMENDED).`,
-        { workId, draftPath, failCount, manualCount, overallVerdict },
+        { workId, draftPath, failCount, manualCount, overallOutcome, outcome: 'DEVIATED' },
       )
     }
 
@@ -108,11 +122,11 @@ export async function finalizeWorkDomains(
       }
       throw new IAPError(
         'PROOF',
-        'INFRA_FAIL',
+        'FINALIZE_BLOCKED',
         IAPAction.YIELD_TO_HUMAN,
         `Work "${workId}" has ${manualCount} MANUAL_PENDING invariants. ` +
           `Resolve all manual assessments before finalizing.`,
-        { workId, draftPath, manualCount, overallVerdict },
+        { workId, draftPath, manualCount, overallOutcome, outcome: 'MANUAL_PENDING' },
       )
     }
 
@@ -124,11 +138,11 @@ export async function finalizeWorkDomains(
       }
       throw new IAPError(
         'PROOF',
-        'INFRA_FAIL',
+        'FINALIZE_BLOCKED',
         IAPAction.YIELD_TO_HUMAN,
         `Work "${workId}" has ${inconclusiveCount} INCONCLUSIVE proofs. ` +
           `Fix script non-zero/non-1 exit codes before finalizing.`,
-        { workId, draftPath, inconclusiveCount, overallVerdict },
+        { workId, draftPath, inconclusiveCount, overallOutcome, outcome: 'INCONCLUSIVE' },
       )
     }
   }
@@ -145,7 +159,7 @@ export async function finalizeWorkDomains(
     }
     throw new IAPError(
       'PROOF',
-      'INFRA_FAIL',
+      'INFRA_FAIL_FROZEN_WRITE',
       IAPAction.YIELD_TO_HUMAN,
       `Failed to freeze work-domains: ${(err as Error).message}`,
       { workId, draftPath, frozenPath },
@@ -155,9 +169,9 @@ export async function finalizeWorkDomains(
   return { draftPath, frozenPath, node }
 }
 
-function computeOverall(evals: DomainProofEval[]): 'PASS' | 'FAIL' | 'INCONCLUSIVE' {
-  if (evals.length === 0) return 'PASS'
-  if (evals.some((e) => e.verdict === 'FAIL')) return 'FAIL'
-  if (evals.some((e) => e.verdict === 'MANUAL_PENDING' || e.verdict === 'INCONCLUSIVE')) return 'INCONCLUSIVE'
-  return 'PASS'
+function computeOverall(evals: DomainProofEval[]): 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' {
+  if (evals.length === 0) return 'COMPLETED'
+  if (evals.some((e) => e.outcome === 'DEVIATED')) return 'DEVIATED'
+  if (evals.some((e) => e.outcome === 'MANUAL_PENDING' || e.outcome === 'INCONCLUSIVE')) return 'INCONCLUSIVE'
+  return 'COMPLETED'
 }

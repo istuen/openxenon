@@ -13,7 +13,7 @@
  *   - io.exec: 进程执行（带 timeout + env）
  *
  * 每个 IO Primitive 返回的 result 携带 IOInterference.flags（12 项枚举），
- * 由 Infra 层 Provider 在物理 IO 时填充，Kernel verdict.ts 据此判定
+ * 由 Infra 层 Provider 在物理 IO 时填充，Kernel outcome.ts 据此判定
  * INCONCLUSIVE / 透传。
  */
 

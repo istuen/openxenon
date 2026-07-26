@@ -1,10 +1,6 @@
 // =============================================================================
-// probe-sandbox.ts (v0.2 Sprint 3d T7)
 //
 // 第三方 Probe Provider 沙箱验证引擎 (v2 核心)
-// 物理路径: src/cli/probe-sandbox.ts
-// 父文档: .openxenon/forges/sprints/sprint-3d/2026-06-15-probe-taint-sandbox-cli-pr4.md
-// PoC 结果: bun-poc/spike-t7-sandbox/RESULT.md (方案 A 通过)
 //
 // 核心机制:
 //   1. Bun Transpiler: TS → JS (无 type-check)

@@ -47,12 +47,12 @@ describe('ProofCompiler.parse', () => {
 
   test('解析 verdicts（含三态 type）', () => {
     const result = compiler.parse({ mdast: root, frontmatter }) as {
-      verdicts: Array<{ name: string; type: string; value: string }>
+      outcomes: Array<{ name: string; type: string; value: string }>
     }
-    expect(result.verdicts).toHaveLength(3)
-    expect(result.verdicts[0]?.name).toBe('artifact-size-check')
-    expect(result.verdicts[0]?.type).toBe('pass')
-    expect(result.verdicts[2]?.type).toBe('inconclusive')
+    expect(result.outcomes).toHaveLength(3)
+    expect(result.outcomes[0]?.name).toBe('artifact-size-check')
+    expect(result.outcomes[0]?.type).toBe('pass')
+    expect(result.outcomes[2]?.type).toBe('inconclusive')
   })
 
   test('解析 runtime', () => {
@@ -86,7 +86,7 @@ describe('ProofCompiler.compile', () => {
     const decl = {
       $type: 'ProofDeclaration',
       name: 'step1-verdict',
-      verdicts: [
+      outcomes: [
         {
           name: 'check1',
           type: 'pass' as const,
@@ -185,21 +185,21 @@ describe('ProofCompiler.parse v0.3.0 扁平范式', () => {
 
   test('扁平 H3 + 键值对列表 → verdicts[].name / type / value', () => {
     const result = compiler.parse({ mdast: root, frontmatter }) as {
-      verdicts: Array<{ name: string; type: string; value: string; artifact: Array<{ key: string; value: unknown }> }>
+      outcomes: Array<{ name: string; type: string; value: string; artifact: Array<{ key: string; value: unknown }> }>
     }
-    expect(result.verdicts).toHaveLength(3)
-    expect(result.verdicts[0]?.name).toBe('artifact-size-check')
-    expect(result.verdicts[0]?.type).toBe('pass')
-    expect(result.verdicts[0]?.value).toContain('2.3MB')
-    expect(result.verdicts[1]?.type).toBe('fail')
-    expect(result.verdicts[2]?.type).toBe('inconclusive')
+    expect(result.outcomes).toHaveLength(3)
+    expect(result.outcomes[0]?.name).toBe('artifact-size-check')
+    expect(result.outcomes[0]?.type).toBe('pass')
+    expect(result.outcomes[0]?.value).toContain('2.3MB')
+    expect(result.outcomes[1]?.type).toBe('fail')
+    expect(result.outcomes[2]?.type).toBe('inconclusive')
   })
 
   test('artifact_<key>: 展平为 ListField[]', () => {
     const result = compiler.parse({ mdast: root, frontmatter }) as {
-      verdicts: Array<{ artifact: Array<{ key: string; value: unknown }> }>
+      outcomes: Array<{ artifact: Array<{ key: string; value: unknown }> }>
     }
-    const art0 = result.verdicts[0]?.artifact ?? []
+    const art0 = result.outcomes[0]?.artifact ?? []
     expect(art0).toHaveLength(3)
     expect(art0[0]?.key).toBe('path')
     expect(art0[0]?.value).toBe('dist/oxn')

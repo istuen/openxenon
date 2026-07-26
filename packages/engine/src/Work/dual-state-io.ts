@@ -95,7 +95,7 @@ export function loadWorkState(projectRoot: string, workName: string): WorkspaceS
     if (!result.success) {
       throw new IAPError(
         'ALIGN',
-        'INFRA_FAIL',
+        'INFRA_FAIL_STATE_LOAD',
         IAPAction.YIELD_TO_HUMAN,
         `Invalid work state.json: ${result.error.message}`,
         { path },
@@ -105,10 +105,16 @@ export function loadWorkState(projectRoot: string, workName: string): WorkspaceS
   } catch (err) {
     if (err instanceof IAPError) throw err
     const cause = err instanceof Error ? err.message : String(err)
-    throw new IAPError('ALIGN', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Failed to load work state: ${cause}`, {
-      path,
-      cause,
-    })
+    throw new IAPError(
+      'ALIGN',
+      'INFRA_FAIL_STATE_LOAD',
+      IAPAction.YIELD_TO_HUMAN,
+      `Failed to load work state: ${cause}`,
+      {
+        path,
+        cause,
+      },
+    )
   }
 }
 
@@ -169,7 +175,7 @@ export function loadTaskState(projectRoot: string, workName: string, taskName: s
     if (!result.success) {
       throw new IAPError(
         'ALIGN',
-        'INFRA_FAIL',
+        'INFRA_FAIL_STATE_LOAD',
         IAPAction.YIELD_TO_HUMAN,
         `Invalid task state.json: ${result.error.message}`,
         { path },
@@ -179,10 +185,16 @@ export function loadTaskState(projectRoot: string, workName: string, taskName: s
   } catch (err) {
     if (err instanceof IAPError) throw err
     const cause = err instanceof Error ? err.message : String(err)
-    throw new IAPError('ALIGN', 'INFRA_FAIL', IAPAction.YIELD_TO_HUMAN, `Failed to load task state: ${cause}`, {
-      path,
-      cause,
-    })
+    throw new IAPError(
+      'ALIGN',
+      'INFRA_FAIL_STATE_LOAD',
+      IAPAction.YIELD_TO_HUMAN,
+      `Failed to load task state: ${cause}`,
+      {
+        path,
+        cause,
+      },
+    )
   }
 }
 

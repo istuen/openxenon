@@ -35,7 +35,7 @@ export const TrendMatrixEntrySchema = z.object({
     z.object({
       proofId: z.string(),
       runAt: z.string(),
-      verdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
+      outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE']),
     }),
   ),
   /** 总数 / PASSED / FAILED / INCONCLUSIVE */
@@ -84,7 +84,7 @@ export const TrendSignalSchema = z.object({
   target: z.string().optional(),
   trend: TrendTypeSchema,
   /** 最近一次 verdict */
-  latestVerdict: z.enum(['PASSED', 'FAILED', 'INCONCLUSIVE']),
+  latestVerdict: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE']),
   /** 最近一次 proof run 的 runAt */
   latestRunAt: z.string(),
   /** 用于判定的"最近 N 次"窗口大小 */

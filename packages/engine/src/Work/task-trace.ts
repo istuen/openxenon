@@ -218,7 +218,7 @@ export function getPartState(state: TaskTraceState | null, partId: string): Part
 
 export function createProbeResult(
   probeType: string,
-  result: 'PASSED' | 'FAILED',
+  result: 'COMPLETED' | 'DEVIATED',
   output?: string,
   error?: string,
 ): ProbeResult {

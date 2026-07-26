@@ -4,7 +4,7 @@ export interface PartEvent {
   taskId: string
   partId: string
   partName: string
-  status: 'STARTED' | 'COMPLETED' | 'FAILED' | 'TIMEOUT'
+  status: 'STARTED' | 'COMPLETED' | 'DEVIATED' | 'TIMEOUT'
   timestamp: number
   details?: Record<string, unknown>
 }
@@ -12,7 +12,7 @@ export interface PartEvent {
 export interface TaskEvent {
   taskId: string
   taskName: string
-  status: 'CREATED' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'ABANDONED'
+  status: 'CREATED' | 'RUNNING' | 'COMPLETED' | 'DEVIATED' | 'ABANDONED'
   timestamp: number
   currentPart?: string
 }
@@ -21,7 +21,7 @@ export interface ProbeEvent {
   taskId: string
   partId: string
   probeType: string
-  result: 'PASSED' | 'FAILED'
+  result: 'COMPLETED' | 'DEVIATED'
   timestamp: number
 }
 
@@ -63,7 +63,7 @@ class HallEmitter extends EventEmitter {
       taskId,
       partId,
       partName,
-      status: 'FAILED',
+      status: 'DEVIATED',
       timestamp: Date.now(),
       details,
     } satisfies PartEvent)
@@ -111,12 +111,12 @@ class HallEmitter extends EventEmitter {
     this.emit('task:failed', {
       taskId,
       taskName,
-      status: 'FAILED',
+      status: 'DEVIATED',
       timestamp: Date.now(),
     } satisfies TaskEvent)
   }
 
-  emitProbeResult(taskId: string, partId: string, probeType: string, result: 'PASSED' | 'FAILED'): void {
+  emitProbeResult(taskId: string, partId: string, probeType: string, result: 'COMPLETED' | 'DEVIATED'): void {
     this.emit('probe:result', {
       taskId,
       partId,

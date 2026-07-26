@@ -198,13 +198,13 @@ work: feature-x
 entity: proof
 version: 0.3.0
 name: feature-x
-verdict: PASSED
+outcome: PASSED
 ---
 
 # Proof: feature-x`
       const result = mdastToKernel({
         entity: 'proof',
-        filePath: '.openxenon/proofs/feature-x/verdict.md',
+        filePath: '.openxenon/proofs/feature-x/outcome.md',
         content: proofMd,
       })
 

@@ -39,7 +39,7 @@ describe('runWork re-runnable (Phase A.1)', () => {
       tasks: [{ taskName: 't1', blueprint: 'bp1', injects: [] }],
     })
     expect(state.currentRound).toBe(1)
-    expect(state.roundHistory[0]?.verdict).toBe('PENDING')
+    expect(state.roundHistory[0]?.outcome).toBe('PENDING')
   })
 
   it('resetCurrentRoundTasks preserves passed tasks, resets failed/running', () => {

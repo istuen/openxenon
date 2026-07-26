@@ -44,13 +44,13 @@ export interface CrossProofFilter {
 interface KeyedProbe {
   probeType: string
   target: string | undefined
-  verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE'
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
   runAt: string
   proofId: string
 }
 
 /**
- * 把 FrozenProof 列表（含同一 proof 的所有 probe）展开成 (probeType, target, verdict, runAt, proofId) 元组。
+ * 把 FrozenProof 列表（含同一 proof 的所有 probe）展开成 (probeType, target, outcome, runAt, proofId) 元组。
  * 应用 filter：since / proofIds / probeTypes。
  */
 function expandToKeyedProbes(frozenList: FrozenProof[], filter: CrossProofFilter): KeyedProbe[] {
@@ -66,7 +66,7 @@ function expandToKeyedProbes(frozenList: FrozenProof[], filter: CrossProofFilter
       out.push({
         probeType,
         target: extractTargetFromOutput(probe),
-        verdict: probe.verdict,
+        outcome: probe.outcome,
         runAt: frozen.runAt,
         proofId: frozen.name,
       })
@@ -83,7 +83,7 @@ function resolveTypeName(ref: string): string {
 }
 
 /**
- * 从 probe.output 提取 target（与 verdict.ts:extractTarget 类似，但 inline 一份避免跨文件依赖）
+ * 从 probe.output 提取 target（与 outcome.ts:extractTarget 类似，但 inline 一份避免跨文件依赖）
  *  - output.params / output.target / output.path / output.url / output.command / output.file
  */
 function extractTargetFromOutput(probe: FrozenProof['probes'][number]): string | undefined {
@@ -128,13 +128,13 @@ function buildTrendMatrix(keyedProbes: KeyedProbe[]): TrendMatrixEntry[] {
     let failed = 0
     let inconclusive = 0
     const sequence = list.map((kp) => {
-      if (kp.verdict === 'PASSED') passed++
-      else if (kp.verdict === 'FAILED') failed++
+      if (kp.outcome === 'COMPLETED') passed++
+      else if (kp.outcome === 'DEVIATED') failed++
       else inconclusive++
       return {
         proofId: kp.proofId,
         runAt: kp.runAt,
-        verdict: kp.verdict,
+        outcome: kp.outcome,
       }
     })
     result.push({
@@ -221,46 +221,46 @@ function buildCorrelationMatrix(frozenList: FrozenProof[]): CorrelationPair[] {
  */
 const MIN_WINDOW = 3
 
-function classifyTrend(verdicts: ('PASSED' | 'FAILED' | 'INCONCLUSIVE')[]): {
+function classifyTrend(outcomes: ('COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE')[]): {
   trend: TrendType
   currentStreak: number
 } {
-  const n = verdicts.length
-  if (n < MIN_WINDOW) return { trend: 'insufficient-data', currentStreak: countCurrentStreak(verdicts) }
+  const n = outcomes.length
+  if (n < MIN_WINDOW) return { trend: 'insufficient-data', currentStreak: countCurrentStreak(outcomes) }
 
-  const window = verdicts.slice(-MIN_WINDOW)
+  const window = outcomes.slice(-MIN_WINDOW)
 
   // 全程 PASSED / FAILED 视为稳定
-  if (verdicts.every((v) => v === 'PASSED')) {
+  if (outcomes.every((v) => v === 'COMPLETED')) {
     return { trend: 'stable-pass', currentStreak: n }
   }
-  if (verdicts.every((v) => v === 'FAILED')) {
+  if (outcomes.every((v) => v === 'DEVIATED')) {
     return { trend: 'stable-fail', currentStreak: n }
   }
 
   // 改善：最近窗口全部 PASSED 且之前有 FAIL
-  const windowAllPass = window.every((v) => v === 'PASSED')
-  const windowAllFail = window.every((v) => v === 'FAILED')
-  const priorHasFail = verdicts.slice(0, n - MIN_WINDOW).some((v) => v === 'FAILED')
-  const priorHasPass = verdicts.slice(0, n - MIN_WINDOW).some((v) => v === 'PASSED')
+  const windowAllPass = window.every((v) => v === 'COMPLETED')
+  const windowAllFail = window.every((v) => v === 'DEVIATED')
+  const priorHasFail = outcomes.slice(0, n - MIN_WINDOW).some((v) => v === 'DEVIATED')
+  const priorHasPass = outcomes.slice(0, n - MIN_WINDOW).some((v) => v === 'COMPLETED')
 
   if (windowAllPass && priorHasFail) {
-    return { trend: 'improving', currentStreak: countCurrentStreak(verdicts) }
+    return { trend: 'improving', currentStreak: countCurrentStreak(outcomes) }
   }
   if (windowAllFail && priorHasPass) {
-    return { trend: 'worsening', currentStreak: countCurrentStreak(verdicts) }
+    return { trend: 'worsening', currentStreak: countCurrentStreak(outcomes) }
   }
 
-  return { trend: 'volatile', currentStreak: countCurrentStreak(verdicts) }
+  return { trend: 'volatile', currentStreak: countCurrentStreak(outcomes) }
 }
 
 /** 计算当前 streak（连续同 verdict 的次数）*/
-function countCurrentStreak(verdicts: ('PASSED' | 'FAILED' | 'INCONCLUSIVE')[]): number {
-  if (verdicts.length === 0) return 0
-  const last = verdicts[verdicts.length - 1]!
+function countCurrentStreak(outcomes: ('COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE')[]): number {
+  if (outcomes.length === 0) return 0
+  const last = outcomes[outcomes.length - 1]!
   let n = 0
-  for (let i = verdicts.length - 1; i >= 0; i--) {
-    if (verdicts[i] === last) n++
+  for (let i = outcomes.length - 1; i >= 0; i--) {
+    if (outcomes[i] === last) n++
     else break
   }
   return n
@@ -282,15 +282,15 @@ function detectTrends(keyedProbes: KeyedProbe[]): TrendSignal[] {
     list.sort((a, b) => a.runAt.localeCompare(b.runAt))
     const [probeType, target] = key.split('\x00') as [string, string]
     const targetOut = target === '(no-target)' ? undefined : target
-    const verdicts = list.map((kp) => kp.verdict)
-    const { trend, currentStreak } = classifyTrend(verdicts)
+    const outcomes = list.map((kp) => kp.outcome)
+    const { trend, currentStreak } = classifyTrend(outcomes)
     const last = list[list.length - 1]!
     const windowSize = Math.min(list.length, MIN_WINDOW)
     result.push({
       probeType,
       ...(targetOut !== undefined ? { target: targetOut } : {}),
       trend,
-      latestVerdict: last.verdict,
+      latestVerdict: last.outcome,
       latestRunAt: last.runAt,
       windowSize,
       currentStreak,
@@ -358,8 +358,8 @@ function rankProbeBehaviorPattern(frozenList: FrozenProof[]): ProbeBehaviorPatte
       const typeName = resolveTypeName(probe.ref)
       const stat = stats.get(typeName)
       if (!stat) continue
-      if (probe.verdict === 'FAILED') stat.failedCount++
-      else if (probe.verdict === 'INCONCLUSIVE') stat.inconclusiveCount++
+      if (probe.outcome === 'DEVIATED') stat.failedCount++
+      else if (probe.outcome === 'INCONCLUSIVE') stat.inconclusiveCount++
     }
   }
 

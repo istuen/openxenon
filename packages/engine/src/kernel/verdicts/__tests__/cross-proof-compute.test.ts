@@ -35,26 +35,26 @@ import { computeCrossProofInsightFromInputs } from '../cross-proof-compute'
 function mkProbe(
   probeName: string,
   ref: string,
-  verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE',
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE',
   passed: boolean,
   output?: Record<string, unknown>,
   durationMs = 5,
 ): FrozenProofProbeResult {
-  return { probeName, ref, verdict, passed, durationMs, ...(output ? { output } : {}) }
+  return { probeName, ref, outcome, passed, durationMs, ...(output ? { output } : {}) }
 }
 
 function mkFrozen(
   name: string,
   runAt: string,
   probes: FrozenProofProbeResult[],
-  verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE' = 'PASSED',
+  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' = 'COMPLETED',
 ): FrozenProof {
   const total = probes.length
   const passed = probes.filter((p) => p.passed).length
   return {
     name,
     runAt,
-    verdict,
+    outcome,
     totalCount: total,
     passedCount: passed,
     failedCount: total - passed,
@@ -90,13 +90,13 @@ describe('computeCrossProofInsightFromInputs trendMatrix', () => {
   test('按 (probeType, target) 分组 + 时间升序', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p3', '2026-06-25T12:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -113,8 +113,8 @@ describe('computeCrossProofInsightFromInputs trendMatrix', () => {
   test('不同 target 拆为不同 entry', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
-        mkProbe('b', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/y.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
+        mkProbe('b', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/y.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -125,7 +125,7 @@ describe('computeCrossProofInsightFromInputs trendMatrix', () => {
 
   test('probe 无 target 时 target 字段省略', () => {
     const frozen: FrozenProof[] = [
-      mkFrozen('p1', '2026-06-25T10:00:00Z', [mkProbe('a', '@oxn/probes/shell-exec', 'PASSED', true)]),
+      mkFrozen('p1', '2026-06-25T10:00:00Z', [mkProbe('a', '@oxn/probes/shell-exec', 'COMPLETED', true)]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
     expect(insight.trendMatrix[0]?.target).toBeUndefined()
@@ -140,8 +140,8 @@ describe('computeCrossProofInsightFromInputs correlationMatrix', () => {
   test('coOccurrences < 2 的 pair 不输出', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true),
-        mkProbe('b', '@oxn/probes/lint-check', 'PASSED', true),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true),
+        mkProbe('b', '@oxn/probes/lint-check', 'COMPLETED', true),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -151,16 +151,16 @@ describe('computeCrossProofInsightFromInputs correlationMatrix', () => {
   test('coFailures 计数：同 proof 内 A+B 都失败时 +1', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false),
-        mkProbe('b', '@oxn/probes/lint-check', 'FAILED', false),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false),
+        mkProbe('b', '@oxn/probes/lint-check', 'DEVIATED', false),
       ]),
       mkFrozen('p2', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false),
-        mkProbe('b', '@oxn/probes/lint-check', 'PASSED', true),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false),
+        mkProbe('b', '@oxn/probes/lint-check', 'COMPLETED', true),
       ]),
       mkFrozen('p3', '2026-06-25T12:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false),
-        mkProbe('b', '@oxn/probes/lint-check', 'FAILED', false),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false),
+        mkProbe('b', '@oxn/probes/lint-check', 'DEVIATED', false),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -176,16 +176,16 @@ describe('computeCrossProofInsightFromInputs correlationMatrix', () => {
   test('coFailureRate 高的 pair 排前', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false),
-        mkProbe('b', '@oxn/probes/lint-check', 'FAILED', false),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false),
+        mkProbe('b', '@oxn/probes/lint-check', 'DEVIATED', false),
       ]),
       mkFrozen('p2', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true),
-        mkProbe('b', '@oxn/probes/lint-check', 'PASSED', true),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true),
+        mkProbe('b', '@oxn/probes/lint-check', 'COMPLETED', true),
       ]),
       mkFrozen('p3', '2026-06-25T12:00:00Z', [
-        mkProbe('a', '@oxn/probes/test-pass', 'FAILED', false),
-        mkProbe('b', '@oxn/probes/lint-check', 'FAILED', false),
+        mkProbe('a', '@oxn/probes/test-pass', 'DEVIATED', false),
+        mkProbe('b', '@oxn/probes/lint-check', 'DEVIATED', false),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -206,10 +206,10 @@ describe('computeCrossProofInsightFromInputs trends', () => {
   test('数据不足（<3 runs）→ insufficient-data', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -219,59 +219,59 @@ describe('computeCrossProofInsightFromInputs trends', () => {
   test('worsening：最近 3 次全 FAIL 且之前有 PASS', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p3', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p4', '2026-06-25T12:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
     expect(insight.trends.length).toBe(1)
     const t = insight.trends[0]!
     expect(t.trend).toBe('worsening')
-    expect(t.latestVerdict).toBe('FAILED')
+    expect(t.latestVerdict).toBe('DEVIATED')
     expect(t.currentStreak).toBe(3) // 最近 3 次全 FAILED
   })
 
   test('improving：最近 3 次全 PASS 且之前有 FAIL', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p3', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p4', '2026-06-25T12:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
     expect(insight.trends.length).toBe(1)
     const t = insight.trends[0]!
     expect(t.trend).toBe('improving')
-    expect(t.latestVerdict).toBe('PASSED')
+    expect(t.latestVerdict).toBe('COMPLETED')
     expect(t.currentStreak).toBe(3)
   })
 
   test('stable-pass：全程 PASSED', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p3', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -282,13 +282,13 @@ describe('computeCrossProofInsightFromInputs trends', () => {
   test('stable-fail：全程 FAILED', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p3', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -298,13 +298,13 @@ describe('computeCrossProofInsightFromInputs trends', () => {
   test('volatile：PASSED/FAILED 交替', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p3', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -320,16 +320,16 @@ describe('computeCrossProofInsightFromInputs probeBehaviorPattern', () => {
   test('按 failRate 降序（行为特征信号，非代码质量评分）', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false),
-        mkProbe('b', '@oxn/probes/test-pass', 'PASSED', true),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false),
+        mkProbe('b', '@oxn/probes/test-pass', 'COMPLETED', true),
       ]),
       mkFrozen('p2', '2026-06-25T10:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false),
-        mkProbe('b', '@oxn/probes/test-pass', 'FAILED', false),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false),
+        mkProbe('b', '@oxn/probes/test-pass', 'DEVIATED', false),
       ]),
       mkFrozen('p3', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true),
-        mkProbe('b', '@oxn/probes/test-pass', 'PASSED', true),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true),
+        mkProbe('b', '@oxn/probes/test-pass', 'COMPLETED', true),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
@@ -342,9 +342,9 @@ describe('computeCrossProofInsightFromInputs probeBehaviorPattern', () => {
 
   test('failureVerdicts 正确分类', () => {
     const frozen: FrozenProof[] = [
-      mkFrozen('p1', '2026-06-25T09:00:00Z', [mkProbe('a', '@oxn/probes/ts-compiles', 'FAILED', false)]),
+      mkFrozen('p1', '2026-06-25T09:00:00Z', [mkProbe('a', '@oxn/probes/ts-compiles', 'DEVIATED', false)]),
       mkFrozen('p2', '2026-06-25T10:00:00Z', [mkProbe('a', '@oxn/probes/ts-compiles', 'INCONCLUSIVE', false)]),
-      mkFrozen('p3', '2026-06-25T11:00:00Z', [mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true)]),
+      mkFrozen('p3', '2026-06-25T11:00:00Z', [mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true)]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen)
     const eff = insight.probeBehaviorPattern[0]!
@@ -361,10 +361,10 @@ describe('computeCrossProofInsightFromInputs filter', () => {
   test('since 只含 runAt >= since', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen, { since: '2026-06-25T10:00:00Z' })
@@ -376,10 +376,10 @@ describe('computeCrossProofInsightFromInputs filter', () => {
   test('proofIds 只含白名单', () => {
     const frozen: FrozenProof[] = [
       mkFrozen('p1', '2026-06-25T09:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
       mkFrozen('p2', '2026-06-25T11:00:00Z', [
-        mkProbe('a', '@oxn/probes/ts-compiles', 'PASSED', true, { path: 'src/x.ts' }),
+        mkProbe('a', '@oxn/probes/ts-compiles', 'COMPLETED', true, { path: 'src/x.ts' }),
       ]),
     ]
     const insight = computeCrossProofInsightFromInputs(ROOT, frozen, { proofIds: ['p1'] })

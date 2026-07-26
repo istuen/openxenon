@@ -18,7 +18,7 @@
  * - `.openxenon/blueprints/<name>.md` — 内部 Blueprint
  * - `.openxenon/works/<w>/work.md` — 内部 Work
  * - `.openxenon/works/<w>/tasks/<t>/task.md` — 内部 Task
- * - `.openxenon/proofs/<p>/verdict.md` — 内部 Proof
+ * - `.openxenon/proofs/<p>/outcome.md` — 内部 Proof
  * - `https://...` — 外部 URL
  * - `./relative.md` `../relative.md` — 外部相对路径
  */
