@@ -1,19 +1,13 @@
 # ADR-0057: 信任链——OpenXenon 的核心模型
 
-> **状态**：✅ Adopted
-> **日期**：2026-07-12
-> **触发**：[版本统一 RFC §0.4](../../docs/rfcs/version-unification-rfc.md)
+> **状态**：⛔ Superseded by [ADR-0066](./0066-terminology-simplification.md)
+> **日期**：2026-07-12（原始） / 2026-07-21（Superseded）
+> **触发**：[版本统一 RFC §0.4](../../rfcs/version-unification-rfc.md)
 > **影响层**：全局哲学（影响所有模块的设计方向）
 
-## Context
+## 原始决策（2026-07-12，已 Superseded）
 
-OpenXenon 解决工程师与 AI Agent 的信任协作问题。AI 是概率性推理模型，其本身就是不确定性的。工程师信任 AI 一定会执行，但不信任 AI 执行在边界内。AI 不懂"信任"，只会通过概率推理执行，但信任 OpenXenon 提供的确定性内容（Asset、Work、Kernel）。
-
-在三边界框架和最小信任闭环确立后，需要将"信任链"正式记录为 OpenXenon Engine 的核心模型。
-
-## Decision
-
-**信任链是 OpenXenon Engine 的"能源"**——三方信任拓扑：
+信任链是 OpenXenon Engine 的"能源"——三方信任拓扑：
 
 ```
          工程师                    AI Agent
@@ -46,21 +40,42 @@ OpenXenon 解决工程师与 AI Agent 的信任协作问题。AI 是概率性推
      哪些不可靠"
 ```
 
-**核心原则**：
-1. 工程师与 AI 原本是两个点协作，协作充满不确定性导致不可信任
-2. OpenXenon 加入后分别跟两者建立信任协作
-3. 工程师通过 OpenXenon 信任 AI（间接信任链）
-4. 信任链是 OpenXenon Engine 的"能源"——没有信任链，OXN 只是任务跟踪器
+## Superseded 理由（2026-07-21）
 
-## Consequences
+1. **AI 不"信任"OXN**：AI 是概率模型，不存在"信任"概念，只消费 OXN 注入的 context
+2. **与"彻底不判"冲突**：ADR-0066 + ADR-0067 明确 OXN 只记录事实不评判，"信任"叙事暗示 OXN 在做信任判定
+3. **术语精简**：TrustChain 词汇废弃，统一到 Proof（决策内容归入 Proof desc）
 
-- **正面**：明确了 OpenXenon 的核心价值定位——不是任务管理器，是信任协作工具
-- **正面**：为 v0.6.1~v1.0 的版本路线提供统一叙事框架
-- **风险**：过度强调信任链可能忽略其他价值维度（如效率、易用性）
-- **衍生**：ADR-0058（最小信任闭环）定义 v0.6.1 的具体实现范围
+## 保留的决策内容
 
-## References
+| 原 TrustChain 要素 | 现归属 |
+|---|---|
+| 工程师 ↔ OXN：信任关系 | OXN Engine desc：OXN 提供客观证据，工程师基于证据判断 |
+| OXN ↔ AI：AI 信任 OXN | 废弃（AI 不"信任"）|
+| 工程师 ↔ AI：通过 OXN 间接信任 | Proof desc：OXN 提供不可篡改证据让工程师观测 AI 执行 |
+| 三方拓扑图 | 废弃（改为：工程师 ↔ OXN ↔ AI 单向观测链）|
 
-- [版本统一 RFC §0.4](../../docs/rfcs/version-unification-rfc.md)
+## 新的核心模型（替代信任链）
+
+```
+工程师 ────► OXN ────► AI
+   │         │         │
+   │    提供客观证据   消费 OXN context
+   │         │         │
+   ▼         ▼         ▼
+  基于证据    记录事实   执行任务
+  做出判定    不评判    (走通道)
+```
+
+- **工程师**：定义边界 + 接收证据 + 基于证据判定
+- **OXN**：记录事实（Probe + Trace + Frozen）+ 提供证据（Report）
+- **AI**：消费 OXN context（Asset 边界 + Skill 指导）+ 执行任务
+
+判定权归工程师，OXN 提供证据，AI 执行任务。三方不再是"信任拓扑"，而是"观测链 + 执行链"。
+
+## 参考
+
+- [版本统一 RFC §0.4](../../rfcs/version-unification-rfc.md)
 - [core-concepts.md §3.1](../../../docs/zh-cn/core-concepts.md)
-- [ADR-0031 Proof = 公证人 ≠ 裁判](./0031-proof-notary-not-judge.md) — 信任链的 Proof 层实现
+- [ADR-0031 Proof = 公证人 ≠ 裁判](./0031-proof-notary-not-judge.md)
+- **Superseded by [ADR-0066 术语精简](./0066-terminology-simplification.md)**

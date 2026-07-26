@@ -2,7 +2,7 @@
 
 > **来源**：v0.6.3 Asset Paper Schema RFC §1.1, §1.3
 > **抽取日**：2026-07-05
-> **状态**：Adopted
+> **状态**：Adopted（`auditTrail` 部分被 [ADR-0071](./0071-abolish-audit-trail.md) 废除；`abstract` + `references` + `citations` + DAG 仍有效）
 > **影响层**：L1-Infra（Asset IO）+ L2-Engine（引用计数 + DAG 校验）
 
 ## 决策
