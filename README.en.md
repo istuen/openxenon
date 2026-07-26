@@ -184,6 +184,8 @@ openxenon/
 
 ## Contributing
 
+> Version: 0.6.1
+
 OpenXenon welcomes contributions of all kinds:
 
 - 🐛 **Report issues** — submit bug reports or feature requests via [GitHub Issues](https://github.com/istuen/openxenon/issues)

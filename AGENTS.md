@@ -111,7 +111,7 @@ docs/
 
 ### 3. 项目资产 — `.openxenon/assets/`（边界，冻结后不可变）
 
-- `.openxenon/assets/{domains,workflows,stacks,blueprints,roadmaps}/`（E1 Asset）
+- `.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（E1 Asset）
 - v0.7.0 布局，业务声明 + AI 创作模板，`.md` 格式
 - `assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`
 
@@ -248,7 +248,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 | T14 daemon PR-2/3/4 闭环 | `feat/v0.2-t14-daemon-pr234-loop` | ✅ done |
 | T15 taint PR-7 spike | `feat/v0.2-t15-taint-pr7-spike` | ⏳ 待启动（spike，不入 main） |
 
-> 各任务详细 commit hash 与改动摘要见 git log / `.changes/0-2-0-roadmap.md`。原 40+ 行逐任务明细已折叠；如需完整记录，查 `git log --oneline feat/v0.2-proof-engine`。
+> 各任务改动摘要见 `.changes/pre-0-6-history.md` 的 v0.2.x 段；详细 commit 记录查 `git log --oneline feat/v0.2-proof-engine`。
 
 **已执行约束**（历史记录）：
 - 所有子分支从 `feat/v0.2-proof-engine` 派生
@@ -258,7 +258,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 
 **Sprint 设计稿位置**：`.openxenon/forges/sprints/sprint-{N}/<doc>.md`（15 份）+ `EXECUTION-ORDER.md`（总索引）
 
-**对应 changelog 片段**：`.changes/0-2-0-roadmap.md`（路线图占位，每个子分支 PR 合入时记得新增一条 changelog）
+**对应变更历史**：`.changes/pre-0-6-history.md` 0.2.x 段（路线图完成；逐子分支 PR 原始 changelog 已合并到历史归档）
 
 **Work v1.1 流程**：每个子分支开工时按 `oxn-work` skill 3 IAP 阶段（Intent → Align → Proof）走完一轮。
 
@@ -268,7 +268,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 
 **RFC 文档**：`.openxenon/pools/sprints/v0.3-md-ssot/design/md-native-grammar-rfc.md` v1.0
 
-**对应 changelog**：`.changes/0-3-0-md-native.md`
+**对应 changelog**：`.changes/pre-0-6-history.md` 0.3.x 段
 
 | 任务 | 子分支 | 周次 | 状态 |
 |---|---|---|---|

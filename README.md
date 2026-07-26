@@ -7,13 +7,12 @@
 
 ## 什么是 OpenXenon
 
-> **OpenXenon —— 工程师定意图，AI Agent 跑对齐，OXN Engine 出证明。**
-> **工程师信任 AI Agent 在边界内的执行成果。**
+> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
 
-OpenXenon 是一款面向 AI Agent 的轻量级人机协作工具。
+OpenXenon 是一款面向 AI Agent 的人机协作工具。
 它作为 Skills 注入现有的 AI Agent 工作台（如 Cursor、OpenCode、Codex、Claude Code）中。
-它专注于将工程师的意图转化为 AI 可对齐的边界，并严格证明 AI 的工作结果。
-OpenXenon 旨在为工程师与 AI 模型的协作，建立更好的**信任基座**。
+它专注于为工程师与 AI Agent 的协作提供**边界**（Asset 资产约束）与**证据**（Proof 客观事实记录）。
+OXN 不评判"工作是否合格"——判定权归工程师，OXN 只提供不可篡改的证据让工程师基于事实决策。
 
 ## 为什么做 OpenXenon
 
@@ -73,9 +72,9 @@ oxn init --ai opencode
 |---|---|---|---|
 | **Intent**（定意图） | 工程师 | Domain / Blueprint / Stack | `term` / `ban` / `invariant` 锁定边界（planLock + content_hash）|
 | **Align**（跑对齐） | AI Agent | Work / Task / Part | Blueprint `slot` 锁定路径，AI 不得修改 Asset |
-| **Proof**（出证明） | OXN Engine | Proof（`frozen.json` + `verdict.md`）| 不可篡改（chmod 0o444 + content_hash）|
+| **Proof**（出证据） | OXN Engine | Proof（`frozen.json` + `outcome` 聚合结构）| 不可篡改（chmod 0o444 + content_hash）|
 
-> **OXN Engine 是公证人，不是裁判**——它记录"发生了什么"（脚本退出码、测试覆盖率、文件路径等客观事实），不评判"工作合格不合格"。"合格"判定属于工程师，基于 Asset 对照 Proof。
+> **OXN Engine 记录事实，不评判合格**——它记录"发生了什么"（脚本退出码、测试覆盖率、文件路径等客观事实），不评判"工作合格不合格"。"合格"判定属于工程师，基于 outcome 聚合结构（各状态 Probe 数量）自行判断。
 
 ### E1-E4 四结构实体（v0.6 哲学层）
 
@@ -147,6 +146,8 @@ openxenon/
 > v0.7+ 规划（[apps/hall Migration Plan](./docs/architecture/v0.7-hall-migration-plan.md)）：Web UI 独立 package + Engine 独立发布 + Insight 涌现推理。
 
 ## 参与贡献
+
+> 当前版本: 0.6.1
 
 欢迎通过 [GitHub Issues](https://github.com/istuen/openxenon/issues) 提交 bug 报告，功能建议与交流。
 

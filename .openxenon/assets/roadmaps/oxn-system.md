@@ -1,11 +1,11 @@
 ---
 entity: roadmap
-version: 1
+version: 2
 name: oxn-system
 abstract: |
-  OpenXenon scene-based routing: 6 builtin scenes (doc / dev / debug / test / release / onboard) map goals to Domain + Workflow + Stack + Blueprint (composition). AI Agent reads this Roadmap + calls oxn roadmap suggest --goal --scene to locate relevant Assets.
+  OpenXenon scene-based routing: 6 builtin scenes (doc / dev / debug / test / release / onboard) map goals to Domain + Workflow + Blueprint (composition). AI Agent reads this Roadmap + calls oxn roadmap suggest --goal --scene to locate relevant Assets.
 oxn-source-sha: pending
-synced-at: 2026-07-09
+synced-at: 2026-07-22
 ---
 
 # Roadmap: oxn-system
@@ -13,6 +13,8 @@ synced-at: 2026-07-09
 > 6 builtin scenes. Use `oxn roadmap show oxn-system --scene <scene>` to view one scene.
 > AI Agent: `oxn roadmap suggest --goal "<goal>" --scene <scene>` for ranked matches.
 > After Asset create/edit: `oxn roadmap sync oxn-system --scene <scene> --dry-run` (manual hint, NOT auto-sync).
+>
+> 当前自举范围（2026-07-22）：**dev** 和 **doc** 是 2 个能自举跑起来的 scene；其余 4 个（debug/test/release/onboard）作为导航存在，引用已收敛到活跃 `oxn-*-domain`。
 
 ## Scenes
 
@@ -21,70 +23,74 @@ synced-at: 2026-07-09
 
 | kind | name | description |
 |---|---|---|
-| domain | DocEngineeringContext | Three-layer doc rules, ADR append-only, promote via Work |
-| domain | VitePressContext | Doc site build constraints (i18n prefix, sidebar, .html suffix) |
+| domain | oxn-domain | 顶层词汇边界 + 产品定位 + IAP 三阶段 |
+| domain | oxn-asset-domain | Asset 生命周期 + 5 类 AssetKind + Paper 结构 |
+| domain | oxn-cli-domain | CLI + i18n + Skill + VitePress 站点配置 |
+| workflow | doc-author | 通用文档撰写流水线（6 slot） |
 | workflow | doc-publish | Doc site build + GitHub Pages deploy |
-| workflow | doc-promote | Promote pools/drafts to ADR/RFC (gather/author/validate/promote) |
+| blueprint | doc-prod-workflow | 产品手册撰写组合模板 |
+| blueprint | doc-dev-workflow | 开发手册撰写组合模板 |
+| blueprint | doc-rfc-workflow | RFC/ADR 提升组合模板（drafts → docs/rfc） |
 
 ### scene: dev
 > Scenario: modify code, add CLI subcommand, evolve Asset.
 
 | kind | name | description |
 |---|---|---|
-| domain | WorkOrchestrationContext | 8 stages + 6 workType + PlanLock |
-| domain | AssetModeContext | 6 AssetKind (incl. roadmap) + lifecycle + references DAG |
-| domain | AssetLifecycleContext | Asset lifecycle create/evolve/archive vocabulary for oxn-asset Skill |
-| domain | intent-domain | Intent axis: CLI entry / OXL / Program |
-| domain | align-domain | Align axis: Work sandbox + Skill + Slot/Part/Probe |
-| domain | proof-domain | Proof axis: Builtin + frozen.json |
-| workflow | dev-workflow | Generic development (build/develop/test/verify) |
-| workflow | asset-create | Asset creation pipeline (choose-kind/fork-template/fill-content/validate-commit) |
-| workflow | asset-evolve | Asset evolve pipeline (read-current/plan-changes/apply-evolve) |
-| workflow | asset-archive | Asset archive pipeline (check-references/confirm/move-to-archived) |
-| workflow | add-cli-subcommand | Add new oxn CLI subcommand |
-| workflow | dsl-evolve | OXL grammar evolution |
-| workflow | refactor-safe | Safe refactor with L0-L3 guard |
-| workflow | git-workflow | Git worktree branch workflow |
+| domain | oxn-work-domain | Work/Task/Slot/Part/Probe/Round/IAP 三阶段 |
+| domain | oxn-asset-domain | AssetKind + 生命周期 + references DAG |
+| domain | oxn-engine-domain | L0-L3 分层 + Kernel/Infra 司法行政分离 |
+| domain | oxn-proof-domain | Proof/ProbeOutcome/outcome/Report |
+| workflow | dev-workflow | 通用开发流程（retrieve → design → develop → test） |
+| workflow | asset-create | Asset 创建流水线 |
+| workflow | asset-evolve | Asset 演进流水线 |
+| workflow | asset-archive | Asset 归档流水线 |
+| workflow | add-cli-subcommand | 新增 oxn CLI 子命令 |
+| workflow | refactor-safe | 安全重构 + L0-L3 守卫 |
+| workflow | git-workflow | Git worktree 分支工作流 |
+| workflow | ts-retrieve-design-develop-test | TypeScript 四阶段（retrieve/design/develop/test） |
+| workflow | explore-analyze-report | 代码库探索 → 分析 → 报告 |
+| workflow | fix-issue | 问题诊断 → 定位 → 修复 → 验证 |
+| workflow | migrate-version | 跨版本迁移 |
+| workflow | release-cut | 切版本 + changelog |
 
 ### scene: debug
-> Scenario: frozen.json anomaly, Probe fail, hash mismatch, regression.
+> Scenario: frozen.json anomaly, Probe DEVIATED, hash mismatch, regression.
 
 | kind | name | description |
 |---|---|---|
-| domain | iap-error-context | IAPError 8 + OXNCrash 3 codes, exit code contract |
-| domain | TaintContext | Probe signal taint 12 items + 3 IO primitives |
-| domain | L0L3Context | L0-L3 architecture boundaries (prevent Kernel IO) |
-| workflow | fix-issue | Bug reproduction + locate + fix + verify |
+| domain | oxn-engine-domain | L0-L3 架构边界（防 Kernel IO）+ IAPError 错误契约 |
+| domain | oxn-proof-domain | ProbeOutcome 三态 + InterferenceFlag + 验证 ≠ 评判 |
+| workflow | fix-issue | Bug 复现 + 定位 + 修复 + 验证 |
 
 ### scene: test
 > Scenario: write tests, run test suite, analyze coverage.
 
 | kind | name | description |
 |---|---|---|
-| domain | WorkOrchestrationContext | 8 stages run/submit logic |
-| domain | CodeQualityContext | Cross-platform consistency, naming, pattern application |
-| workflow | dev-workflow | Reuses dev-workflow, stage-2 includes test |
+| domain | oxn-work-domain | Work/Task/Part 在 Align 阶段的执行模型 |
+| domain | oxn-engine-domain | L0-L3 架构约束 + 跨平台一致性 + 命名规范 |
+| workflow | dev-workflow | 复用 dev-workflow（test 是 develop 阶段的 verify slot） |
 
 ### scene: release
 > Scenario: version migration, release cut, changelog.
 
 | kind | name | description |
 |---|---|---|
-| domain | MonorepoContext | packages/cli + packages/engine dual-package |
-| domain | I18nContext | zh-CN/en bilingual + t() |
-| workflow | migrate-version | Migrate between versions |
-| workflow | release-cut | Cut a release + changelog |
+| domain | oxn-engine-domain | Monorepo 双包边界（packages/cli + packages/engine） |
+| domain | oxn-cli-domain | zh-CN locale + t() 翻译 |
+| workflow | migrate-version | 跨版本迁移 |
+| workflow | release-cut | 切版本 + changelog |
 
 ### scene: onboard
 > Scenario: new contributor first day, full project overview.
 
 | kind | name | description |
 |---|---|---|
-| domain | L0L3Context | L0-L3 architecture core vocabulary |
-| domain | MonorepoContext | Dual-package Monorepo |
-| domain | DocEngineeringContext | Three-layer doc rules |
-| domain | AssetLifecycleContext | Asset create/evolve/archive vocabulary for engineers |
-| workflow | dev-workflow | First workflow to run |
+| domain | oxn-domain | 顶层产品定位 + 三方协作模型 |
+| domain | oxn-engine-domain | L0-L3 架构核心 |
+| domain | oxn-asset-domain | Asset create/evolve/archive 词汇 |
+| workflow | dev-workflow | 第一个跑通的 workflow |
 
 ---
 
@@ -114,7 +120,7 @@ oxn roadmap sync oxn-system --scene doc --apply   # actually modify
 |---|---|
 | write / read / doc / chapter / manual / guide | `doc` |
 | code / cli / subcommand / implement / refactor / evolve / asset / git / branch | `dev` |
-| bug / error / fail / frozen / mismatch / regression / hash / taint | `debug` |
+| bug / error / fail / frozen / mismatch / regression / hash / deviation | `debug` |
 | test / coverage / assertion | `test` |
 | version / release / cut / changelog / migrate | `release` |
 | new / start / overview / project / architecture | `onboard` |
