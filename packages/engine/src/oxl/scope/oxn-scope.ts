@@ -98,7 +98,7 @@ export function getScopeRoot(scope: OxnScope, projectRoot?: string): string | nu
     case 'oxn':
       return null // builtin registry, 不经过文件系统
     case 'prj':
-      return projectRoot ? join(projectRoot, '.openxenon', 'arsenals') : null
+      return projectRoot ? join(projectRoot, '.openxenon', 'assets') : null
   }
 }
 

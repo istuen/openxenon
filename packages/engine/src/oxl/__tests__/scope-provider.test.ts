@@ -102,9 +102,9 @@ describe('getScopeRoot / getScopeAssetDir', () => {
     expect(getScopeRoot('oxn')).toBeNull()
   })
 
-  test('@prj 映射到项目 .openxenon/arsenals', () => {
+  test('@prj 映射到项目 .openxenon/assets', () => {
     const root = getScopeRoot('prj', '/tmp/test-project')
-    expect(root).toContain('.openxenon/arsenals')
+    expect(root).toContain('.openxenon/assets')
     expect(root).toContain('/tmp/test-project')
   })
 
@@ -179,8 +179,8 @@ describe('OxnBuiltinRegistry', () => {
     registry = new OxnBuiltinRegistry()
   })
 
-  test('查询内置探针 shell-exec', () => {
-    const probe = registry.getProbe('shell-exec')
+  test('查询内置探针 shell_exec', () => {
+    const probe = registry.getProbe('shell_exec')
     expect(probe).not.toBeNull()
     expect(probe?.type).toBe('shell_exec')
   })
@@ -189,41 +189,45 @@ describe('OxnBuiltinRegistry', () => {
     expect(registry.getProbe('nonexistent')).toBeNull()
   })
 
-  test('查询内置零件 git-commit', () => {
-    const part = registry.getPart('git-commit')
-    expect(part).not.toBeNull()
-    expect(part?.name).toBe('Git Commit')
+  test('查询内置零件返回 null（D18 收窄）', () => {
+    // v0.7 Phase 4: parts builtin 延后（src/builtin/ 无 parts/*.md）
+    // 旧版本硬编码的 3 phantom parts (git-commit/create-branch/develop-feature) 已删除
+    expect(registry.getPart('git-commit')).toBeNull()
+    expect(registry.has('git-commit', 'part')).toBe(false)
   })
 
   test('has 检查', () => {
-    expect(registry.has('shell-exec', 'probe')).toBe(true)
-    expect(registry.has('git-commit', 'part')).toBe(true)
+    expect(registry.has('shell_exec', 'probe')).toBe(true)
     expect(registry.has('nonexistent', 'probe')).toBe(false)
+    expect(registry.has('git-workflow', 'blueprint')).toBe(true)
     expect(registry.has('anything', 'blueprint')).toBe(false)
   })
 
-  test('listByType 返回所有探针', () => {
+  test('listByType 返回 15 个探针', () => {
     const probes = registry.listByType('probe')
-    expect(probes.length).toBeGreaterThanOrEqual(4)
-    expect(probes.map((p) => p.name)).toContain('shell-exec')
+    expect(probes.length).toBe(15)
+    expect(probes.map((p) => p.name)).toContain('shell_exec')
     expect(probes.map((p) => p.name)).toContain('fs-exists')
+    expect(probes.map((p) => p.name)).toContain('ts-compiles')
   })
 
-  test('listByType 返回所有零件', () => {
-    const parts = registry.listByType('part')
-    expect(parts.length).toBeGreaterThanOrEqual(3)
-    expect(parts.map((p) => p.name)).toContain('git-commit')
-  })
-
-  test('listByType blueprint 返回空数组', () => {
+  test('listByType 返回 3 个蓝图', () => {
     const bps = registry.listByType('blueprint')
-    expect(bps).toEqual([])
+    expect(bps.length).toBe(3)
+    expect(bps.map((b) => b.name)).toContain('git-workflow')
+    expect(bps.map((b) => b.name)).toContain('verify-pipeline')
+    expect(bps.map((b) => b.name)).toContain('leader-test-dsl')
+  })
+
+  test('listByType part 返回空数组（D18 收窄）', () => {
+    expect(registry.listByType('part')).toEqual([])
   })
 
   test('count 和 totalCount', () => {
-    expect(registry.count('probe')).toBeGreaterThanOrEqual(4)
-    expect(registry.count('part')).toBeGreaterThanOrEqual(3)
-    expect(registry.totalCount()).toBeGreaterThanOrEqual(7)
+    expect(registry.count('probe')).toBe(15)
+    expect(registry.count('blueprint')).toBe(3)
+    expect(registry.count('part')).toBe(0)
+    expect(registry.totalCount()).toBe(18)
   })
 
   test('动态注册', () => {
@@ -254,24 +258,24 @@ describe('OxnWorkspaceManager', () => {
     manager = createWorkspaceManager()
   })
 
-  test('解析 @oxn/probe/shell-exec', () => {
-    const result = manager.resolve('@oxn/probe/shell-exec')
+  test('解析 @oxn/probe/shell_exec', () => {
+    const result = manager.resolve('@oxn/probe/shell_exec')
     expect(result.resolvedFrom).toBe('builtin')
     expect(result.asset).not.toBeNull()
     expect(result.reference.scope).toBe('oxn')
-    expect(result.reference.name).toBe('shell-exec')
+    expect(result.reference.name).toBe('shell_exec')
   })
 
-  test('解析 @oxn/part/git-commit', () => {
-    const result = manager.resolve('@oxn/part/git-commit')
+  test('解析 @oxn/blueprint/git-workflow', () => {
+    const result = manager.resolve('@oxn/blueprint/git-workflow')
     expect(result.resolvedFrom).toBe('builtin')
-    expect(result.reference.name).toBe('git-commit')
+    expect(result.reference.name).toBe('git-workflow')
   })
 
-  test('解析两段式 @oxn/shell-exec (typeHint=probe)', () => {
-    const result = manager.resolve('@oxn/shell-exec', 'probe')
+  test('解析两段式 @oxn/shell_exec (typeHint=probe)', () => {
+    const result = manager.resolve('@oxn/shell_exec', 'probe')
     expect(result.resolvedFrom).toBe('builtin')
-    expect(result.reference.name).toBe('shell-exec')
+    expect(result.reference.name).toBe('shell_exec')
   })
 
   test('解析不存在的 @oxn 引用', () => {
@@ -297,18 +301,23 @@ describe('OxnWorkspaceManager', () => {
     expect(Array.isArray(impls)).toBe(true)
   })
 
-  test('list @oxn probe 返回内置探针', () => {
+  test('list @oxn probe 返回 15 个内置探针', () => {
     const probes = manager.list('oxn', 'probe')
-    expect(probes.length).toBeGreaterThanOrEqual(4)
+    expect(probes.length).toBe(15)
     for (const p of probes) {
       expect(p.resolvedFrom).toBe('builtin')
       expect(p.reference.scope).toBe('oxn')
     }
   })
 
-  test('list @oxn part 返回内置零件', () => {
+  test('list @oxn blueprint 返回 3 个内置蓝图', () => {
+    const bps = manager.list('oxn', 'blueprint')
+    expect(bps.length).toBe(3)
+  })
+
+  test('list @oxn part 返回空（D18 收窄）', () => {
     const parts = manager.list('oxn', 'part')
-    expect(parts.length).toBeGreaterThanOrEqual(3)
+    expect(parts).toEqual([])
   })
 
   test('list @oxn interface 返回空', () => {
@@ -317,28 +326,28 @@ describe('OxnWorkspaceManager', () => {
   })
 
   test('count 返回正确数量', () => {
-    expect(manager.count('oxn', 'probe')).toBeGreaterThanOrEqual(4)
-    expect(manager.count('oxn', 'part')).toBeGreaterThanOrEqual(3)
+    expect(manager.count('oxn', 'probe')).toBe(15)
+    expect(manager.count('oxn', 'blueprint')).toBe(3)
+    expect(manager.count('oxn', 'part')).toBe(0)
   })
 
   test('resolve 缓存机制', () => {
-    const r1 = manager.resolve('@oxn/probe/shell-exec')
-    const r2 = manager.resolve('@oxn/probe/shell-exec')
+    const r1 = manager.resolve('@oxn/probe/shell_exec')
+    const r2 = manager.resolve('@oxn/probe/shell_exec')
     expect(r1).toBe(r2) // 引用相同
   })
 
   test('invalidateCache 清除缓存', () => {
-    const r1 = manager.resolve('@oxn/probe/shell-exec')
+    const r1 = manager.resolve('@oxn/probe/shell_exec')
     manager.invalidateCache()
-    const r2 = manager.resolve('@oxn/probe/shell-exec')
+    const r2 = manager.resolve('@oxn/probe/shell_exec')
     // 缓存清除后重新解析，asset 数据相同但对象可能不同
     expect(r2.ref).toBe(r1.ref)
     expect(r2.resolvedFrom).toBe('builtin')
   })
 
   test('支持两段式引用自动推断类型', () => {
-    // @oxn/shell-exec 已知是 probe
-    const result = manager.resolve('@oxn/shell-exec', 'probe')
+    const result = manager.resolve('@oxn/shell_exec', 'probe')
     expect(result.resolvedFrom).toBe('builtin')
   })
 })
@@ -356,44 +365,20 @@ describe('集成测试：scope → resolve → compareProps', () => {
     registry = getBuiltinRegistry()
   })
 
-  test('解析 builtin part git-commit 并提取 props', () => {
-    const result = manager.resolve('@oxn/part/git-commit')
+  test('解析 builtin probe shell_exec 并提取 props', () => {
+    const result = manager.resolve('@oxn/probe/shell_exec')
     expect(result.resolvedFrom).toBe('builtin')
 
     const data = (result.asset as { data: Record<string, unknown> }).data
     expect(data).toBeTruthy()
 
-    // 从 data.props 提取 prop 列表
-    const props = data.props as {
-      type: 'object'
-      properties: Record<string, { type: string; default?: unknown }>
-      required?: string[]
-    }
-    expect(props.type).toBe('object')
-    expect(props.properties.feature_ref).toBeTruthy()
-    expect(props.properties.feature_ref.type).toBe('string')
-    expect(props.required).toContain('feature_ref')
-  })
-
-  test('compareProps 验证 builtin part 的参数覆盖', () => {
-    // git-commit requires feature_ref, message has default
-    const result = compareProps({ feature_ref: 'prop.branch', message: '"chore: update"' }, [
-      { name: 'feature_ref', type: 'string', required: true },
-      { name: 'message', type: 'string', required: false, default: 'update' },
-    ])
-    expect(result.missingRequired).toHaveLength(0)
-    expect(result.unknownFields).toHaveLength(0)
-  })
-
-  test('compareProps 检测缺失的 required 参数', () => {
-    const result = compareProps(
-      { message: '"fix: bug"' }, // 缺少 feature_ref
-      [
-        { name: 'feature_ref', type: 'string', required: true },
-        { name: 'message', type: 'string', required: false, default: 'update' },
-      ],
-    )
-    expect(result.missingRequired).toContain('feature_ref')
+    // shell_exec 探针应有 command prop (required)
+    const props = data.props as Array<{ name: string; type: string; required?: boolean }>
+    expect(Array.isArray(props)).toBe(true)
+    const cmd = props.find((p) => p.name === 'command')
+    expect(cmd).toBeDefined()
+    expect(cmd?.type).toBe('string')
+    expect(cmd?.required).toBe(true)
   })
 
   test('builtin probes 的 props 结构正确', () => {
@@ -404,12 +389,15 @@ describe('集成测试：scope → resolve → compareProps', () => {
     }
   })
 
-  test('builtin parts 有 implements 或 execution 信息', () => {
-    const gitCommit = registry.getPart('git-commit')
-    expect(gitCommit).not.toBeNull()
-    // git-commit 没有 implements（因未定义 interface）
-    const exec = (gitCommit as Record<string, unknown>).execution as string[]
-    expect(Array.isArray(exec)).toBe(true)
-    expect(exec.length).toBeGreaterThan(0)
+  test('builtin blueprints 含 slots + deps', () => {
+    const bps = registry.listByType('blueprint')
+    for (const bp of bps) {
+      const slots = bp.data.slots as Array<{ name: string; deps: string[] }>
+      expect(Array.isArray(slots)).toBe(true)
+      for (const slot of slots) {
+        expect(slot.name).toBeTruthy()
+        expect(Array.isArray(slot.deps)).toBe(true)
+      }
+    }
   })
 })

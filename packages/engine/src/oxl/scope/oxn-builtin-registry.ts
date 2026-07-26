@@ -1,110 +1,281 @@
 /**
- * Task 1.4 — OXN 内置资产注册表
+ * oxn-builtin-registry.ts — v0.7 Phase 4 重写
  *
- * 替代 src/arsenals/builtin.ts 的硬编码方式，
- * 提供内存级的 @oxn/ 作用域资产查询表。
+ * 替代 v0.6.x 硬编码 mock (4 probes + 3 phantom parts + 0 blueprints)，
+ * 从 src/builtin/probes/*.md 与 src/builtin/blueprints/*.md 加载 15 probes + 3 blueprints。
  *
- * Phase 1 先 Mock 内置数据，Phase 2 改由 .oxn 源文件加载。
+ * mdast 管线复用：
+ *   - parseMarkdown (md-pipeline/utils) → tree + frontmatter
+ *   - collectHeadingContexts → H2 段定位（Alignment/Scheme/Props/Output/Version/Slots）
+ *   - collectListFields → listItem key-value 提取
+ *
+ * 路径解析：
+ *   - 测试/dev：process.cwd() + '/src/builtin'
+ *   - 包内：import.meta.dirname + '/../../../../src/builtin'（oxn-builtin-registry.ts 在 packages/engine/src/oxl/scope/）
+ *   - fallback：空 registry（不抛错）
+ *
+ * D18 收窄：domains + workflows builtin 延后，本文件仅 probes + blueprints。
  */
+import { existsSync, readdirSync, readFileSync } from '@openxenon/engine/infra/filesystem'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import type { List, Root } from 'mdast'
+import { parseMarkdown, collectHeadingContexts, collectListFields } from '../md-pipeline/utils'
 import type { BuiltinAssetEntry, IBuiltinRegistry, OxnAssetType } from './oxn-scope'
 
 // ========================
-// 内置探针定义
+// 路径解析（开发/测试 + 包内）
 // ========================
 
-const BUILTIN_PROBE_DEFS = {
-  'shell-exec': {
-    type: 'shell_exec',
-    description: 'Execute a shell command and verify exit code is 0',
-    props: [
-      { name: 'command', type: 'string', required: true },
-      { name: 'cwd', type: 'string', required: false, default: '.' },
-      { name: 'timeout', type: 'number', required: false, default: 30000 },
-    ],
-    output: { exit_code: 'number', stdout: 'string', stderr: 'string' },
-  },
-  'fs-exists': {
-    type: 'fs_exists',
-    description: 'Check if files matching a glob pattern exist',
-    props: [{ name: 'pattern', type: 'string', required: true }],
-    output: { exists: 'boolean', files: 'list<string>' },
-  },
-  'fs-not-exists': {
-    type: 'fs_not_exists',
-    description: 'Check that no files match a glob pattern',
-    props: [{ name: 'pattern', type: 'string', required: true }],
-    output: { not_exists: 'boolean' },
-  },
-  'fs-content-match': {
-    type: 'fs_content_match',
-    description: 'Check file content matches a specified pattern',
-    props: [
-      { name: 'path', type: 'string', required: true },
-      { name: 'contains', type: 'string', required: true },
-    ],
-    output: { matched: 'boolean' },
-  },
-} as const
+function resolveBuiltinDir(): string | null {
+  const candidates: string[] = []
+
+  // 候选 1：cwd 相对路径（bun test / CLI dev mode）
+  candidates.push(join(process.cwd(), 'src/builtin'))
+
+  // 候选 2：import.meta.dirname 相对路径（包内执行）
+  try {
+    const here = dirname(fileURLToPath(import.meta.url))
+    // packages/engine/src/oxl/scope/ → ../../../../src/builtin
+    candidates.push(join(here, '../../../../src/builtin'))
+  } catch {
+    // import.meta.url 不可用（如纯 CommonJS 编译）—— 跳过
+  }
+
+  for (const c of candidates) {
+    if (existsSync(c)) return c
+  }
+
+  return null
+}
 
 // ========================
-// 内置零件定义
+// Probe 解析
 // ========================
 
-const BUILTIN_PART_DEFS = {
-  'git-commit': {
-    id: 'git-commit',
-    name: 'Git Commit',
-    description: 'Commit code to Git repository',
-    implements: null,
-    isAbstract: false,
-    props: {
-      type: 'object',
-      properties: {
-        feature_ref: { type: 'string' },
-        message: { type: 'string', default: 'update' },
-      },
-      required: ['feature_ref'],
-    },
-    probes: [{ type: 'shell_exec', command: "git log -1 --pretty=%s | grep -q '${feature_ref}'" }],
-    execution: ['probe.shell_exec'],
-  },
-  'create-branch': {
-    id: 'create-branch',
-    name: 'Create Branch',
-    description: 'Create a new feature branch',
-    implements: null,
-    isAbstract: false,
-    props: {
-      type: 'object',
-      properties: {
-        branch_name: { type: 'string' },
-      },
-      required: ['branch_name'],
-    },
-    probes: [{ type: 'shell_exec', command: "git branch --show-current | grep -q '${branch_name}'" }],
-    execution: ['probe.shell_exec'],
-  },
-  'develop-feature': {
-    id: 'develop-feature',
-    name: 'Develop Feature',
-    description: 'Execute development tasks and verify with tests',
-    implements: null,
-    isAbstract: false,
-    props: {
-      type: 'object',
-      properties: {
-        feature_desc: { type: 'string' },
-        cwd: { type: 'string', default: '.' },
-      },
-      required: ['feature_desc'],
-    },
-    probes: [
-      { type: 'shell_exec', command: 'pnpm build' },
-      { type: 'shell_exec', command: 'pnpm test' },
-    ],
-    execution: ['probe.shell_exec', 'probe.shell_exec'],
-  },
-} as const
+interface ParsedProbe {
+  name: string
+  description: string
+  type: string
+  align?: string
+  scheme?: string
+  props: Array<{
+    name: string
+    type: string
+    required: boolean
+    default?: unknown
+  }>
+  output: Record<string, string>
+  _sourcePath: string
+}
+
+function coerceScalar(raw: string | null): unknown {
+  if (raw === null || raw === '') return undefined
+  if (raw === 'true') return true
+  if (raw === 'false') return false
+  if (/^-?\d+$/.test(raw)) return Number(raw)
+  if (/^-?\d+\.\d+$/.test(raw)) return Number(raw)
+  return raw
+}
+
+function parsePropFromH3(h3Name: string, list: List | null): {
+  name: string
+  type: string
+  required: boolean
+  default?: unknown
+} | null {
+  if (!list) return null
+  const fields = collectListFields(list)
+  const typeField = fields.find((f) => f.key === 'type')
+  if (!typeField || typeof typeField.value !== 'string') return null
+
+  const requiredField = fields.find((f) => f.key === 'required')
+  const defaultField = fields.find((f) => f.key === 'default')
+  return {
+    name: h3Name,
+    type: typeField.value,
+    required: requiredField?.value === 'true',
+    default: defaultField ? coerceScalar(typeof defaultField.value === 'string' ? defaultField.value : null) : undefined,
+  }
+}
+
+function parseProbe(mdPath: string): ParsedProbe | null {
+  let content: string
+  try {
+    content = readFileSync(mdPath, 'utf-8')
+  } catch {
+    return null
+  }
+
+  let parsed: { tree: Root; frontmatter: Record<string, unknown> }
+  try {
+    parsed = parseMarkdown(content)
+  } catch {
+    return null
+  }
+
+  const { tree, frontmatter } = parsed
+  const name = typeof frontmatter.name === 'string' ? frontmatter.name : null
+  if (!name) return null
+
+  const contexts = collectHeadingContexts(tree)
+  const findSection = (h2Name: string) => contexts.find((c) => c.h2 === h2Name)
+
+  // Alignment
+  const alignCtx = findSection('Alignment')
+  let align: string | undefined
+  if (alignCtx?.h3List) {
+    const fields = collectListFields(alignCtx.h3List)
+    const f = fields.find((x) => x.key === 'align')
+    if (f && typeof f.value === 'string') align = f.value
+  }
+
+  // Scheme
+  const schemeCtx = findSection('Scheme')
+  let scheme: string | undefined
+  if (schemeCtx?.h3List) {
+    const fields = collectListFields(schemeCtx.h3List)
+    const f = fields.find((x) => x.key === 'scheme')
+    if (f && typeof f.value === 'string') scheme = f.value
+  }
+
+  // Props
+  const propsCtx = findSection('Props')
+  const props: ParsedProbe['props'] = []
+  if (propsCtx) {
+    for (const ctx of contexts) {
+      if (ctx.h2 !== 'Props') continue
+      const prop = parsePropFromH3(ctx.h3 ?? '', ctx.h3List)
+      if (prop) props.push(prop)
+    }
+  }
+
+  // Output（Output 段直接在 H2 下用 list，无 H3）
+  const output: Record<string, string> = {}
+  const outputCtx = findSection('Output')
+  if (outputCtx?.h3List) {
+    const fields = collectListFields(outputCtx.h3List)
+    for (const f of fields) {
+      if (typeof f.value === 'string') output[f.key] = f.value
+    }
+  }
+
+  // Description：从 H1 blockquote（> ...）取
+  let description = ''
+  for (const child of tree.children) {
+    if (child.type === 'blockquote') {
+      const para = child.children.find((c) => c.type === 'paragraph')
+      if (para && 'children' in para) {
+        description = para.children
+          .filter((c): c is { type: 'text'; value: string } => c.type === 'text')
+          .map((c) => c.value)
+          .join('')
+          .trim()
+      }
+      break
+    }
+  }
+
+  return {
+    name,
+    description,
+    type: name.replace(/-/g, '_'),
+    align,
+    scheme,
+    props,
+    output,
+    _sourcePath: mdPath,
+  }
+}
+
+// ========================
+// Blueprint 解析
+// ========================
+
+interface ParsedBlueprintSlot {
+  name: string
+  deps: string[]
+  observe: string[]
+}
+
+interface ParsedBlueprint {
+  name: string
+  version: number
+  slots: ParsedBlueprintSlot[]
+  _sourcePath: string
+}
+
+function parseBlueprintSlot(h3Name: string, list: List | null): ParsedBlueprintSlot | null {
+  if (!list) return null
+  const fields = collectListFields(list)
+  const depsField = fields.find((f) => f.key === 'deps')
+  const observeField = fields.find((f) => f.key === 'observe')
+
+  const deps = depsField ? collectDeps(depsField.value) : []
+  const observe = observeField ? collectObserve(observeField.value) : []
+  return { name: h3Name, deps, observe }
+}
+
+function collectDeps(value: string | string[] | null): string[] {
+  if (value === null) return []
+  if (Array.isArray(value)) return value
+  // inline `[]` → 空
+  if (value === '' || value === '[]') return []
+  // block sequence: ['verify', 'fix']
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+function collectObserve(value: string | string[] | null): string[] {
+  return collectDeps(value)
+}
+
+function parseBlueprint(mdPath: string): ParsedBlueprint | null {
+  let content: string
+  try {
+    content = readFileSync(mdPath, 'utf-8')
+  } catch {
+    return null
+  }
+
+  let parsed: { tree: Root; frontmatter: Record<string, unknown> }
+  try {
+    parsed = parseMarkdown(content)
+  } catch {
+    return null
+  }
+
+  const { tree, frontmatter } = parsed
+  const name = typeof frontmatter.name === 'string' ? frontmatter.name : null
+  if (!name) return null
+
+  const contexts = collectHeadingContexts(tree)
+  const findSection = (h2Name: string) => contexts.find((c) => c.h2 === h2Name)
+
+  // Version（H2 Version 下单 - version: 1）
+  let version = 1
+  const versionCtx = findSection('Version')
+  if (versionCtx?.h3List) {
+    const fields = collectListFields(versionCtx.h3List)
+    const f = fields.find((x) => x.key === 'version')
+    if (f && typeof f.value === 'string') {
+      const n = Number(f.value)
+      if (Number.isFinite(n)) version = n
+    }
+  }
+
+  // Slots
+  const slots: ParsedBlueprintSlot[] = []
+  for (const ctx of contexts) {
+    if (ctx.h2 !== 'Slots') continue
+    const slot = parseBlueprintSlot(ctx.h3 ?? '', ctx.h3List)
+    if (slot) slots.push(slot)
+  }
+
+  return { name, version, slots, _sourcePath: mdPath }
+}
 
 // ========================
 // Registry 实现
@@ -112,26 +283,58 @@ const BUILTIN_PART_DEFS = {
 
 export class OxnBuiltinRegistry implements IBuiltinRegistry {
   private probes: Map<string, Record<string, unknown>>
-  private parts: Map<string, Record<string, unknown>>
+  private blueprints: Map<string, Record<string, unknown>>
   private interfaces: Map<string, Record<string, unknown>>
+  private readonly builtinDir: string | null
 
-  constructor() {
+  constructor(builtinDir?: string) {
     this.probes = new Map()
-    this.parts = new Map()
+    this.blueprints = new Map()
     this.interfaces = new Map()
+    this.builtinDir = builtinDir ?? resolveBuiltinDir()
     this._initProbes()
-    this._initParts()
+    this._initBlueprints()
   }
 
   private _initProbes(): void {
-    for (const [name, def] of Object.entries(BUILTIN_PROBE_DEFS)) {
-      this.probes.set(name, { ...def, _builtin: true, _type: 'probe' })
+    if (!this.builtinDir) return
+    const probesDir = join(this.builtinDir, 'probes')
+    if (!existsSync(probesDir)) return
+    const files = readdirSync(probesDir).filter((f) => f.endsWith('.md'))
+    for (const f of files) {
+      const parsed = parseProbe(join(probesDir, f))
+      if (!parsed) continue
+      this.probes.set(parsed.name, {
+        name: parsed.name,
+        type: parsed.type,
+        description: parsed.description,
+        align: parsed.align,
+        scheme: parsed.scheme,
+        props: parsed.props,
+        output: parsed.output,
+        _builtin: true,
+        _type: 'probe',
+        _sourcePath: parsed._sourcePath,
+      })
     }
   }
 
-  private _initParts(): void {
-    for (const [name, def] of Object.entries(BUILTIN_PART_DEFS)) {
-      this.parts.set(name, { ...def, _builtin: true, _type: 'part' })
+  private _initBlueprints(): void {
+    if (!this.builtinDir) return
+    const bpDir = join(this.builtinDir, 'blueprints')
+    if (!existsSync(bpDir)) return
+    const files = readdirSync(bpDir).filter((f) => f.endsWith('.md'))
+    for (const f of files) {
+      const parsed = parseBlueprint(join(bpDir, f))
+      if (!parsed) continue
+      this.blueprints.set(parsed.name, {
+        name: parsed.name,
+        version: parsed.version,
+        slots: parsed.slots,
+        _builtin: true,
+        _type: 'blueprint',
+        _sourcePath: parsed._sourcePath,
+      })
     }
   }
 
@@ -141,12 +344,18 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
     return this.probes.get(name) ?? null
   }
 
-  getPart(name: string): Record<string, unknown> | null {
-    return this.parts.get(name) ?? null
+  getPart(_name: string): Record<string, unknown> | null {
+    // D18 收窄：parts builtin 延后（src/builtin/ 无 parts/*.md）
+    // 接口保留但返回 null
+    return null
   }
 
   getInterface(_name: string): Record<string, unknown> | null {
     return this.interfaces.get(_name) ?? null
+  }
+
+  getBlueprint(name: string): Record<string, unknown> | null {
+    return this.blueprints.get(name) ?? null
   }
 
   has(name: string, type: OxnAssetType): boolean {
@@ -154,11 +363,11 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
       case 'probe':
         return this.probes.has(name)
       case 'part':
-        return this.parts.has(name)
+        return false // parts builtin 延后
       case 'interface':
         return this.interfaces.has(name)
       case 'blueprint':
-        return false // builtin 暂无 blueprint
+        return this.blueprints.has(name)
       default:
         return false
     }
@@ -172,20 +381,14 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
           type: 'probe',
           data,
         }))
-      case 'part':
-        return Array.from(this.parts.entries()).map(([name, data]) => ({
-          name,
-          type: 'part',
-          data,
-        }))
-      case 'interface':
-        return Array.from(this.interfaces.entries()).map(([name, data]) => ({
-          name,
-          type: 'interface',
-          data,
-        }))
       case 'blueprint':
-        return []
+        return Array.from(this.blueprints.entries()).map(([name, data]) => ({
+          name,
+          type: 'blueprint',
+          data,
+        }))
+      case 'part':
+      case 'interface':
       default:
         return []
     }
@@ -206,19 +409,23 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
 
   /** 全部资产数量 */
   totalCount(): number {
-    return this.probes.size + this.parts.size + this.interfaces.size
+    return this.probes.size + this.blueprints.size + this.interfaces.size
+  }
+
+  /** 当前 builtin 目录（调试用） */
+  getBuiltinDir(): string | null {
+    return this.builtinDir
   }
 
   private _getMap(type: OxnAssetType): Map<string, Record<string, unknown>> {
     switch (type) {
       case 'probe':
         return this.probes
-      case 'part':
-        return this.parts
+      case 'blueprint':
+        return this.blueprints
       case 'interface':
         return this.interfaces
-      case 'blueprint':
-        return new Map() // blueprint 暂时无内置
+      case 'part':
       default:
         return new Map()
     }
@@ -236,4 +443,9 @@ export function getBuiltinRegistry(): OxnBuiltinRegistry {
     _instance = new OxnBuiltinRegistry()
   }
   return _instance
+}
+
+/** 重置单例（测试用） */
+export function resetBuiltinRegistry(): void {
+  _instance = null
 }

@@ -36,7 +36,7 @@ export interface OxnWorkspaceConfig {
 
 const DEFAULT_CONFIG: OxnWorkspaceConfig = {
   projectRoot: process.cwd(),
-  globalRoot: join(homedir(), '.openxenon', 'arsenals'), // TODO(v1.1-path): 与 infra/paths.ts GLOBAL_ARSENAL_ROOT 重复
+  globalRoot: join(homedir(), '.openxenon', 'assets'), // 与 infra/paths.ts GLOBAL_ARSENAL_ROOT 对齐（v0.7 Phase 4.4 修复 stale path）
   supportedExtensions: ['.yaml', '.yml', '.json', '.md'],
 }
 
@@ -175,6 +175,9 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
         break
       case 'interface':
         data = this.builtin.getInterface(name)
+        break
+      case 'blueprint':
+        data = this.builtin.getBlueprint(name)
         break
     }
 
@@ -324,7 +327,7 @@ export class OxnWorkspaceManager implements IOxnWorkspaceManager {
 
     let dir: string | null = null
     if (scope === 'prj' && this.config.projectRoot) {
-      dir = join(this.config.projectRoot, '.openxenon', 'arsenals') // TODO(v1.1-path): 与 infra/paths.ts GLOBAL_ARSENAL_ROOT 重复
+      dir = join(this.config.projectRoot, '.openxenon', 'assets') // v0.7 Phase 4.4 修复 stale path
     }
 
     if (!dir) {
