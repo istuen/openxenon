@@ -2,6 +2,7 @@
 version: 0.7.0
 date: 2026-11-15
 type: minor
+status: planned
 rfc:
   - .openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md

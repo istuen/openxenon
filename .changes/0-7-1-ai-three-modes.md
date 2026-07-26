@@ -2,6 +2,7 @@
 version: 0.7.1
 date: 2026-12-15
 type: minor
+status: planned
 rfc:
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.1-ai-three-modes-rfc.md
 adr:

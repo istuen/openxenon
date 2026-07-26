@@ -2,6 +2,7 @@
 version: 0.7.2
 date: 2027-01-15
 type: minor
+status: planned
 rfc:
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.2-anchor-slot-rfc.md
 adr:

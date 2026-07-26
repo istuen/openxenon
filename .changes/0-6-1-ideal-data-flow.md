@@ -3,43 +3,43 @@ version: 0.6.1
 date: 2026-07-17
 type: minor
 rfc:
-  - .openxenon/docs/rfcs/v0.7.3-ideal-data-flow-rfc.md
+  - .openxenon/drafts/rfc/v0.7.3-ideal-data-flow-rfc.md
 adr:
-  - .openxenon/docs/adrs/0061-data-flow-contract.md
+  - .openxenon/drafts/rfc/0061-data-flow-contract.md
 ---
 
 # 0.6.1 — 理想态数据流 runtime 闭环（P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1 + P7 GA + P8 GA）✅
 
-> 本 changelog 记录 v0.7.3 理想态数据流 RFC 的 **P0 alpha.1 + P1 alpha.2 + P2 alpha.2 + P3 alpha.3 + P4 alpha.3 + P5 beta.1 + P6 beta.1 + P7 GA + P8 GA** 全部 9 phase 落地：
+> 本 changelog 记录原以 v0.7.3 命名的理想态数据流 RFC 在 **v0.6.1** 的全部 9 phase 落地：
 > P0 = ADR-0061 立法 + RFC 定稿；
 > P1 = F1 + F2 修复（BlueprintIR + Domain language 注入）；
-> P2 = readDomainFile regex → mdast 切换，修 ## Terms: 后缀 + multiline - desc: | 两个 parser bug；
+> P2 = readDomainFile regex → mdast 切换，修 `## Terms:` 后缀与 multiline `- desc: |` 两个 parser bug；
 > P3 = D1 + D2 多视角 term 视图（Task 多 Domain 主/背景视角 + 块状渲染 + token 预算缓解）；
 > P4 = D3 Boundary.observe 与 Task.probes lock 期 hard-check（F4 part 1 + D3）；
 > P5 = D4 Workflow.slot DAG 与 Task.deps DAG 闭包校验（F4 part 2 + D4）；
 > P6 = D5 Stack.tools 注入 Probe runtime（F4 part 3 + D5）；
-> P7 = D6 Work `## Refs` 旧 `kind: domain` 软警告（不阻断 lock，为 v0.8.0 硬阻断预留窗口）；
-> P8 = ADR-0055 §D2 / ADR-0060 §D4 / ADR-0060 §D8 标注 runtime 已实现（移除纸面规范标记）。
+> P7 = D6 Work `## Refs` 旧 `kind: domain` 软警告；
+> P8 = ADR-0055 §D2 / ADR-0060 §D4 / ADR-0060 §D8 标注 runtime 已实现。
 >
-> **v0.7.3 RFC v0.7.3-ideal-data-flow 全部 9 phase 落地**，7 个决策 D1-D7 全部 runtime 闭环。
+> **实际发布归属为 v0.6.1**；`v0.7.3-ideal-data-flow-rfc.md` 仅保留原 RFC 文件名作为历史标识。
 
 ## P0 核心交付
 
 ### RFC 定稿
 
-- **`.openxenon/docs/rfcs/v0.7.3-ideal-data-flow-rfc.md`** 从 `pools/drafts/` 提升并定稿（状态 `📝 Draft` → `🟢 Accepted`）
+- **`.openxenon/drafts/rfc/v0.7.3-ideal-data-flow-rfc.md`** 作为原始设计稿保留；其实现发布归属修正为 v0.6.1。
 - 4 个数据流断裂点（F1-F4）+ 7 个决策（D1-D7）全部锁定
 
 ### ADR-0061 立法
 
-- **`.openxenon/docs/adrs/0061-data-flow-contract.md`** 新建（状态 🟢 Accepted）
+- **`.openxenon/drafts/rfc/0061-data-flow-contract.md`** 新建（状态 🟢 Accepted）
 - 数据流契约：Blueprint → Work → Task runtime integration
 - 整合 RFC §2（理想态数据流）+ §3（D1-D7 决策）+ §4（P0-P8 phased landing）+ §5（非功能约束）
 - 跨引用：ADR-0054（三边界框架）+ ADR-0055（Blueprint 组合模板）+ ADR-0060（Domain 词汇边界）
 
 ### ADR INDEX 更新
 
-- `.openxenon/docs/adrs/INDEX.md` §4 Work/Asset 分类追加 ADR-0061 条目
+- `.openxenon/drafts/rfc/INDEX.md` §4 Work/Asset 分类追加 ADR-0061 条目
 - ADR 落地状态表追加 ADR-0061 行（v0.6.1 P1-P8 渐进落地，指向 `docs/zh-cn/work.md` 数据流段）
 
 ## 承接 Work
@@ -47,22 +47,18 @@ adr:
 - **`.openxenon/works/v073-ideal-data-flow/`** — P0 已 lock + run + submit（implement part passed）
 - 后续 P1-P8 将在同一 Work 下追加 task，按 RFC §4 phased landing 推进
 
-## P1-P8 路线图（占位 · 待后续 changelog 记录）
+## P1-P8 落地版本
 
 | Phase | 内容 | 版本 | 状态 |
 |---|---|---|---|
-| P1 | `work-context-builder.ts` 读 `blueprints.json`，注入 `BlueprintIR` + 边界 Domain IR | v0.7.3-alpha.2 | ✅ 已落 |
-| P2 | Domain 注入路径 regex → mdast 切换 | v0.7.3-alpha.2 | ✅ 已落 |
-| P3 | Task 多 Domain 主/背景视角注入；`## Allowed Language` 渲染格式升级 | v0.7.3-alpha.3 | ✅ 已落 |
-| P4 | Boundary.observe 与 Task.probes lock 期校验 | v0.7.3-alpha.3 | ✅ 已落 |
-| P5 | Workflow slot DAG 与 Task deps DAG 闭包校验 | v0.7.3-beta.1 | ✅ 已落 |
-| P6 | Stack.tools 注入 Probe runtime | v0.7.3-beta.1 | ✅ 已落 |
-| P7 | Work `## Refs` 旧 `kind: domain` 软警告 | v0.7.3-GA | ✅ 已落 |
-| P8 | ADR-0055 §D2 / ADR-0060 §D4 / ADR-0060 §D8 runtime 状态标注 | v0.7.3-GA | ✅ 已落 |
-| P5 | Workflow.slot DAG 与 Task.deps DAG 闭包校验 | v0.7.3-beta.1 | ⏳ 待启动 |
-| P6 | Stack.tools 注入 ProbeRunner | v0.7.3-beta.1 | ⏳ 待启动 |
-| P7 | Work `## Refs` 旧 `kind: domain` deprecation warn | v0.7.3 | ⏳ 待启动 |
-| P8 | ADR-0054/0055/0060 标注"runtime 已实现" | v0.7.3 | ⏳ 待启动 |
+| P1 | `work-context-builder.ts` 读 `blueprints.json`，注入 `BlueprintIR` + 边界 Domain IR | v0.6.1 | ✅ 已落 |
+| P2 | Domain 注入路径 regex → mdast 切换 | v0.6.1 | ✅ 已落 |
+| P3 | Task 多 Domain 主/背景视角注入；`## Allowed Language` 渲染格式升级 | v0.6.1 | ✅ 已落 |
+| P4 | Boundary.observe 与 Task.probes lock 期校验 | v0.6.1 | ✅ 已落 |
+| P5 | Workflow slot DAG 与 Task deps DAG 闭包校验 | v0.6.1 | ✅ 已落 |
+| P6 | Stack.tools 注入 Probe runtime | v0.6.1 | ✅ 已落 |
+| P7 | Work `## Refs` 旧 `kind: domain` 软警告 | v0.6.1 | ✅ 已落 |
+| P8 | ADR-0055 §D2 / ADR-0060 §D4 / ADR-0060 §D8 runtime 状态标注 | v0.6.1 | ✅ 已落 |
 
 ## P1 alpha.2 核心交付
 
@@ -368,10 +364,10 @@ Terms (must use): Asset, AssetKind, AssetMode, ...
 
 | 文件 | 内容 |
 |---|---|
-| `.openxenon/docs/adrs/0055-blueprint-as-composition-template.md` | 顶部状态从 "✅ Adopted" → "✅ Adopted + Runtime 已实现（v0.6.1 P1）"；加 Runtime Implementation Status 段（4 项决策逐项标注落点） |
-| `.openxenon/docs/adrs/0060-domain-vocabulary-boundary.md` | §D4 顶部加 "Runtime Implementation Status: ✅ Implemented (v0.6.1 P3 多视角 term 注入)"；§D8 顶部加 "Runtime Implementation Status: ✅ Implemented (v0.6.1 P3 [Domain] 标注)" |
-| `.openxenon/docs/adrs/0061-data-flow-contract.md` | 顶部状态从 "P0-P8 渐进落地" → "✅ P0-P8 全落地 (v0.7.3 GA)"；加 7 项决策 D1-D7 runtime 落点对照表 |
-| `.openxenon/docs/adrs/INDEX.md` | §ADR 落地状态一览 表更新 0055/0060/0061 行注脚（runtime 注入 / 多视角 / P1-P8 全落地）|
+| `.openxenon/drafts/rfc/0055-blueprint-as-composition-template.md` | 顶部状态从 "✅ Adopted" → "✅ Adopted + Runtime 已实现（v0.6.1 P1）"；加 Runtime Implementation Status 段（4 项决策逐项标注落点） |
+| `.openxenon/drafts/rfc/0060-domain-vocabulary-boundary.md` | §D4 顶部加 "Runtime Implementation Status: ✅ Implemented (v0.6.1 P3 多视角 term 注入)"；§D8 顶部加 "Runtime Implementation Status: ✅ Implemented (v0.6.1 P3 [Domain] 标注)" |
+| `.openxenon/drafts/rfc/0061-data-flow-contract.md` | 顶部状态从 "P0-P8 渐进落地" → "✅ P0-P8 全落地 (v0.6.1 GA)"；加 7 项决策 D1-D7 runtime 落点对照表 |
+| `.openxenon/drafts/rfc/INDEX.md` | §ADR 落地状态一览 表更新 0055/0060/0061 行注脚（runtime 注入 / 多视角 / P1-P8 全落地）|
 
 ### 验收门槛
 
@@ -382,7 +378,7 @@ Terms (must use): Asset, AssetKind, AssetMode, ...
 - `bun scripts/check-heading-skeleton.ts`：✅ 0 violations
 - 人工 review 4 个 ADR 文件改动一致性：D1-D7 全闭环证据链（每个 D 都有具体落点 + phase 标注）
 
-## v0.7.3 RFC 全 9 Phase 收尾总结
+## v0.6.1 理想态数据流 9 Phase 收尾总结
 
 | Phase | 决策 | 版本 | 测试增量 | 累计测试 |
 |---|---|---|---|---|
