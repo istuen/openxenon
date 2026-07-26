@@ -43,4 +43,4 @@ interface ProbePort {
 ## 参考
 
 - [AGENTS.md §Probes 拆分](../../../AGENTS.md#仓库约定) — verdicts ↔ probes 对偶
-- [ADR-0008 ProbeObservation vs ProbeOutcome](../../../.openxenon/drafts/rfc/0008-probe-observation-vs-verdict.md)
+- [RFC-0002 Kernel/L0 边界 §D2 ProbeObservation vs ProbeOutcome 二元公理](../../../rfc/zh-cn/RFC-0002-kernel-l0.html#d2-probeobservation-vs-probeoutcome-二元公理)

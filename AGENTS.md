@@ -82,21 +82,23 @@ bun test                    # bun test，约 1487 个测试 / 119 文件
   - **正确维护流**：修改 `instruction.md` → 跑 `bun run packages/cli/src/index.ts init -f` → `.opencode/skills/` 自动重建
   - **错误反模式**：不要手动编 `.opencode/skills/<skill>/SKILL.md`——下次 `init -f` 会从 SSOT 覆盖你的修改
 
-## 文档三层架构（v0.7 重构）
+## 文档三层架构（v0.7 三情态分离重构）
 
 > **判据**：受众是外部用户 → `docs/`（topic-first：product|dev|rfc）；受众是贡献者且需长期保留 → `docs/rfc/`（沉淀）；受众是 OXN 开发 → `.openxenon/drafts/`（流动）；项目资产 → `.openxenon/assets/`；运行时 → `.openxenon/{works,proofs}/`。
+>
+> **v0.7 三情态**：文档按"情态"分三类——Asset（定义性，回答"X 是什么"）+ RFC（规定性，回答"为什么决定 X"）+ Doc（描述性，回答"怎么用 X"）。详见 [RFC-0009 文档三情态分离](.openxenon/drafts/rfc-format-design.md#d1三情态定义) 与 [OxnProjectDomain 工程术语](./docs/glossary/zh-cn/project-terms.html)。
 
 ### 1. 对外文档 — `docs/`（topic-first SSOT，tracked）
 
 ```
 docs/
-├── product/{zh-cn,en}/   ← 产品与使用手册
-├── dev/{zh-cn,en}/       ← 开发手册（贡献者）
-└── rfc/{zh-cn,en}/       ← 决策记录（OXP Proposal 机制）
+├── product/{zh-cn,en}/   ← 产品与使用手册（描述性 Doc）
+├── dev/{zh-cn,en}/       ← 开发手册（贡献者，描述性 Doc）
+└── rfc/{zh-cn,en}/       ← 规范 RFC（规定性 Prescriptive）
 ```
 
 - **topic-first**：先按主题（product/dev/rfc）后按语言（zh-cn/en），不再按语言平铺。
-- **rfc/ 内含历史 ADR**：v0.7 前 ADR 迁移至 `docs/rfc/OXP-XXXX-xxx.md`，统一编号。
+- **rfc/ 唯一承载规定性内容**：v0.7+ 废除 OXP 双层机制，所有 RFC 走 `docs/rfc/zh-cn/RFC-XXXX-<theme>.md`（frozen + errata 演进）。
 - 默认中文为主（zh-cn/）；rfc/ 暂无英文版本。
 - 章内统一模板：What → Why → How → 参考。
 - 旧 `docs/_archive/` 保留历史归档（不再作对外引用源，inv-10）。
@@ -104,16 +106,17 @@ docs/
 ### 2. 对内-开发文档 — `.openxenon/drafts/`（流动，tracked）
 
 - `.openxenon/drafts/` — 项目工作草稿（替代原 pools/）
-  - `drafts/rfc/` — OXP Proposal 暂存与历史 ADR 归档（待审视归属）
+  - `drafts/rfc/` — 历史 ADR 归档（v0.7 Phase 3 已批量归档到 `.openxenon/.archived/docs/adrs/`）
   - `drafts/*.md` — 工作草稿（探索、审计、设计初稿）
 - 流动层：可自由编辑/删除
 - 提升通道：promote 走对应 Blueprint → `docs/product/` / `docs/dev/` / `docs/rfc/` / `.openxenon/assets/`
 
-### 3. 项目资产 — `.openxenon/assets/`（边界，冻结后不可变）
+### 3. 项目资产 — `.openxenon/assets/`（边界，定义性 Asset，冻结后不可变）
 
 - `.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（E1 Asset）
 - v0.7.0 布局，业务声明 + AI 创作模板，`.md` 格式
 - `assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`
+- 与 builtin assets 关系：见 [RFC-0011 内置 Asset 两层机制](.openxenon/drafts/rfc-format-design.md)
 
 ### 4. 运行时数据 — `.openxenon/{works,proofs}/`
 
@@ -123,32 +126,35 @@ docs/
 
 - `.changes/` — 按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
-### OXP 生命周期（promote 走 Work）
+### RFC 生命周期（v0.7+ 取代 OXP 机制）
 
 ```
-.openxenon/drafts/xxx-draft.md（散落，无格式）
-    ↓ oxn work create promote-xxx --blueprint doc-rfc-workflow
+.openxenon/drafts/<scope>-draft.md（散落，无格式）
+    ↓ oxn work create rfc-XXXX-... --blueprint doc-rfc-workflow
     ↓ lock → run → submit → finalize
-docs/rfc/zh-cn/OXP-00XX-xxx.md（accepted 后核心冻结，仅可追加 errata 段）
+docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 errata 段）
 ```
+
+详见 [RFC-0010 RFC frozen+errata 演进策略](.openxenon/drafts/rfc-format-design.md) + [RFC-0009 文档三情态分离](.openxenon/drafts/rfc-format-design.md)。
 
 ### 4 条 Promote 工作流
 
 ```
 .openxenon/drafts/xxx.md
     │
-    ├── asset-workflow      → .openxenon/assets/{kind}/xxx.md
-    ├── doc-prod-workflow   → docs/product/{zh-cn,en}/xxx.md
-    ├── doc-dev-workflow    → docs/dev/{zh-cn,en}/xxx.md
-    └── doc-rfc-workflow    → docs/rfc/zh-cn/OXP-XXXX-xxx.md
+    ├── asset-workflow      → .openxenon/assets/{kind}/xxx.md  (定义性 Asset)
+    ├── doc-prod-workflow   → docs/product/{zh-cn,en}/xxx.md    (描述性 Doc)
+    ├── doc-dev-workflow    → docs/dev/{zh-cn,en}/xxx.md        (描述性 Doc)
+    └── doc-rfc-workflow    → docs/rfc/zh-cn/RFC-XXXX-xxx.md    (规定性 RFC)
 ```
 
-### 引用规则（v0.7 简化）
+### 引用规则（v0.7 三情态隔离）
 
 1. `docs/` 内部互引 ✅（product↔dev↔rfc 同树，跨语言需走相对路径）
-2. `docs/` → `.openxenon/` ❌（严格隔离）
+2. `docs/` → `.openxenon/` ❌（严格隔离，dev→drafts/dev→assets 由 `bun scripts/check-doc-boundary.ts` 守门）
 3. `.openxenon/drafts/` → `docs/` ✅（仅通过 promote workflow）
 4. `.openxenon/assets/` → `docs/` ❌（边界不依赖手册）
+5. **RFC 强制约束**（v0.7 RFC-0010）：RFC 只引用 `docs/glossary/zh-cn/<category>.html#<term>` 与 related ADR（不在正文引 docs/{product,dev}）
 
 ## 文档站点
 
@@ -162,13 +168,13 @@ docs/rfc/zh-cn/OXP-00XX-xxx.md（accepted 后核心冻结，仅可追加 errata 
 
 - 运行时数据：`.openxenon/{works,proofs}/`（已 gitignore，运行时产物）。
 - **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/`（E1 Asset 边界）；`drafts/`（探索稿 + 历史 ADR/RFC）；运行时 `works/ proofs/ .cache/` 已 gitignore。
-- IAP 资产：`.openxenon/assets/{domains,blueprints,stack}/`（v0.7.0 布局，业务声明 + AI 创作模板，`.md` 格式）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
+- IAP 资产：`.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（v0.7 布局，Asset = 定义性，5 类 AssetKind）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
 - AI 可见的权威文档：`docs/product/zh-cn/introduction.html`（入口）、`docs/product/zh-cn/concepts/iap-paradigm.html`（IAP 范式）、`docs/product/zh-cn/concepts/insight.html`（Insight 层）、`docs/product/zh-cn/concepts/work.html`（Work 核心）、`docs/product/zh-cn/concepts/proof.html`（Proof 轴）、`docs/product/zh-cn/reference/cli-user-guide.html`（CLI 参考）、`docs/dev/zh-cn/architecture.html`（架构）。
-- ADR/RFC 索引：`.openxenon/drafts/rfc/INDEX.md`（v0.7 暂存状态，待逐个审视归属）。
+- **RFC 索引**：[`docs/rfc/zh-cn/`](./docs/rfc/zh-cn/) — 12 个 RFC（v0.7+ 唯一规定性载体；旧 `.openxenon/drafts/rfc/INDEX.md` 已废，48 ADR 已归档到 `.openxenon/.archived/docs/adrs/`）。
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
-## AI Agent 路由入口（v0.6.x Roadmap）
+## AI Agent 路由入口（v0.7.x Roadmap）
 
 > **第一步：定位 scene，再读 Roadmap**
 > 收到 goal 后判断属于哪个 scene（doc / dev / debug / test / release / onboard），
@@ -176,13 +182,19 @@ docs/rfc/zh-cn/OXP-00XX-xxx.md（accepted 后核心冻结，仅可追加 errata 
 > 列出该 scene 的 Domain + Blueprint 列表（每项带 description）。
 > 用 `oxn roadmap suggest --goal "<goal>" --scene <scene>` 排序匹配。
 
-### 场景速查
+### 场景速查（v0.7+ 6 scene）
 - 写/改/读文档 → `scene=doc`（DocEngineeringContext + VitePressContext + doc-publish + doc-promote）
 - 改代码/加 CLI → `scene=dev`（WorkOrchestrationContext + dev-workflow + add-cli-subcommand）
 - Bug 修复/frozen 异常 → `scene=debug`（iap-error-context + fix-issue）
 - 写测试 → `scene=test`（WorkOrchestrationContext + dev-workflow）
 - 发版 → `scene=release`（MonorepoContext + release-cut + migrate-version）
 - 新人入门 → `scene=onboard`（L0L3Context + MonorepoContext + dev-workflow）
+
+### v0.7+ 文档架构改动（AI 必读）
+- **规定性文档**：48 ADR + 3 OXP → 12 RFC（8 主题 RFC + 4 meta-RFC）；frozen + errata 演进。
+- **三情态分离**：Asset（定义性）+ RFC（规定性）+ Doc（描述性）；3 情态全集中两情态组合是设计错误信号。
+- **内置 Asset 两层**：`@oxn/` scope fallback + `@prj/` scope override（Phase 4 落地）。
+- **跨层链接守门**：`bun scripts/check-doc-boundary.ts` 在 pre-commit 强制（dev→drafts / dev→assets / rfc→drafts 全部禁止）。
 
 ### Asset 变更后（手动 sync，Mode B）
 - `oxn asset create` 成功后会自动提示 `oxn roadmap sync`（不自动改 Roadmap）
@@ -218,7 +230,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 2. 落地后 `git add dev/<filename> && git commit -m "docs(dev): add <title>"`
 3. 更新 `dev/README.md`「当前内容」表 + 本段摘要
 
-**v0.6+ 三层文档守门**：由 `bun scripts/check-doc-boundary.ts` 在 pre-commit 自动校验（TODO：v0.7 落地）。
+**v0.7 三层文档守门**（已落地）：由 `bun scripts/check-doc-boundary.ts` 在 lefthook pre-commit 自动校验（覆盖 `**/*.md`）；Phase 5 扩展规则为 6 条（products/dev/rfc → .openxenon 双向 + drafts 隔离 + drafts-rfc-no-assets）。Phase 5 修复 19 条跨层链接（F6）后 0 violations。
 
 ## v0.2 路线图分支策略（已完成，归档）
 

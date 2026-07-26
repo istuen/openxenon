@@ -4,7 +4,7 @@ title: OXN Engine 开发者手册
 
 # OXN Engine 开发者手册
 
-> **术语权威源**：本文档基于 [`oxn-engine-domain`](../../../.openxenon/assets/domains/oxn-engine-domain.md)
+> **术语权威源**：本文档基于 [oxn-engine-domain 引擎术语](../../glossary/zh-cn/engine-terms.html)
 > （Layer 1 · packages/engine/）编译。所有 term 定义以该 Domain 为唯一 SSOT。
 
 ## What —— 是什么
@@ -144,10 +144,10 @@ packages/cli ↔ packages/daemon
 
 ## 参考
 
-- [OXN 顶层 Domain · oxn-domain](../../../.openxenon/assets/domains/oxn-domain.md)
-- [OXN Engine Domain · oxn-engine-domain](../../../.openxenon/assets/domains/oxn-engine-domain.md)（本文档 SSOT）
+- [OXN 顶层术语 · core-terms](../../glossary/zh-cn/core-terms.html)
+- [OXN Engine 术语 · engine-terms](../../glossary/zh-cn/engine-terms.html)（本文档 SSOT）
 - [OXN CLI 开发者手册 · oxn-cli.md](./oxn-cli.md)
 - [L0-L3 宪法 · l0-l3-constitution.md](./l0-l3-constitution.md)
 - [Monorepo 双包 · monorepo.md](./monorepo.md)
 - [架构总览 · architecture.md](./architecture.md)
-- [v0.7 Domain 三层架构 RFC · v0.7-domain-hierarchy-restructure-rfc.md](../../../.openxenon/drafts/rfc/v0.7-domain-hierarchy-restructure-rfc.md)（W3 部分）
+- v0.7 Domain 三层架构 RFC（v0.7 探索阶段产物，已并入 [RFC-0007 Domain 词汇与 OXN 定位](../../rfc/zh-cn/RFC-0007-domain-positioning.html)）

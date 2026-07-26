@@ -61,5 +61,5 @@ oxn status
 ## 参考
 
 - [AGENTS.md §错误类型定义](../../../AGENTS.md#cli-架构oxn) — IAPError / OXNCrash / isCliInputError
-- [ADR-0031 Proof 记录事实 ≠ 裁判](../../../.openxenon/drafts/rfc/0031-proof-notary-not-judge.md)
+- [RFC-0003 AI 协作哲学 §D3 OXN Engine 公证人 ≠ 裁判](../../rfc/zh-cn/RFC-0003-ai-collaboration.html#d3-oxn-engine-公证人--裁判)
 - [AGENTS.md §开发者操作指南 §调试](../../../AGENTS.md#开发者操作指南)

@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 /**
- * check-doc-boundary — 文档三层守门（v0.7 重构）
+ * check-doc-boundary — 文档三层守门（v0.7 重构 + v0.7.4 Phase 5 扩展）
  *
  * 规则矩阵（v0.7 topic-first）：
  *   docs/product/{zh-cn,en}/*  → 禁止  .openxenon/**
  *   docs/dev/{zh-cn,en}/*       → 禁止  .openxenon/drafts/**
+ *                                禁止  .openxenon/assets/    （v0.7.4 新增；dev→assets 改引 glossary）
  *   docs/rfc/{zh-cn,en}/*       → 禁止  .openxenon/drafts/**
  *   .openxenon/drafts/rfc/*     → 禁止  docs/product/**
  *   .openxenon/drafts/*         → 禁止  .openxenon/drafts/rfc/**
@@ -52,6 +53,13 @@ const RULES: BoundaryRule[] = [
     sourcePattern: /^docs\/dev\//,
     targetPattern: /^\.openxenon\/drafts\//,
     message: '开发手册不可引用 .openxenon/drafts/ 内部（仅 docs/rfc/ 可互引）',
+  },
+  {
+    name: 'dev-no-assets',
+    description: 'dev/ 不可引用 .openxenon/assets/',
+    sourcePattern: /^docs\/dev\//,
+    targetPattern: /^\.openxenon\/assets\//,
+    message: '开发手册不可直接引用 .openxenon/assets/（Domain 是 vocabulary，应通过 docs/glossary/）',
   },
   {
     name: 'rfc-no-drafts-isolated',

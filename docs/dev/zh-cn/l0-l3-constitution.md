@@ -58,5 +58,5 @@ ESLint 架构规则的错误信息是**中文**（"🚨 宪法违规…"），�
 ## 参考
 
 - [AGENTS.md §硬性规则](../../../AGENTS.md#硬性规则l0l3-宪法) — 完整守卫矩阵
-- [ADR-0006 三相模型](../../../.openxenon/drafts/rfc/0006-three-phase-model.md) — 层级设计哲学
-- [ADR-0009 Trace-before-State](../../../.openxenon/drafts/rfc/0009-architectural-guard-tests-trace-before-state.md) — 写入顺序守则
+- [RFC-0002 Kernel/L0 边界 §D7 架构守护测试 + Trace-before-State](../../rfc/zh-cn/RFC-0002-kernel-l0.html#d7-架构守护测试--trace-before-state-写入顺序)
+- ADR-0006 三相模型（v0.7 探索阶段 Proposed 状态，待后续 RFC 化）

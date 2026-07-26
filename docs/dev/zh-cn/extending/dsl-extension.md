@@ -35,5 +35,5 @@ PropertyType: STRING | TermRef;  // v0.8.0: STRING | '@term/'ID
 
 ## 参考
 
-- [ADR-0052 Langium 退役](../../../.openxenon/drafts/rfc/0052-langium-retirement-oxn-deprecation.md)
-- [v0.7 Emergence RFC §OXL](../../../.openxenon/drafts/rfc/v0.7-emergence-rfc.md)
+- [RFC-0001 OXL/Blueprint 哲学 §D3 MD-native 语法统一](../../../rfc/zh-cn/RFC-0001-oxl-philosophy.html#d3-md-native-语法统一)
+- v0.7 Emergence RFC（探索阶段产物，待 v0.8+ 落地）
