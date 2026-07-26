@@ -251,7 +251,7 @@ Domain（SSOT）  ──manual review──>  Glossary（外部手册可见）
 - [ADR-0077](../../.openxenon/drafts/rfc/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md) — Utility + Goal→Boundary（2026-07-23）
 - [ADR-0078](../../.openxenon/drafts/rfc/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md) — LLM knowledge-full（2026-07-23）
 - [ADR-0079](../../.openxenon/drafts/rfc/0079-asset-is-ontology-formal-reasoning-deferred.md) — Asset 是 Ontology（2026-07-23）
-- [OXP-0003](./OXP-0003-daemon-responsibility-boundary.md) — 已合并入本 RFC（Phase 3 删除）
+- [OXP-0003（已删除）](./README.md) — 内容已合并入本 RFC；OXP 文件于 2026-07-26 Phase 3 删除
 
 ## Errata
 

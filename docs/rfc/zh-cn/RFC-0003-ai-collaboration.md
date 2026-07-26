@@ -199,7 +199,7 @@ OXN 只记录客观事实，不评判"合格不合格"。判定权归工程师�
 - [ADR-0058](../../.openxenon/drafts/rfc/0058-minimum-trust-closure.md) — 最小信任闭环（2026-07-12）
 - [ADR-0067](../../.openxenon/drafts/rfc/0067-no-judgment-principle.md) — 彻底不判贯彻（2026-07-21）
 - [ADR-0076](../../.openxenon/drafts/rfc/0076-adversarial-ownership-and-cross-llm-referent.md) — 对抗关系归属（2026-07-23）
-- [OXP-0002](./OXP-0002-no-judgment-principle.md) — 已合并入本 RFC（Phase 3 删除）
+- [OXP-0002（已删除）](./README.md) — 内容已合并入本 RFC；OXP 文件于 2026-07-26 Phase 3 删除
 
 ## Errata
 

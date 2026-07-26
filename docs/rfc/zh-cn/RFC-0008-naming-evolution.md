@@ -142,7 +142,7 @@ Probe 的验证结果（COMPLETED / DEVIATED / INCONCLUSIVE / MANUAL_PENDING）�
 - [ADR-0071](../../.openxenon/drafts/rfc/0071-abolish-audit-trail.md) — 废除 auditTrail（2026-07-23）
 - [ADR-0080](../../.openxenon/drafts/rfc/0080-error-terminology-unification-and-governance.md) — 错误与冲突处理术语统一（2026-07-23）
 - [ADR-0081](../../.openxenon/drafts/rfc/0081-oxn-unified-error-framework.md) — 类型层被取代（ADR-0080 superseded-by）
-- [OXP-0001](./OXP-0001-terminology-simplification.md) — 已合并入本 RFC（Phase 3 删除）
+- [OXP-0001（已删除）](./README.md) — 内容已合并入本 RFC；OXP 文件于 2026-07-26 Phase 3 删除
 
 ## Errata
 
