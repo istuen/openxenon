@@ -546,6 +546,108 @@ const gitMergeFeasibleStrategy: ProbeStrategy = (observation, params) => {
             : `unexpected status: ${status}`,
   }
 }
+
+// v0.6.2: docs_build — 期望 output.passed === true（vitepress build exit 0）
+const docsBuildStrategy: ProbeStrategy = (observation, params) => {
+  let passed = false
+  let exitCode: number | null = null
+  let summary: string | undefined
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      exitCode?: number | null
+      summary?: string
+    }
+    passed = obj.passed === true
+    exitCode = obj.exitCode ?? null
+    summary = obj.summary
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: ok
+      ? `docs-build: vitepress build passed${summary ? ` (${summary})` : ''}`
+      : `docs-build: ${observation.error ?? 'build failed'}`,
+    actual: { exitCode, summary },
+    params,
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? 'vitepress build failed'),
+  }
+}
+
+// v0.6.2: heading_skeleton_check — 期望 output.passed === true（pool H1 骨架完整）
+const headingSkeletonCheckStrategy: ProbeStrategy = (observation, params) => {
+  let passed = false
+  let checked = 0
+  let passedCount = 0
+  let failedFiles: string[] = []
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      checked?: number
+      passedCount?: number
+      failedFiles?: string[]
+    }
+    passed = obj.passed === true
+    checked = obj.checked ?? 0
+    passedCount = obj.passedCount ?? 0
+    failedFiles = obj.failedFiles ?? []
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: ok
+      ? `heading-skeleton-check: ${passedCount}/${checked} pool files passed`
+      : `heading-skeleton-check: ${checked - passedCount} failed (${failedFiles.slice(0, 3).join(', ')})`,
+    actual: { checked, passedCount, failedFiles },
+    params,
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : `${failedFiles.length} pool file(s) failed heading skeleton check`,
+  }
+}
+
+// v0.6.2: docs_heading_check — 期望 output.passed === true（docs H2 章节完整）
+const docsHeadingCheckStrategy: ProbeStrategy = headingSkeletonCheckStrategy
+
+// v0.6.2: doc_boundary — 期望 output.violationCount === 0（6 条规则全通过）
+const docBoundaryStrategy: ProbeStrategy = (observation, params) => {
+  let passed = false
+  let violationCount = 0
+  let violations: Array<{ file: string; line: number; rule: string }> = []
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      violationCount?: number
+      violations?: Array<{ file: string; line: number; rule: string }>
+    }
+    passed = obj.passed === true
+    violationCount = obj.violationCount ?? 0
+    violations = obj.violations ?? []
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: ok
+      ? `doc-boundary: 0 violations`
+      : `doc-boundary: ${violationCount} violation(s) (${violations
+          .slice(0, 3)
+          .map((v) => v.rule)
+          .join(', ')})`,
+    actual: { violationCount, violations },
+    params,
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : `${violationCount} doc boundary violation(s)`,
+  }
+}
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -568,6 +670,11 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   git_branch_exists: gitBranchExistsStrategy,
   git_status_clean: gitStatusCleanStrategy,
   git_merge_feasible: gitMergeFeasibleStrategy,
+  // v0.6.2: doc-* builtin probes（Doc 编写流程闭环）
+  docs_build: docsBuildStrategy,
+  heading_skeleton_check: headingSkeletonCheckStrategy,
+  docs_heading_check: docsHeadingCheckStrategy,
+  doc_boundary: docBoundaryStrategy,
 }
 
 export const PROBE_VERDICT_ALIASES: Record<string, string> = {
@@ -582,6 +689,11 @@ export const PROBE_VERDICT_ALIASES: Record<string, string> = {
   'git-branch-exists': 'git_branch_exists',
   'git-status-clean': 'git_status_clean',
   'git-merge-feasible': 'git_merge_feasible',
+  // v0.6.2: doc-* aliases
+  'docs-build': 'docs_build',
+  'heading-skeleton-check': 'heading_skeleton_check',
+  'docs-heading-check': 'docs_heading_check',
+  'doc-boundary': 'doc_boundary',
 }
 
 export function getVerdictStrategy(observationType: string): ProbeStrategy | null {

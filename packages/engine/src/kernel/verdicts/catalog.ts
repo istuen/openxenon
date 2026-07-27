@@ -490,6 +490,95 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     builtin: 'oxn',
     domainTerm: 'MergeCommit',
   },
+  {
+    // v0.6.2: docs-build — 跑 vitepress build docs 验证文档站点构建通过
+    // 由 doc-author / doc-publish / 3 promote blueprint 的 validate slot observe
+    semanticName: 'docs-build',
+    description: 'Run `bun run docs:build` (vitepress build) to verify doc site builds (exit 0 → PASS)',
+    inputs: [
+      {
+        name: 'timeout',
+        type: 'number',
+        required: false,
+        description: 'Timeout in milliseconds, default 180000',
+      },
+    ],
+    examples: [{ name: 'default', inputs: {} }],
+    internalRef: '@oxn/probes/docs-build',
+    inputMap: { timeout: 'timeout' },
+    builtin: 'oxn',
+  },
+  {
+    // v0.6.2: heading-skeleton-check — 校验 pool .md 的 H1 骨架
+    // 5 池 spec: research / design / issue / audit / journal
+    // 复用 packages/engine/src/infra/markdown-headings.ts 的 validateHeadingSkeleton
+    semanticName: 'heading-skeleton-check',
+    description:
+      'Validate heading skeleton of .openxenon/pools/<pool>/*.md files (H1 mode; pool type determines spec: research / design / issue / audit / journal)',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: true,
+        description: 'File or directory path to validate (recursively collects .md)',
+      },
+      {
+        name: 'pool',
+        type: 'string',
+        required: true,
+        description: 'Pool kind: research / design / issue / audit / journal (determines required H1 spec)',
+      },
+    ],
+    examples: [
+      { name: 'research-pool', inputs: { path: './.openxenon/pools/research', pool: 'research' } },
+      { name: 'design-pool', inputs: { path: './.openxenon/pools/design', pool: 'design' } },
+    ],
+    internalRef: '@oxn/probes/heading-skeleton-check',
+    inputMap: { path: 'path', pool: 'pool' },
+    builtin: 'oxn',
+  },
+  {
+    // v0.6.2: docs-heading-check — 校验 docs .md 章节骨架（H2 模式：What→Why→How→参考）
+    // 与 heading-skeleton-check 区分：pool 用 H1（每个 H1 是独立 spec），docs 用 H2（章内统一模板）
+    semanticName: 'docs-heading-check',
+    description:
+      'Validate chapter skeleton of docs/{product,dev,rfc}/*.md files (H2 mode: What→Why→How→参考; only files containing ## What)',
+    inputs: [
+      {
+        name: 'path',
+        type: 'string',
+        required: true,
+        description: 'File or directory path to validate (recursively collects .md)',
+      },
+    ],
+    examples: [
+      { name: 'product-zh', inputs: { path: './docs/product/zh-cn' } },
+      { name: 'dev-zh', inputs: { path: './docs/dev/zh-cn' } },
+    ],
+    internalRef: '@oxn/probes/docs-heading-check',
+    inputMap: { path: 'path' },
+    builtin: 'oxn',
+  },
+  {
+    // v0.6.2: doc-boundary — 文档三层守门（6 条规则）
+    // 与 scripts/check-doc-boundary.ts 逻辑等价（lefthook pre-commit 也跑该脚本）
+    // 该 probe 让 OXN work flow 内部可主动调用此验证
+    semanticName: 'doc-boundary',
+    description:
+      'Document boundary guard (6 rules: product→openxenon / dev→drafts / dev→assets / rfc→drafts/rfc / drafts→drafts/rfc / drafts/rfc→assets)',
+    inputs: [
+      {
+        name: 'root',
+        type: 'string',
+        required: false,
+        description: 'Project root (default process.cwd())',
+      },
+    ],
+    examples: [{ name: 'default', inputs: {} }],
+    internalRef: '@oxn/probes/doc-boundary',
+    inputMap: { root: 'root' },
+    builtin: 'oxn',
+  },
 ]
 
 // ---------------------------------------------------------------------------

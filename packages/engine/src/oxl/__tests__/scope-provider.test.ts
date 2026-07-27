@@ -203,12 +203,14 @@ describe('OxnBuiltinRegistry', () => {
     expect(registry.has('anything', 'blueprint')).toBe(false)
   })
 
-  test('listByType 返回 15 个探针', () => {
+  test('listByType 返回 19 个探针（v0.6.2: 15 + 4 doc-*）', () => {
     const probes = registry.listByType('probe')
-    expect(probes.length).toBe(15)
+    expect(probes.length).toBe(19)
     expect(probes.map((p) => p.name)).toContain('shell_exec')
     expect(probes.map((p) => p.name)).toContain('fs-exists')
     expect(probes.map((p) => p.name)).toContain('ts-compiles')
+    expect(probes.map((p) => p.name)).toContain('docs-build')
+    expect(probes.map((p) => p.name)).toContain('heading-skeleton-check')
   })
 
   test('listByType 返回 3 个蓝图', () => {
@@ -223,11 +225,11 @@ describe('OxnBuiltinRegistry', () => {
     expect(registry.listByType('part')).toEqual([])
   })
 
-  test('count 和 totalCount', () => {
-    expect(registry.count('probe')).toBe(15)
+  test('count 和 totalCount（v0.6.2: 19 probes = 15 + 4 doc-*）', () => {
+    expect(registry.count('probe')).toBe(19)
     expect(registry.count('blueprint')).toBe(3)
     expect(registry.count('part')).toBe(0)
-    expect(registry.totalCount()).toBe(18)
+    expect(registry.totalCount()).toBe(22)
   })
 
   test('动态注册', () => {
@@ -301,9 +303,9 @@ describe('OxnWorkspaceManager', () => {
     expect(Array.isArray(impls)).toBe(true)
   })
 
-  test('list @oxn probe 返回 15 个内置探针', () => {
+  test('list @oxn probe 返回 19 个内置探针（v0.6.2: 15 + 4 doc-*）', () => {
     const probes = manager.list('oxn', 'probe')
-    expect(probes.length).toBe(15)
+    expect(probes.length).toBe(19)
     for (const p of probes) {
       expect(p.resolvedFrom).toBe('builtin')
       expect(p.reference.scope).toBe('oxn')
@@ -325,8 +327,8 @@ describe('OxnWorkspaceManager', () => {
     expect(ifaces).toEqual([])
   })
 
-  test('count 返回正确数量', () => {
-    expect(manager.count('oxn', 'probe')).toBe(15)
+  test('count 返回正确数量（v0.6.2: 19 probes）', () => {
+    expect(manager.count('oxn', 'probe')).toBe(19)
     expect(manager.count('oxn', 'blueprint')).toBe(3)
     expect(manager.count('oxn', 'part')).toBe(0)
   })

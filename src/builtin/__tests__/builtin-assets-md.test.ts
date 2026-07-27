@@ -65,8 +65,8 @@ describe('v0.6.1 PR-4: builtin assets .md 加载测试（mdast 路径）', () =>
   })
 
   describe('数量守卫', () => {
-    test('15 builtin probes .md 文件存在', () => {
-      expect(listMd(BUILTIN_PROBES_DIR).length).toBe(15)
+    test('19 builtin probes .md 文件存在（v0.6.2: 15 + 4 doc-*）', () => {
+      expect(listMd(BUILTIN_PROBES_DIR).length).toBe(19)
     })
 
     test('3 builtin blueprints .md 文件存在', () => {

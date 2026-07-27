@@ -15,6 +15,10 @@ import { executeGitClean, type GitCleanParams } from './git-clean'
 import { executeGitBranchExists, type GitBranchExistsParams } from './git-branch-exists'
 import { executeGitStatusClean, type GitStatusCleanParams } from './git-status-clean'
 import { executeGitMergeFeasible, type GitMergeFeasibleParams } from './git-merge-feasible'
+import { executeDocsBuild, type DocsBuildParams } from './docs-build'
+import { executeHeadingSkeletonCheck, type HeadingSkeletonCheckParams } from './heading-skeleton-check'
+import { executeDocsHeadingCheck, type DocsHeadingCheckParams } from './docs-heading-check'
+import { executeDocBoundary, type DocBoundaryParams } from './doc-boundary'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -218,6 +222,70 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // v0.6.2: docs-build — 跑 vitepress build docs 验证文档站点构建
+  docs_build: async (params, context) => {
+    const docsParams = params as unknown as DocsBuildParams
+    const result = await executeDocsBuild(docsParams, context as ProbeContext)
+    return {
+      probeType: 'docs_build',
+      output: JSON.stringify({ passed: result.passed, exitCode: result.exitCode, summary: result.summary }),
+      error: result.error,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // v0.6.2: heading-skeleton-check — 校验 pool .md heading 骨架（H1 模式）
+  heading_skeleton_check: async (params, context) => {
+    const hsParams = params as unknown as HeadingSkeletonCheckParams
+    const result = await executeHeadingSkeletonCheck(hsParams, context as ProbeContext)
+    return {
+      probeType: 'heading_skeleton_check',
+      output: JSON.stringify({
+        passed: result.passed,
+        checked: result.checked,
+        passedCount: result.passedCount,
+        failedFiles: result.failedFiles,
+        errors: result.errors,
+      }),
+      error: result.passed ? undefined : `failed: ${result.failedFiles.join(', ')}`,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // v0.6.2: docs-heading-check — 校验 docs .md 章节骨架（H2 模式：What→Why→How→参考）
+  docs_heading_check: async (params, context) => {
+    const dhcParams = params as unknown as DocsHeadingCheckParams
+    const result = await executeDocsHeadingCheck(dhcParams, context as ProbeContext)
+    return {
+      probeType: 'docs_heading_check',
+      output: JSON.stringify({
+        passed: result.passed,
+        checked: result.checked,
+        passedCount: result.passedCount,
+        failedFiles: result.failedFiles,
+        errors: result.errors,
+      }),
+      error: result.passed ? undefined : `failed: ${result.failedFiles.join(', ')}`,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // v0.6.2: doc-boundary — 文档三层守门（6 条规则：product/dev/rfc → openxenon/drafts/assets）
+  doc_boundary: async (params, context) => {
+    const dbParams = params as unknown as DocBoundaryParams
+    const result = await executeDocBoundary(dbParams, context as ProbeContext)
+    return {
+      probeType: 'doc_boundary',
+      output: JSON.stringify({
+        passed: result.passed,
+        violationCount: result.violationCount,
+        violations: result.violations,
+      }),
+      error: result.passed ? undefined : `${result.violationCount} violations`,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -241,6 +309,10 @@ class ProbeRegistry {
     'git-branch-exists': 'git_branch_exists',
     'git-status-clean': 'git_status_clean',
     'git-merge-feasible': 'git_merge_feasible',
+    'docs-build': 'docs_build',
+    'heading-skeleton-check': 'heading_skeleton_check',
+    'docs-heading-check': 'docs_heading_check',
+    'doc-boundary': 'doc_boundary',
     // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
     'fs-exists:probes': 'fs_exists',
     'fs-not-exists:probes': 'fs_not_exists',
@@ -256,6 +328,10 @@ class ProbeRegistry {
     'git-branch-exists:probes': 'git_branch_exists',
     'git-status-clean:probes': 'git_status_clean',
     'git-merge-feasible:probes': 'git_merge_feasible',
+    'docs-build:probes': 'docs_build',
+    'heading-skeleton-check:probes': 'heading_skeleton_check',
+    'docs-heading-check:probes': 'docs_heading_check',
+    'doc-boundary:probes': 'doc_boundary',
   }
 
   constructor() {
@@ -326,4 +402,8 @@ export {
   executeGitBranchExists,
   executeGitStatusClean,
   executeGitMergeFeasible,
+  executeDocsBuild,
+  executeHeadingSkeletonCheck,
+  executeDocsHeadingCheck,
+  executeDocBoundary,
 }

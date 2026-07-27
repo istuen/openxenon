@@ -27,13 +27,17 @@ import { probeRegistry } from '@openxenon/engine/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '@openxenon/engine/kernel/verdicts/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 5a+5b builtin probes（15 条：11 + 4 git-*）', () => {
+  test('catalog 列出 5a+5b builtin probes（19 条：15 + 4 doc-* v0.6.2）', () => {
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
     // 5a: 5 条 + 5b.1+2+3+4+5+6 → 11 条
     // v1.2: + 4 条 git-*（git-clean / git-branch-exists / git-status-clean / git-merge-feasible）= 15
+    // v0.6.2: + 4 条 doc-*（docs-build / heading-skeleton-check / docs-heading-check / doc-boundary）= 19
     expect(names).toEqual([
       'deps-resolved',
+      'doc-boundary',
+      'docs-build',
+      'docs-heading-check',
       'file-exports',
       'fs-content-match',
       'fs-exists',
@@ -43,6 +47,7 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
       'git-clean',
       'git-merge-feasible',
       'git-status-clean',
+      'heading-skeleton-check',
       'http-responds',
       'lint-check',
       'shell-exec',
@@ -51,13 +56,17 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     ])
   })
 
-  test('listProbesSummary 至少 15 个（5a + 5b.1+2+3+4+5+6 + 4 git-*）', () => {
+  test('listProbesSummary 至少 19 个（5a + 5b.1+2+3+4+5+6 + 4 git-* + 4 doc-*）', () => {
     const summary = listProbesSummary()
-    expect(summary.length).toBeGreaterThanOrEqual(15)
+    expect(summary.length).toBeGreaterThanOrEqual(19)
     const names = summary.map((s) => s.name)
     expect(names).toContain('file-exports')
     expect(names).toContain('git-clean')
     expect(names).toContain('git-merge-feasible')
+    expect(names).toContain('docs-build')
+    expect(names).toContain('heading-skeleton-check')
+    expect(names).toContain('docs-heading-check')
+    expect(names).toContain('doc-boundary')
   })
 
   test('P1 probe test-pass 标注 domainTerm = TestCase', () => {
