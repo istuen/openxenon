@@ -1,5 +1,28 @@
 # Changelog
 
+> **0.4.0 / 0.5.0 / 0.6.0 change records live in [`.changes/pre-0-6-history.md`](https://github.com/istuen/openxenon/blob/main/.changes/pre-0-6-history.md).**
+
+## [0.6.2-alpha.0] - 2026-07-26
+
+### Changed
+- RFC migration: 48 Adopted ADR → 12 RFCs (8 thematic + 4 meta-RFCs); deprecated the ADR + OXP dual layer
+- Document three-modality split: Asset (definitional) / RFC (prescriptive) / Doc (descriptive)
+- OxnBuiltinRegistry switched from hardcoded mock to .md file loading (15 probes + 3 blueprints)
+- Boundary checker 3 blind-spot fixes + lefthook pre-commit enabled
+- Terminology alignment: TrustClosure → MinimumClosure, etc.
+
+### Added
+- `docs/adrs/` mirror directory (72 ADR files for RFC references)
+- `docs/glossary/zh-cn/project-terms.md` (engineering terms: RFC / Built-in Asset / three-modality)
+- `oxn-project-domain.md` (8th CONTEXT-MAP Domain)
+- 4 meta-RFCs: RFC-0009 (document three-modality) / RFC-0010 (frozen+errata) / RFC-0011 (built-in Asset two-layer) / RFC-0012 (bootstrap seed exemption)
+- `bun scripts/check-doc-boundary.ts` extensions: YAML frontmatter scanning + removed `^` anchors + dropped `.archived` exemption
+
+### Removed
+- 3 OXP files (`docs/rfc/zh-cn/OXP-000{1,2,3}-*.md`, content merged into RFC)
+- `.openxenon/drafts/rfc/INDEX.md` (replaced by `docs/rfc/zh-cn/README.md`)
+- 3 phantom parts (hardcoded mock in `OxnBuiltinRegistry` without .md files: `git-commit` / `create-branch` / `develop-feature`)
+
 ## [0.6.1] - 2026-07-08
 
 > **Theme**: Asset/Work fully MD-canonical — 5 sub-PRs complete closed loop

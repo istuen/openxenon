@@ -8,7 +8,7 @@ superseded-by: null
 related:
   - .openxenon/drafts/rfc/0081-oxn-unified-error-framework.md
   - .openxenon/drafts/rfc/0080-error-terminology-unification-and-governance.md
-  - .openxenon/drafts/error-code-registry.md
+  - docs/dev/zh-cn/error-code-registry.md
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
 ---
 

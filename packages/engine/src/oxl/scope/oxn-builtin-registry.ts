@@ -78,7 +78,10 @@ function coerceScalar(raw: string | null): unknown {
   return raw
 }
 
-function parsePropFromH3(h3Name: string, list: List | null): {
+function parsePropFromH3(
+  h3Name: string,
+  list: List | null,
+): {
   name: string
   type: string
   required: boolean
@@ -95,7 +98,9 @@ function parsePropFromH3(h3Name: string, list: List | null): {
     name: h3Name,
     type: typeField.value,
     required: requiredField?.value === 'true',
-    default: defaultField ? coerceScalar(typeof defaultField.value === 'string' ? defaultField.value : null) : undefined,
+    default: defaultField
+      ? coerceScalar(typeof defaultField.value === 'string' ? defaultField.value : null)
+      : undefined,
   }
 }
 

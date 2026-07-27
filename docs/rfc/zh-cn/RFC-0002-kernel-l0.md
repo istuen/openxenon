@@ -2,7 +2,6 @@
 entity: rfc
 id: RFC-0002
 theme: kernel-l0
-version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
@@ -16,7 +15,9 @@ related:
   - ADR-0011: docs/adrs/0011-evidence-chain-triple.md
   - ADR-0013: docs/adrs/0013-no-langium-type-leak-acl.md
   - ADR-0037: docs/adrs/0037-part-resolver-moved-to-l2-work.md
-synced-at: 2026-07-26
+  - ADR-0017: docs/adrs/0017-probe-stats-cross-proof-accumulation.md
+  - ADR-013: docs/adrs/013-filesystem-port-vs-runtime-file.md
+synced-at: 2026-07-27
 ---
 
 # RFC-0002: Kernel / L0 边界——真空约束 + Port 注入 + 证据链三件套
@@ -170,12 +171,78 @@ Work (L2)    ──→ DSL (L1) + Kernel (L0) + Arsenal (L2-Builtin)
               │ 含 part-resolver（从 Kernel 迁出）
 ```
 
+### D10：FileSystemPort vs runtime/file.ts 职责分工（ADR-013，历史）
+
+L0 Kernel 通过 Port 注入文件系统能力，但文件系统操作的**物理实现**有两种风格：
+
+| 维度 | FileSystemPort（Type A） | runtime/file.ts（Type B） |
+|---|---|---|
+| 接口形态 | Port 抽象（kernel/contracts/） | Bun/Node fs 直接封装 |
+| 调用方 | L0 / L1-OXL | L1-Infra / L2-Work |
+| 注入方式 | PathPort 注入原理（同 D3） | 直接 import |
+| 运行时 | 跨 runtime（Bun/Node 18+） | 单一 runtime |
+| 典型用例 | Probe 路径解析 / frozen.json 写 | CLI 文件操作 |
+
+**职责分工**：
+
+- **L0 Kernel 用 FileSystemPort**：通过 D3 PathPort 注入原理，所有 IO 操作经 `PathPort`/`FsPort`，跨 runtime 可移植
+- **L1-Infra 实现 FileSystemPort**：`packages/engine/src/infra/fs/` 提供 `NodeFsPort` / `BunFsPort` 双实现
+- **L2-Work 可用 `runtime/file.ts`**：CLI 内部使用（`packages/cli/src/runtime/file.ts`）直接调 Bun/Node fs，不强制走 Port——Work 已在 L2，可依赖 runtime
+
+**理由**：L0 真空约束 + Kernel 可移植性要求双层 IO 抽象——Kernel 不知道自己是 Bun 还是 Node；Work 层反之，可享受 Bun 优化。
+
+### D11：probe-stats.json 跨 proof 累积机制（ADR-0017）
+
+**Probe 行为统计缓存**（位于 `.openxenon/.cache/probe-stats.json`）累积跨 proof 跨 work 的 Probe 行为数据：
+
+```json
+{
+  "fs-exists": {
+    "totalRuns": 128,
+    "passRate": 0.96,
+    "avgDurationMs": 12,
+    "lastFailure": "2026-06-30T12:34:56Z",
+    "unstableContexts": ["path-contains-spaces"]
+  }
+}
+```
+
+#### 累积规则
+
+| 触发 | 操作 |
+|---|---|
+| 每次 `work run` 完成 | append 一条 stats 记录 |
+| Probe 改名 / 删除 | stats 保留 90 天后归档（不立即删） |
+| 不稳定 Probe（passRate < 0.8 且 totalRuns > 20） | Insight 自动警告 |
+
+#### 跨 proof 累积意义
+
+- **Insight 涌现层原料**：Probe 历史统计是 Insight 推理的输入（RFC-0005 D1）
+- **不稳定 Probe 预警**：低 passRate 的 Probe 在 Insight 报告中标记，让工程师人工排查
+- **趋势分析**：跨 work 累积的 passRate 反映 Probe 稳定性，避免单次 work run 抖动误导
+
+#### 落地状态
+
+- ✅ 文件位置 `.openxenon/.cache/probe-stats.json` 已确立
+- ✅ 累积 append 已在 CLI 实现（`oxn work run` 完成时调用）
+- ⚠️ Probe 改名 / 删除的 90 天保留策略代码层未完整实现（v0.7+ 落地）
+- ⚠️ 不稳定 Probe 告警在 Insight 输出格式中未明确标注（v0.7+ 落地）
+
+#### 与 D6 证据链三件套关系
+
+probe-stats.json **不是** D6 三件套的一部分——三件套是单次 work 的不可变证据，probe-stats 是跨 work 的累积缓存。两层数据互不污染：
+
+- 三件套记录"这一次发生了什么"（不可变）
+- probe-stats 记录"历史 Probe 表现如何"（累积）
+
 ## 影响范围
 
 - ✅ 8 ADR 全 Adopted（含 ADR-0011 EvidenceChainTriple 术语已废）
 - ✅ L0 真空由 CI 守护（validate-dependencies.ts + eslint no-restricted-imports）
 - ✅ frozen.json schema 已切换为 outcome 聚合结构（ADR-0067 落地）
 - ✅ v1.1 planLock 在 `.work` 文件维护 4 组件 hash
+- ✅ FileSystemPort vs runtime/file.ts 职责分工已通过 L0 Port 注入 + L1 实现 + L2 直调三层落实（ADR-013 历史决策）
+- ✅ probe-stats.json 跨 proof 累积机制部分落地（append 已实现，retention + 不稳定告警 v0.7+ 待补）
 - 📝 异步 IO 顺序需在 `work run` 关键路径严格保持
 
 ## 相关术语
@@ -198,6 +265,8 @@ Work (L2)    ──→ DSL (L1) + Kernel (L0) + Arsenal (L2-Builtin)
 - [ADR-0011](../../adrs/0011-evidence-chain-triple.md) — 证据链三件套（2026-05-27）
 - [ADR-0013](../../adrs/0013-no-langium-type-leak-acl.md) — Langium 类型隔离 ACL（2026-05-28）
 - [ADR-0037](../../adrs/0037-part-resolver-moved-to-l2-work.md) — part-resolver 迁 L2（2026-05-26）
+- [ADR-0017](../../adrs/0017-probe-stats-cross-proof-accumulation.md) — probe-stats.json 跨 proof 累积（2026-06-10，Partially Adopted → RFC D11 承载决策内容）
+- [ADR-013](../../adrs/013-filesystem-port-vs-runtime-file.md) — FileSystemPort vs runtime/file.ts 职责分工（2026-05-12，历史 ADR → RFC D10 记录分层原则）
 
 ## Errata
 
@@ -206,5 +275,11 @@ Work (L2)    ──→ DSL (L1) + Kernel (L0) + Arsenal (L2-Builtin)
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
 - **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
+
+### 2026-07-27 errata
+
+- **新增 D10 FileSystemPort 职责分工 + D11 probe-stats 累积机制**：ADR-013（历史）+ ADR-0017（Partially Adopted）内容已并入 RFC 正文。FileSystemPort（L0 Port 注入）与 runtime/file.ts（L2 直调）的三层分工已通过 L0 / L1 / L2 三层代码结构落实。probe-stats.json 累积机制部分落地（append 已实现，retention + 不稳定告警 v0.7+ 待补）。
+- **frontmatter related 增补**：ADR-0017 + ADR-013。
+- **影响范围段**：增补 FileSystemPort + probe-stats 落地声明。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0002 Accepted 起冻结。

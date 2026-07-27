@@ -9,8 +9,8 @@ related:
   - .openxenon/drafts/rfc/0067-no-judgment-principle.md
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
   - .openxenon/drafts/rfc/0074-insight-ingredient-not-reasoner.md
-  - .openxenon/drafts/error-conflict-handling-convergence.md
-  - .openxenon/drafts/rn-grilling-summary-assessment.md
+  - .openxenon/.archived/drafts/plans/error-conflict-handling-convergence.md
+  - .openxenon/.archived/drafts/plans/rn-grilling-summary-assessment.md
   - .openxenon/drafts/rfc/0081-oxn-unified-error-framework.md
 ---
 
@@ -172,7 +172,7 @@ INFRA_FAIL 裸码拆分为 `INFRA_FAIL_*` 子码（仅保留真正的基础设�
     │
     ▼
 新增前必须：
-    1. 在错误码 SSOT（.openxenon/drafts/error-code-registry.md）登记
+    1. 在错误码 SSOT（docs/dev/zh-cn/error-code-registry.md）登记
     2. 填写：类型 / 类别 / 前缀 / CODE / AXIS（如适用）/ action / 消费者 / 触发场景 / throw site
     3. 确认无现有码可复用（搜索 SSOT）
     4. 如果是 IAPError，确认 AXIS 选择正确

@@ -3,8 +3,9 @@
 > OpenXenon 是一个多 context 词汇架构：8 个 Domain .md 文件共同构成项目术语权威源。
 > 本文件是入口索引；各 Domain 文件是各 context 的精确定义。
 >
-> **v0.7 新增**：OxnProjectDomain（项目工程元层）—— 定义文档三情态分离（Asset / RFC / Doc）、
-> 内置 Asset 两层机制（`@oxn/` + `@prj/`）、自举种子豁免（src/builtin/）。
+> **0.6.x 新增**：OxnProjectDomain（项目工程元层）—— 定义文档三情态分离（Asset / RFC / Doc）、
+> 内置 Asset 两层机制（`@oxn/` + `@prj/`）、自举种子豁免（src/builtin/）、
+> 版本号政策（Alpha / Version Fragment / Roadmap / Fix Record / AssetMap）。详见 [RFC-0013](docs/rfc/zh-cn/RFC-0013-versioning-policy.md)。
 
 ## Contexts
 

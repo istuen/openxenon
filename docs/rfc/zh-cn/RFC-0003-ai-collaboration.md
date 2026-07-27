@@ -2,7 +2,6 @@
 entity: rfc
 id: RFC-0003
 theme: ai-collaboration
-version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
@@ -16,7 +15,10 @@ related:
   - ADR-0058: docs/adrs/0058-minimum-trust-closure.md
   - ADR-0067: docs/adrs/0067-no-judgment-principle.md
   - ADR-0076: docs/adrs/0076-adversarial-ownership-and-cross-llm-referent.md
-synced-at: 2026-07-26
+  - ADR-0022: docs/adrs/0022-guided-adaptive-unmanaged-ai-modes.md
+  - ADR-0006: docs/adrs/0006-three-phase-model.md
+  - ADR-0015: docs/adrs/0015-insight-four-entity-evidence-chain.md
+synced-at: 2026-07-27
 ---
 
 # RFC-0003: AI 协作哲学——三相拓扑 + 彻底不判 + 对抗关系归属
@@ -171,14 +173,66 @@ OXN 只记录客观事实，不评判"合格不合格"。判定权归工程师�
 
 **跨 LLM 参照锚点**：OXN 持久化 Work/Task context（`work.md` + `tasks/<t>/task.md` + `state.json`）。任何 LLM（主或子、大或小、同会话或跨会话）通过 OXN CLI 读取即可获取上下文——OXN CLI + 持久化 context 已支持跨 LLM 委托，无需特殊协议。
 
+### D9：AI 执行三模式——Guided / Adaptive / Unmanaged（ADR-0022）
+
+AI 执行 Work 时按工程师监督程度分三模式：
+
+| 模式 | 监督 | 验证 | 适用 |
+|---|---|---|---|
+| **Guided** | 全程（默认） | 严格 Probe（PassRate 阈值） | 生产 |
+| **Adaptive** | 跳过 action 重放但仍校验 Probe 结果 | 警告级 | 调试 / 复跑 |
+| **Unmanaged** | 无 | 仅 lint（Probe 不强制） | 实验 / Hall（研讨厅） |
+
+**落地状态**：
+
+- ✅ v0.6.1 默认走 **Guided**（生产）
+- ✅ Hall（研讨厅）启用 Adaptive + Unmanaged（实验性）
+- ⚠️ reputation.json 模式自动切换未实现（人工指定）
+- ⚠️ `oxn-work --mode adaptive|unmanaged` CLI flag 在 v0.7+ 落地
+
+**与"彻底不判"的关系**：三模式不改变 OXN 不判定"合格"的角色——Guided 的"严格 Probe"指 OXN 强制跑 Probe，Adaptive 的"警告级"指 Probe 结果如实输出但不阻断，Unmanaged 的"仅 lint"指 Probe 可不跑。三模式调整的是 OXN 阻断程度，而非 OXN 判定逻辑。
+
+### D10：三相物质模型（ADR-0006）
+
+OXN 的物质形态经历三相循环（借鉴热力学耗散结构）：
+
+```
+Phase 1: 静态结构（Asset · E1）
+   ↓ 工程师写入 / AI 生成
+Phase 2: Loop（Work · E2 — 动态过程）
+   ↓ Intent → Align → Proof → Round
+Phase 3: 静态产物（frozen.json · E3 + Insight · E4）
+```
+
+- **Phase 1 静态**：Asset 是相对静态的"边界"（E1 定义性 + Domain SSOT）
+- **Phase 2 Loop**：所有变化被 trace.jsonl 记录（可重放可审计）
+- **Phase 3 凝固**：frozen.json 是物质再次静止的"凝固点"（不可变）
+- **Insight E4**：涌现层处理 Phase 2 累积的痕迹
+
+### D11：Insight 四实体证据链（ADR-0015）
+
+Insight 数据按 4 个实体维度组织证据链：
+
+| 实体维度 | 关键数据 | tracesBackTo |
+|---|---|---|
+| **Domain** | `domain.invariant` 历史 verdict | `frozen.json` 集合 |
+| **Blueprint** | `blueprint.type` 适用域 | Domain 引用图 |
+| **Work** | 完整 IAP 循环历史 | `trace.jsonl` 整段 |
+| **Task** | 单次 task verdict | `frozen.json` + `state.json` |
+
+每个 Insight 包含 `evidenceChain[]`，每条证据带 `tracesBackTo` 反向指针——确保 Insight 涌现可追溯到原始 Phase 3 产物。
+
 ## 影响范围
 
-- ✅ 8 ADR 全 Accept（含 ADR-0057 Superseded-by ADR-0066）
+- ✅ 11 ADR 全 Accept（含 ADR-0057 Superseded-by ADR-0066）
 - ✅ v0.6.1 四层确定性全部落地（代码层）
 - ✅ frozen.json schema 完成 verdict → outcome 迁移
 - ✅ ProbeOutcome 类型 + 三态字段全栈统一
 - ✅ OXN Engine 仅做公证不做裁判（CLI / Probe / frozen 全部符合）
 - ✅ 跨 LLM 委托机制已就位（CLI 持久化 context）
+- ✅ AI 执行三模式已实现——Guided 为生产默认，Adaptive/Unmanaged 在 Hall 启用
+- ✅ 三相物质模型已贯穿——Asset (静态) → Work (Loop) → frozen.json (凝固)
+- ✅ Insight 四实体证据链 schema 已落地（Domain/Bp/Work/Task 维度）
 
 ## 相关术语
 
@@ -199,6 +253,9 @@ OXN 只记录客观事实，不评判"合格不合格"。判定权归工程师�
 - [ADR-0058](../../adrs/0058-minimum-trust-closure.md) — 最小信任闭环（2026-07-12）
 - [ADR-0067](../../adrs/0067-no-judgment-principle.md) — 彻底不判贯彻（2026-07-21）
 - [ADR-0076](../../adrs/0076-adversarial-ownership-and-cross-llm-referent.md) — 对抗关系归属（2026-07-23）
+- [ADR-0022](../../adrs/0022-guided-adaptive-unmanaged-ai-modes.md) — Guided/Adaptive/Unmanaged 三模式（2026-05-28，Partially Adopted）
+- [ADR-0006](../../adrs/0006-three-phase-model.md) — 三相物质模型（2026-07-02，Proposed → RFC 采纳）
+- [ADR-0015](../../adrs/0015-insight-four-entity-evidence-chain.md) — Insight 四实体证据链（2026-06-10，Partially Adopted → RFC 采纳）
 - [OXP-0002（已删除）](./README.md) — 内容已合并入本 RFC；OXP 文件于 2026-07-26 Phase 3 删除
 
 ## Errata
@@ -208,5 +265,12 @@ OXN 只记录客观事实，不评判"合格不合格"。判定权归工程师�
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
 - **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
+
+### 2026-07-27 errata
+
+- **新增 D9 三模式 + D10 三相 + D11 四实体证据链**：ADR-0022 / ADR-0006 / ADR-0015 内容已并入 RFC 正文（之前仅作为 ADR 归档留存，追溯不完整）。Guided/Adaptive/Unmanaged 三模式在 v0.6.1 已代码落地（Guided 为生产默认，Hall 启用 Adaptive/Unmanaged）。三相物质模型已贯穿 Asset → Work → frozen.json 全链路。Insight 四实体证据链 schema 已在 `.openxenon/.archived/docs/adrs/0015-insight-four-entity-evidence-chain.md` 定义。
+- **frontmatter related 增补**：ADR-0022 / ADR-0006 / ADR-0015。
+- **影响范围段**：8 ADR → 11 ADR。
+- **符合 RFC-0010 errata 流程**：errata 不改核心决策（D1-D8），仅追加 D9-D11 新决策段。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0003 Accepted 起冻结。

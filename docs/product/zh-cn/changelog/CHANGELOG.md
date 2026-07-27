@@ -1,5 +1,28 @@
 # Changelog
 
+> **0.4.0 / 0.5.0 / 0.6.0 的变更记录见 [`.changes/pre-0-6-history.md`](https://github.com/istuen/openxenon/blob/main/.changes/pre-0-6-history.md)。**
+
+## [0.6.2-alpha.0] - 2026-07-26
+
+### Changed
+- RFC 迁移：48 Adopted ADR → 12 RFC（8 主题 RFC + 4 meta-RFC），废除 ADR+OXP 双层
+- 文档三情态分离：Asset（定义性）/ RFC（规定性）/ Doc（描述性）
+- OxnBuiltinRegistry 从硬编码 mock 改为 .md 文件加载（15 probes + 3 blueprints）
+- Boundary checker 3 盲区修复 + lefthook pre-commit 启用
+- 术语对齐：TrustClosure → MinimumClosure 等
+
+### Added
+- `docs/adrs/` 镜像目录（72 ADR 文件，供 RFC 引用）
+- `docs/glossary/zh-cn/project-terms.md`（工程术语：RFC / Built-in Asset / 三情态）
+- `oxn-project-domain.md`（CONTEXT-MAP 第 8 个 Domain）
+- 4 条 meta-RFC：RFC-0009（文档三情态）/ RFC-0010（frozen+errata）/ RFC-0011（内置 Asset 两层）/ RFC-0012（自举种子豁免）
+- `bun scripts/check-doc-boundary.ts` 扩展：YAML frontmatter 扫描 + 无 ^ 锚点 + 取消 .archived 豁免
+
+### Removed
+- 3 条 OXP 文件（`docs/rfc/zh-cn/OXP-000{1,2,3}-*.md`，内容已合并到 RFC）
+- `.openxenon/drafts/rfc/INDEX.md`（被 `docs/rfc/zh-cn/README.md` 替代）
+- 3 phantom parts（`OxnBuiltinRegistry` 中无 .md 文件的硬编码 mock：`git-commit`/`create-branch`/`develop-feature`）
+
 ## [0.6.1] - 2026-07-08
 
 > **主题**：Asset/Work 全面 MD-canonical — 5 子 PR 完整闭环

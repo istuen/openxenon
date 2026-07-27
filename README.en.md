@@ -175,16 +175,14 @@ openxenon/
 | **v0.2.0** | Proof First / Infra Probe | ✓ released on npm |
 | **v0.3.0** | MD-Native assets / Daemon | ✓ released on npm |
 | **v0.4.0** | OXL 1.3 + three-layer architecture | ✓ released on npm |
-| **v0.5.0** | Proof Insight Loop | ✓ released on npm (v0.5+ npm publishing paused) |
-| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo dual-package** | ✓ released on npm (v0.5+ npm publishing paused) |
+| **v0.5.0** | Proof Insight Loop | ⚠️ not released on npm (v0.5+ publishing paused) |
+| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo dual-package** | ⚠️ not released on npm (v0.5+ publishing paused) |
 
 > v0.6 is an **architectural reshape** release: from the IAP three-axis narrative to E1-E4 four structural entities + L0-L3 engineering layers + a Monorepo dual-package layout (`packages/engine` + `packages/cli`). See the [v0.6 IAP Refactor RFC](./.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md) and [Changelog](./.changes/0-6-0-iap-refactor.md).
->
-> v0.7+ roadmap (see [apps/hall Migration Plan](./docs/architecture/v0.7-hall-migration-plan.md)): standalone Web UI package, independent Engine publishing, and Insight emergence reasoning.
 
 ## Contributing
 
-> Version: 0.6.1
+> Version: 0.6.2-alpha.0
 
 OpenXenon welcomes contributions of all kinds:
 

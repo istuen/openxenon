@@ -6,7 +6,7 @@ title: 路线图
 
 # 路线图
 
-> OpenXenon 按 6 大场景（scene）组织能力地图。当前版本：v0.6.1。
+> OpenXenon 按 6 大场景（scene）组织能力地图。当前版本：v0.6.2-alpha.0。
 >
 > AI Agent 可用 `oxn roadmap suggest --goal "<goal>" --scene <scene>` 排序匹配相关 Asset。
 
@@ -159,7 +159,7 @@ OpenXenon 用 OpenXenon 管理自己的开发过程：
 
 ## 版本与变更
 
-当前版本：**v0.6.1**（见 `package.json`）。
+当前版本：**v0.6.2-alpha.0**（见 `package.json`）。
 
 变更日志片段存放在 `.changes/` 目录，按版本号组织。发布新版本时运行：
 

@@ -116,8 +116,7 @@ oxn work finalize my-feature
 - [v0.6 Monorepo 双包 RFC](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-monorepo-packages.md)
 - [v0.6 Service 层设计 (DDD)](../../.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-service-layer-design.md)
 - [L0-L3 Constitution](../architecture/l0-l3-constitution.md)
-- [Builtin Assets Scope (v0.6)](../architecture/v0.6-builtin-assets-scope.md)
-- [v0.7+ apps/hall Migration Plan](../architecture/v0.7-hall-migration-plan.md)
+- [v0.7 emergence changelog](../0-7-0-emergence.md)
 
 ## v6.x 增量（v1.3 拍板）— 协作叙事 + 哲学定位 + Insight 命名重构
 

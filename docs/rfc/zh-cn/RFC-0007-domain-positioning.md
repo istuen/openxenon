@@ -2,7 +2,6 @@
 entity: rfc
 id: RFC-0007
 theme: domain-positioning
-version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
@@ -18,7 +17,9 @@ related:
   - ADR-0077: docs/adrs/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md
   - ADR-0078: docs/adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md
   - ADR-0079: docs/adrs/0079-asset-is-ontology-formal-reasoning-deferred.md
-synced-at: 2026-07-26
+  - ADR-0027: docs/adrs/0027-domain-as-ssot-governance.md
+  - ADR-0034: docs/adrs/0034-work-precise-block-not-daemon-cascade.md
+synced-at: 2026-07-27
 ---
 
 # RFC-0007: Domain 词汇架构与 OXN 定位——Referent 参照系 + 边界工程 + Ontology
@@ -220,14 +221,91 @@ Domain（SSOT）  ──manual review──>  Glossary（外部手册可见）
 - **Glossary → Domain**：禁止反向引用
 - **CI 守卫**：双向一致性检查（drift → fail build），`scripts/check-glossary-sync.ts`（v0.7.4 计划）
 
+### D11：Domain SSOT 工程化治理（ADR-0027）
+
+Domain 不只是 DSL 资产，也是 **SSOT（Single Source of Truth）**——领域知识 / 业务术语 / 不变规则的唯一权威来源。4 项治理要点：
+
+#### 1. 文档强制标注 `domain:` frontmatter
+
+`docs/zh-cn/<page>.md` 必须声明所属 Domain——通过 frontmatter `domain: <DomainId>` 显式声明归属：
+
+```yaml
+---
+title: Work 概念
+domain: work-domain
+---
+```
+
+未声明 `domain:` 字段的 docs 页面 → CI 校验失败。
+
+#### 2. 新 Domain 创建走 Work 流程
+
+不允许工程师直接 `mkdir .openxenon/assets/domains/<new>.md` 创建新 Domain——必须走 `oxn work create <new-domain> --blueprint domain-creation-workflow`。Work 流程强制包含：(a) 与现有 Domain 的引用关系图（`references` + term desc MD link）；(b) 与 OxnBuiltinRegistry 5 类 Asset 的覆盖率检查；(c) 与 Glossary 的同步策略。
+
+#### 3. Domain 覆盖率统计
+
+OXN 引擎编译 Domain 时统计：
+
+| 指标 | 含义 |
+|---|---|
+| `term_count` | Domain 内 term 总数 |
+| `invariant_count` | invariant 总数（每 term 平均） |
+| `subdomain_count` | sub→root 引用深度 |
+| `backlink_count` | 自动 backlinks 数量 |
+| `coverage_ratio` | term 在 Blueprint/Work 中实际被引用比例 |
+
+低覆盖率（`< 0.3`）Domain 在 Insight 涌现层标记为"未充分使用"。
+
+#### 4. Domain 冲突检测
+
+同一 term 在不同 Domain 中定义不一致 → OXN 编译期告警（`E_DOMAIN_TERM_CONFLICT`）：
+
+```
+Domain A: term "Order" desc "订单实体"
+Domain B: term "Order" desc "订单状态机"   // ⚠️ E_DOMAIN_TERM_CONFLICT
+```
+
+冲突解决路径：(a) 合并到单一 Domain；(b) 改名其中一个 term；(c) 通过 term desc 明确语义边界（推荐）。
+
+**当前状态**：
+
+- ✅ D10 Glossary ↔ Domain 同步机制（CI 双向检查）已就位
+- ⚠️ 文档 `domain:` frontmatter 强制（v0.7+ 落地——CI 守卫脚本待写）
+- ⚠️ 新 Domain 走 Work 流程（v0.7+ 落地——Blueprint 待补）
+- ⚠️ Domain 覆盖率统计（v0.7+ 落地——编译器扩展点）
+- ✅ Domain 冲突检测（`E_DOMAIN_TERM_CONFLICT` 错误码已定义，编译期检测 v0.7+ 落地）
+
+### D12：Work 前置精准阻断 vs Daemon 全局崩溃（ADR-0034）
+
+**两类失败处理哲学**：
+
+| 维度 | Work 前置精准阻断 | Daemon 全局崩溃 |
+|---|---|---|
+| 触发时机 | Probe 跑前 | Probe 跑后 + 状态异常 |
+| 阻断范围 | 单 task / single work | 所有 work（全局） |
+| 错误可见性 | 立即报错 `IAP_PROBE_*` | 后置通知 / 日志 |
+| 适用场景 | 已知必失败的 case | 未知异常 / stuck / orphan |
+
+**OXN 决策**：采用 **Work 前置精准阻断** 为主要机制，**Daemon 全局崩溃** 仅在以下情况触发：
+
+- Work 状态卡死 ≥ N 分钟（`stuck-threshold`，默认 30）
+- Orphan work（无对应 state.json 但有 trace.jsonl）
+- Daemon 与 CLI socket 断开 > 重试上限
+
+**Probe CLI-1 细节差异**：`oxn probe` 命令的 `--strict` 模式采用精准阻断（已知 probe schema 错误立即退出），`oxn probe --best-effort` 模式仅输出失败到 stdout 不阻断。
+
+**不监听文件系统**——本 RFC D8 已明确：Daemon 不监听 FS 变化（避免与 v0.5 file watcher 混淆），FS 变化由 Work 启动时 validate 阶段处理。
+
 ## 影响范围
 
-- ✅ 10 ADR 全 Accept（含 ADR-0057 Superseded-by ADR-0066 已在 RFC-0003 体现）
+- ✅ 12 ADR 全 Accept（含 ADR-0057 Superseded-by ADR-0066 已在 RFC-0003 体现）
 - ✅ oxn-domain.md 新增 Referent / Floor / Ceiling 术语
 - ✅ 8 个 Domain SSOT 词汇统一（What/How 双层）
 - ✅ CONTEXT-MAP.md PEAS 块重写 + 7 个 Domain 关系图扩展
 - ✅ Daemon 模块拆分：work-state-monitor + probe-event-listener + socket-server（v0.7+）
 - ✅ Asset Paper schema 4→3 字段（ADR-0071 已在 RFC-0008 合并）
+- 📝 ADR-0027 Domain SSOT 4 项治理——CI 守卫脚本 v0.7+ 落地
+- ✅ ADR-0034 Work 前置精准阻断——已通过 probe --strict / --best-effort 模式部分落地
 
 ## 相关术语
 
@@ -251,6 +329,8 @@ Domain（SSOT）  ──manual review──>  Glossary（外部手册可见）
 - [ADR-0077](../../adrs/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md) — Utility + Goal→Boundary（2026-07-23）
 - [ADR-0078](../../adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md) — LLM knowledge-full（2026-07-23）
 - [ADR-0079](../../adrs/0079-asset-is-ontology-formal-reasoning-deferred.md) — Asset 是 Ontology（2026-07-23）
+- [ADR-0027](../../adrs/0027-domain-as-ssot-governance.md) — Domain SSOT 4 项治理要点（2026-06-17，Partially Adopted → RFC 采纳）
+- [ADR-0034](../../adrs/0034-work-precise-block-not-daemon-cascade.md) — Work 前置精准阻断 vs Daemon 全局崩溃（2026-07-02，Partially Adopted → RFC 采纳）
 - [OXP-0003（已删除）](./README.md) — 内容已合并入本 RFC；OXP 文件于 2026-07-26 Phase 3 删除
 
 ## Errata
@@ -260,5 +340,11 @@ Domain（SSOT）  ──manual review──>  Glossary（外部手册可见）
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
 - **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
+
+### 2026-07-27 errata
+
+- **新增 D11 Domain SSOT 4 项治理 + D12 Work 前置精准阻断**：ADR-0027 / ADR-0034 内容已并入 RFC 正文（之前仅作为 ADR 归档留存）。Domain SSOT 4 项治理（frontmatter 强制 / 走 Work 流程 / 覆盖率统计 / 冲突检测）部分已在 D10 体现，本次补全 4 项治理要点与代码路径。Work 前置精准阻断哲学与 `--strict` / `--best-effort` 双模式已落地。
+- **frontmatter related 增补**：ADR-0027 / ADR-0034。
+- **影响范围段**：10 ADR → 12 ADR。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0007 Accepted 起冻结。

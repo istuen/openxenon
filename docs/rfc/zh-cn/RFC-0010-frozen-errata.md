@@ -2,7 +2,6 @@
 entity: rfc
 id: RFC-0010
 theme: frozen-errata
-version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
@@ -31,7 +30,7 @@ RFC accepted 后核心冻结（不可编辑正文），仅可追加 errata 段�
 RFC `status: Accepted` 后，正文段（摘要 / 决策要点 / 影响范围 / 相关术语 / 相关决策）**不可编辑**。
 
 允许的操作：
-- 追加 `## Errata` 段（修正说明，version bump patch）
+- 追加 `## Errata` 段（修正说明，不 bump 版本号——见 RFC-0013 D6）
 - 修改 frontmatter `synced-at` 字段
 - 修改 frontmatter `superseded-by` 字段（指向新 RFC）
 
@@ -60,7 +59,7 @@ RFC `status: Accepted` 后，正文段（摘要 / 决策要点 / 影响范围 / 
 > 本段用于后续追加修正说明。核心决策自 RFC-XXXX Accepted 起冻结。
 ```
 
-每次 errata 追加应 bump `version` patch 段（1.0.0 → 1.0.1）。
+每次 errata 追加不 bump 版本号——RFC 文档自 RFC-0013 D6 起移除 `version` 字段，对齐 IETF/Rust/Python 业界标准。历史版本号（如 `1.0.0` / `1.0.1`）仅在 Errata 段中追溯保留。
 
 ### D3：supersede 走新 RFC
 
@@ -111,5 +110,13 @@ OXP（v0.6.1 起的旧镜像层）已废除——其演进规则（核心冻结 
 - [RFC-0012](./RFC-0012-bootstrap-exemption.md) — 自举种子豁免（meta）
 
 ## Errata
+
+### 2026-07-27：RFC-0013 D6 errata
+
+- RFC 文档移除 `version` 字段（前 `version: 1.0.1`）
+- 对齐 IETF / Rust / Python 业界标准——RFC 不用版本号，用 status + Errata 段演进
+- 影响：本 RFC 自身 + RFC-0001 ~ RFC-0012 共 12 个 RFC 的 frontmatter
+- supersedes：RFC-0013 D6 取代本 RFC 中"version bump patch"条款
+- 详见 [RFC-0013 D6](./RFC-0013-versioning-policy.md)
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0010 Accepted 起冻结。

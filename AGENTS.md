@@ -1,6 +1,8 @@
 # AGENTS.md
 
-OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 **md-pipeline** 的 OXN DSL（v0.7 起纯 MD，Langium 已退役，见 ADR-0052）。包管理器为 **Bun**（锁文件 `bun.lock`）。仓库本地的 OpenCode 技能（v0.6.1 起共 2 个 Skill：`oxn-asset` 管 Asset 生命周期、`oxn-work` 管 Work 编排与执行；源在 `packages/cli/src/skills/locales/`，编译产物到 `.opencode/skills/`，不 git 追踪）与 opsx 命令（`.opencode/command/opsx-*.md`）属于工作流的一部分。
+OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 **md-pipeline** 的 OXN DSL（0.6.x 起纯 MD，Langium 已退役，见 ADR-0052）。包管理器为 **Bun**（锁文件 `bun.lock`）。仓库本地的 OpenCode 技能（v0.6.1 起共 2 个 Skill：`oxn-asset` 管 Asset 生命周期、`oxn-work` 管 Work 编排与执行；源在 `packages/cli/src/skills/locales/`，编译产物到 `.opencode/skills/`，不 git 追踪）与 opsx 命令（`.opencode/command/opsx-*.md`）属于工作流的一部分。
+
+**版本号政策**：[RFC-0013](docs/rfc/zh-cn/RFC-0013-versioning-policy.md)（Draft）——Alpha prerelease 机制 + Version Fragment/Roadmap/Fix Record 三情态分离 + AssetMap/Roadmap 术语消歧 + RFC 文档移除 version 字段。当前版本：`0.6.2-alpha.0`（RFC 迁移已执行但功能未完全人工验证，alpha 阶段）。
 
 **v0.6 架构重构**：OXN 从"IAP 三轴叙事"重构为"E1-E4 四结构实体 + L0-L3 工程分层"双层叙事。代码从 `src/` 单包拆为 `packages/cli` + `packages/engine` 双包 Monorepo——CLI 是薄组合调用层，Engine 承载全部业务实现（L2 `` DDD 模块化：`Asset/Intent/Align/Proof/Insight/Pool` + `daemon.ts`）。详见 [v0.6 RFC + Monorepo + Service 设计](.openxenon/pools/sprints/v0.6-iap-refactor/design/) 与 [changelog](.changes/0-6-0-iap-refactor.md)。
 
@@ -61,7 +63,7 @@ bun test                    # bun test，约 1487 个测试 / 119 文件
 
 ## OXN DSL
 
-- v0.7.0 后 `.oxn` (Langium) 格式已废弃，`.md` 是唯一 canonical 格式
+- 0.6.x 后 `.oxn` (Langium) 格式已废弃，`.md` 是唯一 canonical 格式
 - 语法定义历史记录：`packages/engine/src/oxl/langium-driver/oxn.langium`（已删除）
 - VSCode 扩展：`oxn-vscode/`（支持 `.md` 语法高亮）
 - `src/builtin/` 存放运行时加载的 **.md** 资产（probes / blueprints）
@@ -82,11 +84,11 @@ bun test                    # bun test，约 1487 个测试 / 119 文件
   - **正确维护流**：修改 `instruction.md` → 跑 `bun run packages/cli/src/index.ts init -f` → `.opencode/skills/` 自动重建
   - **错误反模式**：不要手动编 `.opencode/skills/<skill>/SKILL.md`——下次 `init -f` 会从 SSOT 覆盖你的修改
 
-## 文档三层架构（v0.7 三情态分离重构）
+## 文档三层架构（0.6.x 三情态分离重构）
 
 > **判据**：受众是外部用户 → `docs/`（topic-first：product|dev|rfc）；受众是贡献者且需长期保留 → `docs/rfc/`（沉淀）；受众是 OXN 开发 → `.openxenon/drafts/`（流动）；项目资产 → `.openxenon/assets/`；运行时 → `.openxenon/{works,proofs}/`。
 >
-> **v0.7 三情态**：文档按"情态"分三类——Asset（定义性，回答"X 是什么"）+ RFC（规定性，回答"为什么决定 X"）+ Doc（描述性，回答"怎么用 X"）。详见 [RFC-0009 文档三情态分离](.openxenon/drafts/rfc-format-design.md#d1三情态定义) 与 [OxnProjectDomain 工程术语](./docs/glossary/zh-cn/project-terms.html)。
+> **0.6.x 三情态**：文档按"情态"分三类——Asset（定义性，回答"X 是什么"）+ RFC（规定性，回答"为什么决定 X"）+ Doc（描述性，回答"怎么用 X"）。详见 [RFC-0009 文档三情态分离](.openxenon/drafts/rfc-format-design.md#d1三情态定义) 与 [OxnProjectDomain 工程术语](./docs/glossary/zh-cn/project-terms.html)。
 
 ### 1. 对外文档 — `docs/`（topic-first SSOT，tracked）
 
@@ -98,7 +100,7 @@ docs/
 ```
 
 - **topic-first**：先按主题（product/dev/rfc）后按语言（zh-cn/en），不再按语言平铺。
-- **rfc/ 唯一承载规定性内容**：v0.7+ 废除 OXP 双层机制，所有 RFC 走 `docs/rfc/zh-cn/RFC-XXXX-<theme>.md`（frozen + errata 演进）。
+- **rfc/ 唯一承载规定性内容**：0.6.x+ 废除 OXP 双层机制，所有 RFC 走 `docs/rfc/zh-cn/RFC-XXXX-<theme>.md`（frozen + errata 演进）。
 - 默认中文为主（zh-cn/）；rfc/ 暂无英文版本。
 - 章内统一模板：What → Why → How → 参考。
 - 旧 `docs/_archive/` 保留历史归档（不再作对外引用源，inv-10）。
@@ -106,7 +108,7 @@ docs/
 ### 2. 对内-开发文档 — `.openxenon/drafts/`（流动，tracked）
 
 - `.openxenon/drafts/` — 项目工作草稿（替代原 pools/）
-  - `drafts/rfc/` — 历史 ADR 归档（v0.7 Phase 3 已批量归档到 `.openxenon/.archived/docs/adrs/`）
+  - `drafts/rfc/` — 历史 ADR 归档（0.6.x Phase 3 已批量归档到 `.openxenon/.archived/docs/adrs/`）
   - `drafts/*.md` — 工作草稿（探索、审计、设计初稿）
 - 流动层：可自由编辑/删除
 - 提升通道：promote 走对应 Blueprint → `docs/product/` / `docs/dev/` / `docs/rfc/` / `.openxenon/assets/`
@@ -114,7 +116,7 @@ docs/
 ### 3. 项目资产 — `.openxenon/assets/`（边界，定义性 Asset，冻结后不可变）
 
 - `.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（E1 Asset）
-- v0.7.0 布局，业务声明 + AI 创作模板，`.md` 格式
+- 0.6.2 布局，业务声明 + AI 创作模板，`.md` 格式
 - `assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`
 - 与 builtin assets 关系：见 [RFC-0011 内置 Asset 两层机制](.openxenon/drafts/rfc-format-design.md)
 
@@ -126,7 +128,7 @@ docs/
 
 - `.changes/` — 按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
-### RFC 生命周期（v0.7+ 取代 OXP 机制）
+### RFC 生命周期（0.6.x+ 取代 OXP 机制）
 
 ```
 .openxenon/drafts/<scope>-draft.md（散落，无格式）
@@ -148,13 +150,13 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
     └── doc-rfc-workflow    → docs/rfc/zh-cn/RFC-XXXX-xxx.md    (规定性 RFC)
 ```
 
-### 引用规则（v0.7 三情态隔离）
+### 引用规则（0.6.x 三情态隔离）
 
 1. `docs/` 内部互引 ✅（product↔dev↔rfc 同树，跨语言需走相对路径）
 2. `docs/` → `.openxenon/` ❌（严格隔离，dev→drafts/dev→assets 由 `bun scripts/check-doc-boundary.ts` 守门）
 3. `.openxenon/drafts/` → `docs/` ✅（仅通过 promote workflow）
 4. `.openxenon/assets/` → `docs/` ❌（边界不依赖手册）
-5. **RFC 强制约束**（v0.7 RFC-0010）：RFC 只引用 `docs/glossary/zh-cn/<category>.html#<term>` 与 related ADR（不在正文引 docs/{product,dev}）
+5. **RFC 强制约束**（0.6.x RFC-0010）：RFC 只引用 `docs/glossary/zh-cn/<category>.html#<term>` 与 related ADR（不在正文引 docs/{product,dev}）
 
 ## 文档站点
 
@@ -168,13 +170,13 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 
 - 运行时数据：`.openxenon/{works,proofs}/`（已 gitignore，运行时产物）。
 - **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/`（E1 Asset 边界）；`drafts/`（探索稿 + 历史 ADR/RFC）；运行时 `works/ proofs/ .cache/` 已 gitignore。
-- IAP 资产：`.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（v0.7 布局，Asset = 定义性，5 类 AssetKind）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
+- IAP 资产：`.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（0.6.2 布局，Asset = 定义性，5 类 AssetKind）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
 - AI 可见的权威文档：`docs/product/zh-cn/introduction.html`（入口）、`docs/product/zh-cn/concepts/iap-paradigm.html`（IAP 范式）、`docs/product/zh-cn/concepts/insight.html`（Insight 层）、`docs/product/zh-cn/concepts/work.html`（Work 核心）、`docs/product/zh-cn/concepts/proof.html`（Proof 轴）、`docs/product/zh-cn/reference/cli-user-guide.html`（CLI 参考）、`docs/dev/zh-cn/architecture.html`（架构）。
-- **RFC 索引**：[`docs/rfc/zh-cn/`](./docs/rfc/zh-cn/) — 12 个 RFC（v0.7+ 唯一规定性载体；旧 `.openxenon/drafts/rfc/INDEX.md` 已废，48 ADR 已归档到 `.openxenon/.archived/docs/adrs/`）。
+- **RFC 索引**：[`docs/rfc/zh-cn/`](./docs/rfc/zh-cn/) — 13 个 RFC（0.6.x+ 唯一规定性载体；12 个已 Accepted + RFC-0013 versioning-policy Draft；旧 `.openxenon/drafts/rfc/INDEX.md` 已废，48 ADR 已归档到 `.openxenon/.archived/docs/adrs/`）。RFC 文档无 version 字段，用 status + Errata 段演进（RFC-0013 D6，对齐 IETF/Rust/Python 业界标准）。
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
-## AI Agent 路由入口（v0.7.x Roadmap）
+## AI Agent 路由入口（0.6.x+ Roadmap）
 
 > **第一步：定位 scene，再读 Roadmap**
 > 收到 goal 后判断属于哪个 scene（doc / dev / debug / test / release / onboard），
@@ -182,7 +184,7 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 > 列出该 scene 的 Domain + Blueprint 列表（每项带 description）。
 > 用 `oxn roadmap suggest --goal "<goal>" --scene <scene>` 排序匹配。
 
-### 场景速查（v0.7+ 6 scene）
+### 场景速查（0.6.x+ 6 scene）
 - 写/改/读文档 → `scene=doc`（DocEngineeringContext + VitePressContext + doc-publish + doc-promote）
 - 改代码/加 CLI → `scene=dev`（WorkOrchestrationContext + dev-workflow + add-cli-subcommand）
 - Bug 修复/frozen 异常 → `scene=debug`（iap-error-context + fix-issue）
@@ -190,7 +192,7 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 - 发版 → `scene=release`（MonorepoContext + release-cut + migrate-version）
 - 新人入门 → `scene=onboard`（L0L3Context + MonorepoContext + dev-workflow）
 
-### v0.7+ 文档架构改动（AI 必读）
+### 0.6.x+ 文档架构改动（AI 必读）
 - **规定性文档**：48 ADR + 3 OXP → 12 RFC（8 主题 RFC + 4 meta-RFC）；frozen + errata 演进。
 - **三情态分离**：Asset（定义性）+ RFC（规定性）+ Doc（描述性）；3 情态全集中两情态组合是设计错误信号。
 - **内置 Asset 两层**：`@oxn/` scope fallback + `@prj/` scope override（Phase 4 落地）。
@@ -209,9 +211,11 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 
 **当前 `dev/` 内容**：
 
-| 文件 | 用途 |
+| 文件/目录 | 用途 |
 |---|---|
 | `dev/README.md` | 开发者操作指南入口（待建：getting-started / dev-workflow / release-process / debugging / ai-collaboration） |
+| `dev/versions/` | 前瞻性版本计划（Roadmap）——描述未来版本将包含什么；`dev/versions/README.md` 详述。转正后归档到 `.openxenon/.archived/dev/versions/`（RFC-0013 D3） |
+| `dev/fix/` | 开发者面向的 bug 修复记录（Fix Record）——比 Version Fragment 更详细；`dev/fix/README.md` 详述（RFC-0013 D3） |
 
 **跨层引用规则**（与 dev/README 同步）：
 
@@ -230,7 +234,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 2. 落地后 `git add dev/<filename> && git commit -m "docs(dev): add <title>"`
 3. 更新 `dev/README.md`「当前内容」表 + 本段摘要
 
-**v0.7 三层文档守门**（已落地）：由 `bun scripts/check-doc-boundary.ts` 在 lefthook pre-commit 自动校验（覆盖 `**/*.md`）；Phase 5 扩展规则为 6 条（products/dev/rfc → .openxenon 双向 + drafts 隔离 + drafts-rfc-no-assets）。Phase 5 修复 19 条跨层链接（F6）后 0 violations。
+**0.6.x 三层文档守门**（已落地）：由 `bun scripts/check-doc-boundary.ts` 在 lefthook pre-commit 自动校验（覆盖 `**/*.md`）；Phase 5 扩展规则为 6 条（products/dev/rfc → .openxenon 双向 + drafts 隔离 + drafts-rfc-no-assets）。Phase 5 修复 19 条跨层链接（F6）后 0 violations。
 
 ## v0.2 路线图分支策略（已完成，归档）
 
@@ -274,7 +278,7 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 
 **Work v1.1 流程**：每个子分支开工时按 `oxn-work` skill 3 IAP 阶段（Intent → Align → Proof）走完一轮。
 
-## v0.3 路线图扩展：MD-Native Grammar 改革（🟡 RFC 待拍板）
+## v0.3 路线图扩展：MD-Native Grammar 改革（✅ 已完成，归档到 v0.6.1）
 
 **主分支**：`feat/v0.3-md-ssot`（已开 8 commits，ahead of dev）
 
@@ -284,9 +288,9 @@ L1/L2/L3 ──→  dev/     ⚠️ 谨慎（SSOT 不应反向引用操作指南
 
 | 任务 | 子分支 | 周次 | 状态 |
 |---|---|---|---|
-| T18 md-native grammar | `feat/v0.3-t18-md-native-grammar` | W9a | 🟡 **RFC 待拍板** — EntityCompiler 接口 + EntityRegistry 单例 + 5 个 compiler + extract-headings/extract-list-fields；70 case 新测试；不破坏旧 `:::intent{...}` 解析（双选项 `'native' \| 'directive'`）|
-| T19 md-native migrate | `feat/v0.3-t19-md-native-migrate` | W9b | 🟡 **RFC 待拍板** — decompiler 全切到纯 MD 输出；11 个 `domains-md/*.md` 重生；8 个测试 fixture 迁移；`E_MD_DEPRECATED_SYNTAX` 抛错；删 `remark-directive` 依赖 |
-| T20 md-native highlight | `feat/v0.3-t20-md-native-highlight` | W9c | 🟡 **RFC 待拍板** — oxn-vscode grammar 扩 markdown 注入 + VitePress CSS 着色；0 新 npm 依赖 |
+| T18 md-native grammar | `feat/v0.3-t18-md-native-grammar` | W9a | ✅ 已在 v0.6.1 落地 — EntityCompiler 接口 + EntityRegistry 单例 + 5 个 compiler + extract-headings/extract-list-fields；70 case 新测试；不破坏旧 `:::intent{...}` 解析（双选项 `'native' \| 'directive'`）|
+| T19 md-native migrate | `feat/v0.3-t19-md-native-migrate` | W9b | ✅ 已在 v0.6.1 落地 — decompiler 全切到纯 MD 输出；11 个 `domains-md/*.md` 重生；8 个 测试 fixture 迁移；`E_MD_DEPRECATED_SYNTAX` 抛错；删 `remark-directive` 依赖 |
+| T20 md-native highlight | `feat/v0.3-t20-md-native-highlight` | W9c | ✅ 已在 v0.6.1 落地 — oxn-vscode grammar 扩 markdown 注入 + VitePress CSS 着色；0 新 npm 依赖 |
 
 **严格约束**：
 

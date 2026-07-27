@@ -138,16 +138,14 @@ openxenon/
 | **v0.2.0** | Proof First / Infra Probe | ✓ 已发布 npm |
 | **v0.3.0** | MD-Native 资产 / Daemon | ✓ 已发布 npm |
 | **v0.4.0** | OXL 1.3 + 三层架构 | ✓ 已发布 npm |
-| **v0.5.0** | Proof Insight Loop | ✓ 已发布 npm（v0.5+ 暂停 npm 发布）|
-| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo 双包** | ✓ 已发布 npm（v0.5+ 暂停 npm 发布）|
+| **v0.5.0** | Proof Insight Loop | ⚠️ 未发布 npm（v0.5+ 暂停发布）|
+| **v0.6.0** | **E1-E4 + L0-L3 + Monorepo 双包** | ⚠️ 未发布 npm（v0.5+ 暂停发布）|
 
 > v0.6 是**架构重塑**版：从 IAP 三轴叙事重构为 E1-E4 四结构实体 + L0-L3 工程分层 + Monorepo 双包（`packages/engine` + `packages/cli`）。详见 [v0.6 IAP Refactor RFC](./.openxenon/pools/sprints/v0.6-iap-refactor/design/v0.6-iap-refactor-rfc.md) 与 [Changelog](./.changes/0-6-0-iap-refactor.md)。
->
-> v0.7+ 规划（[apps/hall Migration Plan](./docs/architecture/v0.7-hall-migration-plan.md)）：Web UI 独立 package + Engine 独立发布 + Insight 涌现推理。
 
 ## 参与贡献
 
-> 当前版本: 0.6.1
+> 当前版本: 0.6.2-alpha.0
 
 欢迎通过 [GitHub Issues](https://github.com/istuen/openxenon/issues) 提交 bug 报告，功能建议与交流。
 

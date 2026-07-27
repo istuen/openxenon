@@ -4,6 +4,10 @@ title: Roadmap
 
 # Roadmap
 
+> ⚠️ **This documentation is stale (last synced with v0.1.2).**
+> For current roadmap, see [中文版路线图](../zh-cn/roadmap.html).
+> Planned for update in the v0.7.0 release cycle.
+
 > OpenXenon evolves through four phases (P0–P3). Current version: v0.1.2.
 
 ## P0–P3 roadmap

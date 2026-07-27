@@ -2,7 +2,6 @@
 entity: rfc
 id: RFC-0009
 theme: doc-three-modalities
-version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []

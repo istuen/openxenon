@@ -2,7 +2,6 @@
 entity: rfc
 id: RFC-0004
 theme: work-asset
-version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
@@ -21,7 +20,8 @@ related:
   - ADR-0056: docs/adrs/0056-external-inline-and-status.md
   - ADR-0061: docs/adrs/0061-data-flow-contract.md
   - ADR-0075: docs/adrs/0075-round-loop-as-ai-search-record.md
-synced-at: 2026-07-26
+  - ADR-012: docs/adrs/012-runtime-adapter.md
+synced-at: 2026-07-27
 ---
 
 # RFC-0004: Work / Asset 体系——三边界框架 + Blueprint 组合 + 数据流契约
@@ -226,6 +226,47 @@ ADR-0061 7 项决策 D1-D7 全部 runtime 落地（v0.7.3 GA）：
 
 **与审计链哲学一致性**：Round loop 记录不强制（ADR-0012/0068/0066/0067 同一设计哲学延续）。
 
+### D14：Runtime 适配层——Node 18+ 兜底 + Bun 加速（ADR-012，历史）
+
+**Runtime 双轨策略**：
+
+| Runtime | 角色 | 加速特性 |
+|---|---|---|
+| **Node 18+** | 兜底（fallback） | 标准 npm 兼容，所有用户可直接 `npx` |
+| **Bun** | 加速（primary） | 启动快 4x / 安装快 25x / 内置 TypeScript |
+
+#### 选型理由
+
+1. **兜底必要**：用户可能在没装 Bun 的 CI 环境用 Node 跑 `npx oxn`，OXN 必须能跑
+2. **Bun 加速**：开发态跑 `bun run oxn` 比 `node dist/cli.js` 快 4x 启动，Bun 内置 TS/JSX
+3. **隔离 L0 / L1 Runtime**：Kernel 真空约束（RFC-0002 D1）禁 IO，L0 代码 runtime-agnostic；L1-Infra 提供 Node / Bun 双实现（RFC-0002 D10）
+
+#### 适配层结构
+
+```
+packages/
+├── engine/                 # L0 + L1（runtime-agnostic Kernel + 双实现 Infra）
+├── cli/                    # L3 CLI（Bun 编译为单文件 binary）
+└── shared/                 # L0 共享 schema/contract
+```
+
+#### Runtime 检测路径
+
+```ts
+// packages/cli/src/runtime/index.ts
+const runtime = process.versions.bun ? 'bun' : 'node'
+const fs = runtime === 'bun' ? new BunFsPort() : new NodeFsPort()
+```
+
+#### 落地状态
+
+- ✅ CLI 双 runtime 兼容（`bun build --target=node` + Bun-native 两种 build 路径）
+- ✅ L1-Infra 提供 Node / Bun 双实现（NodeFsPort + BunFsPort）
+- ✅ Kernel runtime-agnostic（`bun scripts/validate-dependencies.ts` 守 L0 禁 fs/net/child_process）
+- ✅ Lockfile `bun.lock`（Bun 官方推荐）+ `package.json` engines 声明
+
+**与 RFC-0002 D1 LambdaVacuum 一致**：Kernel 不感知 runtime，L1-Infra 适配 runtime，CLI 选择 runtime。
+
 ## 影响范围
 
 - ✅ 13 ADR 全 Accept（ADR-0071 部分 Superseded 已合并入 RFC-0008）
@@ -234,6 +275,7 @@ ADR-0061 7 项决策 D1-D7 全部 runtime 落地（v0.7.3 GA）：
 - ✅ catalog.json 已落实；Probe 不入 catalog 已落实
 - ✅ ArsenalResolver 优先级链在 `src/builtin/` + `.openxenon/assets/` 已落实
 - ✅ partId 主键 + atomic-write + Trace-before-State 全栈统一
+- ✅ Runtime 适配层 Node 18+ 兜底 + Bun 加速已落实（ADR-012 历史决策）
 - 📝 v0.8.0 `kind: domain` deprecation hard cut
 - 📝 `dual-state-exec.ts` maxIterations 软反馈改造
 
@@ -263,6 +305,7 @@ ADR-0061 7 项决策 D1-D7 全部 runtime 落地（v0.7.3 GA）：
 - [ADR-0056](../../adrs/0056-external-inline-and-status.md) — External inline（2026-07-10）
 - [ADR-0061](../../adrs/0061-data-flow-contract.md) — 数据流契约 P0-P8（2026-07-17）
 - [ADR-0075](../../adrs/0075-round-loop-as-ai-search-record.md) — Round loop AI 搜索行为（2026-07-23）
+- [ADR-012](../../adrs/012-runtime-adapter.md) — Runtime 适配层 Node 18+ 兜底 + Bun 加速（2026-05-08，历史 ADR → RFC D14 记录双轨策略）
 
 ## Errata
 
@@ -271,5 +314,11 @@ ADR-0061 7 项决策 D1-D7 全部 runtime 落地（v0.7.3 GA）：
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
 - **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
+
+### 2026-07-27 errata
+
+- **新增 D14 Runtime 适配层**：ADR-012（历史）内容已并入 RFC 正文。Node 18+ 兜底 + Bun 加速的双轨策略与 L0 LambdaVacuum 一致——Kernel 不感知 runtime，L1-Infra 适配 runtime，CLI 选择 runtime。
+- **frontmatter related 增补**：ADR-012。
+- **影响范围段**：增补 Runtime 适配层落地声明。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0004 Accepted 起冻结。

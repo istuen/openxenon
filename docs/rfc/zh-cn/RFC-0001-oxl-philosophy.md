@@ -2,7 +2,6 @@
 entity: rfc
 id: RFC-0001
 theme: oxl-philosophy
-version: 1.0.1
 status: Accepted
 date: 2026-07-26
 supersedes: []
@@ -11,7 +10,8 @@ related:
   - ADR-0001: docs/adrs/0001-blueprint-props-funnel-effect.md
   - ADR-0021: docs/adrs/0021-intent-align-observe-keyword-separation.md
   - ADR-0052: docs/adrs/0052-langium-retirement-oxn-deprecation.md
-synced-at: 2026-07-26
+  - ADR-0019: docs/adrs/0019-blueprint-type-paradigm.md
+synced-at: 2026-07-27
 ---
 
 # RFC-0001: OXL/Blueprint 哲学——Props 漏斗 + 关键字分离 + MD-native 语法
@@ -73,9 +73,27 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 
 不再维护两套解析路径（Langium + mdast），只保留 mdast pipeline。OXL 编译期可做引用完整性校验（`@term/...` 物理可寻址——见 RFC-0006）。
 
+### D5：Blueprint `kind` 字段语义（ADR-0019，Superseded-by ADR-0054/ADR-0055）
+
+**历史决策**：ADR-0019 提出 Blueprint 通过 `type` 字段声明语义类别（task / plan / explore）——单字段承载 Blueprint 类别 + Plan 编排 + Explore 草稿三种语义。
+
+**supersede 演化**：
+
+| 维度 | ADR-0019（Superseded） | ADR-0054/0055（采纳） |
+|---|---|---|
+| 字段 | `type` | `kind` |
+| 语义承载 | 类别 + 编排 + 草稿（重载） | 类别（task/plan/explore）单一维度 |
+| 编排维度 | `type "plan"` 隐含 DAG 语义 | `slot "plan_dag"` 显式数据驱动 DAG |
+| 与 Slot 关系 | 混淆（type 与 slot 语义重叠） | 正交（kind 表类别，slot 表数据维度） |
+
+**RFC-0001 D2 已采纳 ADR-0054/0055 决策**：四关键字分离中 `kind` 字段替代原 `type` 字段。
+
+**保留 ADR-0019 的意义**：记录 OXL 关键字段演化历史，避免后人重提 "恢复 `type` 字段"。
+
 ## 影响范围
 
 - ✅ ADR-0001 / ADR-0021 / ADR-0052 Accept
+- ✅ ADR-0019 已 Superseded，决策内容由 ADR-0054 + ADR-0055 + 本 RFC D2 + D5 共同承载
 - ✅ 当前 OXL Grammar 已落实四关键字分离 + Props 漏斗
 - ✅ v0.6.1 后所有 `.oxn` 文件不被解析，错误信息引导写 `.md`
 - 📝 Part 改名 / 删除属性时需同步检查 Blueprint 引用
@@ -93,6 +111,7 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 - [ADR-0001](../../adrs/0001-blueprint-props-funnel-effect.md) — Props 漏斗效应（2026-05-19）
 - [ADR-0021](../../adrs/0021-intent-align-observe-keyword-separation.md) — 四关键字分离（2026-05-29）
 - [ADR-0052](../../adrs/0052-langium-retirement-oxn-deprecation.md) — Langium 退役 + `.oxn` 废除（2026-07-21）
+- [ADR-0019](../../adrs/0019-blueprint-type-paradigm.md) — Blueprint Type 范式（2026-05-22，Superseded-by ADR-0054/0055 → RFC D5 记录演化历史）
 
 ## Errata
 
@@ -101,5 +120,11 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
 - **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
+
+### 2026-07-27 errata
+
+- **新增 D5 Blueprint `kind` 字段语义 + ADR-0019 演化历史**：ADR-0019 已 Superseded by ADR-0054/0055，决策内容由 RFC D2 + D5 共同承载。本段记录 `type` 字段→`kind` 字段的演化路径与 supersede 关系。
+- **frontmatter related 增补**：ADR-0019。
+- **影响范围段**：增补 ADR-0019 Superseded 状态说明。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0001 Accepted 起冻结。

@@ -36,8 +36,10 @@ synced-at: 2026-07-26
 | [RFC-0010 RFC frozen+errata 演进策略](./RFC-0010-frozen-errata.html) | 主题：frozen-errata | meta-RFC（grilling #6） | ✅ Accepted |
 | [RFC-0011 内置 Asset 两层机制](./RFC-0011-builtin-asset-two-layer.html) | 主题：builtin-asset-two-layer | meta-RFC（grilling #6） | ✅ Accepted |
 | [RFC-0012 自举种子豁免](./RFC-0012-bootstrap-exemption.html) | 主题：bootstrap-exemption | meta-RFC（grilling #6） | ✅ Accepted |
+| [RFC-0013 版本号政策](./RFC-0013-versioning-policy.html) | 主题：versioning-policy | meta-RFC（grilling #6） | 📝 Draft |
+| [RFC-0014 Asset 注入机制](./RFC-0014-asset-injection-mechanism.html) | 主题：asset-injection-mechanism | meta-RFC（grilling Asset vs RAG） | ✅ Accepted |
 
-**统计**：8 主题 RFC（48 Adopted ADR 迁移）+ 4 meta-RFC（grilling 决策锁定）。
+**统计**：8 主题 RFC（48 Adopted ADR 迁移）+ 5 meta-RFC（grilling 决策锁定，含 1 Draft）。
 
 ## RFC 生命周期
 
