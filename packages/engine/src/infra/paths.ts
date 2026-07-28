@@ -77,7 +77,7 @@ export const DEFAULT_ASSET_ROOT = 'assets'
 export const DEFAULT_ASSET_DIRS = {
   domain: 'domains',
   workflow: 'workflows', // 🆕 v0.6.1-alpha.2: 原 blueprint 改名
-  stack: 'stack',
+  stack: 'stacks', // 🆕 v0.6.2-alpha.1: 同步复数约定（与 domains/workflows/blueprints/roadmaps + @md/stacks/ 引用一致；fallback 已为 stacks，单数 primary 是 typo）
   blueprint: 'blueprints', // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
   roadmap: 'roadmaps', // 🆕 v0.6.1-alpha.1
 } as const

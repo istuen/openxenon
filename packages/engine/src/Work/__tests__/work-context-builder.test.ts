@@ -609,7 +609,7 @@ describe('loadStackToolsFromBlueprint — v0.7.3 P6', () => {
 
   test('加载真实 Stack .md → 提取 tools[]', () => {
     const { blueprintIR } = makeBlueprintWithStack('oxn-stack', 'oxn-stack')
-    const stackDir = join(tmpDir, '.openxenon', 'assets', 'stack')
+    const stackDir = join(tmpDir, '.openxenon', 'assets', 'stacks')
     mkdirSync(stackDir, { recursive: true })
     writeFileSync(
       join(stackDir, 'oxn-stack.md'),
@@ -682,7 +682,7 @@ name: oxn-stack
 
   test('Stack 文件 parse 失败 → 跳过（drift 兜底）', () => {
     const { blueprintIR } = makeBlueprintWithStack('oxn-stack', 'oxn-stack')
-    const stackDir = join(tmpDir, '.openxenon', 'assets', 'stack')
+    const stackDir = join(tmpDir, '.openxenon', 'assets', 'stacks')
     mkdirSync(stackDir, { recursive: true })
     // 不写 frontmatter 也能解析（parseMarkdown 容忍）
     writeFileSync(join(stackDir, 'oxn-stack.md'), `# Stack: oxn-stack\n\n## Tools\n\n### bun\n- version: 1.3+\n`)
@@ -748,7 +748,7 @@ name: oxn-stack
         },
       ],
     }
-    const stackDir = join(tmpDir, '.openxenon', 'assets', 'stack')
+    const stackDir = join(tmpDir, '.openxenon', 'assets', 'stacks')
     mkdirSync(stackDir, { recursive: true })
     writeFileSync(
       join(stackDir, 'oxn-stack.md'),
@@ -775,7 +775,7 @@ describe('buildWorkContext — v0.7.3 P6: stackTools 字段', () => {
         `## Refs\n### TrustChain\n- kind: domain\n- ref: @prj/domains/TrustChain\n\n` +
         `## Tasks\n### step1\n- domain: TrustChain\n`,
     )
-    const stackDir = join(tmpDir, '.openxenon', 'assets', 'stack')
+    const stackDir = join(tmpDir, '.openxenon', 'assets', 'stacks')
     mkdirSync(stackDir, { recursive: true })
     writeFileSync(join(stackDir, 'oxn-stack.md'), stackMd)
     // blueprints.json 含 stackRefs

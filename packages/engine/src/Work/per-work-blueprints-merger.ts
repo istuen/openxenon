@@ -109,13 +109,26 @@ export function extractBlueprintRefs(workContent: string): DeclaredBlueprintRef[
     // H3 名称 = ### 后到第一个换行符之前的内容
     const name = block.split('\n', 1)[0]?.replace(/^### /, '').trim() ?? ''
     if (!name) continue
-    const kind = block.match(/- kind:\s*(\S+)/)?.[1]
-    if (kind !== 'blueprint') continue
-    // ref 提取：兼容 "- ref: value" 和 "- ref:"（无 value）两种格式
-    // 取 - ref: 后整行的最后一个 token（去引号）
-    const refLineMatch = block.match(/- ref:\s*([^\n]*)/)
-    if (!refLineMatch) continue
-    const refValue = refLineMatch[1]!.trim()
+    let kind = block.match(/- kind:\s*(\S+)/)?.[1]
+    let refValue = ''
+    if (kind === 'blueprint') {
+      // 旧格式：- ref: 行必须存在（哪怕 value 为空 → ref=null）
+      const refLineMatch = block.match(/- ref:\s*([^\n]*)/)
+      if (refLineMatch) {
+        refValue = refLineMatch[1]!.trim()
+      } else {
+        continue
+      }
+    } else {
+      // 🆕 v0.7 fallback: 新格式 - blueprint: @md/blueprints/<name>（H3 名 + 单字段）
+      const singleField = block.match(/- blueprint:\s*(\S+)/)
+      if (singleField) {
+        kind = 'blueprint'
+        refValue = singleField[1]!.replace(/^["']|["']$/g, '')
+      } else {
+        continue
+      }
+    }
     // 去可选引号 + 取最后一个 token（处理 "name @prj/..." 合并形式）
     const refClean = refValue.replace(/^["']|["']$/g, '')
     const refLast = refClean.split(/\s+/).at(-1) ?? ''
@@ -274,14 +287,20 @@ function parseBlueprintSlimFromMd(content: string): ParsedBlueprintSlim {
         if (!block.startsWith('### ')) continue
         const n = block.split('\n', 1)[0]?.replace(/^### /, '').trim() ?? ''
         if (!n) continue
-        const kind = block.match(/- kind:\s*(\S+)/)?.[1]
-        const refLineMatch = block.match(/- ref:\s*([^\n]+)/)
+        let kind = block.match(/- kind:\s*(\S+)/)?.[1]
         let ref: string | null = null
+        const refLineMatch = block.match(/- ref:\s*([^\n]+)/)
         if (refLineMatch) {
           const refValue = refLineMatch[1]!.trim()
           const refClean = refValue.replace(/^["']|["']$/g, '')
-          const refLast = refClean.split(/\s+/).at(-1) ?? ''
-          ref = refLast || null
+          ref = (refClean.split(/\s+/).at(-1) ?? '') || null
+        }
+        if (!kind || !ref) {
+          const singleField = block.match(/- (domain|workflow|stack|blueprint):\s*(\S+)/)
+          if (singleField) {
+            kind = singleField[1]
+            ref = singleField[2]!.replace(/^["']|["']$/g, '')
+          }
         }
         if (kind === 'domain') domainRefs.push({ name: n, ref })
         else if (kind === 'workflow') workflowRefs.push({ name: n, ref })

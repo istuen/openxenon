@@ -3077,7 +3077,11 @@ function collectWorkDomainProofs(
     for (const block of refsSection[1]!.split(/\n(?=### )/)) {
       if (!block.startsWith('### ')) continue
       const name = block.replace(/^### /, '').trim()
-      const kind = block.match(/- kind:\s*(\S+)/)?.[1]
+      let kind = block.match(/- kind:\s*(\S+)/)?.[1]
+      if (kind !== 'domain') {
+        // 🆕 v0.7 fallback: 新格式 - domain: @md/domains/<name>（H3 名 + 单字段）
+        if (block.match(/- domain:\s*\S+/)) kind = 'domain'
+      }
       if (kind === 'domain') domains.push(name)
     }
   }

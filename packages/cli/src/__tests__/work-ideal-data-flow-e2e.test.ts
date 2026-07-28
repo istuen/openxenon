@@ -266,6 +266,6 @@ describe('P6 (D5) — Stack.tools runtime injection to context', () => {
     }
     const r2 = await env.runCli(['work', 'context', 'p457-fixture', '--task', 'step1', '--context-mode', 'full'])
     expect(r2.exitCode).toBe(0)
-    expect(r2.stdout).toContain('## Stack Tools (8)')
+    expect(r2.stdout).toContain('## Stack Tools (7)')
   })
 })

@@ -214,6 +214,101 @@ name: ci-pipeline
     expect(r.slots[1]?.observe).toEqual(['test-pass'])
   })
 
+  // 🆕 v0.7: .md 新格式（H3 name + 单字段 - domain/- workflow/- stack/- blueprint）
+  // 对齐 .openxenon/assets/blueprints/*.md 当前形态（脱胎于 skill SSOT 模板）
+  test('.md 新格式（H3 + 单字段）：完整 Blueprint（- domain/- workflow/- stack）', () => {
+    const md = `---
+entity: blueprint
+version: 2
+name: ci-pipeline
+---
+
+# Blueprint: ci-pipeline
+
+## Use
+### payment-domain
+- domain: @md/domains/PaymentContext
+### fix-issue-workflow
+- workflow: @md/workflows/fix-issue
+### node-stack
+- stack: @md/stacks/node-ts
+
+## Boundaries
+
+### build
+- refs:
+  - domain: payment-domain
+  - workflow: fix-issue-workflow
+  - stack: node-stack
+- observe:
+  - fs-exists
+  - ts-compiles
+- deps: []
+
+### test
+- refs:
+  - domain: payment-domain
+  - workflow: fix-issue-workflow
+  - stack: node-stack
+- observe:
+  - test-pass
+- deps:
+  - build
+`
+    const r = parseBlueprintSlim(md)
+    expect(r.name).toBe('ci-pipeline')
+    expect(r.errors).toEqual([])
+    expect(r.domainRefs.map((d) => d.name)).toEqual(['payment-domain'])
+    expect(r.workflowRefs.map((w) => w.name)).toEqual(['fix-issue-workflow'])
+    expect(r.stackRefs.map((s) => s.name)).toEqual(['node-stack'])
+    expect(r.slots).toHaveLength(2)
+    expect(r.slots[0]?.name).toBe('build')
+    expect(r.slots[0]?.observe).toEqual(['fs-exists', 'ts-compiles'])
+    expect(r.slots[1]?.name).toBe('test')
+    expect(r.slots[1]?.deps).toEqual(['build'])
+  })
+
+  test('.md 新格式（H3 + 单字段）：含嵌套 blueprint ref', () => {
+    const md = `---
+entity: blueprint
+version: 1
+name: parent-bp
+---
+
+# Blueprint: parent-bp
+
+## Use
+### child-bp
+- blueprint: @md/blueprints/child-bp
+### main-domain
+- domain: @md/domains/MainContext
+### main-workflow
+- workflow: @md/workflows/main-workflow
+### main-stack
+- stack: @md/stacks/main-stack
+
+## Boundaries
+
+### build
+- refs:
+  - domain: main-domain
+  - workflow: main-workflow
+  - stack: main-stack
+  - blueprint: child-bp
+- observe:
+  - fs-exists
+- deps: []
+`
+    const r = parseBlueprintSlim(md)
+    expect(r.name).toBe('parent-bp')
+    expect(r.errors).toEqual([])
+    expect(r.domainRefs.map((d) => d.name)).toEqual(['main-domain'])
+    expect(r.workflowRefs.map((w) => w.name)).toEqual(['main-workflow'])
+    expect(r.stackRefs.map((s) => s.name)).toEqual(['main-stack'])
+    expect(r.nestedBlueprintRefs.map((b) => b.name)).toEqual(['child-bp'])
+    expect(r.nestedBlueprintRefs[0]?.ref).toBe('@md/blueprints/child-bp')
+  })
+
   test('.md 格式：缺 Use 段 → 触发 3 boundary 缺失错误', () => {
     const md = `---
 entity: blueprint
