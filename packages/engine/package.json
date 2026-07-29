@@ -23,6 +23,8 @@
     "./Insight/*": "./src/Insight/*",
     "./Pool": "./src/Pool/index.ts",
     "./Pool/*": "./src/Pool/*",
+    "./Draft": "./src/Draft/index.ts",
+    "./Draft/*": "./src/Draft/*",
     "./Work": "./src/Work/index.ts",
     "./Work/*": "./src/Work/*"
   },

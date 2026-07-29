@@ -70,6 +70,8 @@ export interface ProjectConfig {
     blueprint?: string // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
     roadmap?: string // 🆕 v0.6.1-alpha.1
   }
+  /** v0.6.2: Draft 工作目录（默认 '<boundaryDir>/drafts'） */
+  draftDir?: string
 }
 
 /** v0.6 PR-1: Asset 路径解析（支持 config + fallback） */

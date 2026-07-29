@@ -173,6 +173,10 @@ const main = defineCommand({
     // ---- v0.2 T13: Intent Pool v3 ----
     pool: () => import('./commands/pool').then((m) => m.default),
 
+    // ---- v0.6.2: Draft 体系 v1（4 命令：create / list / archive / discard）
+    // ---- 设计：.openxenon/drafts/draft-system-design-grilling.md
+    draft: () => import('./commands/draft').then((m) => m.default),
+
     // ---- Dev namespace (DSL 内部工具) ----
     dev: () => import('./commands/dev').then((m) => m.default),
   },

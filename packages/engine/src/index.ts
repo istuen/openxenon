@@ -9,6 +9,7 @@
 export * as Asset from './Asset'
 export * as Proof from './Proof'
 export * as Pool from './Pool'
+export * as Draft from './Draft'
 
 export const ENGINE_VERSION = '0.6.0'
 export const ENGINE_STATUS = 'pr-5d-cleanup-dead-code'
