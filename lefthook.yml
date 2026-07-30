@@ -3,12 +3,12 @@ pre-commit:
   commands:
     biome-check:
       glob: "*.{ts,js,json}"
-      run: bunx biome check --staged --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      run: pnpm exec biome check --staged --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
     eslint-arch:
       glob: "src/**/*.ts"
-      run: bunx eslint --no-warn-ignored {staged_files}
+      run: pnpm exec eslint --no-warn-ignored {staged_files}
     typecheck:
-      run: bun run typecheck
+      run: pnpm run typecheck
     heading-skeleton:
       glob: "**/*.md"
       run: bun scripts/check-heading-skeleton.ts .openxenon/drafts/

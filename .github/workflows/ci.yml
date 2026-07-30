@@ -12,20 +12,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - run: bun install --frozen-lockfile
+      - name: Install dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        run: bun run typecheck
+        run: pnpm run typecheck
 
       - name: Biome (format + lint)
-        run: bunx biome check src/
+        run: pnpm exec biome check src/
 
       - name: ESLint (architecture)
-        run: bun run lint
+        run: pnpm run lint
 
       - name: Test
         run: bun test

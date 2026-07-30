@@ -1,9 +1,14 @@
 # ─────────────────────────────────────────────────────────────
 # 1. 依赖与锁文件
+#    阶段 1（2026-07-30）：包管理切 pnpm（构建/测试保留 bun）
+#    - pnpm-lock.yaml：track（pnpm install 生成）
+#    - bun.lock：ignore（保留 bun.lock.bak 作本地对照，不入库）
+#    - pnpm-workspace.yaml：track（pnpm 工作区配置）
 # ─────────────────────────────────────────────────────────────
 node_modules/
 .pnpm-store/
-pnpm-lock.yaml
+bun.lock
+bun.lock.bak
 
 # ─────────────────────────────────────────────────────────────
 # 2. 构建产物

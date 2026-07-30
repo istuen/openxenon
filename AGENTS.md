@@ -1,6 +1,10 @@
 # AGENTS.md
 
-OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 **md-pipeline** 的 OXN DSL（0.6.x 起纯 MD，Langium 已退役，见 ADR-0052）。包管理器为 **Bun**（锁文件 `bun.lock`）。仓库本地的 OpenCode 技能（v0.6.1 起共 2 个 Skill：`oxn-asset` 管 Asset 生命周期、`oxn-work` 管 Work 编排与执行；源在 `packages/cli/src/skills/locales/`，编译产物到 `.opencode/skills/`，不 git 追踪）与 opsx 命令（`.opencode/command/opsx-*.md`）属于工作流的一部分。
+OpenXenon 是一个基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 **md-pipeline** 的 OXN DSL（0.6.x 起纯 MD，Langium 已退役，见 ADR-0052）。
+
+**包管理器**：阶段 1（2026-07-30 起）切到 **pnpm**（workspace + 依赖安装），构建器与测试运行器仍为 **Bun**（`bun build` / `bun test`）。权威锁文件 `pnpm-lock.yaml`（track）。`bun.lock` 已 ignore；`bun.lock.bak` 保留作本地对照基线，不入库。阶段 2 计划：构建换 tsup + 运行时切 Node.js。
+
+仓库本地的 OpenCode 技能（v0.6.1 起共 2 个 Skill：`oxn-asset` 管 Asset 生命周期、`oxn-work` 管 Work 编排与执行；源在 `packages/cli/src/skills/locales/`，编译产物到 `.opencode/skills/`，不 git 追踪）与 opsx 命令（`.opencode/command/opsx-*.md`）属于工作流的一部分。
 
 **版本号政策**：[RFC-0013](docs/rfc/zh-cn/RFC-0013-versioning-policy.md)（Draft）——Alpha prerelease 机制 + Version Fragment/Roadmap/Fix Record 三情态分离 + AssetMap/Roadmap 术语消歧 + RFC 文档移除 version 字段。当前版本：`0.6.2-alpha.0`（RFC 迁移已执行但功能未完全人工验证，alpha 阶段）。
 
@@ -59,7 +63,7 @@ bun test                    # bun test，约 1487 个测试 / 119 文件
 
 错误类型定义在 `packages/engine/src/errors/`：`IAPError`（供 AI 消费，JSON 输出到 stdout）、`OXNCrash`（供人类消费，输出到 stderr）、`isCliInputError`（用户输入错）。新增失败模式时，从这三者中挑选——不要在子命令中直接抛出原始 `Error`。
 
-`oxn` 本身是 Bun 编译出的单文件可执行（`dist/cli.js`）。`dist/` 与 `*.js` 已被 gitignore。`pnpm-lock.yaml` 也被忽略——请使用 Bun 安装而非 pnpm，尽管 README 的 `pnpm install` 快速入门略有出入（README 在此点上有轻微过时；权威锁文件是 `bun.lock`）。
+`oxn` 本身是 Bun 编译出的单文件可执行（`dist/cli.js`，阶段 1；阶段 2 计划换 tsup）。`dist/` 与 `*.js` 已被 gitignore。安装时使用 **pnpm**（`pnpm install`），构建与测试仍用 Bun（`bun run build` / `bun test`）。锁文件：`pnpm-lock.yaml` track，`bun.lock` ignore。详见 `.openxenon/drafts/oxn-dev-release-coexistence.md`。
 
 ## OXN DSL
 
