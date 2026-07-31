@@ -8,6 +8,7 @@ import { dirname } from 'path'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 import { resolveAssetFile } from './internal/resolver'
 import type { CreateInput, CreateResult, AssetFormat } from './types'
+import type { ProjectConfig } from '@openxenon/engine/infra/paths'
 
 function createDomainTemplate(name: string, format: AssetFormat): string {
   if (format === 'md') {
@@ -213,11 +214,11 @@ roadmap "${name}" {
 //   - external 用途（网络资源指针）→ 边界类型 ## Externals H2 category（url 字段）
 // 模板函数 createLibraryTemplate / createExternalTemplate 已删除
 
-export async function create(input: CreateInput): Promise<CreateResult> {
+export async function create(input: CreateInput, config?: ProjectConfig | null): Promise<CreateResult> {
   const kind = input.kind
   const format = input.format ?? 'oxn'
   const force = input.force ?? false
-  const assetPath = resolveAssetFile(input.projectRoot, kind, input.name, format)
+  const assetPath = resolveAssetFile(input.projectRoot, kind, input.name, format, config)
 
   if (existsSync(assetPath) && !force) {
     throw new IAPError('INFRA', 'PATH_CONFLICT', IAPAction.YIELD_TO_HUMAN, `Asset already exists: ${assetPath}`, {

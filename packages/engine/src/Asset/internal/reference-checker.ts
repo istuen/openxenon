@@ -19,8 +19,9 @@
 
 import { readFileSync, readdirSync, existsSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
-import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
+import { resolveAssetDir, ALL_ASSET_KINDS, type ProjectConfig } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
+import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 
 export interface AssetReferenceEntry {
   kind: AssetKind
@@ -32,13 +33,16 @@ export interface AssetReferenceEntry {
 /**
  * 扫所有 5 AssetKind 的 .md，提取 references[] 字段，
  * 返回反向引用索引：name → referencedBy[]
+ *
+ * v0.6.2 I-6 fix: 接受可选 config；缺省时 lazy 加载 .openxenon/config.json。
  */
-export function listAssetReferences(projectRoot: string): AssetReferenceEntry[] {
+export function listAssetReferences(projectRoot: string, config?: ProjectConfig | null): AssetReferenceEntry[] {
+  const cfg = config ?? loadProjectConfig(projectRoot)
   const kinds: AssetKind[] = [...ALL_ASSET_KINDS]
   const nodes: Array<{ kind: AssetKind; name: string; references: string[] }> = []
 
   for (const kind of kinds) {
-    const dir = resolveAssetDir(projectRoot, kind, null)
+    const dir = resolveAssetDir(projectRoot, kind, cfg)
     if (!existsSync(dir)) continue
     const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
     for (const file of files) {

@@ -9,17 +9,19 @@
 import { readFileSync, existsSync, readdirSync } from '@openxenon/engine/infra/filesystem'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 import { resolveAssetFile } from './internal/resolver'
-import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
+import { resolveAssetDir, ALL_ASSET_KINDS, type ProjectConfig } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
 import type { ValidateInput, ValidateResult } from './types'
 import { checkAssetDAG, type AssetNode, type DagValidationResult } from './dag-validator.js'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 import { getEntityCompiler } from '@openxenon/engine/oxl/md-bridge/entity-registry'
+import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 // 副作用 import：触发 6 个 EntityCompiler 注册（domain/workflow/stack/blueprint/roadmap/work/task/proof）
 import '@openxenon/engine/oxl/md-bridge/compilers/index.js'
 
-export async function validate(input: ValidateInput): Promise<ValidateResult> {
-  const filePath = resolveAssetFile(input.projectRoot, input.kind, input.name)
+export async function validate(input: ValidateInput, config?: ProjectConfig | null): Promise<ValidateResult> {
+  const cfg = config ?? loadProjectConfig(input.projectRoot)
+  const filePath = resolveAssetFile(input.projectRoot, input.kind, input.name, 'md', cfg)
 
   if (!existsSync(filePath)) {
     throw new IAPError('INFRA', 'KIND_UNSUPPORTED', IAPAction.YIELD_TO_HUMAN, `Asset file not found: ${filePath}`, {
@@ -70,12 +72,13 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
  * @param projectRoot OXN 项目根目录（含 .openxenon/）
  * @returns DAG 校验结果
  */
-export function validateAssetReferences(projectRoot: string): DagValidationResult {
+export function validateAssetReferences(projectRoot: string, config?: ProjectConfig | null): DagValidationResult {
+  const cfg = config ?? loadProjectConfig(projectRoot)
   const kinds: readonly AssetKind[] = ALL_ASSET_KINDS
   const nodes: AssetNode[] = []
 
   for (const kind of kinds) {
-    const dir = resolveAssetDir(projectRoot, kind, null)
+    const dir = resolveAssetDir(projectRoot, kind, cfg)
     if (!existsSync(dir)) continue
     const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
     for (const file of files) {
@@ -181,8 +184,10 @@ export async function validateAssetPaper4Fields(
   kind: AssetKind,
   name: string,
   strict: boolean = false,
+  config?: ProjectConfig | null,
 ): Promise<AssetPaperValidationResult> {
-  const filePath = resolveAssetFile(projectRoot, kind, name)
+  const cfg = config ?? loadProjectConfig(projectRoot)
+  const filePath = resolveAssetFile(projectRoot, kind, name, 'md', cfg)
   if (!existsSync(filePath)) {
     throw new IAPError('INFRA', 'PATH_CONFLICT', IAPAction.YIELD_TO_HUMAN, `Asset not found: ${filePath}`, {
       kind,

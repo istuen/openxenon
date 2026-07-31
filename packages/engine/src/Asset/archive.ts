@@ -25,12 +25,13 @@ import { resolveAssetFile } from './internal/resolver'
 import { resolveArchivedAssetFile, resolveArchivedMetadataFile } from './internal/archived-resolver'
 import { listAssetReferences } from './internal/reference-checker'
 import type { ArchiveInput, ArchiveResult } from './types'
+import type { ProjectConfig } from '@openxenon/engine/infra/paths'
 
-export async function archive(input: ArchiveInput): Promise<ArchiveResult> {
+export async function archive(input: ArchiveInput, config?: ProjectConfig | null): Promise<ArchiveResult> {
   const { kind, name, reason, projectRoot } = input
 
   // 1. 解析源路径（主路径 + fallback）
-  const sourceMdPath = resolveAssetFile(projectRoot, kind, name, 'md')
+  const sourceMdPath = resolveAssetFile(projectRoot, kind, name, 'md', config)
 
   // 2. 解析归档目标路径
   const targetMdPath = resolveArchivedAssetFile(projectRoot, kind, name, 'md')

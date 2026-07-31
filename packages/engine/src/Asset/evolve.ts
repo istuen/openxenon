@@ -22,8 +22,9 @@ import { existsSync, readFileSync, writeFileSync } from '@openxenon/engine/infra
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 import { resolveAssetFile } from './internal/resolver'
 import type { EvolveInput, EvolveResult } from './types'
+import type { ProjectConfig } from '@openxenon/engine/infra/paths'
 
-export async function evolve(input: EvolveInput): Promise<EvolveResult> {
+export async function evolve(input: EvolveInput, config?: ProjectConfig | null): Promise<EvolveResult> {
   const { kind, name, newName, projectRoot } = input
 
   if (!newName || newName === name) {
@@ -37,8 +38,8 @@ export async function evolve(input: EvolveInput): Promise<EvolveResult> {
   }
 
   // 1. 解析路径
-  const oldOxnPath = resolveAssetFile(projectRoot, kind, name, 'oxn')
-  const newOxnPath = resolveAssetFile(projectRoot, kind, newName, 'oxn')
+  const oldOxnPath = resolveAssetFile(projectRoot, kind, name, 'oxn', config)
+  const newOxnPath = resolveAssetFile(projectRoot, kind, newName, 'oxn', config)
 
   if (!existsSync(oldOxnPath)) {
     throw new IAPError(
@@ -75,8 +76,8 @@ export async function evolve(input: EvolveInput): Promise<EvolveResult> {
   writeFileSync(oldOxnPath, oldContentUpdated, 'utf-8')
 
   // 5. 同样处理 .md 镜像（如果有）
-  const oldMdPath = resolveAssetFile(projectRoot, kind, name, 'md')
-  const newMdPath = resolveAssetFile(projectRoot, kind, newName, 'md')
+  const oldMdPath = resolveAssetFile(projectRoot, kind, name, 'md', config)
+  const newMdPath = resolveAssetFile(projectRoot, kind, newName, 'md', config)
   if (existsSync(oldMdPath)) {
     const oldMdContent = readFileSync(oldMdPath, 'utf-8')
     const newMdContent = appendAuditTrail(oldMdContent, `<!-- auditTrail: evolved from ${name} at ${now} -->`)

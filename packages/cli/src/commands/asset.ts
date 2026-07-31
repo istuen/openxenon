@@ -32,6 +32,7 @@ import {
   resolveArchivedAssetFile,
 } from '@openxenon/engine/Asset'
 import { ALL_ASSET_KINDS, type AssetKind } from '@openxenon/engine/infra/paths'
+import { readProjectConfig } from './project-config-io'
 
 const VALID_ASSET_KINDS = ALL_ASSET_KINDS
 type ValidAssetKind = (typeof VALID_ASSET_KINDS)[number]
@@ -83,7 +84,10 @@ const listSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
-    const result = kindFilter ? list({ kind: kindFilter as AssetKind, projectRoot }) : listAll(projectRoot)
+    const config = readProjectConfig(projectRoot)
+    const result = kindFilter
+      ? list({ kind: kindFilter as AssetKind, projectRoot }, config)
+      : listAll(projectRoot, config)
     const groups = new Map<string, typeof result.assets>()
     for (const a of result.assets) {
       if (!groups.has(a.kind)) groups.set(a.kind, [])
@@ -138,7 +142,8 @@ const showSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
-    const result = list({ kind: kind as AssetKind, projectRoot })
+    const config = readProjectConfig(projectRoot)
+    const result = list({ kind: kind as AssetKind, projectRoot }, config)
     const asset = result.assets.find((a) => a.name === name)
     if (!asset) {
       // 检查归档
@@ -233,13 +238,14 @@ const validateSubcommand = defineCommand({
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
     const checkDag = ctx.args['check-dag'] === true
     const all = ctx.args.all === true
     const strict = ctx.args.strict === true
 
     // DAG check across all assets
     if (checkDag || all) {
-      const result = validateAssetReferences(projectRoot)
+      const result = validateAssetReferences(projectRoot, config)
       return output(
         {
           data: {
@@ -279,23 +285,26 @@ const validateSubcommand = defineCommand({
     }
 
     try {
-      const result = await validateAsset({
-        kind: kind as AssetKind,
-        name,
-        projectRoot,
-      })
+      const result = await validateAsset(
+        {
+          kind: kind as AssetKind,
+          name,
+          projectRoot,
+        },
+        config,
+      )
 
       // PR-2: --strict mode adds AssetPaper 4 字段校验
       let paperResult: { ok: boolean; warnings: string[] } | null = null
       if (strict && result.ok) {
         try {
-          paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, true)
+          paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, true, config)
         } catch (err) {
           return iapErrorToOutput(err, format)
         }
       } else if (result.ok) {
         // fail-open: warn only
-        paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, false)
+        paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, false, config)
       }
 
       return output(
@@ -354,8 +363,9 @@ const archiveSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
     try {
-      const result = await archive({ kind: kind as AssetKind, name, reason, projectRoot })
+      const result = await archive({ kind: kind as AssetKind, name, reason, projectRoot }, config)
       return output(
         {
           data: {
@@ -405,8 +415,9 @@ const deleteSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
     try {
-      const result = await deleteAsset({ kind: kind as AssetKind, name, force, projectRoot })
+      const result = await deleteAsset({ kind: kind as AssetKind, name, force, projectRoot }, config)
       return output(
         {
           data: {
@@ -456,8 +467,9 @@ const evolveSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
     try {
-      const result = await evolve({ kind: kind as AssetKind, name, newName, projectRoot })
+      const result = await evolve({ kind: kind as AssetKind, name, newName, projectRoot }, config)
       return output(
         {
           data: {

@@ -3,6 +3,7 @@
  *
  * 复用 PR-1 的 resolveAssetDir/resolveAndDetectAssetDir 并封装为 Asset 专用 helper。
  * v0.7.0: .oxn removed, .md is the only format.
+ * v0.6.2 I-6 fix: 接受可选 config 参数；缺省时 lazy 加载 .openxenon/config.json。
  */
 import { join } from 'path'
 import {
@@ -10,7 +11,9 @@ import {
   resolveAssetCandidates,
   resolveAssetFileCandidatesV61,
   type AssetKind,
+  type ProjectConfig,
 } from '@openxenon/engine/infra/paths'
+import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 import { existsSync } from '@openxenon/engine/infra/filesystem'
 
 /**
@@ -18,8 +21,15 @@ import { existsSync } from '@openxenon/engine/infra/filesystem'
  *
  * v0.7.0: Only .md format supported.
  */
-export function resolveAssetFile(projectRoot: string, kind: AssetKind, name: string, ext: string = 'md'): string {
-  const dir = resolveAssetDir(projectRoot, kind, null)
+export function resolveAssetFile(
+  projectRoot: string,
+  kind: AssetKind,
+  name: string,
+  ext: string = 'md',
+  config?: ProjectConfig | null,
+): string {
+  const cfg = config ?? loadProjectConfig(projectRoot)
+  const dir = resolveAssetDir(projectRoot, kind, cfg)
   return join(dir, `${name}.${ext}`)
 }
 
@@ -31,8 +41,10 @@ export function resolveAssetFileCandidates(
   kind: AssetKind,
   name: string,
   ext: string = 'md',
+  config?: ProjectConfig | null,
 ): { primary: string; fallback: string } {
-  const { primary, fallback } = resolveAssetCandidates(projectRoot, kind, null)
+  const cfg = config ?? loadProjectConfig(projectRoot)
+  const { primary, fallback } = resolveAssetCandidates(projectRoot, kind, cfg)
   return {
     primary: join(primary, `${name}.${ext}`),
     fallback: join(fallback, `${name}.${ext}`),
@@ -42,8 +54,14 @@ export function resolveAssetFileCandidates(
 /**
  * 检测 asset 文件的主路径与 fallback 冲突.
  */
-export function detectAssetConflict(projectRoot: string, kind: AssetKind, name: string, ext: string = 'md'): boolean {
-  const { primary, fallback } = resolveAssetFileCandidates(projectRoot, kind, name, ext)
+export function detectAssetConflict(
+  projectRoot: string,
+  kind: AssetKind,
+  name: string,
+  ext: string = 'md',
+  config?: ProjectConfig | null,
+): boolean {
+  const { primary, fallback } = resolveAssetFileCandidates(projectRoot, kind, name, ext, config)
   return existsSync(primary) && existsSync(fallback)
 }
 
@@ -56,8 +74,10 @@ export function resolveAssetFileFirst(
   projectRoot: string,
   kind: AssetKind, // 🆕 v0.6.1-alpha.2: library/external 已删除，AssetKind 收敛为 5 类型
   name: string,
+  config?: ProjectConfig | null,
 ): string {
-  const candidates = resolveAssetFileCandidatesV61(projectRoot, kind, name, null)
+  const cfg = config ?? loadProjectConfig(projectRoot)
+  const candidates = resolveAssetFileCandidatesV61(projectRoot, kind, name, cfg)
   for (const p of candidates) {
     if (existsSync(p)) return p
   }
