@@ -27,17 +27,19 @@ import { probeRegistry } from '@openxenon/engine/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '@openxenon/engine/kernel/verdicts/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 5a+5b builtin probes（19 条：15 + 4 doc-* v0.6.2）', () => {
+  test('catalog 列出 14 oxn builtin probes（19 - 4 doc-* RFC-0015 D4.2 移到 @prj/）+ 1 git-status-clean @deprecated alias', () => {
+    // RFC-0015 D4.2: 4 OXN-internal probes 移到 @prj/ project scope:
+    //   doc-boundary / heading-skeleton-check / docs-heading-check / docs-build
+    //   builtin: 'oxn' → 'prj'
+    // 期望名单 (builtin === 'oxn'): 14 条 (原 19 - 4 移走 - 1 doc: 仍然是）
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
     // 5a: 5 条 + 5b.1+2+3+4+5+6 → 11 条
     // v1.2: + 4 条 git-*（git-clean / git-branch-exists / git-status-clean / git-merge-feasible）= 15
-    // v0.6.2: + 4 条 doc-*（docs-build / heading-skeleton-check / docs-heading-check / doc-boundary）= 19
+    // 注意: RFC-0015 D4.1 把 doc-boundary / heading-skeleton-check / docs-heading-check / docs-build 这 4 条移到 builtin=prj
+    // 最终 builtin=oxn 共 19 - 4 = 15 条 (含 git-status-clean, 仍 @deprecated 但保留 1 版本)
     expect(names).toEqual([
       'deps-resolved',
-      'doc-boundary',
-      'docs-build',
-      'docs-heading-check',
       'file-exports',
       'fs-content-match',
       'fs-exists',
@@ -47,7 +49,6 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
       'git-clean',
       'git-merge-feasible',
       'git-status-clean',
-      'heading-skeleton-check',
       'http-responds',
       'lint-check',
       'shell-exec',
@@ -56,17 +57,30 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     ])
   })
 
-  test('listProbesSummary 至少 19 个（5a + 5b.1+2+3+4+5+6 + 4 git-* + 4 doc-*）', () => {
+  test('listProbesSummary 至少 19 个 (含 builtin=prj 的 4 doc-*; RFC-0015 D4.2)', () => {
     const summary = listProbesSummary()
+    // 14 oxn builtin + 4 @prj/ builtin = 18 + 1 git-status-clean alias = 19
     expect(summary.length).toBeGreaterThanOrEqual(19)
     const names = summary.map((s) => s.name)
     expect(names).toContain('file-exports')
     expect(names).toContain('git-clean')
     expect(names).toContain('git-merge-feasible')
+    // RFC-0015 D4.2: 4 OXN-internal probes 仍在 catalog, 但 builtin=prj
     expect(names).toContain('docs-build')
     expect(names).toContain('heading-skeleton-check')
     expect(names).toContain('docs-heading-check')
     expect(names).toContain('doc-boundary')
+  })
+
+  test('RFC-0015 D4.2: 4 OXN-internal probes 移到 builtin=prj scope', () => {
+    const prjScp = PROBE_CATALOG.filter((p) => p.builtin === 'prj')
+      .map((p) => p.semanticName)
+      .sort()
+    expect(prjScp).toEqual(['doc-boundary', 'docs-build', 'docs-heading-check', 'heading-skeleton-check'])
+    // internalRef 全部指向 @prj/probes/<x>
+    for (const entry of PROBE_CATALOG.filter((p) => p.builtin === 'prj')) {
+      expect(entry.internalRef.startsWith('@prj/probes/')).toBe(true)
+    }
   })
 
   test('P1 probe test-pass 标注 domainTerm = TestCase', () => {
@@ -129,9 +143,9 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     }
   })
 
-  test('所有 entry 都是 builtin: oxn (P1 域待 v5b)', () => {
+  test('所有 entry 都是 builtin: oxn 或 prj (RFC-0015 D4.2 后; P1 域待 v5b)', () => {
     for (const entry of PROBE_CATALOG) {
-      expect(entry.builtin).toBe('oxn')
+      expect(['oxn', 'prj']).toContain(entry.builtin)
     }
   })
 })
@@ -475,14 +489,14 @@ describe('Catalog invariants', () => {
     }
   })
 
-  test('每个 entry 有 required 字段', () => {
+  test('每个 entry 有 required 字段 (builtin ∈ oxn|prj, RFC-0015 D4.2)', () => {
     for (const entry of PROBE_CATALOG) {
       expect(entry.semanticName).toBeTruthy()
       expect(entry.internalRef).toBeTruthy()
       expect(entry.description).toBeTruthy()
       expect(Array.isArray(entry.inputs)).toBe(true)
       expect(Array.isArray(entry.examples)).toBe(true)
-      expect(entry.builtin).toBe('oxn')
+      expect(['oxn', 'prj']).toContain(entry.builtin)
     }
   })
 })

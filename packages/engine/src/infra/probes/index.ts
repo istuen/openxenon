@@ -506,6 +506,12 @@ class ProbeRegistry {
     'heading-skeleton-check': 'heading_skeleton_check',
     'docs-heading-check': 'docs_heading_check',
     'doc-boundary': 'doc_boundary',
+    // RFC-0015 D4.2: 4 OXN-internal probes 走 @prj/ scope (OXN self-host;
+    // 外部项目不从 builtin 获得。Engine 内仍执行 handler, 但 catalog 已指向 @prj/).
+    '@prj/probes/docs-build': 'docs_build',
+    '@prj/probes/heading-skeleton-check': 'heading_skeleton_check',
+    '@prj/probes/docs-heading-check': 'docs_heading_check',
+    '@prj/probes/doc-boundary': 'doc_boundary',
     'fs-exists:probes': 'fs_exists',
     'fs-not-exists:probes': 'fs_not_exists',
     'fs-parseable:probes': 'fs_parseable',

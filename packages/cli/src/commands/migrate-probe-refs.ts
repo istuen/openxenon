@@ -32,10 +32,14 @@ const BUILTIN_PROBES: ProbeMapping = {
   lint_check: 'oxn/lint-check',
   http_responds: 'oxn/http-responds',
   file_exports: 'oxn/file-exports',
-  exec_exit_zero: 'oxn/exec-exit-zero',
+  // RFC-0015 D4.1: 老 alias migration targets — 迁移到 canonical ref
+  exec_exit_zero: 'oxn/shell-exec',
+  'exec-exit-zero': 'oxn/shell-exec',
+  exec_exit_code: 'oxn/shell-exec',
+  // RFC-0015 D4.1: git-status-clean 迁移到 git-clean
+  git_status_clean: 'oxn/git-clean',
+  'git-status-clean': 'oxn/git-clean',
   shell_exec: 'oxn/shell-exec',
-  'exec-exit-zero': 'oxn/exec-exit-zero',
-  exec_exit_code: 'oxn/exec-exit-zero',
   file_exists: 'oxn/fs-exists',
   file_not_exists: 'oxn/fs-not-exists',
   content_match: 'oxn/fs-content-match',
@@ -79,10 +83,14 @@ function detectAndConvertRef(ref: string): string | null {
     return 'oxn/fs-content-match'
   }
   if (trimmed === 'exec-exit-zero' || trimmed === 'exec_exit_zero') {
-    return 'oxn/exec-exit-zero'
+    return 'oxn/shell-exec'
   }
   if (trimmed === 'shell-exec' || trimmed === 'shell_exec') {
     return 'oxn/shell-exec'
+  }
+  // RFC-0015 D4.1: git-status-clean 老 alias → git-clean canonical
+  if (trimmed === 'git-status-clean' || trimmed === 'git_status_clean') {
+    return 'oxn/git-clean'
   }
 
   return null

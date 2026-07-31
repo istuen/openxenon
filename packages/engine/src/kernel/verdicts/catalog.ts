@@ -43,8 +43,8 @@ export interface ProbeCatalogEntry {
   internalRef: string
   /** input 名翻译表（AI 不可见）：semanticName → internalName */
   inputMap: Record<string, string>
-  /** 归属 builtin 类别 */
-  builtin: 'oxn'
+  /** 归属 builtin 类别 (RFC-0015 D4.2 后允许 'oxn' | 'prj') */
+  builtin: 'oxn' | 'prj'
   /** v1.1: 关联的 ProgramContext term 名（如 'SourceFile' / 'TestCase'）。
    *  AI 可见——帮助 AI 理解 probe 服务的编程概念。
    *  5a builtin probes 留空（无对应 P1 term）；5b P1 probes 必填。 */
@@ -438,9 +438,11 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     domainTerm: 'Branch',
   },
   {
-    // v1.2: git-status-clean — git-clean 的 verbose alias（给工程师读 verdict 用）
+    // RFC-0015 D4.1: git-status-clean — git-clean 的 verbose alias (给工程师读 verdict 用)
+    // @deprecated — use `git-clean` instead. 保留 1 个大版本 (v0.8.x) 兼容期间, v0.9.0 物理删除。
     semanticName: 'git-status-clean',
-    description: 'Check git status --porcelain output (same as git-clean; clean: true → PASS)',
+    description:
+      '@deprecated — use `git-clean`. Check git status --porcelain output (same as git-clean; clean: true → PASS)',
     inputs: [
       {
         name: 'path',
@@ -450,6 +452,9 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       },
     ],
     examples: [{ name: 'default', inputs: {} }],
+    // RFC-0015 D4.1: 保留自 ref — handler/strategy 仍独立注册但语义相同 (alias 兼容);
+    //  runner.ts 跑使用 `@oxn/probes/git-status-clean` 走 git_status_clean handler,
+    //  与 git-clean 二者跑出同一 outcome. v0.9.0 删除此 entry.
     internalRef: '@oxn/probes/git-status-clean',
     inputMap: { path: 'path' },
     builtin: 'oxn',
@@ -504,14 +509,13 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       },
     ],
     examples: [{ name: 'default', inputs: {} }],
-    internalRef: '@oxn/probes/docs-build',
+    // RFC-0015 D4.2: 移至 @prj/ project scope (OXN self-host)
+    internalRef: '@prj/probes/docs-build',
     inputMap: { timeout: 'timeout' },
-    builtin: 'oxn',
+    builtin: 'prj',
   },
   {
-    // v0.6.2: heading-skeleton-check — 校验 pool .md 的 H1 骨架
-    // 5 池 spec: research / design / issue / audit / journal
-    // 复用 packages/engine/src/infra/markdown-headings.ts 的 validateHeadingSkeleton
+    // RFC-0015 D4.2: 移至 @prj/ project scope (heading-skeleton-check OXN-internal — 5 池 spec 是 OXN 项目专属)
     semanticName: 'heading-skeleton-check',
     description:
       'Validate heading skeleton of .openxenon/pools/<pool>/*.md files (H1 mode; pool type determines spec: research / design / issue / audit / journal)',
@@ -533,13 +537,12 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       { name: 'research-pool', inputs: { path: './.openxenon/pools/research', pool: 'research' } },
       { name: 'design-pool', inputs: { path: './.openxenon/pools/design', pool: 'design' } },
     ],
-    internalRef: '@oxn/probes/heading-skeleton-check',
+    internalRef: '@prj/probes/heading-skeleton-check',
     inputMap: { path: 'path', pool: 'pool' },
-    builtin: 'oxn',
+    builtin: 'prj',
   },
   {
-    // v0.6.2: docs-heading-check — 校验 docs .md 章节骨架（H2 模式：What→Why→How→参考）
-    // 与 heading-skeleton-check 区分：pool 用 H1（每个 H1 是独立 spec），docs 用 H2（章内统一模板）
+    // RFC-0015 D4.2: 移至 @prj/ project scope (docs-heading-check — DOCS_CHAPTER_SPEC What→Why→How→参考 OXN 专属)
     semanticName: 'docs-heading-check',
     description:
       'Validate chapter skeleton of docs/{product,dev,rfc}/*.md files (H2 mode: What→Why→How→参考; only files containing ## What)',
@@ -555,14 +558,12 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       { name: 'product-zh', inputs: { path: './docs/product/zh-cn' } },
       { name: 'dev-zh', inputs: { path: './docs/dev/zh-cn' } },
     ],
-    internalRef: '@oxn/probes/docs-heading-check',
+    internalRef: '@prj/probes/docs-heading-check',
     inputMap: { path: 'path' },
-    builtin: 'oxn',
+    builtin: 'prj',
   },
   {
-    // v0.6.2: doc-boundary — 文档三层守门（6 条规则）
-    // 与 scripts/check-doc-boundary.ts 逻辑等价（lefthook pre-commit 也跑该脚本）
-    // 该 probe 让 OXN work flow 内部可主动调用此验证
+    // RFC-0015 D4.2: 移至 @prj/ project scope (doc-boundary 6 条规则硬编码 OXN 目录结构)
     semanticName: 'doc-boundary',
     description:
       'Document boundary guard (6 rules: product→openxenon / dev→drafts / dev→assets / rfc→drafts/rfc / drafts→drafts/rfc / drafts/rfc→assets)',
@@ -575,9 +576,9 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       },
     ],
     examples: [{ name: 'default', inputs: {} }],
-    internalRef: '@oxn/probes/doc-boundary',
+    internalRef: '@prj/probes/doc-boundary',
     inputMap: { root: 'root' },
-    builtin: 'oxn',
+    builtin: 'prj',
   },
 ]
 
