@@ -2,8 +2,8 @@
  * Asset module — list use case (v0.6 PR-5a)
  */
 import { readdirSync, existsSync } from '@openxenon/engine/infra/filesystem'
-import { resolveAssetDir } from '@openxenon/engine/infra/paths'
-import type { ListInput, ListResult, AssetKind, AssetFormat } from './types'
+import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
+import type { ListInput, ListResult, AssetFormat } from './types'
 
 export function list(input: ListInput): ListResult {
   const dir = resolveAssetDir(input.projectRoot, input.kind, null)
@@ -23,9 +23,8 @@ export function list(input: ListInput): ListResult {
 }
 
 export function listAll(projectRoot: string): ListResult {
-  const kinds: AssetKind[] = ['domain', 'blueprint', 'stack']
   const all: ListResult['assets'] = []
-  for (const kind of kinds) {
+  for (const kind of ALL_ASSET_KINDS) {
     const r = list({ kind, projectRoot })
     all.push(...r.assets)
   }
