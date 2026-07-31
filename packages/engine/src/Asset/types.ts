@@ -191,3 +191,48 @@ export interface TreeResult {
   humanTree: string
   message: string
 }
+
+// =============================================================================
+// Migrate — schema 版本升级 (v0.6.2-alpha.0)
+// =============================================================================
+
+export interface MigrateInput {
+  kind: AssetKind
+  name: string
+  /** 目标版本（如 0.3.0） */
+  targetVersion: string
+  projectRoot: string
+}
+
+export interface MigrateResult {
+  ok: boolean
+  /** 幂等（已是目标版本） */
+  idempotent: boolean
+  oldVersion: string
+  newVersion: string
+  path: string
+  message: string
+}
+
+// =============================================================================
+// Diff — 项目 vs builtin (v0.6.2-alpha.0)
+// =============================================================================
+
+export interface DiffInput {
+  kind: AssetKind
+  name: string
+  projectRoot: string
+  /** 默认 'unified'；也支持 'json' */
+  format?: 'unified' | 'json'
+}
+
+export interface DiffResult {
+  ok: boolean
+  /** 是否覆盖 builtin（true=项目与 builtin 不同；false=项目不存在/与 builtin 相同） */
+  hasOverride: boolean
+  /** 是否有 builtin 默认 */
+  hasBuiltin: boolean
+  /** unified diff 字符串或 json 结构 */
+  diff: string | object
+  message: string
+}

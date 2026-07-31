@@ -17,6 +17,8 @@ export { unarchive } from './unarchive'
 export { deleteAsset } from './delete'
 export { evolve } from './evolve'
 export { tree } from './tree'
+export { migrate } from './migrate'
+export { diff } from './diff'
 export * from './domain-manager'
 export * from './blueprint-manager'
 
@@ -45,6 +47,10 @@ export type {
   TreeInput,
   TreeResult,
   TreeNode,
+  MigrateInput,
+  MigrateResult,
+  DiffInput,
+  DiffResult,
 } from './types'
 
 export type { AssetPaper4Fields, AssetPaperValidationResult } from './validate'

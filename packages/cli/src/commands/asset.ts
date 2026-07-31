@@ -31,6 +31,8 @@ import {
   list,
   listAll,
   tree as treeAsset,
+  migrate as migrateAsset,
+  diff as diffAsset,
   resolveArchivedAssetFile,
 } from '@openxenon/engine/Asset'
 import { ALL_ASSET_KINDS, type AssetKind } from '@openxenon/engine/infra/paths'
@@ -626,12 +628,126 @@ const treeSubcommand = defineCommand({
 })
 
 // =============================================================================
+// Subcommand: migrate
+// =============================================================================
+const migrateSubcommand = defineCommand({
+  meta: { name: 'migrate', description: 'Migrate Asset frontmatter version' },
+  args: {
+    name: { type: 'positional', required: true },
+    kind: {
+      type: 'string',
+      required: true,
+      description: `Asset kind (${VALID_ASSET_KINDS.join('|')})`,
+    },
+    'target-version': { type: 'string', required: true, description: 'Target version (e.g., 0.4.0)' },
+    '--json': { type: 'boolean' },
+    '--yaml': { type: 'boolean' },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const name = ctx.args.name as string
+    const kind = ctx.args.kind as string
+    const targetVersion = ctx.args['target-version'] as string
+    if (!VALID_ASSET_KINDS.includes(kind as ValidAssetKind)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_ASSET_KIND',
+          message: `Invalid --kind: '${kind}'`,
+          suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
+        },
+        format,
+      )
+    }
+    const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
+    try {
+      const result = await migrateAsset({ kind: kind as AssetKind, name, targetVersion, projectRoot }, config)
+      return output(
+        {
+          data: {
+            ok: result.ok,
+            idempotent: result.idempotent,
+            oldVersion: result.oldVersion,
+            newVersion: result.newVersion,
+            path: result.path,
+          },
+          human: `✓ ${result.message}`,
+        },
+        format,
+      )
+    } catch (err) {
+      return iapErrorToOutput(err, format)
+    }
+  },
+})
+
+// =============================================================================
+// Subcommand: diff
+// =============================================================================
+const diffSubcommand = defineCommand({
+  meta: { name: 'diff', description: 'Diff project Asset vs builtin default' },
+  args: {
+    name: { type: 'positional', required: true },
+    kind: {
+      type: 'string',
+      required: true,
+      description: `Asset kind (${VALID_ASSET_KINDS.join('|')})`,
+    },
+    '--json': { type: 'boolean' },
+    '--yaml': { type: 'boolean' },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const name = ctx.args.name as string
+    const kind = ctx.args.kind as string
+    if (!VALID_ASSET_KINDS.includes(kind as ValidAssetKind)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_ASSET_KIND',
+          message: `Invalid --kind: '${kind}'`,
+          suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
+        },
+        format,
+      )
+    }
+    const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
+    try {
+      const result = await diffAsset(
+        { kind: kind as AssetKind, name, projectRoot, format: format === 'json' ? 'json' : 'unified' },
+        config,
+      )
+      if (format === 'json') {
+        return output(
+          {
+            data: {
+              ok: result.ok,
+              hasOverride: result.hasOverride,
+              hasBuiltin: result.hasBuiltin,
+              diff: result.diff,
+              message: result.message,
+            },
+            human: result.message,
+          },
+          format,
+        )
+      }
+      // human format: print diff directly
+      const humanOut = typeof result.diff === 'string' && result.diff ? result.diff : `✓ ${result.message}`
+      return output({ data: result, human: humanOut }, format)
+    } catch (err) {
+      return iapErrorToOutput(err, format)
+    }
+  },
+})
+
+// =============================================================================
 // Default export: oxn asset 命令
 // =============================================================================
 export default defineCommand({
   meta: {
     name: 'asset',
-    description: 'Asset lifecycle management (v0.6.1-alpha.1: 8 subcommands)',
+    description: 'Asset lifecycle management (v0.6.1-alpha.1: 9 subcommands)',
   },
   subCommands: {
     list: () => Promise.resolve({ default: listSubcommand }).then((m) => m.default),
@@ -643,5 +759,7 @@ export default defineCommand({
     delete: () => Promise.resolve({ default: deleteSubcommand }).then((m) => m.default),
     evolve: () => Promise.resolve({ default: evolveSubcommand }).then((m) => m.default),
     tree: () => Promise.resolve({ default: treeSubcommand }).then((m) => m.default),
+    migrate: () => Promise.resolve({ default: migrateSubcommand }).then((m) => m.default),
+    diff: () => Promise.resolve({ default: diffSubcommand }).then((m) => m.default),
   },
 })
