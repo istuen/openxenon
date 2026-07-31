@@ -1,13 +1,13 @@
 // =============================================================================
-// Proof Verdict .md Writer tests (v0.5 PR-A)
+// Proof Outcome .md Writer tests (v0.5 PR-A; RFC-0015 D1.1 重命名)
 //
 // 覆盖：
-//   1. buildVerdictMd 构造 frontmatter + Evidence + Summary + Interference
-//   2. 三态 verdict 渲染（PASSED / FAILED / INCONCLUSIVE）
-//   3. SHA-256 content_hash 自洽（写完后 readVerdictMd 验签通过）
+//   1. buildOutcomeMd 构造 frontmatter + Evidence + Summary + Interference
+//   2. 三态 outcome 渲染（COMPLETED / DEVIATED / INCONCLUSIVE）
+//   3. SHA-256 content_hash 自洽（写完后 readOutcomeMd 验签通过）
 //   4. SHA-256 frozen_hash 交叉引用
 //   5. 写盘 chmod 0o444
-//   6. 篡改后 readVerdictMd 验签失败
+//   6. 篡改后 readOutcomeMd 验签失败
 //   7. Target 提取（fs-exists → path / shell-exec → command）
 //   8. Interference flags 收集与去重
 // =============================================================================
@@ -50,18 +50,18 @@ afterEach(() => {
 // Import AFTER chdir
 // -----------------------------------------------------------------------------
 
-const { buildVerdictMd, writeVerdictMd, readVerdictMd, FROZEN_FILE_MODE } = await import(
-  '@openxenon/engine/Proof/verdict-writer'
+const { buildOutcomeMd, writeOutcomeMd, readOutcomeMd, FROZEN_FILE_MODE } = await import(
+  '@openxenon/engine/Proof/outcome-writer'
 )
 const { buildFrozenProof, writeFrozenProof, readFrozenProof } = await import(
   '@openxenon/engine/Proof/proof-frozen-writer'
 )
 
 // -----------------------------------------------------------------------------
-// T1: buildVerdictMd frontmatter
+// T1: buildOutcomeMd frontmatter
 // -----------------------------------------------------------------------------
 
-describe('buildVerdictMd frontmatter', () => {
+describe('buildOutcomeMd frontmatter', () => {
   test('含 proof_id / verdict / run_at / frozen_hash / content_hash 等必填字段', () => {
     const frozenPath = join(tmpDir, 't1-shape.json')
     const body = buildFrozenProof({
@@ -72,7 +72,7 @@ describe('buildVerdictMd frontmatter', () => {
     const r = readFrozenProof(frozenPath)
     if (!r.ok || !r.frozen) throw new Error('roundtrip failed')
 
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
 
     expect(md).toMatch(/^---\n/)
     expect(md).toMatch(/proof_id: check-deploy/)
@@ -99,7 +99,7 @@ describe('buildVerdictMd frontmatter', () => {
     )
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
     expect(md).toMatch(/❌/)
     expect(md).toMatch(/outcome: DEVIATED/)
     expect(md).toMatch(/error: boom/)
@@ -125,7 +125,7 @@ describe('buildVerdictMd frontmatter', () => {
     )
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
     expect(md).toMatch(/⚠️/)
     expect(md).toMatch(/outcome: INCONCLUSIVE/)
     expect(md).toMatch(/inconclusive_count: 1/)
@@ -146,17 +146,17 @@ describe('buildVerdictMd frontmatter', () => {
     )
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
     expect(md).not.toMatch(/inconclusive_count/)
   })
 })
 
 // -----------------------------------------------------------------------------
-// T2: buildVerdictMd Evidence / Summary / Interference sections
+// T2: buildOutcomeMd Evidence / Summary / Interference sections
 // -----------------------------------------------------------------------------
 
-describe('buildVerdictMd sections', () => {
-  test('## Evidence / ## Verdict Summary / ## Interference 三段齐全', () => {
+describe('buildOutcomeMd sections', () => {
+  test('## Evidence / ## Outcome Summary / ## Interference 三段齐全', () => {
     const path = join(tmpDir, 't2-sections.json')
     writeFrozenProof(
       path,
@@ -167,11 +167,11 @@ describe('buildVerdictMd sections', () => {
     )
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
     expect(md).toMatch(/## Evidence/)
-    expect(md).toMatch(/## Verdict Summary/)
+    expect(md).toMatch(/## Outcome Summary/)
     expect(md).toMatch(/\| Metric \| Value \|/)
-    expect(md).toMatch(/\| \*\*Overall verdict\*\* \| \*\*COMPLETED\*\* \|/)
+    expect(md).toMatch(/\| \*\*Overall outcome\*\* \| \*\*COMPLETED\*\* \|/)
     expect(md).toMatch(/## Interference/)
     expect(md).toMatch(/_\(none detected\)_/)
   })
@@ -197,7 +197,7 @@ describe('buildVerdictMd sections', () => {
     )
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
     expect(md).toMatch(/- ✅ \*\*p1\*\* `@oxn\/probes\/ts-compiles` \(COMPLETED, 12ms\)/)
     expect(md).toMatch(/- ❌ \*\*p2\*\* `@oxn\/probes\/test-pass` \(DEVIATED, 8ms\)/)
     expect(md).toMatch(/error: 1 test failed/)
@@ -231,7 +231,7 @@ describe('buildVerdictMd sections', () => {
     )
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
     // 仅截取 ## Interference 段做顺序验证（避免 Evidence 段的同名 flag 干扰）
     const intfSection = md.split('## Interference')[1] ?? ''
     expect(intfSection).toMatch(/- `cache_path`/)
@@ -262,7 +262,7 @@ describe('content_hash integrity', () => {
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
 
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
     const hashMatch = md.match(/content_hash: ([a-f0-9]{64})/)
     expect(hashMatch).not.toBeNull()
     const claimedHash = hashMatch![1]!
@@ -285,7 +285,7 @@ describe('content_hash integrity', () => {
     const r = readFrozenProof(path)
     if (!r.frozen) throw new Error('no frozen')
 
-    const md = buildVerdictMd(r.frozen)
+    const md = buildOutcomeMd(r.frozen)
     const fhMatch = md.match(/frozen_hash: ([a-f0-9]{64})/)
     expect(fhMatch).not.toBeNull()
     expect(fhMatch![1]).toBe(r.frozen._xenon_meta.content_hash)
@@ -296,7 +296,7 @@ describe('content_hash integrity', () => {
 // T4: 写盘 chmod 0o444
 // -----------------------------------------------------------------------------
 
-describe('writeVerdictMd disk write', () => {
+describe('writeOutcomeMd disk write', () => {
   test('写盘后文件存在 + mode=0o444', () => {
     const proofDir = join(tmpDir, 'proofs', 'check-deploy')
     const frozenPath = join(proofDir, 'frozen.json')
@@ -310,7 +310,7 @@ describe('writeVerdictMd disk write', () => {
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(outcomePath, r.frozen)
+    writeOutcomeMd(outcomePath, r.frozen)
 
     expect(existsSync(outcomePath)).toBe(true)
     const stat = statSync(outcomePath)
@@ -330,19 +330,19 @@ describe('writeVerdictMd disk write', () => {
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(outcomePath, r.frozen)
-    writeVerdictMd(outcomePath, r.frozen)
+    writeOutcomeMd(outcomePath, r.frozen)
+    writeOutcomeMd(outcomePath, r.frozen)
     const stat = statSync(outcomePath)
     expect(stat.mode & 0o777).toBe(FROZEN_FILE_MODE)
   })
 })
 
 // -----------------------------------------------------------------------------
-// T5: readVerdictMd 验签
+// T5: readOutcomeMd 验签
 // -----------------------------------------------------------------------------
 
-describe('readVerdictMd signature', () => {
-  test('正常写盘 → readVerdictMd ok=true', () => {
+describe('readOutcomeMd signature', () => {
+  test('正常写盘 → readOutcomeMd ok=true', () => {
     const proofDir = join(tmpDir, 'proofs', 'check-deploy-3')
     const frozenPath = join(proofDir, 'frozen.json')
     const outcomePath = join(proofDir, 'outcome.md')
@@ -355,15 +355,15 @@ describe('readVerdictMd signature', () => {
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(outcomePath, r.frozen)
+    writeOutcomeMd(outcomePath, r.frozen)
 
-    const v = readVerdictMd(outcomePath)
+    const v = readOutcomeMd(outcomePath)
     expect(v.ok).toBe(true)
     expect(v.contentHash).toMatch(/^[a-f0-9]{64}$/)
     expect(v.frozenHash).toBe(r.frozen._xenon_meta.content_hash)
   })
 
-  test('篡改 outcome.md 内容 → readVerdictMd ok=false + reason=signature mismatch', () => {
+  test('篡改 outcome.md 内容 → readOutcomeMd ok=false + reason=signature mismatch', () => {
     const proofDir = join(tmpDir, 'proofs', 'check-deploy-4')
     const frozenPath = join(proofDir, 'frozen.json')
     const outcomePath = join(proofDir, 'outcome.md')
@@ -376,7 +376,7 @@ describe('readVerdictMd signature', () => {
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(outcomePath, r.frozen)
+    writeOutcomeMd(outcomePath, r.frozen)
 
     chmodSync(outcomePath, 0o644)
     const original = readFileSync(outcomePath, 'utf-8')
@@ -384,13 +384,13 @@ describe('readVerdictMd signature', () => {
     writeFileSync(outcomePath, tampered, 'utf-8')
     chmodSync(outcomePath, FROZEN_FILE_MODE)
 
-    const v = readVerdictMd(outcomePath)
+    const v = readOutcomeMd(outcomePath)
     expect(v.ok).toBe(false)
     expect(v.reason).toMatch(/signature mismatch/)
   })
 
   test('文件不存在 → ok=false + reason=not found', () => {
-    const v = readVerdictMd(join(tmpDir, 'proofs', 'no-such', 'outcome.md'))
+    const v = readOutcomeMd(join(tmpDir, 'proofs', 'no-such', 'outcome.md'))
     expect(v.ok).toBe(false)
     expect(v.reason).toMatch(/not found/)
   })
@@ -414,7 +414,7 @@ describe('outcome.md independent of frozen.json', () => {
     )
     const r = readFrozenProof(frozenPath)
     if (!r.frozen) throw new Error('no frozen')
-    writeVerdictMd(outcomePath, r.frozen)
+    writeOutcomeMd(outcomePath, r.frozen)
 
     chmodSync(outcomePath, 0o644)
     rmSync(outcomePath)

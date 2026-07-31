@@ -44,9 +44,10 @@ import {
   PROBE_STATS_JSON,
   PROOFS_DIR,
   PROOF_FROZEN_JSON,
-  PROOF_MD_FILE,
   PROOF_OXN_FILE,
-  PROOF_VERDICT_MD,
+  PROOF_OUTCOME_MD,
+  PROOF_WORK_SNAPSHOT_FILE,
+  PROOF_RUNNING_JSON,
   PROOF_WORK_HASH_FILE,
 } from '@openxenon/engine/kernel'
 import type { ProofDeclaration } from '@openxenon/engine/oxl'
@@ -59,8 +60,8 @@ import {
   readFrozenProof,
   writeFrozenProof,
 } from '@openxenon/engine/Proof/proof-frozen-writer'
-import { writeVerdictMd } from '@openxenon/engine/Proof/verdict-writer'
-import { renderProbeDescribeHuman, renderVerdictHuman } from '@openxenon/engine/Proof/proof-manager'
+import { writeOutcomeMd } from '@openxenon/engine/Proof/outcome-writer'
+import { renderProbeDescribeHuman, renderOutcomeHuman } from '@openxenon/engine/Proof/proof-manager'
 import { describeProbe, listProbesSummary, translateProbeInputs } from '@openxenon/engine/kernel'
 import { updateProbeStats } from '@openxenon/engine/kernel'
 import { emptyProbeStats } from '@openxenon/engine/kernel'
@@ -73,7 +74,7 @@ import { assertDirNameConsistent } from '@openxenon/engine/kernel'
 //   写入时点: run Phase 1（probe 执行前）
 //   删除时点: run Phase 3（frozen.json 写完后）
 //   残留检测: list / show 命令检测存在 → 标 [in-progress] / ⚠️
-const PROOF_RUNNING_JSON = '.running.json'
+//   v0.7+: 移到 kernel/constants.ts（RFC-0015 D1.3），CLI 通过 kernel barrel 引用。
 
 // ---------------------------------------------------------------------------
 // 路径工具
@@ -103,15 +104,18 @@ function getProofRunningPath(name: string): string {
   return join(getProofDir(name), PROOF_RUNNING_JSON)
 }
 
-function getProofVerdictPath(name: string): string {
-  return join(getProofDir(name), PROOF_VERDICT_MD)
+function getProofOutcomePath(name: string): string {
+  return join(getProofDir(name), PROOF_OUTCOME_MD)
 }
 
-// v0.4 PR-B (Q4-A): proof 持有 work.md 不可变快照 + work-hash
-//   - proof.md       = work.md 的 byte-equal 副本 (immutable, 0o444)
-//   - work-hash.txt  = 该副本的 SHA-256 hex (用于 hash drift 校验)
-function getProofMdPath(name: string): string {
-  return join(getProofDir(name), PROOF_MD_FILE)
+// v0.4 PR-B (Q4-A) + RFC-0015 D1.2:
+//   proof 持有 work.md 不可变字节副本 + work-hash：
+//   - proof.md (Probe 声明源；0o644；可编辑) ≠ work-snapshot.md (work.md 副本；0o444；不可变)
+//     二者物理隔离避免 Probe 源被首次 run 后覆盖
+//   - work-hash.txt = work-snapshot.md 副本的 SHA-256 hex (用于 hash drift 校验)
+//   旧名 getProofMdPath 在 v0.8.x 仍指向 proof.md(Probe 源) 以兼容历史 proof 加载路径
+function getProofWorkSnapshotPath(name: string): string {
+  return join(getProofDir(name), PROOF_WORK_SNAPSHOT_FILE)
 }
 
 function getProofWorkHashPath(name: string): string {
@@ -188,9 +192,12 @@ export interface SnapshotResult {
 }
 
 /**
- * 拷贝 work.md → proof.md (immutable, 0o444)，写 work-hash.txt
+ * 拷贝 work.md → work-snapshot.md (immutable, 0o444)，写 work-hash.txt
  *  - 条件：proofs-target-work 注释存在 + work.md 路径有效
  *  - 短路：H_live === H_prev 时跳过拷贝
+ *
+ * RFC-0015 D1.2：snapshot 写入 work-snapshot.md (从 proof.md 物理隔离)，
+ * 避免首次 run 后 Probe 声明源被覆盖。Probe 声明源 proof.md 保持可编辑 (0o644)。
  */
 function snapshotWorkMd(proofName: string, proofOxnPath: string): SnapshotResult {
   const meta = parseProofMetadata(proofOxnPath)
@@ -210,14 +217,14 @@ function snapshotWorkMd(proofName: string, proofOxnPath: string): SnapshotResult
 
   const liveHash = computeFileHash(workPath)
   const hashPath = getProofWorkHashPath(proofName)
-  const mdPath = getProofMdPath(proofName)
+  const snapshotPath = getProofWorkSnapshotPath(proofName)
   const prevHash = existsSync(hashPath) ? readFileSync(hashPath, 'utf-8').trim() : undefined
 
-  if (prevHash === liveHash && existsSync(mdPath)) {
+  if (prevHash === liveHash && existsSync(snapshotPath)) {
     return { status: 'unchanged', workPath, workHash: liveHash, prevHash }
   }
 
-  // 原子写：work-hash.txt → proof.md (immutable)
+  // 原子写：work-hash.txt → work-snapshot.md (immutable)
   const workContent = readFileSync(workPath, 'utf-8')
 
   // 1. 写 work-hash.txt (chmod 0o444, 跟 frozen.json 一致)
@@ -230,12 +237,13 @@ function snapshotWorkMd(proofName: string, proofOxnPath: string): SnapshotResult
     chmodSync(hashPath, 0o444)
   }
 
-  // 2. 写 proof.md (immutable, 0o444)
-  if (existsSync(mdPath)) chmodSync(mdPath, 0o644)
+  // 2. 写 work-snapshot.md (immutable, 0o444)
+  //    RFC-0015 D1.2：从 proof.md 物理隔离以避免首次 run 后覆盖 Probe 声明源
+  if (existsSync(snapshotPath)) chmodSync(snapshotPath, 0o644)
   try {
-    writeFileSync(mdPath, workContent, { mode: 0o444 })
+    writeFileSync(snapshotPath, workContent, { mode: 0o444 })
   } finally {
-    chmodSync(mdPath, 0o444)
+    chmodSync(snapshotPath, 0o444)
   }
 
   return { status: 'updated', workPath, workHash: liveHash, prevHash }
@@ -711,17 +719,17 @@ const runSubcommand = defineCommand({
     const readBack = readFrozenProof(frozenPath)
     const frozen = readBack.frozen
 
-    // v0.5 PR-A: Phase 3.5 — 写 outcome.md（人类可读结案文档）
+    // v0.5 PR-A: Phase 3.5 — 写 outcome.md（人类可读结案文档；RFC-0015 D1.1 由 verdictWriter→outcomeWriter 重命名）
     //   与 frozen.json 同时 chmod 0o444；frozen.json 已写入后再写 outcome.md
     //   outcome.md 写失败**不影响** frozen.json 已写入的主流程（仅 stderr warning）
-    let verdictWritten = false
+    let outcomeWritten = false
     let outcomePath: string | null = null
     let outcomeError: string | null = null
     if (frozen) {
-      outcomePath = getProofVerdictPath(name)
+      outcomePath = getProofOutcomePath(name)
       try {
-        writeVerdictMd(outcomePath, frozen)
-        verdictWritten = true
+        writeOutcomeMd(outcomePath, frozen)
+        outcomeWritten = true
       } catch (e) {
         outcomeError = e instanceof Error ? e.message : String(e)
         process.stderr.write(`warning: outcome.md write failed: ${outcomeError}\n`)
@@ -730,7 +738,7 @@ const runSubcommand = defineCommand({
 
     // v0.1.2: 追加 probe 执行历史到全局 .cache/probe-stats.json
     // 编排仅发生在 L3-CLI：L0-Processor 纯函数合并 + L1-Infra IO 写盘。
-    // 写失败不影响 verdict 返回（主流程已落 frozen.json）。
+    // 写失败不影响 outcome 返回（主流程已落 frozen.json）。
     if (frozen) {
       try {
         const projectRoot = getProjectRoot()
@@ -754,12 +762,12 @@ const runSubcommand = defineCommand({
           failedCount: frozen?.failedCount ?? 0,
           frozenPath,
           outcomePath,
-          verdictWritten,
+          outcomeWritten,
           outcomeError,
           readOnly: isFrozenFileReadOnly(frozenPath),
         },
         human: frozen
-          ? renderVerdictHuman(name, frozen, getProjectRoot(), outcomePath, verdictWritten)
+          ? renderOutcomeHuman(name, frozen, getProjectRoot(), outcomePath, outcomeWritten)
           : 'frozen write failed',
       },
       format,
@@ -938,7 +946,7 @@ const showSubcommand = defineCommand({
     const name = ctx.args.name as string
     const frozenPath = getProofFrozenPath(name)
     const runningPath = getProofRunningPath(name)
-    const outcomePath = getProofVerdictPath(name)
+    const outcomePath = getProofOutcomePath(name)
     const r = readFrozenProof(frozenPath)
 
     if (!r.ok || !r.frozen) {
@@ -954,13 +962,13 @@ const showSubcommand = defineCommand({
     const inProgress = existsSync(runningPath)
 
     // v0.5 PR-A: 检测 outcome.md 是否存在（用于提示人类消费者）
-    const hasVerdict = existsSync(outcomePath)
+    const hasOutcome = existsSync(outcomePath)
 
     output(
       {
         ok: true,
-        data: { ...r.frozen, signatureValid: true, inProgress, hasVerdict, outcomePath },
-        human: renderShowHuman(r.frozen, inProgress, hasVerdict ? outcomePath : null),
+        data: { ...r.frozen, signatureValid: true, inProgress, hasOutcome, outcomePath },
+        human: renderShowHuman(r.frozen, inProgress, hasOutcome ? outcomePath : null),
       },
       format,
     )
@@ -974,7 +982,7 @@ function renderShowHuman(
 ): string {
   const lines: string[] = []
   if (inProgress) {
-    lines.push(`⚠️ Warning: .running.json residue found — last run may have crashed; verdict from previous frozen.json`)
+    lines.push(`⚠️ Warning: .running.json residue found — last run may have crashed; outcome from previous frozen.json`)
     lines.push('')
   }
   // v0.5 PR-A: 提示 outcome.md 可读
@@ -982,8 +990,8 @@ function renderShowHuman(
     lines.push(`📄 Human-readable outcome: ${outcomePath}`)
     lines.push('')
   }
-  // v0.2 T5: 3-state verdict 展示 (PASSED/FAILED/INCONCLUSIVE) + 色彩降级
-  //  - TTY 启用时: PASSED=green, FAILED=red, INCONCLUSIVE=yellow
+  // v0.2 T5: 3-state outcome 展示 (COMPLETED/DEVIATED/INCONCLUSIVE) + 色彩降级
+  //  - TTY 启用时: COMPLETED=green, DEVIATED=red, INCONCLUSIVE=yellow
   //  - 非 TTY / --no-color: 仅 emoji 区分
   //  emoji 与色彩互为冗余: 管道 (| cat) 仍可读, TTY 仍可一眼区分
   const ttyColor = process.stdout.isTTY === true
@@ -999,7 +1007,7 @@ function renderShowHuman(
     outcomeText = `${colorCode}${outcomeText}\u001b[0m`
   }
   lines.push(`Proof: ${frozen.name}`)
-  lines.push(`Verdict: ${outcomeIcon} ${outcomeText}`)
+  lines.push(`Outcome: ${outcomeIcon} ${outcomeText}`)
   lines.push(`Run at: ${frozen.runAt}`)
   lines.push(`Signature: ${frozen._xenon_meta.content_hash}`)
   lines.push('')
@@ -1034,12 +1042,14 @@ export default defineCommand({
 })
 
 // 导出辅助函数（供测试与外部调用）
+// RFC-0015 D1.1/D1.2: getProofMdPath → getProofWorkSnapshotPath; getProofVerdictPath → getProofOutcomePath
+// 旧名作为 deprecated alias 同步 export 至 v0.9.0 删除
 export {
   getProofDir,
   getProofFrozenPath,
-  getProofMdPath,
+  getProofWorkSnapshotPath,
   getProofOxnPath,
-  getProofVerdictPath,
+  getProofOutcomePath,
   getProofWorkHashPath,
   parseProofFile,
   parseProofMetadata,

@@ -26,19 +26,34 @@ export const TASK_TRACE_FILE = 'task-trace.jsonl'
 export const CONFIG_FILE = 'config.json'
 export const CANONICAL_FILE = 'canonical.yaml'
 
-// Proof 空间（v0.1.2 Proof-First 入口）
-//   .openxenon/proofs/<name>/proof.md   — Probe 声明
-//   .openxenon/proofs/<name>/frozen.json — 判决书（不可篡改）
-//   .openxenon/proofs/<name>/outcome.md  — 人类可读结案文档（v0.5 PR-A）
-//   .openxenon/proofs/<name>/proof.md   — work.md 不可变快照（v0.4 PR-B Q4-A）
-//   .openxenon/proofs/<name>/work-hash.txt — work.md 副本的 SHA-256（v0.4 PR-B Q4-A）
+// Proof 空间（v0.1.2 Proof-First 入口；RFC-0015 D1 全面规范化）
+//   .openxenon/proofs/<name>/proof.md          — Probe 声明（可编辑，0o644）
+//   .openxenon/proofs/<name>/frozen.json       — 判决书（不可篡改，0o444 + SHA-256）
+//   .openxenon/proofs/<name>/outcome.md        — 人类可读结案文档（v0.5 PR-A；RFC-0008 D2 + RFC-0015 D1.1 verdict→outcome 名实一致）
+//   .openxenon/proofs/<name>/work-snapshot.md  — work.md 不可变字节副本（RFC-0015 D1.2：从 proof.md 物理隔离以避免 Probe 源被首次 run 后覆盖）
+//   .openxenon/proofs/<name>/work-hash.txt     — work-snapshot.md 副本的 SHA-256（v0.4 PR-B Q4-A）
+//   .openxenon/proofs/<name>/.running.json     — 瞬态占位（v0.1.3 PR-2；RFC-0015 D1.3 从 CLI 提升至 kernel）
 export const PROOF_FILE = 'proof.md'
 /** @deprecated Use PROOF_FILE instead. Will be removed in v0.8. */
 export const PROOF_OXN_FILE = PROOF_FILE
 export const PROOF_FROZEN_JSON = 'frozen.json'
-export const PROOF_VERDICT_MD = 'outcome.md'
-export const PROOF_MD_FILE = 'proof.md'
+/** 人类可读结案文档文件名（v0.5 PR-A；RFC-0008 D2 verdict→outcome 名实对齐；RFC-0015 D1.1 完成名实一致） */
+export const PROOF_OUTCOME_MD = 'outcome.md'
+/**
+ * @deprecated Use PROOF_OUTCOME_MD instead. Value alias kept for 1 major version (v0.8.x 仍能读取历史 verdict.md)，
+ * v0.9.0 物理删除。(RFC-0015 D1.1)
+ */
+export const PROOF_VERDICT_MD = PROOF_OUTCOME_MD
+/** work.md 不可变字节副本文件名（RFC-0015 D1.2：从 'proof.md' 物理隔离避免覆盖 Probe 源） */
+export const PROOF_WORK_SNAPSHOT_FILE = 'work-snapshot.md'
+/**
+ * @deprecated Use PROOF_WORK_SNAPSHOT_FILE instead. Old value 'proof.md' 仍指向 Probe 声明源以便
+ * 历史 probe 加载（v0.8.x 兼容窗口）。v0.9.0 物理删除。(RFC-0015 D1.2)
+ */
+export const PROOF_MD_FILE = PROOF_FILE
 export const PROOF_WORK_HASH_FILE = 'work-hash.txt'
+/** 运行时瞬态占位文件名（v0.1.3 PR-2；RFC-0015 D1.3 从 CLI local const 提升至 kernel） */
+export const PROOF_RUNNING_JSON = '.running.json'
 
 // v0.1.2: 全局 Probe 执行历史（Proof-First 闭环的"记忆"）
 //   .openxenon/.cache/probe-stats.json  — 派生数据，可重建；非 frozen，不签名

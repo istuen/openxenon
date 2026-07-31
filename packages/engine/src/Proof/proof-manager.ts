@@ -1,11 +1,14 @@
 /**
- * packages/engine/src/Proof/proof-manager.ts (v0.6 清理后)
+ * packages/engine/src/Proof/proof-manager.ts (v0.6 清理后; RFC-0015 D1.1 重命名)
  *
  * 仅保留 CLI 实际使用的 2 个 human 渲染函数:
  *   - renderProbeDescribeHuman
- *   - renderVerdictHuman
+ *   - renderOutcomeHuman (RFC-0015 D1.1 由 renderVerdictHuman 重命名)
  *
  * v0.6 移除: createProof / runProof (CLI 未使用, 由 src/cli/proof.ts 直接走 executeProbe + writeFrozenProof)
+ *
+ * 旧名 renderVerdictHuman / verdictWritten 以 @deprecated alias 保留 1 个大版本（v0.8.x），
+ * v0.9.0 物理删除。(RFC-0015 D1.1)
  */
 
 import { join } from 'path'
@@ -39,12 +42,20 @@ export function renderProbeDescribeHuman(info: ReturnType<typeof describeProbe> 
   return lines.join('\n')
 }
 
-export function renderVerdictHuman(
+/**
+ * 渲染 proof run 的 outcome 结果（人类可读）。
+ *   - outcome: COMPLETED / DEVIATED / INCONCLUSIVE
+ *   - outcomeWritten: outcome.md 是否已成功写盘（false 时降级为仅 frozen 信息）
+ *   - outcomePath: outcome.md 绝对路径（用来 hop user 到编辑器）
+ *
+ * (RFC-0015 D1.1 由 renderVerdictHuman 重命名为 renderOutcomeHuman；旧名作为 @deprecated alias 保留)
+ */
+export function renderOutcomeHuman(
   name: string,
   frozen: NonNullable<ReturnType<typeof readFrozenProof>['frozen']>,
   projectRoot: string,
   outcomePath: string | null = null,
-  verdictWritten: boolean = false,
+  outcomeWritten: boolean = false,
 ): string {
   const lines: string[] = []
   lines.push(`Proof "${name}" outcome: ${frozen.outcome} (${frozen.passedCount}/${frozen.totalCount})`)
@@ -54,8 +65,11 @@ export function renderVerdictHuman(
   }
   lines.push(`\nProof saved: ${join(getProofDir(projectRoot, name), PROOF_FROZEN_JSON)}`)
   lines.push(`Read-only: ${isFrozenFileReadOnly(join(getProofDir(projectRoot, name), PROOF_FROZEN_JSON))}`)
-  if (verdictWritten && outcomePath) {
-    lines.push(`Verdict doc: ${outcomePath}`)
+  if (outcomeWritten && outcomePath) {
+    lines.push(`Outcome doc: ${outcomePath}`)
   }
   return lines.join('\n')
 }
+
+/* ─── Deprecated aliases (RFC-0015 D1.1; 保留至 v0.9.0 删除) ─── */
+export const renderVerdictHuman = renderOutcomeHuman

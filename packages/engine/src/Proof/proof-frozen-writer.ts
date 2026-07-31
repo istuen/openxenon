@@ -7,11 +7,11 @@
 //
 // 写权独占：本模块是 frozen.json 的**唯一**合法写路径（AI / 工程师禁手改）。
 //
-// v0.3.0 Q1 决策（3 态命名大小写分层）：
+// v0.3.0 Q1 决策（3 态命名大小写分层；RFC-0008 D3 / RFC-0015 D1.4 同步更新）：
 // - canonical .md（人类阅读 SSOT）：lowercase  `pass` / `fail` / `inconclusive`
-// - frozen.json（机器内核）：           uppercase  `PASSED` / `FAILED` / `INCONCLUSIVE`
+// - frozen.json（机器内核）：           uppercase  `COMPLETED` / `DEVIATED` / `INCONCLUSIVE`
 // - Kernel ProbeOutcome（接口契约）：    uppercase  `PASS` / `FAIL` / `INCONCLUSIVE`（无 -ED）
-// - 映射在 buildFrozenProof 的 verdict 字段统一做：
+// - 映射在 buildFrozenProof 的 outcome 字段统一做：
 //     ProbeOutcome.PASS      → outcome: 'COMPLETED'
 //     ProbeOutcome.FAIL      → outcome: 'DEVIATED'
 //     ProbeOutcome.INCONCLUSIVE → outcome: 'INCONCLUSIVE'

@@ -74,7 +74,7 @@ packages/engine/src/           ← L2 Engine 物理位置
 │   ├── index.ts
 │   ├── create.ts / list.ts / describe.ts / list-probes.ts
 │   ├── add-probe.ts / run.ts / dry-run.ts
-│   ├── show.ts / verify.ts / verdict-writer.ts
+│   ├── show.ts / verify.ts / outcome-writer.ts
 │
 ├── Insight/                              ← E4 Insight 涌现层
 │   ├── index.ts
