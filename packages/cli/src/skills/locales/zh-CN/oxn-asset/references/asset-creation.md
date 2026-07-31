@@ -61,7 +61,7 @@ cp docs/zh-cn/asset-templates/domain.md /tmp/MyDomain.md
 
 ```bash
 # 验证（语法 + Asset Paper 4 字段 + External 校验）
-oxn asset validate <name>
+oxn asset validate <name> --kind domain
 
 # 通过后写入资产目录
 mv /tmp/MyDomain.md .openxenon/assets/domains/MyDomain.md

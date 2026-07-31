@@ -7,15 +7,15 @@
 ### Step 1: Locate the Asset
 
 ```bash
-oxn asset list --type domain --name MemberContext
+oxn asset list --kind domain
 # Or
-ls .openxenon/domains/MemberContext.oxn
+ls .openxenon/domains/MemberContext.md
 ```
 
 ### Step 2: Check planLock
 
 ```bash
-oxn asset show MemberContext --json
+oxn asset show MemberContext --kind domain --json
 # View lock status, citations, dependent Asset list
 ```
 

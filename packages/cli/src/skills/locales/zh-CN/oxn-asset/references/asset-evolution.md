@@ -7,15 +7,15 @@
 ### 步骤 1：定位 Asset
 
 ```bash
-oxn asset list --type domain --name MemberContext
+oxn asset list --kind domain
 # 或
-ls .openxenon/domains/MemberContext.oxn
+ls .openxenon/domains/MemberContext.md
 ```
 
 ### 步骤 2：检查 planLock
 
 ```bash
-oxn asset show MemberContext --json
+oxn asset show MemberContext --kind domain --json
 # 看 lock 状态、citations、依赖 Asset 列表
 ```
 
