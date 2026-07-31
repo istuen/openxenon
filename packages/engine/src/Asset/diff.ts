@@ -63,28 +63,11 @@ export async function diff(input: DiffInput, config?: ProjectConfig | null): Pro
   let builtinContent: string | null = null
   let builtinExists = false
 
-  // 当前 builtin registry 只暴露 probes/blueprints 接口，且只存内存解析结果
-  // 为支持 unified diff，我们直接读 src/builtin/<kind>s/<name>.md（kind 目录在 v0.6.2 仅蓝图存在）
-  if (
-    builtinDir &&
-    (kind === 'blueprint' || kind === 'workflow' || kind === 'stack' || kind === 'domain' || kind === 'roadmap')
-  ) {
-    // kind → 目录映射（与 DEFAULT_ASSET_DIRS 对齐）
-    const kindDirMap: Record<string, string> = {
-      domain: 'domains',
-      workflow: 'workflows',
-      stack: 'stacks',
-      blueprint: 'blueprints',
-      roadmap: 'roadmaps',
-    }
-    const kindDir = kindDirMap[kind]
-    if (kindDir) {
-      const builtinPath = `${builtinDir}/${kindDir}/${name}.md`
-      if (existsSync(builtinPath)) {
-        builtinContent = readFileSync(builtinPath, 'utf-8')
-        builtinExists = true
-      }
-    }
+  // 使用 builtin registry 的 readBuiltinAsset API（v0.6.2 I-4 引入）
+  const builtinRaw = builtinRegistry.readBuiltinAsset(kind, name)
+  if (builtinRaw !== null) {
+    builtinContent = builtinRaw
+    builtinExists = true
   }
 
   // 3. 各种情况处理

@@ -71,6 +71,10 @@ const listSubcommand = defineCommand({
       type: 'string',
       description: `Filter by kind (${VALID_ASSET_KINDS.join('|')})`,
     },
+    scope: {
+      type: 'string',
+      description: 'Scope: prj (default) | oxn (builtin only) | effective (prj + builtin-only)',
+    },
     '--json': { type: 'boolean' },
     '--yaml': { type: 'boolean' },
   },
@@ -87,11 +91,25 @@ const listSubcommand = defineCommand({
         format,
       )
     }
+
+    const scopeArg = (ctx.args.scope as string | undefined) ?? 'prj'
+    if (!['prj', 'oxn', 'effective'].includes(scopeArg)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_SCOPE',
+          message: `Invalid --scope: '${scopeArg}'`,
+          suggestion: 'Use: prj | oxn | effective',
+        },
+        format,
+      )
+    }
+    const scope = scopeArg as 'prj' | 'oxn' | 'effective'
+
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const result = kindFilter
-      ? list({ kind: kindFilter as AssetKind, projectRoot }, config)
-      : listAll(projectRoot, config)
+      ? list({ kind: kindFilter as AssetKind, projectRoot, scope }, config)
+      : listAll(projectRoot, config, scope)
     const groups = new Map<string, typeof result.assets>()
     for (const a of result.assets) {
       if (!groups.has(a.kind)) groups.set(a.kind, [])

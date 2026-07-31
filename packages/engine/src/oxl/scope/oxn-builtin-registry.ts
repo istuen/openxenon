@@ -422,6 +422,49 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
     return this.builtinDir
   }
 
+  /**
+   * v0.6.2 I-4 fix: 列出指定 kind 的 builtin Asset 文件名（仅文件名，不解析内容）。
+   * 用于 oxn asset list --scope oxn。
+   *
+   * @param kind 5 类 AssetKind 之一；当前 builtin 仅 blueprint / probe 有实质内容
+   * @returns builtin asset 文件名数组（含 .md 后缀）
+   */
+  listBuiltinAssetNames(kind: string): string[] {
+    if (!this.builtinDir) return []
+    const kindDirMap: Record<string, string> = {
+      domain: 'domains',
+      workflow: 'workflows',
+      stack: 'stacks',
+      blueprint: 'blueprints',
+      roadmap: 'roadmaps',
+    }
+    const kindDir = kindDirMap[kind]
+    if (!kindDir) return []
+    const dir = join(this.builtinDir, kindDir)
+    if (!existsSync(dir)) return []
+    return readdirSync(dir).filter((f) => f.endsWith('.md'))
+  }
+
+  /**
+   * v0.6.2 I-4 fix: 读取 builtin Asset 的完整内容（按 kind+name）。
+   * 用于 oxn asset show --scope oxn 和 oxn asset diff 的 builtin 侧。
+   */
+  readBuiltinAsset(kind: string, name: string): string | null {
+    if (!this.builtinDir) return null
+    const kindDirMap: Record<string, string> = {
+      domain: 'domains',
+      workflow: 'workflows',
+      stack: 'stacks',
+      blueprint: 'blueprints',
+      roadmap: 'roadmaps',
+    }
+    const kindDir = kindDirMap[kind]
+    if (!kindDir) return null
+    const filePath = join(this.builtinDir, kindDir, `${name}.md`)
+    if (!existsSync(filePath)) return null
+    return readFileSync(filePath, 'utf-8')
+  }
+
   private _getMap(type: OxnAssetType): Map<string, Record<string, unknown>> {
     switch (type) {
       case 'probe':

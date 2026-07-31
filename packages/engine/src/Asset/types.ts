@@ -43,6 +43,8 @@ export interface ValidateResult {
 export interface ListInput {
   kind: AssetKind
   projectRoot: string
+  /** v0.6.2 I-4: 默认 'prj'；'oxn' 仅 builtin；'effective' = project + builtin-only */
+  scope?: 'prj' | 'oxn' | 'effective'
 }
 
 export interface ListResult {
@@ -51,6 +53,7 @@ export interface ListResult {
     name: string
     path: string
     format: AssetFormat
+    scope?: 'prj' | 'oxn'
   }>
 }
 
