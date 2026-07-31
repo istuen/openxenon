@@ -25,10 +25,12 @@ import {
   validateAssetReferences,
   validateAssetPaper4Fields,
   archive,
+  unarchive,
   deleteAsset,
   evolve,
   list,
   listAll,
+  tree as treeAsset,
   resolveArchivedAssetFile,
 } from '@openxenon/engine/Asset'
 import { ALL_ASSET_KINDS, type AssetKind } from '@openxenon/engine/infra/paths'
@@ -490,6 +492,140 @@ const evolveSubcommand = defineCommand({
 })
 
 // =============================================================================
+// Subcommand: unarchive
+// =============================================================================
+const unarchiveSubcommand = defineCommand({
+  meta: { name: 'unarchive', description: 'Unarchive Asset (restore from .archived/)' },
+  args: {
+    name: { type: 'positional', required: true },
+    kind: {
+      type: 'string',
+      required: true,
+      description: `Asset kind (${VALID_ASSET_KINDS.join('|')})`,
+    },
+    '--json': { type: 'boolean' },
+    '--yaml': { type: 'boolean' },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const name = ctx.args.name as string
+    const kind = ctx.args.kind as string
+    if (!VALID_ASSET_KINDS.includes(kind as ValidAssetKind)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_ASSET_KIND',
+          message: `Invalid --kind: '${kind}'`,
+          suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
+        },
+        format,
+      )
+    }
+    const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
+    try {
+      const result = await unarchive({ kind: kind as AssetKind, name, projectRoot }, config)
+      return output(
+        {
+          data: {
+            ok: result.ok,
+            idempotent: result.idempotent,
+            restoredPath: result.restoredPath,
+          },
+          human: `✓ ${result.message}`,
+        },
+        format,
+      )
+    } catch (err) {
+      return iapErrorToOutput(err, format)
+    }
+  },
+})
+
+// =============================================================================
+// Subcommand: tree
+// =============================================================================
+const treeSubcommand = defineCommand({
+  meta: { name: 'tree', description: 'Show Asset dependency graph' },
+  args: {
+    root: { type: 'string', description: 'Root asset as <kind>:<name> (e.g., domain:oxn-asset-domain)' },
+    depth: { type: 'string', description: 'Max depth (default 3)' },
+    direction: {
+      type: 'string',
+      description: 'Direction: forward | reverse | both (default forward)',
+    },
+    kind: {
+      type: 'string',
+      description: `Filter by kind (${VALID_ASSET_KINDS.join('|')})`,
+    },
+    '--json': { type: 'boolean' },
+    '--yaml': { type: 'boolean' },
+  },
+  async run(ctx) {
+    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
+    const projectRoot = getProjectRoot()
+    const config = readProjectConfig(projectRoot)
+
+    const rootArg = ctx.args.root as string | undefined
+    let root: { kind: AssetKind; name: string } | undefined
+    if (rootArg) {
+      const [kindPart, ...nameParts] = rootArg.split(':')
+      const namePart = nameParts.join(':')
+      if (!kindPart || !namePart || !VALID_ASSET_KINDS.includes(kindPart as ValidAssetKind)) {
+        return outputError(
+          {
+            code: 'OXN_INVALID_ROOT_FORMAT',
+            message: `Invalid --root format: '${rootArg}'`,
+            suggestion: 'Use <kind>:<name>, e.g., --root domain:oxn-asset-domain',
+          },
+          format,
+        )
+      }
+      root = { kind: kindPart as AssetKind, name: namePart }
+    }
+
+    const depthStr = ctx.args.depth as string | undefined
+    const depth = depthStr ? Number.parseInt(depthStr, 10) : 3
+
+    const directionStr = (ctx.args.direction as string | undefined) ?? 'forward'
+    if (!['forward', 'reverse', 'both'].includes(directionStr)) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_DIRECTION',
+          message: `Invalid --direction: '${directionStr}'`,
+          suggestion: 'Use: forward | reverse | both',
+        },
+        format,
+      )
+    }
+
+    try {
+      const result = await treeAsset(
+        {
+          projectRoot,
+          root,
+          depth,
+          direction: directionStr as 'forward' | 'reverse' | 'both',
+        },
+        config,
+      )
+      return output(
+        {
+          data: {
+            ok: result.ok,
+            nodes: result.nodes,
+            message: result.message,
+          },
+          human: result.humanTree,
+        },
+        format,
+      )
+    } catch (err) {
+      return iapErrorToOutput(err, format)
+    }
+  },
+})
+
+// =============================================================================
 // Default export: oxn asset 命令
 // =============================================================================
 export default defineCommand({
@@ -503,7 +639,9 @@ export default defineCommand({
     create: () => Promise.resolve({ default: createSubcommand }).then((m) => m.default),
     validate: () => Promise.resolve({ default: validateSubcommand }).then((m) => m.default),
     archive: () => Promise.resolve({ default: archiveSubcommand }).then((m) => m.default),
+    unarchive: () => Promise.resolve({ default: unarchiveSubcommand }).then((m) => m.default),
     delete: () => Promise.resolve({ default: deleteSubcommand }).then((m) => m.default),
     evolve: () => Promise.resolve({ default: evolveSubcommand }).then((m) => m.default),
+    tree: () => Promise.resolve({ default: treeSubcommand }).then((m) => m.default),
   },
 })

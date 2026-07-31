@@ -13,8 +13,10 @@ export { validate, validateAssetReferences, validateAssetPaper4Fields } from './
 export { list, listAll } from './list'
 export { checkAssetDAG } from './dag-validator'
 export { archive } from './archive'
+export { unarchive } from './unarchive'
 export { deleteAsset } from './delete'
 export { evolve } from './evolve'
+export { tree } from './tree'
 export * from './domain-manager'
 export * from './blueprint-manager'
 
@@ -34,10 +36,15 @@ export type {
   SyncResult,
   ArchiveInput,
   ArchiveResult,
+  UnarchiveInput,
+  UnarchiveResult,
   DeleteInput,
   DeleteResult,
   EvolveInput,
   EvolveResult,
+  TreeInput,
+  TreeResult,
+  TreeNode,
 } from './types'
 
 export type { AssetPaper4Fields, AssetPaperValidationResult } from './validate'

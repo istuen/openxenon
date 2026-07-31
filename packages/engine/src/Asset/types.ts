@@ -142,3 +142,52 @@ export interface EvolveResult {
   evolvedAt: string
   message: string
 }
+
+// =============================================================================
+// Unarchive — archive 的反向操作 (v0.6.2-alpha.0)
+// =============================================================================
+
+export interface UnarchiveInput {
+  kind: AssetKind
+  name: string
+  projectRoot: string
+}
+
+export interface UnarchiveResult {
+  ok: boolean
+  /** 幂等操作（资产未归档） */
+  idempotent: boolean
+  /** 恢复后 .md 路径 */
+  restoredPath: string
+  message: string
+}
+
+// =============================================================================
+// Tree — 依赖图展示 (v0.6.2-alpha.0)
+// =============================================================================
+
+export interface TreeInput {
+  projectRoot: string
+  /** 起点（kind+name），不指定则扫所有 root（无任何反向引用的 Asset） */
+  root?: { kind: AssetKind; name: string }
+  /** 最大深度（默认 3，防止循环引用栈溢出） */
+  depth?: number
+  /** 方向：forward=我引用了谁 / reverse=谁引用了我 / both=双向 */
+  direction?: 'forward' | 'reverse' | 'both'
+  /** 按 kind 过滤（默认 5 类全扫） */
+  kind?: AssetKind
+}
+
+export interface TreeNode {
+  kind: AssetKind
+  name: string
+  references: string[]
+  referencedBy: Array<{ kind: AssetKind; name: string }>
+}
+
+export interface TreeResult {
+  ok: boolean
+  nodes: TreeNode[]
+  humanTree: string
+  message: string
+}
