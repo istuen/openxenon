@@ -13,6 +13,10 @@ import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
 import type { ValidateInput, ValidateResult } from './types'
 import { checkAssetDAG, type AssetNode, type DagValidationResult } from './dag-validator.js'
+import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
+import { getEntityCompiler } from '@openxenon/engine/oxl/md-bridge/entity-registry'
+// 副作用 import：触发 6 个 EntityCompiler 注册（domain/workflow/stack/blueprint/roadmap/work/task/proof）
+import '@openxenon/engine/oxl/md-bridge/compilers/index.js'
 
 export async function validate(input: ValidateInput): Promise<ValidateResult> {
   const filePath = resolveAssetFile(input.projectRoot, input.kind, input.name)
@@ -34,14 +38,18 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
 
   const content = readFileSync(filePath, 'utf-8')
   try {
-    const { parseMarkdown } = await import('@openxenon/engine/oxl/md-pipeline/utils')
-    parseMarkdown(content)
-    // Return a minimal valid shape for downstream consumers
-    return { ok: true, errors: [], ast: { entities: [] }, domain: null }
+    const { tree, frontmatter } = parseMarkdown(content)
+    const compiler = getEntityCompiler(input.kind)
+    const validationErrors = compiler.validate({ mdast: tree, frontmatter, filePath })
+    const errors = validationErrors.map(
+      (e) => `${e.code}: ${e.message}${e.line !== undefined ? ` (line ${e.line})` : ''}`,
+    )
+    const ok = validationErrors.filter((e) => e.severity === 'error').length === 0
+    return { ok, errors, ast: { entities: [] }, domain: null }
   } catch (e) {
     return {
       ok: false,
-      errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`],
+      errors: [`validate failed: ${e instanceof Error ? e.message : String(e)}`],
     }
   }
 }

@@ -41,6 +41,9 @@ import type { IntentEntityType } from '../pipeline.js'
  * - 删除 'Externals'（external 并入 frontmatter references）
  */
 const DOMAIN_CATEGORIES = ['Terms', 'Bans', 'Invariants'] as const
+// v0.6.2 扩展：Terms 段允许带 ": <subtopic>" 后缀（如 "## Terms: Asset" / "## Terms: 文档情态"）
+// 实际 9 个 domain 文件全部使用此格式，原白名单过严导致全报 E_MD_CATEGORY_UNKNOWN
+const DOMAIN_CATEGORY_PREFIXES = ['Terms', 'Bans', 'Invariants'] as const
 type DomainCategory = (typeof DOMAIN_CATEGORIES)[number]
 
 /**
@@ -306,7 +309,12 @@ export class DomainCompiler implements EntityCompiler {
 // ========================
 
 function isDomainCategory(cat: string): cat is DomainCategory {
-  return (DOMAIN_CATEGORIES as readonly string[]).includes(cat)
+  if ((DOMAIN_CATEGORIES as readonly string[]).includes(cat)) return true
+  // 支持 "Terms: <subtopic>" / "Bans: <subtopic>" 等带后缀写法
+  return DOMAIN_CATEGORY_PREFIXES.some(
+    (prefix) =>
+      cat === prefix || cat.startsWith(`${prefix}:`) || cat.startsWith(`${prefix}： `) || cat.startsWith(`${prefix}: `),
+  )
 }
 
 /** 去除字符串两侧的引号（Langium STRING 终端包含引号）*/
