@@ -7,7 +7,7 @@
  *
  * v0.6 移除: createProof / runProof (CLI 未使用, 由 src/cli/proof.ts 直接走 executeProbe + writeFrozenProof)
  *
- * 旧名 renderVerdictHuman / verdictWritten 以 @deprecated alias 保留 1 个大版本（v0.8.x），
+ * 旧名 renderVerdictHuman 以 @deprecated alias 保留 1 个大版本（v0.8.x），
  * v0.9.0 物理删除。(RFC-0015 D1.1)
  */
 
@@ -48,7 +48,7 @@ export function renderProbeDescribeHuman(info: ReturnType<typeof describeProbe> 
  *   - outcomeWritten: outcome.md 是否已成功写盘（false 时降级为仅 frozen 信息）
  *   - outcomePath: outcome.md 绝对路径（用来 hop user 到编辑器）
  *
- * (RFC-0015 D1.1 由 renderVerdictHuman 重命名为 renderOutcomeHuman；旧名作为 @deprecated alias 保留)
+ * (RFC-0015 D1.1 由 renderVerdictHuman 重命名为 renderOutcomeHuman)
  */
 export function renderOutcomeHuman(
   name: string,

@@ -70,6 +70,7 @@ export type IAPErrorCode =
   | 'PROBE_OUT_OF_BOUNDARY'
   | 'TASK_DAG_VIOLATES_SLOT'
   | 'FINALIZE_BLOCKED'
+  | 'PROBE_REGISTRY_DRIFT'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown
