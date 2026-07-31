@@ -117,6 +117,11 @@ export async function executeProbe(
     passed: outcome.passed,
     output: { observation, outcome },
     errorMessage: outcome.passed ? undefined : (outcome.failureMessage ?? outcome.message),
+    // RFC-0015 D2.1: YELLOW flag 透传到 result.interferenceFlags (per proof-schema.ts:46)
+    // INCONCLUSIVE 时 verifyTrustBaseline 已返 failureMessage, 此处仅 YELLOW 路径会落 interferenceFlags
+    ...(outcome.interferenceFlags && outcome.interferenceFlags.length > 0
+      ? { interferenceFlags: [...outcome.interferenceFlags] }
+      : {}),
     durationMs: Date.now() - start,
   }
 }

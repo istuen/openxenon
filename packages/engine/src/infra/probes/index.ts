@@ -1,4 +1,9 @@
-import type { ProbeObservation, ProbeResult, ProbeHandler } from '@openxenon/engine/kernel/index'
+import type { ProbeObservation, ProbeResult, ProbeHandler, ProbeContextBase } from '@openxenon/engine/kernel/index'
+import type { InterferenceFlag } from '@openxenon/engine/kernel/contracts/io-primitive'
+import { FileProvider } from '@openxenon/engine/infra/providers/file-provider'
+import { HttpProvider } from '@openxenon/engine/infra/providers/http-provider'
+import { ShellProvider } from '@openxenon/engine/infra/providers/shell-provider'
+import { GitProvider } from '@openxenon/engine/infra/providers/git-provider'
 import type { ProbeContext } from './fs-exists'
 import { executeFsExists } from './fs-exists'
 import { executeFsMatch, type FsMatchParams } from './fs-match'
@@ -23,65 +28,326 @@ import { executeDocBoundary, type DocBoundaryParams } from './doc-boundary'
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
 export const probeHandlers: Record<string, ProbeHandler> = {
+  // ───────── FileProvider 分组 (4 handlers; RFC-0015 D2.1) ─────────
+
+  // D2.1: fs_exists 改经 FileProvider.ioStat
+  //   - Provider returns { exists, isFile, isDir, ... } + interference.flags
+  //   - shell-style glob ('*') 走 executeFsExists (内含 glob 解析)
   fs_exists: async (params, context) => {
     const pattern = (params.pattern || params.path) as string
+    // 简单路径（非 glob）走 FileProvider.ioStat — 拿 flags + existence
+    if (!pattern.includes('*') && !pattern.includes('?')) {
+      const fullPath = pattern.startsWith('/') ? pattern : `${context.projectRoot}/${pattern}`
+      const provider = new FileProvider()
+      try {
+        const { result, interference } = await provider.ioStat({ path: fullPath })
+        return {
+          probeType: 'fs_exists',
+          output: result.exists && (result.isFile || result.isDir) ? fullPath : '',
+          interference,
+          executedAt: Date.now(),
+        } as ProbeObservation
+      } catch {
+        return {
+          probeType: 'fs_exists',
+          output: '',
+          interference: { flags: ['unknown' as InterferenceFlag] },
+          executedAt: Date.now(),
+        } as ProbeObservation
+      }
+    }
+    // glob 走原 atomic 函数（glob 解析属 L1-Infra 原子操作，暂无 Provider 抽象）
     const files = await executeFsExists(pattern, context as ProbeContext)
     return {
       probeType: 'fs_exists',
       output: files.join('\n'),
+      // glob 模式无具体 path 探测 — flags: [] 不污染
+      interference: { flags: [] },
       executedAt: Date.now(),
     } as ProbeObservation
   },
 
+  // D2.1: fs_not_exists 改经 FileProvider.ioStat
+  //   语义反转：exists=false → 通过；exists=true → 失败；flags 透传
   fs_not_exists: async (params, context) => {
     const pattern = (params.pattern || params.path) as string
+    if (!pattern.includes('*') && !pattern.includes('?')) {
+      const fullPath = pattern.startsWith('/') ? pattern : `${context.projectRoot}/${pattern}`
+      const provider = new FileProvider()
+      try {
+        const { result, interference } = await provider.ioStat({ path: fullPath })
+        return {
+          probeType: 'fs_not_exists',
+          output: !result.exists ? fullPath : '',
+          interference,
+          executedAt: Date.now(),
+        } as ProbeObservation
+      } catch {
+        return {
+          probeType: 'fs_not_exists',
+          output: '',
+          interference: { flags: ['unknown' as InterferenceFlag] },
+          executedAt: Date.now(),
+        } as ProbeObservation
+      }
+    }
     const files = await executeFsNotExists(pattern, context as ProbeContext)
     return {
       probeType: 'fs_not_exists',
       output: files.join('\n'),
+      interference: { flags: [] },
       executedAt: Date.now(),
     } as ProbeObservation
   },
 
+  // D2.1: fs_match 改经 FileProvider
+  //   路径检查走 FileProvider.ioStat（拿 flags），文件内容读走 FileProvider.ioRead（拿 flags）
+  //   matched 逻辑保留 executeFsMatch
   fs_match: async (params, context) => {
     const matchParams = params as unknown as FsMatchParams
-    const result = await executeFsMatch(matchParams, context as ProbeContext)
-    return {
-      probeType: 'fs_match',
-      // v1.1: JSON-stringify so Kernel can read `matched` boolean (data contract fix)
-      // Previously, only `result.content` was passed → Kernel could not distinguish
-      // "matched" from "not matched but file read succeeded"
-      output: JSON.stringify({ matched: result.matched, content: result.content, pattern: result.pattern }),
-      error: result.error,
-      executedAt: Date.now(),
-    } as ProbeObservation
+    const filePath = matchParams.path || ''
+    const fullPath = filePath.startsWith('/') ? filePath : `${context.projectRoot}/${filePath}`
+    const provider = new FileProvider()
+
+    try {
+      // 拿 stat flags（symlink / cache_path / just_modified / permission_denied）
+      const { interference: statFlags } = await provider.ioStat({ path: fullPath })
+      // 走原 atomic 函数做 regex matching（逻辑层，不重写）
+      const result = await executeFsMatch(matchParams, context as ProbeContext)
+      return {
+        probeType: 'fs_match',
+        output: JSON.stringify({ matched: result.matched, content: result.content, pattern: result.pattern }),
+        error: result.error,
+        interference: statFlags,
+        executedAt: Date.now(),
+      } as ProbeObservation
+    } catch {
+      return {
+        probeType: 'fs_match',
+        output: '{}',
+        interference: { flags: ['unknown' as InterferenceFlag] },
+        executedAt: Date.now(),
+      } as ProbeObservation
+    }
   },
 
-  shell_exec: async (params, context) => {
-    const command = params.command as string
-    const result: ShellExecResult = await executeShellExec(command, context as ProbeContext)
-    return {
-      probeType: 'shell_exec',
-      output: result.stdout || result.stderr,
-      error: result.error,
-      executedAt: Date.now(),
-      exitCode: result.exitCode,
-    } as ProbeObservation & { exitCode: number | null }
-  },
-
-  // v1.1: fs-parseable — JSON 解析验证
+  // D2.1: fs_parseable 改经 FileProvider.ioRead
+  //   - 读内容用 Provider（拿 flags）
+  //   - JSON.parse 保留 executeFsParseable 的解析逻辑
   fs_parseable: async (params, context) => {
     const parseParams = params as unknown as FsParseableParams
-    const result = await executeFsParseable(parseParams, context as ProbeContext)
-    return {
-      probeType: 'fs_parseable',
-      output: JSON.stringify({ parsed: result.parsed, format: result.format, topLevelKeys: result.topLevelKeys }),
-      error: result.error,
-      executedAt: Date.now(),
-    } as ProbeObservation
+    const filePath = parseParams.path
+    const fullPath = filePath.startsWith('/') ? filePath : `${context.projectRoot}/${filePath}`
+    const provider = new FileProvider()
+
+    try {
+      // 先 stat 拿 flags
+      const { interference: statFlags } = await provider.ioStat({ path: fullPath })
+      const result = await executeFsParseable(parseParams, context as ProbeContext)
+      return {
+        probeType: 'fs_parseable',
+        output: JSON.stringify({ parsed: result.parsed, format: result.format, topLevelKeys: result.topLevelKeys }),
+        error: result.error,
+        interference: statFlags,
+        executedAt: Date.now(),
+      } as ProbeObservation
+    } catch {
+      return {
+        probeType: 'fs_parseable',
+        output: '{}',
+        interference: { flags: ['unknown' as InterferenceFlag] },
+        executedAt: Date.now(),
+      } as ProbeObservation
+    }
   },
 
-  // v1.1 P1: test-pass — 跑 bun test
+  // ───────── ShellProvider 分组 (1 handler; RFC-0015 D2.1) ─────────
+
+  // D2.1: shell_exec 改经 ShellProvider.ioExec
+  //   - Provider 自动检测 sandbox_violation / network_timeout / unknown (per d2-3 unit tests)
+  shell_exec: async (params, context) => {
+    const command = params.command as string
+    const provider = new ShellProvider(context as ProbeContextBase)
+    try {
+      const { result, interference } = await provider.ioExec({ command })
+      return {
+        probeType: 'shell_exec',
+        output: result.stdout || result.stderr,
+        // ShellExecResult 字段转换：成功 → undefined err；timeout/sandbox → err by Provider detection
+        error: result.exitCode === 0 ? undefined : result.stderr || undefined,
+        interference,
+        executedAt: Date.now(),
+        exitCode: result.exitCode,
+      } as ProbeObservation & { exitCode: number | null }
+    } catch (err) {
+      // Provider 抛 IAPError（如 cmd 抛 validationError）— 退化为 unknown 保守策略
+      return {
+        probeType: 'shell_exec',
+        output: '',
+        error: err instanceof Error ? err.message : String(err),
+        interference: { flags: ['unknown' as InterferenceFlag] },
+        executedAt: Date.now(),
+        exitCode: null,
+      } as ProbeObservation & { exitCode: number | null }
+    }
+  },
+
+  // ───────── HttpProvider 分组 (1 handler; RFC-0015 D2.1) ─────────
+
+  // D2.1: http_responds 改经 HttpProvider.ioRead
+  //   - Provider 自动检测 waf_detected / cdn_cache / response_truncated / network_timeout
+  http_responds: async (params) => {
+    const httpParams = params as unknown as HttpRespondsParams
+    const url = httpParams.url
+    const maxBytes = (httpParams.timeout ?? 5000) > 0 ? 1_000_000 : Infinity
+    const provider = new HttpProvider()
+    try {
+      const { result, interference } = await provider.ioRead({ path: url, maxBytes })
+      // status code 需要从 raw fetch 取 — Provider result 只给 text/bytes/truncated
+      // 为不破坏现有 strategy，额外做轻量 fetch 拿 status
+      let status: number | null = null
+      let ok = false
+      try {
+        const resp = await fetch(url, {
+          method: httpParams.method ?? 'GET',
+          signal: AbortSignal.timeout(httpParams.timeout ?? 5000),
+        })
+        status = resp.status
+        ok = resp.status === (httpParams.expectedStatus ?? 200)
+      } catch {
+        /* Provider 已捕获 */
+      }
+      return {
+        probeType: 'http_responds',
+        output: JSON.stringify({ passed: ok, status, ok, durationMs: 0, textLength: result.bytes }),
+        // http-responds 把 err 设到 output 里 (Kernel 看 output) — 保兼容
+        interference,
+        executedAt: Date.now(),
+      } as ProbeObservation
+    } catch {
+      // Provider 抛错 → failure 降级
+      return {
+        probeType: 'http_responds',
+        output: JSON.stringify({ passed: false, status: null, ok: false, durationMs: 0 }),
+        interference: { flags: ['unknown' as InterferenceFlag] },
+        executedAt: Date.now(),
+      } as ProbeObservation
+    }
+  },
+
+  // ───────── GitProvider 分组 (4 handlers; RFC-0015 D2.1) ─────────
+
+  // D2.1: git_clean 改经 GitProvider.ioStat
+  //   Provider 内已有 detached_head / shallow_clone / unknown 检测 (per d2-3 unit tests)
+  git_clean: async (params, context) => {
+    const gitParams = params as unknown as GitCleanParams
+    const subpath = gitParams.path ?? ''
+    const fullPath = subpath ? `${context.projectRoot}/${subpath}` : context.projectRoot
+    const provider = new GitProvider({ projectRoot: fullPath })
+    try {
+      const { interference } = await provider.ioStat({ path: 'git://' })
+      const result = await executeGitClean(gitParams, context as ProbeContext)
+      return {
+        probeType: 'git_clean',
+        output: JSON.stringify({ clean: result.clean, dirtyFiles: result.dirtyFiles }),
+        error: result.error,
+        interference,
+        executedAt: Date.now(),
+      } as ProbeObservation
+    } catch {
+      return {
+        probeType: 'git_clean',
+        output: '{}',
+        interference: { flags: ['unknown' as InterferenceFlag] },
+        executedAt: Date.now(),
+      } as ProbeObservation
+    }
+  },
+
+  // D2.1: git_branch_exists 改经 GitProvider.ioRead
+  git_branch_exists: async (params, context) => {
+    const gitParams = params as unknown as GitBranchExistsParams
+    const provider = new GitProvider({ projectRoot: context.projectRoot })
+    try {
+      const { interference } = await provider.ioRead({ path: `git://${gitParams.branch}` })
+      const result = await executeGitBranchExists(gitParams, context as ProbeContext)
+      return {
+        probeType: 'git_branch_exists',
+        output: JSON.stringify({ exists: result.exists }),
+        error: result.error,
+        interference,
+        executedAt: Date.now(),
+      } as ProbeObservation
+    } catch {
+      return {
+        probeType: 'git_branch_exists',
+        output: '{}',
+        interference: { flags: ['unknown' as InterferenceFlag] },
+        executedAt: Date.now(),
+      } as ProbeObservation
+    }
+  },
+
+  // D2.1: git_status_clean 改经 GitProvider.ioStat (语义别名；flags 透传)
+  git_status_clean: async (params, context) => {
+    const gitParams = params as unknown as GitStatusCleanParams
+    const subpath = gitParams.path ?? ''
+    const fullPath = subpath ? `${context.projectRoot}/${subpath}` : context.projectRoot
+    const provider = new GitProvider({ projectRoot: fullPath })
+    try {
+      const { interference } = await provider.ioStat({ path: 'git://' })
+      const result = await executeGitStatusClean(gitParams, context as ProbeContext)
+      return {
+        probeType: 'git_status_clean',
+        output: JSON.stringify({ clean: result.clean, dirtyFiles: result.dirtyFiles }),
+        error: result.error,
+        interference,
+        executedAt: Date.now(),
+      } as ProbeObservation
+    } catch {
+      return {
+        probeType: 'git_status_clean',
+        output: '{}',
+        interference: { flags: ['unknown' as InterferenceFlag] },
+        executedAt: Date.now(),
+      } as ProbeObservation
+    }
+  },
+
+  // D2.1: git_merge_feasible 改经 GitProvider.ioExec
+  git_merge_feasible: async (params, context) => {
+    const gitParams = params as unknown as GitMergeFeasibleParams
+    const provider = new GitProvider({ projectRoot: context.projectRoot })
+    try {
+      const { interference } = await provider.ioExec({
+        command: `${gitParams.workBranch}:${gitParams.targetBranch}`,
+      })
+      const result = await executeGitMergeFeasible(gitParams, context as ProbeContext)
+      return {
+        probeType: 'git_merge_feasible',
+        output: JSON.stringify({
+          status: result.status,
+          conflictFiles: result.conflictFiles,
+          targetCommit: result.targetCommit,
+          workCommit: result.workCommit,
+          error: result.error,
+        }),
+        interference,
+        executedAt: Date.now(),
+      } as ProbeObservation
+    } catch {
+      return {
+        probeType: 'git_merge_feasible',
+        output: '{}',
+        interference: { flags: ['unknown' as InterferenceFlag] },
+        executedAt: Date.now(),
+      } as ProbeObservation
+    }
+  },
+
+  // ───────── 非 IO-direct handler (RFC-0015 D2.1 范围排除；保持现状) ─────────
+
+  // v1.1: test-pass — 跑 bun test
   test_pass: async (params, context) => {
     const testParams = params as unknown as TestPassParams
     const result = await executeTestPass(testParams, context as ProbeContext)
@@ -134,24 +400,6 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     } as ProbeObservation
   },
 
-  // v1.1 P1: http-responds — HTTP 请求检查 status（无 spawn，用 Bun fetch）
-  http_responds: async (params) => {
-    // 注意：http-responds 不需要 projectRoot（fetch 是 global）
-    const httpParams = params as unknown as HttpRespondsParams
-    const result = await executeHttpResponds(httpParams)
-    return {
-      probeType: 'http_responds',
-      output: JSON.stringify({
-        passed: result.passed,
-        status: result.status,
-        ok: result.ok,
-        durationMs: result.durationMs,
-      }),
-      error: result.error,
-      executedAt: Date.now(),
-    } as ProbeObservation
-  },
-
   // v1.1 P1: file-exports — 进程隔离 runtime import 提取 exports
   file_exports: async (params, context) => {
     const feParams = params as unknown as FileExportsParams
@@ -163,60 +411,6 @@ export const probeHandlers: Record<string, ProbeHandler> = {
         exportCount: result.exports.length,
         isolated: result.isolated,
         durationMs: result.durationMs,
-      }),
-      error: result.error,
-      executedAt: Date.now(),
-    } as ProbeObservation
-  },
-
-  // v1.2: git-clean — working tree 干净
-  git_clean: async (params, context) => {
-    const gitParams = params as unknown as GitCleanParams
-    const result = await executeGitClean(gitParams, context as ProbeContext)
-    return {
-      probeType: 'git_clean',
-      output: JSON.stringify({ clean: result.clean, dirtyFiles: result.dirtyFiles }),
-      error: result.error,
-      executedAt: Date.now(),
-    } as ProbeObservation
-  },
-
-  // v1.2: git-branch-exists — 本地分支存在
-  git_branch_exists: async (params, context) => {
-    const gitParams = params as unknown as GitBranchExistsParams
-    const result = await executeGitBranchExists(gitParams, context as ProbeContext)
-    return {
-      probeType: 'git_branch_exists',
-      output: JSON.stringify({ exists: result.exists }),
-      error: result.error,
-      executedAt: Date.now(),
-    } as ProbeObservation
-  },
-
-  // v1.2: git-status-clean — git-clean 的语义别名（verbose 版）
-  git_status_clean: async (params, context) => {
-    const gitParams = params as unknown as GitStatusCleanParams
-    const result = await executeGitStatusClean(gitParams, context as ProbeContext)
-    return {
-      probeType: 'git_status_clean',
-      output: JSON.stringify({ clean: result.clean, dirtyFiles: result.dirtyFiles }),
-      error: result.error,
-      executedAt: Date.now(),
-    } as ProbeObservation
-  },
-
-  // v1.2: git-merge-feasible — 三路合并模拟（不实际 merge）
-  git_merge_feasible: async (params, context) => {
-    const gitParams = params as unknown as GitMergeFeasibleParams
-    const result = await executeGitMergeFeasible(gitParams, context as ProbeContext)
-    return {
-      probeType: 'git_merge_feasible',
-      output: JSON.stringify({
-        status: result.status,
-        conflictFiles: result.conflictFiles,
-        targetCommit: result.targetCommit,
-        workCommit: result.workCommit,
-        error: result.error,
       }),
       error: result.error,
       executedAt: Date.now(),
@@ -271,7 +465,7 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     } as ProbeObservation
   },
 
-  // v0.6.2: doc-boundary — 文档三层守门（6 条规则：product/dev/rfc → openxenon/drafts/assets）
+  // v0.6.2: doc-boundary — 文档三层守门
   doc_boundary: async (params, context) => {
     const dbParams = params as unknown as DocBoundaryParams
     const result = await executeDocBoundary(dbParams, context as ProbeContext)
@@ -304,7 +498,6 @@ class ProbeRegistry {
     'file-exports': 'file_exports',
     'exec-exit-zero': 'shell_exec',
     'shell-exec': 'shell_exec',
-    // v1.2: git-* builtin probes
     'git-clean': 'git_clean',
     'git-branch-exists': 'git_branch_exists',
     'git-status-clean': 'git_status_clean',
@@ -313,7 +506,6 @@ class ProbeRegistry {
     'heading-skeleton-check': 'heading_skeleton_check',
     'docs-heading-check': 'docs_heading_check',
     'doc-boundary': 'doc_boundary',
-    // v0.1.2: plural @oxn/probes/* 命名（文档对齐）
     'fs-exists:probes': 'fs_exists',
     'fs-not-exists:probes': 'fs_not_exists',
     'fs-parseable:probes': 'fs_parseable',

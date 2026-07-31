@@ -45,11 +45,14 @@ export function executeShellExec(command: string, context: ProbeContext, timeout
   return new Promise((resolve) => {
     const validationError = validateCommand(command)
     if (validationError) {
+      // RFC-0015 D2.3: ShellProvider 通过 r.error.includes('Invalid command') 检测 sandbox_violation。
+      // 必须把 validationError 设到 error 字段（不是只 stderr），否则 Provider 永远检测不到。
       resolve({
         success: false,
         stdout: '',
         stderr: `Invalid command: ${validationError}`,
         exitCode: null,
+        error: `Invalid command: ${validationError}`,
       })
       return
     }
@@ -57,18 +60,25 @@ export function executeShellExec(command: string, context: ProbeContext, timeout
     // v0.1.6: 用 sh -c 包装命令（兼容 shell 语义但禁止 shell:true 形式）
     // 这是 SecurityContext 允许的"半 shell"形式（argv 数组 + sh 包装）
     void (async () => {
+      const timeout = timeoutMs ?? 30_000
       const result = await spawn(['sh', '-c', command], {
         cwd: context.projectRoot,
-        timeout: timeoutMs ?? 30_000,
+        timeout,
       })
 
+      // RFC-0015 D2.3: ShellProvider 需要识别 timeout 路径填 network_timeout flag。
+      // Bun.spawn's signal is always null (bun/spawn.ts:55), 所以原 `error: result.signal ? ...`
+      // 永远走 undefined 分支，让 Provider 检测不到 timeout。
+      // 改用 durationMs >= timeout 作为 timeout 显式信号（更可靠——超过 timeout 必是 SIGKILL 触发）。
+      const timedOut = result.durationMs >= timeout && result.exitCode !== 0
+
       resolve({
-        success: result.exitCode === 0,
+        success: result.exitCode === 0 && !timedOut,
         stdout: result.stdout,
         stderr: result.stderr,
         exitCode: result.exitCode,
         durationMs: result.durationMs,
-        error: result.signal ? `killed by signal ${result.signal}` : undefined,
+        error: timedOut ? `shell timeout after ${timeout}ms` : undefined,
       })
     })()
   })

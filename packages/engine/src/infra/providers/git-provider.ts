@@ -21,6 +21,7 @@
 
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { IAPError, IAPAction } from '@openxenon/engine/kernel/index'
 import type { ProbeContextBase } from '@openxenon/engine/kernel/contracts/probe-port'
 import type {
@@ -37,6 +38,28 @@ import type { InfraProvider, ProviderManifest } from '../registry/provider-regis
 import { executeGitBranchExists } from '../probes/git-branch-exists'
 import { executeGitMergeFeasible } from '../probes/git-merge-feasible'
 import { executeGitStatusClean } from '../probes/git-status-clean'
+
+// ───────── Detached HEAD detection (RFC-0015 D2.3) ─────────
+//
+// executeGitStatusClean 走 `git status --porcelain`，stdout 为空时无法区分"clean + detached"
+//   vs "clean + on branch"。Provider 需独立探测 detached HEAD。
+//
+// `git symbolic-ref HEAD` 命令:
+//   - 在正常分支 (refs/heads/X): 返 'refs/heads/X' + exit 0
+//   - 在 detached HEAD: 返空 stdout + exit 1
+// 用返回 null vs non-null 区分。
+function detectDetachedHead(projectRoot: string): boolean {
+  try {
+    const out = execFileSync('git', ['symbolic-ref', '-q', 'HEAD'], {
+      cwd: projectRoot,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).toString()
+    return out.trim() === ''
+  } catch {
+    // exit 1 → detached
+    return true
+  }
+}
 
 // ───────── GitProvider ─────────
 
@@ -72,9 +95,9 @@ export class GitProvider implements InfraProvider {
       }
     }
 
-    // 2. 派生 interference flags (从 stdout 检测 detached_head)
+    // 2. 派生 interference flags (从 symbolic-ref HEAD 探测 detached; porcelain stdout 不含 "HEAD detached")
     const flags: InterferenceFlag[] = []
-    if (statusResult.stdout.includes('HEAD detached') || statusResult.stdout.toLowerCase().includes('detached')) {
+    if (detectDetachedHead(this.context.projectRoot + (subpath ? `/${subpath}` : ''))) {
       flags.push('detached_head')
     }
 
