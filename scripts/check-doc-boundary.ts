@@ -86,10 +86,37 @@ const RULES: BoundaryRule[] = [
   },
   {
     name: 'drafts-rfc-no-assets',
-    description: '.openxenon/drafts/rfc/ 不可引用 .openxenon/assets/ 直接（Domain 是 vocabulary，应通过 docs/）',
+    description: '.openxenon/drafts/rfc/ 不可引用 .openxenon/assets/',
     sourcePattern: /^\.openxenon\/drafts\/rfc\//,
     targetPattern: /\.openxenon\/assets\//,
     message: 'ADR/RFC 暂存不应直接引用项目资产（应通过 docs/ 概念页）',
+  },
+  {
+    // v0.6.2 Step 9 (ssot-asset-doc-boundary-audit-2026-07-28.md)
+    // 来自 oxn-project-domain.md ban `assets-to-docs`：Asset 是边界不依赖手册
+    name: 'assets-no-docs',
+    description: '.openxenon/assets/ 不可引用 docs/（边界不依赖手册）',
+    sourcePattern: /^\.openxenon\/assets\//,
+    targetPattern: /^docs\//,
+    message: 'Asset 不应依赖手册（边界独立可读）',
+  },
+  {
+    // v0.6.2 Step 9
+    // 来自 oxn-project-domain.md ban `rfc-to-product-doc`：规定性应独立可读
+    name: 'rfc-no-product-doc',
+    description: 'docs/rfc/ 不可引用 docs/product/（规定性应独立可读）',
+    sourcePattern: /^docs\/rfc\//,
+    targetPattern: /^docs\/product\//,
+    message: 'RFC（规定性）不应引用 product 手册（描述性）',
+  },
+  {
+    // v0.6.2 Step 9
+    // 来自 oxn-project-domain.md ban `rfc-to-dev-doc`：规定性应独立可读
+    name: 'rfc-no-dev-doc',
+    description: 'docs/rfc/ 不可引用 docs/dev/（规定性应独立可读）',
+    sourcePattern: /^docs\/rfc\//,
+    targetPattern: /^docs\/dev\//,
+    message: 'RFC（规定性）不应引用 dev 手册（描述性）',
   },
 ]
 
@@ -199,7 +226,7 @@ function scanFile(filePath: string): Violation[] {
             file: relativePath,
             line: relatedStartLine,
             rule: rule.name,
-            message: rule.message + '（frontmatter related）',
+            message: `${rule.message}（frontmatter related）`,
             link: ref,
           })
         }
