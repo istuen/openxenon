@@ -38,6 +38,7 @@ synced-at: 2026-07-26
 | [RFC-0012 自举种子豁免](./RFC-0012-bootstrap-exemption.html) | 主题：bootstrap-exemption | meta-RFC（grilling #6） | ✅ Accepted |
 | [RFC-0013 版本号政策](./RFC-0013-versioning-policy.html) | 主题：versioning-policy | meta-RFC（grilling #6） | 📝 Draft |
 | [RFC-0014 Asset 注入机制](./RFC-0014-asset-injection-mechanism.html) | 主题：asset-injection-mechanism | meta-RFC（grilling Asset vs RAG） | ✅ Accepted |
+| [RFC-0015 Proof 体系重整](./RFC-0015-proof-system-overhaul.html) | 主题：proof-system-overhaul | 0（grilling #2 Proof/Probe/Verdict 审视） | 📝 Draft |
 
 **统计**：8 主题 RFC（48 Adopted ADR 迁移）+ 5 meta-RFC（grilling 决策锁定，含 1 Draft）。
 
