@@ -61,7 +61,7 @@
 ```bash
 oxn roadmap show oxn-system --scene <scene>
 oxn roadmap suggest --goal "<goal>" --scene <scene> --top 5
-oxn roadmap sync oxn-system --scene <scene>           # 默认 dry-run；加 --apply 才写入
+oxn roadmap sync oxn-system --scene <scene> --dry-run   # 手动 hint
 ```
 
 > **与 `oxn-work` 的职责边界**：本 Skill 管 Asset 生命周期；Work 编排 / Run / Submit / Proof 是 `oxn-work`。详见 `references/asset-vs-work.md`。

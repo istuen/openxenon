@@ -233,6 +233,7 @@
     "tools": "Skill 分发的目标 AI 助手",
     "withoutTools": "排除某个 AI 助手",
     "resetTools": "忽略现有 config.tools",
+    "global": "写到全局目录 (~/.opencode/skills/ 等)，跨项目可见 (v0.6.2+)",
     "localeUpdated": "语言已更新为: {{locale}}",
     "projectInitialized": "项目初始化成功: {{name}} (locale: {{locale}})",
     "compilingSkills": "正在编译 Skill (适配器: {{adapter}})...",
@@ -255,9 +256,11 @@
     }
   },
   "installSkill": {
-    "description": "把 oxn-* OpenCode Skills 安装到目标目录 (默认: ~/.opencode/skills/, 装全部 oxn-cli/oxn-work)",
-    "target": "目标根目录 (默认: ~/.opencode/skills/)",
-    "skill": "只装指定 skill (例: oxn-work)。不传则装全部 oxn-* skills",
+    "description": "把 OpenXenon Skills 编译并安装（v0.6.2 默认项目级：./.opencode/skills/ 等；--global 写到 ~/.opencode/skills/）",
+    "target": "目标根目录（显式指定；与 --global 互斥）",
+    "skill": "只装指定 skill (例: oxn-draft)。不传则装全部已注册 skills",
+    "tools": "限定 adapter (默认: {{adapters}}，写多个用逗号)",
+    "global": "写到全局目录 (~/.opencode/skills/ 等)，跨项目可见",
     "force": "覆盖已存在的 Skill"
   },
   "migrate": {

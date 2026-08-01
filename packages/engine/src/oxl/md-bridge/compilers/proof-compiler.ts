@@ -92,10 +92,10 @@ export class ProofCompiler implements EntityCompiler {
     sections.push(`# Proof: ${name}`)
     sections.push('')
 
-    if (decl.verdicts && decl.verdicts.length > 0) {
+    if (decl.outcomes && decl.outcomes.length > 0) {
       sections.push('## Verdicts')
       sections.push('')
-      for (const v of decl.verdicts) {
+      for (const v of decl.outcomes) {
         // v0.3.0 canonical 形式（用户定稿）：H3 扁平 + 键值对列表
         // - H3 标题 = 探针名（不带 state 后缀）
         // - 第一行 `- type: pass|fail|inconclusive` 单独字段

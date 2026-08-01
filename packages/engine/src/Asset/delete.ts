@@ -22,15 +22,15 @@ import { join } from 'node:path'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
 import { resolveAssetFile } from './internal/resolver'
 import { isAssetReferenced } from './internal/reference-checker'
-import type { AssetKind, ProjectConfig } from '@openxenon/engine/infra/paths'
+import type { AssetKind } from '@openxenon/engine/infra/paths'
 import type { DeleteInput, DeleteResult } from './types'
 
-export async function deleteAsset(input: DeleteInput, config?: ProjectConfig | null): Promise<DeleteResult> {
+export async function deleteAsset(input: DeleteInput): Promise<DeleteResult> {
   const { kind, name, force, projectRoot } = input
 
   // 1. 解析源路径（主路径 + fallback）
-  const sourceOxnPath = resolveAssetFile(projectRoot, kind, name, 'oxn', config)
-  const sourceMdPath = resolveAssetFile(projectRoot, kind, name, 'md', config)
+  const sourceOxnPath = resolveAssetFile(projectRoot, kind, name, 'oxn')
+  const sourceMdPath = resolveAssetFile(projectRoot, kind, name, 'md')
 
   // 2. 幂等检查：不存在 → 返回 idempotent
   if (!existsSync(sourceOxnPath) && !existsSync(sourceMdPath)) {

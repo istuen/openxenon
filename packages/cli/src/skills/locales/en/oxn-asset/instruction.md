@@ -61,7 +61,7 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 ```bash
 oxn roadmap show oxn-system --scene <scene>
 oxn roadmap suggest --goal "<goal>" --scene <scene> --top 5
-oxn roadmap sync oxn-system --scene <scene>           # dry-run by default; add --apply to write
+oxn roadmap sync oxn-system --scene <scene> --dry-run   # manual hint
 ```
 
 > **Boundary with `oxn-work`**: This Skill manages Asset lifecycle; Work orchestration / Run / Submit / Proof is `oxn-work`. See `references/asset-vs-work.md`.

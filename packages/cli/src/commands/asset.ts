@@ -25,18 +25,13 @@ import {
   validateAssetReferences,
   validateAssetPaper4Fields,
   archive,
-  unarchive,
   deleteAsset,
   evolve,
   list,
   listAll,
-  tree as treeAsset,
-  migrate as migrateAsset,
-  diff as diffAsset,
   resolveArchivedAssetFile,
 } from '@openxenon/engine/Asset'
 import { ALL_ASSET_KINDS, type AssetKind } from '@openxenon/engine/infra/paths'
-import { readProjectConfig } from './project-config-io'
 
 const VALID_ASSET_KINDS = ALL_ASSET_KINDS
 type ValidAssetKind = (typeof VALID_ASSET_KINDS)[number]
@@ -71,10 +66,6 @@ const listSubcommand = defineCommand({
       type: 'string',
       description: `Filter by kind (${VALID_ASSET_KINDS.join('|')})`,
     },
-    scope: {
-      type: 'string',
-      description: 'Scope: prj (default) | oxn (builtin only) | effective (prj + builtin-only)',
-    },
     '--json': { type: 'boolean' },
     '--yaml': { type: 'boolean' },
   },
@@ -91,25 +82,8 @@ const listSubcommand = defineCommand({
         format,
       )
     }
-
-    const scopeArg = (ctx.args.scope as string | undefined) ?? 'prj'
-    if (!['prj', 'oxn', 'effective'].includes(scopeArg)) {
-      return outputError(
-        {
-          code: 'OXN_INVALID_SCOPE',
-          message: `Invalid --scope: '${scopeArg}'`,
-          suggestion: 'Use: prj | oxn | effective',
-        },
-        format,
-      )
-    }
-    const scope = scopeArg as 'prj' | 'oxn' | 'effective'
-
     const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
-    const result = kindFilter
-      ? list({ kind: kindFilter as AssetKind, projectRoot, scope }, config)
-      : listAll(projectRoot, config, scope)
+    const result = kindFilter ? list({ kind: kindFilter as AssetKind, projectRoot }) : listAll(projectRoot)
     const groups = new Map<string, typeof result.assets>()
     for (const a of result.assets) {
       if (!groups.has(a.kind)) groups.set(a.kind, [])
@@ -164,8 +138,7 @@ const showSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
-    const result = list({ kind: kind as AssetKind, projectRoot }, config)
+    const result = list({ kind: kind as AssetKind, projectRoot })
     const asset = result.assets.find((a) => a.name === name)
     if (!asset) {
       // 检查归档
@@ -260,14 +233,13 @@ const validateSubcommand = defineCommand({
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
     const checkDag = ctx.args['check-dag'] === true
     const all = ctx.args.all === true
     const strict = ctx.args.strict === true
 
     // DAG check across all assets
     if (checkDag || all) {
-      const result = validateAssetReferences(projectRoot, config)
+      const result = validateAssetReferences(projectRoot)
       return output(
         {
           data: {
@@ -307,26 +279,23 @@ const validateSubcommand = defineCommand({
     }
 
     try {
-      const result = await validateAsset(
-        {
-          kind: kind as AssetKind,
-          name,
-          projectRoot,
-        },
-        config,
-      )
+      const result = await validateAsset({
+        kind: kind as AssetKind,
+        name,
+        projectRoot,
+      })
 
       // PR-2: --strict mode adds AssetPaper 4 字段校验
       let paperResult: { ok: boolean; warnings: string[] } | null = null
       if (strict && result.ok) {
         try {
-          paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, true, config)
+          paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, true)
         } catch (err) {
           return iapErrorToOutput(err, format)
         }
       } else if (result.ok) {
         // fail-open: warn only
-        paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, false, config)
+        paperResult = await validateAssetPaper4Fields(projectRoot, kind as AssetKind, name, false)
       }
 
       return output(
@@ -385,9 +354,8 @@ const archiveSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
     try {
-      const result = await archive({ kind: kind as AssetKind, name, reason, projectRoot }, config)
+      const result = await archive({ kind: kind as AssetKind, name, reason, projectRoot })
       return output(
         {
           data: {
@@ -437,9 +405,8 @@ const deleteSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
     try {
-      const result = await deleteAsset({ kind: kind as AssetKind, name, force, projectRoot }, config)
+      const result = await deleteAsset({ kind: kind as AssetKind, name, force, projectRoot })
       return output(
         {
           data: {
@@ -489,9 +456,8 @@ const evolveSubcommand = defineCommand({
       )
     }
     const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
     try {
-      const result = await evolve({ kind: kind as AssetKind, name, newName, projectRoot }, config)
+      const result = await evolve({ kind: kind as AssetKind, name, newName, projectRoot })
       return output(
         {
           data: {
@@ -512,260 +478,12 @@ const evolveSubcommand = defineCommand({
 })
 
 // =============================================================================
-// Subcommand: unarchive
-// =============================================================================
-const unarchiveSubcommand = defineCommand({
-  meta: { name: 'unarchive', description: 'Unarchive Asset (restore from .archived/)' },
-  args: {
-    name: { type: 'positional', required: true },
-    kind: {
-      type: 'string',
-      required: true,
-      description: `Asset kind (${VALID_ASSET_KINDS.join('|')})`,
-    },
-    '--json': { type: 'boolean' },
-    '--yaml': { type: 'boolean' },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const name = ctx.args.name as string
-    const kind = ctx.args.kind as string
-    if (!VALID_ASSET_KINDS.includes(kind as ValidAssetKind)) {
-      return outputError(
-        {
-          code: 'OXN_INVALID_ASSET_KIND',
-          message: `Invalid --kind: '${kind}'`,
-          suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
-        },
-        format,
-      )
-    }
-    const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
-    try {
-      const result = await unarchive({ kind: kind as AssetKind, name, projectRoot }, config)
-      return output(
-        {
-          data: {
-            ok: result.ok,
-            idempotent: result.idempotent,
-            restoredPath: result.restoredPath,
-          },
-          human: `✓ ${result.message}`,
-        },
-        format,
-      )
-    } catch (err) {
-      return iapErrorToOutput(err, format)
-    }
-  },
-})
-
-// =============================================================================
-// Subcommand: tree
-// =============================================================================
-const treeSubcommand = defineCommand({
-  meta: { name: 'tree', description: 'Show Asset dependency graph' },
-  args: {
-    root: { type: 'string', description: 'Root asset as <kind>:<name> (e.g., domain:oxn-asset-domain)' },
-    depth: { type: 'string', description: 'Max depth (default 3)' },
-    direction: {
-      type: 'string',
-      description: 'Direction: forward | reverse | both (default forward)',
-    },
-    kind: {
-      type: 'string',
-      description: `Filter by kind (${VALID_ASSET_KINDS.join('|')})`,
-    },
-    '--json': { type: 'boolean' },
-    '--yaml': { type: 'boolean' },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
-
-    const rootArg = ctx.args.root as string | undefined
-    let root: { kind: AssetKind; name: string } | undefined
-    if (rootArg) {
-      const [kindPart, ...nameParts] = rootArg.split(':')
-      const namePart = nameParts.join(':')
-      if (!kindPart || !namePart || !VALID_ASSET_KINDS.includes(kindPart as ValidAssetKind)) {
-        return outputError(
-          {
-            code: 'OXN_INVALID_ROOT_FORMAT',
-            message: `Invalid --root format: '${rootArg}'`,
-            suggestion: 'Use <kind>:<name>, e.g., --root domain:oxn-asset-domain',
-          },
-          format,
-        )
-      }
-      root = { kind: kindPart as AssetKind, name: namePart }
-    }
-
-    const depthStr = ctx.args.depth as string | undefined
-    const depth = depthStr ? Number.parseInt(depthStr, 10) : 3
-
-    const directionStr = (ctx.args.direction as string | undefined) ?? 'forward'
-    if (!['forward', 'reverse', 'both'].includes(directionStr)) {
-      return outputError(
-        {
-          code: 'OXN_INVALID_DIRECTION',
-          message: `Invalid --direction: '${directionStr}'`,
-          suggestion: 'Use: forward | reverse | both',
-        },
-        format,
-      )
-    }
-
-    try {
-      const result = await treeAsset(
-        {
-          projectRoot,
-          root,
-          depth,
-          direction: directionStr as 'forward' | 'reverse' | 'both',
-        },
-        config,
-      )
-      return output(
-        {
-          data: {
-            ok: result.ok,
-            nodes: result.nodes,
-            message: result.message,
-          },
-          human: result.humanTree,
-        },
-        format,
-      )
-    } catch (err) {
-      return iapErrorToOutput(err, format)
-    }
-  },
-})
-
-// =============================================================================
-// Subcommand: migrate
-// =============================================================================
-const migrateSubcommand = defineCommand({
-  meta: { name: 'migrate', description: 'Migrate Asset frontmatter version' },
-  args: {
-    name: { type: 'positional', required: true },
-    kind: {
-      type: 'string',
-      required: true,
-      description: `Asset kind (${VALID_ASSET_KINDS.join('|')})`,
-    },
-    'target-version': { type: 'string', required: true, description: 'Target version (e.g., 0.4.0)' },
-    '--json': { type: 'boolean' },
-    '--yaml': { type: 'boolean' },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const name = ctx.args.name as string
-    const kind = ctx.args.kind as string
-    const targetVersion = ctx.args['target-version'] as string
-    if (!VALID_ASSET_KINDS.includes(kind as ValidAssetKind)) {
-      return outputError(
-        {
-          code: 'OXN_INVALID_ASSET_KIND',
-          message: `Invalid --kind: '${kind}'`,
-          suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
-        },
-        format,
-      )
-    }
-    const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
-    try {
-      const result = await migrateAsset({ kind: kind as AssetKind, name, targetVersion, projectRoot }, config)
-      return output(
-        {
-          data: {
-            ok: result.ok,
-            idempotent: result.idempotent,
-            oldVersion: result.oldVersion,
-            newVersion: result.newVersion,
-            path: result.path,
-          },
-          human: `✓ ${result.message}`,
-        },
-        format,
-      )
-    } catch (err) {
-      return iapErrorToOutput(err, format)
-    }
-  },
-})
-
-// =============================================================================
-// Subcommand: diff
-// =============================================================================
-const diffSubcommand = defineCommand({
-  meta: { name: 'diff', description: 'Diff project Asset vs builtin default' },
-  args: {
-    name: { type: 'positional', required: true },
-    kind: {
-      type: 'string',
-      required: true,
-      description: `Asset kind (${VALID_ASSET_KINDS.join('|')})`,
-    },
-    '--json': { type: 'boolean' },
-    '--yaml': { type: 'boolean' },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const name = ctx.args.name as string
-    const kind = ctx.args.kind as string
-    if (!VALID_ASSET_KINDS.includes(kind as ValidAssetKind)) {
-      return outputError(
-        {
-          code: 'OXN_INVALID_ASSET_KIND',
-          message: `Invalid --kind: '${kind}'`,
-          suggestion: `Valid: ${VALID_ASSET_KINDS.join(', ')}`,
-        },
-        format,
-      )
-    }
-    const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
-    try {
-      const result = await diffAsset(
-        { kind: kind as AssetKind, name, projectRoot, format: format === 'json' ? 'json' : 'unified' },
-        config,
-      )
-      if (format === 'json') {
-        return output(
-          {
-            data: {
-              ok: result.ok,
-              hasOverride: result.hasOverride,
-              hasBuiltin: result.hasBuiltin,
-              diff: result.diff,
-              message: result.message,
-            },
-            human: result.message,
-          },
-          format,
-        )
-      }
-      // human format: print diff directly
-      const humanOut = typeof result.diff === 'string' && result.diff ? result.diff : `✓ ${result.message}`
-      return output({ data: result, human: humanOut }, format)
-    } catch (err) {
-      return iapErrorToOutput(err, format)
-    }
-  },
-})
-
-// =============================================================================
 // Default export: oxn asset 命令
 // =============================================================================
 export default defineCommand({
   meta: {
     name: 'asset',
-    description: 'Asset lifecycle management (v0.6.1-alpha.1: 9 subcommands)',
+    description: 'Asset lifecycle management (v0.6.1-alpha.1: 8 subcommands)',
   },
   subCommands: {
     list: () => Promise.resolve({ default: listSubcommand }).then((m) => m.default),
@@ -773,11 +491,7 @@ export default defineCommand({
     create: () => Promise.resolve({ default: createSubcommand }).then((m) => m.default),
     validate: () => Promise.resolve({ default: validateSubcommand }).then((m) => m.default),
     archive: () => Promise.resolve({ default: archiveSubcommand }).then((m) => m.default),
-    unarchive: () => Promise.resolve({ default: unarchiveSubcommand }).then((m) => m.default),
     delete: () => Promise.resolve({ default: deleteSubcommand }).then((m) => m.default),
     evolve: () => Promise.resolve({ default: evolveSubcommand }).then((m) => m.default),
-    tree: () => Promise.resolve({ default: treeSubcommand }).then((m) => m.default),
-    migrate: () => Promise.resolve({ default: migrateSubcommand }).then((m) => m.default),
-    diff: () => Promise.resolve({ default: diffSubcommand }).then((m) => m.default),
   },
 })

@@ -7,7 +7,7 @@
 ### Step 1: Mark as Deprecated
 
 ```bash
-oxn asset archive MemberContext --kind domain --reason "Business boundary merged into IdentityContext" --json
+oxn asset archive MemberContext --reason "Business boundary merged into IdentityContext" --json
 ```
 
 Effects:
@@ -33,7 +33,7 @@ After archiving, all Works referencing this Asset should:
 Only use when **confirmed no references** AND **business team agrees**:
 
 ```bash
-oxn asset delete MemberContext --kind domain --force --json
+oxn asset delete MemberContext --force --json
 ```
 
 Effects:

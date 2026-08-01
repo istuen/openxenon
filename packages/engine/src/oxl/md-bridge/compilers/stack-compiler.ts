@@ -31,7 +31,7 @@ import type {
   ValidationError,
 } from '../entity-compiler.js'
 import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
-import { extractListFields } from '../../md-pipeline/utils.js'
+import { extractListFields, getScalar } from '../../md-pipeline/utils.js'
 import type { IntentEntityType } from '../pipeline.js'
 import { findLegacyIntentBlocks } from './_legacy-detect.js'
 

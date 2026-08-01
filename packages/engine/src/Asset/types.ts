@@ -43,8 +43,6 @@ export interface ValidateResult {
 export interface ListInput {
   kind: AssetKind
   projectRoot: string
-  /** v0.6.2 I-4: 默认 'prj'；'oxn' 仅 builtin；'effective' = project + builtin-only */
-  scope?: 'prj' | 'oxn' | 'effective'
 }
 
 export interface ListResult {
@@ -53,7 +51,6 @@ export interface ListResult {
     name: string
     path: string
     format: AssetFormat
-    scope?: 'prj' | 'oxn'
   }>
 }
 
@@ -143,99 +140,5 @@ export interface EvolveResult {
   oldPath: string
   newPath: string
   evolvedAt: string
-  message: string
-}
-
-// =============================================================================
-// Unarchive — archive 的反向操作 (v0.6.2-alpha.0)
-// =============================================================================
-
-export interface UnarchiveInput {
-  kind: AssetKind
-  name: string
-  projectRoot: string
-}
-
-export interface UnarchiveResult {
-  ok: boolean
-  /** 幂等操作（资产未归档） */
-  idempotent: boolean
-  /** 恢复后 .md 路径 */
-  restoredPath: string
-  message: string
-}
-
-// =============================================================================
-// Tree — 依赖图展示 (v0.6.2-alpha.0)
-// =============================================================================
-
-export interface TreeInput {
-  projectRoot: string
-  /** 起点（kind+name），不指定则扫所有 root（无任何反向引用的 Asset） */
-  root?: { kind: AssetKind; name: string }
-  /** 最大深度（默认 3，防止循环引用栈溢出） */
-  depth?: number
-  /** 方向：forward=我引用了谁 / reverse=谁引用了我 / both=双向 */
-  direction?: 'forward' | 'reverse' | 'both'
-  /** 按 kind 过滤（默认 5 类全扫） */
-  kind?: AssetKind
-}
-
-export interface TreeNode {
-  kind: AssetKind
-  name: string
-  references: string[]
-  referencedBy: Array<{ kind: AssetKind; name: string }>
-}
-
-export interface TreeResult {
-  ok: boolean
-  nodes: TreeNode[]
-  humanTree: string
-  message: string
-}
-
-// =============================================================================
-// Migrate — schema 版本升级 (v0.6.2-alpha.0)
-// =============================================================================
-
-export interface MigrateInput {
-  kind: AssetKind
-  name: string
-  /** 目标版本（如 0.3.0） */
-  targetVersion: string
-  projectRoot: string
-}
-
-export interface MigrateResult {
-  ok: boolean
-  /** 幂等（已是目标版本） */
-  idempotent: boolean
-  oldVersion: string
-  newVersion: string
-  path: string
-  message: string
-}
-
-// =============================================================================
-// Diff — 项目 vs builtin (v0.6.2-alpha.0)
-// =============================================================================
-
-export interface DiffInput {
-  kind: AssetKind
-  name: string
-  projectRoot: string
-  /** 默认 'unified'；也支持 'json' */
-  format?: 'unified' | 'json'
-}
-
-export interface DiffResult {
-  ok: boolean
-  /** 是否覆盖 builtin（true=项目与 builtin 不同；false=项目不存在/与 builtin 相同） */
-  hasOverride: boolean
-  /** 是否有 builtin 默认 */
-  hasBuiltin: boolean
-  /** unified diff 字符串或 json 结构 */
-  diff: string | object
   message: string
 }

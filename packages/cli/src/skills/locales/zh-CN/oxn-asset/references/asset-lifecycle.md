@@ -7,7 +7,7 @@
 ### 步骤 1：标记废弃
 
 ```bash
-oxn asset archive MemberContext --kind domain --reason "业务边界已合并到 IdentityContext" --json
+oxn asset archive MemberContext --reason "业务边界已合并到 IdentityContext" --json
 ```
 
 效果：
@@ -33,7 +33,7 @@ oxn asset archive MemberContext --kind domain --reason "业务边界已合并到
 仅在**确认无任何引用**且**业务团队同意**时才使用：
 
 ```bash
-oxn asset delete MemberContext --kind domain --force --json
+oxn asset delete MemberContext --force --json
 ```
 
 效果：

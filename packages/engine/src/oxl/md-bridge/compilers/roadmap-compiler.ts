@@ -38,15 +38,10 @@ import { findLegacyIntentBlocks } from './_legacy-detect.js'
  * v0.6.1-alpha.1 Roadmap 简化版：仅 Links 分类
  * - Links: 指向其他 Asset 的引用列表（target: string）
  *
- * v0.6.2 实际 roadmap 格式扩展：
- * - Scenes: 场景路由表（H3 = scene 名 + links[] 列表）—— Roadmap/parser.ts 实际消费的格式
- * - Usage: 使用说明（描述性 H2，无 H3 实例）
- * - Scene quick-reference: 场景速查（描述性 H2）
- *
  * 注意：Roadmap 不含 Themes/Milestones/Risks 等复杂 H2 分类
  * RoadmapDeclaration AST 仅含 links[] 字段
  */
-const ROADMAP_CATEGORIES = ['Links', 'Scenes', 'Usage', 'Scene quick-reference'] as const
+const ROADMAP_CATEGORIES = ['Links'] as const
 type RoadmapCategory = (typeof ROADMAP_CATEGORIES)[number]
 
 interface RoadmapLink {

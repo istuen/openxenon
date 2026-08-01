@@ -233,6 +233,7 @@
     "tools": "Target AI assistant(s) for Skill distribution",
     "withoutTools": "Exclude specific AI assistant",
     "resetTools": "Ignore existing config.tools",
+    "global": "Write to global directory (~/.opencode/skills/ etc.), cross-project visible (v0.6.2+)",
     "localeUpdated": "Locale updated to: {{locale}}",
     "projectInitialized": "Project initialized: {{name}} (locale: {{locale}})",
     "compilingSkills": "Compiling Skills (adapter: {{adapter}})...",
@@ -255,9 +256,11 @@
     }
   },
   "installSkill": {
-    "description": "Install oxn-* OpenCode Skills to target directory (default: ~/.opencode/skills/, all oxn-* skills)",
-    "target": "Target root directory (default: ~/.opencode/skills/)",
-    "skill": "Install only specified skill (e.g. oxn-work). Default: all oxn-* skills",
+    "description": "Compile and install OpenXenon Skills (v0.6.2 default project-level: ./.opencode/skills/ etc.; --global writes to ~/.opencode/skills/)",
+    "target": "Target root directory (explicit; mutually exclusive with --global)",
+    "skill": "Install only specified skill (e.g. oxn-draft). Default: all registered skills",
+    "tools": "Restrict adapter (default: {{adapters}}, multiple comma-separated)",
+    "global": "Write to global directory (~/.opencode/skills/ etc.), cross-project visible",
     "force": "Overwrite existing Skill"
   },
   "migrate": {
