@@ -1,9 +1,11 @@
 # Proof Probe Per-Description + Target + extractTarget Bug Fix
 
-> **状态**：📝 Draft（评审中，未执行）
+> **状态**：✅ 已执行（2026-08-01 完整落地，含 D9 修复）
 > **日期**：2026-08-01
 > **来源**：2026-08-01 Proof-First 实例 demo（demo-proof-first）审查
+> **执行记录**：D1-D8 由先前会话落地（代码注释标记 `proof-probe-description-target D1-D8`）；D9（CLI 映射）+ i18n 翻译键 + demo 验证由本次会话完成（2026-08-01 04:13 UTC）
 > **关联**：RFC-0015 D1（产物命名）/ RFC-0015 D2.1（Taint 接入已执行）/ RFC-0015 D3.1（注册表死表未执行）
+> **验证**：`bun test packages/engine/src/Proof packages/cli/src/__tests__/work-*` 35/35 通过；全量 `bun test` 1759 pass / 38 fail（38 个 fail 均为预存 Asset / probe handler 问题，与本 Draft 无关）
 
 ## 1. Context（触发问题）
 
@@ -149,17 +151,50 @@ bodyLines.push(
 D8.1: 默认行为不变（`nextProbeName` 逻辑保留）
 D8.2: 当用户传 `--description` 但没传 `--probeName` 时，CLI 输出 hint 建议使用语义名（不阻断）
 
-## 4. 改动清单（7 个文件）
+### D9（执行期间发现并修复）：CLI proof→runner IR 透传 description + target
 
-| # | 文件 | 改动 |
-|---|---|---|
-| 1 | `packages/engine/src/oxl/md-pipeline/transformers/proof.ts` | `ProofProbeIR` 加 `description?`/`target?`；`extractProbeFromFields` 读新字段 |
-| 2 | `packages/engine/src/Proof/runner.ts` | `ProofProbeIR` 副本同步加字段；`executeProbe` 返回值透传 |
-| 3 | `packages/engine/src/kernel/schemas/probe-schema.ts` | `FrozenProofProbeResultSchema` 加 optional `description`/`target` |
-| 4 | `packages/cli/src/commands/proof.ts` | `probe add` 加 `--description`/`--target` 参数；写 proof.md 模板加字段；hint 输出 |
-| 5 | `packages/engine/src/Proof/outcome-writer.ts` | **bug fix**：删除本地 `extractTarget`，改 import `extraction.ts`；Evidence 行显示 description |
-| 6 | `packages/engine/src/kernel/verdicts/cross-proof-compute.ts` | **bug fix**：删除本地 `extractTargetFromOutput`，改 import `./extraction` |
-| 7 | `packages/engine/src/Proof/outcome-writer.ts` | `buildOutcomeMd` Evidence 段渲染逻辑（D7） |
+**触发**（2026-08-01 04:13 UTC 执行期间）：运行 demo `bun run oxn proof run demo-proof-first` 后，frozen.json 里**没有** description/target 字段（只有 package.json 内嵌的 `"description"` 字符串）。检查调用链：
+
+```
+parseProofFile (proof.ts:308)
+  → extractProofIR (transformers/proof.ts:35)         ← D1 已正确读 description/target
+  → proofProbesToIR (proof.ts:317)                    ← ⚠️ 只映射 3 字段，丢失 D1 扩展
+    → executeProbe (runner.ts:66)                      ← D4 正确读 probe.description/target
+      → FrozenProofProbeResult                         ← 无 description/target
+```
+
+**根因**：`proofProbesToIR`（proof.ts:317-325）的 `.map((p) => ({...}))` 旧实现只复制 `probeName`/`ref`/`params` 三个字段，D1 扩展的 `description`/`target` 被丢弃。D1 + D4 都正确，但中间环节断链。
+
+**修复**：`packages/cli/src/commands/proof.ts:317-330` `proofProbesToIR` 增加：
+```typescript
+return {
+  probeName: p.probeName,
+  ref: p.ref,
+  params: p.params ?? {},
+  ...(p.description ? { description: p.description } : {}),
+  ...(p.target ? { target: p.target } : {}),
+}
+```
+
+**i18n 翻译键补漏**（同一执行期发现）：CLI 用了 `t('proof.probeAdd.description')` 和 `t('proof.probeAdd.target')` 但 i18n 文件漏配，D3 改动未配齐翻译：
+- `packages/engine/src/infra/i18n/zh-CN.json:314-315` 加 `"description"` + `"target"`
+- `packages/engine/src/infra/i18n/en.json:314-315` 加 `"description"` + `"target"`
+
+**验证**：重跑 demo-proof-first，frozen.json 每个 probe 含 `description` + `target` 字段，outcome.md Evidence 显示 `intent` 子行。
+
+## 4. 改动清单（8 个文件）
+
+| # | 文件 | 改动 | 状态 |
+|---|---|---|---|
+| 1 | `packages/engine/src/oxl/md-pipeline/transformers/proof.ts` | `ProofProbeIR` 加 `description?`/`target?`；`extractProbeFromFields` 读新字段 | ✅ D1 |
+| 2 | `packages/engine/src/Proof/runner.ts` | `ProofProbeIR` 副本同步加字段；`executeProbe` 返回值透传 | ✅ D4 |
+| 3 | `packages/engine/src/kernel/schemas/probe-schema.ts` | `FrozenProofProbeResultSchema` 加 optional `description`/`target` | ✅ D2 |
+| 4 | `packages/cli/src/commands/proof.ts` | `probe add` 加 `--description`/`--target` 参数；写 proof.md 模板加字段；hint 输出 | ✅ D3 + D8.2 |
+| 5 | `packages/cli/src/commands/proof.ts` | `proofProbesToIR` 透传 description/target 到 runner IR | ✅ D9（执行期发现） |
+| 6 | `packages/engine/src/infra/i18n/zh-CN.json` | 加 `probeAdd.description` + `probeAdd.target` 翻译键 | ✅ D3 补漏 |
+| 7 | `packages/engine/src/infra/i18n/en.json` | 加 `probeAdd.description` + `probeAdd.target` 翻译键 | ✅ D3 补漏 |
+| 8 | `packages/engine/src/Proof/outcome-writer.ts` | **bug fix**：删除本地 `extractTarget`，改 import `extraction.ts`；Evidence 行显示 description/target + intent 子行 | ✅ D5 + D7 |
+| 9 | `packages/engine/src/kernel/verdicts/cross-proof-compute.ts` | **bug fix**：删除本地 `extractTargetFromOutput`，改 import `./extraction` | ✅ D6 |
 
 ## 5. 改动后效果
 
@@ -252,4 +287,57 @@ D8.2: 当用户传 `--description` 但没传 `--probeName` 时，CLI 输出 hint
 
 ## 11. 审批
 
-待审：pending
+已执行（2026-08-01）。D1-D8 由先前会话落地（代码注释清晰标记），D9 + i18n 翻译键由本次会话在执行期间发现并修复。
+
+## 12. 执行摘要（2026-08-01）
+
+### 落地顺序
+
+1. **先前会话**：D1（IR 字段扩展）+ D2（schema）+ D3（CLI 参数）+ D4（runner 透传）+ D5（extractTarget bug fix）+ D6（cross-proof bug fix）+ D7（Evidence 渲染）+ D8（hint 输出）—— 8 项决策共 8 处代码改动，注释清晰标注 `proof-probe-description-target D<n>`
+2. **本次会话**：执行 demo-proof-first 时发现 D1 → runner 链路在 `proofProbesToIR` 环节断链（**D9**），i18n 翻译键漏配（D3 补漏）
+3. **本次会话修复**：修改 `proof.ts:317-330` + i18n zh-CN + i18n en 共 3 个文件
+
+### 最终 demo 验证（demo-proof-first，4 个 probe 含 description + target）
+
+| Probe | description | target | Outcome |
+|---|---|---|---|
+| package-json-exists | 确认 package.json 存在 | ./package.json | ✅ COMPLETED, 1ms |
+| package-json-valid-json | package.json 可被 JSON.parse | ./package.json | ✅ COMPLETED, 0ms |
+| package-json-head | package.json 第一行可读 | ./package.json | ✅ COMPLETED, 8ms |
+| working-tree-clean | 工作树干净无未提交改动 | . | ❌ DEVIATED, 30ms（3 dirty files） |
+
+**整体 outcome**：DEVIATED（3/4）
+
+**outcome.md Evidence 段（最终版）**：
+```
+- ✅ **package-json-exists** `@oxn/probes/fs-exists` `./package.json` (COMPLETED, 1ms)
+  - intent: 确认 package.json 存在
+- ✅ **package-json-valid-json** `@oxn/probes/fs-parseable` `./package.json` (COMPLETED, 0ms)
+  - intent: package.json 可被 JSON.parse
+- ✅ **package-json-head** `@oxn/probes/shell-exec` `./package.json` (COMPLETED, 8ms)
+  - intent: package.json 第一行可读
+- ❌ **working-tree-clean** `@oxn/probes/git-clean` `.` (DEVIATED, 30ms)
+  - error: 3 dirty file(s) found
+  - intent: 工作树干净无未提交改动
+```
+
+**frozen.json 每个 probe 含字段**：
+```json
+{
+  "probeName": "package-json-exists",
+  "description": "确认 package.json 存在",
+  "ref": "@oxn/probes/fs-exists",
+  "target": "./package.json",
+  "outcome": "COMPLETED",
+  ...
+}
+```
+
+### 回归验证
+
+| 测试范围 | 结果 |
+|---|---|
+| `packages/engine/src/Proof/__tests__` | 11/11 pass |
+| `packages/cli/src/__tests__/work-*` e2e | 24/24 pass |
+| `bun run typecheck` | ✅ pass |
+| `bun test` 全量 | 1759 pass / 38 fail（预存 Asset / probe handler 问题，与本 Draft 无关） |
