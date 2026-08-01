@@ -65,7 +65,7 @@ export class ProofCompiler implements EntityCompiler {
     const decl = input.decl as {
       $type?: string
       name?: string
-      verdicts?: Array<{ name: string; type: VerdictType; value?: string; artifact?: ListField[]; note?: string }>
+      outcomes?: Array<{ name: string; type: VerdictType; value?: string; artifact?: ListField[]; note?: string }>
       runtime?: { observedAt?: string; probesRun?: number; probesPassed?: number; probesInconclusive?: number }
     }
 

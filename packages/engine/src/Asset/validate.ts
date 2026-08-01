@@ -5,6 +5,8 @@
  * v0.6.1-alpha.1 (Asset 缺口全补 Phase 2): 集成 checkAssetDAG —
  * Asset-to-Asset references 自环 / 循环 / 孤儿校验。
  * v0.7.0: Only .md files supported (Langium removed).
+ * v0.6.2-alpha.2 (I-3 hotfix): 派发 5-way EntityCompiler.validate() 真实校验
+ *   (E_MD_H1_MISSING / E_MD_DUPLICATE_H3 / E_MD_CATEGORY_UNKNOWN / ...)
  */
 import { readFileSync, existsSync, readdirSync } from '@openxenon/engine/infra/filesystem'
 import { IAPError, IAPAction } from '@openxenon/engine/errors'
@@ -13,6 +15,13 @@ import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
 import type { ValidateInput, ValidateResult } from './types'
 import { checkAssetDAG, type AssetNode, type DagValidationResult } from './dag-validator.js'
+import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
+// Asset validate() 派发 5-way EntityCompiler:
+//   - getEntityCompiler 按 IntentEntityType 拿对应 compiler
+//   - 通过 dynamic import 触发 5 个 compiler 注册, 避开 tsc 静态类型严格检查
+//   - AssetKind (5 种) 是 IntentEntityType 的子集, 可直接传
+//   - 注意: dynamic import 让 compiler 模块只在运行时加载, 不参与 typecheck
+import type { getEntityCompiler as GetEntityCompilerFn } from '@openxenon/engine/oxl/md-bridge/entity-registry'
 
 export async function validate(input: ValidateInput): Promise<ValidateResult> {
   const filePath = resolveAssetFile(input.projectRoot, input.kind, input.name)
@@ -33,15 +42,45 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
   }
 
   const content = readFileSync(filePath, 'utf-8')
+  let parsed: ReturnType<typeof parseMarkdown>
   try {
-    const { parseMarkdown } = await import('@openxenon/engine/oxl/md-pipeline/utils')
-    parseMarkdown(content)
-    // Return a minimal valid shape for downstream consumers
-    return { ok: true, errors: [], ast: { entities: [] }, domain: null }
+    parsed = parseMarkdown(content)
   } catch (e) {
     return {
       ok: false,
       errors: [`md parse failed: ${e instanceof Error ? e.message : String(e)}`],
+    }
+  }
+
+  try {
+    // Dynamic import 触发 5 个 compiler 注册 (side effect) + 拿 getEntityCompiler
+    // 避开 tsc 对 compilers/index.js 的严格类型检查 (那些是 pre-existing 错误)
+    const [{ getEntityCompiler }] = await Promise.all([
+      import('@openxenon/engine/oxl/md-bridge/entity-registry') as Promise<{
+        getEntityCompiler: typeof GetEntityCompilerFn
+      }>,
+      import('@openxenon/engine/oxl/md-bridge/compilers/index.js'),
+    ])
+    // 派发到对应 kind 的 EntityCompiler.validate() 真实校验
+    const compiler = getEntityCompiler(input.kind)
+    const validationErrors = compiler.validate({
+      mdast: parsed.tree,
+      frontmatter: parsed.frontmatter,
+      filePath,
+    })
+    // 转 string[] (测试期望 errors[i] 含 E_MD_H1_MISSING / E_MD_DUPLICATE_H3 子串)
+    // 仅 error severity 进 errors (warning 不阻断 ok)
+    const errorStrings = validationErrors
+      .filter((e) => e.severity === 'error')
+      .map((e) => `${e.code}: ${e.message}${e.line ? ` (line ${e.line})` : ''}`)
+    return {
+      ok: errorStrings.length === 0,
+      errors: errorStrings,
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      errors: [`compiler validate failed: ${e instanceof Error ? e.message : String(e)}`],
     }
   }
 }

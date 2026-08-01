@@ -30,7 +30,7 @@ import type {
   ValidationError,
 } from '../entity-compiler.js'
 import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
-import { extractListFields, getScalar, getArray } from '../../md-pipeline/utils.js'
+import { extractListFields, getScalar } from '../../md-pipeline/utils.js'
 import type { IntentEntityType } from '../pipeline.js'
 import { findLegacyIntentBlocks } from './_legacy-detect.js'
 
@@ -89,21 +89,6 @@ export class WorkflowCompiler implements EntityCompiler {
         .trim()
       if (desc) {
         sections.push(`> ${desc}`)
-        sections.push('')
-      }
-    }
-
-    if (decl.props && decl.props.length > 0) {
-      sections.push('## Props')
-      sections.push('')
-      for (const p of decl.props) {
-        sections.push(`### ${p.name}`)
-        sections.push(`- type: ${p.type ?? 'string'}`)
-        if (p.values && p.values.length > 0) {
-          sections.push(`- values: [${p.values.join(', ')}]`)
-        }
-        if (p.required !== undefined) sections.push(`- required: ${p.required}`)
-        if (p.defaultValue !== undefined) sections.push(`- default: ${p.defaultValue}`)
         sections.push('')
       }
     }

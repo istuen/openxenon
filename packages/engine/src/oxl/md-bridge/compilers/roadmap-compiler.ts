@@ -41,7 +41,12 @@ import { findLegacyIntentBlocks } from './_legacy-detect.js'
  * 注意：Roadmap 不含 Themes/Milestones/Risks 等复杂 H2 分类
  * RoadmapDeclaration AST 仅含 links[] 字段
  */
-const ROADMAP_CATEGORIES = ['Links'] as const
+/**
+ * Roadmap H2 分类白名单（v0.7 + v0.6.x 双轨）
+ * - 'Links': v0.6.x+ RoadmapLinks H3 实例（表格列 link/scope/desc）
+ * - 'Scenes' / 'Usage' / 'Scene quick-reference': 实际 oxn-system.md roadmap 用法 (test 5 对齐)
+ */
+const ROADMAP_CATEGORIES = ['Links', 'Scenes', 'Usage', 'Scene quick-reference'] as const
 type RoadmapCategory = (typeof ROADMAP_CATEGORIES)[number]
 
 interface RoadmapLink {

@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url'
 import type { List, Root } from 'mdast'
 import { parseMarkdown, collectHeadingContexts, collectListFields } from '../md-pipeline/utils'
 import type { BuiltinAssetEntry, IBuiltinRegistry, OxnAssetType } from './oxn-scope'
+import type { AssetKind } from '@openxenon/engine/infra/paths'
 
 // ========================
 // 路径解析（开发/测试 + 包内）
@@ -420,6 +421,34 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
   /** 当前 builtin 目录（调试用） */
   getBuiltinDir(): string | null {
     return this.builtinDir
+  }
+
+  /**
+   * 读 builtin asset 原始文本（v0.6.2 I-4 引入, v0.6.2-alpha.2 实现）。
+   *
+   * AssetKind → builtin 子目录映射:
+   * - blueprint → blueprints/  (3 个 builtin: verify-pipeline / git-workflow / leader-test-dsl)
+   * - domain/workflow/stack/roadmap → builtin 延后 (src/builtin/{kinds}/ 目录空) → null
+   *
+   * 返 null 场景:
+   * - builtinDir 为 null (registry 未初始化)
+   * - kind 不在 builtin 支持列表
+   * - 文件不存在 (name 不在 builtin)
+   */
+  readBuiltinAsset(kind: AssetKind, name: string): string | null {
+    if (!this.builtinDir) return null
+    const subdirMap: Record<AssetKind, string | null> = {
+      blueprint: 'blueprints',
+      domain: null, // builtin 延后 (oxn-builtin-registry.ts:16-17)
+      workflow: null,
+      stack: null,
+      roadmap: null,
+    }
+    const subdir = subdirMap[kind]
+    if (!subdir) return null
+    const path = join(this.builtinDir, subdir, `${name}.md`)
+    if (!existsSync(path)) return null
+    return readFileSync(path, 'utf-8')
   }
 
   private _getMap(type: OxnAssetType): Map<string, Record<string, unknown>> {
