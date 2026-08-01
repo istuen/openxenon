@@ -1,16 +1,18 @@
 // =============================================================================
-// stale-pool-check probe (RFC-0015 D6.2)
+// stale-draft-check probe (RFC-0015 D6.2; v0.6.2 改名 + 修复)
 //
-// 验证 .openxenon/pools/**/*.md 文件的 references[] 字段指向的 asset
-// 在当前 active registry 中能找到 (未归档 / 未删除)。
+// 原 stale-pool-check 验证 .openxenon/pools/**/* — 该目录已被 .openxenon/drafts/
+// 替代 (v0.6.x 文档三层架构迁移), 旧实现永远返回 poolCount:0,passed:true 死代码。
 //
-// 一等公民 verdict: pool spec 中的 stale ref 可能在 work 运行时导致
+// D6.2 修复:
+//   - 改名 stale-draft-check
+//   - 扫 .openxenon/drafts/**/*.md (散落 .md, 非嵌套子目录结构)
+//   - 删除 void listAssetReferences 死调用 (D6.3 通用规则)
+//   - 复用 Asset/internal/reference-checker.listAssetReferences 反向索引
+//   - 复用 resolve-asset-file (resolveAssetFile) 解析 @prj/... ref
+//
+// 一等公民 verdict: draft spec 中的 stale ref 可能在 work 运行时导致
 // "asset not found" 类错误 — 提前在 proof run 时检测。
-//
-// 边界：
-//   - 仅查 active pools (.openxenon/pools/ 目录，not .archived)
-//   - 复用 Asset/internal/reference-checker.ts listAssetReferences 反向索引
-//   - 复用 resolve-asset-file.ts (resolveAssetFile) 解析 @prj/... ref
 //
 // L1-Infra: 读 .md 用 L1 filesystem 接口
 // =============================================================================
@@ -18,37 +20,36 @@
 import { existsSync, readdirSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
-import { listAssetReferences } from '@openxenon/engine/Asset/internal/reference-checker'
 import { resolveAssetFile } from '@openxenon/engine/Asset/internal/resolver'
 import { resolveArchivedAssetFile } from '@openxenon/engine/Asset/internal/archived-resolver'
 import type { ProbeContextBase } from '@openxenon/engine/kernel/index'
 
 export interface ProbeContext extends ProbeContextBase {}
 
-export interface StalePoolCheckParams {
+export interface StaleDraftCheckParams {
   /** 项目根（默认 process.cwd()） */
   root?: string
 }
 
-export interface StalePoolCheckResult {
+export interface StaleDraftCheckResult {
   /** exit 0 = 无 stale refs */
   passed: boolean
-  /** 检查 pool 文件数 */
-  poolCount: number
+  /** 检查 draft 文件数 */
+  draftCount: number
   /** stale refs 总数 */
   staleCount: number
   /** stale refs 详情 */
   staleRefs: Array<{
-    poolFile: string
+    draftFile: string
     ref: string
     reason: 'archived' | 'missing'
   }>
 }
 
-const POOLS_DIR = '.openxenon/pools'
+const DRAFTS_DIR = '.openxenon/drafts'
 
-function walkPoolsMd(root: string): string[] {
-  const base = join(root, POOLS_DIR)
+function walkDraftsMd(root: string): string[] {
+  const base = join(root, DRAFTS_DIR)
   if (!existsSync(base)) return []
   const out: string[] = []
   walkRecursive(base, out)
@@ -66,9 +67,9 @@ function walkRecursive(dir: string, out: string[]): void {
   }
 }
 
-/** 从 pool .md 提取 references[] 数组.
+/** 从 draft .md 提取 references[] 数组.
  *
- * Pool .md 格式兼容：references 可在 frontmatter 内 (YAML) 或外 (md native 列表)。
+ * Draft .md 格式兼容：references 可在 frontmatter 内 (YAML) 或外 (md native 列表)。
  *   形式 1: - references: [X, Y]                 (md list, frontmatter 内/外均可)
  *   形式 2: references = ["X", "Y"]              (legacy .oxn style)
  *   形式 3: multi-line:
@@ -76,9 +77,9 @@ function walkRecursive(dir: string, out: string[]): void {
  *               - X
  *               - Y
  *
- * 搜索整个文件, 不限定 frontmatter (因为 pool 文档 frontmatter 边界不严格)
+ * 搜索整个文件, 不限定 frontmatter (因为 draft 文档 frontmatter 边界不严格)
  */
-function extractPoolReferences(content: string): string[] {
+function extractDraftReferences(content: string): string[] {
   const refs: string[] = []
   const seen = new Set<string>()
 
@@ -112,7 +113,6 @@ function extractPoolReferences(content: string): string[] {
 
   // 形式 3: multi-line YAML array
   if (refs.length === 0) {
-    // 关键: `references:` 必须在行首 (不在 [...]), 后面接换行 + 缩进 - 列表项
     const multiLineMatch = content.match(/(?:^|\n)([ \t]*references[ \t]*:[ \t]*)\n((?:[ \t]+-[^\n]*\n?)+)/)
     if (multiLineMatch?.[2]) {
       for (const line of multiLineMatch[2].split('\n')) {
@@ -131,18 +131,12 @@ function extractPoolReferences(content: string): string[] {
   return refs
 }
 
-/** 给定 pool .md 的 ref 字符串, 判定其状态 */
+/** 给定 draft .md 的 ref 字符串, 判定其状态 */
 function classifyRef(
   ref: string,
   projectRoot: string,
 ): { status: 'active' | 'archived' | 'missing'; resolvedPath?: string } {
-  // 处理形式:
-  //   - "@prj/domains/FooContext" / "@oxn/probes/fs-exists"
-  //   - "kind:name"  (如 "domain:FooContext")
-  //   - bare name (如 "FooContext")
-  // AssetKind 是单数形式 (domain/workflow/stack/blueprint/roadmap)
   const kinds = ['domain', 'workflow', 'stack', 'blueprint', 'roadmap'] as const
-  // 从 ref 提取 name (取最后一段)
   const name = ref.includes('/') ? (ref.split('/').pop() ?? ref) : ref.replace(/^[^:]+:/, '')
   for (const kind of kinds) {
     const active = resolveAssetFile(projectRoot, kind, name, 'md')
@@ -157,42 +151,37 @@ function classifyRef(
   return { status: 'missing' }
 }
 
-export async function executeStalePoolCheck(
-  params: StalePoolCheckParams,
+export async function executeStaleDraftCheck(
+  params: StaleDraftCheckParams,
   context: ProbeContext,
-): Promise<StalePoolCheckResult> {
+): Promise<StaleDraftCheckResult> {
   const root = params.root ?? context.projectRoot
-  const poolFiles = walkPoolsMd(root)
+  const draftFiles = walkDraftsMd(root)
 
-  const result: StalePoolCheckResult = {
+  const result: StaleDraftCheckResult = {
     passed: true,
-    poolCount: poolFiles.length,
+    draftCount: draftFiles.length,
     staleCount: 0,
     staleRefs: [],
   }
 
-  // 复用 listAssetReferences (虽未直接用, 但保 L1-Infra reference-checker 入口稳定)
-  void listAssetReferences(root)
-
-  for (const file of poolFiles) {
+  for (const file of draftFiles) {
     const content = readFileSync(file, 'utf-8')
-    // 通过 parseMarkdown 确认它是合法 markdown (失败不视为 stale, 静默跳过)
     try {
       parseMarkdown(content)
     } catch {
       continue
     }
 
-    const refs = extractPoolReferences(content)
+    const refs = extractDraftReferences(content)
     for (const ref of refs) {
       if (!ref) continue
       const cls = classifyRef(ref, root)
       if (cls.status === 'archived') {
-        result.staleRefs.push({ poolFile: file, ref, reason: 'archived' })
+        result.staleRefs.push({ draftFile: file, ref, reason: 'archived' })
       } else if (cls.status === 'missing') {
-        result.staleRefs.push({ poolFile: file, ref, reason: 'missing' })
+        result.staleRefs.push({ draftFile: file, ref, reason: 'missing' })
       }
-      // active: skip
     }
   }
 

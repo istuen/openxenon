@@ -27,20 +27,19 @@ import { probeRegistry } from '@openxenon/engine/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '@openxenon/engine/kernel/verdicts/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 19 oxn builtin probes（15 原有 + 4 RFC-0015 D6 一等公民）+ 1 git-status-clean @deprecated alias', () => {
-    // RFC-0015 D4.2: 4 OXN-internal probes 移到 @prj/ project scope:
-    //   doc-boundary / heading-skeleton-check / docs-heading-check / docs-build
-    //   builtin: 'oxn' → 'prj'
-    // RFC-0015 D6.1-D6.4: 4 一等公民 probe 新增到 builtin=oxn:
-    //   boundary-guard / stale-pool-check / asset-migrate-check / oxn-runtime-version
-    // 期望名单 (builtin === 'oxn'): 19 条 (原 15 + 4 D6)
+  test('catalog 列出 19 oxn builtin probes (RFC-0015 + RFC-0016 落地后)', () => {
+    // RFC-0015 D4.2: 8 OXN-internal probes 全部 @prj/ scope:
+    //   4 旧: doc-boundary / heading-skeleton-check / docs-heading-check / docs-build
+    //   4 新: boundary-guard / stale-draft-check / asset-migrate-check / oxn-runtime-version
+    // RFC-0016 D1-D4: 4 通用 builtin probe 加入 @oxn/:
+    //   file-hash / test-coverage / json-path / port-listening
+    // builtin=oxn 名单: 19 条 (原 15 + 4 通用)
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
     expect(names).toEqual([
-      'asset-migrate-check',
-      'boundary-guard',
       'deps-resolved',
       'file-exports',
+      'file-hash',
       'fs-content-match',
       'fs-exists',
       'fs-not-exists',
@@ -50,10 +49,11 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
       'git-merge-feasible',
       'git-status-clean',
       'http-responds',
+      'json-path',
       'lint-check',
-      'oxn-runtime-version',
+      'port-listening',
       'shell-exec',
-      'stale-pool-check',
+      'test-coverage',
       'test-pass',
       'ts-compiles',
     ])
@@ -74,11 +74,20 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
     expect(names).toContain('doc-boundary')
   })
 
-  test('RFC-0015 D4.2: 4 OXN-internal probes 移到 builtin=prj scope', () => {
+  test('RFC-0015 D4.2: 8 OXN-internal probes 移到 builtin=prj scope (4 旧 + 4 新 commit 63b50dd)', () => {
     const prjScp = PROBE_CATALOG.filter((p) => p.builtin === 'prj')
       .map((p) => p.semanticName)
       .sort()
-    expect(prjScp).toEqual(['doc-boundary', 'docs-build', 'docs-heading-check', 'heading-skeleton-check'])
+    expect(prjScp).toEqual([
+      'asset-migrate-check',
+      'boundary-guard',
+      'doc-boundary',
+      'docs-build',
+      'docs-heading-check',
+      'heading-skeleton-check',
+      'oxn-runtime-version',
+      'stale-draft-check',
+    ])
     // internalRef 全部指向 @prj/probes/<x>
     for (const entry of PROBE_CATALOG.filter((p) => p.builtin === 'prj')) {
       expect(entry.internalRef.startsWith('@prj/probes/')).toBe(true)

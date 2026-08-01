@@ -51,7 +51,14 @@ const WORK_DIR = '.openxenon/works'
 const BLUEPRINTS_DIR = '.openxenon/assets/blueprints'
 const DOMAINS_DIR = '.openxenon/assets/domains'
 const OXN_BUILTIN_BLUEPRINT = 'oxn-blueprint'
-const OXN_BUILTIN_DOMAINS = new Set<string>([
+
+// D6.1: builtin domain fallback 集合 (OXN self-host 项目 git tracked)
+//   - 优先从 .openxenon/assets/domains/ 运行时扫 (.md 文件)
+//   - 扫不到时回退到此 fallback 集合 (保证 OXN self-host 在 test fixture
+//     "无 .md 副本" 场景下也能 resolve builtin domains)
+//   - 9 个 builtin domain 对应 OXN 9 个核心域 (oxn-domain 等)
+//   - 未来若 builtin 列表变更: 修改 fallback + 在 .openxenon/assets/domains/ 创建 .md
+const OXN_BUILTIN_DOMAINS_FALLBACK = [
   'oxn-asset-domain',
   'oxn-cli-domain',
   'oxn-domain',
@@ -61,7 +68,7 @@ const OXN_BUILTIN_DOMAINS = new Set<string>([
   'oxn-project-domain',
   'oxn-proof-domain',
   'oxn-work-domain',
-])
+]
 
 function listBuiltinBlueprints(projectRoot: string): Set<string> {
   const out = new Set<string>([OXN_BUILTIN_BLUEPRINT])
@@ -74,11 +81,16 @@ function listBuiltinBlueprints(projectRoot: string): Set<string> {
 }
 
 function listBuiltinDomains(projectRoot: string): Set<string> {
-  const out = new Set<string>(OXN_BUILTIN_DOMAINS)
+  const out = new Set<string>()
   const dir = join(projectRoot, DOMAINS_DIR)
-  if (!existsSync(dir)) return out
-  for (const f of readdirSync(dir)) {
-    if (f.endsWith('.md')) out.add(f.replace(/\.md$/, ''))
+  if (existsSync(dir)) {
+    for (const f of readdirSync(dir)) {
+      if (f.endsWith('.md')) out.add(f.replace(/\.md$/, ''))
+    }
+  }
+  // D6.1 fallback: 无 .md 副本时回退到 builtin 静态集合
+  if (out.size === 0) {
+    for (const name of OXN_BUILTIN_DOMAINS_FALLBACK) out.add(name)
   }
   return out
 }

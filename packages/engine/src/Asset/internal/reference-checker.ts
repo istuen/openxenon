@@ -100,7 +100,7 @@ export function isAssetReferenced(
  * - - references: X                  （.md 列表项语法）
  * - - references: [X, Y]             （.md 列表项语法）
  */
-function extractReferences(content: string): string[] {
+export function extractReferences(content: string): string[] {
   // .oxn legacy syntax: references = [...]
   const oxnMatch = content.match(/references\s*=\s*\[([^\]]*)\]/m)
   if (oxnMatch?.[1]) {

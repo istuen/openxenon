@@ -688,8 +688,8 @@ const boundaryGuardStrategy: ProbeStrategy = (observation) => {
   }
 }
 
-// RFC-0015 D6.2: stale_pool_check — 一等公民 probe，校验 pool .md 的 references[] 不指向 archived/missing
-const stalePoolCheckStrategy: ProbeStrategy = (observation) => {
+// RFC-0015 D6.2: stale_draft_check — 一等公民 probe，校验 draft .md 的 references[] 不指向 archived/missing
+const staleDraftCheckStrategy: ProbeStrategy = (observation) => {
   let passed = false
   let poolCount = 0
   let staleCount = 0
@@ -799,6 +799,136 @@ const oxnRuntimeVersionStrategy: ProbeStrategy = (observation) => {
 
 // ---------- registry ----------
 
+// =============================================================================
+// RFC-0016 D1: file-hash strategy — output.actual.hash === params.expectedHash → PASS
+// =============================================================================
+const fileHashStrategy: ProbeStrategy = (observation) => {
+  let passed = false
+  let actual: { hash: string; algorithm: string; file: string } | null = null
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      actual?: { hash: string; algorithm: string; file: string }
+    }
+    passed = obj.passed === true
+    actual = obj.actual ?? null
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: ok
+      ? `file-hash: ${actual?.algorithm ?? '?'} ${actual?.hash?.slice(0, 12) ?? ''}... matched`
+      : `file-hash: ${actual?.hash ?? 'no-hash'} did not match`,
+    actual,
+    params: {},
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? 'hash mismatch'),
+  }
+}
+
+// =============================================================================
+// RFC-0016 D2: test-coverage strategy — output.lines.passed + branches + functions 全满足 → PASS
+// =============================================================================
+const testCoverageStrategy: ProbeStrategy = (observation) => {
+  let passed = false
+  let lines: { actual: number; threshold: number; passed: boolean } | null = null
+  let branches: { actual: number; threshold: number; passed: boolean } | null = null
+  let functions: { actual: number; threshold: number; passed: boolean } | null = null
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      lines?: { actual: number; threshold: number; passed: boolean }
+      branches?: { actual: number; threshold: number; passed: boolean } | null
+      functions?: { actual: number; threshold: number; passed: boolean } | null
+    }
+    passed = obj.passed === true
+    lines = obj.lines ?? null
+    branches = obj.branches ?? null
+    functions = obj.functions ?? null
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: ok
+      ? `test-coverage: lines=${lines?.actual.toFixed(1) ?? '?'}% ≥ ${lines?.threshold ?? '?'}%`
+      : `test-coverage: lines=${lines?.actual.toFixed(1) ?? '?'}% < ${lines?.threshold ?? '?'}%`,
+    actual: { lines, branches, functions },
+    params: {},
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? 'coverage below threshold'),
+  }
+}
+
+// =============================================================================
+// RFC-0016 D3: json-path strategy — output.passed === true → PASS
+// =============================================================================
+const jsonPathStrategy: ProbeStrategy = (observation) => {
+  let passed = false
+  let actual: { resolved: unknown; expected: unknown; path: string } | null = null
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      actual?: { resolved: unknown; expected: unknown; path: string }
+    }
+    passed = obj.passed === true
+    actual = obj.actual ?? null
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: ok ? `json-path: ${actual?.path ?? '?'} matched` : `json-path: ${actual?.path ?? '?'} did not match`,
+    actual,
+    params: {},
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? 'value mismatch'),
+  }
+}
+
+// =============================================================================
+// RFC-0016 D4: port-listening strategy — output.passed === true → PASS
+// =============================================================================
+const portListeningStrategy: ProbeStrategy = (observation) => {
+  let passed = false
+  let host = ''
+  let port = 0
+  let durationMs = 0
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      host?: string
+      port?: number
+      durationMs?: number
+    }
+    passed = obj.passed === true
+    host = obj.host ?? ''
+    port = obj.port ?? 0
+    durationMs = obj.durationMs ?? 0
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: ok
+      ? `port-listening: ${host}:${port} listening (${durationMs}ms)`
+      : `port-listening: ${host}:${port} not listening`,
+    actual: { host, port, durationMs },
+    params: {},
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : (observation.error ?? 'port not listening'),
+  }
+}
+
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   fs_exists: fsExistsStrategy,
   fs_not_exists: fsNotExistsStrategy,
@@ -826,9 +956,14 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   doc_boundary: docBoundaryStrategy,
   // RFC-0015 D6.1-D6.4: 4 一等公民 probes (boundary / stale-pool / asset-migrate / runtime-version)
   boundary_guard: boundaryGuardStrategy,
-  stale_pool_check: stalePoolCheckStrategy,
+  stale_draft_check: staleDraftCheckStrategy,
   asset_migrate_check: assetMigrateCheckStrategy,
   oxn_runtime_version: oxnRuntimeVersionStrategy,
+  // RFC-0016 D1-D4: 4 通用 builtin probe (file-hash / test-coverage / json-path / port-listening)
+  file_hash: fileHashStrategy,
+  test_coverage: testCoverageStrategy,
+  json_path: jsonPathStrategy,
+  port_listening: portListeningStrategy,
 }
 
 export const PROBE_VERDICT_ALIASES: Record<string, string> = {

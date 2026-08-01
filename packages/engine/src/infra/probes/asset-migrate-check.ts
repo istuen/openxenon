@@ -13,7 +13,7 @@
 
 import { existsSync, readdirSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
-import { listAssetReferences } from '@openxenon/engine/Asset/internal/reference-checker'
+import { listAssetReferences, extractReferences } from '@openxenon/engine/Asset/internal/reference-checker'
 import { resolveAssetDir } from '@openxenon/engine/infra/paths'
 import { ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { ProbeContextBase } from '@openxenon/engine/kernel/index'
@@ -87,47 +87,8 @@ function checkArchivalMarker(content: string): boolean {
 }
 
 /** 简化版 reference 提取 (用于 active assets 扫引用) */
-function extractReferencesForCheck(content: string): string[] {
-  const oxnMatch = content.match(/references\s*=\s*\[([^\]]*)\]/m)
-  if (oxnMatch?.[1]) {
-    const inner = oxnMatch[1].trim()
-    if (!inner) return []
-    const refs: string[] = []
-    const strRegex = /"([^"\\]*(?:\\.[^"\\]*)*)"/g
-    let m: RegExpExecArray | null
-    while ((m = strRegex.exec(inner)) !== null) {
-      if (m[1]) refs.push(m[1])
-    }
-    return refs
-  }
-  const mdMatch = content.match(/(?:^|\n)[ \t]*(?:- )?references[ \t]*:[ \t]*(\[[^\]]*\]|[^\n\-\[]+)\s*(?:\n|$)/m)
-  if (mdMatch?.[1]) {
-    const value = mdMatch[1].trim()
-    const arrayMatch = value.match(/\[([^\]]*)\]/)
-    if (arrayMatch?.[1]) {
-      return arrayMatch[1]
-        .split(',')
-        .map((s) => s.trim().replace(/"/g, ''))
-        .filter(Boolean)
-    }
-    if (value && !value.startsWith('[')) {
-      return [value.replace(/"/g, '')]
-    }
-  }
-  const multiLineMatch = content.match(/(?:^|\n)([ \t]*references[ \t]*:[ \t]*)\n((?:[ \t]+-[^\n]*\n?)+)/)
-  if (multiLineMatch?.[2]) {
-    return multiLineMatch[2]
-      .split('\n')
-      .map((line) =>
-        line
-          .replace(/^[ \t]*-[ \t]*/, '')
-          .trim()
-          .replace(/^["']|["']$/g, ''),
-      )
-      .filter((s) => s.length > 0)
-  }
-  return []
-}
+// D6.3 修复: 删除 extractReferencesForCheck 自实现 (~40 行),
+//   复用 reference-checker.extractReferences 已有的 export (单一实现源).
 
 export async function executeAssetMigrateCheck(
   params: AssetMigrateCheckParams,
@@ -207,7 +168,7 @@ export async function executeAssetMigrateCheck(
       const name = f.replace(/\.md$/, '')
       const content = readFileSync(join(dir, f), 'utf-8')
       // 复用 reference-checker 提取 (通过直接 regex, 因为 export 不对外)
-      const refs = extractReferencesForCheck(content)
+      const refs = extractReferences(content)
       for (const ref of refs) {
         // ref 指向 archived (active 列表中不存在该 name, 但 archived 列表中存在) → stale
         if (!allActiveNames.has(ref) && allArchived.has(`${kind}:${ref}`)) {

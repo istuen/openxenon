@@ -581,11 +581,9 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     builtin: 'prj',
   },
   {
-    // RFC-0015 D6.1: boundary-guard — 一等公民 probe，校验 work.md ## Tasks
-    //   - blueprint ref resolve (.openxenon/assets/blueprints/)
-    //   - domain ref resolve (.openxenon/assets/domains/ + builtin)
-    //   - boundary 字段非空 (work-validator 必填)
-    //   - deps[] task name 在 ## Tasks 下能找到
+    // RFC-0015 D4.2+D6.1: boundary-guard — OXN-internal 生命周期 probe (@prj/ scope)
+    //   校验 work.md ## Tasks 段每个 task 的 blueprint/domain/boundary/deps 引用
+    //   builtin domain 列表运行时从 @oxn/domains/ registry 动态读取 (D6.1 修复)
     semanticName: 'boundary-guard',
     description: 'Validate each work.md ## Tasks blueprint/domain/boundary/deps references resolve to existing assets',
     inputs: [
@@ -597,14 +595,15 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       },
     ],
     examples: [{ name: 'default', inputs: {} }],
-    internalRef: '@oxn/probes/boundary-guard',
+    internalRef: '@prj/probes/boundary-guard',
     inputMap: { root: 'root' },
-    builtin: 'oxn',
+    builtin: 'prj',
   },
   {
-    // RFC-0015 D6.2: stale-pool-check — 一等公民 probe, 校验 pool .md references[] 不 stale
-    semanticName: 'stale-pool-check',
-    description: 'Validate pool .md references[] all point to active assets (not archived/missing)',
+    // RFC-0015 D4.2+D6.2: stale-draft-check — OXN-internal 生命周期 probe (@prj/ scope)
+    //   原 stale-draft-check (扫已废弃 .openxenon/pools/) 改造为扫 .openxenon/drafts/
+    semanticName: 'stale-draft-check',
+    description: 'Validate drafts .md references[] all point to active assets (not archived/missing)',
     inputs: [
       {
         name: 'root',
@@ -614,12 +613,13 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       },
     ],
     examples: [{ name: 'default', inputs: {} }],
-    internalRef: '@oxn/probes/stale-pool-check',
+    internalRef: '@prj/probes/stale-draft-check',
     inputMap: { root: 'root' },
-    builtin: 'oxn',
+    builtin: 'prj',
   },
   {
-    // RFC-0015 D6.3: asset-migrate-check — 一等公民 probe, 校验 .archived/assets 完整性
+    // RFC-0015 D4.2+D6.3: asset-migrate-check — OXN-internal 生命周期 probe (@prj/ scope)
+    //   校验 .archived/assets 完整性; D6.3 修复: 复用 reference-checker.listAssetReferences (删除自实现)
     semanticName: 'asset-migrate-check',
     description: 'Validate .archived/assets completeness (.metadata.json + ## Archival marker + no forward ref)',
     inputs: [
@@ -631,12 +631,13 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       },
     ],
     examples: [{ name: 'default', inputs: {} }],
-    internalRef: '@oxn/probes/asset-migrate-check',
+    internalRef: '@prj/probes/asset-migrate-check',
     inputMap: { root: 'root' },
-    builtin: 'oxn',
+    builtin: 'prj',
   },
   {
-    // RFC-0015 D6.4: oxn-runtime-version — 一等公民 probe, 校验 config.runtime.oxnVersion 与 engine 一致
+    // RFC-0015 D4.2+D6.4: oxn-runtime-version — OXN-internal 生命周期 probe (@prj/ scope)
+    //   校验 config.runtime.oxnVersion 与 engine version; D6.4 修复: 从 ProbeContext.engineVersion 注入 (非 import.meta.url 上溯)
     semanticName: 'oxn-runtime-version',
     description:
       'Validate project expected runtime version (config.runtime.oxnVersion) matches engine package.json version',
@@ -649,9 +650,155 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
       },
     ],
     examples: [{ name: 'default', inputs: {} }],
-    internalRef: '@oxn/probes/oxn-runtime-version',
+    internalRef: '@prj/probes/oxn-runtime-version',
     inputMap: { root: 'root' },
+    builtin: 'prj',
+  },
+  // ========================================================================
+  // RFC-0016 D1-D4: 4 通用 builtin probe (@oxn/ scope; 任何项目可用)
+  // ========================================================================
+  {
+    // RFC-0016 D1: file-hash — 文件 SHA-256 匹配预期 hash
+    semanticName: 'file-hash',
+    description: 'Verify file SHA-256 (or other algorithm) matches expected hash',
+    inputs: [
+      {
+        name: 'file',
+        type: 'string',
+        required: true,
+        description: 'File path (relative to project root or absolute)',
+      },
+      {
+        name: 'expectedHash',
+        type: 'string',
+        required: true,
+        description: 'Expected hash (hex string)',
+      },
+      {
+        name: 'algorithm',
+        type: 'string',
+        required: false,
+        description: 'Hash algorithm (sha256/sha512/md5/sha1, default sha256)',
+      },
+    ],
+    examples: [{ name: 'sha256-check', inputs: { file: './package.json', expectedHash: 'abc123...' } }],
+    internalRef: '@oxn/probes/file-hash',
+    inputMap: { file: 'file', expectedHash: 'expectedHash', algorithm: 'algorithm' },
     builtin: 'oxn',
+    domainTerm: 'SourceFile',
+  },
+  {
+    // RFC-0016 D2: test-coverage — 覆盖率 ≥ 阈值 (lines/branches/functions)
+    semanticName: 'test-coverage',
+    description: 'Verify test coverage (lines/branches/functions) meets thresholds',
+    inputs: [
+      {
+        name: 'minLinesPct',
+        type: 'number',
+        required: true,
+        description: 'Minimum lines coverage percentage (0-100)',
+      },
+      {
+        name: 'minBranchesPct',
+        type: 'number',
+        required: false,
+        description: 'Minimum branches coverage percentage (0-100)',
+      },
+      {
+        name: 'minFunctionsPct',
+        type: 'number',
+        required: false,
+        description: 'Minimum functions coverage percentage (0-100)',
+      },
+      {
+        name: 'runner',
+        type: 'string',
+        required: false,
+        description: 'Test runner (bun/jest/vitest, default bun; v0.7.0 expand)',
+      },
+    ],
+    examples: [
+      { name: 'lines-80', inputs: { minLinesPct: 80 } },
+      { name: 'strict', inputs: { minLinesPct: 95, minBranchesPct: 85, minFunctionsPct: 90 } },
+    ],
+    internalRef: '@oxn/probes/test-coverage',
+    inputMap: {
+      minLinesPct: 'minLinesPct',
+      minBranchesPct: 'minBranchesPct',
+      minFunctionsPct: 'minFunctionsPct',
+      runner: 'runner',
+    },
+    builtin: 'oxn',
+    domainTerm: 'TestCase',
+  },
+  {
+    // RFC-0016 D3: json-path — JSONPath 值匹配预期
+    semanticName: 'json-path',
+    description: 'Verify JSONPath value matches expected (simplified JSONPath subset)',
+    inputs: [
+      {
+        name: 'file',
+        type: 'string',
+        required: true,
+        description: 'JSON file path',
+      },
+      {
+        name: 'path',
+        type: 'string',
+        required: true,
+        description: 'Simplified JSONPath expression ($.a.b[0][*])',
+      },
+      {
+        name: 'expected',
+        type: 'string',
+        required: true,
+        description: 'Expected value (JSON-serialized; deep equality in handler)',
+      },
+    ],
+    examples: [
+      { name: 'package-name', inputs: { file: './package.json', path: '$.name', expected: 'openxenon' } },
+      {
+        name: 'tsconfig-strict',
+        inputs: { file: './tsconfig.json', path: '$.compilerOptions.strict', expected: true },
+      },
+    ],
+    internalRef: '@oxn/probes/json-path',
+    inputMap: { file: 'file', path: 'path', expected: 'expected' },
+    builtin: 'oxn',
+    domainTerm: 'ConfigFile',
+  },
+  {
+    // RFC-0016 D4: port-listening — 端口正在监听
+    semanticName: 'port-listening',
+    description: 'Verify TCP port is listening (Node net.connect cross-platform)',
+    inputs: [
+      {
+        name: 'host',
+        type: 'string',
+        required: true,
+        description: 'Host (localhost / 127.0.0.1 / 0.0.0.0)',
+      },
+      {
+        name: 'port',
+        type: 'number',
+        required: true,
+        description: 'Port number (1-65535)',
+      },
+      {
+        name: 'timeout',
+        type: 'number',
+        required: false,
+        description: 'Connection timeout in milliseconds (default 3000)',
+      },
+    ],
+    examples: [
+      { name: 'localhost-3000', inputs: { host: 'localhost', port: 3000 } },
+      { name: 'dev-server-check', inputs: { host: '127.0.0.1', port: 5173, timeout: 5000 } },
+    ],
+    internalRef: '@oxn/probes/port-listening',
+    inputMap: { host: 'host', port: 'port', timeout: 'timeout' },
+    builtin: 'oxn',
+    domainTerm: 'APIEndpoint',
   },
 ]
 

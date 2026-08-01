@@ -4,6 +4,47 @@ import { FileProvider } from '@openxenon/engine/infra/providers/file-provider'
 import { HttpProvider } from '@openxenon/engine/infra/providers/http-provider'
 import { ShellProvider } from '@openxenon/engine/infra/providers/shell-provider'
 import { GitProvider } from '@openxenon/engine/infra/providers/git-provider'
+import { readFileSync, existsSync } from '@openxenon/engine/infra/filesystem'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+/** RFC-0015 D6.4: 从 packages/engine/package.json 读 version 注入 ProbeContext.engineVersion
+ *  - ProbeRunner 层职责: 在 wrapper 调用 execute* 前注入
+ *  - 候选路径覆盖 src/ + bundled dist/ (与 oxn-builtin-registry.resolveBuiltinDir 同模式)
+ *  - 失败降级: 返回 undefined (handler 检测到后报 passed=false)
+ */
+let _cachedEngineVersion: string | undefined
+function readEngineVersion(): string | undefined {
+  if (_cachedEngineVersion) return _cachedEngineVersion
+  const candidates: string[] = []
+  try {
+    const here = dirname(fileURLToPath(import.meta.url))
+    // dev: packages/engine/src/infra/probes/ → ../../../package.json
+    candidates.push(join(here, '../../../package.json'))
+    // bundled: dist/ 同级
+    candidates.push(join(here, '../../package.json'))
+  } catch {
+    /* CommonJS 等 */
+  }
+  for (const p of candidates) {
+    if (existsSync(p)) {
+      try {
+        const pkg = JSON.parse(readFileSync(p, 'utf-8')) as { name?: string; version?: string }
+        if (pkg.name === '@openxenon/engine' && pkg.version) {
+          _cachedEngineVersion = pkg.version
+          return pkg.version
+        }
+        if (pkg.version) {
+          _cachedEngineVersion = pkg.version
+          return pkg.version
+        }
+      } catch {
+        /* 继续下一候选 */
+      }
+    }
+  }
+  return undefined
+}
 import type { ProbeContext } from './fs-exists'
 import { executeFsExists } from './fs-exists'
 import { executeFsMatch, type FsMatchParams } from './fs-match'
@@ -25,9 +66,13 @@ import { executeHeadingSkeletonCheck, type HeadingSkeletonCheckParams } from './
 import { executeDocsHeadingCheck, type DocsHeadingCheckParams } from './docs-heading-check'
 import { executeDocBoundary, type DocBoundaryParams } from './doc-boundary'
 import { executeBoundaryGuard, type BoundaryGuardParams } from './boundary-guard'
-import { executeStalePoolCheck, type StalePoolCheckParams } from './stale-pool-check'
+import { executeStaleDraftCheck, type StaleDraftCheckParams } from './stale-draft-check'
 import { executeAssetMigrateCheck, type AssetMigrateCheckParams } from './asset-migrate-check'
 import { executeOxnRuntimeVersion, type OxnRuntimeVersionParams } from './oxn-runtime-version'
+import { executeFileHash, type FileHashParams } from './file-hash'
+import { executeTestCoverage, type TestCoverageParams } from './test-coverage'
+import { executeJsonPath, type JsonPathParams } from './json-path'
+import { executePortListening, type PortListeningParams } from './port-listening'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -434,8 +479,19 @@ export const probeHandlers: Record<string, ProbeHandler> = {
   },
 
   // v0.6.2: heading-skeleton-check — 校验 pool .md heading 骨架（H1 模式）
+  //   D2.1: 走 FileProvider.ioStat 拿 flags（stat-only，不读内容 → content flags 无）
   heading_skeleton_check: async (params, context) => {
     const hsParams = params as unknown as HeadingSkeletonCheckParams
+    const fileProvider = new FileProvider()
+    const probePath = hsParams.path ?? ''
+    const fullPath = probePath.startsWith('/') ? probePath : `${context.projectRoot}/${probePath}`
+    let interference: { flags: InterferenceFlag[] } = { flags: [] }
+    try {
+      const statResult = await fileProvider.ioStat({ path: fullPath })
+      interference = statResult.interference
+    } catch {
+      /* stat 失败不影响 probe 执行 */
+    }
     const result = await executeHeadingSkeletonCheck(hsParams, context as ProbeContext)
     return {
       probeType: 'heading_skeleton_check',
@@ -447,13 +503,25 @@ export const probeHandlers: Record<string, ProbeHandler> = {
         errors: result.errors,
       }),
       error: result.passed ? undefined : `failed: ${result.failedFiles.join(', ')}`,
+      interference,
       executedAt: Date.now(),
     } as ProbeObservation
   },
 
   // v0.6.2: docs-heading-check — 校验 docs .md 章节骨架（H2 模式：What→Why→How→参考）
+  //   D2.1: 走 FileProvider.ioStat 拿 flags（stat-only）
   docs_heading_check: async (params, context) => {
     const dhcParams = params as unknown as DocsHeadingCheckParams
+    const fileProvider = new FileProvider()
+    const probePath = dhcParams.path ?? ''
+    const fullPath = probePath.startsWith('/') ? probePath : `${context.projectRoot}/${probePath}`
+    let interference: { flags: InterferenceFlag[] } = { flags: [] }
+    try {
+      const statResult = await fileProvider.ioStat({ path: fullPath })
+      interference = statResult.interference
+    } catch {
+      /* stat 失败不影响 probe 执行 */
+    }
     const result = await executeDocsHeadingCheck(dhcParams, context as ProbeContext)
     return {
       probeType: 'docs_heading_check',
@@ -465,13 +533,25 @@ export const probeHandlers: Record<string, ProbeHandler> = {
         errors: result.errors,
       }),
       error: result.passed ? undefined : `failed: ${result.failedFiles.join(', ')}`,
+      interference,
       executedAt: Date.now(),
     } as ProbeObservation
   },
 
   // v0.6.2: doc-boundary — 文档三层守门
+  //   D2.1: 走 FileProvider.ioStat 拿 flags（stat-only，扫描 docs/ 与 drafts/ 根）
   doc_boundary: async (params, context) => {
     const dbParams = params as unknown as DocBoundaryParams
+    const fileProvider = new FileProvider()
+    const root = dbParams.root ?? context.projectRoot
+    const docsRoot = `${root}/docs`
+    let interference: { flags: InterferenceFlag[] } = { flags: [] }
+    try {
+      const statResult = await fileProvider.ioStat({ path: docsRoot })
+      interference = statResult.interference
+    } catch {
+      /* stat 失败不影响 probe 执行 */
+    }
     const result = await executeDocBoundary(dbParams, context as ProbeContext)
     return {
       probeType: 'doc_boundary',
@@ -481,6 +561,7 @@ export const probeHandlers: Record<string, ProbeHandler> = {
         violations: result.violations,
       }),
       error: result.passed ? undefined : `${result.violationCount} violations`,
+      interference,
       executedAt: Date.now(),
     } as ProbeObservation
   },
@@ -502,15 +583,15 @@ export const probeHandlers: Record<string, ProbeHandler> = {
     } as ProbeObservation
   },
 
-  // RFC-0015 D6.2: stale-pool-check — 一等公民 probe, 校验 pool .md refs 不 stale
-  stale_pool_check: async (params, context) => {
-    const spParams = params as unknown as StalePoolCheckParams
-    const result = await executeStalePoolCheck(spParams, context as ProbeContext)
+  // RFC-0015 D6.2: stale-draft-check — 一等公民 probe, 校验 draft .md refs 不 stale (v0.6.2 从 stale-pool-check 改造)
+  stale_draft_check: async (params, context) => {
+    const spParams = params as unknown as StaleDraftCheckParams
+    const result = await executeStaleDraftCheck(spParams, context as ProbeContext)
     return {
-      probeType: 'stale_pool_check',
+      probeType: 'stale_draft_check',
       output: JSON.stringify({
         passed: result.passed,
-        poolCount: result.poolCount,
+        draftCount: result.draftCount,
         staleRefs: result.staleRefs,
       }),
       error: result.passed ? undefined : `${result.staleRefs.length} stale ref(s)`,
@@ -538,9 +619,14 @@ export const probeHandlers: Record<string, ProbeHandler> = {
   },
 
   // RFC-0015 D6.4: oxn-runtime-version — 一等公民 probe, 校验 engine runtime version
+  //   注入 engineVersion 到 ProbeContext (替代原 handler 内 import.meta.url 上溯)
   oxn_runtime_version: async (params, context) => {
     const rtvParams = params as unknown as OxnRuntimeVersionParams
-    const result = await executeOxnRuntimeVersion(rtvParams, context as ProbeContext)
+    const enrichedContext: ProbeContext = {
+      ...context,
+      engineVersion: context.engineVersion ?? readEngineVersion(),
+    } as ProbeContext
+    const result = await executeOxnRuntimeVersion(rtvParams, enrichedContext)
     return {
       probeType: 'oxn_runtime_version',
       output: JSON.stringify({
@@ -553,6 +639,70 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       error: result.passed
         ? undefined
         : `engine version mismatch: actual=${result.actual}, expected=${result.expected}`,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // ========================================================================
+  // RFC-0016 D1-D4: 4 通用 builtin probe (任何项目可用)
+  // ========================================================================
+
+  // RFC-0016 D1: file-hash — 文件 SHA-256 匹配预期
+  file_hash: async (params, context) => {
+    const fhParams = params as unknown as FileHashParams
+    const result = await executeFileHash(fhParams, context as ProbeContext)
+    return {
+      probeType: 'file_hash',
+      output: JSON.stringify({ passed: result.passed, actual: result.actual }),
+      error: result.passed ? undefined : (result.error ?? 'hash mismatch'),
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // RFC-0016 D2: test-coverage — 覆盖率 ≥ 阈值
+  test_coverage: async (params, context) => {
+    const tcParams = params as unknown as TestCoverageParams
+    const result = await executeTestCoverage(tcParams, context as ProbeContext)
+    return {
+      probeType: 'test_coverage',
+      output: JSON.stringify({
+        passed: result.passed,
+        lines: result.lines,
+        branches: result.branches,
+        functions: result.functions,
+        exitCode: result.exitCode,
+        summaryPath: result.summaryPath,
+      }),
+      error: result.passed ? undefined : (result.error ?? 'coverage below threshold'),
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // RFC-0016 D3: json-path — JSONPath 值匹配预期
+  json_path: async (params, context) => {
+    const jpParams = params as unknown as JsonPathParams
+    const result = await executeJsonPath(jpParams, context as ProbeContext)
+    return {
+      probeType: 'json_path',
+      output: JSON.stringify({ passed: result.passed, actual: result.actual }),
+      error: result.passed ? undefined : (result.error ?? 'value mismatch'),
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // RFC-0016 D4: port-listening — 端口正在监听
+  port_listening: async (params, context) => {
+    const plParams = params as unknown as PortListeningParams
+    const result = await executePortListening(plParams, context as ProbeContext)
+    return {
+      probeType: 'port_listening',
+      output: JSON.stringify({
+        passed: result.passed,
+        host: result.host,
+        port: result.port,
+        durationMs: result.durationMs,
+      }),
+      error: result.passed ? undefined : (result.error ?? 'port not listening'),
       executedAt: Date.now(),
     } as ProbeObservation
   },
@@ -607,8 +757,17 @@ class ProbeRegistry {
     'docs-heading-check:probes': 'docs_heading_check',
     'doc-boundary:probes': 'doc_boundary',
     'boundary-guard:probes': 'boundary_guard',
-    'stale-pool-check:probes': 'stale_pool_check',
+    'stale-draft-check:probes': 'stale_draft_check',
     'asset-migrate-check:probes': 'asset_migrate_check',
+    // RFC-0016 D1-D4: 4 通用 builtin probe aliases (@oxn/ scope)
+    '@oxn/probes/file-hash': 'file_hash',
+    '@oxn/probes/test-coverage': 'test_coverage',
+    '@oxn/probes/json-path': 'json_path',
+    '@oxn/probes/port-listening': 'port_listening',
+    'file-hash:probes': 'file_hash',
+    'test-coverage:probes': 'test_coverage',
+    'json-path:probes': 'json_path',
+    'port-listening:probes': 'port_listening',
   }
 
   constructor() {
@@ -684,7 +843,11 @@ export {
   executeDocsHeadingCheck,
   executeDocBoundary,
   executeBoundaryGuard,
-  executeStalePoolCheck,
+  executeStaleDraftCheck,
   executeAssetMigrateCheck,
   executeOxnRuntimeVersion,
+  executeFileHash,
+  executeTestCoverage,
+  executeJsonPath,
+  executePortListening,
 }

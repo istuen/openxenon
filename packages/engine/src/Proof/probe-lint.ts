@@ -73,9 +73,14 @@ function handlerKeyFromRef(ref: string): string | null {
     'doc-boundary': 'doc_boundary',
     // RFC-0015 D6.1-D6.4: 一等公民 probe
     'boundary-guard': 'boundary_guard',
-    'stale-pool-check': 'stale_pool_check',
+    'stale-draft-check': 'stale_draft_check',
     'asset-migrate-check': 'asset_migrate_check',
     'oxn-runtime-version': 'oxn_runtime_version',
+    // RFC-0016 D1-D4: 4 通用 builtin probe
+    'file-hash': 'file_hash',
+    'test-coverage': 'test_coverage',
+    'json-path': 'json_path',
+    'port-listening': 'port_listening',
   }
   return aliases[stripped] ?? stripped
 }
@@ -166,7 +171,7 @@ export function assertRegistryConsistency(): RegistryConsistencyResult {
       docs_heading_check: 'docs-heading-check',
       doc_boundary: 'doc-boundary',
       boundary_guard: 'boundary-guard',
-      stale_pool_check: 'stale-pool-check',
+      stale_draft_check: 'stale-draft-check',
       asset_migrate_check: 'asset-migrate-check',
       oxn_runtime_version: 'oxn-runtime-version',
       exec_exit_zero: 'shell-exec',

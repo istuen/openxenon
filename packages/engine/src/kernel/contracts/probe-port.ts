@@ -47,6 +47,13 @@ export interface ProbeContextBase {
    *   - 缺省 undefined（无 Stack 注入场景）
    */
   stackTools?: StackToolInfo[]
+  /** 🆕 v0.6.2 (RFC-0015 D6.4): Engine version 注入
+   *   - ProbeRunner 从 packages/engine/package.json 读取并注入
+   *   - L1 probe handler（如 oxn-runtime-version）可读 context.engineVersion
+   *   - 避免在 handler 内 import.meta.url 路径上溯（强耦合 engine 物理布局）
+   *   - 缺省 undefined（无 Engine version 注入场景，handler 应降级）
+   */
+  engineVersion?: string
 }
 
 /**
