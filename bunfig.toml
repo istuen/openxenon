@@ -45,8 +45,24 @@
 # Note on helpers in `__tests__/helpers/`: `run-cli.ts`, `parse-md.ts` are
 # NOT test files — Bun skips them since `.test.ts` suffix is required.
 concurrentTestGlob = [
-  # Engine (L0–L2) — broad pattern matches every engine test file at any depth
-  "packages/engine/src/**/*.test.ts",
+  # Engine (L0–L2) — explicit per-module subdirs to SKIP infra/{probes,providers}
+  #   (probe handler tests spawn shell/tsc — cross-process race causes flake)
+  "packages/engine/src/kernel/**/*.test.ts",
+  "packages/engine/src/oxl/**/*.test.ts",
+  "packages/engine/src/Proof/**/*.test.ts",
+  "packages/engine/src/Asset/**/*.test.ts",
+  "packages/engine/src/Insight/**/*.test.ts",
+  "packages/engine/src/Intent/**/*.test.ts",
+  "packages/engine/src/Align/**/*.test.ts",
+  "packages/engine/src/Pool/**/*.test.ts",
+  "packages/engine/src/Roadmap/**/*.test.ts",
+  "packages/engine/src/Work/**/*.test.ts",
+  "packages/engine/src/Workflow/**/*.test.ts",
+  "packages/engine/src/Domain/**/*.test.ts",
+  "packages/engine/src/Stack/**/*.test.ts",
+  "packages/engine/src/Daemon/**/*.test.ts",
+  # Note: 3 个 probe handler 测试 (shell-exec / ts-compiles / shell-provider) 已 rename 为 *.serial.test.ts
+  #   不进 concurrentTestGlob, 强制串行 (跨进程 spawn 资源竞争)
   # Residual pre-monorepo modules
   "src/daemon/__tests__/**",
   "src/builtin/__tests__/**",
