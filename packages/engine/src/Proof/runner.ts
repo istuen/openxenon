@@ -19,6 +19,9 @@ import type { FrozenProofProbeResult } from '@openxenon/engine/kernel'
 /** 内存中的 proof.md 解析结果 */
 export interface ProofProbeIR {
   probeName: string
+  // proof-probe-description-target D4: 副本同步, 与 oxl/transformers/proof.ts:ProofProbeIR 字段对齐
+  description?: string
+  target?: string
   ref: string
   params: Record<string, unknown>
 }
@@ -113,6 +116,9 @@ export async function executeProbe(
   return {
     probeName: probe.probeName,
     ref: probe.ref,
+    // proof-probe-description-target D4: 透传 description/target 到 FrozenProofProbeResult (向后兼容 optional)
+    ...(probe.description ? { description: probe.description } : {}),
+    ...(probe.target ? { target: probe.target } : {}),
     outcome: outcome.outcome === 'INCONCLUSIVE' ? 'INCONCLUSIVE' : outcome.passed ? 'COMPLETED' : 'DEVIATED',
     passed: outcome.passed,
     output: { observation, outcome },

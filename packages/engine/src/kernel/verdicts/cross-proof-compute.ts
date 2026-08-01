@@ -29,6 +29,8 @@ import type {
   TrendType,
 } from '../schemas/cross-proof-insight-schema'
 import { getSemanticNameByInternalRef } from './catalog'
+// proof-probe-description-target D6: 复用 extraction.ts 的 extractTarget (DRY, 正确层级)
+import { extractTarget } from './extraction'
 
 /** 过滤参数 */
 export interface CrossProofFilter {
@@ -65,7 +67,7 @@ function expandToKeyedProbes(frozenList: FrozenProof[], filter: CrossProofFilter
       }
       out.push({
         probeType,
-        target: extractTargetFromOutput(probe),
+        target: extractTarget(probe),
         outcome: probe.outcome,
         runAt: frozen.runAt,
         proofId: frozen.name,
@@ -82,26 +84,8 @@ function resolveTypeName(ref: string): string {
   return ref.replace(/^@oxn\/probes?\//, '') || ref
 }
 
-/**
- * 从 probe.output 提取 target（与 outcome.ts:extractTarget 类似，但 inline 一份避免跨文件依赖）
- *  - output.params / output.target / output.path / output.url / output.command / output.file
- */
-function extractTargetFromOutput(probe: FrozenProof['probes'][number]): string | undefined {
-  const output = probe.output
-  if (output === null || output === undefined) return undefined
-  if (typeof output !== 'object') return undefined
-  const obj = output as Record<string, unknown>
-  const candidates = [obj.params, obj.target, obj.path, obj.url, obj.command, obj.file]
-  for (const c of candidates) {
-    if (typeof c === 'string' && c.length > 0) return c
-    if (c && typeof c === 'object') {
-      for (const v of Object.values(c as Record<string, unknown>)) {
-        if (typeof v === 'string' && v.length > 0) return v
-      }
-    }
-  }
-  return undefined
-}
+// proof-probe-description-target D6: 本地 extractTargetFromOutput 已删除, 改 import ./extraction
+// 原实现错误 (在 output 顶层找 params, 实际 params 在 output.outcome.params)
 
 /**
  * 维度 1：target 趋势矩阵

@@ -11,6 +11,9 @@ import { collectHeadingContexts, collectListFields, type ListField, extractYamlF
 
 export interface ProofProbeIR {
   probeName: string
+  // proof-probe-description-target D1: per-probe description (intent 层) + target (artifact 层)
+  description?: string
+  target?: string
   ref: string
   params: Record<string, unknown>
 }
@@ -71,6 +74,9 @@ export function extractProofIR(root: Root, frontmatter: Record<string, unknown> 
 function extractProbeFromFields(name: string, fields: ListField[]): ProofProbeIR {
   const refField = fields.find((f) => f.key === 'ref')
   const paramsField = fields.find((f) => f.key === 'params')
+  // proof-probe-description-target D1: 读 description/target (optional, 老 proof.md 无此字段)
+  const descField = fields.find((f) => f.key === 'description')
+  const targetField = fields.find((f) => f.key === 'target')
 
   // params 是嵌套 list (- params: / - key: value), 解析为 key-value 对象
   const params: Record<string, unknown> = {}
@@ -81,11 +87,18 @@ function extractProbeFromFields(name: string, fields: ListField[]): ProofProbeIR
     }
   }
 
-  return {
+  const ir: ProofProbeIR = {
     probeName: name,
     ref: stripQuotes(typeof refField?.value === 'string' ? refField.value : ''),
     params,
   }
+  if (typeof descField?.value === 'string' && descField.value.length > 0) {
+    ir.description = stripQuotes(descField.value)
+  }
+  if (typeof targetField?.value === 'string' && targetField.value.length > 0) {
+    ir.target = stripQuotes(targetField.value)
+  }
+  return ir
 }
 
 /** 去除 raw 文本值的引号 (e.g. `"foo"` → `foo`, `'foo'` → `foo`) */

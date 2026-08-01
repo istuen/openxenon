@@ -37,10 +37,14 @@ function mkProbe(
   ref: string,
   outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE',
   passed: boolean,
-  output?: Record<string, unknown>,
+  params?: Record<string, unknown>,
   durationMs = 5,
 ): FrozenProofProbeResult {
-  return { probeName, ref, outcome, passed, durationMs, ...(output ? { output } : {}) }
+  // proof-probe-description-target D6: output 格式对齐 runner.ts:118
+  //   { observation: {...}, outcome: { ... params: {...} } }
+  // mkProbe 接受扁平 params (如 { path: 'x' }), 自动包装到 outcome.params
+  const realOutput = params ? { observation: {}, outcome: { params } } : undefined
+  return { probeName, ref, outcome, passed, durationMs, ...(realOutput ? { output: realOutput } : {}) }
 }
 
 function mkFrozen(

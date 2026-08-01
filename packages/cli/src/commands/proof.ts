@@ -507,6 +507,9 @@ const probeAddSubcommand = defineCommand({
       description: t('proof.probeAdd.inputJson'),
     },
     probeName: { type: 'string', description: t('proof.probeAdd.probeName') },
+    // proof-probe-description-target D3: 新增 --description + --target 参数 (向后兼容, optional)
+    description: { type: 'string', description: t('proof.probeAdd.description') },
+    target: { type: 'string', description: t('proof.probeAdd.target') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
@@ -562,17 +565,32 @@ const probeAddSubcommand = defineCommand({
     // 2. 写 proof.md（CLI 翻译后写内部 ref + 内部 param 名 — 这就是封装边界）
     const existing = readFileSync(oxnPath, 'utf-8')
     const probeName = (ctx.args.probeName as string) ?? nextProbeName(existing)
+    // proof-probe-description-target D3: 读 description + target 参数 (optional)
+    const description = ctx.args.description as string | undefined
+    const target = ctx.args.target as string | undefined
     const paramsEntries = Object.entries(translated.internalParams)
       .map(([k, v]) => `  - ${k}: ${String(v)}`)
       .join('\n')
 
+    // proof-probe-description-target D3: description/target 行仅在显式提供时写入 (向后兼容, 老 proof.md 不写)
+    const descLine = description ? `- description: ${description}\n` : ''
+    const targetLine = target ? `- target: ${target}\n` : ''
+
     const newBlock = `### ${probeName}
-- ref: ${translated.internalRef}
+${descLine}${targetLine}- ref: ${translated.internalRef}
 - params:
 ${paramsEntries}
 `
     const updated = `${existing.replace(/\n+$/, '')}\n\n${newBlock}`
     writeFileSync(oxnPath, updated, 'utf-8')
+
+    // proof-probe-description-target D8.2: 当用户传 --description 但没传 --probeName 时, hint 建议语义名 (不阻断)
+    const hintParts: string[] = []
+    if (description && !ctx.args.probeName) {
+      hintParts.push(
+        '💡 hint: consider using --probeName with a semantic name (e.g. --probeName package-json-exists) since you provided --description',
+      )
+    }
 
     output(
       {
@@ -585,7 +603,7 @@ ${paramsEntries}
           internalParams: translated.internalParams,
           path: oxnPath,
         },
-        human: `Added probe "${probeName}" (${probeSemantic}) to proof "${name}"`,
+        human: `Added probe "${probeName}" (${probeSemantic}) to proof "${name}"${hintParts.length > 0 ? `\n${hintParts.join('\n')}` : ''}`,
       },
       format,
     )

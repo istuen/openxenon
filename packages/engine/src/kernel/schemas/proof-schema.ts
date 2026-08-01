@@ -35,6 +35,9 @@ const InterferenceFlagZodEnum = z.enum([
 export const FrozenProofProbeResultSchema = z.object({
   probeName: z.string().min(1),
   ref: z.string().min(1),
+  // proof-probe-description-target D2: per-probe description (intent) + target (artifact), 全 optional 向后兼容
+  description: z.string().optional(),
+  target: z.string().optional(),
   // v0.2 T5: verdict 三态（必填）— PASSED / FAILED / INCONCLUSIVE
   outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE']),
   // 保留兼容字段：PASSED → true, FAILED/INCONCLUSIVE → false

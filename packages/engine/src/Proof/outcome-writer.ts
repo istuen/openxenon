@@ -27,6 +27,8 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from '@
 import { dirname } from 'path'
 import { FROZEN_FILE_MODE } from '@openxenon/engine/infra/frozen/immutable'
 import type { FrozenProof, FrozenProofProbeResult } from '@openxenon/engine/kernel'
+// proof-probe-description-target D5: 复用 extraction.ts 的 extractTarget (DRY, 正确层级)
+import { extractTarget } from '@openxenon/engine/kernel/verdicts/extraction'
 
 // ─── 签名协议 ────────────────────────────────────────────────────────────────
 //
@@ -112,16 +114,19 @@ export function buildOutcomeMd(frozen: FrozenProof): OutcomeMdBody {
   bodyLines.push('## Evidence')
   bodyLines.push('')
   for (const probe of frozen.probes) {
-    const target = extractTarget(probe)
+    // proof-probe-description-target D7: target 显示优先级 — 显式 probe.target 优先, 无声明从 extractTarget 派生
+    const effectiveTarget = probe.target ?? extractTarget(probe)
     const icon = probe.outcome === 'COMPLETED' ? '✅' : probe.outcome === 'INCONCLUSIVE' ? '⚠️' : '❌'
-    const targetStr = target ? ` \`${target}\`` : ''
+    const targetStr = effectiveTarget ? ` \`${effectiveTarget}\`` : ''
     const errLine = probe.errorMessage ? `\n  - error: ${probe.errorMessage}` : ''
     const flagsLine =
       probe.interferenceFlags && probe.interferenceFlags.length > 0
         ? `\n  - flags: ${probe.interferenceFlags.join(', ')}`
         : ''
+    // proof-probe-description-target D7: description (intent 层) 子行, 无 description 时不显示
+    const intentLine = probe.description ? `\n  - intent: ${probe.description}` : ''
     bodyLines.push(
-      `- ${icon} **${probe.probeName}** \`${probe.ref}\`${targetStr} (${probe.outcome}, ${probe.durationMs}ms)${errLine}${flagsLine}`,
+      `- ${icon} **${probe.probeName}** \`${probe.ref}\`${targetStr} (${probe.outcome}, ${probe.durationMs}ms)${errLine}${flagsLine}${intentLine}`,
     )
   }
   bodyLines.push('')
@@ -168,31 +173,8 @@ export function buildOutcomeMd(frozen: FrozenProof): OutcomeMdBody {
   return placeholderBody.replace(`content_hash: ${CONTENT_HASH_PLACEHOLDER}`, `content_hash: ${contentHash}`)
 }
 
-/**
- * 提取 probe 的 target（文件路径 / URL / 命令）。
- *   - 从 probe 的 output 字段里挑第一个看起来像路径或 URL 的字符串值
- *   - output 是 unknown（Probe 自定义），只挑"第一个非空字符串"作为最佳猜测
- *   - 找不到时返回 undefined（Evidence 行不显示 target 部分）
- */
-function extractTarget(probe: FrozenProofProbeResult): string | undefined {
-  const output = probe.output
-  if (output === null || output === undefined) return undefined
-  if (typeof output !== 'object') return undefined
-  // 尝试常见位置：output.params / output.target / output.path / output.url / output.command
-  const obj = output as Record<string, unknown>
-  const candidates = [obj.params, obj.target, obj.path, obj.url, obj.command, obj.file]
-  for (const c of candidates) {
-    if (typeof c === 'string' && c.length > 0) return c
-    if (c && typeof c === 'object') {
-      // 若是 params 对象（如 { path: "./x" }），递归找第一个 string 值
-      for (const v of Object.values(c as Record<string, unknown>)) {
-        if (typeof v === 'string' && v.length > 0) return v
-      }
-    }
-  }
-  return undefined
-}
-
+// proof-probe-description-target D5: 本地 extractTarget 已删除, 改 import @openxenon/engine/kernel/verdicts/extraction
+// 原实现错误 (在 output 顶层找 params/target/path, 实际 params 在 output.outcome.params)
 /** 收集所有 probe 的 interference flags（去重）*/
 function collectInterferenceFlags(probes: FrozenProofProbeResult[]): string[] {
   const seen = new Set<string>()
