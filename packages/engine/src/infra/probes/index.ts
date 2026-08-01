@@ -24,6 +24,10 @@ import { executeDocsBuild, type DocsBuildParams } from './docs-build'
 import { executeHeadingSkeletonCheck, type HeadingSkeletonCheckParams } from './heading-skeleton-check'
 import { executeDocsHeadingCheck, type DocsHeadingCheckParams } from './docs-heading-check'
 import { executeDocBoundary, type DocBoundaryParams } from './doc-boundary'
+import { executeBoundaryGuard, type BoundaryGuardParams } from './boundary-guard'
+import { executeStalePoolCheck, type StalePoolCheckParams } from './stale-pool-check'
+import { executeAssetMigrateCheck, type AssetMigrateCheckParams } from './asset-migrate-check'
+import { executeOxnRuntimeVersion, type OxnRuntimeVersionParams } from './oxn-runtime-version'
 
 export type { ProbeObservation, ProbeResult, ProbeHandler }
 
@@ -480,6 +484,78 @@ export const probeHandlers: Record<string, ProbeHandler> = {
       executedAt: Date.now(),
     } as ProbeObservation
   },
+
+  // RFC-0015 D6.1: boundary-guard — 一等公民 probe, 校验 work.md ## Tasks refs
+  boundary_guard: async (params, context) => {
+    const bgParams = params as unknown as BoundaryGuardParams
+    const result = await executeBoundaryGuard(bgParams, context as ProbeContext)
+    return {
+      probeType: 'boundary_guard',
+      output: JSON.stringify({
+        passed: result.passed,
+        workCount: result.workCount,
+        taskCount: result.taskCount,
+        failedRefs: result.failedRefs,
+      }),
+      error: result.passed ? undefined : `${result.failedRefs.length} failed ref(s)`,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // RFC-0015 D6.2: stale-pool-check — 一等公民 probe, 校验 pool .md refs 不 stale
+  stale_pool_check: async (params, context) => {
+    const spParams = params as unknown as StalePoolCheckParams
+    const result = await executeStalePoolCheck(spParams, context as ProbeContext)
+    return {
+      probeType: 'stale_pool_check',
+      output: JSON.stringify({
+        passed: result.passed,
+        poolCount: result.poolCount,
+        staleRefs: result.staleRefs,
+      }),
+      error: result.passed ? undefined : `${result.staleRefs.length} stale ref(s)`,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // RFC-0015 D6.3: asset-migrate-check — 一等公民 probe, 校验 .archived/assets 完整性
+  asset_migrate_check: async (params, context) => {
+    const amcParams = params as unknown as AssetMigrateCheckParams
+    const result = await executeAssetMigrateCheck(amcParams, context as ProbeContext)
+    return {
+      probeType: 'asset_migrate_check',
+      output: JSON.stringify({
+        passed: result.passed,
+        archiveCount: result.archiveCount,
+        incompleteArchives: result.incompleteArchives,
+        staleArchiveRefs: result.staleArchiveRefs,
+      }),
+      error: result.passed
+        ? undefined
+        : `${result.incompleteArchives.length} incomplete + ${result.staleArchiveRefs.length} stale ref(s)`,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
+
+  // RFC-0015 D6.4: oxn-runtime-version — 一等公民 probe, 校验 engine runtime version
+  oxn_runtime_version: async (params, context) => {
+    const rtvParams = params as unknown as OxnRuntimeVersionParams
+    const result = await executeOxnRuntimeVersion(rtvParams, context as ProbeContext)
+    return {
+      probeType: 'oxn_runtime_version',
+      output: JSON.stringify({
+        passed: result.passed,
+        skipped: result.skipped,
+        actual: result.actual,
+        expected: result.expected,
+        mismatch: result.mismatch,
+      }),
+      error: result.passed
+        ? undefined
+        : `engine version mismatch: actual=${result.actual}, expected=${result.expected}`,
+      executedAt: Date.now(),
+    } as ProbeObservation
+  },
 }
 
 class ProbeRegistry {
@@ -530,6 +606,9 @@ class ProbeRegistry {
     'heading-skeleton-check:probes': 'heading_skeleton_check',
     'docs-heading-check:probes': 'docs_heading_check',
     'doc-boundary:probes': 'doc_boundary',
+    'boundary-guard:probes': 'boundary_guard',
+    'stale-pool-check:probes': 'stale_pool_check',
+    'asset-migrate-check:probes': 'asset_migrate_check',
   }
 
   constructor() {
@@ -604,4 +683,8 @@ export {
   executeHeadingSkeletonCheck,
   executeDocsHeadingCheck,
   executeDocBoundary,
+  executeBoundaryGuard,
+  executeStalePoolCheck,
+  executeAssetMigrateCheck,
+  executeOxnRuntimeVersion,
 }

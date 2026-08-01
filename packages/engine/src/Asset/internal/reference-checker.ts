@@ -19,9 +19,8 @@
 
 import { readFileSync, readdirSync, existsSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
-import { resolveAssetDir, ALL_ASSET_KINDS, type ProjectConfig } from '@openxenon/engine/infra/paths'
+import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
-import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 
 export interface AssetReferenceEntry {
   kind: AssetKind
@@ -33,16 +32,13 @@ export interface AssetReferenceEntry {
 /**
  * 扫所有 5 AssetKind 的 .md，提取 references[] 字段，
  * 返回反向引用索引：name → referencedBy[]
- *
- * v0.6.2 I-6 fix: 接受可选 config；缺省时 lazy 加载 .openxenon/config.json。
  */
-export function listAssetReferences(projectRoot: string, config?: ProjectConfig | null): AssetReferenceEntry[] {
-  const cfg = config ?? loadProjectConfig(projectRoot)
+export function listAssetReferences(projectRoot: string): AssetReferenceEntry[] {
   const kinds: AssetKind[] = [...ALL_ASSET_KINDS]
   const nodes: Array<{ kind: AssetKind; name: string; references: string[] }> = []
 
   for (const kind of kinds) {
-    const dir = resolveAssetDir(projectRoot, kind, cfg)
+    const dir = resolveAssetDir(projectRoot, kind, null)
     if (!existsSync(dir)) continue
     const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
     for (const file of files) {
@@ -120,7 +116,9 @@ function extractReferences(content: string): string[] {
   }
 
   // .md syntax: - references: X 或 - references: [X, Y]
-  const mdMatch = content.match(/references:\s*(.+)/m)
+  // 注意: 不能匹配 multi-line YAML 的 continuation line (e.g. "- X")
+  // 这里要求 references: 后的 value 是 inline 形式 (非 - 开头的 list item)
+  const mdMatch = content.match(/(?:^|\n)[ \t]*(?:- )?references[ \t]*:[ \t]*(\[[^\]]*\]|[^\n\-\[]+)\s*(?:\n|$)/m)
   if (mdMatch?.[1]) {
     const value = mdMatch[1].trim()
     // Array format: [X, Y]
@@ -135,6 +133,23 @@ function extractReferences(content: string): string[] {
     if (value && !value.startsWith('[')) {
       return [value.replace(/"/g, '')]
     }
+  }
+
+  // .md multi-line YAML array:
+  //   references:
+  //     - X
+  //     - Y
+  const multiLineMatch = content.match(/(?:^|\n)([ \t]*references[ \t]*:[ \t]*)\n((?:[ \t]+-[^\n]*\n?)+)/)
+  if (multiLineMatch?.[2]) {
+    return multiLineMatch[2]
+      .split('\n')
+      .map((line) =>
+        line
+          .replace(/^[ \t]*-[ \t]*/, '')
+          .trim()
+          .replace(/^["']|["']$/g, ''),
+      )
+      .filter((s) => s.length > 0)
   }
 
   return []

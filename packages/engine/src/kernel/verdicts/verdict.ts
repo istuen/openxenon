@@ -648,6 +648,155 @@ const docBoundaryStrategy: ProbeStrategy = (observation, params) => {
     failureMessage: ok ? undefined : `${violationCount} doc boundary violation(s)`,
   }
 }
+
+// RFC-0015 D6.1: boundary_guard — 一等公民 probe，校验 work.md ## Tasks 的 blueprint/domain/boundary/deps refs 解析
+const boundaryGuardStrategy: ProbeStrategy = (observation) => {
+  let passed = false
+  let workCount = 0
+  let taskCount = 0
+  let failedCount = 0
+  let failedRefs: Array<{ work: string; task: string; field: string; value: string }> = []
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      workCount?: number
+      taskCount?: number
+      failedRefs?: Array<{ work: string; task: string; field: string; value: string }>
+    }
+    passed = obj.passed === true
+    workCount = obj.workCount ?? 0
+    taskCount = obj.taskCount ?? 0
+    failedRefs = obj.failedRefs ?? []
+    failedCount = failedRefs.length
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: `boundary-guard: scanned ${workCount} work(s) / ${taskCount} task(s); ${ok ? 'no drift' : `${failedCount} failed ref(s)`}`,
+    actual: { workCount, taskCount, failedRefs },
+    params: {},
+    duration: observation.executedAt,
+    failureMessage: ok
+      ? undefined
+      : `${failedCount} failed ref(s): ${failedRefs
+          .slice(0, 3)
+          .map((f) => `${f.work}/${f.task}.${f.field}=${f.value}`)
+          .join('; ')}`,
+  }
+}
+
+// RFC-0015 D6.2: stale_pool_check — 一等公民 probe，校验 pool .md 的 references[] 不指向 archived/missing
+const stalePoolCheckStrategy: ProbeStrategy = (observation) => {
+  let passed = false
+  let poolCount = 0
+  let staleCount = 0
+  let staleRefs: Array<{ poolFile: string; ref: string; reason: string }> = []
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      poolCount?: number
+      staleRefs?: Array<{ poolFile: string; ref: string; reason: string }>
+    }
+    passed = obj.passed === true
+    poolCount = obj.poolCount ?? 0
+    staleRefs = obj.staleRefs ?? []
+    staleCount = staleRefs.length
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: `stale-pool-check: scanned ${poolCount} pool(s); ${ok ? 'no stale refs' : `${staleCount} stale ref(s)`}`,
+    actual: { poolCount, staleRefs },
+    params: {},
+    duration: observation.executedAt,
+    failureMessage: ok
+      ? undefined
+      : `${staleCount} stale ref(s): ${staleRefs
+          .slice(0, 3)
+          .map((s) => `${s.poolFile}:${s.ref}=${s.reason}`)
+          .join('; ')}`,
+  }
+}
+
+// RFC-0015 D6.3: asset_migrate_check — 一等公民 probe，校验 .archived/assets 完整性
+const assetMigrateCheckStrategy: ProbeStrategy = (observation) => {
+  let passed = false
+  let archiveCount = 0
+  let incompleteCount = 0
+  let staleRefCount = 0
+  let incompleteArchives: Array<{ kind: string; name: string; issue: string; detail: string }> = []
+  let staleArchiveRefs: Array<{ kind: string; name: string; referencedBy: Array<{ kind: string; name: string }> }> = []
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      archiveCount?: number
+      incompleteArchives?: Array<{ kind: string; name: string; issue: string; detail: string }>
+      staleArchiveRefs?: Array<{ kind: string; name: string; referencedBy: Array<{ kind: string; name: string }> }>
+    }
+    passed = obj.passed === true
+    archiveCount = obj.archiveCount ?? 0
+    incompleteArchives = obj.incompleteArchives ?? []
+    staleArchiveRefs = obj.staleArchiveRefs ?? []
+    incompleteCount = incompleteArchives.length
+    staleRefCount = staleArchiveRefs.length
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: `asset-migrate-check: scanned ${archiveCount} archive(s); ${ok ? 'no issues' : `${incompleteCount} incomplete + ${staleRefCount} stale ref(s)`}`,
+    actual: { archiveCount, incompleteArchives, staleArchiveRefs },
+    params: {},
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : `${incompleteCount} incomplete archive(s); ${staleRefCount} stale archive ref(s)`,
+  }
+}
+
+// RFC-0015 D6.4: oxn_runtime_version — 一等公民 probe, 校验 config.runtime.oxnVersion 与 engine 一致
+const oxnRuntimeVersionStrategy: ProbeStrategy = (observation) => {
+  let passed = false
+  let skipped = false
+  let actual: string | null = null
+  let expected: string | null = null
+  let mismatch: { expected: string; actual: string } | undefined
+  try {
+    const obj = JSON.parse(observation.output ?? '{}') as {
+      passed?: boolean
+      skipped?: boolean
+      actual?: string | null
+      expected?: string | null
+      mismatch?: { expected: string; actual: string }
+    }
+    passed = obj.passed === true
+    skipped = obj.skipped ?? false
+    actual = obj.actual ?? null
+    expected = obj.expected ?? null
+    mismatch = obj.mismatch
+  } catch {
+    passed = false
+  }
+  const ok = passed && !observation.error
+  return {
+    passed: ok,
+    outcome: ok ? 'COMPLETED' : 'DEVIATED',
+    message: skipped
+      ? `oxn-runtime-version: skipped (no expected version set), actual=${actual}`
+      : `oxn-runtime-version: actual=${actual}, expected=${expected}, ${ok ? 'match' : 'mismatch'}`,
+    actual: { actual, expected, mismatch },
+    params: {},
+    duration: observation.executedAt,
+    failureMessage: ok ? undefined : `engine version mismatch: actual=${actual}, expected=${expected}`,
+  }
+}
+
 // ---------- registry ----------
 
 export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
@@ -675,6 +824,11 @@ export const PROBE_VERDICT_STRATEGIES: Record<string, ProbeStrategy> = {
   heading_skeleton_check: headingSkeletonCheckStrategy,
   docs_heading_check: docsHeadingCheckStrategy,
   doc_boundary: docBoundaryStrategy,
+  // RFC-0015 D6.1-D6.4: 4 一等公民 probes (boundary / stale-pool / asset-migrate / runtime-version)
+  boundary_guard: boundaryGuardStrategy,
+  stale_pool_check: stalePoolCheckStrategy,
+  asset_migrate_check: assetMigrateCheckStrategy,
+  oxn_runtime_version: oxnRuntimeVersionStrategy,
 }
 
 export const PROBE_VERDICT_ALIASES: Record<string, string> = {

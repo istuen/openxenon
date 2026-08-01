@@ -27,18 +27,18 @@ import { probeRegistry } from '@openxenon/engine/infra/probes'
 import { PROBE_VERDICT_STRATEGIES } from '@openxenon/engine/kernel/verdicts/verdict'
 
 describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
-  test('catalog 列出 14 oxn builtin probes（19 - 4 doc-* RFC-0015 D4.2 移到 @prj/）+ 1 git-status-clean @deprecated alias', () => {
+  test('catalog 列出 19 oxn builtin probes（15 原有 + 4 RFC-0015 D6 一等公民）+ 1 git-status-clean @deprecated alias', () => {
     // RFC-0015 D4.2: 4 OXN-internal probes 移到 @prj/ project scope:
     //   doc-boundary / heading-skeleton-check / docs-heading-check / docs-build
     //   builtin: 'oxn' → 'prj'
-    // 期望名单 (builtin === 'oxn'): 14 条 (原 19 - 4 移走 - 1 doc: 仍然是）
+    // RFC-0015 D6.1-D6.4: 4 一等公民 probe 新增到 builtin=oxn:
+    //   boundary-guard / stale-pool-check / asset-migrate-check / oxn-runtime-version
+    // 期望名单 (builtin === 'oxn'): 19 条 (原 15 + 4 D6)
     const builtin = PROBE_CATALOG.filter((p) => p.builtin === 'oxn')
     const names = builtin.map((p) => p.semanticName).sort()
-    // 5a: 5 条 + 5b.1+2+3+4+5+6 → 11 条
-    // v1.2: + 4 条 git-*（git-clean / git-branch-exists / git-status-clean / git-merge-feasible）= 15
-    // 注意: RFC-0015 D4.1 把 doc-boundary / heading-skeleton-check / docs-heading-check / docs-build 这 4 条移到 builtin=prj
-    // 最终 builtin=oxn 共 19 - 4 = 15 条 (含 git-status-clean, 仍 @deprecated 但保留 1 版本)
     expect(names).toEqual([
+      'asset-migrate-check',
+      'boundary-guard',
       'deps-resolved',
       'file-exports',
       'fs-content-match',
@@ -51,16 +51,18 @@ describe('v1.1 Phase 5a: 5 条 builtin probes 集成', () => {
       'git-status-clean',
       'http-responds',
       'lint-check',
+      'oxn-runtime-version',
       'shell-exec',
+      'stale-pool-check',
       'test-pass',
       'ts-compiles',
     ])
   })
 
-  test('listProbesSummary 至少 19 个 (含 builtin=prj 的 4 doc-*; RFC-0015 D4.2)', () => {
+  test('listProbesSummary 至少 23 个 (19 oxn + 4 @prj/; RFC-0015 D4.2 + D6)', () => {
     const summary = listProbesSummary()
-    // 14 oxn builtin + 4 @prj/ builtin = 18 + 1 git-status-clean alias = 19
-    expect(summary.length).toBeGreaterThanOrEqual(19)
+    // 19 oxn builtin (15 原有 + 4 D6) + 4 @prj/ builtin = 23
+    expect(summary.length).toBeGreaterThanOrEqual(23)
     const names = summary.map((s) => s.name)
     expect(names).toContain('file-exports')
     expect(names).toContain('git-clean')

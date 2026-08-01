@@ -71,6 +71,11 @@ function handlerKeyFromRef(ref: string): string | null {
     'heading-skeleton-check': 'heading_skeleton_check',
     'docs-heading-check': 'docs_heading_check',
     'doc-boundary': 'doc_boundary',
+    // RFC-0015 D6.1-D6.4: 一等公民 probe
+    'boundary-guard': 'boundary_guard',
+    'stale-pool-check': 'stale_pool_check',
+    'asset-migrate-check': 'asset_migrate_check',
+    'oxn-runtime-version': 'oxn_runtime_version',
   }
   return aliases[stripped] ?? stripped
 }
@@ -103,7 +108,9 @@ export function assertRegistryConsistency(): RegistryConsistencyResult {
     catalogHandlerKeys.add(hKey)
     const stripped = stripPrefix(entry.internalRef)
     if (!hasProbeHandler(hKey) && !hasProbeHandler(stripped)) {
-      errors.push(`catalog entry "${entry.semanticName}" refs unknown handler "${hKey}" (internalRef="${entry.internalRef}")`)
+      errors.push(
+        `catalog entry "${entry.semanticName}" refs unknown handler "${hKey}" (internalRef="${entry.internalRef}")`,
+      )
     }
   }
 
@@ -158,6 +165,10 @@ export function assertRegistryConsistency(): RegistryConsistencyResult {
       heading_skeleton_check: 'heading-skeleton-check',
       docs_heading_check: 'docs-heading-check',
       doc_boundary: 'doc-boundary',
+      boundary_guard: 'boundary-guard',
+      stale_pool_check: 'stale-pool-check',
+      asset_migrate_check: 'asset-migrate-check',
+      oxn_runtime_version: 'oxn-runtime-version',
       exec_exit_zero: 'shell-exec',
       exec_output_match: 'shell-exec',
     }

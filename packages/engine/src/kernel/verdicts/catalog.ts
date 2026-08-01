@@ -580,6 +580,79 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
     inputMap: { root: 'root' },
     builtin: 'prj',
   },
+  {
+    // RFC-0015 D6.1: boundary-guard — 一等公民 probe，校验 work.md ## Tasks
+    //   - blueprint ref resolve (.openxenon/assets/blueprints/)
+    //   - domain ref resolve (.openxenon/assets/domains/ + builtin)
+    //   - boundary 字段非空 (work-validator 必填)
+    //   - deps[] task name 在 ## Tasks 下能找到
+    semanticName: 'boundary-guard',
+    description: 'Validate each work.md ## Tasks blueprint/domain/boundary/deps references resolve to existing assets',
+    inputs: [
+      {
+        name: 'root',
+        type: 'string',
+        required: false,
+        description: 'Project root directory (defaults to process.cwd())',
+      },
+    ],
+    examples: [{ name: 'default', inputs: {} }],
+    internalRef: '@oxn/probes/boundary-guard',
+    inputMap: { root: 'root' },
+    builtin: 'oxn',
+  },
+  {
+    // RFC-0015 D6.2: stale-pool-check — 一等公民 probe, 校验 pool .md references[] 不 stale
+    semanticName: 'stale-pool-check',
+    description: 'Validate pool .md references[] all point to active assets (not archived/missing)',
+    inputs: [
+      {
+        name: 'root',
+        type: 'string',
+        required: false,
+        description: 'Project root directory (defaults to process.cwd())',
+      },
+    ],
+    examples: [{ name: 'default', inputs: {} }],
+    internalRef: '@oxn/probes/stale-pool-check',
+    inputMap: { root: 'root' },
+    builtin: 'oxn',
+  },
+  {
+    // RFC-0015 D6.3: asset-migrate-check — 一等公民 probe, 校验 .archived/assets 完整性
+    semanticName: 'asset-migrate-check',
+    description: 'Validate .archived/assets completeness (.metadata.json + ## Archival marker + no forward ref)',
+    inputs: [
+      {
+        name: 'root',
+        type: 'string',
+        required: false,
+        description: 'Project root directory (defaults to process.cwd())',
+      },
+    ],
+    examples: [{ name: 'default', inputs: {} }],
+    internalRef: '@oxn/probes/asset-migrate-check',
+    inputMap: { root: 'root' },
+    builtin: 'oxn',
+  },
+  {
+    // RFC-0015 D6.4: oxn-runtime-version — 一等公民 probe, 校验 config.runtime.oxnVersion 与 engine 一致
+    semanticName: 'oxn-runtime-version',
+    description:
+      'Validate project expected runtime version (config.runtime.oxnVersion) matches engine package.json version',
+    inputs: [
+      {
+        name: 'root',
+        type: 'string',
+        required: false,
+        description: 'Project root directory (defaults to process.cwd())',
+      },
+    ],
+    examples: [{ name: 'default', inputs: {} }],
+    internalRef: '@oxn/probes/oxn-runtime-version',
+    inputMap: { root: 'root' },
+    builtin: 'oxn',
+  },
 ]
 
 // ---------------------------------------------------------------------------
