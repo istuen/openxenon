@@ -14,7 +14,7 @@
 import { describe, expect, test } from 'bun:test'
 import { ShellProvider } from '../shell-provider'
 
-describe('ShellProvider', () => {
+describe.serial('ShellProvider', () => {
   // ShellProvider 需要 projectRoot；test 调真实 executeShellExec
   // 注: ShellProvider.ioExec 是 async (委派 executeShellExec)
   const context = { projectRoot: process.cwd() }

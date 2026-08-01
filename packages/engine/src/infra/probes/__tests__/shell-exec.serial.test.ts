@@ -11,7 +11,7 @@ import type { ProbeContext } from '../shell-exec'
 
 const ctx: ProbeContext = { projectRoot: process.cwd() }
 
-describe('probes/shell-exec', () => {
+describe.serial('probes/shell-exec', () => {
   test('success: echo 成功 + exitCode 0', async () => {
     const result = await executeShellExec('echo hello_probe', ctx, 5000)
     expect(result.success).toBe(true)

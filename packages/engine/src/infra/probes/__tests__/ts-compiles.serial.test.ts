@@ -60,7 +60,7 @@ function assertNoLeakedTempFiles() {
 }
 
 // T1: 只传 tsconfig → 不写临时文件，走项目级
-describe('ts-compiles: 只传 tsconfig（不传 path）', () => {
+describe.serial('ts-compiles: 只传 tsconfig（不传 path）', () => {
   test('不写临时 .tsconfig.oxn-*.json', async () => {
     const result = await executeTsCompiles(params({ tsconfig: './tsconfig.json' }), ctx())
     expect(result.errorCount).toBeGreaterThanOrEqual(1)
@@ -70,7 +70,7 @@ describe('ts-compiles: 只传 tsconfig（不传 path）', () => {
 })
 
 // T2: path + tsconfig 共存 → 写临时文件 + 用完清理（核心修复）
-describe('ts-compiles: path + tsconfig 共存', () => {
+describe.serial('ts-compiles: path + tsconfig 共存', () => {
   test('path 指向 ok 文件 → passed=true,无 TS5042', async () => {
     const result = await executeTsCompiles(params({ path: './src/ok.ts', tsconfig: './tsconfig.json' }), ctx())
     expect(result.exitCode).toBe(0)
@@ -99,7 +99,7 @@ describe('ts-compiles: path + tsconfig 共存', () => {
 })
 
 // T3: 只传 path → 退化为 tsc <path>，不写临时文件
-describe('ts-compiles: 只传 path（无 tsconfig）', () => {
+describe.serial('ts-compiles: 只传 path（无 tsconfig）', () => {
   test('不写临时文件（退化路径）', async () => {
     const result = await executeTsCompiles(params({ path: './src/ok.ts' }), ctx())
     expect(result.passed).toBe(true)
@@ -108,7 +108,7 @@ describe('ts-compiles: 只传 path（无 tsconfig）', () => {
 })
 
 // T4: 既不传 path 也不传 tsconfig → 自动检测
-describe('ts-compiles: 自动检测 tsconfig', () => {
+describe.serial('ts-compiles: 自动检测 tsconfig', () => {
   test('auto-detect 到 ./tsconfig.json + 跑全项目', async () => {
     const result = await executeTsCompiles(params(), ctx())
     expect(result.errorCount).toBeGreaterThanOrEqual(1)
@@ -118,7 +118,7 @@ describe('ts-compiles: 自动检测 tsconfig', () => {
 })
 
 // T5: cleanup 兜底 — 即使 tsc 报错也要清理
-describe('ts-compiles: 异常路径也清理', () => {
+describe.serial('ts-compiles: 异常路径也清理', () => {
   test('path 指向不存在的文件 → 仍清理', async () => {
     const result = await executeTsCompiles(
       params({ path: './src/does-not-exist.ts', tsconfig: './tsconfig.json' }),
@@ -130,7 +130,7 @@ describe('ts-compiles: 异常路径也清理', () => {
 })
 
 // T6: errorCount 契约 — 必须精确计数，不是 0 也不是 undefined
-describe('ts-compiles: errorCount 契约', () => {
+describe.serial('ts-compiles: errorCount 契约', () => {
   test('坏文件路径时 errorCount 精确 = 1', async () => {
     const result = await executeTsCompiles(params({ path: './src/bad.ts', tsconfig: './tsconfig.json' }), ctx())
     expect(result.errorCount).toBe(1)
