@@ -40,12 +40,16 @@ import enWorkExplore from './locales/en/oxn-work/assets/work-explore.md' with { 
 import enWorkDevelop from './locales/en/oxn-work/assets/work-develop.md' with { type: 'text' }
 import enWorkFix from './locales/en/oxn-work/assets/work-fix.md' with { type: 'text' }
 import enWorkOnboarding from './locales/en/oxn-work/assets/work-onboarding.md' with { type: 'text' }
+import zhCnDraft from './locales/zh-CN/oxn-draft/instruction.md' with { type: 'text' }
+import zhCnDraftLifecycle from './locales/zh-CN/oxn-draft/references/draft-lifecycle.md' with { type: 'text' }
+import enDraft from './locales/en/oxn-draft/instruction.md' with { type: 'text' }
+import enDraftLifecycle from './locales/en/oxn-draft/references/draft-lifecycle.md' with { type: 'text' }
 import type { OpenXenonSkill, ReferenceFile } from './types'
 
 export interface SkillContent {
   instruction: string
-  references: ReferenceFile[]
-  assets: ReferenceFile[]
+  references?: ReferenceFile[]
+  assets?: ReferenceFile[]
 }
 
 interface SkillMeta {
@@ -59,6 +63,7 @@ interface SkillMeta {
 //
 // v0.6.1-alpha.0: 每个 Skill = 1 SKILL.md (≤200 tokens 目标) + 5 references/* + assets/* 模板
 // v0.6.1-alpha.4: 收敛 5 AssetKind；Workflow 从 Blueprint 改名；新 Blueprint 为组合模板
+// v0.6.2: 新增 oxn-draft Skill（第 3 个）— Draft 生命周期（create/list/archive/discard）
 const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
   'zh-CN': [
     {
@@ -71,6 +76,11 @@ const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
       description:
         'Work 编排 + 执行（v0.6 极简版）— 引用 Asset 到 Tasks，走 Round 多轮循环，结束展示 Proof。所有开发/修复/onboarding/explore 工作都走这里。不处理 Asset 创建/修改（那是 oxn-asset）',
     },
+    {
+      id: 'oxn-draft',
+      description:
+        'Draft 工作稿管理（v0.6.2）— 创建/列出/归档/丢弃 Draft（未提升的描述性工作稿），覆盖 3 类 DraftType（report/issue/design）。底层走 oxn draft CLI 命令。当用户需要写探索性草稿、调研报告、设计稿、问题记录时触发。不处理 Work 编排、Asset 创建、Proof 验证（那是 oxn-work / oxn-asset）',
+    },
   ],
   en: [
     {
@@ -81,7 +91,12 @@ const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
     {
       id: 'oxn-work',
       description:
-        'Work orchestration + execution (v0.6 simplified) — reference Assets in Tasks, drive Round cycles, display Proof after completion. All development/fix/onboarding/explore work goes here. Does NOT handle Asset creation/modification (that is oxn-asset)',
+        'Work orchestration + execution (v0.6 simplified) — reference Assets to Tasks, drive Round cycles, display Proof after completion. All development/fix/onboarding/explore work goes here. Does NOT handle Asset creation/modification (that is oxn-asset)',
+    },
+    {
+      id: 'oxn-draft',
+      description:
+        'Draft workspace management (v0.6.2) — create/list/archive/discard Drafts (unpromoted descriptive workspace), covering 3 DraftTypes (report/issue/design). Underlying oxn draft CLI commands. Triggered when user needs to write exploratory drafts, research reports, design drafts, or problem records. Does NOT handle Work orchestration, Asset creation, or Proof verification (that is oxn-work / oxn-asset)',
     },
   ],
 }
@@ -120,6 +135,10 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
         { filename: 'work-onboarding.md', content: zhCnWorkOnboarding },
       ],
     },
+    'oxn-draft': {
+      instruction: zhCnDraft,
+      references: [{ filename: 'draft-lifecycle.md', content: zhCnDraftLifecycle }],
+    },
   },
   en: {
     'oxn-asset': {
@@ -154,6 +173,10 @@ const skillContents: Record<string, Record<string, SkillContent>> = {
         { filename: 'work-onboarding.md', content: enWorkOnboarding },
       ],
     },
+    'oxn-draft': {
+      instruction: enDraft,
+      references: [{ filename: 'draft-lifecycle.md', content: enDraftLifecycle }],
+    },
   },
 }
 
@@ -179,4 +202,4 @@ export function getAllSkillsForLocale(locale: SupportedLocale): OpenXenonSkill[]
   })
 }
 
-// v0.6+: 所有 Skill 资源已确认 en + zh-CN 双 locale 就绪（oxn-asset + oxn-work 共 2 个 Skill）
+// v0.6+: 所有 Skill 资源已确认 en + zh-CN 双 locale 就绪（oxn-asset + oxn-work + oxn-draft 共 3 个 Skill）

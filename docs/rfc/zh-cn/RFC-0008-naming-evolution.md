@@ -172,7 +172,7 @@ canonical.oxn    ────►          blueprint.oxn    (Blueprint 正本)
 - ✅ glossary 8 个文件同步
 - ✅ ProbeOutcome 字段 + frozen.json schema 变更
 - ✅ Asset Paper schema 3 字段固化
-- ✅ 错误码 SSOT 文档级注册表（[`error-code-registry.md`](../../dev/zh-cn/error-code-registry.md)）— v0.7+ 配套（已于 v0.6.2-alpha.0 从 drafts/ promote 到 docs/dev/zh-cn/）
+- ✅ 错误码 SSOT 文档级注册表（`error-code-registry.md`，位于 docs/dev/zh-cn/）— v0.7+ 配套（已于 v0.6.2-alpha.0 从 drafts/ promote 到 docs/dev/zh-cn/）
 - 📝 v0.8.0 可物理删除 `auditTrail` 解析代码路径 + 僵尸码
 - ✅ "出证明" 对外命名 + 内部 Intent/Align/Proof 三段式——自 v0.6 RFC 起未变
 - ✅ canonical.oxn → blueprint.oxn/domain.oxn/workflow.oxn/stack.oxn/frozen.json 命名演化——v0.6.1 完成

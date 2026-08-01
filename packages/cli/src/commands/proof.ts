@@ -447,7 +447,7 @@ const probeListSubcommand = defineCommand({
             : probes
                 .map((p) => `  ${p.name}\n    ${p.description}\n    requires: ${p.requiredInputs.join(', ')}`)
                 .join('\n') +
-          (!consistency.ok ? `\n\n⚠️ registry drift detected: ${consistency.errors.length} error(s)\n` : ''),
+              (!consistency.ok ? `\n\n⚠️ registry drift detected: ${consistency.errors.length} error(s)\n` : ''),
       },
       format,
     )

@@ -206,3 +206,77 @@ OxnProjectDomain（v0.7+，reference oxn-domain + oxn-engine-domain + oxn-asset-
 - 外部读者使用 `docs/glossary/zh-cn/`（7 个文件）作为手册可见表
 - 修改术语必须先修改 Domain 文件，再同步 glossary，再写新 ADR 记录决策
 - 新增术语前先在 `CONTEXT-MAP.md` 确认归属 context
+
+## 术语新增记录（2026-07-27 grilling session）
+
+> 以下是 2026-07-27 `/grilling` session 锐化的 7 个新术语。每条注明所属 context（按引用方向）、权威源文件、grilling 来源问题。
+> 与上方"术语精简记录"对偶——精简是废弃，新增是建立。
+
+| 术语 | 英文 | 定义 | 所属 context | 权威源 | grilling 来源 |
+|---|---|---|---|---|---|
+| **自举完成 v2** | Bootstrapping Closure (v2) | OXN Engine 能完整跑通 **Asset 生命周期 ∪ Work 生命周期 ∪ Proof 采集** 的**三轴联动**——单一 Work 实例同时穿过 Asset + Work + Proof 三轴。验证手段：跑端到端 Work（如 doc-rfc-workflow 升级一个 RFC）同时验证 (a) Asset 文件落盘 + planLock 更新、(b) frozen.json 完整、(c) ProbeOutcome 全 COMPLETED、(d) trace.jsonl 事件流连续、(e) Asset planLock 正确更新。达成后：OXN ≡ 完整产品 ≡ Release-Ready | OxnEngineDomain + OxnProjectDomain | `oxn-engine-domain.md` + `oxn-project-domain.md` | Q4 (自举完成 = 完整产品) + Q5 (Engine = Asset + Work + Proof 完整生命周期) |
+| **规划池** | Planning Pool | 前瞻性规划备选集合；住 `dev/pool/`；frontmatter **无 version 字段**；status 仅 `planned`；与 Roadmap（`dev/versions/`，version-bound）是同一类文档的两个生命周期阶段：备选 vs 已绑版本 | OxnProjectDomain | `oxn-project-domain.md#planning-pool` + `dev/pool/README.md` | C-OC2 (把 v0.7.0+ 规划集中到无版本号规划池) |
+| **单向 Blueprint 修复语义** | One-Shot Blueprint Fix Semantics | Blueprint slot DAG 单向流；ProbeOutcome=COMPLETED 即意味着该 Boundary 的目标已满足 = fixed；无需显式"fixed" 状态；DEVIATED → 工程师开新 Work（非 Blueprint retry，非自动 loop）；自动的是"Probe 验证自动跑"，非"修复自动循环" | OxnEngineDomain + OxnProofDomain | `oxn-proof-domain.md:inv-23` + `oxn-work-domain.md:inv-29` | G1 (debug wiring = 自动但 Blueprint 单向) |
+| **生命周期联动** | Lifecycle Linkage | 单一 Work 实例同时穿过 Asset + Work + Proof 三轴。是 v2 自举完成区分 v1 的关键判据——v1 只验证 Work 闭环；v2 验证三轴同时产生物理变化 | OxnEngineDomain | `oxn-engine-domain.md`（待补术语）+ `dev/pool/engine-closure-self-verify.md` | Turn 7 Q5 校准 + 第一/第二 Scene 串联 |
+| **Dev Version** | Dev Version | OXN 的开发版本分发渠道；git clone + bun install + bun run build 路径；目标用户 = 贡献者 + 内部 dogfood；当前 `dist/` gitignore | OxnCliDomain + OxnProjectDomain | `README.md` + `package.json#files` + `dev/pool/npm-ship-path.md` | Q8 (git clone = 开发版本) |
+| **Release Version** | Release Version | OXN 的正式发布渠道；npm install -g @istuen/openxenon 路径；目标用户 = 终端用户 + CI/CD；预编译 `dist/cli.js` + signature；v0.5+ 暂停发 npm | OxnCliDomain + OxnProjectDomain | `dev/pool/npm-ship-path.md` | Q8 (npm 才是 Release Version) + Q5 (npm ship 当前主线) |
+| **定义完成度 vs 实现完成度** | Definition Completeness vs Implementation Completeness | 完成度的两个正交维度：定义完成度 = glossary + Domain .md + RFC 全；实现完成度 = 代码 + 测试 + frozen.json 全；OXN 不评判完成度（ADR-0066/0067），但完成度本身有定义/实现两层 | OxnDomain | `oxn-domain.md` + `CONTEXT-MAP.md`（outcome 聚合结构是实现完成度判据，glossary 是定义完成度判据）| Q2 (术语是定义完成度，非实现完成度) |
+
+### 2026-07-27 锐化链（一句话串联）
+
+```
+Q1（alpha 阶段目的 = 功能特性完整性梳理）
+  → Q2（完成度 = 定义 + 实现两层）
+  → Q4（OXN 自举完成 = 完整产品）
+  → Q5（Engine = Asset + Work + Proof 完整生命周期）
+  → G1（debug wiring = 自动但 Blueprint 单向 → inv-23）
+  → G2（Promote RFC-0013 → 走 doc-rfc-workflow Blueprint）
+  → C-OC2（v0.7.0+ 规划 → dev/pool/ 规划池，0.7.0 暂空）
+  → Q8（npm ship 主线）
+```
+
+### 落地执行（2026-07-27 已完成）
+
+| # | 交付物 | 落地文件 |
+|---|---|---|
+| D1 | 6 术语新增（含 1 个衍生） | `CONTEXT-MAP.md`（本节）+ `oxn-project-domain.md` + `oxn-proof-domain.md` |
+| D2 | `oxn-proof-domain.md:inv-23 probe-pass-implies-fixed` | `oxn-proof-domain.md` |
+| D3 | `dev/versions/` → `dev/pool/` 迁移 + frontmatter 转换 + README 重写 | `dev/pool/{emergence,asset-graph,ai-three-modes,anchor-slot,term-upstream-dag}.md` + `dev/pool/README.md` + `dev/versions/README.md` |
+| D4 | RFC-0013 status: Draft → Accepted + Errata 2026-07-27（D3 规划池补充）| `docs/rfc/zh-cn/RFC-0013-versioning-policy.md` |
+| D5 | Engine 闭环自证 Work 模板 | `dev/pool/engine-closure-self-verify.md` |
+| D6 | npm ship 路径（6 个 Block 阻塞解除顺序）| `dev/pool/npm-ship-path.md` |
+
+## 术语新增记录（2026-07-30 grilling session）
+
+> 以下是 2026-07-30 `/grilling` session 锐化的术语。每条注明所属 context（按引用方向）、权威源文件、grilling 来源问题。
+> 与上方"术语精简记录 / 2026-07-27 新增记录"形成三情态（建立 + 演进）。
+
+| 术语 | 英文 | 定义 | 所属 context | 权威源 | grilling 来源 |
+|---|---|---|---|---|---|
+| **Version Hygiene** | Version Hygiene | Dev Version 与 Release Version 在运行时的唯一区分器——dev 版本号恒严格大于已发布 release 版本号。OXN CLI **不**注入 build metadata（git SHA / build timestamp / "dev" 标记）；版本号字符串本身是唯一信号。判据：`oxn --version` 在 dev shell 与 release shell 输出不同字符串。流程保障：`release-cut` workflow 的 `post-publish-bump` slot 在 publish 后**立即** bump dev 到下一个 `-alpha.0`，关闭共享版本号过渡窗口 | OxnCliDomain + OxnProjectDomain | `docs/adrs/0083-version-hygiene-over-build-metadata.md` + `oxn-cli-domain.md` + `oxn-project-domain.md` + `scripts/oxn-switch.sh` | Q4 (version 字符串足以区分) → Q6 (rejected build metadata) → Q9 (post-publish-bump slot 关闭歧义窗口) |
+| **oxn-switch** | oxn-switch | 在 Dev Version 与 Release Version 之间切换的命令工具（`pnpm oxn:dev` / `pnpm oxn:prod` / `pnpm oxn:status`），核心操作是当前 node 全局 bin 的 npm link ↔ npm install -g 互斥切换。串行切换：一次只一个 oxn 生效（PATH 互斥）| OxnCliDomain | `scripts/oxn-switch.sh` + `package.json#scripts` | 用户校正"npm link 就是 Dev 版" + 参考方案适配 |
+
+### 2026-07-30 锐化链（一句话串联）
+
+```
+Q1（alpha 阶段目的 = 功能特性完整性梳理）
+  → Q2（完成度 = 定义 + 实现两层）
+  → Q3（Skill 写死 oxn 不能改）
+  → Q4（version 字符串足以区分 dev/release，无需 build metadata）
+  → Q5（同时 vs 串行 → 串行，采纳参考方案）
+  → Q6（rejected build metadata，version hygiene 替代）
+  → Q7（包管理器：真切 pnpm vs 退回 bun link → 阶段化方案：pnpm 管理 + bun 构建/测试）
+  → Q8（npm ship 主线，npm pack 本地 tarball 占位）
+  → Q9（post-publish-bump slot 关闭 version hygiene 歧义窗口）
+```
+
+### 落地执行（2026-07-30 已完成）
+
+| # | 交付物 | 落地文件 |
+|---|---|---|
+| D1 | 计划文档落盘 | `.openxenon/drafts/oxn-dev-release-coexistence.md` |
+| D2 | Step 0 spike：pnpm install + bun test 兼容性验证（R2 通过） | `pnpm-workspace.yaml` + `pnpm-lock.yaml` + `bun.lock.bak` |
+| D3 | Step 1 pnpm 包管理迁移：.gitignore + AGENTS.md + lefthook.yml + 5 个 CI workflows | `.gitignore` + `AGENTS.md` + `lefthook.yml` + `.github/workflows/{ci,docs,publish,runtime,validate-deps}.yml` |
+| D4 | Step 2 oxn 切换脚本（npm link ↔ npm install -g 串行） | `scripts/oxn-switch.sh` + `package.json#scripts.oxn:dev|prod|status` |
+| D5 | Step 3 Version Hygiene 落地：release-cut post-publish-bump slot + ADR-0083 + 术语 | `.openxenon/assets/workflows/release-cut.md` + `docs/adrs/0083-version-hygiene-over-build-metadata.md` + `oxn-cli-domain.md` + `oxn-project-domain.md` |
+| D6 | Step 4 skill-store 规则文档化（嵌入 oxn-switch.sh 注释） | `scripts/oxn-switch.sh` 头注释 |

@@ -2,8 +2,9 @@
 entity: rfc
 id: RFC-0013
 theme: versioning-policy
-status: Draft
+status: Accepted
 date: 2026-07-27
+accepted-at: 2026-07-27
 supersedes: []
 superseded-by: ~
 synced-at: 2026-07-27
@@ -184,4 +185,42 @@ OXN 版本相关文档分为三类，各居其位，职责不重叠：
 
 ## Errata
 
-（暂无——本 RFC 仍为 Draft）
+### 2026-07-27 — D3 补充：规划池（Planning Pool）
+
+**触发**：2026-07-27 grilling session C-OC2 决策——把当前 v0.7.0+ 规划集中到无版本号的规划池，由工程师 scheduling 后再绑版本号。
+
+**补充条款**：在 D3 表格中 `Roadmap` 行下，新增前置状态：
+
+| 文档类型 | 情态 | 位置 | 时间向 | 入场条件 | 状态 |
+|---|---|---|---|---|---|
+| **PlanningPool** | 描述性 | `dev/pool/` | 前瞻（备选）| 工程师 mental commit 后入池；frontmatter 无 `version` 字段 | `status: planned` |
+| **Roadmap** | 描述性 | `dev/versions/` | 前瞻（已绑版本）| 从 PlanningPool scheduling 后移过来；frontmatter 必填 `version` | `status: planned` |
+
+**frontmatter schema 差异**：
+
+| 字段 | PlanningPool（`dev/pool/`）| Roadmap（`dev/versions/`）|
+|---|---|---|
+| 必填 | `id` / `theme` / `priority` / `status` / `created-at` / `scheduled-version` | `version` / `date` / `type` / `status` |
+| 可选 | `note` / `rfc` / `adr` | `rfc` / `adr` |
+| 禁用 | `version` 字段 | — |
+
+**生命周期**：
+
+```
+1. 入池: PlanningPool  (工程师 mental commit)
+2. 调度: PlanningPool  → Roadmap  (git mv + 补 version)
+3. 转正: Roadmap      → .openxenon/.archived/dev/versions/  (版本转正时)
+```
+
+**当前状态（2026-07-27）**：`dev/versions/` 为空，所有 v0.7.0+ 规划已迁入 `dev/pool/`（5 个 entry + 2 个 grilling 产出 critical entry）。
+
+**配套修改**：
+- `.openxenon/assets/domains/oxn-project-domain.md` 新增 `PlanningPool` 术语 + 更新 `Roadmap` 术语
+- `dev/pool/README.md` 创建立规划池定义
+- `dev/versions/README.md` 更新为"已绑版本 Roadmap 目录（当前空）"
+- 5 个原 `dev/versions/0-X-Y-*.md` 已 `git mv` 到 `dev/pool/<slug>.md` + 改 frontmatter
+- `dev/pool/` 新增 `engine-closure-self-verify.md` + `npm-ship-path.md`（grilling 产出）
+
+**配套 invariant**：
+- `oxn-project-domain.md` 新增 `PlanningPool` 术语（含入池/出池条件）
+- 无新增 inv——`Roadmap` 原有 inv（`doc-three-modalities`）继续适用

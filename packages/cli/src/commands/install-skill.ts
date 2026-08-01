@@ -1,60 +1,66 @@
 // src/cli/install-skill.ts
 //
-// `oxn install-skill` copies canonical OpenCode Skills from
-// `.opencode/skills/oxn-*/SKILL.md` (this repo) to a target directory.
+// `oxn install-skill` 把 OpenXenon Skill 编译并写入目标目录。
 //
-// Default behaviour: install ALL oxn-* skills (oxn-cli, oxn-work, oxn-proof)
-// to the user's global OpenCode skills folder (`~/.opencode/skills/`).
-// Use `--skill <id>` to install a single one.
+// 默认行为（v0.6.2 修订）：写到**当前项目**的 `.opencode/skills/` 等目录，
+// 与 `oxn init` 的 `compileAllSkills` 行为一致。
 //
-import { t } from '@openxenon/engine/infra/i18n'
-
-// Embed SKILL.md files into the compiled binary so the command works
-// regardless of the user's current working directory. In dev (`bun run`),
-// this resolves to the real on-disk path; in a `--compile`d binary, Bun
-// replaces it with an internal `$bunfs/...` path that always reads the
-// embedded content.
+// `--global` 写到**全局**目录（`~/.opencode/skills/` 等），跨项目可见。
 //
-// v0.6: Only oxn-work skill remains (oxn-cli / oxn-proof deleted).
-import skillWork from '../../../../.opencode/skills/oxn-work/SKILL.md' with { type: 'file' }
+// 默认行为历史说明：
+//   v0.6.1 之前 install-skill 默认写到 `~/.opencode/skills/`（全局），是错误的历史实现。
+//   v0.6.2 修订为默认项目级（与 init 对齐），`--global` 才写到全局。
+//
+// 适配器：
+//   - opencode → .opencode/skills/
+//   - claude   → .claude/skills/
+//   - agents   → .agents/skills/
 
 import { defineCommand } from 'citty'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
-import { dirname, join, resolve } from 'path'
-import { fileURLToPath } from 'url'
-import { getFormatFromArgs, output } from './output'
+import { t } from '@openxenon/engine/infra/i18n'
+import { existsSync, mkdirSync } from '@openxenon/engine/infra/filesystem'
+import { join, resolve } from 'path'
+import { getFormatFromArgs, output, outputError } from './output'
+import { compileAllSkillsToRoot, compileSkillToRoot } from './skill-compiler'
+import { DEFAULT_ADAPTERS, isSkillAdapterId, type SkillAdapterId } from '../skills/adapters'
+import { getAllSkillsForLocale } from '../skills/loader'
+import { DEFAULT_LOCALE } from './project-config'
+import { readProjectConfig } from './project-config-io'
 
-const EMBEDDED_SKILLS: Record<string, string> = {
-  'oxn-work': skillWork,
+function getGlobalHome(): string {
+  return process.env.HOME ?? process.env.USERPROFILE ?? '.'
 }
 
-function getDefaultSkillsRoot(): string {
-  const home = process.env.HOME ?? process.env.USERPROFILE ?? '.'
-  return join(home, '.opencode', 'skills')
+function resolveGlobalRoots(): Record<SkillAdapterId, string> {
+  const home = getGlobalHome()
+  return {
+    opencode: join(home, '.opencode', 'skills'),
+    claude: join(home, '.claude', 'skills'),
+    agents: join(home, '.agents', 'skills'),
+  }
 }
 
-function readSkillContent(skillId: string): { content: string; source: string } {
-  const embedded = EMBEDDED_SKILLS[skillId]
-  if (embedded) {
-    try {
-      const content = readFileSync(embedded, 'utf-8')
-      return { content, source: embedded }
-    } catch {
-      // fall through to disk search
+function ensureDir(p: string): void {
+  if (!existsSync(p)) {
+    mkdirSync(p, { recursive: true })
+  }
+}
+
+function normalizeTools(input: string | string[] | undefined): SkillAdapterId[] {
+  if (!input) return [...DEFAULT_ADAPTERS]
+  const arr = Array.isArray(input) ? input : [input]
+  const out: SkillAdapterId[] = []
+  for (const raw of arr) {
+    for (const piece of String(raw).split(',')) {
+      const v = piece.trim()
+      if (!v) continue
+      if (!isSkillAdapterId(v)) {
+        throw new Error(`OXN_INVALID_TOOL: unknown tool id "${v}". Valid: ${DEFAULT_ADAPTERS.join(', ')}`)
+      }
+      out.push(v)
     }
   }
-  const here = dirname(fileURLToPath(import.meta.url))
-  const candidates = [
-    resolve(join(here, '..', '..', '..', '..', '.opencode', 'skills', skillId, 'SKILL.md')),
-    resolve(join(process.cwd(), '.opencode', 'skills', skillId, 'SKILL.md')),
-  ]
-  for (const path of candidates) {
-    if (existsSync(path)) {
-      const content = readFileSync(path, 'utf-8')
-      return { content, source: path }
-    }
-  }
-  throw new Error(`source SKILL.md not found for ${skillId}`)
+  return Array.from(new Set(out))
 }
 
 export default defineCommand({
@@ -71,6 +77,16 @@ export default defineCommand({
       type: 'string',
       description: t('installSkill.skill'),
     },
+    tools: {
+      type: 'string',
+      description: t('installSkill.tools', { adapters: DEFAULT_ADAPTERS.join(', ') }),
+    },
+    global: {
+      type: 'boolean',
+      alias: 'g',
+      description: t('installSkill.global'),
+      default: false,
+    },
     force: {
       type: 'boolean',
       alias: 'f',
@@ -82,55 +98,137 @@ export default defineCommand({
   run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const force = ctx.args.force === true || ctx.args.f === true
+    const isGlobal = ctx.args.global === true || ctx.args.g === true
     const explicitTarget = typeof ctx.args.target === 'string' ? resolve(ctx.args.target) : null
     const explicitSkill = typeof ctx.args.skill === 'string' ? ctx.args.skill : null
-    const skillsRoot = explicitTarget ?? getDefaultSkillsRoot()
 
-    const skillIds = explicitSkill
-      ? [explicitSkill]
-      : existsSync(resolve(join(process.cwd(), '.opencode', 'skills')))
-        ? listOxnSkillsFromDisk()
-        : Object.keys(EMBEDDED_SKILLS)
+    const projectPath = process.cwd()
+    const globalRoots = resolveGlobalRoots()
 
-    const installed: { skill: string; path: string }[] = []
-    const skipped: { skill: string; reason: string }[] = []
-    const failed: { skill: string; error: string }[] = []
-
-    for (const skillId of skillIds) {
-      const targetDir = join(skillsRoot, skillId)
-      const targetPath = join(targetDir, 'SKILL.md')
-      let skill: { content: string; source: string }
-      try {
-        skill = readSkillContent(skillId)
-      } catch (err) {
-        failed.push({ skill: skillId, error: err instanceof Error ? err.message : String(err) })
-        continue
-      }
-      if (existsSync(targetPath) && !force) {
-        skipped.push({ skill: skillId, reason: `exists at ${targetPath}` })
-        continue
-      }
-      if (!existsSync(targetDir)) {
-        mkdirSync(targetDir, { recursive: true })
-      }
-      writeFileSync(targetPath, skill.content, 'utf-8')
-      installed.push({ skill: skillId, path: targetPath })
+    let toolIds: SkillAdapterId[]
+    try {
+      toolIds = normalizeTools(ctx.args.tools as string | string[] | undefined)
+    } catch (err) {
+      return outputError(
+        {
+          code: 'OXN_INVALID_TOOL',
+          message: err instanceof Error ? err.message : String(err),
+          suggestion: `valid tools: ${DEFAULT_ADAPTERS.join(', ')}`,
+        },
+        format,
+      )
     }
+
+    const config = readProjectConfig(projectPath)
+    const locale = (config?.locale ?? DEFAULT_LOCALE) as Parameters<typeof getAllSkillsForLocale>[0]
+    const allSkills = getAllSkillsForLocale(locale)
+    const skillIds = explicitSkill
+      ? allSkills.filter((s) => s.id === explicitSkill).map((s) => s.id)
+      : allSkills.map((s) => s.id)
+
+    if (explicitSkill && skillIds.length === 0) {
+      return outputError(
+        {
+          code: 'OXN_SKILL_NOT_FOUND',
+          message: `Skill "${explicitSkill}" not found in registered Skills`,
+          suggestion: `Available: ${allSkills.map((s) => s.id).join(', ')}`,
+        },
+        format,
+      )
+    }
+
+    const installed: { skill: string; tool: SkillAdapterId; path: string }[] = []
+    const skipped: { skill: string; tool: SkillAdapterId; reason: string }[] = []
+    const failed: { skill: string; tool: SkillAdapterId; error: string }[] = []
+
+    if (explicitTarget) {
+      // 显式 target：写到指定目录（单 adapter：opencode 风格）
+      ensureDir(explicitTarget)
+      try {
+        for (const skill of allSkills.filter((s) => skillIds.includes(s.id))) {
+          const result = compileSkillToRoot(skill, explicitTarget, force)
+          if (result.action === 'skipped') {
+            skipped.push({ skill: skill.id, tool: 'opencode', reason: `exists at ${result.outputPath}` })
+          } else {
+            installed.push({ skill: skill.id, tool: 'opencode', path: result.outputPath })
+          }
+        }
+      } catch (err) {
+        return outputError(
+          {
+            code: 'OXN_INSTALL_SKILL_FAILED',
+            message: err instanceof Error ? err.message : String(err),
+          },
+          format,
+        )
+      }
+    } else {
+      // 标准路径：每个 tool 写到对应目录
+      const roots = isGlobal ? globalRoots : null
+      for (const toolId of toolIds) {
+        const root = roots ? roots[toolId] : join(projectPath, '.opencode', 'skills') // dummy; compileAllSkills 计算真实路径
+        // 简化：直接调 compileAllSkills 走项目级；全局级调 compileAllSkillsToRoot 走自定义 root
+        if (isGlobal) {
+          try {
+            ensureDir(root)
+            for (const skill of allSkills.filter((s) => skillIds.includes(s.id))) {
+              const result = compileSkillToRoot(skill, root, force)
+              if (result.action === 'skipped') {
+                skipped.push({ skill: skill.id, tool: toolId, reason: `exists at ${result.outputPath}` })
+              } else {
+                installed.push({ skill: skill.id, tool: toolId, path: result.outputPath })
+              }
+            }
+          } catch (err) {
+            for (const skillId of skillIds) {
+              failed.push({
+                skill: skillId,
+                tool: toolId,
+                error: err instanceof Error ? err.message : String(err),
+              })
+            }
+          }
+        } else {
+          try {
+            const report = compileAllSkillsToRoot(toolIds, projectPath, root, force)
+            for (const r of report.results) {
+              if (r.action === 'skipped') {
+                skipped.push({ skill: r.skillId, tool: toolId, reason: `exists at ${r.outputPath}` })
+              } else {
+                installed.push({ skill: r.skillId, tool: toolId, path: r.outputPath })
+              }
+            }
+          } catch (err) {
+            for (const skillId of skillIds) {
+              failed.push({
+                skill: skillId,
+                tool: toolId,
+                error: err instanceof Error ? err.message : String(err),
+              })
+            }
+          }
+        }
+      }
+    }
+
+    const targetDesc = explicitTarget
+      ? explicitTarget
+      : isGlobal
+        ? `${getGlobalHome()}/{${toolIds.map((id) => `.${id === 'opencode' ? 'opencode' : id === 'claude' ? 'claude' : 'agents'}/skills`).join('|')}}`
+        : `./{${toolIds.map((id) => `.${id === 'opencode' ? 'opencode' : id === 'claude' ? 'claude' : 'agents'}/skills`).join('|')}}`
 
     output(
       {
         ok: failed.length === 0,
-        data: { installed, skipped, failed, target: skillsRoot },
+        data: {
+          installed,
+          skipped,
+          failed,
+          scope: isGlobal ? 'global' : 'project',
+          target: targetDesc,
+        },
       },
       format,
     )
   },
 })
-
-function listOxnSkillsFromDisk(): string[] {
-  const dir = resolve(join(process.cwd(), '.opencode', 'skills'))
-  if (!existsSync(dir)) return Object.keys(EMBEDDED_SKILLS)
-  return readdirSync(dir, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && e.name.startsWith('oxn-'))
-    .map((e) => e.name)
-}

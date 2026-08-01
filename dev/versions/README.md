@@ -1,32 +1,37 @@
-# `dev/versions/` — Roadmap 目录
+# `dev/versions/` — 已绑版本 Roadmap 目录（当前空）
 
-> **情态**：描述性 Doc（前瞻性版本计划）
-> **命名**：每个文件以 `0-X-Y-<slug>.md` 命名，对应一个未来版本的 Roadmap
-> **frontmatter**：`version` / `date` / `type` / `status: planned`
-> **锁定**：RFC-0013 D3（版本相关文档三情态分离）
+> **情态**：描述性 Doc（前瞻性已绑版本）
+> **命名**：`0-X-Y-<slug>.md`（如 `0-7-0-emergence.md`）
+> **frontmatter**：`version` / `date` / `type` / `status`
+> **锁定**：RFC-0013 D3 + Errata 2026-07-27（grilling session 引入 `dev/pool/` 备选池）
+
+## 当前状态
+
+**`dev/versions/` 当前为空**。
+
+2026-07-27 grilling session 之前的所有前瞻规划已迁至 `dev/pool/`（备选池）。`dev/versions/` 仅在工程师 scheduling 后才放已绑版本的 Roadmap 文件。
 
 ## 目录说明
 
-`dev/versions/` 存放 OXN 项目**前瞻性版本计划**——描述未来版本将包含什么。每个文件对应一个尚未发布的版本，按版本号命名（如 `0-7-0-emergence.md` 对应 0.7.0 版本计划）。
+`dev/versions/` 存放**已绑版本**的 Roadmap——描述某具体未来版本将包含什么。每个文件对应一个尚未发布的版本，按版本号命名（如 `0-7-0-emergence.md` 对应 0.7.0 版本计划）。
 
-## 与 `.changes/` 的区别
+## 与 `dev/pool/` 的关系
 
-| 维度 | `.changes/0-X-Y-*.md`（Version Fragment） | `dev/versions/0-X-Y-*.md`（Roadmap） |
+| 维度 | `dev/pool/` | `dev/versions/` |
 |---|---|---|
-| **情态** | 描述性 Doc（回顾性） | 描述性 Doc（前瞻性） |
-| **时间向** | 版本转正后落盘 | 版本规划时落盘 |
-| **状态** | `status: released` | `status: planned` |
-| **可见性** | 公开（README + CHANGELOG.md 引用） | 开发者面向（不公开） |
-| **引用边界** | 不引用 `.openxenon/` 内部路径 | 允许引用 `.openxenon/` 内部 RFC 草稿、sprint 设计稿 |
-| **转正后** | — | **归档**（移到 `.openxenon/.archived/dev/versions/`，不删除） |
+| **语义** | 备选池（无版本绑定）| 已绑版本（带 version 字段）|
+| **何时入** | 工程师 mental commit | scheduling 决定时从 pool 移过来 |
+| **frontmatter** | `id` / `theme` / `priority` / `scheduled-version: ~` | `version: 0.X.Y` / `date` / `type` |
+
+详细语义见 [`dev/pool/README.md`](../pool/README.md)。
 
 ## 生命周期
 
-1. **规划**：版本规划时创建 `dev/versions/0-X-Y-<slug>.md`，`status: planned`
+1. **scheduling**：工程师判定 `dev/pool/<slug>.md` 进入下一开发周期 → `git mv` 到 `dev/versions/0-X-Y-<slug>.md` + 补 version 字段
 2. **开发**：开发期间可迭代更新（添加 feature、补 RFC 引用）
 3. **转正**：版本转正时（alpha → stable）：
    - 创建对应的 `.changes/0-X-Y-*.md`（Version Fragment）作为变更日志
-   - 将 `dev/versions/0-X-Y-<slug>.md` 移到 `.openxenon/.archived/dev/versions/`（归档，不删除）
+   - `git mv dev/versions/0-X-Y-<slug>.md .openxenon/.archived/dev/versions/`
    - 归档目录保留历史 Roadmap 作为"该版本曾经规划了什么"的审计痕迹
 
 ## 命名约定
@@ -37,16 +42,15 @@
 
 ## 当前内容
 
+（空）
+
 | 版本 | 文件 | 主题 | 状态 |
 |---|---|---|---|
-| 0.7.0 | `0-7-0-emergence.md` | 涌现层骨架：Insight 工程化 + Hall v0.5 + Infra Ports | 📝 planned |
-| 0.7.0 | `0-7-0-asset-graph.md` | Asset 关系图（Mermaid 渲染） | 📝 planned |
-| 0.7.1 | `0-7-1-ai-three-modes.md` | AI 三模式（Edit/Plan/Apply） | 📝 planned |
-| 0.7.2 | `0-7-2-anchor-slot.md` | Anchor slot 机制 | 📝 planned |
-| 0.8.0 | `0-8-0-term-upstream-dag.md` | Term 上游 DAG | 📝 planned |
+| — | — | — | — |
 
 ## 参考
 
-- [RFC-0013 D3 版本相关文档三情态分离](../docs/rfc/zh-cn/RFC-0013-versioning-policy.md)
-- [RFC-0013 D4 AssetMap ≠ Roadmap](../docs/rfc/zh-cn/RFC-0013-versioning-policy.md)
-- `.changes/` 目录——回顾性 Version Fragment 存放处
+- RFC-0013 D3 版本相关文档三情态分离 + Errata 2026-07-27（规划池补充）
+- RFC-0013 D4 AssetMap ≠ Roadmap
+- [`dev/pool/README.md`](../pool/README.md) —— 备选池定义
+- `.openxenon/assets/domains/oxn-project-domain.md#planning-pool` —— 本术语权威定义

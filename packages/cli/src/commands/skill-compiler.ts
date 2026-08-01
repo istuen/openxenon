@@ -55,7 +55,11 @@ ${skill.instruction}
 `
 }
 
-function compileSkillToRoot(skill: OpenXenonSkill, skillsRoot: string, force: boolean = false): CompilationResult {
+export function compileSkillToRoot(
+  skill: OpenXenonSkill,
+  skillsRoot: string,
+  force: boolean = false,
+): CompilationResult {
   const content = defaultRender(skill)
   const outputPath = join(skillsRoot, skill.id, 'SKILL.md')
   const skillDir = dirname(outputPath)
@@ -223,6 +227,36 @@ export function compileAllSkills(
   }
 
   return { byTool, total, created, updated, skipped, pruned }
+}
+
+/**
+ * Compile skills for a single tool to a custom root path (used by install-skill --global).
+ * Does NOT prune stale Skills (single-tool write, not full compile).
+ * v0.6.2: Added for install-skill --global support.
+ */
+export function compileAllSkillsToRoot(
+  adapterOrTools: string | readonly string[],
+  projectPath: string,
+  skillsRoot: string,
+  force: boolean = false,
+): { toolId: SkillAdapterId; results: CompilationResult[] } {
+  const toolIds: SkillAdapterId[] = resolveToolIds(adapterOrTools)
+  const config = readProjectConfig(projectPath)
+  const locale = (config?.locale ?? DEFAULT_LOCALE) as SupportedLocale
+  const skills = loadSkills(locale)
+  if (toolIds.length === 0) {
+    return { toolId: 'opencode', results: [] }
+  }
+  const toolId = toolIds[0]!
+  const results: CompilationResult[] = []
+  for (const skill of skills) {
+    try {
+      results.push(compileSkillToRoot(skill, skillsRoot, force))
+    } catch (error) {
+      console.error(`Failed to compile skill ${skill.id} for ${skillsRoot}: ${error}`)
+    }
+  }
+  return { toolId, results }
 }
 
 function resolveToolIds(input: string | readonly string[]): SkillAdapterId[] {

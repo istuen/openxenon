@@ -10,7 +10,7 @@ import type { ProjectConfig, SupportedLocale } from './project-config'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from './project-config'
 import { getFormatFromArgs, output, outputError } from './output'
 import { readProjectConfig, writeProjectConfig } from './project-config-io'
-import { compileAllSkills, formatCompilationReport } from './skill-compiler'
+import { compileAllSkills, compileAllSkillsToRoot, formatCompilationReport } from './skill-compiler'
 import { DEFAULT_ADAPTERS, isSkillAdapterId, type SkillAdapterId } from '../skills/adapters'
 
 const PROJECT_BOUNDARY_GITIGNORE = `# .openxenon/ 工程工作台 .gitignore 模板（v0.7）
@@ -164,6 +164,12 @@ export default defineCommand({
       description: t('init.resetTools'),
       default: false,
     },
+    global: {
+      type: 'boolean',
+      alias: 'g',
+      description: t('init.global'),
+      default: false,
+    },
     '--json': {
       type: 'boolean',
       description: t('format.json'),
@@ -179,6 +185,7 @@ export default defineCommand({
     const projectName = ctx.args.name || projectPath.split('/').pop() || 'unnamed'
     const sandbox = ctx.args.sandbox as boolean
     const force = ctx.args.force as boolean
+    const isGlobal = ctx.args.global as boolean
     const locale = (ctx.args.locale as string) || DEFAULT_LOCALE
 
     if (!SUPPORTED_LOCALES.includes(locale as SupportedLocale)) {
@@ -269,7 +276,44 @@ export default defineCommand({
         existingConfig?.tools,
       )
 
-      const report = compileAllSkills(toolIds, projectPath, force)
+      // v0.6.2: --global 时写到全局目录（~/.opencode/skills/ 等）
+      // 项目级：写到 ./<tool>/skills/；全局：写到 ~/<tool>/skills/
+      let report: ReturnType<typeof compileAllSkills>
+      if (isGlobal) {
+        const globalHome = process.env.HOME ?? process.env.USERPROFILE ?? '.'
+        const byTool: Record<SkillAdapterId, ReturnType<typeof compileAllSkills>['byTool'][SkillAdapterId]> =
+          {} as never
+        let total = 0
+        let created = 0
+        let updated = 0
+        let skipped = 0
+        for (const toolId of toolIds) {
+          const skillsRoot =
+            toolId === 'opencode'
+              ? `${globalHome}/.opencode/skills`
+              : toolId === 'claude'
+                ? `${globalHome}/.claude/skills`
+                : `${globalHome}/.agents/skills`
+          const result = compileAllSkillsToRoot(toolIds, projectPath, skillsRoot, force)
+          byTool[toolId] = {
+            toolId,
+            results: result.results,
+            total: result.results.length,
+            created: result.results.filter((r) => r.action === 'created').length,
+            updated: result.results.filter((r) => r.action === 'updated').length,
+            skipped: result.results.filter((r) => r.action === 'skipped').length,
+            referencesCreated: result.results.reduce((sum, r) => sum + (r.referencesWritten ?? 0), 0),
+            pruned: 0,
+          }
+          total += byTool[toolId]!.total
+          created += byTool[toolId]!.created
+          updated += byTool[toolId]!.updated
+          skipped += byTool[toolId]!.skipped
+        }
+        report = { byTool, total, created, updated, skipped, pruned: 0 }
+      } else {
+        report = compileAllSkills(toolIds, projectPath, force)
+      }
       const reportStr = formatCompilationReport(report)
 
       // PR-1: init 后静默重建全局 Domain 索引
@@ -290,6 +334,10 @@ export default defineCommand({
 
       const toolsLine = `\n  Tools: ${toolIds.join(', ')}`
 
+      const outputDirs = isGlobal
+        ? toolIds.map((id) => `~/${idRootForHuman(id)}`).join(', ')
+        : toolIds.map((id) => `./${idRootForHuman(id)}`).join(', ')
+
       return output(
         {
           data: {
@@ -298,11 +346,12 @@ export default defineCommand({
             mode: sandbox ? 'SANDBOX' : 'PRODUCTION',
             tools: toolIds,
             skillsCompiled: report.total,
+            skillsScope: isGlobal ? 'global' : 'project',
             skillsReport: reportStr,
             domainIndex: domainIndexStatus,
             blueprintIndex: blueprintIndexStatus,
           },
-          human: `${message}\n\n${t('init.compilingSkills')}${toolsLine}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: toolIds.map((id) => `./${idRootForHuman(id)}`).join(', ') })}\n\n✓ Domain index: ${domainIndexStatus}\n✓ Blueprint index: ${blueprintIndexStatus}`,
+          human: `${message}\n\n${t('init.compilingSkills')}${toolsLine}\n\n${reportStr}${report.pruned ? `\nPruned ${report.pruned} stale skill(s)` : ''}\n\n✓ ${t('init.skillsCompiled')}\n  ${t('init.skillsOutputDir', { dir: outputDirs })}\n\n✓ Domain index: ${domainIndexStatus}\n✓ Blueprint index: ${blueprintIndexStatus}`,
         },
         format,
       )

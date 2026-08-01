@@ -394,7 +394,7 @@ FrozenProofProbeResult { probeName, ref, outcome, passed, output, durationMs }
                                       ↓
 buildFrozenProof → frozen.json (chmod 0o444)
                                       ↓
-  writeOutcomeMd → outcome.md (chmod 0o444)
+writeVerdictMd → outcome.md (chmod 0o444)
                                      ↓
 updateProbeStats → probe-stats.json (atomic)
 ```
@@ -455,7 +455,7 @@ Phase 2:
   → unlink .running.json (失败保留, 供 list/show 检测)
 
 Phase 3.5 (v0.5 PR-A):
-writeOutcomeMd → outcome.md (chmod 0o444)
+  writeVerdictMd → outcome.md (chmod 0o444)
    失败 → stderr warning (不阻断)
 
 Phase 4 (v0.1.2):
@@ -551,8 +551,8 @@ OXL 编译期校验 required 字段**必须**在五级链中有显式来源，�
 | `packages/engine/src/Proof/index.ts` | 引擎层 Proof API barrel |
 | `packages/engine/src/Proof/runner.ts` | `executeProbe()` + `resolveProbeKind()` |
 | `packages/engine/src/Proof/proof-frozen-writer.ts` | `buildFrozenProof` + `writeFrozenProof` + `readFrozenProof` |
-| `packages/engine/src/Proof/proof-manager.ts` | `renderProbeDescribeHuman` + `renderOutcomeHuman`（CLI human 输出） |
-| `packages/engine/src/Proof/outcome-writer.ts` | `buildOutcomeMd` + `writeOutcomeMd` + `readOutcomeMd` |
+| `packages/engine/src/Proof/proof-manager.ts` | `renderProbeDescribeHuman` + `renderVerdictHuman`（CLI human 输出） |
+| `packages/engine/src/Proof/verdict-writer.ts` | `buildVerdictMd` + `writeVerdictMd` + `readVerdictMd` |
 | `packages/engine/src/kernel/schemas/proof-schema.ts` | `FrozenProof` Zod schema |
 | `packages/engine/src/kernel/verdicts/verdict.ts` | `judge()` 纯函数判定 |
 | `packages/engine/src/kernel/verdicts/catalog.ts` | catalog 语义翻译 |
