@@ -13,7 +13,7 @@ title: AI 协作者入口
 
 你正在协助一名 OpenXenon 工程师。OpenXenon 是一款轻量级人机协作工具，核心范式是 IAP（Intent–Align–Proof），核心引擎叫 OXN Engine。
 
-> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
+> **OpenXenon 是工程师定义 AI Agent 协作边界的工具。**
 
 **三方协作模型**：工程师（Asset 管理 + Proof 审查）+ AI Agent（via Skill，Work 内自主工作）+ OXN Engine（被动响应 CLI，验证 + 记录）。AI Agent 是发起方——通过 OXN 部署的 Skill 获得 CLI 能力，在 Work 内自主工作。
 

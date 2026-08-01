@@ -281,14 +281,14 @@ const fs = runtime === 'bun' ? new BunFsPort() : new NodeFsPort()
 
 ## 相关术语
 
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — E1 静态边界
-- [Work](/glossary/zh-cn/work-terms.html#work) — E2 动态协作
-- [Blueprint](/glossary/zh-cn/asset-terms.html#blueprint) — 跨 AssetKind 组合模板
-- [Domain](/glossary/zh-cn/core-terms.html#domain) — 业务边界
-- [Probe](/glossary/zh-cn/proof-terms.html#probe) — 验证传感器
-- [Part](/glossary/zh-cn/work-terms.html#part) — Task 内执行单元
-- [PlanLock](/glossary/zh-cn/asset-terms.html#planlock) — Asset 创建后强校验卡
-- [Built-in Asset](/glossary/zh-cn/project-terms.html#built-in-asset) — `@oxn/` scope 内置
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — E1 静态边界
+- [Work](/product/zh-cn/concepts/glossary.html#work) — E2 动态协作
+- [Blueprint](/product/zh-cn/concepts/glossary.html#blueprint) — 跨 AssetKind 组合模板
+- [Domain](/product/zh-cn/concepts/glossary.html#domain) — 业务边界
+- [Probe](/product/zh-cn/concepts/glossary.html#probe) — 验证传感器
+- [Part](/product/zh-cn/concepts/glossary.html#part) — Task 内执行单元
+- [PlanLock](/product/zh-cn/concepts/glossary.html#planlock) — Asset 创建后强校验卡
+- [Built-in Asset](/product/zh-cn/concepts/glossary.html#built-in-asset) — `@oxn/` scope 内置
 
 ## 相关决策
 

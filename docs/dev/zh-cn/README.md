@@ -2,7 +2,7 @@
 
 > 本目录是 OpenXenon 维护者 + 贡献者写给开发者看的操作手册，不是产品文档。
 >
-> 术语查询见 [术语表](../../glossary/zh-cn/)；架构说明见 [架构总览](./architecture.html)。
+> 术语查询见 [术语表](/product/zh-cn/concepts/glossary.md)（RFC-0017 单一权威源）；架构说明见 [架构总览](./architecture.html)。
 
 ## 1. OpenXenon 文档分类
 
@@ -15,7 +15,7 @@ OpenXenon 的文档分 5 类（不使用"L1/L2/L3 三层架构"等内部术语�
 | **API Reference** | `docs/product/zh-cn/reference/` | 使用者 |
 | **Architecture Guide** | `docs/dev/zh-cn/architecture.md` | 理解架构 |
 | **Migration Guide** | `docs/product/zh-cn/changelog/` + `.changes/` | 升级用户 |
-| **Glossary** | [`docs/glossary/zh-cn/`](../../glossary/zh-cn/) | 全员（术语汇总） |
+| **Glossary** | [`/product/zh-cn/concepts/glossary.md`](/product/zh-cn/concepts/glossary.md) | 全员（术语汇总，RFC-0017 单一权威源） |
 
 > **dev/ 目录的文档不进 VitePress 构建**（仅作仓库内部手册）；其他 5 类进站点。
 
@@ -60,15 +60,11 @@ OpenXenon 的文档分 5 类（不使用"L1/L2/L3 三层架构"等内部术语�
 - **vocabulary**：`@prj/domains/oxn-engine-domain`, `oxn-asset-domain`, `oxn-domain`
 - **implementation**：`@prj/stack/oxn-stack`
 
-> **强约束**：`doc-author.validate` slot 校验产物禁止出现 `.openxenon/` 相对路径——dev/ 文档作为外部手册无法感知该目录。术语引用必须指向 [`docs/glossary/zh-cn/`](../../glossary/zh-cn/)。
+> **强约束**：`doc-author.validate` slot 校验产物禁止出现 `.openxenon/` 相对路径——dev/ 文档作为外部手册无法感知该目录。术语引用必须指向 [`/product/zh-cn/concepts/glossary.md`](/product/zh-cn/concepts/glossary.md)。
 
 ## 5. 术语与概念
 
-dev/ 文档涉及的术语汇总见 [术语表](../../glossary/zh-cn/)：
-
-- [核心术语](../../glossary/zh-cn/core-terms) — OpenXenon / OXN / IAP / Intent / Align / Proof / Asset / Work / ProbeOutcome / Insight / Daemon
-- [引擎术语](../../glossary/zh-cn/engine-terms) — Kernel / Infra / OXL / Daemon / IAPError / OXNCrash / CliInputError / Proof / OXN Engine
-- [资产术语](../../glossary/zh-cn/asset-terms) — AssetKind / Blueprint / Workflow / Stack / Domain / Roadmap / External / PlanLock / AssetPaper
+dev/ 文档涉及的术语汇总见 [术语表](/product/zh-cn/concepts/glossary.md)（RFC-0017 单一权威源，按字母序排列 140 term）。
 
 ## 6. 版本
 

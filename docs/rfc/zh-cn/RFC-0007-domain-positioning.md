@@ -309,13 +309,13 @@ Domain B: term "Order" desc "订单状态机"   // ⚠️ E_DOMAIN_TERM_CONFLICT
 
 ## 相关术语
 
-- [Referent](/glossary/zh-cn/core-terms.html#referent) — OXN 统一设计模式
-- [Floor](/glossary/zh-cn/core-terms.html#floor) — 下限参照
-- [Ceiling](/glossary/zh-cn/core-terms.html#ceiling) — 上限机制（OXN 不介入）
-- [Domain](/glossary/zh-cn/core-terms.html#domain) — E1 业务词汇 SSOT
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — E1 静态边界（= Ontology）
-- [Daemon](/glossary/zh-cn/engine-terms.html#daemon) — OXN Engine 后台守护进程
-- [Built-in Asset](/glossary/zh-cn/project-terms.html#built-in-asset) — `@oxn/` scope 内置
+- [Referent](/product/zh-cn/concepts/glossary.html#referent) — OXN 统一设计模式
+- [Floor](/product/zh-cn/concepts/glossary.html#floor) — 下限参照
+- [Ceiling](/product/zh-cn/concepts/glossary.html#ceiling) — 上限机制（OXN 不介入）
+- [Domain](/product/zh-cn/concepts/glossary.html#domain) — E1 业务词汇 SSOT
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — E1 静态边界（= Ontology）
+- [Daemon](/product/zh-cn/concepts/glossary.html#daemon) — OXN Engine 后台守护进程
+- [Built-in Asset](/product/zh-cn/concepts/glossary.html#built-in-asset) — `@oxn/` scope 内置
 
 ## 相关决策
 

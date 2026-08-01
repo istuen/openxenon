@@ -74,11 +74,11 @@ OXN 项目文档按"情态"分三类——**Asset（定义性）** / **RFC（规
 
 ## 相关术语
 
-- [Definitional Modality](/glossary/zh-cn/project-terms.html#definitional-modality) — Asset 情态
-- [Prescriptive Modality](/glossary/zh-cn/project-terms.html#prescriptive-modality) — RFC 情态
-- [Descriptive Modality](/glossary/zh-cn/project-terms.html#descriptive-modality) — Doc 情态
-- [RFC](/glossary/zh-cn/project-terms.html#rfc) — 规定性文档载体
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — 定义性文档载体
+- [Definitional Modality](/product/zh-cn/concepts/glossary.html#definitional-modality) — Asset 情态
+- [Prescriptive Modality](/product/zh-cn/concepts/glossary.html#prescriptive-modality) — RFC 情态
+- [Descriptive Modality](/product/zh-cn/concepts/glossary.html#descriptive-modality) — Doc 情态
+- [RFC](/product/zh-cn/concepts/glossary.html#rfc) — 规定性文档载体
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — 定义性文档载体
 
 ## 相关决策
 

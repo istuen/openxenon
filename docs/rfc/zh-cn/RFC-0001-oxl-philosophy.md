@@ -100,11 +100,11 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 
 ## 相关术语
 
-- [OXL](/glossary/zh-cn/core-terms.html#oxl) — OpenXenon DSL
-- [Blueprint](/glossary/zh-cn/asset-terms.html#blueprint) — Props 漏斗承担者
-- [Part](/glossary/zh-cn/work-terms.html#part) — Task 内执行单元
-- [Probe](/glossary/zh-cn/proof-terms.html#probe) — observe 维度承载者
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — E1 静态边界
+- [OXL](/product/zh-cn/concepts/glossary.html#oxl) — OpenXenon DSL
+- [Blueprint](/product/zh-cn/concepts/glossary.html#blueprint) — Props 漏斗承担者
+- [Part](/product/zh-cn/concepts/glossary.html#part) — Task 内执行单元
+- [Probe](/product/zh-cn/concepts/glossary.html#probe) — observe 维度承载者
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — E1 静态边界
 
 ## 相关决策
 

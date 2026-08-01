@@ -135,4 +135,4 @@ oxn work migrate <work-name>
 
 ### 废弃了哪些术语？
 
-`noun` → `term`，`verb` → 已删除，`domain_rules` → `invariant`，`expectation` / `rule` → Probe 承载，`stage` → `slot`，`@glo` → `@prj`。完整列表见 [Glossary](./reference/glossary.md)。
+`noun` → `term`，`verb` → 已删除，`domain_rules` → `invariant`，`expectation` / `rule` → Probe 承载，`stage` → `slot`，`@glo` → `@prj`。完整列表见 [Glossary](./concepts/glossary.md)。

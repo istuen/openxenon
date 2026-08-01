@@ -1,6 +1,6 @@
 # Context Map
 
-> OpenXenon 是一个多 context 词汇架构：8 个 Domain .md 文件共同构成项目术语权威源。
+> OpenXenon 是一个多 context 词汇架构：9 个 Domain .md 文件共同构成项目术语权威源。
 > 本文件是入口索引；各 Domain 文件是各 context 的精确定义。
 >
 > **0.6.x 新增**：OxnProjectDomain（项目工程元层）—— 定义文档三情态分离（Asset / RFC / Doc）、
@@ -19,6 +19,7 @@
 | **OxnInsightDomain** | [.openxenon/assets/domains/oxn-insight-domain.md](./.openxenon/assets/domains/oxn-insight-domain.md) | Insight 业务领域；涌现层 + 跨 Work 模式 |
 | **OxnCliDomain** | [.openxenon/assets/domains/oxn-cli-domain.md](./.openxenon/assets/domains/oxn-cli-domain.md) | OXN CLI 领域；命令 + i18n + Skill |
 | **OxnProjectDomain** | [.openxenon/assets/domains/oxn-project-domain.md](./.openxenon/assets/domains/oxn-project-domain.md) | OXN 项目工程领域（v0.7+）；文档三情态 + 内置 Asset 两层 + 自举种子豁免 |
+| **OxnDraftDomain** | [.openxenon/assets/domains/oxn-draft-domain.md](./.openxenon/assets/domains/oxn-draft-domain.md) | OXN Draft 业务领域；描述性工作稿管理（report/issue/design） |
 
 ## Relationships
 
@@ -41,6 +42,8 @@ OxnInsightDomain（reference 全部 6 个业务 context）
 
 OxnProjectDomain（v0.7+，reference oxn-domain + oxn-engine-domain + oxn-asset-domain，
                 单向补父域未说的元层词汇；不向下引用其他子域）
+OxnDraftDomain（reference oxn-asset-domain + oxn-project-domain，
+                描述性工作稿（Draft）业务边界；不向下引用其他子域）
 ```
 
 - **OxnDomain → 所有子 Domain**：单向引用，root 不被引用
@@ -49,6 +52,7 @@ OxnProjectDomain（v0.7+，reference oxn-domain + oxn-engine-domain + oxn-asset-
 - **OxnWorkDomain → OxnAssetDomain + OxnProofDomain**：Work 编排 Asset + 产出 Proof
 - **OxnInsightDomain → 全部 6 个 context**：Insight 涌现层跨 Work 推理，消费所有 context
 - **OxnProjectDomain → oxn-domain/oxn-engine-domain/oxn-asset-domain**：项目工程元层，引用父域 + 资产相关子域；自身不被任何子域引用（避免环形依赖）
+- **OxnDraftDomain → oxn-asset-domain + oxn-project-domain**：Draft 是 Asset 的前置状态（描述性情态），同时受项目工程元层约束
 
 ## 核心术语锐化（来自 2026-07-21 / 07-22 / 07-23 grilling session）
 
@@ -62,7 +66,8 @@ OxnProjectDomain（v0.7+，reference oxn-domain + oxn-engine-domain + oxn-asset-
 
 ### OpenXenon（产品定位）
 - **形态**：协作工具
-- **slogan**：OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据
+- **slogan**：OpenXenon 是工程师定义 AI Agent 协作边界的工具
+- **正定义**：工程师通过 OXN 定义 Asset，作为 AI Agent 在 Work 约束的协作边界，由 Proof 验证其成果
 - **核心隐喻**：通道——AI Agent 通过 OXN CLI 走的部分才有证据；不走 = 通道外，工程师自负
 - **三方协作模型**（2026-07-22 锐化）：
   - **工程师** = 发起方（Asset 管理 + 审查 Proof）；通过 `oxn` CLI 操作
@@ -111,172 +116,28 @@ OxnProjectDomain（v0.7+，reference oxn-domain + oxn-engine-domain + oxn-asset-
 - **不聚合判定**：OXN 不做"整体合格/失败"聚合判定；只提供各状态 Probe 数量
 - **判定权归工程师**
 
-### R&N 三十二核心术语 ↔ OXN 对照表（ADR-0072 + ADR-0073 + ADR-0074 + ADR-0075 + ADR-0076 + ADR-0077 + ADR-0078 + ADR-0079 完整版）
+## 跨层引用
 
-| # | R&N 术语 | OXN 对应物 | 关键偏离 |
-|---|---|---|---|
-| 1 | 智能体结构 | AI Agent（非 OXN Engine） | OXN 是参照系非智能体 |
-| 2 | 世界模型 | Asset（只读参照） | 写侧拆成三角色协议，无单一更新函数 |
-| 3 | 感知器 | AI 工具 I/O + Probe（双轨） | Probe 是 OXN 确定性传感器，AI 主动调用自证 |
-| 4 | 执行器 | AI 工具调用 + OXN writer（双轨） | Work 是通道非执行器 |
-| 5 | 动作 | OXN CLI 调用 + AI 工具调用（双轨） | 原子性锚在 CLI 边界；OXN 无动作选择函数 |
-| 6 | 解 | Work（解的目标参照） | OXN 不做业务 goal-test，Work 自带结构性完成参照 |
-| 7 | 图 | Task DAG + Blueprint slot DAG | ~~Round = 元搜索~~ **修订（ADR-0075）**：Round loop = AI 搜索行为的外化记录，不是 OXN 的搜索；Task DAG = AI 搜索计划的外化记录 |
-| 8 | 环境类型（六轴） | 不直接对应——补偿 agent 非确定性，不补偿环境性质 | OXN 不补偿环境缺陷；参照系是 scope-bound + temporal anchor；功能是标记参照（非 drift recovery） |
-| 9 | agent program types | OXN 把 LLM 从不可靠 type 2-3 升到可靠 type 2-3，不进 type 4 | utility 故意外包给工程师；Insight 产出 pattern 建议，utility 决策在工程师 |
-| 10 | rationality | 分布式理性（AI 伪理性 + 工程师真理性 + OXN 对齐参照） | OXN 提高 floor 不提高 ceiling；AI 可涌现更优但也可局部最优全局非优 |
-| 11 | problem formulation | initial=Work create / actions=Task DAG+工具+CLI / goal_test=结构性+业务性 / path_cost=slot DAG+Tasks | path_cost 不是最小化代价；判据是"确定性满足"非"路径优化" |
-| 12 | learning agents | 分布式学习（双向闭环） | 正向：工程师经验→Asset→Work→AI 执行→Insight 统计→工程师学习；反向：工程师沉淀 Asset→AI 获取更优边界。OXN 不做 critic/learning element；**Insight 推理主体是 AI 不是 OXN**（ADR-0074） |
-| 13 | search strategies | 不直接对应——搜索是 AI Agent 自有能力，OXN 是搜索的参照物记录 | OXN 不搜索；提供 `h(n)` 参照原料（Asset/Blueprint/Probe catalog）让 AI 的 informed search 有稳定启发锚点。Uninformed search（AI 裸读代码）OXN 不介入。Round loop 不是 OXN 搜索机制，是 AI 搜索行为被 OXN 记录（ADR-0075）；maxIterations 从硬限改 Blueprint 配置 + 软反馈 |
-| 14 | adversarial search | 不直接对应——对抗在 AI-vs-AI 之间，不在 OXN-vs-AI 之间 | OXN 无利益不博弈，是对抗关系的验证边界非博弈方。对抗在 AI 主子委托链（1:N，主编排 Task 子执行，或跨会话委托更小 LLM）。**软对抗两层分离**（ADR-0076）：Probe 声明 AI 可见（审计链层）+ Probe 验证标准 AI 不可见（对抗设计层）。**跨 LLM 参照**：不同 LLM 通过 OXN CLI 读持久化 context 对齐同一确定性边界 |
-| 15 | constraint satisfaction | CSP 的范围与执行记录（非 CSP solver） | R&N CSP = solver 寻找满足约束的赋值。OXN 不解 CSP——承担"CSP 的范围（Asset 三边界聚焦约束）+ 执行记录（Probe 验证 + trace 记录）"。LLM 天然会逃离/修改约束（非确定），OXN 不阻止，反而记录作为工程师追溯证据。约束聚焦提高 LLM 注意力（floor），不保证全遵守（ceiling 不限） |
-| 16 | knowledge representation | Asset 全是声明式（字面层）；"程序式"是执行语义分属 OXN + AI | R&N 知识表示 = agent 内部表示以推理。Asset 全是声明式（MD 文档不执行，含 `script` 也是声明式描述"要执行什么"）。执行语义分属两主体：OXN 通过 Probe script 执行（验证传感器）+ AI 也可执行（导航传感器，获取一手反馈）。同一声明式 script 因执行主体不同成为不同传感器。Asset 是给 AI 参照的外部知识表示（非 OXN 内部推理用）。Blueprint 聚合约束后在 Work/Task Context 里作为软约束边界——提高 LLM 注意力（floor），不根本改变 LLM 黑盒（ceiling）。两步验证：AI 先自验→OXN 后公证 |
-| 17 | planning | Blueprint 静态模板（参照）+ AI 动态规划（执行）+ OXN 存储（载体） | R&N planning = agent 内部规划动作序列。OXN 不是 planner——三层（Work/Task/Part）是**职责分工**（工程师定义 Blueprint / OXN 存储 / AI 使用）不是规划深度。规划深度在 slot/task DAG，灵活性归 AI 发挥，不由 OXN 或工程师限死。Blueprint = 工程师沉淀的静态规划模板（参照锚点），AI 依模板做动态规划编排 Task DAG。OXN 不规划，提供规划参照 + 存储载体 + 记录规划行为。和搜索（Term #13）/CSP（Term #15）同构 |
-| 18 | utility theory | **Utility 归属 AI（注意力机制）；OXN 机制 = 目标→边界参照转换** | R&N MEU = agent 内部效用函数 + 概率模型 + argmax 优化。三组件全在 AI（注意力机制即内置 utility）。工程师目标是 utility 依据，但直接应用到非确定性 AI = 不可知（0%-100% 不可观测）。**OXN 的核心机制**：把工程师目标转换为边界参照（非"必须这么做"，而是"依据其做会提高确定性"）——解释 Referent（ADR-0072）存在的根本原因：不可知→可观测。Probe verdict **不是退化 utility**，是边界参照验证（satisfaction ≠ optimization，ADR-0073 判据 4）。Term #9 修订：utility 非"外包给工程师"，是"AI 自有，工程师提供依据，OXN 转换为边界参照" |
-| 19 | decision theory | **决策辅助（非决策方）；AI 在 ignorance 下决策** | R&N decision = utility + probability。两者都归属 AI（Term #18 utility + AI 隐式概率模型）。OXN 不参与 decision network 三节点（chance/decision/utility）。AI 的 utility 隐式（注意力机制不可观测），实际在 **ignorance**（最深不确定性）下决策。**OXN 不降级 ignorance→risk**——提供决策辅助：Blueprint 减少决策空间 + Asset 聚焦注意力 + Probe 反馈信号。不改变不确定性类型，提高决策质量（floor）。Insight = 决策辅助信号（非概率估计原料） |
-| 20 | communication | **AI↔AI = shared blackboard；OXN↔工程师 = daemon 主动通信** | R&N communication = agent 之间直接交换信息（speech acts + protocol）。OXN 架构里 AI 主↔AI 子**不直接通信**，通过 OXN 持久化的 Work/Task Context 间接协调——OXN 是 shared blackboard（信息存储大家可见，AI 通信不需要携带上下文，通过 OXN 获取即可）。但是否携带、如何通信是 AI Agent 自己的事。**两种通信关系分离**：AI↔AI 走 shared blackboard（OXN 不主动传递，只持久化共享状态）；OXN↔工程师走 daemon 主动通信（监听 + 预警，这是不同的通信方）。通信也是 AI 自有能力，OXN 提供共享黑板参照——和搜索（Term #13）/planning（Term #17）/utility（Term #18）同构 |
-| 21 | belief state | **信念锚点 + 世界模型抽象参考 + AI 构建脚手架** | R&N belief state = agent 对部分可观测环境的内部估计。**软件工程特化**：软件本身就是一种世界模型，工程师的信念状态通过编程外化为软件世界模型。AI Agent 需基于自己的信念状态理解 + 构建软件世界模型。OXN 的三重角色：(1) 信念锚点——给 AI 非确定信念提供确定性参照；(2) 世界模型抽象参考——Asset 是工程师信念外化的结构化表达（非代码本身）；(3) AI 构建脚手架——若 AI 选择 OXN，Asset/Blueprint/Work 提供构建软件世界模型的脚手架。OXN 不是 agent（Term #1）对自己的产物有确定性知识（不是 belief），对 AI 内部状态完全不可见。深化 Term #2（Asset = 世界模型参照）+ 贯通 Term #16（外部知识表示）+ Term #18（目标→边界参照转换） |
-| 22 | knowledge engineering | **OXN 无知识工程；做的是边界工程（ADR-0078）** | R&N knowledge engineering = 为 knowledge-empty agent 注入知识（acquisition→representation→base→inference→validation）。**根本范式差异**：R&N agent 是 knowledge-empty（需外部注入知识），LLM agent 是 knowledge-full（预训练内化庞大知识库）。LLM-based agent 是 R&N agent 子集（成书后出现），自带所有智能体组件，但 LLM 原理决定其非稳定——这是与 R&N agent 的最大区别。OXN 不做知识工程——Asset 不是知识（不是给空机器的推理原料），是**边界线索**（给满载 AI 的约束参考）。工程师写 Asset 是 boundary acquisition 非 knowledge acquisition。前提（ADR-0078）→机制（ADR-0077）→结构（ADR-0072）→判据（ADR-0073）闭环完成 |
-| 23 | uncertainty / probability | **当前阶段无概率模型（确定性边界）；下一代方向 = 概率边界；统计原料 AI/工程师消费** | R&N probability = agent 维护显式概率模型 + 贝叶斯更新信念。**三结构**：(1) Asset 聚焦知识使用——LLM 不只有领域知识，有过多知识（含非当前所需），Asset 让 LLM 从海量知识专注当前领域（补充 ADR-0078）。(2) **概率边界是 OXN 下一代核心**——当前 Probe true/false 构建确定性边界，未来通过概率定义边界（更适应 LLM 与现实软件不确定性）。当前不做因工程师不具备这方面知识经验——"我的边界决定 OXN 当前开发边界"（ADR-0078 边界工程的递归应用）。(3) OXN 可提供概率统计（贝叶斯等确定公式计算），但不决定下一步或 Asset 演化——AI Agent 与工程师决定。概率统计也是原料非推理（ADR-0074）。knowledge-full（知识维度）与 ignorance（决策维度）正交无矛盾 |
-| 24 | ontology | **Asset 全体是 Ontology（ADR-0079）；边界 = Ontology 定义；形式化推理保留不实现** | R&N ontology = 领域概念化的显式表达（实体 + 属性 + 关系）+ 形式化推理（description logic）。**Asset 全体是 Ontology**——不只 Domain，所有类型（Domain/Workflow/Stack/Blueprint）都描述"构建软件是什么、如何关联"，非具体实现（实现交 AI Agent）。**边界 = Ontology 定义本身**——Asset 的边界不是外加约束，就是 Ontology 的定义；对 LLM 可确定性（LLM 知识库包含这些概念或可推理出）。**形式化推理归属 AI Agent**——OXN 无 inference engine（ADR-0074），但 AI 读 Asset Ontology 自行推理，结果作为 Insight 给工程师决策。**OXN 形式化推理能力保留不实现**——理论上可行（数学公式推导，确定性），当前不做因：(a) 工程师能力不具备；(b) 让 AI 实现 OXN 推理功能→工程师无法验证→噪音+损害 OXN 确定性。ADR-0078 边界工程的再次递归应用 |
-| 25 | Bayesian networks | **当前无对应；slot/task DAG 是执行编排非概率依赖；BN 实现保留不实现** | R&N BN = DAG 编码概率依赖 + 条件概率推理。OXN 的 slot/task DAG 也是 DAG 但语义不同——后者是**执行编排**（确定性时序依赖），前者是**概率推理结构**（随机变量 + 条件概率）。两者不能类比。OXN 不做概率推理（Term #23）。**BN 实现保留不实现**——与形式化推理（ADR-0079）、概率边界（Term #23）同类保留决策。slot/task DAG 是否演化（概率化）属下一代再确认。三个保留决策形成 OXN 下一代方向集群：概率边界 + 形式化推理 + 贝叶斯网络 |
-| 26 | Markov decision process | **当前无对应；属 AI 深水区，超出 OXN 轻量级定位；保留不实现** | R&N MDP = 序贯决策形式化（S/A/P/R/π\*）。OXN 有状态机（Work/Task 生命周期）但无概率转移/奖励/最优策略。OXN 状态机是马尔可夫的（当前状态决定可用命令），AI 决策是非马尔可夫的（依赖历史 Context）——但这属设计观察非 MDP 实现。**MDP 保留不实现**——进入 AI 深水区和 LLM 底层原理，对当前 OXN 是"甜点"，超出"轻量级人机协作工具"产品定位。是否引入待工程师使用 OXN 后再考虑。**保留决策集群现共四项**：概率边界（Term #23）+ 形式化推理（ADR-0079）+ 贝叶斯网络（Term #25）+ MDP（Term #26），共同边界判据 = 轻量级定位 |
-| 27 | reinforcement learning | **OXN 不参与 AI 学习** | R&N RL = agent 通过试错 + reward signal 学习最优策略。Probe verdict **不是 reward**——RL reward = 标量信号驱动 policy 自动更新；Probe = 约束满足检查（pass/fail），AI 自己决定如何用 verdict。学习是 AI 自有能力（Term #12 分布式学习）。往 OXN 引入 AI 学习 = 超出边界 |
-| 28 | neural networks / deep learning | **OXN 不碰（消费层 vs 实现层分离）** | LLM 底层原理。LLM 本身就是神经网络产物，OXN 消费 LLM 但不实现神经网络。消费层（OXN 使用 LLM 输出）vs 实现层（LLM 内部机制）严格分离 |
-| 29 | supervised / unsupervised learning | **OXN 不碰** | 机器学习训练范式。OXN 不训练模型，不消费训练数据。Insight 统计是频率统计（ADR-0074 原料提供者）非 ML 训练 |
-| 30 | hidden Markov models (HMM) | **保留不实现** | 时序概率模型，与贝叶斯网络（Term #25）/MDP（Term #26）同类保留。属下一代概率方向集群 |
-| 31 | perception (vision / speech) | **OXN 不碰** | 感知模态，超出软件工程协作范围。OXN 的"感知"是 Probe（确定性验证传感器，Term #3），非视觉/语音感知 |
-| 32 | robotics | **OXN 不碰** | 物理 agent 领域。OXN 服务软件工程协作，不涉及物理世界交互 |
-
-### OXN 实现边界四判据（ADR-0073）
-
-> 评估任何 OXN 新功能时，过四判据——任一判据命中"不该实现"则拒绝。四判据全过则符合 OXN 定位。
-
-| # | 判据 | 维度 | 该实现 | 不该实现 |
-|---|---|---|---|---|
-| 1 | 补偿方向 | 补偿什么 | agent 非确定性 | 环境性质 |
-| 2 | agent 级别 | 升到哪级 | type 2-3 可靠性 | type 4 效用 |
-| 3 | floor/ceiling | 提哪限 | floor（下限参照保底） | ceiling（上限机制） |
-| 4 | 路径判据 | 路径怎么判 | 确定性满足 | 路径优化 |
-
-### 分布式学习闭环（ADR-0074）
-
-> **Insight 的推理主体是 AI，不是 OXN**。OXN 提供统计原料（确定性 floor），AI 主动请求并自己推理（ceiling 不限）。OXN 不做 critic、不做 learning element（确定性程序不更新自身逻辑）。
-
-**双向闭环**（Asset 是双向枢纽）：
-
-```
-正向（学习链）：
-  工程师经验 → Asset 静态边界 → Work 动态边界上下文 → AI 执行 →
-  Insight 统计原料 → 工程师学习 → （回到）工程师经验
-
-反向（赋能链）：
-  工程师沉淀 Asset → AI 从 Asset 获取更优边界 → AI 推理效能提升
-```
-
-**三方学习分工**：
-
-| 主体 | 学习形态 | 特性 |
-|---|---|---|
-| AI Agent | 上下文内 transient 学习 | 学快但忘快（窗口外就忘） |
-| 工程师 | 持久学习（沉淀 Asset） | 学慢但持久（Asset 冻结可累积） |
-| OXN Engine | 桥接层（不学习） | 提供统计原料把 AI transient 模式转成工程师可读 pattern |
-
-**v0.7+ Insight RFC 约束**：必须遵守"原料 vs 推理"分离——任何让 OXN 自己做推理/评判/学习的实现都越界。具体统计算法/查询接口待 RFC 探索。
-
-## 术语精简记录
-
-本次 grilling session 废弃以下 7 个术语（统一到 Proof 或 OXN Engine）：
-
-| 废弃词 | 原位置 | 决策内容归入 |
-|---|---|---|
-| TrustChain | oxn-engine-domain H3 + ADR-0057 | Proof desc |
-| EvidenceChain | （未引入） | —— |
-| EvidenceChainTriple | oxn-work-domain H3 + ADR-0011 | Proof desc（三件套是 Proof 的技术规范）|
-| Notary | oxn-engine-domain H3 + ADR-0031 | OXN Engine desc |
-| AuditChain | oxn-engine-domain H3 + ADR-0012 | OXN Engine desc |
-| Taint | oxn-proof-domain H3 | InterferenceFlag（合并）|
-| Verdict | oxn-proof-domain H3 + 代码 | 拆分为 ProbeOutcome + outcome + Report |
-
-详见 ADR-0066（术语精简立法）。
+- 详细 R&N 32 术语对照 → [RFC-0018 附录 A](./docs/rfc/zh-cn/RFC-0018-project-engineering-meta.html#附录-a-rn-32-术语对照)
+- OXN 实现边界四判据 → [RFC-0007 §D1](./docs/rfc/zh-cn/RFC-0007-domain-positioning.html#d1)
+- 分布式学习闭环 → [RFC-0003 §D4](./docs/rfc/zh-cn/RFC-0003-ai-collaboration.html#d4)
+- 协作边界分层 → [ADR-0084](./docs/adrs/0084-collaboration-boundary-layering.md)
+- OXN 环境 6 轴刻画 → [ADR-0085](./docs/adrs/0085-oxn-environment-characterization.md)
 
 ## 文档维护约定
 
 - Domain .md 文件是术语权威源（SSOT）
-- 外部读者使用 `docs/glossary/zh-cn/`（7 个文件）作为手册可见表
+- 外部读者使用 `docs/glossary/zh-cn/`（9 个文件）作为手册可见表（v0.7+ 拟收为单页 `docs/product/zh-cn/concepts/glossary.md`，见 RFC-0017）
 - 修改术语必须先修改 Domain 文件，再同步 glossary，再写新 ADR 记录决策
 - 新增术语前先在 `CONTEXT-MAP.md` 确认归属 context
 
-## 术语新增记录（2026-07-27 grilling session）
+## 历史快照（已迁出）
 
-> 以下是 2026-07-27 `/grilling` session 锐化的 7 个新术语。每条注明所属 context（按引用方向）、权威源文件、grilling 来源问题。
-> 与上方"术语精简记录"对偶——精简是废弃，新增是建立。
+详细历史（2026-07-21 / 07-22 / 07-23 / 07-27 / 07-30 / 07-31 grilling sessions + R&N 32 术语对照 + 分布式学习闭环 + 术语精简记录 + 6 次新增记录）已迁出本文件，迁入位置：
 
-| 术语 | 英文 | 定义 | 所属 context | 权威源 | grilling 来源 |
-|---|---|---|---|---|---|
-| **自举完成 v2** | Bootstrapping Closure (v2) | OXN Engine 能完整跑通 **Asset 生命周期 ∪ Work 生命周期 ∪ Proof 采集** 的**三轴联动**——单一 Work 实例同时穿过 Asset + Work + Proof 三轴。验证手段：跑端到端 Work（如 doc-rfc-workflow 升级一个 RFC）同时验证 (a) Asset 文件落盘 + planLock 更新、(b) frozen.json 完整、(c) ProbeOutcome 全 COMPLETED、(d) trace.jsonl 事件流连续、(e) Asset planLock 正确更新。达成后：OXN ≡ 完整产品 ≡ Release-Ready | OxnEngineDomain + OxnProjectDomain | `oxn-engine-domain.md` + `oxn-project-domain.md` | Q4 (自举完成 = 完整产品) + Q5 (Engine = Asset + Work + Proof 完整生命周期) |
-| **规划池** | Planning Pool | 前瞻性规划备选集合；住 `dev/pool/`；frontmatter **无 version 字段**；status 仅 `planned`；与 Roadmap（`dev/versions/`，version-bound）是同一类文档的两个生命周期阶段：备选 vs 已绑版本 | OxnProjectDomain | `oxn-project-domain.md#planning-pool` + `dev/pool/README.md` | C-OC2 (把 v0.7.0+ 规划集中到无版本号规划池) |
-| **单向 Blueprint 修复语义** | One-Shot Blueprint Fix Semantics | Blueprint slot DAG 单向流；ProbeOutcome=COMPLETED 即意味着该 Boundary 的目标已满足 = fixed；无需显式"fixed" 状态；DEVIATED → 工程师开新 Work（非 Blueprint retry，非自动 loop）；自动的是"Probe 验证自动跑"，非"修复自动循环" | OxnEngineDomain + OxnProofDomain | `oxn-proof-domain.md:inv-23` + `oxn-work-domain.md:inv-29` | G1 (debug wiring = 自动但 Blueprint 单向) |
-| **生命周期联动** | Lifecycle Linkage | 单一 Work 实例同时穿过 Asset + Work + Proof 三轴。是 v2 自举完成区分 v1 的关键判据——v1 只验证 Work 闭环；v2 验证三轴同时产生物理变化 | OxnEngineDomain | `oxn-engine-domain.md`（待补术语）+ `dev/pool/engine-closure-self-verify.md` | Turn 7 Q5 校准 + 第一/第二 Scene 串联 |
-| **Dev Version** | Dev Version | OXN 的开发版本分发渠道；git clone + bun install + bun run build 路径；目标用户 = 贡献者 + 内部 dogfood；当前 `dist/` gitignore | OxnCliDomain + OxnProjectDomain | `README.md` + `package.json#files` + `dev/pool/npm-ship-path.md` | Q8 (git clone = 开发版本) |
-| **Release Version** | Release Version | OXN 的正式发布渠道；npm install -g @istuen/openxenon 路径；目标用户 = 终端用户 + CI/CD；预编译 `dist/cli.js` + signature；v0.5+ 暂停发 npm | OxnCliDomain + OxnProjectDomain | `dev/pool/npm-ship-path.md` | Q8 (npm 才是 Release Version) + Q5 (npm ship 当前主线) |
-| **定义完成度 vs 实现完成度** | Definition Completeness vs Implementation Completeness | 完成度的两个正交维度：定义完成度 = glossary + Domain .md + RFC 全；实现完成度 = 代码 + 测试 + frozen.json 全；OXN 不评判完成度（ADR-0066/0067），但完成度本身有定义/实现两层 | OxnDomain | `oxn-domain.md` + `CONTEXT-MAP.md`（outcome 聚合结构是实现完成度判据，glossary 是定义完成度判据）| Q2 (术语是定义完成度，非实现完成度) |
+- R&N 32 术语对照 → [RFC-0018 附录 A](./docs/rfc/zh-cn/RFC-0018-project-engineering-meta.html#附录-a-rn-32-术语对照)
+- 分布式学习闭环 / 四判据 → [RFC-0007 §D1](./docs/rfc/zh-cn/RFC-0007-domain-positioning.html#d1) + [RFC-0003 §D4](./docs/rfc/zh-cn/RFC-0003-ai-collaboration.html#d4)
+- 术语精简 / 新增历史 → `.openxenon/drafts/rfc/context-map-history.md`（不追踪）
+- AGENTS.md 0.6.x 三情态架构 → [RFC-0009 文档三情态分离](./docs/rfc/zh-cn/RFC-0009-doc-three-modalities.html)（RFC-0018 扩展为四层）
 
-### 2026-07-27 锐化链（一句话串联）
-
-```
-Q1（alpha 阶段目的 = 功能特性完整性梳理）
-  → Q2（完成度 = 定义 + 实现两层）
-  → Q4（OXN 自举完成 = 完整产品）
-  → Q5（Engine = Asset + Work + Proof 完整生命周期）
-  → G1（debug wiring = 自动但 Blueprint 单向 → inv-23）
-  → G2（Promote RFC-0013 → 走 doc-rfc-workflow Blueprint）
-  → C-OC2（v0.7.0+ 规划 → dev/pool/ 规划池，0.7.0 暂空）
-  → Q8（npm ship 主线）
-```
-
-### 落地执行（2026-07-27 已完成）
-
-| # | 交付物 | 落地文件 |
-|---|---|---|
-| D1 | 6 术语新增（含 1 个衍生） | `CONTEXT-MAP.md`（本节）+ `oxn-project-domain.md` + `oxn-proof-domain.md` |
-| D2 | `oxn-proof-domain.md:inv-23 probe-pass-implies-fixed` | `oxn-proof-domain.md` |
-| D3 | `dev/versions/` → `dev/pool/` 迁移 + frontmatter 转换 + README 重写 | `dev/pool/{emergence,asset-graph,ai-three-modes,anchor-slot,term-upstream-dag}.md` + `dev/pool/README.md` + `dev/versions/README.md` |
-| D4 | RFC-0013 status: Draft → Accepted + Errata 2026-07-27（D3 规划池补充）| `docs/rfc/zh-cn/RFC-0013-versioning-policy.md` |
-| D5 | Engine 闭环自证 Work 模板 | `dev/pool/engine-closure-self-verify.md` |
-| D6 | npm ship 路径（6 个 Block 阻塞解除顺序）| `dev/pool/npm-ship-path.md` |
-
-## 术语新增记录（2026-07-30 grilling session）
-
-> 以下是 2026-07-30 `/grilling` session 锐化的术语。每条注明所属 context（按引用方向）、权威源文件、grilling 来源问题。
-> 与上方"术语精简记录 / 2026-07-27 新增记录"形成三情态（建立 + 演进）。
-
-| 术语 | 英文 | 定义 | 所属 context | 权威源 | grilling 来源 |
-|---|---|---|---|---|---|
-| **Version Hygiene** | Version Hygiene | Dev Version 与 Release Version 在运行时的唯一区分器——dev 版本号恒严格大于已发布 release 版本号。OXN CLI **不**注入 build metadata（git SHA / build timestamp / "dev" 标记）；版本号字符串本身是唯一信号。判据：`oxn --version` 在 dev shell 与 release shell 输出不同字符串。流程保障：`release-cut` workflow 的 `post-publish-bump` slot 在 publish 后**立即** bump dev 到下一个 `-alpha.0`，关闭共享版本号过渡窗口 | OxnCliDomain + OxnProjectDomain | `docs/adrs/0083-version-hygiene-over-build-metadata.md` + `oxn-cli-domain.md` + `oxn-project-domain.md` + `scripts/oxn-switch.sh` | Q4 (version 字符串足以区分) → Q6 (rejected build metadata) → Q9 (post-publish-bump slot 关闭歧义窗口) |
-| **oxn-switch** | oxn-switch | 在 Dev Version 与 Release Version 之间切换的命令工具（`pnpm oxn:dev` / `pnpm oxn:prod` / `pnpm oxn:status`），核心操作是当前 node 全局 bin 的 npm link ↔ npm install -g 互斥切换。串行切换：一次只一个 oxn 生效（PATH 互斥）| OxnCliDomain | `scripts/oxn-switch.sh` + `package.json#scripts` | 用户校正"npm link 就是 Dev 版" + 参考方案适配 |
-
-### 2026-07-30 锐化链（一句话串联）
-
-```
-Q1（alpha 阶段目的 = 功能特性完整性梳理）
-  → Q2（完成度 = 定义 + 实现两层）
-  → Q3（Skill 写死 oxn 不能改）
-  → Q4（version 字符串足以区分 dev/release，无需 build metadata）
-  → Q5（同时 vs 串行 → 串行，采纳参考方案）
-  → Q6（rejected build metadata，version hygiene 替代）
-  → Q7（包管理器：真切 pnpm vs 退回 bun link → 阶段化方案：pnpm 管理 + bun 构建/测试）
-  → Q8（npm ship 主线，npm pack 本地 tarball 占位）
-  → Q9（post-publish-bump slot 关闭 version hygiene 歧义窗口）
-```
-
-### 落地执行（2026-07-30 已完成）
-
-| # | 交付物 | 落地文件 |
-|---|---|---|
-| D1 | 计划文档落盘 | `.openxenon/drafts/oxn-dev-release-coexistence.md` |
-| D2 | Step 0 spike：pnpm install + bun test 兼容性验证（R2 通过） | `pnpm-workspace.yaml` + `pnpm-lock.yaml` + `bun.lock.bak` |
-| D3 | Step 1 pnpm 包管理迁移：.gitignore + AGENTS.md + lefthook.yml + 5 个 CI workflows | `.gitignore` + `AGENTS.md` + `lefthook.yml` + `.github/workflows/{ci,docs,publish,runtime,validate-deps}.yml` |
-| D4 | Step 2 oxn 切换脚本（npm link ↔ npm install -g 串行） | `scripts/oxn-switch.sh` + `package.json#scripts.oxn:dev|prod|status` |
-| D5 | Step 3 Version Hygiene 落地：release-cut post-publish-bump slot + ADR-0083 + 术语 | `.openxenon/assets/workflows/release-cut.md` + `docs/adrs/0083-version-hygiene-over-build-metadata.md` + `oxn-cli-domain.md` + `oxn-project-domain.md` |
-| D6 | Step 4 skill-store 规则文档化（嵌入 oxn-switch.sh 注释） | `scripts/oxn-switch.sh` 头注释 |
+> 本文件未来仅承载 9 Domain 索引 + 9 个核心术语锐化段（≤ 100 行）。

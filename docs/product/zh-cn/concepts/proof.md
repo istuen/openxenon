@@ -6,10 +6,12 @@ title: 证明
 
 # 证明（E3 · Engine 独立验证记录）
 
+> 术语查询见 [术语表](./glossary.md)（RFC-0017 单一权威源）。本页不重定义术语。
+
 > **Proof 是 OXN 的第三结构实体（E3）——OXN Engine 的独立验证记录**，由 `frozen.json`（机器 SSOT）+ `outcome.md`（人类 SSOT）+ `probe-stats.json`（全局索引）三层证据构成。
 > v0.6 起 `oxn proof` 是独立子命令（不再依赖 `oxn work finalize` 触发），但 Proof 仍可在 Work 内作为 Proof 模式（Align 阶段的探针断言）。
 
-> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
+> **OpenXenon 是工程师定义 AI Agent 协作边界的工具。**
 
 ## 1. Proof 概念
 
@@ -532,7 +534,7 @@ OXL 编译期校验 required 字段**必须**在五级链中有显式来源，�
 | Probe 是否失败 | 客观事实记录（仅基于事实判定） |
 | 业务是否正确 | 人类 |
 
-> slogan 印证：**OpenXenon 为协作提供边界与证据。**
+> slogan 印证：**OpenXenon 是工程师定义 AI Agent 协作边界的工具。**
 
 ### 11.4 与 E4 Insight 的边界
 

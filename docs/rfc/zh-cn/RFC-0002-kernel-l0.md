@@ -247,13 +247,13 @@ probe-stats.json **不是** D6 三件套的一部分——三件套是单次 wor
 
 ## 相关术语
 
-- [Kernel](/glossary/zh-cn/engine-terms.html#kernel) — L0 纯逻辑验证模块
-- [Infra](/glossary/zh-cn/engine-terms.html#infra) — L1 副作用/IO 执行模块
-- [ProbeObservation](/glossary/zh-cn/proof-terms.html#probeobservation) — 物理事实层
-- [ProbeOutcome](/glossary/zh-cn/proof-terms.html#probeoutcome) — 业务判定层
-- [PathPort](/glossary/zh-cn/engine-terms.html#pathport) — L1 注入式路径操作接口
-- [Frozen](/glossary/zh-cn/proof-terms.html#frozen) — 不可变证据文件
-- [LambdaVacuum](/glossary/zh-cn/engine-terms.html#lambdavacuum) — L0 零 IO 约束的正式术语
+- [Kernel](/product/zh-cn/concepts/glossary.html#kernel) — L0 纯逻辑验证模块
+- [Infra](/product/zh-cn/concepts/glossary.html#infra) — L1 副作用/IO 执行模块
+- [ProbeObservation](/product/zh-cn/concepts/glossary.html#probeobservation) — 物理事实层
+- [ProbeOutcome](/product/zh-cn/concepts/glossary.html#probeoutcome) — 业务判定层
+- [PathPort](/product/zh-cn/concepts/glossary.html#pathport) — L1 注入式路径操作接口
+- [Frozen](/product/zh-cn/concepts/glossary.html#frozen) — 不可变证据文件
+- [LambdaVacuum](/product/zh-cn/concepts/glossary.html#lambdavacuum) — L0 零 IO 约束的正式术语
 
 ## 相关决策
 

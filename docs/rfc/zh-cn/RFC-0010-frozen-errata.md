@@ -98,9 +98,9 @@ OXP（v0.6.1 起的旧镜像层）已废除——其演进规则（核心冻结 
 
 ## 相关术语
 
-- [FrozenPlusErrata](/glossary/zh-cn/project-terms.html#frozenpluserrata) — 本 RFC 命名
-- [Prescriptive Modality](/glossary/zh-cn/project-terms.html#prescriptive-modality) — 规定性情态
-- [RFC](/glossary/zh-cn/project-terms.html#rfc) — 规定性文档载体
+- [FrozenPlusErrata](/product/zh-cn/concepts/glossary.html#frozenpluserrata) — 本 RFC 命名
+- [Prescriptive Modality](/product/zh-cn/concepts/glossary.html#prescriptive-modality) — 规定性情态
+- [RFC](/product/zh-cn/concepts/glossary.html#rfc) — 规定性文档载体
 
 ## 相关决策
 

@@ -24,7 +24,7 @@ synced-at: 2026-08-01
 
 ## 摘要
 
-为 [Proof](/glossary/zh-cn/proof-terms.html#proof) / Probe / Verdict 子系统补 4 个**通用 builtin probe**，覆盖 shell-exec + 现有 probe 无法精细表达的 4 类高频验证场景：
+为 [Proof](/product/zh-cn/concepts/glossary.html#proof) / Probe / Verdict 子系统补 4 个**通用 builtin probe**，覆盖 shell-exec + 现有 probe 无法精细表达的 4 类高频验证场景：
 
 1. **file-hash** —— 文件 SHA-256 匹配预期 hash（精确检测文件内容变化）
 2. **test-coverage** —— 测试覆盖率（lines / branches / functions）≥ 阈值（数值阈值比较，shell-exec 只能拿到 exit code）
@@ -253,12 +253,12 @@ bun scripts/check-doc-boundary.ts
 
 ## 相关术语
 
-- [Proof](/glossary/zh-cn/proof-terms.html#proof) — 验证体系顶层
-- [Probe](/glossary/zh-cn/proof-terms.html#probe) — 单条验证声明
-- [ProbeOutcome](/glossary/zh-cn/proof-terms.html#probeoutcome) — Verdict 三层拆分第一层（[RFC-0008 D2](./RFC-0008-naming-evolution.html#d2verdict-三层拆分)）
-- [outcome](/glossary/zh-cn/proof-terms.html#outcome) — Verdict 三层拆分第二层
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — 5 类 AssetKind（Domain/Workflow/Stack/Blueprint/Roadmap）
-- [Built-in Asset](/glossary/zh-cn/project-terms.html#built-in-asset) — `@oxn/` scope 解析目标（[RFC-0011](./RFC-0011-builtin-asset-two-layer.html)）
+- [Proof](/product/zh-cn/concepts/glossary.html#proof) — 验证体系顶层
+- [Probe](/product/zh-cn/concepts/glossary.html#probe) — 单条验证声明
+- [ProbeOutcome](/product/zh-cn/concepts/glossary.html#probeoutcome) — Verdict 三层拆分第一层（[RFC-0008 D2](./RFC-0008-naming-evolution.html#d2verdict-三层拆分)）
+- [outcome](/product/zh-cn/concepts/glossary.html#outcome) — Verdict 三层拆分第二层
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — 5 类 AssetKind（Domain/Workflow/Stack/Blueprint/Roadmap）
+- [Built-in Asset](/product/zh-cn/concepts/glossary.html#built-in-asset) — `@oxn/` scope 解析目标（[RFC-0011](./RFC-0011-builtin-asset-two-layer.html)）
 
 ## 相关决策
 

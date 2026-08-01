@@ -6,6 +6,8 @@ title: 工作
 
 # 工作（E2 · 动态协作空间）
 
+> 术语查询见 [术语表](./glossary.md)（RFC-0017 单一权威源）。本页不重定义术语。
+
 > **Work 是 OXN 的第二结构实体（E2）——工程师与 AI 的动态协作空间**。Work 内部走 IAP 三阶段（Intent → Align → Proof），多轮 Round 循环直到 work 真正结束。
 > v0.6 把 Insight 从 Work 中独立为 E4 涌现层——Work 不再负责"总结"，只负责"交付"。
 

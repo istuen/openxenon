@@ -111,11 +111,11 @@ OXN 提供 3 个独立 Skill，分别承载 IAP（Intent / Align / Proof）三�
 
 ## 相关术语
 
-- [Insight](/glossary/zh-cn/insight-terms.html#insight) — E4 涌现层
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — 双向枢纽
-- [Work](/glossary/zh-cn/work-terms.html#work) — AI 执行入口
-- [Probe](/glossary/zh-cn/proof-terms.html#probe) — 统计原料来源之一
-- [Skill](/glossary/zh-cn/cli-terms.html#skill) — OXN 内置给 AI 助手的技能
+- [Insight](/product/zh-cn/concepts/glossary.html#insight) — E4 涌现层
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — 双向枢纽
+- [Work](/product/zh-cn/concepts/glossary.html#work) — AI 执行入口
+- [Probe](/product/zh-cn/concepts/glossary.html#probe) — 统计原料来源之一
+- [Skill](/product/zh-cn/concepts/glossary.html#skill) — OXN 内置给 AI 助手的技能
 
 ## 相关决策
 

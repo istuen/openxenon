@@ -4,6 +4,8 @@ title: OpenXenon 协作生命周期
 
 # OpenXenon 协作生命周期
 
+> 术语查询见 [术语表](./glossary.md)（RFC-0017 单一权威源）。本页不重定义术语。
+
 > OpenXenon 是人机协作工具，支撑工程师与 AI Agent 之间的协作链路。
 > 本页定义 9 个阶段的完整生命周期。
 
@@ -15,8 +17,8 @@ OpenXenon 是**人机协作工具**。它不替代工程师与 AI Agent 的直�
 
 | 主体 | 角色 |
 |---|---|
-| 工程师 | 提供协作定义（[Asset](/glossary/zh-cn/asset-terms#asset) + [Proof](/glossary/zh-cn/proof-terms#proof)） |
-| AI Agent | 协作记录（[Work](/glossary/zh-cn/core-terms#work)） |
+| 工程师 | 提供协作定义（[Asset](./glossary.md#asset) + [Proof](./glossary.md#proof)） |
+| AI Agent | 协作记录（[Work](./glossary.md#work)） |
 | OXN Engine | 支撑协作链路（工具 + 记录 + 验证） |
 
 - 工程师用 Asset 定义协作边界，用 Proof 定义验证机制
@@ -304,4 +306,4 @@ graph LR
 - [Asset · E1](./asset) — 静态边界详情
 - [Work · E2](./work) — 动态协作详情
 - [Proof · E3](./proof) — 独立验证记录详情
-- [术语表](/glossary/zh-cn/) — 术语查询
+- [术语表](./glossary.md) — 术语查询（RFC-0017 单一权威源）

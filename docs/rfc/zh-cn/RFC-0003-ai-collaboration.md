@@ -236,12 +236,12 @@ Insight 数据按 4 个实体维度组织证据链：
 
 ## 相关术语
 
-- [OXN Engine](/glossary/zh-cn/core-terms.html#oxn-engine) — 确定性参照系（Referent），不是智能体
-- [Proof](/glossary/zh-cn/proof-terms.html#proof) — 客观事实记录，不评判
-- [ProbeOutcome](/glossary/zh-cn/proof-terms.html#probeoutcome) — 物理观测 vs 业务判定分离
-- [outcome](/glossary/zh-cn/proof-terms.html#outcome) — Proof 级聚合结构
-- [Work](/glossary/zh-cn/work-terms.html#work) — AI 的 Align
-- [Skill](/glossary/zh-cn/cli-terms.html#skill) — AI 助手消费 OXN 能力的入口
+- [OXN Engine](/product/zh-cn/concepts/glossary.html#oxn-engine) — 确定性参照系（Referent），不是智能体
+- [Proof](/product/zh-cn/concepts/glossary.html#proof) — 客观事实记录，不评判
+- [ProbeOutcome](/product/zh-cn/concepts/glossary.html#probeoutcome) — 物理观测 vs 业务判定分离
+- [outcome](/product/zh-cn/concepts/glossary.html#outcome) — Proof 级聚合结构
+- [Work](/product/zh-cn/concepts/glossary.html#work) — AI 的 Align
+- [Skill](/product/zh-cn/concepts/glossary.html#skill) — AI 助手消费 OXN 能力的入口
 
 ## 相关决策
 

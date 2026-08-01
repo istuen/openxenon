@@ -8,7 +8,7 @@ title: IAP 速记卡
 
 > 三大法则速记卡。一页可打印。
 
-> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
+> **OpenXenon 是工程师定义 AI Agent 协作边界的工具。**
 
 ---
 

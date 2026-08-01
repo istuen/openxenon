@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'OpenXenon',
-  description: '工程师与 AI Agent 协作工具，为协作提供边界与证据',
+  description: '工程师定义 AI Agent 协作边界的工具',
   cleanUrls: false,
   base: '/openxenon/',
   lastUpdated: true,
@@ -123,14 +123,14 @@ export default defineConfig({
       label: '产品手册',
       lang: 'zh-CN',
       link: '/product/zh-cn/',
-      title: 'OpenXenon · 工程师与 AI Agent 协作工具',
-      description: '为协作提供边界与证据',
+      title: 'OpenXenon · 工程师定义 AI Agent 协作边界的工具',
+      description: '面向 AI Agent 的协作边界工具',
       themeConfig: {
         nav: [
           { text: '产品手册', link: '/product/zh-cn/' },
           { text: '开发手册', link: '/dev/zh-cn/' },
           { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
-          { text: '术语表', link: '/glossary/zh-cn/' },
+          { text: '术语表', link: '/product/zh-cn/concepts/glossary.html' },
           { text: '快速开始', link: '/product/zh-cn/quickstart.html' },
           { text: 'AI 入口', link: '/product/zh-cn/ai-entry.html' },
         ],
@@ -190,7 +190,7 @@ export default defineConfig({
           { text: '产品手册', link: '/product/zh-cn/' },
           { text: '开发手册', link: '/dev/zh-cn/' },
           { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
-          { text: '术语表', link: '/glossary/zh-cn/' },
+          { text: '术语表', link: '/product/zh-cn/concepts/glossary.html' },
         ],
         sidebar: {
           '/dev/zh-cn/': [
@@ -247,7 +247,7 @@ export default defineConfig({
           { text: '产品手册', link: '/product/zh-cn/' },
           { text: '开发手册', link: '/dev/zh-cn/' },
           { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
-          { text: '术语表', link: '/glossary/zh-cn/' },
+          { text: '术语表', link: '/product/zh-cn/concepts/glossary.html' },
         ],
         sidebar: {
           '/rfc/zh-cn/': [
@@ -267,39 +267,7 @@ export default defineConfig({
                 { text: 'RFC-0010 RFC frozen+errata', link: '/rfc/zh-cn/RFC-0010-frozen-errata.html' },
                 { text: 'RFC-0011 内置 Asset 两层机制', link: '/rfc/zh-cn/RFC-0011-builtin-asset-two-layer.html' },
                 { text: 'RFC-0012 自举种子豁免', link: '/rfc/zh-cn/RFC-0012-bootstrap-exemption.html' },
-              ],
-            },
-          ],
-        },
-      },
-    },
-    '/glossary/zh-cn/': {
-      label: '术语表',
-      lang: 'zh-CN',
-      link: '/glossary/zh-cn/',
-      title: 'OpenXenon · 术语表',
-      description: 'OpenXenon 外部手册引用术语的统一汇集地',
-      themeConfig: {
-        nav: [
-          { text: '产品手册', link: '/product/zh-cn/' },
-          { text: '开发手册', link: '/dev/zh-cn/' },
-          { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
-          { text: '术语表', link: '/glossary/zh-cn/' },
-        ],
-        sidebar: {
-          '/glossary/zh-cn/': [
-            {
-              text: '术语表',
-              items: [
-                { text: '总入口', link: '/glossary/zh-cn/' },
-                { text: '核心术语', link: '/glossary/zh-cn/core-terms.html' },
-                { text: '引擎术语', link: '/glossary/zh-cn/engine-terms.html' },
-                { text: '资产术语', link: '/glossary/zh-cn/asset-terms.html' },
-                { text: '工作术语', link: '/glossary/zh-cn/work-terms.html' },
-                { text: '证明术语', link: '/glossary/zh-cn/proof-terms.html' },
-                { text: '洞察术语', link: '/glossary/zh-cn/insight-terms.html' },
-                { text: 'CLI 术语', link: '/glossary/zh-cn/cli-terms.html' },
-                { text: '工程术语', link: '/glossary/zh-cn/project-terms.html' },
+                { text: 'RFC-0017 术语双层 SSOT', link: '/rfc/zh-cn/RFC-0017-terminology-two-tier-ssot.html' },
               ],
             },
           ],
@@ -376,8 +344,8 @@ export default defineConfig({
     siteTitle: 'OpenXenon',
     search: { provider: 'local' },
     socialLinks: [{ icon: 'github', link: 'https://github.com/istuen/openxenon' }],
-      footer: {
-      message: 'OpenXenon · 工程师与 AI Agent 协作工具，为协作提供边界与证据',
+    footer: {
+      message: 'OpenXenon · 工程师定义 AI Agent 协作边界的工具',
       copyright: `MIT License · ${new Date().getFullYear()}`,
     },
   },

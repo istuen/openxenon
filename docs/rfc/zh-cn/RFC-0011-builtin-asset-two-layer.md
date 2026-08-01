@@ -78,10 +78,10 @@ v0.6.1 三 SSOT 不一致（catalog.ts 15 probes + .md 15 probes + Registry mock
 
 ## 相关术语
 
-- [Built-in Asset](/glossary/zh-cn/project-terms.html#built-in-asset) — `@oxn/` scope 解析目标
-- [Starter Asset](/glossary/zh-cn/project-terms.html#starter-asset) — `--starter` flag 拷贝产物
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — E1 静态边界
-- [Probe](/glossary/zh-cn/proof-terms.html#probe) — 内置 15 个
+- [Built-in Asset](/product/zh-cn/concepts/glossary.html#built-in-asset) — `@oxn/` scope 解析目标
+- [Starter Asset](/product/zh-cn/concepts/glossary.html#starter-asset) — `--starter` flag 拷贝产物
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — E1 静态边界
+- [Probe](/product/zh-cn/concepts/glossary.html#probe) — 内置 15 个
 
 ## 相关决策
 

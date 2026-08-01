@@ -88,11 +88,11 @@ bun test                    # bun test，约 1487 个测试 / 119 文件
   - **正确维护流**：修改 `instruction.md` → 跑 `bun run packages/cli/src/index.ts init -f` → `.opencode/skills/` 自动重建
   - **错误反模式**：不要手动编 `.opencode/skills/<skill>/SKILL.md`——下次 `init -f` 会从 SSOT 覆盖你的修改
 
-## 文档三层架构（0.6.x 三情态分离重构）
+## 文档四层 SSOT 架构（0.6.2-alpha.2 起四情态分离）
 
-> **判据**：受众是外部用户 → `docs/`（topic-first：product|dev|rfc）；受众是贡献者且需长期保留 → `docs/rfc/`（沉淀）；受众是 OXN 开发 → `.openxenon/drafts/`（流动）；项目资产 → `.openxenon/assets/`；运行时 → `.openxenon/{works,proofs}/`。
+> **判据**：受众是外部用户 → `docs/`（topic-first：product|dev|rfc）；受众是贡献者且需长期保留 → `docs/rfc/`（沉淀）；受众是 OXN 开发 → `.openxenon/drafts/`（流动）；项目资产 → `.openxenon/assets/`；运行时 → `.openxenon/{works,proofs}/`；OXN 自身工程元层 → 仓库根（README.md / AGENTS.md / CONTEXT-MAP.md / .changes/ / dev/）。
 >
-> **0.6.x 三情态**：文档按"情态"分三类——Asset（定义性，回答"X 是什么"）+ RFC（规定性，回答"为什么决定 X"）+ Doc（描述性，回答"怎么用 X"）。详见 [RFC-0009 文档三情态分离](.openxenon/drafts/rfc-format-design.md#d1三情态定义) 与 [OxnProjectDomain 工程术语](./docs/glossary/zh-cn/project-terms.html)。
+> **0.6.x 三情态 → 0.6.2 四情态**：文档按"情态"分四类——Asset（定义性，回答"X 是什么"）+ RFC（规定性，回答"为什么决定 X"）+ Doc（描述性，回答"怎么用 X"）+ Meta（项目工程元，回答"OXN 自己怎么组织"）。详见 [RFC-0009 文档三情态分离](https://github.com/istuen/openxenon/blob/main/docs/rfc/zh-cn/RFC-0009-doc-three-modalities.md) + [RFC-0018 项目工程元层与 SSOT 全景](./docs/rfc/zh-cn/RFC-0018-project-engineering-meta.md) + [OxnProjectDomain 工程术语](./docs/glossary/zh-cn/project-terms.html)。
 
 ### 1. 对外文档 — `docs/`（topic-first SSOT，tracked）
 
@@ -119,7 +119,7 @@ docs/
 
 ### 3. 项目资产 — `.openxenon/assets/`（边界，定义性 Asset，冻结后不可变）
 
-- `.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（E1 Asset）
+- `.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（E1 Asset；v0.7+ `roadmaps/` 拟改 `assetmaps/`，AssetKind 枚举值仍为 `roadmap`）
 - 0.6.2 布局，业务声明 + AI 创作模板，`.md` 格式
 - `assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`
 - 与 builtin assets 关系：见 [RFC-0011 内置 Asset 两层机制](.openxenon/drafts/rfc-format-design.md)
@@ -131,6 +131,36 @@ docs/
 ### 5. 版本 changelog（tracked）
 
 - `.changes/` — 按版本号组织的变更日志片段；发布版本号时记得新增一条。
+
+### 6. 项目工程元层（v0.6.2-alpha.2 起 · Meta Modality）
+
+> 5 类仓库根文档构成 OXN 自身工程元层（meta-vocabulary），承载"OXN 自己怎么组织"的 SSOT。
+> 与 Asset / RFC / Doc 三情态并列。详见 [RFC-0018 项目工程元层与 SSOT 全景](./docs/rfc/zh-cn/RFC-0018-project-engineering-meta.md)。
+
+| 文档 | 角色 | 受 RFC-0018 引用规则 |
+|---|---|---|
+| **`README.md`** | 仓库根入口（marketing + 5min quickstart + GitHub 渲染） | D4.1：双向同步 `docs/product/zh-cn/introduction.md` slogan；禁止 → RFC / drafts |
+| **`AGENTS.md`** | AI Agent 进入项目的第一份入口（硬性规则 + 跨层路由） | D4.2：可引 Asset / RFC / Doc / dev/；禁止 → drafts/rfc/ |
+| **`CONTEXT-MAP.md`** | 9 Domain 索引 + 9 核心术语锐化（≤ 138 行，2026-08-01 修正 OxnDraftDomain 索引） | D4.3：**特例豁免**可引 Asset（索引场景）；禁止 → docs/product / docs/dev / drafts |
+| **`.changes/0-X-Y-*.md`** | Version Fragment（changelog 片段，版本转正时落盘） | RFC-0013 D3：可引 RFC + ADR 追溯当前版本 |
+| **`dev/{versions,fix,pool}/`** | Roadmap + Fix Record + PlanningPool（开发者面向） | RFC-0013 D4：可引 RFC + sprint 设计稿 |
+
+**Meta 层与三情态的特例豁免**（RFC-0018 D5）：
+
+| 组合 | 含义 | 状态 |
+|---|---|---|
+| Asset + Meta | 既是定义又是元入口 | ✅ 允许特例（CONTEXT-MAP.md 索引场景） |
+| RFC + Meta | 既是规定又是元入口 | ❌ 设计错误（RFC 不依赖元入口） |
+| Doc + Meta | 既是描述又是元入口 | ⚠️ 特例允许（README.md = marketing + 入口） |
+| 全四情态组合 | README.md 唯一合法 | ✅ README.md |
+
+**Meta 层跨层引用守门**（`scripts/check-doc-boundary.ts` v0.6.2-alpha.2 新增 5 条规则）：
+
+- `rfc-no-meta`：RFC 不依赖项目工程元层
+- `docs-product-no-meta`：产品手册不依赖 README/AGENTS/.changes/dev（CONTEXT-MAP.md 例外）
+- `docs-dev-no-meta`：开发手册不依赖项目工程元层（CONTEXT-MAP.md 例外）
+- `assets-no-meta`：Asset 不依赖项目工程元层（CONTEXT-MAP.md 例外）
+- `context-map-asset-index-allowed`：CONTEXT-MAP.md → Asset 特例豁免（显式声明）
 
 ### RFC 生命周期（0.6.x+ 取代 OXP 机制）
 
@@ -154,7 +184,7 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
     └── doc-rfc-workflow    → docs/rfc/zh-cn/RFC-XXXX-xxx.md    (规定性 RFC)
 ```
 
-### 引用规则（0.6.x 三情态隔离）
+### 引用规则（0.6.2 四情态隔离）
 
 1. `docs/` 内部互引 ✅（product↔dev↔rfc 同树，跨语言需走相对路径）
 2. `docs/` → `.openxenon/` ❌（严格隔离，dev→drafts/dev→assets 由 `bun scripts/check-doc-boundary.ts` 守门）
@@ -174,7 +204,7 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 
 - 运行时数据：`.openxenon/{works,proofs}/`（已 gitignore，运行时产物）。
 - **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/`（E1 Asset 边界）；`drafts/`（探索稿 + 历史 ADR/RFC）；运行时 `works/ proofs/ .cache/` 已 gitignore。
-- IAP 资产：`.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（0.6.2 布局，Asset = 定义性，5 类 AssetKind）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
+- IAP 资产：`.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（0.6.2 布局，Asset = 定义性，5 类 AssetKind）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`（v0.7+ `roadmaps/` 拟改 `assetmaps/`，目录重命名为独立 RFC 工作）。
 - AI 可见的权威文档：`docs/product/zh-cn/introduction.html`（入口）、`docs/product/zh-cn/concepts/iap-paradigm.html`（IAP 范式）、`docs/product/zh-cn/concepts/insight.html`（Insight 层）、`docs/product/zh-cn/concepts/work.html`（Work 核心）、`docs/product/zh-cn/concepts/proof.html`（Proof 轴）、`docs/product/zh-cn/reference/cli-user-guide.html`（CLI 参考）、`docs/dev/zh-cn/architecture.html`（架构）。
 - **RFC 索引**：[`docs/rfc/zh-cn/`](./docs/rfc/zh-cn/) — 14 个 RFC（0.6.x+ 唯一规定性载体；12 个已 Accepted + RFC-0013 versioning-policy Draft + RFC-0015 proof-system-overhaul Draft + RFC-0016 generic-verification-probes Draft；旧 `.openxenon/drafts/rfc/INDEX.md` 已废，48 ADR 已归档到 `.openxenon/.archived/docs/adrs/`）。RFC 文档无 version 字段，用 status + Errata 段演进（RFC-0013 D6，对齐 IETF/Rust/Python 业界标准）。
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。

@@ -6,17 +6,14 @@ title: 介绍
 
 # 介绍
 
-> OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。
+> OpenXenon 是工程师定义 AI Agent 协作边界的工具。
 
 ## 什么是 OpenXenon
 
 OpenXenon（OXN）是一款面向 AI Agent 的人机协作工具。
-它以 Skills 形式注入现有的 AI Agent 工作台（Cursor / OpenCode / Codex / Claude Code），为工程师与 AI Agent 协作提供两个核心机制：
+它以 Skills 形式注入现有的 AI Agent 工作台（Cursor / OpenCode / Codex / Claude Code），通过**工程师定义 Asset → 作为 AI Agent 在 Work 约束的协作边界 → 由 Proof 验证其成果**的闭环，让工程师能信任 AI Agent 在边界内的执行。
 
-- **边界（Asset）** —— 工程师定义 AI Agent 协作的环境约束（5 类：Domain / Workflow / Stack / Blueprint / Roadmap）
-- **证据（Proof）** —— OXN 验证 AI Agent 执行结果并记录为不可篡改的客观事实（frozen.json + trace.jsonl + state.json 三件套）
-
-OXN 不评判"工作是否合格"——判定权归工程师，OXN 只提供不可篡改的证据让工程师基于事实决策。
+OXN 不评判"工作是否合格"——判定权归工程师，OXN 只通过 Probe 自动跑（完成 / 偏离 / 未完成）并把结果记录为不可篡改的验证证据（frozen.json + trace.jsonl + state.json 三件套），让工程师基于事实决策。
 
 ## 为什么存在
 
@@ -24,7 +21,7 @@ OXN 不评判"工作是否合格"——判定权归工程师，OXN 只提供不�
 
 这让工程师与 AI 的直接协作变成不确定性黑箱：AI 执行完成后，工程师不知道实际发生了什么、哪些在目标以内、哪些在目标以外。
 
-OpenXenon 不试图限制 AI（沙箱思路），也不评判 AI 的工作是否合格。它**为 AI Agent 提供验证自身执行的能力**——AI Agent 通过 OXN 提交执行结果，OXN 通过 Probe 自动验证（完成 / 偏离 / 未完成），并记录为不可篡改的 Proof 交给工程师审查。
+OpenXenon 不试图限制 AI（沙箱思路），也不评判 AI 的工作是否合格。它**为 AI Agent 提供验证自身执行的能力**——AI Agent 通过 OXN 提交执行结果，OXN 通过 Probe 自动验证（完成 / 偏离 / 未完成），并记录为不可篡改的验证证据交给工程师审查。
 
 ## 三方协作模型
 
@@ -127,6 +124,6 @@ OXN 在**每一步**都记录 trace.jsonl + 提供 Probe 验证——AI Agent �
 
 - [快速开始](./quickstart) — 5 分钟跑通
 - [协作生命周期](./concepts/lifecycle) — 9 阶段完整流程
-- [术语表](/glossary/zh-cn/) — 术语查询
+- [术语表](./concepts/glossary.html) — 术语查询（RFC-0017 单一权威源）
 - [IAP 范式与协作通道](./concepts/iap-paradigm) — 范式深入
 - [架构总览](../../dev/zh-cn/architecture.html) — 引擎内部

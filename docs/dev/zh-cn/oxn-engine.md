@@ -4,7 +4,7 @@ title: OXN Engine 开发者手册
 
 # OXN Engine 开发者手册
 
-> **术语权威源**：本文档基于 [oxn-engine-domain 引擎术语](../../glossary/zh-cn/engine-terms.html)
+> **术语权威源**：本文档基于 [oxn-engine-domain 引擎术语](/product/zh-cn/concepts/glossary.html#
 > （Layer 1 · packages/engine/）编译。所有 term 定义以该 Domain 为唯一 SSOT。
 
 ## What —— 是什么
@@ -144,8 +144,8 @@ packages/cli ↔ packages/daemon
 
 ## 参考
 
-- [OXN 顶层术语 · core-terms](../../glossary/zh-cn/core-terms.html)
-- [OXN Engine 术语 · engine-terms](../../glossary/zh-cn/engine-terms.html)（本文档 SSOT）
+- [OXN 顶层术语 · core-terms](/product/zh-cn/concepts/glossary.html#
+- [OXN Engine 术语 · engine-terms](/product/zh-cn/concepts/glossary.html#（本文档 SSOT）
 - [OXN CLI 开发者手册 · oxn-cli.md](./oxn-cli.md)
 - [L0-L3 宪法 · l0-l3-constitution.md](./l0-l3-constitution.md)
 - [Monorepo 双包 · monorepo.md](./monorepo.md)

@@ -6,7 +6,9 @@ title: 核心概念
 
 # 核心概念
 
-> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
+> 术语查询见 [术语表](./glossary.md)（RFC-0017 单一权威源）。本页不重定义术语。
+
+> **OpenXenon 是工程师定义 AI Agent 协作边界的工具。**
 >
 > **OXN 由 4 个结构实体（E1-E4）加 L0-L3 工程实现构建而成**。E1-E4 定义 OXN 的哲学边界，L0-L3 描述代码的依赖方向。物理目录用各自名称（`kernel/`、`oxl/`、`infra/`、`Asset/`、`Intent/`、`cli/`、`daemon/` 等），不直接对应 E 或 L。
 
@@ -102,7 +104,7 @@ L0-L3 描述代码的**依赖方向**（上层依赖下层，不可反向）。v
 
 ## 3.1 边界与证据——OpenXenon 的核心
 
-> **OXN 为协作提供边界与证据**——没有边界与证据，OXN 只是任务跟踪器。
+> **OXN 为协作提供边界与验证**——没有边界与验证，OXN 只是任务跟踪器。
 
 OpenXenon 解决工程师与 AI Agent 的协作可观测性问题。AI 是概率性推理模型，其执行天然存在不确定性（同样的输入可能产生不同输出，AI 无法证明自己做了什么）。OXN 不评判 AI 是否"合格"，而是提供两层支持让工程师基于事实决策：
 
@@ -137,7 +139,7 @@ OpenXenon 解决工程师与 AI Agent 的协作可观测性问题。AI 是概率
 
 ## 4. IAP 协作流水线核心
 
-> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
+> **OpenXenon 是工程师定义 AI Agent 协作边界的工具。**
 
 - **工程师**：定意图（边界 + 蓝图）；负责"工作是否合格"的最终判定（基于 outcome 聚合结构）
 - **AI Agent**：跑对齐；在 Asset 边界内自由发挥；不得修改 Asset
@@ -363,7 +365,7 @@ Sub Agent (AI)
 
 - ✅ 不阻碍 AI 发挥，但保留事后审计能力
 - ✅ "AI 行为可解释" 通过 trace 而非 schema 限制
-- ✅ slogan：**"OpenXenon 为协作提供边界与证据"**
+- ✅ slogan：**"OpenXenon 是工程师定义 AI Agent 协作边界的工具"**
 
 ### 12.3 与传统"沙箱"的区别
 
@@ -400,7 +402,7 @@ Sub Agent (AI)
 - [Insight · E4 涌现层 SSOT](./insight.md)
 - [Architecture](../../../dev/zh-cn/architecture.html) — Engine L0-L3 分层
 - [Asset Paper Schema · 资产论文结构](./asset-paper.md) — Asset-as-Paper + 引用计数 + DAG（v0.6.3+）
-- [Glossary](../reference/glossary.md) — 完整术语表
+- [术语表](./glossary.md) — RFC-0017 单一权威源
 - 三边界框架 RFC — Domain/Workflow/Stack + Blueprint 提升
 - 版本统一 RFC — 协作通道叙事 + v0.6.1 最小闭环
 - ADR-0054 三边界框架

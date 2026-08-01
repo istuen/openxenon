@@ -82,9 +82,9 @@ src/builtin/（手动 seed 首批 probes + blueprints）
 
 ## 相关术语
 
-- [Bootstrap Seed Exemption](/glossary/zh-cn/project-terms.html#bootstrap-seed-exemption) — 自举种子豁免
-- [Built-in Asset](/glossary/zh-cn/project-terms.html#built-in-asset) — `src/builtin/` 物理位置
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — E1 静态边界
+- [Bootstrap Seed Exemption](/product/zh-cn/concepts/glossary.html#bootstrap-seed-exemption) — 自举种子豁免
+- [Built-in Asset](/product/zh-cn/concepts/glossary.html#built-in-asset) — `src/builtin/` 物理位置
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — E1 静态边界
 
 ## 相关决策
 

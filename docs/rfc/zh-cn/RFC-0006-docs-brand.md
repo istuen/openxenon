@@ -101,10 +101,10 @@ OXL 引用必须是**物理可寻址**——Langium（v0.6.1 退役后由 mdast 
 
 ## 相关术语
 
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — `@prj/` 解析目标
-- [Built-in Asset](/glossary/zh-cn/project-terms.html#built-in-asset) — `@oxn/` 解析目标
-- [Domain](/glossary/zh-cn/core-terms.html#domain) — `@term/` 解析目标
-- [OXL](/glossary/zh-cn/core-terms.html#oxl) — 引用语法承载者
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — `@prj/` 解析目标
+- [Built-in Asset](/product/zh-cn/concepts/glossary.html#built-in-asset) — `@oxn/` 解析目标
+- [Domain](/product/zh-cn/concepts/glossary.html#domain) — `@term/` 解析目标
+- [OXL](/product/zh-cn/concepts/glossary.html#oxl) — 引用语法承载者
 
 ## 相关决策
 

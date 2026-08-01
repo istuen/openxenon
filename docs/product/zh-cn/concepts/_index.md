@@ -17,6 +17,7 @@ title: 范式与实体
 5. [**Proof · E3**](./proof) — 独立验证记录。frozen.json + outcome + 不可篡改机制
 6. [**Insight · E4**](./insight) — 涌现层。跨 Work 综合推理，1+1>2
 7. [**Asset Paper**](./asset-paper) — 资产论文结构。引用网络 + 影响半径
+8. [**术语表**](./glossary) — RFC-0017 单一权威源。术语查询入口
 
 ## E1-E4 速览
 

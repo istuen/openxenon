@@ -29,7 +29,7 @@ synced-at: 2026-08-01
 
 ## 摘要
 
-对 [Proof](/glossary/zh-cn/proof-terms.html#proof) / Probe / Verdict 子系统进行 6 项设计审视后形成的整体重整方案。覆盖四项核心问题：
+对 [Proof](/product/zh-cn/concepts/glossary.html#proof) / Probe / Verdict 子系统进行 6 项设计审视后形成的整体重整方案。覆盖四项核心问题：
 
 1. **产物命名规范化** —— 修复半完成的 Verdict → outcome 术语迁移（[RFC-0008 D2](./RFC-0008-naming-evolution.html#d2verdict-三层拆分) 仅改了文件值未改标识符）与 `proof.md` 同名冲突（源 vs 快照）
 2. **Taint 机制接入执行路径** —— 当前 12-flag RED/YELLOW 机制在真实 `oxn proof run` 中是死代码（Provider 实现 flag 检测但 19 个 probe handler 全部绕过 Provider 直连 IO）
@@ -97,7 +97,7 @@ Proof 子系统当前产出的 7 个文件命名混乱，存在 name/value 不�
 
 ### D2：Taint 机制接入执行路径
 
-**核心问题**：[InterferenceFlag](/glossary/zh-cn/proof-terms.html#interferenceflag)（12-flag RED/YELLOW 信任基线）在真实 `oxn proof run` 中是**死代码**——4 个 Provider 实现了 flag 检测，但 19 个 probe handler 全部绕过 Provider 直接做 IO。
+**核心问题**：[InterferenceFlag](/product/zh-cn/concepts/glossary.html#interferenceflag)（12-flag RED/YELLOW 信任基线）在真实 `oxn proof run` 中是**死代码**——4 个 Provider 实现了 flag 检测，但 19 个 probe handler 全部绕过 Provider 直接做 IO。
 
 #### D2.1: 全部 probe handler 改经 Provider 做 IO
 
@@ -457,12 +457,12 @@ bun scripts/check-doc-boundary.ts
 
 ## 相关术语
 
-- [Proof](/glossary/zh-cn/proof-terms.html#proof) — 验证体系顶层
-- [Probe](/glossary/zh-cn/proof-terms.html#probe) — 单条验证声明
-- [ProbeOutcome](/glossary/zh-cn/proof-terms.html#probeoutcome) — Verdict 三层拆分第一层（[RFC-0008 D2](./RFC-0008-naming-evolution.html#d2verdict-三层拆分)）
-- [outcome](/glossary/zh-cn/proof-terms.html#outcome) — Verdict 三层拆分第二层
-- [InterferenceFlag](/glossary/zh-cn/proof-terms.html#interferenceflag) — Taint 12 flag
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — 5 类 AssetKind（Domain/Workflow/Stack/Blueprint/Roadmap）
+- [Proof](/product/zh-cn/concepts/glossary.html#proof) — 验证体系顶层
+- [Probe](/product/zh-cn/concepts/glossary.html#probe) — 单条验证声明
+- [ProbeOutcome](/product/zh-cn/concepts/glossary.html#probeoutcome) — Verdict 三层拆分第一层（[RFC-0008 D2](./RFC-0008-naming-evolution.html#d2verdict-三层拆分)）
+- [outcome](/product/zh-cn/concepts/glossary.html#outcome) — Verdict 三层拆分第二层
+- [InterferenceFlag](/product/zh-cn/concepts/glossary.html#interferenceflag) — Taint 12 flag
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — 5 类 AssetKind（Domain/Workflow/Stack/Blueprint/Roadmap）
 
 ## 相关决策
 

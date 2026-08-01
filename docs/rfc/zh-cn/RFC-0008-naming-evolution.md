@@ -179,12 +179,12 @@ canonical.oxn    ────►          blueprint.oxn    (Blueprint 正本)
 
 ## 相关术语
 
-- [Proof](/glossary/zh-cn/proof-terms.html#proof) — Verdict 拆分的目标归属
-- [ProbeOutcome](/glossary/zh-cn/proof-terms.html#probeoutcome) — Verdict 三层拆分第一层
-- [outcome](/glossary/zh-cn/proof-terms.html#outcome) — Verdict 三层拆分第二层
-- [Report](/glossary/zh-cn/proof-terms.html#report) — Verdict 三层拆分第三层
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — Paper 字段演进承载者
-- [IAPError](/glossary/zh-cn/engine-terms.html#iaperror) — 错误类型之一
+- [Proof](/product/zh-cn/concepts/glossary.html#proof) — Verdict 拆分的目标归属
+- [ProbeOutcome](/product/zh-cn/concepts/glossary.html#probeoutcome) — Verdict 三层拆分第一层
+- [outcome](/product/zh-cn/concepts/glossary.html#outcome) — Verdict 三层拆分第二层
+- [Report](/product/zh-cn/concepts/glossary.html#report) — Verdict 三层拆分第三层
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — Paper 字段演进承载者
+- [IAPError](/product/zh-cn/concepts/glossary.html#iaperror) — 错误类型之一
 
 ## 相关决策
 

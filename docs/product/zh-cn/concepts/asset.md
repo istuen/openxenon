@@ -6,6 +6,8 @@ title: 资产
 
 # 资产（E1 · 静态边界）
 
+> 术语查询见 [术语表](./glossary.md)（RFC-0017 单一权威源）。本页不重定义术语。
+
 > **Asset 是 OXN 的第一结构实体（E1）——工程师维护的硬约束边界**。Domain / Workflow / Stack 三类边界资产 + Blueprint 组合模板 + Roadmap 索引层构成 5 类型 Asset。
 > Asset 创建后在 planLock + content_hash 下冻结，**不被 Work 改写，只被 Work 引用**——这是 OXN 区别于 OpenSpec 的关键设计反转。
 

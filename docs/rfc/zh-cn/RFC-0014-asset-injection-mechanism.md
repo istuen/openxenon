@@ -24,7 +24,7 @@ synced-at: 2026-07-27
 
 ## 摘要
 
-[Asset](/glossary/zh-cn/asset-terms.html#asset) 的上下文注入机制是**结构化抽取**——从项目抽取确定性的术语 / 工作流 / 技术栈 / 编排模板，通过显式链接（`@prj/` / `@oxn/`）绑定注入。确定性结构层叠在 LLM 非确定性层上，方向是**锚定**（提高 [Floor](/glossary/zh-cn/core-terms.html#floor)，ADR-0073 判据 3），而非放大。本 RFC 桥接 [ADR-0078](../../adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md)（前提：LLM knowledge-full，缺边界而非缺知识）与 [ADR-0073 判据 1](../../adrs/0073-oxn-implementation-boundary-criteria.md)（补偿方向：补偿 agent 非确定性，不补偿环境性质），补上"为什么不走向量化检索路线"的显式论证。
+[Asset](/product/zh-cn/concepts/glossary.html#asset) 的上下文注入机制是**结构化抽取**——从项目抽取确定性的术语 / 工作流 / 技术栈 / 编排模板，通过显式链接（`@prj/` / `@oxn/`）绑定注入。确定性结构层叠在 LLM 非确定性层上，方向是**锚定**（提高 [Floor](/product/zh-cn/concepts/glossary.html#floor)，ADR-0073 判据 3），而非放大。本 RFC 桥接 [ADR-0078](../../adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md)（前提：LLM knowledge-full，缺边界而非缺知识）与 [ADR-0073 判据 1](../../adrs/0073-oxn-implementation-boundary-criteria.md)（补偿方向：补偿 agent 非确定性，不补偿环境性质），补上"为什么不走向量化检索路线"的显式论证。
 
 RAG / MCP / Skill 与 Asset 同属"往 LLM 上下文注入信息"的机制家族。RAG 通过向量化检索注入外部知识，其检索层本身是非确定的（同一 query 不同时刻可能检索到不同 chunk），非确定层叠在非确定层（LLM）上方向是**放大**。**RAG 是参照非对标**——Asset 的定义不依赖于 RAG 存在与否；Asset 不跟 RAG 比谁检索得准，两者在注入机制家族中各司其职、可并存。
 
@@ -32,17 +32,17 @@ RAG / MCP / Skill 与 Asset 同属"往 LLM 上下文注入信息"的机制家族
 
 ### D1：Asset 注入机制 = 结构化抽取 + 显式引用绑定
 
-[Asset](/glossary/zh-cn/asset-terms.html#asset) 是工程师维护的确定性参照锚点（[Referent](/glossary/zh-cn/core-terms.html#referent)，ADR-0072）。其注入机制由两层构成：
+[Asset](/product/zh-cn/concepts/glossary.html#asset) 是工程师维护的确定性参照锚点（[Referent](/product/zh-cn/concepts/glossary.html#referent)，ADR-0072）。其注入机制由两层构成：
 
 | 层 | 机制 | 物理形态 |
 |---|---|---|
-| **结构化抽取** | 从项目抽取确定性结构 | [Domain](/glossary/zh-cn/asset-terms.html#domain)（术语/禁词/不变量）+ [Workflow](/glossary/zh-cn/asset-terms.html#workflow)（slot DAG）+ [Stack](/glossary/zh-cn/asset-terms.html#stack)（工具/版本/配置）+ [Blueprint](/glossary/zh-cn/asset-terms.html#blueprint)（编排模板组合） |
-| **显式引用绑定** | 通过链接绑定注入 | `@prj/` override > `@gbl/` > `@oxn/` fallback（[ArsenalResolver](/glossary/zh-cn/asset-terms.html#arsenalresolver) 优先级链，确定性覆盖） |
+| **结构化抽取** | 从项目抽取确定性结构 | [Domain](/product/zh-cn/concepts/glossary.html#domain)（术语/禁词/不变量）+ [Workflow](/product/zh-cn/concepts/glossary.html#workflow)（slot DAG）+ [Stack](/product/zh-cn/concepts/glossary.html#stack)（工具/版本/配置）+ [Blueprint](/product/zh-cn/concepts/glossary.html#blueprint)（编排模板组合） |
+| **显式引用绑定** | 通过链接绑定注入 | `@prj/` override > `@gbl/` > `@oxn/` fallback（[ArsenalResolver](/product/zh-cn/concepts/glossary.html#arsenalresolver) 优先级链，确定性覆盖） |
 
 **关键性质**：
 
 1. **不对外部知识做向量化**——Asset 抽取的是项目自身的确定性结构（术语 / 工作流 / 技术栈），不是外部知识的向量表示。
-2. **绑定是显式的**——工程师或 AI 在 Work 的 Intent 阶段把 `ref @prj/blueprints/...` 写进 work.md，[PlanLock](/glossary/zh-cn/asset-terms.html#planlock) 锁死后内容 hash 不可漂移。绑定发生在设计时，不在运行时按相似度重选。
+2. **绑定是显式的**——工程师或 AI 在 Work 的 Intent 阶段把 `ref @prj/blueprints/...` 写进 work.md，[PlanLock](/product/zh-cn/concepts/glossary.html#planlock) 锁死后内容 hash 不可漂移。绑定发生在设计时，不在运行时按相似度重选。
 3. **优先级链是覆盖不是排序**——`@prj/` 高于 `@oxn/` 是确定性的 override 语义，不是 RAG 的 relevance ranking。
 
 **对比 RAG（参照）**：RAG 检索的是内容 chunk，直接注入上下文供 LLM 消费；Asset 注入的是结构化定义，由 LLM 读取后**自行推理**如何应用（推理归属 AI，ADR-0074 / ADR-0079 D3）。Asset 即使有 `oxn roadmap suggest` 这样的发现工具，检索的也是**指针**（Asset 名字）而非内容 chunk——发现后仍需显式 `ref` 绑定才算消费。
@@ -53,7 +53,7 @@ LLM 是非确定性的（同输入可能不同输出，ADR-0078 D1）。任何�
 
 | 注入机制 | 叠加层性质 | 方向 | 对应 ADR-0073 判据 |
 |---|---|---|---|
-| **Asset** | 确定性结构（hash 锁定、显式引用） | **锚定**——提高 [Floor](/glossary/zh-cn/core-terms.html#floor) | 判据 1 ✅ 补偿 agent 非确定性 / 判据 3 ✅ 提 floor |
+| **Asset** | 确定性结构（hash 锁定、显式引用） | **锚定**——提高 [Floor](/product/zh-cn/concepts/glossary.html#floor) | 判据 1 ✅ 补偿 agent 非确定性 / 判据 3 ✅ 提 floor |
 | **RAG（向量化检索）** | 非确定层（检索结果随 embedding 模型/索引版本/温度变化） | **放大**——非确定性相乘 | 判据 1 ❌ 引入环境性质层面的非确定性源 |
 
 **桥接论证**：
@@ -80,10 +80,10 @@ ADR-0078 说"为什么需要边界参照而非知识注入"；ADR-0073 判据 1 
 > **RAG 路径**——把执行细节（"先挖土，把土运走，挖到 10 米深再搭建"）向量化后按 query 检索。检索层本身是非确定的：同一 query 在不同 embedding 版本/索引状态下可能返回残缺 chunk（如"把土运走，再搭建"）。这层非确定性叠在 LLM 非确定性上，方向是放大。
 >
 > **Asset 路径**——抽取确定性结构：
-> - [Domain](/glossary/zh-cn/asset-terms.html#domain)：术语 {土, 运输, 深度, 搭建} + 不变量 {深度 ≥ 10m 才能搭建}
-> - [Workflow](/glossary/zh-cn/asset-terms.html#workflow)：slot DAG [挖土 → 运输土 → 测量深度 → 搭建]
-> - [Stack](/glossary/zh-cn/asset-terms.html#stack)：工具 {挖土机, 运输机, 水泥车}
-> - [Blueprint](/glossary/zh-cn/asset-terms.html#blueprint)：组合上述三边界为"地基"编排模板
+> - [Domain](/product/zh-cn/concepts/glossary.html#domain)：术语 {土, 运输, 深度, 搭建} + 不变量 {深度 ≥ 10m 才能搭建}
+> - [Workflow](/product/zh-cn/concepts/glossary.html#workflow)：slot DAG [挖土 → 运输土 → 测量深度 → 搭建]
+> - [Stack](/product/zh-cn/concepts/glossary.html#stack)：工具 {挖土机, 运输机, 水泥车}
+> - [Blueprint](/product/zh-cn/concepts/glossary.html#blueprint)：组合上述三边界为"地基"编排模板
 >
 > 这份结构通过 `ref @prj/blueprints/foundation` 显式绑定注入。LLM 读到的是**完整确定的结构**，自行推理执行细节。LLM 在细节回答上可能有差异，但整体方向被结构锚定。
 
@@ -96,9 +96,9 @@ RAG / MCP / Skill / Asset 同属"往 LLM 上下文注入信息"的机制家族�
 | 维度 | Asset | RAG | MCP | Skill |
 |---|---|---|---|---|
 | **注入内容** | 确定性结构（术语/工作流/技术栈/编排） | 检索的内容 chunk | 工具调用结果 | 工作流指令 |
-| **绑定机制** | 显式引用 `@prj/` + [PlanLock](/glossary/zh-cn/asset-terms.html#planlock) hash | 运行时相似度检索 | 运行时工具调用 | 运行时指令加载 |
+| **绑定机制** | 显式引用 `@prj/` + [PlanLock](/product/zh-cn/concepts/glossary.html#planlock) hash | 运行时相似度检索 | 运行时工具调用 | 运行时指令加载 |
 | **对非确定性的影响** | 锚定（确定层叠非确定层） | 放大（非确定层叠非确定层） | 中性（工具 I/O 是 AI 自有器官，ADR-0072） | 中性（指令是 AI 自有执行参考） |
-| **信息隐藏** | [Probe 验证标准对 AI 不可见](/glossary/zh-cn/engine-terms.html#informationhiding)（对抗性设计） | 全部检索内容对 AI 可见 | 工具结果对 AI 可见 | 指令对 AI 可见 |
+| **信息隐藏** | [Probe 验证标准对 AI 不可见](/product/zh-cn/concepts/glossary.html#informationhiding)（对抗性设计） | 全部检索内容对 AI 可见 | 工具结果对 AI 可见 | 指令对 AI 可见 |
 
 **Asset 的定义性维度是第三列（对非确定性的影响 = 锚定）**——前两列是机制差异，第四列是附加特性。锚定方向是 Asset 在家族中不可替代的定位：其他机制不提供这层确定性锚定（RAG 放大，MCP/Skill 中性）。
 
@@ -110,7 +110,7 @@ RAG / MCP / Skill / Asset 同属"往 LLM 上下文注入信息"的机制家族�
 
 ### D4：Roadmap suggest 的检索边界
 
-[`oxn roadmap suggest`](/glossary/zh-cn/asset-terms.html#roadmap) 是设计时**发现工具**，非运行时检索机制。其边界由检索目标界定：
+[`oxn roadmap suggest`](/product/zh-cn/concepts/glossary.html#roadmap) 是设计时**发现工具**，非运行时检索机制。其边界由检索目标界定：
 
 | 检索目标 | 性质 | 是否改变 Asset 本质 |
 |---|---|---|
@@ -132,13 +132,13 @@ RAG / MCP / Skill / Asset 同属"往 LLM 上下文注入信息"的机制家族�
 
 ## 相关术语
 
-- [Asset](/glossary/zh-cn/asset-terms.html#asset) — E1 静态边界
-- [Domain](/glossary/zh-cn/asset-terms.html#domain) / [Workflow](/glossary/zh-cn/asset-terms.html#workflow) / [Stack](/glossary/zh-cn/asset-terms.html#stack) / [Blueprint](/glossary/zh-cn/asset-terms.html#blueprint) / [Roadmap](/glossary/zh-cn/asset-terms.html#roadmap) — 5 类 AssetKind
-- [ArsenalResolver](/glossary/zh-cn/asset-terms.html#arsenalresolver) — 优先级链（@prj/ > @gbl/ > @oxn/）
-- [PlanLock](/glossary/zh-cn/asset-terms.html#planlock) — 内容 hash 锁
-- [Referent](/glossary/zh-cn/core-terms.html#referent) — 确定性参照系
-- [Boundary](/glossary/zh-cn/core-terms.html#boundary) / [Floor](/glossary/zh-cn/core-terms.html#floor) / [Ceiling](/glossary/zh-cn/core-terms.html#ceiling) — 锚定语义
-- [InformationHiding](/glossary/zh-cn/engine-terms.html#informationhiding) — Probe 验证标准对 AI 不可见
+- [Asset](/product/zh-cn/concepts/glossary.html#asset) — E1 静态边界
+- [Domain](/product/zh-cn/concepts/glossary.html#domain) / [Workflow](/product/zh-cn/concepts/glossary.html#workflow) / [Stack](/product/zh-cn/concepts/glossary.html#stack) / [Blueprint](/product/zh-cn/concepts/glossary.html#blueprint) / [Roadmap](/product/zh-cn/concepts/glossary.html#roadmap) — 5 类 AssetKind
+- [ArsenalResolver](/product/zh-cn/concepts/glossary.html#arsenalresolver) — 优先级链（@prj/ > @gbl/ > @oxn/）
+- [PlanLock](/product/zh-cn/concepts/glossary.html#planlock) — 内容 hash 锁
+- [Referent](/product/zh-cn/concepts/glossary.html#referent) — 确定性参照系
+- [Boundary](/product/zh-cn/concepts/glossary.html#boundary) / [Floor](/product/zh-cn/concepts/glossary.html#floor) / [Ceiling](/product/zh-cn/concepts/glossary.html#ceiling) — 锚定语义
+- [InformationHiding](/product/zh-cn/concepts/glossary.html#informationhiding) — Probe 验证标准对 AI 不可见
 
 ## 相关决策
 

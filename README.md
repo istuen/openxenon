@@ -7,12 +7,9 @@
 
 ## 什么是 OpenXenon
 
-> **OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。**
+> **OpenXenon 是工程师定义 AI Agent 协作边界的工具。**
 
-OpenXenon 是一款面向 AI Agent 的人机协作工具。
-它作为 Skills 注入现有的 AI Agent 工作台（如 Cursor、OpenCode、Codex、Claude Code）中。
-它专注于为工程师与 AI Agent 的协作提供**边界**（Asset 资产约束）与**证据**（Proof 客观事实记录）。
-OXN 不评判"工作是否合格"——判定权归工程师，OXN 只提供不可篡改的证据让工程师基于事实决策。
+OpenXenon 通过工程师定义 Asset，作为 AI Agent 在 Work 约束的协作边界，由 Proof 验证 AI Agent 成果。
 
 ## 为什么做 OpenXenon
 
@@ -32,13 +29,8 @@ cd openxenon
 bun install
 ```
 
-> [!TIP]
-> 仓库 v0.5+ 起不再发布到 npm。需要 git clone + bun install 本地开发。`dist/cli.js` 是 Bun 编译产物，可通过 `bun run build` 构建。
-
 
 ### 在项目注入 OpenXenon 空间与 Skills
-
-
 
 ```bash
 # cd youer/project
