@@ -8,6 +8,7 @@
 
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 import type { ProbeContextBase } from '@openxenon/engine/kernel/index'
+import { resolveToolCommand } from './_tool-resolver'
 
 export interface ProbeContext extends ProbeContextBase {}
 
@@ -36,9 +37,22 @@ export interface LintCheckResult {
 }
 
 export async function executeLintCheck(params: LintCheckParams, context: ProbeContext): Promise<LintCheckResult> {
-  // biome check [--apply] [path]
-  const args: string[] = ['npx', 'biome', 'check']
-  if (params.apply) args.push('--apply')
+  // RFC-0015 D5: 从 ProbeContext.stackTools 派生 linter command.
+  //   - 优先 tool.name='biome' (或 'eslint') 精确匹配
+  //   - role 容错匹配 'linter' / 'lint' / 'format' 关键词
+  //   - fallback: 'npx biome check' (BWC)
+  //   例: stackTools 配置 biome='biome check --apply', resolveToolCommand 返 'biome check --apply',
+  //   handler 仍追加 params.path 末段 (若 path 缺省则不追加).
+  const baseCommand = resolveToolCommand(context, {
+    toolName: 'biome',
+    roleKeyword: ['linter', 'lint', 'format'],
+    fallback: 'npx biome check',
+  })
+  const args: string[] = baseCommand.split(/\s+/).filter(Boolean)
+  // biome 形式下, params.apply 触发 --apply (若 base 已含 --apply 则不重复)
+  if (params.apply && !args.includes('--apply') && !args.includes('--write')) {
+    args.push('--apply')
+  }
   if (params.path) args.push(params.path)
   const command = args.join(' ')
 

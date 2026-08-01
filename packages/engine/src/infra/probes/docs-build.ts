@@ -7,6 +7,7 @@
 
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 import type { ProbeContextBase } from '@openxenon/engine/kernel/index'
+import { resolveToolCommand } from './_tool-resolver'
 
 export interface ProbeContext extends ProbeContextBase {}
 
@@ -31,8 +32,18 @@ export interface DocsBuildResult {
 }
 
 export async function executeDocsBuild(params: DocsBuildParams, context: ProbeContext): Promise<DocsBuildResult> {
+  // RFC-0015 D5: 从 ProbeContext.stackTools 派生 docs builder command.
+  //   - 优先 tool.name='vitepress' (或 'docs-build') 精确匹配
+  //   - role 容错匹配 'doc' / 'docs' / 'site' 关键词
+  //   - fallback: 'bun run docs:build' (BWC)
+  const command = resolveToolCommand(context, {
+    toolName: 'vitepress',
+    roleKeyword: ['doc', 'docs', 'site builder', 'documentation'],
+    fallback: 'bun run docs:build',
+  })
+
   const shellResult: ShellExecResult = await executeShellExec(
-    'bun run docs:build',
+    command,
     context as ProbeContext,
     params.timeout ?? 180000,
   )

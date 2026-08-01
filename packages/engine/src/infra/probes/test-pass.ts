@@ -7,6 +7,7 @@
 
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 import type { ProbeContextBase } from '@openxenon/engine/kernel/index'
+import { resolveToolCommand } from './_tool-resolver'
 
 export interface ProbeContext extends ProbeContextBase {}
 
@@ -35,11 +36,18 @@ export interface TestPassResult {
 }
 
 export async function executeTestPass(params: TestPassParams, context: ProbeContext): Promise<TestPassResult> {
-  // 构造命令：bun test [pattern] [path]
-  const args: string[] = ['bun', 'test']
+  // RFC-0015 D5: 从 ProbeContext.stackTools 派生 test runner command.
+  //   - 优先 tool.name='bun-test' 精确匹配 (e.g. 'bun test' / 'bun test --bail')
+  //   - role 容错匹配 'test' 关键词 (e.g. 'role: runtime + test runner')
+  //   - fallback: 'bun test [pattern] [path]' (BWC, 项目未配置时不变)
+  const baseCommand = resolveToolCommand(context, {
+    toolName: 'bun-test',
+    roleKeyword: ['test runner', 'tester'],
+    fallback: 'bun test',
+  })
+  const args: string[] = [baseCommand]
   if (params.path) args.push(params.path)
   if (params.pattern) args.push(params.pattern)
-  // bun test 输出可机器解析的 TAP 或 JSON（这里用默认输出 + exit code）
   const command = args.join(' ')
 
   const shellResult: ShellExecResult = await executeShellExec(

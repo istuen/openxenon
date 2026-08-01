@@ -15,6 +15,7 @@ import { createHash, randomUUID } from 'crypto'
 import { join, resolve } from 'path'
 import { executeShellExec, type ShellExecResult } from './shell-exec'
 import type { ProbeContextBase } from '@openxenon/engine/kernel/index'
+import { resolveToolCommand } from './_tool-resolver'
 
 export interface ProbeContext extends ProbeContextBase {}
 
@@ -83,11 +84,20 @@ export async function executeTsCompiles(params: TsCompilesParams, context: Probe
       projectPath = tempTsconfig
     }
 
-    // 构造命令
-    // - path + tsconfig: 已经把 path 写入临时 tsconfig.files，只传 --project
-    // - path only: 自动检测到 tsconfig 后也传 --project（避免丢项目配置）
-    // - tsconfig only: 走默认
-    const args: string[] = ['bun', 'x', 'tsc', '--noEmit']
+    // RFC-0015 D5: 从 ProbeContext.stackTools 派生 tsc command.
+    //   - 优先 tool.name='typescript' 精确匹配
+    //   - role 容错匹配 'typescript' / 'type-check' 关键词
+    //   - fallback: 'bun x tsc --noEmit' (BWC)
+    const tscCommand = resolveToolCommand(context, {
+      toolName: 'typescript',
+      roleKeyword: ['typescript', 'type-check', 'typecheck'],
+      fallback: 'bun x tsc --noEmit',
+    })
+    // 解析 tscCommand 拆 args (例如 'bun x tsc --noEmit' 或 'tsc --noEmit' 或 'pnpm tsc --noEmit')
+    // 简单处理：按 split + 把 --noEmit 强制注入 (如果不是 --noEmit 形式)
+    const tscArgs = tscCommand.split(/\s+/).filter(Boolean)
+    const args: string[] = [...tscArgs]
+    if (!args.includes('--noEmit')) args.push('--noEmit')
     if (projectPath) {
       args.push('--project', projectPath)
     } else if (params.path) {
