@@ -116,6 +116,34 @@ R&N 假定单一 agent 独占四个动作；OXN 把每个都拆成"AI 非确定�
 - **"外化器官"框架**（OXN 替 agent 长器官）：否决。LLM Agent 本来就有器官，只是非确定。"外化"预设 agent 没有器官，与事实不符。"参照"更准——参照系必须稳定，所以不能让被参照者（AI）改它。
 - **只修 PEAS 不命名 Referent**：否决。参照系是贯穿七个术语的统一模式，不命名会导致每次重新解释"为什么 Asset/Probe/writer 性质都和 R&N 原义相反"。
 
+## Errata
+
+### Errata v1.0.1（2026-07-31）— 确定性根基锐化
+
+**修订范围**：D1 表格"OXN 参照版本（确定）"列 + 引用段落"参照版本与 agent 自有版本性质相反恰恰是对的设计"。
+
+**修订动机**：2026-07-31 `/grilling` session 第三轮盘问暴露，原"OXN 确定性来自信息隐藏"的表述不准确。`Probe 标准 AI 不可见`（ADR-0076）是**软对抗机制**（提高针对性绕过成本），不是确定性根基。确定性真正根基是**执行代码不可变**（OXN 构建产物）——AI 即使知道 Probe 调用契约，也无法修改 Probe 执行代码。
+
+**修订内容**：
+
+| 修订前 | 修订后 |
+|---|---|
+| 参照版本"确定" = 信息隐藏 + 代码不可变（混合表述） | 参照版本"确定" = **执行代码不可变**（明确单一根基） |
+| ADR-0076 「验证标准 AI 不可见」= 确定性来源 | ADR-0076 「验证标准 AI 不可见」= **软对抗**（非确定性根基） |
+| Asset 暴露 Probe 调用契约 = 破坏确定性 | Asset 暴露 Probe 调用契约 = **不破坏确定性**（参数化改变观测行为不改变代码） |
+
+**关联变更**：
+
+- [.openxenon/assets/domains/oxn-proof-domain.md](../../../.openxenon/assets/domains/oxn-proof-domain.md) 新增 term「确定性根基」+ inv-24 `proof-code-immutability`
+- [.openxenon/assets/domains/oxn-asset-domain.md](../../../.openxenon/assets/domains/oxn-asset-domain.md) 新增 inv-22 `asset-exposes-probe-contract-not-implementation`
+- [ADR-0084](./0084-collaboration-boundary-layering.md) D5：slogan 与正定义（用"验证"替代"证据/证明"）
+
+**兼容性**：
+
+- 本 errata 不删除原 Decision 内容，仅追加 Errata 段。
+- 引用本 ADR 的下游文档（CONTEXT-MAP、glossary）按 Errata 段口径更新，不强制重写原 Decision。
+- 旧 `CONTEXT-MAP.md:PEAS` 映射不受影响（Errata 仅影响 D1 表的"OXN 参照版本"列）。
+
 ## References
 
 - [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — PEAS 块重写落地点
@@ -124,4 +152,7 @@ R&N 假定单一 agent 独占四个动作；OXN 把每个都拆成"AI 非确定�
 - [ADR-0067 彻底不判贯彻](./0067-no-judgment-principle.md) — 三态改名 + 彻底不判原则
 - [ADR-0057 三方协作模型](./0057-trust-chain-core-model.md) — 三方拓扑（本 ADR 在其基础上锐化"OXN 不是 agent"）
 - [ADR-0070 Glossary ↔ Domain 同步](./0070-glossary-domain-sync.md) — glossary 同步约定
+- [ADR-0076 Probe 对抗机制](./0076-probe-anti-bypass-mechanism.md) — 验证标准 AI 不可见（软对抗，非确定性根基）
+- [ADR-0084 协作边界分层模型](./0084-collaboration-boundary-layering.md) — 协作边界分层（与本 ADR 互引）
+- [ADR-0085 OXN 环境 6 轴刻画](./0085-oxn-environment-characterization.md) — 部分可观察 + 通道内确定（与本 ADR 互证）
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach* — R&N 智能体理论原义来源

@@ -46,7 +46,29 @@ interface BoundaryRule {
   sourcePattern: RegExp
   targetPattern: RegExp
   message: string
+  isExemption?: boolean
+  /**
+   * 目标豁免：target 匹配此正则时跳过该规则（用于"规则方向正确但有少量特例"）。
+   * 与 isExemption 不同：isExemption 标记规则整体为正向（CONTEXT-MAP → Asset 允许）；
+   * targetExempt 仅豁免特定目标。
+   */
+  targetExempt?: RegExp
+  /**
+   * phasePending 标记：规则已写入但暂不触发 violation。
+   * 设为 undefined 或 'rfc-0017-phase-3'（已落地的 phase gate 键）。
+   * 当前未触发的 rule 会保留供 phase 启用时直接打开。
+   */
+  phasePending?: string
 }
+
+/**
+ * Phase gate（RFC-0017 §4 实施步骤）。
+ * Phase 3（概念页去重）已完成，glossary 三规则全部启用。
+ * 后续如需临时禁用某规则，加回 'rfc-0017-phase-3' 等键即可。
+ */
+const PHASE_PENDING_RULES = new Set<string>([
+  // 'rfc-0017-phase-3', // Phase 3 已完成（2026-08-01），glossary 三规则全部启用
+])
 
 const RULES: BoundaryRule[] = [
   {
@@ -103,10 +125,13 @@ const RULES: BoundaryRule[] = [
   {
     // v0.6.2 Step 9
     // 来自 oxn-project-domain.md ban `rfc-to-product-doc`：规定性应独立可读
+    // RFC-0017 特例豁免：RFC 可引用 docs/product/zh-cn/concepts/glossary.md
+    // 因为 glossary 是术语 SSOT（RFC-0010 要求 RFC 引用术语权威源），不是产品手册
     name: 'rfc-no-product-doc',
-    description: 'docs/rfc/ 不可引用 docs/product/（规定性应独立可读）',
+    description: 'docs/rfc/ 不可引用 docs/product/（规定性应独立可读；例外 glossary）',
     sourcePattern: /^docs\/rfc\//,
     targetPattern: /^docs\/product\//,
+    targetExempt: /^docs\/product\/zh-cn\/concepts\/glossary\.html(#.*)?$/,
     message: 'RFC（规定性）不应引用 product 手册（描述性）',
   },
   {
@@ -117,6 +142,83 @@ const RULES: BoundaryRule[] = [
     sourcePattern: /^docs\/rfc\//,
     targetPattern: /^docs\/dev\//,
     message: 'RFC（规定性）不应引用 dev 手册（描述性）',
+  },
+  {
+    // v0.6.2-alpha.2 (RFC-0018 D6)
+    // 来自 oxn-project-domain.md ban `rfc-to-meta`：规定性不依赖元入口
+    name: 'rfc-no-meta',
+    description: 'docs/rfc/ 不可引用项目工程元层（README/AGENTS/CONTEXT-MAP/.changes/dev）',
+    sourcePattern: /^docs\/rfc\//,
+    targetPattern: /^(README\.md|AGENTS\.md|CONTEXT-MAP\.md|\.changes\/|dev\/)/,
+    message: 'RFC 不应依赖项目工程元层（RFC-0018 D4）',
+  },
+  {
+    // v0.6.2-alpha.2 (RFC-0018 D6)
+    // 来自 oxn-project-domain.md ban `docs-product-to-meta`：产品手册不依赖 README/AGENTS/.changes/dev（CONTEXT-MAP 例外）
+    name: 'docs-product-no-meta',
+    description: 'docs/product/ 不可引用项目工程元层（CONTEXT-MAP.md 例外）',
+    sourcePattern: /^docs\/product\//,
+    targetPattern: /^(README\.md|AGENTS\.md|\.changes\/|dev\/)/,
+    message: '产品手册不应依赖 README/AGENTS/.changes/dev（CONTEXT-MAP.md 例外，RFC-0018 D4）',
+  },
+  {
+    // v0.6.2-alpha.2 (RFC-0018 D6)
+    // 来自 oxn-project-domain.md ban `docs-dev-to-meta`：开发手册不依赖项目工程元层（CONTEXT-MAP/AGENTS.md 例外）
+    name: 'docs-dev-no-meta',
+    description: 'docs/dev/ 不可引用项目工程元层（CONTEXT-MAP.md + AGENTS.md 例外）',
+    sourcePattern: /^docs\/dev\//,
+    targetPattern: /^(README\.md|\.changes\/|dev\/)/,
+    message: '开发手册不应依赖 README/.changes/dev（CONTEXT-MAP.md + AGENTS.md 例外，RFC-0018 D4）',
+  },
+  {
+    // v0.6.2-alpha.2 (RFC-0018 D6)
+    // 来自 oxn-project-domain.md ban `assets-to-meta`：Asset 不依赖项目工程元层（CONTEXT-MAP 特例豁免）
+    name: 'assets-no-meta',
+    description: '.openxenon/assets/ 不可引用项目工程元层（CONTEXT-MAP.md 特例豁免）',
+    sourcePattern: /^\.openxenon\/assets\//,
+    targetPattern: /^(README\.md|AGENTS\.md|\.changes\/|dev\/)/,
+    message: 'Asset 不应依赖 README/AGENTS/.changes/dev（CONTEXT-MAP.md 索引场景例外，RFC-0018 D4.3）',
+  },
+  {
+    // v0.6.2-alpha.2 (RFC-0018 D6)
+    // 特例豁免：CONTEXT-MAP.md 作为 Domain 索引页可引 Asset
+    // 此规则为正向（CONTEXT-MAP → Asset 允许），不作为 violation 检查；标记为 allow_rule
+    name: 'context-map-asset-index-allowed',
+    description: 'CONTEXT-MAP.md 作为 Domain 索引页可引 Asset（RFC-0018 D4.3 特例豁免）',
+    sourcePattern: /^CONTEXT-MAP\.md$/,
+    targetPattern: /^\.openxenon\/assets\//,
+    message: 'CONTEXT-MAP.md 引用 Asset 是索引场景（RFC-0018 D4.3 豁免）',
+    isExemption: true,
+  },
+  // ── RFC-0017 §D6 — 术语双层 SSOT 守门规则（Phase 2 写入，Phase 3 后启用） ──
+  // 启用时机：docs/product/zh-cn/concepts/glossary.md 已生成 + 8 个概念页去重完成后。
+  // 当前标记 phase-pending，由 PHASE_PENDING_RULES 过滤不触发 violation。
+  {
+    name: 'glossary-is-generated',
+    description: 'glossary.md 是 sync 脚本生成产物，SYNC:START/END 内禁止手工混入未注册的 term',
+    sourcePattern: /^docs\/product\/zh-cn\/concepts\/glossary\.md$/,
+    targetPattern: /^.*$/,
+    message: 'glossary.md 仅由 scripts/sync-domain-glossary.ts 生成；SYNC:START/END 内禁止手工编辑',
+    isExemption: true,
+    phasePending: 'rfc-0017-phase-3',
+  },
+  {
+    name: 'concepts-no-term-redef',
+    description: 'concepts/*.md 中 ### 标题的 slug 不得与 glossary term slug 碰撞',
+    sourcePattern: /^docs\/product\/zh-cn\/concepts\/[a-z-]+\.md$/,
+    targetPattern: /^.*$/,
+    message: '概念页不得以 ### 形式重定义 glossary 中的 term',
+    isExemption: true,
+    phasePending: 'rfc-0017-phase-3',
+  },
+  {
+    name: 'domain-terms-have-glossary-ref',
+    description: 'Domain ## Terms: 段下的 ### term 必须含 glossary-ref 字段',
+    sourcePattern: /^\.openxenon\/assets\/domains\/.*\.md$/,
+    targetPattern: /^.*$/,
+    message: 'Domain ## Terms: 段下的 term 必须含 glossary-ref 字段（sync 后由脚本维护）',
+    isExemption: true,
+    phasePending: 'rfc-0017-phase-3',
   },
 ]
 
@@ -221,6 +323,9 @@ function scanFile(filePath: string): Violation[] {
       if (!targetPath) continue
 
       for (const rule of RULES) {
+        if (rule.isExemption) continue
+        if (rule.phasePending && PHASE_PENDING_RULES.has(rule.phasePending)) continue
+        if (rule.targetExempt && rule.targetExempt.test(targetPath)) continue
         if (rule.sourcePattern.test(relativePath) && rule.targetPattern.test(targetPath)) {
           violations.push({
             file: relativePath,
@@ -256,6 +361,9 @@ function scanFile(filePath: string): Violation[] {
       if (targetPath.includes('_archive')) continue
 
       for (const rule of RULES) {
+        if (rule.isExemption) continue
+        if (rule.phasePending && PHASE_PENDING_RULES.has(rule.phasePending)) continue
+        if (rule.targetExempt && rule.targetExempt.test(targetPath)) continue
         if (rule.sourcePattern.test(relativePath) && rule.targetPattern.test(targetPath)) {
           violations.push({
             file: relativePath,
@@ -301,6 +409,39 @@ function scanDirectory(dir: string): Violation[] {
   return violations
 }
 
+/**
+ * 收集项目工程元层 5 类文档路径（v0.6.2-alpha.2 起）
+ * 用于 rfc-no-meta / docs-product-no-meta / docs-dev-no-meta / assets-no-meta 规则的反向校验
+ */
+function collectProjectEngineeringMetaFiles(): string[] {
+  const files: string[] = []
+  for (const metaFile of ['README.md', 'AGENTS.md', 'CONTEXT-MAP.md']) {
+    const fullPath = join(ROOT, metaFile)
+    if (statExists(fullPath)) files.push(fullPath)
+  }
+  const changesDir = join(ROOT, '.changes')
+  if (statExists(changesDir)) {
+    try {
+      for (const entry of readdirSync(changesDir)) {
+        if (entry.endsWith('.md')) files.push(join(changesDir, entry))
+      }
+    } catch {}
+  }
+  for (const devSubdir of ['versions', 'fix', 'pool']) {
+    const devSubdirPath = join(ROOT, 'dev', devSubdir)
+    if (statExists(devSubdirPath)) {
+      try {
+        for (const entry of readdirSync(devSubdirPath)) {
+          if (entry.endsWith('.md')) files.push(join(devSubdirPath, entry))
+        }
+      } catch {}
+    }
+  }
+  const devReadme = join(ROOT, 'dev', 'README.md')
+  if (statExists(devReadme)) files.push(devReadme)
+  return files
+}
+
 // ─── 主流程 ──────────────────────────────────────────────
 
 function main() {
@@ -318,6 +459,14 @@ function main() {
   const draftsDir = join(OPENXENON_ROOT, 'drafts')
   if (statExists(draftsDir)) {
     violations.push(...scanDirectory(draftsDir))
+  }
+
+  // v0.6.2-alpha.2 (RFC-0018 D6)：扫描项目工程元层 5 类文档
+  //   - README.md / AGENTS.md / CONTEXT-MAP.md（仓库根）
+  //   - .changes/0-X-Y-*.md（仓库根）
+  //   - dev/{versions,fix,pool}/*.md（仓库根）
+  for (const metaFile of collectProjectEngineeringMetaFiles()) {
+    violations.push(...scanFile(metaFile))
   }
 
   if (violations.length === 0) {

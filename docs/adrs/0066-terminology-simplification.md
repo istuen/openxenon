@@ -27,7 +27,7 @@ related:
 ## Context
 
 经过 4 轮 grilling session 锐化，OpenXenon 产品定位收敛为：
-> "OpenXenon 是工程师与 AI Agent 协作工具，为协作提供边界与证据。"
+> "OpenXenon 是工程师定义 AI Agent 协作边界的工具。"
 
 核心原则是"**彻底不判**"——OXN 只记录客观事实（Probe 跑了/exitCode/文件路径），不评判"合格不合格"。判定权归工程师。
 
