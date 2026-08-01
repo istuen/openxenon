@@ -310,7 +310,9 @@
       "name": "Proof name (existing)",
       "probe": "Probe semantic name (e.g. fs-exists)",
       "inputJson": "Probe input (JSON string)",
-      "probeName": "Custom probe name (default p1/p2/...)"
+      "probeName": "Custom probe name (default p1/p2/...)",
+      "descriptionArg": "Probe intent (why, e.g. 'Confirm package.json exists')",
+      "target": "Probe target artifact (what, e.g. './package.json')"
     },
     "probe": {
       "description": "Manipulate probes in a proof (list / describe / add)"

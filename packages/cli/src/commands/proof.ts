@@ -316,10 +316,14 @@ async function parseProofFile(filePath: string): Promise<{
 /** proof IR probes → runner IR (v0.7.0: params already in correct format) */
 function proofProbesToIR(proof: ProofDeclaration): ProofProbeIR[] {
   return (proof.probes ?? []).map((p: ProofProbeDecl) => {
+    // proof-probe-description-target D9: 透传 description + target 到 runner IR
+    //   (extractProofIR 已读, 但 proofProbesToIR 旧实现只映射 3 字段, 丢失 D1 扩展)
     return {
       probeName: p.probeName,
       ref: p.ref,
       params: p.params ?? {},
+      ...(p.description ? { description: p.description } : {}),
+      ...(p.target ? { target: p.target } : {}),
     }
   })
 }
@@ -508,7 +512,7 @@ const probeAddSubcommand = defineCommand({
     },
     probeName: { type: 'string', description: t('proof.probeAdd.probeName') },
     // proof-probe-description-target D3: 新增 --description + --target 参数 (向后兼容, optional)
-    description: { type: 'string', description: t('proof.probeAdd.description') },
+    description: { type: 'string', description: t('proof.probeAdd.descriptionArg') },
     target: { type: 'string', description: t('proof.probeAdd.target') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },

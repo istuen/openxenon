@@ -310,7 +310,9 @@
       "name": "Proof 名称（已存在）",
       "probe": "probe 语义名（如 fs-exists）",
       "inputJson": "probe 输入（JSON 字符串）",
-      "probeName": "自定义 probe 名（默认 p1/p2/...）"
+      "probeName": "自定义 probe 名（默认 p1/p2/...）",
+      "descriptionArg": "probe 验证意图（intent 层，如\"确认 package.json 存在\"）",
+      "target": "probe 验证目标（artifact 层，如\"./package.json\"）"
     },
     "probe": {
       "description": "操作 proof 内的 probe（list / describe / add）"
