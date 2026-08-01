@@ -5,7 +5,7 @@
  *
  * 格式：`@md/<scope>/<name>`
  *   - prefix：`@md/`（必填）
- *   - scope：`blueprints` | `domains` | `stacks` | `roadmaps`（与 AssetKind 对齐）
+ *   - scope：`blueprints` | `domains` | `stacks` | `assetmaps`（与 AssetKind 对齐；v0.7 已收敛 `roadmaps` → `assetmaps`）
  *   - name：kebab-case（与 file name 对齐）
  *
  * 校验：
@@ -20,8 +20,8 @@
 
 import { IAPError, IAPAction } from '../../kernel/contracts/iap-error.js'
 
-/** v0.6.1 AssetKind 4 类（与 infra/paths.ts:AssetKind 对齐） */
-export type MDScope = 'blueprints' | 'domains' | 'stacks' | 'roadmaps'
+/** v0.7 AssetKind 4 类（与 infra/paths.ts:AssetKind 对齐；roadmap → assetmap） */
+export type MDScope = 'blueprints' | 'domains' | 'stacks' | 'assetmaps'
 
 export interface MdRef {
   /** 原始字符串（含 `@md/` 前缀） */
@@ -33,14 +33,14 @@ export interface MdRef {
 }
 
 /** 4 类合法 scope（runtime set for O(1) lookup） */
-const VALID_SCOPES: ReadonlySet<string> = new Set(['blueprints', 'domains', 'stacks', 'roadmaps'])
+const VALID_SCOPES: ReadonlySet<string> = new Set(['blueprints', 'domains', 'stacks', 'assetmaps'])
 
 /**
  * 解析 `@md/<scope>/<name>` 引用值。
  *
  * @param raw 引用字符串（必须非空；前后空白会被 trim）
  * @param expectedKind 调用方预期的 scope 类别（'blueprint' | 'domain' | 'stack' | 'roadmap'）
- *                   用于字段-值一致性校验
+ *                   用于字段-值一致性校验（AssetKind 枚举值仍为 'roadmap'）
  * @returns 拆解后的 `{ scope, name }`
  * @throws IAPError axis=INTENT, code=REFERENCE_PREFIX_INVALID
  */
@@ -111,7 +111,7 @@ export function parseMdRef(raw: string, expectedKind: 'blueprint' | 'domain' | '
         ? 'domains'
         : expectedKind === 'stack'
           ? 'stacks'
-          : 'roadmaps'
+          : 'assetmaps'
   if (scope !== expectedScope) {
     throw new IAPError(
       'INTENT',
@@ -151,5 +151,5 @@ export function parseMdRef(raw: string, expectedKind: 'blueprint' | 'domain' | '
  * 把 AssetKind 翻成 MDScope（共用 helper）
  */
 export function kindToScope(kind: 'blueprint' | 'domain' | 'stack' | 'roadmap'): MDScope {
-  return kind === 'blueprint' ? 'blueprints' : kind === 'domain' ? 'domains' : kind === 'stack' ? 'stacks' : 'roadmaps'
+  return kind === 'blueprint' ? 'blueprints' : kind === 'domain' ? 'domains' : kind === 'stack' ? 'stacks' : 'assetmaps'
 }

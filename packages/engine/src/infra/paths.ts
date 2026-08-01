@@ -81,7 +81,7 @@ export const DEFAULT_ASSET_DIRS = {
   workflow: 'workflows', // 🆕 v0.6.1-alpha.2: 原 blueprint 改名
   stack: 'stacks', // 🆕 v0.6.2-alpha.1: 同步复数约定（与 domains/workflows/blueprints/roadmaps + @md/stacks/ 引用一致；fallback 已为 stacks，单数 primary 是 typo）
   blueprint: 'blueprints', // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
-  roadmap: 'roadmaps', // 🆕 v0.6.1-alpha.1
+  roadmap: 'assetmaps', // 🆕 v0.7: roadmap → assetmap 命名收敛（AssetKind 枚举值仍为 'roadmap'）
 } as const
 
 /**
@@ -163,8 +163,8 @@ export function resolveAssetCandidates(
   const boundaryDir = getBoundaryDir(config)
   const boundary = join(projectRoot, boundaryDir)
   const primary = resolveAssetDir(projectRoot, kind, config)
-  // 旧布局 fallback：<boundaryDir>/<plural>/（domains/blueprints/stack/roadmaps）
-  // 🆕 v0.6.1-alpha.2: 加入 workflow（从原 blueprint 拆分）
+  // 旧布局 fallback：<boundaryDir>/<plural>/（domains/workflows/blueprints/assetmaps/stacks）
+  // 🆕 v0.7: roadmap → assetmap 命名收敛（AssetKind 枚举值仍为 'roadmap'）
   const fallbackDir =
     kind === 'domain'
       ? 'domains'
@@ -173,7 +173,7 @@ export function resolveAssetCandidates(
         : kind === 'blueprint'
           ? 'blueprints'
           : kind === 'roadmap'
-            ? 'roadmaps'
+            ? 'assetmaps'
             : 'stacks'
   const fallback = join(boundary, fallbackDir)
   return { primary, fallback }

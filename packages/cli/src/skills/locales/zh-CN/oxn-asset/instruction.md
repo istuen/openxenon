@@ -1,4 +1,4 @@
-# /oxn-asset — Asset 生命周期管理 v0.6.1
+# /oxn-asset — Asset 生命周期管理 v0.7+
 
 ## 目标
 管理 Asset 整个生命周期：创建 / 修改 / 演进 / 删除 / 查询，覆盖 5 种 AssetKind（v0.6.1-alpha.4 三边界框架）：
@@ -6,7 +6,7 @@
 
 底层走 `oxn work create --type asset --asset-kind X`（IAP 闭环）。
 
-> **v0.6.1-alpha.4 变化**：AssetKind 6→5；原 blueprint 改名 **workflow**；新 **Blueprint** = 组合模板；External 收敛为边界内 `## Externals`；External 状态独立索引。
+> **v0.7 命名收敛**：用户面 CLI 命令与目录从 `roadmap` 收敛为 `assetmap`（`oxn assetmap`、`assets/assetmaps/`）；**AssetKind 枚举值仍为 `roadmap`**（RFC-0013 D4 明确不改代码枚举，内部代码/AssetKind 字段使用 `'roadmap'`）。
 
 ## 硬规则
 - Asset 创建后 planLock 锁定，修改必须走 `oxn work create --type asset`（v0.6.3+ hard-block）
@@ -21,7 +21,7 @@
 - **Workflow** = 执行边界（slot DAG + 可选 ## Externals）
 - **Stack** = 环境边界（runtime/linter/test + 可选 ## Externals）
 - **Blueprint** = 组合模板（`## Refs`；**无 ## Externals**）
-- **Roadmap** = 导航图（scene → Domain/Workflow/Stack/Blueprint）
+- **Roadmap / AssetMap** = 导航图（scene → Domain/Workflow/Stack/Blueprint）
 
 ## 执行
 1. **选 AssetKind**：查 `references/asset-kind-reference.md`
@@ -56,12 +56,12 @@
 - 不创建 library/external Asset 类型（v0.6.1-alpha.4 已删除）
 - 不在 Blueprint 内声明 External（Blueprint 是纯组合层）
 
-## Roadmap 路由
+## AssetMap 路由
 
 ```bash
-oxn roadmap show oxn-system --scene <scene>
-oxn roadmap suggest --goal "<goal>" --scene <scene> --top 5
-oxn roadmap sync oxn-system --scene <scene> --dry-run   # 手动 hint
+oxn assetmap show oxn-system --scene <scene>
+oxn assetmap suggest --goal "<goal>" --scene <scene> --top 5
+oxn assetmap sync oxn-system --scene <scene> --dry-run   # 手动 hint
 ```
 
 > **与 `oxn-work` 的职责边界**：本 Skill 管 Asset 生命周期；Work 编排 / Run / Submit / Proof 是 `oxn-work`。详见 `references/asset-vs-work.md`。

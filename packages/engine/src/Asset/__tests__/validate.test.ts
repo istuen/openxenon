@@ -22,7 +22,7 @@ function setupProject(): void {
     join(tmpDir, '.openxenon', 'config.json'),
     JSON.stringify({ version: 1, mode: 'PRODUCTION', locale: 'zh-CN' }),
   )
-  for (const kind of ['domains', 'workflows', 'stacks', 'blueprints', 'roadmaps']) {
+  for (const kind of ['domains', 'workflows', 'stacks', 'blueprints', 'assetmaps']) {
     mkdirSync(join(tmpDir, '.openxenon', 'assets', kind), { recursive: true })
   }
 }
@@ -99,7 +99,7 @@ name: valid
   test('5. roadmap Asset 含 ## Scenes + ## Usage + ## Scene quick-reference → ok=true', async () => {
     setupProject()
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'roadmaps', 'multi-h2.md'),
+      join(tmpDir, '.openxenon', 'assets', 'assetmaps', 'multi-h2.md'),
       `---
 entity: roadmap
 name: multi-h2

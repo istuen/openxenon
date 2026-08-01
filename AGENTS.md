@@ -119,7 +119,7 @@ docs/
 
 ### 3. 项目资产 — `.openxenon/assets/`（边界，定义性 Asset，冻结后不可变）
 
-- `.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（E1 Asset；v0.7+ `roadmaps/` 拟改 `assetmaps/`，AssetKind 枚举值仍为 `roadmap`）
+- `.openxenon/assets/{domains,workflows,stacks,blueprints,assetmaps}/`（E1 Asset；v0.7 已收敛 `roadmaps/` → `assetmaps/`，AssetKind 枚举值仍为 `roadmap`）
 - 0.6.2 布局，业务声明 + AI 创作模板，`.md` 格式
 - `assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`
 - 与 builtin assets 关系：见 [RFC-0011 内置 Asset 两层机制](.openxenon/drafts/rfc-format-design.md)
@@ -204,19 +204,19 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 
 - 运行时数据：`.openxenon/{works,proofs}/`（已 gitignore，运行时产物）。
 - **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/`（E1 Asset 边界）；`drafts/`（探索稿 + 历史 ADR/RFC）；运行时 `works/ proofs/ .cache/` 已 gitignore。
-- IAP 资产：`.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（0.6.2 布局，Asset = 定义性，5 类 AssetKind）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`（v0.7+ `roadmaps/` 拟改 `assetmaps/`，目录重命名为独立 RFC 工作）。
+- IAP 资产：`.openxenon/assets/{domains,workflows,stacks,blueprints,assetmaps}/`（0.6.2 布局，Asset = 定义性，5 类 AssetKind）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`（v0.7 已收敛 `roadmaps/` → `assetmaps/`，AssetKind 枚举值仍为 `roadmap`）。
 - AI 可见的权威文档：`docs/product/zh-cn/introduction.html`（入口）、`docs/product/zh-cn/concepts/iap-paradigm.html`（IAP 范式）、`docs/product/zh-cn/concepts/insight.html`（Insight 层）、`docs/product/zh-cn/concepts/work.html`（Work 核心）、`docs/product/zh-cn/concepts/proof.html`（Proof 轴）、`docs/product/zh-cn/reference/cli-user-guide.html`（CLI 参考）、`docs/dev/zh-cn/architecture.html`（架构）。
 - **RFC 索引**：[`docs/rfc/zh-cn/`](./docs/rfc/zh-cn/) — 14 个 RFC（0.6.x+ 唯一规定性载体；12 个已 Accepted + RFC-0013 versioning-policy Draft + RFC-0015 proof-system-overhaul Draft + RFC-0016 generic-verification-probes Draft；旧 `.openxenon/drafts/rfc/INDEX.md` 已废，48 ADR 已归档到 `.openxenon/.archived/docs/adrs/`）。RFC 文档无 version 字段，用 status + Errata 段演进（RFC-0013 D6，对齐 IETF/Rust/Python 业界标准）。
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
-## AI Agent 路由入口（0.6.x+ Roadmap）
+## AI Agent 路由入口（0.7+ AssetMap）
 
-> **第一步：定位 scene，再读 Roadmap**
+> **第一步：定位 scene，再读 AssetMap**
 > 收到 goal 后判断属于哪个 scene（doc / dev / debug / test / release / onboard），
-> 读 `.openxenon/assets/roadmaps/oxn-system.md` 的对应 scene 段。
+> 读 `.openxenon/assets/assetmaps/oxn-system.md` 的对应 scene 段。
 > 列出该 scene 的 Domain + Blueprint 列表（每项带 description）。
-> 用 `oxn roadmap suggest --goal "<goal>" --scene <scene>` 排序匹配。
+> 用 `oxn assetmap suggest --goal "<goal>" --scene <scene>` 排序匹配。
 
 ### 场景速查（0.6.x+ 6 scene）
 - 写/改/读文档 → `scene=doc`（DocEngineeringContext + VitePressContext + doc-publish + doc-promote）
@@ -233,8 +233,8 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 - **跨层链接守门**：`bun scripts/check-doc-boundary.ts` 在 pre-commit 强制（dev→drafts / dev→assets / rfc→drafts 全部禁止）。
 
 ### Asset 变更后（手动 sync，Mode B）
-- `oxn asset create` 成功后会自动提示 `oxn roadmap sync`（不自动改 Roadmap）
-- 跑 `oxn roadmap sync oxn-system --scene <scene> --dry-run` 检查 dangling / outdated link
+- `oxn asset create` 成功后会自动提示 `oxn assetmap sync`（不自动改 AssetMap）
+- 跑 `oxn assetmap sync oxn-system --scene <scene> --dry-run` 检查 dangling / outdated link
 - 确认后加 `--apply` 写入：删 dangling + 刷新过时 description
 
 ## 开发者操作指南

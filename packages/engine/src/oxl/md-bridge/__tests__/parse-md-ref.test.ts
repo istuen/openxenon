@@ -37,10 +37,10 @@ describe('parseMdRef — v0.6.1 PR-2 (D-γ b)', () => {
       expect(r.name).toBe('ts-stack')
     })
 
-    test('4. @md/roadmaps/q3-roadmap 解析为 roadmap', () => {
-      const r = parseMdRef('@md/roadmaps/q3-roadmap', 'roadmap')
-      expect(r.scope).toBe('roadmaps')
-      expect(r.name).toBe('q3-roadmap')
+    test('4. @md/assetmaps/q3-assetmap 解析为 roadmap', () => {
+      const r = parseMdRef('@md/assetmaps/q3-assetmap', 'roadmap')
+      expect(r.scope).toBe('assetmaps')
+      expect(r.name).toBe('q3-assetmap')
     })
   })
 
@@ -126,7 +126,7 @@ describe('parseMdRef — v0.6.1 PR-2 (D-γ b)', () => {
       expect(kindToScope('blueprint')).toBe('blueprints')
       expect(kindToScope('domain')).toBe('domains')
       expect(kindToScope('stack')).toBe('stacks')
-      expect(kindToScope('roadmap')).toBe('roadmaps')
+      expect(kindToScope('roadmap')).toBe('assetmaps')
     })
   })
 })

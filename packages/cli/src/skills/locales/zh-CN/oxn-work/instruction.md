@@ -21,12 +21,12 @@ D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
 
 > v0.7+：Work 不再有 mode（task/explore/edit）；行为差异由 Blueprint slots/observe 承载。
 
-## 执行（v0.6.4 Roadmap-driven Asset 选取）
+## 执行（v0.7+ AssetMap-driven Asset 选取）
 
 1. **前置**：项目已 `oxn init`，所需 Asset 已就绪 — 若需创建/修改 Asset，**触发 `oxn-asset` Skill**。
-2. **查 Roadmap 确定可用 Asset**（人机主动，非自动推荐）：
-   - `oxn roadmap show oxn-system --scene <scene>` — 列出 scene 下的 Domain / Blueprint / Stack
-   - `oxn roadmap suggest --goal "<goal>" --scene <scene>` — 按关键词 jaccard 排序的候选
+2. **查 AssetMap 确定可用 Asset**（人机主动，非自动推荐）：
+   - `oxn assetmap show oxn-system --scene <scene>` — 列出 scene 下的 Domain / Blueprint / Stack
+   - `oxn assetmap suggest --goal "<goal>" --scene <scene>` — 按关键词 jaccard 排序的候选
 3. **人机分析，从 suggest 结果挑选**：
    - **Blueprint** — 1..N 个 pipeline（通常 1 个；多 blueprint 用于跨阶段不同流水线）
    - **Domain** — 1..N 个（Work 级声明，提供全局词汇；Task 级只能选其中 1 个）

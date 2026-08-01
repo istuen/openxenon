@@ -70,7 +70,8 @@ export function resolveAndDetectAssetDir(
 
   const boundary = join(projectRoot, BOUNDARY_DIR)
   const primary = resolveAssetDir(projectRoot, kind, config)
-  // fallback 旧布局：.openxenon/<plural>/（domains/workflows/blueprints/stack/roadmaps — v0.5 兼容）
+  // fallback 旧布局：.openxenon/<plural>/（domains/workflows/blueprints/assetmaps/stacks — v0.5 兼容）
+  // 🆕 v0.7: roadmap → assetmap 命名收敛（AssetKind 枚举值仍为 'roadmap'）
   const fallbackDir =
     kind === 'domain'
       ? 'domains'
@@ -79,8 +80,8 @@ export function resolveAndDetectAssetDir(
         : kind === 'blueprint'
           ? 'blueprints'
           : kind === 'roadmap'
-            ? 'roadmaps'
-            : 'stack'
+            ? 'assetmaps'
+            : 'stacks'
   const fallback = join(boundary, fallbackDir)
 
   const primaryExists = exists(primary)

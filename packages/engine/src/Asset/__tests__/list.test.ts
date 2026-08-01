@@ -22,7 +22,7 @@ function setupProject(): void {
     join(tmpDir, '.openxenon', 'config.json'),
     JSON.stringify({ version: 1, mode: 'PRODUCTION', locale: 'zh-CN' }),
   )
-  for (const kind of ['domains', 'workflows', 'stacks', 'blueprints', 'roadmaps']) {
+  for (const kind of ['domains', 'workflows', 'stacks', 'blueprints', 'assetmaps']) {
     mkdirSync(join(tmpDir, '.openxenon', 'assets', kind), { recursive: true })
   }
 }
@@ -59,7 +59,7 @@ describe('Asset.listAll() 全 kind 列举（hotfix 回归测试）', () => {
     writeFileSync(join(tmpDir, '.openxenon', 'assets', 'workflows', 'w2.md'), 'c')
     writeFileSync(join(tmpDir, '.openxenon', 'assets', 'stacks', 's1.md'), 'd')
     writeFileSync(join(tmpDir, '.openxenon', 'assets', 'blueprints', 'b1.md'), 'e')
-    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'roadmaps', 'r1.md'), 'f')
+    writeFileSync(join(tmpDir, '.openxenon', 'assets', 'assetmaps', 'r1.md'), 'f')
 
     const result = listAll(tmpDir)
     expect(result.assets.length).toBe(6)

@@ -14,7 +14,7 @@ function setupAssets() {
   // Create assetRoot structure
   mkdirSync(join(TMP, '.openxenon/assets/domains'), { recursive: true })
   mkdirSync(join(TMP, '.openxenon/assets/blueprints'), { recursive: true })
-  mkdirSync(join(TMP, '.openxenon/assets/roadmaps'), { recursive: true })
+  mkdirSync(join(TMP, '.openxenon/assets/assetmaps'), { recursive: true })
 
   // Real assets
   writeFileSync(
@@ -55,7 +55,7 @@ describe('syncRoadmap', () => {
   afterEach(cleanup)
 
   test('detects dangling link (target does not exist)', () => {
-    writeRoadmapMd(join(TMP, '.openxenon/assets/roadmaps/oxn-system.md'), [
+    writeRoadmapMd(join(TMP, '.openxenon/assets/assetmaps/oxn-system.md'), [
       {
         name: 'dev',
         description: 'Dev',
@@ -71,7 +71,7 @@ describe('syncRoadmap', () => {
   })
 
   test('detects outdated description (Asset.abstract changed)', () => {
-    writeRoadmapMd(join(TMP, '.openxenon/assets/roadmaps/oxn-system.md'), [
+    writeRoadmapMd(join(TMP, '.openxenon/assets/assetmaps/oxn-system.md'), [
       {
         name: 'dev',
         description: 'Dev',
@@ -84,7 +84,7 @@ describe('syncRoadmap', () => {
   })
 
   test('reports orphans (Assets not in Roadmap)', () => {
-    writeRoadmapMd(join(TMP, '.openxenon/assets/roadmaps/oxn-system.md'), [
+    writeRoadmapMd(join(TMP, '.openxenon/assets/assetmaps/oxn-system.md'), [
       {
         name: 'dev',
         description: 'Dev',
@@ -97,7 +97,7 @@ describe('syncRoadmap', () => {
   })
 
   test('scope to single scene', () => {
-    writeRoadmapMd(join(TMP, '.openxenon/assets/roadmaps/oxn-system.md'), [
+    writeRoadmapMd(join(TMP, '.openxenon/assets/assetmaps/oxn-system.md'), [
       {
         name: 'doc',
         description: 'Doc',
@@ -116,7 +116,7 @@ describe('syncRoadmap', () => {
   })
 
   test('--apply removes dangling links from .md', () => {
-    const mdPath = join(TMP, '.openxenon/assets/roadmaps/oxn-system.md')
+    const mdPath = join(TMP, '.openxenon/assets/assetmaps/oxn-system.md')
     writeRoadmapMd(mdPath, [
       {
         name: 'dev',
@@ -140,7 +140,7 @@ describe('syncRoadmap', () => {
   })
 
   test('dry-run does NOT modify .md', () => {
-    const mdPath = join(TMP, '.openxenon/assets/roadmaps/oxn-system.md')
+    const mdPath = join(TMP, '.openxenon/assets/assetmaps/oxn-system.md')
     writeRoadmapMd(mdPath, [
       {
         name: 'dev',

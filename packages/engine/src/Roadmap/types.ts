@@ -1,9 +1,9 @@
 /**
- * Roadmap module — v0.6.x scene-based Roadmap types
+ * Roadmap module — v0.7+ scene-based Roadmap types (用户面收敛为 AssetMap)
  *
- * Roadmap = AssetKind=roadmap with 6 builtin scenes (doc/dev/debug/test/release/onboard).
+ * Roadmap = AssetKind='roadmap'（枚举值不变）with 6 builtin scenes (doc/dev/debug/test/release/onboard).
  * Each scene contains a flat list of links (kind + name + description).
- * Roadmap lives at `.openxenon/assets/roadmaps/<name>.md` (canonical).
+ * Roadmap lives at `.openxenon/assets/assetmaps/<name>.md` (canonical; v0.7 已从 `roadmaps/` 收敛为 `assetmaps/`).
  *
  * Scope: project-specific (per user decision A). Does NOT participate in Asset references DAG.
  */

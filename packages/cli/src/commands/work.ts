@@ -822,7 +822,7 @@ const createSubcommand = defineCommand({
               tasks: autoTasks,
               nextStep:
                 `Edit the task files, then run: oxn work validate ${workName} && oxn work lock ${workName} && oxn work run ${workName}\n` +
-                `  Tip: view Roadmap scene for related Assets: oxn roadmap show oxn-system --scene <scene>`,
+                `  Tip: view AssetMap scene for related Assets: oxn assetmap show oxn-system --scene <scene>`,
             },
           },
           format,

@@ -108,7 +108,7 @@ export function syncRoadmap(opts: SyncOptions): SyncReport {
   }
 
   if (apply) {
-    const mdPath = join(projectRoot, '.openxenon', 'assets', 'roadmaps', `${name}.md`)
+    const mdPath = join(projectRoot, '.openxenon', 'assets', 'assetmaps', `${name}.md`)
     if (existsSync(mdPath)) {
       let content = readFileSync(mdPath, 'utf-8')
 

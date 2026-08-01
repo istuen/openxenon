@@ -148,7 +148,7 @@ export class RoadmapCompiler implements EntityCompiler {
     if (legacy.length > 0) {
       throw new Error(
         `E_MD_DEPRECATED_SYNTAX: ${legacy.length} legacy :::intent block(s) found. ` +
-          `Syntax deprecated in v0.3.0. Please use \`oxn roadmap compile\` to generate fresh .md.`,
+          `Syntax deprecated in v0.3.0. Please use \`oxn assetmap compile\` to generate fresh .md.`,
       )
     }
 

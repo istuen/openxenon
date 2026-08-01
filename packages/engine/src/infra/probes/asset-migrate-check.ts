@@ -50,7 +50,7 @@ export interface AssetMigrateCheckResult {
 }
 
 const ARCHIVED_BASE = '.openxenon/.archived/assets'
-const ASSET_KINDS = ['domains', 'workflows', 'blueprints', 'stacks', 'roadmaps'] as const
+const ASSET_KINDS = ['domains', 'workflows', 'blueprints', 'stacks', 'assetmaps'] as const
 
 interface ParsedMetadata {
   archiveAt?: string

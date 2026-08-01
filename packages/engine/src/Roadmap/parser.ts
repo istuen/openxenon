@@ -1,8 +1,8 @@
 /**
- * Roadmap/parser.ts — scene-based .md parser
+ * Roadmap/parser.ts — scene-based .md parser (v0.7+ 命名收敛为 AssetMap)
  *
- * Input: `.openxenon/assets/roadmaps/<name>.md` (scene-based)
- * Output: `Roadmap` AST (in-memory)
+ * Input: `.openxenon/assets/assetmaps/<name>.md` (scene-based; v0.7 已从 `roadmaps/` 收敛为 `assetmaps/`)
+ * Output: `Roadmap` AST (in-memory; 类型名沿用 'Roadmap'，AssetKind 枚举值仍为 'roadmap')
  *
  * Format (v0.6.x scene-based):
  * ```
@@ -46,7 +46,7 @@ const VALID_KINDS: readonly AssetKind[] = ALL_ASSET_KINDS
  * @throws if file not found
  */
 export function parseRoadmapMd(projectRoot: string, name: string): RoadmapParseResult {
-  const path = join(projectRoot, '.openxenon', 'assets', 'roadmaps', `${name}.md`)
+  const path = join(projectRoot, '.openxenon', 'assets', 'assetmaps', `${name}.md`)
   if (!existsSync(path)) {
     throw new Error(`Roadmap not found: ${path}`)
   }

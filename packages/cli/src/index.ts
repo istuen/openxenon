@@ -151,8 +151,8 @@ const main = defineCommand({
     blueprint: () => import('./commands/blueprint').then((m) => m.default),
     // ---- v0.6.1-alpha.4: External inline status (check/status/mark) ----
     external: () => import('./commands/external').then((m) => m.externalCommand),
-    // ---- v0.6.x: scene-based Roadmap CLI (asset-kind=roadmap navigation) ----
-    roadmap: () => import('./commands/roadmap').then((m) => m.default),
+    // ---- v0.7: scene-based AssetMap CLI (asset-kind=roadmap navigation; AssetKind 枚举值仍为 'roadmap') ----
+    assetmap: () => import('./commands/assetmap').then((m) => m.default),
 
     // ---- v0.6.1-alpha.1: Asset lifecycle (8 subcommands: list/show/create/validate/archive/delete/evolve)
     // ---- alias 兼容: oxn work create --type asset --asset-kind X 仍保留 (work.ts handleAssetModeCreate)

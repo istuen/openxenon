@@ -21,12 +21,12 @@ D=Business Intent | B=Tech Intent | W=Align orchestration | T=Align execution
 
 > v0.7+: Work no longer has mode (task/explore/edit); behavior differences carried by Blueprint slots/observe.
 
-## Execution (v0.6.4 Roadmap-driven Asset selection)
+## Execution (v0.7+ AssetMap-driven Asset selection)
 
 1. **Prereq**: project initialized via `oxn init`; required Assets ready — to create/modify Assets, **invoke `oxn-asset` Skill**.
-2. **Query Roadmap for available Assets** (human/AI initiated, NOT auto-recommended):
-   - `oxn roadmap show oxn-system --scene <scene>` — list Domain / Blueprint / Stack under scene
-   - `oxn roadmap suggest --goal "<goal>" --scene <scene>` — jaccard keyword ranking candidates
+2. **Query AssetMap for available Assets** (human/AI initiated, NOT auto-recommended):
+   - `oxn assetmap show oxn-system --scene <scene>` — list Domain / Blueprint / Stack under scene
+   - `oxn assetmap suggest --goal "<goal>" --scene <scene>` — jaccard keyword ranking candidates
 3. **Human analysis, pick from suggest results**:
    - **Blueprint** — 1..N pipelines (typically 1; multiple blueprints for cross-phase different pipelines)
    - **Domain** — 1..N (Work-level declaration, provides global vocabulary; Task level picks exactly 1)

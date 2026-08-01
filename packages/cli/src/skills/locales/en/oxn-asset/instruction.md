@@ -1,4 +1,4 @@
-# /oxn-asset — Asset Lifecycle Management v0.6.1
+# /oxn-asset — Asset Lifecycle Management v0.7+
 
 ## Goal
 Manage the full Asset lifecycle: create / modify / evolve / delete / query. Covers 5 AssetKind (v0.6.1-alpha.4 three-boundary framework):
@@ -6,7 +6,7 @@ Manage the full Asset lifecycle: create / modify / evolve / delete / query. Cove
 
 Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop).
 
-> **v0.6.1-alpha.4 changes**: AssetKind 6→5; original blueprint renamed **workflow**; new **Blueprint** = composition template; External converged to boundary `## Externals`; External status independent index.
+> **v0.7 naming convergence**: User-facing CLI command and directory converged from `roadmap` to `assetmap` (`oxn assetmap`, `assets/assetmaps/`); **AssetKind enum value remains `roadmap`** (RFC-0013 D4 explicitly preserves code enum, internal code/AssetKind fields still use `'roadmap'`).
 
 ## Hard rules
 - Asset creation triggers planLock; modification must go through `oxn work create --type asset` (v0.6.3+ hard-block)
@@ -21,7 +21,7 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 - **Workflow** = execution boundary (slot DAG + optional ## Externals)
 - **Stack** = environment boundary (runtime/linter/test + optional ## Externals)
 - **Blueprint** = composition template (`## Refs`; **NO ## Externals**)
-- **Roadmap** = navigation graph (scene → Domain/Workflow/Stack/Blueprint)
+- **Roadmap / AssetMap** = navigation graph (scene → Domain/Workflow/Stack/Blueprint)
 
 ## Execution
 1. **Choose AssetKind**: see `references/asset-kind-reference.md`
@@ -56,12 +56,12 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 - Don't create library/external Asset types (removed in v0.6.1-alpha.4)
 - Don't declare External in Blueprint (Blueprint is pure composition layer)
 
-## Roadmap routing
+## AssetMap routing
 
 ```bash
-oxn roadmap show oxn-system --scene <scene>
-oxn roadmap suggest --goal "<goal>" --scene <scene> --top 5
-oxn roadmap sync oxn-system --scene <scene> --dry-run   # manual hint
+oxn assetmap show oxn-system --scene <scene>
+oxn assetmap suggest --goal "<goal>" --scene <scene> --top 5
+oxn assetmap sync oxn-system --scene <scene> --dry-run   # manual hint
 ```
 
 > **Boundary with `oxn-work`**: This Skill manages Asset lifecycle; Work orchestration / Run / Submit / Proof is `oxn-work`. See `references/asset-vs-work.md`.
