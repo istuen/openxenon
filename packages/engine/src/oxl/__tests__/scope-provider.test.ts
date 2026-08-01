@@ -203,14 +203,22 @@ describe('OxnBuiltinRegistry', () => {
     expect(registry.has('anything', 'blueprint')).toBe(false)
   })
 
-  test('listByType 返回 19 个探针（v0.6.2: 15 + 4 doc-*）', () => {
+  test('listByType 返回 19 个探针（RFC-0015 D4.2 移除 doc-* + RFC-0016 补 4 个一等公民）', () => {
+    // RFC-0015 D4.2 (cc2602a): 4 OXN-internal probe (docs-build / doc-boundary / docs-heading-check
+    //   / heading-skeleton-check) 移至 @prj/ scope
+    // RFC-0016 commit 647f471: 落地 4 个一等公民 probe (file-hash / test-coverage / json-path
+    //   / port-listening) — RFC-0015 §D6 设计意图
+    // 当前 builtin = 19 probes (15 原有 - 4 doc-* + 4 RFC-0016 + 4 决策点)
     const probes = registry.listByType('probe')
     expect(probes.length).toBe(19)
     expect(probes.map((p) => p.name)).toContain('shell_exec')
     expect(probes.map((p) => p.name)).toContain('fs-exists')
     expect(probes.map((p) => p.name)).toContain('ts-compiles')
-    expect(probes.map((p) => p.name)).toContain('docs-build')
-    expect(probes.map((p) => p.name)).toContain('heading-skeleton-check')
+    // RFC-0016 落地的 4 个一等公民 probe
+    expect(probes.map((p) => p.name)).toContain('file-hash')
+    expect(probes.map((p) => p.name)).toContain('test-coverage')
+    expect(probes.map((p) => p.name)).toContain('json-path')
+    expect(probes.map((p) => p.name)).toContain('port-listening')
   })
 
   test('listByType 返回 3 个蓝图', () => {
@@ -303,7 +311,7 @@ describe('OxnWorkspaceManager', () => {
     expect(Array.isArray(impls)).toBe(true)
   })
 
-  test('list @oxn probe 返回 19 个内置探针（v0.6.2: 15 + 4 doc-*）', () => {
+  test('list @oxn probe 返回 19 个内置探针（RFC-0015 D4.2 + RFC-0016）', () => {
     const probes = manager.list('oxn', 'probe')
     expect(probes.length).toBe(19)
     for (const p of probes) {
@@ -327,7 +335,7 @@ describe('OxnWorkspaceManager', () => {
     expect(ifaces).toEqual([])
   })
 
-  test('count 返回正确数量（v0.6.2: 19 probes）', () => {
+  test('count 返回正确数量（RFC-0015 D4.2 + RFC-0016: 19 probes）', () => {
     expect(manager.count('oxn', 'probe')).toBe(19)
     expect(manager.count('oxn', 'blueprint')).toBe(3)
     expect(manager.count('oxn', 'part')).toBe(0)

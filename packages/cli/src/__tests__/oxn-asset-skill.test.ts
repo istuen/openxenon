@@ -87,33 +87,36 @@ describe('oxn-asset SKILL.md 渐进式披露（v0.6.1-alpha.4）', () => {
     }
   })
 
-  test('7. domain.md H2 分类遵循 DomainCompiler（Terms / Bans / Invariants / Externals）', () => {
+  test('7. domain.md H2 分类遵循 DomainCompiler（Terms / Bans / Invariants）', () => {
+    // v0.7 重构: DomainCompiler H2 白名单 = ['Terms', 'Bans', 'Invariants']
+    //   - 删 'Stack'（v0.4 PR-A 软推荐已废弃）
+    //   - 删 'Externals'（external 并入 frontmatter references）
     const content = readIfExists(join(SKILL_DIR, 'assets', 'domain.md'))
     expect(content).toMatch(/^## Terms$/m)
     expect(content).toMatch(/^## Bans$/m)
     expect(content).toMatch(/^## Invariants$/m)
-    // Externals 模板含中文注释，匹配宽松
-    expect(content).toMatch(/^## Externals/m)
   })
 
-  test('8. workflow.md H2 分类遵循 WorkflowCompiler（Props / Slots / Externals）', () => {
+  test('8. workflow.md H2 分类遵循 WorkflowCompiler（Slots）', () => {
+    // v0.7 重构: WorkflowCompiler H2 白名单 = ['Slots']
+    //   - 删 'Props' + 'Externals'（v0.4 PR-A 软推荐已废弃）
     const content = readIfExists(join(SKILL_DIR, 'assets', 'workflow.md'))
-    expect(content).toMatch(/^## Props$/m)
     expect(content).toMatch(/^## Slots$/m)
-    expect(content).toMatch(/^## Externals/m)
   })
 
-  test('9. stack.md H2 分类遵循 StackCompiler（Runtimes / Linters / Tests / Externals）', () => {
+  test('9. stack.md H2 分类遵循 StackCompiler（Tools）', () => {
+    // v0.7 重构: StackCompiler H2 白名单 = ['Tools']
+    //   - 删 'Runtimes / Linters / Tests / Externals'（v0.4 PR-A 软推荐已废弃）
     const content = readIfExists(join(SKILL_DIR, 'assets', 'stack.md'))
-    expect(content).toMatch(/^## Runtimes$/m)
-    expect(content).toMatch(/^## Linters$/m)
-    expect(content).toMatch(/^## Tests$/m)
-    expect(content).toMatch(/^## Externals/m)
+    expect(content).toMatch(/^## Tools$/m)
   })
 
-  test('10. blueprint.md H2 分类遵循 BlueprintCompiler（Refs）', () => {
+  test('10. blueprint.md H2 分类遵循 BlueprintCompiler（Use / Boundaries）', () => {
+    // v0.7 重构: BlueprintCompiler H2 白名单 = ['Use', 'Boundaries']
+    //   - 删 'Refs'（ref 关系通过 ## Use 段表达）
     const content = readIfExists(join(SKILL_DIR, 'assets', 'blueprint.md'))
-    expect(content).toMatch(/^## Refs$/m)
+    expect(content).toMatch(/^## Use$/m)
+    expect(content).toMatch(/^## Boundaries$/m)
   })
 
   test('11. 4 个模板 frontmatter entity 字段正确', () => {
