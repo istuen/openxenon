@@ -77,7 +77,7 @@ The AI Agent calls `oxn` via Skill, result flows back to `frozen.json`.
 |---|---|---|---|
 | **Intent** (define) | Engineer | Domain / Blueprint / Stack | `term` / `ban` / `invariant` boundaries (planLock + content_hash) |
 | **Align** (run) | AI Agent | Work / Task / Part | Blueprint `slot` lock; AI must not modify Asset |
-| **Proof** (emit) | OXN Engine | Proof (`frozen.json` + `verdict.md`) | Tamper-proof (chmod 0o444 + content_hash) |
+| **Proof** (emit) | OXN Engine | Proof (`frozen.json` + `outcome.md`) | Tamper-proof (chmod 0o444 + content_hash) |
 
 > **OXN Engine is a notary, not a judge** — it records "what happened" (script exit codes, test coverage, file paths as objective facts) and does not judge whether the work is "acceptable". The "acceptability" judgment belongs to the engineer, based on comparing Asset against Proof.
 
