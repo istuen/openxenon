@@ -176,7 +176,7 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 - **`.openxenon/` = 工程工作台**（非纯运行时目录）：`assets/`（E1 Asset 边界）；`drafts/`（探索稿 + 历史 ADR/RFC）；运行时 `works/ proofs/ .cache/` 已 gitignore。
 - IAP 资产：`.openxenon/assets/{domains,workflows,stack,blueprints,roadmaps}/`（0.6.2 布局，Asset = 定义性，5 类 AssetKind）；`assetRoot` 可配（`.oxnrc` 指定），支持跳出 `.openxenon/`。
 - AI 可见的权威文档：`docs/product/zh-cn/introduction.html`（入口）、`docs/product/zh-cn/concepts/iap-paradigm.html`（IAP 范式）、`docs/product/zh-cn/concepts/insight.html`（Insight 层）、`docs/product/zh-cn/concepts/work.html`（Work 核心）、`docs/product/zh-cn/concepts/proof.html`（Proof 轴）、`docs/product/zh-cn/reference/cli-user-guide.html`（CLI 参考）、`docs/dev/zh-cn/architecture.html`（架构）。
-- **RFC 索引**：[`docs/rfc/zh-cn/`](./docs/rfc/zh-cn/) — 13 个 RFC（0.6.x+ 唯一规定性载体；12 个已 Accepted + RFC-0013 versioning-policy Draft；旧 `.openxenon/drafts/rfc/INDEX.md` 已废，48 ADR 已归档到 `.openxenon/.archived/docs/adrs/`）。RFC 文档无 version 字段，用 status + Errata 段演进（RFC-0013 D6，对齐 IETF/Rust/Python 业界标准）。
+- **RFC 索引**：[`docs/rfc/zh-cn/`](./docs/rfc/zh-cn/) — 14 个 RFC（0.6.x+ 唯一规定性载体；12 个已 Accepted + RFC-0013 versioning-policy Draft + RFC-0015 proof-system-overhaul Draft + RFC-0016 generic-verification-probes Draft；旧 `.openxenon/drafts/rfc/INDEX.md` 已废，48 ADR 已归档到 `.openxenon/.archived/docs/adrs/`）。RFC 文档无 version 字段，用 status + Errata 段演进（RFC-0013 D6，对齐 IETF/Rust/Python 业界标准）。
 - Probes 拆分：`packages/engine/src/kernel/verdicts/` = L0 判定/目录（纯函数，verdict strategies + probe catalog）；`packages/engine/src/infra/probes/` = L1 IO 执行器。不要在二者之间挪动逻辑。两层以 `verdicts` ↔ `probes` 命名对偶显式 L0 ⇄ L1 边界。
 - `.changes/` 存放按版本号组织的变更日志片段；发布版本号时记得新增一条。
 
