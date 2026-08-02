@@ -378,3 +378,137 @@ describe('dispatchPromote - edge cases', () => {
     teardown()
   })
 })
+
+describe('dispatchPromote - Fix #2 target-dir override', () => {
+  test('18. RFC --target-dir 覆盖默认 docs/rfc/zh-cn/', () => {
+    setup()
+    const result = dispatchPromote({
+      projectRoot: FIXTURE_PROJECT,
+      name: 'custom-rfc',
+      target: 'rfc',
+      kind: null,
+      subTarget: 'promote-rfc',
+      draftFrontmatter: { 'promote-target': 'rfc', theme: 'custom' },
+      draftBody: '# Custom RFC',
+      targetDirOverride: 'docs/rfcs/custom-locale',
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.targetPath).toContain('docs/rfcs/custom-locale/')
+    expect(result.targetPath).not.toContain('docs/rfc/zh-cn/')
+    expect(existsSync(result.targetPath)).toBe(true)
+    teardown()
+  })
+
+  test('19. Asset+domain --target-dir 覆盖默认 .openxenon/assets/domains/', () => {
+    setup()
+    const result = dispatchPromote({
+      projectRoot: FIXTURE_PROJECT,
+      name: 'custom-domain',
+      target: 'asset',
+      kind: 'domain',
+      subTarget: 'promote-asset-domain',
+      draftFrontmatter: { 'promote-target': 'asset', 'promote-kind': 'domain' },
+      draftBody: '# Custom Domain',
+      targetDirOverride: 'custom-asset/ddd',
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.targetPath).toContain('custom-asset/ddd/CustomDomain.md')
+    expect(result.targetPath).not.toContain('.openxenon/assets/domains/')
+    teardown()
+  })
+
+  test('20. Work --target-dir 覆盖默认 .openxenon/works/', () => {
+    setup()
+    const result = dispatchPromote({
+      projectRoot: FIXTURE_PROJECT,
+      name: 'custom-work',
+      target: 'work',
+      kind: null,
+      subTarget: 'promote-work',
+      draftFrontmatter: { 'promote-target': 'work' },
+      draftBody: '# Custom Work',
+      targetDirOverride: 'tasks/my-proj',
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.targetPath).toContain('tasks/my-proj/custom-work/work.md')
+    expect(result.targetPath).not.toContain('.openxenon/works/')
+    teardown()
+  })
+
+  test('21. .oxnrc config.draftPromote.rfcDir 覆盖默认（无 --target-dir）', () => {
+    setup()
+    const result = dispatchPromote({
+      projectRoot: FIXTURE_PROJECT,
+      name: 'config-rfc',
+      target: 'rfc',
+      kind: null,
+      subTarget: 'promote-rfc',
+      draftFrontmatter: { 'promote-target': 'rfc', theme: 'config' },
+      draftBody: '# Config RFC',
+      config: { draftPromote: { rfcDir: 'docs/rfcs/from-oxnrc' } },
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.targetPath).toContain('docs/rfcs/from-oxnrc/')
+    teardown()
+  })
+
+  test('22. .oxnrc config.draftPromote.assetDirs.domain 覆盖默认', () => {
+    setup()
+    const result = dispatchPromote({
+      projectRoot: FIXTURE_PROJECT,
+      name: 'config-domain',
+      target: 'asset',
+      kind: 'domain',
+      subTarget: 'promote-asset-domain',
+      draftFrontmatter: { 'promote-target': 'asset', 'promote-kind': 'domain' },
+      draftBody: '# Config Domain',
+      config: { draftPromote: { assetDirs: { domain: 'custom/contexts' } } },
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.targetPath).toContain('custom/contexts/ConfigDomain.md')
+    teardown()
+  })
+
+  test('23. --target-dir 优先级高于 .oxnrc config', () => {
+    setup()
+    const result = dispatchPromote({
+      projectRoot: FIXTURE_PROJECT,
+      name: 'priority-test',
+      target: 'rfc',
+      kind: null,
+      subTarget: 'promote-rfc',
+      draftFrontmatter: { 'promote-target': 'rfc', theme: 'priority' },
+      draftBody: '# Priority',
+      targetDirOverride: 'cli-wins',
+      config: { draftPromote: { rfcDir: 'config-loses' } },
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.targetPath).toContain('cli-wins/')
+    expect(result.targetPath).not.toContain('config-loses/')
+    teardown()
+  })
+
+  test('24. targetDirOverride 空字符串走 default（不覆盖）', () => {
+    setup()
+    const result = dispatchPromote({
+      projectRoot: FIXTURE_PROJECT,
+      name: 'empty-override',
+      target: 'rfc',
+      kind: null,
+      subTarget: 'promote-rfc',
+      draftFrontmatter: { 'promote-target': 'rfc', theme: 'empty' },
+      draftBody: '# Empty',
+      targetDirOverride: '',
+    })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.targetPath).toContain('docs/rfc/zh-cn/')
+    teardown()
+  })
+})

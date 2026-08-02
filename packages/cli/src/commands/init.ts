@@ -12,6 +12,7 @@ import { getFormatFromArgs, output, outputError } from './output'
 import { readProjectConfig, writeProjectConfig } from './project-config-io'
 import { compileAllSkills, compileAllSkillsToRoot, formatCompilationReport } from './skill-compiler'
 import { DEFAULT_ADAPTERS, isSkillAdapterId, type SkillAdapterId } from '../skills/adapters'
+import { BUILTIN_SKELETON_TEMPLATES, SKELETON_OUTPUT_DIR } from '../init/builtin-skeleton-templates'
 
 const PROJECT_BOUNDARY_GITIGNORE = `# .openxenon/ 工程工作台 .gitignore 模板（v0.7）
 # 默认每个目录单独一行忽略。工程师需 tracked 某目录时注释掉对应行即可。
@@ -55,6 +56,29 @@ function ensureProjectBoundary(projectRoot: string): void {
   const gitignorePath = join(boundaryPath, '.gitignore')
   if (!existsSync(gitignorePath)) {
     writeFileSync(gitignorePath, PROJECT_BOUNDARY_GITIGNORE, 'utf-8')
+  }
+  // v0.6.3 Fix #1: 落地 7 skeleton 模板到 .openxenon/draft-skeletons/
+  ensureBuiltinSkeletons(projectRoot)
+}
+
+/**
+ * v0.6.3 Fix #1: 创建 7 内置 skeleton 模板（rfc / asset-{5} / work）
+ *
+ * 用途：新项目 `oxn draft create --target` 立即可用，无需手动复制模板。
+ * 失败 fallback：创建失败不阻塞 init 流程（log warning）。
+ */
+function ensureBuiltinSkeletons(projectRoot: string): void {
+  const targetDir = join(projectRoot, SKELETON_OUTPUT_DIR)
+  try {
+    mkdirSync(targetDir, { recursive: true })
+    for (const tpl of BUILTIN_SKELETON_TEMPLATES) {
+      const filePath = join(targetDir, tpl.filename)
+      if (!existsSync(filePath)) {
+        writeFileSync(filePath, tpl.content, 'utf-8')
+      }
+    }
+  } catch {
+    // ignore — fall back to skeleton-not-found error (existing behavior)
   }
 }
 

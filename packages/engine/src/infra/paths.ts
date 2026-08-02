@@ -72,6 +72,21 @@ export interface ProjectConfig {
   }
   /** v0.6.2: Draft 工作目录（默认 '<boundaryDir>/drafts'） */
   draftDir?: string
+  /** v0.6.3 Fix #2: Draft Promote 目标目录配置 */
+  draftPromote?: {
+    /** RFC 目标目录（默认 'docs/rfc/zh-cn'） */
+    rfcDir?: string
+    /** Asset 5 类 per-kind 目标目录（默认 {domain, workflow, stack, blueprint, assetmaps}） */
+    assetDirs?: {
+      domain?: string
+      workflow?: string
+      stack?: string
+      blueprint?: string
+      roadmap?: string
+    }
+    /** Work 目标目录（默认 '.openxenon/works'） */
+    workDir?: string
+  }
 }
 
 /** v0.6 PR-1: Asset 路径解析（支持 config + fallback） */

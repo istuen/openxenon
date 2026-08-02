@@ -36,6 +36,22 @@ export interface DispatchInput {
   draftBody: string
   /** 是否覆盖现有目标文件 */
   force?: boolean
+  /** v0.6.3 Fix #2: 目标目录覆盖（相对 projectRoot）；优先级高于 .oxnrc */
+  targetDirOverride?: string
+  /** v0.6.3 Fix #2: .oxnrc 配置（从 ProjectConfig.draftPromote 读） */
+  config?: {
+    draftPromote?: {
+      rfcDir?: string
+      assetDirs?: {
+        domain?: string
+        workflow?: string
+        stack?: string
+        blueprint?: string
+        roadmap?: string
+      }
+      workDir?: string
+    }
+  } | null
 }
 
 export interface DispatchResult {
@@ -155,11 +171,15 @@ function buildRFCTarget(
   projectRoot: string,
   frontmatter: Record<string, string>,
   body: string,
+  targetDirOverride?: string,
+  configRfcDir?: string,
 ): TargetSpec & { rfcNumber: string } {
   const rfcNumber = nextRFCNumber(projectRoot)
   const theme = frontmatter['theme'] || 'TODO'
   const filename = `${rfcNumber}-${theme}.md`
-  const targetPath = join(projectRoot, 'docs', 'rfc', 'zh-cn', filename)
+  // v0.6.3 Fix #2: targetDirOverride > config.rfcDir > default
+  const dirRel = targetDirOverride || (configRfcDir ?? join('docs', 'rfc', 'zh-cn'))
+  const targetPath = join(projectRoot, dirRel, filename)
   const fm = buildRFCFrontmatter(frontmatter, rfcNumber)
   const content = `---\n${fm}\n---\n\n${body.trim()}\n`
   return { targetPath, content, rfcNumber }
@@ -171,11 +191,15 @@ function buildAssetTarget(
   kind: DraftAssetKind,
   frontmatter: Record<string, string>,
   body: string,
+  targetDirOverride?: string,
+  configAssetDirs?: { domain?: string; workflow?: string; stack?: string; blueprint?: string; roadmap?: string },
 ): TargetSpec {
-  const dir = kind === 'roadmap' ? 'assetmaps' : `${kind}s`
+  // v0.6.3 Fix #2: targetDirOverride > config.assetDirs[kind] > default
+  const defaultDir = kind === 'roadmap' ? 'assetmaps' : `${kind}s`
+  const dirRel = targetDirOverride || (configAssetDirs?.[kind] ?? join('.openxenon', 'assets', defaultDir))
   // Domain 用 PascalCase 文件名（如 MemberContext.md）; 其他用 kebab-case
   const filename = kind === 'domain' ? `${toPascalCase(name)}.md` : `${name}.md`
-  const targetPath = join(projectRoot, '.openxenon', 'assets', dir, filename)
+  const targetPath = join(projectRoot, dirRel, filename)
   const fm = buildAssetFrontmatter(frontmatter, kind, name)
   const content = `---\n${fm}\n---\n\n${body.trim()}\n`
   return { targetPath, content }
@@ -186,8 +210,12 @@ function buildWorkTarget(
   name: string,
   frontmatter: Record<string, string>,
   body: string,
+  targetDirOverride?: string,
+  configWorkDir?: string,
 ): TargetSpec {
-  const targetPath = join(projectRoot, '.openxenon', 'works', name, 'work.md')
+  // v0.6.3 Fix #2: targetDirOverride > config.workDir > default
+  const dirRel = targetDirOverride || (configWorkDir ?? join('.openxenon', 'works'))
+  const targetPath = join(projectRoot, dirRel, name, 'work.md')
   const fm = buildWorkFrontmatter(frontmatter, name)
   const content = `---\n${fm}\n---\n\n${body.trim()}\n`
   return { targetPath, content }
@@ -199,14 +227,36 @@ export function dispatchPromote(input: DispatchInput): DispatchResult | Dispatch
   let spec: TargetSpec & { rfcNumber?: string }
   let rfcNumber: string | null = null
 
+  const cfg = input.config?.draftPromote
   if (input.target === 'rfc') {
-    const r = buildRFCTarget(input.projectRoot, input.draftFrontmatter, input.draftBody)
+    const r = buildRFCTarget(
+      input.projectRoot,
+      input.draftFrontmatter,
+      input.draftBody,
+      input.targetDirOverride,
+      cfg?.rfcDir,
+    )
     spec = { targetPath: r.targetPath, content: r.content }
     rfcNumber = r.rfcNumber
   } else if (input.target === 'asset' && input.kind) {
-    spec = buildAssetTarget(input.projectRoot, input.name, input.kind, input.draftFrontmatter, input.draftBody)
+    spec = buildAssetTarget(
+      input.projectRoot,
+      input.name,
+      input.kind,
+      input.draftFrontmatter,
+      input.draftBody,
+      input.targetDirOverride,
+      cfg?.assetDirs,
+    )
   } else if (input.target === 'work') {
-    spec = buildWorkTarget(input.projectRoot, input.name, input.draftFrontmatter, input.draftBody)
+    spec = buildWorkTarget(
+      input.projectRoot,
+      input.name,
+      input.draftFrontmatter,
+      input.draftBody,
+      input.targetDirOverride,
+      cfg?.workDir,
+    )
   } else {
     return {
       ok: false,

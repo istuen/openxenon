@@ -46,6 +46,8 @@ export interface PromoteDraftInput {
   commit?: boolean
   /** 覆盖已存在的目标文件 */
   force?: boolean
+  /** v0.6.3 Fix #2: 目标目录覆盖（相对 projectRoot） */
+  targetDirOverride?: string
 }
 
 export interface PromoteDraftResult {
@@ -147,9 +149,28 @@ function computeTargetPath(target: DraftTarget, kind: DraftAssetKind | null, nam
   return join('.openxenon', 'assets', dir, `${name}.md`)
 }
 
+/**
+ * Config passed to promoteDraft. Extends the project-level config with the
+ * new `draftPromote` field introduced in v0.6.3 (Fix #2).
+ */
+export interface PromoteDraftConfig {
+  draftDir?: string
+  draftPromote?: {
+    rfcDir?: string
+    assetDirs?: {
+      domain?: string
+      workflow?: string
+      stack?: string
+      blueprint?: string
+      roadmap?: string
+    }
+    workDir?: string
+  }
+}
+
 export function promoteDraft(
   input: PromoteDraftInput,
-  config: { draftDir?: string } | null = null,
+  config: PromoteDraftConfig | null = null,
 ): PromoteDraftResult | PromoteDraftError {
   // ── Phase 1: gather ──
   const dir = getDraftDir(input.projectRoot, config)
@@ -265,6 +286,8 @@ export function promoteDraft(
       draftFrontmatter: frontmatter,
       draftBody: body,
       force: input.force,
+      targetDirOverride: input.targetDirOverride,
+      config,
     })
     if (!dispatchResult.ok) {
       return dispatchResult

@@ -7,7 +7,7 @@
  *   - .openxenon/assets/workflows/draft-skeleton-fork.md
  *
  * 职责：
- *   - 从 `.openxenon/assets/blueprints/draft-skeletons/<target>[-<kind>].md` 派生 skeleton
+ *   - 从 `.openxenon/draft-skeletons/<target>[-<kind>].md` 派生 skeleton
  *   - 注入 frontmatter 字段（promote-target / promote-kind / created-from / synced-at）
  *   - 不写文件本身（由 caller 写）
  *
@@ -68,7 +68,7 @@ export interface ForkSkeletonError {
   suggestion?: string
 }
 
-const SKELETON_DIR = 'assets/blueprints/draft-skeletons'
+const SKELETON_DIR = 'draft-skeletons'
 const WORKFLOW_VERSION = 'draft-skeleton-fork@0.1.0'
 
 function isDraftTarget(value: string): value is DraftTarget {
@@ -149,7 +149,7 @@ export function forkDraftSkeleton(
       ok: false,
       code: 'OXN_DRAFT_SKELETON_NOT_FOUND',
       message: `Skeleton template not found at ${templatePath}`,
-      suggestion: `Create the skeleton at .openxenon/assets/blueprints/draft-skeletons/${input.target === 'asset' && input.kind ? `asset-${input.kind}.md` : `${input.target}.md`}`,
+      suggestion: `Create the skeleton at .openxenon/draft-skeletons/${input.target === 'asset' && input.kind ? `asset-${input.kind}.md` : `${input.target}.md`}`,
     }
   }
 

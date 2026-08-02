@@ -28,7 +28,7 @@ Underlying: `oxn draft <subcommand>` (CLI calls Engine → Infra Module directly
 Draft = pre-state of Descriptive Modality
   ├── create                    # 2 modes:
   │     ├── blank (no --target) → 0 bytes (backward compat v0.6.2)
-  │     └── skeleton (--target X) → fork from .openxenon/assets/blueprints/draft-skeletons/<X>[-kind].md
+  │     └── skeleton (--target X) → fork from .openxenon/draft-skeletons/<X>[-kind].md
   ├── list                       # by mtime desc
   ├── archive                    # → .archived/
   ├── discard                    # unlink (--force)
@@ -195,7 +195,7 @@ oxn draft retarget my-design --new-target rfc
 | `OXN_DRAFT_TARGET_INVALID` | `--target` not in 3 types | use `rfc` / `asset` / `work` |
 | `OXN_DRAFT_KIND_REQUIRED` | `--target=asset` missing `--kind` | add `--kind=<5 AssetKind>` |
 | `OXN_DRAFT_KIND_INVALID` | `--kind` not in 5 types | use `domain` / `workflow` / `stack` / `blueprint` / `roadmap` |
-| `OXN_DRAFT_SKELETON_NOT_FOUND` | skeleton template missing | create `.openxenon/assets/blueprints/draft-skeletons/<target>[-kind].md` |
+| `OXN_DRAFT_SKELETON_NOT_FOUND` | skeleton template missing | create `.openxenon/draft-skeletons/<target>[-kind].md` |
 | `OXN_DRAFT_PROMOTE_TARGET_MISSING` | frontmatter missing `promote-target` | `oxn draft retarget` to add target |
 | `OXN_DRAFT_PROMOTE_TARGET_UNKNOWN` | `promote-target` not in 3 types | fix frontmatter or `--target` |
 | `OXN_DRAFT_PROMOTE_TARGET_KIND_MISMATCH` | target/kind combination invalid | use `--target=asset --kind=<valid>` |

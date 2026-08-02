@@ -20,7 +20,7 @@ function setup(): void {
   }
   const dir = join(FIXTURE_PROJECT, '.openxenon/drafts')
   mkdirSync(dir, { recursive: true })
-  const skelDir = join(FIXTURE_PROJECT, '.openxenon/assets/blueprints/draft-skeletons')
+  const skelDir = join(FIXTURE_PROJECT, '.openxenon/draft-skeletons')
   mkdirSync(skelDir, { recursive: true })
 
   // 7 skeleton 模板

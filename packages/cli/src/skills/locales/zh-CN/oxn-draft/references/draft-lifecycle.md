@@ -251,7 +251,7 @@ oxn draft retarget <name> --new-target <rfc|asset|work> [--new-kind <5 AssetKind
 oxn draft create <name> --target <rfc|asset|work> [--kind <5 AssetKind>]
 ```
 
-**7 个 skeleton 模板**（`.openxenon/assets/blueprints/draft-skeletons/`）：
+**7 个 skeleton 模板**（`.openxenon/draft-skeletons/`）：
 - `rfc.md` — RFC skeleton
 - `asset-{domain|workflow|stack|blueprint|roadmap}.md` — 5 AssetKind skeleton
 - `work.md` — Work skeleton
@@ -264,7 +264,7 @@ oxn draft create <name> --target <rfc|asset|work> [--kind <5 AssetKind>]
 
 **关键约束**：
 - skeleton 模板不存在 → 报 `OXN_DRAFT_SKELETON_NOT_FOUND`（不静默降级）
-- 资产位置与标准 Asset 一致（`.openxenon/assets/blueprints/draft-skeletons/`）
+- 资产位置与标准 Asset 一致（`.openxenon/draft-skeletons/`）
 
 ---
 

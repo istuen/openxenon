@@ -16,7 +16,7 @@ import { forkDraftSkeleton, DRAFT_TARGETS, ASSET_KINDS } from '../skeleton'
 const FIXTURE_PROJECT = '/tmp/oxn-test-skeleton-project'
 
 function setupSkeletonDir(): void {
-  const dir = join(FIXTURE_PROJECT, '.openxenon/assets/blueprints/draft-skeletons')
+  const dir = join(FIXTURE_PROJECT, '.openxenon/draft-skeletons')
   if (existsSync(dir)) rmSync(dir, { recursive: true })
   mkdirSync(dir, { recursive: true })
 

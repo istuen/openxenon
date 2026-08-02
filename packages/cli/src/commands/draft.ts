@@ -38,17 +38,48 @@ import {
   type DraftAssetKind,
 } from '@openxenon/engine/Draft'
 import { readProjectConfig } from './project-config-io'
+import { loadOxnRc } from '@openxenon/engine/infra/oxnrc'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 
 function getProjectRoot(): string {
   return process.cwd()
 }
 
-function loadDraftConfig(): { draftDir?: string } {
+function loadDraftConfig(): {
+  draftDir?: string
+  draftPromote?: {
+    rfcDir?: string
+    assetDirs?: {
+      domain?: string
+      workflow?: string
+      stack?: string
+      blueprint?: string
+      roadmap?: string
+    }
+    workDir?: string
+  }
+} {
   try {
+    // v0.6.3 Fix #2: 合并 .openxenon/config.json (draftDir) + .oxnrc (draftPromote)
     const cfg = readProjectConfig(getProjectRoot())
-    if (cfg == null) return {}
-    return { draftDir: cfg.draftDir }
+    const oxnrc = loadOxnRc(getProjectRoot())
+    return {
+      draftDir: cfg?.draftDir,
+      // .oxnrc 的 draftPromote 是 string-keyed，需要 cast
+      draftPromote: (oxnrc.config as unknown as { draftPromote?: { rfcDir?: string; assetDirs?: Record<string, string>; workDir?: string } } | undefined)?.draftPromote as
+        | {
+            rfcDir?: string
+            assetDirs?: {
+              domain?: string
+              workflow?: string
+              stack?: string
+              blueprint?: string
+              roadmap?: string
+            }
+            workDir?: string
+          }
+        | undefined,
+    }
   } catch {
     return {}
   }
@@ -289,6 +320,10 @@ export default defineCommand({
           type: 'boolean',
           description: 'v0.6.3 NG6: 覆盖已存在的目标文件（仅 --commit 时有效）',
         },
+        'target-dir': {
+          type: 'string',
+          description: 'v0.6.3 Fix #2: 目标目录覆盖（相对 projectRoot）; 优先级高于 .oxnrc',
+        },
       },
       async run(ctx) {
         const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -297,6 +332,7 @@ export default defineCommand({
         const archiveAfter = ctx.args['archive-after'] === true
         const commit = ctx.args.commit === true
         const force = ctx.args.force === true
+        const targetDirOverride = ctx.args['target-dir'] as string | undefined
 
         const targetOverride: DraftTarget | 'auto' | undefined =
           !targetOverrideRaw || targetOverrideRaw === ''
@@ -323,6 +359,7 @@ export default defineCommand({
             archiveAfter,
             commit,
             force,
+            targetDirOverride,
           },
           config,
         )

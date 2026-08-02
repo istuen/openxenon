@@ -28,7 +28,7 @@
 Draft = 描述性情态的前置状态
   ├── create                    # 2 模式:
   │     ├── 空白模式 (无 --target) → 0 bytes 空白文件(向后兼容 v0.6.2)
-  │     └── 骨架模式 (--target X) → 从 .openxenon/assets/blueprints/draft-skeletons/<X>[-kind].md 派生
+  │     └── 骨架模式 (--target X) → 从 .openxenon/draft-skeletons/<X>[-kind].md 派生
   ├── list                       # 按 mtime 降序
   ├── archive                    # → .archived/(保留历史)
   ├── discard                    # 物理删除 (--force)
@@ -195,7 +195,7 @@ oxn draft retarget my-design --new-target rfc
 | `OXN_DRAFT_TARGET_INVALID` | `--target` 不在 3 类中 | 用 `rfc` / `asset` / `work` |
 | `OXN_DRAFT_KIND_REQUIRED` | `--target=asset` 缺 `--kind` | 加 `--kind=<5 AssetKind>` |
 | `OXN_DRAFT_KIND_INVALID` | `--kind` 不在 5 类中 | 用 `domain` / `workflow` / `stack` / `blueprint` / `roadmap` |
-| `OXN_DRAFT_SKELETON_NOT_FOUND` | skeleton 模板不存在 | 建 `.openxenon/assets/blueprints/draft-skeletons/<target>[-kind].md` |
+| `OXN_DRAFT_SKELETON_NOT_FOUND` | skeleton 模板不存在 | 建 `.openxenon/draft-skeletons/<target>[-kind].md` |
 | `OXN_DRAFT_PROMOTE_TARGET_MISSING` | frontmatter 缺 `promote-target` | `oxn draft retarget` 加 target |
 | `OXN_DRAFT_PROMOTE_TARGET_UNKNOWN` | `promote-target` 值不在 3 类中 | 改 frontmatter 或 `--target` |
 | `OXN_DRAFT_PROMOTE_TARGET_KIND_MISMATCH` | target/kind 组合不合法 | 用 `--target=asset --kind=<valid>` |

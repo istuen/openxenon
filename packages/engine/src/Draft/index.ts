@@ -37,6 +37,7 @@ export {
   type PromoteDraftInput,
   type PromoteDraftResult,
   type PromoteDraftError,
+  type PromoteDraftConfig,
   type SubTarget,
 } from './promote'
 
