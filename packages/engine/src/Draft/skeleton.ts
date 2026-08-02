@@ -97,7 +97,7 @@ function injectFrontmatter(content: string, fields: Record<string, string>): str
   const lines = content.split('\n')
   if (lines[0] === '---') {
     // 找到 frontmatter 结束
-    let endIdx = lines.indexOf('---', 1)
+    const endIdx = lines.indexOf('---', 1)
     if (endIdx === -1) return content
     // 在 frontmatter 末尾插入新字段
     const newLines = [

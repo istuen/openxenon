@@ -227,7 +227,7 @@ export function promoteDraft(
       code: 'OXN_DRAFT_PROMOTE_VALIDATE_FAILED',
       message: `Draft frontmatter missing required fields: ${missingFields.join(', ')}`,
       detail: { missingFields, requiredFields },
-      suggestion: "Run `oxn draft retarget` to re-fork skeleton, or add fields manually.",
+      suggestion: 'Run `oxn draft retarget` to re-fork skeleton, or add fields manually.',
     }
   }
 

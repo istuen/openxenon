@@ -69,15 +69,13 @@ function isAssetKind(value: string): value is DraftAssetKind {
 export default defineCommand({
   meta: {
     name: 'draft',
-    description:
-      'Draft 工作稿管理：create / list / archive / discard / promote / retarget（v0.6.2-alpha.3+）',
+    description: 'Draft 工作稿管理：create / list / archive / discard / promote / retarget（v0.6.2-alpha.3+）',
   },
   subCommands: {
     create: defineCommand({
       meta: {
         name: 'create',
-        description:
-          '创建 Draft（默认空白；--target/<rfc|asset|work> 模式从 skeleton 派生带 frontmatter）',
+        description: '创建 Draft（默认空白；--target/<rfc|asset|work> 模式从 skeleton 派生带 frontmatter）',
       },
       args: {
         name: { type: 'positional', required: true, description: 'Draft name（kebab-case 或 camelCase）' },
@@ -119,10 +117,7 @@ export default defineCommand({
           return
         }
         if (kind != null && !isAssetKind(kind)) {
-          outputUserInputError(
-            'OXN_DRAFT_KIND_INVALID',
-            `Invalid --kind "${kind}". Valid: ${ASSET_KINDS.join(', ')}`,
-          )
+          outputUserInputError('OXN_DRAFT_KIND_INVALID', `Invalid --kind "${kind}". Valid: ${ASSET_KINDS.join(', ')}`)
           return
         }
         if (target === 'asset' && kind == null) {
@@ -353,7 +348,9 @@ export default defineCommand({
         }
         console.log(`✓ Promote dispatch: ${result.subTarget} → ${result.targetPath}`)
         console.log(`  Target: ${result.target}${result.kind ? ` (${result.kind})` : ''}`)
-        console.log(`  Note: Draft file unchanged; run \`oxn work create --blueprint promote-target-aware-workflow\` to materialize.`)
+        console.log(
+          `  Note: Draft file unchanged; run \`oxn work create --blueprint promote-target-aware-workflow\` to materialize.`,
+        )
       },
     }),
 
@@ -442,7 +439,9 @@ export default defineCommand({
             format,
           )
         }
-        console.log(`✓ Retargeted: ${result.oldTarget ?? '(none)'} → ${result.newTarget}${result.newKind ? ` (${result.newKind})` : ''}`)
+        console.log(
+          `✓ Retargeted: ${result.oldTarget ?? '(none)'} → ${result.newTarget}${result.newKind ? ` (${result.newKind})` : ''}`,
+        )
         console.log(`  Draft: ${result.draftPath}`)
         console.log(`  Preserved ${result.preservedContentChars} chars of engineer content`)
       },

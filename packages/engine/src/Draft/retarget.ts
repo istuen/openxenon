@@ -19,11 +19,7 @@
 import { join } from 'node:path'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { getBoundaryDir } from '@openxenon/engine/infra/oxnrc'
-import {
-  forkDraftSkeleton,
-  type DraftTarget,
-  type DraftAssetKind,
-} from './skeleton'
+import { forkDraftSkeleton, type DraftTarget, type DraftAssetKind } from './skeleton'
 
 export interface RetargetDraftInput {
   projectRoot: string
@@ -66,7 +62,7 @@ function getDraftDir(projectRoot: string, config: { draftDir?: string } | null =
 function parseFrontmatter(content: string): { frontmatter: Record<string, string>; body: string } {
   const lines = content.split('\n')
   if (lines[0] !== '---') return { frontmatter: {}, body: content }
-  let endIdx = lines.indexOf('---', 1)
+  const endIdx = lines.indexOf('---', 1)
   if (endIdx === -1) return { frontmatter: {}, body: content }
   const fmLines = lines.slice(1, endIdx)
   const body = lines.slice(endIdx + 1).join('\n')
@@ -102,11 +98,7 @@ function mergeIntoSkeleton(skeletonContent: string, preservedFm: Record<string, 
 
   if (newFmLines.length === 0) return skeletonContent
 
-  const newLines = [
-    ...lines.slice(0, endIdx),
-    ...newFmLines,
-    ...lines.slice(endIdx),
-  ]
+  const newLines = [...lines.slice(0, endIdx), ...newFmLines, ...lines.slice(endIdx)]
   return newLines.join('\n')
 }
 
