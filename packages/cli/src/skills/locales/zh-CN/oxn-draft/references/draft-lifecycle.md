@@ -204,9 +204,74 @@ Draft 文件**可被 Promote Blueprint 的 gather slot 读取**（作为提升�
 
 ---
 
-## 8. 完整示例
+## 8. v0.6.2-alpha.3 新增 2 命令（promote / retarget）
+
+### 8.1 promote 命令
 
 ```bash
+oxn draft promote <name> [--target auto|rfc|asset|work] [--archive-after]
+```
+
+**4 阶段生命周期**（走 draft-promote-router Blueprint）：
+
+1. **gather** — 读 Draft frontmatter + body
+2. **select-target** — 读 promote-target 字段（或 `--target` 覆盖）
+3. **validate** — 校验必填字段（promote-target + promote-kind 仅 target=asset）
+4. **dispatch-target** — 路由到 promote-target-aware-workflow Blueprint 对应 sub-target
+
+**7 sub-target**：
+- `promote-rfc` → `docs/rfcs/zh-cn/RFC-XXXX-<theme>.md`
+- `promote-asset-{domain|workflow|stack|blueprint|roadmap}` → `.openxenon/assets/{kind}/{name}.md`
+- `promote-work` → `.openxenon/works/<id>/work.md`
+
+**关键约束**：
+- 源 Draft 文件 mtime 不变（不修改原 Draft）
+- Promote 完成后，工程师决定 archive / discard
+- 4 阶段顺序强制，任意失败回滚
+
+### 8.2 retarget 命令
+
+```bash
+oxn draft retarget <name> --new-target <rfc|asset|work> [--new-kind <5 AssetKind>]
+```
+
+**职责**：
+- 重新派生 skeleton with new target
+- 保留工程师已填的 frontmatter 字段（除 `promote-target` / `promote-kind` / `created-from` / `synced-at`）
+- 保留工程师已填的 body 内容（append 到 `<!-- engineer-preserved-content -->`）
+
+**关键约束**：
+- 显式 retarget（不允许直接编辑 frontmatter 改 promote-target）
+- retarget 调 draft-skeleton-fork Workflow 重新派生 skeleton
+- 工程师 body 内容自动保留
+
+### 8.3 Skeleton 派生（draft-skeleton-fork Workflow）
+
+```bash
+oxn draft create <name> --target <rfc|asset|work> [--kind <5 AssetKind>]
+```
+
+**7 个 skeleton 模板**（`.openxenon/assets/blueprints/draft-skeletons/`）：
+- `rfc.md` — RFC skeleton
+- `asset-{domain|workflow|stack|blueprint|roadmap}.md` — 5 AssetKind skeleton
+- `work.md` — Work skeleton
+
+**注入字段**：
+- `promote-target: <rfc|asset|work>`（必填）
+- `promote-kind: <5 AssetKind>`（仅 target=asset）
+- `created-from: draft-skeleton-fork@0.1.0`
+- `synced-at: <YYYY-MM-DD>`
+
+**关键约束**：
+- skeleton 模板不存在 → 报 `OXN_DRAFT_SKELETON_NOT_FOUND`（不静默降级）
+- 资产位置与标准 Asset 一致（`.openxenon/assets/blueprints/draft-skeletons/`）
+
+---
+
+## 9. 完整示例（v0.6.2-alpha.3+ 推荐用法）
+
+```bash
+# ===== 空白模式（兼容 v0.6.2）=====
 # 创建一份设计稿
 oxn draft create my-design --prefix design
 # → /path/to/.openxenon/drafts/design-my-design.md（空白）
@@ -217,12 +282,32 @@ vim .openxenon/drafts/design-my-design.md
 # 列出当前 Draft
 oxn draft list
 
-# 设计完成，决定 promote 到 RFC
-oxn work create my-design-rfc --blueprint doc-rfc-workflow
-
 # 归档原 Draft（保留历史）
 oxn draft archive design-my-design
 
 # 不再需要，丢弃
 oxn draft discard design-my-design --force
+
+# ===== 骨架模式（新推荐）=====
+# 1. 创建 RFC skeleton
+oxn draft create rfc-0013 --target rfc
+# → /path/to/.openxenon/drafts/rfc-0013.md（含 frontmatter + 5 H2 段）
+
+# 2. 编辑 RFC 内容
+vim .openxenon/drafts/rfc-0013.md
+
+# 3. Promote（4 阶段自动）→ 调 draft-promote-router Blueprint
+oxn draft promote rfc-0013
+# → 路由 promote-rfc → 落盘 docs/rfcs/zh-cn/RFC-XXXX-rfc-0013.md
+
+# 4. Promote 后若目标错（rfc → asset+domain）
+oxn draft retarget rfc-0013 --new-target asset --new-kind domain
+# → 重新 fork skeleton, 保留 RFC body 内容
+
+# 5. 再次 Promote
+oxn draft promote rfc-0013
+# → 路由 promote-asset-domain → 落盘 .openxenon/assets/domains/rfc-0013.md
+
+# 6. Promote 完成后, archive 原 Draft
+oxn draft promote rfc-0013 --archive-after
 ```
