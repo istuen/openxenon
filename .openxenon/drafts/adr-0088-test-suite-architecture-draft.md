@@ -1,8 +1,8 @@
 ---
 entity: adr-draft
-version: 0.1.0
+version: 0.2.0
 status: Draft
-date: 2026-08-01
+date: 2026-08-02
 supersedes: null
 superseded-by: null
 draft-location: .openxenon/drafts/adr-0088-test-suite-architecture-draft.md
@@ -164,6 +164,22 @@ OXN 工程分层（AGENTS.md L0-L3）↔ 测试分层：
 
 > **2026-08-02 amend 修正 D5**：原表 D5 与 `bunfig.toml concurrentTestGlob` 互相矛盾——bunfig 引用 6 个不存在的 engine 模块（`Intent`/`Align`/`Workflow`/`Domain`/`Stack`/`Daemon`），D5 不提。amend 后：bunfig 漂移由 P1 清理（删 6 幻影 glob），D5 表保留 L0-L3 映射但**不**列具体模块路径（路径归 bunfig 管）。
 
+### Decision → Migration Plan 落地映射（2026-08-02 锁定）
+
+| Decision | 落地 phase | 状态 |
+|---|---|---|
+| **D1** 4 层测试架构 | P0（typecheck 边界 + bunfig 拆包）+ P1（bunfig 精确化） | P0 ✅ / P1 ❌ |
+| **D2** 测试 vs Proof 边界 | 文档固化，**无 phase 落地**（双轨并行不重叠） | ✅ doc-only |
+| **D3** "不评判"哲学澄清 | 文档固化，**无 phase 落地** | ✅ doc-only |
+| **D4** T3 CLI 双轨制 | P3（CLI 桶拆 + 28 子命令 unit 化） | ❌ pending |
+| **D5** L0-L3 → T0-T3 映射 | 文档固化，phase 落地由 P0/P1/P3 间接覆盖 | ✅ doc + indirect |
+| **D6** colocated + 三层嵌套 + CLI 桶拆 | P3（CLI 桶拆 e2e 到子目录）+ bunfig 改精确 glob | ❌ pending |
+| **D7** typecheck 覆盖（含 silent gap 修复） | P0 + P0d（已 done — tsconfig 修 + 17 source bug + 2 silent ignore + 跨包 leak） | ✅ done |
+| **D8** feature→test 映射审计 | P2（产映射表） | ❌ pending |
+| **D9** 子包 files 策略 | **defer** → ADR-0089 follow-up 候选（不阻塞本 ADR） | 🔵 deferred |
+
+> **D1/D6/D7 → P0/P1/P3** 是核心改造链；**D8 → P2** 是审计交付；**D9** 跨发布边界，单独决策。
+
 ### D6：测试布局原则（2026-08-02 新增）
 
 OXN 测试**严格 colocated**（`__tests__/` 紧邻源码），**禁止**改顶层 `tests/` 镜像源码树。理由：
@@ -222,9 +238,13 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 
 ## Migration Plan
 
-> **2026-08-02 amend 重排**：原 Phase 1-6 被替换为 P0（已 done） + P1-P9。P0 在 2026-08-02 落地（详见 P0 段）；P1-P9 待执行。
+> **2026-08-02 amend 重排**：原 Phase 1-6 被替换为 **ADR-P0**（已 done，commit `fd62346`） + **ADR-P1** 到 **ADR-P9**（待执行）。
+>
+> **命名约定**：本 ADR 内部 phase 用 `ADR-P{N}` 前缀（避免与 `feat(draft): P4` / `chore(drafts): P5` 等 oxn-draft 工作编号冲突——oxn-draft 工作的 P4/P5 是骨架派生 + changelog 同步，与本 ADR P4/P5 Insight-Pool/Proof-unit 无关）。
+>
+> 落地跟踪：每个 ADR-P{N} 都对应一个独立 work + 1 个 commit。commit hash 记入本段 History。
 
-### P0（**DONE 2026-08-02**，work `p0-typecheck-silent-gap-fix`）：silent gap 修复
+### ADR-P0（**DONE 2026-08-02**，commit `fd62346`，work `p0-typecheck-silent-gap-fix`）：silent gap 修复
 
 **P0a — tsconfig**（30 min）
 - ✅ root `tsconfig.json`：include 加 `packages/engine/src/**/*`；exclude 去 `packages/engine`/`tests`/`**/__tests__`
@@ -250,7 +270,7 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 - `bun test`：1831 pass / 3 skip / 0 fail（**零回归**）
 - wall-clock：32.91s → 34.76s（+1.85s，typecheck 加载测试源码后实际跑通的代价）
 
-### P0d：测试 drift 清理（剩余 232 个错误，**当前 phase**）
+### ADR-P0d：测试 drift 清理（剩余 232 个错误，**当前 phase**）
 
 按错误类型优先级：
 1. **TS6133 unused imports**（~52 个）— 机械删除，最快
@@ -263,67 +283,80 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 
 **预计工作量**：~3-5 天（与 ADR-0088 P7 Work split 重叠）
 
-### P1：bunfig 漂移清理（30 min）
+### ADR-P1：bunfig 漂移清理（30 min）
 
 - 删 6 个幻影模块 glob（`Intent`/`Align`/`Workflow`/`Domain`/`Stack`/`Daemon` — 实际 engine 子目录：Asset/Draft/errors/infra/Insight/kernel/oxl/Pool/Proof/Roadmap/Work）
-- 修 stale 注释（`*serial.test.ts` rename 没发生）
-- 评估 `infra/` 全局排除的意图（原意是排除 `infra/{probes,providers}` 跨进程 spawn 资源竞争，但实际整个 `infra/` 被排除；P1 决策是否把 `infra/git`/`infra/i18n`/`infra/runtime`/`infra/__tests__`（root）等纯逻辑纳入并发）
+- 修 stale 注释（`*serial.test.ts` rename 没发生——已 amend：`*.serial.test.ts` rename 已在 495ebd3 commit 还原为 `.test.ts`，按 spyOn + mock.restore() 模式重做）
+- **`infra/` 全局排除决策（2026-08-02 锁定）**：维持 `packages/engine/src/infra/**/*` 全局排除，但加 explicit subdirectory include 模式：
+  - `packages/engine/src/infra/git/**/__tests__/**` （纯逻辑，3 src / 1 test，纳入并发）
+  - `packages/engine/src/infra/i18n/**/__tests__/**` （纯 i18n lookup，3 src / 1 test，纳入并发）
+  - `packages/engine/src/infra/runtime/**/__tests__/**` （mock Bun/Deno/Node spawn，4 src / 1 test，纳入并发）
+  - `packages/engine/src/infra/{probes,providers}/**/__tests__/**` 维持排除（跨进程 spawn 资源竞争）
+- 落地形式：bunfig `concurrentTestGlob` 改为精确 glob（含包/层/子目录白名单，**不**用 extglob negation）
 
-### P2：feature→test 映射审计（3-4 hr，按 D8）
+### ADR-P2：feature→test 映射审计（3-4 hr，按 D8）
 
 - 扫 `.changes/` 按版本（v0.6.0 / v0.6.1 / v0.6.2-alpha.0）列特性
 - 每特性标 source module + test file
 - 产映射表（`docs/dev/zh-cn/test-coverage-audit.md` 或 `.openxenon/drafts/` 草稿）
 - 缺口/冗余清单喂给 P3/P4/P6/P7/P8
 
-### P3：CLI 桶拆分 + unit 化 + 并发重排（合并原 ADR P4，3-4 hr）
+### ADR-P3：CLI 桶拆分 + unit 化 + 并发重排（合并原 ADR P4，3-4 hr）
 
-- `packages/cli/src/__tests__/` 14 个 `*-e2e.test.ts` 移到 `__tests__/e2e/`
-- 调整 e2e 文件相对 import（fixtures/helpers 路径 +1 层）
-- bunfig 加 `packages/cli/src/__tests__/*.test.ts`（顶层，fnmatch 不匹配 `e2e/` 子目录）到 `concurrentTestGlob` → 14 个 unit 进并发，14 个 e2e 保持串行
-- shell-provider.test.ts 改 `mock.module`（消除双 spawn）
+- **`shell-provider.test.ts mock 化`**：✅ **已 done**（commit `495ebd3`）—— 原 `mock.module('../shell-exec', ...)` 顶层全局替换改 `spyOn` + `afterEach(mock.restore())`，消除 shell-exec / shell-provider 双测真壳 spawn。495ebd3 commit 同时把 3 个 `.serial.test.ts` 还原为 `.test.ts`，配 spyOn + mock.restore 模式
+- **`packages/cli/src/__tests__/` 14 个 `*-e2e.test.ts` 移到 `__tests__/e2e/`**：待做
+- 调整 e2e 文件相对 import（fixtures/helpers 路径 +1 层）：待做
+- bunfig 加 `packages/cli/src/__tests__/*.test.ts`（顶层，fnmatch 不匹配 `e2e/` 子目录）到 `concurrentTestGlob` → 14 个 unit 进并发，14 个 e2e 保持串行：待做
 - 预期 wall-clock -6800ms（原 ADR P4 预估）
+- **残余工作量**：~3 hr（CLI 桶拆 + bunfig 改）
 
-### P4：Insight/Pool unit 补救（2-3 hr，原 P2）
+### ADR-P4：Insight/Pool unit 补救（2-3 hr，原 P2）
 
 新建：
 - `packages/engine/src/Insight/__tests__/insight-manager.test.ts`（5 个 export 函数各 5-10 case，~500-800 行）
 - `packages/engine/src/Pool/__tests__/{gatekeeper,create,list}.test.ts`（~300-400 行）
 
-### P5：Proof 子模块 unit 补充（1-2 hr，原 P3）
+### ADR-P5：Proof 子模块 unit 补充（1-2 hr，原 P3）
 
 新建：
 - `packages/engine/src/Proof/__tests__/outcome-writer.test.ts`
 - `packages/engine/src/Proof/__tests__/proof-frozen-writer.test.ts`
 - `packages/engine/src/Proof/__tests__/proof-manager.test.ts`
 
-### P6：Work 单文件拆分（2 hr，原 P5）
+### ADR-P6：Work 单文件拆分（2 hr，原 P5）
 
 拆分：
 - `work-validator.test.ts`（1007 行）→ `work-validator-base.ts` + `work-validator-edge.ts`
 - `work-context-builder.test.ts`（901 行）→ `work-context-builder-*.ts`
 
-### P7：orphan test + fixtures 清理（30 min，原 P6）
+### ADR-P7：orphan test + fixtures 清理（30 min，原 P6）
 
 确认后删除：
 - `oxl/examples-md/__tests__/`
 - `oxl/generator/__tests__/`
 - `cli/__tests__/fixtures/` 5 个未引用文件
 
-### P8：零风险废弃清理核实（1 hr，原 P1）
+### ADR-P8：零风险废弃清理核实（1 hr，原 P1）
 
 - 核实 commit `45183a0` 等是否真做了 `*.serial.test.ts` rename（git log）
 - 核实 `external-cli-e2e.test.ts` L234-248 4 个 `.skip` 块——保留 or 删？
 - 核实 `blueprint-schema.test.ts` `validatePartTemplates (@deprecated)` 块——保留 or 删？
 
-### P9：ADR promote + docs sync（1-2 hr）
+### ADR-P9：ADR promote + docs sync（1-2 hr）
 
 - amend → review → Accepted
 - 跑 `bun scripts/check-doc-boundary.ts` + `check-heading-skeleton.ts`
 - 迁移到 `docs/adrs/0088-test-suite-architecture.md`
-- frontmatter `entity: adr-draft` → `entity: adr`，`status: Draft` → `Accepted`
+- frontmatter `entity: adr-draft` → `entity: adr`，`status: Draft` → `Accepted`，`version: 0.2.0` → `1.0.0`
 - 删 draft 文件
 - 提交 commit：`docs(adrs): ADR-0088 Accepted — OXN 测试套件 4 层架构`
+
+#### ADR-P9 子项：跨包 leak 完整搬移（follow-up，1-2 hr）
+
+- **现状**：cli tsconfig 已去 `rootDir: "./src"`（修 TS6059 silent gap），`cli → src/daemon/` 跨包相对 import 在 typecheck 层不再报错
+- **未完成**：`src/daemon/` → `packages/daemon/src/` 完整搬移（消除残留跨包依赖）
+- **决策点**：是否本期完成？若否，列为 **ADR-0089 follow-up** 单独跟踪
+- **建议**：本期列占位，ADR-0089 单独决策（涉及包结构调整，与本 ADR 测试架构解耦）
 
 ## Expected Outcomes
 
@@ -342,15 +375,36 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 
 ### wall-clock 变化
 
-| 操作 | wall-clock |
-|---|---|
-| P0 已 done | +1850ms（typecheck 加载测试源码后实际跑通） |
-| P0d 清理（占位） | ±0 |
-| P4 新增 | +200ms |
-| P5 新增 | +100ms |
-| P3 并发重排 | -6800ms |
-| P7 删除 | -50ms |
-| **净 wall-clock（预估）** | **-4700ms (-14.3%)** |
+| 操作 | wall-clock | 占比 |
+|---|---|---|
+| **P0** 已 done | **+1850ms**（typecheck 加载测试源码后实际跑通的代价） | +5.3% |
+| **P0d** 清理（typecheck 全清） | ±0（不影响 wall-clock，但 `pnpm run typecheck` 从 EXIT=0 silent → EXIT=2 → 0 真实） | 0% |
+| P1 bunfig 精确化（infra/git/i18n/runtime 纳入并发） | **-250ms**（3 个纯逻辑 test 套进 concurrent） | -0.7% |
+| P2 审计（无 wall-clock 影响） | 0 | 0% |
+| **P3** CLI 桶拆 + 14 unit 进并发 | **-6800ms**（CLI 84% wall-clock → <50%） | **-19.6%** |
+| P4 新增（Insight/Pool unit） | +200ms | +0.6% |
+| P5 新增（Proof 子模块 unit） | +100ms | +0.3% |
+| P6 拆分（Work 单文件） | ±0 | 0% |
+| P7 删除（orphan + fixtures） | -50ms | -0.1% |
+| **净 wall-clock（预估）** | **-4950ms (-14.2%)** | **-14.2%** |
+
+> **关键观察**：P3 单独贡献 -6800ms（最大单点优化），其他 phase 加起来 ±300ms net。
+
+### 决策 ↔ 价值密度矩阵（2026-08-02 锁定）
+
+| Phase | wall-clock 净 | LOC 净 | 覆盖缺口修复 | 价值密度 |
+|---|---|---|---|---|
+| P0 | +1850ms | +86 | — | ⭐⭐⭐（修 silent typecheck + 17 source bug） |
+| P0d | 0 | -300 ~ +500 | — | ⭐⭐⭐（typecheck 真实化） |
+| **P3** | **-6800ms** | +600~1000 | — | ⭐⭐⭐⭐⭐（最大 ROI） |
+| **P4** | +200ms | +800~1200 | **+Insight/Pool unit** | ⭐⭐⭐⭐ |
+| P5 | +100ms | +400~600 | +Proof unit | ⭐⭐⭐ |
+| P9 (ADR promote) | 0 | 0 | — | ⭐⭐⭐（固化决策） |
+| P7 | -50ms | -1500 | — | ⭐⭐（纯减负） |
+| P1 | -250ms | 0 | — | ⭐（修文档漂移） |
+| P8 | 0 | 0 | — | ⭐（核实确认） |
+| P2 | 0 | 0 | 文档 | ⭐（审计交付） |
+| P6 | 0 | 0 | — | ⭐（可读性） |
 
 ### 价值密度变化
 
@@ -409,16 +463,32 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 
 ## History
 
-- 2026-08-01：`/grilling` session 产出（domain-modeling skill）+ 用户决策 #1-#5
-- 2026-08-01：初始误放在 `docs/adrs/0087-test-suite-architecture.md`，按"ADR 在 Draft 阶段应在 .openxenon/drafts/"约定迁移到本路径
-- 2026-08-02：编号从 0087 改为 0088（0087 已被 `0087-md-single-orthogonal-point.md` 占用）
-- 2026-08-02：**amend #1**（当前）：
-  - **P0 已落地**（work `p0-typecheck-silent-gap-fix`）—— 修 tsconfig silent gap + 17 Asset 源码 bug + 2 函数签名 silent ignore + 跨包 leak
-  - **新增 D6-D9**：测试布局原则（colocated + 三层嵌套 + CLI 桶拆）/ typecheck 覆盖 / feature→test 映射审计 / 子包 files follow-up
-  - **新增 Definitions 段**：5 个锐化术语（Test Suite / colocated / feature→test 映射 / typecheck 覆盖 / 幻影模块澄清）
-  - **重排 Migration Plan**：原 Phase 1-6 → P0（done） + P1-P9（pending），P0d 填补 typecheck 暴露的测试 drift
-  - **修漂移**：删原 Phase 1 已 commit 但实际未做的 `*.serial.test.ts` rename 声称；删原 D5 6 个幻影模块 glob 路径引用
-  - 同步 Expected Outcomes（P0 实际成果 + 后续预估）
+| 时间 | 事件 | 关联 commit |
+|---|---|---|
+| 2026-08-01 | `/grilling` session 产出（domain-modeling skill）+ 用户决策 #1-#5 | — |
+| 2026-08-01 | 初始误放在 `docs/adrs/0087-test-suite-architecture.md`，按"ADR 在 Draft 阶段应在 .openxenon/drafts/"约定迁移 | — |
+| 2026-08-02 | 编号从 0087 改为 0088（0087 已被 `0087-md-single-orthogonal-point.md` 占用） | — |
+| 2026-08-02 | **amend #1**（part 1）：P0 + P0d 落地——修 tsconfig silent gap + 17 Asset 源码 bug + 2 函数签名 silent ignore + 跨包 leak + 236 typecheck 错误清零 | **`fd62346`** (fix(test): ADR-0088 P0+P0d) |
+| 2026-08-02 | **amend #1**（part 1 cont.）：shell-provider / shell-exec / ts-compiles 改 spyOn + mock.restore()，还原 3 个 `.serial.test.ts` | **`495ebd3`** (chore(test): RFC-0015 D5.2 + ADR-0088 Phase 2-3 测试组织) |
+| 2026-08-02 | **amend #1**（part 1 cont.）：ADR-0088 draft 文本首次 commit 进 git | **`45db028`** (chore(drafts): housekeeping) |
+| 2026-08-02 | **amend #1**（part 2）：D6-D9 + Definitions + ADR-P{N} 重排 + 修 10 个 review 问题 | **当前 edit** |
+
+### amend #1 完整改进清单
+
+1. **新增 D6-D9**：测试布局原则（colocated + 三层嵌套 + CLI 桶拆）/ typecheck 覆盖 / feature→test 映射审计 / 子包 files follow-up
+2. **新增 Definitions 段**：5 个锐化术语（Test Suite / colocated / feature→test 映射 / typecheck 覆盖 / 幻影模块澄清）
+3. **新增 Decision → Migration Plan 映射表**：9 个 D 决策各自落地 phase
+4. **重排 Migration Plan**：原 Phase 1-6 → **ADR-P0**（done） + **ADR-P1** 到 **ADR-P9**（pending），ADR-P0d 填补 typecheck 暴露的测试 drift
+5. **Phase 编号加 ADR-P 前缀**：避免与 oxn-draft 工作（`feat(draft): P4` / `chore(drafts): P5`）冲突
+6. **wall-clock 拆分**：P3 单独贡献 -6800ms，其他 phase ±300ms net（净 -4950ms / -14.2%）
+7. **新增决策 ↔ 价值密度矩阵**：11 行表格，⭐ 评级标识 ROI
+8. **修漂移**：删原 Phase 1 已 commit 但实际未做的 `*.serial.test.ts` rename 声称；删原 D5 6 个幻影模块 glob 路径引用
+9. **修跨包 leak follow-up**：明确列入 ADR-P9 子项 + ADR-0089 候选
+10. **Promote Checklist 加 version bump**：0.2.0 → 1.0.0
+11. **frontmatter bump**：date 2026-08-01 → 2026-08-02；version 0.1.0 → 0.2.0
+12. **infra/ 全局排除决策锁定**：维持 + explicit subdirectory include 模式（infra/git/i18n/runtime 纳入并发）
+13. **同步 Expected Outcomes**：P0 实际成果 + 后续预估 + 价值密度矩阵
+14. **P3 状态同步**：shell-provider mock 化标 ✅ done（495ebd3）
 
 ## Promote Checklist（review → Accepted 后）
 
