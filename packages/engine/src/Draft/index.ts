@@ -1,16 +1,46 @@
 /**
- * Draft module — v0.6.2 (设计见 .openxenon/drafts/draft-system-design-grilling.md §4)
+ * Draft module — v0.6.2-alpha.3
  *
- * 4 操作：create / list / archive / discard
+ * 6 操作 (v0.6.2 4 + v0.6.2-alpha.3 2):
+ *   - v0.6.2: create / list / archive / discard
+ *   - v0.6.2-alpha.3: promote / retarget
+ *
  * 默认目录：`<boundaryDir>/drafts/`（默认 `.openxenon/drafts/`，可经 .oxnrc draftDir 配）
  * 文件命名：无 --prefix → <name>.md；有 --prefix → <prefix>-<name>.md
- * 文件内容：空白，无 Template，无 frontmatter，无 Probe
+ * 文件内容：v0.6.2 空白（无 Template / frontmatter / Probe）;
+ *          v0.6.2-alpha.3+ 可选带 frontmatter（来自 --target skeleton fork）
  * 本模块不依赖 L0-Processor / L1-Infra 之外层（仅 std fs）
+ *
+ * 详见：
+ *   - .openxenon/assets/domains/oxn-draft-domain.md
+ *   - .openxenon/assets/domains/oxn-draft-promote-domain.md
  */
 
 import { join } from 'node:path'
 import { existsSync, mkdirSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { getBoundaryDir } from '@openxenon/engine/infra/oxnrc'
+import { forkDraftSkeleton, type DraftTarget, type DraftAssetKind } from './skeleton'
+
+export {
+  DRAFT_TARGETS,
+  ASSET_KINDS,
+  type DraftTarget,
+  type DraftAssetKind,
+  type ForkSkeletonInput,
+  type ForkSkeletonResult,
+  type ForkSkeletonError,
+} from './skeleton'
+
+export {
+  promoteDraft,
+  SUB_TARGETS,
+  type PromoteDraftInput,
+  type PromoteDraftResult,
+  type PromoteDraftError,
+  type SubTarget,
+} from './promote'
+
+export { retargetDraft, type RetargetDraftInput, type RetargetDraftResult, type RetargetDraftError } from './retarget'
 
 export const DRAFT_PREFIXES = ['report', 'issue', 'design'] as const
 export type DraftPrefix = (typeof DRAFT_PREFIXES)[number]
@@ -19,6 +49,10 @@ export interface CreateDraftInput {
   projectRoot: string
   name: string
   prefix?: DraftPrefix | null
+  /** v0.6.2-alpha.3 新增: --target 参数 (rfc|asset|work) */
+  target?: DraftTarget | null
+  /** v0.6.2-alpha.3 新增: --kind 参数 (5 AssetKind,仅 target=asset 时) */
+  kind?: DraftAssetKind | null
 }
 
 export interface CreateDraftResult {
@@ -30,7 +64,14 @@ export interface CreateDraftResult {
 
 export interface CreateDraftError {
   ok: false
-  code: 'OXN_DRAFT_INVALID_NAME' | 'OXN_DRAFT_INVALID_PREFIX' | 'OXN_DRAFT_ALREADY_EXISTS'
+  code:
+    | 'OXN_DRAFT_INVALID_NAME'
+    | 'OXN_DRAFT_INVALID_PREFIX'
+    | 'OXN_DRAFT_ALREADY_EXISTS'
+    | 'OXN_DRAFT_TARGET_INVALID'
+    | 'OXN_DRAFT_KIND_REQUIRED'
+    | 'OXN_DRAFT_KIND_INVALID'
+    | 'OXN_DRAFT_SKELETON_NOT_FOUND'
   message: string
   suggestion?: string
 }
@@ -153,7 +194,30 @@ export function createDraft(
     }
   }
 
-  writeFileSync(filePath, '', 'utf-8')
+  // v0.6.2-alpha.3: --target 模式派生 skeleton;无 --target 走空白模式（兼容 v0.6.2）
+  let content = ''
+  if (input.target != null) {
+    const forkResult = forkDraftSkeleton(
+      {
+        projectRoot: input.projectRoot,
+        target: input.target,
+        kind: input.kind ?? null,
+        name: input.name,
+      },
+      config,
+    )
+    if (!forkResult.ok) {
+      return {
+        ok: false,
+        code: forkResult.code,
+        message: forkResult.message,
+        suggestion: forkResult.suggestion,
+      }
+    }
+    content = forkResult.content
+  }
+
+  writeFileSync(filePath, content, 'utf-8')
   return { ok: true, path: filePath, name: input.name, prefix: input.prefix ?? null }
 }
 
