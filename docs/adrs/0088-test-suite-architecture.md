@@ -1,12 +1,11 @@
 ---
-entity: adr-draft
-version: 0.2.0
-status: Draft
-date: 2026-08-02
+entity: adr
+version: 1.0.0
+status: Accepted
+date: 2026-08-01
+accepted: 2026-08-02
 supersedes: null
 superseded-by: null
-draft-location: .openxenon/drafts/adr-0088-test-suite-architecture-draft.md
-promote-target: docs/adrs/0088-test-suite-architecture.md
 related:
   - .openxenon/CONTEXT-MAP.md
   - docs/adrs/0084-collaboration-boundary-layering.md
@@ -14,11 +13,13 @@ related:
   - AGENTS.md
 ---
 
-# ADR-0088 (Draft): OXN 测试套件 4 层架构（Test Suite Architecture）
+# ADR-0088: OXN 测试套件 4 层架构（Test Suite Architecture）
 
-> **状态**：🚧 Draft（**2026-08-02 amended** — P0a-c 已落地，详见 Migration Plan；待 review → Accepted 后 promote 到 `docs/adrs/0088-test-suite-architecture.md`）
-> **日期**：2026-08-01（origin），2026-08-02（amend #1：P0 完成 + D6-D9 + Definitions + Phase 重排）
-> **位置**：`.openxenon/drafts/adr-0088-test-suite-architecture-draft.md`（Draft 阶段，不应在 `docs/adrs/`）
+> **状态**：✅ Accepted（**2026-08-02** — P0a-d + ADR-P1 已落地；ADR-P3/P4/P5 由本 ADR-P9 promote 后承接）
+> **日期**：2026-08-01（origin），2026-08-02（amend #1：P0 完成 + D6-D9 + Definitions + Phase 重排 + ADR-P{N} 命名 + 14 项 review fixes）
+> **来源**：
+> - 2026-08-01 `/grilling` session（domain-modeling skill）—— 用户 #1 "测试都对应当前版本功能、单元测试、是否存在脱节差异" + #2 "测试属于 OXN 保证其交付质量" + #4 "测试归测试，Proof 归 Proof，两者不重叠" + #5 "重新架构"
+> - 2026-08-02 `/grilling` session（domain-modeling skill）—— 用户锁定 4 决策（覆盖=feature→test 映射；模块=三层嵌套；布局=colocated + 拆 CLI 桶；typecheck=修 TS18003 + 测试纳入 + 子包不动）
 > **来源**：
 > - 2026-08-01 `/grilling` session（domain-modeling skill）—— 用户 #1 "测试都对应当前版本功能、单元测试、是否存在脱节差异" + #2 "测试属于 OXN 保证其交付质量" + #4 "测试归测试，Proof 归 Proof，两者不重叠" + #5 "重新架构"
 > - 2026-08-02 `/grilling` session（domain-modeling skill）—— 用户锁定 4 决策（覆盖=feature→test 映射；模块=三层嵌套；布局=colocated + 拆 CLI 桶；typecheck=修 TS18003 + 测试纳入 + 子包不动）
