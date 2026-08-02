@@ -229,22 +229,5 @@ name: TestDomain
   })
 })
 
-// 🆕 v0.7: 旧的 ## Externals H2 已从 Domain 移除（external 并入 frontmatter references）
-//   下列测试块已废弃，仅保留以防误删
-describe.skip('5. External kind enum 校验（compiler validate，已废弃）', () => {
-  test.skip('Domain 含无效 kind → validate 报 E_MD_EXTERNAL_KIND_INVALID', async () => {
-    // v0.7 废弃：## Externals H2 从 Domain 移除
-  })
-})
-
-// 🆕 v0.7: 旧的 ## Externals H2 已从 Domain 移除（external 并入 frontmatter references）
-//   下列测试块已废弃，仅保留以防误删
-describe.skip('6. url/path 互斥校验（已废弃）', () => {
-  test.skip('同时有 url + path → E_MD_EXTERNAL_URL_PATH_CONFLICT', async () => {
-    // v0.7 废弃：## Externals H2 从 Domain 移除
-  })
-
-  test.skip('缺 url 和 path → E_MD_EXTERNAL_URL_PATH_REQUIRED', async () => {
-    // v0.7 废弃：## Externals H2 从 Domain 移除
-  })
-})
+// ADR-0088 P8 (2026-08-02): 删除 v0.7 废弃的 External 校验块（旧 ## Externals H2 已从 Domain 移除）
+// 原 4 个 .skip 测试（kind 枚举 + url/path 互斥）已废弃，删除以减少 noise。

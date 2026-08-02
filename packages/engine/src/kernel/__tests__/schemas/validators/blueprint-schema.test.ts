@@ -150,7 +150,9 @@ describe('ALLOWED_VARIABLE_SCOPES', () => {
   })
 })
 
-describe('validatePartTemplates (@deprecated)', () => {
+// ADR-0088 P8 (2026-08-02): `validatePartTemplates` 函数未弃用（仍 export 在 kernel/index.ts:125），
+// 仅 describe label 误带 `@deprecated` 标记（误导）。改为正常 describe 标签。
+describe('validatePartTemplates', () => {
   it('合法的 params/task/part 变量通过', () => {
     const part = {
       id: 'test',
