@@ -40,6 +40,13 @@ export {
   type SubTarget,
 } from './promote'
 
+export {
+  dispatchPromote,
+  type DispatchInput,
+  type DispatchResult,
+  type DispatchError,
+} from './promote-dispatch'
+
 export { retargetDraft, type RetargetDraftInput, type RetargetDraftResult, type RetargetDraftError } from './retarget'
 
 export const DRAFT_PREFIXES = ['report', 'issue', 'design'] as const

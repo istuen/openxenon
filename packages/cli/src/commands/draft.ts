@@ -272,7 +272,7 @@ export default defineCommand({
       meta: {
         name: 'promote',
         description:
-          'Promote Draft → 3 类 Target（rfc / asset / work）。v0.6.2-alpha.3+ 走 draft-promote-router Blueprint。',
+          'Promote Draft → 3 类 Target（rfc / asset / work）。v0.6.2-alpha.3+ 走 draft-promote-router Blueprint。v0.6.3 NG6 起支持 --commit 实际写文件。',
       },
       args: {
         name: { type: 'positional', required: true, description: 'Draft name（可省略 prefix）' },
@@ -281,12 +281,22 @@ export default defineCommand({
           description: `显式覆盖 frontmatter promote-target。可选：auto | ${DRAFT_TARGETS.join(' | ')}。默认 auto（读 frontmatter）`,
         },
         'archive-after': { type: 'boolean', description: 'Promote 完成后自动 archive 原 Draft' },
+        commit: {
+          type: 'boolean',
+          description: 'v0.6.3 NG6: 实际写目标文件（默认 false=仅返回 dispatch info）',
+        },
+        force: {
+          type: 'boolean',
+          description: 'v0.6.3 NG6: 覆盖已存在的目标文件（仅 --commit 时有效）',
+        },
       },
       async run(ctx) {
         const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
         const name = ctx.args.name as string
         const targetOverrideRaw = ctx.args.target as string | undefined
         const archiveAfter = ctx.args['archive-after'] === true
+        const commit = ctx.args.commit === true
+        const force = ctx.args.force === true
 
         const targetOverride: DraftTarget | 'auto' | undefined =
           !targetOverrideRaw || targetOverrideRaw === ''
@@ -311,6 +321,8 @@ export default defineCommand({
             name,
             targetOverride,
             archiveAfter,
+            commit,
+            force,
           },
           config,
         )
@@ -338,19 +350,31 @@ export default defineCommand({
                 kind: result.kind,
                 subTarget: result.subTarget,
                 targetPath: result.targetPath,
+                rfcNumber: result.rfcNumber,
                 phases: result.phases,
                 archived: result.archived,
               },
-              human: `✓ Promote dispatch: ${result.subTarget} → ${result.targetPath}`,
+              human:
+                result.phases.commit != null
+                  ? `✓ Promoted: ${result.subTarget} → ${result.phases.commit.filePath} (${result.phases.commit.bytesWritten}B)`
+                  : `✓ Promote dispatch: ${result.subTarget} → ${result.targetPath} (--commit required to write)`,
             },
             format,
           )
         }
-        console.log(`✓ Promote dispatch: ${result.subTarget} → ${result.targetPath}`)
-        console.log(`  Target: ${result.target}${result.kind ? ` (${result.kind})` : ''}`)
-        console.log(
-          `  Note: Draft file unchanged; run \`oxn work create --blueprint promote-target-aware-workflow\` to materialize.`,
-        )
+        if (result.phases.commit != null) {
+          // v0.6.3 NG6: 已实际写文件
+          console.log(`✓ Promoted: ${result.subTarget} → ${result.phases.commit.filePath}`)
+          console.log(`  Bytes: ${result.phases.commit.bytesWritten}`)
+          console.log(`  Mode: ${result.phases.commit.created ? 'created' : 'overwritten'}`)
+          if (result.rfcNumber) console.log(`  RFC: ${result.rfcNumber}`)
+          console.log(`  Source Draft unchanged at: .openxenon/drafts/${result.name}.md`)
+        } else {
+          // v0.6.2-alpha.3: 仅 dispatch（不写）
+          console.log(`✓ Promote dispatch: ${result.subTarget} → ${result.targetPath}`)
+          console.log(`  Target: ${result.target}${result.kind ? ` (${result.kind})` : ''}`)
+          console.log(`  Note: Pass --commit to actually write the target file.`)
+        }
       },
     }),
 

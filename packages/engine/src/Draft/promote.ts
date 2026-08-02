@@ -22,6 +22,7 @@ import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 import { getBoundaryDir } from '@openxenon/engine/infra/oxnrc'
 import { DRAFT_TARGETS, ASSET_KINDS, type DraftTarget, type DraftAssetKind } from './skeleton'
+import { dispatchPromote } from './promote-dispatch'
 
 export const SUB_TARGETS = [
   'promote-rfc',
@@ -41,6 +42,10 @@ export interface PromoteDraftInput {
   targetOverride?: DraftTarget | 'auto'
   /** 是否在 promote 完成后自动 archive 原 Draft */
   archiveAfter?: boolean
+  /** v0.6.3 NG6: 实际写目标文件 (默认 false=v0.6.2-alpha.3 行为) */
+  commit?: boolean
+  /** 覆盖已存在的目标文件 */
+  force?: boolean
 }
 
 export interface PromoteDraftResult {
@@ -51,12 +56,16 @@ export interface PromoteDraftResult {
   subTarget: SubTarget
   /** 落盘到的目标路径 */
   targetPath: string
+  /** v0.6.3 NG6: RFC 编号 (仅 target=rfc) */
+  rfcNumber: string | null
   /** 4 阶段执行详情 */
   phases: {
     gather: { frontmatter: Record<string, string>; bodyChars: number }
     validate: { valid: true; missingFields: string[] }
     fork: { forked: boolean; fieldsAdded: string[] }
     dispatch: { subTarget: SubTarget; workCreated: boolean }
+    /** v0.6.3 NG6: 实际写文件结果 */
+    commit?: { filePath: string; bytesWritten: number; created: boolean }
   }
   /** 是否已 archive 原 Draft */
   archived: boolean
@@ -71,6 +80,9 @@ export interface PromoteDraftError {
     | 'OXN_DRAFT_PROMOTE_TARGET_KIND_MISMATCH'
     | 'OXN_DRAFT_PROMOTE_VALIDATE_FAILED'
     | 'OXN_DRAFT_FRONTMATTER_INVALID'
+    | 'OXN_DRAFT_PROMOTE_TARGET_EXISTS'
+    | 'OXN_DRAFT_PROMOTE_TARGET_DIR_CREATE_FAILED'
+    | 'OXN_DRAFT_PROMOTE_RFC_NUMBER_INVALID'
   message: string
   suggestion?: string
   detail?: Record<string, unknown>
@@ -239,8 +251,32 @@ export function promoteDraft(
   const subTarget = resolveSubTarget(target, kind)
   const targetPath = computeTargetPath(target, kind, input.name)
 
-  // 简化：v0.6.2-alpha.3 不真正调用 oxn work create
-  // 仅返回 dispatch 信息给 CLI，由 CLI 接着调 work create
+  // v0.6.3 NG6: 实际写文件
+  let commitInfo: { filePath: string; bytesWritten: number; created: boolean } | undefined
+  let rfcNumber: string | null = null
+
+  if (input.commit) {
+    const dispatchResult = dispatchPromote({
+      projectRoot: input.projectRoot,
+      name: input.name,
+      target,
+      kind,
+      subTarget,
+      draftFrontmatter: frontmatter,
+      draftBody: body,
+      force: input.force,
+    })
+    if (!dispatchResult.ok) {
+      return dispatchResult
+    }
+    commitInfo = {
+      filePath: dispatchResult.targetPath,
+      bytesWritten: dispatchResult.bytesWritten,
+      created: dispatchResult.created,
+    }
+    rfcNumber = dispatchResult.rfcNumber
+  }
+
   return {
     ok: true,
     name: input.name,
@@ -248,11 +284,13 @@ export function promoteDraft(
     kind,
     subTarget,
     targetPath,
+    rfcNumber,
     phases: {
       gather: { frontmatter, bodyChars: body.length },
       validate: { valid: true, missingFields: [] },
       fork: { forked: false, fieldsAdded: [] },
-      dispatch: { subTarget, workCreated: false },
+      dispatch: { subTarget, workCreated: input.commit ?? false },
+      ...(commitInfo ? { commit: commitInfo } : {}),
     },
     archived: false,
   }
