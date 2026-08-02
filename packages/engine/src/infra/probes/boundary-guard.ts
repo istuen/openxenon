@@ -56,13 +56,15 @@ const OXN_BUILTIN_BLUEPRINT = 'oxn-blueprint'
 //   - 优先从 .openxenon/assets/domains/ 运行时扫 (.md 文件)
 //   - 扫不到时回退到此 fallback 集合 (保证 OXN self-host 在 test fixture
 //     "无 .md 副本" 场景下也能 resolve builtin domains)
-//   - 9 个 builtin domain 对应 OXN 9 个核心域 (oxn-domain 等)
+//   - 10 个 builtin domain 对应 OXN 10 个核心域 (oxn-domain 等)
+//   - v0.6.2-alpha.3 增 `oxn-draft-promote-domain`（Draft Promote 路由领域）
 //   - 未来若 builtin 列表变更: 修改 fallback + 在 .openxenon/assets/domains/ 创建 .md
 const OXN_BUILTIN_DOMAINS_FALLBACK = [
   'oxn-asset-domain',
   'oxn-cli-domain',
   'oxn-domain',
   'oxn-draft-domain',
+  'oxn-draft-promote-domain',
   'oxn-engine-domain',
   'oxn-insight-domain',
   'oxn-project-domain',
