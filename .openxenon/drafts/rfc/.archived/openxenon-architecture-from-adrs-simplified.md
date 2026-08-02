@@ -1,7 +1,7 @@
 # OpenXenon 完整架构（从激活 ADR 提取 · 简化版）
 
 > **日期**：2026-07-18
-> **状态**：📝 Draft（基于 30 条 Adopted + 5 条 Partially Adopted ADR 整理）
+> **状态**：📦 **归档**：简化版与完整版重复（双份），以完整版 `openxenon-architecture-from-adrs.md` 为 SSOT（2026-08-02 归档）。保留作历史溯源。
 > **来源**：`.openxenon/docs/adrs/` INDEX.md 50 条 ADR（30 Adopted / 5 Partial / 9 Proposed / 6 Superseded）
 > **目的**：从架构决策记录反向提取完整架构图景，作为 architecture.md 的补充参考
 > **约定**：每节标注来源 ADR 编号，可追溯

@@ -1,11 +1,11 @@
 # Blueprint `## Use` 解析器：新格式支持修复计划
 
 > **日期**：2026-07-28
-> 
+>
 > **来源**：ssot-asset-doc-boundary-audit-2026-07-28.md 的后续（Step 4-10 修复后暴露的运行时代码 gap）
-> 
-> **状态**：📝 Working Draft（待提升为 Work，输入到 `oxn work create blueprint-parser-format-fix`）
-> 
+>
+> **状态**：📦 **归档**：`packages/engine/src/Work/per-work-blueprints-merger.ts:107-120` 已实现旧格式 `- kind:` + `- ref:` 与新格式 `- blueprint: @md/...` 双格式 fallback，4 个相关单元测试覆盖；修复 gap 已闭合（2026-08-02 归档）。保留作历史溯源。
+>
 > **关联**：ADR-0055（Blueprint composition template）/ v0.7.3-ideal-data-flow-rfc / three-boundary-blueprint-elevation-rfc.md / per-work-blueprints-merger.test.ts
 
 ---

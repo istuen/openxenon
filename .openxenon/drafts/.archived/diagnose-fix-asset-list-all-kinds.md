@@ -1,5 +1,7 @@
 # Diagnose: fix-asset-list-all-kinds
 
+> **状态**：📦 **归档**：修复已落地（commit d09f217 `feat(asset): RFC-0011 I-3/I-4 落地 — list 全 kind + scope 模式`）；`packages/engine/src/Asset/list.ts:75` 已用 `[...ALL_ASSET_KINDS]` 替代硬编码 3 类；5 类覆盖单测已加。保留作历史溯源。
+
 ## 触发条件
 
 ```bash
