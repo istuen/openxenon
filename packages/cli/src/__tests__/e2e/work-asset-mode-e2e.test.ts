@@ -19,8 +19,8 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, copyFileSync, writeFileSync
 import { tmpdir } from 'os'
 import { join } from 'path'
 
-const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
-const REPO_ROOT = join(import.meta.dir, '..', '..', '..', '..')
+const CLI_PATH = join(import.meta.dir, '..', '..', 'index.ts')
+const REPO_ROOT = join(import.meta.dir, '..', '..', '..', '..', '..')
 
 let tmpDir: string
 

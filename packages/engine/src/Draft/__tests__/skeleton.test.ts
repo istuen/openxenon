@@ -44,10 +44,7 @@ function teardownSkeletonDir(): void {
 describe('forkDraftSkeleton', () => {
   test('1. rfc target 派生 skeleton 注入 promote-target', () => {
     setupSkeletonDir()
-    const result = forkDraftSkeleton(
-      { projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'test-rfc' },
-      null,
-    )
+    const result = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'test-rfc' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.content).toContain('promote-target: rfc')
@@ -87,10 +84,7 @@ describe('forkDraftSkeleton', () => {
 
   test('4. work target 派生 skeleton（无 promote-kind）', () => {
     setupSkeletonDir()
-    const result = forkDraftSkeleton(
-      { projectRoot: FIXTURE_PROJECT, target: 'work', name: 'test-work' },
-      null,
-    )
+    const result = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'work', name: 'test-work' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.content).toContain('promote-target: work')
@@ -100,10 +94,7 @@ describe('forkDraftSkeleton', () => {
 
   test('5. target invalid 报错', () => {
     setupSkeletonDir()
-    const result = forkDraftSkeleton(
-      { projectRoot: FIXTURE_PROJECT, target: 'invalid' as never, name: 'x' },
-      null,
-    )
+    const result = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'invalid' as never, name: 'x' }, null)
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.code).toBe('OXN_DRAFT_TARGET_INVALID')
@@ -113,10 +104,7 @@ describe('forkDraftSkeleton', () => {
 
   test('6. asset target 缺 kind 报错', () => {
     setupSkeletonDir()
-    const result = forkDraftSkeleton(
-      { projectRoot: FIXTURE_PROJECT, target: 'asset', name: 'x' },
-      null,
-    )
+    const result = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'asset', name: 'x' }, null)
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.code).toBe('OXN_DRAFT_KIND_REQUIRED')
@@ -138,10 +126,7 @@ describe('forkDraftSkeleton', () => {
 
   test('8. skeleton 模板不存在报错 OX경_DRAFT_SKELETON_NOT_FOUND', () => {
     teardownSkeletonDir()
-    const result = forkDraftSkeleton(
-      { projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'x' },
-      null,
-    )
+    const result = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'x' }, null)
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.code).toBe('OXN_DRAFT_SKELETON_NOT_FOUND')
@@ -168,10 +153,7 @@ describe('forkDraftSkeleton', () => {
 
   test('10. synced-at 字段为 YYYY-MM-DD 格式', () => {
     setupSkeletonDir()
-    const result = forkDraftSkeleton(
-      { projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'x' },
-      null,
-    )
+    const result = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'x' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.content).toMatch(/synced-at: \d{4}-\d{2}-\d{2}/)
@@ -181,10 +163,7 @@ describe('forkDraftSkeleton', () => {
   test('11. 5 AssetKind 全部派生', () => {
     setupSkeletonDir()
     for (const kind of ASSET_KINDS) {
-      const result = forkDraftSkeleton(
-        { projectRoot: FIXTURE_PROJECT, target: 'asset', kind, name: `x-${kind}` },
-        null,
-      )
+      const result = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'asset', kind, name: `x-${kind}` }, null)
       expect(result.ok).toBe(true)
       if (!result.ok) continue
       expect(result.content).toContain(`promote-kind: ${kind}`)

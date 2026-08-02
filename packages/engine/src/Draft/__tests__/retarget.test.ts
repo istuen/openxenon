@@ -52,10 +52,7 @@ function teardown(): void {
 describe('retargetDraft', () => {
   test('1. retarget 从 rfc → asset+domain', () => {
     setup()
-    writeDraft(
-      'test',
-      '---\nentity: rfc\npromote-target: rfc\n---\n# Section\n\nEngineer content here.\n',
-    )
+    writeDraft('test', '---\nentity: rfc\npromote-target: rfc\n---\n# Section\n\nEngineer content here.\n')
     const result = retargetDraft(
       { projectRoot: FIXTURE_PROJECT, name: 'test', newTarget: 'asset', newKind: 'domain' },
       null,
@@ -82,10 +79,7 @@ describe('retargetDraft', () => {
       'meta-test',
       '---\nentity: domain\npromote-target: asset\npromote-kind: domain\nabstract: Keep this\n---\n# Body\n',
     )
-    const result = retargetDraft(
-      { projectRoot: FIXTURE_PROJECT, name: 'meta-test', newTarget: 'work' },
-      null,
-    )
+    const result = retargetDraft({ projectRoot: FIXTURE_PROJECT, name: 'meta-test', newTarget: 'work' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     const content = readFileSync(result.draftPath, 'utf-8')
@@ -96,10 +90,7 @@ describe('retargetDraft', () => {
 
   test('3. Draft 不存在报错 OXN_DRAFT_NOT_FOUND', () => {
     setup()
-    const result = retargetDraft(
-      { projectRoot: FIXTURE_PROJECT, name: 'nonexistent', newTarget: 'rfc' },
-      null,
-    )
+    const result = retargetDraft({ projectRoot: FIXTURE_PROJECT, name: 'nonexistent', newTarget: 'rfc' }, null)
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.code).toBe('OXN_DRAFT_NOT_FOUND')
@@ -122,10 +113,7 @@ describe('retargetDraft', () => {
   test('5. asset target 缺 kind 报错', () => {
     setup()
     writeDraft('asset-no-kind', '---\npromote-target: rfc\n---\n# Original\n')
-    const result = retargetDraft(
-      { projectRoot: FIXTURE_PROJECT, name: 'asset-no-kind', newTarget: 'asset' },
-      null,
-    )
+    const result = retargetDraft({ projectRoot: FIXTURE_PROJECT, name: 'asset-no-kind', newTarget: 'asset' }, null)
     expect(result.ok).toBe(false)
     if (result.ok) return
     expect(result.code).toBe('OXN_DRAFT_KIND_REQUIRED')
@@ -134,10 +122,7 @@ describe('retargetDraft', () => {
 
   test('6. 链式 retarget 多次切换', () => {
     setup()
-    writeDraft(
-      'chain',
-      '---\npromote-target: rfc\n---\n# Body\n\nNote: keep me\n',
-    )
+    writeDraft('chain', '---\npromote-target: rfc\n---\n# Body\n\nNote: keep me\n')
     // rfc → asset+workflow
     const r1 = retargetDraft(
       { projectRoot: FIXTURE_PROJECT, name: 'chain', newTarget: 'asset', newKind: 'workflow' },
@@ -147,20 +132,14 @@ describe('retargetDraft', () => {
     if (!r1.ok) return
 
     // asset+workflow → work
-    const r2 = retargetDraft(
-      { projectRoot: FIXTURE_PROJECT, name: 'chain', newTarget: 'work' },
-      null,
-    )
+    const r2 = retargetDraft({ projectRoot: FIXTURE_PROJECT, name: 'chain', newTarget: 'work' }, null)
     expect(r2.ok).toBe(true)
     if (!r2.ok) return
     expect(r2.oldTarget).toBe('asset')
     expect(r2.newTarget).toBe('work')
 
     // work → rfc
-    const r3 = retargetDraft(
-      { projectRoot: FIXTURE_PROJECT, name: 'chain', newTarget: 'rfc' },
-      null,
-    )
+    const r3 = retargetDraft({ projectRoot: FIXTURE_PROJECT, name: 'chain', newTarget: 'rfc' }, null)
     expect(r3.ok).toBe(true)
     if (!r3.ok) return
     expect(r3.oldTarget).toBe('work')
@@ -172,14 +151,8 @@ describe('retargetDraft', () => {
   test('7. 工程师 oversized 保护', () => {
     setup()
     const bigContent = 'X'.repeat(100_000)
-    writeDraft(
-      'big',
-      `---\npromote-target: rfc\n---\n# Body\n\n${bigContent}\n`,
-    )
-    const result = retargetDraft(
-      { projectRoot: FIXTURE_PROJECT, name: 'big', newTarget: 'work' },
-      null,
-    )
+    writeDraft('big', `---\npromote-target: rfc\n---\n# Body\n\n${bigContent}\n`)
+    const result = retargetDraft({ projectRoot: FIXTURE_PROJECT, name: 'big', newTarget: 'work' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.preservedContentChars).toBeGreaterThan(100_000)

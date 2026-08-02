@@ -8,9 +8,9 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { setupCliEnv, type CliEnv } from './helpers/run-cli'
+import { setupCliEnv, type CliEnv } from '../helpers/run-cli'
 
-const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
+const CLI_PATH = join(import.meta.dir, '..', '..', 'index.ts')
 
 let env: CliEnv
 

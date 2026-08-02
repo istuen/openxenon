@@ -9,7 +9,7 @@ import { existsSync, mkdtempSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
-const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
+const CLI_PATH = join(import.meta.dir, '..', '..', 'index.ts')
 
 let tmpDir: string
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# OpenXenon — Bun test configuration
+# OpenXenon — Bun test configuration (ADR-0088 P1)
 #
 # Goal: maximize parallelism while keeping E2E tests that share the `.openxenon/`
 # workspace serialized (Bun.spawn + shared FS state would race otherwise).
@@ -7,32 +7,31 @@
 # Strategy:
 #   - Default: tests run serially within a file (Bun default).
 #   - concurrentTestGlob: any test file matching this glob runs concurrently
-#     WITHIN that file (per-test concurrency). The bulk of our suite is pure
-#     logic (kernel/dsl/work/daemon/schema/errors/skills locales) and is safe.
+#     WITHIN that file (per-test concurrency). Pure-logic test files are safe.
 #   - E2E files (packages/cli/src/__tests__/*-e2e.test.ts) and cross-layer
 #     integration tests (tests/integration/**) are deliberately NOT in the
 #     glob, so they stay serial — they share `/tmp/oxn-…` and the real
 #     `.openxenon/` index, and concurrent `Bun.spawn` calls have historically
 #     caused work-migrate-e2e to flake.
 #
-# Test layout (Y scheme — tests reflect architecture boundary, not source):
-#   - packages/engine/src/<mod>/__tests__/  module unit tests
-#   - packages/cli/src/__tests__/           CLI tests + E2E (latter not in glob)
+# Test layout (colocated, per ADR-0088 D6):
+#   - packages/engine/src/<mod>/__tests__/  module unit tests (colocated)
+#   - packages/cli/src/__tests__/           CLI tests + E2E (latter not in glob; future P3 splits e2e/ subdir)
 #   - src/{daemon,builtin}/__tests__/       residual pre-monorepo modules
 #   - oxn-vscode/__tests__/                 VSCode grammar
 #   - scripts/__tests__/                    validation scripts
 #   - tests/architectural/                  L0-L3 constitutional guards
 #   - tests/integration/                    cross-layer integration (not in glob)
 #
-# Verified: 2026-01, after monorepo regroup (v0.6.1). Globs repointed from
-# pre-monorepo `src/` paths to real `packages/` locations; per-test
-# concurrency restored.
+# ADR-0088 P1 修订要点（2026-08-02）:
+#   - 删 6 个幻影模块 glob（Intent/Align/Workflow/Domain/Stack/Daemon 不存在）
+#   - infra 拆 subdir：纯逻辑（assets/git/i18n/registry/runtime）进并发；probes/providers 因跨进程 spawn 资源竞争保留串行
+#   - 删 *.serial.test.ts stale 注释（rename 从未发生）
 # =============================================================================
 
 [test]
 
-# Pure unit / integration / schema / md-bridge compiler / skill-content tests:
-# these are isolated and safe to run concurrently within a file.
+# Pure-logic tests safe to run concurrently within a file.
 #
 # Note on CLI tests: `packages/cli/src/__tests__/` mixes pure-unit files
 # (config-loader, domain-canonicalization, iap-error-dictionary-v1_1, …)
@@ -40,29 +39,31 @@
 # and share `.openxenon/` FS state. Bun's concurrentTestGlob syntax (basic
 # fnmatch, no extglob negation) cannot exclude the E2E subset. So the whole
 # CLI dir stays serial by default (no glob entry). The bulk of speedup comes
-# from the engine (~85 files), which is the primary suite.
+# from the engine, which is the primary suite. ADR-0088 P3 will split e2e/.
+#
+# Note on infra subdirs: probes (16 files) + providers (4 files) test
+# handlers that spawn shell/tsc/git child processes via Bun.spawn. Cross-
+# process resource contention has historically caused flake under
+# per-test concurrency. They are NOT in concurrentTestGlob → default serial.
 #
 # Note on helpers in `__tests__/helpers/`: `run-cli.ts`, `parse-md.ts` are
 # NOT test files — Bun skips them since `.test.ts` suffix is required.
 concurrentTestGlob = [
-  # Engine (L0–L2) — explicit per-module subdirs to SKIP infra/{probes,providers}
-  #   (probe handler tests spawn shell/tsc — cross-process race causes flake)
+  # Engine L2-Work domain modules (colocated __tests__/)
   "packages/engine/src/kernel/**/*.test.ts",
   "packages/engine/src/oxl/**/*.test.ts",
   "packages/engine/src/Proof/**/*.test.ts",
   "packages/engine/src/Asset/**/*.test.ts",
   "packages/engine/src/Insight/**/*.test.ts",
-  "packages/engine/src/Intent/**/*.test.ts",
-  "packages/engine/src/Align/**/*.test.ts",
   "packages/engine/src/Pool/**/*.test.ts",
   "packages/engine/src/Roadmap/**/*.test.ts",
   "packages/engine/src/Work/**/*.test.ts",
-  "packages/engine/src/Workflow/**/*.test.ts",
-  "packages/engine/src/Domain/**/*.test.ts",
-  "packages/engine/src/Stack/**/*.test.ts",
-  "packages/engine/src/Daemon/**/*.test.ts",
-  # Note: 3 个 probe handler 测试 (shell-exec / ts-compiles / shell-provider) 已 rename 为 *.serial.test.ts
-  #   不进 concurrentTestGlob, 强制串行 (跨进程 spawn 资源竞争)
+  # Engine L1-Infra pure-logic subdirs only (probes + providers excluded — see above)
+  "packages/engine/src/infra/assets/**/*.test.ts",
+  "packages/engine/src/infra/git/**/*.test.ts",
+  "packages/engine/src/infra/i18n/**/*.test.ts",
+  "packages/engine/src/infra/registry/**/*.test.ts",
+  "packages/engine/src/infra/runtime/**/*.test.ts",
   # Residual pre-monorepo modules
   "src/daemon/__tests__/**",
   "src/builtin/__tests__/**",
@@ -70,11 +71,16 @@ concurrentTestGlob = [
   "oxn-vscode/__tests__/**",
   "scripts/__tests__/**",
   "tests/architectural/**",
+  # ADR-0088 ADR-P3: cli __tests__/ 顶层（unit only; fnmatch 不匹配 e2e/ 子目录 → e2e 串行）
+  # 14 unit 进 concurrent, 14 e2e 维持串行
+  "packages/cli/src/__tests__/*.test.ts",
 ]
 
-# E2E tests (packages/cli/src/__tests__/*-e2e.test.ts) and cross-layer
-# integration tests (tests/integration/**) deliberately omitted so they
-# default to serial execution.
+# E2E tests (packages/cli/src/__tests__/e2e/*-e2e.test.ts) and cross-layer
+# integration tests (tests/integration/**) deliberately omitted from concurrentTestGlob
+# so they default to serial execution.
+# ADR-0088 ADR-P3: e2e 已移到 __tests__/e2e/ 子目录（fnmatch basic 不匹配 e2e/），所以
+# 顶层 glob 加 concurrentTestGlob → unit 进并发, e2e 自动串行.
 
 # Retry once on failure: absorbs the historical work-migrate-e2e:320 flake
 # (concurrent Bun.spawn + shared `.openxenon/` cache). Net cost ~250ms when

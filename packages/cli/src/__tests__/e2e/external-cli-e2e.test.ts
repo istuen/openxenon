@@ -16,7 +16,7 @@ import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync, mkdirSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
+const CLI_PATH = join(import.meta.dir, '..', '..', 'index.ts')
 
 function runOxn(args: string[], cwd: string): { exitCode: number; stdout: string; stderr: string } {
   const result = spawnSync({

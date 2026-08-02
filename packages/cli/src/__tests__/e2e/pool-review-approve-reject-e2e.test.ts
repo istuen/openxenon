@@ -16,7 +16,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSy
 import { tmpdir } from 'os'
 import { join } from 'path'
 
-const CLI_PATH = join(import.meta.dir, '..', 'index.ts')
+const CLI_PATH = join(import.meta.dir, '..', '..', 'index.ts')
 
 let tmpDir: string
 

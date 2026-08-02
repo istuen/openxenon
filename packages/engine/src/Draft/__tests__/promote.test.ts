@@ -37,10 +37,7 @@ function teardown(): void {
 describe('promoteDraft', () => {
   test('1. rfc target 派生 promote-rfc subTarget', () => {
     setup()
-    writeDraft(
-      'rfc-foo',
-      '---\nentity: rfc\nid: RFC-0001\npromote-target: rfc\n---\n# RFC\n',
-    )
+    writeDraft('rfc-foo', '---\nentity: rfc\nid: RFC-0001\npromote-target: rfc\n---\n# RFC\n')
     const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'rfc-foo' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -53,10 +50,7 @@ describe('promoteDraft', () => {
 
   test('2. asset+domain 派生 promote-asset-domain', () => {
     setup()
-    writeDraft(
-      'd-foo',
-      '---\nentity: domain\npromote-target: asset\npromote-kind: domain\n---\n# Domain\n',
-    )
+    writeDraft('d-foo', '---\nentity: domain\npromote-target: asset\npromote-kind: domain\n---\n# Domain\n')
     const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'd-foo' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -69,10 +63,7 @@ describe('promoteDraft', () => {
 
   test('3. asset+roadmap 派生到 assetmaps 目录', () => {
     setup()
-    writeDraft(
-      'rm-foo',
-      '---\nentity: roadmap\npromote-target: asset\npromote-kind: roadmap\n---\n# Roadmap\n',
-    )
+    writeDraft('rm-foo', '---\nentity: roadmap\npromote-target: asset\npromote-kind: roadmap\n---\n# Roadmap\n')
     const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'rm-foo' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -83,10 +74,7 @@ describe('promoteDraft', () => {
 
   test('4. work target 派生 promote-work', () => {
     setup()
-    writeDraft(
-      'w-foo',
-      '---\nworkId: w-foo\npromote-target: work\n---\n# Work\n',
-    )
+    writeDraft('w-foo', '---\nworkId: w-foo\npromote-target: work\n---\n# Work\n')
     const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'w-foo' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -152,10 +140,7 @@ describe('promoteDraft', () => {
 
   test('9. asset target kind 未知报错 OXN_DRAFT_PROMOTE_TARGET_KIND_MISMATCH', () => {
     setup()
-    writeDraft(
-      'asset-bad-kind',
-      '---\npromote-target: asset\npromote-kind: invalid-kind\n---\n# Asset\n',
-    )
+    writeDraft('asset-bad-kind', '---\npromote-target: asset\npromote-kind: invalid-kind\n---\n# Asset\n')
     const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'asset-bad-kind' }, null)
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -165,10 +150,7 @@ describe('promoteDraft', () => {
 
   test('10. rfc target 不应有 promote-kind', () => {
     setup()
-    writeDraft(
-      'rfc-with-kind',
-      '---\npromote-target: rfc\npromote-kind: domain\n---\n# RFC\n',
-    )
+    writeDraft('rfc-with-kind', '---\npromote-target: rfc\npromote-kind: domain\n---\n# RFC\n')
     const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'rfc-with-kind' }, null)
     expect(result.ok).toBe(false)
     if (result.ok) return
@@ -197,14 +179,8 @@ describe('promoteDraft', () => {
 
   test('13. --target override 覆盖 frontmatter', () => {
     setup()
-    writeDraft(
-      'override-test',
-      '---\npromote-target: rfc\n---\n# RFC\n',
-    )
-    const result = promoteDraft(
-      { projectRoot: FIXTURE_PROJECT, name: 'override-test', targetOverride: 'work' },
-      null,
-    )
+    writeDraft('override-test', '---\npromote-target: rfc\n---\n# RFC\n')
+    const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'override-test', targetOverride: 'work' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.target).toBe('work')
