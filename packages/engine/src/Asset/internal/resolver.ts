@@ -12,14 +12,17 @@ import {
   type AssetKind,
 } from '@openxenon/engine/infra/paths'
 import { existsSync } from '@openxenon/engine/infra/filesystem'
+import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 
 /**
  * 解析 asset 文件的完整路径（主路径优先，fallback 为后备）.
  *
  * v0.7.0: Only .md format supported.
+ * v0.6.2 I-6 fix: 读 .openxenon/config.json 的 assetRoot 配置。
  */
 export function resolveAssetFile(projectRoot: string, kind: AssetKind, name: string, ext: string = 'md'): string {
-  const dir = resolveAssetDir(projectRoot, kind, null)
+  const config = loadProjectConfig(projectRoot)
+  const dir = resolveAssetDir(projectRoot, kind, config)
   return join(dir, `${name}.${ext}`)
 }
 

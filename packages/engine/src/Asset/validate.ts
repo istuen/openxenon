@@ -15,6 +15,7 @@ import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
 import type { ValidateInput, ValidateResult } from './types'
 import { checkAssetDAG, type AssetNode, type DagValidationResult } from './dag-validator.js'
+import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 // Asset validate() 派发 5-way EntityCompiler:
 //   - getEntityCompiler 按 IntentEntityType 拿对应 compiler
@@ -104,9 +105,10 @@ export async function validate(input: ValidateInput): Promise<ValidateResult> {
 export function validateAssetReferences(projectRoot: string): DagValidationResult {
   const kinds: readonly AssetKind[] = ALL_ASSET_KINDS
   const nodes: AssetNode[] = []
+  const config = loadProjectConfig(projectRoot)
 
   for (const kind of kinds) {
-    const dir = resolveAssetDir(projectRoot, kind, null)
+    const dir = resolveAssetDir(projectRoot, kind, config)
     if (!existsSync(dir)) continue
     const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
     for (const file of files) {

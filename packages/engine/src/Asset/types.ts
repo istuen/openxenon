@@ -8,6 +8,9 @@ import type { AssetFormat, AssetKind } from '@openxenon/engine/infra/paths'
 
 export type { AssetKind, AssetFormat }
 
+/** v0.6.2 I-4: Asset 来源 scope — builtin (@oxn) 或项目 (@prj) */
+export type AssetScope = 'oxn' | 'prj'
+
 export interface CreateInput {
   kind: AssetKind
   name: string
@@ -43,6 +46,12 @@ export interface ValidateResult {
 export interface ListInput {
   kind: AssetKind
   projectRoot: string
+  /** v0.6.2 I-4: 列举范围
+   *  - 'prj'（默认）：仅项目内
+   *  - 'oxn'：仅 builtin（@oxn scope）
+   *  - 'effective'：项目 + builtin-only（项目同名覆盖 builtin）
+   */
+  scope?: AssetScope | 'effective'
 }
 
 export interface ListResult {
@@ -51,6 +60,7 @@ export interface ListResult {
     name: string
     path: string
     format: AssetFormat
+    scope: AssetScope
   }>
 }
 

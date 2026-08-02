@@ -21,6 +21,7 @@ import { readFileSync, readdirSync, existsSync } from '@openxenon/engine/infra/f
 import { join } from 'node:path'
 import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
 import type { AssetKind } from '@openxenon/engine/infra/paths'
+import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 
 export interface AssetReferenceEntry {
   kind: AssetKind
@@ -36,9 +37,10 @@ export interface AssetReferenceEntry {
 export function listAssetReferences(projectRoot: string): AssetReferenceEntry[] {
   const kinds: AssetKind[] = [...ALL_ASSET_KINDS]
   const nodes: Array<{ kind: AssetKind; name: string; references: string[] }> = []
+  const config = loadProjectConfig(projectRoot)
 
   for (const kind of kinds) {
-    const dir = resolveAssetDir(projectRoot, kind, null)
+    const dir = resolveAssetDir(projectRoot, kind, config)
     if (!existsSync(dir)) continue
     const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
     for (const file of files) {
