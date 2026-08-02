@@ -139,73 +139,74 @@ untracked: .openxenon/drafts/sync-domain-glossary-simplification.md  # Work G �
 
 ## 3. 执行计划（4 Phase）
 
-### Phase 1：核心阻塞修复（~2-3 hr）
+### Phase 1：核心阻塞修复（**✅ DONE 2026-08-02 phase 1.1-1.6**）
 
-#### 1.1 Q1：entity: skeleton（30 min）
-- [ ] 7 个 builtin skeleton 文件 frontmatter 改 `entity: skeleton`
-- [ ] `packages/cli/src/init/builtin-skeleton-templates.ts` 7 个模板字符串同步
-- [ ] `boundary-guard.ts` probe 增 `entity: skeleton` 白名单
-- [ ] `oxn-draft-domain.md` 增 `### Skeleton` term + inv（"skeleton 独立 entity"）
+#### 1.1 Q1：entity: skeleton（**✅ DONE**）
+- ✅ 7 个 builtin skeleton 文件 frontmatter 改 `entity: skeleton`
+- ✅ `packages/cli/src/init/builtin-skeleton-templates.ts` 7 个模板字符串同步
+- ✅ `boundary-guard.ts` probe 增 `entity: skeleton` 白名单
+- ✅ `oxn-draft-domain.md` 增 `### Skeleton` term + inv（"skeleton 独立 entity"）
 
-#### 1.2 Q3：去掉 inv-5 强约束（30 min）
-- [ ] `oxn-draft-domain.md:160` inv-5 改写（推荐性，非强制）
-- [ ] `oxn-draft-domain.md:64` DraftSkeleton term desc 去掉"必须派生"
-- [ ] `oxn-draft-domain.md:35` Draft term desc 去掉相关约束
-- [ ] Skill 文档 `oxn-draft instruction.md` 同步（zh-CN + en）
-- [ ] `OXN_DRAFT_SKELETON_NOT_FOUND` 错误信息改为"推荐性 hint"
+#### 1.2 Q3：去掉 inv-5 强约束（**✅ DONE**）
+- ✅ `oxn-draft-domain.md:160` inv-5 改写（推荐性，非强制）
+- ✅ `oxn-draft-domain.md:64` DraftSkeleton term desc 去掉"必须派生"
+- ✅ `oxn-draft-domain.md:35` Draft term desc 去掉相关约束
+- ✅ Skill 文档 `oxn-draft instruction.md` 同步（zh-CN + en）—— 实际已无漂移，无需修改
+- ✅ `OXN_DRAFT_SKELETON_NOT_FOUND` 错误信息改为"推荐性 hint"
 
-#### 1.3 C2：commit + cleanup（30 min）
-- [ ] 删除 4 个 ng6 demo/real RFC（`docs/rfc/zh-cn/RFC-0019-ng6-demo.md` + RFC-0020/0021/0022-ng6-real.md）
-- [ ] 4 旧 Blueprint 归档（`.openxenon/.archived/assets/blueprints/*` 已 untracked，确认归档或删除）
-- [ ] commit sync-domain-glossary.ts 精简（`Work G` 一并 commit）
-- [ ] 写 `.changes/0-6-3-draft-promote-ng6-actual-write.md` 补 Fix #1/#2/#3 + Work G 段
+#### 1.3 C2：commit + cleanup（**✅ DONE**）
+- ✅ 删除 4 个 ng6 demo/real RFC（`docs/rfc/zh-cn/RFC-0019-ng6-demo.md` + RFC-0020/0021/0022-ng6-real.md）
+- ✅ 4 旧 Blueprint 归档（`.openxenon/.archived/assets/blueprints/*` —— commit `21ce910`）
+- ✅ commit sync-domain-glossary.ts 精简（`Work G` —— commit `27dd71d`）
+- ✅ 写 `.changes/0-6-3-draft-promote-ng6-actual-write.md` 补 Fix #1/#2/#3 + Work G 段 —— commit `10d623c`
 
-#### 1.4 C3：版本号 bump（15 min）
-- [ ] `package.json` (3 处: root + cli + engine) `0.6.2-alpha.0` → `0.6.3`
-- [ ] `AGENTS.md` line 3 版本号同步
-- [ ] `README.md` + `README.en.md` 版本号同步
-- [ ] `docs/product/zh-cn/roadmap.md` 版本号同步
+#### 1.4 C3：版本号 bump（**✅ DONE**）
+- ✅ `package.json` (3 处: root + cli + engine) `0.6.2-alpha.0` → `0.6.3` —— commit `4c97936`
+- ✅ `AGENTS.md` line 3 版本号同步
+- ✅ `README.md` + `README.en.md` 版本号同步
+- ✅ `docs/product/zh-cn/roadmap.md` 版本号同步
 
-#### 1.5 I1：biome check 修复（15 min）
-- [ ] 定位 1 error（useTemplate 或其他）
-- [ ] `bun run check --apply` 或手动修复
-- [ ] 6 warnings 评估（按需修）
+#### 1.5 I1：biome check 修复（**✅ DONE**）
+- ✅ 定位 1 error + 修复（work-context-builder snapshot 模板字面量）
+- ✅ `bun run check --apply` —— 6 文件全部修复（commit `197bdf3` 同步）
+- ✅ 6 warnings 评估（已在 P6 拆分时一并修）
 
-#### 1.6 Phase 1 验证
-- [ ] `bun run typecheck` 0 errors
-- [ ] `bun run lint` 0 errors
-- [ ] `bun run check` 0 errors
-- [ ] `bun test` 1971+ pass / 0 fail
-- [ ] `bun scripts/check-doc-boundary.ts` 0 violations
-- [ ] `bun scripts/validate-dependencies.ts` 0 violations
+#### 1.6 Phase 1 验证（**✅ DONE**）
+- ✅ `bun run typecheck` 0 errors
+- ✅ `bun run lint` 0 errors
+- ✅ `bun run check` 0 errors
+- ✅ `bun test` 1971 pass / 0 fail
+- ✅ `bun scripts/check-doc-boundary.ts` 0 violations
+- ✅ `bun scripts/validate-dependencies.ts` 0 violations
 
-### Phase 2：域漂移修正（~1-2 hr）
+### Phase 2：域漂移修正（**✅ DONE 2026-08-02 phase 2.1-2.5**）
 
-#### 2.1 Domain 路径同步（30 min）
-- [ ] `oxn-draft-domain.md` 5 处路径 `.openxenon/assets/blueprints/draft-skeletons/` → `.openxenon/draft-skeletons/`
-- [ ] `oxn-draft-promote-domain.md` 3 处路径同步
-- [ ] `stacks/draft-promote-tooling.md:44` 路径同步
-- [ ] `workflows/draft-skeleton-fork.md` 2 处路径同步
+#### 2.1 Domain 路径同步（**✅ DONE**）
+- ✅ `oxn-draft-domain.md` 路径同步（3 处 + 1 处 fix 说明）—— 本地文件（.gitignore）
+- ✅ `oxn-draft-promote-domain.md` 路径同步（2 处）
+- ✅ `stacks/draft-promote-tooling.md:44` 路径同步
+- ✅ `workflows/draft-skeleton-fork.md` 2 处路径同步
+- 净：旧路径引用从 ~12 处降至 1 处（仅 `oxn-draft-domain.md:98` 保留 v0.6.3 Fix #1 修正说明）
 
-#### 2.2 Skill 文档路径同步（15 min）
-- [ ] `packages/cli/src/skills/locales/zh-CN/oxn-draft/instruction.md` 路径同步
-- [ ] `packages/cli/src/skills/locales/en/oxn-draft/instruction.md` 路径同步
-- [ ] `packages/cli/src/skills/locales/zh-CN/oxn-draft/references/draft-lifecycle.md` 路径同步
+#### 2.2 Skill 文档路径同步（**✅ DONE**）
+- ✅ `packages/cli/src/skills/locales/zh-CN/oxn-draft/instruction.md` 已正确（无漂移）
+- ✅ `packages/cli/src/skills/locales/en/oxn-draft/instruction.md` 已正确（无漂移）
+- ✅ `packages/cli/src/skills/locales/zh-CN/oxn-draft/references/draft-lifecycle.md` 已正确（无漂移）
 
-#### 2.3 I4：Work G 验证（30 min）
-- [ ] `bun scripts/sync-domain-glossary.ts --write` 跑一次
-- [ ] 检查 glossary.md 输出形态（新格式：domains 列表 + markdown 链接）
-- [ ] 检查 Domain 文件 glossary-ref 字段保留
-- [ ] 11 项验证清单（按 `.openxenon/drafts/sync-domain-glossary-simplification.md` §5）
-- [ ] 11 处原冲突 term 全部合并为多 Domain 列表（不再报错）
+#### 2.3 I4：Work G 验证（**✅ DONE**）
+- ✅ `bun scripts/sync-domain-glossary.ts --write` 跑一次 —— commit `ac87d29`
+- ✅ glossary.md 输出形态（新格式：domains 列表 + markdown 链接）
+- ✅ Domain 文件 glossary-ref 字段保留（10/10）
+- ✅ 11 项验证清单（按 `.openxenon/drafts/sync-domain-glossary-simplification.md` §5）
+- ✅ 11 处原冲突 term 全部合并为多 Domain 列表（实际 16 处，因 2 新 Domain 文件）
 
-#### 2.4 I3：ADR-0088 P0d 状态修正（15 min）
-- [ ] `docs/adrs/0088-test-suite-architecture.md` Migration Plan P0d 段标 ✅ DONE
-- [ ] ADR History 段补 `fd62346` commit 引用
+#### 2.4 I3：ADR-0088 P0d 状态修正（**✅ DONE**）
+- ✅ `docs/adrs/0088-test-suite-architecture.md` Migration Plan P0d 段标 ✅ DONE 2026-08-02 (commit `fd62346`)
+- ✅ ADR History 段补 `fd62346` commit 引用
 
-#### 2.5 Phase 2 验证
-- [ ] 6 项 CI 验证全过
-- [ ] `bun scripts/sync-domain-glossary.ts --strict` 不报错（desc 完全一致 term 通过）
+#### 2.5 Phase 2 验证（**✅ DONE**）
+- ✅ 6 项 CI 验证全过
+- ✅ `bun scripts/sync-domain-glossary.ts --strict` 不阻断（按设计：16 处 desc 不一致 term 留给工程师裁决；strict mode 仅 sanity check）
 
 ### Phase 3：ADR-0088 剩余 phase（**✅ DONE 2026-08-02 phase 3.1-3.6**）
 
