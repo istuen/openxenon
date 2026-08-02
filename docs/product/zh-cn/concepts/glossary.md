@@ -365,10 +365,15 @@ synced-at: 2026-08-02
 
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#scope) — OXN 引用作用域（@oxn builtin / @prj 项目级；@gbl 已废弃）。
 
+### Skeleton
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#skeleton) — per-target 模板文件的实体类型（v0.6.3 Q1 新增）。
+
 ### SkeletonForking
 
 
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#skeletonforking) — skeleton 派生规则——v0.6.2-alpha.3 起 Draft 创建时（`--target` 模式）从 `.openxenon/assets/blueprints/draft-skeletons/&lt;target&gt;[-&lt;kind&gt;].md` 派生。
+- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#skeletonforking) — skeleton 派生规则——v0.6.2-alpha.3 起 Draft 创建时（`--target` 模式）从 `.openxenon/draft-skeletons/&lt;target&gt;[-&lt;kind&gt;].md` 派生（v0.6.3 Fix #1 移到 boundary 顶层）。
 
 ### Skill
 
