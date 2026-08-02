@@ -11,7 +11,7 @@
 // =============================================================================
 
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
@@ -330,7 +330,7 @@ describe('v1.1 Phase 5b.5: http-responds 真 e2e (使用 httpbin.org 或本地 s
   test('真 e2e: invalid URL → passed: false + error', async () => {
     const handler = probeRegistry.get('http_responds')
     expect(handler).not.toBeNull()
-    const obs = await handler!({ url: 'http://localhost:1/nonexistent', timeout: 1000 })
+    const obs = await handler!({ url: 'http://localhost:1/nonexistent', timeout: 1000 }, { projectRoot: '' })
     const parsed = JSON.parse(obs.output ?? '{}')
     expect(parsed.passed).toBe(false)
     expect(parsed.status).toBeNull()

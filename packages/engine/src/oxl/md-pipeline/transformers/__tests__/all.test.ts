@@ -14,10 +14,7 @@ import {
   extractTaskIR,
   extractProofIR,
   remarkDomainExtractor,
-  remarkBlueprintExtractor,
   remarkWorkExtractor,
-  remarkTaskExtractor,
-  remarkProofExtractor,
 } from '../index'
 import { unified } from 'unified'
 import remarkParse from 'remark-parse'

@@ -11,25 +11,6 @@ import {
   validateOxnAssemblyIR,
 } from '../schemas/oxn-assembly.schema'
 
-function _createAbstractPart(params: { name: string; implements?: string }): any {
-  return { name: params.name, description: undefined, props: [], probes: [], execution: [] }
-}
-function _createConcretePart(params: {
-  name: string
-  implements?: string
-  props?: { name: string; type: string; required?: boolean; default?: unknown }[]
-  probes?: { name: string; ref?: string; params?: Record<string, unknown> }[]
-  execution?: string[]
-}): any {
-  return {
-    name: params.name,
-    description: undefined,
-    props: params.props || [],
-    probes: params.probes || [],
-    execution: params.execution || [],
-  }
-}
-
 // ========================
 // 类型引用测试
 // ========================
@@ -108,8 +89,14 @@ describe('OxnAssemblyIR', () => {
 
   test('合法 Blueprint IR 通过校验', () => {
     const ir = makeBlueprint()
-    ir.slots.push({ name: 'tester', deps: [] })
-    ir.blueprintParts.push({ name: 'jest-runner', props: [], probes: [], execution: ['run_tests'] })
+    ir.slots.push({ name: 'tester', deps: [], observe: [], isMulti: false })
+    ir.blueprintParts.push({
+      name: 'jest-runner',
+      props: [],
+      probes: [],
+      execution: ['run_tests'],
+      deps: [],
+    })
 
     expect(() => validateOxnAssemblyIR(ir)).not.toThrow()
   })
@@ -147,7 +134,7 @@ describe('OxnAssemblyTaskIR', () => {
     expect(task.blueprint).toBe('feature-pipeline')
     expect(task.domain).toBe('MemberContext')
     expect(task.parts).toHaveLength(1)
-    expect(task.parts[0].name).toBe('tester')
+    expect(task.parts[0]?.name).toBe('tester')
   })
 })
 
@@ -207,9 +194,9 @@ describe('OxnAssemblyBundle', () => {
       ],
     })
     expect(bundle.entities).toHaveLength(3)
-    expect(bundle.entities[0].type).toBe('probe')
-    expect(bundle.entities[1].type).toBe('part')
-    expect(bundle.entities[2].type).toBe('blueprint')
+    expect(bundle.entities[0]?.type).toBe('probe')
+    expect(bundle.entities[1]?.type).toBe('part')
+    expect(bundle.entities[2]?.type).toBe('blueprint')
   })
 
   test('Bundle 支持 Work 实体 (v0.1-final)', () => {
@@ -228,8 +215,8 @@ describe('OxnAssemblyBundle', () => {
         },
       ],
     })
-    expect(bundle.entities[0].type).toBe('work')
-    expect((bundle.entities[0].data as { name: string }).name).toBe('deploy-prod')
+    expect(bundle.entities[0]?.type).toBe('work')
+    expect((bundle.entities[0]?.data as { name: string }).name).toBe('deploy-prod')
   })
 })
 
@@ -243,27 +230,20 @@ describe('与 Mock Pipeline (Task 1.2) 互操作', () => {
     const ir: OxnAssemblyIR = {
       id: 'feature-pipeline-blueprint',
       name: 'feature-pipeline-blueprint',
+      type: 'task',
       _version: 1,
       assembly_at: new Date().toISOString(),
       props: [
         { name: 'env', type: 'enum("dev", "staging", "prod")', required: false, default: 'dev' },
         { name: 'coverage', type: 'number', required: false, default: 80 },
       ],
-      abstractParts: [
-        {
-          name: 'tester',
-          implements: 'test-runner-interface',
-          isAbstract: true,
-          props: [],
-          probes: [],
-          execution: [],
-        },
-      ],
+      slots: [],
+      blueprintParts: [],
+      abstractParts: [],
       concreteParts: [
         {
           name: 'jest-runner-part',
-          implements: 'test-runner-interface',
-          isAbstract: false,
+          deps: [],
           props: [
             { name: 'target_env', type: 'string', required: false, default: 'dev' },
             { name: 'coverage_threshold', type: 'number', required: false, default: 80 },
@@ -282,21 +262,6 @@ describe('与 Mock Pipeline (Task 1.2) 互操作', () => {
         },
       ],
       stages: [{ name: 'unit_test', run: 'part.tester.run', deps: [] }],
-      expectations: [
-        {
-          name: 'must_use_zod',
-          probeRef: '@oxn/probe/ts-uses-import',
-          params: { file_pattern: 'src/api/**/*.ts' },
-          errMsg: '必须使用 Zod',
-        },
-      ],
-      rules: [
-        {
-          name: 'prod_requires_ha',
-          condition: 'prop.env != "prod" || prop.ha_enabled == true',
-          errMsg: '生产环境需开启 HA',
-        },
-      ],
     }
 
     expect(() => validateOxnAssemblyIR(ir)).not.toThrow()

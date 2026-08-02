@@ -74,7 +74,7 @@ describe('assertNameFileConsistent (NAME_FILE_MISMATCH 防御)', () => {
     expect(err.name).toBe('IAP_INTENT_NAME_FILE_MISMATCH')
     expect(err.axis).toBe('INTENT')
     expect(err.code).toBe('NAME_FILE_MISMATCH')
-    expect(err.action).toBe('YIELD_TO_HUMAN')
+    expect(String(err.action)).toBe('YIELD_TO_HUMAN')
     expect(err.message).toContain("'MemberContext'")
     expect(err.message).toContain("'foo-bar.md'")
     expect(err.context).toEqual({

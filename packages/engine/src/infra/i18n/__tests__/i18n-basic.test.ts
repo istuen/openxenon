@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { t, setLocale } from '../index'
 import i18next from 'i18next'
 
-// i18next is a global singleton; tests must run sequentially
-describe('i18n basic functionality', { concurrent: false }, () => {
+// i18next is a global singleton; tests must run sequentially (bun:test default: serial within file)
+describe('i18n basic functionality', () => {
   test('t() returns interpolated string for en key', () => {
     setLocale('en')
     const result = t('init.invalidLocale', { locale: 'x' })

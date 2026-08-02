@@ -20,9 +20,7 @@ import type {
   IOReadRequest,
   IOReadResult,
   IOStatRequest,
-  IOStatResult,
 } from '@openxenon/engine/kernel/contracts/io-primitive'
-import { probeListSubcommand } from '../commands/probe-list'
 
 function stubProvider(name: string, scheme: string): { provider: InfraProvider; manifest: ProviderManifest } {
   const provider: InfraProvider = {

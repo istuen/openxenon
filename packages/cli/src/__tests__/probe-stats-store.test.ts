@@ -11,7 +11,7 @@
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
@@ -79,8 +79,8 @@ describe('writeProbeStatsToFile', () => {
     expect(existsSync(path)).toBe(true)
     const r = readProbeStatsFromFile(path)
     expect(r).not.toBeNull()
-    expect(r?.probes['fs-exists'].totalCount).toBe(3)
-    expect(r?.probes['fs-exists'].targets['./dist/index.js'].consecutiveFails).toBe(1)
+    expect(r?.probes['fs-exists']?.totalCount).toBe(3)
+    expect(r?.probes['fs-exists']?.targets?.['./dist/index.js']?.consecutiveFails).toBe(1)
   })
 
   test('atomic write: no .tmp residue after success', () => {
@@ -133,6 +133,7 @@ function makeFrozen(
       probeName: p.probeName,
       ref: p.ref,
       passed: p.passed,
+      outcome: p.passed ? ('COMPLETED' as const) : ('DEVIATED' as const),
       output: p.params ? { outcome: { passed: p.passed, message: 'mock', params: p.params } } : undefined,
       durationMs: 1,
     })),
@@ -146,10 +147,10 @@ describe('updateProbeStats', () => {
       { probeName: 'p1', ref: '@oxn/probes/fs-exists', passed: true, params: { pattern: './dist/index.js' } },
     ])
     const r = initProbeStatsFromFrozen('/proj', frozen)
-    expect(r.probes['fs-exists'].totalCount).toBe(1)
-    expect(r.probes['fs-exists'].passCount).toBe(1)
-    expect(r.probes['fs-exists'].failCount).toBe(0)
-    expect(r.probes['fs-exists'].targets['./dist/index.js'].consecutiveFails).toBe(0)
+    expect(r.probes['fs-exists']?.totalCount).toBe(1)
+    expect(r.probes['fs-exists']?.passCount).toBe(1)
+    expect(r.probes['fs-exists']?.failCount).toBe(0)
+    expect(r.probes['fs-exists']?.targets?.['./dist/index.js']?.consecutiveFails).toBe(0)
     expect(r.proofRuns.length).toBe(1)
     expect(r.proofRuns[0]?.outcome).toBe('COMPLETED')
   })
@@ -169,11 +170,11 @@ describe('updateProbeStats', () => {
     s = updateProbeStats(s, frozen2)
     s = updateProbeStats(s, frozen3)
 
-    expect(s.probes['fs-exists'].totalCount).toBe(3)
-    expect(s.probes['fs-exists'].passCount).toBe(1)
-    expect(s.probes['fs-exists'].failCount).toBe(2)
+    expect(s.probes['fs-exists']?.totalCount).toBe(3)
+    expect(s.probes['fs-exists']?.passCount).toBe(1)
+    expect(s.probes['fs-exists']?.failCount).toBe(2)
     // 连续 2 失败后 1 成功 → 清零
-    expect(s.probes['fs-exists'].targets['./missing.js'].consecutiveFails).toBe(0)
+    expect(s.probes['fs-exists']?.targets?.['./missing.js']?.consecutiveFails).toBe(0)
   })
 
   test('FIFO 截断 proofRuns', async () => {
@@ -197,7 +198,7 @@ describe('updateProbeStats', () => {
     ])
     const s = initProbeStatsFromFrozen('/p', frozen)
     expect(s.probes['shell-exec']).toBeDefined()
-    expect(s.probes['shell-exec'].targets['bun test']).toBeDefined()
+    expect(s.probes['shell-exec']?.targets?.['bun test']).toBeDefined()
   })
 
   test('不可变性：不修改入参', () => {

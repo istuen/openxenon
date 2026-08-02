@@ -63,8 +63,6 @@ export {
   type DomainStackEntry,
   type BlueprintCategory,
   type BlueprintIR,
-  type BlueprintProp,
-  type BlueprintSlot,
   type WorkCategory,
   type WorkIR,
   type WorkContext,

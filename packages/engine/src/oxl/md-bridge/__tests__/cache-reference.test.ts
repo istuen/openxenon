@@ -6,7 +6,7 @@
 
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test'
 import { join } from 'node:path'
-import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 
 // ========================

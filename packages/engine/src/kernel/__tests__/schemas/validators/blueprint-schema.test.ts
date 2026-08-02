@@ -156,7 +156,7 @@ describe('validatePartTemplates (@deprecated)', () => {
       id: 'test',
       action: { instruction: 'echo {{params.output}}' },
     }
-    const result = validatePartTemplates(part)
+    const result = validatePartTemplates(part as never)
     expect(result.valid).toBe(true)
     expect(result.errors).toEqual([])
   })
@@ -166,7 +166,7 @@ describe('validatePartTemplates (@deprecated)', () => {
       id: 'test',
       action: { instruction: 'echo {{env.API_KEY}}' },
     }
-    const result = validatePartTemplates(part)
+    const result = validatePartTemplates(part as never)
     expect(result.valid).toBe(false)
     expect(result.errors).toContain('action 模板禁止使用 env.* 变量')
   })
@@ -176,7 +176,7 @@ describe('validatePartTemplates (@deprecated)', () => {
       id: 'test',
       action: { instruction: 'echo {{unknown.var}}' },
     }
-    const result = validatePartTemplates(part)
+    const result = validatePartTemplates(part as never)
     expect(result.valid).toBe(false)
   })
 })

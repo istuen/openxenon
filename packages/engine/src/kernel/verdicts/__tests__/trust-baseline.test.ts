@@ -35,7 +35,6 @@ describe('TRUST_BASELINE 配置契约', () => {
 
   it('Object.freeze 后修改抛错（开发态）', () => {
     expect(() => {
-      // @ts-expect-error - 故意违反 readonly 测运行时行为
       ;(TRUST_BASELINE as { waf_detected?: string }).waf_detected = 'YELLOW'
     }).toThrow()
   })

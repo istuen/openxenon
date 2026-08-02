@@ -15,25 +15,21 @@ import {
   resolveTemplateString,
 } from '@openxenon/engine/oxl/compiler/oxn-adapter'
 
-function _createAbstractPart(params: {
-  name: string
-  implements?: string
-  params?: Record<string, unknown>
-}): OxnAssemblyPart {
-  return { name: params.name, description: undefined, props: [], probes: [], execution: [] }
-}
 function createConcretePart(params: {
   name: string
   props?: OxnAssemblyPart['props']
   probes?: OxnAssemblyPart['probes']
   execution?: string[]
+  deps?: string[]
+  description?: string
 }): OxnAssemblyPart {
   return {
     name: params.name,
-    description: undefined,
+    description: params.description,
     props: params.props || [],
     probes: params.probes || [],
     execution: params.execution || [],
+    deps: params.deps ?? [],
   }
 }
 
@@ -78,7 +74,6 @@ describe('adaptConcretePart', () => {
   test('具象零件转换，参数和探针正确', () => {
     const part = createConcretePart({
       name: 'jest-runner',
-      implements: 'test-runner',
       description: 'Jest 测试执行器',
       props: [
         { name: 'target_env', type: 'string', required: false, default: 'dev' },
@@ -98,15 +93,19 @@ describe('adaptConcretePart', () => {
     })
 
     const resolvedParams = { target_env: 'prod', coverage_threshold: 95 }
-    const frozenPart = adaptConcretePart(part, resolvedParams)
+    const frozenPart = adaptConcretePart(part, resolvedParams, {
+      taskId: 't1',
+      taskName: 'test-task',
+      boundary: 'design',
+    })
 
     expect(frozenPart.id).toBe('jest-runner')
-    expect(frozenPart.params.target_env).toBe('prod')
-    expect(frozenPart.params.coverage_threshold).toBe(95)
+    expect(frozenPart.params?.target_env).toBe('prod')
+    expect(frozenPart.params?.coverage_threshold).toBe(95)
     expect(frozenPart.probes).toHaveLength(1)
-    expect(frozenPart.probes[0].type).toBe('shell_exec')
-    expect(frozenPart.probes[0].params.command).toContain('coverage=95')
-    expect(frozenPart.probes[0].params.timeout).toBe(60000)
+    expect(frozenPart.probes?.[0]?.type).toBe('shell_exec')
+    expect(frozenPart.probes?.[0]?.params?.command).toContain('coverage=95')
+    expect(frozenPart.probes?.[0]?.params?.timeout).toBe(60000)
   })
 
   test('使用 prop 默认值填充未传入的参数', () => {
@@ -115,8 +114,8 @@ describe('adaptConcretePart', () => {
       props: [{ name: 'timeout', type: 'number', required: false, default: 30000 }],
     })
 
-    const frozenPart = adaptConcretePart(part, {})
-    expect(frozenPart.params.timeout).toBe(30000)
+    const frozenPart = adaptConcretePart(part, {}, { taskId: 't1', taskName: 'test-task', boundary: 'design' })
+    expect(frozenPart.params?.timeout).toBe(30000)
   })
 
   test('required 参数缺失抛异常', () => {
@@ -125,7 +124,9 @@ describe('adaptConcretePart', () => {
       props: [{ name: 'api_key', type: 'string', required: true }],
     })
 
-    expect(() => adaptConcretePart(part, {})).toThrow('api_key')
+    expect(() => adaptConcretePart(part, {}, { taskId: 't1', taskName: 'test-task', boundary: 'design' })).toThrow(
+      'api_key',
+    )
   })
 })
 
@@ -162,12 +163,15 @@ describe('OxnKernelAdapter', () => {
       }),
     )
 
-    ir.slots = [{ name: 'tester', deps: [] }]
-    ir.expectations = []
-    ir.rules = []
+    ir.slots = [{ name: 'tester', deps: [], observe: [], isMulti: false }]
 
     const slotBindings: OxnAssemblySlotBinding[] = [
-      { slot: 'tester', ref: '@prj/parts/jest-runner', props: { target_env: 'prod', coverage_threshold: 90 } },
+      {
+        slot: 'tester',
+        ref: '@prj/parts/jest-runner',
+        props: { target_env: 'prod', coverage_threshold: 90 },
+        probeBindings: [],
+      },
     ]
 
     return { ir, slotBindings }
@@ -192,32 +196,37 @@ describe('OxnKernelAdapter', () => {
 
   test('FrozenPart 参数正确', () => {
     const ir = createOxnAssemblyIR({ id: 'test', name: 'test' })
-    ir.slots = [{ name: 'tester', deps: [] }]
+    ir.slots = [{ name: 'tester', deps: [], observe: [], isMulti: false }]
     ir.concreteParts.push(
       createConcretePart({
         name: 'jest-runner',
         props: [
-          { name: 'target_env', type: 'string' },
-          { name: 'coverage_threshold', type: 'number', default: 80 },
+          { name: 'target_env', type: 'string', required: false },
+          { name: 'coverage_threshold', type: 'number', required: false, default: 80 },
         ],
       }),
     )
 
     const slotBindings: OxnAssemblySlotBinding[] = [
-      { slot: 'tester', ref: '@prj/parts/jest-runner', props: { target_env: 'prod' } },
+      {
+        slot: 'tester',
+        ref: '@prj/parts/jest-runner',
+        props: { target_env: 'prod' },
+        probeBindings: [],
+      },
     ]
 
     const result = adapter.adapt(ir, slotBindings)
     const part = result.frozen.parts[0]!
-    expect(part.params.coverage_threshold).toBe(80)
+    expect(part.params?.coverage_threshold).toBe(80)
   })
 
-  test('adaptStrict 在有 warnings 时抛异常', () => {
+  test('adaptStrict 在有 warnings 时抛异常（重复 part）', () => {
     const ir = createOxnAssemblyIR({ id: 'test', name: 'test' })
-    ir.blueprintParts.push(createConcretePart({ name: 'build', deps: [], execution: ['build'] }))
-    ir.blueprintParts.push(createConcretePart({ name: 'test', deps: ['build'], execution: ['test'] }))
-    // DAG has multiple entry nodes (no deps between build and test) → should throw
-    expect(() => adapter.adaptStrict(ir, [])).toThrow(/DAG/)
+    // 重复 blueprintPart name → adapt 内部会 push warning
+    ir.blueprintParts.push(createConcretePart({ name: 'dup', execution: ['run'] }))
+    ir.blueprintParts.push(createConcretePart({ name: 'dup', execution: ['run'] }))
+    expect(() => adapter.adaptStrict(ir, [])).toThrow(/warnings/i)
   })
 
   test('FrozenBlueprint 通过终态 schema 校验', () => {
@@ -240,9 +249,9 @@ describe('OxnKernelAdapter', () => {
     ir.concreteParts.push(createConcretePart({ name: 'test', execution: ['test'] }))
     ir.concreteParts.push(createConcretePart({ name: 'deploy', execution: ['deploy'] }))
     ir.slots = [
-      { name: 'build', deps: [] },
-      { name: 'test', deps: ['build'] },
-      { name: 'deploy', deps: ['test'] },
+      { name: 'build', deps: [], observe: [], isMulti: false },
+      { name: 'test', deps: ['build'], observe: [], isMulti: false },
+      { name: 'deploy', deps: ['test'], observe: [], isMulti: false },
     ]
 
     const slotBindings: OxnAssemblySlotBinding[] = []

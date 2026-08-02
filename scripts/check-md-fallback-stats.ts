@@ -93,8 +93,10 @@ function main() {
 
   console.log('=== v0.6.1 PR-3 .oxn fallback stats (INFO) ===')
   for (const s of stats) {
-    const ratio = s.mdCount > 0 ? (s.oxnCount / (s.oxnCount + s.mdCount) * 100).toFixed(1) : '0.0'
-    console.log(`  ${s.kind.padEnd(10)} : ${String(s.oxnCount).padStart(3)} .oxn / ${String(s.mdCount).padStart(3)} .md  (${ratio}% legacy remaining)`)
+    const ratio = s.mdCount > 0 ? ((s.oxnCount / (s.oxnCount + s.mdCount)) * 100).toFixed(1) : '0.0'
+    console.log(
+      `  ${s.kind.padEnd(10)} : ${String(s.oxnCount).padStart(3)} .oxn / ${String(s.mdCount).padStart(3)} .md  (${ratio}% legacy remaining)`,
+    )
   }
   console.log('  ' + '-'.repeat(60))
   console.log(`  ${'TOTAL'.padEnd(10)} : ${String(totalOxn).padStart(3)} .oxn / ${String(totalMd).padStart(3)} .md`)
@@ -103,7 +105,9 @@ function main() {
   if (totalOxn === 0) {
     console.log('✓ Clean: no .oxn fallback files remain. v0.7.0 can proceed with git rm.')
   } else if (totalMd === 0) {
-    console.log('⚠ Warning: only .oxn files present. Run `oxn domain sync --all` and `oxn blueprint sync --all` to migrate.')
+    console.log(
+      '⚠ Warning: only .oxn files present. Run `oxn domain sync --all` and `oxn blueprint sync --all` to migrate.',
+    )
   } else {
     const ratio = (totalMd / (totalOxn + totalMd)) * 100
     console.log(`ℹ Migration progress: ${ratio.toFixed(1)}% converted to .md. v0.7.0 cutover planned.`)

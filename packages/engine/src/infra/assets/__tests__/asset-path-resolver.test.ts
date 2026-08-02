@@ -10,6 +10,7 @@ import {
   DEFAULT_ASSET_ROOT,
   DEFAULT_ASSET_DIRS,
 } from '../asset-path-resolver'
+import type { ProjectConfig } from '../../paths'
 
 let tmp: string
 
@@ -133,10 +134,10 @@ describe('migrateAssetsToV6Layout', () => {
     mkdirSync(fallback, { recursive: true })
     writeFileSync(join(fallback, 'dev.oxn'), 'blueprint "dev" {}')
 
-    const config = {
+    const config: ProjectConfig = {
       version: 1,
-      mode: 'PRODUCTION' as const,
-      assetFormat: 'oxn' as const,
+      mode: 'PRODUCTION',
+      assetFormat: 'oxn',
       autoSync: true,
     }
     const r = migrateAssetsToV6Layout(tmp, config, false)

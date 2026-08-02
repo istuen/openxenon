@@ -133,6 +133,7 @@ name: probe-wm
       taskName: 't-canonical',
       blueprintName: 'dev-workflow',
       assetFormat: 'md',
+      force: false,
     })
     const { readFileSync } = await import('node:fs')
     const written = readFileSync(result.path, 'utf-8')

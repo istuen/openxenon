@@ -127,7 +127,7 @@ describe('GitProvider', () => {
 
     const provider = makeProvider(tmpDir)
     const r = await provider.ioExec({ command: `feature:${baseBranch}` })
-    expect([0, 1]).toContain(r.result.exitCode)
+    expect([0, 1]).toContain(r.result.exitCode as number)
     // 不带 detached/shallow 干扰 → flags: []
     expect(r.interference.flags).toEqual([])
     // 防止 lint 抱怨 head 未用

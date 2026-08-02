@@ -24,6 +24,7 @@ function createConcretePart(params: {
     props: params.props || [],
     probes: params.probes || [],
     execution: params.execution || [],
+    deps: [],
   }
 }
 
@@ -51,7 +52,7 @@ describe('validateParamCoverage', () => {
     const result = validateParamCoverage(props, { api_key: 'sk-123' })
     expect(result.valid).toBe(false)
     expect(result.missing).toContain('region')
-    expect(result.errors[0].kind).toBe('missing_required')
+    expect(result.errors[0]?.kind).toBe('missing_required')
   })
 
   test('有 default 的 required → 豁免', () => {
@@ -89,14 +90,14 @@ describe('validateTypeConsistency', () => {
     const props = [{ name: 'coverage', type: 'number', required: false }]
     const result = validateTypeConsistency(props, { coverage: 'high' })
     expect(result.valid).toBe(false)
-    expect(result.errors[0].kind).toBe('type_mismatch')
+    expect(result.errors[0]?.kind).toBe('type_mismatch')
   })
 
   test('enum 越界', () => {
     const props = [{ name: 'env', type: 'enum("dev", "staging", "prod")', required: false }]
     const result = validateTypeConsistency(props, { env: 'testing' })
     expect(result.valid).toBe(false)
-    expect(result.errors[0].message).toContain('枚举')
+    expect(result.errors[0]?.message).toContain('枚举')
   })
 
   test('enum 合法值通过', () => {
@@ -152,8 +153,8 @@ describe('validateAbstractParamFields', () => {
     const part = createConcretePart({
       name: 'jest',
       props: [
-        { name: 'target_env', type: 'string' },
-        { name: 'coverage_threshold', type: 'number' },
+        { name: 'target_env', type: 'string', required: false },
+        { name: 'coverage_threshold', type: 'number', required: false },
       ],
     })
     const result = validateAbstractParamFields(['target_env', 'coverage_threshold'], part)
@@ -161,10 +162,13 @@ describe('validateAbstractParamFields', () => {
   })
 
   test('未知字段报错', () => {
-    const part = createConcretePart({ name: 'jest', props: [{ name: 'target_env', type: 'string' }] })
+    const part = createConcretePart({
+      name: 'jest',
+      props: [{ name: 'target_env', type: 'string', required: false }],
+    })
     const result = validateAbstractParamFields(['target_env', 'bad_field'], part)
     expect(result.valid).toBe(false)
-    expect(result.errors[0].message).toContain('bad_field')
+    expect(result.errors[0]?.message).toContain('bad_field')
   })
 })
 
@@ -206,7 +210,7 @@ describe('evaluatePartParams', () => {
     })
     const result = evaluatePartParams({ part, taskProps: {} })
     expect(result.valid).toBe(false)
-    expect(result.coverage.errors[0].kind).toBe('missing_required')
+    expect(result.coverage.errors[0]?.kind).toBe('missing_required')
   })
 
   test('类型不匹配 → valid=false', () => {
@@ -222,7 +226,7 @@ describe('evaluatePartParams', () => {
 describe('evaluateAllParts', () => {
   test('批量求值多个 parts', () => {
     const parts = [
-      createConcretePart({ name: 'build', props: [{ name: 'env', type: 'string' }] }),
+      createConcretePart({ name: 'build', props: [{ name: 'env', type: 'string', required: false }] }),
       createConcretePart({ name: 'test', props: [{ name: 'env', type: 'string', required: true }] }),
     ]
 

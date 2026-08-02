@@ -88,7 +88,7 @@ describe('RecoveryManager', () => {
     it('rolls back state.json to target recovery point', () => {
       recoveryManager.createRecoveryPoint(taskId, 'stage-1')
       const points = recoveryManager.getRecoveryPoints(taskId)
-      const targetId = points[0].id
+      const targetId = points[0]!.id
 
       writeFileSync(
         join(TEST_WORKDIR, '.openxenon', 'tasks', taskId, 'state.json'),

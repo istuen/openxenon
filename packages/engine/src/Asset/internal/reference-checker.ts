@@ -20,7 +20,7 @@
 import { readFileSync, readdirSync, existsSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
 import { resolveAssetDir, ALL_ASSET_KINDS } from '@openxenon/engine/infra/paths'
-import type { AssetKind } from '@openxenon/engine/infra/paths'
+import type { AssetKind, ProjectConfig } from '@openxenon/engine/infra/paths'
 import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 
 export interface AssetReferenceEntry {
@@ -33,14 +33,16 @@ export interface AssetReferenceEntry {
 /**
  * 扫所有 5 AssetKind 的 .md，提取 references[] 字段，
  * 返回反向引用索引：name → referencedBy[]
+ *
+ * v0.6.2-alpha.0 P0b fix: 接受 caller 传入的 config（避免重复 load + 避免 caller 缓存 config 与函数实际 load 的不一致）。
  */
-export function listAssetReferences(projectRoot: string): AssetReferenceEntry[] {
+export function listAssetReferences(projectRoot: string, config?: ProjectConfig | null): AssetReferenceEntry[] {
   const kinds: AssetKind[] = [...ALL_ASSET_KINDS]
   const nodes: Array<{ kind: AssetKind; name: string; references: string[] }> = []
-  const config = loadProjectConfig(projectRoot)
+  const cfg = config ?? loadProjectConfig(projectRoot)
 
   for (const kind of kinds) {
-    const dir = resolveAssetDir(projectRoot, kind, config)
+    const dir = resolveAssetDir(projectRoot, kind, cfg)
     if (!existsSync(dir)) continue
     const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
     for (const file of files) {
@@ -120,7 +122,7 @@ export function extractReferences(content: string): string[] {
   // .md syntax: - references: X 或 - references: [X, Y]
   // 注意: 不能匹配 multi-line YAML 的 continuation line (e.g. "- X")
   // 这里要求 references: 后的 value 是 inline 形式 (非 - 开头的 list item)
-  const mdMatch = content.match(/(?:^|\n)[ \t]*(?:- )?references[ \t]*:[ \t]*(\[[^\]]*\]|[^\n\-\[]+)\s*(?:\n|$)/m)
+  const mdMatch = content.match(/(?:^|\n)[ \t]*(?:- )?references[ \t]*:[ \t]*(\[[^\]]*\]|[^\n\-[]+)\s*(?:\n|$)/m)
   if (mdMatch?.[1]) {
     const value = mdMatch[1].trim()
     // Array format: [X, Y]

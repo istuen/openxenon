@@ -12,7 +12,7 @@
  * - 5 个 compiler import 时自动注册
  */
 
-import { describe, test, expect, beforeAll, afterEach } from 'bun:test'
+import { describe, test, expect } from 'bun:test'
 import {
   entityRegistry,
   getEntityCompiler,
@@ -49,7 +49,7 @@ describe('EntityRegistry 单例性', () => {
 describe('EntityRegistry 注册与获取', () => {
   // 创建 1 个 mock compiler 用于测试
   class MockCompiler implements EntityCompiler {
-    readonly entityType: IntentEntityType = 'mock'
+    readonly entityType: IntentEntityType = 'mock' as IntentEntityType
     compileCalled = 0
     parseCalled = 0
     validateCalled = 0
@@ -70,14 +70,14 @@ describe('EntityRegistry 注册与获取', () => {
   test('register 1 个 + get 返回同一对象', () => {
     const mock = new MockCompiler()
     registerEntityCompiler(mock)
-    const got = getEntityCompiler('mock')
+    const got = getEntityCompiler('mock' as IntentEntityType)
     expect(got).toBe(mock)
   })
 
   test('list 包含已注册 type', () => {
     registerEntityCompiler(new MockCompiler())
     const list = entityRegistry.list()
-    expect(list).toContain('mock')
+    expect(list).toContain('mock' as IntentEntityType)
   })
 
   test('get 未注册 type 抛 E_OXL_ENTITY_NOT_REGISTERED', () => {
@@ -111,7 +111,7 @@ describe('EntityRegistry 注册与获取', () => {
     const second = new MockCompiler()
     registerEntityCompiler(first)
     registerEntityCompiler(second)
-    const got = getEntityCompiler('mock')
+    const got = getEntityCompiler('mock' as IntentEntityType)
     expect(got).toBe(second) // 后注册覆盖
   })
 })
@@ -215,7 +215,7 @@ describe('EntityRegistry 测试隔离（最后）', () => {
       }
     }
     registerEntityCompiler(new TempCompiler())
-    expect(entityRegistry.list()).toContain('temp')
+    expect(entityRegistry.list()).toContain('temp' as IntentEntityType)
 
     if (process.env.NODE_ENV !== 'production') {
       entityRegistry._clearForTest()

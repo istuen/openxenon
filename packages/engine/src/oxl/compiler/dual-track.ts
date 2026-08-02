@@ -10,7 +10,7 @@ import { parse as parseYaml } from 'yaml'
 import { ensureDirectory } from '@openxenon/engine/infra/filesystem'
 import { preloadCompileDependencies } from '@openxenon/engine/infra/loader'
 import { compileBlueprint, compileFrozen } from '@openxenon/engine/oxl/compiler/blueprint-compiler'
-import { ASSEMBLY_JSON, BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, FROZEN_BLUEPRINT_JSON } from '@openxenon/engine/kernel'
 import type { Blueprint } from '@openxenon/engine/kernel'
 import type { FrozenBlueprint } from '@openxenon/engine/kernel'
 

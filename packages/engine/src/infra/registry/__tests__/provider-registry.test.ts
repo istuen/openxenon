@@ -26,7 +26,6 @@ import type {
   IOReadRequest,
   IOReadResult,
   IOStatRequest,
-  IOStatResult,
 } from '../../../kernel/contracts/io-primitive'
 
 let tmpDir: string
@@ -150,10 +149,7 @@ describe('ProviderRegistry', () => {
     )
 
     // bootstrapFromDisk 必须不抛错
-    let result: ReturnType<typeof reg.bootstrapFromDisk> | null = null
-    expect(() => {
-      result = reg.bootstrapFromDisk(registryJson, tmpDir)
-    }).not.toThrow()
+    const result = reg.bootstrapFromDisk(registryJson, tmpDir)
     expect(result).toEqual({ ok: 3, corrupted: 1, missing: 0 })
     expect(reg.getStatus('https://')).toBe('CORRUPTED')
   })
@@ -187,10 +183,7 @@ describe('ProviderRegistry', () => {
       }),
     )
 
-    let result: ReturnType<typeof reg.bootstrapFromDisk> | null = null
-    expect(() => {
-      result = reg.bootstrapFromDisk(registryJson, tmpDir)
-    }).not.toThrow()
+    const result = reg.bootstrapFromDisk(registryJson, tmpDir)
     expect(result).toEqual({ ok: 3, corrupted: 0, missing: 1 })
     expect(reg.getStatus('https://')).toBe('MISSING')
   })

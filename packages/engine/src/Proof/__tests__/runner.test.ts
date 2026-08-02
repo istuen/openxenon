@@ -10,12 +10,13 @@
 
 import { describe, expect, test } from 'bun:test'
 import { executeProbe } from '../runner'
-import { registerProbeHandler, type ProbeContext, type ProbeObservation } from '@openxenon/engine/infra/probes'
+import { registerProbeHandler, type ProbeObservation } from '@openxenon/engine/infra/probes'
+import type { ProbeContextBase } from '@openxenon/engine/kernel'
 
 describe('executeProbe — v0.7.3 P6: stackTools 透传', () => {
   test('context.stackTools 透传到 ProbeContext（mock handler 验证）', async () => {
-    let receivedCtx: ProbeContext | null = null
-    registerProbeHandler('p6-test-mock-stack', async (_params, ctx) => {
+    let receivedCtx: ProbeContextBase | null = null
+    registerProbeHandler('p6-test-mock-stack', async (_params: unknown, ctx: ProbeContextBase) => {
       receivedCtx = ctx
       const obs: ProbeObservation = { probeType: 'p6-test-mock-stack', executedAt: Date.now() }
       return obs
@@ -31,14 +32,14 @@ describe('executeProbe — v0.7.3 P6: stackTools 透传', () => {
       { projectRoot: '/tmp', stackTools },
     )
     expect(receivedCtx).not.toBeNull()
-    expect(receivedCtx?.stackTools).toHaveLength(2)
-    expect(receivedCtx?.stackTools?.[0]).toMatchObject({ name: 'bun', version: '1.3+' })
-    expect(receivedCtx?.stackTools?.[1]?.name).toBe('typescript')
+    expect(receivedCtx!.stackTools).toHaveLength(2)
+    expect(receivedCtx!.stackTools![0]).toMatchObject({ name: 'bun', version: '1.3+' })
+    expect(receivedCtx!.stackTools![1]!.name).toBe('typescript')
   })
 
   test('context 不含 stackTools → ProbeContext.stackTools 为 undefined（向后兼容）', async () => {
-    let receivedCtx: ProbeContext | null = null
-    registerProbeHandler('p6-test-mock-no-stack', async (_params, ctx) => {
+    let receivedCtx: ProbeContextBase | null = null
+    registerProbeHandler('p6-test-mock-no-stack', async (_params: unknown, ctx: ProbeContextBase) => {
       receivedCtx = ctx
       const obs: ProbeObservation = { probeType: 'p6-test-mock-no-stack', executedAt: Date.now() }
       return obs
@@ -49,12 +50,12 @@ describe('executeProbe — v0.7.3 P6: stackTools 透传', () => {
       { projectRoot: '/tmp' }, // 无 stackTools
     )
     expect(receivedCtx).not.toBeNull()
-    expect(receivedCtx?.stackTools).toBeUndefined()
+    expect(receivedCtx!.stackTools).toBeUndefined()
   })
 
   test('context.stackTools 为空数组 → 不注入 stackTools 字段', async () => {
-    let receivedCtx: ProbeContext | null = null
-    registerProbeHandler('p6-test-mock-empty-stack', async (_params, ctx) => {
+    let receivedCtx: ProbeContextBase | null = null
+    registerProbeHandler('p6-test-mock-empty-stack', async (_params: unknown, ctx: ProbeContextBase) => {
       receivedCtx = ctx
       const obs: ProbeObservation = { probeType: 'p6-test-mock-empty-stack', executedAt: Date.now() }
       return obs
@@ -64,12 +65,12 @@ describe('executeProbe — v0.7.3 P6: stackTools 透传', () => {
       { probeName: 'mock', ref: '@oxn/probes/p6-test-mock-empty-stack', params: {} },
       { projectRoot: '/tmp', stackTools: [] },
     )
-    expect(receivedCtx?.stackTools).toBeUndefined()
+    expect(receivedCtx!.stackTools).toBeUndefined()
   })
 
   test('context 含 projectRoot → ProbeContext.projectRoot 等值', async () => {
-    let receivedCtx: ProbeContext | null = null
-    registerProbeHandler('p6-test-mock-proot', async (_params, ctx) => {
+    let receivedCtx: ProbeContextBase | null = null
+    registerProbeHandler('p6-test-mock-proot', async (_params: unknown, ctx: ProbeContextBase) => {
       receivedCtx = ctx
       const obs: ProbeObservation = { probeType: 'p6-test-mock-proot', executedAt: Date.now() }
       return obs
@@ -79,6 +80,6 @@ describe('executeProbe — v0.7.3 P6: stackTools 透传', () => {
       { probeName: 'mock', ref: '@oxn/probes/p6-test-mock-proot', params: {} },
       { projectRoot: '/custom/path', stackTools: [{ name: 'bun' }] },
     )
-    expect(receivedCtx?.projectRoot).toBe('/custom/path')
+    expect(receivedCtx!.projectRoot).toBe('/custom/path')
   })
 })

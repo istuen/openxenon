@@ -10,7 +10,7 @@
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { outputUserInputError, outputError } from '../commands/output'
+import { outputUserInputError } from '../commands/output'
 
 describe('outputUserInputError (Phase 4)', () => {
   let exitCode: number | null = null

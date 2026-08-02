@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { IAPError, IAPAction } from '../../../kernel/contracts/iap-error.js'
+import { IAPError } from '../../../kernel/contracts/iap-error.js'
 import { parseMdRef, kindToScope, type MdRef } from '../parse-md-ref.js'
 
 describe('parseMdRef — v0.6.1 PR-2 (D-γ b)', () => {
@@ -53,7 +53,7 @@ describe('parseMdRef — v0.6.1 PR-2 (D-γ b)', () => {
         const err = e as IAPError
         expect(err.code).toBe('REFERENCE_PREFIX_INVALID')
         expect(err.axis).toBe('INTENT')
-        expect(err.action).toBe(IAPAction.AUTONOMOUS_RETRY)
+        expect(String(err.action)).toBe('AUTONOMOUS_RETRY')
         expect(err.context?.raw).toBe('dev-workflow')
       }
     })

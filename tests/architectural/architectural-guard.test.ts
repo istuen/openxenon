@@ -6,8 +6,6 @@ import { join } from 'path'
 const PROJECT_ROOT = join(import.meta.dir, '../..')
 const KERNEL_ROOT = join(PROJECT_ROOT, 'packages/engine/src/kernel')
 const OXL_ROOT = join(PROJECT_ROOT, 'packages/engine/src/oxl')
-const INFRA_ROOT = join(PROJECT_ROOT, 'packages/engine/src/infra')
-const CLI_ROOT = join(PROJECT_ROOT, 'src/cli')
 
 describe('Kernel Architectural Guard', () => {
   describe('L0 Kernel 不应导入 L1/L2/L3 模块', () => {

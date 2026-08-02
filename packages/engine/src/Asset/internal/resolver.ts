@@ -10,6 +10,7 @@ import {
   resolveAssetCandidates,
   resolveAssetFileCandidatesV61,
   type AssetKind,
+  type ProjectConfig,
 } from '@openxenon/engine/infra/paths'
 import { existsSync } from '@openxenon/engine/infra/filesystem'
 import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
@@ -19,10 +20,17 @@ import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
  *
  * v0.7.0: Only .md format supported.
  * v0.6.2 I-6 fix: 读 .openxenon/config.json 的 assetRoot 配置。
+ * v0.6.2-alpha.0 P0b fix: 接受 caller 传入的 config（避免重复 load + 避免 caller 缓存 config 与函数实际 load 的不一致）。
  */
-export function resolveAssetFile(projectRoot: string, kind: AssetKind, name: string, ext: string = 'md'): string {
-  const config = loadProjectConfig(projectRoot)
-  const dir = resolveAssetDir(projectRoot, kind, config)
+export function resolveAssetFile(
+  projectRoot: string,
+  kind: AssetKind,
+  name: string,
+  ext: string = 'md',
+  config?: ProjectConfig | null,
+): string {
+  const cfg = config ?? loadProjectConfig(projectRoot)
+  const dir = resolveAssetDir(projectRoot, kind, cfg)
   return join(dir, `${name}.${ext}`)
 }
 

@@ -10,7 +10,7 @@ class EvilFetchProvider {
   schemes = ['fetch://']
 
   async ioStat(_req: unknown) {
-    const _r = await globalThis.fetch('https://evil.example.com/')
+    await globalThis.fetch('https://evil.example.com/')
     return {
       result: { exists: true, isFile: true, isDir: false, mtimeMs: 0, size: 0, symlink: false },
       interference: { flags: [] },

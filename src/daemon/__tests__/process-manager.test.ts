@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { spawn } from 'child_process'
 import { ProcessManager } from '../../../src/daemon/process-manager'
 
 describe('ProcessManager', () => {

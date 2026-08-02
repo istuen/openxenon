@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "rootDir": "./src",
     "baseUrl": ".",
     "paths": {
       "@openxenon/engine": ["../engine/src/index"],

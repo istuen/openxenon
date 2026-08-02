@@ -236,7 +236,7 @@ outcome: PASSED
         content: validDomainMd,
       })
 
-      expect(result.meta).toBe(result.frozen.parts[0]?._xenon_meta)
+      expect(result.meta).toBe(result.frozen.parts[0]?._xenon_meta as typeof result.meta)
     })
 
     test('frozen.frozen_at 存在（Blueprint 级）', () => {

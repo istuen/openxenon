@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
-import { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } from 'fs'
+import { mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
-import { runWork, nextRoundWork, getRoundStatus, type WorkspaceState } from '../../dual-state-exec'
+import { runWork, nextRoundWork, getRoundStatus } from '../../dual-state-exec'
 import { loadWorkState } from '../../dual-state-io'
-import { BOUNDARY_DIR, WORK_OXN_FILE, WORK_FILE } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, WORK_OXN_FILE } from '@openxenon/engine/kernel'
 
 let tmp: string
 

@@ -91,7 +91,7 @@ export default defineConfig({
     // adrs/*.md 引同目录 *.md（VitePress 解析为 .html 而原始 .md 可能消失）
     /^\.\.\/\d{4}-[a-z0-9-]+\.md$/,
     // ADR 历史引用 docs/{product,dev}/*.md（裸目录引用）
-    /\.\.+\/docs\/(product|dev)\/[a-z\-]+\//,
+    /\.\.+\/docs\/(product|dev)\/[a-z-]+\//,
     // ADR 历史引用 .openxenon/assets/{domains,workflows,stack,roadmaps,blueprints}/*.md
     /^\.\.\/\.\.\/assets\//,
     // ADR 中相对路径含 /assets/ 子串（adrs 镜像后路径错误，无 .openxenon/ 前缀）

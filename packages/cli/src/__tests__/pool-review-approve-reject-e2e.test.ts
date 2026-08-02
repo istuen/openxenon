@@ -12,17 +12,7 @@
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'fs'
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
@@ -300,7 +290,6 @@ describe('oxn pool review/approve/reject (v0.5 PR-D)', () => {
     expect(outer.data.path).toMatch(/pools\/audit\/add-invariant-c99-testdomain-\d+\.md$/)
 
     // 验证 audit entry 内容
-    const _base = realpathSync(tmpDir)
     const mdPath = outer.data.path
     const mdContent = readFileSync(mdPath, 'utf-8')
     expect(mdContent).toContain('C99: from insight test')

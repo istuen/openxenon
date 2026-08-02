@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { CircuitBreaker, type CircuitBreakerConfig } from '../../../src/daemon/circuit-breaker'
+import { beforeEach, describe, expect, it } from 'bun:test'
+import { CircuitBreaker } from '../../../src/daemon/circuit-breaker'
 
 // 5ms reset window keeps wall-time low while still exercising the actual
 // setTimeout in trip().  1100ms (the prior value) was spending 4×~1.1s = 4.4s

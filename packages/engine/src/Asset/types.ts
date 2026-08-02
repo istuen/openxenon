@@ -152,3 +152,99 @@ export interface EvolveResult {
   evolvedAt: string
   message: string
 }
+
+// =============================================================================
+// v0.6.2-alpha.0 I-5b: Asset Diff use case
+// =============================================================================
+
+export interface DiffInput {
+  kind: AssetKind
+  name: string
+  projectRoot: string
+  /** 'unified'（默认）或 'json'（结构化差异） */
+  format?: 'unified' | 'json'
+}
+
+export interface DiffResult {
+  ok: boolean
+  /** 项目 Asset 是否覆盖了 builtin 默认 */
+  hasOverride: boolean
+  /** builtin 是否存在对应默认 Asset */
+  hasBuiltin: boolean
+  /** 'unified' 模式为文本 diff 字符串；'json' 模式为结构化对象 */
+  diff: string | object
+  message: string
+}
+
+// =============================================================================
+// v0.6.2-alpha.0 I-5b: Asset Migrate use case
+// =============================================================================
+
+export interface MigrateInput {
+  kind: AssetKind
+  name: string
+  /** 目标 schema 版本号 (semver) */
+  targetVersion: string
+  projectRoot: string
+}
+
+export interface MigrateResult {
+  ok: boolean
+  /** 幂等操作（资产已在目标版本） */
+  idempotent: boolean
+  oldVersion: string
+  newVersion: string
+  message: string
+  /** 迁移后 .md 路径 */
+  path: string
+}
+
+// =============================================================================
+// v0.6.2-alpha.0 I-5: Asset Tree use case
+// =============================================================================
+
+export interface TreeInput {
+  projectRoot: string
+  /** 默认 3（防止循环引用栈溢出） */
+  depth?: number
+  /** 'forward'（默认） | 'reverse' | 'both' */
+  direction?: 'forward' | 'reverse' | 'both'
+  /** 指定 root 节点；不指定则用"无 referencedBy"的节点集合 */
+  root?: { kind: AssetKind; name: string }
+}
+
+export interface TreeNode {
+  kind: AssetKind
+  name: string
+  /** 该 Asset 引用的其他 Asset 名列表 */
+  references: string[]
+  /** 引用该 Asset 的 (kind, name) 列表 */
+  referencedBy: Array<{ kind: AssetKind; name: string }>
+}
+
+export interface TreeResult {
+  ok: boolean
+  nodes: TreeNode[]
+  /** 人类可读的文本树 */
+  humanTree: string
+  message: string
+}
+
+// =============================================================================
+// v0.6.2-alpha.0 I-5: Asset Unarchive use case（archive 的反向操作）
+// =============================================================================
+
+export interface UnarchiveInput {
+  kind: AssetKind
+  name: string
+  projectRoot: string
+}
+
+export interface UnarchiveResult {
+  ok: boolean
+  /** 幂等操作（资产不在归档状态） */
+  idempotent: boolean
+  message: string
+  /** 还原后 .md 路径（idempotent 时为空字符串） */
+  restoredPath: string
+}

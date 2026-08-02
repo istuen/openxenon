@@ -87,12 +87,7 @@ function main() {
 
   for (const file of newFiles) {
     // 跳过非扫描范围
-    if (
-      !file.endsWith('.ts') &&
-      !file.endsWith('.tsx') &&
-      !file.endsWith('.js') &&
-      !file.endsWith('.mjs')
-    ) {
+    if (!file.endsWith('.ts') && !file.endsWith('.tsx') && !file.endsWith('.js') && !file.endsWith('.mjs')) {
       continue
     }
     if (file.includes('node_modules')) continue

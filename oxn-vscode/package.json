@@ -36,7 +36,9 @@
       {
         "scopeName": "markdown.intent.extensions.oxn",
         "path": "./syntaxes/oxn-intent.tmLanguage.json",
-        "injectTo": ["text.html.markdown"]
+        "injectTo": [
+          "text.html.markdown"
+        ]
       }
     ]
   }

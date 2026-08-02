@@ -159,17 +159,11 @@ describe('buildWorkContext — v0.7.3 P1: BlueprintIR + Domain language 注入',
   const workName = 'bp-work'
 
   function setupWithBlueprints(opts: {
-    workDomainsRef?: string
     blueprintDomainName?: string
     blueprintDomainContent?: string
     includeBlueprintsJson?: boolean
   }): void {
-    const {
-      workDomainsRef = 'TrustChain',
-      blueprintDomainName = 'TrustChain',
-      blueprintDomainContent = '',
-      includeBlueprintsJson = true,
-    } = opts
+    const { blueprintDomainName = 'TrustChain', blueprintDomainContent = '', includeBlueprintsJson = true } = opts
     const workDir = join(tmpDir, '.openxenon', 'works', workName)
     mkdirSync(workDir, { recursive: true })
 
@@ -402,7 +396,7 @@ describe('buildTermViews — v0.7.3 P3: D1+D2 term 视图聚合', () => {
       scope: '@prj',
       ref: '@prj/domains/empty-domain',
       fileHash: 'a'.repeat(64),
-      language: null,
+      language: undefined,
     }
     const result = buildTermViews(main, [bgNoLang], { maxBackgroundFull: 3 })
     expect(result.termViews).toHaveLength(1)

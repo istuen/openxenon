@@ -23,7 +23,6 @@ import type {
   IOReadRequest,
   IOReadResult,
   IOStatRequest,
-  IOStatResult,
 } from '@openxenon/engine/kernel/contracts/io-primitive'
 import { workPrecheck } from '@openxenon/engine/Work/work-precheck'
 

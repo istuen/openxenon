@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
+import { existsSync, readdirSync, readFileSync } from 'fs'
 import { join } from 'path'
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@openxenon/engine/infra/i18n/locale'
 import { getSkillContent, getAllSkillsForLocale } from '../../skills/loader'

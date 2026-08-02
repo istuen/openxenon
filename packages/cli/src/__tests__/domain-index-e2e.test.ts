@@ -5,7 +5,7 @@
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs'
+import { existsSync, mkdtempSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
@@ -48,8 +48,6 @@ async function initProject(): Promise<void> {
 describe('oxn domain index (PR-1)', () => {
   test('init 不会强制建索引（无 domains/ 目录时不建文件）', async () => {
     await initProject()
-    const cacheDir = join(tmpDir, '.openxenon', '.cache')
-    const _indexPath = join(cacheDir, 'domains.json')
     // 没创建任何 domain → 索引可能不建（autoRebuild 静默跳过）
     // 但 init 消息应明确说出 "no domains yet"
     const { stdout } = await runCli(['init'])

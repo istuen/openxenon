@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { mkdir, readdir, readFile, writeFile } from 'fs/promises'
 import { rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'

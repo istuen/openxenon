@@ -321,7 +321,9 @@ describe('work migrate diagnostics（PR-14d）', () => {
 
     const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
-    const bpDiag = r.data.diagnostics.find((d) => d.type === 'blueprint' && d.ref === '@prj/blueprints/blueprint-x')
+    const bpDiag = r.data.diagnostics.find(
+      (d: { type: string; ref?: string }) => d.type === 'blueprint' && d.ref === '@prj/blueprints/blueprint-x',
+    )
     expect(bpDiag).toBeDefined()
     expect(bpDiag.severity).toBe('warn')
     expect(bpDiag.code).toBe('OXN_WORK_REFS_UNRESOLVED')
@@ -345,7 +347,7 @@ describe('work migrate diagnostics（PR-14d）', () => {
 
     const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
-    const bpDiags = r.data.diagnostics.filter((d) => d.type === 'blueprint')
+    const bpDiags = r.data.diagnostics.filter((d: { type: string }) => d.type === 'blueprint')
     expect(bpDiags.length).toBeGreaterThanOrEqual(1)
   })
 

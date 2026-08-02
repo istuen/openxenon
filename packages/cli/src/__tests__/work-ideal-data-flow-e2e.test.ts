@@ -10,8 +10,7 @@
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs'
-import { tmpdir } from 'os'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { setupCliEnv, type CliEnv } from './helpers/run-cli'
 
@@ -43,10 +42,7 @@ async function setupWorkFixture(opts: SetupOpts = {}): Promise<void> {
 
   // 复制项目根目录的 .openxenon/assets/blueprints + assets/domains + assets/stack
   // 让 E2E 跑真实 oxn-blueprint + 真实 domains + 真实 stack
-  const realAssets = join(env.tmpDir, '..', '..', '..', '..', '.openxenon', 'assets')
-  // 上面这一招不对路径不可靠；改用绝对路径 cwd 推断
-  // 由于 env.tmpDir 在 /tmp/oxn-cli-e2e-<ts>-<rand> 下，而 cwd 是项目根
-  // 直接从 process.cwd() 取项目根 → .openxenon/assets
+  // 直接从 process.cwd() 取项目根 → .openxenon/assets（env.tmpDir 路径推导不可靠）
   const projectRoot = process.cwd()
   const assetsRoot = join(projectRoot, '.openxenon', 'assets')
   const targetAssetsRoot = join(env.tmpDir, '.openxenon', 'assets')
@@ -251,10 +247,9 @@ describe('P6 (D5) — Stack.tools runtime injection to context', () => {
     await setupWorkFixture({})
     // 先 validate（让 blueprintIR 写入）
     await env.runCli(['work', 'validate', 'p457-fixture'])
-    const r = await env.runCli(['work', 'context', 'p457-fixture', '--task', 'step1', '--context-mode', 'full'])
+    await env.runCli(['work', 'context', 'p457-fixture', '--task', 'step1', '--context-mode', 'full'])
     // 不论 lock 与否，context 应输出；可能因 lock-not-found 退出非 0
     // 我们只关心 human 输出中是否有 Stack Tools 段
-    const allOut = r.stdout + r.stderr
     // 由于 work-context-builder 自身不依赖 lock（lockCheck=false on work.context 时由 CLI 处理）
     // 但我们的 CLI 在 work context 里仍然校验 planLock，可能导致 OXN_ALIGN_LOCK_NOT_FOUND
     // 这里我们检查 stderr/stdout 任一是否含 "Stack Tools"

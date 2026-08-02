@@ -8,12 +8,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
-import { mkdirSync, rmSync, writeFileSync, existsSync } from 'fs'
+import { mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
-import { runWork, submitTask, resetCurrentRoundTasks } from '../dual-state-exec'
-import { loadWorkState } from '../dual-state-io'
+import { runWork, resetCurrentRoundTasks } from '../dual-state-exec'
 import { BOUNDARY_DIR, WORK_OXN_FILE } from '@openxenon/engine/kernel'
 
 let tmp: string
@@ -61,7 +60,7 @@ describe('runWork re-runnable (Phase A.1)', () => {
     resetCurrentRoundTasks(state)
 
     expect(state.tasks[0]?.status).toBe('passed') // passed 保留
-    expect(state.tasks[1]?.status).toBe('pending') // failed → pending
+    expect(state.tasks[1]?.status as string).toBe('pending') // failed → pending
   })
 
   it('second runWork on running state is allowed (no OXN_WORK_ALREADY_EXISTS)', () => {

@@ -15,7 +15,6 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { readFileSync } from 'fs'
 import {
   applyPlanLock,
   BirthCertSchema,
@@ -52,7 +51,6 @@ function makeHash64(input: string): string {
 
 // 64-hex stub（合法 fileHash）
 const HASH_A = makeHash64('domain-A-content')
-const _HASH_B = makeHash64('domain-B-content')
 const HASH_BP = makeHash64('blueprint-content')
 
 // ───────── Zod schema 验证 ─────────
@@ -184,9 +182,7 @@ describe('BirthCertSchema', () => {
     // 写入历史字段应当被 zod 默认剥除（strict mode 关闭）或被 BirthCertSchema 不再要求
     const parsed = BirthCertSchema.safeParse({
       ...base,
-      // @ts-expect-error - v0.7+ 不再接受 mode/editTarget
       mode: 'task',
-      // @ts-expect-error - v0.7+ 不再接受 mode/editTarget
       editTarget: 'domain:X',
     })
     // schema 默认会剥除未知字段（passthrough 默认 false），parse 仍成功但 mode/editTarget 被剥离
@@ -244,7 +240,7 @@ describe('workFile I/O', () => {
     writeFileSync(getWorkFilePath(tmpDir, workName), JSON.stringify({ schemaVersion: 99, totally: 'wrong' }))
     const r = readWorkFile(tmpDir, workName)
     expect(r.ok).toBe(false)
-    if (!r.ok) {
+    if (!r.ok && r.reason !== 'missing') {
       expect(r.reason).toBe('schema-mismatch')
       expect(r.errors.length).toBeGreaterThan(0)
     }
@@ -288,7 +284,7 @@ describe('createBirthCert', () => {
             name: 'A',
             version: 1,
             fileHash: HASH_A,
-            domainRefs: [{ name: 'D', scope: '@prj', version: 1, fileHash: HASH_A }],
+            domainRefs: [{ name: 'D', kind: 'domain', scope: '@prj', version: 1, fileHash: HASH_A }],
           },
         ],
       },

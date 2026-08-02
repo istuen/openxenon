@@ -498,7 +498,7 @@ name: step1
       const err = e as IAPError
       expect(err.code).toBe('PROBE_OUT_OF_BOUNDARY')
       expect(err.axis).toBe('INTENT')
-      expect(err.action).toBe('YIELD_TO_HUMAN')
+      expect(String(err.action)).toBe('YIELD_TO_HUMAN')
       expect((err.context as { violations?: unknown[] }).violations).toBeDefined()
     }
   })
@@ -879,7 +879,7 @@ describe('collectAndThrowDagClosureViolations — v0.7.3 P5', () => {
       expect(err.name).toBe('IAP_INTENT_TASK_DAG_VIOLATES_SLOT')
       expect(err.code).toBe('TASK_DAG_VIOLATES_SLOT')
       expect(err.axis).toBe('INTENT')
-      expect(err.action).toBe('YIELD_TO_HUMAN')
+      expect(String(err.action)).toBe('YIELD_TO_HUMAN')
       const ctx = err.context as { violations: Array<{ taskName: string; depName: string }> }
       expect(ctx.violations).toHaveLength(1)
       expect(ctx.violations[0]!.depName).toBe('compass')

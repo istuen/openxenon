@@ -11,7 +11,7 @@ import { createOxnAssemblyIR, type OxnAssemblyPart } from '../schemas/oxn-assemb
 import { MutationValidator } from '../validator/mutation-validator'
 
 function part(name: string, execution: string[] = []): OxnAssemblyPart {
-  return { name, description: undefined, props: [], probes: [], execution }
+  return { name, description: undefined, props: [], probes: [], execution, deps: [] }
 }
 
 describe('MutationValidator', () => {

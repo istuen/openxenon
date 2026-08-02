@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
-import { existsSync, mkdirSync, rmSync, unlinkSync, writeFileSync } from 'fs'
-import { join } from 'path'
+import { existsSync, unlinkSync } from 'fs'
 import { DaemonSupervisor } from '../../../src/daemon/supervisor'
 import { DAEMON_PID_PATH } from '@openxenon/engine/infra/global'
 

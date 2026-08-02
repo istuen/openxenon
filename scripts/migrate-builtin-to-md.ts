@@ -24,7 +24,9 @@ import { join } from 'node:path'
 /** Simple glob: list *.oxn in a single directory */
 function listOxnFilesInDir(dir: string): string[] {
   try {
-    return readdirSync(dir).filter((f) => f.endsWith('.oxn')).map((f) => join(dir, f))
+    return readdirSync(dir)
+      .filter((f) => f.endsWith('.oxn'))
+      .map((f) => join(dir, f))
   } catch {
     return []
   }
@@ -114,10 +116,16 @@ function parseBlueprint(content: string): BlueprintMigration | null {
     const depsMatch = body.match(/deps\s*=\s*\[([^\]]*)\]/)
     const observeMatch = body.match(/observe\s*=\s*\[([^\]]*)\]/)
     const deps = depsMatch
-      ? depsMatch[1]!.split(',').map((s) => s.trim().replace(/^"|"$/g, '')).filter(Boolean)
+      ? depsMatch[1]!
+          .split(',')
+          .map((s) => s.trim().replace(/^"|"$/g, ''))
+          .filter(Boolean)
       : []
     const observe = observeMatch
-      ? observeMatch[1]!.split(',').map((s) => s.trim().replace(/^"|"$/g, '')).filter(Boolean)
+      ? observeMatch[1]!
+          .split(',')
+          .map((s) => s.trim().replace(/^"|"$/g, ''))
+          .filter(Boolean)
       : []
     slots.push({ name: slotName, deps, observe })
   }

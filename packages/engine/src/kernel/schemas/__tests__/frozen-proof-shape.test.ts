@@ -81,8 +81,8 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
     const r = readFrozenProof(path)
     expect(r.ok).toBe(true)
     expect(r.frozen?.outcome).toBe('COMPLETED')
-    expect(r.frozen?.probes[0].outcome).toBe('COMPLETED')
-    expect(r.frozen?.probes[0].interferenceFlags).toEqual(['symlink'])
+    expect(r.frozen?.probes[0]?.outcome).toBe('COMPLETED')
+    expect(r.frozen?.probes[0]?.interferenceFlags).toEqual(['symlink'])
   })
 
   test('case 3: INCONCLUSIVE 写读 round-trip', () => {
@@ -107,8 +107,8 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
     expect(r.frozen?.outcome).toBe('INCONCLUSIVE')
     expect(r.frozen?.passedCount).toBe(0)
     expect(r.frozen?.failedCount).toBe(0)
-    expect(r.frozen?.probes[0].outcome).toBe('INCONCLUSIVE')
-    expect(r.frozen?.probes[0].interferenceFlags).toContain('sandbox_violation')
+    expect(r.frozen?.probes[0]?.outcome).toBe('INCONCLUSIVE')
+    expect(r.frozen?.probes[0]?.interferenceFlags).toContain('sandbox_violation')
   })
 
   test('case 4: 老 content_hash 兼容 (v0.1.x 时代手写 hash) 仍可读取', () => {
@@ -188,6 +188,6 @@ describe('FrozenProof schema 3-state shape (T5)', () => {
 
     // hash 变化是预期的 (字段不同 → body 不同 → hash 不同), 但两次写入都必须成功
     expect(hash1).not.toBe(hash2)
-    expect(r2.frozen?.probes[0].interferenceFlags).toEqual(['cache_path'])
+    expect(r2.frozen?.probes[0]?.interferenceFlags).toEqual(['cache_path'])
   })
 })

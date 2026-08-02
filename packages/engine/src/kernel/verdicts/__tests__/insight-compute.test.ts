@@ -22,7 +22,7 @@ import {
   computeInsightFromInputs,
 } from '../insight-compute'
 import { safeValidateInsight } from '../../schemas/insight-schema'
-import { emptyProbeStats, type ProbeStats } from '../../schemas/probe-stats-schema'
+import { emptyProbeStats } from '../../schemas/probe-stats-schema'
 import type { FrozenProof } from '../../schemas/proof-schema'
 
 // ───────── Helpers ─────────
@@ -51,6 +51,7 @@ function makeFrozen(
       probeName: p.probeName,
       ref: p.ref,
       passed: p.passed,
+      outcome: p.passed ? ('COMPLETED' as const) : ('DEVIATED' as const),
       ...(p.errorMessage ? { errorMessage: p.errorMessage } : {}),
       output: {
         observation: { probeType: 'mock', executedAt: 0 },

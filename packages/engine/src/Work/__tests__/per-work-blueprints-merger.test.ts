@@ -10,7 +10,7 @@
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import {
@@ -565,7 +565,7 @@ describe('writePerWorkBlueprintsIndex / loadPerWorkBlueprintsIndex', () => {
     writeBlueprintFile('p', 'blueprint "P" { slot "x" {} }')
     writeFileSync(workMdPath, `work "demo" { blueprint "P" ref "@prj/blueprints/p"; }\n`)
     const outPath = getPerWorkBlueprintsJsonPath(tmpDir, workName)
-    const _idx = writePerWorkBlueprintsIndex({
+    writePerWorkBlueprintsIndex({
       projectRoot: tmpDir,
       workName,
       workMdPath,
