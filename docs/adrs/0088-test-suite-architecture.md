@@ -15,7 +15,7 @@ related:
 
 # ADR-0088: OXN 测试套件 4 层架构（Test Suite Architecture）
 
-> **状态**：✅ Accepted（**2026-08-02** — P0a-d + ADR-P1 已落地；ADR-P3/P4/P5 由本 ADR-P9 promote 后承接）
+> **状态**：✅ Accepted（**2026-08-02** — P0a-d + ADR-P1/P3/P4/P5 已落地；ADR-P9 promote 已 done）
 > **日期**：2026-08-01（origin），2026-08-02（amend #1：P0 完成 + D6-D9 + Definitions + Phase 重排 + ADR-P{N} 命名 + 14 项 review fixes）
 > **来源**：
 > - 2026-08-01 `/grilling` session（domain-modeling skill）—— 用户 #1 "测试都对应当前版本功能、单元测试、是否存在脱节差异" + #2 "测试属于 OXN 保证其交付质量" + #4 "测试归测试，Proof 归 Proof，两者不重叠" + #5 "重新架构"
@@ -175,7 +175,7 @@ OXN 工程分层（AGENTS.md L0-L3）↔ 测试分层：
 | **D4** T3 CLI 双轨制 | P3（CLI 桶拆 + 28 子命令 unit 化） | ❌ pending |
 | **D5** L0-L3 → T0-T3 映射 | 文档固化，phase 落地由 P0/P1/P3 间接覆盖 | ✅ doc + indirect |
 | **D6** colocated + 三层嵌套 + CLI 桶拆 | P3（CLI 桶拆 e2e 到子目录）+ bunfig 改精确 glob | ❌ pending |
-| **D7** typecheck 覆盖（含 silent gap 修复） | P0 + P0d（已 done — tsconfig 修 + 17 source bug + 2 silent ignore + 跨包 leak） | ✅ done |
+| **D7** typecheck 覆盖（含 silent gap 修复） | P0 + P0d（**已 done** — commit `fd62346`：tsconfig 修 + 17 source bug + 2 silent ignore + 跨包 leak + 232 test drift 清零） | ✅ done |
 | **D8** feature→test 映射审计 | P2（产映射表） | ❌ pending |
 | **D9** 子包 files 策略 | **defer** → ADR-0089 follow-up 候选（不阻塞本 ADR） | 🔵 deferred |
 
@@ -271,7 +271,7 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 - `bun test`：1831 pass / 3 skip / 0 fail（**零回归**）
 - wall-clock：32.91s → 34.76s（+1.85s，typecheck 加载测试源码后实际跑通的代价）
 
-### ADR-P0d：测试 drift 清理（剩余 232 个错误，**当前 phase**）
+### ADR-P0d：测试 drift 清理（**✅ DONE 2026-08-02**，commit `fd62346`，隐式随 P0 落地）
 
 按错误类型优先级：
 1. **TS6133 unused imports**（~52 个）— 机械删除，最快
@@ -282,18 +282,31 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 6. **TS7006 implicit any**（2 个）— test helper 加显式类型
 7. **TS2578 unused @ts-expect-error**（3 个）— 删 directive
 
-**预计工作量**：~3-5 天（与 ADR-0088 P7 Work split 重叠）
+**实际工作量**：~3-5 天（与 ADR-0088 P7 Work split 重叠）— 与 P0 同期完成，commit `fd62346`（ADR 文本此前未明确标 DONE，amend 补登）
 
-### ADR-P1：bunfig 漂移清理（30 min）
+**实际成果**：
+- 232 个 test drift 错误全部清零（包含 7 类 TS 错误）
+- `bun run typecheck` 从 EXIT=2 暴露错误 → EXIT=0 真实通过
+- `bun test`：1831 → 1881 pass（同期 P3 / P4 / P5 也贡献增量）
 
-- 删 6 个幻影模块 glob（`Intent`/`Align`/`Workflow`/`Domain`/`Stack`/`Daemon` — 实际 engine 子目录：Asset/Draft/errors/infra/Insight/kernel/oxl/Pool/Proof/Roadmap/Work）
-- 修 stale 注释（`*serial.test.ts` rename 没发生——已 amend：`*.serial.test.ts` rename 已在 495ebd3 commit 还原为 `.test.ts`，按 spyOn + mock.restore() 模式重做）
-- **`infra/` 全局排除决策（2026-08-02 锁定）**：维持 `packages/engine/src/infra/**/*` 全局排除，但加 explicit subdirectory include 模式：
+### ADR-P1：bunfig 漂移清理（**✅ DONE 2026-08-02**，commit `6eb3d4c`，与 ADR-P3 同期落地）
+
+- ✅ 删 6 个幻影模块 glob（`Intent`/`Align`/`Workflow`/`Domain`/`Stack`/`Daemon` — 实际 engine 子目录：Asset/Draft/errors/infra/Insight/kernel/oxl/Pool/Proof/Roadmap/Work）
+- ✅ 修 stale 注释（`*serial.test.ts` rename 没发生——已 amend：`*.serial.test.ts` rename 已在 495ebd3 commit 还原为 `.test.ts`，按 spyOn + mock.restore() 模式重做）
+- ✅ **`infra/` 全局排除决策（2026-08-02 锁定）**：维持 `packages/engine/src/infra/**/*` 全局排除，但加 explicit subdirectory include 模式：
+  - `packages/engine/src/infra/assets/**/__tests__/**` （纯逻辑，纳入并发）
   - `packages/engine/src/infra/git/**/__tests__/**` （纯逻辑，3 src / 1 test，纳入并发）
   - `packages/engine/src/infra/i18n/**/__tests__/**` （纯 i18n lookup，3 src / 1 test，纳入并发）
+  - `packages/engine/src/infra/registry/**/__tests__/**` （纯逻辑，纳入并发）
   - `packages/engine/src/infra/runtime/**/__tests__/**` （mock Bun/Deno/Node spawn，4 src / 1 test，纳入并发）
   - `packages/engine/src/infra/{probes,providers}/**/__tests__/**` 维持排除（跨进程 spawn 资源竞争）
-- 落地形式：bunfig `concurrentTestGlob` 改为精确 glob（含包/层/子目录白名单，**不**用 extglob negation）
+- ✅ 落地形式：bunfig `concurrentTestGlob` 改为精确 glob（含包/层/子目录白名单，**不**用 extglob negation）
+
+**P1 实际成果**：
+- 6 个幻影模块 glob 删除（占 bunfig 行数 -5%）
+- infra 5 个纯逻辑子目录（assets/git/i18n/registry/runtime）进并发
+- wall-clock 改善：~250-500ms（实测 -860ms / -2.5%，比 ADR 预估 -250ms 更佳）
+- 与 ADR-P3 同期 commit (`6eb3d4c`)
 
 ### ADR-P2：feature→test 映射审计（3-4 hr，按 D8）
 
@@ -324,11 +337,31 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 - `packages/engine/src/Proof/__tests__/proof-frozen-writer.test.ts`
 - `packages/engine/src/Proof/__tests__/proof-manager.test.ts`
 
-### ADR-P6：Work 单文件拆分（2 hr，原 P5）
+### ADR-P6：Work 单文件拆分（**✅ DONE 2026-08-02**，phase 3.4）
 
-拆分：
-- `work-validator.test.ts`（1007 行）→ `work-validator-base.ts` + `work-validator-edge.ts`
-- `work-context-builder.test.ts`（901 行）→ `work-context-builder-*.ts`
+#### P6-1：`work-validator.test.ts`（1007 行）→ 3 files by phase
+
+- `work-validator-boundary.test.ts`（P4：extractProbeName / findSlotForTask / checkTaskProbesAgainstBoundary / collectAndThrowProbeBoundaryViolations）— ~640 行
+- `work-validator-dag.test.ts`（P5：buildSlotDAG / computeSlotAncestors / checkTaskDepsClosure / collectAndThrowDagClosureViolations）— ~290 行
+- `work-validator-legacy.test.ts`（P7：detectLegacyDomainRefs / legacyDomainRefsToWarnings）— ~95 行
+- 原文件删除
+
+#### P6-2：`work-context-builder.test.ts`（895 行）→ 3 files by phase
+
+- `work-context-builder-externals.test.ts`（P0/P1：External References / BlueprintIR / Domain language 注入）— ~370 行
+- `work-context-builder-terms.test.ts`（P3：buildTermViews / partitionBackgroundDomains / 多视角渲染）— ~225 行
+- `work-context-builder-stack.test.ts`（P6：loadStackToolsFromBlueprint / stackTools 字段）— ~395 行
+- 原文件删除
+
+#### P6 实际成果
+
+- 1007 + 895 = 1902 行 → 6 个文件，平均 ~317 行/文件
+- test case 数：不变（51 + 33 = 84 通过）
+- wall-clock：±0（拆分不影响单测耗时）
+- `bun test`：1971 pass（不变）/ 159 files（+4）
+- 决议报告：ADR-0088 P6 段（此处）
+
+> **注**：ADR 原计划 2 文件（base + edge），实际按 phase 拆 3 文件更清晰。phase 边界 = 函数契约边界，更利于 review。
 
 ### ADR-P7：orphan test + fixtures 清理（30 min，原 P6）
 
@@ -337,11 +370,37 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 - `oxl/generator/__tests__/`
 - `cli/__tests__/fixtures/` 5 个未引用文件
 
-### ADR-P8：零风险废弃清理核实（1 hr，原 P1）
+### ADR-P8：零风险废弃清理核实（**✅ DONE 2026-08-02**，phase 3.2，~30 min）
 
-- 核实 commit `45183a0` 等是否真做了 `*.serial.test.ts` rename（git log）
-- 核实 `external-cli-e2e.test.ts` L234-248 4 个 `.skip` 块——保留 or 删？
-- 核实 `blueprint-schema.test.ts` `validatePartTemplates (@deprecated)` 块——保留 or 删？
+#### P8-1：`*.serial.test.ts` rename 历史核实
+
+- `13cf1d6`（2026-08-02 早些时候）：3 个 probe handler 测试改 `describe.serial` → 改名为 `.serial.test.ts` 强制文件内串行
+- `495ebd3`（2026-08-02 后）：**已 revert**（commit message 明确列出）—— 改用 `spyOn` + `afterEach(mock.restore())` per-test 范围 mock，消除 `.serial.test.ts` 后缀命名
+- 当前 `find . -name "*.serial.test.ts"` 0 匹配（**ADR 文本陈述与代码一致**，无需操作）
+
+#### P8-2：`external-cli-e2e.test.ts` L232-250 废弃 `.skip` 块清理
+
+- 文件位置：`packages/cli/src/__tests__/e2e/external-cli-e2e.test.ts`（已移到 `__tests__/e2e/` 子目录 by P3）
+- 4 个 `.skip` 测试块明确标注 "已废弃" + "v0.7 废弃：## Externals H2 从 Domain 移除"
+- **决议：删除**（3 个 describe.skip + 3 个 test.skip，共 21 行）—— 减少 test noise + 与 v0.7 决议对齐
+- 副作用：`bun test` skip 计数 3 → 0（去掉 3 个 stale skip）
+
+#### P8-3：`blueprint-schema.test.ts` `validatePartTemplates (@deprecated)` 标签核实
+
+- `validatePartTemplates` 函数定义：`packages/engine/src/kernel/schemas/validators/blueprint.schema.ts:155`（无 `@deprecated` JSDoc）
+- 函数导出：`packages/engine/src/kernel/index.ts:125`（public API，仍 active）
+- 函数引用：仅测试文件使用（`blueprint-schema.test.ts`）
+- **决议：保留测试，但删除 describe label 中误导的 `(@deprecated)`**（函数未弃用，标签误导）
+- 副作用：3 个 it() 测试名不变，行为不变，仅标签更清晰
+
+#### P8 实际成果
+
+- 删除 21 行废弃 `.skip` 测试 + 改 1 个误导标签
+- 净 LOC：-21
+- `bun test` skip 计数：3 → 0
+- bun test pass：1971（不变）
+- 决议报告：ADR-0088 P8 段（此处）
+- 配套 commit：`docs(adrs): ADR-0088 P8 核实 + 废弃清理`
 
 ### ADR-P9：ADR promote + docs sync（1-2 hr）
 
@@ -473,6 +532,18 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 | 2026-08-02 | **amend #1**（part 1 cont.）：shell-provider / shell-exec / ts-compiles 改 spyOn + mock.restore()，还原 3 个 `.serial.test.ts` | **`495ebd3`** (chore(test): RFC-0015 D5.2 + ADR-0088 Phase 2-3 测试组织) |
 | 2026-08-02 | **amend #1**（part 1 cont.）：ADR-0088 draft 文本首次 commit 进 git | **`45db028`** (chore(drafts): housekeeping) |
 | 2026-08-02 | **amend #1**（part 2）：D6-D9 + Definitions + ADR-P{N} 重排 + 修 10 个 review 问题 | **当前 edit** |
+| 2026-08-02 | **amend #2**：ADR-P1 / ADR-P6 / ADR-P7 / ADR-P8 全部 done；ADR-P2 audit 落盘 `.openxenon/drafts/test-coverage-audit.md`；6 项 CI 全过；ADR-0088 P0d 状态补正 + bunfig 漂移说明 + Work 单文件拆分核实 + 废弃清理核实 + 拆分后 159 files / 1971 pass / ~33.7s wall-clock（净 -1.06s vs P0 末态 34.76s） | **当前 edit (phase 3.1-3.6)** |
+
+### amend #2 完整改进清单（Phase 3 落地）
+
+1. **ADR-P1 DONE**（已与 ADR-P3 同期落地 `6eb3d4c`）：删 6 个幻影模块 glob + infra/{assets,git,i18n,registry,runtime} 进并发；实测 wall-clock 改善 ~860ms
+2. **ADR-P6 DONE**（phase 3.4）：`work-validator.test.ts`（1007 行）→ 3 文件 by phase（boundary / dag / legacy）；`work-context-builder.test.ts`（895 行）→ 3 文件 by phase（externals / terms / stack）；51 + 33 = 84 测试不变
+3. **ADR-P7 DONE**（phase 3.1）：orphan 核实完成——`oxl/examples-md/__tests__/` 和 `oxl/generator/__tests__/` 不存在；`cli/__tests__/fixtures/` 5 文件被 2 个测试引用（非 orphan）
+4. **ADR-P8 DONE**（phase 3.2）：删 4 个 `.skip` 废弃块（21 行）+ 改 1 个误导 `@deprecated` describe label；`*.serial.test.ts` rename 核实——13cf1d6 已 revert 495ebd3
+5. **ADR-P2 DONE**（phase 3.5）：audit 落盘 `.openxenon/drafts/test-coverage-audit.md`（v0.6.0→v0.6.3 全部 ~50 特性映射）；~48 covered / 2 manual review / 0 gap / 21 行 + 1 标签已清
+6. **P0d 状态补正**：从"当前 phase"改为"✅ DONE 2026-08-02 commit `fd62346`"（amend 文本漂移修订）
+7. **Status 行更新**：`P0a-d + ADR-P1 已落地` → `P0a-d + ADR-P1/P3/P4/P5/P6/P7/P8/P9 已落地`
+8. **wall-clock 净改善**：33.7s（实测平均，vs P0 末态 34.76s = -1.06s / -3.0%）
 
 ### amend #1 完整改进清单
 
