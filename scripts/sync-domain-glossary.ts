@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * scripts/sync-domain-glossary.ts — RFC-0017 术语双层 SSOT sync 脚本
+ * scripts/sync-domain-glossary.ts — RFC-0017 术语双层 SSOT sync 脚本（精简版）
  *
  * 行为契约（RFC-0017 §D7）：
  *   输入：.openxenon/assets/domains/oxn-{x}-domain.md (9 files)
@@ -10,34 +10,21 @@
  * 操作流程：
  *   1. 读取 9 个 Domain 文件，**仅**提取 `## Terms:` 段下的 `### term` H3
  *      （排除 `## Invariants` / `## Bans` 段，per RFC-0017 §D2/D3）
- *   2. 合并去重（按 references DAG 找 root；sub-Domain desc 追加为子项）
- *   3. 按字母排序，输出 ~141 个去重 term
+ *   2. 合并去重（按 references DAG 找 root；同 name 多 Domain 定义全部保留为 domains: 列表）
+ *   3. 按字母排序，输出 ~140 个去重 term
  *   4. 渲染到 glossary.md（SYNC:START/END 外覆盖，sentinel 内保留）
  *   5. 更新 Domain 文件：`## Terms:` 段下每个 term 头部加 `glossary-ref:`
  *   6. 更新 Domain 与 glossary 的 synced-at 字段
  *
- * 合并去重规则（RFC-0017 §D7）：
- *   a. root 解析：按 Domain 的 references DAG 找根——被 0 个 Domain reference
- *      的是 root（oxn-domain 是绝对 root，无 references）
- *   b. 同名 term 归属：root Domain 的 desc 为主项；sub-Domain 的 desc 追加
- *      为 "- <DomainName> 视角：<desc>" 子项
- *   c. 冲突检测：同名 term 的 desc 首句（第一个句号前）不一致时，报
- *      E_GLOSSARY_DUPLICATE_TERM，列出冲突的 Domain 与首句
- *
- * 错误码（RFC-0017 §D6 + §D7）：
- *   E_GLOSSARY_DUPLICATE_TERM        — 同名 term 多 Domain 且 desc 首句不一致
- *   E_GLOSSARY_TERM_NOT_IN_DOMAIN    — glossary 含未注册的 term
- *   E_GLOSSARY_REDEF_IN_CONCEPT      — concepts/*.md 中 `### ` 标题 slug 与
- *                                       glossary term slug 碰撞
- *
- * 务实路径注（2026-08-01 grilling Round 3 决定）：
- *   错误码本地硬编码字符串，未注册到 OXN 统一错误框架（ADR-0081 当前
- *   Proposed 状态未落地）。等 ADR-0081 Accepted 后再迁。
+ * sync 职责边界（2026-08-01 grilling 决议）：
+ *   ✅ 提取、合并、排序、生成、回填——纯机械工作
+ *   ❌ 冲突判定——同名 term 多 Domain 定义是否矛盾由工程师 + AI 负责
+ *   ❌ 概念边界设计——Probe/Part/Roadmap 等跨 Domain 概念是否拆分 term 由 RFC 立项
  *
  * 用法：
  *   bun scripts/sync-domain-glossary.ts            # dry-run
  *   bun scripts/sync-domain-glossary.ts --write    # 实际写入
- *   bun scripts/sync-domain-glossary.ts --write --strict  # 严格模式（任何冲突即失败）
+ *   bun scripts/sync-domain-glossary.ts --write --strict  # 严格模式（同 name 多 Domain 必须 desc 完全一致）
  */
 
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs'
@@ -49,21 +36,11 @@ const ROOT = join(import.meta.dir, '..')
 const DOMAINS_DIR = join(ROOT, '.openxenon', 'assets', 'domains')
 const GLOSSARY_PATH = join(ROOT, 'docs', 'product', 'zh-cn', 'concepts', 'glossary.md')
 
-// ─── 错误码（RFC-0017 §D6/D7） ─────────────────────────────
-
-const E_GLOSSARY_DUPLICATE_TERM = 'E_GLOSSARY_DUPLICATE_TERM'
-// E_GLOSSARY_TERM_NOT_IN_DOMAIN 与 E_GLOSSARY_REDEF_IN_CONCEPT 由
-// check-doc-boundary.ts 在 Phase 3 启用后检测，本脚本仅输出 DUP_TERM。
-// const E_GLOSSARY_TERM_NOT_IN_DOMAIN = 'E_GLOSSARY_TERM_NOT_IN_DOMAIN'
-// const E_GLOSSARY_REDEF_IN_CONCEPT = 'E_GLOSSARY_REDEF_IN_CONCEPT'
-
 // ─── 类型 ──────────────────────────────────────────────────
 
 interface DomainTerm {
   /** term 名（H3 文本） */
   name: string
-  /** 首句 desc（冲突检测用） */
-  descFirstSentence: string
   /** 完整 desc */
   desc: string
   /** 归属 Domain */
@@ -80,6 +57,16 @@ interface Domain {
   name: string
   references: string[]
   terms: DomainTerm[]
+}
+
+interface MergedTerm {
+  name: string
+  slug: string
+  /** 所有出现该 term 的 Domain 来源 */
+  domains: Array<{
+    domain: string
+    desc: string
+  }>
 }
 
 // ─── 工具函数 ──────────────────────────────────────────────
@@ -101,62 +88,6 @@ function toSlug(h3Text: string): string {
  */
 function escapeAngleBrackets(s: string): string {
   return s.replace(/<([a-zA-Z][a-zA-Z0-9_-]*)>/g, '&lt;$1&gt;')
-}
-
-/**
- * 提取 desc 首句（第一个句号前）用于冲突检测
- */
-function firstSentence(desc: string): string {
-  const match = desc.match(/^[^。.]+/)
-  return match ? match[0].trim() : desc.trim()
-}
-
-/**
- * 判定 sub-Domain 首句是否与 root 真正矛盾
- *
- * 简化策略（RFC §D7 c 工程化）：
- *   - 占位/引用型（如 "见 [`oxn-*-domain`]"、"参见 oxn-X"）→ 不算矛盾（视为引用）
- *   - 含核心名词的子集/补全 → 不算矛盾（视为视角补全）
- *   - 包含明显反义关键词（"不是 X"、"≠ X"、"vs X"）→ 算矛盾
- *   - Jaccard 相似度 < 0.2（无共享 token）→ 算矛盾
- */
-function isContradicting(root: string, sub: string): boolean {
-  // 占位/引用型
-  if (/^(见|参见|详见|参考)\s*\[?`/.test(sub.trim())) return false
-  if (/^(见|参见|详见|参考)\s*\[?`/.test(root.trim())) return false
-
-  // 反义关键词
-  const negPattern = /(不是|≠|而非|vs\.?|相反)/
-  if (negPattern.test(sub)) return true
-
-  // Jaccard 相似度（bigram + 单词）
-  const tokensA = extractTokens(root)
-  const tokensB = extractTokens(sub)
-  const setA = new Set(tokensA)
-  const setB = new Set(tokensB)
-  const inter = [...setA].filter((t) => setB.has(t)).length
-  const unionSize = new Set([...setA, ...setB]).size
-  const overlap = unionSize === 0 ? 0 : inter / unionSize
-  return overlap < 0.2
-}
-
-/**
- * Token 提取：英文/数字按 word，中文按 2-gram
- */
-function extractTokens(s: string): string[] {
-  const tokens: string[] = []
-  // 英文/数字 word
-  const en = s.match(/[A-Za-z][A-Za-z0-9_]+|\d+/g)
-  if (en) tokens.push(...en)
-  // 中文 2-gram（不拆单字；用 3-4 gram 加强语义捕获）
-  const cjk = s.match(/[\u4e00-\u9fa5]+/g) ?? []
-  for (const phrase of cjk) {
-    if (phrase.length === 1) tokens.push(phrase)
-    else {
-      for (let i = 0; i <= phrase.length - 2; i++) tokens.push(phrase.slice(i, i + 2))
-    }
-  }
-  return tokens
 }
 
 /**
@@ -237,7 +168,6 @@ function buildDomainTerm(raw: { name: string; line: number; descLines: string[] 
   return {
     name: raw.name,
     desc,
-    descFirstSentence: firstSentence(desc),
     domainName,
     slug: toSlug(raw.name),
     hasGlossaryRef: false,
@@ -270,40 +200,9 @@ function loadAllDomains(): Domain[] {
   return domains
 }
 
-/**
- * 按 references DAG 找 root（被 0 个 Domain reference 的是 root）
- */
-function findRoots(domains: Domain[]): Set<string> {
-  const referenced = new Set<string>()
-  for (const d of domains) {
-    for (const ref of d.references) {
-      referenced.add(ref.replace(/\.md$/, ''))
-    }
-  }
-  const roots = new Set<string>()
-  for (const d of domains) {
-    if (!referenced.has(d.name)) {
-      roots.add(d.name)
-    }
-  }
-  return roots
-}
-
 // ─── 合并去重 ──────────────────────────────────────────────
 
-interface MergedTerm {
-  name: string
-  slug: string
-  primaryDomain: string
-  primaryDesc: string
-  viewpoints: Array<{ domain: string; desc: string }>
-  conflictDomains: string[] | null
-}
-
-function mergeTerms(domains: Domain[]): {
-  merged: MergedTerm[]
-  conflicts: Array<{ name: string; domains: string[]; firstSentences: string[] }>
-} {
+function mergeTerms(domains: Domain[]): MergedTerm[] {
   const byName = new Map<string, Array<{ domain: Domain; term: DomainTerm }>>()
   for (const d of domains) {
     for (const t of d.terms) {
@@ -312,56 +211,26 @@ function mergeTerms(domains: Domain[]): {
     }
   }
 
-  const roots = findRoots(domains)
   const merged: MergedTerm[] = []
-  const conflicts: Array<{ name: string; domains: string[]; firstSentences: string[] }> = []
-
   for (const [name, occurrences] of byName) {
-    // 选 root Domain 的 desc 为主项
-    const rootOcc = occurrences.find((o) => roots.has(o.domain.name)) ?? occurrences[0]!
-    const otherOccs = occurrences.filter((o) => o !== rootOcc)
+    const slug = toSlug(name)
+    const mergedDomains = occurrences.map((o) => ({
+      domain: o.domain.name,
+      desc: o.term.desc,
+    }))
 
-    // 冲突检测：sub-Domain 的 firstSentence 与 root 必须互斥或自相矛盾才算冲突
-    // （多视角补全是 RFC §D7 b 允许的行为，不算冲突）
-    const rootFirst = rootOcc.term.descFirstSentence
-    const otherOccsFiltered = otherOccs.filter((o) => o.term.descFirstSentence !== rootFirst)
-    const conflictingSubDomains = otherOccsFiltered.filter((o) => isContradicting(rootFirst, o.term.descFirstSentence))
-    const hasConflict = conflictingSubDomains.length > 0
-    const conflictDomains = hasConflict
-      ? [rootOcc.domain.name, ...conflictingSubDomains.map((o) => o.domain.name)]
-      : null
-
-    if (hasConflict) {
-      conflicts.push({
-        name,
-        domains: conflictDomains!,
-        firstSentences: [rootFirst, ...conflictingSubDomains.map((o) => o.term.descFirstSentence)],
-      })
-    }
-
-    // 仅作 advisory：记录 sub-Domain 视角补全（即使不"矛盾"）
-    const advisoryViewpoints = otherOccsFiltered.filter((o) => !conflictingSubDomains.includes(o))
-
-    merged.push({
-      name,
-      slug: rootOcc.term.slug,
-      primaryDomain: rootOcc.domain.name,
-      primaryDesc: rootOcc.term.desc,
-      viewpoints: [
-        ...advisoryViewpoints.map((o) => ({ domain: o.domain.name, desc: o.term.desc })),
-        ...conflictingSubDomains.map((o) => ({ domain: o.domain.name, desc: o.term.desc })),
-      ],
-      conflictDomains,
-    })
+    merged.push({ name, slug, domains: mergedDomains })
   }
 
   // 按字母排序
   merged.sort((a, b) => a.name.localeCompare(b.name))
 
-  return { merged, conflicts }
+  return merged
 }
 
 // ─── 渲染 ──────────────────────────────────────────────────
+
+// ─── 合并去重 ──────────────────────────────────────────────
 
 function renderGlossary(merged: MergedTerm[], today: string): string {
   const lines: string[] = [
@@ -375,8 +244,11 @@ function renderGlossary(merged: MergedTerm[], today: string): string {
     '# 术语表',
     '',
     '> 本页是 OpenXenon 项目的对外术语词典，**单一权威源**。',
+    '>',
     '> 内部定义来自 `.openxenon/assets/domains/`（Asset 视角），本页是面向用户的精简字典。',
     '> 修改术语请编辑 Asset Domain 文件，本页通过 sync 脚本自动重建。',
+    '>',
+    '> **多 Domain 定义说明**：同名 term 在多个 Domain 视角下可能有不同描述。**冲突判定由工程师 + AI 负责**，sync 脚本仅如实合并。',
     '',
     '## 字母速查',
     '- [A-E](#a-e)',
@@ -402,15 +274,13 @@ function renderGlossary(merged: MergedTerm[], today: string): string {
     lines.push(`## ${groupName}`, '')
     for (const t of items) {
       lines.push(`### ${t.name}`, '')
-      lines.push(`- desc: ${escapeAngleBrackets(t.primaryDesc)}`)
-      if (t.viewpoints.length > 0) {
-        lines.push(`- 视角:`)
-        for (const v of t.viewpoints) {
-          lines.push(`  - ${v.domain}: ${escapeAngleBrackets(v.desc)}`)
-        }
-      }
-      if (t.conflictDomains) {
-        lines.push(`- ⚠️ 冲突：desc 首句在 ${t.conflictDomains.length} 个 Domain 间不一致`)
+      lines.push(
+        ``,
+        `- [${t.domains[0]!.domain}](/openxenon/assets/domains/${t.domains[0]!.domain}.md#${t.slug}) — ${escapeAngleBrackets(t.domains[0]!.desc)}`,
+      )
+      for (const d of t.domains.slice(1)) {
+        const linkPath = `/openxenon/assets/domains/${d.domain}.md#${t.slug}`
+        lines.push(`- [${d.domain}](${linkPath}) — ${escapeAngleBrackets(d.desc)}`)
       }
       lines.push('')
     }
@@ -452,7 +322,7 @@ function injectGlossaryRef(domains: Domain[], merged: MergedTerm[]): Map<string,
         if (!slug) continue
         // 检查下一行是否为 `- desc:`
         if (i + 1 < end && lines[i + 1]!.match(/^\s*-\s*desc:/)) {
-          const refLine = `- glossary-ref: ./docs/product/zh-cn/concepts/glossary.md#${slug}`
+          const refLine = `- glossary-ref: /openxenon/assets/domains/${d.name}.md#${slug}`
           // 检查是否已存在
           if (lines[i + 1]!.includes('glossary-ref:')) continue
           lines.splice(i + 1, 0, refLine)
@@ -481,20 +351,23 @@ function main() {
   console.log(`   ${domains.length} Domain / ${totalTerms} term headings`)
 
   console.log(`🔗 合并去重...`)
-  const { merged, conflicts } = mergeTerms(domains)
-  console.log(`   去重后 ${merged.length} term / 冲突 ${conflicts.length} 处`)
+  const merged = mergeTerms(domains)
+  const multiDomain = merged.filter((t) => t.domains.length > 1).length
+  console.log(`   去重后 ${merged.length} term / 多 Domain 定义 ${multiDomain} 处`)
 
-  if (conflicts.length > 0) {
-    console.warn(`\n⚠️  ${E_GLOSSARY_DUPLICATE_TERM} 冲突检测（默认 advisory）：`)
-    for (const c of conflicts) {
-      console.warn(`   - "${c.name}" 在 [${c.domains.join(', ')}] 间概念不一致`)
-      for (const fs of c.firstSentences) {
-        console.warn(`       • ${fs.slice(0, 80)}${fs.length > 80 ? '...' : ''}`)
+  // strict 模式：同 name 多 Domain 必须 desc 完全一致（防止 root/sub 错配）
+  if (strict) {
+    let strictViolation = 0
+    for (const t of merged) {
+      if (t.domains.length < 2) continue
+      const descs = new Set(t.domains.map((d) => d.desc))
+      if (descs.size > 1) {
+        console.error(`❌ --strict：term "${t.name}" 在多个 Domain 间 desc 字符串不完全一致`)
+        strictViolation++
       }
     }
-    if (strict) {
-      console.error(`\n❌ 严格模式：检测到 ${conflicts.length} 处概念冲突，拒绝写入`)
-      console.error(`   解决方式：先在对应 Domain 调整 desc，或单独发 RFC 裁决同名 term 的归属`)
+    if (strictViolation > 0) {
+      console.error(`   共 ${strictViolation} 处违规，请确认 root/sub 分配是否正确`)
       process.exit(1)
     }
   }
@@ -506,19 +379,14 @@ function main() {
   const updates = injectGlossaryRef(domains, merged)
 
   console.log(`\n📝 计划变更：`)
-  console.log(`   - ${GLOSSARY_PATH.replace(ROOT + '/', '')}: ${write ? '写入' : 'dry-run'}`)
+  console.log(`   - docs/product/zh-cn/concepts/glossary.md: ${write ? '写入' : 'dry-run'}`)
   for (const [name] of updates) {
     console.log(`   - .openxenon/assets/domains/${name}.md: ${write ? '注入 glossary-ref' : 'dry-run'}`)
   }
 
   if (!write) {
-    console.log(`\n💡 加 --write 实际写入；加 --strict 让冲突即失败`)
+    console.log(`\n💡 加 --write 实际写入；加 --strict 让多 Domain desc 字符串不一致即失败`)
     return
-  }
-
-  if (conflicts.length > 0) {
-    console.warn(`\n⚠️  检测到 ${conflicts.length} 处概念重载（同 term 在不同 Domain 语义不同）`)
-    console.warn(`   这些将以 "视角" 子项合并写入 glossary；根因裁决留给后续 errata 或 v0.7+ RFC。`)
   }
 
   writeFileSync(GLOSSARY_PATH, glossaryContent, 'utf-8')
