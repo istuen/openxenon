@@ -2554,7 +2554,7 @@ function renderContextHuman(c: {
     lines.push('')
     lines.push('## Allowed Language (multi-view)')
     lines.push(
-      `> Main view: \`${al.mainDomain ?? '(unknown)'}\` · Background views: ${(al.backgroundDomains ?? []).map((d) => '`' + d + '`').join(', ') || '(none)'}`,
+      `> Main view: \`${al.mainDomain ?? '(unknown)'}\` · Background views: ${(al.backgroundDomains ?? []).map((d) => `\`${d}\``).join(', ') || '(none)'}`,
     )
     lines.push('> Token budget: 前 3 个 background 满注入（同名 term desc），其余仅 term 名列表')
     lines.push('')

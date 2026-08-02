@@ -107,7 +107,7 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, string
   const frontmatter: Record<string, string> = {}
   for (const line of fmLines) {
     const m = line.match(/^([a-zA-Z][a-zA-Z0-9_-]*):\s*(.*)$/)
-    if (m && m[1] && m[2] !== undefined) {
+    if (m?.[1] && m[2] !== undefined) {
       frontmatter[m[1]] = m[2].trim()
     }
   }

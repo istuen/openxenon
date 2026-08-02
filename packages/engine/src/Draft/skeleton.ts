@@ -148,8 +148,8 @@ export function forkDraftSkeleton(
     return {
       ok: false,
       code: 'OXN_DRAFT_SKELETON_NOT_FOUND',
-      message: `Skeleton template not found at ${templatePath}`,
-      suggestion: `Create the skeleton at .openxenon/draft-skeletons/${input.target === 'asset' && input.kind ? `asset-${input.kind}.md` : `${input.target}.md`}`,
+      message: `Skeleton template not found at ${templatePath} (recommended, not required — see v0.6.3 Q3)`,
+      suggestion: `Run \`oxn init\` to install the 7 built-in skeletons, or create the skeleton manually at .openxenon/draft-skeletons/${input.target === 'asset' && input.kind ? `asset-${input.kind}.md` : `${input.target}.md`} (you may also write the Draft by hand and skip skeleton fork).`,
     }
   }
 
@@ -169,7 +169,7 @@ export function forkDraftSkeleton(
   // retarget 场景：保留工程师已填的 H2/H3 内容
   // 简化策略：append 保留的内容到 skeleton 末尾（用户后续手动合并）
   // 完整实现需 mdast 重写 —— v0.6.2-alpha.3 走简化
-  if (input.preserveContent && input.preserveContent.trim()) {
+  if (input.preserveContent?.trim()) {
     content = `${content}\n\n<!-- engineer-preserved-content -->\n${input.preserveContent}\n`
   }
 

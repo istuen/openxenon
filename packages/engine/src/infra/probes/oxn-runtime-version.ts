@@ -43,8 +43,8 @@ function readProjectRootConfig(root: string): { expected?: string; error?: strin
   try {
     const content = readFileSync(configPath, 'utf-8')
     const cfg = JSON.parse(content) as Record<string, unknown>
-    const runtime = cfg['runtime'] as Record<string, unknown> | undefined
-    const expected = (runtime?.['oxnVersion'] ?? runtime?.['version']) as string | undefined
+    const runtime = cfg.runtime as Record<string, unknown> | undefined
+    const expected = (runtime?.oxnVersion ?? runtime?.version) as string | undefined
     if (typeof expected === 'string' && expected.length > 0) {
       return { expected }
     }

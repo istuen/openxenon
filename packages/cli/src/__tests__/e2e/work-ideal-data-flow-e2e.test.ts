@@ -74,8 +74,7 @@ async function setupWorkFixture(opts: SetupOpts = {}): Promise<void> {
       `${taskProbeLines}\n`,
   )
 
-  const workMd =
-    `---\nentity: work\nversion: 0.7.0\nname: p457-fixture\n---\n` + `# Work: p457-fixture\n\n` + sections.join('')
+  const workMd = `---\nentity: work\nversion: 0.7.0\nname: p457-fixture\n---\n# Work: p457-fixture\n\n${sections.join('')}`
 
   writeFileSync(join(workDir, 'work.md'), workMd)
 

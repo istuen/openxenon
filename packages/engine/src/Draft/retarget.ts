@@ -69,7 +69,7 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, string
   const frontmatter: Record<string, string> = {}
   for (const line of fmLines) {
     const m = line.match(/^([a-zA-Z][a-zA-Z0-9_-]*):\s*(.*)$/)
-    if (m && m[1] && m[2] !== undefined) frontmatter[m[1]] = m[2].trim()
+    if (m?.[1] && m[2] !== undefined) frontmatter[m[1]] = m[2].trim()
   }
   return { frontmatter, body }
 }
@@ -89,7 +89,7 @@ function mergeIntoSkeleton(skeletonContent: string, preservedFm: Record<string, 
     const line = lines[i]
     if (line === undefined) continue
     const m = line.match(/^([a-zA-Z][a-zA-Z0-9_-]*):\s*(.*)$/)
-    if (m && m[1]) existingKeys.add(m[1])
+    if (m?.[1]) existingKeys.add(m[1])
   }
 
   const newFmLines = Object.entries(preservedFm)

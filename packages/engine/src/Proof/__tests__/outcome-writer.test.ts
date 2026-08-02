@@ -80,7 +80,7 @@ describe('Proof / buildOutcomeMd (pure)', () => {
     expect(md).toContain('proof_id: p1')
     expect(md).toContain('outcome: COMPLETED')
     expect(md).toContain('run_at: 2026-08-01T12:00:00Z')
-    expect(md).toContain('frozen_hash: ' + 'a'.repeat(64))
+    expect(md).toContain(`frozen_hash: ${'a'.repeat(64)}`)
     expect(md).toContain('content_hash: ') // SHA-256 hex 64 字符
     expect(md).toContain('# Proof: p1')
     expect(md).toContain('## Evidence')

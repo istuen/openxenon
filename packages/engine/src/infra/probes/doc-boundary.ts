@@ -165,7 +165,7 @@ function scanFile(ROOT: string, filePath: string): DocBoundaryViolation[] {
             file: relativePath,
             line: relatedStartLine,
             rule: rule.name,
-            message: rule.message + '（frontmatter related）',
+            message: `${rule.message}（frontmatter related）`,
             link: ref,
           })
         }

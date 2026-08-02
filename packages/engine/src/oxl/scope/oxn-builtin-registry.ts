@@ -393,8 +393,6 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
           type: 'blueprint',
           data,
         }))
-      case 'part':
-      case 'interface':
       default:
         return []
     }
@@ -459,7 +457,6 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
         return this.blueprints
       case 'interface':
         return this.interfaces
-      case 'part':
       default:
         return new Map()
     }

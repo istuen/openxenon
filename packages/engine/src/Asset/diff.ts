@@ -119,7 +119,7 @@ export async function diff(input: DiffInput, config?: ProjectConfig | null): Pro
       hasOverride: true,
       hasBuiltin: true,
       diff: {
-        builtinPath: `${builtinDir}/${kind === 'blueprint' ? 'blueprints' : kind + 's'}/${name}.md`,
+        builtinPath: `${builtinDir}/${kind === 'blueprint' ? 'blueprints' : `${kind}s`}/${name}.md`,
         projectPath,
         builtinBytes: builtinContent?.length ?? 0,
         projectBytes: projectContent?.length ?? 0,

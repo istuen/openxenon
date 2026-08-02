@@ -108,7 +108,7 @@ export async function migrate(input: MigrateInput, config?: ProjectConfig | null
     newVersion: targetVersion,
     timestamp: new Date().toISOString(),
   }
-  appendFileSync(logPath, JSON.stringify(logEntry) + '\n', 'utf-8')
+  appendFileSync(logPath, `${JSON.stringify(logEntry)}\n`, 'utf-8')
 
   return {
     ok: true,

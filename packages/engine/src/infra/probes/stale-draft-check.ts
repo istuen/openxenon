@@ -144,7 +144,7 @@ function classifyRef(
       return { status: 'active', resolvedPath: active }
     }
     const archived = resolveArchivedAssetFile(projectRoot, kind, name)
-    if (existsSync(archived + '.md') || existsSync(archived)) {
+    if (existsSync(`${archived}.md`) || existsSync(archived)) {
       return { status: 'archived', resolvedPath: archived }
     }
   }

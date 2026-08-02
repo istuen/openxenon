@@ -66,7 +66,11 @@ function loadDraftConfig(): {
     return {
       draftDir: cfg?.draftDir,
       // .oxnrc 的 draftPromote 是 string-keyed，需要 cast
-      draftPromote: (oxnrc.config as unknown as { draftPromote?: { rfcDir?: string; assetDirs?: Record<string, string>; workDir?: string } } | undefined)?.draftPromote as
+      draftPromote: (
+        oxnrc.config as unknown as
+          | { draftPromote?: { rfcDir?: string; assetDirs?: Record<string, string>; workDir?: string } }
+          | undefined
+      )?.draftPromote as
         | {
             rfcDir?: string
             assetDirs?: {

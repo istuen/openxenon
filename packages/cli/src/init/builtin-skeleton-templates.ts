@@ -10,7 +10,9 @@
  *   - `oxn init` 创建时落地到 `.openxenon/draft-skeletons/`
  *   - 解决新项目 `OXN_DRAFT_SKELETON_NOT_FOUND` 错误
  *
- * 关键约束：
+ * 关键约束（v0.6.3 Q1）：
+ *   - `entity: skeleton` 标识模板自身（独立 entity，不与其他 AssetKind 混淆）
+ *   - `target-entity` 字段标识 fork 后生成的目标 entity
  *   - 不含 `promote-target` / `promote-kind` / `created-from` / `synced-at` 字段（由 skeleton fork 注入）
  *   - 包含目标 H2 段（TODO 占位）
  */
@@ -23,7 +25,8 @@ export interface BuiltinSkeletonTemplate {
 }
 
 const RFC_SKELETON = `---
-entity: rfc
+entity: skeleton
+target-entity: rfc
 id: RFC-XXXX
 theme: TODO_<theme>
 status: Draft
@@ -56,7 +59,8 @@ date: 2026-08-02
 `
 
 const ASSET_DOMAIN_SKELETON = `---
-entity: domain
+entity: skeleton
+target-entity: domain
 version: 0.1.0
 name: TODO_<DomainName>
 abstract: |
@@ -91,7 +95,8 @@ citations: 0
 `
 
 const ASSET_WORKFLOW_SKELETON = `---
-entity: workflow
+entity: skeleton
+target-entity: workflow
 version: 0.1.0
 name: TODO_<workflow-name>
 abstract: "TODO: one-line description of this execution flow"
@@ -116,7 +121,8 @@ citations: 0
 `
 
 const ASSET_STACK_SKELETON = `---
-entity: stack
+entity: skeleton
+target-entity: stack
 version: 0.1.0
 name: TODO_<stack-name>
 abstract: "TODO: one-line description of this technical stack"
@@ -140,7 +146,8 @@ citations: 0
 `
 
 const ASSET_BLUEPRINT_SKELETON = `---
-entity: blueprint
+entity: skeleton
+target-entity: blueprint
 version: 0.1.0
 name: TODO_<blueprint-name>
 abstract: |
@@ -189,7 +196,8 @@ citations: 0
 `
 
 const ASSET_ROADMAP_SKELETON = `---
-entity: roadmap
+entity: skeleton
+target-entity: roadmap
 version: 0.1.0
 name: TODO_<roadmap-name>
 abstract: |
@@ -221,6 +229,8 @@ references: []
 `
 
 const WORK_SKELETON = `---
+entity: skeleton
+target-entity: work
 workId: TODO_<work-id>
 intent: TODO: one-line description of the work's intent
 createdAt: 2026-08-02

@@ -85,7 +85,7 @@ function scanExistingRFCNumbers(projectRoot: string): number[] {
   const numbers: number[] = []
   for (const f of readdirSync(rfcDir)) {
     const m = f.match(/^RFC-(\d{4})-/)
-    if (m && m[1]) {
+    if (m?.[1]) {
       numbers.push(parseInt(m[1], 10))
     }
   }
@@ -101,13 +101,13 @@ function nextRFCNumber(projectRoot: string): string {
 // ──────────────── Per-target frontmatter 生成 ────────────────
 
 function buildRFCFrontmatter(frontmatter: Record<string, string>, rfcNumber: string): string {
-  const theme = frontmatter['theme'] || 'TODO_<theme>'
+  const theme = frontmatter.theme || 'TODO_<theme>'
   const today = new Date().toISOString().slice(0, 10)
   const fields: Record<string, string> = {
     entity: 'rfc',
     id: rfcNumber,
     theme,
-    status: frontmatter['status'] || 'Draft',
+    status: frontmatter.status || 'Draft',
     date: today,
     'synced-at': today,
   }
@@ -120,11 +120,11 @@ function buildAssetFrontmatter(frontmatter: Record<string, string>, kind: DraftA
   const today = new Date().toISOString().slice(0, 10)
   const fields: Record<string, string> = {
     entity: kind,
-    version: frontmatter['version'] || '0.1.0',
-    name: frontmatter['name'] || name,
-    abstract: frontmatter['abstract'] || 'TODO: one-line description',
-    references: frontmatter['references'] || '[]',
-    citations: frontmatter['citations'] || '0',
+    version: frontmatter.version || '0.1.0',
+    name: frontmatter.name || name,
+    abstract: frontmatter.abstract || 'TODO: one-line description',
+    references: frontmatter.references || '[]',
+    citations: frontmatter.citations || '0',
     'synced-at': today,
   }
   // domain PascalCase 名 (e.g., MemberContext); 其他 kebab-case
@@ -140,12 +140,12 @@ function buildWorkFrontmatter(frontmatter: Record<string, string>, name: string)
   const today = new Date().toISOString().slice(0, 10)
   const fields: Record<string, string> = {
     entity: 'work',
-    workId: frontmatter['workId'] || name,
-    intent: frontmatter['intent'] || 'TODO: one-line description',
-    createdAt: frontmatter['createdAt'] || today,
-    status: frontmatter['status'] || 'aligning',
-    currentRound: frontmatter['currentRound'] || '1',
-    references: frontmatter['references'] || '[]',
+    workId: frontmatter.workId || name,
+    intent: frontmatter.intent || 'TODO: one-line description',
+    createdAt: frontmatter.createdAt || today,
+    status: frontmatter.status || 'aligning',
+    currentRound: frontmatter.currentRound || '1',
+    references: frontmatter.references || '[]',
     'synced-at': today,
   }
   return Object.entries(fields)
@@ -175,7 +175,7 @@ function buildRFCTarget(
   configRfcDir?: string,
 ): TargetSpec & { rfcNumber: string } {
   const rfcNumber = nextRFCNumber(projectRoot)
-  const theme = frontmatter['theme'] || 'TODO'
+  const theme = frontmatter.theme || 'TODO'
   const filename = `${rfcNumber}-${theme}.md`
   // v0.6.3 Fix #2: targetDirOverride > config.rfcDir > default
   const dirRel = targetDirOverride || (configRfcDir ?? join('docs', 'rfc', 'zh-cn'))
@@ -282,7 +282,7 @@ export function dispatchPromote(input: DispatchInput): DispatchResult | Dispatch
   const parentDir = dirname(absTargetPath)
   try {
     mkdirSync(parentDir, { recursive: true })
-  } catch (err) {
+  } catch (_err) {
     return {
       ok: false,
       code: 'OXN_DRAFT_PROMOTE_TARGET_DIR_CREATE_FAILED',
