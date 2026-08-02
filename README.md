@@ -137,7 +137,7 @@ openxenon/
 
 ## 参与贡献
 
-> 当前版本: 0.6.2-alpha.0
+> 当前版本: 0.6.3
 
 欢迎通过 [GitHub Issues](https://github.com/istuen/openxenon/issues) 提交 bug 报告，功能建议与交流。
 

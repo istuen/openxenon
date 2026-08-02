@@ -1,6 +1,6 @@
 # AGENTS.md
 
-OpenXenon 是基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 **md-pipeline** 的 OXN DSL（0.6.x 起纯 MD）。当前版本：`0.6.2-alpha.0`（alpha 阶段）。包管理器 pnpm（阶段 1），构建/测试 Bun。
+OpenXenon 是基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + 基于 **md-pipeline** 的 OXN DSL（0.6.x 起纯 MD）。当前版本：`0.6.3`（alpha 阶段）。包管理器 pnpm（阶段 1），构建/测试 Bun。
 
 ## 语义优先级（5 级，从强到弱）
 

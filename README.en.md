@@ -182,7 +182,7 @@ openxenon/
 
 ## Contributing
 
-> Version: 0.6.2-alpha.0
+> Version: 0.6.3
 
 OpenXenon welcomes contributions of all kinds:
 
