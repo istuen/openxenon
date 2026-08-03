@@ -147,4 +147,13 @@ describe('boundary-guard (RFC-0015 D6.1)', () => {
     const r = await executeBoundaryGuard({}, ctx)
     expect(r.passed).toBe(true) // builtin 默认集合含 oxn-engine-domain
   })
+
+  test('case 9: domain ref 是 skeleton (v0.6.3 Q3 实体白名单) → passed=true', async () => {
+    makeProject({ withDomains: [] }) // 不创建 .md
+    makeWork('w1', [{ name: 'task-a', blueprint: validBlueprint, domain: 'skeleton' }])
+    const ctx: ProbeContext = { projectRoot: tmpDir }
+    const r = await executeBoundaryGuard({}, ctx)
+    expect(r.passed).toBe(true) // v0.6.3 Q3: skeleton 是独立 entity，含在 OXN_BUILTIN_DOMAINS_FALLBACK
+    expect(r.failedRefs.find((f) => f.field === 'domain')).toBeUndefined()
+  })
 })

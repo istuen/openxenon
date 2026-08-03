@@ -176,3 +176,36 @@ describe('forkDraftSkeleton', () => {
     expect(ASSET_KINDS).toEqual(['domain', 'workflow', 'stack', 'blueprint', 'roadmap'])
   })
 })
+
+describe('OXN_DRAFT_SKELETON_NOT_FOUND Q3 推荐性 hint (v0.6.3+)', () => {
+  test('13. message 含 "recommended, not required"', () => {
+    teardownSkeletonDir()
+    const r = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'x' }, null)
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.code).toBe('OXN_DRAFT_SKELETON_NOT_FOUND')
+    expect(r.message).toContain('recommended, not required')
+    expect(r.message).toContain('v0.6.3 Q3')
+  })
+
+  test('14. suggestion 含 "create the skeleton manually"', () => {
+    teardownSkeletonDir()
+    const r = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'x' }, null)
+    if (r.ok) throw new Error('expected failure')
+    expect(r.suggestion).toMatch(/create the skeleton manually/i)
+  })
+
+  test('15. suggestion 含 "skip skeleton fork"（明示可手写 Draft）', () => {
+    teardownSkeletonDir()
+    const r = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'x' }, null)
+    if (r.ok) throw new Error('expected failure')
+    expect(r.suggestion).toContain('skip skeleton fork')
+  })
+
+  test('16. suggestion 提及 `oxn init` 安装路径', () => {
+    teardownSkeletonDir()
+    const r = forkDraftSkeleton({ projectRoot: FIXTURE_PROJECT, target: 'rfc', name: 'x' }, null)
+    if (r.ok) throw new Error('expected failure')
+    expect(r.suggestion).toContain('`oxn init`')
+  })
+})

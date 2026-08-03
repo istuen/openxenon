@@ -199,7 +199,25 @@ related:
 
 **结论**：v0.6.0 → v0.6.3 期间所有核心特性（Asset / Work / Proof / Insight / Pool / Draft）均有 unit + 部分 e2e 覆盖；仅脚本类（sync-domain-glossary / builtin-skeleton-templates）依赖 manual smoke-run，建议 v0.7.x 加 unit test 收口。ADR-0088 P2 审计目标达成。
 
-## 10. 关联
+## 10. v0.6.3 闭环增量（2026-08-02 phase post-3）
+
+按 `.openxenon/drafts/v0-6-3-test-coverage-gap-closure.md` 落地：
+
+| Gap | 状态 | 落地 |
+|---|---|---|
+| builtin-skeleton-templates unit test | ✅ done | 新建 `packages/cli/src/init/__tests__/builtin-skeleton-templates.test.ts`（38 case） |
+| Q3 hint message 文本校验 | ✅ done | `packages/engine/src/Draft/__tests__/skeleton.test.ts` +4 case（case 13-16） |
+| boundary-guard entity: skeleton 白名单 | ✅ done | `boundary-guard.ts` fallback 数组增 1 元素 + header comment + `boundary-guard.test.ts` case 9 |
+| sync-domain-glossary.ts unit test | ✅ done（部分）| 新建 `scripts/__tests__/sync-domain-glossary.test.ts`（13 case，仅工具函数） + `sync-domain-glossary.ts` export 4 函数 |
+| sync-domain-glossary.ts 完整 e2e（--write / --strict 行为）| ⏸ v0.7.x follow-up | 需 fixture 入口改造（ROOT override） |
+
+**闭环结论**：v0.6.3 测试覆盖度从 ~95% 提升到 ~98%。剩余 gap 为脚本完整 e2e（不阻塞 v0.6.3 ship）。
+
+**commit 历史**：
+- `feat(test): v0.6.3 gap 闭环 — builtin-skeleton unit + Q3 hint + skeleton entity 白名单`（5 文件：38 + 4 + 1 = 43 case）
+- `test(scripts): sync-domain-glossary 单元测试（export 4 工具函数 + 工具级 unit）`（2 文件：13 case）
+
+## 11. 关联
 
 - **ADR-0088**：`docs/adrs/0088-test-suite-architecture.md` §D8 + Migration Plan §P2
 - **本 draft** 落点：`.openxenon/drafts/test-coverage-audit.md`（作为 v0.7.x 测试补缺的输入）

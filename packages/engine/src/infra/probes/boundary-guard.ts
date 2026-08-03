@@ -11,6 +11,11 @@
 // 一等公民 verdict: 任何 work 的 task refs drift 即 fail, 强制工程师 review.
 //
 // L1-Infra: 读 .md 用 L1 filesystem 接口; 用 oxl/md-pipeline/utils collectHeadingContexts.
+//
+// v0.6.3 Q3: skeleton 实体不需 .openxenon/assets/domains/skeleton.md 副本
+//   - 7 skeleton 模板由 `oxn init` 落到 `.openxenon/draft-skeletons/`（不在 worksDir 范围）
+//   - boundary-guard 仅扫 `.openxenon/works/`，隐式忽略 draft-skeletons
+//   - 显式加入 fallback 是为了「未来 task domain: skeleton」场景通过（如 Studio 引用模板）
 // =============================================================================
 
 import { existsSync, readdirSync, readFileSync } from '@openxenon/engine/infra/filesystem'
@@ -70,6 +75,7 @@ const OXN_BUILTIN_DOMAINS_FALLBACK = [
   'oxn-project-domain',
   'oxn-proof-domain',
   'oxn-work-domain',
+  'skeleton', // v0.6.3 Q3: 7 skeleton 模板 entity (独立 entity，不需 .openxenon/assets/domains/ 副本)
 ]
 
 function listBuiltinBlueprints(projectRoot: string): Set<string> {
