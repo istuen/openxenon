@@ -42,7 +42,7 @@ jobs:
       # Build (统一用 --target=node，让 Node 矩阵能直接跑)
       # 阻断 #1 修复：build:dist 必须改 --target=node，否则 dist/cli.js 在 Node 下 ReferenceError
       - name: Build dist (Node target)
-        run: pnpm run langium:generate && pnpm run build:dist
+        run: pnpm run build:dist
 
       # Bun 矩阵：跑 bun test（含 1091 既有 + 23 适配层 + 5 e2e = 1119+ 测）
       - name: Bun test suite

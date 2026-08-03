@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies (pnpm)
         run: pnpm install --frozen-lockfile
 
-      # Build (clean + langium + dist; 跳过 build:types)
+      # Build (clean + dist; 跳过 build:types + langium)
       # 注:
       # - typecheck/lint/test 已在 ci.yml (push to main) 与 runtime.yml (push to main/feat/**)
       #   跑过, dev 分支推 tag 时这些 CI 已 validate 完毕, 这里不再重复.
@@ -43,12 +43,12 @@ jobs:
       #   (deno-global.d.ts / which.d.ts 的 declare global 跨 OS 解析路径不同).
       #   package.json 的 types 字段指 dist/types/index.d.ts, 实际从未生成;
       #   cli.js 不依赖 .d.ts, 跳过 build:types 不影响 npm 包可用性.
+      # - langium 已 retire (ADR-0052)，package.json 无 langium:generate 脚本
       - name: Build
         run: |
           pnpm run build:clean
-          pnpm run langium:generate
           pnpm run build:dist
-          # 故意跳过 build:types (见注释)
+          # 故意跳过 build:types + langium (见注释)
 
       # 验证产物
       - name: Verify dist/
