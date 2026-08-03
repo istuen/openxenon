@@ -405,12 +405,57 @@ git log --oneline github/feat/v0.6.1 -1   # 远端（应一致）
 
 | 项 | 标准 | 状态 |
 |---|---|---|
-| 本地 build | `node dist/cli.js --version` 返回 `0.6.3` | ⏸ Step 1 待执行 |
-| 冒烟通过 | 干净目录 `oxn init` 生成 `.openxenon/draft-skeletons/` 7 文件 + frontmatter `entity: skeleton` | ⏸ Step 1 待执行 |
+| 本地 build | `node dist/cli.js --version` 返回 `0.6.3` | ✅ DONE 2026-08-03（2.47 MB cli.js） |
+| 冒烟通过 | 干净目录 `oxn init` 生成 `.openxenon/draft-skeletons/` 7 文件 + frontmatter `entity: skeleton` | ✅ DONE 2026-08-03（7/7 entity: skeleton，7 unique target-entity） |
 | 远端 CI | `github/feat/v0.6.1` runtime.yml ✅ pass | ⏸ Step 2 待执行 |
 | 远端同步 | `github/feat/v0.6.1` 与本地 HEAD 一致 | ⏸ Step 2 待执行 |
 | 文档状态 | wrap-up draft §4.5 标 ✅ DONE + archived | ⏸ Step 3 待执行 |
 | 本地 oxn | `oxn --version` 返回 `0.6.3`（dev 模式） | ⏸ Step 4 待执行 |
+
+#### Step 1 实测详情（2026-08-03）
+
+```bash
+$ bun run build:clean && bun run build:dist
+Bundled 589 modules in 69ms
+  cli.js  2.47 MB  (entry point)
+
+$ node dist/cli.js --version
+0.6.3
+
+$ cd /tmp/oxn-smoke-v0-6-3 && node /Users/issac/pro/openxenon/dist/cli.js init
+✓ Skill 编译完成 (3 skills: oxn-asset / oxn-work / oxn-draft)
+✓ Domain index: no domains yet
+✓ Blueprint index: no blueprints yet
+
+$ ls .openxenon/draft-skeletons/
+asset-blueprint.md  asset-domain.md  asset-roadmap.md  asset-stack.md
+asset-workflow.md   rfc.md           work.md          (7 files)
+
+$ grep -c "^entity: skeleton" .openxenon/draft-skeletons/*.md | grep -v ":0$" | wc -l
+7    # 全部 7 个文件含 entity: skeleton
+
+$ grep "^target-entity:" .openxenon/draft-skeletons/*.md | sort -u
+target-entity: blueprint, domain, rfc, roadmap, stack, work, workflow    # 7 unique
+
+$ node /Users/issac/pro/openxenon/dist/cli.js draft create smoke --target rfc
+✓ Created draft: /tmp/oxn-smoke-v0-6-3/.openxenon/drafts/smoke.md
+# frontmatter 含 promote-target: rfc + created-from: draft-skeleton-fork@0.1.0
+
+$ node /Users/issac/pro/openxenon/dist/cli.js draft promote smoke --to rfc --commit
+✓ Promoted: promote-rfc → docs/rfc/zh-cn/RFC-0019-TODO_<theme>.md
+  Bytes: 539
+  Mode: created    # NG6 actual write ✅
+```
+
+**6 项 CI 守门**：
+- typecheck ✅ 0 errors
+- lint ✅ 0 errors
+- biome ✅ 528 files clean
+- check-doc-boundary ✅ 0 violations
+- validate-dependencies ✅ 0 violations
+- bun test ✅ **2035 pass / 0 fail**（vs 1971 baseline +64：commit `81853af` sync-domain-glossary unit + `372e276` builtin-skeleton unit）
+
+**Step 1 结论**：✅ **PASS**——v0.6.3 在真实 build 产物（dist/cli.js）里全部行为成立（Fix #1/Q1/NG6/Fix #2/Fix #3）。Step 2-4 可继续。
 
 ### 5.5 风险与回滚（交付阶段）
 
