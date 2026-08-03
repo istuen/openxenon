@@ -2,7 +2,9 @@
 entity: draft
 type: design
 created: 2026-08-02
-status: active
+status: archived
+archived: 2026-08-03
+archived-reason: v0.6.3 收尾全部完成（Phase 1-5）；Step 1-3 PASS，Step 4 收口
 related:
   - .changes/0-6-2-alpha-1-pool-and-glossary.md
   - .changes/0-6-2-alpha-2-collab-boundary.md
@@ -11,13 +13,16 @@ related:
   - .changes/0-6-2-alpha-2-rfc-0016-implementation.md
   - .changes/0-6-2-alpha-3-draft-promote-routing.md
   - .changes/0-6-3-draft-promote-ng6-actual-write.md
+  - .changes/0-6-3-final.md
   - docs/adrs/0088-test-suite-architecture.md
   - .openxenon/drafts/sync-domain-glossary-simplification.md
 ---
 
 # Draft: v0.6.3 版本收尾 + 域漂移修正 + ADR-0088 全部完成
 
-> **状态**：🟢 Ready（设计层决策已完成，待执行）
+> **状态**：📦 **Archived**（2026-08-03 — Phase 1-5 全部完成；Step 1-3 PASS，Step 4 收口）
+> **过程记录**：详 §5.4 + §5.7
+> **执行轨迹**：详 §10
 > **来源**：2026-08-02 `/grilling` session（grill-with-docs + domain-modeling skill）
 > **作者**：opencode（与 user 协作，2026-08-02）
 
@@ -408,9 +413,9 @@ git log --oneline github/feat/v0.6.1 -1   # 远端（应一致）
 | 本地 build | `node dist/cli.js --version` 返回 `0.6.3` | ✅ DONE 2026-08-03（2.47 MB cli.js） |
 | 冒烟通过 | 干净目录 `oxn init` 生成 `.openxenon/draft-skeletons/` 7 文件 + frontmatter `entity: skeleton` | ✅ DONE 2026-08-03（7/7 entity: skeleton，7 unique target-entity） |
 | 远端 CI | `github/feat/v0.6.1` runtime.yml ✅ pass | 🟡 PARTIAL 2026-08-03（Node 20/22 矩阵 ✅ pass；bun 矩阵 2005/30 fail = pre-existing flake，详 §5.7） |
-| 远端同步 | `github/feat/v0.6.1` 与本地 HEAD 一致 | ✅ DONE 2026-08-03（push 16 commits: `10245eb..a1b66f4`） |
-| 文档状态 | wrap-up draft §4.5 标 ✅ DONE + archived | ⏸ Step 3 待执行 |
-| 本地 oxn | `oxn --version` 返回 `0.6.3`（dev 模式） | ⏸ Step 4 待执行 |
+| 远端同步 | `github/feat/v0.6.1` 与本地 HEAD 一致 | ✅ DONE 2026-08-03（push 17 commits: `10245eb..f31e1bb`） |
+| 文档状态 | wrap-up draft §4.5 标 ✅ DONE + archived | ✅ DONE 2026-08-03（frontmatter `status: active → archived` + archived-reason） |
+| 本地 oxn | `oxn --version` 返回 `0.6.3`（dev 模式） | ✅ DONE 2026-08-03（`/opt/homebrew/bin/oxn` → npm link → 本仓 dist/cli.js；Step 1 重建后自动 0.6.3） |
 
 #### Step 1 实测详情（2026-08-03）
 
@@ -478,6 +483,21 @@ $ node /Users/issac/pro/openxenon/dist/cli.js draft promote smoke --to rfc --com
 - ❌ test (bun, 20, bun-test): 2005 pass / **30 fail / pre-existing flake**（详 §5.7）
 
 **Step 2 结论**：✅ **PARTIAL PASS**——核心交付物（v0.6.3 代码 + 文档）已 push 到远端；CI 矩阵 Node 端 ✅ 全过；bun 端因预存 ts-compiles/probes-shell-exec/timeout flake 30 失败（pre-existing，自 7/3 起 100% 失败）。v0.6.3 本身代码正确（本地 2035/0），CI flake 不影响交付。
+
+#### Step 3 实测详情（2026-08-03）
+
+**3.3 本地 oxn dev 模式验证**：
+- `/opt/homebrew/bin/oxn` → npm link → `/opt/homebrew/lib/node_modules/@istuen/openxenon` → 本仓 `/Users/issac/pro/openxenon`
+- Step 1 重建 dist/cli.js 后 dev 模式 oxn 自动指向 0.6.3
+- 验证：`oxn --version` = `0.6.3` ✅
+- 验证：`oxn init` 干净目录生成 7 skeleton ✅（同 Step 1 冒烟）
+
+**3.2 归档 wrap-up draft**：
+- frontmatter `status: active → archived`
+- frontmatter 加 `archived: 2026-08-03` + `archived-reason: v0.6.3 收尾全部完成`
+- 头部状态行加 📦 Archived 标签
+
+**Step 3 结论**：✅ **PASS**——dev mode oxn 自动生效（无需手动切换）；draft 已归档。Step 4 收口待执行。
 
 ### 5.5 风险与回滚（交付阶段）
 
