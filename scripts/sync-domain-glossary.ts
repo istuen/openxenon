@@ -396,4 +396,6 @@ function main() {
   console.log(`\n✅ sync 完成`)
 }
 
-main()
+if (import.meta.main) {
+  main()
+}
