@@ -74,7 +74,7 @@ interface MergedTerm {
 /**
  * 从 H3 文本生成 kebab-case slug
  */
-function toSlug(h3Text: string): string {
+export function toSlug(h3Text: string): string {
   return h3Text
     .trim()
     .toLowerCase()
@@ -86,14 +86,14 @@ function toSlug(h3Text: string): string {
  * 转义 raw 文本以避免被 Vue 模板解析（VitePress 用 Vue 编译器）
  * 将 `<x>` 形式转义为 `&lt;x&gt;`
  */
-function escapeAngleBrackets(s: string): string {
+export function escapeAngleBrackets(s: string): string {
   return s.replace(/<([a-zA-Z][a-zA-Z0-9_-]*)>/g, '&lt;$1&gt;')
 }
 
 /**
  * 解析 Domain 文件 frontmatter（YAML 简化版：仅 references）
  */
-function parseFrontmatter(content: string): { references: string[] } {
+export function parseFrontmatter(content: string): { references: string[] } {
   const fmMatch = content.match(/^---\n([\s\S]*?)\n---/)
   if (!fmMatch) return { references: [] }
   const fm = fmMatch[1]!
@@ -113,7 +113,7 @@ function parseFrontmatter(content: string): { references: string[] } {
 /**
  * 提取 Domain 文件 `## Terms:` 段下的所有 `### term`（排除 Invariants/Bans）
  */
-function extractTermsFromDomain(filePath: string, domainName: string): DomainTerm[] {
+export function extractTermsFromDomain(filePath: string, domainName: string): DomainTerm[] {
   const content = readFileSync(filePath, 'utf-8')
   const lines = content.split('\n')
   const terms: DomainTerm[] = []
