@@ -299,7 +299,7 @@ untracked: .openxenon/drafts/sync-domain-glossary-simplification.md  # Work G �
 | ADR-0088 History | amend #2 已落地 |
 | CI 6 项 | 全过（0 errors / 0 violations / 1971 pass） |
 | wall-clock | ~35.4s（system load 影响，±1.5s 偏差属正常） |
-| commit | ⏸ 待用户授权 |
+| commit | ✅ DONE 2026-08-02（12 commits：`10d623c` → `504e2df`，working tree clean） |
 
 ## 4. 关键决策 ↔ 价值密度矩阵
 
@@ -319,7 +319,118 @@ untracked: .openxenon/drafts/sync-domain-glossary-simplification.md  # Work G �
 | ADR P2 | 3-4 hr | ⭐⭐ | 审计交付 |
 | **总计** | **~12-15 hr** | — | 约 2 个 sprint |
 
-## 5. 不在范围
+## 5. Phase 5：交付收尾（Delivery Wrap-up，2026-08-03）
+
+> **状态**：🟢 Ready（用户 3 项决策已落——见 §9 Round 6）
+> **触发**：Phase 1-4 全部 DONE 后，问"如何做最后的收尾，保证能作为完整产品交付使用"
+
+### 5.1 交付缺口盘点（commit → 可交付产品的 gap）
+
+| # | 缺口 | 风险 | 实测证据 |
+|---|---|---|---|
+| **G1** | 本地 `dist/cli.js` 是旧版 `0.6.2-alpha.0` | 🔴 高 | `node dist/cli.js --version` → `0.6.2-alpha.0`；v0.6.3 从未 build 验证过 |
+| **G2** | 12 commits 未 push 到任何 remote | 🔴 高 | `github/feat/v0.6.1` 落后 12 commits；`feat/v0.6.1` 领先 `github/main` 856 commits（main 仅有 1 个 Initial commit） |
+| **G3** | 无 `v0.6.3` git tag | 🔴 高 | 最近 tag `v0.4.0`（指向 75963ee）；publish.yml 走 `v*.*.*` tag 触发 |
+| **G4** | npm registry 最新仍是 `0.4.0` | 🔴 高 | `npm view @istuen/openxenon version` → `0.4.0`（2026-06-25）；0.6.x 系列从未发布 |
+| **G5** | wrap-up draft §4.5 状态漂移（已修） | 🟡 低 | 原写"⏸ 待用户授权"，实际 12 commits 已 commit（已在 §4.5 标 ✅ DONE） |
+| **G6** | `feat/v0.6.1` → `main` 合并策略未定 | 🟡 中 | 856 commits 差异 + main 空白 → 决策点（已锁定方案 C：维持 main 空白） |
+| **G7** | 未做新项目冒烟（`oxn init` 干跑） | 🟡 中 | v0.6.3 Fix #1 改了 skeleton init 落地逻辑，需在干净环境验证 |
+| **G8** | GitHub Release notes 未准备 | 🟡 低 | `.changes/0-6-3-final.md` 是内部 changelog；GitHub Release 是对外门面 |
+
+### 5.2 用户 3 项决策（2026-08-03 Round 6）
+
+1. **Step 1 现在执行**（构建 + 冒烟 gate）
+2. **main 合并**：方案 C——维持 main 空白，`feat/v0.6.1` 作为长期开发分支
+3. **npm 发布**：暂不发（alpha 阶段内部验证为主；不打 `v0.6.3` tag 避免触发 publish.yml）
+
+### 5.3 执行计划（4 步）
+
+#### Step 1：本地构建 + 冒烟验证（**🔵 进行中**，前置 gate）
+
+```bash
+# 1.1 重建 dist/
+bun run build:clean && bun run build:dist
+
+# 1.2 验证版本号
+node dist/cli.js --version                         # 期望: 0.6.3
+
+# 1.3 干净环境冒烟（临时目录）
+mkdir -p /tmp/oxn-smoke-v0-6-3
+node /Users/issac/pro/openxenon/dist/cli.js init   # 验证 .openxenon/ 生成
+ls -la .openxenon/draft-skeletons/                 # 期望 7 个 skeleton 文件
+head -5 .openxenon/draft-skeletons/rfc.md          # 期望 entity: skeleton（Q1）
+
+# 1.4 Draft 链路冒烟
+node dist/cli.js draft create smoke --target rfc
+node dist/cli.js draft list
+```
+
+**Gate**：任一失败即停，修复后再继续。这是 v0.6.3 在真实 build 产物里的首次验证。
+
+#### Step 2：Push 到 remote（**不发 npm，不打 tag**）
+
+```bash
+# 基于"暂不发 npm"决策：不打 v0.6.3 tag（避免触发 publish.yml）
+git push github feat/v0.6.1
+# runtime.yml 在远端跑 CI 验证（typecheck / lint / biome / test）
+```
+
+main 维持空白（方案 C），不合并。
+
+#### Step 3：文档状态对齐 + 本地 oxn 升级
+
+```bash
+# 3.1 wrap-up draft §4.5 状态 ✅ DONE（已在 §4.5 落地）
+
+# 3.2 归档 wrap-up draft（status: active → archived）
+
+# 3.3 本地 oxn 升级（dev 模式，指向 dist/cli.js）
+bash scripts/oxn-switch.sh dev
+oxn --version   # 期望: 0.6.3
+```
+
+#### Step 4：最终交付确认
+
+```bash
+# 4.1 远端 CI 通过确认
+gh run list --workflow=runtime.yml --limit=1
+
+# 4.2 本地 + 远端一致性
+git fetch github
+git log --oneline -1                # 本地
+git log --oneline github/feat/v0.6.1 -1   # 远端（应一致）
+```
+
+### 5.4 Definition of Done
+
+| 项 | 标准 | 状态 |
+|---|---|---|
+| 本地 build | `node dist/cli.js --version` 返回 `0.6.3` | ⏸ Step 1 待执行 |
+| 冒烟通过 | 干净目录 `oxn init` 生成 `.openxenon/draft-skeletons/` 7 文件 + frontmatter `entity: skeleton` | ⏸ Step 1 待执行 |
+| 远端 CI | `github/feat/v0.6.1` runtime.yml ✅ pass | ⏸ Step 2 待执行 |
+| 远端同步 | `github/feat/v0.6.1` 与本地 HEAD 一致 | ⏸ Step 2 待执行 |
+| 文档状态 | wrap-up draft §4.5 标 ✅ DONE + archived | ⏸ Step 3 待执行 |
+| 本地 oxn | `oxn --version` 返回 `0.6.3`（dev 模式） | ⏸ Step 4 待执行 |
+
+### 5.5 风险与回滚（交付阶段）
+
+| 风险 | 缓解 |
+|---|---|
+| Step 1 build 失败（dist/ 从未为 0.6.3 重建） | Step 1 是 gate，失败即停 |
+| push 后远端 CI 失败 | `git reset --hard HEAD~n` 回退 + 修复 + amend |
+| `feat/v0.6.1` 与 `github/feat/v0.6.1` 分叉 | 远端 rebase / `--force-with-lease` push（谨慎） |
+| main 方案 C 长期不可持续 | 列 follow-up ADR 候选（main 应反映发布状态） |
+| 暂不发 npm 但用户期待 0.6.3 可用 | dev 模式 `scripts/oxn-switch.sh dev` 兜底 |
+
+### 5.6 不在范围（交付阶段）
+
+- ❌ GitHub Release（无 tag，无 PR，不创建）
+- ❌ npm publish（用户明确：暂不发）
+- ❌ main 合并（方案 C：维持空白）
+- ❌ 远端 `feat/v0.6.1` 之外的分支同步（无意义）
+- ❌ `OXN_DRAFT_SKELETON_NOT_FOUND` 推荐性 hint 落地（Q2 推迟到 v0.7.x）
+
+## 6. 不在范围（v0.6.3 实现范围）
 
 - ❌ 0.7/0.8 RFC drafts 中的部分实现/未实现（用户明确：不用在意）
 - ❌ `.openxenon/drafts/glossary-convergence-2026-08-01.md`（Work F 已 done，无须执行）
@@ -328,7 +439,7 @@ untracked: .openxenon/drafts/sync-domain-glossary-simplification.md  # Work G �
 - ❌ skeleton 可发现性 hint（Q2 决议推迟）
 - ❌ ADR-0089 跨包 leak 完整搬移（独立 ADR 候选）
 
-## 6. 风险与回滚
+## 7. 风险与回滚
 
 | 风险 | 缓解 |
 |---|---|
@@ -338,7 +449,7 @@ untracked: .openxenon/drafts/sync-domain-glossary-simplification.md  # Work G �
 | ADR P2 审计发现大量缺口 | 仅记录，不自动触发修复（独立 RFC） |
 | biome 修不完 | 仅修 1 error，warnings 留 follow-up |
 
-## 7. 关联文档
+## 8. 关联文档
 
 - `.changes/0-6-2-alpha-1-pool-and-glossary.md`
 - `.changes/0-6-2-alpha-2-collab-boundary.md`
@@ -347,18 +458,25 @@ untracked: .openxenon/drafts/sync-domain-glossary-simplification.md  # Work G �
 - `.changes/0-6-2-alpha-2-rfc-0016-implementation.md`
 - `.changes/0-6-2-alpha-3-draft-promote-routing.md`
 - `.changes/0-6-3-draft-promote-ng6-actual-write.md`
+- `.changes/0-6-3-final.md`
 - `docs/adrs/0088-test-suite-architecture.md`
 - `.openxenon/drafts/sync-domain-glossary-simplification.md`
+- `.openxenon/drafts/test-coverage-audit.md`
 - `packages/cli/src/init/builtin-skeleton-templates.ts`
 - `packages/engine/src/Draft/skeleton.ts`
 - `.openxenon/assets/domains/oxn-draft-domain.md`
 - `.openxenon/assets/domains/oxn-draft-promote-domain.md`
 
-## 8. 待用户确认
+## 9. 已决议 / 待用户确认
 
-无（已通过 `/grilling` session 完成 5 轮决策）。
+**已决议**（2026-08-03 Round 6）：
+- ✅ Step 1 现在执行（构建 + 冒烟 gate）
+- ✅ main 方案 C：维持 main 空白，feat/v0.6.1 作为长期开发分支
+- ✅ npm 暂不发布（alpha 阶段内部验证；不打 `v0.6.3` tag 避免触发 publish.yml）
 
-## 9. Session 轨迹
+**待解决**：无新增。Step 1-4 执行中按 §5.3 顺序推进。
+
+## 10. Session 轨迹
 
 | 轮次 | 焦点 | 产出 |
 |---|---|---|
@@ -367,3 +485,4 @@ untracked: .openxenon/drafts/sync-domain-glossary-simplification.md  # Work G �
 | Round 3 | Phase 1-4 执行计划 | 执行顺序锁定 |
 | Round 4 | 用户质疑 skeleton 设计（"为何放 blueprints/ 下？"） | 发现设计错误 + 已修正（10d623c） + 域漂移 |
 | Round 5 | Q1-Q3 设计决议 | entity: skeleton / Q2 推迟 / 去掉 inv-5 |
+| Round 6 | 交付收尾计划（"如何做最后收尾保证产品交付"） | §5 Phase 5 + 3 项决策（Step 1 now / 方案 C / 暂不发 npm）+ 4 步执行计划 + DoD 表 |
