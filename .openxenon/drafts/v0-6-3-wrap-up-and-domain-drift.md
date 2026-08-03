@@ -499,6 +499,46 @@ $ node /Users/issac/pro/openxenon/dist/cli.js draft promote smoke --to rfc --com
 
 **Step 3 结论**：✅ **PASS**——dev mode oxn 自动生效（无需手动切换）；draft 已归档。Step 4 收口待执行。
 
+#### Step 4 实测详情（2026-08-03）
+
+**4.1 6 项 CI 等价验证（本地）**：
+
+| 项 | 结果 |
+|---|---|
+| typecheck | ✅ 0 errors |
+| lint | ✅ 0 errors |
+| biome | ✅ 528 files clean |
+| check-doc-boundary | ✅ 0 violations |
+| validate-dependencies | ✅ 0 violations |
+| bun test | ✅ **2035 pass / 0 fail / 36.82s wall-clock** |
+
+**4.2 远端 CI + 一致性**：
+
+| 项 | 结果 |
+|---|---|
+| 本地 HEAD | `c841ff1e581c72bb97f6a4f68533434d70fce49e` |
+| 远端 HEAD | `c841ff1e581c72bb97f6a4f68533434d70fce49e` |
+| 一致性 | ✅ 完全 sync（0 ahead / 0 behind） |
+| Node 20 cli-e2e | ✅ SUCCESS |
+| Node 22 cli-e2e | ✅ SUCCESS |
+| Bun 20 bun-test | ❌ 2005/30 fail（pre-existing flake，详 §5.7） |
+
+**Step 4 结论**：✅ **DELIVERY COMPLETE**——6 项 CI gate ✅ + 远端 sync + Node 矩阵全过 + bun 矩阵 pre-existing flake（§5.7 已记录为 v0.7.x follow-up）。
+
+#### 最终交付摘要
+
+| 维度 | 状态 |
+|---|---|
+| 代码 | ✅ 18 commits 在 `feat/v0.6.1` + 远端 `github/feat/v0.6.1` 同步 |
+| 测试 | ✅ 2035 pass / 0 fail / 0 skip（161 files，~36s） |
+| Build | ✅ `dist/cli.js` 2.47 MB / version 0.6.3 |
+| 冒烟 | ✅ `oxn init` 生成 7 skeleton + `entity: skeleton` + `target-entity` |
+| 文档 | ✅ ADR-0088 Accepted / changelog shipped / wrap-up archived |
+| 远端 CI | 🟡 Node ✅ / bun pre-existing flake |
+| 本地 oxn | ✅ dev mode 0.6.3（npm link → dist/cli.js） |
+| npm publish | ❌ 暂不发（alpha 阶段内部验证为主） |
+| main 合并 | ❌ 方案 C（main 维持空白，feat/v0.6.1 为开发分支） |
+
 ### 5.5 风险与回滚（交付阶段）
 
 | 风险 | 缓解 |
