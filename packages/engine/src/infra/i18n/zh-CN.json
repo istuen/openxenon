@@ -255,6 +255,14 @@
       "inputJson": "JSON 对象: { source, sessionID, workRef, modelID, providerID, tokens: { input, output }, cost, timestamp }"
     }
   },
+  "onboard": {
+    "description": "项目消费者 Onboarding 统一入口（ADR-0089）：探测 / 新项目 / 存量项目 / 探索建 Asset",
+    "detect": "探测项目状态 + 输出建议路径（不执行任何修改）",
+    "new": "新项目入口：复制 5 起手 Asset + 跑 oxn asset check（Stage C）",
+    "existing": "存量项目入口：列出 Proof-First / 探索建 Asset 2 路径选项",
+    "proofFirst": "存量项目路径 B1：直接跑 Proof-First 5 分钟闭环（Stage D）",
+    "bootstrap": "存量项目路径 B2：AI 探索建 Asset（Stage D / 复用 ADR-0050）"
+  },
   "installSkill": {
     "description": "把 OpenXenon Skills 编译并安装（v0.6.2 默认项目级：./.opencode/skills/ 等；--global 写到 ~/.opencode/skills/）",
     "target": "目标根目录（显式指定；与 --global 互斥）",

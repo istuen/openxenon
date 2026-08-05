@@ -179,6 +179,10 @@ const main = defineCommand({
 
     // ---- Dev namespace (DSL 内部工具) ----
     dev: () => import('./commands/dev').then((m) => m.default),
+
+    // ---- v0.7+: Project consumer onboarding unified entry (ADR-0089)
+    // ---- 4 子命令: --detect / --new / --existing / --bootstrap
+    onboard: () => import('./commands/onboard').then((m) => m.default),
   },
   args: {
     verbose: {

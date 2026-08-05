@@ -251,9 +251,17 @@
   "token": {
     "description": "AI model token consumption tracking",
     "ingest": {
-      "description": "Ingest a token consumption record from an AI assistant",
+      "description": "Ingest a token consumption record from AI assistant",
       "inputJson": "JSON object: { source, sessionID, workRef, modelID, providerID, tokens: { input, output }, cost, timestamp }"
     }
+  },
+  "onboard": {
+    "description": "Project consumer onboarding unified entry (ADR-0089): detect / new / existing / bootstrap",
+    "detect": "Detect project state + output recommended path (read-only, no modifications)",
+    "new": "New project entry: copy 5 starter Assets + run oxn asset check (Stage C)",
+    "existing": "Existing project entry: list Proof-First / Bootstrap 2 path options",
+    "proofFirst": "Existing project path B1: direct Proof-First 5-minute loop (Stage D)",
+    "bootstrap": "Existing project path B2: AI explore-build Asset (Stage D / reuses ADR-0050)"
   },
   "installSkill": {
     "description": "Compile and install OpenXenon Skills (v0.6.2 default project-level: ./.opencode/skills/ etc.; --global writes to ~/.opencode/skills/)",
