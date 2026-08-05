@@ -27,13 +27,7 @@
 // =============================================================================
 
 import { defineCommand } from 'citty'
-import {
-  existsSync,
-  readdirSync,
-  readFile,
-  writeFile,
-  mkdirSync,
-} from '@openxenon/engine/infra/filesystem'
+import { existsSync, readdirSync, readFile, writeFile, mkdirSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'node:path'
 import { t } from '@openxenon/engine/infra/i18n'
 import { getBuiltinRegistry } from '@openxenon/engine/oxl/scope/oxn-builtin-registry'
@@ -247,7 +241,10 @@ function recommendPath(projectType: ProjectType, signals: ProjectSignals): Recom
       if (signals.hasSourceCode) {
         return {
           path: 'B1',
-          reason: '已有源码实现（' + sourceCodeSummary(signals) + '），但 .openxenon/assets/ 为空，建议先跑 Proof-First 5 分钟闭环',
+          reason:
+            '已有源码实现（' +
+            sourceCodeSummary(signals) +
+            '），但 .openxenon/assets/ 为空，建议先跑 Proof-First 5 分钟闭环',
           nextCommand: 'oxn onboard --existing --proof-first',
         }
       }
@@ -329,9 +326,7 @@ function kindDirName(kind: AssetKind): string {
 async function copyAndValidateStarterAssets(projectRoot: string): Promise<CopyResult> {
   const sourceDir = resolveStarterSource()
   if (!sourceDir) {
-    throw new Error(
-      'OXN starter source not found. Expected packages/engine/src/builtin/. Did you run `bun run build`?',
-    )
+    throw new Error('OXN starter source not found. Expected packages/engine/src/builtin/. Did you run `bun run build`?')
   }
 
   const result: CopyResult = {
@@ -419,7 +414,7 @@ function renderCopyResult(result: CopyResult): string {
   lines.push('Validation:')
   for (const v of result.validationResults) {
     const mark = v.ok ? '✓' : '✗'
-    lines.push(`  ${mark} ${v.kind}/${v.name}${v.errors.length > 0 ? ': ' + v.errors.join('; ') : ''}`)
+    lines.push(`  ${mark} ${v.kind}/${v.name}${v.errors.length > 0 ? `: ${v.errors.join('; ')}` : ''}`)
   }
   return lines.join('\n')
 }
@@ -449,7 +444,7 @@ async function runNew(projectRoot: string): Promise<void> {
     ],
   }
 
-  return output({ ok: allValid, data, human: renderCopyResult(result) }, 'human') as unknown as void
+  return output({ ok: allValid, data, human: renderCopyResult(result) }, 'human') as unknown as undefined
 }
 
 // -----------------------------------------------------------------------------
@@ -688,10 +683,7 @@ export default defineCommand({
         await runNew(projectRoot)
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        return outputError(
-          { code: 'OXN_ONBOARD_NEW_FAILED', message: msg },
-          format,
-        )
+        return outputError({ code: 'OXN_ONBOARD_NEW_FAILED', message: msg }, format)
       }
       return
     }
@@ -716,7 +708,7 @@ export default defineCommand({
               { id: 'B2', label: '探索建 Asset（AI 推断项目类型）', command: 'oxn onboard --existing --bootstrap' },
             ],
           },
-          human: renderDetectHuman(data) + '\n\nNext: 选择路径 B1 或 B2',
+          human: `${renderDetectHuman(data)}\n\nNext: 选择路径 B1 或 B2`,
         },
         format,
       )
