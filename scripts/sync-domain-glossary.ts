@@ -149,9 +149,14 @@ export function extractTermsFromDomain(filePath: string, domainName: string): Do
       continue
     }
 
-    // term 下的 desc 行
+    // term 下的 desc 行（首行）
     if (currentTerm && line.match(/^\s*-\s*desc:/)) {
-      currentTerm.descLines.push(line.replace(/^\s*-\s*desc:\s*/, ''))
+      currentTerm.descLines.push(line.replace(/^\s*-\s*desc:\s*\|?\s*/, ''))
+      continue
+    }
+    // YAML 多行 block scalar 续行（缩进但不是新 key）
+    if (currentTerm && currentTerm.descLines.length > 0 && line.match(/^\s+\S/) && !line.match(/^\s*-\s/)) {
+      currentTerm.descLines.push(line.trimStart())
     }
   }
 

@@ -2,7 +2,7 @@
 title: 术语表
 entity: glossary
 generated-by: scripts/sync-domain-glossary.ts
-synced-at: 2026-08-02
+synced-at: 2026-08-05
 ---
 
 # 术语表
@@ -40,6 +40,16 @@ synced-at: 2026-08-02
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#asset) — 见 [`oxn-asset-domain`](./oxn-asset-domain.md#asset)。本文域内特指"Project 资产"——住 `.openxenon/assets/`。
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#asset) — 工程师为 AI 协作定义的**环境约束**；5 类 AssetKind（domain/workflow/stack/blueprint/roadmap）。具体领域见 [`oxn-asset-domain`](./oxn-asset-domain.md)。
 
+### Asset Check
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#asset-check) — 5 起手 Asset 完整性校验（替代 ADR-0069 G1 "数量下限校验"）：
+校验项 — Domain ≥ 1（必含 doc-md-domain）/ Workflow ≥ 1（必含 md-author-workflow）/
+Stack ≥ 1（必含 md-stack）/ Blueprint ≥ 1（必含 md-author-blueprint）/
+AssetMap ≥ 1（必含 md-system）。
+缺任一 → 提示运行 `oxn onboard --new`；不阻断 Proof-First 模式。
+ADR-0089 D3 + D4。
+
 ### AssetKind
 
 
@@ -49,7 +59,11 @@ synced-at: 2026-08-02
 
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#assetmap) — AssetKind=roadmap 的语义别名（首选术语）——meta 索引层，AI 路由入口（6 scene 路由表 + Domain/Blueprint 索引）；不参与 references DAG。
+与版本计划文档 "Roadmap"（`dev/versions/`）不同情态（定义性 Asset vs 描述性 Doc）、不同位置。原别名 "Roadmap" 已废弃（RFC-0013 D4）。
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#assetmap) — AssetKind=roadmap 的语义别名——OXN 系统导航索引（6 scene 路由表 + Domain/Blueprint 索引）；
+AI 路由入口。不是版本路线图。
+与 Roadmap（版本计划文档）不同情态、不同位置。原别名 "Roadmap" 已废弃，避免与版本计划文档混淆（RFC-0013 D4）。
+AssetKind 枚举值保持 `roadmap`（代码不改），glossary 主术语为 AssetMap。
 
 ### AssetPaper
 
@@ -71,15 +85,13 @@ synced-at: 2026-08-02
 
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#boundary) — Asset 的别名。
 
-### Boundary Deviation
-
-
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#boundary-deviation) — 边界偏离信号（frozen.json 标记），替代原"Boundary Violation"；OXN 只记录偏离不阻断，判定权归工程师；ADR-0066。
-
 ### Built-in Asset
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#built-in-asset) — 随 OXN 版本发布的内置 Asset；住 `src/builtin/`；通过 `@oxn/` scope 解析；
+项目可用 `@prj/` override。自举种子——手动创建不经 Work，后续变更走 asset-evolve Work。
+v0.6 Registry mock 与 `.md` 文件 SSOT 不一致（F1）；D18 收窄 Phase 4 范围（仅 probes+blueprints）。
+**别名（已合并）**：Builtin / BuiltinAsset（glossary 不再单独列出）
 
 ### Ceiling
 
@@ -131,26 +143,58 @@ synced-at: 2026-08-02
 
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#draft) — 未提升的描述性工作稿（Descriptive Modality 草稿态）；物理位置 `.openxenon/drafts/`（可经 `.oxnrc` `draftDir` 字段配）；CLI 创建 + 工程师 / AI Agent 填写 + 工程师主动 promote（经 draft-promote-router Blueprint）。
+v0.6.2-alpha.3 起支持 2 种创建模式：
+关键约束：v0.6.2-alpha.3 后 Draft 可选携带 frontmatter hint（`promote-target` / `promote-kind`），但仍不是 Asset，不参与 Asset 生命周期。
+生命周期：create → (promote → archive | discard) | archive | discard。
 
 ### DraftPromoteLifecycle
 
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#draftpromotelifecycle) — Draft Promote 阶段（v0.6.2-alpha.3 新增）——4 阶段：
+1. `gather`：router Blueprint 读 Draft frontmatter + body。
+2. `validate-skeleton`：校验 frontmatter 字段 + H2 段结构（含必填字段检查）。
+3. `fork-missing`：缺字段时从 skeleton 模板补全（保留工程师填写的内容）。
+4. `dispatch-target`：按 promote-target 路由到 3 类目标执行体（rfc / asset / work）。
+不走 Work IAP：Draft promote 是单次路由 + 转换，不分 Intent / Align / Proof 三阶段。
+可经 `.oxnrc` `draftDir` 字段配（v0.6.2 新增；走 ProjectConfig.draftDir）。
+含 2 子目录：active 根（默认 drafts/）+ archived 子目录（默认 drafts/.archived/）。
+前缀 `.` 让 list/archive 默认不显示（除非显式 --include-archived）。
+v0.6.3 Fix #1：skeleton 物理位置 `.openxenon/draft-skeletons/`（boundary 顶层），v0.6.2-alpha.3 原 `.openxenon/assets/blueprints/draft-skeletons/` 设计错误已修正。
+物理实现：`packages/cli/src/commands/draft.ts` + `@openxenon/engine/Draft`。
+v0.6.2 4 命令（create / list / archive / discard）；v0.6.2-alpha.3 增 2 命令（promote / retarget）。
+与 `oxn work` / `oxn proof` 平级；不与 `oxn asset` 混（Draft 不走 Asset 生命周期，Q-S4 不引入"通道"术语）。
+draft-skeleton-fork Workflow（v0.6.2-alpha.3 新）：派生 skeleton。
+draft-promote-router Blueprint（v0.6.2-alpha.3 新）：总路由 + 4 阶段生命周期。
+promote-target-aware-workflow Blueprint（v0.6.2-alpha.3 重构，原 4 件合并）：3 target 通用 promote。
+详见 .openxenon/assets/blueprints/draft-promote-router.md 等。
+v0.6.2-alpha.3 部分实现（Asset 层 + 路由命令）；剩余（execute mode 自动跟踪、content 校验 Probe 化）待 v0.7.x scene-based Roadmap 收敛后再决。
+D8 推迟扩展：AI Agent 自动推断 promote-target（基于内容关键字）；多人协同 Draft（lock/concurrent edit）。
+v0.6.3 Q2 推迟：skeleton 版本号 + sync 机制；skeleton 演进通知；OXN_DRAFT_SKELETON_NOT_FOUND 加可发现性 hint。
 
 ### DraftSkeleton
 
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#draftskeleton) — per-target 模板——含 frontmatter（必填字段占位）+ H2 段（按目标类型，例如 RFC 的 `## 决策` / Domain 的 `## Terms`）+ TODO 占位。
+物理位置：`.openxenon/draft-skeletons/&lt;target&gt;[-&lt;kind&gt;].md`（v0.6.3 Fix #1 移到 boundary 顶层，避开 blueprint index）。
+frontmatter：`entity: skeleton`（v0.6.3 Q1 独立 entity）+ `target-entity`（fork 后的目标 entity）。
+派生方式（推荐）：draft-skeleton-fork Workflow 调 `asset-create` workflow 的 fork-template slot，从骨架源拷贝。
+关键区别：Skeleton **不是** Draft 内置 template 机制（B-α 决议），独立 entity 标识不与其他 AssetKind 混淆。
 
 ### DraftTarget
 
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#drafttarget) — Draft Promote 路由去向——3 值枚举（Q-T1）：
+物理载体：Draft 文件 frontmatter `promote-target: <rfc|asset|work>`（v0.6.2-alpha.3 新增，可选）。
+路由规则：详见 .openxenon/assets/domains/oxn-draft-promote-domain.md §Invariants。
 
 ### DraftType
 
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#drafttype) — Draft 用途分类——3 类：report（调研报告） / issue（问题记录） / design（设计稿）。映射到文件名前缀（Q-S1/Q-S5）：
+与 DraftTarget 不同（D9+D-α）：DraftType 仅是文件名 metadata（标识用途），DraftTarget 是 algorithmic 路由（标识去向）。
+例：`design-foo.md`（要设计 foo）→ promote-target=asset（推到 Asset）。
+状态转移：active → archived（archive 命令，保留历史）；active → discarded（discard --force，物理删除）。
+Q-S7 锁定：6 命令 = create + list + archive + discard + promote + retarget（最小完整周期）。
 
 ### External
 
@@ -163,6 +207,8 @@ synced-at: 2026-08-02
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#fix-record) — 开发者面向的 bug 修复记录；住 `dev/fix/`；比 Version Fragment 更详细（含根因分析、调试过程）。
+不对外公开（dev/ 是开发者手册，不是产品文档）。
+与 Version Fragment 互补——fix record 给开发者，fragment 给用户（RFC-0013 D3）。
 
 ### Floor
 
@@ -172,7 +218,9 @@ synced-at: 2026-08-02
 ### forbidden-draft-promote-as-asset
 
 
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#forbidden-draft-promote-as-asset) — |
+- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#forbidden-draft-promote-as-asset) — Draft Promote 不产生新 AssetKind——Draft 自身不是 Asset（OxnDraftDomain forbidden-draft-as-asset）。
+Promote 的产物落到 3 类 Target 之一（RFC / Asset / Work），不引入第 4 类。
+Draft 命名空间与 Asset 命名空间分离（drafts/ vs assets/）：即使同名 Draft + Asset 也无冲突。
 
 ### Frozen
 
@@ -210,7 +258,12 @@ synced-at: 2026-08-02
 ### InterferenceFlag
 
 
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#interferenceflag) — 12 项干扰标记枚举（8 RED: waf_detected/just_modified/detached_head/shallow_clone/sandbox_violation/network_timeout/response_truncated/permission_denied + 4 YELLOW: cdn_cache/cache_path/symlink/unknown）；原 Taint 体系的子项保留，合并后统一术语。
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#interferenceflag) — 信号污染标记 = L1-Infra Provider 在 IO 时检测到的干扰信号。是 "Taint / Boundary Deviation / InterferenceFlag" 三个旧术语的**唯一收敛目标**（ADR-0086 + ADR-0066）。
+**真实枚举 = 9 RED + 3 YELLOW = 12 项**（trust-baseline.ts:23-36；domain 旧注释 "8 RED + 4 YELLOW" 是历史勘误）：
+| RED（短路 → INCONCLUSIVE） | YELLOW（透传 + 记录） |
+|---|---|
+| waf_detected, just_modified, detached_head, shallow_clone, sandbox_violation, network_timeout, response_truncated, permission_denied, unknown | cdn_cache, cache_path, symlink |
+RED/YELLOW 不可配置（ADR-0086：信任是系统决策不是用户决策）。
 
 ### Kernel
 
@@ -235,6 +288,23 @@ synced-at: 2026-08-02
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#meta-modality) — 项目工程元情态——回答"OXN 自己怎么组织"的文档；住仓库根 + `dev/` + `.changes/`。包含 5 类项目工程文档（README.md / AGENTS.md / CONTEXT-MAP.md / .changes/ / dev/）。**特例**：可与 Descriptive Modality 组合（README.md = marketing + 入口）；可与 Definitional Modality 组合（CONTEXT-MAP.md = 8 Domain 索引）。RFC-0018 锁定。
 
+### Onboarding Path
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#onboarding-path) — 项目消费者 onboarding 3 入口路径：
+入口探测：`oxn onboard --detect`（基于 package.json / compose.yaml / Cargo.toml / pyproject.toml 4 类信号）。
+Skill 入口：复用 `/oxn-work`，通过 Blueprint 区分场景（ADR-0089 D6）。
+ADR-0089 D2。
+
+### Onboarding Starter
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#onboarding-starter) — 项目消费者 onboarding 用的 5 个内置 Asset（doc-md-domain / md-author-workflow / md-stack / md-author-blueprint / md-system），
+物理位置 `src/builtin/projects/starter/`，走 RFC-0011 `@oxn/` 公共层；
+通过 `oxn onboard --new` 复制到 `&lt;project&gt;/.openxenon/assets/`（@prj/ 层）。
+5 起手 Asset 是 onboarding 的最小可用集（替代 ADR-0069 D1 的 6 Asset）。
+ADR-0089 D1。
+
 ### OpenXenon
 
 
@@ -243,7 +313,19 @@ synced-at: 2026-08-02
 ### outcome
 
 
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#outcome) — frozen.json 里的 Proof 级聚合结构 `{completed: N, deviated: N, inconclusive: N}`；OXN 不做整体合格/失败聚合判定，只提供各状态 Probe 数量；判定权归工程师；ADR-0067。
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#outcome) — Proof 聚合结果。在 schema 中以 `summary` 容器出现：
+```json
+"summary": {
+"outcome": "DEVIATED",      // 3 态（INCONCLUSIVE > DEVIATED > COMPLETED 优先级）
+"totalCount": 4,
+"passedCount": 3,
+"failedCount": 1,
+"inconclusiveCount": 0
+}
+```
+**禁止**：在 aggregate 层直接使用 `outcome` 字段名（撞名 ProbeOutcome 专用字段，
+详见 oxn-probe-domain.md inv-27），必须用 `summary.<...>` 形式。
+`passed: boolean` 是 v0.1 legacy 兼容字段，将随 v0.8 移除。
 
 ### OXL
 
@@ -294,6 +376,12 @@ synced-at: 2026-08-02
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#planningpool) — 规划池——前瞻性规划备选集合；住 `dev/pool/`；`status: planned`；**frontmatter 不含 version 字段**。
+与 Roadmap（`dev/versions/`）是同一类文档的两个生命周期阶段：备选 vs 已绑版本。
+frontmatter 必填：`id` (slug) / `theme` / `priority` (low/medium/high) / `status` / `created-at` /
+`scheduled-version`（未绑为 `~`，scheduling 后改为 `0.X.Y`）。
+入池条件：(a) RFC 主题已定（非 spike），(b) 有最小 RFC 草稿或 ADR 引用，(c) 工程师 mental commit 会做。
+出池条件 (scheduling)：工程师 mental commit 绑版本 → `git mv dev/pool/&lt;slug&gt;.md dev/versions/0-X-Y-&lt;slug&gt;.md` + 补 `version` 字段。
+来源：2026-07-27 grilling session C-OC2 决策；RFC-0013 Errata 2026-07-27 补 dev/pool/。
 
 ### Prescriptive Modality
 
@@ -303,33 +391,72 @@ synced-at: 2026-08-02
 ### Probe
 
 
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#probe) — OXN 内置探针（物理观测 + 客观结果），由 L1-Infra Provider 执行 + L0-Kernel 产出 ProbeOutcome。
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#probe) — OXN 内置探针 = "一次客观事实校验"的统一抽象。物理观测 L1-Infra Provider 执行 → 客观结果 L0-Kernel 产出 ProbeOutcome。同一个 Probe 可在多个 Proof 中被多个业务场景复用。
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#probe) — 物理观测单元（prop 输入 + output 判定），内联在 part 内；标准必须来自 Blueprint observe 数组。
+
+### probeName
+
+
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#probename) — Probe 本体名 = Probe 实体自己的名字（catalog 注册名）。从 `ref` 去除 `@oxn/probes/` 前缀派生（如 `ref: "@oxn/probes/fs-exists"` → `probeName: "fs-exists"`）。
 
 ### ProbeOutcome
 
 
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#probeoutcome) — L0 Kernel 产出的单个 Probe 客观结果（COMPLETED/DEVIATED/INCONCLUSIVE）；探测目标是否符合预期；"完成"指探测完成，不是目标完成；原 ProbeVerdict 改名（ADR-0066/0067）。
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#probeoutcome) — L0 Kernel 产出的单个 Probe 客观结果。**3 态拼写是设计分层**（proof-frozen-writer.ts:11-25 记录）：
+| 层 | 拼写 | 用途 |
+|---|---|---|
+| human canonical `.md` | `pass` / `fail` / `inconclusive` | proof.md 人类阅读 |
+| machine SSOT JSON | `COMPLETED` / `DEVIATED` / `INCONCLUSIVE` | frozen.json（uppercase + -ED 是 JSON Schema enum 惯例） |
+| Kernel ProbeOutcome TS union | `PASS` / `FAIL` / `INCONCLUSIVE` | 接口契约（无 -ED） |
+映射边界在 `buildFrozenProof` / `proof-compiler.ts`。"完成"指探测完成，不是目标完成。`outcome` 字段仅 Probe 内部专用（aggregate 层不可用，详见 inv-27）。
+
+### Project Bootstrap
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#project-bootstrap) — 5 起手 Asset 复制到 `&lt;project&gt;/.openxenon/assets/` 并完成 `oxn asset check` 校验的过程。
+包含 3 步：(1) `oxn onboard --new` 触发复制；(2) 工程师填项目专属内容；
+(3) `oxn asset check` 验证 5 Asset 完整性。
+Proof-First 模式下 bootstrap 可选；完整 IAP 模式下 bootstrap 必走。
+ADR-0089 D2。
 
 ### promote-boundary-isolation
 
 
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promote-boundary-isolation) — |
+- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promote-boundary-isolation) — Draft promote 仅跨 3 类 Target 输出目录（docs/rfcs/zh-cn/ / .openxenon/assets/ / .openxenon/works/），不写其他目录。
+4 条边界规则（继承自 oxn-draft-domain inv-3 + 增 1 条）：
+draft-promote-router Blueprint（v0.6.2-alpha.3 新）：总路由 + 4 阶段生命周期。
+promote-target-aware-workflow Blueprint（v0.6.2-alpha.3 重构，原 4 件合并）：3 target 通用 promote。
+draft-skeleton-fork Workflow（v0.6.2-alpha.3 新）：派生 skeleton。
+draft-promote-tooling Stack（v0.6.2-alpha.3 新）：frontmatter 解析 + H2 段校验工具栈。
+draft-skeletons/&lt;target&gt;[-&lt;kind&gt;].md（v0.6.2-alpha.3 新，7 件）：per-target 模板。
+v0.6.2-alpha.3 落地 7 个 skeleton + 4 阶段 router + 3 target dispatch。
+后续 v0.7.x 扩展：
 
 ### PromoteLifecycle
 
 
 - [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promotelifecycle) — Draft Promote 4 阶段（v0.6.2-alpha.3 锁）：
+1. **gather**：draft-promote-router 读 Draft frontmatter + body，校验 Draft 存在 + promote-target 字段不缺。
+2. **validate-skeleton**：校 frontmatter 字段 + H2 段结构（对照 PromoteRoute 的目标骨架清单）；缺字段报错 `OXN_DRAFT_PROMOTE_VALIDATE_FAILED`，列出缺失清单。
+3. **fork-missing**：从 skeleton 模板补全缺字段（保留工程师填写的内容）；不修改工程师已填字段。
+4. **dispatch-target**：按 PromoteRoute 调 promote-target-aware-workflow Blueprint 的对应分支（rfc / asset-&lt;kind&gt; / work），Work 执行后续 gather/author/validate/promote 4 Boundary。
+关键约束：promote 不分 Intent / Align / Proof 三阶段（与 Work IAP 不同）；是单次 transactional 操作。
 
 ### PromoteRoute
 
 
 - [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promoteroute) — Draft → Target 路由映射表——3 条规则（Q-T1）：
+物理载体：frontmatter `promote-target: <rfc|asset|work>` + `promote-kind: <5 AssetKind>`（仅 asset 时需要）。
+默认值：`--target auto` 模式下，若未声明则报错 `OXN_DRAFT_PROMOTE_TARGET_MISSING`。
 
 ### Proof
 
 
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#proof) — OXN 验证 AI Agent 执行结果（ProbeOutcome 三态）并记录的协作**过程**证明（不是结果证明）；执行主体 OXN Engine（记录事实不评判 ADR-0031）；物理观测 L1-Infra + 客观结果 L0-Kernel；包含三件套（frozen.json + trace.jsonl + state.json）；ADR-0066 + ADR-0067。
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#proof) — OXN 验证 AI Agent 执行结果并记录的协作**过程**证明（不是结果证明）。执行主体 OXN Engine
+（ADR-0031 记录事实不评判）；物理观测 L1-Infra + 客观结果 L0-Kernel。物理产物（`frozen.json`
++ `outcome.md` + `trace.jsonl` + `state.json`）是副作用，**不是** Proof 术语本身。
+聚合结果字段详见 `### outcome`（下方）；IAP 阶段名 = Proof Domain 实例化之一
+（与 Intent/Align 并列，但当前已少用 Intent/Align）。
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#proof) — OXN Engine 记录的协作**过程**证明（不是协作结果证明）；包含 frozen.json + trace.jsonl + state.json 三件套；OXN 只记录事实不评判合格；具体领域见 [`oxn-proof-domain`](./oxn-proof-domain.md)。
 
 ### Referent
@@ -346,12 +473,17 @@ synced-at: 2026-08-02
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#rfc) — OpenXenon 规范（规定性文档）；住 `docs/rfc/zh-cn/RFC-XXXX-&lt;theme&gt;.md`；frozen + errata 演进策略；
+顺序编号 + theme 字段；中文 only；只引用 `docs/glossary/`。替代旧 ADR + OXP 双层（v0.7 废除 OXP）。
 
 ### Roadmap
 
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#roadmap) — AssetKind=roadmap 的历史术语别名。**已废弃**——主术语改为 **AssetMap**（RFC-0013 D4），避免与版本计划文档（`dev/versions/`，同名 Roadmap）混淆。AssetKind 枚举值在代码中仍为 `roadmap`（不变），glossary 主术语为 AssetMap。
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#roadmap) — 前瞻性版本计划文档——描述未来版本将包含什么；住 `dev/versions/`；`status: planned`；frontmatter 必填 `version`。
+允许引用 `.openxenon/` 内部 RFC 草稿、sprint 设计稿（`dev/ → .openxenon/` ✅）。
+版本转正后归档（不删除）到 `.openxenon/.archived/dev/versions/`。
+注意：与 AssetKind=roadmap（AssetMap）是不同概念，术语不混用（RFC-0013 D4）。
+仅当 entry 从 `PlanningPool` scheduling 后才放入 `dev/versions/`；当前 `dev/versions/` 为空。
 
 ### Round
 
@@ -369,11 +501,20 @@ synced-at: 2026-08-02
 
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#skeleton) — per-target 模板文件的实体类型（v0.6.3 Q1 新增）。
+frontmatter：`entity: skeleton` 标识模板自身（不与任何目标 entity 混淆）+ `target-entity: <rfc|domain|workflow|stack|blueprint|roadmap|work>` 标识 fork 目标。
+物理位置：`.openxenon/draft-skeletons/`（boundary 顶层）。
+7 个内置模板：`rfc.md` / `asset-{domain,workflow,stack,blueprint,roadmap}.md` / `work.md`。
+落盘方式：`oxn init` 自动写入（如果不存在）。
+与 AssetKind 关系：Skeleton **不是** AssetKind 第 6 类（5 AssetKind 封闭性保持：domain/workflow/stack/blueprint/roadmap）。
+与 Draft 关系：Skeleton 是 Draft 的**前置模板**（与 `.openxenon/drafts/` 平行），不是 Draft 实例。
+自由度（v0.6.3 Q3）：工程师可手写 Draft，不强制从 skeleton 派生。
 
 ### SkeletonForking
 
 
 - [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#skeletonforking) — skeleton 派生规则——v0.6.2-alpha.3 起 Draft 创建时（`--target` 模式）从 `.openxenon/draft-skeletons/&lt;target&gt;[-&lt;kind&gt;].md` 派生（v0.6.3 Fix #1 移到 boundary 顶层）。
+7 个 skeleton 模板（v0.6.2-alpha.3 全部建）：
+派生方式：draft-skeleton-fork Workflow 调 fork-template slot（Asset 形式），源文件必含 OXN 形式的 frontmatter + H2 占位（不允许纯空白）。
 
 ### Skill
 
@@ -394,11 +535,27 @@ synced-at: 2026-08-02
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#starter-asset) — `oxn init --starter` 拷贝到 `.openxenon/assets/` 的 Built-in Asset 副本；
+用户拥有可改。与 `@oxn/` fallback 两层覆盖（D8）。
+存在后后续变更走 asset-evolve Work。RFC-0012 锁定（meta-RFC）。
+Supersede 走新 RFC 标 superseded-by / supersedes。RFC-0010 锁定（meta-RFC）。RFC-0013 D6 移除 version 字段（对齐业界标准）。
+格式 `0.6.2-alpha.0` < `0.6.2`。允许多次迭代。patch 不走 alpha。
+开启条件：minor 由工程师人工确认；major 必经。一旦开启必须走完到 stable（不能跳过该版本）。
+转正条件：工程师人工 sign-off（无自动条件）。RFC-0013 锁定（meta-RFC）。
 
 ### TargetDispatchTable
 
 
 - [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#targetdispatchtable) — 路由 translate 表——把 Draft target 语法转成 promote-target-aware-workflow Blueprint 内部 task name：
+| promote-target | promote-kind | 内部 task |
+|---|---|---|
+| rfc | (none) | `promote-rfc` |
+| asset | domain | `promote-asset-domain` |
+| asset | workflow | `promote-asset-workflow` |
+| asset | stack | `promote-asset-stack` |
+| asset | blueprint | `promote-asset-blueprint` |
+| asset | roadmap | `promote-asset-roadmap` |
+| work | (none) | `promote-work` |
+物理载体：promote-target-aware-workflow Blueprint 的 H2 `## Tasks` 段，每条 task 一个 target。
 
 ### Task
 
@@ -410,10 +567,17 @@ synced-at: 2026-08-02
 
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#trace) — Work 执行轨迹（trace.jsonl），JSONL 追加式事件流；append-only + Trace-before-State（ADR-0009）。
 
+### useName
+
+
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#usename) — 业务场景名 = 一次 Probe 使用的**业务场景名**（"这次要验证什么"）。在 proof.md 是 H3 key，在 frozen.json 是 `probes` 对象的 key。字符集约束 `^[a-zA-Z0-9-]+$`（保证可作 JSON object key）。
+
 ### Version Fragment
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#version-fragment) — 回顾性变更日志片段；住 `.changes/0-X-Y-*.md`；版本转正时落盘；`status: released`。
+不引用 `.openxenon/` 内部路径（boundary 规则）。
+package.json 为版本号 SSOT，8 文件一致性由 version-check 强制（RFC-0013 D5）。
 
 ### Version Hygiene
 
