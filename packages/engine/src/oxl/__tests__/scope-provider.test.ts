@@ -190,7 +190,7 @@ describe('OxnBuiltinRegistry', () => {
   })
 
   test('查询内置零件返回 null（D18 收窄）', () => {
-    // v0.7 Phase 4: parts builtin 延后（src/builtin/ 无 parts/*.md）
+    // Phase 4: parts builtin 延后（packages/engine/src/builtin/ 无 parts/*.md）
     // 旧版本硬编码的 3 phantom parts (git-commit/create-branch/develop-feature) 已删除
     expect(registry.getPart('git-commit')).toBeNull()
     expect(registry.has('git-commit', 'part')).toBe(false)
@@ -221,23 +221,25 @@ describe('OxnBuiltinRegistry', () => {
     expect(probes.map((p) => p.name)).toContain('port-listening')
   })
 
-  test('listByType 返回 3 个蓝图', () => {
+  test('listByType 返回 4 个蓝图（ADR-0090 + ADR-0089 md-author）', () => {
     const bps = registry.listByType('blueprint')
-    expect(bps.length).toBe(3)
+    expect(bps.length).toBe(4)
     expect(bps.map((b) => b.name)).toContain('git-workflow')
     expect(bps.map((b) => b.name)).toContain('verify-pipeline')
     expect(bps.map((b) => b.name)).toContain('leader-test-dsl')
+    expect(bps.map((b) => b.name)).toContain('md-author-blueprint')
   })
 
   test('listByType part 返回空数组（D18 收窄）', () => {
     expect(registry.listByType('part')).toEqual([])
   })
 
-  test('count 和 totalCount（v0.6.2: 19 probes = 15 + 4 doc-*）', () => {
+  test('count 和 totalCount（ADR-0090: 19+4+1+1+1+1 = 27）', () => {
     expect(registry.count('probe')).toBe(19)
-    expect(registry.count('blueprint')).toBe(3)
+    expect(registry.count('blueprint')).toBe(4)
     expect(registry.count('part')).toBe(0)
-    expect(registry.totalCount()).toBe(22)
+    // 4 个 blueprint + 19 probes + 1 domain + 1 workflow + 1 stack + 1 roadmap = 27
+    expect(registry.totalCount()).toBe(27)
   })
 
   test('动态注册', () => {
@@ -320,9 +322,9 @@ describe('OxnWorkspaceManager', () => {
     }
   })
 
-  test('list @oxn blueprint 返回 3 个内置蓝图', () => {
+  test('list @oxn blueprint 返回 4 个内置蓝图（ADR-0090 + ADR-0089 md-author）', () => {
     const bps = manager.list('oxn', 'blueprint')
-    expect(bps.length).toBe(3)
+    expect(bps.length).toBe(4)
   })
 
   test('list @oxn part 返回空（D18 收窄）', () => {
@@ -335,9 +337,9 @@ describe('OxnWorkspaceManager', () => {
     expect(ifaces).toEqual([])
   })
 
-  test('count 返回正确数量（RFC-0015 D4.2 + RFC-0016: 19 probes）', () => {
+  test('count 返回正确数量（ADR-0090: 19 probes + 4 blueprints + 1 domain + 1 workflow + 1 stack + 1 roadmap）', () => {
     expect(manager.count('oxn', 'probe')).toBe(19)
-    expect(manager.count('oxn', 'blueprint')).toBe(3)
+    expect(manager.count('oxn', 'blueprint')).toBe(4)
     expect(manager.count('oxn', 'part')).toBe(0)
   })
 

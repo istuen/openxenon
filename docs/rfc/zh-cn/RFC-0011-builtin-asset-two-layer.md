@@ -17,8 +17,8 @@ synced-at: 2026-07-26
 > **类型**：RFC（OpenXenon 规范 · meta-RFC）
 > **主题**：builtin-asset-two-layer
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
-> **来源**：2026-07-25 grilling session #6（与 user 协作）+ v0.7 探索发现
-> **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+> **来源**：2026-07-25 grilling session #6（与 user 协作）+ 探索发现
+> **批次**：2026-07-26 RFC 首批 promote（Phase 2）
 
 ## 摘要
 
@@ -30,30 +30,41 @@ Builtin Asset（`@oxn/` scope，编译时内置）与 Project Asset（`@prj/` sc
 
 | 层 | scope | 物理位置 | 创建方式 | 优先级 |
 |---|---|---|---|---|
-| **Built-in Asset** | `@oxn/` | `src/builtin/`（OXN 仓库内） | 自举种子（手动创建） | 低（fallback） |
+| **Built-in Asset** | `@oxn/` | `packages/engine/src/builtin/`（engine 包内） | 自举种子（手动创建） | 低（fallback） |
 | **Project Asset** | `@prj/` | `.openxenon/assets/`（项目工作台） | 走 Work 流转 | 高（override） |
+
+> **ADR-0090 修订**：builtin 物理位置从 `src/builtin/`（OXN 仓库根）迁移到 `packages/engine/src/builtin/`（engine 包内）。原因为：① `bunx oxn` 安装场景下仓库根路径不存在；② builtin 是 engine 包固有职责，不该跟仓库布局耦合；③ engine npm 包携带 builtin .md 一起发布。
 
 解析顺序：`@prj/` override > `@oxn/` fallback。项目可 fork builtin 到 project 层变可编辑。
 
-### D2：`OxnBuiltinRegistry` 重写（Phase 4 范围收窄）
+### D2：`OxnBuiltinRegistry` 重写（Phase 4 范围收窄 + ADR-0090 D18 解除）
 
 v0.6.1 三 SSOT 不一致（catalog.ts 15 probes + .md 15 probes + Registry mock 4 probes + 3 phantom parts）。Phase 4 修复：
 
-- `_initProbes()` 改为从 `src/builtin/probes/*.md` 加载（mdast pipeline）
-- `_initBlueprints()` 改为从 `src/builtin/blueprints/*.md` 加载
+- `_initProbes()` 改为从 `packages/engine/src/builtin/probes/*.md` 加载（mdast pipeline）
+- `_initBlueprints()` 改为从 `packages/engine/src/builtin/blueprints/*.md` 加载
 - 删除 3 phantom parts（无 .md 文件）
 - 补齐 11 个缺失 probes（`ts-compiles`, `lint-check`, `git-branch-exists`, `http-responds`, `git-clean`, `deps-resolved`, `file-exports`, `fs-parseable`, `git-merge-feasible`, `test-pass`, `git-status-clean`）
 
+ADR-0090 解除 D18 延后：
+
+- `_initDomains()` / `_initWorkflows()` / `_initStacks()` / `_initAssetmaps()` 新增
+- 5 类 builtin 全部加载；`readBuiltinAsset(kind, name)` 5 类填齐
+- `getDomain / getWorkflow / getStack / getRoadmap` 4 个新查询接口
+- `IBuiltinRegistry` 接口扩展（向后兼容，旧 4 接口保留）
+
 ### D3：D18 延后范围
 
-| 范围 | Phase 4 处理 | 延后落地 |
+| 范围 | Phase 4 处理 | ADR-0090 状态 |
 |---|---|---|
-| probes | ✅ 修复 | — |
-| blueprints | ✅ 修复 | — |
-| domains | ❌ 延后 | RFC-0011 记录，后续探索 |
-| workflows | ❌ 延后 | RFC-0011 记录，后续探索 |
+| probes | ✅ 修复 | ✅ 维持 |
+| blueprints | ✅ 修复 | ✅ 维持 + md-author（ADR-0089）|
+| domains | ❌ 延后 | ✅ 解除（doc-md, ADR-0089） |
+| workflows | ❌ 延后 | ✅ 解除（md-author, ADR-0089） |
+| stacks | ❌ 延后 | ✅ 解除（md-stack, ADR-0089） |
+| roadmaps | ❌ 延后 | ✅ 解除（md-system, ADR-0089，目录 `assetmaps/`）|
 
-`oxn init --starter` flag（拷贝 builtin 到 `.openxenon/assets/`）也属延后范畴。
+`oxn init --starter` flag（拷贝 builtin 到 `.openxenon/assets/`）通过 `oxn onboard --new`（ADR-0089 D2）落地。
 
 ### D4：`@oxn/` scope 行为
 
@@ -72,7 +83,7 @@ v0.6.1 三 SSOT 不一致（catalog.ts 15 probes + .md 15 probes + Registry mock
 - ✅ 19 个 builtin probes+blueprints 修复（4→15 probes + 0→3 blueprints）
 - ✅ 3 phantom parts 删除
 - ✅ `builtin-assets-md.test.ts` 测试守卫扩展
-- 📝 domains + workflows builtin 延后（v0.8+）
+- 📝 domains + workflows builtin 延后（已被 ADR-0090 解除）
 - 📝 `oxn init --starter` flag 延后
 - 📝 `oxn-scope.ts` stale path 顺手修复
 

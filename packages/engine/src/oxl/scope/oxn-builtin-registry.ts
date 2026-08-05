@@ -1,20 +1,27 @@
 /**
- * oxn-builtin-registry.ts — v0.7 Phase 4 重写
+ * oxn-builtin-registry.ts — Phase 4 builtin 加载 + ADR-0090 物理位置迁移
  *
  * 替代 v0.6.x 硬编码 mock (4 probes + 3 phantom parts + 0 blueprints)，
- * 从 src/builtin/probes/*.md 与 src/builtin/blueprints/*.md 加载 15 probes + 3 blueprints。
+ * 从 packages/engine/src/builtin/{kind}/*.md 加载 27 builtin assets（ADR-0090）：
+ *   - 19 probes
+ *   - 4 blueprints (3 原生 + md-author)
+ *   - 1 domain (doc-md)
+ *   - 1 workflow (md-author)
+ *   - 1 stack (md-stack)
+ *   - 1 roadmap (md-system, 收为 assetmap/)
  *
  * mdast 管线复用：
  *   - parseMarkdown (md-pipeline/utils) → tree + frontmatter
  *   - collectHeadingContexts → H2 段定位（Alignment/Scheme/Props/Output/Version/Slots）
  *   - collectListFields → listItem key-value 提取
  *
- * 路径解析：
- *   - 测试/dev：process.cwd() + '/src/builtin'
- *   - 包内：import.meta.dirname + '/../../../../src/builtin'（oxn-builtin-registry.ts 在 packages/engine/src/oxl/scope/）
- *   - fallback：空 registry（不抛错）
+ * 路径解析（ADR-0090 修订）：
+ *   - 候选 1：cwd + '/packages/engine/src/builtin'（OXN 仓库 dev mode，从 root 运行）
+ *   - 候选 2：import.meta.dirname + '/../../builtin'（3 级向上：packages/engine/src/oxl/scope/ → packages/engine/src/builtin/）
+ *   - 候选 3：fallback，空 registry（不抛错）
  *
- * D18 收窄：domains + workflows builtin 延后，本文件仅 probes + blueprints。
+ * 决策：builtin 现在归属 engine 包，跟着 engine npm 一起发布（ADR-0090 D3）。
+ * D18 延后由 ADR-0090 D2 解除：5 类 builtin 全部加载。
  */
 import { existsSync, readdirSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { dirname, join } from 'node:path'
@@ -28,20 +35,32 @@ import type { AssetKind } from '@openxenon/engine/infra/paths'
 // 路径解析（开发/测试 + 包内）
 // ========================
 
+/**
+ * ADR-0090 builtin 物理位置：packages/engine/src/builtin/
+ *
+ * 候选路径优先级（resolveBuiltinDir）：
+ *   1. cwd + 'packages/engine/src/builtin' — OXN repo dev mode (CLI 从 root 跑)
+ *   2. import.meta.dirname + '../../builtin' — 3 级向上到 engine/src/builtin
+ *      (registry 文件在 packages/engine/src/oxl/scope/)
+ *   3. cwd + 'src/builtin' — v0.6.x 兼容路径（已废弃，保留 fallback）
+ */
 function resolveBuiltinDir(): string | null {
   const candidates: string[] = []
 
-  // 候选 1：cwd 相对路径（bun test / CLI dev mode）
-  candidates.push(join(process.cwd(), 'src/builtin'))
+  // 候选 1：OXN repo dev mode (cwd 为仓库根)
+  candidates.push(join(process.cwd(), 'packages/engine/src/builtin'))
 
-  // 候选 2：import.meta.dirname 相对路径（包内执行）
+  // 候选 2：import.meta.dirname 相对路径（包内执行 / npm 安装后）
   try {
     const here = dirname(fileURLToPath(import.meta.url))
-    // packages/engine/src/oxl/scope/ → ../../../../src/builtin
-    candidates.push(join(here, '../../../../src/builtin'))
+    // packages/engine/src/oxl/scope/ → ../../builtin (3 级)
+    candidates.push(join(here, '../../builtin'))
   } catch {
     // import.meta.url 不可用（如纯 CommonJS 编译）—— 跳过
   }
+
+  // 候选 3：v0.6.x 兼容（fallback，仅在过渡期生效）
+  candidates.push(join(process.cwd(), 'src/builtin'))
 
   for (const c of candidates) {
     if (existsSync(c)) return c
@@ -284,22 +303,71 @@ function parseBlueprint(mdPath: string): ParsedBlueprint | null {
 }
 
 // ========================
+// Generic Asset 解析（domain / workflow / stack / roadmap）
+// ========================
+//
+// 这 4 类 builtin 暂不需要 H2 段解析（不像 Probe/Blueprint 有 Alignment/Scheme/Props/Output/Version/Slots
+// 这种结构化段）。当前只解析 frontmatter + 保留 raw 文本，调用者按需 deep-parse。
+// 未来如果 Domain/Workflow 引入 H2 结构（如 Term / Invariant / Ban 段），再扩展 `parseGenericAsset`。
+
+interface ParsedGenericAsset {
+  name: string
+  version: number
+  abstract: string
+  references: string[]
+  raw: string
+  _sourcePath: string
+}
+
+function parseGenericAsset(mdPath: string): ParsedGenericAsset | null {
+  const raw = readFileSync(mdPath, 'utf-8')
+  const { frontmatter } = parseMarkdown(raw)
+  const name = typeof frontmatter.name === 'string' ? frontmatter.name : null
+  if (!name) return null
+  const version = typeof frontmatter.version === 'number' ? frontmatter.version : 0.1
+  const abstract = typeof frontmatter.abstract === 'string' ? frontmatter.abstract : ''
+  const refs = Array.isArray(frontmatter.references)
+    ? (frontmatter.references as unknown[]).filter((r): r is string => typeof r === 'string')
+    : []
+  return {
+    name,
+    version,
+    abstract,
+    references: refs,
+    raw,
+    _sourcePath: mdPath,
+  }
+}
+
+// ========================
 // Registry 实现
 // ========================
 
 export class OxnBuiltinRegistry implements IBuiltinRegistry {
   private probes: Map<string, Record<string, unknown>>
   private blueprints: Map<string, Record<string, unknown>>
+  private domains: Map<string, Record<string, unknown>>
+  private workflows: Map<string, Record<string, unknown>>
+  private stacks: Map<string, Record<string, unknown>>
+  private roadmaps: Map<string, Record<string, unknown>>
   private interfaces: Map<string, Record<string, unknown>>
   private readonly builtinDir: string | null
 
   constructor(builtinDir?: string) {
     this.probes = new Map()
     this.blueprints = new Map()
+    this.domains = new Map()
+    this.workflows = new Map()
+    this.stacks = new Map()
+    this.roadmaps = new Map()
     this.interfaces = new Map()
     this.builtinDir = builtinDir ?? resolveBuiltinDir()
     this._initProbes()
     this._initBlueprints()
+    this._initDomains()
+    this._initWorkflows()
+    this._initStacks()
+    this._initAssetmaps()
   }
 
   private _initProbes(): void {
@@ -344,6 +412,90 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
     }
   }
 
+  private _initDomains(): void {
+    if (!this.builtinDir) return
+    const dir = join(this.builtinDir, 'domains')
+    if (!existsSync(dir)) return
+    const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
+    for (const f of files) {
+      const parsed = parseGenericAsset(join(dir, f))
+      if (!parsed) continue
+      this.domains.set(parsed.name, {
+        name: parsed.name,
+        version: parsed.version,
+        abstract: parsed.abstract,
+        references: parsed.references,
+        _builtin: true,
+        _type: 'domain',
+        _sourcePath: parsed._sourcePath,
+        _raw: parsed.raw,
+      })
+    }
+  }
+
+  private _initWorkflows(): void {
+    if (!this.builtinDir) return
+    const dir = join(this.builtinDir, 'workflows')
+    if (!existsSync(dir)) return
+    const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
+    for (const f of files) {
+      const parsed = parseGenericAsset(join(dir, f))
+      if (!parsed) continue
+      this.workflows.set(parsed.name, {
+        name: parsed.name,
+        version: parsed.version,
+        abstract: parsed.abstract,
+        references: parsed.references,
+        _builtin: true,
+        _type: 'workflow',
+        _sourcePath: parsed._sourcePath,
+        _raw: parsed.raw,
+      })
+    }
+  }
+
+  private _initStacks(): void {
+    if (!this.builtinDir) return
+    const dir = join(this.builtinDir, 'stacks')
+    if (!existsSync(dir)) return
+    const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
+    for (const f of files) {
+      const parsed = parseGenericAsset(join(dir, f))
+      if (!parsed) continue
+      this.stacks.set(parsed.name, {
+        name: parsed.name,
+        version: parsed.version,
+        abstract: parsed.abstract,
+        references: parsed.references,
+        _builtin: true,
+        _type: 'stack',
+        _sourcePath: parsed._sourcePath,
+        _raw: parsed.raw,
+      })
+    }
+  }
+
+  private _initAssetmaps(): void {
+    if (!this.builtinDir) return
+    const dir = join(this.builtinDir, 'assetmaps')
+    if (!existsSync(dir)) return
+    const files = readdirSync(dir).filter((f) => f.endsWith('.md'))
+    for (const f of files) {
+      const parsed = parseGenericAsset(join(dir, f))
+      if (!parsed) continue
+      this.roadmaps.set(parsed.name, {
+        name: parsed.name,
+        version: parsed.version,
+        abstract: parsed.abstract,
+        references: parsed.references,
+        _builtin: true,
+        _type: 'roadmap',
+        _sourcePath: parsed._sourcePath,
+        _raw: parsed.raw,
+      })
+    }
+  }
+
   // ---- 查询接口 ----
 
   getProbe(name: string): Record<string, unknown> | null {
@@ -351,17 +503,35 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
   }
 
   getPart(_name: string): Record<string, unknown> | null {
-    // D18 收窄：parts builtin 延后（src/builtin/ 无 parts/*.md）
+    // parts builtin 延后（packages/engine/src/builtin/ 无 parts/*.md）
     // 接口保留但返回 null
     return null
   }
 
-  getInterface(_name: string): Record<string, unknown> | null {
-    return this.interfaces.get(_name) ?? null
+  getInterface(name: string): Record<string, unknown> | null {
+    return this.interfaces.get(name) ?? null
   }
 
   getBlueprint(name: string): Record<string, unknown> | null {
     return this.blueprints.get(name) ?? null
+  }
+
+  /** ADR-0090 D2 新增：domain / workflow / stack / roadmap 查询 */
+  getDomain(name: string): Record<string, unknown> | null {
+    return this.domains.get(name) ?? null
+  }
+
+  getWorkflow(name: string): Record<string, unknown> | null {
+    return this.workflows.get(name) ?? null
+  }
+
+  getStack(name: string): Record<string, unknown> | null {
+    return this.stacks.get(name) ?? null
+  }
+
+  /** roadmap kind → assetmap 命名收敛后，查询仍走 getRoadmap（保留 RFC-0013 D4 枚举） */
+  getRoadmap(name: string): Record<string, unknown> | null {
+    return this.roadmaps.get(name) ?? null
   }
 
   has(name: string, type: OxnAssetType): boolean {
@@ -413,7 +583,15 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
 
   /** 全部资产数量 */
   totalCount(): number {
-    return this.probes.size + this.blueprints.size + this.interfaces.size
+    return (
+      this.probes.size +
+      this.blueprints.size +
+      this.domains.size +
+      this.workflows.size +
+      this.stacks.size +
+      this.roadmaps.size +
+      this.interfaces.size
+    )
   }
 
   /** 当前 builtin 目录（调试用） */
@@ -424,9 +602,15 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
   /**
    * 读 builtin asset 原始文本（v0.6.2 I-4 引入, v0.6.2-alpha.2 实现）。
    *
+   * ADR-0090 修订：5 类 builtin 全部填齐（D18 延后解除）。
+   *
    * AssetKind → builtin 子目录映射:
-   * - blueprint → blueprints/  (3 个 builtin: verify-pipeline / git-workflow / leader-test-dsl)
-   * - domain/workflow/stack/roadmap → builtin 延后 (src/builtin/{kinds}/ 目录空) → null
+   * - probe      → probes/      (19 个 builtin)
+   * - blueprint  → blueprints/  (4 个 builtin: verify-pipeline / git-workflow / leader-test-dsl / md-author)
+   * - domain     → domains/     (1 个 builtin: doc-md)
+   * - workflow   → workflows/   (1 个 builtin: md-author)
+   * - stack      → stacks/      (1 个 builtin: md-stack)
+   * - roadmap    → assetmaps/   (1 个 builtin: md-system)
    *
    * 返 null 场景:
    * - builtinDir 为 null (registry 未初始化)
@@ -437,10 +621,10 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
     if (!this.builtinDir) return null
     const subdirMap: Record<AssetKind, string | null> = {
       blueprint: 'blueprints',
-      domain: null, // builtin 延后 (oxn-builtin-registry.ts:16-17)
-      workflow: null,
-      stack: null,
-      roadmap: null,
+      domain: 'domains',
+      workflow: 'workflows',
+      stack: 'stacks',
+      roadmap: 'assetmaps',
     }
     const subdir = subdirMap[kind]
     if (!subdir) return null

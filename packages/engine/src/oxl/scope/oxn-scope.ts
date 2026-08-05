@@ -204,6 +204,12 @@ export interface IBuiltinRegistry {
   getProbe(name: string): Record<string, unknown> | null
   getPart(name: string): Record<string, unknown> | null
   getInterface(name: string): Record<string, unknown> | null
+  getBlueprint(name: string): Record<string, unknown> | null
+  /** ADR-0090 D2 新增：domain / workflow / stack / roadmap 查询 */
+  getDomain(name: string): Record<string, unknown> | null
+  getWorkflow(name: string): Record<string, unknown> | null
+  getStack(name: string): Record<string, unknown> | null
+  getRoadmap(name: string): Record<string, unknown> | null
   listByType(type: OxnAssetType): BuiltinAssetEntry[]
   has(name: string, type: OxnAssetType): boolean
 }
