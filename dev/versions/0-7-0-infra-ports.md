@@ -1,10 +1,23 @@
-# v0.7.0 sub-RFC — ResourcePort / CachePort / WorkSnapshot（infra 扩展）
+---
+version: 0.7.0
+date: 2026-11-15
+type: minor
+status: planned
+rfc:
+  - dev/versions/0-7-0-emergence.md
+adr:
+  - docs/adrs/0028-resource-port-cache-port-work-snapshot.md
+promoted-from: .openxenon/drafts/.archived/rfc/v0.7.0-infra-ports-rfc.md
+---
 
-> **RFC 状态**：📝 Draft（待 review）
+# 0.7.0 — Infra 扩展：ResourcePort / CachePort / WorkSnapshot
+
+> **状态**：📝 Draft（待 review）
 > **目标版本**：v0.7.0（首个 v0.7 minor，与 emergence RFC 并行）
-> **前置依赖**：v0.6.1（信任链就位；原 v0.6.5 已并入 v0.7，见 version-unification-rfc.md）
+> **前置依赖**：v0.6.1（信任链就位；原 v0.6.5 已并入 v0.7，见 dev/meta/version-unification.md）
 > **核心交付**：Infra Port 扩展 — ResourcePort（虚拟 FS）+ CachePort（RAM/Redis）+ WorkSnapshot（序列化）
-> **来源**：[ADR-0028](../adrs/0028-resource-port-cache-port-work-snapshot.md) · docs_tmp/mirage-1.md (2026-06-11)
+> **来源**：[ADR-0028](/Users/issac/pro/openxenon/docs/adrs/0028-resource-port-cache-port-work-snapshot.md) · docs_tmp/mirage-1.md (2026-06-11)
+> **原路径**：`.openxenon/drafts/rfc/v0.7.0-infra-ports-rfc.md`（已归档）
 
 ---
 

@@ -15,6 +15,9 @@ pre-commit:
     doc-boundary:
       glob: "**/*.md"
       run: bun scripts/check-doc-boundary.ts
+    versioned-docs:
+      glob: "docs/{dev,rfc,adrs}/**/*.md"
+      run: bun scripts/check-versioned-docs.ts
 
 pre-push:
   commands:

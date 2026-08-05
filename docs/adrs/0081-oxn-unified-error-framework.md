@@ -1,15 +1,16 @@
 ---
 entity: adr
 version: 1.0.0
-status: Proposed
+status: Accepted
 date: 2026-07-24
-supersedes: null
+accepted: 2026-07-24
+supersedes: ADR-0080
 superseded-by: null
 related:
-  - .openxenon/drafts/rfc/0080-error-terminology-unification-and-governance.md
+  - docs/adrs/0080-error-terminology-unification-and-governance.md
   - docs/dev/zh-cn/error-code-registry.md
-  - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
-  - .openxenon/drafts/rfc/0082-diagnostic-unification.md
+  - docs/adrs/0072-oxn-as-referent-for-nondeterministic-agent.md
+  - docs/adrs/0082-diagnostic-unification.md
 ---
 
 # ADR-0081: OXN 统一错误体系框架（EngineError + CLIError 双基类 + Domain 子类 + severity 两档）

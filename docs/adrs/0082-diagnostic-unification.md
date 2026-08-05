@@ -5,11 +5,13 @@ status: Proposed
 date: 2026-07-25
 supersedes: null
 superseded-by: null
+implementation-status: not-shipped
+implementation-note: 代码未落地（无 LoggerPort 接口 / consola 依赖 / logger.warn 调用）；保留 Proposed 待 v0.7.0+ 实施
 related:
-  - .openxenon/drafts/rfc/0081-oxn-unified-error-framework.md
-  - .openxenon/drafts/rfc/0080-error-terminology-unification-and-governance.md
+  - docs/adrs/0081-oxn-unified-error-framework.md
+  - docs/adrs/0080-error-terminology-unification-and-governance.md
   - docs/dev/zh-cn/error-code-registry.md
-  - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
+  - docs/adrs/0072-oxn-as-referent-for-nondeterministic-agent.md
 ---
 
 # ADR-0082: OXN Diagnostic 统一（LoggerPort + consola 隔离层 + 纯日志单通道）

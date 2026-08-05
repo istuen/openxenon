@@ -1,12 +1,28 @@
-# .oxn Deprecation RFC — v0.7.0 Langium Retirement & .oxn Canonical Flip
+---
+version: 0.7.0
+date: 2026-11-15
+type: minor
+status: planned
+rfc:
+  - docs/rfc/zh-cn/RFC-0020-three-boundary-blueprint-elevation.md
+adr:
+  - docs/adrs/0052-langium-retirement-oxn-deprecation.md
+  - docs/adrs/0054-three-boundary-framework.md
+  - docs/adrs/0055-blueprint-as-composition-template.md
+  - docs/adrs/0056-external-inline-and-status.md
+baseline:
+  - dev/meta/oxn-deprecation-baseline.md
+promoted-from: .openxenon/drafts/.archived/rfc/oxn-deprecation-rfc.md
+---
 
-> **日期**：2026-07-11（v1.0 拍板）
-> **状态**：🟢 **v1.0 已拍板**（D9/D10/D11 实施路径锁定）
+# 0.7.0 — .oxn 切割：Langium 完整退役 + git rm 全量 .oxn + CLI 清理
+
+> **类型**：已绑版本 Roadmap（deferred v0.7.0 切割）
+> **状态**：📝 Planned（基础部分 v0.6.1 已 ship，见 dev/meta/oxn-deprecation-baseline.md）
 > **目标版本**：v0.7.0
-> **前置依赖**：v0.6.1（三边界框架 + Blueprint 提升 + External inline 全部落地）
+> **前置依赖**：v0.6.1（三边界框架 + Blueprint 提升 + External inline + Langium freeze）
 > **核心交付**：删除 Langium 基础设施 + git rm 全量 .oxn 文件 + 单 .md 路径 + CLI 清理
-> **关联 RFC**：[`md-native-grammar-rfc.md` v2.0](./md-native-grammar-rfc.md)（D9/D10/D11 锁定）· [`three-boundary-blueprint-elevation-rfc.md` v1.0](./three-boundary-blueprint-elevation-rfc.md)（三边界框架）
-> **关联 ADR**：[ADR-0054](../adrs/0054-three-boundary-framework.md) · [ADR-0055](../adrs/0055-blueprint-as-composition-template.md) · [ADR-0056](../adrs/0056-external-inline-and-status.md)
+> **原路径**：`.openxenon/drafts/rfc/oxn-deprecation-rfc.md`（已归档）
 
 ---
 

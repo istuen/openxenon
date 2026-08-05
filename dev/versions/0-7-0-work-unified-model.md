@@ -1,11 +1,23 @@
-# Work 统一模型 + 引用收敛 + Round 改进 RFC
+---
+version: 0.7.0
+date: 2026-11-15
+type: minor
+status: planned
+rfc:
+  - docs/rfc/zh-cn/RFC-0020-three-boundary-blueprint-elevation.md
+  - docs/adrs/0050-onboarding-via-starter-work.md
+  - docs/adrs/0055-blueprint-as-composition-template.md
+promoted-from: .openxenon/drafts/.archived/rfc/work-unified-model-rfc.md
+---
 
-> **日期**：2026-07-10（v1.0 Draft）
+# 0.7.0 — Work 统一模型 + 引用收敛 + Round 改进
+
 > **状态**：📝 Draft（待 review）
-> **基础**：[三边界框架 + Blueprint 提升组合模板 RFC](./three-boundary-blueprint-elevation-rfc.md) · [ADR-0050 Onboarding via starter-work](../.openxenon/docs/adrs/0050-onboarding-via-starter-work.md) · [ADR-0055 Blueprint 组合模板](../.openxenon/docs/adrs/0055-blueprint-as-composition-template.md) · [v0.7 Work Closed Loop Cleanup Draft](./2026-07-09-v0.7-work-closed-loop-and-cleanup.md)
+> **日期**：2026-07-10（v1.0 Draft）
 > **作者**：opencode（与 user 协作，2026-07-10）
-> **目标版本**：v0.6.1-alpha.5 ~ v0.6.1 收尾
+> **目标版本**：v0.7.0
 > **范围**：4 个决策整合（Asset 创建统一 + Work 引用收敛 + Round 改进 + 阶段缩减为 IAP 三阶段实体）
+> **原路径**：`.openxenon/drafts/rfc/work-unified-model-rfc.md`（已归档）
 
 ---
 

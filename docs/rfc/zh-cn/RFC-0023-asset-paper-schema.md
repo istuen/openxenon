@@ -1,0 +1,243 @@
+---
+entity: rfc
+id: RFC-0023
+theme: asset-paper-schema
+status: Partially Accepted
+date: 2026-07-17
+accepted: 2026-07-17
+supersedes: []
+superseded-by: ~
+related:
+  - ADR-0051: docs/adrs/0051-asset-paper-citation-network.md
+  - ADR-0056: docs/adrs/0056-external-inline-and-status.md
+  - .changes/0-6-1-asset-paper.md
+deferred-rfc:
+  - 0-7-0-asset-graph: dev/versions/0-7-0-asset-graph.md
+promoted-from: .openxenon/drafts/.archived/rfc/v0.6.3-asset-paper-schema-rfc.md
+note: 文件名带 v0.6.3 前缀；4 字段 schema 在 v0.6.1-alpha.1 落地，图渲染 deferred 到 v0.7.0
+synced-at: 2026-08-05
+---
+
+# RFC-0023: Asset Paper Schema — 引用计数 + 依赖 DAG
+
+> **类型**：RFC（OpenXenon 规范）
+> **主题**：asset-paper-schema
+> **状态**：🟡 Partially Accepted（基础 4 字段 v0.6.1-alpha.1 落地；library/external 子目录由 RFC-0020 收敛为 inline；图渲染 deferred 到 v0.7.0，见 dev/versions/0-7-0-asset-graph.md）
+> **来源**：2026-07-17 调研 session
+> **批次**：v0.6.1 体系重构（promote 自 drafts/rfc/v0.6.3-asset-paper-schema-rfc.md）
+
+## 0. 背景与动机
+
+### 0.1 v0.7.x Memory RFC 反弹（2026-07-05）
+
+原计划引入 `.openxenon/memory/` 作为外部知识与内部资产的"信息海关"，但通过奥姆剃刀反思后确认：
+
+- Memory 中间层引入"缓存失效 / 回写策略 / 生命周期"等状态机复杂度
+- Asset（静态）+ Work（动态）已足够承载所有信息流
+- 外部信息摄入可统一通过 Work 路径，无需独立缓存
+
+→ **删除 Memory 层**，回归 Asset + Work 本体二元结构。
+
+### 0.2 v0.6.3 W9 scope schema 窗口
+
+v0.6.3 W9 计划：`scope schema + OXL grammar` + `inject-strategy.ts` + `lazy Asset query API`
+这是 Asset schema 演进的自然窗口：
+- scope 字段已涉及 Asset 引用关系
+- inject-strategy 需要"被引用的 Asset 优先注入"
+- 论文结构（references/citations）作为 schema 扩展顺带加入
+
+### 0.3 v0.7.0 W11-12 Asset 影响图
+
+v0.7.0 W11-12 计划："Asset 影响图（Hall 端展示 Insight → Asset 链路）"
+这是论文结构的天然集成点：
+- 引用链 = 依赖 DAG = 影响图数据源
+- 引用计数 = 影响力指标 = Hall 排序基础
+
+---
+
+## 1. 决策
+
+### 1.1 Asset schema 扩展（v0.6.3 W9）
+
+Asset frontmatter 新增 4 个字段：
+
+| 字段 | 类型 | 含义 | 示例 |
+|---|---|---|---|
+| `abstract` | string | Asset 的 Intent 摘要（论文 Abstract）| "本文档定义支付核心..." |
+| `references[]` | Asset ID 数组 | 引用其他 Asset（依赖 DAG 出边）| `[stack-nodejs, api-rest-standard]` |
+| `citations` | number | 被引用次数（自动维护）| `3`（被 3 个 Asset 引用）|
+| `auditTrail[]` | 对象数组 | 版本历史（论文修改记录）| `[{version, date, author, changes}]` |
+
+**向后兼容**：缺字段时 Zod `default([])` / `default(0)`，v0.6.x 项目升级无破坏。
+
+### 1.2 library/ + external/ 子目录（v0.6.3 W9）
+
+新增 2 个 Asset 子目录：
+
+```
+.openxenon/assets/
+├── domain/                          # 原
+├── blueprint/                       # 原
+├── stack/                           # 原
+├── library/                         # 🆕 外部信息聚合（Work 产出）
+│   ├── axios-docs.oxn              # Axios 官方文档聚合
+│   └── terraform-aws.oxn
+└── external/                        # 🆕 外部引用指针（不存内容）
+    ├── npm-deps.oxn                # URL + hash + ttl
+    └── github-issues.oxn
+```
+
+**`library/` vs `external/` 区别**：
+- `library/` — 内容已索引（AI 解析后写入 .oxn）
+- `external/` — 仅引用指针（按需 fetch）
+
+### 1.3 引用计数算法
+
+**静态扫**（每次 `oxn asset validate` 触发）：
+
+1. 扫 `.openxenon/assets/**.oxn`
+2. 解析每个 Asset 的 `references[]`
+3. 构建反向引用 map（target → count）
+4. 写入每个 target Asset 的 `citations` 字段
+5. 检测循环依赖（DAG 校验）
+
+**动态监听**（v0.7.1 优化）：
+- Asset 新增/修改/删除触发增量重算
+- `oxn asset graph <name>` 实时显示子树
+
+### 1.4 DAG 校验与循环依赖检测
+
+```
+算法: topologicalSortGeneric(assets)
+  输入: assets 列表（每个含 references[]）
+  输出: valid=true/false + cycles[]
+
+检测规则:
+  1. 每个 Asset 节点指向其 references[] 中的目标
+  2. 若 A → B → C → A 形成环 → 报错 OXN_ASSET_CIRCULAR_DEPENDENCY
+  3. 若 A.references[0] 指向不存在的 B → 报错 OXN_ASSET_ORPHAN_REFERENCE
+```
+
+### 1.5 错误码
+
+| 错误码 | 触发 |
+|---|---|
+| `OXN_ASSET_ORPHAN_REFERENCE` | references[] 指向不存在的 Asset |
+| `OXN_ASSET_CIRCULAR_DEPENDENCY` | 引用链形成环 |
+| `OXN_ASSET_CITATION_MISMATCH` | citations 字段与实际引用数不符 |
+| `OXN_ASSET_LIBRARY_SCHEMA_INVALID` | library/ 子目录 Asset 缺少 abstract |
+| `OXN_ASSET_EXTERNAL_FETCH_FAILED` | external/ 引用 fetch 失败 |
+
+---
+
+## 2. 实施时间线
+
+| 版本 | Week | 任务 | 工作量 |
+|---|---|---|---|
+| **v0.6.3 W9** | 2026-09 | Asset schema 扩展 `references`/`abstract` + library/external 子目录 + 错误码 | 3 天 |
+| **v0.7.0 W11-12** | 2026-11 | citations 计算 + Hall Asset 影响图 + `oxn asset graph` CLI | 4 天 |
+| **v0.7.1** | 2026-12 | 动态监听 + 循环依赖图可视化 + 引用计数缓存 | 3 天 |
+
+---
+
+## 3. Work/context.md 模板（取代 Memory L1）
+
+见 [docs/zh-cn/work.md §12 Work context.md 设计](../../../../docs/zh-cn/work.md)
+
+```markdown
+<!-- works/<work-id>/context.md -->
+---
+workId: w-fix-payment-idempotency
+intent: 修复支付网关回调的幂等性
+createdAt: 1731628800000
+status: aligning
+currentRound: 3
+references:                        # 引用 Asset（不复制内容，只存指针）
+  - assets/domain/payment-core.oxn
+  - assets/stack/nodejs.oxn
+  - assets/library/axios-docs.oxn
+---
+
+## Intent
+[工程师声明的意图]
+
+## Roadmap
+- [x] 1. 读取 payment/service.ts
+- [x] 2. 分析幂等性漏洞
+- [~] 3. 编写单元测试  ← current
+- [ ] 4. 修复代码
+- [ ] 5. 运行 Proof
+
+## Loop History（仅摘要，不全量历史）
+### Round 1
+- User: 启动 Work
+- AI: 读取代码 → 发现漏洞位置
+
+### Round 3 (current)
+- AI: 写测试用例
+- Tool: write_file(tests/payment/idempotency.test.ts)
+
+## Key Observations
+- 支付回调未使用 idempotency_key
+```
+
+---
+
+## 4. 测试统计
+
+| 版本 | 新增 tests | 累计 |
+|---|---|---|
+| v0.6.3 | +12（schema 解析 + DAG 校验 + 引用计数） | 1,986 |
+| v0.7.0 | +8（`oxn asset graph` CLI + Hall 渲染） | 2,035 |
+| v0.7.1 | +6（动态监听 + 循环依赖图） | 2,041 |
+
+---
+
+## 5. 关键风险
+
+| 风险 | 概率 | 影响 | 缓解 |
+|---|---|---|---|
+| v0.6.x 项目升级 schema 不兼容 | 低 | 中 | 缺字段时 Zod default([])/default(0) |
+| 引用计数性能瓶颈（N > 10K）| 低 | 中 | v0.7.1 增量计算 + 缓存 |
+| 循环依赖误报（v0.6.3 早期）| 中 | 低 | 仅 warn，不阻断 validate |
+| library/ 误用（塞大量文本）| 中 | 中 | `oxn library validate` 限制 size < 50KB |
+
+---
+
+## 6. 不做（明确推迟）
+
+- 跨 Project 引用 → v0.8.0 Skill Registry
+- 自动 refactor 工具 → v0.9.0 自适应 Blueprint
+- 引用计数 ML 预测 → v0.9.0+
+- Hall 实时引用图 → v0.8.0 WebSocket
+
+---
+
+## 7. 关联 ADR
+
+- [ADR-0048 library/external 子目录方案](../../../.archived/docs/adrs/0048-asset-library-external-scheme.md)
+- [ADR-0049 Work/context.md 取代 Memory L1](../adrs/0049-work-context-md-replaces-memory.md)
+- [ADR-0050 Onboarding via Starter Work](../adrs/0050-onboarding-via-starter-work.md)
+- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../adrs/0051-asset-paper-citation-network.md)
+
+---
+
+## 8. 关联 RFC（已废弃 / 已反弹）
+
+- ~~v0.7.x Memory RFC~~（2026-07-05 反弹，移入 archive/）
+
+---
+
+## 9. 关联 SSOT 文档
+
+- [docs/zh-cn/asset.md](../../../../docs/zh-cn/asset.md) §8 反模式 + §14 Asset 论文结构
+- [docs/zh-cn/work.md](../../../../docs/zh-cn/work.md) §12 Work context.md 设计
+- [docs/zh-cn/insight.md](../../../../docs/zh-cn/insight.md) §Insight 单源
+- [docs/zh-cn/core-concepts.md](../../../../docs/zh-cn/core-concepts.md) §11 Asset 论文结构
+- [docs/zh-cn/asset-paper.md](../../../../docs/zh-cn/asset-paper.md) 完整论文结构说明
+
+---
+
+**作者**：docs-tmp-cleanup work · 2026-07-05
+**目标发布**：v0.6.3 W9 (2026-09) → v0.7.0 W11-12 (2026-11) → v0.7.1 (2026-12)
+**状态**：📝 Draft（待 issac review）

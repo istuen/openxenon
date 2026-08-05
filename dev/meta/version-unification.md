@@ -1,11 +1,24 @@
-# 版本统一规划 RFC
+---
+entity: dev-meta
+type: meta
+created: 2026-07-10
+status: accepted
+promoted-from: .openxenon/drafts/.archived/rfc/version-unification-rfc.md
+synced-at: 2026-08-05
+related:
+  - docs/rfc/zh-cn/RFC-0020-three-boundary-blueprint-elevation.md
+  - dev/versions/README.md
+---
 
-> **日期**：2026-07-10（v1.0 Draft）
-> **状态**：📝 Draft（待 review）
-> **基础**：v0.6.x-roadmap-rfc.md（已被 Superseded）· three-boundary-blueprint-elevation-rfc.md
+# 版本统一规划（v0.6.x → v0.7 合并）
+
+> **类型**：dev meta 文档（OpenXenon 维护者操作参考）
+> **日期**：2026-07-10（v1.0）
+> **状态**：✅ Accepted（v0.6.x 散落版本统一合并到 v0.7 序列）
 > **作者**：opencode（与 user 协作，2026-07-10）
 > **范围**：全项目版本路线统一——以"信任链"为核心重新规划版本路线
 > **核心命题**：OpenXenon 解决工程师与 AI Agent 的信任协作问题。信任链是 OpenXenon Engine 的"能源"。
+> **原路径**：`.openxenon/drafts/rfc/version-unification-rfc.md`
 
 ---
 

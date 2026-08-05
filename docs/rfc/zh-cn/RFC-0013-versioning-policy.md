@@ -14,7 +14,7 @@ synced-at: 2026-07-27
 
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：versioning-policy
-> **状态**：📝 Draft（待 review）
+> **状态**：✅ Accepted（2026-07-27，v0.6.2-alpha.0 首批新增；frontmatter `status: Accepted`）
 > **批次**：2026-07-27 v0.6.2-alpha.0 首批新增
 
 ## 摘要

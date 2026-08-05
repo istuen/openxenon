@@ -1,11 +1,22 @@
-# v0.8.1 sub-RFC — Probe 体系演进（追溯 + 内外拆 + 目标成果分类）
+---
+version: 0.8.1
+date: 2027-02-15
+type: minor
+status: planned
+rfc:
+  - dev/versions/0-8-0-term-upstream-dag.md
+promoted-from: .openxenon/drafts/.archived/rfc/v0.8.1-probe-system-evolution-rfc.md
+---
 
-> **RFC 状态**：📝 Draft（待 review）
+# 0.8.1 — Probe 体系演进（追溯 + 内外拆 + 目标成果分类）
+
+> **状态**：📝 Draft（待 review）
 > **目标版本**：v0.8.1
 > **前置依赖**：v0.8.0（`@term/X` + `@upstream` DAG）
 > **核心交付**：Probe 体系的三大演进——追溯机制 + 内外接口严格分离 + 目标成果类型分类
 > **来源**：OpenXenon 协作生命周期 v0.8 设计讨论（2026-07-21）
 > **合并历史**：本 RFC 由原 `v0.8.1-proof-traceability-rfc.md` + `v0.8.3-probe-internal-external`（待写）+ `v0.8.4-probe-outcome-type-rfc.md` 三份合并而来（2026-07-21）
+> **原路径**：`.openxenon/drafts/rfc/v0.8.1-probe-system-evolution-rfc.md`（已归档）
 
 ---
 

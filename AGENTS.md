@@ -19,6 +19,12 @@ OpenXenon 是基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + �
 - 读 AssetMap 是为了"找 Blueprint"，不是找 Domain 关系
 - Skill 维护流：改 `packages/cli/src/skills/locales/{zh-CN,en}/<skill>/instruction.md` → 跑 `bun run packages/cli/src/index.ts init -f` → `.opencode/skills/` 自动重建
 - 跨层引用规则：RFC / Doc / Dev 不依赖 Meta 层（CONTEXT-MAP.md 例外），守门在 pre-commit 自动跑
+- **版本号中性原则**：已落地的架构真理不带版本号——RFC/ADR/Dev 文档的 H1 标题必须 versionless；版本号只放：
+  - `.changes/`（changelog 历史）
+  - `dev/versions/`（已绑版本 Roadmap，前瞻）
+  - `dev/meta/`（meta 文档）
+  - `.openxenon/drafts/`（草稿层，可临时带版本）
+  - **守门**：`bun scripts/check-versioned-docs.ts`（pre-commit 钩 RFC-0020..0023 严格门 + 其他 advisory）
 
 ## 意图解析流程（4 步）
 

@@ -36,11 +36,19 @@ synced-at: 2026-07-26
 | [RFC-0010 RFC frozen+errata 演进策略](./RFC-0010-frozen-errata.html) | 主题：frozen-errata | meta-RFC（grilling #6） | ✅ Accepted |
 | [RFC-0011 内置 Asset 两层机制](./RFC-0011-builtin-asset-two-layer.html) | 主题：builtin-asset-two-layer | meta-RFC（grilling #6） | ✅ Accepted |
 | [RFC-0012 自举种子豁免](./RFC-0012-bootstrap-exemption.html) | 主题：bootstrap-exemption | meta-RFC（grilling #6） | ✅ Accepted |
-| [RFC-0013 版本号政策](./RFC-0013-versioning-policy.html) | 主题：versioning-policy | meta-RFC（grilling #6） | 📝 Draft |
+| [RFC-0013 版本号政策](./RFC-0013-versioning-policy.html) | 主题：versioning-policy | meta-RFC（grilling #6） | ✅ Accepted |
 | [RFC-0014 Asset 注入机制](./RFC-0014-asset-injection-mechanism.html) | 主题：asset-injection-mechanism | meta-RFC（grilling Asset vs RAG） | ✅ Accepted |
 | [RFC-0015 Proof 体系重整](./RFC-0015-proof-system-overhaul.html) | 主题：proof-system-overhaul | 0（grilling #2 Proof/Probe/Verdict 审视） | 📝 Draft |
+| [RFC-0016 通用验证 Probe 扩展](./RFC-0016-generic-verification-probes.html) | 主题：generic-verification-probes | 0（v0.6.2-alpha.2 实施完成）| 📝 Draft |
+| [RFC-0017 术语双层 SSOT](./RFC-0017-terminology-two-tier-ssot.html) | 主题：terminology-two-tier-ssot | 0 | 📝 Draft |
+| [RFC-0018 项目工程元层](./RFC-0018-project-engineering-meta.html) | 主题：project-engineering-meta | 0 | 📝 Draft |
+| [RFC-0019 Draft Promote 路由](./RFC-0019-draft-promote-routing.html) | 主题：draft-promote-routing | 0 | 📝 Draft |
+| [RFC-0020 三边界框架 + Blueprint 提升组合模板](./RFC-0020-three-boundary-blueprint-elevation.html) | 主题：three-boundary-blueprint-elevation | 4 (0019, 0048, 0053, 0054, 0055, 0056) | ✅ Accepted（promote 自 drafts/，2026-08-05）|
+| [RFC-0021 Domain 三层架构](./RFC-0021-domain-hierarchy-restructure.html) | 主题：domain-hierarchy-restructure | 2（0060, 0070）| ✅ Accepted（v0.6.1 落地；promote 自 drafts/，2026-08-05）|
+| [RFC-0022 理想态数据流 runtime 闭环](./RFC-0022-ideal-data-flow.html) | 主题：ideal-data-flow | 1（0061）| ✅ Accepted（v0.6.1 落地；promote 自 drafts/，2026-08-05）|
+| [RFC-0023 Asset Paper Schema](./RFC-0023-asset-paper-schema.html) | 主题：asset-paper-schema | 2（0051, 0056）| 🟡 Partially Accepted（基础 v0.6.1；图渲染 deferred v0.7.0）|
 
-**统计**：8 主题 RFC（48 Adopted ADR 迁移）+ 5 meta-RFC（grilling 决策锁定，含 1 Draft）。
+**统计**：8 主题 RFC（48 Adopted ADR 迁移）+ 7 meta-RFC + 4 落地 RFC（2026-08-05 promote 自 drafts/）+ 5 Draft = 24 个 RFC（其中 19 Accepted + 5 Draft）。
 
 ## RFC 生命周期
 
