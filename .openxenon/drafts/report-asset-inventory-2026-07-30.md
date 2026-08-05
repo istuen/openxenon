@@ -1,6 +1,7 @@
 # Report: `.openxenon/assets/` Asset 清单与结构分析
 
 - **DraftType**: report（调研报告）
+- **状态**: archived（2026-07-30 完成，结论已采纳）
 - **创建日期**: 2026-07-30
 - **触发场景**: scene=explore → workflow=`explore-analyze-report`
 - **数据源**: `find .openxenon/assets -name "*.md"` + frontmatter 扫描

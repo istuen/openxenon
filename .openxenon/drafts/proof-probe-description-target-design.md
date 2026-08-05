@@ -1,6 +1,6 @@
 # Proof Probe Per-Description + Target + extractTarget Bug Fix
 
-> **状态**：✅ 已执行（2026-08-01 完整落地，含 D9 修复）
+> **状态**：archived（2026-08-01 完整落地，含 D9 修复）
 > **日期**：2026-08-01
 > **来源**：2026-08-01 Proof-First 实例 demo（demo-proof-first）审查
 > **执行记录**：D1-D8 由先前会话落地（代码注释标记 `proof-probe-description-target D1-D8`）；D9（CLI 映射）+ i18n 翻译键 + demo 验证由本次会话完成（2026-08-01 04:13 UTC）

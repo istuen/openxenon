@@ -17,6 +17,7 @@ import type { ValidateInput, ValidateResult } from './types'
 import { checkAssetDAG, type AssetNode, type DagValidationResult } from './dag-validator.js'
 import { loadProjectConfig } from '@openxenon/engine/infra/project-config'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
+import { loggerPort } from '@openxenon/engine/infra/logging'
 // Asset validate() 派发 5-way EntityCompiler:
 //   - getEntityCompiler 按 IntentEntityType 拿对应 compiler
 //   - 通过 dynamic import 触发 5 个 compiler 注册, 避开 tsc 静态类型严格检查
@@ -243,15 +244,29 @@ export async function validateAssetPaper4Fields(
   const fields: AssetPaper4Fields = { abstract, references, citations, auditTrail }
 
   const warnings: string[] = []
-  if (!abstract) warnings.push(`abstract field missing (recommended: 1-line business boundary description)`)
+  const assetLogger = loggerPort.withTag('Asset.validate')
+  if (!abstract) {
+    const msg = `abstract field missing (recommended: 1-line business boundary description)`
+    warnings.push(msg)
+    assetLogger.warn(msg, { kind, name, field: 'abstract' })
+  }
   // Roadmap intentionally omits references field
   // Roadmap's "navigation" role is fulfilled by its own links[] (per grammar comment 2026-07-08).
-  if (references === undefined && kind !== 'roadmap')
-    warnings.push(`references field missing (use references = ["X", "Y"] or references = [])`)
-  if (citations === undefined && kind !== 'roadmap')
-    warnings.push(`citations field missing (set initial value, e.g. citations = 0)`)
-  if (!auditTrail && kind !== 'roadmap')
-    warnings.push(`auditTrail comment missing (add // auditTrail: created by <name> at <time>)`)
+  if (references === undefined && kind !== 'roadmap') {
+    const msg = `references field missing (use references = ["X", "Y"] or references = [])`
+    warnings.push(msg)
+    assetLogger.warn(msg, { kind, name, field: 'references' })
+  }
+  if (citations === undefined && kind !== 'roadmap') {
+    const msg = `citations field missing (set initial value, e.g. citations = 0)`
+    warnings.push(msg)
+    assetLogger.warn(msg, { kind, name, field: 'citations' })
+  }
+  if (!auditTrail && kind !== 'roadmap') {
+    const msg = `auditTrail comment missing (add // auditTrail: created by <name> at <time>)`
+    warnings.push(msg)
+    assetLogger.warn(msg, { kind, name, field: 'auditTrail' })
+  }
 
   const ok = warnings.length === 0
 

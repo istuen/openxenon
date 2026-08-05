@@ -97,7 +97,9 @@ R&N 假定单一 agent 独占四个动作；OXN 把每个都拆成"AI 非确定�
 
 ### 负面 / 风险
 
+<!-- allow-version -->
 - **对照表是快照**：R&N 术语映射会随 OXN 演进（如 v0.7+ Insight 涌现推理可能改变"搜索"的映射）。需在对照表标注版本。
+<!-- /allow-version -->
 - **PEAS 重写影响外部引用**：`CONTEXT-MAP.md` 被多处引用（7 个 Domain SSOT、glossary、docs/product）。重写后需检查下游引用是否依赖旧的"A=Work/S=Proof"表述。
 - **Referent 是新词**：增加术语学习成本。但它是统一模式的命名，不引入新实体，认知收益大于成本。
 
@@ -118,7 +120,9 @@ R&N 假定单一 agent 独占四个动作；OXN 把每个都拆成"AI 非确定�
 
 ## Errata
 
+<!-- allow-version -->
 ### Errata v1.0.1（2026-07-31）— 确定性根基锐化
+<!-- /allow-version -->
 
 **修订范围**：D1 表格"OXN 参照版本（确定）"列 + 引用段落"参照版本与 agent 自有版本性质相反恰恰是对的设计"。
 

@@ -150,4 +150,6 @@ packages/cli ↔ packages/daemon
 - [L0-L3 宪法 · l0-l3-constitution.md](./l0-l3-constitution.md)
 - [Monorepo 双包 · monorepo.md](./monorepo.md)
 - [架构总览 · architecture.md](./architecture.md)
+<!-- allow-version -->
 - v0.7 Domain 三层架构 RFC（v0.7 探索阶段产物，已并入 [RFC-0007 Domain 词汇与 OXN 定位](../../rfc/zh-cn/RFC-0007-domain-positioning.html)）
+<!-- /allow-version -->

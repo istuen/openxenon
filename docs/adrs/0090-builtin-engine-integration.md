@@ -30,12 +30,16 @@ related:
 
 ## Context
 
+<!-- allow-version -->
 ### 现状盘点（v0.6.x）
 
 v0.6.x 起 `src/builtin/` 是 OXN 仓库根的"种子资产"目录（27 个 .md），承载 RFC-0011 D1 的 `@oxn/` scope 物理位置。Engine 通过 `resolveBuiltinDir()` 解析：
+<!-- /allow-version -->
 
 ```ts
+<!-- allow-version -->
 // packages/engine/src/oxl/scope/oxn-builtin-registry.ts:31-46 (v0.6.x)
+<!-- /allow-version -->
 function resolveBuiltinDir(): string | null {
   const candidates: string[] = []
   candidates.push(join(process.cwd(), 'src/builtin'))                              // cwd 相对
@@ -81,7 +85,9 @@ packages/engine/src/builtin/
 - `resolveBuiltinDir()` 路径：`../../../../src/builtin` → `../../builtin`（3 级向上）
   - 候选 1：`cwd + 'packages/engine/src/builtin'`（OXN repo dev mode）
   - 候选 2：`import.meta.dirname + '../../builtin'`（包内执行 / npm 安装后）
+<!-- allow-version -->
   - 候选 3：`cwd + 'src/builtin'`（v0.6.x 兼容 fallback，过渡期保留）
+<!-- /allow-version -->
 - `_initDomains()` / `_initWorkflows()` / `_initStacks()` / `_initAssetmaps()` 新增
 - `parseGenericAsset()` 新增（domain/workflow/stack/roadmap 通用 frontmatter + raw 文本解析）
 - `readBuiltinAsset()` 5 类 subdir 全部填齐
@@ -184,6 +190,8 @@ packages/engine/src/builtin/
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (待定)
+<!-- /allow-version -->
 
 - 保留位置观察 `src/daemon/` + `src/watcher/` 是否也需要同步迁入 engine 包（独立 ADR 评审）

@@ -2,9 +2,10 @@
 entity: rfc
 id: RFC-0018
 theme: project-engineering-meta
-status: Draft
+status: Accepted
 date: 2026-07-31
-accepted-at: ~
+accepted: 2026-08-05
+accepted-at: 2026-08-05
 supersedes: []
 superseded-by: ~
 related:
@@ -16,16 +17,18 @@ related:
   - .openxenon/assets/domains/oxn-project-domain.md
   - CONTEXT-MAP.md
   - AGENTS.md
-synced-at: 2026-07-31
+synced-at: 2026-08-05
 ---
 
 # RFC-0018: 项目工程元层与 SSOT 全景
 
 > **类型**：RFC（OpenXenon 规范 · meta-RFC）
 > **主题**：project-engineering-meta
-> **状态**：📝 Draft（待 review）
+<!-- allow-version -->
+> **状态**：✅ Accepted（2026-08-05 — Meta Modality 落地：CONTEXT-MAP.md + oxn-project-domain.md v0.3.0 + check-doc-boundary 14 条规则 + AGENTS.md 5 级语义优先级）
 > **来源**：2026-07-31 `/grilling` session（domain-modeling skill）
 > **批次**：2026-07-31 v0.6.2-alpha.2 配套新增
+<!-- /allow-version -->
 > **关系**：本 RFC 是 RFC-0009 的**扩展**（增加第 4 层），不替代；与 RFC-0010/0011/0012/0013 四个 meta-RFC 并列
 
 ## 摘要
@@ -94,7 +97,9 @@ CONTEXT-MAP.md 末尾加：
 #### D4.1：README.md 引用规则
 
 允许：
+<!-- allow-version -->
 - ✅ → `docs/product/zh-cn/introduction.md`（与 slogan 同步，AGENTS.md §v0.6.2 锁定双向同步）
+<!-- /allow-version -->
 - ✅ → `docs/glossary/zh-cn/*`（术语链）
 - ✅ → `CONTEXT-MAP.md`（同元层内部）
 - ✅ → `AGENTS.md`（同元层内部）
@@ -153,7 +158,9 @@ CONTEXT-MAP.md 末尾加：
 
 1. RFC-0018 落盘（本文件）
 2. CONTEXT-MAP.md 重构（删除 line 115-283，加 D3.3 段）
+<!-- allow-version -->
 3. `oxn-project-domain.md` 升版 v0.2.0 → v0.3.0（增 3 term + 5 inv + 3 ban）
+<!-- /allow-version -->
 4. AGENTS.md §文档三层架构段升级（三层 → 四层）
 5. `scripts/check-doc-boundary.ts` 扩 5 条规则
 6. 写 `.changes/0-6-2-alpha-2-meta-layer.md`
@@ -166,13 +173,17 @@ CONTEXT-MAP.md 末尾加：
 - **5 类项目工程文档的 SSOT 归属明确**：README.md / AGENTS.md / CONTEXT-MAP.md / .changes/ / dev/ 各自有 RFC 引用规则，不再是"情态组合的设计错误"
 - **CONTEXT-MAP.md 降级为索引页**：从 283 行降到 ≤ 100 行；R&N 32 术语对照进入 RFC（规定性正确归位）
 - **`check-doc-boundary.ts` 规则矩阵扩展**：5 条新规则明确 Meta 层边界；规则总数 9 → 14
+<!-- allow-version -->
 - **`oxn-project-domain.md` 升版**：v0.2.0 → v0.3.0（5 inv + 3 ban + 3 term；补全项目工程元层的 SSOT 定义）
+<!-- /allow-version -->
 
 ### 负面 / 风险
 
 - **AGENTS.md 升级可能影响 skill 编译产物**：skill instruction.md 通过 `oxn init -f` 从 SSOT 重新生成，AGENTS.md 是 skill 间接依赖
 - **CONTEXT-MAP.md 历史信息损失**：line 211-283 的"术语新增记录"迁到 `.openxenon/drafts/rfc/context-map-history.md`（不追踪），如需回查需 git log
+<!-- allow-version -->
 - **README.md 双同步成本**：slogan / description 类改动需同时更新 README.md + `docs/product/zh-cn/introduction.md` + `docs/glossary/zh-cn/core-terms.md`（已在 v0.6.2-alpha.2 锁定的 13 文件清单内）
+<!-- /allow-version -->
 
 ### 衍生
 
@@ -225,7 +236,9 @@ CONTEXT-MAP.md 末尾加：
 | 28 | 一阶逻辑（first-order logic） | Asset `term / ban / invariant` 表达式 | 领域词汇约束 | ADR-0084 |
 | 29 | 知识库（knowledge base） | Asset 5 类集合 + content_hash | 静态 + 强校验 | ADR-0071 |
 | 30 | 推理（inference） | Kernel verdict（pure function） | 确定性纯函数判定 | ADR-0066 / ADR-0067 |
+<!-- allow-version -->
 | 31 | 学习（learning） | Insight（v0.7+ 涌现层） | 跨 Work 模式涌现，反哺工程师 | ADR-0074 |
+<!-- /allow-version -->
 | 32 | 神经网络（neural network） | AI Agent 自身（黑箱推理） | OXN 不介入 AI 内部 | ADR-0072 |
 
 ### A.2：映射偏离总览
@@ -261,7 +274,9 @@ CONTEXT-MAP.md 末尾加：
 - [RFC-0012 自举种子豁免](./RFC-0012-bootstrap-exemption.md) — `src/builtin/`
 - [RFC-0013 版本号政策](./RFC-0013-versioning-policy.md) — Version Fragment / Roadmap / Fix Record / PlanningPool
 - [RFC-0014 Asset 注入机制](./RFC-0014-asset-injection-mechanism.md) — Asset 解析
+<!-- allow-version -->
 - [.openxenon/assets/domains/oxn-project-domain.md](../../.openxenon/assets/domains/oxn-project-domain.md) — 项目工程元层 Domain SSOT（v0.3.0）
+<!-- /allow-version -->
 - [CONTEXT-MAP.md](../../CONTEXT-MAP.md) — 8 Domain 索引（重构后 ≤ 100 行）
 - [AGENTS.md](../../AGENTS.md) — AI Agent 入口
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach* — R&N 智能体理论原义来源

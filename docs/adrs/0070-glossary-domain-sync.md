@@ -131,10 +131,12 @@ on-fail:
 
 ### 衍生
 
+<!-- allow-version -->
 - **scripts/check-glossary-sync.ts** 实现 CI 守卫（v0.7.4 计划）
 - **oxn glossary CLI 子命令**实现 D3（v0.7.4 计划）
 - **ADR-0066/0067 同步记录**——已在 _index.md "词汇同步约定"段落地
 - **oxn-vscode** Markdown 插件可集成 glossary check（v0.8 计划）
+<!-- /allow-version -->
 
 ## Alternatives Considered
 

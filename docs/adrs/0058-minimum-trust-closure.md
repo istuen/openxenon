@@ -1,4 +1,6 @@
+<!-- allow-version -->
 # ADR-0058: 最小信任闭环（v0.6.1 Scope）
+<!-- /allow-version -->
 
 > **状态**：✅ Adopted
 > **日期**：2026-07-12
@@ -7,7 +9,9 @@
 
 ## Context
 
+<!-- allow-version -->
 信任链模型（ADR-0057）确立后，需要定义"信任链就位"的最小实现范围。v0.6.1 不是功能完备版，而是信任链的四层确定性就位——OpenXenon Engine 从"任务跟踪器"升级为"信任协作工具"的临界点。
+<!-- /allow-version -->
 
 信任链有四个断裂点需要修复：
 
@@ -20,7 +24,9 @@
 
 ## Decision
 
+<!-- allow-version -->
 **v0.6.1 = 最小信任闭环**——四层确定性就位：
+<!-- /allow-version -->
 
 ### D1: 确定性边界（三边界框架）
 
@@ -49,7 +55,9 @@ AssetKind 从 6 收敛为 5（domain/workflow/stack/blueprint/roadmap）。详�
 - **正面**：OpenXenon 从"任务跟踪器"升级为"信任协作工具"
 - **正面**：四层确定性形成完整证据链（边界→验证→证据→记录）
 - **风险**：A3 修复需要 Work 引擎调用 Kernel verdict，涉及跨层调用
+<!-- allow-version -->
 - **衍生**：v0.7 在此基础上构建效率层（自动收集、可视化、模式识别）
+<!-- /allow-version -->
 
 ## Alternatives Considered
 
@@ -61,6 +69,8 @@ AssetKind 从 6 收敛为 5（domain/workflow/stack/blueprint/roadmap）。详�
 
 - [版本统一 RFC §1.3 + §3](../../docs/rfcs/version-unification-rfc.md)
 - [core-concepts.md §13](../../docs/zh-cn/core-concepts.md)
+<!-- allow-version -->
 - [2026-07-09 Work 闭环清理草案](../../pools/drafts/2026-07-09-v0.7-work-closed-loop-and-cleanup.md) — A1/A2/A3 代码级分析
+<!-- /allow-version -->
 - [ADR-0054 三边界框架](./0054-three-boundary-framework.md) — D1 实现
 - [ADR-0011 证据链三件套](./0011-evidence-chain-triple.md) — frozen.json 规范

@@ -2,7 +2,7 @@
 
 > **日期**：2026-07-28
 > **来源**：grilling session on SSOT management（domain-modeling + grill-with-docs skills）
-> **状态**：📝 Working Draft（待提升为 RFC 或 promote 到对应 Asset）
+> **状态**：active（Working Draft，待提升为 RFC 或 promote 到对应 Asset）
 > **关联**：ADR-0054（三边界框架）/ ADR-0055（Blueprint 组合模板）/ three-boundary-blueprint-elevation-rfc.md / v0.7.3-ideal-data-flow-rfc.md / ADR-0061（D3 lock-check）/ RFC-0013（版本号政策）
 
 ---

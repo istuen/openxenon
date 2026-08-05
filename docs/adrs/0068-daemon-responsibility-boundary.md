@@ -84,9 +84,11 @@ oxn-engine-domain.md Daemon H3 term desc 改为：
 
 ### 衍生
 
+<!-- allow-version -->
 - **Daemon 模块拆分**：建议 `src/daemon/` 拆分为 `work-state-monitor.ts` + `probe-event-listener.ts` + `socket-server.ts`（v0.7+ RFC）
 - **CLI 增强**：CLI 订阅 Daemon 事件，DEVIATED 时打印警告
 - **Hall 面板**：v0.7+ Hall 面板展示 Work 状态异常列表
+<!-- /allow-version -->
 
 ## Alternatives Considered
 

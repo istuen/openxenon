@@ -22,7 +22,9 @@ related:
 
 ## Context
 
+<!-- allow-version -->
 v0.6 引入 Asset 体系后，OXN 自身有完整的根 Asset 三件套（oxn-domain + oxn-workflow + oxn-stack + oxn-blueprint），但**没有规范定义"一个新项目要 bootstrap 起来需要哪些 Asset"**。
+<!-- /allow-version -->
 
 历史症状：
 - Roadmap 100% 断链（14 个 Domain 引用全指 archived）——自举入口断裂

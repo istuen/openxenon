@@ -26,12 +26,16 @@ synced-at: 2026-07-27
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：ai-collaboration
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 > **合并**：OXP-0002（彻底不判原则代码贯彻）→ 本 RFC
 
 ## 摘要
 
+<!-- allow-version -->
 OXN 与 AI Agent 协作的顶层哲学——**事后审计而非预防限制**（Main/Sub Agent 审计链）+ **彻底不判原则**（OXN 只记录事实，判定权归工程师）+ **Intent/Align 统一矩阵**（Asset = Intent, Work = Align）+ **对抗关系在 AI-vs-AI**（OXN 不是博弈方）+ **四层确定性**（v0.6.1 最小信任闭环）+ **OpenCode 选型**（避免反复讨论）。OXN 是 AI Agent 的**确定性参照系**（Referent），不是智能体本身。
+<!-- /allow-version -->
 
 ## 决策要点
 
@@ -133,7 +137,9 @@ OXN 采用 **OpenCode** 作为 AI 协作底座（**非 Pi**）。
 
 ### D6：四层确定性最小信任闭环（ADR-0058）
 
+<!-- allow-version -->
 v0.6.1 = 最小信任闭环——四层确定性就位：
+<!-- /allow-version -->
 
 | 层 | 决策 | 断裂点修复 |
 |---|---|---|
@@ -185,10 +191,14 @@ AI 执行 Work 时按工程师监督程度分三模式：
 
 **落地状态**：
 
+<!-- allow-version -->
 - ✅ v0.6.1 默认走 **Guided**（生产）
+<!-- /allow-version -->
 - ✅ Hall（研讨厅）启用 Adaptive + Unmanaged（实验性）
 - ⚠️ reputation.json 模式自动切换未实现（人工指定）
+<!-- allow-version -->
 - ⚠️ `oxn-work --mode adaptive|unmanaged` CLI flag 在 v0.7+ 落地
+<!-- /allow-version -->
 
 **与"彻底不判"的关系**：三模式不改变 OXN 不判定"合格"的角色——Guided 的"严格 Probe"指 OXN 强制跑 Probe，Adaptive 的"警告级"指 Probe 结果如实输出但不阻断，Unmanaged 的"仅 lint"指 Probe 可不跑。三模式调整的是 OXN 阻断程度，而非 OXN 判定逻辑。
 
@@ -225,7 +235,9 @@ Insight 数据按 4 个实体维度组织证据链：
 ## 影响范围
 
 - ✅ 11 ADR 全 Accept（含 ADR-0057 Superseded-by ADR-0066）
+<!-- allow-version -->
 - ✅ v0.6.1 四层确定性全部落地（代码层）
+<!-- /allow-version -->
 - ✅ frozen.json schema 完成 verdict → outcome 迁移
 - ✅ ProbeOutcome 类型 + 三态字段全栈统一
 - ✅ OXN Engine 仅做公证不做裁判（CLI / Probe / frozen 全部符合）
@@ -260,7 +272,9 @@ Insight 数据按 4 个实体维度组织证据链：
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
@@ -268,7 +282,9 @@ Insight 数据按 4 个实体维度组织证据链：
 
 ### 2026-07-27 errata
 
+<!-- allow-version -->
 - **新增 D9 三模式 + D10 三相 + D11 四实体证据链**：ADR-0022 / ADR-0006 / ADR-0015 内容已并入 RFC 正文（之前仅作为 ADR 归档留存，追溯不完整）。Guided/Adaptive/Unmanaged 三模式在 v0.6.1 已代码落地（Guided 为生产默认，Hall 启用 Adaptive/Unmanaged）。三相物质模型已贯穿 Asset → Work → frozen.json 全链路。Insight 四实体证据链 schema 已在 `.openxenon/.archived/docs/adrs/0015-insight-four-entity-evidence-chain.md` 定义。
+<!-- /allow-version -->
 - **frontmatter related 增补**：ADR-0022 / ADR-0006 / ADR-0015。
 - **影响范围段**：8 ADR → 11 ADR。
 - **符合 RFC-0010 errata 流程**：errata 不改核心决策（D1-D8），仅追加 D9-D11 新决策段。

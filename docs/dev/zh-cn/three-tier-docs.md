@@ -2,11 +2,15 @@
 title: 三层文档守门（v0.7）
 ---
 
+<!-- allow-version -->
 # 三层文档守门（v0.7）
+<!-- /allow-version -->
 
 > 产品手册、开发手册、内部手册（RFC）、动态文稿（drafts）之间的引用有严格规则。
 
+<!-- allow-version -->
 ## 四层文档架构（v0.7 topic-first）
+<!-- /allow-version -->
 
 | 层 | 路径 | 性质 | 受众 |
 |---|---|---|---|
@@ -17,7 +21,9 @@ title: 三层文档守门（v0.7）
 | **项目资产** | `.openxenon/assets/` | 边界 · 冻结 | 项目工程师 |
 | **运行时数据** | `.openxenon/{works,proofs,.cache}/` | gitignore | IAP 运行时 |
 
+<!-- allow-version -->
 ## 引用规则矩阵（v0.7）
+<!-- /allow-version -->
 
 | 来源 → 目标 | docs/product | docs/dev | docs/rfc | .openxenon/drafts | .openxenon/assets |
 |---|---|---|---|---|---|
@@ -61,9 +67,11 @@ bun scripts/check-doc-boundary.ts
 
 支持豁免：在违规行前加 `<!-- boundary:ignore -->`。
 
+<!-- allow-version -->
 ## 与 v0.6 老模型对比
 
 | v0.6 | v0.7 |
+<!-- /allow-version -->
 |---|---|
 | `docs/zh-cn/product/` | `docs/product/zh-cn/`（topic-first） |
 | `.openxenon/docs/adrs/` | `docs/rfc/zh-cn/RFC-XXXX-<theme>.md`（规范） |

@@ -2,7 +2,7 @@
 
 > **日期**：2026-07-23
 > **来源**：实践盘问 #1-#2（grilling session 转入实践阶段）
-> **状态**：📝 候选 RFC（待 promote 为 v0.7.x onboarding RFC）
+> **状态**：ready（候选 RFC，待 promote 为 v0.7.x onboarding RFC）
 > **关联**：ADR-0050（Starter Work 引导）+ ADR-0078（边界工程）+ ADR-0079（Asset = Ontology）
 
 ## 问题

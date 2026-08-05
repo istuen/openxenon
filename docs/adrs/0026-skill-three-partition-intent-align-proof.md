@@ -30,7 +30,9 @@ AGENTS.md 当前已落实：
 ## 候选落地
 
 - `AGENTS.md` Skills 段增补 /oxn-intent 说明
+<!-- allow-version -->
 - `.opencode/skills/oxn-intent/SKILL.md` 新增（v0.7+）
+<!-- /allow-version -->
 
 ## 参考
 

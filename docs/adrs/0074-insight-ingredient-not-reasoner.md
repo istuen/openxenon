@@ -17,7 +17,9 @@ related:
 > **状态**：✅ Accepted
 > **日期**：2026-07-23
 > **来源**：2026-07-23 grilling session 第三轮（domain-modeling + grill-with-docs skill）
+<!-- allow-version -->
 > **影响层**：Insight 模块实现边界 + v0.7+ Insight RFC 约束
+<!-- /allow-version -->
 
 ## Context
 
@@ -89,27 +91,35 @@ Asset 是双向枢纽：
 
 统计学/智能学习的具体实现是待探索短板。但无论统计/学习怎么实现，**OXN 只提供原料，AI 做推理**——这个架构边界已确定。
 
+<!-- allow-version -->
 本 ADR 不规定 Insight 的具体算法（统计方法、ML 模型、查询接口等），只规定：**任何让 OXN 自己做推理/评判/学习的实现都越界**。具体实现留给 v0.7+ Insight RFC。
+<!-- /allow-version -->
 
 ## Consequences
 
 ### 正面
 
+<!-- allow-version -->
 - **Insight 实现边界明确**：v0.7+ Insight RFC 有约束——不能内置推理引擎、不能做 critic、不能自动判定。
+<!-- /allow-version -->
 - **AI 能力上限不被 OXN 限制**：AI 推理能力随 LLM 升级而升级，OXN 只保证原料确定。这是 floor/ceiling 判据的实例。
 - **四判据一致性验证**：Insight 是四判据的真实测试用例，四判据全过证明判据集可用。
 
 ### 负面 / 风险
 
 - **AI 推理质量不稳定**：原料确定但推理靠 AI，不同 LLM / 同一 LLM 不同次推理结果不同。工程师需审视 AI 的 Insight 推理建议（已有 audit pool approve 闸门）。
+<!-- allow-version -->
 - **原料接口设计是关键**：OXN 提供什么原料、什么格式、什么查询接口，直接决定 AI 推理质量。这是 v0.7+ Insight RFC 的核心工作。
+<!-- /allow-version -->
 - **"OXN 不学习"可能被质疑**：未来若有人提议让 OXN 内置 ML 模型自动优化 Probe 选择或 Asset 推荐，本 ADR 是拒绝依据。
 
 ### 衍生
 
 - **CONTEXT-MAP 对照表扩展 Term #12**（本次落地）
 - **CONTEXT-MAP 新增分布式学习闭环小节**（本次落地）
+<!-- allow-version -->
 - **v0.7+ Insight RFC 约束**：必须遵守本 ADR 的"原料 vs 推理"分离
+<!-- /allow-version -->
 - **候选新术语**（待短板补完后入 Domain SSOT）：`DistributedLearning`（分布式学习）/ `LearningLoop`（双向闭环）—— 因实现未定，暂不入 SSOT
 
 ## Alternatives Considered

@@ -6,8 +6,10 @@
 > **关联文档**：
 > - ADR-012（runtime 适配层）：`./012-runtime-adapter.md`
 > - arch-discussion §3 (Type A/B 分类) + §6.1 (FileSystemPort 无 kernel 消费者) + §6.2 (hashPort 双重身份)
+<!-- allow-version -->
 > - design v0.3 §11.3 (FileSystemPort vs runtime/file.ts 职责分工表)
 > - 关联变更：v0.1.5 引入 infra/runtime/ 适配层后，probe handler 改用 runtime/file.ts；
+<!-- /allow-version -->
 >   sandbox-manager 保留 FileSystemPort 注入模式
 
 ## 背景
@@ -17,7 +19,9 @@ OpenXenon 有**两套**文件 IO 抽象：
 1. **`FileSystemPort`** (L0-Contract, Type A) — 同步基础 fs 操作
 2. **`runtime/file.ts`** (L1-Infra, Type B) — 异步高级文件读取
 
+<!-- allow-version -->
 v0.1.5 引入 runtime 适配层后，**probe handler 改走 runtime/file.ts**（`openFile().text()` 等）。但 sandbox-manager 仍然用 `FileSystemPort`（同步基础原语）。
+<!-- /allow-version -->
 
 两者是否冲突？哪些应该用哪个？这是 ADR-013 要回答的问题。
 
@@ -42,10 +46,14 @@ v0.1.5 引入 runtime 适配层后，**probe handler 改走 runtime/file.ts**（
 ├─ 是 → 用 FileSystemPort (Type A, 同步, 函数参数注入)
 └─ 否 → 问: 它是 probe handler 吗？
     ├─ 是 → 用 runtime/file.ts (Type B, 异步, 工厂)
+<!-- allow-version -->
     └─ 否 → 默认用 Node fs (但 v0.1.6 强约束 probe handler 必须走 runtime)
+<!-- /allow-version -->
 ```
 
+<!-- allow-version -->
 ### 3. 当前实际消费方（v0.1.6）
+<!-- /allow-version -->
 
 | 模块 | 层 | 用什么 | 理由 |
 |---|---|---|---|
@@ -59,7 +67,9 @@ v0.1.5 引入 runtime 适配层后，**probe handler 改走 runtime/file.ts**（
 
 **重点观察**：
 - **Type A 接口确实有非 kernel 消费者**（sandbox-manager / boundary / path-port 都是 L1/L2）
+<!-- allow-version -->
 - arch-discussion §6.1 当时拍板"无 kernel 消费者"是**真实状态**（v0.1.5 之前）；v0.1.6 sandbox-manager 引入后变成"L0-Kernel 无但 L1/L2 有"
+<!-- /allow-version -->
 - 但**核心 Type A 定义不变**：仍以"函数参数注入"为消费方式
 
 ### 4. 为什么不合并成一个？
@@ -103,7 +113,9 @@ ADR-012 拍板"RuntimePort 放 Type B 而非 Type A"。**ADR-013 是其推论**�
 
 ### arch-discussion §6.1 的"无 kernel 消费者"陈述已过时
 
+<!-- allow-version -->
 v0.1.5 之前，FileSystemPort / OsPort / PathPort 确实**没消费者**。v0.1.6 引入 sandbox-manager 之后，FileSystemPort 有了 sandbox-manager 消费者（L2-Work）。OsPort / PathPort 仍然**没消费者**。
+<!-- /allow-version -->
 
 **判断**：
 - FileSystemPort 现状有 1 个 L2-Work 消费者 — **类型分类仍 Type A**（函数参数注入）
@@ -115,11 +127,15 @@ v0.1.5 之前，FileSystemPort / OsPort / PathPort 确实**没消费者**。v0.1
 
 - ✅ `bun scripts/validate-dependencies.ts` — 0 违规
 - ✅ FileSystemPort 与 runtime/file.ts 在 L0-Contract vs L1-Infra 物理隔离
+<!-- allow-version -->
 - ✅ sandbox-manager 的 `fs?: FileSystemPort` 注入在 v0.1.6 仍工作
+<!-- /allow-version -->
 - ✅ 5 个 probe handler 改走 runtime/file.ts 后 1091 测 pass
 
 ## 未来扩展
 
 如未来需要：
+<!-- allow-version -->
 - **HTTP 抽象**：arch-discussion §6.1 + design v0.3 §7.5 留了口。届时建 `src/infra/runtime/http.ts` 走 Type B 模式
+<!-- /allow-version -->
 - **OsPort 真实使用**：kernel 纯函数真需要 OS 抽象时，可移 OsPort 实现到 `src/infra/os/`，保留 kernel/contracts 抽象

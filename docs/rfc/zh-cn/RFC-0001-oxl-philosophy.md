@@ -19,11 +19,15 @@ synced-at: 2026-07-27
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：oxl-philosophy
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 
 ## 摘要
 
+<!-- allow-version -->
 OXL 语法与 Blueprint 设计的三大基石——**Props 漏斗效应**（Blueprint 收敛 Part 复杂度，三层默认值优先级链）+ **四关键字分离**（kind / intent / align / observe 避免 type 重载）+ **MD-native 语法统一**（v0.6.1 废除 Langium，`.md` 为唯一 canonical 格式，`.oxn` 不保留）。
+<!-- /allow-version -->
 
 ## 决策要点
 
@@ -55,9 +59,11 @@ OXL 关键字按 4 个语义轴分离，避免 `type` 重载歧义：
 - ❌ `role` / `port` 命名（语义不清）
 - ❌ `Blueprint type task` 隐式（应显式 `kind "task"`）
 
+<!-- allow-version -->
 ### D3：MD-native 语法统一（ADR-0052，v0.6.1 已实施）
 
 v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md` 成为 canonical 格式，`.oxn` 不再保留。
+<!-- /allow-version -->
 
 **实施内容**：
 - 删除 Langium 基础设施（`packages/engine/src/oxl/langium-driver/`）
@@ -95,7 +101,9 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 - ✅ ADR-0001 / ADR-0021 / ADR-0052 Accept
 - ✅ ADR-0019 已 Superseded，决策内容由 ADR-0054 + ADR-0055 + 本 RFC D2 + D5 共同承载
 - ✅ 当前 OXL Grammar 已落实四关键字分离 + Props 漏斗
+<!-- allow-version -->
 - ✅ v0.6.1 后所有 `.oxn` 文件不被解析，错误信息引导写 `.md`
+<!-- /allow-version -->
 - 📝 Part 改名 / 删除属性时需同步检查 Blueprint 引用
 
 ## 相关术语
@@ -115,7 +123,9 @@ v0.6.1 完成了 MD-native 语法改革（`:::intent{...}` → 纯 MD），`.md`
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。

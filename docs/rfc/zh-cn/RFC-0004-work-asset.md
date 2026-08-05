@@ -29,11 +29,15 @@ synced-at: 2026-07-27
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：work-asset
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 
 ## 摘要
 
+<!-- allow-version -->
 OXN 的 Work / Asset 体系总政策——**ArsenalResolver 优先级链**（`@prj/` > `@gbl/` > `@oxn/`）+ **运行期隔离宪法**（Engine 只看 `frozen.json`）+ **三边界框架**（Domain/Workflow/Stack 正交维度）+ **Blueprint 组合模板**（Work 只引 Blueprint，3 边界通过 Blueprint 间接）+ **Asset Paper 4→3 字段**（abstract + references + citations）+ **Blueprint→Work→Task 数据流契约**（7 项决策 P0-P8 全落地 v0.7.3 GA）+ **Round loop AI 搜索行为记录**（maxIterations 软反馈）+ **partId 主键 + atomic-write**（trace-before-state 物理基础）+ **Task 沙箱 + namespace 纪律**（`.` vs `@` 三前缀）+ **Work/context.md 取代 Memory L1**（KV Cache 优化）+ **Onboarding via Starter Work**（init → starter-work IAP 闭环）+ **catalog.json + Probe-excluded**（AI 盲区保护）+ **External inline 收敛**（`## Externals` H2 category）。
+<!-- /allow-version -->
 
 ## 决策要点
 
@@ -95,7 +99,9 @@ fs.renameSync(`${statePath}.tmp`, statePath)
 
 ### D6：Work/context.md 取代 Memory L1（ADR-0049）
 
+<!-- allow-version -->
 `works/<work-id>/context.md` 是 Work 内的"短期记忆"——v0.7.x Memory RFC 反弹后的承载方案：
+<!-- /allow-version -->
 
 ```
 [1. System Instruction]              ← Stable
@@ -142,7 +148,9 @@ $ oxn init --ai opencode
 
 `auditTrail` 已废除（ADR-0071 合并入 RFC-0008），版本历史归 git。
 
+<!-- allow-version -->
 **引用计数 + DAG 校验**（v0.7.1 优化）：
+<!-- /allow-version -->
 - 静态扫：`oxn asset validate` 触发 → computeCitations
 - 动态监听：Asset 新增/修改/删除触发增量重算
 - DAG 校验：循环引用检测（A → B → A 抛 `IAPError INFRA_FAIL`）
@@ -196,7 +204,9 @@ External 从 Asset 类型降级为边界类型内的 `## Externals` H2 category�
 
 ### D12：Blueprint → Work → Task 数据流契约（ADR-0061）
 
+<!-- allow-version -->
 ADR-0061 7 项决策 D1-D7 全部 runtime 落地（v0.7.3 GA）：
+<!-- /allow-version -->
 
 | Decision | 含义 | Phase |
 |---|---|---|
@@ -205,7 +215,9 @@ ADR-0061 7 项决策 D1-D7 全部 runtime 落地（v0.7.3 GA）：
 | **D3** | Boundary.observe vs Task.probes lock-check（`IAP_INTENT_PROBE_OUT_OF_BOUNDARY`） | P4 alpha.3 |
 | **D4** | Workflow.slot DAG vs Task.deps DAG 闭包校验 | P5 beta.1 |
 | **D5** | Stack.tools 注入 Probe runtime（自动 `bun` 前缀） | P6 beta.1 |
+<!-- allow-version -->
 | **D6** | `## Refs` legacy `kind: domain` 软警告（v0.8.0 hard cut） | P7 GA |
+<!-- /allow-version -->
 | **D7** | PlanLock hash 公式不动 + work-context-builder 读 blueprints.json | P1 alpha.2 |
 
 ### D13：Round loop 是 AI 搜索行为（ADR-0075）
@@ -270,13 +282,17 @@ const fs = runtime === 'bun' ? new BunFsPort() : new NodeFsPort()
 ## 影响范围
 
 - ✅ 13 ADR 全 Accept（ADR-0071 部分 Superseded 已合并入 RFC-0008）
+<!-- allow-version -->
 - ✅ v0.6.1-alpha.4 三边界框架落地（AssetKind 6→5）
 - ✅ v0.7.3 GA Blueprint→Work→Task 数据流契约 P0-P8 全落地
+<!-- /allow-version -->
 - ✅ catalog.json 已落实；Probe 不入 catalog 已落实
 - ✅ ArsenalResolver 优先级链在 `src/builtin/` + `.openxenon/assets/` 已落实
 - ✅ partId 主键 + atomic-write + Trace-before-State 全栈统一
 - ✅ Runtime 适配层 Node 18+ 兜底 + Bun 加速已落实（ADR-012 历史决策）
+<!-- allow-version -->
 - 📝 v0.8.0 `kind: domain` deprecation hard cut
+<!-- /allow-version -->
 - 📝 `dual-state-exec.ts` maxIterations 软反馈改造
 
 ## 相关术语
@@ -309,7 +325,9 @@ const fs = runtime === 'bun' ? new BunFsPort() : new NodeFsPort()
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。

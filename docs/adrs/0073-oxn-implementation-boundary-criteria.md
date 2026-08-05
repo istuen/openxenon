@@ -135,7 +135,9 @@ AI 可涌现比工程师更优的选择（反向帮助工程师增加经验、�
 
 ### 负面 / 风险
 
+<!-- allow-version -->
 - **判据是快照**：四判据基于 R&N 术语 + 当前 OXN 架构。OXN 演进（如 v0.7+ Insight 涌现推理）可能需要扩展判据。
+<!-- /allow-version -->
 - **type 4 边界有张力**：Insight 的"该废弃/该改进"建议接近 type 4 推理。D2 判据说"不进 type 4"，但 Insight 产出 pattern 建议在边缘。靠"建议归工程师批"保持不越线，但需持续审视。
 - **floor/ceiling 隐含 AI 能力假设**：D3 假定 AI 能力（ceiling）可超工程师。若 LLM 能力退化或边界变化，此假设需复审。
 
@@ -144,7 +146,9 @@ AI 可涌现比工程师更优的选择（反向帮助工程师增加经验、�
 - **`Floor` + `Ceiling` 术语入 oxn-domain.md**（本次落地）——D3 判据的对偶概念，高频引用
 - **CONTEXT-MAP 对照表扩展 4 行**（本次落地）
 - **后续 grilling 可扩展判据**：Utility 深挖 / Search strategies / Adversarial search / Learning 等术语可能产出第五、六判据
+<!-- allow-version -->
 - **架构守卫集成候选**：四判据可转化为 CI 检查（如"新功能 PR 必须声明过哪几判据"）——v0.8+ 计划
+<!-- /allow-version -->
 
 ## Alternatives Considered
 

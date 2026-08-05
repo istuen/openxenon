@@ -68,7 +68,9 @@ ADR-0051 中关于 `auditTrail` 的部分（§决策第 4 条 + §学术论文�
 
 ### D4: 代码 fail-open 降级为 noop
 
+<!-- allow-version -->
 现有 `auditTrail` 相关代码（warn 逻辑）改为 noop——不读、不写、不 warn。v0.8.0 可物理删除残留代码路径。
+<!-- /allow-version -->
 
 ### D5: 不做数据迁移
 
@@ -93,7 +95,9 @@ ADR-0051 中关于 `auditTrail` 的部分（§决策第 4 条 + §学术论文�
 
 ### 衍生
 
+<!-- allow-version -->
 - v0.8.0 可物理删除 `auditTrail` 解析代码路径
+<!-- /allow-version -->
 - `oxn asset check` CLI（ADR-0069）实现时应校验 3 字段而非 4 字段
 - Asset 模板文件（`assets/{kind}.md` 模板）应移除 `auditTrail` 示例
 

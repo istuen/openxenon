@@ -26,7 +26,9 @@ Domain 不只是 DSL 资产，也是 **SSOT（Single Source of Truth）**：领�
 ## 候选落地
 
 - `docs/zh-cn/core-concepts.md` §Domain 作为 SSOT 段落
+<!-- allow-version -->
 - v0.7-emergence RFC：Anchor/Slot 文档绑定机制
+<!-- /allow-version -->
 
 ## 参考
 

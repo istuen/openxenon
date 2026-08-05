@@ -17,11 +17,15 @@ synced-at: 2026-07-26
 > **主题**：frozen-errata
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
 > **来源**：2026-07-25 grilling session #6（与 user 协作）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 
 ## 摘要
 
+<!-- allow-version -->
 RFC accepted 后核心冻结（不可编辑正文），仅可追加 errata 段。supersede 走新 RFC 标 `superseded-by` / `supersedes`。本策略与 OXP（v0.6.1 起的旧镜像层）一致但取代之——OXP 合并入 RFC，演进规则统一。
+<!-- /allow-version -->
 
 ## 决策要点
 
@@ -50,7 +54,9 @@ RFC `status: Accepted` 后，正文段（摘要 / 决策要点 / 影响范围 / 
 
 <修正说明——为什么需要补充、原决策哪里需要澄清、影响哪些读者。>
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
@@ -88,12 +94,16 @@ superseded-by: RFC-YYYY
 
 ### D5：与 OXP 演进规则的差异
 
+<!-- allow-version -->
 OXP（v0.6.1 起的旧镜像层）已废除——其演进规则（核心冻结 + errata）由本 RFC 继承并取代。OXP 文件在 Phase 3 删除（物理移动到 `.openxenon/.archived/docs/oxps/` 或直接删除）。
+<!-- /allow-version -->
 
 ## 影响范围
 
 - ✅ 与 RFC-0009 三情态分离对齐（规定性情态的标准演进策略）
+<!-- allow-version -->
 - ✅ doc-rfc-workflow v0.2 Blueprint 的 promote 阶段记录"accepted 后核心冻结"
+<!-- /allow-version -->
 - ✅ 48 条 ADR → 8 RFC + 4 meta-RFC 全部按本策略冻结
 
 ## 相关术语

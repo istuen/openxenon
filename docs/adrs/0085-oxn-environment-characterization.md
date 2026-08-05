@@ -95,7 +95,9 @@ OXN 环境的"部分可观察"是对**工程师**而言的——OXN 不向工程
 - **OXN Engine 性质刻画明确**：6 轴分类让"OXN 是 X 吗"问题有判据（"OXN 通道内确定、通道外不可观察"——不是"完全确定"也不是"完全可观察"）。
 - **设计决策边界锐化**：maxIterations vs path_cost、拓扑闭包校验 vs 搜索空间约束、Probe 不可见 vs 环境不可观察——三对容易混淆的概念被显式区分。
 - **Probe 设计范围收敛**：Probe 不试图观测 AI 通道外行为（不可能），Probe 是**工程师选择的观测面**（manifest）；这与 ADR-0072 "OXN 是工程师定义的确定性参照"一致。
+<!-- allow-version -->
 - **未来探索模式不被锁死**：v0.7+ Insight 涌现层如果要 AI 在 OXN 通道内做更复杂的探索（环境动态 / 部分可观察），6 轴刻画给探索留有"语义提升"空间，不必重写底层。
+<!-- /allow-version -->
 
 ### 负面 / 风险
 
@@ -105,7 +107,9 @@ OXN 环境的"部分可观察"是对**工程师**而言的——OXN 不向工程
 
 ### 衍生
 
+<!-- allow-version -->
 - **CONTEXT-MAP Term #8 锐化**：明确"半动态 = 资产静态 + 执行动态"，与 v0.6 RFC 的 Asset 不可改写约束对齐。
+<!-- /allow-version -->
 - **oxn-domain.md 增补"OXN 环境 6 轴" term**：与 Referent / Floor / Ceiling 并列，作为产品核心概念。
 - **oxn-engine-domain.md 新增 6 轴对应描述**：L0 Kernel 零 IO + L1 Infra 副作用 + 通道内确定性 = 6 轴的具体实现映射。
 

@@ -9,27 +9,35 @@ promote-target: rfc
 created-from: draft-skeleton-fork@0.1.0
 ---
 
+<!-- allow-version -->
 # v0.6.2 Draft Promote 路由 RFC — 用 OXN 形式管理 Draft 生命周期
+<!-- /allow-version -->
 
 > **日期**：2026-08-02
+<!-- allow-version -->
 > **状态**：🟡 **Draft**（待 promote 进 RFC 流程；v0.6.2-alpha.3 已落地 P1-P5，待 P1α review）
 > **作者**：draft-system-design 实施
 > **目标版本**：v0.6.2-alpha.3（实施已落地）/ v0.6.3（正式 promote）
+<!-- /allow-version -->
 > **关联**：
 >   - RFC-0009 (Doc 三情态)
 >   - RFC-0011 (Asset 两层)
 >   - RFC-0017 (术语双层 SSOT)
 >   - RFC-0018 (Meta 层)
+<!-- allow-version -->
 >   - `.openxenon/drafts/draft-system-design-grilling.md`（v0.6.2 起点）
+<!-- /allow-version -->
 >   - `.openxenon/drafts/ssot-asset-doc-boundary-audit-2026-07-28.md`
 
 ---
 
 ## 0. 背景与动机
 
+<!-- allow-version -->
 ### 0.1 v0.6.2 现状
 
 v0.6.2 起 Draft 用 4 命令（`create / list / archive / discard`）管理，但 Promote 路径走 `oxn work create --blueprint X`（工程师手动拼装）：
+<!-- /allow-version -->
 
 ```
 oxn draft create x.md       # 0 bytes 空白
@@ -43,14 +51,18 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 2. **Promote 路由硬编码在 CLI 层**：CLI 不感知 target 类型，要工程师手动选 Blueprint（`doc-rfc-workflow` / `asset-workflow` / `doc-dev-workflow` / `doc-prod-workflow`）。
 3. **4 Promote Blueprint 重复**：4 件各自 `gather / author / validate / promote` 边界近似，但 refs / deps / outputs 各异，合并可能性未被探索。
 
+<!-- allow-version -->
 ### 0.2 v0.6.2-alpha.3 触发
+<!-- /allow-version -->
 
 基于：
 - 用户意图（"Draft 创建时**参考目标结构** OR Promote **重写**对应结构" + "新增 Asset 围绕 Draft-Promote"）
+<!-- allow-version -->
 - oxn-draft-domain v0.1.0 决议（"v0.6.2 不实现，4 命令 CLI 够用时不需要" → v0.6.2-alpha.3 时机已到）
 - 4 件 Promote Blueprint 已收敛到边界定义（v0.7 Workflow 编译器形状 → 合并为 1 件的契机）
 
 → **v0.6.2-alpha.3 设计落地：用 OXN 形式（Blueprint + Domain + Workflow + Stack）管理 Draft 生命周期**。
+<!-- /allow-version -->
 
 ---
 
@@ -68,7 +80,9 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 
 ### D3: Promote 4 阶段顺序强制 — 不允许 short-circuit
 - **决议**：`gather → select-target → validate → dispatch-target` 严格顺序
+<!-- allow-version -->
 - **理由**：v0.6.2-alpha.3 锁定为 Draft 专属生命周期（与 Work IAP 不同）
+<!-- /allow-version -->
 - **兜底**：每阶段 transaction，失败回滚，下次 retry 走完整流程
 
 ### D4: skeleton 派生走 Asset 层 — Draft engine 不内置 Template
@@ -76,9 +90,11 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 - **理由**：违反 `oxn-draft-domain inv-2`（OXN 不执行 Draft 创建逻辑业务）+ `forbidden-draft-builtin-template`（Draft 内置 template 已废）
 - **绕开**：用 draft-skeleton-fork Workflow（Asset 层）派生 skeleton，由 caller 写文件
 
+<!-- allow-version -->
 ### D5: 兼容 v0.6.2 空白模式 — `--target` 缺失时仍 0 bytes
 - **决议**：默认行为不变（兼容 v0.6.2 4 命令）；`--target` 是可选增强
 - **理由**：v0.6.2 已落地 4 命令 + 现有 17+ draft；强制 frontmatter 会破坏现有数据
+<!-- /allow-version -->
 - **落实**：`oxn-draft-domain forbidden-draft-frontmatter-required` ban 锁定为空 Draft 合法
 
 ### D6: 7 sub-target 是 dispatch 终点 — 不再细分
@@ -95,7 +111,9 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 
 ## 2. 目标与非目标
 
+<!-- allow-version -->
 ### 2.1 目标（v0.6.2-alpha.3 必达）
+<!-- /allow-version -->
 
 | # | 目标 | 验收 |
 |---|---|---|
@@ -103,20 +121,24 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 | G2 | Draft Promote 4 阶段生命周期 | `oxn draft promote x` 走 draft-promote-router Blueprint，4 阶段顺序强制 |
 | G3 | 3 类 Target（rfc / asset / work）路由 | 7 sub-target dispatch 全部落地 |
 | G4 | 7 skeleton 模板驱动 per-target frontmatter + H2 段 | `.openxenon/assets/blueprints/draft-skeletons/{rfc,asset-*,work}.md` 全建 |
+<!-- allow-version -->
 | G5 | 4 旧 Promote Blueprint 合并为 1 | `promote-target-aware-workflow.md` v0.1.0 + 4 旧归档 |
 | G6 | retarget 显式操作 | `oxn draft retarget x --new-target <...>` 重新派生 skeleton，保留工程师内容 |
 | G7 | 与 v0.6.2 4 命令完全兼容 | 默认 `--target` 缺失时仍走空白模式 |
+<!-- /allow-version -->
 
 ### 2.2 非目标（明确推迟）
 
 | # | 非目标 | 推迟到 |
 |---|---|---|
+<!-- allow-version -->
 | NG1 | AI Agent 自动推断 promote-target（基于内容关键字） | v0.7.x |
 | NG2 | 多人协同 Draft（lock / concurrent edit / merge） | v0.7.x |
 | NG3 | Promote 时自动生成 changelog 段（与 .changes/ 集成） | v0.7.x |
 | NG4 | Per-target Probe（rfc-promote-hook / asset-promote-hook） | v0.7.x |
 | NG5 | 跟踪 `.openxenon/assets/` 到 git（团队治理决策） | 待 RFC |
 | NG6 | Promote 实际写文件（当前仅返回 dispatch 信息，CLI 接 `oxn work create --blueprint`） | v0.6.3 |
+<!-- /allow-version -->
 
 ---
 
@@ -141,7 +163,9 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 │   --new-target rfc|asset|work                                      │
 │   [--new-kind <5 AssetKind>]                                       │
 │                                                                   │
+<!-- allow-version -->
 │ oxn draft list/archive/discard  (v0.6.2 不变)                     │
+<!-- /allow-version -->
 └──────────────────────────────────────────────────────────────────┘
                                 ↓
 ┌──────────────────────────────────────────────────────────────────┐
@@ -164,6 +188,7 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 ├──────────────────────────────────────────────────────────────────┤
 │ .openxenon/assets/                                                │
 │ ├── domains/                                                       │
+<!-- allow-version -->
 │ │   ├── oxn-draft-domain.md           (v0.1.0 → v0.2.0 增 3 Term)│
 │ │   └── oxn-draft-promote-domain.md   (v0.1.0 新增)               │
 │ ├── workflows/                                                     │
@@ -171,12 +196,15 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 │ ├── blueprints/                                                    │
 │ │   ├── draft-promote-router.md       (v0.1.0 新增 Layer 1)       │
 │ │   ├── promote-target-aware-workflow.md (v0.1.0 新增 Layer 2)    │
+<!-- /allow-version -->
 │ │   └── draft-skeletons/                (7 skeleton 模板)          │
 │ │       ├── rfc.md                                                  │
 │ │       ├── asset-{domain,workflow,stack,blueprint,roadmap}.md    │
 │ │       └── work.md                                                │
 │ └── stacks/                                                        │
+<!-- allow-version -->
 │     └── draft-promote-tooling.md      (v0.1.0 新增)               │
+<!-- /allow-version -->
 │                                                                   │
 │ .openxenon/.archived/assets/blueprints/                           │
 │   (4 旧 Promote Blueprint 归档)                                   │
@@ -190,8 +218,10 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 │                    Layer 3 — Work (existing)                       │
 ├──────────────────────────────────────────────────────────────────┤
 │ oxn work create <name> --blueprint <name>                          │
+<!-- allow-version -->
 │   (v0.6.2-alpha.3 仅返回 dispatch 信息;                            │
 │    v0.6.3 由 router 真正调 work create)                            │
+<!-- /allow-version -->
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -226,15 +256,19 @@ oxn work create x-rfc --blueprint doc-rfc-workflow  # 4 件 promote Blueprint �
 │ Phase 3: validate                                            │
 │   - 校验必填字段: promote-target                             │
 │   - 校验 promote-kind (target=asset 时)                      │
+<!-- allow-version -->
 │   - v0.6.2-alpha.3: 简化版（v0.6.3 扩为 H2 段校验）           │
+<!-- /allow-version -->
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ Phase 4: dispatch-target                                     │
 │   - resolveSubTarget(target, kind) → 7 sub-target            │
 │   - computeTargetPath(target, kind, name) → 落盘路径          │
+<!-- allow-version -->
 │   - v0.6.2-alpha.3: 返回 dispatch info（不实际写文件）       │
 │   - v0.6.3: 由 promote-target-aware-workflow 真正写文件      │
+<!-- /allow-version -->
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -263,11 +297,13 @@ TargetDispatchTable (oxn-draft-promote-domain §TargetDispatchTable)
 
 | # | 资产路径 | 类型 | 用途 |
 |---|---|---|---|
+<!-- allow-version -->
 | 1 | `domains/oxn-draft-promote-domain.md` v0.1.0 | Domain | Promote 路由领域（Target · PromoteRoute · SkeletonForking · PromoteLifecycle · TargetDispatchTable） |
 | 2 | `workflows/draft-skeleton-fork.md` v0.1.0 | Workflow | skeleton 派生流水线（pick-target → pick-kind → fork-template → inject-frontmatter） |
 | 3 | `blueprints/draft-promote-router.md` v0.1.0 | Blueprint | Layer 1 总路由（4 Boundaries 顺序强制） |
 | 4 | `blueprints/promote-target-aware-workflow.md` v0.1.0 | Blueprint | Layer 2 通用 Promote（合并 4 → 1；4 Boundaries + 7 Tasks） |
 | 5 | `stacks/draft-promote-tooling.md` v0.1.0 | Stack | Promote 工具栈（yaml-parser / mdast-validator / path-guard） |
+<!-- /allow-version -->
 | 6 | `blueprints/draft-skeletons/rfc.md` | Skeleton | RFC skeleton（frontmatter 5 字段 + 5 H2 段） |
 | 7 | `blueprints/draft-skeletons/asset-domain.md` | Skeleton | Domain skeleton（frontmatter 7 字段 + 3 H2 段） |
 | 8 | `blueprints/draft-skeletons/asset-workflow.md` | Skeleton | Workflow skeleton（frontmatter 7 字段 + 1 H2 段） |
@@ -280,7 +316,9 @@ TargetDispatchTable (oxn-draft-promote-domain §TargetDispatchTable)
 
 | # | 资产路径 | 改动 |
 |---|---|---|
+<!-- allow-version -->
 | M1 | `domains/oxn-draft-domain.md` | v0.1.0 → v0.2.0（增 3 Term / 改 2 Ban / 增 2 Invariant / Future extension 改写） |
+<!-- /allow-version -->
 
 具体改动：
 
@@ -341,24 +379,34 @@ OXN_DRAFT_PROMOTE_VALIDATE_FAILED frontmatter 校验失败
 
 ---
 
+<!-- allow-version -->
 ## 6. CLI 6 子命令（v0.6.2 4 + v0.6.2-alpha.3 2）
+<!-- /allow-version -->
 
 ### 6.1 create（增强）
 
 ```bash
+<!-- allow-version -->
 # v0.6.2 (兼容)
+<!-- /allow-version -->
 oxn draft create <name> [--prefix <3 types>]
 
+<!-- allow-version -->
 # v0.6.2-alpha.3 (新增 --target/--kind)
+<!-- /allow-version -->
 oxn draft create <name> [--prefix <3 types>] \
                      --target <rfc|asset|work> [--kind <5 AssetKind>]
 ```
 
 行为：
+<!-- allow-version -->
 - 无 `--target` → 0 bytes 空白（v0.6.2 兼容）
+<!-- /allow-version -->
 - 有 `--target` → 调 `forkDraftSkeleton` 派生含 frontmatter + H2 段
 
+<!-- allow-version -->
 ### 6.2 promote（v0.6.2-alpha.3 新增）
+<!-- /allow-version -->
 
 ```bash
 oxn draft promote <name> [--target auto|<rfc|asset|work>] [--archive-after]
@@ -366,10 +414,12 @@ oxn draft promote <name> [--target auto|<rfc|asset|work>] [--archive-after]
 
 行为：
 - 4 阶段：gather → select-target → validate → dispatch-target
+<!-- allow-version -->
 - v0.6.2-alpha.3：返回 dispatch info（含 subTarget + targetPath）
 - v0.6.3：实际调 `oxn work create --blueprint promote-target-aware-workflow`
 
 ### 6.3 retarget（v0.6.2-alpha.3 新增）
+<!-- /allow-version -->
 
 ```bash
 oxn draft retarget <name> --new-target <rfc|asset|work> [--new-kind <5 AssetKind>]
@@ -381,7 +431,9 @@ oxn draft retarget <name> --new-target <rfc|asset|work> [--new-kind <5 AssetKind
 - 合并：保留工程师 frontmatter（除 `promote-target` / `promote-kind` / `created-from` / `synced-at`）
 - 写回：保留 body 内容到 `<!-- engineer-preserved-content -->`
 
+<!-- allow-version -->
 ### 6.4 list / archive / discard（v0.6.2 不变）
+<!-- /allow-version -->
 
 ```bash
 oxn draft list [--include-archived]
@@ -395,7 +447,9 @@ oxn draft discard <name> --force
 
 ### 7.1 术语更新
 
+<!-- allow-version -->
 | 概念 | v0.6.2 | v0.6.2-alpha.3 |
+<!-- /allow-version -->
 |---|---|---|
 | Draft 模板 | 强制无 Template | 可选 skeleton 派生（Asset 层） |
 | Draft frontmatter | 强制无 frontmatter | 可选 `--target` 派生 `promote-target` / `promote-kind` hint |
@@ -409,13 +463,17 @@ oxn draft discard <name> --force
 - Promote 后源 Draft 不变 → 不破坏 inv-1
 - Draft engine 无 Template 机制 → skeleton 走 Asset 层派生 → 不破坏 inv-2
 - 4 Promote Blueprint 归档但保留文件 → 不破坏引用
+<!-- allow-version -->
 - 兼容 v0.6.2 4 命令空白模式 → 不破坏现有 17+ draft 文件
+<!-- /allow-version -->
 
 ---
 
 ## 8. 测试统计
 
+<!-- allow-version -->
 ### 8.1 单元测试（v0.6.2-alpha.3 新增 33 件）
+<!-- /allow-version -->
 
 | 文件 | 测试数 | 覆盖 |
 |---|---|---|
@@ -423,17 +481,21 @@ oxn draft discard <name> --force
 | `__tests__/promote.test.ts` | 14 | 4 阶段 / 7 sub-target / 5 错误码 / override |
 | `__tests__/retarget.test.ts` | 7 | retarget 改 frontmatter / 保留内容 / 链式 / oversized |
 
+<!-- allow-version -->
 ### 8.2 集成测试（v0.6.3+）
 
 - `tests/integration/draft-promote.test.ts` — CLI e2e 测试（未实现，v0.6.3 阶段）
 - `tests/integration/draft-skeleton.test.ts` — skeleton 派生 e2e（未实现，v0.6.3 阶段）
+<!-- /allow-version -->
 
 ### 8.3 累计测试
 
 | 版本 | 新增 | 累计 |
 |---|---|---|
+<!-- allow-version -->
 | v0.6.2-alpha.2 | — | 1622 pass |
 | v0.6.2-alpha.3 | + 33 | 1864 pass / 0 fail / 3 skip |
+<!-- /allow-version -->
 
 ---
 
@@ -441,10 +503,12 @@ oxn draft discard <name> --force
 
 | 版本 | Week | 任务 | 工作量 |
 |---|---|---|---|
+<!-- allow-version -->
 | **v0.6.2-alpha.3** | 2026-08 | P1-P5 全部（5 commits） | 3 天 |
 | **v0.6.3 W1** | 2026-09 | Promote 实际写文件（router 调 work create）+ 集成测试 | 3 天 |
 | **v0.6.3 W2** | 2026-09 | promote-target-aware-workflow 7 Tasks 实际产物 | 4 天 |
 | **v0.7.x** | 2026-Q4 | AI Agent 自动推断 target / 多人协同 / changelog 集成 | 待评估 |
+<!-- /allow-version -->
 
 ---
 
@@ -458,17 +522,21 @@ oxn draft discard <name> --force
 | 7 skeleton 字段与目标 Asset 漂移 | 高 | 中 | 写 CI Probe 校验：每次 `oxn asset create <kind>` 后跑 `compare-skeleton <target>` |
 | 旧 Draft（无 frontmatter）兼容 | 高 | 低 | 老 Draft 走 `oxn draft retarget` 注入 frontmatter |
 | 工程师误声明 target | 中 | 低 | `oxn draft promote` 二次确认 + 列出 override 警告 |
+<!-- allow-version -->
 | `.openxenon/assets/` 不 commit 导致其他开发者拿不到新 Asset | 中 | 中 | engine fallback 列表（已注册 `oxn-draft-promote-domain`）+ README 指引（v0.7.x 走 RFC 决策） |
+<!-- /allow-version -->
 | 4 旧 Promote Blueprint 引用未更新 | 低 | 低 | grep 扫描 + changelog 提示 |
 
 ---
 
+<!-- allow-version -->
 ## 11. 不做（明确推迟到 v0.7.x）
 
 - 跨 Project 引用 Draft → v0.7.x Skill Registry
 - Draft 自动 refactor 工具 → v0.9.0 自适应 Blueprint
 - Draft 内容 ML 预测 → v0.9.0+
 - Hall 实时 Promote 图 → v0.8.0 WebSocket
+<!-- /allow-version -->
 - `.openxenon/assets/` 跟踪 git → 团队治理 RFC
 
 ---
@@ -491,10 +559,14 @@ oxn draft discard <name> --force
 - RFC-0018（Meta 层）
 
 ### RFC（本文相关）
+<!-- allow-version -->
 - 本文 → RFC-0019（v0.6.2-draft-promote-routing）
+<!-- /allow-version -->
 
 ### 草稿（已落地 + 待 promote）
+<!-- allow-version -->
 - `.openxenon/drafts/draft-system-design-grilling.md`（v0.6.2 起点）
+<!-- /allow-version -->
 - `.openxenon/drafts/ssot-asset-doc-boundary-audit-2026-07-28.md`（Step 1-2-3-4-5-7-9-10 已落；Step 6/8 待）
 - `.openxenon/drafts/onboarding-cold-start-solution.md`（冷启动相关，待排期）
 - `.openxenon/drafts/probe-coef-slot-cost-grilling.md`（Q4 推迟决策）
@@ -513,7 +585,9 @@ oxn draft discard <name> --force
 
 主要条目：
 - **新 Asset 11 件**：1 Domain + 1 Workflow + 2 Blueprint + 1 Stack + 7 skeleton
+<!-- allow-version -->
 - **改 Domain 1 件**：oxn-draft-domain.md v0.1.0 → v0.2.0
+<!-- /allow-version -->
 - **归档 4 Blueprint**：4 Promote Blueprint 合并为 1
 - **新 Engine 3 模块**：skeleton.ts / promote.ts / retarget.ts
 - **新 CLI 2 命令**：promote / retarget
@@ -531,7 +605,9 @@ oxn draft discard <name> --force
 | 工程师 | Q-C: 重构 1 件（合并 4 → 1） | 2026-08-02 |
 | 工程师 | Q-A: Asset 跟踪策略 A（保持 local-only） | 2026-08-02 |
 | 工程师 | 批准 P1-P5 实施 | 2026-08-02 |
+<!-- allow-version -->
 | 待 review | v0.6.2-alpha.3 整套设计 | 待 promote |
+<!-- /allow-version -->
 
 ---
 
@@ -546,10 +622,14 @@ oxn draft discard <name> --force
 - [ ] 走 `oxn work create rfc-0019 --blueprint doc-rfc-workflow` 正式 promote
 - [ ] 落盘 `docs/rfcs/zh-cn/RFC-0019-draft-promote-routing.md`
 - [ ] 更新 Domain changelog
+<!-- allow-version -->
 - [ ] v0.6.3 实施剩余（实际写文件 + 集成测试）
+<!-- /allow-version -->
 
 ---
 
+<!-- allow-version -->
 **作者**：draft-system-design 实施（v0.6.2-alpha.3）
 **目标发布**：v0.6.3（v0.6.2-alpha.3 已落地 P1-P5）
+<!-- /allow-version -->
 **状态**：🟡 Draft（待 promote 进 RFC 流程）

@@ -13,7 +13,9 @@ Blueprint 通过 `type` 字段声明其语义类别：
 ```oxl
 blueprint "my-feature" {
   type "task"       // 单次执行单元
+<!-- allow-version -->
   // type "plan"    // 多次 Round 编排（v0.6+）
+<!-- /allow-version -->
   // type "explore" // 探索性 work（无严格 Proof）
   ...
 }
@@ -21,7 +23,9 @@ blueprint "my-feature" {
 
 ### 三类语义
 
+<!-- allow-version -->
 | Type | 意图 | Proof 严格度 | v0.6 状态 |
+<!-- /allow-version -->
 |---|---|---|---|
 | `task` | 单次任务执行 | 强制 | ✅ 落地 |
 | `plan` | 多 Round 编排 | 强制 | ✅ 落地 |

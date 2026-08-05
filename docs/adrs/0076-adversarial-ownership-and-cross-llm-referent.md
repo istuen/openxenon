@@ -100,7 +100,9 @@ OXN 的参照系让不同 LLM 对齐同一确定性边界：
 
 - **CONTEXT-MAP 对照表**：Term #14 新增（本次落地）
 - **ADR-0012 扩展记录**：本 ADR 是 ADR-0012 在跨 LLM 场景的延伸
+<!-- allow-version -->
 - **Probe 可见性矩阵**：后续可细化哪些 Probe 字段对 AI 可见/隐藏（v0.8+ Probe 体系演进 RFC 候选）
+<!-- /allow-version -->
 
 ## Alternatives Considered
 

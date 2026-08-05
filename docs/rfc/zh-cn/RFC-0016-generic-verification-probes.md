@@ -104,7 +104,9 @@ synced-at: 2026-08-01
 
 **为什么不 shell-exec**：shell-exec 只能跑 `bun test --coverage` 然后看 exit code（反映 pass/fail）——exit 0 不能区分 "lines 65%" 还是 "lines 95%"。需要主动解析 `coverage-summary.json` 的 JSON 值后做数值阈值比较。
 
+<!-- allow-version -->
 **多 runner 支持**：v0.6.2 仅支持 bun（OXN 内置默认）；v0.7.0 扩展 jest / vitest 时按 [RFC-0015 D5.1](./RFC-0015-proof-system-overhaul.html#d51-handler-读-stacktoolinfo-覆盖硬编码命令) 模式从 `StackToolInfo` 读取。
+<!-- /allow-version -->
 
 ### D3：json-path（中等优先级）
 
@@ -134,7 +136,9 @@ synced-at: 2026-08-01
 
 **为什么不 shell-exec**：jq 跨平台命令不统一（`jq` / `python -c` / `node -e`），需要硬编码平台分支；Node `JSON.parse` + 自实现路径遍历跨平台一致。
 
+<!-- allow-version -->
 **JSONPath 语法范围**：本 RFC 采用简化子集（`$.<key>` / `$.<key>.<key>` / `$.<key>[<index>]` / `$.<key>[*]`），完整 RFC 9535 JSONPath 留待 v0.8+ 评估。
+<!-- /allow-version -->
 
 ### D4：port-listening（低优先级）
 
@@ -249,7 +253,9 @@ bun scripts/check-doc-boundary.ts
 - ❌ Taint 接入（RFC-0015 D2）
 - ❌ 工具绑定可配置化（RFC-0015 D5）
 - ❌ 完整 RFC 9535 JSONPath 语法（D3 仅采用简化子集）
+<!-- allow-version -->
 - ❌ test-coverage 多 runner 完整适配（D2 Phase 2 仅 bun，jest/vitest 留 v0.7.0）
+<!-- /allow-version -->
 
 ## 相关术语
 

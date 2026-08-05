@@ -27,7 +27,9 @@ synced-at: 2026-07-27
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：domain-positioning
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 > **合并**：OXP-0003（Daemon 职责边界）→ 本 RFC
 
 ## 摘要
@@ -53,7 +55,9 @@ OXN 项目的产品定位 + Domain 词汇架构的顶层规范——**Domain 引
 
 ### D2：Domain 词汇边界 What/How 判据（ADR-0060）
 
+<!-- allow-version -->
 **重写测试**："如果 OpenXenon 用 Rust 重写、或 v0.8 把内部实现改名（如 md-pipeline 改名为 unified-ast-bridge），这个词还需存在么？"
+<!-- /allow-version -->
 
 - 仍需存在 → Domain 收（"是什么"）
 - 不需存在 → 迁 Stack/docs（"怎么实现"）
@@ -219,7 +223,9 @@ Domain（SSOT）  ──manual review──>  Glossary（外部手册可见）
 
 - **Domain → Glossary**：手动 review + 工具辅助（`oxn glossary sync --from-domain`）
 - **Glossary → Domain**：禁止反向引用
+<!-- allow-version -->
 - **CI 守卫**：双向一致性检查（drift → fail build），`scripts/check-glossary-sync.ts`（v0.7.4 计划）
+<!-- /allow-version -->
 
 ### D11：Domain SSOT 工程化治理（ADR-0027）
 
@@ -270,10 +276,12 @@ Domain B: term "Order" desc "订单状态机"   // ⚠️ E_DOMAIN_TERM_CONFLICT
 **当前状态**：
 
 - ✅ D10 Glossary ↔ Domain 同步机制（CI 双向检查）已就位
+<!-- allow-version -->
 - ⚠️ 文档 `domain:` frontmatter 强制（v0.7+ 落地——CI 守卫脚本待写）
 - ⚠️ 新 Domain 走 Work 流程（v0.7+ 落地——Blueprint 待补）
 - ⚠️ Domain 覆盖率统计（v0.7+ 落地——编译器扩展点）
 - ✅ Domain 冲突检测（`E_DOMAIN_TERM_CONFLICT` 错误码已定义，编译期检测 v0.7+ 落地）
+<!-- /allow-version -->
 
 ### D12：Work 前置精准阻断 vs Daemon 全局崩溃（ADR-0034）
 
@@ -294,7 +302,9 @@ Domain B: term "Order" desc "订单状态机"   // ⚠️ E_DOMAIN_TERM_CONFLICT
 
 **Probe CLI-1 细节差异**：`oxn probe` 命令的 `--strict` 模式采用精准阻断（已知 probe schema 错误立即退出），`oxn probe --best-effort` 模式仅输出失败到 stdout 不阻断。
 
+<!-- allow-version -->
 **不监听文件系统**——本 RFC D8 已明确：Daemon 不监听 FS 变化（避免与 v0.5 file watcher 混淆），FS 变化由 Work 启动时 validate 阶段处理。
+<!-- /allow-version -->
 
 ## 影响范围
 
@@ -302,9 +312,11 @@ Domain B: term "Order" desc "订单状态机"   // ⚠️ E_DOMAIN_TERM_CONFLICT
 - ✅ oxn-domain.md 新增 Referent / Floor / Ceiling 术语
 - ✅ 8 个 Domain SSOT 词汇统一（What/How 双层）
 - ✅ CONTEXT-MAP.md PEAS 块重写 + 7 个 Domain 关系图扩展
+<!-- allow-version -->
 - ✅ Daemon 模块拆分：work-state-monitor + probe-event-listener + socket-server（v0.7+）
 - ✅ Asset Paper schema 4→3 字段（ADR-0071 已在 RFC-0008 合并）
 - 📝 ADR-0027 Domain SSOT 4 项治理——CI 守卫脚本 v0.7+ 落地
+<!-- /allow-version -->
 - ✅ ADR-0034 Work 前置精准阻断——已通过 probe --strict / --best-effort 模式部分落地
 
 ## 相关术语
@@ -335,7 +347,9 @@ Domain B: term "Order" desc "订单状态机"   // ⚠️ E_DOMAIN_TERM_CONFLICT
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。

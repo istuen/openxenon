@@ -17,7 +17,9 @@ synced-at: 2026-07-26
 > **主题**：doc-three-modalities
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
 > **来源**：2026-07-25 grilling session #6（与 user 协作）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 
 ## 摘要
 
@@ -68,7 +70,9 @@ OXN 项目文档按"情态"分三类——**Asset（定义性）** / **RFC（规
 ## 影响范围
 
 - ✅ RFC-0010（frozen+errata）+ RFC-0011（builtin Asset 两层）+ RFC-0012（自举种子豁免）三 meta-RFC 与本 RFC 互锁
+<!-- allow-version -->
 - ✅ v0.7+ 文档架构 SSOT 切换到三情态
+<!-- /allow-version -->
 - ✅ AGENTS.md §文档三层架构段（Phase 5.1 重写）
 - ✅ 4 类 Promote 工作流（asset-workflow / doc-prod-workflow / doc-dev-workflow / doc-rfc-workflow）与三情态 1:1 对应
 
@@ -89,7 +93,9 @@ OXN 项目文档按"情态"分三类——**Asset（定义性）** / **RFC（规
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。

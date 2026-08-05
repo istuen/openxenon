@@ -1,7 +1,7 @@
 # RFC XXXX: Skill 体系扩展性（草案 / v0.6.2 设计草稿）
 
 > **类型**：RFC 草案（design 类 Draft，由 `oxn draft create rfc-skill-extensibility --prefix design` 创建）
-> **状态**：🚧 Draft（待通过 `oxn work create --blueprint doc-rfc-workflow` 提升到 `docs/rfc/zh-cn/RFC-XXXX-skill-extensibility.md`）
+> **状态**：active（待通过 `oxn work create --blueprint doc-rfc-workflow` 提升到 `docs/rfc/zh-cn/RFC-XXXX-skill-extensibility.md`）
 > **创建**：2026-07-29
 > **来源**：oxn-draft Skill 落地时衍生的扩展性议题（Q-D6/Q-D7/Q-D8 grilling 决议）
 

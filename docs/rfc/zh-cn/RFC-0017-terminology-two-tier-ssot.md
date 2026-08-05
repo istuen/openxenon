@@ -20,7 +20,9 @@ synced-at: 2026-08-01
 > **主题**：terminology-two-tier-ssot
 > **状态**：📝 Draft（评审中，未执行）
 > **来源**：2026-08-01 `/grilling` session（grill-with-docs + domain-modeling skill）
+<!-- allow-version -->
 > **批次**：2026-08-01 v0.7 RFC 批次（接 RFC-0016 之后；RFC-0018 同期）
+<!-- /allow-version -->
 
 ## 摘要
 
@@ -172,7 +174,9 @@ name: scripts/sync-domain-glossary.ts
 - glossary.md 单页面可能膨胀（~141 term × 4-6 行 ≈ 600-800 行，仍可控）
 - en/ 翻译工作未启动，Phase 4 删 `docs/glossary/en/_index.md` 后 en 翻译另行立项
 - sync 脚本首次落地时需清理 glossary 的 `source:` frontmatter（从 9 文件迁移到 1 文件时丢弃）
+<!-- allow-version -->
 - 代码层 `roadmap` → `assetmap` 命名同步（CLI 命令、目录、Engine 模块）超出本 RFC 范围，列入 v0.7+ 独立 RFC
+<!-- /allow-version -->
 
 ### 衍生
 
@@ -185,7 +189,9 @@ name: scripts/sync-domain-glossary.ts
 
 | 方案 | 否决理由 |
 |---|---|
+<!-- allow-version -->
 | **glossary 升为 AssetKind 第 6 类（kind=glossary）** | v0.6.1-alpha.4 刚收敛为 5 类（删 library/external），glossary 不属于"业务边界"，添加会破坏三边界框架 |
+<!-- /allow-version -->
 | **glossary 物理在仓库根（GLOSSARY.md）** | 仓库根只承载 Meta 层（RFC-0018），glossary 是外部用户可见的 Doc 范畴 |
 | **Domain 引用 glossary 反向链（双向 sync）** | SSOT 流向必须单向；双向会导致"哪个版本对"的循环问题，违反 D2 |
 | **保留 glossary/zh-cn/*.md 多文件 + 加 sync** | 用户在 2026-08-01 grilling 第 2 轮明确选择"换成手册内联定义列表"，多文件形态废弃 |
@@ -194,7 +200,9 @@ name: scripts/sync-domain-glossary.ts
 
 ## 实施步骤
 
+<!-- allow-version -->
 > D7 root 解析基于 v0.6 扁平 9-Domain 结构；[v0.7 层级 RFC](../../openxenon/drafts/rfc/v0.7-domain-hierarchy-restructure-rfc.md) 落地后需重定向 root 解析逻辑（按新的 Layer 0/1/2 层级判定 root）。
+<!-- /allow-version -->
 
 ### Phase 0：CONTEXT-MAP.md 计数修正
 
@@ -261,7 +269,9 @@ name: scripts/sync-domain-glossary.ts
 
 ## Errata
 
+<!-- allow-version -->
 ### v0.1 (2026-08-01)
+<!-- /allow-version -->
 
 - 初稿：来自 2026-08-01 `/grilling` session 第 3 轮（domain-modeling skill）输出
 - 评审中项（待 Draft → Accepted 拍板前确认）：

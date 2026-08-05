@@ -2,7 +2,9 @@
 
 > **来源**：`docs_tmp/skill-1.md` (2026-07-03)
 > **抽取日**：2026-07-04
+<!-- allow-version -->
 > **状态**：Proposed → v0.7-plus-roadmap 待办
+<!-- /allow-version -->
 > **影响层**：Skill 架构
 
 ## 决策（提案）

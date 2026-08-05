@@ -41,6 +41,7 @@
 | 0.7.0 | `0-7-0-asset-graph.md` | Asset 影响图 + Hall v0.5 集成 | 📝 planned |
 | 0.7.0 | `0-7-0-emergence.md` | 涌现层骨架：Insight 工程化 + Hall v0.5 + Infra Ports 扩展 | 📝 planned |
 | 0.7.0 | `0-7-0-infra-ports.md` | Infra 扩展：ResourcePort / CachePort / WorkSnapshot | 📝 planned |
+| 0.7.0 | `0-7-0-logger-migration.md` | ADR-0082 LoggerPort 全面迁移（baseline 2026-08-05 ship）| 📝 planned |
 | 0.7.0 | `0-7-0-oxn-deprecation.md` | .oxn 切割：Langium 完整退役 + git rm 全量 .oxn + CLI 清理 | 📝 planned（baseline ship v0.6.1）|
 | 0.7.0 | `0-7-0-work-unified-model.md` | Work 统一模型 + 引用收敛 + Round 改进 | 📝 planned |
 | 0.7.1 | `0-7-1-ai-three-modes.md` | AI 三档监督模式（Guided / Adaptive / Unmanaged）| 📝 planned |

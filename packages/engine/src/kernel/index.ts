@@ -28,6 +28,7 @@
 // ───────── 协议层：Port 接口（外层实现，被 L2 持有）─────────
 export type { FileSystemPort } from './contracts/file-system-port'
 export type { HashPort } from './contracts/hash-port'
+export type { LoggerPort, LogEntry, LogLevel } from './contracts/logger-port'
 export type { OsPort } from './contracts/os-port'
 export type { PartPort } from './contracts/part-port'
 export type {

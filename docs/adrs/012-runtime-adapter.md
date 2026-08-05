@@ -4,9 +4,11 @@
 > **日期**：2026-06-12
 > **决策者**：架构师 + 维护者
 > **关联 forge**：
+<!-- allow-version -->
 > - 设计 v0.3（最终拍板）：`.openxenon/forges/2026-06-11-runtime-adapter-design.v0.3.md`
 > - 架构讨论 v1.0：`.openxenon/forges/2026-06-11-runtime-adapter-arch-discussion.md`
 > - v0.1.0 pre-publish（Step 0 硬依赖）：`.openxenon/forges/2026-06-11-v0.1.0-pre-publish-design.md`
+<!-- /allow-version -->
 > **关联 changeset**：`.changes/0-1-6-runtime-adapter.md`
 
 ## 背景
@@ -47,7 +49,9 @@ Node 18+ 兜底让 npm install 0 负担（用户调研硬约束）。
 **RuntimePort 不属于 Type A** 因为 `spawn()` 消费者是 L1-Infra 的 probe handler，**不是 kernel 纯函数**。Kernel 是 lambda vacuum（禁止 `fs`/`net`/`child_process`/`process.env`/`EventEmitter`），不可能调用 spawn。
 
 ### 5. 双目录 + 工厂（arch-discussion §5.1 拍板）
+<!-- allow-version -->
 **不**用扁平 5 文件目录（v0.2 design 原方案），改用：
+<!-- /allow-version -->
 ```
 src/infra/runtime/
 ├── types.ts              # RuntimePort 接口
@@ -92,7 +96,9 @@ SIGTERM 可能被进程忽略，SIGKILL 保证超时后进程一定退出。
 - ❌ 全部 handler 重写为 async（现状已 async）
 - ❌ 移除 `Bun.*` 引用（保留作为 detect 内部用）
 - ❌ RuntimePort 放 `kernel/contracts/`（Type A 分类空抽象）
+<!-- allow-version -->
 - ❌ 跨平台 binary 矩阵（`build:linux` / `build:macos` / `build:windows` 删除，v0.1.6 纯 JS 入口）
+<!-- /allow-version -->
 - ❌ RuntimePort 用 DI 容器（Type B 用模块 import + 工厂模式）
 
 ## 替代方案
@@ -118,7 +124,9 @@ SIGTERM 可能被进程忽略，SIGKILL 保证超时后进程一定退出。
 
 - `engines.node` 从 `>=18` 不变（已生效）
 - `bin: dist/oxn` (63MB binary) → `bin: dist/cli.js` (2.71MB JS)
+<!-- allow-version -->
 - `build:all` / `build:linux` / `build:macos` / `build:windows` 删除（v0.1.6 不再 cross-compile binary）
+<!-- /allow-version -->
 - `prepublishOnly` 升级为 `typecheck + lint + test + build`
 - 新增 `which` 直接依赖（Node 路径用 npm `which` 包跨平台兼容）
 - `dist/cli.js` 启动时间：Node 路径 ~200ms / Bun 路径 ~50ms（tradeoff）

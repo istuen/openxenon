@@ -17,7 +17,9 @@ synced-at: 2026-07-26
 > **主题**：bootstrap-exemption
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
 > **来源**：2026-07-25 grilling session #6（与 user 协作）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 
 ## 摘要
 
@@ -78,7 +80,9 @@ src/builtin/（手动 seed 首批 probes + blueprints）
 - ✅ `src/builtin/probes/*.md` + `src/builtin/blueprints/*.md` 15 + 3 文件均属自举种子
 - ✅ Phase 4 Registry 重写保持自举豁免语义
 - ✅ 工程师可手动调整 `src/builtin/` 内容（git commit）
+<!-- allow-version -->
 - 📝 项目工作台删除流程的 Work 化（v0.8+ 探索）
+<!-- /allow-version -->
 
 ## 相关术语
 
@@ -95,7 +99,9 @@ src/builtin/（手动 seed 首批 probes + blueprints）
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。

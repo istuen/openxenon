@@ -310,7 +310,9 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 
 ### ADR-P2：feature→test 映射审计（3-4 hr，按 D8）
 
+<!-- allow-version -->
 - 扫 `.changes/` 按版本（v0.6.0 / v0.6.1 / v0.6.2-alpha.0）列特性
+<!-- /allow-version -->
 - 每特性标 source module + test file
 - 产映射表（`docs/dev/zh-cn/test-coverage-audit.md` 或 `.openxenon/drafts/` 草稿）
 - 缺口/冗余清单喂给 P3/P4/P6/P7/P8
@@ -381,8 +383,10 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 #### P8-2：`external-cli-e2e.test.ts` L232-250 废弃 `.skip` 块清理
 
 - 文件位置：`packages/cli/src/__tests__/e2e/external-cli-e2e.test.ts`（已移到 `__tests__/e2e/` 子目录 by P3）
+<!-- allow-version -->
 - 4 个 `.skip` 测试块明确标注 "已废弃" + "v0.7 废弃：## Externals H2 从 Domain 移除"
 - **决议：删除**（3 个 describe.skip + 3 个 test.skip，共 21 行）—— 减少 test noise + 与 v0.7 决议对齐
+<!-- /allow-version -->
 - 副作用：`bun test` skip 计数 3 → 0（去掉 3 个 stale skip）
 
 #### P8-3：`blueprint-schema.test.ts` `validatePartTemplates (@deprecated)` 标签核实
@@ -540,7 +544,9 @@ bun test 硬断言 + tsc 硬断言都适用 OXN 自身 Engine 代码。两者层
 2. **ADR-P6 DONE**（phase 3.4）：`work-validator.test.ts`（1007 行）→ 3 文件 by phase（boundary / dag / legacy）；`work-context-builder.test.ts`（895 行）→ 3 文件 by phase（externals / terms / stack）；51 + 33 = 84 测试不变
 3. **ADR-P7 DONE**（phase 3.1）：orphan 核实完成——`oxl/examples-md/__tests__/` 和 `oxl/generator/__tests__/` 不存在；`cli/__tests__/fixtures/` 5 文件被 2 个测试引用（非 orphan）
 4. **ADR-P8 DONE**（phase 3.2）：删 4 个 `.skip` 废弃块（21 行）+ 改 1 个误导 `@deprecated` describe label；`*.serial.test.ts` rename 核实——13cf1d6 已 revert 495ebd3
+<!-- allow-version -->
 5. **ADR-P2 DONE**（phase 3.5）：audit 落盘 `.openxenon/drafts/test-coverage-audit.md`（v0.6.0→v0.6.3 全部 ~50 特性映射）；~48 covered / 2 manual review / 0 gap / 21 行 + 1 标签已清
+<!-- /allow-version -->
 6. **P0d 状态补正**：从"当前 phase"改为"✅ DONE 2026-08-02 commit `fd62346`"（amend 文本漂移修订）
 7. **Status 行更新**：`P0a-d + ADR-P1 已落地` → `P0a-d + ADR-P1/P3/P4/P5/P6/P7/P8/P9 已落地`
 8. **wall-clock 净改善**：33.7s（实测平均，vs P0 末态 34.76s = -1.06s / -3.0%）

@@ -22,7 +22,9 @@ synced-at: 2026-07-26
 
 ## 摘要
 
+<!-- allow-version -->
 Builtin Asset（`@oxn/` scope，编译时内置）与 Project Asset（`@prj/` scope，`.openxenon/assets/`）两层覆盖——后者优先。v0.6.1 发现 `OxnBuiltinRegistry` mock（4 probes + 3 phantom parts）与 `src/builtin/probes/*.md`（15 文件）+ `catalog.ts`（15 probes）三 SSOT 不一致，Phase 4 收窄修复范围（仅 probes + blueprints）。D18 延后 domains + workflows builtin 落地。
+<!-- /allow-version -->
 
 ## 决策要点
 
@@ -39,7 +41,9 @@ Builtin Asset（`@oxn/` scope，编译时内置）与 Project Asset（`@prj/` sc
 
 ### D2：`OxnBuiltinRegistry` 重写（Phase 4 范围收窄 + ADR-0090 D18 解除）
 
+<!-- allow-version -->
 v0.6.1 三 SSOT 不一致（catalog.ts 15 probes + .md 15 probes + Registry mock 4 probes + 3 phantom parts）。Phase 4 修复：
+<!-- /allow-version -->
 
 - `_initProbes()` 改为从 `packages/engine/src/builtin/probes/*.md` 加载（mdast pipeline）
 - `_initBlueprints()` 改为从 `packages/engine/src/builtin/blueprints/*.md` 加载
@@ -76,7 +80,9 @@ ADR-0090 解除 D18 延后：
 
 ### D5：Stale path 修复（Phase 4 顺手）
 
+<!-- allow-version -->
 `oxn-scope.ts` 内 `.openxenon/arsenals/` 路径 stale（实际是 `.openxenon/assets/`，有 `TODO(v1.1-path)` 标记）——Phase 4 一并修复。
+<!-- /allow-version -->
 
 ## 影响范围
 
@@ -104,7 +110,9 @@ ADR-0090 解除 D18 延后：
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。

@@ -54,7 +54,9 @@ packages/cli/
 | 3 | CliInputError | stdout + 友好消息 | 1 | 人类 / AI |
 | 4 | 未知 Crash | stderr | 2 | 人类工程师 |
 
+<!-- allow-version -->
 ### IAPError 字典（v1.1 收敛 8 个）
+<!-- /allow-version -->
 
 | Axis | Code | Action |
 |---|---|---|
@@ -67,7 +69,9 @@ packages/cli/
 | PROOF | `IAP_PROOF_INFRA_FAIL` | YIELD_TO_HUMAN |
 | PROOF | `IAP_PROOF_CRASH` | YIELD_TO_HUMAN |
 
+<!-- allow-version -->
 ### OXNCrash 字典（v1.1 收敛 3 个）
+<!-- /allow-version -->
 
 | Code | 含义 |
 |---|---|
@@ -136,4 +140,6 @@ AssemblyIR（IR）
 - [OXN 顶层术语 · core-terms](/product/zh-cn/concepts/glossary.html#
 - [OXN CLI 术语 · cli-terms](/product/zh-cn/concepts/glossary.html#（本文档 SSOT）
 - [架构总览 · architecture.md](./architecture.md)
+<!-- allow-version -->
 - v0.7 Domain 三层架构 RFC（v0.7 探索阶段产物，已并入 [RFC-0007 Domain 词汇与 OXN 定位](../../rfc/zh-cn/RFC-0007-domain-positioning.html)）
+<!-- /allow-version -->

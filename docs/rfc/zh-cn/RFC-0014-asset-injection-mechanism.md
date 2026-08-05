@@ -117,7 +117,9 @@ RAG / MCP / Skill / Asset 同属"往 LLM 上下文注入信息"的机制家族�
 | 检索**指针**（Asset 名字 + description） | 导航辅助——发现后仍需显式 `ref` 绑定才消费 | ❌ 不改变 |
 | 检索**内容 chunk**（Asset 正文片段直接注入上下文） | RAG 范式——运行时消费检索内容 | ✅ 改变（Asset 退化为 RAG 语料） |
 
+<!-- allow-version -->
 `packages/engine/src/Roadmap/suggest.ts` 当前用 Jaccard 词法重叠（line 36-69），line 11 注释 `Future (v0.8): upgrade to BM25 or LLM-embedding`。**本 RFC 划定边界**：v0.8 升级检索算法本身不受限——BM25 或 embedding 都可以用，**只要检索目标保持"指针"而非"内容 chunk"**。一旦检索目标滑向内容 chunk 直接注入上下文，Asset 就退化为 RAG 语料，违反 D2 的方向性判据。
+<!-- /allow-version -->
 
 **判据**：检索结果是"让工程师/AI 知道有这个 Asset 存在并去显式引用"，还是"直接把内容塞进上下文让 LLM 消费"——前者是导航，后者是 RAG。
 
@@ -125,7 +127,9 @@ RAG / MCP / Skill / Asset 同属"往 LLM 上下文注入信息"的机制家族�
 
 - ✅ 锐化 Asset 注入机制的正向定义（结构化抽取 + 显式引用绑定 + 锚定非确定性）
 - ✅ 桥接 [ADR-0078](../../adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md)（前提）与 [ADR-0073 判据 1](../../adrs/0073-oxn-implementation-boundary-criteria.md)（补偿方向），补上"为什么不走向量化检索路线"的显式论证
+<!-- allow-version -->
 - ✅ 为 `Roadmap/suggest.ts` v0.8 升级（BM25/embedding）划定边界：可升级检索算法，检索目标必须保持"指针"而非"内容 chunk"
+<!-- /allow-version -->
 - ✅ 明确 Asset 在上下文注入机制家族（RAG/MCP/Skill/Asset）中的定位
 - 📝 不改变现有 Asset 实现——纯概念性 RFC，无代码变更
 - 📝 不否决 RAG——RAG 作为 fact 注入机制可与 Asset 并存；本 RFC 只界定 Asset 不走 RAG 路线

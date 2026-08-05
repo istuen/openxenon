@@ -60,7 +60,9 @@ Proof 子系统当前产出的 7 个文件命名混乱，存在 name/value 不�
 
 **决策**：执行系统性重命名（grep `verdict` 在 `packages/engine/src/Proof/` + `packages/cli/src/commands/proof.ts` 全量替换）。
 
+<!-- allow-version -->
 **反向**：旧名 `verdict.md` 通过 deprecation alias 保留 1 个大版本（v0.8.x 仍可读取），v0.9 物理删除。
+<!-- /allow-version -->
 
 #### D1.2: `proof.md` 同名冲突——快照改名为 `work-snapshot.md`
 
@@ -92,7 +94,9 @@ Proof 子系统当前产出的 7 个文件命名混乱，存在 name/value 不�
 |---|---|---|
 | `README.en.md:80` | `Proof (\`frozen.json\` + \`verdict.md\`)` | `outcome.md` |
 | `docs/product/en/_index.md:23,32,87` | 3 处 `verdict.md` | `outcome.md` |
+<!-- allow-version -->
 | `.openxenon/drafts/rfc/v0.7-domain-hierarchy-restructure-rfc.md:121` | `frozen.json + verdict.md + content_hash + planLock` | `outcome.md` |
+<!-- /allow-version -->
 | `packages/engine/src/Proof/proof-frozen-writer.ts:11-12` 注释 | `PASSED` / `FAILED` | `COMPLETED` / `DEVIATED`（[RFC-0008 D3](./RFC-0008-naming-evolution.html#d3三态字段重命名) 已改名，注释未同步） |
 
 ### D2：Taint 机制接入执行路径
@@ -154,7 +158,9 @@ Proof 子系统当前产出的 7 个文件命名混乱，存在 name/value 不�
 
 #### D3.1: 删除 `PROBE_STRATEGY_MAPPINGS` 死表
 
+<!-- allow-version -->
 **现状**：`packages/engine/src/kernel/contracts/probe-port.ts:84-102` 定义 `PROBE_STRATEGY_MAPPINGS` 表，全代码库无引用（grep 0 hits），且只列 15 项 probe，缺 4 个 v0.6.2 doc-* probe（`heading-skeleton-check` / `docs-heading-check` / `doc-boundary` / 1 more）。
+<!-- /allow-version -->
 
 **决策**：物理删除，必要时由 Catalog 自动生成（`assertCatalogConsistency` 内部派生）。
 
@@ -186,8 +192,10 @@ Proof 子系统当前产出的 7 个文件命名混乱，存在 name/value 不�
 
 | 别名 | 证据 | 处理 |
 |---|---|---|
+<!-- allow-version -->
 | `git-status-clean` | handler `git-status-clean.ts:14-19` 纯委托 `executeGitClean`；verdict `gitStatusCleanStrategy` 与 `gitCleanStrategy` 结构相同 | 保留别名 1 版本（v0.8.x），v0.9 删 |
 | `exec_exit_zero` | 无独立 handler，仅 alias 表项；verdict `= shellExecStrategy` 赋值；`migrate-probe-refs.ts` 已有迁移工具 | 按计划 v1.3 删除 |
+<!-- /allow-version -->
 
 **执行机制**：通过 `migrate-probe-refs.ts` 自动迁移项目内的 probe 引用。
 
@@ -239,7 +247,9 @@ Proof 子系统当前产出的 7 个文件命名混乱，存在 name/value 不�
 
 #### D5.1: handler 读 `StackToolInfo` 覆盖硬编码命令
 
+<!-- allow-version -->
 **现状**：[v0.7.3 P6](.openxenon/pools/sprints/v0.7-stacks-probes/design/) 已设计 `StackToolInfo` 注入机制（`packages/engine/src/kernel/contracts/probe-port.ts:42-68`），Blueprint `use.stack` 可声明工具栈，但 **4 个 handler 都没读 `stackTools` 参数**。
+<!-- /allow-version -->
 
 **决策**：4 个 handler 改造为：
 1. 优先读 `params.stackTools.<field>`（运行时覆盖）
@@ -296,12 +306,16 @@ interface StackToolInfo {
 | catalog entry | `builtin: 'prj'` + `internalRef: '@prj/probes/stale-draft-check'` |
 
 **修复项（commit 63b50dd 死代码）**：
+<!-- allow-version -->
 - ❌ 当前 `stale-pool-check` 验证 `.openxenon/pools/`——**该目录已被 `.openxenon/drafts/` 替代（v0.6.x 迁移），当前 OXN 项目中不存在**；probe 永远返回 `poolCount: 0, passed: true`，是死代码
+<!-- /allow-version -->
 - ✅ 改名 `stale-draft-check`，扫描 `.openxenon/drafts/` 替代
 - ✅ 重新设计 `extractPoolReferences` 为 `extractDraftReferences`，适配 drafts 文档的 3 种 references 形式（list item / inline / multi-line YAML）
 - ✅ 删除旧的 `stale-pool-check.ts` handler + catalog entry + verdict strategy
 
+<!-- allow-version -->
 **关联 ADR**：v0.6.x 文档三层架构迁移（`pools/` → `drafts/`）见 AGENTS.md "文档三层架构" 段。
+<!-- /allow-version -->
 
 #### D6.3: `asset-migrate-check`（中优先级）
 
@@ -479,13 +493,19 @@ bun scripts/check-doc-boundary.ts
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0015 Draft 起评审，尚未冻结。
 
+<!-- allow-version -->
 ### 2026-08-01：D6 重写 + 落地状态更新（v0.6.2-alpha.2）
+<!-- /allow-version -->
 
 - **D6 主题变更**：原 §D6 设计 4 个通用 builtin probe（file-hash / test-coverage / json-path / port-listening）；commit 63b50dd 实现了 4 个 OXN-internal 生命周期 probe（boundary-guard / stale-pool-check / asset-migrate-check / oxn-runtime-version）但代码注释错误标注 "RFC-0015 D6.x"。本次重写 §D6 适配实际实现的 4 个 probe，并修复 4 个设计瑕疵（D6.1-D6.4）。
+<!-- allow-version -->
 - **D6.2 stale-pool-check → stale-draft-check 改名**：原 probe 扫描已废弃的 `.openxenon/pools/` 目录（v0.6.x 迁移至 `.openxenon/drafts/`），是事实上的死代码。改造为扫描 drafts/。
+<!-- /allow-version -->
 - **D6.4 oxn-runtime-version import.meta.url → context 注入**：原 handler 通过 `import.meta.url` 路径上溯找 `packages/engine/package.json`，强耦合 engine 物理布局。改为 ProbeRunner 注入 `context.engineVersion`。
 - **D4.2 扩展**：从 4 个旧 OXN-internal probe 扩展为 8 个（4 旧 + 4 新 commit 63b50dd）；收敛后 `@oxn/` builtin 数量从 13 修订为 9。
+<!-- allow-version -->
 - **D1.4 清理完成**：3 处 stale `verdict.md` 引用清理（README.en.md:80 + docs/product/en/_index.md:23,32,87 + .openxenon/drafts/rfc/v0.7-domain-hierarchy-restructure-rfc.md:121）。
+<!-- /allow-version -->
 - **D6 拆分**：通用 builtin probe 扩展（file-hash / test-coverage / json-path / port-listening）拆至 [RFC-0016](./RFC-0016-generic-verification-probes.html) 独立推进，避免 RFC-0015 "重整" 主题被通用能力扩展拖累。
 - **落地状态**：D1.1-D1.4 + D2.1 + D3.1-D3.3 + D4.1-D4.2 + D5.1 + D6.1-D6.4 全部落地。6 项验证通过（typecheck/lint/biome/test/validate-deps/check-doc-boundary）。
 

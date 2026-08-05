@@ -15,7 +15,9 @@ title: 架构
 | E1 Asset | 静态硬约束边界 | 工程师 | `service/Asset/` |
 | E2 Work | 动态协作（IAP 三阶段 + Round） | 工程师 ↔ AI | `service/Intent/` + `service/Align/` |
 | E3 Engine | 独立验证主权基座 | OXN | L0-L2 全部 |
+<!-- allow-version -->
 | E4 Insight | 涌现层（1+1>2） | AI 推理 | `service/Insight/`（v0.6 哲学占位） |
+<!-- /allow-version -->
 
 详见 [Core Concepts](../../product/zh-cn/concepts/iap-paradigm.html)。
 
@@ -68,7 +70,9 @@ packages/engine/src/           ← L2 Engine 物理位置
 │   ├── run.ts / submit.ts / status.ts
 │   ├── list-tasks.ts / task-status.ts
 │   ├── edit-task.ts / delete-task.ts / finalize.ts
+<!-- allow-version -->
 │   ├── read-artifact.ts / next-round.ts       ← v0.6 Round 新增
+<!-- /allow-version -->
 │
 ├── Proof/                                ← E2 Work · Proof 阶段
 │   ├── index.ts
@@ -78,8 +82,10 @@ packages/engine/src/           ← L2 Engine 物理位置
 │
 ├── Insight/                              ← E4 Insight 涌现层
 │   ├── index.ts
+<!-- allow-version -->
 │   ├── proof-insight.ts / work-insight.ts（v0.6 最弱形态）
 │   ├── cross-proof.ts / pipeline.ts（v0.5 规划）
+<!-- /allow-version -->
 │   ├── audit-write.ts / audit-list.ts / audit-read.ts
 │
 └── Pool/                                 ← 辅助
@@ -94,7 +100,9 @@ packages/engine/src/           ← L2 Engine 物理位置
 - 纯函数式导出：`export async function create(input): Promise<output>`
 - 无类、无状态、无 DI 容器
 
+<!-- allow-version -->
 详见 [v0.6 Service 层设计稿](../../../.openxenon/.archived/docs/rfcs/v0.6-iap-refactor-rfc.md) §3 L2 Engine 物理位置。
+<!-- /allow-version -->
 
 ## 4. Runtime 三模块（L0-L1 约束）
 
@@ -110,7 +118,9 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 
 ## 5. Config 软迁移
 
+<!-- allow-version -->
 默认布局（v0.6 新项目）：
+<!-- /allow-version -->
 
 ```
 .openxenon/
@@ -120,14 +130,18 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 ├── assets/stack/
 ├── works/<w>/
 │   ├── work.md
+<!-- allow-version -->
 │   ├── round-1/                  ← v0.6 Round 快照
+<!-- /allow-version -->
 │   ├── round-2/
 │   └── .run/{state,trace,frozen}.json
 ├── proofs/<p>/
 └── pools/
 ```
 
+<!-- allow-version -->
 兼容旧项目（v0.5）：通过 config fallback 自动探测。
+<!-- /allow-version -->
 
 ## 6. L3 Tools（工具入口层）
 
@@ -139,7 +153,9 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 
 ## 7. 与 OpenSpec 架构对比
 
+<!-- allow-version -->
 | 维度 | OpenSpec | OXN v0.6 |
+<!-- /allow-version -->
 |---|---|---|
 | 哲学色底 | 还原论（spec → change → archive 线性拆解） | 还原论 + 整体论辩证统一（E4 Insight 涌现） |
 | Asset/规范 角色 | 被 change 改写的目标 | 被 Work 引用的硬约束边界 |
@@ -152,11 +168,15 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 ## 8. Skill 入口架构
 
 ```
+<!-- allow-version -->
 packages/cli/src/skills/            ← Skills 资源 (v0.6 阶段 6 迁入)
+<!-- /allow-version -->
 ├── loader.ts                       locale 加载器 (.md with type:'text')
 ├── types.ts                        OpenXenonSkill / ReferenceFile
 ├── index.ts                        barrel
+<!-- allow-version -->
 └── locales/                        4 个 i18n 文件（v0.6 Skill 极简：仅 oxn-work）
+<!-- /allow-version -->
     ├── en/oxn-work/instruction.md
     ├── en/oxn-work/references/blueprint-format.md
     ├── zh-CN/oxn-work/instruction.md
@@ -284,4 +304,6 @@ export type { OxnIR, OxnValidationResult } from './ir-types.js'
 - [Asset](../../product/zh-cn/concepts/asset.html) — E1 硬约束边界
 - [Work](../../product/zh-cn/concepts/work.html) — E2 动态协作 + IAP + Round
 - [Insight](../../product/zh-cn/concepts/insight.html) — E4 涌现层
+<!-- allow-version -->
 - [v0.6 RFC](../../../.openxenon/.archived/docs/rfcs/v0.6-iap-refactor-rfc.md)
+<!-- /allow-version -->

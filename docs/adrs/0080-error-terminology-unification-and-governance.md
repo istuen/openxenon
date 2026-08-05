@@ -264,7 +264,9 @@ Referent 提供的是"确定性参考"而非"确定性保证"——它如实记�
 | Code | 状态 | 处理 |
 |---|---|---|
 | `CRASH` | 无 throw site | 标记 deprecated，后续删除（用 OXNCrash 替代） |
+<!-- allow-version -->
 | `CHECKLIST_MISSING` | 无 throw site（v0.2 TODO） | 标记 deprecated，后续删除或实现 |
+<!-- /allow-version -->
 | `UNDEFINED_TERM` | 无 throw site | 标记 deprecated，后续删除或实现 |
 | `PROBE_INVALID` | 无 throw site | 标记 deprecated，后续删除（已被 catalog.ts 的 INFRA_FAIL 替代） |
 | `PROBE_FIX_UNAVAILABLE` | 无 throw site | 标记 deprecated，后续删除或实现 |

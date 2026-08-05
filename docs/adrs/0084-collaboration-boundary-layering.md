@@ -26,11 +26,15 @@ related:
 
 ## Context
 
+<!-- allow-version -->
 **触发问题**：OXN 既有叙事把 Asset → Work → Proof 三机制表达为**线性编排**——"先 Intent（Asset）后 Align（Work）后 Proof"。这种叙事在 v0.1–v0.5 时期足以解释 IAP 范式的三阶段顺序，但 v0.6.x 落地后暴露两个语义冲突：
+<!-- /allow-version -->
 
 1. **Proof 不依赖 Work/Asset 可独立运作**：`oxn proof create / probe add / run` 三命令不引用任何 Asset、不创建任何 Work 即可跑通。这是 OXN 在 5 分钟上手阶段给工程师的**核心确定性工具**，但线性叙事把它放在流水线的最后，掩盖了"Proof 是下限"的独立性。
 
+<!-- allow-version -->
 2. **Insight 涌现层与线性叙事冲突**：v0.7+ 设计稿把 Insight 列为 E4 涌现实体，但在线性叙事里没有位置（既是"Proof 之后"又是"Asset 之前"，取决于观察角度）。工程师与 AI Agent 协作的实际心理模型是**分层**而非线性——可以从任意一层启动，逐层叠加。
+<!-- /allow-version -->
 
 **3 机制协作语义不锐化**：在 `oxn-domain.md` 早期定义里，Asset/Work/Proof 的描述是"互相引用、一起工作"，但缺乏"方向（工程师→AI 还是 AI→工程师）""本质（参照/追踪/验证）""不可省价值"的清晰分工。这让"OXN 是不是 CI？" "OXN 是不是 RAG？"等差异化问题难以回答。
 
@@ -55,9 +59,11 @@ Proof（下限层）—— AI 通过 OXN 自证；工程师用 Probe 定义确�
 **四层各自独立可用，上层依赖下层但下层不依赖上层**：
 
 - **只用 Proof**：`oxn proof create → probe add → run`——验证任意文件/命令，无 Asset 无 Work（oxn-proof Skill 已实现）。
+<!-- allow-version -->
 - **Proof + Asset**：Proof 引用 Asset 派生的 stackTools——参数化 Probe 执行（v0.6.1 已实现）。
 - **Asset + Work + Proof**：完整 IAP 闭环——三轴联动（oxn-work Skill）。
 - **三层 + Insight**：跨 Work 涌现层——v0.7+ 设计中，Insight 从 Work 客观数据（trace.jsonl + frozen.json）提取模式反哺工程师。
+<!-- /allow-version -->
 
 ### D2: 三机制协作语义锐化表
 
@@ -104,20 +110,26 @@ Proof（下限层）—— AI 通过 OXN 自证；工程师用 Probe 定义确�
 
 ### 负面 / 风险
 
+<!-- allow-version -->
 - **叙事切换成本**：v0.6.0 之前的 README / docs / glossary 大量使用"为协作提供边界与证据"。本 ADR 落地需同步替换 13 个文件。
 - **Insight 暂不实现**：本 ADR 不承诺 Insight 时间表——v0.7+ 设计稿已有，但不在本 ADR 范围。
+<!-- /allow-version -->
 - **三机制"协作语义"是抽象层表述**：具体实现细节（如 planLock 4 组件 hash、frozen.json 三件套）保留在各 Domain SSOT 与 ADR-0051/0055 中，本 ADR 不重复。
 
 ### 衍生
 
 - **ADR-0085**（环境 6 轴刻画）：把 OXN 在 R&N 环境分类学中的位置钉死（partially observable / deterministic channel / semidynamic / sequential-with-memory / discrete / partially known）。
+<!-- allow-version -->
 - **ADR-0072 erratum v1.0.1**：确定性根基从"信息隐藏"锐化为"执行代码不可变"——ADR-0076 「验证标准 AI 不可见」是软对抗，非确定性根基。
 - **3 个 Domain 升级**：oxn-proof-domain.md v0.3.0、oxn-work-domain.md v0.3.0、oxn-asset-domain.md v0.4.0（新增 Proof-First 下限 / 确定性度量 / 确定性根基 / 三机制协作语义 4 个 term + inv-21/22/24/25/30/31）。
+<!-- /allow-version -->
 - **13 个产品文档 slogan 替换**：从"为协作提供边界与证据"到"工程师定义 AI Agent 协作边界的工具"。
 
 ## Alternatives Considered
 
+<!-- allow-version -->
 - **维持线性 Asset → Work → Proof 不动**：否决。Proof-First 的独立性（5 分钟跑通）在线性叙事里没有位置，且 v0.7+ Insight 涌现层在线性里也无家可归。
+<!-- /allow-version -->
 - **"OXN 整合 vs 独有能力"二分**：否决。整合（边界 + 验证 + 记录 + 积累）与独有能力（planLock / frozen.json / Probe catalog）应整合到分层模型——分层模型同时承载两者。
 - **保留"证据/证明"措辞**：否决。证据/证明带来"OXN 如何保证证据准确性"的延伸认知负担；OXN 只做"客观事实记录"，用"验证"准确覆盖。
 - **slogan 加 AI Agent 工作台名（Cursor / OpenCode / Codex）**：否决。产品定位不绑定具体 AI Agent，OXN 通过 Skill 注入机制兼容所有 AI Agent 工作台，slogan 不列举以保留可扩展性。
@@ -130,6 +142,8 @@ Proof（下限层）—— AI 通过 OXN 自证；工程师用 Probe 定义确�
 - [docs/adrs/0073-oxn-implementation-boundary-criteria.md](./0073-oxn-implementation-boundary-criteria.md) — 四判据（与本 ADR 正交）
 - [docs/adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md](./0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md) — 边界工程
 - [docs/adrs/0057-trust-chain-core-model.md](./0057-trust-chain-core-model.md) — 三方协作模型
+<!-- allow-version -->
 - [.openxenon/assets/domains/oxn-proof-domain.md](../../../.openxenon/assets/domains/oxn-proof-domain.md) — Proof Domain SSOT（v0.3.0）
 - [.openxenon/assets/domains/oxn-work-domain.md](../../../.openxenon/assets/domains/oxn-work-domain.md) — Work Domain SSOT（v0.3.0）
 - [.openxenon/assets/domains/oxn-asset-domain.md](../../../.openxenon/assets/domains/oxn-asset-domain.md) — Asset Domain SSOT（v0.4.0）
+<!-- /allow-version -->

@@ -22,7 +22,9 @@ related:
 
 ## Context
 
+<!-- allow-version -->
 **触发问题**：Probe 在真实 IO 路径上会遭遇"信号污染"风险——网络层 WAF 拦截、文件系统层 symlink、shell 沙箱拦截、git detached HEAD 等——这些都会让 Probe 的"客观事实"输出**失真**到不可信。但当前实现（v0.6.2-alpha.0）：
+<!-- /allow-version -->
 
 1. 4 个 Provider（FileProvider / HttpProvider / ShellProvider / GitProvider）已实现 flag 检测（trust-baseline.ts 12 flag 映射 + InterferenceFlag schema 在 io-primitive.ts:24）
 2. verdict.ts:706 `applyTrustBaseline(observation.interference?.flags ?? [], judge)` 已 wiring 入口
@@ -30,7 +32,9 @@ related:
 
 这意味着 OXN Engine 当前对"信号污染"是**不可见**的，与"客观事实记录 ≠ 裁判"的核心承诺（ADR-0031 / ADR-0067）矛盾。
 
+<!-- allow-version -->
 **父文档状态**：`.openxenon/forges/2026-06-14-probe-signal-taint-design.md v2` 已在 v0.6.1 monorepo 重组时随 `forges/` 目录归档（glob 返回空），但 5 个 Provider 源文件 import 仍标注 v2 父文档路径——形成"SSOT 缺失 + 5 个孤儿引用"的混乱状态。
+<!-- /allow-version -->
 
 **RFC-0015 D2.2 决策**：将设计落档到 `docs/adrs/0086-taint-trust-baseline-design.md`，固化 12 flag 的选取理由、Provider-Handler 接线契约、failure 降级语义。本 ADR 即 SSOT。
 

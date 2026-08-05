@@ -5,7 +5,9 @@ synced-at: 2026-07-26
 
 # RFC 索引
 
+<!-- allow-version -->
 > OpenXenon 规范（RFC）归档。OpenXenon Proposal (OXP) 双层机制已废除（v0.7），所有规定性内容统一为单层 RFC。
+<!-- /allow-version -->
 > RFC 是 OpenXenon 项目的 SSOT——所有决策、约束、规则必须落 RFC；不再保留 ADR（内部日志）+ OXP（外部镜像）双层。
 
 ## 什么是 RFC？
@@ -20,7 +22,9 @@ synced-at: 2026-07-26
 
 详见 [RFC-0009 文档三情态分离](./RFC-0009-doc-three-modalities.html) + [RFC-0010 RFC frozen+errata 演进策略](./RFC-0010-frozen-errata.html)。
 
+<!-- allow-version -->
 ## 已落盘的 RFC（v0.7 首批 promote）
+<!-- /allow-version -->
 
 | RFC | 主题 | 来源 ADR 数 | 状态 |
 |---|---|---|---|
@@ -39,14 +43,18 @@ synced-at: 2026-07-26
 | [RFC-0013 版本号政策](./RFC-0013-versioning-policy.html) | 主题：versioning-policy | meta-RFC（grilling #6） | ✅ Accepted |
 | [RFC-0014 Asset 注入机制](./RFC-0014-asset-injection-mechanism.html) | 主题：asset-injection-mechanism | meta-RFC（grilling Asset vs RAG） | ✅ Accepted |
 | [RFC-0015 Proof 体系重整](./RFC-0015-proof-system-overhaul.html) | 主题：proof-system-overhaul | 0（grilling #2 Proof/Probe/Verdict 审视） | 📝 Draft |
+<!-- allow-version -->
 | [RFC-0016 通用验证 Probe 扩展](./RFC-0016-generic-verification-probes.html) | 主题：generic-verification-probes | 0（v0.6.2-alpha.2 实施完成）| 📝 Draft |
+<!-- /allow-version -->
 | [RFC-0017 术语双层 SSOT](./RFC-0017-terminology-two-tier-ssot.html) | 主题：terminology-two-tier-ssot | 0 | 📝 Draft |
 | [RFC-0018 项目工程元层](./RFC-0018-project-engineering-meta.html) | 主题：project-engineering-meta | 0 | 📝 Draft |
 | [RFC-0019 Draft Promote 路由](./RFC-0019-draft-promote-routing.html) | 主题：draft-promote-routing | 0 | 📝 Draft |
 | [RFC-0020 三边界框架 + Blueprint 提升组合模板](./RFC-0020-three-boundary-blueprint-elevation.html) | 主题：three-boundary-blueprint-elevation | 4 (0019, 0048, 0053, 0054, 0055, 0056) | ✅ Accepted（promote 自 drafts/，2026-08-05）|
+<!-- allow-version -->
 | [RFC-0021 Domain 三层架构](./RFC-0021-domain-hierarchy-restructure.html) | 主题：domain-hierarchy-restructure | 2（0060, 0070）| ✅ Accepted（v0.6.1 落地；promote 自 drafts/，2026-08-05）|
 | [RFC-0022 理想态数据流 runtime 闭环](./RFC-0022-ideal-data-flow.html) | 主题：ideal-data-flow | 1（0061）| ✅ Accepted（v0.6.1 落地；promote 自 drafts/，2026-08-05）|
 | [RFC-0023 Asset Paper Schema](./RFC-0023-asset-paper-schema.html) | 主题：asset-paper-schema | 2（0051, 0056）| 🟡 Partially Accepted（基础 v0.6.1；图渲染 deferred v0.7.0）|
+<!-- /allow-version -->
 
 **统计**：8 主题 RFC（48 Adopted ADR 迁移）+ 7 meta-RFC + 4 落地 RFC（2026-08-05 promote 自 drafts/）+ 5 Draft = 24 个 RFC（其中 19 Accepted + 5 Draft）。
 
@@ -77,7 +85,9 @@ docs/rfc/zh-cn/RFC-XXXX-<theme>.md（accepted 后核心冻结，仅可追加 err
 
 详见 [RFC-0010 frozen+errata](./RFC-0010-frozen-errata.html)。
 
+<!-- allow-version -->
 ## ADR → RFC 迁移说明（v0.7）
+<!-- /allow-version -->
 
 OXN 旧文档体系采用 ADR + OXP 双层决策记录机制：
 
@@ -86,7 +96,9 @@ OXN 旧文档体系采用 ADR + OXP 双层决策记录机制：
 | ADR（内部 SSOT, append-only） | （废除） |
 | OXP（外部镜像，frozen） | RFC（合并两者职责） |
 
+<!-- allow-version -->
 **48 条 Adopted ADR**（v0.7 探索时点）+ 5 条 Partially Adopted + 11 条 Proposed + 6 条 Superseded = **70 条 ADR**，已迁移 / 归档如下：
+<!-- /allow-version -->
 
 | 来源 | 处理 | 物理位置 |
 |---|---|---|
@@ -104,7 +116,9 @@ OXP 文件已删除（Phase 3 步骤 3.1）。
 
 ## ADR 归档查询
 
+<!-- allow-version -->
 v0.7+ 所有 ADR 已物理归档到 `.openxenon/.archived/docs/adrs/`，共 72 文件（64 迁移 ADR + 6 早期 Superseded + 2 历史 ADR）。
+<!-- /allow-version -->
 
 | 查询需求 | 位置 |
 |---|---|

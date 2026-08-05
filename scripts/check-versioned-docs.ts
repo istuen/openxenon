@@ -169,13 +169,20 @@ if (strictViolations > 0) {
 
 if (advisoryCount > 0) {
   console.log(`ℹ️  Advisory（${advisoryCount} 处）— 历史版本引用，可清理但非阻塞：\n`)
-  const byFile = new Map<string, number>()
+  const byFile = new Map<string, Array<{ line: number; text: string; match: string }>>()
   for (const v of advisoryDetails) {
-    byFile.set(v.file, (byFile.get(v.file) ?? 0) + 1)
+    if (!byFile.has(v.file)) byFile.set(v.file, [])
+    byFile.get(v.file)!.push(v)
   }
-  const sorted = [...byFile.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10)
-  for (const [file, count] of sorted) {
-    console.log(`  ${file.padEnd(50)} ${count} 处`)
+  const sorted = [...byFile.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 10)
+  for (const [file, items] of sorted) {
+    console.log(`  ${file}（${items.length} 处）`)
+    for (const item of items.slice(0, 5)) {
+      console.log(`    L${item.line} [${item.match}]  ${item.text.slice(0, 80)}`)
+    }
+    if (items.length > 5) {
+      console.log(`    ... 还有 ${items.length - 5} 处`)
+    }
   }
   console.log(`  ... 共 ${byFile.size} 个文件`)
   console.log('')

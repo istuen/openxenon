@@ -31,7 +31,9 @@ interface PartPort {
 
 - Task 沙箱：`./` 路径可读写，`@` namespace 只读
 - Part 不能绕过 sandbox 写入限制
+<!-- allow-version -->
 - `--force` 不可用（v0.6.1 起禁止）
+<!-- /allow-version -->
 
 ## 参考
 

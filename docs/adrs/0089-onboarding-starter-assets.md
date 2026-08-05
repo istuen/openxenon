@@ -34,7 +34,9 @@ related:
   - `packages/engine/src/builtin/stacks/md-stack.md`（39 行）
   - `packages/engine/src/builtin/blueprints/md-author-blueprint.md`（74 行）
   - `packages/engine/src/builtin/assetmaps/md-system.md`（93 行）
+<!-- allow-version -->
 - ✅ **Domain 术语同步**：`oxn-asset-domain.md` v0.5.0
+<!-- /allow-version -->
   - 新增 4 术语：Onboarding Starter / Project Bootstrap / Onboarding Path / Asset Check
   - 新增 2 Invariant：inv-23 project-bootstrap-5-assets / inv-24 starter-asset-readonly
 - ✅ **Stage A**：`oxn onboard --detect` 完整实现
@@ -65,7 +67,9 @@ related:
 
 ### 现状盘点
 
+<!-- allow-version -->
 v0.6.x 起 OpenXenon 是相对完整的产品，但**项目消费者 onboarding 路径不清晰**：
+<!-- /allow-version -->
 
 - **README.md 5 分钟上手**（README.md:22-44）只覆盖 `git clone`（自身贡献者）+ `oxn init --ai <agent>`（项目消费者），**后续怎么走没说**。
 - **Quickstart**（`docs/product/zh-cn/quickstart.md`）解决 Proof-First 冷启动（5 分钟闭环），但**升格到完整 IAP 的过渡断裂**——末尾仅一句"→ 用 Domain 和 Blueprint 把验收标准固化为可复用 Asset"，无具体命令。

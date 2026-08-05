@@ -3,7 +3,7 @@
 > **日期**：2026-08-01
 > **参与者**：工程师 + AI Agent
 > **目标**：检查 OpenXenon 能否为 Probe 引入"系数"作为验证权重 + 为 Blueprint slot 引入"成本"作为实现成本，并设计实现路径
-> **状态**：✅ Grilling 收束，最终设计已达成（待人工验证 + 分块 Work 执行）
+> **状态**：archived（Grilling 收束，决议已达成）
 > **关联**：RFC-0013-versioning-policy / oxn-proof-domain / oxn-asset-domain / ADR-0066/0067（彻底不判）/ Term #23（概率边界 deferred）/ trust-baseline.ts
 
 ---

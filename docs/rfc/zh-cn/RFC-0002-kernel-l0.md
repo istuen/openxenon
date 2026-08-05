@@ -25,7 +25,9 @@ synced-at: 2026-07-27
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：kernel-l0
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 
 ## 摘要
 
@@ -102,7 +104,9 @@ L1 可注入 Path / Hash / Fs / Clock 等 Port，让 L0 跨 runtime 可移植。
 
 ```
 works/<work-name>/
+<!-- allow-version -->
 ├── .work                         # v1.1 出生证明 + planLock
+<!-- /allow-version -->
 ├── .run/
 │   ├── frozen.json               # 编译期产物（不可变）
 │   ├── trace.jsonl               # NDJSON 事件流（append-only）
@@ -136,7 +140,9 @@ fs.writeFileSync(statePath, ...)
 
 **原因**：state 是快照，trace 是历史。若 state 写成功但 trace 未写，崩溃后无法解释 state 来源。Trace 在前意味着：state 永远有迹可循。
 
+<!-- allow-version -->
 ### D8：Langium 类型隔离 ACL（ADR-0013，v0.6.1 退役后仍有意义）
+<!-- /allow-version -->
 
 `src/oxl/index.ts` **不导出 Langium 类型**。OXL 对外只暴露：
 
@@ -225,8 +231,10 @@ L0 Kernel 通过 Port 注入文件系统能力，但文件系统操作的**物�
 
 - ✅ 文件位置 `.openxenon/.cache/probe-stats.json` 已确立
 - ✅ 累积 append 已在 CLI 实现（`oxn work run` 完成时调用）
+<!-- allow-version -->
 - ⚠️ Probe 改名 / 删除的 90 天保留策略代码层未完整实现（v0.7+ 落地）
 - ⚠️ 不稳定 Probe 告警在 Insight 输出格式中未明确标注（v0.7+ 落地）
+<!-- /allow-version -->
 
 #### 与 D6 证据链三件套关系
 
@@ -240,9 +248,11 @@ probe-stats.json **不是** D6 三件套的一部分——三件套是单次 wor
 - ✅ 8 ADR 全 Adopted（含 ADR-0011 EvidenceChainTriple 术语已废）
 - ✅ L0 真空由 CI 守护（validate-dependencies.ts + eslint no-restricted-imports）
 - ✅ frozen.json schema 已切换为 outcome 聚合结构（ADR-0067 落地）
+<!-- allow-version -->
 - ✅ v1.1 planLock 在 `.work` 文件维护 4 组件 hash
 - ✅ FileSystemPort vs runtime/file.ts 职责分工已通过 L0 Port 注入 + L1 实现 + L2 直调三层落实（ADR-013 历史决策）
 - ✅ probe-stats.json 跨 proof 累积机制部分落地（append 已实现，retention + 不稳定告警 v0.7+ 待补）
+<!-- /allow-version -->
 - 📝 异步 IO 顺序需在 `work run` 关键路径严格保持
 
 ## 相关术语
@@ -270,7 +280,9 @@ probe-stats.json **不是** D6 三件套的一部分——三件套是单次 wor
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
@@ -278,7 +290,9 @@ probe-stats.json **不是** D6 三件套的一部分——三件套是单次 wor
 
 ### 2026-07-27 errata
 
+<!-- allow-version -->
 - **新增 D10 FileSystemPort 职责分工 + D11 probe-stats 累积机制**：ADR-013（历史）+ ADR-0017（Partially Adopted）内容已并入 RFC 正文。FileSystemPort（L0 Port 注入）与 runtime/file.ts（L2 直调）的三层分工已通过 L0 / L1 / L2 三层代码结构落实。probe-stats.json 累积机制部分落地（append 已实现，retention + 不稳定告警 v0.7+ 待补）。
+<!-- /allow-version -->
 - **frontmatter related 增补**：ADR-0017 + ADR-013。
 - **影响范围段**：增补 FileSystemPort + probe-stats 落地声明。
 

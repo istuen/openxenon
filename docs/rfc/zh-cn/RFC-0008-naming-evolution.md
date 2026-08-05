@@ -20,7 +20,9 @@ synced-at: 2026-07-27
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：naming-evolution
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 > **合并**：OXP-0001（术语精简）→ 本 RFC
 
 ## 摘要
@@ -133,7 +135,9 @@ Probe 的验证结果（COMPLETED / DEVIATED / INCONCLUSIVE / MANUAL_PENDING）�
 
 **反提案已否决**：refactor-1 提出对外改为 "Intent/Align/Verify"（Proof 通俗化为 Verify）。否决理由：
 
+<!-- allow-version -->
 1. "出证明" 已经在 instruction.md / v0.6 RFC / 多处 docs 落地
+<!-- /allow-version -->
 2. 改名带来 docs 全量更新成本
 3. "Proof" 在工程语境（法律 / 数学证明）有精确含义，不算术语壁垒
 4. 保持现有术语可避免新人 onboarding 时的双层命名混淆
@@ -142,12 +146,16 @@ Probe 的验证结果（COMPLETED / DEVIATED / INCONCLUSIVE / MANUAL_PENDING）�
 
 ### D13：canonical.oxn 命名演化历史节点（ADR-0036，Superseded）
 
+<!-- allow-version -->
 v0.1 阶段 OXL 设计用 `canonical.oxn` 作为资产"正本"文件名（区别于"草稿"）——由 `forge` 命令生成。该命名约定已被替代：
+<!-- /allow-version -->
 
 **演化路径**：
 
 ```
+<!-- allow-version -->
 v0.1 阶段                       v0.6.1 阶段（当前）
+<!-- /allow-version -->
 ─────────────────              ──────────────────────
 canonical.oxn    ────►          blueprint.oxn    (Blueprint 正本)
                                 domain.oxn       (Domain 正本)
@@ -160,7 +168,9 @@ canonical.oxn    ────►          blueprint.oxn    (Blueprint 正本)
 
 1. **`canonical.oxn` 二义性**："正本 vs 草稿"语义在 multi-Asset 场景下退化（哪种 Asset 有草稿？）
 2. **文件名暗示 Owner**：暗示单一权威源（违反多 Asset 平行架构）
+<!-- allow-version -->
 3. **`forge` 命令退役**：v0.6+ Asset 创建走 Work 流程而非 forge 命令
+<!-- /allow-version -->
 4. **`frozen.json` 命名统一**：编译产物统一叫 `frozen.json`（不带源格式后缀——RFC-0002 D5 运行期隔离）
 
 **保留意义**：本决策记录命名演化关键节点，避免后人重提 `canonical.oxn` + `forge` 命令。
@@ -172,10 +182,12 @@ canonical.oxn    ────►          blueprint.oxn    (Blueprint 正本)
 - ✅ glossary 8 个文件同步
 - ✅ ProbeOutcome 字段 + frozen.json schema 变更
 - ✅ Asset Paper schema 3 字段固化
+<!-- allow-version -->
 - ✅ 错误码 SSOT 文档级注册表（`error-code-registry.md`，位于 docs/dev/zh-cn/）— v0.7+ 配套（已于 v0.6.2-alpha.0 从 drafts/ promote 到 docs/dev/zh-cn/）
 - 📝 v0.8.0 可物理删除 `auditTrail` 解析代码路径 + 僵尸码
 - ✅ "出证明" 对外命名 + 内部 Intent/Align/Proof 三段式——自 v0.6 RFC 起未变
 - ✅ canonical.oxn → blueprint.oxn/domain.oxn/workflow.oxn/stack.oxn/frozen.json 命名演化——v0.6.1 完成
+<!-- /allow-version -->
 
 ## 相关术语
 
@@ -198,7 +210,9 @@ canonical.oxn    ────►          blueprint.oxn    (Blueprint 正本)
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。

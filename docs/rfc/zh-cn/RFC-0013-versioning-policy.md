@@ -14,8 +14,10 @@ synced-at: 2026-07-27
 
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：versioning-policy
+<!-- allow-version -->
 > **状态**：✅ Accepted（2026-07-27，v0.6.2-alpha.0 首批新增；frontmatter `status: Accepted`）
 > **批次**：2026-07-27 v0.6.2-alpha.0 首批新增
+<!-- /allow-version -->
 
 ## 摘要
 
@@ -187,7 +189,9 @@ OXN 版本相关文档分为三类，各居其位，职责不重叠：
 
 ### 2026-07-27 — D3 补充：规划池（Planning Pool）
 
+<!-- allow-version -->
 **触发**：2026-07-27 grilling session C-OC2 决策——把当前 v0.7.0+ 规划集中到无版本号的规划池，由工程师 scheduling 后再绑版本号。
+<!-- /allow-version -->
 
 **补充条款**：在 D3 表格中 `Roadmap` 行下，新增前置状态：
 
@@ -212,7 +216,9 @@ OXN 版本相关文档分为三类，各居其位，职责不重叠：
 3. 转正: Roadmap      → .openxenon/.archived/dev/versions/  (版本转正时)
 ```
 
+<!-- allow-version -->
 **当前状态（2026-07-27）**：`dev/versions/` 为空，所有 v0.7.0+ 规划已迁入 `dev/pool/`（5 个 entry + 2 个 grilling 产出 critical entry）。
+<!-- /allow-version -->
 
 **配套修改**：
 - `.openxenon/assets/domains/oxn-project-domain.md` 新增 `PlanningPool` 术语 + 更新 `Roadmap` 术语

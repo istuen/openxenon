@@ -113,12 +113,16 @@ OXN 的核心价值是**忠实记录 + Probe 验证**——记录并提供反馈
 ### 衍生
 
 - **CONTEXT-MAP 对照表**：Term #13 新增 + Term #7 修订标注（本次落地）
+<!-- allow-version -->
 - **代码修改待办**（v0.7+）：
+<!-- /allow-version -->
   - `dual-state-exec.ts`：`maxIterations` 硬限改软反馈
   - `IAP_ALIGN_ROUND_MAX_EXCEEDED` 错误码：降级为 warning 或废弃
   - `roundHistory`：保留全程记录，增加"超限"标记字段
   - Blueprint schema：`loopPolicy.maxIterations` 字段标准化
+<!-- allow-version -->
 - **`work.md` 文档更新**：§3 Round loop 描述修订（v0.7+）
+<!-- /allow-version -->
 - **Insight 消费**：超限信号作为 Insight 的统计原料（ADR-0074 原料提供者定位的实例）
 
 ## Alternatives Considered
@@ -137,5 +141,7 @@ OXN 的核心价值是**忠实记录 + Probe 验证**——记录并提供反馈
 - [ADR-0066 术语精简](./0066-terminology-simplification.md) — 彻底不判
 - [ADR-0074 Insight 原料非推理](./0074-insight-ingredient-not-reasoner.md) — 超限信号作为 Insight 原料
 - [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — 对照表扩展
+<!-- allow-version -->
 - [Work 概念文档](../../../docs/product/zh-cn/concepts/work.md) — §3 Round loop（待 v0.7+ 修订）
+<!-- /allow-version -->
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach* — 搜索策略原义

@@ -76,7 +76,9 @@ frozen.json 新增 `forceUsed` 字段记录 `--force` 绕过事实：
 | `PROBE_OUT_OF_BOUNDARY` | YIELD_TO_HUMAN | 强制机制 | Task Probe 不在 Blueprint slot.observe[] | `work-validator.ts:238` |
 | `TASK_DAG_VIOLATES_SLOT` | YIELD_TO_HUMAN | 强制机制 | Task deps 违反 slot DAG 闭包 | `work-validator.ts:401` |
 | `UNDEFINED_TERM` | — | — | ⚠️ **DEPRECATED**：无 throw site | — |
+<!-- allow-version -->
 | `CHECKLIST_MISSING` | — | — | ⚠️ **DEPRECATED**：无 throw site（v0.2 TODO） | — |
+<!-- /allow-version -->
 
 #### ALIGN 轴
 

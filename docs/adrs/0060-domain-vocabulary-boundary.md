@@ -15,23 +15,31 @@ related:
 
 # ADR-0060: Domain 词汇边界（What/How 判据）
 
+<!-- allow-version -->
 > **状态**：🟢 Accepted（v0.7 RFC §2 同步拍板）
 > **日期**：2026-07-17
 > **来源**：[v0.7-domain-hierarchy-restructure-rfc §2.1 v0.4.1 演进行](../../rfcs/v0.7-domain-hierarchy-restructure-rfc.md)
+<!-- /allow-version -->
 > **影响层**：L1-OXL（AssetFrontmatter schema）+ L2-Engine（Domain transformer）+ L3（oxn CLI）
 
 ## 背景
 
+<!-- allow-version -->
 v0.7 RFC §2 决定采用三层 Domain 架构（root / package / module），但未明确 Domain 应承载的词汇边界。前几个版本的 Engine Domain 反复出现"新增实现词 → 下一版本实现改了 → 再删词"的循环（v0.2 Langium → v0.4 删除；v0.3 Layer×6 + Monorepo×3 → v0.4 删除；v0.4 新增 md-pipeline/md-bridge/EntityCompiler/EntityRegistry/PackageEngine/Barrel/OXNPackageScope → 又面临再删）。
+<!-- /allow-version -->
 
 每次实现重构，Domain 都要跟着删/改一批词，本质是 **Domain 承载了实现名**，违反 DDD 通用语言（universal language）原则。
 
+<!-- allow-version -->
 具体症状（v0.4 Engine Domain 的 16 个 term）：
+<!-- /allow-version -->
 
 | 性质 | Term | 命运 |
 |---|---|---|
 | 业务/契约词 | OXN Engine / Kernel / Infra / Daemon / OXL / BuiltinAsset / IAPError / OXNCrash / CliInputError | 跨版本稳定 |
+<!-- allow-version -->
 | 实现层词 | PackageEngine / Barrel / OXNPackageScope / md-pipeline / md-bridge / EntityCompiler / EntityRegistry | v0.4.1 删除 |
+<!-- /allow-version -->
 
 ## 决策
 
@@ -46,7 +54,9 @@ Domain 仅承载"**是什么**"层词汇；"**怎么实现**"层词汇由 Stack 
 
 判据：
 
+<!-- allow-version -->
 > **重写测试**："如果 OpenXenon 用 Rust 重写、或 v0.8 把内部实现改名（如 md-pipeline 改名为 unified-ast-bridge），这个词还需存在么？"
+<!-- /allow-version -->
 >
 > - 仍需存在 → Domain 收（它在描述"是什么"）
 > - 不需存在 → 迁 Stack/docs（它在描述"怎么实现"）
@@ -70,12 +80,16 @@ root Domain 装的是 **OpenXenon 的特性集合**，不限业务/技术分类�
 
 ### D4：同名特性词多域共存
 
+<!-- allow-version -->
 > **Runtime Implementation Status (2026-07-17)**: ✅ **Implemented**（[ADR-0061 §D1+D2](../0061-data-flow-contract.md) + v0.7.3 RFC §4 P3）
+<!-- /allow-version -->
 >
 > - `work-context-builder.ts:294 buildTermViews` 聚合同名 term 多 Domain 视角
 > - `renderContextHuman` 输出 `## Allowed Language (multi-view)` 块状结构 + `[Domain 名]` 行内标注
 > - Token 预算缓解：前 3 background 满注入 desc，4+ 仅 term name 列表
+<!-- allow-version -->
 > - 依据：[v0.7.3 理想态数据流 RFC §2.2 + §5.1](../rfcs/v0.7.3-ideal-data-flow-rfc.md)
+<!-- /allow-version -->
 
 同一特性词（如 OXL）可在 root + 子 Domain（Engine / CLI 等）重名存在，依 ADR-0059 §D2「重名不重定义」机制：
 
@@ -106,7 +120,9 @@ Domain 的 desc / invariant **禁止**包含实现状态注释（`@pending-migra
 
 #### D5.5 允许引用 ADR（append-only）
 
+<!-- allow-version -->
 Domain 的 desc / invariant **允许**引用 ADR（append-only 不可变），但作为名词陈述句的一部分（如 "v0.7 Langium 退役（ADR-0052）"），不嵌 markdown link。
+<!-- /allow-version -->
 
 #### D5.6 允许 Domain 间 MD link
 
@@ -140,12 +156,16 @@ OXL 当前在 Engine Domain 内（1 个 term）。若 OXL 相关契约词 > 5 �
 
 ### D8：Domain 视角隔离
 
+<!-- allow-version -->
 > **Runtime Implementation Status (2026-07-17)**: ✅ **Implemented**（[ADR-0061 §D2](../0061-data-flow-contract.md) + v0.7.3 RFC §4 P3）
+<!-- /allow-version -->
 >
 > - `renderContextHuman` 在 multi-view 块状渲染中**强制标注 `[Domain 名]` 行内前缀**（`[oxn-engine-domain [main]]` / `[oxn-domain [background]]` / `[oxn-engine-domain [name-only]]`）
 > - AI 上下文能看到每个 desc 的视角来源，不会把不同视角的 desc 当成同一断言的多重确认
 > - 视角隔离原则在 runtime 层有显式落地，不再是纯纸面规范
+<!-- allow-version -->
 > - 依据：[v0.7.3 理想态数据流 RFC §2.2 + §5.4 ADR 一致性](../rfcs/v0.7.3-ideal-data-flow-rfc.md)
+<!-- /allow-version -->
 
 Term desc 仅描述**本 Domain 视角**的 What；跨视角信息由子 Domain 自有 term + references 表达。
 
@@ -173,14 +193,18 @@ Domain 归属按**语义边界**切，不按代码目录切。
 
 | 模块 | 改动 |
 |---|---|
+<!-- allow-version -->
 | `oxn-engine-domain.md` v0.4 → v0.4.1 | 删 7 词（PackageEngine/Barrel/OXNPackageScope/md-pipeline/md-bridge/EntityCompiler/EntityRegistry）；9 个保留 term 的 desc 按 D5 清理 |
 | `oxn-domain.md` v0.4 → v0.4.1 | 新增 OXL 顶层特性词（16 → 17） |
 | `oxn-cli-domain.md` v0.4 → v0.4.1 | 删 2 处 SSOT 代码路径引用 |
 | `oxn-work-domain.md` v0.2 → v0.2.1 | 删 1 处 docs 引用 |
 | `oxn-asset-domain.md` v0.2 → v0.2.1 | 删 1 处 docs 引用 |
+<!-- /allow-version -->
 | `docs/zh-cn/dev/oxn-engine.md` | 已承担 7 个被删词的实现细节描述（§"OXL 解析链路" / §"模块结构"）；无需大改 |
 | RFC §2 全景图 | Engine 域 terms 列表去掉 7 词；root terms 列表加 OXL |
+<!-- allow-version -->
 | RFC §2.1 演进表 | 新增 v0.4.1 行 |
+<!-- /allow-version -->
 | `remark-canonical.ts` | 未来增强：D5.1-D5.4 校验作为可选 strict mode（本次不实现） |
 
 ## 兼容性
@@ -199,5 +223,7 @@ Domain 归属按**语义边界**切，不按代码目录切。
 
 - **ADR-0059 §D2（sub→root 引用）**：D5.6 扩展 ADR-0059 允许 Domain 间 MD link 作为 What 引用
 - **ADR-0059 §D7（citations 处理）**：本 ADR 不动 citations 语义
+<!-- allow-version -->
 - **RFC v0.7 §2.1 v0.4.1 行**：本 ADR 是其落地约束
+<!-- /allow-version -->
 - **ADR-0052（Langium 退役）**：作为 ADR 引用保留例；cli-domain `forbidden-constructs` desc 名词陈述句 "Langium 退役（ADR-0052）" 是 D5.5 合规引用

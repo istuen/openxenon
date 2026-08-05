@@ -3,7 +3,7 @@
 > **日期**：2026-07-29
 > **参与者**：工程师 + AI Agent
 > **目标**：检查 OpenXenon 当前版本是否能用 Asset 管理 Doc / Asset / Draft，并设计 Draft 体系
-> **状态**：✅ Grilling 收束，最终决议已达成
+> **状态**：archived（Grilling 收束，决议已落地）
 > **关联**：ssot-asset-doc-boundary-audit-2026-07-28.md / blueprint-use-parser-format-support.md / RFC-0011-builtin-asset-two-layer / RFC-0013-versioning-policy
 
 ---

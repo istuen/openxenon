@@ -17,7 +17,9 @@ synced-at: 2026-07-27
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：docs-brand
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 
 ## 摘要
 
@@ -51,7 +53,9 @@ OrderItem -> Order
 
 ### D3：物理可寻址约束
 
+<!-- allow-version -->
 OXL 引用必须是**物理可寻址**——Langium（v0.6.1 退役后由 mdast 编译器继承）必须能解析为实际 AST 节点。这意味着：
+<!-- /allow-version -->
 
 - `@term/OrderItem` 必须指向某个 Domain 文件中的 H3 标题
 - `@prj/domains/oxn-domain` 必须指向 `.openxenon/assets/domains/oxn-domain.md`
@@ -84,12 +88,16 @@ OXL 引用必须是**物理可寻址**——Langium（v0.6.1 退役后由 mdast 
 - **LLM 上下文边界**：AI 读取 Domain 时按 DAG 拓扑加载上游，避免无关上下文注入
 - **Insight 反向追溯**：Insight 涌现层可通过反向 DAG 从 frozen.json 追溯到所有上游 Domain
 
+<!-- allow-version -->
 **当前状态**（v0.7-emergence 待办）：
+<!-- /allow-version -->
 
 - ✅ `@term/` 语法已落地（mdast 编译器继承 Langium 退役）
+<!-- allow-version -->
 - ⚠️ `@upstream/` 声明语法在 v0.7+ 落地
 - ⚠️ DAG 循环检测编译期校验 v0.7+ 实现
 - ⚠️ LLM 上下文按 DAG 拓扑加载 v0.7+ 实现
+<!-- /allow-version -->
 
 ## 影响范围
 
@@ -97,7 +105,9 @@ OXL 引用必须是**物理可寻址**——Langium（v0.6.1 退役后由 mdast 
 - ✅ 当前 OXL Grammar 已落实 `@` 前缀
 - ✅ 跨 term / 跨 Domain 引用语义统一
 - 📝 与 RFC-0011 内置 Asset 两层机制联动（`@oxn/` fallback + `@prj/` override）
+<!-- allow-version -->
 - 📝 ADR-0030 内容（@upstream DAG 验证）部分采纳——语法已落地，校验机制 v0.7+ 实施
+<!-- /allow-version -->
 
 ## 相关术语
 
@@ -113,7 +123,9 @@ OXL 引用必须是**物理可寻址**——Langium（v0.6.1 退役后由 mdast 
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
@@ -121,7 +133,9 @@ OXL 引用必须是**物理可寻址**——Langium（v0.6.1 退役后由 mdast 
 
 ### 2026-07-27 errata
 
+<!-- allow-version -->
 - **新增 D4 `@upstream` DAG 验证机制**：ADR-0030 内容已并入 RFC 正文。`@term/` 跨 term 引用必须满足 DAG（无环）约束，引入 4 类错误码（`E_MD_REFERENCE_NOT_FOUND` / `E_MD_UPSTREAM_CYCLE` / `E_MD_UPSTREAM_UNDECLARED` / `E_MD_UPSTREAM_MISSING_DOMAIN`）。DAG 循环检测 + LLM 上下文拓扑加载 v0.7+ 落地。
+<!-- /allow-version -->
 - **frontmatter related 增补**：ADR-0030。
 - **影响范围段**：ADR-0030 状态标注 Proposed → RFC 部分采纳。
 

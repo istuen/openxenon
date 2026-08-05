@@ -1,12 +1,13 @@
 ---
 entity: adr
 version: 1.1.0
-status: Proposed
+status: Accepted
 date: 2026-07-25
+accepted: 2026-08-05
 supersedes: null
 superseded-by: null
-implementation-status: not-shipped
-implementation-note: 代码未落地（无 LoggerPort 接口 / consola 依赖 / logger.warn 调用）；保留 Proposed 待 v0.7.0+ 实施
+implementation-status: partial
+implementation-note: D1 LoggerPort 接口 + D2 consola 隔离层 + Asset.validate 重构已落地（commit 见 history）；CLI + Daemon + Work/Proof 全面 logger.warn 迁移待跟进（dev/versions/0-7-0-logger-migration.md）
 related:
   - docs/adrs/0081-oxn-unified-error-framework.md
   - docs/adrs/0080-error-terminology-unification-and-governance.md
@@ -16,8 +17,10 @@ related:
 
 # ADR-0082: OXN Diagnostic 统一（LoggerPort + consola 隔离层 + 纯日志单通道）
 
-> **状态**：💡 Proposed
+> **状态**：✅ Accepted（2026-08-05 partial ship：D1 + D2 + Asset.validate logger.warn 落地；CLI/Daemon/Work/Proof 全面迁移待跟进 dev/versions/0-7-0-logger-migration.md）
+<!-- allow-version -->
 > **日期**：2026-07-25（v1.1.0 — grilling #1-#5 决策更新）
+<!-- /allow-version -->
 > **来源**：grilling session Diagnostic 盘问（ADR-0081 Error 体系定稿后）
 > **影响层**：全栈非阻断诊断 + L0-L3 日志架构 + CLI JSON envelope + state.json schema
 > **与 ADR-0081 的关系**：ADR-0081 确立了 "Error = throw only（两档 FATAL/ERR）" 原则，将所有非阻断问题（warning/diagnostic）推出 Error 体系，预告 ADR-0082 统一。本 ADR 兑现该预告：用 LoggerPort 接口 + consola 隔离层 + 纯日志单通道 `logger.warn()` 调用，取代当前 7 种碎片化 warning pattern + 4 种不兼容 severity enum + 10+ 个返回 `warnings: string[]` 的函数签名。
@@ -372,7 +375,9 @@ export function validateAndWriteArtifacts(
   const legacyDomainRefs = detectLegacyDomainRefs(work)
   for (const ref of legacyDomainRefs) {
     logger.warn(
+<!-- allow-version -->
       `ref "${ref.name}" (@prj/domains/${ref.name}) uses deprecated "kind: domain" (ADR-0055 §D2). v0.7.3 only warns; v0.8.0 will hard-block.`,
+<!-- /allow-version -->
       { ref: ref.name, suggestion: ref.suggestion },
     )
   }

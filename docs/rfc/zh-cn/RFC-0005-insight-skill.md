@@ -18,7 +18,9 @@ synced-at: 2026-07-27
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：insight-skill
 > **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+<!-- allow-version -->
 > **批次**：2026-07-26 v0.7 RFC 首批 promote（Phase 2）
+<!-- /allow-version -->
 
 ## 摘要
 
@@ -71,7 +73,9 @@ Asset 是双向枢纽：
 
 ### D6：实现约束
 
+<!-- allow-version -->
 Insight 具体统计算法 / ML 模型 / 查询接口待 v0.7+ 探索——**任何让 OXN 自己做推理 / 评判 / 学习的实现都越界**（实现边界已定，具体实现待探索）。
+<!-- /allow-version -->
 
 ### D7：Skill 三分发 IAP 映射（ADR-0026）
 
@@ -97,8 +101,10 @@ OXN 提供 3 个独立 Skill，分别承载 IAP（Intent / Align / Proof）三�
 - ✅ CLI 输出安全边界（`oxn-work/instruction.md:461-469`）已落实
 - ✅ 三 Skill 在 SSOT `packages/cli/src/skills/locales/zh-CN/` 存在
 - ✅ Skill 编译产物 `.opencode/skills/` 自动重建（`oxn init` 触发）
+<!-- allow-version -->
 - ⚠️ Skill 重构（拆 5 references + 4 assets）由 ADR-0039 单独定义（v0.7+ 待办）
 - ⚠️ YAML frontmatter 全员缺失（路由器识别能力边界）—— v0.7+ 待补
+<!-- /allow-version -->
 
 **与 RFC-0004 关系**：Skill 三分发的语义轴（IAP 三阶段）与 RFC-0004 D2 Intent/Align 矩阵对齐，但 RFC-0004 关注 Asset-Work 矩阵，RFC-0005 关注 Skill 拆分（AI 入口侧）。
 
@@ -106,7 +112,9 @@ OXN 提供 3 个独立 Skill，分别承载 IAP（Intent / Align / Proof）三�
 
 - ✅ ADR-0018（2026-05-21 落地）+ ADR-0074（2026-07-23 落地）Accept
 - ✅ LSP readonly + atomic-index + CLI proxy 已在 L3 CLI 实现
+<!-- allow-version -->
 - ✅ Insight 原料接口设计是关键（v0.7+ Insight RFC 核心工作）
+<!-- /allow-version -->
 - ✅ Skill 三分发（oxn-intent / oxn-align / oxn-proof）已在 SSOT 落地（ADR-0026 决策内容由 RFC-0005 D7 承载）
 
 ## 相关术语
@@ -125,7 +133,9 @@ OXN 提供 3 个独立 Skill，分别承载 IAP（Intent / Align / Proof）三�
 
 ## Errata
 
+<!-- allow-version -->
 ### v1.0.1 (2026-07-26)
+<!-- /allow-version -->
 
 - **ADR 引用路径修正**：原 `## 相关决策` 段链接指向 `.openxenon/drafts/rfc/00XX-*.md`，该路径在 Phase 3 ADR 归档后已失效（72 文件已移至 `.openxenon/.archived/docs/adrs/`）。现镜像到 `docs/adrs/`，RFC 链接指向 `../../adrs/00XX-*.md`（docs/ 内部，无跨层）。frontmatter `related` 同步更新为 `docs/adrs/00XX-*.md`。
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。

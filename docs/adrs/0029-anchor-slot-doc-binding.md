@@ -2,7 +2,9 @@
 
 > **来源**：`docs_tmp/ssot-domain-1.md` (2026-06-17)
 > **抽取日**：2026-07-04
+<!-- allow-version -->
 > **状态**：Proposed → v0.7-emergence RFC 待办
+<!-- /allow-version -->
 > **影响层**：Docs / Domain
 
 ## 决策（提案）
@@ -38,7 +40,9 @@ domain "MemberContext" {
 ## 当前状态
 
 - ❌ 未实现
+<!-- allow-version -->
 - 🔗 候选落地：v0.7-emergence RFC §Anchor/Slot 段
+<!-- /allow-version -->
 
 ## 参考
 

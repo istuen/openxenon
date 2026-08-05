@@ -8,7 +8,9 @@ title: L0-L3 宪法
 
 ## 层级 → 目录映射
 
+<!-- allow-version -->
 | 层级 | 物理位置（v0.6） | 禁止导入 |
+<!-- /allow-version -->
 |---|---|---|
 | **L0-Schema** | `packages/engine/src/kernel/schemas/` | 其他所有层 |
 | **L0-Contract** | `packages/engine/src/kernel/contracts/` | L0-Processor、L1、L2、L3 |
@@ -59,4 +61,6 @@ ESLint 架构规则的错误信息是**中文**（"🚨 宪法违规…"），�
 
 - [AGENTS.md §硬性规则](../../../AGENTS.md#硬性规则l0l3-宪法) — 完整守卫矩阵
 - [RFC-0002 Kernel/L0 边界 §D7 架构守护测试 + Trace-before-State](../../rfc/zh-cn/RFC-0002-kernel-l0.html#d7-架构守护测试--trace-before-state-写入顺序)
+<!-- allow-version -->
 - ADR-0006 三相模型（v0.7 探索阶段 Proposed 状态，待后续 RFC 化）
+<!-- /allow-version -->
