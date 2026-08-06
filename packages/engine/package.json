@@ -1,6 +1,6 @@
 {
   "name": "@openxenon/engine",
-  "version": "0.6.3",
+  "version": "0.6.4-alpha.0",
   "description": "OXN Engine — 核心能力提供者（kernel + oxl + infra + Asset/Intent/Align/Proof/Insight/Pool + daemon + builtin 资产库）",
   "author": "istuen",
   "license": "MIT",

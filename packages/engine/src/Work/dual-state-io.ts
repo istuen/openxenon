@@ -238,3 +238,37 @@ export function resolveWorkFilePath(projectRoot: string, workName: string, _asse
   if (existsSync(primaryPath)) return primaryPath
   return primaryPath
 }
+
+// ───────── v0.7+ Context 路径（PlanLock 5-hash 新增）─────────
+
+/**
+ * Work Context 文件路径：works/<w>/context.md
+ * 由 AI Agent 按 Blueprint ## Context Template 从 Assets 组装；纳入 PlanLock 5-hash (workContextHash)
+ * 来源：design-blueprint-context-template Draft（2026-08-06 grilling）
+ */
+export function getWorkContextPath(projectRoot: string, workName: string): string {
+  return join(getWorkDir(projectRoot, workName), 'context.md')
+}
+
+/**
+ * Task Context 文件路径：works/<w>/tasks/<t>/context.md
+ * 由 AI Agent 从 Work Context 按 Blueprint ## Boundaries 拆分；纳入 PlanLock 5-hash (taskContextsHash)
+ */
+export function getTaskContextPath(projectRoot: string, workName: string, taskName: string): string {
+  return join(getWorkDir(projectRoot, workName), 'tasks', taskName, 'context.md')
+}
+
+/**
+ * Work Memory 文件路径：works/<w>/memory.md（Phase 2 实现）
+ * Loop History + Key Observations + Round Notes；不纳入 PlanLock；append-only
+ */
+export function getWorkMemoryPath(projectRoot: string, workName: string): string {
+  return join(getWorkDir(projectRoot, workName), 'memory.md')
+}
+
+/**
+ * Task Memory 文件路径：works/<w>/tasks/<t>/memory.md（Phase 2 实现）
+ */
+export function getTaskMemoryPath(projectRoot: string, workName: string, taskName: string): string {
+  return join(getWorkDir(projectRoot, workName), 'tasks', taskName, 'memory.md')
+}

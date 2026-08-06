@@ -123,6 +123,7 @@ OxnDraftDomain（reference oxn-asset-domain + oxn-project-domain，
 - 分布式学习闭环 → [RFC-0003 §D4](./docs/rfc/zh-cn/RFC-0003-ai-collaboration.html#d4)
 - 协作边界分层 → [ADR-0084](./docs/adrs/0084-collaboration-boundary-layering.md)
 - OXN 环境 6 轴刻画 → [ADR-0085](./docs/adrs/0085-oxn-environment-characterization.md)
+- Blueprint 上下文工程（Context Template + Scope + 5-hash） → [`.openxenon/drafts/design-blueprint-context-template.md`](./.openxenon/drafts/design-blueprint-context-template.md)（2026-08-06 grilling）
 
 ## 文档维护约定
 
@@ -141,3 +142,41 @@ OxnDraftDomain（reference oxn-asset-domain + oxn-project-domain，
 - AGENTS.md 0.6.x 三情态架构 → [RFC-0009 文档三情态分离](./docs/rfc/zh-cn/RFC-0009-doc-three-modalities.html)（RFC-0018 扩展为四层）
 
 > 本文件未来仅承载 9 Domain 索引 + 9 个核心术语锐化段（≤ 100 行）。
+
+## Blueprint 上下文工程（2026-08-06 grilling）
+
+> **来源**：`.openxenon/drafts/design-blueprint-context-template.md`（grilling session 收束；待 promote 为 RFC）
+
+### Blueprint（上下文工程元结构）
+- **定义**：AssetKind=blueprint 的扩展 — 不再只是"Use + Boundaries 组合模板"，而是**上下文工程的元结构**：声明哪些 Assets 提供什么上下文（Use）+ 如何拆分为 Slot（Boundaries）+ 文件范围（Scope）+ 组装指令（Context Template）
+- **三层职责分离**：
+  - **Use** = 聚合（哪些 Domain/Workflow/Stack 提供上下文）
+  - **Boundaries** = 结构（Slot 拓扑决定 Task 拆分）
+  - **Scope** = 范围（声明允许/禁止修改的文件路径）
+  - **Context Template** = 指令（告诉 AI Agent 如何组装 Work/Task Context）
+- **不复制内容** — Blueprint 保持纯净，只声明"去哪取"，避免 inv-26 违反（Domain 与 Blueprint 互不写内容）
+
+### WorkContext（语义层 · PlanLock 保护）
+- **定义**：Work 级上下文内容（AI Agent 按 Blueprint Context Template 从 Use refs 引用的 Assets 组装）
+- **位置**：`works/<id>/context.md`
+- **生命周期**：lock 前写完；纳入 PlanLock 5-hash（workContextHash）；lock 后漂移 → HASH_MISMATCH
+- **与 memory.md 的二分**：WorkContext = 静态结构骨架（PlanLock 锁）；memory.md = 动态记忆（append-only）
+
+### TaskContext（语义层 · Per-Slot 拆分）
+- **定义**：Task 级上下文内容（AI Agent 从 WorkContext 按 Blueprint ## Boundaries 的每个 Slot 拆分）
+- **位置**：`works/<id>/tasks/<t>/context.md`
+- **生命周期**：纳入 PlanLock 5-hash（taskContextsHash）；与 workContextHash 分开定位 drift
+
+### Scope（文件边界 · 静态锁定）
+- **定义**：Blueprint 内 `## Scope` 段声明 allow/forbid 文件 glob 列表
+- **验证**：lock 时 Engine 校验 Task ArtifactDeclaration ⊆ Scope.allow AND ∩ Scope.forbid = ∅；不新增 Probe
+- **与 Use 的正交**：Use 引用 Asset（业务逻辑边界）；Scope 约束文件（修改边界）
+
+### PlanLock 5-hash（v0.7+）
+- **结构**：`workMdHash + workContextHash + blueprintsHash + tasksHash + taskContextsHash → allHash`
+- **保障**：同一 Blueprint 的 N 个 Work 的 WorkContext 结构一致（除 Goal 外）— 跨 Work 比较 hash 一致 ⇒ 结构骨架一致
+
+### 与"通用上下文工程"的边界设计
+- **通用上下文工程**：把所有知识塞进 LLM 上下文窗口，无边界设计
+- **OXN 上下文工程**：每个 Work 有独立 context.md（goal-scoped，PlanLock 锁），目标聚焦、范围隔离、PlanLock 可审计
+- **本质区别**：OXN 的上下文工程是"声明 vs 物化"二分 — Blueprint 声明（Use + Boundaries + Scope + Context Template），Work 物化（context.md + memory.md），Task 拆分（context.md + Artifacts）

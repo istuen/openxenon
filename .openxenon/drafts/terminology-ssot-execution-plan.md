@@ -2,7 +2,7 @@
 
 > **来源**：2026-08-01 `/grilling` session（grill-with-docs + domain-modeling skill），3 轮
 > **分析对象**：`.openxenon/drafts/rfc/terminology-two-tier-ssot-rfc.md`
-> **状态**：待执行（5 个 Work，暂不动手）
+> **状态**：planned（5 个 Work 待执行）
 > **作者**：opencode（与 user 协作，2026-08-01）
 
 ---

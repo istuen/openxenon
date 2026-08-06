@@ -88,6 +88,10 @@ async function setupWorkFixture(opts: SetupOpts = {}): Promise<void> {
     `${taskProbeBlock ? `${taskProbeBlock}\n` : ''}` +
     `## Refs\n- blueprint: oxn-blueprint\n- boundary: ${taskBoundary}\n- domain: oxn-engine-domain\n`
   writeFileSync(join(taskDir, 'task.md'), taskMd)
+
+  // 🆕 v0.7+ PlanLock 5-hash: context.md + task context.md (inv-33 要求 lock 前写)
+  writeFileSync(join(workDir, 'context.md'), '# Work Context\n\n(work context placeholder)\n')
+  writeFileSync(join(taskDir, 'context.md'), '# Task Context\n\n(task context placeholder)\n')
 }
 
 // 递归复制目录（src → dst）

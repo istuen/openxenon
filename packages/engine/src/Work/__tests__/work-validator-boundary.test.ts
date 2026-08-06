@@ -66,6 +66,9 @@ function makeBlueprints(observeBySlot: Record<string, string[]>): PerWorkBluepri
         workflowRefs: [],
         stackRefs: [],
         nestedBlueprintRefs: [],
+        // 🆕 v0.7+ Blueprint Context Template
+        fileScope: { allow: [], forbid: [], desc: '' },
+        contextTemplate: null,
       },
     ],
   }

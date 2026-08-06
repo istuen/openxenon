@@ -31,6 +31,14 @@ export const SlotSlimSchema = z.object({
   observe: z.array(z.string()).default([]),
 })
 
+// 🆕 v0.7+ Blueprint Context Template: ## Scope 段 schema
+export const ScopeSlimSchema = z.object({
+  allow: z.array(z.string()).default([]),
+  forbid: z.array(z.string()).default([]),
+  desc: z.string().default(''),
+})
+export type ScopeSlim = z.infer<typeof ScopeSlimSchema>
+
 export const BoundaryRefSlimSchema = z.object({
   name: z.string().min(1),
   // 🆕 Phase B: kind 加 'blueprint'（nestedBlueprintRefs 使用）
@@ -57,6 +65,10 @@ export const PerWorkBlueprintEntrySchema = z.object({
   stackRefs: z.array(BoundaryRefSlimSchema).default([]),
   // 🆕 嵌套 Blueprint ref（可组合）
   nestedBlueprintRefs: z.array(BoundaryRefSlimSchema).default([]),
+  // 🆕 v0.7+ Blueprint Context Template: ## Scope 段（默认 allow=[] 允许任意）
+  fileScope: ScopeSlimSchema.default({ allow: [], forbid: [], desc: '' }),
+  // 🆕 v0.7+ Blueprint Context Template: ## Context Template 段（可选）
+  contextTemplate: z.string().nullable().default(null),
 })
 
 export const PerWorkBlueprintsIndexSchema = z.object({
@@ -222,6 +234,11 @@ export interface ParsedBlueprintSlim {
   workflowRefs: Array<{ name: string; ref: string | null }>
   stackRefs: Array<{ name: string; ref: string | null }>
   nestedBlueprintRefs: Array<{ name: string; ref: string | null }>
+  // 🆕 v0.7+ Blueprint Context Template：## Scope 段（允许/禁止文件 glob）
+  // 缺省值：allow=[] (允许任意), forbid=[] (无限制)
+  fileScope: { allow: string[]; forbid: string[]; desc: string }
+  // 🆕 v0.7+ Blueprint Context Template：## Context Template 段（可选）
+  contextTemplate: string | null
 }
 
 /**
@@ -384,6 +401,38 @@ function parseBlueprintSlimFromMd(content: string): ParsedBlueprintSlim {
     errors.push('no `entity: blueprint` declaration with name found in frontmatter')
   }
 
+  // 5️⃣ 🆕 v0.7+ Blueprint Context Template: 提取 ## Scope 段（允许/禁止文件 glob）
+  const scope: { allow: string[]; forbid: string[]; desc: string } = {
+    allow: [],
+    forbid: [],
+    desc: '',
+  }
+  const scopeMatch = content.match(/## Scope\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (scopeMatch) {
+    const scopeBody = scopeMatch[1] ?? ''
+    const allowMatch = scopeBody.match(/- allow:\s*\n((?:\s+-\s+[^\n]+\n?)+)/)
+    if (allowMatch) {
+      for (const m of allowMatch[1]!.matchAll(/\s+-\s+"?([^"\n]+)"?/g)) {
+        scope.allow.push(m[1]!.trim())
+      }
+    }
+    const forbidMatch = scopeBody.match(/- forbid:\s*\n((?:\s+-\s+[^\n]+\n?)+)/)
+    if (forbidMatch) {
+      for (const m of forbidMatch[1]!.matchAll(/\s+-\s+"?([^"\n]+)"?/g)) {
+        scope.forbid.push(m[1]!.trim())
+      }
+    }
+    const descMatch = scopeBody.match(/- desc:\s*"?([^"\n]+)"?/)
+    if (descMatch) scope.desc = descMatch[1]!.trim()
+  }
+
+  // 6️⃣ 🆕 v0.7+ Blueprint Context Template: 提取 ## Context Template 段
+  let contextTemplate: string | null = null
+  const ctMatch = content.match(/## Context Template\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (ctMatch) {
+    contextTemplate = (ctMatch[1] ?? '').trim()
+  }
+
   return {
     name,
     version,
@@ -393,6 +442,8 @@ function parseBlueprintSlimFromMd(content: string): ParsedBlueprintSlim {
     workflowRefs,
     stackRefs,
     nestedBlueprintRefs,
+    fileScope: scope,
+    contextTemplate,
   }
 }
 
@@ -463,6 +514,9 @@ function parseBlueprintSlimFromOxn(content: string): ParsedBlueprintSlim {
     workflowRefs,
     stackRefs,
     nestedBlueprintRefs,
+    // 🆕 v0.7+ Blueprint Context Template: .oxn 格式暂不支持 Scope（向后兼容给默认值）
+    fileScope: { allow: [], forbid: [], desc: '' },
+    contextTemplate: null,
   }
 }
 
@@ -545,6 +599,9 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
         workflowRefs: [],
         stackRefs: [],
         nestedBlueprintRefs: [],
+        // 🆕 v0.7+ Blueprint Context Template
+        fileScope: { allow: [], forbid: [], desc: '' },
+        contextTemplate: null,
       })
       continue
     }
@@ -566,6 +623,9 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
         workflowRefs: [],
         stackRefs: [],
         nestedBlueprintRefs: [],
+        // 🆕 v0.7+ Blueprint Context Template
+        fileScope: { allow: [], forbid: [], desc: '' },
+        contextTemplate: null,
       })
       continue
     }
@@ -616,6 +676,9 @@ export function buildPerWorkBlueprintsIndex(options: BuildPerWorkBlueprintsOptio
       workflowRefs: toSlim(slim.workflowRefs, 'workflow'),
       stackRefs: toSlim(slim.stackRefs, 'stack'),
       nestedBlueprintRefs: toBlueprintSlim(slim.nestedBlueprintRefs),
+      // 🆕 v0.7+ Blueprint Context Template
+      fileScope: slim.fileScope,
+      contextTemplate: slim.contextTemplate,
     })
   }
 

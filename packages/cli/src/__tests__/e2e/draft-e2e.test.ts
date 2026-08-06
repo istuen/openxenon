@@ -95,11 +95,7 @@ describe('oxn draft create', () => {
 
   test('--target asset --kind domain → Domain skeleton', async () => {
     await env.initProject()
-    const r = await env.runCli([
-      'draft', 'create', 'my-domain',
-      '--target', 'asset', '--kind', 'domain',
-      '--json',
-    ])
+    const r = await env.runCli(['draft', 'create', 'my-domain', '--target', 'asset', '--kind', 'domain', '--json'])
     expect(r.exitCode).toBe(0)
     const content = readFileSync(join(env.tmpDir, '.openxenon', 'drafts', 'my-domain.md'), 'utf-8')
     expect(content).toContain('entity: domain')
@@ -126,11 +122,7 @@ describe('oxn draft create', () => {
 
   test('--kind 非法值 → exit 1 + OXN_DRAFT_KIND_INVALID', async () => {
     await env.initProject()
-    const r = await env.runCli([
-      'draft', 'create', 'foo',
-      '--target', 'asset', '--kind', 'invalid-kind',
-      '--json',
-    ])
+    const r = await env.runCli(['draft', 'create', 'foo', '--target', 'asset', '--kind', 'invalid-kind', '--json'])
     expect(r.exitCode).toBe(1)
     const body = JSON.parse(r.stdout)
     expect(body.error.code).toBe('OXN_DRAFT_KIND_INVALID')
@@ -379,11 +371,7 @@ describe('oxn draft promote --commit (NG6)', () => {
   test('--commit + --target-dir → 写到自定义目录 (Fix #2)', async () => {
     await env.initProject()
     await env.runCli(['draft', 'create', 'custom-rfc', '--target', 'rfc', '--json'])
-    const r = await env.runCli([
-      'draft', 'promote', 'custom-rfc',
-      '--commit', '--target-dir', 'custom/rfcs',
-      '--json',
-    ])
+    const r = await env.runCli(['draft', 'promote', 'custom-rfc', '--commit', '--target-dir', 'custom/rfcs', '--json'])
     expect(r.exitCode).toBe(0)
     const body = JSON.parse(r.stdout)
     expect(body.data.phases.commit.filePath).toContain('custom/rfcs/')
@@ -394,10 +382,18 @@ describe('oxn draft promote --commit (NG6)', () => {
   test('.oxnrc draftPromote.rfcDir → 无 --target-dir 时走 .oxnrc 配置 (Fix #2)', async () => {
     await env.initProject()
     // 写入 .oxnrc
-    writeFileSync(join(env.tmpDir, '.oxnrc'), JSON.stringify({
-      version: 1,
-      draftPromote: { rfcDir: 'from-oxnrc-rfcs' },
-    }, null, 2), 'utf-8')
+    writeFileSync(
+      join(env.tmpDir, '.oxnrc'),
+      JSON.stringify(
+        {
+          version: 1,
+          draftPromote: { rfcDir: 'from-oxnrc-rfcs' },
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    )
     await env.runCli(['draft', 'create', 'oxnrc-rfc', '--target', 'rfc', '--json'])
     const r = await env.runCli(['draft', 'promote', 'oxnrc-rfc', '--commit', '--json'])
     expect(r.exitCode).toBe(0)
@@ -414,8 +410,13 @@ describe('oxn draft retarget', () => {
     await env.initProject()
     await env.runCli(['draft', 'create', 're-target', '--target', 'rfc', '--json'])
     const r = await env.runCli([
-      'draft', 'retarget', 're-target',
-      '--new-target', 'asset', '--new-kind', 'domain',
+      'draft',
+      'retarget',
+      're-target',
+      '--new-target',
+      'asset',
+      '--new-kind',
+      'domain',
       '--json',
     ])
     expect(r.exitCode).toBe(0)
@@ -455,11 +456,7 @@ describe('oxn draft retarget', () => {
     content = content.replace('theme: TODO_<theme>', 'theme: my-theme\ndescription: 这是测试描述')
     writeFileSync(fp, content, 'utf-8')
     // retarget → asset+domain
-    await env.runCli([
-      'draft', 'retarget', 'preserve-test',
-      '--new-target', 'asset', '--new-kind', 'domain',
-      '--json',
-    ])
+    await env.runCli(['draft', 'retarget', 'preserve-test', '--new-target', 'asset', '--new-kind', 'domain', '--json'])
     // 验证保留字段
     const after = readFileSync(fp, 'utf-8')
     expect(after).toContain('theme: my-theme')
@@ -526,8 +523,13 @@ describe('oxn draft 完整生命周期', () => {
     writeFileSync(fp, content, 'utf-8')
     // 3. retarget rfc → asset+domain
     const retargetRes = await env.runCli([
-      'draft', 'retarget', 'cross-target',
-      '--new-target', 'asset', '--new-kind', 'domain',
+      'draft',
+      'retarget',
+      'cross-target',
+      '--new-target',
+      'asset',
+      '--new-kind',
+      'domain',
       '--json',
     ])
     expect(retargetRes.exitCode).toBe(0)

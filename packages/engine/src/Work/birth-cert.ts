@@ -74,9 +74,19 @@ export type BlueprintAssetEntry = z.infer<typeof BlueprintAssetEntrySchema>
 export const PlanLockSchema = z.object({
   lockedAt: z.string().min(1),
   workMdHash: z.string().regex(/^[0-9a-f]{64}$/),
+  // 🆕 v0.7+ PlanLock 5-hash: work context（向后兼容 optional）
+  workContextHash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
   // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite 包含 Blueprint + 3 边界）
   blueprintsHash: z.string().regex(/^[0-9a-f]{64}$/),
   tasksHash: z.string().regex(/^[0-9a-f]{64}$/),
+  // 🆕 v0.7+ PlanLock 5-hash: task contexts 组合（向后兼容 optional）
+  taskContextsHash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/)
+    .optional(),
   // PR-13: allHash 必填（v1.1 锁时必含；旧 v1.0 .work 无此字段兼容为 optional）
   allHash: z
     .string()
@@ -212,14 +222,22 @@ export function createBirthCert(params: CreateBirthCertParams): BirthCert {
 
 /**
  * 设定 planLock（输入的 hash 必须完整；调用方先用 hashWorkPlan 算出）
+ *
+ * 🆕 v0.7+ PlanLock 5-hash: 接受 workContextHash + taskContextsHash（optional 向后兼容）
+ *
+ * 必填（缺失抛错）：workMdHash / blueprintsHash / tasksHash
+ * 可选（新工作 context.md 缺失时设 null）：workContextHash / taskContextsHash
+ *
+ * 注：inv-33 (context-written-before-lock) 要求 lock 时 context.md 必须存在；
+ *      CLI 应在调用 applyPlanLock 前用 hashWorkPlan 探测 missing 并报 IAP_INTENT_CONTEXT_MISSING。
+ *      此函数接受 context.md 缺失的 hash 是为了让 lock 命令能给出具体错误（包含 missing 列表）。
  */
 export function applyPlanLock(cert: BirthCert, hash: PlanHash, lockedAt?: string): BirthCert {
   if (
     hash.workMdHash === null ||
     // 🆕 Phase B: 删 workDomainsHash null check（Domain refs 走 Blueprint ## Refs）
     hash.blueprintsHash === null ||
-    hash.tasksHash === null ||
-    hash.allHash === null
+    hash.tasksHash === null
   ) {
     throw new Error(`cannot apply planLock: incomplete plan hash (missing: ${hash.missing.join(', ')})`)
   }
@@ -229,10 +247,14 @@ export function applyPlanLock(cert: BirthCert, hash: PlanHash, lockedAt?: string
     planLock: {
       lockedAt: lockedAt ?? new Date().toISOString(),
       workMdHash: hash.workMdHash,
+      // 🆕 v0.7+ PlanLock 5-hash: optional 向后兼容
+      ...(hash.workContextHash !== null ? { workContextHash: hash.workContextHash } : {}),
       // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite）
       blueprintsHash: hash.blueprintsHash,
       tasksHash: hash.tasksHash,
-      allHash: hash.allHash,
+      // 🆕 v0.7+ PlanLock 5-hash: optional 向后兼容
+      ...(hash.taskContextsHash !== null ? { taskContextsHash: hash.taskContextsHash } : {}),
+      allHash: hash.allHash ?? undefined,
     },
   }
 }
@@ -248,7 +270,8 @@ export type VerifyResult =
   | {
       ok: false
       reason: 'no-plan-lock' | 'work-removed' | 'hash-mismatch'
-      component?: 'workMd' | 'workDomains' | 'blueprints' | 'tasks'
+      // 🆕 v0.7+ PlanLock 5-hash: 扩展 component 字段名
+      component?: 'workMd' | 'workContext' | 'workDomains' | 'blueprints' | 'tasks' | 'taskContexts'
       expected?: string
       actual?: string
       message: string
@@ -261,6 +284,8 @@ export type VerifyResult =
  *   - no-plan-lock    ：cert.planLock === null（未锁）
  *   - work-removed    ：work 目录被删 / work.md 失踪
  *   - hash-mismatch   ：work 已锁但内容被改，component 指明哪个文件
+ *
+ * 🆕 v0.7+ PlanLock 5-hash: 新增 workContext + taskContexts drift 检测
  */
 export function verifyPlanLock(projectRoot: string, workName: string, cert: BirthCert): VerifyResult {
   if (cert.planLock === null) {
@@ -285,6 +310,21 @@ export function verifyPlanLock(projectRoot: string, workName: string, cert: Birt
       message: 'work.md has been modified after lock',
     }
   }
+  // 🆕 v0.7+ PlanLock 5-hash: work context drift 检测
+  if (
+    cert.planLock.workContextHash !== undefined &&
+    current.workContextHash !== null &&
+    current.workContextHash !== cert.planLock.workContextHash
+  ) {
+    return {
+      ok: false,
+      reason: 'hash-mismatch',
+      component: 'workContext',
+      expected: cert.planLock.workContextHash,
+      actual: current.workContextHash,
+      message: 'works/<w>/context.md has been modified after lock',
+    }
+  }
   // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash drift 检查（Domain 引用完全由 Blueprint ## Refs 承担）
   if (current.blueprintsHash !== null && current.blueprintsHash !== cert.planLock.blueprintsHash) {
     return {
@@ -304,6 +344,21 @@ export function verifyPlanLock(projectRoot: string, workName: string, cert: Birt
       expected: cert.planLock.tasksHash,
       actual: current.tasksHash,
       message: 'one or more tasks/<t>/task.md have been modified after lock',
+    }
+  }
+  // 🆕 v0.7+ PlanLock 5-hash: task contexts drift 检测
+  if (
+    cert.planLock.taskContextsHash !== undefined &&
+    current.taskContextsHash !== null &&
+    current.taskContextsHash !== cert.planLock.taskContextsHash
+  ) {
+    return {
+      ok: false,
+      reason: 'hash-mismatch',
+      component: 'taskContexts',
+      expected: cert.planLock.taskContextsHash,
+      actual: current.taskContextsHash,
+      message: 'one or more tasks/<t>/context.md have been modified after lock',
     }
   }
   return { ok: true }

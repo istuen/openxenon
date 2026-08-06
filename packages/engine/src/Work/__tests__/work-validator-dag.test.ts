@@ -61,6 +61,8 @@ function makeBlueprintsWithDeps(
         workflowRefs: [],
         stackRefs: [],
         nestedBlueprintRefs: [],
+        fileScope: { allow: [], forbid: [], desc: '' },
+        contextTemplate: null,
       },
     ],
   }
@@ -101,6 +103,8 @@ function makeMultiBlueprintBlueprints(
       workflowRefs: [],
       stackRefs: [],
       nestedBlueprintRefs: [],
+      fileScope: { allow: [], forbid: [], desc: '' },
+      contextTemplate: null,
     })),
   }
 }

@@ -145,21 +145,28 @@ describe('listTaskFiles', () => {
 
 // ───────── hashWorkPlan ─────────
 
-function writeTask(name: string, content: string): void {
+function writeTask(name: string, content: string, contextContent?: string): void {
   const dir = join(tmpDir, '.openxenon', 'works', workName, 'tasks', name)
   mkdirSync(dir, { recursive: true })
   writeFileSync(join(dir, 'task.md'), content)
+  // 🆕 v0.7+ PlanLock 5-hash: 同时写 task context.md
+  if (contextContent !== undefined) {
+    writeFileSync(join(dir, 'context.md'), contextContent)
+  }
 }
 
 describe('hashWorkPlan', () => {
-  test('全 4 组件存在 → allHash 不为 null', () => {
+  test('全 5 组件存在 → allHash 不为 null', () => {
     writeFileSync(getWorkMdPath(tmpDir, workName), 'work.md content')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'context.md'), 'work context')
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
-    writeTask('a', 'task a')
+    writeTask('a', 'task a', 'task a context')
     const r = hashWorkPlan(tmpDir, workName)
     expect(r.workMdHash).not.toBe(null)
+    expect(r.workContextHash).not.toBe(null)
     expect(r.blueprintsHash).not.toBe(null)
     expect(r.tasksHash).not.toBe(null)
+    expect(r.taskContextsHash).not.toBe(null)
     expect(r.allHash).not.toBe(null)
     expect(r.missing).toEqual([])
   })
@@ -177,7 +184,8 @@ describe('hashWorkPlan', () => {
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
     const r = hashWorkPlan(tmpDir, workName)
     expect(r.tasksHash).toBe(null)
-    expect(r.missing).toEqual([]) // 0 task = empty, not "missing"
+    // 🆕 v0.7+ PlanLock 5-hash: context.md 缺失计入 missing
+    expect(r.missing).toEqual(['context.md']) // 0 task = empty, not "missing"; context.md 缺失
     expect(r.allHash).toBe(null) // 但 allHash 仍为 null（不完整）
   })
 
@@ -222,8 +230,9 @@ describe('hashWorkPlan', () => {
 
   test('1 改 1 → allHash 也变（组件联动）', () => {
     writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'context.md'), 'context')
     writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
-    writeTask('a', 'A')
+    writeTask('a', 'A', 'context A')
     const h1 = hashWorkPlan(tmpDir, workName).allHash
 
     writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'a', 'task.md'), 'A2')
@@ -283,7 +292,7 @@ describe('probePlanPresence', () => {
     mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'x'), { recursive: true })
     writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'x', 'task.md'), 'X')
     const r = probePlanPresence(tmpDir, workName)
-    expect(r.tasks).toEqual([{ taskName: 'x', hasMd: true }])
+    expect(r.tasks).toEqual([{ taskName: 'x', hasMd: true, hasContextMd: false }])
   })
 })
 

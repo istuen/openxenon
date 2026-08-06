@@ -1,6 +1,6 @@
 {
   "name": "@openxenon/cli",
-  "version": "0.6.3",
+  "version": "0.6.4-alpha.0",
   "description": "OXN CLI — L3 Tools 入口（薄组合调用层），调 Engine 业务模块",
   "author": "istuen",
   "license": "MIT",

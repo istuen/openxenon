@@ -52,6 +52,11 @@ export type TaskFileSummary = {
   /** 顶层 ## Probes 段声明的真实 probe（带 ref + params），供 submit --run-probes 执行 */
   probes?: TaskProbeDecl[]
   deps: string[]
+  /**
+   * 🆕 v0.7+ PlanLock 5-hash: Task ## Artifacts 段声明的预期产物路径列表
+   * 用于 lock 时 Scope 校验（inv-35: artifacts-within-scope）
+   */
+  artifacts?: Array<{ path: string; type: string }>
 } | null
 
 /**
@@ -228,6 +233,20 @@ function readTaskFileMd(content: string): TaskFileSummary {
     domain = refsSection[1]!.match(/- domain:\s*(.+)$/m)?.[1]?.trim()
   }
 
+  // 🆕 v0.7+ PlanLock 5-hash: ## Artifacts 段（Task 预期产物路径列表）
+  // 用于 lock 时 Scope 校验（inv-35: artifacts-within-scope）
+  const artifacts: Array<{ path: string; type: string }> = []
+  const artifactsSection = content.match(/## Artifacts\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (artifactsSection) {
+    const blocks = artifactsSection[1]!.split(/\n(?=- )/)
+    for (const block of blocks) {
+      if (!block.startsWith('- ')) continue
+      const path = block.match(/- path:\s*(.+)$/m)?.[1]?.trim()
+      const type = block.match(/- type:\s*(.+)$/m)?.[1]?.trim() ?? 'code'
+      if (path) artifacts.push({ path, type })
+    }
+  }
+
   // ## Parts: ### <part> + - skill_context: ... + inline - probe: ...
   const parts: Array<{
     name: string
@@ -287,6 +306,8 @@ function readTaskFileMd(content: string): TaskFileSummary {
     parts,
     ...(probes.length > 0 ? { probes } : {}),
     deps: [],
+    // 🆕 v0.7+ PlanLock 5-hash
+    ...(artifacts.length > 0 ? { artifacts } : {}),
   }
 }
 

@@ -71,6 +71,9 @@ export type IAPErrorCode =
   | 'TASK_DAG_VIOLATES_SLOT'
   | 'FINALIZE_BLOCKED'
   | 'PROBE_REGISTRY_DRIFT'
+  // 🆕 v0.7+ Blueprint Context Template (design-blueprint-context-template Draft 2026-08-06)
+  | 'SCOPE_VIOLATION'
+  | 'CONTEXT_MISSING'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

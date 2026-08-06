@@ -2,7 +2,7 @@
 title: 术语表
 entity: glossary
 generated-by: scripts/sync-domain-glossary.ts
-synced-at: 2026-08-05
+synced-at: 2026-08-06
 ---
 
 # 术语表
@@ -32,6 +32,11 @@ synced-at: 2026-08-05
 
 
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#artifact) — Align 阶段产出的物理事实（被 Probe 观测的对象），路径必须落在 Work 沙盒内或宿主项目目录。
+
+### ArtifactDeclaration
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#artifactdeclaration) — Task 内声明的预期产物路径列表（## Artifacts）；lock 时 Engine 校验 ⊆ Blueprint Scope.allow AND ∩ Scope.forbid = ∅；与运行时 Artifact（含 hash）区分；来源 design-blueprint-context-template。
 
 ### Asset
 
@@ -111,7 +116,12 @@ v0.6 Registry mock 与 `.md` 文件 SSOT 不一致（F1）；D18 收窄 Phase 4 
 ### context.md
 
 
-- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#context-md) — Work 内短期记忆文件（works/&lt;id&gt;/context.md）；取代 v0.7.x Memory L1；Intent + Roadmap + LoopHistory + KeyObservations 结构；ADR-0049。
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#context-md) — Work 内上下文文件（works/&lt;id&gt;/context.md）；AI Agent 按 Blueprint ## Context Template 从 ## Use 引用的 Assets 组装；纳入 PlanLock 5-hash（workContextHash）；lock 前写完；来源 design-blueprint-context-template Draft（2026-08-06 grilling）。
+
+### ContextTemplate
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#contexttemplate) — Blueprint 内上下文组装指令段（## Context Template）；可选，缺省 Engine 用内置默认模板（基于 Use refs + Boundaries + Goal 推导）；Blueprint 可覆写默认（如 bug-fix-blueprint 在 diagnose 段加"证据落盘"指令）；来源 design-blueprint-context-template。
 
 ### Daemon
 
@@ -282,6 +292,11 @@ RED/YELLOW 不可配置（ADR-0086：信任是系统决策不是用户决策）�
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#loop) — Work 核心动态过程（三相模型 Phase 2）；物质运动态；所有变化被 trace 记录；ADR-0006。
 
 ## M-R
+
+### memory.md
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#memory-md) — Work 级动态记忆文件（works/&lt;id&gt;/memory.md，Phase 2 实现）；Loop History + Key Observations + Round Notes；不纳入 PlanLock；append-only 追加；原 context.md 定义（ADR-0049）实体名改为 memory.md。
 
 ### Meta Modality
 
@@ -496,6 +511,7 @@ v0.6.2-alpha.3 落地 7 个 skeleton + 4 阶段 router + 3 target dispatch。
 
 
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#scope) — OXN 引用作用域（@oxn builtin / @prj 项目级；@gbl 已废弃）。
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#scope) — Blueprint 内文件范围声明段（## Scope）；allow/forbid glob 列表；静态锁定，PlanLock 保护；与 Blueprint ## Use 引用机制正交（Scope 是文件边界，Use 是 Asset 引用）；来源 design-blueprint-context-template。
 
 ### Skeleton
 
@@ -562,6 +578,16 @@ Supersede 走新 RFC 标 superseded-by / supersedes。RFC-0010 锁定（meta-RFC
 
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#task) — Align 执行单元，对齐 1 个 Blueprint 并可引用 N 个 Domain；内联 Part + Probe；DAG 无环（Kahn 校验）。
 
+### TaskContext
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#taskcontext) — Task 级上下文内容（语义层）；AI Agent 从 WorkContext 按 Blueprint ## Boundaries 的每个 Slot 拆分；每个 TaskContext 携带 WorkContext 中与该 Slot 相关的子集 + 该 Slot 的 acceptance；纳入 PlanLock 5-hash（taskContextsHash）；来源 design-blueprint-context-template。
+
+### TaskMemory
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#taskmemory) — Task 级动态记忆内容；Round 间追加；不纳入 PlanLock；来源 design-blueprint-context-template。
+
 ### Trace
 
 
@@ -591,9 +617,19 @@ package.json 为版本号 SSOT，8 文件一致性由 version-check 强制（RFC
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#work) — 人机协作的工作空间，衔接 Asset 与 Proof；AI Agent 在 Asset 边界内自主工作（create → read Blueprint → write Context → orchestrate Tasks → execute → 汇报 → react → finalize）；具体领域见 [`oxn-work-domain`](./oxn-work-domain.md)。
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#work) — Work 是 E2 人机协作的工作空间；编排流程 3 IAP 阶段顺序不可跳；必经路径 create→lock→run→submit×N→finalize。
 
+### WorkContext
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#workcontext) — Work 级上下文内容（语义层）；AI Agent 按 Blueprint Context Template 从 Use refs 引用的 Domain/Workflow/Stack 提取相关 Terms/Invariants/Slots 编写；同一 Blueprint 的 N 个 Work 的 WorkContext 结构一致（除 Goal 外）；来源 design-blueprint-context-template。
+
 ### Workflow
 
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#workflow) — AssetKind 之一，执行边界（slot DAG + observe Probe），原 Blueprint 改名；AssetKind=workflow。ADR-0054。
+
+### WorkMemory
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#workmemory) — Work 级动态记忆内容；Round 间追加；不纳入 PlanLock；与 PlanLock 保护的 WorkContext 形成"声明 vs 动态"二分；来源 design-blueprint-context-template。
 
 <!-- SYNC:END -->

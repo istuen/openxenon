@@ -13,7 +13,11 @@
  */
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { OxnBuiltinRegistry, resetBuiltinRegistry, getBuiltinRegistry } from '@openxenon/engine/oxl/scope/oxn-builtin-registry'
+import {
+  type OxnBuiltinRegistry,
+  resetBuiltinRegistry,
+  getBuiltinRegistry,
+} from '@openxenon/engine/oxl/scope/oxn-builtin-registry'
 
 describe('ADR-0090: builtin registry 加载守卫', () => {
   let registry: OxnBuiltinRegistry

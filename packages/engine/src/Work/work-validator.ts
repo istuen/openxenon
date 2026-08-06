@@ -2,6 +2,7 @@ import { existsSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import type { WorkDeclaration } from '../oxl'
 import { getWorkMdPath, getWorkGatePath, getTaskOxnPath } from './dual-state-io'
+import { validatePathScope, type Scope } from '../Asset/scope-matcher'
 // 🆕 v0.6.1-alpha.4 Phase B: 删 buildPerWorkDomainsIndex/writePerWorkDomainsIndex/getPerWorkDomainsJsonPath import
 import {
   buildPerWorkBlueprintsIndex,
@@ -410,6 +411,108 @@ export function collectAndThrowDagClosureViolations(
 }
 
 // =============================================================================
+// 🆕 v0.7+ (RFC §6 PlanLock 5-hash): Task ## Artifacts ⊆ Blueprint ## Scope 校验
+// 来源：design-blueprint-context-template Draft（2026-08-06 grilling）
+//       oxn-work-domain inv-35 (artifacts-within-scope)
+// =============================================================================
+
+/**
+ * 校验每个 Task ## Artifacts 段声明的预期产物路径是否符合 Blueprint ## Scope.allow / forbid。
+ *
+ * 行为：
+ *   - 缺省 Scope（allow=[]） → 允许任意路径（向后兼容）
+ *   - 任意 Artifact path 违反 → throw IAPError (YIELD_TO_HUMAN)
+ *
+ * 注：lock 时一次性校验；不新增 Probe。运行时使用现有 fs-exists / fs-no-exists 验证 Artifact 存在性。
+ */
+export function collectAndThrowScopeViolations(
+  work: WorkDeclaration,
+  projectRoot: string,
+  workName: string,
+  blueprintsIdx: PerWorkBlueprintsIndex,
+): void {
+  // 收集所有 Task 的 ArtifactDeclaration
+  const tasksWithArtifacts: Array<{
+    taskName: string
+    blueprintName: string | undefined
+    artifacts: Array<{ path: string; type: string }>
+  }> = []
+
+  for (const t of work.tasks ?? []) {
+    const taskName = String(t.name)
+    const taskFile = getTaskOxnPath(projectRoot, workName, taskName)
+    if (!existsSync(taskFile)) continue
+    const taskData = readTaskFile(taskFile)
+    if (!taskData?.artifacts || taskData.artifacts.length === 0) continue
+    tasksWithArtifacts.push({
+      taskName,
+      blueprintName: taskData.blueprint ?? t.blueprint ?? undefined,
+      artifacts: taskData.artifacts,
+    })
+  }
+
+  if (tasksWithArtifacts.length === 0) return // 无 ArtifactDeclaration 跳过校验
+
+  // 为每个 Blueprint 构建 Scope map
+  const scopeByBlueprint = new Map<string, Scope>()
+  for (const bp of blueprintsIdx.blueprints) {
+    if (bp.status !== 'ok') continue
+    scopeByBlueprint.set(bp.name, {
+      allow: bp.fileScope.allow,
+      forbid: bp.fileScope.forbid,
+      desc: bp.fileScope.desc,
+    })
+  }
+
+  // 校验
+  const violations: Array<{
+    taskName: string
+    blueprint: string
+    artifactPath: string
+    reason: string
+  }> = []
+
+  for (const { taskName, blueprintName, artifacts } of tasksWithArtifacts) {
+    if (!blueprintName) {
+      violations.push({
+        taskName,
+        blueprint: '(none)',
+        artifactPath: artifacts[0]?.path ?? '',
+        reason: 'task has no blueprint reference (cannot determine Scope)',
+      })
+      continue
+    }
+    const scope = scopeByBlueprint.get(blueprintName)
+    if (!scope) {
+      // Blueprint 不存在或 status=invalid；这种情况会在 unresolved 检查里捕获
+      continue
+    }
+    for (const artifact of artifacts) {
+      const result = validatePathScope(artifact.path, scope)
+      if (!result.ok) {
+        violations.push({
+          taskName,
+          blueprint: blueprintName,
+          artifactPath: artifact.path,
+          reason: result.reason,
+        })
+      }
+    }
+  }
+
+  if (violations.length > 0) {
+    throw new IAPError(
+      'INTENT',
+      'SCOPE_VIOLATION',
+      IAPAction.YIELD_TO_HUMAN,
+      `Task Artifacts violate Blueprint Scope: ${violations.length} violation(s). ` +
+        violations.map((v) => `  - task "${v.taskName}" (${v.blueprint}): ${v.artifactPath} → ${v.reason}`).join('\n'),
+      { violations, hint: 'see inv-35 (artifacts-within-scope)' },
+    )
+  }
+}
+
+// =============================================================================
 // 🆕 v0.7.3 P7 (RFC §4 P7 + ADR-0061 §D6):
 //   Work `## Refs` 旧 `kind: domain` deprecation warn（不阻断 lock）
 // =============================================================================
@@ -504,6 +607,11 @@ export async function validateAndWriteArtifacts(params: {
   //   task.deps 必须 ∈ task.boundary 的祖先集合 ∪ {boundary 自身}
   //   escape hatch: skipDagCheck=true 时跳过（仅供历史 Work 渐进迁移）
   collectAndThrowDagClosureViolations(work, blueprintsIdx, { skip: skipDagCheck })
+
+  // 🆕 v0.7+ Blueprint Context Template: Task ## Artifacts ⊆ Blueprint ## Scope 校验（inv-35）
+  //   - lock 时一次性校验；不新增 Probe
+  //   - 缺省 Scope（allow=[]） → 允许任意路径（向后兼容）
+  collectAndThrowScopeViolations(work, projectRoot, workName, blueprintsIdx)
 
   // 🆕 v0.7.3 P7 (ADR-0061 §D6): Work ## Refs 旧 kind: domain 软警告
   //   - 不阻断 artifacts 写入（仅 push warning + structured entry）

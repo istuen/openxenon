@@ -314,8 +314,10 @@ describe('applyPlanLock / clearPlanLock', () => {
     const HASH_ALL = HASH_A
     const hash = {
       workMdHash: HASH_A,
+      workContextHash: HASH_BP,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
+      taskContextsHash: HASH_A,
       allHash: HASH_ALL,
       missing: [],
     }
@@ -338,8 +340,10 @@ describe('applyPlanLock / clearPlanLock', () => {
     expect(() =>
       applyPlanLock(base, {
         workMdHash: null,
+        workContextHash: HASH_BP,
         blueprintsHash: HASH_BP,
         tasksHash: HASH_A,
+        taskContextsHash: HASH_A,
         allHash: null,
         missing: ['work.md'],
       }),
@@ -353,8 +357,10 @@ describe('applyPlanLock / clearPlanLock', () => {
     })
     const hash = {
       workMdHash: HASH_A,
+      workContextHash: HASH_BP,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
+      taskContextsHash: HASH_A,
       allHash: HASH_A,
       missing: [],
     }
@@ -371,8 +377,10 @@ describe('applyPlanLock / clearPlanLock', () => {
     })
     const hash = {
       workMdHash: HASH_A,
+      workContextHash: HASH_BP,
       blueprintsHash: HASH_BP,
       tasksHash: HASH_A,
+      taskContextsHash: HASH_A,
       allHash: HASH_A,
       missing: [],
     }

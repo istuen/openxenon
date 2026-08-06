@@ -38,11 +38,12 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   unlinkSync,
   writeFileSync,
 } from '@openxenon/engine/infra/filesystem'
 import { t } from '@openxenon/engine/infra/i18n'
-import { join } from 'path'
+import { join, relative } from 'path'
 import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '@openxenon/engine/kernel'
 import { assertDirNameConsistent } from '@openxenon/engine/kernel'
 import { IAPError } from '@openxenon/engine/errors'
@@ -1965,6 +1966,164 @@ const submitSubcommand = defineCommand({
 })
 
 // ---------------------------------------------------------------------------
+// Subcommand: inject (v0.7+ Blueprint Context Template)
+// ---------------------------------------------------------------------------
+// 3-flag 注入：--paths / --context / --memory
+//   - --paths：返回 Work 三件套路径（轻量 JSON）
+//   - --context：输出 context.md 内容（Markdown）
+//   - --memory：输出 memory.md 内容（Markdown；Phase 2 前返回 null）
+//   - --task <name>：限定到指定 task（同样 3-flag 适用）
+//
+// 设计：design-blueprint-context-template Draft（2026-08-06 grilling）
+// ---------------------------------------------------------------------------
+const injectSubcommand = defineCommand({
+  meta: {
+    name: 'inject',
+    description: 'Inject Work/Task Context (3-flag: --paths/--context/--memory)',
+  },
+  args: {
+    name: { type: 'positional', required: true, description: t('work.args.workName') },
+    task: { type: 'string', description: 'Limit to specified task' },
+    paths: { type: 'boolean', description: 'Return three-piece set file paths (JSON)' },
+    context: { type: 'boolean', description: 'Output context.md content (Markdown)' },
+    memory: { type: 'boolean', description: 'Output memory.md content (Markdown; Phase 2 returns null)' },
+    '--json': { type: 'boolean', description: t('format.json') },
+    '--yaml': { type: 'boolean', description: t('format.yaml') },
+  },
+  run(ctx) {
+    const format = getFormatFromArgs(ctx.args)
+    const workName = ctx.args.name as string
+    const taskName = ctx.args.task as string | undefined
+    const wantPaths = ctx.args.paths === true
+    const wantContext = ctx.args.context === true
+    const wantMemory = ctx.args.memory === true
+    const projectRoot = getProjectRoot()
+
+    if (!projectBoundaryExists()) {
+      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
+    }
+
+    // 至少需要一个 flag
+    if (!wantPaths && !wantContext && !wantMemory) {
+      return outputError(
+        {
+          code: 'OXN_CLI_INPUT_ERROR',
+          message: 'inject requires at least one of --paths / --context / --memory',
+          suggestion: 'Run `oxn work inject <name> --paths` to get file paths, or `--context` for Work Context.',
+        },
+        format,
+      )
+    }
+
+    const workDir = getWorkDir(projectRoot, workName)
+    if (!existsSync(workDir)) {
+      return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workDir}` }, format)
+    }
+
+    // Task 模式：限定到 tasks/<t>/
+    if (taskName) {
+      const taskDir = join(workDir, 'tasks', taskName)
+      if (!existsSync(taskDir)) {
+        return outputError(
+          { code: 'OXN_TASK_NOT_FOUND', message: `task "${taskName}" not found in work "${workName}"` },
+          format,
+        )
+      }
+
+      if (wantPaths) {
+        const paths = {
+          task_md: relative(projectRoot, join(taskDir, 'task.md')),
+          context_md: relative(projectRoot, join(taskDir, 'context.md')),
+          memory_md: relative(projectRoot, join(taskDir, 'memory.md')),
+        }
+        return output({ ok: true, data: paths, human: JSON.stringify(paths, null, 2) }, format)
+      }
+      if (wantContext) {
+        const ctxPath = join(taskDir, 'context.md')
+        if (!existsSync(ctxPath)) {
+          return outputError(
+            { code: 'OXN_INTENT_CONTEXT_MISSING', message: `task "${taskName}" context.md not found at ${ctxPath}` },
+            format,
+          )
+        }
+        const content = readFileSync(ctxPath, 'utf-8')
+        return output({ ok: true, data: { content }, human: content }, format)
+      }
+      if (wantMemory) {
+        const memPath = join(taskDir, 'memory.md')
+        if (!existsSync(memPath)) {
+          return output(
+            { ok: true, data: { content: null }, human: '(memory.md not yet implemented — Phase 2)' },
+            format,
+          )
+        }
+        const content = readFileSync(memPath, 'utf-8')
+        return output({ ok: true, data: { content }, human: content }, format)
+      }
+      return // unreachable
+    }
+
+    // Work 模式
+    if (wantPaths) {
+      const paths = {
+        work_md: relative(projectRoot, join(workDir, 'work.md')),
+        context_md: relative(projectRoot, join(workDir, 'context.md')),
+        memory_md: relative(projectRoot, join(workDir, 'memory.md')),
+        tasks: listTaskDirs(workDir).map((t) => ({
+          name: t,
+          task_md: relative(projectRoot, join(workDir, 'tasks', t, 'task.md')),
+          context_md: relative(projectRoot, join(workDir, 'tasks', t, 'context.md')),
+          memory_md: relative(projectRoot, join(workDir, 'tasks', t, 'memory.md')),
+        })),
+      }
+      return output({ ok: true, data: paths, human: JSON.stringify(paths, null, 2) }, format)
+    }
+    if (wantContext) {
+      const ctxPath = join(workDir, 'context.md')
+      if (!existsSync(ctxPath)) {
+        return outputError(
+          { code: 'OXN_INTENT_CONTEXT_MISSING', message: `work "${workName}" context.md not found at ${ctxPath}` },
+          format,
+        )
+      }
+      const content = readFileSync(ctxPath, 'utf-8')
+      return output({ ok: true, data: { content }, human: content }, format)
+    }
+    if (wantMemory) {
+      const memPath = join(workDir, 'memory.md')
+      if (!existsSync(memPath)) {
+        return output({ ok: true, data: { content: null }, human: '(memory.md not yet implemented — Phase 2)' }, format)
+      }
+      const content = readFileSync(memPath, 'utf-8')
+      return output({ ok: true, data: { content }, human: content }, format)
+    }
+    return // unreachable
+  },
+})
+
+/**
+ * 列出 work 下所有 task 目录名（按字母序）。
+ */
+function listTaskDirs(workDir: string): string[] {
+  const tasksDir = join(workDir, 'tasks')
+  if (!existsSync(tasksDir)) return []
+  try {
+    return readdirSync(tasksDir)
+      .filter((name) => {
+        if (name.startsWith('.')) return false
+        try {
+          return statSync(join(tasksDir, name)).isDirectory()
+        } catch {
+          return false
+        }
+      })
+      .sort()
+  } catch {
+    return []
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Subcommand: status
 // ---------------------------------------------------------------------------
 const statusSubcommand = defineCommand({
@@ -2802,6 +2961,28 @@ const lockSubcommand = defineCommand({
 
     // ── 2. 算 hash ──
     const hash = hashWorkPlan(projectRoot, workName)
+
+    // 🆕 v0.7+ PlanLock 5-hash: inv-33 (context-written-before-lock)
+    // context.md 必须在 lock 前写完；缺失 → IAP_INTENT_CONTEXT_MISSING
+    const missingContext = hash.missing.find(
+      (m) => m === 'context.md' || (m.startsWith('tasks/') && m.endsWith('/context.md')),
+    )
+    if (missingContext) {
+      return outputError(
+        {
+          code: 'OXN_INTENT_CONTEXT_MISSING',
+          message:
+            `Work "${workName}" cannot lock: ${missingContext} not found. ` +
+            `Write context.md before lock per inv-33 (context-written-before-lock).`,
+          suggestion:
+            `Write works/<w>/context.md (Work Context) and works/<w>/tasks/<t>/context.md (Task Context) ` +
+            `before running \`oxn work lock ${workName}\`. See design-blueprint-context-template Draft.`,
+          context: { missing: hash.missing },
+        },
+        format,
+      )
+    }
+
     if (hash.allHash === null) {
       return outputError(
         {
@@ -2826,8 +3007,12 @@ const lockSubcommand = defineCommand({
           lockedAt: pl.lockedAt,
           planLock: {
             workMdHash: pl.workMdHash,
+            // 🆕 v0.7+ PlanLock 5-hash
+            workContextHash: pl.workContextHash,
             blueprintsHash: pl.blueprintsHash,
             tasksHash: pl.tasksHash,
+            // 🆕 v0.7+ PlanLock 5-hash
+            taskContextsHash: pl.taskContextsHash,
             allHash: pl.allHash,
           },
           nextStep: `run \`oxn work run ${workName}\` to start execution`,
@@ -2836,8 +3021,10 @@ const lockSubcommand = defineCommand({
   Locked at: ${pl.lockedAt}
   Components:
     - work.md:     ${pl.workMdHash.slice(0, 16)}...
+    - context.md: ${(pl.workContextHash ?? '(legacy)').toString().slice(0, 16)}...
     - blueprints.json: ${pl.blueprintsHash.slice(0, 16)}...
     - tasks:        ${pl.tasksHash.slice(0, 16)}...
+    - taskContexts: ${(pl.taskContextsHash ?? '(legacy)').toString().slice(0, 16)}...
     - all:          ${pl.allHash?.slice(0, 16) ?? '(legacy)'}...
 
   Next: run \`oxn work run ${workName}\` to start execution`,
@@ -2912,14 +3099,16 @@ const unlockSubcommand = defineCommand({
           cleared: true,
           clearedAt: cleared.updatedAt,
           previousLockedAt: existing.cert.planLock.lockedAt,
-          nextStep: 'edit work.md / tasks/<t>/task.md as needed, then re-run `oxn work validate` and `oxn work lock`',
+          // 🆕 v0.7+ PlanLock 5-hash: 提示包含 context.md + tasks/<t>/context.md
+          nextStep:
+            'edit work.md / context.md / tasks/<t>/task.md / tasks/<t>/context.md as needed, then re-run `oxn work validate` and `oxn work lock`',
         },
         human: `Work "${workName}" unlocked ✓
   Cleared at: ${cleared.updatedAt}
   Previous lock was at: ${existing.cert.planLock.lockedAt}
 
   Next:
-    1. Edit work.md / tasks/<t>/task.md as needed
+    1. Edit work.md / context.md / tasks/<t>/task.md / tasks/<t>/context.md as needed
     2. Re-run \`oxn work validate ${workName}\` to refresh domains.json / blueprints.json / .work
     3. Re-run \`oxn work lock ${workName}\` to lock the new plan`,
       },
@@ -3384,6 +3573,7 @@ export default defineCommand({
     run: runSubcommand,
     submit: submitSubcommand,
     status: statusSubcommand,
+    inject: injectSubcommand,
     context: contextSubcommand,
     lock: lockSubcommand,
     unlock: unlockSubcommand,

@@ -22,7 +22,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from '@openxenon/engi
 import { join, relative } from 'path'
 import { hashPort } from '@openxenon/engine/infra/hash'
 import { WORK_DOMAINS_JSON, WORK_BLUEPRINTS_JSON } from '@openxenon/engine/kernel'
-import { getWorkDir, getWorkMdPath } from './dual-state-io'
+import { getWorkDir, getWorkMdPath, getWorkContextPath, getTaskContextPath } from './dual-state-io'
 
 // ───────── 文本 hash（归一化）─────────
 
@@ -137,20 +137,29 @@ export function listTaskFiles(
 // ───────── Plan hash（顶层入口）─────────
 
 /**
- * Plan hash 3 组件 + 1 combined（v0.6.1-alpha.4 Phase B: 删 workDomainsHash）：
- *   - workMdHash       work.md 自身
- *   - blueprintsHash    works/<w>/blueprints.json （per-work slim + composite boundary refs）
- *   - tasksHash         所有 tasks/<t>/task.md 的组合 hash（按 task 名排序）
- *   - allHash           上面 3 个的稳定组合（用同样顺序的 normalize 后字符串再 hash）
+ * Plan hash 5 组件 + 1 combined（v0.7+ Context Template）：
+ *   - workMdHash         work.md 自身
+ *   - workContextHash    🆕 works/<w>/context.md（Work Context；AI Agent 按 Blueprint Context Template 组装）
+ *   - blueprintsHash     works/<w>/blueprints.json （per-work slim + composite boundary refs）
+ *   - tasksHash          所有 tasks/<t>/task.md 的组合 hash（按 task 名排序）
+ *   - taskContextsHash   🆕 所有 tasks/<t>/context.md 的组合 hash（按 task 名排序）
+ *   - allHash            上面 5 个的稳定组合（用同样顺序的 normalize 后字符串再 hash）
  *
+ * 向后兼容（v0.7 之前 .work 文件）：3-hash 模式（无 workContextHash/taskContextsHash）仍可读。
  * 任何组件缺失 → hash 为 null；call 端用 Object.values(...).every(h => h) 判定完整性。
+ *
+ * 来源：design-blueprint-context-template Draft（2026-08-06 grilling）
  */
 export interface PlanHash {
   workMdHash: string | null
+  // 🆕 v0.7+ PlanLock 5-hash 扩展
+  workContextHash: string | null
   // 🆕 v0.6.1-alpha.4 Phase B: 删 workDomainsHash（Domain refs 走 Blueprint ## Refs → blueprintsHash composite）
   blueprintsHash: string | null
   tasksHash: string | null
-  /** 上面 3 个的组合 hash（缺一即 null） */
+  // 🆕 v0.7+ PlanLock 5-hash 扩展
+  taskContextsHash: string | null
+  /** 上面 5 个的组合 hash（缺一即 null） */
   allHash: string | null
   /** 缺失/不可读的组件名（用于 AI 报告） */
   missing: string[]
@@ -158,6 +167,8 @@ export interface PlanHash {
 
 export function hashWorkPlan(projectRoot: string, workName: string): PlanHash {
   const workMdHash = hashFile(getWorkMdPath(projectRoot, workName))
+  // 🆕 v0.7+ PlanLock 5-hash: works/<w>/context.md
+  const workContextHash = hashFile(getWorkContextPath(projectRoot, workName))
   // 🆕 Phase B: domains.json 不再生成（Domain refs 走 Blueprint ## Refs）
   const blueprintsHash = hashFile(getWorkBlueprintsJsonPath(projectRoot, workName))
 
@@ -170,18 +181,91 @@ export function hashWorkPlan(projectRoot: string, workName: string): PlanHash {
         ? hashPort.computeHash(taskFiles.map((t) => `${t.taskName}=${t.hash}`).join('\n'))
         : null
 
+  // 🆕 v0.7+ PlanLock 5-hash: tasks/<t>/context.md 组合
+  const taskContextFiles = listTaskContextFiles(projectRoot, workName)
+  const missingTaskContexts = taskContextFiles.filter((t) => t.hash === null).map((t) => t.taskName)
+  const taskContextsHash =
+    taskContextFiles.length === 0
+      ? null
+      : taskContextFiles.every((t) => t.hash !== null)
+        ? hashPort.computeHash(taskContextFiles.map((t) => `${t.taskName}=${t.hash}`).join('\n'))
+        : null
+
   const missing: string[] = []
   if (workMdHash === null) missing.push('work.md')
+  // 🆕 v0.7+ PlanLock 5-hash 检查 work context（optional：context.md 不存在时 allHash 为 null）
+  // 注：与 task hash 不同，work context 是单个文件，不存在 = missing
+  if (workContextHash === null) missing.push('context.md')
   // 🆕 Phase B: 删 domains.json 检查
   if (blueprintsHash === null) missing.push('blueprints.json')
   missing.push(...missingTasks.map((t) => `tasks/${t}/task.md`))
+  missing.push(...missingTaskContexts.map((t) => `tasks/${t}/context.md`))
 
   const allHash =
-    workMdHash !== null && blueprintsHash !== null && tasksHash !== null
-      ? hashPort.computeHash([`work.md=${workMdHash}`, `blueprints.json=${blueprintsHash}`, tasksHash].join('\n'))
+    workMdHash !== null &&
+    workContextHash !== null &&
+    blueprintsHash !== null &&
+    tasksHash !== null &&
+    taskContextsHash !== null
+      ? hashPort.computeHash(
+          [
+            `work.md=${workMdHash}`,
+            `context.md=${workContextHash}`,
+            `blueprints.json=${blueprintsHash}`,
+            tasksHash,
+            taskContextsHash,
+          ].join('\n'),
+        )
       : null
 
-  return { workMdHash, blueprintsHash, tasksHash, allHash, missing }
+  return { workMdHash, workContextHash, blueprintsHash, tasksHash, taskContextsHash, allHash, missing }
+}
+
+/**
+ * 列出 work 下所有 task context.md，按 task 名排序。
+ * 与 listTaskFiles 模式对称，但目标是 tasks/<t>/context.md。
+ *
+ * 🆕 v0.7+ PlanLock 5-hash 新增。
+ */
+export function listTaskContextFiles(
+  projectRoot: string,
+  workName: string,
+): Array<{
+  taskName: string
+  filePath: string
+  hash: string | null
+}> {
+  const tasksDir = join(getWorkDir(projectRoot, workName), 'tasks')
+  if (!existsSync(tasksDir)) return []
+
+  let entries: string[]
+  try {
+    entries = readdirSync(tasksDir)
+  } catch {
+    return []
+  }
+
+  const out: Array<{ taskName: string; filePath: string; hash: string | null }> = []
+  for (const name of entries) {
+    if (name.startsWith('.')) continue
+    const dir = join(tasksDir, name)
+    let isDir = false
+    try {
+      isDir = statSync(dir).isDirectory()
+    } catch {
+      continue
+    }
+    if (!isDir) continue
+    const contextMd = getTaskContextPath(projectRoot, workName, name)
+    if (!existsSync(contextMd)) continue
+    out.push({
+      taskName: name,
+      filePath: contextMd,
+      hash: hashFile(contextMd),
+    })
+  }
+  out.sort((a, b) => a.taskName.localeCompare(b.taskName))
+  return out
 }
 
 // ───────── 单文件 hash 工具（直接暴露给 CLI 调试用）─────────
@@ -197,19 +281,25 @@ export function sha256Hex(text: string): string {
 /** 静默探测：列出 works/<w>/ 下所有组件的实际状态 */
 export interface PlanPresence {
   workMd: boolean
+  // 🆕 v0.7+ PlanLock 5-hash: work context
+  workContext: boolean
   // 🆕 Phase B: 删 domainsJson（Domain refs 走 Blueprint ## Refs）
   blueprintsJson: boolean
-  tasks: Array<{ taskName: string; hasMd: boolean }>
+  tasks: Array<{ taskName: string; hasMd: boolean; hasContextMd: boolean }>
 }
 
 export function probePlanPresence(projectRoot: string, workName: string): PlanPresence {
   return {
     workMd: existsSync(getWorkMdPath(projectRoot, workName)),
+    // 🆕 v0.7+ PlanLock 5-hash: work context 探测
+    workContext: existsSync(getWorkContextPath(projectRoot, workName)),
     // 🆕 Phase B: 删 domainsJson 检查
     blueprintsJson: existsSync(getWorkBlueprintsJsonPath(projectRoot, workName)),
     tasks: listTaskFiles(projectRoot, workName).map((t) => ({
       taskName: t.taskName,
       hasMd: t.hash !== null,
+      // 🆕 v0.7+ PlanLock 5-hash: task context 探测
+      hasContextMd: existsSync(getTaskContextPath(projectRoot, workName, t.taskName)),
     })),
   }
 }
