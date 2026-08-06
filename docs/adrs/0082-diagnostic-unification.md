@@ -7,7 +7,7 @@ accepted: 2026-08-05
 supersedes: null
 superseded-by: null
 implementation-status: partial
-implementation-note: D1 LoggerPort 接口 + D2 consola 隔离层 + Asset.validate 重构已落地（commit 见 history）；CLI + Daemon + Work/Proof 全面 logger.warn 迁移待跟进（dev/versions/0-7-0-logger-migration.md）
+implementation-note: D1 LoggerPort 接口 + D2 consola 隔离层 + Asset.validate 重构已落地（commit 见 history）；CLI + Daemon + Work/Proof 全面 logger.warn 迁移待跟进（已归档：`.openxenon/.archived/dev/versions/0-7-0-logger-migration.md`，2026-08-06 baseline ship 后归档）
 related:
   - docs/adrs/0081-oxn-unified-error-framework.md
   - docs/adrs/0080-error-terminology-unification-and-governance.md
@@ -17,7 +17,7 @@ related:
 
 # ADR-0082: OXN Diagnostic 统一（LoggerPort + consola 隔离层 + 纯日志单通道）
 
-> **状态**：✅ Accepted（2026-08-05 partial ship：D1 + D2 + Asset.validate logger.warn 落地；CLI/Daemon/Work/Proof 全面迁移待跟进 dev/versions/0-7-0-logger-migration.md）
+> **状态**：✅ Accepted（2026-08-05 partial ship：D1 + D2 + Asset.validate logger.warn 落地；CLI/Daemon/Work/Proof 全面迁移待跟进，原 Roadmap 已归档 `.openxenon/.archived/dev/versions/0-7-0-logger-migration.md`）
 <!-- allow-version -->
 > **日期**：2026-07-25（v1.1.0 — grilling #1-#5 决策更新）
 <!-- /allow-version -->

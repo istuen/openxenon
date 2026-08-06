@@ -7,7 +7,7 @@ related:
   - docs/adrs/0052-langium-retirement-oxn-deprecation.md
   - .changes/0-6-1-oxn-deprecation.md
   - .changes/0-6-1-pr4-langium-freeze.md
-  - dev/versions/0-7-0-oxn-deprecation.md
+  - .openxenon/.archived/dev/versions/0-7-0-oxn-deprecation.md
 synced-at: 2026-08-05
 ---
 
@@ -16,7 +16,7 @@ synced-at: 2026-08-05
 > **类型**：dev meta 文档（OpenXenon 维护者操作参考）
 > **状态**：✅ Shipped（v0.6.1 落地）
 > **范围**：oxn-deprecation-rfc.md 的 PARTIAL ship 部分
-> **完整路径**：见 [dev/versions/0-7-0-oxn-deprecation.md](../../dev/versions/0-7-0-oxn-deprecation.md)（v0.7.0 切割 deferred 部分）
+> **完整路径**：见 [.openxenon/.archived/dev/versions/0-7-0-oxn-deprecation.md](../../.openxenon/.archived/dev/versions/0-7-0-oxn-deprecation.md)（v0.7.0 切割 deferred 部分，2026-08-06 归档）
 
 ## 1. 已落地交付
 
@@ -59,4 +59,4 @@ synced-at: 2026-08-05
 
 ## 4. deferred 部分
 
-完整 v0.7.0 切割（git rm 全量 .oxn + 卸 Langium npm dep + 移除 `--oxn-legacy` flag + CLI 清理）见 [dev/versions/0-7-0-oxn-deprecation.md](../../dev/versions/0-7-0-oxn-deprecation.md)。
+完整 v0.7.0 切割（git rm 全量 .oxn + 卸 Langium npm dep + 移除 `--oxn-legacy` flag + CLI 清理）见 [.openxenon/.archived/dev/versions/0-7-0-oxn-deprecation.md](../../.openxenon/.archived/dev/versions/0-7-0-oxn-deprecation.md)（2026-08-06 归档）。
