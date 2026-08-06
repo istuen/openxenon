@@ -1,12 +1,14 @@
 ---
-version: 0.8.0
-date: 2027-02-15
-type: minor
-rfc:
-  - .openxenon/pools/sprints/v0.7-emergence/design/v0.8.0-term-upstream-dag-rfc.md
-adr:
-  - .openxenon/docs/adrs/0030-term-cross-reference-upstream-dag.md
-  - .openxenon/docs/adrs/0023-at-addressing-no-arrow-pointer.md
+id: term-upstream-dag
+theme: Term 上游 DAG
+priority: low
+status: planned
+created-at: 2026-07-22
+scheduled-version: ~
+synced-at: 2026-07-27
+note: |
+  从 dev/versions/0-8-0-term-upstream-dag.md 迁移 (2026-07-27 grilling session)。
+  移除 version 绑定，进入规划池备选。
 ---
 
 # 0.8.0 — Domain DSL 演进：`@term/X` 跨 term 寻址 + `@upstream` DAG

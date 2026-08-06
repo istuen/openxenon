@@ -1,22 +1,26 @@
 ---
 id: term-upstream-dag
-theme: Term 上游 DAG
+theme: Domain DSL 演进：@term/X 跨 term 寻址 + @upstream DAG
 priority: low
 status: planned
-created-at: 2026-07-22
+created-at: 2026-07-28
 scheduled-version: ~
-synced-at: 2026-07-27
+synced-at: 2026-08-06
 note: |
-  从 dev/versions/0-8-0-term-upstream-dag.md 迁移 (2026-07-27 grilling session)。
-  移除 version 绑定，进入规划池备选。
+  从 dev/versions/term-upstream-dag（按 0-X-Y-<slug> 命名）回滚（去版本化）。
+  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
+rfc:
+  - .openxenon/pools/sprints/v0.7-emergence/design/v0.8.0-term-upstream-dag-rfc.md
+adr:
+  - .openxenon/docs/adrs/0030-term-cross-reference-upstream-dag.md
 ---
 
-# 0.8.0 — Domain DSL 演进：`@term/X` 跨 term 寻址 + `@upstream` DAG
+# Domain DSL 演进：`@term/X` 跨 term 寻址 + `@upstream` DAG
 
-> **v0.8.0 主题**：Domain DSL 演进 — 跨 term 物理引用 + 域间 DAG 编译期校验。补齐 ADR-0023 `@` 寻址哲学的最后两块拼图，让跨域影响分析成为编译期事实。
+> **主题**：Domain DSL 演进 — 跨 term 物理引用 + 域间 DAG 编译期校验。补齐 ADR-0023 `@` 寻址哲学的最后两块拼图，让跨域影响分析成为编译期事实。
 >
-> **前提**：v0.7.0 + v0.7.1 + v0.7.2。
-> **核心 RFC**：[v0.8.0 @term/@upstream DAG RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.8.0-term-upstream-dag-rfc.md) 📝 Draft
+> **前提**：~（scheduling 决定；前置 minor 由工程师判定） + v0.7.2。
+> **核心 RFC**：[@term/@upstream DAG RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.8.0-term-upstream-dag-rfc.md) 📝 Draft
 > **⚠ Breaking Change**：Domain grammar 扩展（`upstream` 块 + `@term/X` 类型引用）。旧 `.oxn` 文件兼容，新语法可选启用。
 
 ## 核心变化
@@ -144,7 +148,7 @@ Order
 
 ```typescript
 ExecErrorCode = {
-  // ... v0.7.2 已有
+  // ... 已有
   E_OXL_TERM_NOT_FOUND: 'E_OXL_TERM_NOT_FOUND',
   E_OXL_TERM_SELF_REFERENCE: 'E_OXL_TERM_SELF_REFERENCE',
   E_OXL_UPSTREAM_CYCLE: 'E_OXL_UPSTREAM_CYCLE',
@@ -152,7 +156,7 @@ ExecErrorCode = {
 }
 ```
 
-## 物理布局（v0.8.0 新增/修改）
+## 物理布局（本版本新增/修改）
 
 ### 新增
 
@@ -190,7 +194,7 @@ packages/cli/src/commands/
 ## 测试 / 构建结果（目标）
 
 - **typecheck**: 0 errors ✅
-- **测试**: ≥ 2,132 pass（v0.7.2 末 2,099 + 33）
+- **测试**: ≥ 2,132 pass（完成时 2,099 + 33）
 - **grammar regen**: 重新生成 `src/oxl/generated/*`（2 次 langium:generate 兼容窗口）
 - **CLI build**: 集成 `domain impact` / `domain dag`
 
@@ -223,7 +227,7 @@ oxn domain validate Order
 oxn domain impact Order
 ```
 
-**兼容窗口**：v0.8.0 + v0.8.1 + v0.8.2 三个 minor 期内维持纯文本引用兼容；v0.9.0 起纯文本引用将升级为 `E_OXL_DEPRECATED_TEXT_REF` warning。
+**兼容窗口**：3 个 minor 期（具体版本由 scheduling 决定）内维持纯文本引用兼容；v0.9.0 起纯文本引用将升级为 `E_OXL_DEPRECATED_TEXT_REF` warning。
 
 ## 风险与缓解
 
@@ -234,7 +238,7 @@ oxn domain impact Order
 | Langium grammar 升级破坏旧 .oxn | 低 | 中 | 3 个 minor 期兼容窗口 |
 | 大型项目 `upstream` DAG 性能 | 低 | 低 | 增量校验（仅变更 Domain 触发） |
 
-## v0.8.0 不做
+## 本版本不做
 
 - 跨项目 Asset 引用（v0.8 Skill 远程 Registry 范围）
 - 自动 refactor 工具（v0.9 自组织协同）

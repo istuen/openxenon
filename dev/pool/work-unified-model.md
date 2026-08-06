@@ -1,8 +1,14 @@
 ---
-version: 0.7.0
-date: 2026-11-15
-type: minor
+id: work-unified-model
+theme: Work 统一模型 + 引用收敛 + Round 改进
+priority: high
 status: planned
+created-at: 2026-07-28
+scheduled-version: ~
+synced-at: 2026-08-06
+note: |
+  从 dev/versions/work-unified-model（按 0-X-Y-<slug> 命名）回滚（去版本化）。
+  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
 rfc:
   - docs/rfc/zh-cn/RFC-0020-three-boundary-blueprint-elevation.md
   - docs/adrs/0050-onboarding-via-starter-work.md
@@ -10,12 +16,12 @@ rfc:
 promoted-from: .openxenon/drafts/.archived/rfc/work-unified-model-rfc.md
 ---
 
-# 0.7.0 — Work 统一模型 + 引用收敛 + Round 改进
+# Work 统一模型 + 引用收敛 + Round 改进
 
 > **状态**：📝 Draft（待 review）
 > **日期**：2026-07-10（v1.0 Draft）
 > **作者**：opencode（与 user 协作，2026-07-10）
-> **目标版本**：v0.7.0
+> **目标版本**：~（scheduling 决定）
 > **范围**：4 个决策整合（Asset 创建统一 + Work 引用收敛 + Round 改进 + 阶段缩减为 IAP 三阶段实体）
 > **原路径**：`.openxenon/drafts/rfc/work-unified-model-rfc.md`（已归档）
 
@@ -37,7 +43,7 @@ v0.6.1-alpha.4 三边界 RFC 实施后（Phase 0-2 + Phase 3 Batch 1-3），Work
 - ❌ 不进 task DAG
 - ✅ 仅写 `.openxenon/assets/<kind>/<Name>.oxn` 一个文件
 
-这与 v0.6 RFC §4 "任何工作 = IAP 周期" 的哲学原则矛盾，且 ADR-0050 明确将"跳过 Work 直接写 Asset"列为**反模式**。v0.7 draft §7.2 已显式推迟"Asset 模式重构 → v0.9+"。
+这与 v0.6 RFC §4 "任何工作 = IAP 周期" 的哲学原则矛盾，且 ADR-0050 明确将"跳过 Work 直接写 Asset"列为**反模式**。v0.7 draft §7.2 已显式推迟"Asset 模式重构 → 后续 major.9+"。
 
 **问题 2：Work 引用模型是双轨混合状态（未完全收敛）**
 

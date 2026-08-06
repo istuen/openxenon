@@ -1,17 +1,23 @@
 ---
-version: 0.8.1
-date: 2027-02-15
-type: minor
+id: probe-system-evolution
+theme: Probe 体系演进（追溯 + 内外拆 + 目标成果分类）
+priority: medium
 status: planned
+created-at: 2026-07-28
+scheduled-version: ~
+synced-at: 2026-08-06
+note: |
+  从 dev/versions/probe-system-evolution（按 0-X-Y-<slug> 命名）回滚（去版本化）。
+  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
 rfc:
   - dev/versions/0-8-0-term-upstream-dag.md
 promoted-from: .openxenon/drafts/.archived/rfc/v0.8.1-probe-system-evolution-rfc.md
 ---
 
-# 0.8.1 — Probe 体系演进（追溯 + 内外拆 + 目标成果分类）
+# Probe 体系演进（追溯 + 内外拆 + 目标成果分类）
 
 > **状态**：📝 Draft（待 review）
-> **目标版本**：v0.8.1
+> **目标版本**：~（scheduling 决定）
 > **前置依赖**：v0.8.0（`@term/X` + `@upstream` DAG）
 > **核心交付**：Probe 体系的三大演进——追溯机制 + 内外接口严格分离 + 目标成果类型分类
 > **来源**：OpenXenon 协作生命周期 v0.8 设计讨论（2026-07-21）

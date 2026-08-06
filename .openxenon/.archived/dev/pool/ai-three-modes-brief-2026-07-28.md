@@ -1,12 +1,14 @@
 ---
-version: 0.7.1
-date: 2026-12-15
-type: minor
+id: ai-three-modes
+theme: AI 三模式 (Edit / Plan / Apply)
+priority: medium
 status: planned
-rfc:
-  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.1-ai-three-modes-rfc.md
-adr:
-  - .openxenon/docs/adrs/0022-guided-adaptive-unmanaged-ai-modes.md
+created-at: 2026-07-23
+scheduled-version: ~
+synced-at: 2026-07-27
+note: |
+  从 dev/versions/0-7-1-ai-three-modes.md 迁移 (2026-07-27 grilling session)。
+  移除 version 绑定，进入规划池备选。
 ---
 
 # 0.7.1 — AI 三模式分级：Guided / Adaptive / Unmanaged

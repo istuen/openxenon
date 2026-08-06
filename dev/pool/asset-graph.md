@@ -3,26 +3,31 @@ id: asset-graph
 theme: Asset 影响图（Mermaid/DOT 渲染）
 priority: medium
 status: planned
-created-at: 2026-07-23
+created-at: 2026-07-28
 scheduled-version: ~
-synced-at: 2026-07-27
+synced-at: 2026-08-06
 note: |
-  从 dev/versions/0-7-0-asset-graph.md 迁移 (2026-07-27 grilling session)。
-  移除 version 绑定，进入规划池备选。
+  从 dev/versions/asset-graph（按 0-X-Y-<slug> 命名）回滚（去版本化）。
+  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
+rfc:
+  - .openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md
+  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md
+adr:
+  
 ---
 
-# 0.7.0 — Asset 影响图 + Hall v0.5 集成
+# Asset 影响图 + Hall v0.5 集成
 
-> **v0.7.0 Asset 影响图增量**：在 v0.6.3 Asset Paper Schema 基础上，v0.7.0 W11-12 引入 citations 计算 + Hall Asset 影响图渲染（DOT / Mermaid）。
+> **Asset 影响图增量**：在 v0.6.3 Asset Paper Schema 基础上，W11-12 引入 citations 计算 + Hall Asset 影响图渲染（DOT / Mermaid）。
 >
-> **前提**：v0.6.3 Asset Paper Schema 落地（abstract / references / citations / auditTrail 字段）
-> **核心 RFC**：[v0.6.3 Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft · [v0.7 Emergence RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md) ✅ Approved
+> **前提**：~（scheduling 决定） Asset Paper Schema 落地（abstract / references / citations / auditTrail 字段）
+> **核心 RFC**：[Asset Paper Schema RFC](../../.openxenon/pools/sprints/v0.6.x-observability-roadmap/design/v0.6.3-asset-paper-schema-rfc.md) 📝 Draft · [v0.7 Emergence RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md) ✅ Approved
 
 ## 核心变化
 
 ### 1. citations 动态计算（从静态扫 → 增量）
 
-**v0.6.3 Phase A 静态扫**（每次 `oxn asset validate` 触发）：
+**Phase A 静态扫（前置版本）**（每次 `oxn asset validate` 触发）：
 
 ```typescript
 function computeCitations(assets: Asset[]): void {
@@ -32,7 +37,7 @@ function computeCitations(assets: Asset[]): void {
 }
 ```
 
-**v0.7.0 优化**：增量计算 + 缓存
+**本版本优化**：增量计算 + 缓存
 
 ```typescript
 class CitationCache {
@@ -68,13 +73,13 @@ $ oxn asset graph payment-core --format mermaid
 #   refund-flow --> payment-core
 ```
 
-### 3. Hall Asset 影响图（v0.7.0 W11-12 新增面板）
+### 3. Hall Asset 影响图（W11-12 新增面板）
 
 `/hall/assets/<name>/` 详情页：
 
 ```
 MyApp
-├── Anchored Docs (v0.7.2 计划)
+├── Anchored Docs（后续计划）
 ├── Citations: 3
 │   ├── order-checkout (引用此)
 │   ├── refund-flow (引用此)
@@ -117,13 +122,13 @@ assets.sort((a, b) => (b.citations ?? 0) - (a.citations ?? 0))
 
 ```typescript
 ExecErrorCode = {
-  // ... v0.6.3 已有
+  // ... 已有
   OXN_ASSET_GRAPH_CYCLE: 'OXN_ASSET_GRAPH_CYCLE',  // 渲染时发现环
   OXN_ASSET_GRAPH_TOO_LARGE: 'OXN_ASSET_GRAPH_TOO_LARGE',  // 节点 > 100 警告
 }
 ```
 
-## 物理布局（v0.7.0 增量）
+## 物理布局（本版本增量）
 
 ### 新增
 
@@ -143,7 +148,7 @@ packages/cli/src/commands/
     └── asset-graph-e2e.test.ts   # 2 cases
 
 docs/.vitepress/theme/components/
-└── AssetsImpactPanel.vue         # 🆕 Hall 资产影响面板（v0.7.0 W12）
+└── AssetsImpactPanel.vue         # 🆕 Hall 资产影响面板（W12）
 ```
 
 ### 修改
@@ -163,9 +168,9 @@ docs/.vitepress/theme/components/
 | 集成（Hall AssetsImpactPanel） | 1 |
 | **合计** | **16** |
 
-**v0.7.0 验收门槛**：≥ 2,043 pass（v0.6.5 末 1,996 + v0.6.3 +12 + v0.7.0 增量 +16 + emergence RFC 31 = 2,055）
+**验收门槛**：≥ 2,043 pass（前置版本末 1,996 + v0.6.3 +12 + 本版本增量 +16 + emergence RFC 31 = 2,055）
 
-> 注：v0.6.3 末门槛为 1,986（含 v0.6.3 12 cases）+ v0.6.4/5 增量 4 = 1,990；v0.7.0 增量 16 + emergence 31 = +47 → 2,037（v0.7.0 末）
+> 注：前置版本末门槛为 1,986（含 v0.6.3 12 cases）+ v0.6.4/5 增量 4 = 1,990；本版本增量 16 + emergence 31 = +47 → 2,037（完成时）
 
 ## 关键风险
 
@@ -175,17 +180,17 @@ docs/.vitepress/theme/components/
 | 增量 citations 缓存失效 | 中 | 低 | content_hash 校验 + 自动重算 |
 | 循环依赖在 graph 渲染时崩溃 | 低 | 中 | DOT 输出时检测环 + warn |
 
-## v0.7.0 不做（推迟到 v0.7.1）
+## 本版本不做（推迟到 v0.7.1）
 
-- 动态监听（filesystem watch 自动重算）→ v0.7.1
-- 循环依赖图可视化（Cycle 高亮）→ v0.7.1
-- 引用计数缓存持久化 → v0.7.1
-- 跨 Project 引用图 → v0.8.0 Skill Registry
+- 动态监听（filesystem watch 自动重算）→ 后续 minor
+- 循环依赖图可视化（Cycle 高亮）→ 后续 minor
+- 引用计数缓存持久化 → 后续 minor
+- 跨 Project 引用图 → 后续 minor Skill Registry
 
 ## 迁移路径
 
 ```bash
-# v0.6.3 → v0.7.0
+# 上一 minor → 本 minor
 bun install
 bun run langium:generate  # Asset schema 增量（无 breaking change）
 

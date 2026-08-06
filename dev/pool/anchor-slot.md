@@ -1,22 +1,26 @@
 ---
 id: anchor-slot
-theme: Anchor slot 机制
+theme: Anchor / Slot 文档双向绑定
 priority: medium
 status: planned
-created-at: 2026-07-23
+created-at: 2026-07-28
 scheduled-version: ~
-synced-at: 2026-07-27
+synced-at: 2026-08-06
 note: |
-  从 dev/versions/0-7-2-anchor-slot.md 迁移 (2026-07-27 grilling session)。
-  移除 version 绑定，进入规划池备选。
+  从 dev/versions/anchor-slot（按 0-X-Y-<slug> 命名）回滚（去版本化）。
+  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
+rfc:
+  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.2-anchor-slot-rfc.md
+adr:
+  
 ---
 
-# 0.7.2 — Anchor / Slot 文档双向绑定
+# Anchor / Slot 文档双向绑定
 
-> **v0.7.2 主题**：Markdown 文档锚点（Anchor）+ Domain 术语插槽（Slot）双向绑定。让 Insight `evidenceChain` 一步反查到 `docs/zh-cn/api.md#api-register`，让 Domain 校验自动检查文档 orphan，让 Hall Asset 影响图直接展示"哪些 docs 章节锚定此 Asset"。
+> **主题**：Markdown 文档锚点（Anchor）+ Domain 术语插槽（Slot）双向绑定。让 Insight `evidenceChain` 一步反查到 `docs/zh-cn/api.md#api-register`，让 Domain 校验自动检查文档 orphan，让 Hall Asset 影响图直接展示"哪些 docs 章节锚定此 Asset"。
 >
-> **前提**：v0.7.0 + v0.7.1。
-> **核心 RFC**：[v0.7.2 Anchor/Slot RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7.2-anchor-slot-rfc.md) 📝 Draft
+> **前提**：~（scheduling 决定；前置 minor 由工程师判定）。
+> **核心 RFC**：[Anchor/Slot RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7.2-anchor-slot-rfc.md) 📝 Draft
 
 ## 核心变化
 
@@ -104,13 +108,13 @@ oxn docs validate docs/zh-cn/api.md   # 单文档检查
 
 ```typescript
 ExecErrorCode = {
-  // ... v0.7.1 已有
+  // ... 已有
   E_DOC_ANCHOR_ORPHAN: 'E_DOC_ANCHOR_ORPHAN',
   E_DOMAIN_SLOT_DANGLING: 'E_DOMAIN_SLOT_DANGLING',
 }
 ```
 
-## 物理布局（v0.7.2 新增/修改）
+## 物理布局（本版本新增/修改）
 
 ### 新增
 
@@ -139,7 +143,7 @@ packages/cli/src/commands/
 ## 测试 / 构建结果（目标）
 
 - **typecheck**: 0 errors ✅
-- **测试**: ≥ 2,099 pass（v0.7.1 末 2,075 + 24）
+- **测试**: ≥ 2,099 pass（完成时 2,075 + 24）
 - **docs:build**: 484 docs 文件 + Anchor 索引正常
 
 ## 风险与缓解
@@ -150,16 +154,16 @@ packages/cli/src/commands/
 | 文档重命名导致 anchor 失效 | 中 | 中 | 重命名时自动检测 + 警告 |
 | Hall 渲染双链断裂 | 低 | 低 | 链接存在性校验（health check） |
 
-## v0.7.2 不做
+## 本版本不做
 
 - 自动生成 anchor ID（用户手工标注）
-- Anchor 反向查找图谱（v0.8.0 Asset 知识库范围）
+- Anchor 反向查找图谱（未来 Asset 知识库范围）
 - 跨项目 anchor 引用（v0.8 Skill 远程 Registry）
 
 ## 迁移路径（开发者视角）
 
 ```bash
-# v0.7.1 → v0.7.2
+# 上一 minor → 本 minor
 bun install
 bun run build
 

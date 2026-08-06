@@ -1,15 +1,15 @@
 ---
-version: 0.7.0
-date: 2026-11-15
-type: minor
+id: emergence
+theme: 涌现层骨架 + Insight 工程化 + Hall v0.5 + Infra Ports
+priority: high
 status: planned
-rfc:
-  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md
-  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.0-infra-ports-rfc.md
-adr:
-  - .openxenon/docs/adrs/0006-three-phase-model.md
-  - .openxenon/docs/adrs/0007-loop-observation-three-dimensions.md
-  - .openxenon/docs/adrs/0028-resource-port-cache-port-work-snapshot.md
+created-at: 2026-07-23
+scheduled-version: ~
+synced-at: 2026-07-27
+note: |
+  从 dev/versions/0-7-0-emergence.md 迁移 (2026-07-27 grilling session)。
+  移除 version 绑定，进入规划池备选；scheduling 后再绑版本号。
+  RFC 草稿路径已迁至 .openxenon/drafts/rfc/，正文相对路径保留历史引用。
 ---
 
 # 0.7.0 — 涌现层骨架：Insight 工程化 + Hall v0.5 + Infra Ports 扩展

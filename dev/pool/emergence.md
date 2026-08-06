@@ -3,20 +3,25 @@ id: emergence
 theme: 涌现层骨架 + Insight 工程化 + Hall v0.5 + Infra Ports
 priority: high
 status: planned
-created-at: 2026-07-23
+created-at: 2026-07-28
 scheduled-version: ~
-synced-at: 2026-07-27
+synced-at: 2026-08-06
 note: |
-  从 dev/versions/0-7-0-emergence.md 迁移 (2026-07-27 grilling session)。
-  移除 version 绑定，进入规划池备选；scheduling 后再绑版本号。
-  RFC 草稿路径已迁至 .openxenon/drafts/rfc/，正文相对路径保留历史引用。
+  从 dev/versions/emergence（按 0-X-Y-<slug> 命名）回滚（去版本化）。
+  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
+rfc:
+  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md
+  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.0-infra-ports-rfc.md
+adr:
+  - .openxenon/docs/adrs/0006-three-phase-model.md
+  - .openxenon/docs/adrs/0007-loop-observation-three-dimensions.md
 ---
 
-# 0.7.0 — 涌现层骨架：Insight 工程化 + Hall v0.5 + Infra Ports 扩展
+# 涌现层骨架：Insight 工程化 + Hall v0.5 + Infra Ports 扩展
 
-> **v0.7.0 主题**：把 Insight 从"收集"升级到"工程化"——`oxn insight apply` 一键应用草案闭环 + 模式库持久化 + Insight 关系图（Mermaid 渲染）+ Hall v0.5 Vue 组件化。同时落地 Infra Ports 三件套（ResourcePort / CachePort / WorkSnapshot），让可观测性 hot path 提速 50-500 倍。
+> **主题**：把 Insight 从"收集"升级到"工程化"——`oxn insight apply` 一键应用草案闭环 + 模式库持久化 + Insight 关系图（Mermaid 渲染）+ Hall v0.5 Vue 组件化。同时落地 Infra Ports 三件套（ResourcePort / CachePort / WorkSnapshot），让可观测性 hot path 提速 50-500 倍。
 >
-> **前提**：v0.6.5（Insight 收集层 + Hall v0 完整化）。
+> **前提**：~（scheduling 决定）（Insight 收集层 + Hall v0 完整化）。
 > **核心 RFC**：[v0.7 Emergence RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7-emergence-rfc.md) · [v0.7.0 Infra Ports RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7.0-infra-ports-rfc.md)
 
 ## 核心变化
@@ -141,7 +146,7 @@ ExecErrorCode = {
 
 v0.7.0 是 ADR-0006 三相模型（静态结构 → Loop → 静态产物）+ ADR-0007 Loop 行为观测三维度（命令 + 命中规则 + 反复重试）的首个落地版本。详见 [docs/zh-cn/core-concepts.md](../../docs/zh-cn/core-concepts.md) §11-§12。
 
-## 物理布局（v0.7.0 新增/修改）
+## 物理布局（本版本新增/修改）
 
 ### 新增
 
@@ -208,7 +213,7 @@ docs/.vitepress/theme/components/
 
 - **typecheck**: 0 errors ✅
 - **biome check**: 0 issues
-- **测试**: ≥ 2,058 pass（v0.6.5 末 1,996 + 31 emergence + 31 infra-ports）
+- **测试**: ≥ 2,058 pass（前置版本末 1,996 + 31 emergence + 31 infra-ports）
 - **CLI build**: 集成 mermaid 后 ~3.6MB bundled
 - **Hall build**: VitePress + Vue 组件正常渲染
 
@@ -223,7 +228,7 @@ docs/.vitepress/theme/components/
 | CachePort 与 disk 数据不一致 | 中 | 中 | 启动 disk-rehydrate + 异步落盘 |
 | ResourcePort 远程 IO 慢 | 中 | 中 | Probe-level timeout 30s |
 
-## v0.7.0 不做（明确推迟）
+## 本版本不做（明确推迟）
 
 | 功能 | 推迟到 |
 |---|---|

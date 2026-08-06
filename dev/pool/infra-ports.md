@@ -1,8 +1,14 @@
 ---
-version: 0.7.0
-date: 2026-11-15
-type: minor
+id: infra-ports
+theme: Infra 扩展：ResourcePort / CachePort / WorkSnapshot
+priority: high
 status: planned
+created-at: 2026-07-28
+scheduled-version: ~
+synced-at: 2026-08-06
+note: |
+  从 dev/versions/infra-ports（按 0-X-Y-<slug> 命名）回滚（去版本化）。
+  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
 rfc:
   - dev/versions/0-7-0-emergence.md
 adr:
@@ -10,10 +16,10 @@ adr:
 promoted-from: .openxenon/drafts/.archived/rfc/v0.7.0-infra-ports-rfc.md
 ---
 
-# 0.7.0 — Infra 扩展：ResourcePort / CachePort / WorkSnapshot
+# Infra 扩展：ResourcePort / CachePort / WorkSnapshot
 
 > **状态**：📝 Draft（待 review）
-> **目标版本**：v0.7.0（首个 v0.7 minor，与 emergence RFC 并行）
+> **目标版本**：~（scheduling 决定）（首个 v0.7 minor，与 emergence RFC 并行）
 > **前置依赖**：v0.6.1（信任链就位；原 v0.6.5 已并入 v0.7，见 dev/meta/version-unification.md）
 > **核心交付**：Infra Port 扩展 — ResourcePort（虚拟 FS）+ CachePort（RAM/Redis）+ WorkSnapshot（序列化）
 > **来源**：[ADR-0028](/Users/issac/pro/openxenon/docs/adrs/0028-resource-port-cache-port-work-snapshot.md) · docs_tmp/mirage-1.md (2026-06-11)
@@ -241,7 +247,7 @@ packages/cli/src/commands/
 | 集成 | probe-stats + cache | 3 |
 | **合计** | — | **31** |
 
-**v0.7.0 验收门槛**（含 emergence RFC 的 31）：≥ 2,058 pass（v0.6.5 末 1,996 + 31 + 31）
+**验收门槛**（含 emergence RFC 的 31）：≥ 2,058 pass（前置版本末 1,996 + 31 + 31）
 
 ---
 

@@ -1,22 +1,26 @@
 ---
 id: ai-three-modes
-theme: AI 三模式 (Edit / Plan / Apply)
+theme: AI 三模式分级：Guided / Adaptive / Unmanaged
 priority: medium
 status: planned
-created-at: 2026-07-23
+created-at: 2026-07-28
 scheduled-version: ~
-synced-at: 2026-07-27
+synced-at: 2026-08-06
 note: |
-  从 dev/versions/0-7-1-ai-three-modes.md 迁移 (2026-07-27 grilling session)。
-  移除 version 绑定，进入规划池备选。
+  从 dev/versions/ai-three-modes（按 0-X-Y-<slug> 命名）回滚（去版本化）。
+  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
+rfc:
+  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.1-ai-three-modes-rfc.md
+adr:
+  
 ---
 
-# 0.7.1 — AI 三模式分级：Guided / Adaptive / Unmanaged
+# AI 三模式分级：Guided / Adaptive / Unmanaged
 
-> **v0.7.1 主题**：把 AI Agent 执行监督程度从二元（Guided 默认 / 无监督实验）扩展为**三档分级**。基于 v0.7.0 模式库累积，新增 `mode_recommendation` Insight 类型，让 AI 模式选择成为 Insight 驱动的工程化决策。
+> **主题**：把 AI Agent 执行监督程度从二元（Guided 默认 / 无监督实验）扩展为**三档分级**。基于前置 minor 模式库累积，新增 `mode_recommendation` Insight 类型，让 AI 模式选择成为 Insight 驱动的工程化决策。
 >
-> **前提**：v0.7.0（Insight 审核闭环 + 模式库 + CachePort 热路径）。
-> **核心 RFC**：[v0.7.1 AI Three Modes RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7.1-ai-three-modes-rfc.md) 📝 Draft
+> **前提**：~（scheduling 决定）（Insight 审核闭环 + 模式库 + CachePort 热路径）。
+> **核心 RFC**：[AI Three Modes RFC](../../.openxenon/pools/sprints/v0.7-emergence/design/v0.7.1-ai-three-modes-rfc.md) 📝 Draft
 
 ## 核心变化
 
@@ -92,13 +96,13 @@ state.guardLevel = guardLevel
 
 ```typescript
 ExecErrorCode = {
-  // ... v0.7.0 已有
+  // ... 已有
   OXNI_MODE_NOT_SUPPORTED: 'OXNI_MODE_NOT_SUPPORTED',
   OXNI_MODE_RECOMMENDATION_NOT_FOUND: 'OXNI_MODE_RECOMMENDATION_NOT_FOUND',
 }
 ```
 
-## 物理布局（v0.7.1 新增/修改）
+## 物理布局（本版本新增/修改）
 
 ### 新增
 
@@ -124,7 +128,7 @@ packages/cli/src/commands/
 ## 测试 / 构建结果（目标）
 
 - **typecheck**: 0 errors ✅
-- **测试**: ≥ 2,075 pass（v0.7.0 末 2,058 + 17）
+- **测试**: ≥ 2,075 pass（完成时 2,058 + 17）
 - **CLI build**: 集成 `--mode` flag
 
 ## 风险与缓解
@@ -135,16 +139,16 @@ packages/cli/src/commands/
 | 模式推荐误判 | 中 | 中 | 工程师显式 `oxn insight apply` 审批 |
 | 模式分布失衡（80% unmanaged） | 低 | 高 | Hall 协同健康度告警 |
 
-## v0.7.1 不做
+## 本版本不做
 
-- 模式自动切换（AI 自动升降级）→ v0.9
-- 模式机器学习 → v0.9
-- 多 AI Agent 协同分级 → v1.0
+- 模式自动切换（AI 自动升降级）→ 后续 major.9
+- 模式机器学习 → 后续 major.9
+- 多 AI Agent 协同分级 → 后续 major.0
 
 ## 迁移路径（开发者视角）
 
 ```bash
-# v0.7.0 → v0.7.1
+# 上一 minor → 本 minor
 bun install
 bun run build
 

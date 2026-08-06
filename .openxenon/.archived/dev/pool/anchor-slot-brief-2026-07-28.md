@@ -1,12 +1,14 @@
 ---
-version: 0.7.2
-date: 2027-01-15
-type: minor
+id: anchor-slot
+theme: Anchor slot 机制
+priority: medium
 status: planned
-rfc:
-  - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.2-anchor-slot-rfc.md
-adr:
-  - .openxenon/docs/adrs/0029-anchor-slot-doc-binding.md
+created-at: 2026-07-23
+scheduled-version: ~
+synced-at: 2026-07-27
+note: |
+  从 dev/versions/0-7-2-anchor-slot.md 迁移 (2026-07-27 grilling session)。
+  移除 version 绑定，进入规划池备选。
 ---
 
 # 0.7.2 — Anchor / Slot 文档双向绑定
