@@ -21,10 +21,12 @@ OpenXenon 是基于 Bun 构建的 OXO/IAP 控制引擎：`oxn` CLI + Daemon + �
 - 跨层引用规则：RFC / Doc / Dev 不依赖 Meta 层（CONTEXT-MAP.md 例外），守门在 pre-commit 自动跑
 - **版本号中性原则**：已落地的架构真理不带版本号——RFC/ADR/Dev 文档的 H1 标题必须 versionless；版本号只放：
   - `.changes/`（changelog 历史）
-  - `dev/versions/`（已绑版本 Roadmap，前瞻）
+  - `dev/versions/`（scheduling 后已绑版本 Roadmap；scheduling 时由 `dev/pool/` 转入并补 `version: 0.X.Y`）
+  - `dev/pool/`（未绑版本规划池，`scheduled-version: ~`；工程师 mental commit 入池）
   - `dev/meta/`（meta 文档）
   - `.openxenon/drafts/`（草稿层，可临时带版本）
   - **守门**：`bun scripts/check-versioned-docs.ts`（pre-commit 钩 RFC-0020..0023 严格门 + 其他 advisory）
+  - **生命周期**：pool → scheduling → versions → 版本转正 → `.archived/dev/versions/`
 
 ## 意图解析流程（4 步）
 

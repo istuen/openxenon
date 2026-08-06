@@ -2,7 +2,7 @@
 
 > **`dev/` 目录 = 维护者 + 贡献者写给开发者看的操作手册，不是产品文档。**
 >
-> 本目录由 RFC-0013 D3（版本相关文档三情态分离）建立 `dev/versions/` + `dev/fix/` 后形成。
+> 本目录由 RFC-0013 D3（版本相关文档三情态分离）建立 `dev/versions/` + `dev/fix/` 后形成；2026-07-27 grilling session 补充 `dev/pool/` 作为备选池；2026-08-06 dev-versionless-pooling 把 `dev/versions/` 中过早填充的 10 个 Roadmap 回滚到 `dev/pool/`。
 > 跨层引用规则见 [AGENTS.md](../AGENTS.md)。
 
 ## 当前内容
@@ -10,7 +10,9 @@
 | 文件/目录 | 用途 |
 |---|---|
 | `README.md` | 本文件——开发者操作指南入口 |
-| `versions/` | 前瞻性版本计划（Roadmap）——描述未来版本将包含什么；转正后归档。详见 [`versions/README.md`](./versions/README.md) |
+| `pool/` | 前瞻性未绑版本规划池——工程师 mental commit 入池；scheduling 时 `git mv` 到 `versions/`。详见 [`pool/README.md`](./pool/README.md) |
+| `versions/` | 已绑版本 Roadmap（scheduling 后才落地）——scheduling 时由 `dev/pool/` 转入并补 `version: 0.X.Y`；转正后归档。详见 [`versions/README.md`](./versions/README.md) |
+| `meta/` | 跨版本不变的 meta 文档（如版本统一、baseline 状态）。详见 [`meta/README.md`](./meta/README.md) |
 | `fix/` | 开发者面向的 bug 修复记录（Fix Record）——比 Version Fragment 更详细；详见 [`fix/README.md`](./fix/README.md) |
 
 ## 跨层引用规则

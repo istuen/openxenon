@@ -231,3 +231,9 @@ dev/                               (OXN 自身开发手册)
 - [ ] T5.1 check-versioned-docs.ts
 - [ ] T5.2 lefthook.yml hook
 - [ ] 最终 commit + push
+
+## 7. 演进（2026-08-06）
+
+> **本计划已演进**：原本规划 `dev/versions/` 长期持有版本 Roadmap，但 2026-08-06 工程师评估后认为 8 个版本号过早绑定反而是误导，scheduling 决定前应该让所有规划都在 `dev/pool/` 中待选。
+> **新计划**：`.openxenon/drafts/doc-dev-versionless-pooling.md`
+> **执行差异**：8 个 dev/versions/*.md 已回滚到 dev/pool/（去版本化），scheduling 时再 git mv 回来。

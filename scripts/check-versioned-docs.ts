@@ -40,6 +40,7 @@ const SCAN_DIRS = [
 const ALLOW_PATTERNS = [
   /^\.changes\//,
   /^dev\/versions\//,
+  /^dev\/pool\//, // 规划池可引用 RFC 路径中的版本号（如 v0.7-emergence/），不应被脚本拦截
   /^dev\/meta\//,
   /^\.openxenon\/drafts\//,
   /^docs\/_archive\//,
@@ -190,9 +191,12 @@ if (advisoryCount > 0) {
 
 console.log('版本号应放：')
 console.log('  - .changes/                  （changelog 片段）')
-console.log('  - dev/versions/              （已绑版本 Roadmap）')
+console.log('  - dev/versions/              （scheduling 后已绑版本 Roadmap；pool 转入时补 version 字段）')
+console.log('  - dev/pool/                  （未绑版本规划池，scheduled-version: ~）')
 console.log('  - dev/meta/                  （meta 文档）')
 console.log('  - .openxenon/drafts/         （草稿层）')
+console.log('')
+console.log('生命周期：pool → scheduling → versions → 版本转正 → .archived/dev/versions/')
 console.log('')
 console.log('豁免方式（特殊引用）：<!-- allow-version --> ... <!-- /allow-version -->')
 console.log('')

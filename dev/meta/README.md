@@ -16,8 +16,8 @@
 
 | 目录 | 情态 |
 |---|---|
-| `dev/versions/` | 已绑版本 Roadmap（前瞻）|
-| `dev/pool/` | 备选池（无版本）|
+| `dev/pool/` | 备选池（未绑版本，scheduling 前 entry 所在）|
+| `dev/versions/` | 已绑版本 Roadmap（scheduling 后 `git mv` 过来，含 `version: 0.X.Y`）|
 | `dev/fix/` | Fix Record（开发者面向）|
 | `dev/meta/` | meta 文档（跨版本不变的元信息）|
 
