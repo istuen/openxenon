@@ -32,6 +32,7 @@ export const SUB_TARGETS = [
   'promote-asset-blueprint',
   'promote-asset-roadmap',
   'promote-work',
+  'promote-draft-goal',
 ] as const
 export type SubTarget = (typeof SUB_TARGETS)[number]
 
@@ -40,6 +41,8 @@ export interface PromoteDraftInput {
   name: string
   /** 若指定 --target 显式覆盖 frontmatter promote-target */
   targetOverride?: DraftTarget | 'auto'
+  /** v0.5.0 D2: --target=goal 必填；落 dev/pool/<slug>.md */
+  goalSlug?: string
   /** 是否在 promote 完成后自动 archive 原 Draft */
   archiveAfter?: boolean
   /** v0.6.3 NG6: 实际写目标文件 (默认 false=v0.6.2-alpha.3 行为) */
@@ -85,6 +88,10 @@ export interface PromoteDraftError {
     | 'OXN_DRAFT_PROMOTE_TARGET_EXISTS'
     | 'OXN_DRAFT_PROMOTE_TARGET_DIR_CREATE_FAILED'
     | 'OXN_DRAFT_PROMOTE_RFC_NUMBER_INVALID'
+    | 'OXN_DRAFT_PROMOTE_GOAL_SLUG_REQUIRED'
+    | 'OXN_DRAFT_PROMOTE_GOAL_SLUG_INVALID'
+    | 'OXN_DRAFT_PROMOTE_GIT_BRANCH_FAILED'
+    | 'OXN_DRAFT_PROMOTE_GOAL_BRANCH_EXISTS'
   message: string
   suggestion?: string
   detail?: Record<string, unknown>
@@ -117,6 +124,7 @@ function parseFrontmatter(content: string): { frontmatter: Record<string, string
 function resolveSubTarget(target: DraftTarget, kind: DraftAssetKind | null): SubTarget {
   if (target === 'rfc') return 'promote-rfc'
   if (target === 'work') return 'promote-work'
+  if (target === 'goal') return 'promote-draft-goal'
   // target=asset
   if (!kind) throw new Error('Internal: target=asset with null kind should be rejected upstream')
   switch (kind) {
@@ -135,13 +143,18 @@ function resolveSubTarget(target: DraftTarget, kind: DraftAssetKind | null): Sub
   }
 }
 
-function computeTargetPath(target: DraftTarget, kind: DraftAssetKind | null, name: string): string {
+function computeTargetPath(target: DraftTarget, kind: DraftAssetKind | null, name: string, goalSlug?: string): string {
   const { join } = require('node:path') as typeof import('node:path')
   if (target === 'rfc') {
     return join('docs', 'rfc', 'zh-cn', `RFC-XXXX-${name}.md`)
   }
   if (target === 'work') {
     return join('.openxenon', 'works', name, 'work.md')
+  }
+  if (target === 'goal') {
+    // v0.5.0 D2: Goal 落 dev/pool/<slug>.md；slug 优先取 goalSlug 否则用 name
+    const slug = goalSlug ?? name
+    return join('dev', 'pool', `${slug}.md`)
   }
   // target=asset
   if (!kind) throw new Error('Internal: target=asset with null kind')
@@ -220,6 +233,8 @@ export function promoteDraft(
   const target = targetRaw as DraftTarget
   const kindRaw = frontmatter['promote-kind']
   let kind: DraftAssetKind | null = null
+  // v0.5.0 D2: target=goal 必带 --goal-slug（CLI 拒收裸 goal target）
+  let goalSlug: string | null = null
   if (target === 'asset') {
     if (!kindRaw) {
       return {
@@ -240,6 +255,27 @@ export function promoteDraft(
       }
     }
     kind = kindRaw as DraftAssetKind
+  } else if (target === 'goal') {
+    if (!input.goalSlug) {
+      return {
+        ok: false,
+        code: 'OXN_DRAFT_PROMOTE_GOAL_SLUG_REQUIRED',
+        message: 'promote-target=goal requires --goal-slug=<slug>.',
+        detail: { target, slug: input.goalSlug ?? null },
+        suggestion:
+          'Pass `--goal-slug=<kebab-case-slug>` matching Draft name; slug is Goal id + branch suffix (feat/goal-<slug>).',
+      }
+    }
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(input.goalSlug)) {
+      return {
+        ok: false,
+        code: 'OXN_DRAFT_PROMOTE_GOAL_SLUG_INVALID',
+        message: `--goal-slug="${input.goalSlug}" is invalid. Must match /^[a-z0-9][a-z0-9-]*$/ (kebab-case).`,
+        detail: { slug: input.goalSlug },
+        suggestion: 'Use kebab-case ASCII slug (e.g., "anchor-slot", "engine-closure").',
+      }
+    }
+    goalSlug = input.goalSlug
   } else if (kindRaw) {
     return {
       ok: false,
@@ -270,7 +306,7 @@ export function promoteDraft(
 
   // ── Phase 5: dispatch-target ──
   const subTarget = resolveSubTarget(target, kind)
-  const targetPath = computeTargetPath(target, kind, input.name)
+  const targetPath = computeTargetPath(target, kind, input.name, goalSlug ?? undefined)
 
   // v0.6.3 NG6: 实际写文件
   let commitInfo: { filePath: string; bytesWritten: number; created: boolean } | undefined
@@ -288,6 +324,7 @@ export function promoteDraft(
       force: input.force,
       targetDirOverride: input.targetDirOverride,
       config,
+      goalSlug: goalSlug ?? undefined,
     })
     if (!dispatchResult.ok) {
       return dispatchResult

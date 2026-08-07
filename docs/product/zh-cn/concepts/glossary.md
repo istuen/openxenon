@@ -2,7 +2,7 @@
 title: 术语表
 entity: glossary
 generated-by: scripts/sync-domain-glossary.ts
-synced-at: 2026-08-06
+synced-at: 2026-08-07
 ---
 
 # 术语表
@@ -157,6 +157,16 @@ v0.6.2-alpha.3 起支持 2 种创建模式：
 关键约束：v0.6.2-alpha.3 后 Draft 可选携带 frontmatter hint（`promote-target` / `promote-kind`），但仍不是 Asset，不参与 Asset 生命周期。
 生命周期：create → (promote → archive | discard) | archive | discard。
 
+### DraftOrigin
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#draftorigin) — v0.4.0（D1 2026-08-07）起：Draft producer 标识字段，frontmatter `origin: human | insight`，默认 `human`。
+5 类原 Intent Pool 类型 → 3 DraftType 映射由 oxn-insight-domain.md §InsightDraftMapping 锁定；
+origin 字段由 Insight 注入，不允许工程师从 insight 退回 human（避免追溯链断裂）。
+origin 不影响 promote 路由（仍是 rfc/asset/work 3 类），仅标识 producer；
+list 可按 `oxn draft list --origin=insight` 过滤（CLI v0.4.0 新增 flag）。
+Origin 不参与 AssetLifecycle（不参与 citations）；仅 Draft 内部 metadata。
+
 ### DraftPromoteLifecycle
 
 
@@ -193,9 +203,11 @@ frontmatter：`entity: skeleton`（v0.6.3 Q1 独立 entity）+ `target-entity`�
 ### DraftTarget
 
 
-- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#drafttarget) — Draft Promote 路由去向——3 值枚举（Q-T1）：
-物理载体：Draft 文件 frontmatter `promote-target: <rfc|asset|work>`（v0.6.2-alpha.3 新增，可选）。
-路由规则：详见 .openxenon/assets/domains/oxn-draft-promote-domain.md §Invariants。
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#drafttarget) — Draft Promote 路由去向——4 值枚举（v0.5.0 D2 起；Q-T1 + D2）：
+Goal = 规划期承诺单元；与 DraftTarget=work 区别：work=IAP 执行（多轮），goal=IAP 准备（单 commitment）。
+physical isolation：dev/pool/ 是 dev/ 元层（v0.6.2-alpha.2 起治理）；.openxenon/works/ 是 .openxenon 边界。
+物理载体：Draft 文件 frontmatter `promote-target: <rfc|asset|work|goal>`（v0.6.2-alpha.3 起，可选）。
+路由规则：详见 oxn-draft-promote-domain.md §TargetDispatchTable（v0.5.0 起 8 sub-target）。
 
 ### DraftType
 
@@ -257,13 +269,46 @@ Draft 命名空间与 Asset 命名空间分离（drafts/ vs assets/）：即使�
 
 
 - [oxn-insight-domain](/openxenon/assets/domains/oxn-insight-domain.md#insight) — Insight 是 E4 涌现层；整体论 vs 前三层还原论；只输出协作态势信号（边界使用/触碰/Loop 收敛/退出模式），不输出代码质量评分；永不自动回写 Asset。
+v0.3.0（D1）：Insight **经 Draft 通路**写入（origin=insight），不再经 Intent Pool v3 5 池机制。review/discard 由工程师对 Draft 生命周期决定。
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#insight) — 洞察 IAP 并提供涌现的可能性。具体领域见 [`oxn-insight-domain`](./oxn-insight-domain.md)。
 研讨厅，人机协作范围内的中央枢纽。
+
+### InsightDraftMapping
+
+
+- [oxn-insight-domain](/openxenon/assets/domains/oxn-insight-domain.md#insightdraftmapping) — Insight 输出类型 → DraftType 映射（D1 锁定）：
+| 原 Intent Pool 类型 | 新 DraftType | Draft 前缀 | 适用场景 |
+|---|---|---|---|
+| research | report | report- | 调研报告（不限于 research，可双向） |
+| audit | report | report- | 审计 / 边界检查（合并为报告） |
+| journal | report | report- | 日志 / 复盘（合并为报告） |
+| design | design | design- | 设计稿（直接对应） |
+| issue | issue | issue- | 问题记录（直接对应） |
+零信息损失；frontmatter `origin: insight` 标识 producer；`promote-target` 由工程师在 review 时选定。
 
 ### Intent
 
 
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#intent) — 人机协作的软件目标，AI Agent 对齐的工作对象。
+
+### IntentPoolDeprecated
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#intentpooldeprecated) — Intent Pool v3 已退役（v0.4.0 / D1 2026-08-07）—— 设计稿 .openxenon/drafts/design-version-iteration-redesign.md D1 决策。
+历史：5 池模型（research / design / issue / audit / journal）由 Insight 写入 `.openxenon/pools/&lt;pool&gt;/&lt;slug&gt;/frozen.json`；
+当前：D1 后 Insight 经 Draft 通路写入（origin=insight），详见 oxn-insight-domain.md §InsightDraftMapping + oxn-draft-domain.md §DraftOrigin。
+CLI 退役：`oxn pool {create,list,review,approve,reject}` 全部抛 `OXN_POOL_DEPRECATED`（兼容期 1 版本）。
+与 PlanningPool（dev/pool/）不同：PlanningPool = Goal 概念正名候选（D4 待后续 Wave），与 Intent Pool 是不同层次。
+配套：CLI 退役 1 版本后彻底移除 pool 命令代码 + 引擎层 `writePoolEntry` 等 util。
+
+### IntentPoolRetired
+
+
+- [oxn-insight-domain](/openxenon/assets/domains/oxn-insight-domain.md#intentpoolretired) — Intent Pool v3 已退役（v0.3.0 / D1 2026-08-07）。
+历史背景：5 池模型（research / design / issue / audit / journal）覆盖 Insight 输出类型；
+当前路由：5 类收敛为 3 DraftType（report / issue / design），由 frontmatter origin=insight 标识 producer。
+物理路径 `.openxenon/pools/` 从未创建；CLI `oxn pool {create,list,review,approve,reject}` 全部抛 `OXN_POOL_DEPRECATED`。
+衍生：5 类 → 3 类零信息损失映射见 type-mapping。
 
 ### InterferenceFlag
 
@@ -324,6 +369,34 @@ ADR-0089 D1。
 
 
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#openxenon) — 工程师定义 AI Agent 协作边界的工具（slogan）。正定义：工程师通过 OXN 定义 Asset，作为 AI Agent 在 Work 约束的协作边界，由 Proof 验证其成果。以 Skills 形式注入 AI Agent 工作台（Cursor / OpenCode / Codex / Claude Code）。OXN 本身不是 AI Agent，而是 AI Agent 之上的工具层。
+
+### operate
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#operate) — Blueprint slot 内执行参照数组（`## Boundaries ### &lt;slot&gt; - operate: [name...]`）；
+声明 AI Agent 在该 slot 应运行的 Operation 名列表。work-context-builder 在 lock 期
+解析 BlueprintIR.boundaries[].operate → 匹配 Blueprint 引用的 Stack tool.operations
+→ 注入 WorkContextResult.slotOperations（只到 name，不注入完整 command）。
+AI Agent 从 Task context 看到 operation 名 → 从已注入的 stackTools 解析 command → 执行。
+语义：**参照**（声明 AI 该跑什么），**不是门禁**（AI 可自主决定跑或不跑，
+如有信心跳过 test；submit 后 observe Probe 独立验证）。与 observe 正交：
+operate = 执行参照（AI 跑），observe = 验证参照（OXN 跑）。operate 纳入 PlanLock
+（随 Blueprint blueprintsHash 锁），drift 检测与现有机制一致。
+来源：design-stack-operation-referent Draft（2026-08-07 grilling）。
+
+### Operation
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#operation) — Stack Tool 的命名调用声明（name + command template + desc），住进 Stack 文件
+`## Tools ### &lt;tool&gt;` 下的 `operations` 子段。Blueprint slot 通过 `operate: [op-name...]`
+数组引用 Operation 名；work-context-builder 在 lock 期解析为可消费快照注入
+WorkContextResult，让 AI Agent 在 Task 内零推理拿到应运行的命令。
+与 Probe（验证参照）正交：Operation = 执行参照（AI Agent 跑），Probe = 验证参照
+（OXN 跑）。设计上独立，实践中常成对（如 `test` Operation + `test-pass` Probe）。
+命名独立：Operation 用动词原形（test/lint/build），Probe 用结果态
+（test-pass/lint-check/ts-compiles）。operate 是参照不是门禁（与 ADR-0066/0067 一致），
+验证由 observe Probe 独立承担。
+来源：design-stack-operation-referent Draft（2026-08-07 grilling）。
 
 ### outcome
 
@@ -460,8 +533,8 @@ v0.6.2-alpha.3 落地 7 个 skeleton + 4 阶段 router + 3 target dispatch。
 ### PromoteRoute
 
 
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promoteroute) — Draft → Target 路由映射表——3 条规则（Q-T1）：
-物理载体：frontmatter `promote-target: <rfc|asset|work>` + `promote-kind: <5 AssetKind>`（仅 asset 时需要）。
+- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promoteroute) — Draft → Target 路由映射表——4 条规则（v0.2.0 D2；Q-T1 + D2）：
+物理载体：frontmatter `promote-target: <rfc|asset|work|goal>` + `promote-kind: <5 AssetKind>`（仅 asset 时需要）。
 默认值：`--target auto` 模式下，若未声明则报错 `OXN_DRAFT_PROMOTE_TARGET_MISSING`。
 
 ### Proof
@@ -561,7 +634,7 @@ Supersede 走新 RFC 标 superseded-by / supersedes。RFC-0010 锁定（meta-RFC
 ### TargetDispatchTable
 
 
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#targetdispatchtable) — 路由 translate 表——把 Draft target 语法转成 promote-target-aware-workflow Blueprint 内部 task name：
+- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#targetdispatchtable) — 路由 translate 表——把 Draft target 语法转成 promote-target-aware-workflow Blueprint 内部 task name（v0.2.0 D2 起 8 行）：
 | promote-target | promote-kind | 内部 task |
 |---|---|---|
 | rfc | (none) | `promote-rfc` |
@@ -571,6 +644,7 @@ Supersede 走新 RFC 标 superseded-by / supersedes。RFC-0010 锁定（meta-RFC
 | asset | blueprint | `promote-asset-blueprint` |
 | asset | roadmap | `promote-asset-roadmap` |
 | work | (none) | `promote-work` |
+| **goal**（v0.2.0 D2 新增） | (none) | **`promote-draft-goal`** |
 物理载体：promote-target-aware-workflow Blueprint 的 H2 `## Tasks` 段，每条 task 一个 target。
 
 ### Task

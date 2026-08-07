@@ -52,6 +52,10 @@ export interface DispatchInput {
       workDir?: string
     }
   } | null
+  /** v0.5.0 D2: target=goal 必填（promote 阶段校验后传入） */
+  goalSlug?: string
+  /** v0.5.0 D2: 强制 auto git checkout（默认 true；仅 target=goal 有效） */
+  gitBranchAuto?: boolean
 }
 
 export interface DispatchResult {
@@ -64,6 +68,8 @@ export interface DispatchResult {
   bytesWritten: number
   /** 是否为新建（true）or 覆盖（false） */
   created: boolean
+  /** v0.5.0 D2: auto 创建的 branch 名 (仅 target=goal) */
+  branch?: string | null
 }
 
 export interface DispatchError {
@@ -72,6 +78,8 @@ export interface DispatchError {
     | 'OXN_DRAFT_PROMOTE_TARGET_EXISTS'
     | 'OXN_DRAFT_PROMOTE_TARGET_DIR_CREATE_FAILED'
     | 'OXN_DRAFT_PROMOTE_RFC_NUMBER_INVALID'
+    | 'OXN_DRAFT_PROMOTE_GIT_BRANCH_FAILED'
+    | 'OXN_DRAFT_PROMOTE_GOAL_BRANCH_EXISTS'
   message: string
   suggestion?: string
 }
@@ -221,11 +229,105 @@ function buildWorkTarget(
   return { targetPath, content }
 }
 
+// ──────────────── v0.5.0 D2: Goal target ────────────────
+
+function buildGoalFrontmatter(frontmatter: Record<string, string>, goalSlug: string, sourceDraftPath?: string): string {
+  const today = new Date().toISOString().slice(0, 10)
+  const branchName = `feat/goal-${goalSlug}`
+  const fields: Record<string, string> = {
+    id: goalSlug,
+    theme: frontmatter.theme || 'TODO_<theme>',
+    priority: frontmatter.priority || 'medium',
+    status: 'planned',
+    'created-at': frontmatter['created-at'] || today,
+    'scheduled-version': '~',
+    'synced-at': today,
+    branch: branchName,
+    source: 'draft',
+  }
+  if (sourceDraftPath) {
+    fields['source-ref'] = sourceDraftPath
+  }
+  return Object.entries(fields)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('\n')
+}
+
+function buildGoalTarget(
+  projectRoot: string,
+  goalSlug: string,
+  frontmatter: Record<string, string>,
+  body: string,
+  targetDirOverride?: string,
+): TargetSpec {
+  // v0.5.0 D2: targetDirOverride > default dev/pool/
+  const dirRel = targetDirOverride || join('dev', 'pool')
+  const targetPath = join(projectRoot, dirRel, `${goalSlug}.md`)
+  const fm = buildGoalFrontmatter(frontmatter, goalSlug)
+  const content = `---\n${fm}\n---\n\n${body.trim()}\n`
+  return { targetPath, content }
+}
+
+/**
+ * v0.5.0 D2: auto `git checkout -b feat/goal-<slug> dev` (or main if dev 不存在).
+ * 分支已存在报 OXN_DRAFT_PROMOTE_GOAL_BRANCH_EXISTS。
+ */
+function ensureGoalBranch(
+  projectRoot: string,
+  slug: string,
+):
+  | {
+      ok: true
+      branch: string
+    }
+  | DispatchError {
+  const branchName = `feat/goal-${slug}`
+  // 1. 检查分支是否已存在
+  const checkExists = Bun.spawnSync({
+    cmd: ['git', 'rev-parse', '--verify', '--quiet', `refs/heads/${branchName}`],
+    cwd: projectRoot,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+  })
+  if (checkExists.exitCode === 0) {
+    return {
+      ok: false,
+      code: 'OXN_DRAFT_PROMOTE_GOAL_BRANCH_EXISTS',
+      message: `Branch ${branchName} already exists.`,
+      suggestion: `Use existing branch (\`git checkout ${branchName}\`) or remove with \`git branch -D ${branchName}\` then retry.`,
+    }
+  }
+
+  // 2. 选 base branch：dev 优先；不存在用 main
+  const hasDev =
+    Bun.spawnSync({
+      cmd: ['git', 'rev-parse', '--verify', '--quiet', 'refs/heads/dev'],
+      cwd: projectRoot,
+    }).exitCode === 0
+  const base = hasDev ? 'dev' : 'main'
+
+  // 3. checkout -b
+  const result = Bun.spawnSync({
+    cmd: ['git', 'checkout', '-b', branchName, base],
+    cwd: projectRoot,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+  })
+  if (result.exitCode !== 0) {
+    return {
+      ok: false,
+      code: 'OXN_DRAFT_PROMOTE_GIT_BRANCH_FAILED',
+      message: `git checkout -b ${branchName} ${base} failed: ${result.stderr?.toString() ?? 'unknown'}`,
+      suggestion: 'Verify git repo state and base branch access.',
+    }
+  }
+  return { ok: true, branch: branchName }
+}
+
 // ──────────────── 公开 API ────────────────
 
 export function dispatchPromote(input: DispatchInput): DispatchResult | DispatchError {
   let spec: TargetSpec & { rfcNumber?: string }
   let rfcNumber: string | null = null
+  let goalBranch: string | null = null
 
   const cfg = input.config?.draftPromote
   if (input.target === 'rfc') {
@@ -256,6 +358,22 @@ export function dispatchPromote(input: DispatchInput): DispatchResult | Dispatch
       input.draftBody,
       input.targetDirOverride,
       cfg?.workDir,
+    )
+  } else if (input.target === 'goal') {
+    // v0.5.0 D2: target=goal 必带 goalSlug（已上游校验）
+    if (!input.goalSlug) {
+      return {
+        ok: false,
+        code: 'OXN_DRAFT_PROMOTE_RFC_NUMBER_INVALID',
+        message: 'target=goal requires goalSlug (should be checked upstream)',
+      }
+    }
+    spec = buildGoalTarget(
+      input.projectRoot,
+      input.goalSlug,
+      input.draftFrontmatter,
+      input.draftBody,
+      input.targetDirOverride,
     )
   } else {
     return {
@@ -311,11 +429,30 @@ export function dispatchPromote(input: DispatchInput): DispatchResult | Dispatch
     }
   }
 
+  // 4. v0.5.0 D2: target=goal 时 auto git checkout -b feat/goal-<slug> dev
+  // 失败回滚：删除已创建文件 + 不留分支
+  if (input.target === 'goal' && input.goalSlug && input.gitBranchAuto !== false) {
+    const branchResult = ensureGoalBranch(input.projectRoot, input.goalSlug)
+    if (!branchResult.ok) {
+      // 回滚：删除已创建文件
+      if (created) {
+        try {
+          unlinkSync(absTargetPath)
+        } catch {
+          // ignore cleanup failure
+        }
+      }
+      return branchResult
+    }
+    goalBranch = branchResult.branch
+  }
+
   return {
     ok: true,
     targetPath: absTargetPath,
     rfcNumber,
     bytesWritten: Buffer.byteLength(spec.content, 'utf-8'),
     created,
+    branch: goalBranch,
   }
 }

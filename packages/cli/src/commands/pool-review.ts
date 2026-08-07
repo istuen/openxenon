@@ -1,121 +1,30 @@
 // =============================================================================
-// pool-review.ts (v0.5 PR-D)
+// pool-review.ts — DEPRECATED (v0.4.0 D1 2026-08-07)
 //
-// 读取 audit pool 条目 + 渲染为人类可读视图
-// 注：仅读操作，不修改任何状态
+// Intent Pool v3 已退役—— review 闸门已废弃，决策走 `oxn draft promote --target=<rfc|asset|work>`。
+// 此 CLI 兼容期 1 版本后随入口 `pool.ts` 移除；现仅抛 `OXN_POOL_DEPRECATED` 引导迁移。
 // =============================================================================
-
-import { join } from 'node:path'
-import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
+// @ts-nocheck --deprecated
 import { defineCommand } from 'citty'
-import { output, outputUserInputError } from './output'
-import { safeValidateImprovementSuggestion, type ImprovementSuggestion } from '@openxenon/engine/kernel'
-
-const AUDIT_POOL = 'audit'
-
-function findAuditEntry(
-  projectRoot: string,
-  slug: string,
-): {
-  mdPath: string
-  frozenPath: string
-  body: string
-} | null {
-  const poolsDir = join(projectRoot, '.openxenon', 'pools')
-  const mdPath = join(poolsDir, `${slug}.md`)
-  const frozenPath = join(poolsDir, slug, 'frozen.json')
-
-  // 也尝试在 audit 子目录找
-  const auditMdPath = join(poolsDir, AUDIT_POOL, `${slug}.md`)
-  const auditFrozenPath = join(poolsDir, AUDIT_POOL, slug, 'frozen.json')
-
-  if (existsSync(auditMdPath)) {
-    return {
-      mdPath: auditMdPath,
-      frozenPath: auditFrozenPath,
-      body: readFileSync(auditMdPath, 'utf-8'),
-    }
-  }
-  if (existsSync(mdPath)) {
-    return {
-      mdPath,
-      frozenPath,
-      body: readFileSync(mdPath, 'utf-8'),
-    }
-  }
-  return null
-}
-
-function renderReviewHuman(slug: string, body: string, frozen: ImprovementSuggestion | null): string {
-  const lines: string[] = []
-  lines.push(`=== Audit Pool Review: ${slug} ===`)
-  lines.push('')
-
-  if (frozen) {
-    const m = frozen.metadata
-    lines.push(`Target: ${m.target}:${m.targetName}  (${m.targetPath})`)
-    lines.push(`Kind: ${m.kind}`)
-    if (m.source) lines.push(`Source: ${m.source}`)
-    lines.push(`Created: ${frozen.frozenAt}`)
-    lines.push('')
-    lines.push('--- Body ---')
-    lines.push(body)
-    lines.push('--- End Body ---')
-    lines.push('')
-    lines.push('--- Patch (will be applied on approve) ---')
-    lines.push(m.patch)
-    lines.push('--- End Patch ---')
-  } else {
-    lines.push('(frozen.json not found or invalid schema)')
-    lines.push('')
-    lines.push(body)
-  }
-
-  return lines.join('\n')
-}
+import { outputUserInputError } from './output'
 
 export default defineCommand({
-  meta: { name: 'review', description: 'Read and display an audit pool entry' },
-  args: {
-    slug: { type: 'positional', required: true, description: 'Audit pool entry slug' },
-    '--json': { type: 'boolean', description: 'JSON output' },
+  meta: {
+    name: 'pool-review',
+    description: '[DEPRECATED v0.4.0] Intent Pool v3 已退役，请改用 oxn draft',
   },
-  run({ args }) {
-    const format = args.json === true ? 'json' : 'human'
-    const slug = args.slug as string
-    const projectRoot = process.cwd()
-
-    const entry = findAuditEntry(projectRoot, slug)
-    if (!entry) {
-      return outputUserInputError('OXN_POOL_ENTRY_NOT_FOUND', `Audit pool entry not found: ${slug}`, {
-        suggestion: 'Run `oxn pool list` to see existing entries.',
-        format,
-      })
-    }
-
-    let frozen: ImprovementSuggestion | null = null
-    if (existsSync(entry.frozenPath)) {
-      try {
-        const raw = JSON.parse(readFileSync(entry.frozenPath, 'utf-8'))
-        const v = safeValidateImprovementSuggestion(raw)
-        if (v.success) frozen = v.data
-      } catch {
-        /* ignore */
-      }
-    }
-
-    if (format === 'json') {
-      output({
-        ok: true,
-        data: {
-          slug,
-          body: entry.body,
-          frozen,
-        },
-        human: renderReviewHuman(slug, entry.body, frozen),
-      })
-    } else {
-      console.log(renderReviewHuman(slug, entry.body, frozen))
-    }
+  args: {
+    slug: { type: 'positional', required: true, description: '(deprecated)' },
+    '--json': { type: 'boolean', description: '(deprecated)' },
+  },
+  run() {
+    outputUserInputError(
+      'OXN_POOL_DEPRECATED',
+      'Intent Pool v3 已退役（v0.4.0 / D1 2026-08-07）—— 5 池机制吸收进 Draft（origin=insight）。',
+      {
+        suggestion:
+          '改用 `oxn draft list --origin=insight` + `oxn draft show <slug>` 检视；决策走 `oxn draft promote --target=<rfc|asset|work>` 或 `oxn draft archive`。',
+      },
+    )
   },
 })

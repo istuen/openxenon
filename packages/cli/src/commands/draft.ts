@@ -201,15 +201,65 @@ export default defineCommand({
     }),
 
     list: defineCommand({
-      meta: { name: 'list', description: '列出 .openxenon/drafts/ 下所有 Draft（默认仅 active）' },
+      meta: {
+        name: 'list',
+        description: '列出 .openxenon/drafts/ 下所有 Draft（默认仅 active；D4.6 加 --inactive/--older-than 过滤）',
+      },
       args: {
         'include-archived': { type: 'boolean', description: '同时列出 .archived/ 下的 Draft' },
+        inactive: {
+          type: 'boolean',
+          description: '仅列 inactive drafts（mtime > 90d；D4.6 cleanup cycle）',
+        },
+        'older-than': {
+          type: 'string',
+          description: '与 --inactive 配合使用；格式 N d（天）或 N w（周）。默认 90d',
+        },
       },
       async run(ctx) {
         const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
         const includeArchived = ctx.args['include-archived'] === true
+        const inactive = ctx.args.inactive === true
+        const olderThanRaw = ctx.args['older-than'] as string | undefined
+        let olderThanDays = 90
+        if (olderThanRaw != null && olderThanRaw !== '') {
+          const m = olderThanRaw.match(/^(\d+)([dDwW])$/)
+          if (!m) {
+            outputUserInputError(
+              'OXN_DRAFT_OLDER_THAN_INVALID',
+              `Invalid --older-than "${olderThanRaw}". Expected format: N d | N w (e.g. 90d, 12w).`,
+            )
+            return
+          }
+          const n = parseInt(m[1] ?? '90', 10)
+          const unit = (m[2] ?? 'd').toLowerCase()
+          olderThanDays = unit === 'w' ? n * 7 : n
+        }
         const config = loadDraftConfig()
-        const result = listDrafts({ projectRoot: getProjectRoot(), includeArchived }, config)
+        let result = listDrafts({ projectRoot: getProjectRoot(), includeArchived }, config)
+
+        if (inactive) {
+          const threshold = Date.now() - olderThanDays * 24 * 60 * 60 * 1000
+          result.drafts = result.drafts.filter((d) => Date.parse(d.mtime) < threshold)
+          if (format === 'json') {
+            return output(
+              {
+                ok: true,
+                data: {
+                  drafts: result.drafts,
+                  count: result.drafts.length,
+                  filter: { inactive: true, olderThanDays },
+                },
+                human: `Found ${result.drafts.length} inactive drafts (older than ${olderThanDays}d)`,
+              },
+              format,
+            )
+          }
+          console.log(`Found ${result.drafts.length} inactive drafts (older than ${olderThanDays}d):`)
+          console.log(formatHumanList(result.drafts))
+          return
+        }
+
         if (format === 'json') {
           return output(
             {

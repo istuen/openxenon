@@ -1,93 +1,36 @@
 // =============================================================================
-// pool-create.ts (v0.2 T13 + v0.5 PR-D)
+// pool-create.ts — DEPRECATED (v0.4.0 D1 2026-08-07)
 //
-// 扩展：--from insight 选项
-//   - 读 stdin 的 JSON（CrossProofInsight 或 PipelineInsight）
-//   - 用 suggestion-generator 提取结构化建议
-//   - 写入 audit pool entry（含 patch metadata）
+// Intent Pool v3 已退役——5 池机制（research/design/issue/audit/journal）吸收进 Draft（origin=insight），
+// type mapping 见 oxn-insight-domain.md §InsightDraftMapping。
+// 此 CLI 兼容期 1 版本后随入口 `pool.ts` 移除；现仅抛 `OXN_POOL_DEPRECATED` 引导迁移。
 // =============================================================================
-
-import { join } from 'node:path'
-import { mkdirSync, readFileSync } from '@openxenon/engine/infra/filesystem'
+// @ts-nocheck --deprecated
 import { defineCommand } from 'citty'
-import { output } from './output'
-import { writePoolEntry } from '@openxenon/engine/infra/frozen/pool-writer'
-import type { IntentPool } from '@openxenon/engine/infra/frozen/pool-writer'
-import { generateSuggestionFromInsight } from '@openxenon/engine/infra/insight/suggestion-generator'
-
-const VALID_POOLS: IntentPool[] = ['research', 'design', 'issue', 'audit', 'journal']
+import { outputUserInputError } from './output'
 
 export default defineCommand({
-  meta: { name: 'pool-create', description: 'Create a new Intent Pool entry' },
-  args: {
-    pool: { type: 'string', required: true, description: 'Pool type: research/design/issue/audit/journal' },
-    slug: { type: 'string', description: 'Unique kebab-case slug (auto-generated if --from insight)' },
-    title: { type: 'string', description: 'Entry title (auto-generated if --from insight)' },
-    content: { type: 'string', description: 'Markdown content (or empty for template)' },
-    'from-insight': { type: 'string', description: 'Path to insight JSON file (v0.5 PR-D)' },
-    'target-domain': {
-      type: 'string',
-      description: 'Target domain name (required with --from-insight)',
-    },
-    'insight-kind': {
-      type: 'string',
-      description: 'Insight type: pipeline | cross-proof (default: pipeline)',
-    },
+  meta: {
+    name: 'pool-create',
+    description: '[DEPRECATED v0.4.0] Intent Pool v3 已退役，请改用 oxn draft',
   },
-  async run({ args }) {
-    const pool = args.pool as string
-    const projectRoot = process.cwd()
-
-    if (!VALID_POOLS.includes(pool as IntentPool)) {
-      throw new Error(`Invalid pool "${pool}". Must be one of: ${VALID_POOLS.join(', ')}`)
-    }
-
-    // ─── --from insight 分支（v0.5 PR-D） ───
-    if (args['from-insight']) {
-      const insightPath = args['from-insight'] as string
-      const targetDomain = args['target-domain'] as string | undefined
-      if (!targetDomain) {
-        throw new Error('--target-domain is required with --from-insight')
-      }
-      const insightKind = ((args['insight-kind'] as string) ?? 'pipeline') as 'pipeline' | 'cross-proof'
-
-      const insightJson = readFileSync(insightPath, 'utf-8')
-      const draft = generateSuggestionFromInsight(insightJson, targetDomain, insightKind)
-      if (!draft) {
-        throw new Error(`No actionable suggestion found in insight for domain "${targetDomain}" (kind=${insightKind})`)
-      }
-
-      const poolDir = join(projectRoot, '.openxenon', 'pools', pool)
-      mkdirSync(join(poolDir, draft.slug), { recursive: true })
-
-      const result = await writePoolEntry(projectRoot, {
-        pool: pool as IntentPool,
-        slug: draft.slug,
-        title: draft.title,
-        content: draft.content,
-        metadata: draft.meta as unknown as Record<string, unknown>,
-      })
-      output({ ok: true, fromInsight: true, ...result })
-      return
-    }
-
-    // ─── 标准分支（v0.2 T13） ───
-    const slug = args.slug as string
-    const title = args.title as string
-    const content = (args.content as string) ?? ''
-
-    if (!slug) throw new Error('--slug is required (or use --from-insight)')
-    if (!title) throw new Error('--title is required (or use --from-insight)')
-
-    const poolDir = join(projectRoot, '.openxenon', 'pools', pool)
-    mkdirSync(join(poolDir, slug), { recursive: true })
-
-    const result = await writePoolEntry(projectRoot, {
-      pool: pool as IntentPool,
-      slug,
-      title,
-      content: content || '## Why\n\n## How\n\n',
-    })
-    output({ ok: true, ...result })
+  args: {
+    pool: { type: 'string', required: true, description: '(deprecated)' },
+    slug: { type: 'string', description: '(deprecated)' },
+    title: { type: 'string', description: '(deprecated)' },
+    content: { type: 'string', description: '(deprecated)' },
+    'from-insight': { type: 'string', description: '(deprecated)' },
+    'target-domain': { type: 'string', description: '(deprecated)' },
+    'insight-kind': { type: 'string', description: '(deprecated)' },
+  },
+  async run() {
+    outputUserInputError(
+      'OXN_POOL_DEPRECATED',
+      'Intent Pool v3 已退役（v0.4.0 / D1 2026-08-07）—— 5 池机制（research/design/issue/audit/journal）吸收进 Draft（origin=insight）。',
+      {
+        suggestion:
+          '改用 `oxn draft create --prefix=<report|issue|design> [--origin=insight]`。此命令兼容 1 版本后彻底移除。',
+      },
+    )
   },
 })

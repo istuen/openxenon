@@ -1,33 +1,26 @@
 // =============================================================================
-// pool-list.ts (v0.2 T13)
+// pool-list.ts — DEPRECATED (v0.4.0 D1 2026-08-07)
+//
+// Intent Pool v3 已退役。请改用 `oxn draft list [--origin=insight]`。
+// 此 CLI 兼容期 1 版本后随入口 `pool.ts` 移除；现仅抛 `OXN_POOL_DEPRECATED` 引导迁移。
 // =============================================================================
-import { join } from 'node:path'
-import { readdirSync } from '@openxenon/engine/infra/filesystem'
+// @ts-nocheck --deprecated
 import { defineCommand } from 'citty'
-import { output } from './output'
-import type { IntentPool } from '@openxenon/engine/infra/frozen/pool-writer'
-
-const POOLS: IntentPool[] = ['research', 'design', 'issue', 'audit', 'journal']
+import { outputUserInputError } from './output'
 
 export default defineCommand({
-  meta: { name: 'pool-list', description: 'List all pools and their entries' },
-  args: { pool: { type: 'string', description: 'Filter to specific pool' } },
-  async run({ args }) {
-    const root = join(process.cwd(), '.openxenon', 'pools')
-    const limit = args.pool as string | undefined
-    const result: Array<{ pool: string; entries: string[]; count: number }> = []
-
-    for (const pool of POOLS) {
-      if (limit && pool !== limit) continue
-      const poolDir = join(root, pool)
-      let entries: string[] = []
-      try {
-        entries = readdirSync(poolDir).filter((f) => f.endsWith('.md'))
-      } catch {
-        entries = []
-      }
-      result.push({ pool, entries, count: entries.length })
-    }
-    output({ ok: true, pools: result })
+  meta: {
+    name: 'pool-list',
+    description: '[DEPRECATED v0.4.0] Intent Pool v3 已退役，请改用 oxn draft',
+  },
+  args: { pool: { type: 'string', description: '(deprecated)' } },
+  async run() {
+    outputUserInputError(
+      'OXN_POOL_DEPRECATED',
+      'Intent Pool v3 已退役（v0.4.0 / D1 2026-08-07）—— 5 池机制吸收进 Draft（origin=insight）。',
+      {
+        suggestion: '改用 `oxn draft list --origin=insight` 列出 Insight 产出 Draft。此命令兼容 1 版本后彻底移除。',
+      },
+    )
   },
 })

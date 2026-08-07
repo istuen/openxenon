@@ -171,8 +171,8 @@ describe('forkDraftSkeleton', () => {
     teardownSkeletonDir()
   })
 
-  test('12. 3 target 枚举完整', () => {
-    expect(DRAFT_TARGETS).toEqual(['rfc', 'asset', 'work'])
+  test('12. 4 target 枚举完整（v0.5.0 D2 goal 新增）', () => {
+    expect(DRAFT_TARGETS).toEqual(['rfc', 'asset', 'work', 'goal'])
     expect(ASSET_KINDS).toEqual(['domain', 'workflow', 'stack', 'blueprint', 'roadmap'])
   })
 })

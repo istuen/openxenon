@@ -207,4 +207,64 @@ describe('promoteDraft', () => {
     expect(result.phases.dispatch.workCreated).toBe(false)
     teardown()
   })
+
+  // ──────────────── v0.5.0 D2: target=goal ────────────────
+
+  test('15. promote-target=goal 路由到 promote-draft-goal subTarget（仅路径解析，不 commit）', () => {
+    setup()
+    writeDraft(
+      'engine-closure',
+      '---\nentity: domain\npromote-target: goal\ntheme: engine-closure-self-verify\npriority: critical\n---\n# Goal\n\n## Intent\nverify engine closure.\n',
+    )
+    const result = promoteDraft(
+      { projectRoot: FIXTURE_PROJECT, name: 'engine-closure', goalSlug: 'engine-closure-self-verify' },
+      null,
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.target).toBe('goal')
+    expect(result.subTarget).toBe('promote-draft-goal')
+    expect(result.targetPath).toBe(join('dev', 'pool', 'engine-closure-self-verify.md'))
+    teardown()
+  })
+
+  test('16. promote-target=goal 但缺 --goal-slug → OXN_DRAFT_PROMOTE_GOAL_SLUG_REQUIRED', () => {
+    setup()
+    writeDraft('goal-no-slug', '---\nentity: domain\npromote-target: goal\ntheme: x\n---\n# x\n')
+    const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'goal-no-slug' }, null)
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.code).toBe('OXN_DRAFT_PROMOTE_GOAL_SLUG_REQUIRED')
+    teardown()
+  })
+
+  test('17. promote-target=goal 但 --goal-slug 非 kebab-case → OXN_DRAFT_PROMOTE_GOAL_SLUG_INVALID', () => {
+    setup()
+    writeDraft('goal-bad-slug', '---\nentity: domain\npromote-target: goal\ntheme: x\n---\n# x\n')
+    const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'goal-bad-slug', goalSlug: 'Bad_Slug!' }, null)
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.code).toBe('OXN_DRAFT_PROMOTE_GOAL_SLUG_INVALID')
+    teardown()
+  })
+
+  test('18. promote-target=goal commit=false 不创建文件', () => {
+    setup()
+    writeDraft('goal-no-commit', '---\nentity: domain\npromote-target: goal\ntheme: x\npriority: low\n---\n# x\n')
+    const result = promoteDraft(
+      {
+        projectRoot: FIXTURE_PROJECT,
+        name: 'goal-no-commit',
+        goalSlug: 'x',
+        commit: false,
+      },
+      null,
+    )
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const targetPath = join(FIXTURE_PROJECT, 'dev', 'pool', 'x.md')
+    expect(existsSync(targetPath)).toBe(false)
+    expect(result.phases.commit).toBeUndefined()
+    teardown()
+  })
 })

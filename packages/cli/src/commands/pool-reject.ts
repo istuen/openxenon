@@ -1,91 +1,32 @@
 // =============================================================================
-// pool-reject.ts (v0.5 PR-D)
+// pool-reject.ts — DEPRECATED (v0.4.0 D1 2026-08-07)
 //
-// 拒绝 audit pool 建议 → 写回 frozen.json（追加 rejection 记录）
-// 不修改 Intent 资产。
+// Intent Pool v3 已退役—— reject 闸门已废弃，废弃走 `oxn draft discard --force`。
+// 此 CLI 兼容期 1 版本后随入口 `pool.ts` 移除；现仅抛 `OXN_POOL_DEPRECATED` 引导迁移。
 // =============================================================================
-
-import { join } from 'node:path'
-import { existsSync, readFileSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
+// @ts-nocheck --deprecated
 import { defineCommand } from 'citty'
-import { output, outputUserInputError } from './output'
-import {
-  type ImprovementSuggestion,
-  type RejectionRecord,
-  safeValidateImprovementSuggestion,
-} from '@openxenon/engine/kernel'
-import { ensureWritable } from '@openxenon/engine/infra/insight/intent-overwriter'
-
-const AUDIT_POOL = 'audit'
-
-function findAuditEntry(projectRoot: string, slug: string): string | null {
-  const poolsDir = join(projectRoot, '.openxenon', 'pools')
-  const candidates = [join(poolsDir, AUDIT_POOL, slug, 'frozen.json'), join(poolsDir, slug, 'frozen.json')]
-  for (const c of candidates) {
-    if (existsSync(c)) return c
-  }
-  return null
-}
-
-function readFrozenBody(frozenPath: string): ImprovementSuggestion {
-  const raw = JSON.parse(readFileSync(frozenPath, 'utf-8'))
-  const v = safeValidateImprovementSuggestion(raw)
-  if (!v.success) {
-    throw new Error(`frozen.json schema invalid: ${v.error.issues.map((i) => i.message).join('; ')}`)
-  }
-  return v.data
-}
-
-function writeRejectionRecord(frozenPath: string, record: RejectionRecord): void {
-  const raw = JSON.parse(readFileSync(frozenPath, 'utf-8'))
-  if (raw.metadata) {
-    raw.metadata.rejection = record
-  }
-  ensureWritable(frozenPath)
-  writeFileSync(frozenPath, JSON.stringify(raw, null, 2), 'utf-8')
-}
+import { outputUserInputError } from './output'
 
 export default defineCommand({
-  meta: { name: 'reject', description: 'Reject an audit pool entry (no Intent changes)' },
-  args: {
-    slug: { type: 'positional', required: true, description: 'Audit pool entry slug' },
-    reason: { type: 'string', required: true, description: 'Rejection reason' },
-    operator: { type: 'string', description: 'Operator identity (default: operator)' },
-    '--json': { type: 'boolean', description: 'JSON output' },
+  meta: {
+    name: 'pool-reject',
+    description: '[DEPRECATED v0.4.0] Intent Pool v3 已退役，请改用 oxn draft',
   },
-  run({ args }) {
-    const slug = args.slug as string
-    const reason = args.reason as string
-    const operator = (args.operator as string) ?? 'operator'
-    const format = args.json === true ? 'json' : 'human'
-    const projectRoot = process.cwd()
-
-    const frozenPath = findAuditEntry(projectRoot, slug)
-    if (!frozenPath) {
-      return outputUserInputError('OXN_POOL_ENTRY_NOT_FOUND', `Audit pool entry not found: ${slug}`, {
-        suggestion: 'Run `oxn pool review <slug>` to verify the entry exists.',
-        format,
-      })
-    }
-    // Validate schema (best-effort — metadata may be missing/invalid for legacy entries)
-    try {
-      readFrozenBody(frozenPath)
-    } catch {
-      /* allow reject even if metadata schema is invalid */
-    }
-
-    const record: RejectionRecord = {
-      rejectedAt: new Date().toISOString(),
-      rejectedBy: operator,
-      reason,
-    }
-    writeRejectionRecord(frozenPath, record)
-
-    output({
-      ok: true,
-      data: { slug, rejectionRecord: record },
-      human: `=== Reject: ${slug} ===\nReason: ${reason}\nRejected by: ${operator}\nAt: ${record.rejectedAt}`,
-      format,
-    })
+  args: {
+    slug: { type: 'positional', required: true, description: '(deprecated)' },
+    reason: { type: 'string', required: true, description: '(deprecated)' },
+    operator: { type: 'string', description: '(deprecated)' },
+    '--json': { type: 'boolean', description: '(deprecated)' },
+  },
+  run() {
+    outputUserInputError(
+      'OXN_POOL_DEPRECATED',
+      'Intent Pool v3 已退役（v0.4.0 / D1 2026-08-07）—— reject 闸门已废弃。',
+      {
+        suggestion:
+          '改用 `oxn draft discard --force` 废弃；或 `oxn draft retarget --new-target=<rfc|asset|work>` 重路由。',
+      },
+    )
   },
 })

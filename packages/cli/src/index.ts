@@ -173,8 +173,17 @@ const main = defineCommand({
     // ---- v0.2 T13: Intent Pool v3 ----
     pool: () => import('./commands/pool').then((m) => m.default),
 
-    // ---- v0.6.2: Draft 体系 v1（4 命令：create / list / archive / discard）
-    // ---- 设计：.openxenon/drafts/draft-system-design-grilling.md
+    // ---- v0.6.0 D4 2026-08-07: dev-pool-migrate（D4 一次性迁移命令）
+    'dev-pool-migrate': () => import('./commands/dev-pool-migrate').then((m) => m.default),
+
+    // ---- v0.6.0 D5+ 2026-08-07: Goal 体系（5 命令：create / list / show / work / archive）
+    // ---- 设计：.openxenon/drafts/design-version-iteration-redesign.md §4.3
+    goal: () => import('./commands/goal').then((m) => m.default),
+
+    // ---- v0.6.0 D5+ 2026-08-07: Version 体系（4 命令：cut / list / show / status）
+    // ---- 设计：design-version-iteration-redesign.md §4.3 + §4.5 release-cut 改造
+    version: () => import('./commands/version').then((m) => m.default),
+
     draft: () => import('./commands/draft').then((m) => m.default),
 
     // ---- Dev namespace (DSL 内部工具) ----

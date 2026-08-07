@@ -11,15 +11,17 @@
  *   - 注入 frontmatter 字段（promote-target / promote-kind / created-from / synced-at）
  *   - 不写文件本身（由 caller 写）
  *
- * 7 个 skeleton 模板（v0.6.2-alpha.3 全建）：
+ * 8 个 skeleton 模板（v0.5.0 D2 起含 goal.md）：
  *   - rfc.md
  *   - asset-domain.md / asset-workflow.md / asset-stack.md / asset-blueprint.md / asset-roadmap.md
  *   - work.md
+ *   - goal.md（v0.5.0 新增）
  *
  * 关键约束：
  *   - skeleton 模板不存在 → 报 OXN_DRAFT_SKELETON_NOT_FOUND（不静默降级）
  *   - promote-target=asset 但缺 --kind → 报 OXN_DRAFT_KIND_REQUIRED
- *   - promote-target ∉ {rfc, asset, work} → 报 OXN_DRAFT_TARGET_INVALID
+ *   - promote-target=goal 但缺 --goal-slug → 报 OXN_DRAFT_GOAL_SLUG_REQUIRED（v0.5.0）
+ *   - promote-target ∉ {rfc, asset, work, goal} → 报 OXN_DRAFT_TARGET_INVALID
  *   - ASCII / UTF-8 frontmatter 注入必须保留换行格式
  */
 
@@ -27,7 +29,7 @@ import { join } from 'node:path'
 import { existsSync, readFileSync } from 'node:fs'
 import { getBoundaryDir } from '@openxenon/engine/infra/oxnrc'
 
-export const DRAFT_TARGETS = ['rfc', 'asset', 'work'] as const
+export const DRAFT_TARGETS = ['rfc', 'asset', 'work', 'goal'] as const
 export type DraftTarget = (typeof DRAFT_TARGETS)[number]
 
 export const ASSET_KINDS = ['domain', 'workflow', 'stack', 'blueprint', 'roadmap'] as const
