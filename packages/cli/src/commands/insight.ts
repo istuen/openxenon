@@ -1,3 +1,4 @@
+// FROZEN v0.7+: not actively developed; retained for compatibility (cli-convergence Work decision 2026-08-07)
 // =============================================================================
 // `oxn insight` — Proof → Intent 结构化反馈（v0.1.2 + v0.5 PR-B）
 //

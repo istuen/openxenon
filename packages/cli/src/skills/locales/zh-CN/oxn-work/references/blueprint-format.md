@@ -26,7 +26,7 @@ blueprint "<name>" {
 |------|------|------|
 | `slot "name"` | ✅ | Slot 名称（kebab-case 推荐） |
 | `deps = ["other"]` | 否 | 依赖的其他 slot 列表（不填 = 无依赖） |
-| `observe = ["ShellExec"]` | 否 | 该 slot 关注的探针名（运行时 `submit --run-probes` 触发） |
+| `observe = ["ShellExec"]` | 否 | 该 slot 关注的探针名（运行时 `oxn proof run` 触发；submit 不再跑脚本 probe，仅写客观执行事实到 per-task frozen.json） |
 
 ## Slot DAG 4 大模式
 

@@ -821,7 +821,8 @@ const runSubcommand = defineCommand({
 const verifySubcommand = defineCommand({
   meta: {
     name: 'verify',
-    description: 'Verify proof work-hash consistency (v0.4 PR-B Q4-A). Re-hash work.md and compare to work-hash.txt.',
+    description:
+      'Verify proof work-hash consistency (v0.4 PR-B Q4-A). Re-hash work.md and compare to work-hash.txt. [建议改用 oxn proof show — show 已做 hash 校验；verify 保留入口供向后兼容]',
   },
   args: {
     name: { type: 'positional', required: true, description: 'Proof name' },

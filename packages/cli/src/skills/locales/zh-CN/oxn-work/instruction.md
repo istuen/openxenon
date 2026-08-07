@@ -31,7 +31,7 @@ D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
 2. **首次接入项目（v0.7+ ADR-0089）**：项目未 bootstrap 5 起手 Asset 时，触发 `oxn onboard` 流程：
    - 跑 `oxn onboard --detect --json` 探测项目状态
    - 解析探测结果 → 列 3 选项卡片（`A` 新项目 / `B1` 存量-Proof-First / `B2` 存量-探索建 Asset）
-   - **等工程师确认选项** → 执行对应 `oxn onboard --new` / `--existing --proof-first` / `--existing --bootstrap`
+   - **等工程师确认选项** → 执行对应 `oxn onboard --new` / `--existing --proof-first`（已 reroute 为 definition-first 5 分钟回路）/ `--existing --bootstrap`
    - Bootstrap 完成后（`.openxenon/.bootstrap-done` 标记存在），进入正常 Work 流程
 3. **查 AssetMap 确定可用 Asset**（人机主动，非自动推荐）：
    - `oxn assetmap show <map> --scene <scene>` — 列出 scene 下的 Domain / Blueprint / Stack（`<map>` 默认 `oxn-system`；项目消费者可新建 `<project>-system`）
@@ -265,7 +265,7 @@ Step 4: oxn work lock <name>
 4. **必须等工程师确认**（不能擅自决定）
 5. 执行工程师选择的子命令：
    - 'A' → `oxn onboard --new`
-   - 'B1' → `oxn onboard --existing --proof-first`
+   - 'B1' → `oxn onboard --existing --proof-first` (rerouted to definition-first 5-min loop; 体验完整闭环：定义→锁定→协作→收口)
    - 'B2' → `oxn onboard --existing --bootstrap`
 6. Bootstrap 完成后，进入正常 Work 流程
 ```

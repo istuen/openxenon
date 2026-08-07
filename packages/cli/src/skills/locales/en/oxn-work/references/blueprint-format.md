@@ -26,7 +26,7 @@ blueprint "<name>" {
 |------|------|------|
 | `slot "name"` | ✅ | Slot name (kebab-case recommended) |
 | `deps = ["other"]` | No | List of other slots this depends on (empty = no deps) |
-| `observe = ["ShellExec"]` | No | Probe names this slot observes (triggers on `submit --run-probes`) |
+| `observe = ["ShellExec"]` | No | Probe names this slot observes (triggers on `oxn proof run`; submit no longer runs script probes, only writes objective execution facts to per-task frozen.json) |
 
 ## 4 Slot DAG Patterns
 

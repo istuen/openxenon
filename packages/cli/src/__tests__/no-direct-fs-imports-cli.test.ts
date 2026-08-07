@@ -19,8 +19,8 @@ describe('packages/cli/src/commands/* no-direct-fs-imports guard', () => {
     expect(tsFiles.length).toBeGreaterThan(0)
   })
 
-  it('38 个生产文件应被本 guard 覆盖 (Sprint 5 迁移范围)', () => {
-    expect(tsFiles.length).toBeGreaterThanOrEqual(38)
+  it('commands 目录生产文件应被本 guard 覆盖 (cli-convergence 后实际文件数)', () => {
+    expect(tsFiles.length).toBeGreaterThanOrEqual(30)
   })
 
   it.each(tsFiles)('%s 无 fs 直引', (filename) => {

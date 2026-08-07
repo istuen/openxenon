@@ -226,7 +226,7 @@ export default defineCommand({
     }),
 
     validate: defineCommand({
-      meta: { name: 'validate', description: 'Validate an AssetMap' },
+      meta: { name: 'validate', description: 'Validate an AssetMap (内部委托 oxn asset validate --kind roadmap)' },
       args: {
         name: { type: 'positional', required: true, description: 'AssetMap name' },
       },

@@ -51,7 +51,7 @@ import { getFormatFromArgs, output, outputError, outputUserInputError } from './
 import type { WorkDeclaration } from '@openxenon/engine/oxl'
 import { extractBlueprintIR } from '@openxenon/engine/oxl/md-pipeline/transformers/blueprint.js'
 import type { WorkPart } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
-import { runTask, runWork, submitTask, submitTaskWithProbes, nextRoundWork } from '@openxenon/engine/Work'
+import { runTask, runWork, submitTask, nextRoundWork } from '@openxenon/engine/Work'
 import {
   ensureWorkDir,
   getTaskOxnPath,
@@ -1876,7 +1876,6 @@ const submitSubcommand = defineCommand({
     name: { type: 'positional', required: true, description: t('work.args.workName') },
     task: { type: 'string', required: true, description: t('work.args.taskName') },
     '--evidence': { type: 'string', description: t('work.submit.args.evidence') },
-    '--run-probes': { type: 'boolean', description: t('work.submit.args.runProbes') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
   },
@@ -1884,7 +1883,6 @@ const submitSubcommand = defineCommand({
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
     const workName = ctx.args.name as string
     const taskName = ctx.args.task as string
-    const runProbes = ctx.args['run-probes'] === true
     const projectRoot = getProjectRoot()
 
     // NV-2: 状态机未启动 → 拒
@@ -1901,19 +1899,11 @@ const submitSubcommand = defineCommand({
     }
 
     try {
-      const result = runProbes
-        ? await submitTaskWithProbes({
-            projectRoot,
-            workName,
-            taskName,
-            runProbes,
-          })
-        : submitTask({
-            projectRoot,
-            workName,
-            taskName,
-            runProbes,
-          })
+      const result = submitTask({
+        projectRoot,
+        workName,
+        taskName,
+      })
 
       const probeResults: Array<{
         probe: string

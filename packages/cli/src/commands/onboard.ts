@@ -452,24 +452,42 @@ async function runNew(projectRoot: string): Promise<void> {
 // -----------------------------------------------------------------------------
 
 function runProofFirst(_projectRoot: string): void {
+  // phase5 T20 (cli-convergence Work, 2026-08-07): rerouted from Proof-First to Definition-First
+  // 决议：grilling 锁定 "协作" 为目标，"定义边界" 是 OXN 产物；onboard 应优先体验闭环而非验证
+  // 保留 --proof-first flag 作为别名（向后兼容），输出改为 definition-first 序列
   const data = {
     path: 'B1' as const,
-    description: 'Proof-First 5 分钟闭环（不构建 Asset，先验证 1 个客观事实）',
+    description: 'Definition-First 5 分钟闭环（定义边界 → 锁定 → 协作 → 收口；体验 OXN 完整闭环）',
     commands: [
-      '# 1. 创建第一个 Proof',
-      'oxn proof create check-deploy',
+      '# 1. 初始化 OXN 边界（如未初始化）',
+      'oxn init',
       '',
-      '# 2. 添加 Probe（验收标准）',
-      'oxn proof probe add fs-exists --target ./dist/index.js',
-      'oxn proof probe add http-responds --url http://localhost:3000/health --status 200',
+      '# 2. 定义第一个 Blueprint（Asset 是工程师定义的协作边界）',
+      'oxn asset create --kind blueprint my-first-bp',
       '',
-      '# 3. 运行验证',
-      'oxn proof run check-deploy',
+      '# 3. 创建 Work（引用 Blueprint 进入协作）',
+      'oxn work create my-first-work --blueprint my-first-bp',
       '',
-      '# 4. 查看 frozen.json',
-      'cat .openxenon/proofs/check-deploy/frozen.json',
+      '# 4. 编排 Task',
+      'oxn work add-task my-first-work --task implement --blueprint my-first-bp',
+      '',
+      '# 5. 校验 + 锁定边界（PlanLock 5-hash：边界从 SSOT 变成可执行约束）',
+      'oxn work validate my-first-work',
+      'oxn work lock my-first-work',
+      '',
+      '# 6. 启动协作（AI Agent 在边界内工作）',
+      'oxn work run my-first-work',
+      'oxn work submit my-first-work --task implement',
+      '',
+      '# 7. 收口（Domain invariant 校验 + 写最终 frozen.json 如实记录）',
+      'oxn work finalize my-first-work',
+      '',
+      '# 查看 per-task 与 work 级 frozen.json（客观执行事实）',
+      'cat .openxenon/works/my-first-work/.run/tasks/implement/frozen.json',
+      'cat .openxenon/works/my-first-work/.run/frozen.json',
     ],
-    nextStep: '升级到完整 IAP 时，运行 `oxn onboard --existing --bootstrap`（Path B2）',
+    nextStep:
+      '这是 OXN 完整闭环：定义 → 锁定 → 协作 → 收口。如需验证具体产物（脚本 exitCode / 文件存在 / 测试覆盖率），运行 `oxn proof create <name>` + `oxn proof run <name>` 走独立 Proof 路径；升级到完整 Asset 体系时，运行 `oxn onboard --existing --bootstrap`（Path B2）',
   }
   const human = `${data.description}\n\n${data.commands.join('\n')}\n\n${data.nextStep}`
   output({ ok: true, data, human }, 'human')

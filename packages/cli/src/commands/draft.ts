@@ -236,7 +236,7 @@ export default defineCommand({
           olderThanDays = unit === 'w' ? n * 7 : n
         }
         const config = loadDraftConfig()
-        let result = listDrafts({ projectRoot: getProjectRoot(), includeArchived }, config)
+        const result = listDrafts({ projectRoot: getProjectRoot(), includeArchived }, config)
 
         if (inactive) {
           const threshold = Date.now() - olderThanDays * 24 * 60 * 60 * 1000

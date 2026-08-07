@@ -165,17 +165,6 @@ const main = defineCommand({
     proof: () => import('./commands/proof').then((m) => m.default),
     insight: () => import('./commands/insight').then((m) => m.default),
 
-    // ---- v0.2.2: AI Token 可观测 ----
-    token: () => import('./commands/token').then((m) => m.default),
-
-    // ---- v0.2 T7: 第三方 Probe Provider (sandbox-validated) ----
-    probe: () => import('./commands/probe').then((m) => m.default),
-    // ---- v0.2 T13: Intent Pool v3 ----
-    pool: () => import('./commands/pool').then((m) => m.default),
-
-    // ---- v0.6.0 D4 2026-08-07: dev-pool-migrate（D4 一次性迁移命令）
-    'dev-pool-migrate': () => import('./commands/dev-pool-migrate').then((m) => m.default),
-
     // ---- v0.6.0 D5+ 2026-08-07: Goal 体系（5 命令：create / list / show / work / archive）
     // ---- 设计：.openxenon/drafts/design-version-iteration-redesign.md §4.3
     goal: () => import('./commands/goal').then((m) => m.default),

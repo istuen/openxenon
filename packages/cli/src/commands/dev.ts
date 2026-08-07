@@ -1,3 +1,4 @@
+// FROZEN v0.7+: not actively developed; retained for compatibility (cli-convergence Work decision 2026-08-07)
 // =============================================================================
 // `oxn dev` — DSL 开发工具命名空间
 //

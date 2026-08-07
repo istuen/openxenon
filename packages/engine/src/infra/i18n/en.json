@@ -1,7 +1,7 @@
 {
   "blueprint": {
     "create": {
-      "description": "Generate a new blueprint skeleton in .openxenon/blueprints/ (using unified OXL)",
+      "description": "Generate a new blueprint skeleton in .openxenon/blueprints/ (using unified OXL). Thin wrapper: prefer oxn asset create --kind blueprint",
       "name": "Blueprint name (kebab-case)",
       "slots": "Comma-separated slot names (default stage-1, stage-2)",
       "force": "Overwrite existing file"
@@ -92,7 +92,7 @@
   },
   "domain": {
     "create": {
-      "description": "Generate a new domain skeleton in .openxenon/assets/domains/ (DDD bounded context, v0.6 path)",
+      "description": "Generate a new domain skeleton in .openxenon/assets/domains/ (DDD bounded context, v0.6 path). Thin wrapper: prefer oxn asset create --kind domain",
       "name": "Domain name (PascalCase recommended, e.g. MemberContext)",
       "force": "Overwrite existing file"
     },
@@ -398,13 +398,13 @@
       }
     },
     "listTask": {
-      "description": "List all tasks under a work"
+      "description": "Task read-side: list all tasks under a work (use with oxn work task-status)"
     },
     "taskStatus": {
-      "description": "View task.oxn meta information"
+      "description": "Task read-side: view task.oxn meta information (use with oxn work list-task)"
     },
     "verifyTaskPath": {
-      "description": "Verify that a task.oxn path belongs to the specified work",
+      "description": "Verify that a task.oxn path belongs to the specified work (prefer oxn work validate; retained for backward compatibility)",
       "args": {
         "filePath": "Absolute path of the task.oxn to verify"
       },

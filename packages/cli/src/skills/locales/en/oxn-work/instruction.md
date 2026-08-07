@@ -32,7 +32,7 @@ D=Business Intent | B=Tech Intent | W=Align orchestration | T=Align execution
    - Run `oxn onboard --detect --json` (detection, side-effect-free)
    - Parse detection result → list 3 option cards (`A` new project / `B1` existing-Proof-First / `B2` existing-bootstrap)
    - **Wait for engineer confirmation** (do not auto-decide)
-   - Execute chosen `oxn onboard --new` / `--existing --proof-first` / `--existing --bootstrap`
+   - Execute chosen `oxn onboard --new` / `--existing --proof-first` (rerouted to definition-first 5-min loop) / `--existing --bootstrap`
    - After bootstrap (`.openxenon/.bootstrap-done` marker exists), enter normal Work flow
 3. **Query AssetMap for available Assets** (human/AI initiated, NOT auto-recommended):
    - `oxn assetmap show <map> --scene <scene>` — list Domain / Blueprint / Stack under scene (`<map>` defaults to `oxn-system`; project consumers can create `<project>-system`)
@@ -241,7 +241,7 @@ Skip validate+lock; modify `.oxn` after lock; legacy syntax (`align|noun|verb|ne
 4. **Must wait for engineer confirmation** (do not auto-decide)
 5. Execute engineer-chosen subcommand:
    - 'A' → `oxn onboard --new`
-   - 'B1' → `oxn onboard --existing --proof-first`
+   - 'B1' → `oxn onboard --existing --proof-first` (rerouted to definition-first 5-min loop; experience full closed loop: define → lock → collaborate → finalize)
    - 'B2' → `oxn onboard --existing --bootstrap`
 6. After bootstrap completion, enter normal Work flow
 ```

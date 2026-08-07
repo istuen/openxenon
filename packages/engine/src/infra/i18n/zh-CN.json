@@ -1,7 +1,7 @@
 {
   "blueprint": {
     "create": {
-      "description": "在 .openxenon/blueprints/ 生成一个新的 blueprint 骨架（用统一 OXL）",
+      "description": "在 .openxenon/blueprints/ 生成一个新的 blueprint 骨架（用统一 OXL）。薄包装：建议用 oxn asset create --kind blueprint",
       "name": "Blueprint 名称（kebab-case）",
       "slots": "逗号分隔的 slot 名称列表（默认 stage-1, stage-2）",
       "force": "覆盖已存在的文件"
@@ -92,7 +92,7 @@
   },
   "domain": {
     "create": {
-      "description": "在 .openxenon/assets/domains/ 生成一个新的 domain 骨架（DDD 限界上下文，v0.6 路径）",
+      "description": "在 .openxenon/assets/domains/ 生成一个新的 domain 骨架（DDD 限界上下文，v0.6 路径）。薄包装：建议用 oxn asset create --kind domain",
       "name": "Domain 名称（PascalCase 推荐，如 MemberContext）",
       "force": "覆盖已存在的文件"
     },
@@ -398,13 +398,13 @@
       }
     },
     "listTask": {
-      "description": "列出 work 下所有 task"
+      "description": "task 读侧：列出 work 下所有 task（与 oxn work task-status 合一查看）"
     },
     "taskStatus": {
-      "description": "查看 task.oxn 元信息"
+      "description": "task 读侧：查看 task.oxn 元信息（与 oxn work list-task 合一查看）"
     },
     "verifyTaskPath": {
-      "description": "验证手写 task.oxn 路径是否属于指定 work",
+      "description": "验证手写 task.oxn 路径是否属于指定 work（建议改用 oxn work validate；保留入口供向后兼容）",
       "args": {
         "filePath": "待验证的 task.oxn 绝对路径"
       },

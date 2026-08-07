@@ -1,3 +1,4 @@
+// FROZEN v0.7+: not actively developed; retained for compatibility (cli-convergence Work decision 2026-08-07)
 /**
  * cli/commands/external.ts — `oxn external` 命令族（v0.6.1-alpha.4 Phase 2）
  *

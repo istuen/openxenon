@@ -1,3 +1,4 @@
+// FROZEN v0.7+: not actively developed; retained for compatibility (cli-convergence Work decision 2026-08-07)
 /**
  * `oxn goal` — Goal 体系 v0.6.0 D5+ (2026-08-07)
  *
