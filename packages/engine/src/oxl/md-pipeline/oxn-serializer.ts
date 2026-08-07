@@ -149,6 +149,10 @@ export function serializeBlueprintToOxn(ir: BlueprintIR, ts?: string): string {
     if (boundary.observe.length > 0) {
       lines.push(indent(2, `observe = [${boundary.observe.map((o) => `"${escapeString(o)}"`).join(', ')}]`))
     }
+    // 🆕 v0.7.4 stack-operation-referent — 序列化 operate 字段
+    if (boundary.operate.length > 0) {
+      lines.push(indent(2, `operate = [${boundary.operate.map((o) => `"${escapeString(o)}"`).join(', ')}]`))
+    }
     if (boundary.deps.length > 0) {
       lines.push(indent(2, `deps = [${boundary.deps.map((d) => `"${escapeString(d)}"`).join(', ')}]`))
     }

@@ -87,3 +87,12 @@ export {
   type ProofIR,
   type ProofProbeIR,
 } from './proof'
+
+export {
+  extractStackIR,
+  STACK_CATEGORIES,
+  type StackCategory,
+  type StackIR,
+  type StackToolIR,
+  type StackOperationIR,
+} from './stack'

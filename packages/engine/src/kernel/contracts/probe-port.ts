@@ -72,6 +72,23 @@ export interface StackToolInfo {
   config?: string
   role?: string
   desc?: string
+  /**
+   * 🆕 v0.7.4 stack-operation-referent (design-stack-operation-referent Draft 2026-08-07):
+   * Tool 的命名调用声明列表。Blueprint slot.operate 引用 operation.name；
+   * work-context-builder 在 lock 期解析后注入 WorkContextResult.slotOperations。
+   * Operation 是 AI Agent 的执行参照（OXN 不替 AI 跑），与 Probe 验证参照正交。
+   */
+  operations?: StackOperationInfo[]
+}
+
+/**
+ * Stack Tool 的命名调用声明（name + command + desc）。
+ * 来自 Stack .md 文件 `## Tools ### <tool>` 下的 `operations` 子段解析。
+ */
+export interface StackOperationInfo {
+  name: string
+  command: string
+  desc?: string
 }
 
 export interface ProbeDefinition {

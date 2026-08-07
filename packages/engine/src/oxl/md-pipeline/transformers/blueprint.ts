@@ -35,13 +35,18 @@ export interface BlueprintUse {
 /**
  * Blueprint ## Boundaries 段的一个编排单元
  * - refs: 引用哪些边界（domain/workflow/stack）
- * - observe: 可用 Probe 类型列表
+ * - observe: 可用 Probe 类型列表（OXN 验证参照；OXN 自跑）
+ * - operate: 🆕 v0.7.4 stack-operation-referent — 可用 Operation 名列表（AI Agent 执行参照；AI 自跑）
+ *   与 observe 正交：设计上独立，实践中常成对。operation.name 必须在 Blueprint 引用的
+ *   Stack tool.operations 中可解析（inv-27 operate-subset-stack-operations）；同名歧义
+ *   触发 inv-28 operation-disambiguation，要求 tool:operation 限定名。
  * - deps: 依赖的其他 Boundary 名
  */
 export interface BlueprintBoundary {
   name: string
   refs: Array<{ kind: 'domain' | 'workflow' | 'stack'; ref: string }>
   observe: string[]
+  operate: string[]
   deps: string[]
 }
 
@@ -215,6 +220,7 @@ function extractRefFromValue(value: string): string {
 function extractBoundary(name: string, fields: ListField[]): BlueprintBoundary {
   const refs: Array<{ kind: 'domain' | 'workflow' | 'stack'; ref: string }> = []
   const observe: string[] = []
+  const operate: string[] = []
   const deps: string[] = []
 
   for (const f of fields) {
@@ -236,6 +242,14 @@ function extractBoundary(name: string, fields: ListField[]): BlueprintBoundary {
       } else if (typeof f.value === 'string') {
         observe.push(f.value)
       }
+    } else if (f.key === 'operate') {
+      // 🆕 v0.7.4 stack-operation-referent — 操作参照数组
+      // 格式：- operate: [name1, name2] 或 - operate: name1
+      if (Array.isArray(f.value)) {
+        operate.push(...(f.value as string[]))
+      } else if (typeof f.value === 'string') {
+        operate.push(f.value)
+      }
     } else if (f.key === 'deps') {
       if (Array.isArray(f.value)) {
         deps.push(...(f.value as string[]))
@@ -245,7 +259,7 @@ function extractBoundary(name: string, fields: ListField[]): BlueprintBoundary {
     }
   }
 
-  return { name, refs, observe, deps }
+  return { name, refs, observe, operate, deps }
 }
 
 function extractH1Description(root: Root): string {

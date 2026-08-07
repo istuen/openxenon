@@ -40,6 +40,8 @@ export type {
   ProbeOutcome,
   ProbeDefinition,
   StackToolInfo,
+  // 🆕 v0.7.4 stack-operation-referent — Stack Operation 数据契约
+  StackOperationInfo,
 } from './contracts/probe-port'
 
 // ───────── 协议层：错误契约（IAP 范式异常体系）─────────

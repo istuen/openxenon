@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { BOUNDARY_DIR, type StackToolInfo } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, type StackToolInfo, type StackOperationInfo } from '@openxenon/engine/kernel'
 import {
   type WorkFileSummary,
   type DomainFileSummary,
@@ -66,7 +66,7 @@ export interface BlueprintIRSummary {
     file: string
     status: string
     version: number
-    slots: Array<{ name: string; deps: string[]; observe: string[] }>
+    slots: Array<{ name: string; deps: string[]; observe: string[]; operate?: string[] }>
     errors: string[]
     ref: string
     domainRefs: Array<{ name: string; kind: string; ref: string; scope: string; version: number; fileHash: string }>
@@ -151,11 +151,19 @@ export interface WorkContextResult {
   domainLanguages?: DomainLanguageEntry[]
   /** 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5): Blueprint.use.stack 加载的 StackTool 列表
    *   - 来源：Blueprint.stackRefs[].name → 解析 .openxenon/assets/stack/<name>.md
-   *   - 形状：每项 { name, version?, command?, config?, role?, desc? }
+   *   - 形状：每项 { name, version?, command?, config?, role?, desc?, operations? }
    *   - 消费者：ProofRunner.executeProbe 透传给 ProbeContext.stackTools
    *   - L1 probe handlers 可按 tool.name 匹配做 env metadata merge
    */
   stackTools?: StackToolInfo[]
+  /** 🆕 v0.7.4 stack-operation-referent (design-stack-operation-referent Draft 2026-08-07):
+   * BlueprintIR 解析后的 slot.operate 列表（只到 operation 名）。
+   *   - 来源：BlueprintIRSummary.blueprints[].slots[].operate（lock 期固化）
+   *   - 形状：每项 { slot, operations: string[] }
+   *   - 消费者：AI Agent 从 Task context 看到 operation 名 → 跨层查找 stackTools.operations 拿 command
+   *   - 语义：参照不强制（inv-36 operate-is-reference-not-gate）
+   */
+  slotOperations?: Array<{ slot: string; operations: string[] }>
 }
 
 /**
@@ -180,7 +188,13 @@ export function summarizeBlueprints(idx: PerWorkBlueprintsIndex): BlueprintIRSum
     file: e.file,
     status: e.status,
     version: e.version,
-    slots: e.slots.map((s) => ({ name: s.name, deps: [...s.deps], observe: [...s.observe] })),
+    slots: e.slots.map((s) => ({
+      name: s.name,
+      deps: [...s.deps],
+      observe: [...s.observe],
+      // 🆕 v0.7.4 stack-operation-referent — 透传 operate（可选，向后兼容）
+      ...(s.operate && s.operate.length > 0 ? { operate: [...s.operate] } : {}),
+    })),
     errors: [...e.errors],
     ref: e.ref,
     domainRefs: e.domainRefs.map((r) => ({
@@ -282,20 +296,22 @@ export function findBoundaryAssetFile(
 }
 
 /**
- * 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5):
+ * 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5) + 🆕 v0.7.4 stack-operation-followup P2:
  * 从 Blueprint.stackRefs[] 加载 Stack 文件并提取 tools。
  *   - 解析 .md → 提取 H3 under `## Tools` 段的 key-value props
- *   - 字段映射：version / command / config / role / desc
+ *   - 字段映射：version / command / config / role / desc / operations
  *   - 文件不存在 / 解析失败 → 跳过该 entry（drift 由 birth-cert 承担）
- *   - 同名 Stack 时按 Blueprint 顺序去重（first wins）
+ *   - 🆕 v0.7.4 P2: 按 Stack 名去重（loadedStacks），允许 Blueprint 引用多 Stack
+ *     同一 Stack 被多个 Blueprint 引用时只加载一次；同名 tool 跨 Stack 时
+ *     后引用覆盖前引用（与 RFC-0022 observe 引用语义一致）
  */
 export function loadStackToolsFromBlueprint(blueprintIR: BlueprintIRSummary, projectRoot: string): StackToolInfo[] {
   const out: StackToolInfo[] = []
-  const seen = new Set<string>()
+  const loadedStacks = new Set<string>() // 去重：同一 Stack 不重复加载
   for (const bp of blueprintIR.blueprints) {
     for (const ref of bp.stackRefs) {
-      if (seen.has(ref.name)) continue
-      seen.add(ref.name)
+      if (loadedStacks.has(ref.name)) continue
+      loadedStacks.add(ref.name)
       const filePath = findBoundaryAssetFile(projectRoot, 'stack', ref.name)
       if (!filePath) continue
       const tools = parseStackTools(filePath)
@@ -309,8 +325,9 @@ export function loadStackToolsFromBlueprint(blueprintIR: BlueprintIRSummary, pro
  * 🆕 v0.7.3 P6 helper: 解析 Stack .md 文件的 `## Tools` 段为 StackToolInfo[]
  *   - 与 stack-compiler.ts:148-191 parse() 行为一致（轻量版，避免 import L1-OXL）
  *   - 返回 null 表示解析失败（drift 由 caller 决定如何处理）
+ *   - 🆕 v0.7.4 stack-operation-referent: 改为 export，work-validator 复用做 operate 校验
  */
-function parseStackTools(filePath: string): StackToolInfo[] | null {
+export function parseStackTools(filePath: string): StackToolInfo[] | null {
   if (!existsSync(filePath)) return null
   let content: string
   try {
@@ -322,6 +339,7 @@ function parseStackTools(filePath: string): StackToolInfo[] | null {
   const lines = content.split('\n')
   const out: StackToolInfo[] = []
   let currentTool: StackToolInfo | null = null
+  let inOperationsBlock = false
 
   for (const line of lines) {
     // H3 tool 段开始（### bun / ### typescript / ...）
@@ -329,12 +347,14 @@ function parseStackTools(filePath: string): StackToolInfo[] | null {
     if (h3) {
       if (currentTool) out.push(currentTool)
       currentTool = { name: h3[1]! }
+      inOperationsBlock = false
       continue
     }
     if (!currentTool) continue
     // 跳过 H2 边界（## Tools → 下一段）
     if (line.match(/^##\s+/)) {
       // 新的 H2 段可能仍在当前 tool 下；不要 reset，让后续 ### 重置
+      inOperationsBlock = false
       continue
     }
     // 解析 `- key: value`
@@ -342,6 +362,35 @@ function parseStackTools(filePath: string): StackToolInfo[] | null {
     if (!li) continue
     const key = li[1]!.toLowerCase()
     let value = li[2]!.trim()
+
+    // 🆕 v0.7.4 stack-operation-referent — operations 子段标记
+    if (key === 'operations') {
+      // - operations: 行标记开始；后续 `- name: command` 是 operation 声明
+      inOperationsBlock = true
+      if (!currentTool.operations) currentTool.operations = []
+      continue
+    }
+
+    if (inOperationsBlock) {
+      // operation 声明格式：- <op-name>: <command> [— <desc>]
+      // 例：- test: "bun test" — 全量测试
+      //     - test-filtered: "bun test --filter $PATTERN" — 按过滤器跑
+      // 注：外层正则 `^\s*-\s+(\w[\w-]*)\s*:\s*(.*)$` 已经把 op-name 与 command 切开
+      //     （key = op-name, value = command + 可能的 desc）。
+      //     value 中可能有 `— desc` 后缀（em/en dash 分隔）。
+      const opName = key.replace(/^["']|["']$/g, '')
+      let rest = value
+      // 去除首尾引号
+      rest = rest.replace(/^["']|["']$/g, '')
+      // 分离 desc（"— ..." 或 "— ..."）
+      const descMatch = rest.match(/^(.+?)\s*[—–-]\s+(.+)$/)
+      const op: StackOperationInfo = descMatch
+        ? { name: opName, command: descMatch[1]!.trim(), desc: descMatch[2]!.trim() }
+        : { name: opName, command: rest }
+      currentTool.operations!.push(op)
+      continue
+    }
+
     // 去除尾随注释（如 "bun.lock（权威锁文件）" → "bun.lock" + desc="权威锁文件"）
     const descIdx = value.search(/[（(]/)
     if (descIdx >= 0) {
@@ -358,6 +407,30 @@ function parseStackTools(filePath: string): StackToolInfo[] | null {
   if (currentTool) out.push(currentTool)
   // 防止 unused 警告
   void parsed
+  return out
+}
+
+/**
+ * 🆕 v0.7.4 stack-operation-referent (design-stack-operation-referent Draft 2026-08-07):
+ * 从 BlueprintIR 提取 slot.operate 列表（只到 operation 名）。
+ *   - 来源：BlueprintIRSummary.blueprints[].slots[].operate（lock 期固化）
+ *   - 形状：[{ slot, operations: string[] }]
+ *   - 消费者：AI Agent 从 Task context 看到 operation 名 → 跨层查找 stackTools.operations 拿 command
+ *   - 与 stackTools 注入路径平行（stackTools 是环境元数据全集，slotOperations 是当前 Blueprint 声明）
+ *   - 锁期校验由 work-validator 跑（inv-27 operate-subset-stack-operations）
+ */
+export function loadSlotOperationsFromBlueprint(blueprintIR: BlueprintIRSummary): Array<{
+  slot: string
+  operations: string[]
+}> {
+  const out: Array<{ slot: string; operations: string[] }> = []
+  for (const bp of blueprintIR.blueprints) {
+    for (const slot of bp.slots) {
+      if (slot.operate && slot.operate.length > 0) {
+        out.push({ slot: slot.name, operations: [...slot.operate] })
+      }
+    }
+  }
   return out
 }
 
@@ -553,6 +626,7 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     let backgroundDomainNames: string[] = []
     let mainLang: NonNullable<DomainFileSummary>['language'] | null = null
     let stackTools: StackToolInfo[] = []
+    let slotOperations: Array<{ slot: string; operations: string[] }> = []
 
     if (contextMode === 'full') {
       // main language 从已加载的 injectedDomains[0] 取
@@ -588,6 +662,8 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
 
       // 🆕 v0.7.3 P6 (RFC §2.3 + ADR-0061 §D5): 加载 StackTool 列表
       stackTools = blueprintIR ? loadStackToolsFromBlueprint(blueprintIR, root) : []
+      // 🆕 v0.7.4 stack-operation-referent: 加载 slot.operate 列表
+      slotOperations = blueprintIR ? loadSlotOperationsFromBlueprint(blueprintIR) : []
     }
 
     const allowedTerms: Array<{ name: string; desc: string }> = []
@@ -661,6 +737,8 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
       lockHealth: { status: 'unknown' },
       diagnostics,
       ...(stackTools.length > 0 ? { stackTools } : {}),
+      // 🆕 v0.7.4 stack-operation-referent — 注入 slot operations
+      ...(slotOperations.length > 0 ? { slotOperations } : {}),
     }
 
     return context
@@ -697,6 +775,7 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
   //   - 注入到 WorkContextResult.stackTools（ProofRunner 透传给 ProbeContext）
   //   - Stack 文件找不到 → 跳过该 entry
   const stackTools = blueprintIR ? loadStackToolsFromBlueprint(blueprintIR, root) : []
+  const slotOperations = blueprintIR ? loadSlotOperationsFromBlueprint(blueprintIR) : []
 
   return {
     workspace: workName,
@@ -716,6 +795,8 @@ export function buildWorkContext(params: WorkContextBuilderParams): WorkContextR
     ...(blueprintIR ? { blueprintIR } : {}),
     ...(domainLanguages.length > 0 ? { domainLanguages } : {}),
     ...(stackTools.length > 0 ? { stackTools } : {}),
+    // 🆕 v0.7.4 stack-operation-referent — 注入 slot operations
+    ...(slotOperations.length > 0 ? { slotOperations } : {}),
   }
 }
 
@@ -752,7 +833,20 @@ export function renderContextHuman(c: {
   tasks?: unknown[]
   domainExternals?: Array<{ domainName: string; externals: ExternalEntry[] }>
   /** 🆕 v0.7.3 P6 (ADR-0061 §D5): Stack tools 列表 */
-  stackTools?: Array<{ name: string; version?: string; command?: string; config?: string; role?: string }>
+  stackTools?: Array<{
+    name: string
+    version?: string
+    command?: string
+    config?: string
+    role?: string
+    /** 🆕 v0.7.4 stack-operation-referent — tool 的命名调用声明 */
+    operations?: StackOperationInfo[]
+  }>
+  /** 🆕 v0.7.4 stack-operation-referent (design-stack-operation-referent Draft 2026-08-07):
+   * Blueprint slot.operate 解析结果。AI Agent 看到 operation 名后，跨层查上面的 Stack Tools
+   * 找同名 tool 的 operations 子段拿 command。参照不强制（inv-36）。
+   */
+  slotOperations?: Array<{ slot: string; operations: string[] }>
 }): string {
   const lines: string[] = []
   lines.push(`# Context for ${c.workspace}${c.task ? ` / ${c.task}` : ''}`)
@@ -894,7 +988,27 @@ export function renderContextHuman(c: {
       if (t.role) meta.push(`role=${t.role}`)
       const tag = meta.length > 0 ? ` (${meta.join(' | ')})` : ''
       lines.push(`  - ${t.name}${tag}`)
+      // 🆕 v0.7.4 stack-operation-referent — 渲染 tool.operations 子段
+      if (t.operations && t.operations.length > 0) {
+        for (const op of t.operations) {
+          const opTag = op.desc ? ` — ${op.desc}` : ''
+          lines.push(`      · op ${op.name}: ${op.command}${opTag}`)
+        }
+      }
     }
   }
+
+  // 🆕 v0.7.4 stack-operation-referent — 渲染 slot.operate 列表
+  if (c.slotOperations && c.slotOperations.length > 0) {
+    lines.push('')
+    lines.push('## Operations to run')
+    lines.push(
+      '> Reference for AI Agent execution (inv-36: not enforced). Cross-reference Stack Tools above for command.',
+    )
+    for (const so of c.slotOperations) {
+      lines.push(`  - slot=${so.slot}: [${so.operations.join(', ')}]`)
+    }
+  }
+
   return lines.join('\n')
 }

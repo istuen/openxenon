@@ -29,6 +29,9 @@ export const SlotSlimSchema = z.object({
   name: z.string().min(1),
   deps: z.array(z.string()).default([]),
   observe: z.array(z.string()).default([]),
+  // 🆕 v0.7.4 stack-operation-referent — 执行参照（AI Agent 自跑）；与 observe 正交
+  // .optional() 保留向后兼容：老 mock / 老 data 无 operate 字段时 TS 不报错
+  operate: z.array(z.string()).optional(),
 })
 
 // 🆕 v0.7+ Blueprint Context Template: ## Scope 段 schema
@@ -380,6 +383,8 @@ function parseBlueprintSlimFromMd(content: string): ParsedBlueprintSlim {
         name: name_,
         deps: parseListField('deps'),
         observe: parseListField('observe'),
+        // 🆕 v0.7.4 stack-operation-referent — 解析 operate 列表
+        operate: parseListField('operate'),
       })
     }
   }
@@ -539,7 +544,15 @@ function parseSlotSlim(name: string, body: string, _errors: string[]): SlotSlim 
       observe.push(m[1]!)
     }
   }
-  return { name, deps, observe }
+  // 🆕 v0.7.4 stack-operation-referent — operate = ["test", "lint"]
+  const operate: string[] = []
+  const opMatch = body.match(/operate\s*=\s*\[([^\]]*)\]/)
+  if (opMatch) {
+    for (const m of opMatch[1]!.matchAll(/"([^"]+)"/g)) {
+      operate.push(m[1]!)
+    }
+  }
+  return { name, deps, observe, operate }
 }
 
 // ───────── 顶层：构建 per-work blueprints index ─────────

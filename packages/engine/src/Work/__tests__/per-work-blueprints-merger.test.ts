@@ -126,8 +126,8 @@ describe('parseBlueprintSlim', () => {
     expect(r.workflowRefs).toHaveLength(1)
     expect(r.stackRefs).toHaveLength(1)
     expect(r.slots).toHaveLength(2)
-    expect(r.slots[0]).toEqual({ name: 'alpha', deps: [], observe: ['fs-match'] })
-    expect(r.slots[1]).toEqual({ name: 'beta', deps: ['alpha'], observe: ['lint-check', 'type-check'] })
+    expect(r.slots[0]).toEqual({ name: 'alpha', deps: [], observe: ['fs-match'], operate: [] })
+    expect(r.slots[1]).toEqual({ name: 'beta', deps: ['alpha'], observe: ['lint-check', 'type-check'], operate: [] })
   })
 
   test('缺 version → 默认 1', () => {
@@ -137,7 +137,7 @@ describe('parseBlueprintSlim', () => {
 
   test('空 slot body → deps=[] observe=[]', () => {
     const r = parseBlueprintSlim(`blueprint "Foo" { domain "D"; workflow "W"; slot "a" {} }\n`)
-    expect(r.slots[0]).toEqual({ name: 'a', deps: [], observe: [] })
+    expect(r.slots[0]).toEqual({ name: 'a', deps: [], observe: [], operate: [] })
   })
 
   test('无 blueprint 声明 → name=null + error', () => {
