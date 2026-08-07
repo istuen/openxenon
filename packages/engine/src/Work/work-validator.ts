@@ -20,6 +20,7 @@ import {
 import { hashFile } from './plan-hash'
 import { readTaskFile } from '../oxl/summary-extractors'
 import { IAPError, IAPAction } from '../kernel'
+import { findBoundaryAssetFile, parseStackTools } from './work-context-builder'
 
 interface UnresolvedRef {
   kind: 'blueprint' // 🆕 Phase B: 删 domain（Domain 引用走 Blueprint ## Refs）
@@ -513,6 +514,118 @@ export function collectAndThrowScopeViolations(
 }
 
 // =============================================================================
+// 🆕 v0.7.4 stack-operation-referent (RFC-0024 §实施 + design-stack-operation-followup Draft 2026-08-07):
+//   slot.operate[] 引用校验（inv-27 operate-subset-stack-operations + inv-28 operation-disambiguation）
+// =============================================================================
+
+/**
+ * 🆕 v0.7.4 stack-operation-referent (RFC-0024 §实施 + design-stack-operation-followup Draft 2026-08-07):
+ * 校验每个 Blueprint slot.operate[] 项是否能在 Blueprint 引用的 Stack tool.operations 中解析。
+ *
+ * 行为：
+ *   - 加载 Blueprint 引用的所有 Stack 文件 → 提取 tool.operations → 建 operationIndex
+ *   - 校验每个 slot.operate[] 项：
+ *     - 限定名 `tool:operation`：直接定位，跳过消歧；不在 → OPERATION_NOT_FOUND
+ *     - 简单名：无候选 → OPERATION_NOT_FOUND；≥2 候选 → OPERATION_AMBIGUOUS
+ *   - 任意 violation → throw IAPError (YIELD_TO_HUMAN)
+ *
+ * 与 ADR-0055 / RFC-0022 P4 一致：lock 时一次性校验，不新增 Probe。
+ */
+export function collectAndThrowOperateViolations(
+  _work: WorkDeclaration,
+  projectRoot: string,
+  _workName: string,
+  blueprintsIdx: PerWorkBlueprintsIndex,
+): void {
+  const violations: Array<{
+    slot: string
+    blueprint: string
+    code: 'OPERATION_NOT_FOUND' | 'OPERATION_AMBIGUOUS'
+    name: string
+    candidates?: string[]
+  }> = []
+
+  // Step 1: 为每个 Blueprint 构建 operationIndex（Map<opName, Array<{stack, tool}>>）
+  for (const bp of blueprintsIdx.blueprints) {
+    if (bp.status !== 'ok') continue
+    if (bp.slots.every((s) => (s.operate ?? []).length === 0)) continue
+    // 无 Stack ref 时跳过校验（Blueprint 没声明 Stack，无法解析 operate）
+    if (bp.stackRefs.length === 0) continue
+
+    const operationIndex = new Map<string, Array<{ stack: string; tool: string }>>()
+    for (const stackRef of bp.stackRefs) {
+      const stackFilePath = findBoundaryAssetFile(projectRoot, 'stack', stackRef.name)
+      if (!stackFilePath) continue
+      const tools = parseStackTools(stackFilePath)
+      if (!tools) continue
+      for (const t of tools) {
+        for (const op of t.operations ?? []) {
+          const list = operationIndex.get(op.name) ?? []
+          list.push({ stack: stackRef.name, tool: t.name })
+          operationIndex.set(op.name, list)
+        }
+      }
+    }
+
+    // Step 2: 校验每个 slot.operate[] 项
+    for (const slot of bp.slots) {
+      for (const opName of slot.operate ?? []) {
+        // 限定名 tool:operation 形式直接定位
+        if (opName.includes(':')) {
+          const [toolName, op] = opName.split(':', 2) as [string, string]
+          const candidates = operationIndex.get(op) ?? []
+          const matched = candidates.find((c) => c.tool === toolName)
+          if (!matched) {
+            violations.push({
+              slot: slot.name,
+              blueprint: bp.name,
+              code: 'OPERATION_NOT_FOUND',
+              name: opName,
+            })
+          }
+          continue
+        }
+        // 简单名
+        const candidates = operationIndex.get(opName) ?? []
+        if (candidates.length === 0) {
+          violations.push({
+            slot: slot.name,
+            blueprint: bp.name,
+            code: 'OPERATION_NOT_FOUND',
+            name: opName,
+          })
+        } else if (candidates.length > 1) {
+          violations.push({
+            slot: slot.name,
+            blueprint: bp.name,
+            code: 'OPERATION_AMBIGUOUS',
+            name: opName,
+            candidates: candidates.map((c) => `${c.tool}:${opName}`),
+          })
+        }
+      }
+    }
+  }
+
+  if (violations.length === 0) return
+
+  const lines = violations.map((v) => {
+    if (v.code === 'OPERATION_NOT_FOUND') {
+      return `  - blueprint "${v.blueprint}" slot "${v.slot}": operate "${v.name}" not found in Stack tool.operations`
+    }
+    return `  - blueprint "${v.blueprint}" slot "${v.slot}": operate "${v.name}" ambiguous (${v.candidates!.join(', ')}); use qualified name like ${v.candidates![0]}`
+  })
+
+  throw new IAPError(
+    'INTENT',
+    violations.some((v) => v.code === 'OPERATION_NOT_FOUND') ? 'OPERATION_NOT_FOUND' : 'OPERATION_AMBIGUOUS',
+    IAPAction.YIELD_TO_HUMAN,
+    `Blueprint slot.operate[] reference invalid: ${violations.length} violation(s).\n${lines.join('\n')}`,
+    { violations },
+  )
+}
+
+// =============================================================================
 // 🆕 v0.7.3 P7 (RFC §4 P7 + ADR-0061 §D6):
 //   Work `## Refs` 旧 `kind: domain` deprecation warn（不阻断 lock）
 // =============================================================================
@@ -612,6 +725,12 @@ export async function validateAndWriteArtifacts(params: {
   //   - lock 时一次性校验；不新增 Probe
   //   - 缺省 Scope（allow=[]） → 允许任意路径（向后兼容）
   collectAndThrowScopeViolations(work, projectRoot, workName, blueprintsIdx)
+
+  // 🆕 v0.7.4 stack-operation-referent (RFC-0024 §实施): slot.operate[] 引用校验
+  //   - inv-27: operate 名 ⊆ Blueprint 引用 Stack tool.operations
+  //   - inv-28: 多 tool 同名 → OPERATION_AMBIGUOUS（要求限定名）
+  //   - lock 时一次性校验；不新增 Probe
+  collectAndThrowOperateViolations(work, projectRoot, workName, blueprintsIdx)
 
   // 🆕 v0.7.3 P7 (ADR-0061 §D6): Work ## Refs 旧 kind: domain 软警告
   //   - 不阻断 artifacts 写入（仅 push warning + structured entry）

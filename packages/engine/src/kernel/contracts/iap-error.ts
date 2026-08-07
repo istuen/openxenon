@@ -74,6 +74,9 @@ export type IAPErrorCode =
   // 🆕 v0.7+ Blueprint Context Template (design-blueprint-context-template Draft 2026-08-06)
   | 'SCOPE_VIOLATION'
   | 'CONTEXT_MISSING'
+  // 🆕 v0.7.4 stack-operation-referent (RFC-0024 §实施 work-validator 校验 + design-stack-operation-followup Draft 2026-08-07)
+  | 'OPERATION_NOT_FOUND'
+  | 'OPERATION_AMBIGUOUS'
 
 export interface IAPErrorContext {
   readonly [key: string]: unknown

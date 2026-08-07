@@ -126,6 +126,33 @@ Task 切换时：
 - **不返回 Work 全部结构**（避免 token 膨胀 + LLM JSON 解析开销）
 - **至少 1 个 flag**：无 flag 调用 → `OXN_CLI_INPUT_ERROR` 提示用 `--paths` 或 `--context`
 
+### Task ## Operations to run 段（RFC-0024 · v0.7.4 · operate 参照）
+
+`oxn work context --task <t>` 输出中如出现 `## Operations to run` 段，说明当前 Task 对齐 Blueprint slot 声明了 **执行参照**（与 `## Acceptance` 验证门禁正交）。
+
+```yaml
+## Operations to run
+  - slot=verify: [lint, typecheck, test]      # operate 数组：AI 应运行的 operation 名
+## Stack Tools (含 operations 子段)
+  - biome
+      · op lint: bun run check               # 在这里找 command
+  - typescript
+      · op typecheck: bun run typecheck
+  - bun-test
+      · op test: bun test
+```
+
+**精确查询路径**：
+1. 对 `## Operations to run` 中每个 operation 名 → 在 `## Stack Tools` 段按 tool 名定位
+2. 检查该 tool 的 operations 子段是否有同名 op → 取 command 字段
+3. 按 slot 列出的顺序执行（与 Blueprint slot DAG 一致）
+
+**operate vs observe 语义区别**（必读，避免误判）：
+- **operate = 参照**（不强制）：AI 可自主决定跑不跑，跳过不导致失败
+- **observe = 门禁**（OXN 跑）：test-pass / ts-compiles / lint-check 等 Probe，OXN 会独立验证
+- 例如 `operate: [test]` + `observe: [test-pass]`：AI 跑 `bun test` 是预检；OXN 跑 `test-pass` Probe 是证据采集
+- 不要从 observe 名反推 operate 命令（observe 名 ≠ 必有对应 operate）
+
 ### Task ## Artifacts 声明（inv-35 · lock 时 Scope 校验）
 
 Task.md 写 `## Artifacts` 段声明预期产物路径，lock 时 Engine 校验 ⊆ Blueprint `## Scope.allow`：
