@@ -6,6 +6,8 @@ status: planned
 created-at: 2026-07-27
 scheduled-version: ~
 synced-at: 2026-07-27
+branch: feat/goal-npm-ship-path
+source: direct
 note: |
   2026-07-27 grilling session 产出。当前主线目标（Q8）：
   打好正式版本去 npm 发版。GitHub = Dev Version，NPM = Release Version。

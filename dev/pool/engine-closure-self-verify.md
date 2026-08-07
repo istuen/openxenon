@@ -6,6 +6,8 @@ status: planned
 created-at: 2026-07-27
 scheduled-version: ~
 synced-at: 2026-07-27
+branch: feat/goal-engine-closure-self-verify
+source: direct
 note: |
   2026-07-27 grilling session 产出。Engine 闭环 v2 定义：
   Asset 生命周期 ∪ Work 生命周期 ∪ Proof 采集 = 自举完成。

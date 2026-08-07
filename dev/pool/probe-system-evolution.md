@@ -6,11 +6,13 @@ status: planned
 created-at: 2026-07-28
 scheduled-version: ~
 synced-at: 2026-08-06
+branch: feat/goal-probe-system-evolution
+source: draft
+source-ref: .openxenon/drafts/.archived/rfc/v0.8.1-probe-system-evolution-rfc.md
 note: |
-  从 dev/versions/probe-system-evolution（按 0-X-Y-<slug> 命名）回滚（去版本化）。
-  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
+  从 dev/versions/probe-system-evolution（已退役）回滚。D5+ 起前瞻 intent 留在 Goal 层（dev/pool/）；cut 时由 `oxn version cut` 收录到 Version 文档。Source Draft 见 source-ref。
 rfc:
-  - dev/versions/0-8-0-term-upstream-dag.md
+  - dev/pool/term-upstream-dag.md
 promoted-from: .openxenon/drafts/.archived/rfc/v0.8.1-probe-system-evolution-rfc.md
 ---
 

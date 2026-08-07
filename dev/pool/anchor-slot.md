@@ -6,9 +6,10 @@ status: planned
 created-at: 2026-07-28
 scheduled-version: ~
 synced-at: 2026-08-06
+branch: feat/goal-anchor-slot
+source: direct
 note: |
-  从 dev/versions/anchor-slot（按 0-X-Y-<slug> 命名）回滚（去版本化）。
-  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
+  从 dev/versions/anchor-slot（已退役）回滚。D5+ 起前瞻 intent 留在 Goal 层（dev/pool/）；cut 时由 `oxn version cut` 收录到 Version 文档。
 rfc:
   - .openxenon/pools/sprints/v0.7-emergence/design/v0.7.2-anchor-slot-rfc.md
 adr:

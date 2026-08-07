@@ -6,9 +6,11 @@ status: planned
 created-at: 2026-07-28
 scheduled-version: ~
 synced-at: 2026-08-06
+branch: feat/goal-work-unified-model
+source: draft
+source-ref: .openxenon/drafts/.archived/rfc/work-unified-model-rfc.md
 note: |
-  从 dev/versions/work-unified-model（按 0-X-Y-<slug> 命名）回滚（去版本化）。
-  scheduling 时由工程师判定版本号 + git mv 到 dev/versions/<slug>.md。
+  从 dev/versions/work-unified-model（已退役）回滚。D5+ 起前瞻 intent 留在 Goal 层（dev/pool/）；cut 时由 `oxn version cut` 收录到 Version 文档。Source Draft 见 source-ref。
 rfc:
   - docs/rfc/zh-cn/RFC-0020-three-boundary-blueprint-elevation.md
   - docs/adrs/0050-onboarding-via-starter-work.md
