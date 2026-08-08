@@ -278,4 +278,29 @@ name: scripts/sync-domain-glossary.ts
   - D7 sync 脚本 spec 的 `E_GLOSSARY_*` 错误码是否需补到 OXN 统一错误框架（ADR-0081）
   - ADR-0059 errata 是否单独发或并入本 RFC
 
+<!-- allow-version -->
+### v0.2 (2026-08-08) — Asset 结构 v2 收编：free-form Group 名映射
+<!-- /allow-version -->
+
+- **背景**：v0.7.4（2026-08-08）Asset 结构收编让 Group 名 free-form，原 D4 「术语分类硬约束」调整为「按 Group 名映射自动分类」。
+- **free-form Group 名映射表**（`packages/engine/src/oxl/md-pipeline/transformers/domain.ts` `GROUP_TO_CATEGORY`）：
+
+  | Group 名 | Domain Category | 解释 |
+  |---|---|---|
+  | `## Terms` / `## Concept` / `## Practice` / `## Foundation` / `## Phases` / `## Reference` / `## FailureHandling` / `## Quality` / `## Scenes` / `## DocModality` / `## DocArch` / `## Bootstrap` / `## EvolutionStrategy` / `## Versioning` / `## AssetDisambiguation` | **Term** | 名词 / 概念 / 阶段 / 工具 / 业务规则 |
+  | `## Bans` / `## Forbidden` | **Ban** | 禁用项 / 禁忌 |
+  | `## Invariants` / `## Boundary` / `## ToolchainRule` / `## Slogan` | **Invariant** | 不变量 / 边界 / 口号 |
+
+- **Axiom 体字段负载推断**（`classifyAxiom` 优先级）：
+  1. 旧结构 H2 名直接映射（Terms / Bans / Invariants / Stack）
+  2. `### Axiom` 体 `- value:` 字段 → Invariant
+  3. `### Axiom` 体 `- items:` 字段 → Ban
+  4. Group 名 fallback 映射（free-form）
+  5. `### Axiom` 体 `- desc:` 字段 → Term
+  6. 未知 Group → 默认 Term
+
+- **D7 sync 脚本扩展**：`scripts/sync-domain-glossary.ts` 已扩展支持 v2 free-form Group 名扫描（除 `## Terms:` 段外，还包括 `## Concept` / `## DocModality` 等 21 类 Term Group）；2026-08-08 sync 结果：12 Domain / 122 term headings / 107 unique terms / 14 multi-domain。
+
+- **影响**：术语提取（D7 sync）现在跨所有 Term 类 Group 工作；Engine 不再硬编码 `## Terms:` 段名。
+
 > 本段用于后续追加修正说明。核心决策自 RFC Accepted 起冻结。

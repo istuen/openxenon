@@ -15,6 +15,12 @@ pre-commit:
     doc-boundary:
       glob: "**/*.md"
       run: bun scripts/check-doc-boundary.ts
+    asset-structure:
+      # NpmSupplyChainAdvisory.md 是 chmod 0o444 只读 advisory 文件，不属于常规 Asset 范围
+      # 见 .openxenon/drafts/design-asset-structure-unification.md §4.3 Phase 3 范围
+      glob: ".openxenon/assets/**/*.md"
+      exclude: ".openxenon/assets/domains/NpmSupplyChainAdvisory.md"
+      run: bun scripts/check-asset-structure.ts
     versioned-docs:
       glob: "docs/{dev,rfc,adrs}/**/*.md"
       run: bun scripts/check-versioned-docs.ts

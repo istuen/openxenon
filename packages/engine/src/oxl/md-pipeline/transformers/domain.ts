@@ -18,6 +18,14 @@
  * L0–L3 兼容性：
  *   - L1-OXL 层
  *   - 不 import L0-Processor / L1-Infra / L2-Work / L3
+ *
+ * 🆕 v0.7.4 (Asset 结构 v2 收编)：free-form Group 名兼容
+ *   - 旧 ## Terms / ## Bans / ## Invariants 直接映射（向后兼容）
+ *   - 新 ## Concept / ## Forbidden / ## Boundary / ## DocModality 等按 GROUP_TO_CATEGORY 映射
+ *   - Axiom 体字段负载推断：`- value:` → Invariant / `- items:` → Ban / `- desc:` → Term
+ *   - 自由文本项（无 key: value 形式）归为 _text 合成字段
+ *
+ * 详见 docs/dev/zh-cn/asset-structure-v2.md 与 RFC-0017。
  */
 
 import type { Root } from 'mdast'
@@ -30,6 +38,63 @@ import { collectHeadingContexts, collectListFields, type ListField, extractYamlF
 
 export const DOMAIN_CATEGORIES = ['Terms', 'Bans', 'Invariants', 'Stack'] as const
 export type DomainCategory = (typeof DOMAIN_CATEGORIES)[number]
+
+/**
+ * v0.7.4: Asset 结构 v2（design-asset-structure-unification）允许 Group 名 free-form。
+ * Group → Axiom → Theorem 三层结构下，Engine 必须按 Axiom 体字段负载推断类型：
+ *   - 有 `- value:` 字段 → Invariant
+ *   - 有 `- items:` 列表（值数组） → Ban
+ *   - 否则（仅 `- desc:` 或纯文本） → Term
+ *
+ * 同时保留旧 ## Terms/Bans/Invariants 兼容识别（按 Group 名推断）。
+ */
+const GROUP_TO_CATEGORY: Record<string, DomainCategory> = {
+  // 旧结构
+  Terms: 'Terms',
+  Bans: 'Bans',
+  Invariants: 'Invariants',
+  Stack: 'Stack',
+  // v0.7.4：Asset 结构 v2 free-form Group 名 → 默认 Category
+  Concept: 'Terms',
+  Forbidden: 'Bans',
+  Boundary: 'Invariants',
+  Practice: 'Terms',
+  Foundation: 'Terms',
+  Phases: 'Terms',
+  Reference: 'Terms',
+  FailureHandling: 'Terms',
+  Quality: 'Terms',
+  ToolchainRule: 'Terms',
+  UseWorkflow: 'Terms',
+  UseDomain: 'Terms',
+  UseStack: 'Terms',
+  Scenes: 'Terms',
+}
+
+function classifyAxiom(categoryPrefix: string, fields: ListField[], desc: string): DomainCategory {
+  // 1. 旧结构 H2 名直接映射（Terms / Bans / Invariants / Stack）
+  if (
+    categoryPrefix === 'Terms' ||
+    categoryPrefix === 'Bans' ||
+    categoryPrefix === 'Invariants' ||
+    categoryPrefix === 'Stack'
+  ) {
+    return categoryPrefix as DomainCategory
+  }
+  // 2. v0.7.4 free-form Group：按 Axiom 体字段负载推断（最强信号）
+  //    - value → Invariants
+  //    - items → Bans
+  if (fields.some((f) => f.key === 'value')) return 'Invariants'
+  if (fields.some((f) => f.key === 'items')) return 'Bans'
+  // 3. 形态 C：Group 名映射（Forbidden → Bans / Boundary → Invariants 等）
+  if (categoryPrefix in GROUP_TO_CATEGORY) {
+    return GROUP_TO_CATEGORY[categoryPrefix]!
+  }
+  // 4. 仅有 `- desc:` 字段（无 value / items / Group mapping）→ Term
+  if (desc || fields.some((f) => f.key === 'desc')) return 'Terms'
+  // 5. 完全未知 Group + 无 desc → 默认 Term（兼容未来 Group 名）
+  return 'Terms'
+}
 
 // ========================
 // Domain IR 类型
@@ -106,12 +171,14 @@ export function extractDomainIR(root: Root, frontmatter: Record<string, unknown>
     if (!ctx.h2 || !ctx.h3) continue
     // 🆕 v0.7.3 P2: support `## Terms: <Group>` style headings
     // (extract category prefix from "Terms: Work" → "Terms")
-    const categoryPrefix = (ctx.h2.split(':')[0] ?? '').trim() as DomainCategory
-    if (!DOMAIN_CATEGORIES.includes(categoryPrefix)) continue
-
+    // 🆕 v0.7.4: free-form Group（Asset 结构 v2）：按 Axiom 体字段负载推断类型
+    const rawCategoryPrefix = (ctx.h2.split(':')[0] ?? '').trim()
+    // Externals 由 parseDomainExternals 单独处理；不在 IR 通用收编范围
+    if (rawCategoryPrefix === 'Externals') continue
     const fields = ctx.h3List ? collectListFields(ctx.h3List) : []
     const descField = fields.find((f) => f.key === 'desc')
     const desc = typeof descField?.value === 'string' ? descField.value : ''
+    const categoryPrefix = classifyAxiom(rawCategoryPrefix, fields, desc)
 
     switch (categoryPrefix) {
       case 'Terms':
@@ -138,7 +205,7 @@ export function extractDomainIR(root: Root, frontmatter: Record<string, unknown>
         invIdx++
         invariants.push({
           id: `inv-${slugify(ctx.h3)}`,
-          value: extractFirstFieldValue(fields, desc),
+          value: extractFirstFieldValue(fields, desc) || extractFreeTextFromFields(fields),
           desc,
         })
         break
@@ -172,10 +239,35 @@ function extractFirstFieldValue(fields: ListField[], fallback: string): string {
   return fallback
 }
 
+/**
+ * v0.7.4: 收集 Axiom 体所有 free-text list 行（Asset 结构 v2 形态 A）。
+ * 例如 `### Inv1\n- 5 AssetKind 白名单不可混用...` → "5 AssetKind 白名单不可混用..."
+ * 用于 Invariant / Term / Ban 在缺 `value:` / `items:` / `desc:` 字段时回退。
+ */
+function extractFreeTextFromFields(fields: ListField[]): string {
+  const texts: string[] = []
+  for (const f of fields) {
+    if (f.key !== '_text') continue
+    if (typeof f.value === 'string' && f.value.length > 0) {
+      texts.push(f.value)
+    }
+  }
+  return texts.join(' / ')
+}
+
 function extractBanItems(fields: ListField[], desc: string): { items: string[]; itemsFromItemsList: boolean } {
   const itemsField = fields.find((f) => f.key === 'items')
-  if (Array.isArray(itemsField?.value)) {
+  if (Array.isArray(itemsField?.value) && itemsField.value.length > 0) {
     return { items: itemsField.value as string[], itemsFromItemsList: true }
+  }
+  // 🆕 v0.7.4: Asset 结构 v2 形态 A 下 Ban Axiom 体是一组 `- <name>` 自由行
+  // （被 collectListFields 归类为 `_text` synthetic fields）
+  const textFields = fields.filter((f) => f.key === '_text' && typeof f.value === 'string' && f.value.length > 0)
+  if (textFields.length > 0) {
+    return {
+      items: textFields.map((f) => (f.value as string).trim()).filter(Boolean),
+      itemsFromItemsList: true,
+    }
   }
   return { items: desc ? desc.split(',').map((s) => s.trim()) : [], itemsFromItemsList: false }
 }

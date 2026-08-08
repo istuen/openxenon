@@ -198,7 +198,12 @@ export function collectListFields(list: List): ListField[] {
     const raw = firstText.value
     // 🆕 v0.7.3 P2: 用 's' flag 让 . 匹配 newline（支持 multiline - desc: | YAML block scalar）
     const m = raw.match(/^([\w-]+):\s*(.*)$/s)
-    if (!m) continue
+    if (!m) {
+      // 🆕 v0.7.4: 自由文本行（Asset 结构 v2 形态 A: `- <Theorem>` 无 key: value）
+      // 视为 `_text` synthetic field，供 Axiom 体回退（desc / value / items 缺省时）
+      fields.push({ key: '_text', value: raw.trim(), raw })
+      continue
+    }
     const [, key, value] = m as unknown as [string, string, string]
     // 嵌套 list 作为 array value
     const nestedList = (li.children ?? []).find((c: ListItem['children'][number]) => c.type === 'list') as

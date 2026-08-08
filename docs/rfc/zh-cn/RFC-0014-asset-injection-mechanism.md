@@ -153,4 +153,15 @@ RAG / MCP / Skill / Asset 同属"往 LLM 上下文注入信息"的机制家族�
 
 ## Errata
 
+<!-- allow-version -->
+### v1.0.1 (2026-08-08) — Asset 结构 v2 收编
+<!-- /allow-version -->
+
+- **Blueprint Use 段格式 v2**：Blueprint 的 `## Use` 段从单段列表形式（v1）扩展为按 Asset Type 分组的多段形式：
+  - v1 形式：`## Use` + `### name` + `- kind / - ref`（单 H2 段）
+  - v2 形式：`## Use workflow` + `## Use domain` + `## Use stack` + `## Use blueprint` + `## Use roadmap`（每段独立 H2）
+  - 兼容：两种形式 Engine 均能解析（`packages/engine/src/Work/per-work-blueprints-merger.ts`）
+- **影响范围**：Blueprint 文本格式变化不影响 Asset 注入机制本身；Engine 通过 Use 段声明的 ref 注入语义保持不变。
+- **参考**：详细结构规范见 `.openxenon/drafts/design-asset-structure-unification.md` §5 Phase 1+2；Schema 文档为 `docs/dev/zh-cn/asset-structure-v2.md`（RFC 不直接引用 dev 手册，参见设计稿）。
+
 > 本段用于后续追加修正说明。核心决策自 RFC-0014 Accepted 起冻结。

@@ -101,4 +101,15 @@ OXN 项目文档按"情态"分三类——**Asset（定义性）** / **RFC（规
 - **修复触发**：grilling #7 发现 body markdown 链接死链 + 失效 frontmatter refs；边界检查器因错误相对路径漏报。
 - **符合 RFC-0009 D4**：ADR 引用现在遵循"仅 related 段可引 docs/adrs/"规则。
 
+<!-- allow-version -->
+### v1.1.0 (2026-08-08) — Asset 结构 v2 收编
+<!-- /allow-version -->
+
+- **Asset 正文统一为三层模型**：定义性 Asset 的正文统一为 `## Group → ### Axiom → - Theorem` 三层结构；Engine 仅识别结构骨架，业务语义由 Group 名承载。
+- **形态合法**：A（Axiom + Theorem）/ B（纯 Axiom）/ C（纯 Theorem）三形态均合法；Group 下可混排。
+- **Blueprint 特例**：保留为 `## Use <Asset Type> + ## Slot + 顶层 ### Scope / ### Context Template`；兼容旧 `## Use` 单段 + `## Boundaries` 段。
+- **设计稿**：`.openxenon/drafts/design-asset-structure-unification.md`；Schema 文档：`docs/dev/zh-cn/asset-structure-v2.md`。
+- **守门**：新增 `scripts/check-asset-structure.ts`，接入 `lefthook pre-commit` + `package.json scripts.check:asset-structure`。
+- **Engine 兼容层**：`packages/engine/src/oxl/md-pipeline/transformers/domain.ts` `classifyAxiom` 支持 free-form Group 名映射；`packages/engine/src/Work/per-work-blueprints-merger.ts` 支持 `## Use <kind>` + `## Slot`。
+
 > 本段用于后续追加修正说明。核心决策自 RFC-0009 Accepted 起冻结。

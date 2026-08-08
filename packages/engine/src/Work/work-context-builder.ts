@@ -340,13 +340,26 @@ export function parseStackTools(filePath: string): StackToolInfo[] | null {
   const out: StackToolInfo[] = []
   let currentTool: StackToolInfo | null = null
   let inOperationsBlock = false
-
+  // 🆕 v0.7.4: Asset 结构 v2 三层模型 — Stack tool 仅在 `## Tools` / `## Foundation`
+  // 等工具组 H2 下识别；其他 free-form Group 下的 Axiom 不算 tool。
+  // 兼容老 Stack：未命中 tool-组时退化行为（接收所有 ### Axiom），保留旧 wide-open 行为。
+  let inToolSection = false
+  let hasToolSections = false
   for (const line of lines) {
+    const h2 = line.match(/^##\s+(\S+)\s*$/)
+    if (h2) {
+      const title = h2[1]!
+      const isToolSection = title === 'Tools' || title === 'Foundation' || title.startsWith('Use ')
+      if (isToolSection) hasToolSections = true
+      inToolSection = isToolSection
+      inOperationsBlock = false
+      continue
+    }
     // H3 tool 段开始（### bun / ### typescript / ...）
     const h3 = line.match(/^###\s+(\S+)\s*$/)
     if (h3) {
       if (currentTool) out.push(currentTool)
-      currentTool = { name: h3[1]! }
+      currentTool = hasToolSections ? (inToolSection ? { name: h3[1]! } : null) : { name: h3[1]! }
       inOperationsBlock = false
       continue
     }

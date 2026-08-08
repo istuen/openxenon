@@ -44,6 +44,7 @@
     "check:no-langium": "bun run scripts/check-no-new-langium-usage.ts",
     "check:adr-landing": "bun scripts/check-adr-landing.ts",
     "check:adr-landing:strict": "bun scripts/check-adr-landing.ts --strict",
+    "check:asset-structure": "bun scripts/check-asset-structure.ts",
     "docs:boundary": "bun scripts/check-doc-boundary.ts",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",

@@ -111,8 +111,37 @@ export function parseFrontmatter(content: string): { references: string[] } {
 }
 
 /**
- * 提取 Domain 文件 `## Terms:` 段下的所有 `### term`（排除 Invariants/Bans）
+ * 🆕 v0.7.4 (Asset 结构 v2)：Term 类 Group 白名单
+ * 包括 ## Terms: <group>（legacy）+ ## Concept + ## DocModality / ## DocArch / ## DocDisambiguation /
+ * ## Bootstrap / ## EvolutionStrategy / ## Versioning / ## AssetDisambiguation /
+ * ## Practice / ## Foundation / ## Phases / ## Reference / ## FailureHandling /
+ * ## Quality / ## Scenes / ## UseWorkflow / ## UseDomain / ## UseStack 等
  */
+const TERM_GROUP_NAMES = new Set([
+  'Terms',
+  'Concept',
+  'DocModality',
+  'DocArch',
+  'DocDisambiguation',
+  'Bootstrap',
+  'EvolutionStrategy',
+  'Versioning',
+  'AssetDisambiguation',
+  'Practice',
+  'Foundation',
+  'Phases',
+  'Reference',
+  'FailureHandling',
+  'Quality',
+  'Scenes',
+  'UseWorkflow',
+  'UseDomain',
+  'UseStack',
+  'UseBlueprint',
+  'SceneQuickRef',
+])
+
+/** 提取 Domain 文件所有 Term 类 Group 下的 ### term（H3） */
 export function extractTermsFromDomain(filePath: string, domainName: string): DomainTerm[] {
   const content = readFileSync(filePath, 'utf-8')
   const lines = content.split('\n')
@@ -124,16 +153,18 @@ export function extractTermsFromDomain(filePath: string, domainName: string): Do
     const line = lines[i]!
 
     // 切换 section
-    if (line.match(/^## Terms:/)) {
-      inTermsSection = true
+    const h2Match = line.match(/^##\s+(.+?)\s*$/)
+    if (h2Match) {
+      // flush 上一个 term
+      if (currentTerm) {
+        terms.push(buildDomainTerm(currentTerm, domainName))
+        currentTerm = null
+      }
+      const rawTitle = h2Match[1]!.trim()
+      // ## Terms: <group> → 提取 group 前缀
+      const groupKey = rawTitle.split(':')[0]!.trim()
+      inTermsSection = TERM_GROUP_NAMES.has(groupKey)
       continue
-    }
-    if (inTermsSection && line.match(/^## (Invariants|Bans)/)) {
-      inTermsSection = false
-      continue
-    }
-    if (inTermsSection && line.match(/^## /)) {
-      inTermsSection = false
     }
 
     if (!inTermsSection) continue
@@ -163,6 +194,11 @@ export function extractTermsFromDomain(filePath: string, domainName: string): Do
   // flush 最后一个
   if (currentTerm) {
     terms.push(buildDomainTerm(currentTerm, domainName))
+  }
+
+  // 标记 group 来源（用于渲染分组，保留原功能）
+  for (const t of terms) {
+    t.hasGlossaryRef = false // 重置；injectGlossaryRef 阶段再设置
   }
 
   return terms
@@ -298,6 +334,10 @@ function renderGlossary(merged: MergedTerm[], today: string): string {
 
 // ─── Domain 文件加 glossary-ref ────────────────────────────
 
+/**
+ * 扫描 Domain 文件所有 Term 类 Group 段，在每个 `### term` 紧贴 H3 行下方插入 `glossary-ref`
+ * （如果还没有），保持幂等（不覆盖已有）。
+ */
 function injectGlossaryRef(domains: Domain[], merged: MergedTerm[]): Map<string, string> {
   const slugByName = new Map<string, string>()
   for (const t of merged) {
@@ -311,28 +351,35 @@ function injectGlossaryRef(domains: Domain[], merged: MergedTerm[]): Map<string,
     const content = readFileSync(filePath, 'utf-8')
     const lines = content.split('\n')
 
-    // 找到 `## Terms:` 段
-    const termsStart = lines.findIndex((l) => l.match(/^## Terms:/))
-    if (termsStart === -1) continue
-    const nextSection = lines.findIndex((l, i) => i > termsStart && l.match(/^## (?!Terms)/))
-    const end = nextSection === -1 ? lines.length : nextSection
+    // 找所有 Term 类 Group 段（v0.7.4 多 Group 收编）
+    const termSectionRanges: Array<[number, number]> = []
+    for (let i = 0; i < lines.length; i++) {
+      const h2Match = lines[i]!.match(/^##\s+(.+?)\s*$/)
+      if (!h2Match) continue
+      const rawTitle = h2Match[1]!.trim()
+      const groupKey = rawTitle.split(':')[0]!.trim()
+      if (!TERM_GROUP_NAMES.has(groupKey)) continue
+      const start = i + 1
+      const end = lines.findIndex((l, idx) => idx > i && l.match(/^##\s+/))
+      termSectionRanges.push([start, end === -1 ? lines.length : end])
+    }
 
-    // 在每个 `### term` 下首行 `desc` 上方加 `glossary-ref`
-    for (let i = termsStart + 1; i < end; i++) {
-      const line = lines[i]!
-      const h3Match = line.match(/^### (.+)$/)
-      if (h3Match) {
+    // 倒序插入（避免行号错位）
+    for (let r = termSectionRanges.length - 1; r >= 0; r--) {
+      const [start, end] = termSectionRanges[r]!
+      for (let i = end - 1; i >= start; i--) {
+        const line = lines[i]!
+        const h3Match = line.match(/^### (.+)$/)
+        if (!h3Match) continue
         const termName = h3Match[1]!.trim()
         const slug = slugByName.get(termName)
         if (!slug) continue
-        // 检查下一行是否为 `- desc:`
-        if (i + 1 < end && lines[i + 1]!.match(/^\s*-\s*desc:/)) {
-          const refLine = `- glossary-ref: /openxenon/assets/domains/${d.name}.md#${slug}`
-          // 检查是否已存在
-          if (lines[i + 1]!.includes('glossary-ref:')) continue
-          lines.splice(i + 1, 0, refLine)
-          i++ // 跳过插入的行
-        }
+        // 检查紧贴 H3 的下一行（更可能是 Axiom body 首行）
+        const nextLine = lines[i + 1]
+        if (!nextLine?.match(/^\s*-\s/)) continue
+        if (nextLine.includes('glossary-ref:')) continue
+        const refLine = `- glossary-ref: /openxenon/assets/domains/${d.name}.md#${slug}`
+        lines.splice(i + 1, 0, refLine)
       }
     }
 
@@ -396,7 +443,17 @@ function main() {
 
   writeFileSync(GLOSSARY_PATH, glossaryContent, 'utf-8')
   for (const [name, content] of updates) {
-    writeFileSync(join(DOMAINS_DIR, `${name}.md`), content, 'utf-8')
+    const target = join(DOMAINS_DIR, `${name}.md`)
+    try {
+      writeFileSync(target, content, 'utf-8')
+    } catch (err) {
+      // 跳过只读文件（如 NpmSupplyChainAdvisory advisory 类型 chmod 0o444）
+      if ((err as NodeJS.ErrnoException).code === 'EACCES') {
+        console.warn(`   ⚠️  跳过只读文件: ${name}.md`)
+        continue
+      }
+      throw err
+    }
   }
   console.log(`\n✅ sync 完成`)
 }

@@ -3,7 +3,7 @@
 //
 // 把 work.md 中声明的 blueprint ref 列表 → 合并成 per-work `blueprints.json`（slim）。
 //
-// slim 内容：name / version / slots[{name, deps, observe}] / sourceHash
+// slim 内容：name / version / slots[{name, deps, observe, operate}] / sourceHash
 //   - 不展开 prop 列表（决策不需要）
 //   - 不展开 slot 的 description（也不需要；slim 哲学）
 //   - 不递归 part/probe 内容（那是 Proof 轴的事）
@@ -11,6 +11,15 @@
 // 🆕 v0.7: 同时支持 .oxn 和 .md 格式（.oxn 兼容 + .md canonical）
 //   - .oxn: `blueprint "X" ref "Y";` 在 work body 内
 //   - .md:  `## Use` 段下 `### name` + `- kind: blueprint` + `- ref: @prj/...`
+//
+// 🆕 v0.7.4 (Asset 结构 v2 收编)：Blueprint 特例识别以下结构变体：
+//   - ## Use (legacy): 单 H2 段，### H3 列引用；或 - kind / - ref 平铺 list
+//   - ## Use <kind> (v2): 按 Asset Type 分组的 ## Use workflow / ## Use domain / ## Use stack
+//   - ## Boundaries (legacy): 单 H2 段，### H3 列 slot（含 deps/observe/operate 字段负载）
+//   - ## Slot (v2): 收编后的 ## Boundaries 等价段
+//   - ## Scope / ## Context Template: Blueprint 顶层字段（v2 与 legacy H2 形式均支持）
+//
+// 详见 docs/dev/zh-cn/asset-structure-v2.md 与 RFC-0014。
 //
 // 与 work-domains-merger 对称设计。
 // =============================================================================
@@ -256,8 +265,8 @@ export interface ParsedBlueprintSlim {
  */
 export function parseBlueprintSlim(content: string): ParsedBlueprintSlim {
   // 🆕 v0.7: 优先尝试 .md 格式（canonical）；.oxn 解析作为 fallback
-  // 判断依据：frontmatter `---` 开头 或 包含 `## Use`/`## Boundaries` 段
-  const isMdFormat = /^---\n/m.test(content) || /## (Use|Boundaries)\b/m.test(content)
+  // 判断依据：frontmatter `---` 开头 或 包含 `## Use`/`## Boundaries`/`## Slot` 段
+  const isMdFormat = /^---\n/m.test(content) || /## (Use|Boundaries|Slot)\b/m.test(content)
   if (isMdFormat) {
     return parseBlueprintSlimFromMd(content)
   }
@@ -289,25 +298,37 @@ function parseBlueprintSlimFromMd(content: string): ParsedBlueprintSlim {
   }
 
   // 2️⃣ 提取 `## Use` 段 → domainRefs / workflowRefs / stackRefs / nestedBlueprintRefs
-  // 🆕 v0.7: 兼容两种格式
+  // 🆕 v0.7: 兼容三种格式
   //   A：## Use + ### name H3 + - kind / - ref（每个 ref 一个 H3）
   //   B：## Use + - kind / - ref（list under H2，无 H3）
-  const useMatch = content.match(/## Use\n([\s\S]*?)(?=\n## |\n# |$)/)
+  //   C：## Use <kind> + ### name H3 + - kind: <kind> / - ref: @prj/...
+  //      v0.7.4 (Asset 结构 v2)：per-type Use 段，按 ## Use <Asset Type> 分组
   const domainRefs: Array<{ name: string; ref: string | null }> = []
   const workflowRefs: Array<{ name: string; ref: string | null }> = []
   const stackRefs: Array<{ name: string; ref: string | null }> = []
   const nestedBlueprintRefs: Array<{ name: string; ref: string | null }> = []
-  if (useMatch) {
-    const useBody = useMatch[1] ?? ''
+  // 收集所有 ## Use 或 ## Use <kind> 段
+  const useSectionMatches: Array<{ kind: string | null; body: string }> = []
+  // 格式 A/B：## Use\n
+  const useMatchAB = content.match(/## Use\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (useMatchAB) {
+    useSectionMatches.push({ kind: null, body: useMatchAB[1] ?? '' })
+  }
+  // 格式 C：## Use <kind>\n
+  const useKindRe = /## Use\s+(domain|workflow|stack|blueprint)\n([\s\S]*?)(?=\n## |\n# |$)/g
+  for (const m of content.matchAll(useKindRe)) {
+    useSectionMatches.push({ kind: m[1]!, body: m[2] ?? '' })
+  }
+  for (const { kind: sectionKind, body: useBody } of useSectionMatches) {
     // 检测是否有 ### H3
     const hasH3 = /^### /m.test(useBody)
     if (hasH3) {
-      // 格式 A：每个 ### H3 是一个 ref
+      // 格式 A/C：每个 ### H3 是一个 ref
       for (const block of useBody.split(/\n(?=### )/)) {
         if (!block.startsWith('### ')) continue
         const n = block.split('\n', 1)[0]?.replace(/^### /, '').trim() ?? ''
         if (!n) continue
-        let kind = block.match(/- kind:\s*(\S+)/)?.[1]
+        let kind = sectionKind ?? block.match(/- kind:\s*(\S+)/)?.[1]
         let ref: string | null = null
         const refLineMatch = block.match(/- ref:\s*([^\n]+)/)
         if (refLineMatch) {
@@ -346,11 +367,12 @@ function parseBlueprintSlimFromMd(content: string): ParsedBlueprintSlim {
     }
   }
 
-  // 3️⃣ 提取 `## Boundaries` 段 → slots[]（每个 boundary 当作一个 slot）
+  // 3️⃣ 提取 `## Boundaries` 或 `## Slot` 段 → slots[]（每个 boundary 当作一个 slot）
+  // 🆕 v0.7.4 (Asset 结构 v2)：Blueprint 特例把 Boundaries 收编为 ## Slot
   const slots: SlotSlim[] = []
-  const boundariesMatch = content.match(/## Boundaries\n([\s\S]*?)(?=\n## |\n# |$)/)
-  if (boundariesMatch) {
-    for (const block of (boundariesMatch[1] ?? '').split(/\n(?=### )/)) {
+  const slotMatch = content.match(/## (Boundaries|Slot)\n([\s\S]*?)(?=\n## |\n# |$)/)
+  if (slotMatch) {
+    for (const block of (slotMatch[2] ?? '').split(/\n(?=### )/)) {
       if (!block.startsWith('### ')) continue
       // H3 名称 = ### 后到第一个换行符之前的内容
       const name_ = block.split('\n', 1)[0]?.replace(/^### /, '').trim() ?? ''

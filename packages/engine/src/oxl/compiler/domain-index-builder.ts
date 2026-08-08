@@ -120,10 +120,11 @@ export interface ParseError {
 export function parseDomainSlim(filePath: string, projectRoot: string): DomainIndexEntry {
   const relFile = relative(projectRoot, filePath)
   const errors: string[] = []
+  const fileStem = basename(filePath).replace(/\.md$/i, '')
 
   if (!existsSync(filePath)) {
     return {
-      name: basename(filePath).replace(/\.md$/i, ''),
+      name: fileStem,
       file: relFile,
       status: 'invalid',
       errors: [`file not found: ${filePath}`],
@@ -138,7 +139,7 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
     content = readFileSync(filePath, 'utf-8')
   } catch (err) {
     return {
-      name: basename(filePath).replace(/\.md$/i, ''),
+      name: fileStem,
       file: relFile,
       status: 'invalid',
       errors: [`read failed: ${err instanceof Error ? err.message : String(err)}`],
@@ -148,11 +149,18 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
     }
   }
 
+  // 🆕 v0.7.4 (Asset 结构 v2): 优先识别 .md 格式（frontmatter + Group/Axiom）
+  //   与 blueprint-index-builder 对称：先 sniff .md 格式 → parseDomainSlimMdFormat
+  const isMdFormat = /^---\n/m.test(content) || /^# Domain:/m.test(content)
+  if (isMdFormat) {
+    return parseDomainSlimMdFormat(content, fileStem, relFile, errors)
+  }
+
   const nameMatch = content.match(/^\s*domain\s+"([^"]+)"\s*\{/m)
   if (!nameMatch) {
     errors.push('no `domain "X" { ... }` declaration found')
     return {
-      name: basename(filePath).replace(/\.md$/i, ''),
+      name: fileStem,
       file: relFile,
       status: 'invalid',
       errors,
@@ -165,7 +173,6 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
   // v1.1 NAME_FILE_MISMATCH 防御（macOS-safe 字符串比对）
   // 与 src/oxl/compiler/blueprint-index-builder.ts:194-199 模式一致：软检测
   // 累积到 errors[],status='invalid',不阻断索引构建。
-  const fileStem = basename(filePath).replace(/\.md$/i, '')
   if (toKebab(nameMatch[1]!) !== toKebab(fileStem)) {
     errors.push(
       `NAME_FILE_MISMATCH: declared '${nameMatch[1]!}' (normalized: '${toKebab(nameMatch[1]!)}') ` +
@@ -214,6 +221,138 @@ export function parseDomainSlim(filePath: string, projectRoot: string): DomainIn
     termNames,
     banCount,
     invariantCount,
+    errors,
+  }
+}
+
+/**
+ * 🆕 v0.7.4 (Asset 结构 v2): 解析 .md 格式 Domain
+ *   - name/version 来自 frontmatter
+ *   - description 来自 H1 之后的 blockquote
+ *   - termNames/banCount/invariantCount 来自 ## Group 下 ### Axiom 计数
+ *     （兼容旧 ## Terms / ## Bans / ## Invariants 与 v2 free-form Group 名）
+ */
+function parseDomainSlimMdFormat(
+  content: string,
+  fileStem: string,
+  relFile: string,
+  errors: string[],
+): DomainIndexEntry {
+  const fmNameMatch = content.match(/^---\n[\s\S]*?name:\s*([^\n]+)/m)
+  const declared = fmNameMatch?.[1]?.trim() ?? fileStem
+  if (fmNameMatch && toKebab(declared) !== toKebab(fileStem)) {
+    errors.push(
+      `NAME_FILE_MISMATCH: declared '${declared}' (normalized: '${toKebab(declared)}') ` +
+        `does not match file '${fileStem}' (normalized: '${toKebab(fileStem)}')`,
+    )
+  }
+  if (!fmNameMatch) {
+    errors.push('no `entity: domain` declaration with name found in frontmatter')
+  }
+
+  // description: H1 + blockquote
+  const descMatch = content.match(/^# Domain:[^\n]*\n\n>\s*([^\n]+)/m)
+  const description = descMatch?.[1]?.trim()
+
+  // 统计 ## Group 下 ### Axiom 数（兼容 Terms/Bans/Invariants + v2 free-form）
+  // Group 名映射到分类：
+  //   - Terms / Concept / Practice / Foundation / Phases / Reference / FailureHandling / Use* / Scenes / ToolchainRule → Term
+  //   - Bans / Forbidden → Ban
+  //   - Invariants / Boundary / Slogan → Invariant
+  const groupCounts: Record<'Terms' | 'Bans' | 'Invariants', number> = {
+    Terms: 0,
+    Bans: 0,
+    Invariants: 0,
+  }
+  const groupTitleRe = /^##\s+([^\n]+)$/gm
+
+  // 先扫所有 H2 group 索引
+  const groupSpans: Array<{ title: string; start: number; end: number }> = []
+  let m: RegExpExecArray | null
+  const groupMatches: Array<{ title: string; idx: number }> = []
+  while ((m = groupTitleRe.exec(content)) !== null) {
+    groupMatches.push({ title: m[1]!.trim(), idx: m.index })
+  }
+  for (let i = 0; i < groupMatches.length; i++) {
+    const g = groupMatches[i]!
+    const next = groupMatches[i + 1]
+    groupSpans.push({ title: g.title, start: g.idx, end: next ? next.idx : content.length })
+  }
+
+  const GROUP_TO_CATEGORY: Record<string, 'Terms' | 'Bans' | 'Invariants'> = {
+    Terms: 'Terms',
+    Bans: 'Bans',
+    Invariants: 'Invariants',
+    Concept: 'Terms',
+    Forbidden: 'Bans',
+    Boundary: 'Invariants',
+    Practice: 'Terms',
+    Foundation: 'Terms',
+    Phases: 'Terms',
+    Reference: 'Terms',
+    FailureHandling: 'Terms',
+    Quality: 'Terms',
+    ToolchainRule: 'Invariants',
+    Slogan: 'Terms',
+  }
+
+  for (const g of groupSpans) {
+    // 兼容 ## Terms: <group> 后缀
+    const rawTitle = g.title.split(':')[0]!.trim()
+    const category = GROUP_TO_CATEGORY[rawTitle] ?? 'Terms'
+    const slice = content.slice(g.start, g.end)
+    const axiomCount = (slice.match(/^###\s+/gm) ?? []).length
+    groupCounts[category] += axiomCount
+  }
+
+  // termNames: 取所有 Term 类 Group（Concept / DocModality / DocArch / DocDisambiguation /
+  //   Bootstrap / EvolutionStrategy / Versioning / Terms / Practice / Foundation / Phases /
+  //   Reference / FailureHandling / Quality / Scenes / Use* / SceneQuickRef 等）下所有 ### Axiom 名
+  const TERM_GROUPS = new Set([
+    'Concept',
+    'DocModality',
+    'DocArch',
+    'DocDisambiguation',
+    'Bootstrap',
+    'EvolutionStrategy',
+    'Versioning',
+    'AssetDisambiguation',
+    'Terms',
+    'Practice',
+    'Foundation',
+    'Phases',
+    'Reference',
+    'FailureHandling',
+    'Quality',
+    'Scenes',
+    'UseWorkflow',
+    'UseDomain',
+    'UseStack',
+    'UseBlueprint',
+    'UseRoadmap',
+    'SceneQuickRef',
+  ])
+  const termNames: string[] = []
+  for (const g of groupSpans) {
+    const rawTitle = g.title.split(':')[0]!.trim()
+    if (!TERM_GROUPS.has(rawTitle)) continue
+    const slice = content.slice(g.start, g.end)
+    const are = /^###\s+([^\n]+)$/gm
+    let am: RegExpExecArray | null
+    while ((am = are.exec(slice)) !== null) {
+      const name = am[1]!.trim()
+      if (name) termNames.push(name)
+    }
+  }
+
+  return {
+    name: declared,
+    file: relFile,
+    status: errors.length > 0 ? 'invalid' : 'ok',
+    ...(description !== undefined ? { description } : {}),
+    termNames,
+    banCount: groupCounts.Bans,
+    invariantCount: groupCounts.Invariants,
     errors,
   }
 }

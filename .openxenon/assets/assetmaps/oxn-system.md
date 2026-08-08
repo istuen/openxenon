@@ -1,12 +1,13 @@
 ---
 entity: roadmap
-version: 3
+version: 3.0.0
 name: oxn-system
 abstract: |
-  OpenXenon scene-based routing: 6 builtin scenes (doc / dev / debug / test / release / onboard) map goals to Domain + Workflow + Blueprint (composition). AI Agent reads this Roadmap + calls oxn roadmap suggest --goal --scene to locate relevant Assets.
+  OpenXenon scene-based routing v3: 6 builtin scenes (doc / dev / debug / test / release / onboard) map goals to Domain + Workflow + Blueprint (composition). AI Agent reads this Roadmap + calls oxn roadmap suggest --goal --scene to locate relevant Assets.
   0.6.x+：文档按三情态分离（Asset/RFC/Doc），RFC 体系取代旧 ADR + OXP 双层；8 个 Domain + 12 RFC（8 主题 + 4 meta）为 AI 必读。
+  v3.0.0 (2026-08-08): 收编为 Asset 结构 v2（## Scenes + ## Usage + ## SceneQuickRef）；保留 roadmap 目录命名兼容 v0.7.4（RFC-0013 D4：代码枚举值仍为 `roadmap`，目录 `assetmaps/`）。
 oxn-source-sha: pending
-synced-at: 2026-07-26
+synced-at: 2026-08-08
 ---
 
 # Roadmap: oxn-system
@@ -21,8 +22,8 @@ synced-at: 2026-07-26
 
 ## Scenes
 
-### scene: doc
-> Scenario: write/read documentation, ask what OXN is, find chapters.
+### scene-doc
+- desc: write/read documentation, ask what OXN is, find chapters.
 
 | kind | name | description |
 |---|---|---|
@@ -36,8 +37,8 @@ synced-at: 2026-07-26
 | blueprint | doc-dev-workflow | 开发手册撰写组合模板 |
 | blueprint | doc-rfc-workflow | RFC 提升组合模板 v0.2（drafts → docs/rfc/zh-cn/RFC-XXXX-<theme>.md，OXP 废除） |
 
-### scene: dev
-> Scenario: modify code, add CLI subcommand, evolve Asset.
+### scene-dev
+- desc: modify code, add CLI subcommand, evolve Asset.
 
 | kind | name | description |
 |---|---|---|
@@ -58,8 +59,8 @@ synced-at: 2026-07-26
 | workflow | migrate-version | 跨版本迁移 |
 | workflow | release-cut | 切版本 + changelog |
 
-### scene: debug
-> Scenario: frozen.json anomaly, Probe DEVIATED, hash mismatch, regression.
+### scene-debug
+- desc: frozen.json anomaly, Probe DEVIATED, hash mismatch, regression.
 
 | kind | name | description |
 |---|---|---|
@@ -67,8 +68,8 @@ synced-at: 2026-07-26
 | domain | oxn-proof-domain | ProbeOutcome 三态 + InterferenceFlag + 验证 ≠ 评判 |
 | workflow | fix-issue | Bug 复现 + 定位 + 修复 + 验证 |
 
-### scene: test
-> Scenario: write tests, run test suite, analyze coverage.
+### scene-test
+- desc: write tests, run test suite, analyze coverage.
 
 | kind | name | description |
 |---|---|---|
@@ -76,8 +77,8 @@ synced-at: 2026-07-26
 | domain | oxn-engine-domain | L0-L3 架构约束 + 跨平台一致性 + 命名规范 |
 | workflow | dev-workflow | 复用 dev-workflow（test 是 develop 阶段的 verify slot） |
 
-### scene: release
-> Scenario: version migration, release cut, changelog.
+### scene-release
+- desc: version migration, release cut, changelog.
 
 | kind | name | description |
 |---|---|---|
@@ -86,8 +87,8 @@ synced-at: 2026-07-26
 | workflow | migrate-version | 跨版本迁移 |
 | workflow | release-cut | 切版本 + changelog |
 
-### scene: onboard
-> Scenario: new contributor first day, full project overview.
+### scene-onboard
+- desc: new contributor first day, full project overview.
 
 | kind | name | description |
 |---|---|---|
@@ -96,29 +97,40 @@ synced-at: 2026-07-26
 | domain | oxn-asset-domain | Asset create/evolve/archive 词汇 |
 | workflow | dev-workflow | 第一个跑通的 workflow |
 
----
-
 ## Usage
 
+- List all Roadmaps:
+
 ```bash
-# List all Roadmaps
 oxn roadmap list
-
-# View full Roadmap
-oxn roadmap show oxn-system
-
-# View single scene
-oxn roadmap show oxn-system --scene dev
-
-# AI Agent: suggest in a scene
-oxn roadmap suggest --goal "Add new CLI subcommand" --scene dev --top 3
-
-# After Asset change: detect dangling links (manual, dry-run by default)
-oxn roadmap sync oxn-system --scene doc --dry-run
-oxn roadmap sync oxn-system --scene doc --apply   # actually modify
 ```
 
-## Scene quick-reference
+- View full Roadmap:
+
+```bash
+oxn roadmap show oxn-system
+```
+
+- View single scene:
+
+```bash
+oxn roadmap show oxn-system --scene dev
+```
+
+- AI Agent: suggest in a scene:
+
+```bash
+oxn roadmap suggest --goal "<goal>" --scene dev
+```
+
+- After Asset change: detect dangling links (manual, dry-run):
+
+```bash
+oxn roadmap sync oxn-system --scene doc --dry-run
+oxn roadmap sync oxn-system --scene doc --apply
+```
+
+## SceneQuickRef
 
 | Goal keywords | scene |
 |---|---|

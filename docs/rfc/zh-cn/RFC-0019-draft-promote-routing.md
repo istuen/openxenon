@@ -633,3 +633,19 @@ oxn draft discard <name> --force
 **目标发布**：v0.6.3（v0.6.2-alpha.3 已落地 P1-P5）
 <!-- /allow-version -->
 **状态**：🟡 Draft（待 promote 进 RFC 流程）
+
+---
+
+<!-- allow-version -->
+### v0.3 (2026-08-08) — Asset 结构 v2 收编：Blueprint Use/Slot 段格式
+<!-- /allow-version -->
+
+- **背景**：v0.7.4（2026-08-08）Asset 结构 v2 收编让 Blueprint 的 Use / Slot 段格式语义更清晰。
+- **Use 段格式 v2**：
+  - v1 形式：`## Use`（单 H2 段，下含 `### name` + `- kind / - ref` 列表）
+  - v2 形式：`## Use workflow` / `## Use domain` / `## Use stack` / `## Use blueprint` / `## Use roadmap`（按 Asset Type 分组的独立 H2 段）
+  - 兼容：两种形式 Engine 均解析（`packages/engine/src/Work/per-work-blueprints-merger.ts`）
+- **Slot 段格式 v2**：Blueprint 的 Slot 段从 `## Boundaries`（v1）收编为 `## Slot`（v2）；功能等价；Engine 解析器两种形式均识别。
+- **Task 派发 `## Tasks (sub-target dispatch)` 段保留**：作为 Blueprint 的 sub-target 派发表（如 `### promote-rfc` / `### promote-asset-domain` 等 8 条），与 `## Slot` 顶层 Slot 段平级（不是 Slot 内部 Axiom）；Engine 解析时跳过此段。
+- **影响**：Draft Promote 路由 Blueprint（`draft-promote-router` / `promote-target-aware-workflow`）已收编为 v2 形式；Draft 派生、4 Boundaries 生命周期、8 sub-target 派发语义保持不变。
+- **参考**：详细结构规范见 `.openxenon/drafts/design-asset-structure-unification.md` §5 Phase 1+2；Schema 文档为 `docs/dev/zh-cn/asset-structure-v2.md`（RFC 不直接引用 dev 手册，参见设计稿）。

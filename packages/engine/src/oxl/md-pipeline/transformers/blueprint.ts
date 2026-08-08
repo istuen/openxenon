@@ -6,6 +6,14 @@
  * - Use: 引用三边界（domain/workflow/stack），替代 Refs
  * - Boundaries: 编排单元，替代 Slots（带 refs + observe + deps）
  * - Props 删除（设计决定）
+ *
+ * 🆕 v0.7.4 (Asset 结构 v2 收编)：Blueprint 特例把 Boundaries 收编为 ## Slot
+ *   - 兼容 ## Use（legacy 单 H2 段）与 ## Use <kind>（v2 按 Asset Type 分组）
+ *   - 兼容 ## Boundaries（legacy）与 ## Slot（v2）
+ *   - 顶层 ### Scope / ### Context Template 字段；也支持 ## Scope / ## Context Template H2 形式
+ *   - Slot Axiom 体内 observe / operate / deps 字段负载保留
+ *
+ * 详见 docs/dev/zh-cn/asset-structure-v2.md 与 RFC-0014。
  */
 
 import type { Root, Heading, Text } from 'mdast'
@@ -15,7 +23,8 @@ import { collectHeadingContexts, collectListFields, type ListField, extractYamlF
 // Blueprint H2 分类白名单
 // ========================
 
-export const BLUEPRINT_CATEGORIES = ['Use', 'Boundaries'] as const
+// 🆕 v0.7.4 (Asset 结构 v2)：Blueprint 特例把 Boundaries 收编为 ## Slot
+export const BLUEPRINT_CATEGORIES = ['Use', 'Boundaries', 'Slot'] as const
 export type BlueprintCategory = (typeof BLUEPRINT_CATEGORIES)[number]
 
 // ========================
@@ -141,7 +150,7 @@ export function extractBlueprintIR(root: Root, frontmatter: Record<string, unkno
     if (!ctx.h2) continue
     if (!BLUEPRINT_CATEGORIES.includes(ctx.h2 as BlueprintCategory)) continue
 
-    if (ctx.h2 === 'Boundaries' && ctx.h3) {
+    if ((ctx.h2 === 'Boundaries' || ctx.h2 === 'Slot') && ctx.h3) {
       boundaryIdx++
       const fields = ctx.h3List ? collectListFields(ctx.h3List) : []
       boundaries.push(extractBoundary(ctx.h3, fields))
