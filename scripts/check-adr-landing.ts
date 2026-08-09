@@ -2,6 +2,9 @@
 /**
  * check-adr-landing — ADR Accepted 必须配套 filesystem 落地的守门（ADR-0099）
  *
+ * version: 0.7.5
+ * synced-at: 2026-08-09
+ *
  * 目的：v0.6.0 D5+ 起，每个 Accepted ADR 必须在 frontmatter 声明 landing-files，
  * 本脚本校验 git diff 中实际有这些路径变化。
  *
@@ -117,15 +120,21 @@ function getChangedFiles(root: string): Set<string> {
       cwd: root,
       encoding: 'utf8',
     })
-    staged.split('\n').forEach((f) => f.trim() && changed.add(f.trim()))
+    staged.split('\n').forEach((f) => {
+      const t = f.trim()
+      if (t) changed.add(t)
+    })
 
     // untracked
     const untracked = execSync('git ls-files --others --exclude-standard', {
       cwd: root,
       encoding: 'utf8',
     })
-    untracked.split('\n').forEach((f) => f.trim() && changed.add(f.trim()))
-  } catch (e) {
+    untracked.split('\n').forEach((f) => {
+      const t = f.trim()
+      if (t) changed.add(t)
+    })
+  } catch (_e) {
     // not a git repo or git unavailable — skip
   }
 
@@ -258,7 +267,9 @@ if (violations.length > 0) {
   console.log(`✗ 落地校验失败（${violations.length}）：`)
   for (const c of violations) {
     console.log(`  ${c.id} (${c.path}):`)
-    console.log(`    status=${c.status}, landing-files=${c.landingFiles.length} 项, landing-reason=${c.landingReason ?? '(none)'}`)
+    console.log(
+      `    status=${c.status}, landing-files=${c.landingFiles.length} 项, landing-reason=${c.landingReason ?? '(none)'}`,
+    )
     for (const issue of c.issues) {
       console.log(`    ⚠ ${issue}`)
     }

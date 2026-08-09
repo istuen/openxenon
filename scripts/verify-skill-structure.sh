@@ -1,4 +1,9 @@
 #!/bin/bash
+# verify-skill-structure — OpenCode Skill 加载验证脚本
+#
+# version: 0.7.5
+# synced-at: 2026-08-09
+
 set -e
 
 echo "=== Skill Loading Verification Script (v2) ==="

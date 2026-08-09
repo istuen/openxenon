@@ -181,8 +181,12 @@ export function extractTermsFromDomain(filePath: string, domainName: string): Do
     }
 
     // term 下的 desc 行（首行）
-    if (currentTerm && line.match(/^\s*-\s*desc:/)) {
-      currentTerm.descLines.push(line.replace(/^\s*-\s*desc:\s*\|?\s*/, ''))
+    // v0.7.4 兼容：`- desc: <text>`（旧）和 `- <text>`（v2 收编后）
+    if (currentTerm && currentTerm.descLines.length === 0 && line.match(/^\s*-\s+\S/)) {
+      const stripped = line.replace(/^\s*-\s+desc:\s*\|?\s*/, '').replace(/^\s*-\s+/, '')
+      if (stripped.length > 0) {
+        currentTerm.descLines.push(stripped)
+      }
       continue
     }
     // YAML 多行 block scalar 续行（缩进但不是新 key）
@@ -335,58 +339,12 @@ function renderGlossary(merged: MergedTerm[], today: string): string {
 // ─── Domain 文件加 glossary-ref ────────────────────────────
 
 /**
- * 扫描 Domain 文件所有 Term 类 Group 段，在每个 `### term` 紧贴 H3 行下方插入 `glossary-ref`
- * （如果还没有），保持幂等（不覆盖已有）。
+ * v0.7.4 收编后：glossary-ref 已收敛到 ### Term 自身（H3 auto-slug 自动生成）。
+ * 此函数保留作为空操作（兼容旧调用点），不再修改 Domain 文件。
+ * 见 design-asset-structure-unification §4.4 与 docs/dev/zh-cn/asset-structure-v2.md。
  */
-function injectGlossaryRef(domains: Domain[], merged: MergedTerm[]): Map<string, string> {
-  const slugByName = new Map<string, string>()
-  for (const t of merged) {
-    slugByName.set(t.name, t.slug)
-  }
-
-  const updates = new Map<string, string>() // domainName -> new content
-  for (const d of domains) {
-    if (d.terms.length === 0) continue
-    const filePath = join(DOMAINS_DIR, `${d.name}.md`)
-    const content = readFileSync(filePath, 'utf-8')
-    const lines = content.split('\n')
-
-    // 找所有 Term 类 Group 段（v0.7.4 多 Group 收编）
-    const termSectionRanges: Array<[number, number]> = []
-    for (let i = 0; i < lines.length; i++) {
-      const h2Match = lines[i]!.match(/^##\s+(.+?)\s*$/)
-      if (!h2Match) continue
-      const rawTitle = h2Match[1]!.trim()
-      const groupKey = rawTitle.split(':')[0]!.trim()
-      if (!TERM_GROUP_NAMES.has(groupKey)) continue
-      const start = i + 1
-      const end = lines.findIndex((l, idx) => idx > i && l.match(/^##\s+/))
-      termSectionRanges.push([start, end === -1 ? lines.length : end])
-    }
-
-    // 倒序插入（避免行号错位）
-    for (let r = termSectionRanges.length - 1; r >= 0; r--) {
-      const [start, end] = termSectionRanges[r]!
-      for (let i = end - 1; i >= start; i--) {
-        const line = lines[i]!
-        const h3Match = line.match(/^### (.+)$/)
-        if (!h3Match) continue
-        const termName = h3Match[1]!.trim()
-        const slug = slugByName.get(termName)
-        if (!slug) continue
-        // 检查紧贴 H3 的下一行（更可能是 Axiom body 首行）
-        const nextLine = lines[i + 1]
-        if (!nextLine?.match(/^\s*-\s/)) continue
-        if (nextLine.includes('glossary-ref:')) continue
-        const refLine = `- glossary-ref: /openxenon/assets/domains/${d.name}.md#${slug}`
-        lines.splice(i + 1, 0, refLine)
-      }
-    }
-
-    updates.set(d.name, lines.join('\n'))
-  }
-
-  return updates
+function injectGlossaryRef(_domains: Domain[], _merged: MergedTerm[]): Map<string, string> {
+  return new Map<string, string>()
 }
 
 // ─── 主流程 ──────────────────────────────────────────────
@@ -432,9 +390,7 @@ function main() {
 
   console.log(`\n📝 计划变更：`)
   console.log(`   - docs/product/zh-cn/concepts/glossary.md: ${write ? '写入' : 'dry-run'}`)
-  for (const [name] of updates) {
-    console.log(`   - .openxenon/assets/domains/${name}.md: ${write ? '注入 glossary-ref' : 'dry-run'}`)
-  }
+  console.log(`   - .openxenon/assets/domains/*.md: glossary-ref 已收敛到 ### Term H3 auto-slug（不再注入）`)
 
   if (!write) {
     console.log(`\n💡 加 --write 实际写入；加 --strict 让多 Domain desc 字符串不一致即失败`)

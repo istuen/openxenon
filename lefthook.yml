@@ -21,11 +21,30 @@ pre-commit:
       glob: ".openxenon/assets/**/*.md"
       exclude: ".openxenon/assets/domains/NpmSupplyChainAdvisory.md"
       run: bun scripts/check-asset-structure.ts
+    naming:
+      glob: ".openxenon/**/*.md"
+      run: bun scripts/check-naming.ts
+    md-canonical:
+      glob: ".openxenon/drafts/**/*.md"
+      run: bun scripts/check-md-canonical.ts .openxenon/drafts/
+    adr-landing:
+      glob: "docs/adrs/*.md"
+      run: bun scripts/check-adr-landing.ts
     versioned-docs:
       glob: "docs/{dev,rfc,adrs}/**/*.md"
       run: bun scripts/check-versioned-docs.ts
 
 pre-push:
+  parallel: true
   commands:
     test:
       run: bun test
+    intent-types-drift:
+      # CI 守卫（detect L1-OXL vs L3-CLI Intent 类型漂移）
+      run: bun scripts/check-intent-types-drift.ts
+    no-langium-usage:
+      # CI 守卫（fatal：禁止新代码引入 Langium）
+      run: bun scripts/check-no-new-langium-usage.ts
+    md-fallback-stats:
+      # INFO 等级（.oxn fallback 数量观察期工具，不阻断）
+      run: bun scripts/check-md-fallback-stats.ts

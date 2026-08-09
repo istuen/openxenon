@@ -1,3 +1,11 @@
+#!/usr/bin/env bun
+/**
+ * scripts/version-sync.ts — v0.7.5 同步
+ *
+ * version: 0.7.5
+ * synced-at: 2026-08-09
+ */
+
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const PKG_VERSION = JSON.parse(readFileSync('package.json', 'utf-8')).version

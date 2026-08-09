@@ -2,6 +2,9 @@
 /**
  * check-versioned-docs — 版本号中性守门（advisory）
  *
+ * version: 0.7.5
+ * synced-at: 2026-08-09
+ *
  * 目的：v0.7+ 起，OpenXenon 文档系统趋向"版本号中性"——已落地的架构真理不带版本号。
  * 本脚本扫描 docs/{dev,rfc,adrs}/ 中版本号字符串（v0.X.Y / vX.Y / v0.X.Y-alpha.N）。
  *

@@ -1,5 +1,8 @@
 /**
- * scripts/version-aggregate.ts — v0.3 stage 4 T13
+ * scripts/version-aggregate.ts — v0.7.5 同步（v0.3 stage 4 T13）
+ *
+ * version: 0.7.5
+ * synced-at: 2026-08-09
  *
  * 角色:
  * - 扫描 .openxenon 下所有 .md 文件

@@ -2,6 +2,9 @@
 /**
  * scripts/check-intent-types-drift.ts
  *
+ * version: 0.7.5
+ * synced-at: 2026-08-09
+ *
  * v0.3 改革 PR-C（feat/v0.3-t20-md-native-highlight）
  *
  * 角色：

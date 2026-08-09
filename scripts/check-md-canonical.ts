@@ -1,20 +1,29 @@
 #!/usr/bin/env bun
 // =============================================================================
-// check-md-canonical.ts (v0.3 md-ssot)
+// check-md-canonical.ts — v0.7.5 更新
 //
-// 扫指定目录下的 .md 文件, 校验 v0.3.0 canonical 纯 MD 范式:
+// version: 0.7.5
+// synced-at: 2026-08-09
+//
+// v0.7.5 更新：
+// - RFC 引用从 v0.3.0 §3.4 → 当前 文档三情态规范（docs/dev/zh-cn/three-tier-docs.md）
+// - NATURAL_LANGUAGE_FIELDS 白名单扩展（添加 v0.6+ 引入的 instruction / guidance 字段）
+// - 路径扫描兼容 `.openxenon/drafts/<DraftType>-*.md`
+//
+// 角色（v0.7.5）：
+// - 扫指定目录下的 .md 文件，校验 canonical 纯 MD 范式：
 //   - 无 `;` 内联分隔符（纯 MD 范式，一行一个 key:value）
 //   - 无 `- name: <H3-text>` 冗余（H3 已经是 canonical name）
 //   - 无 `items: A, B, C` 逗号字符串（必须用缩进列表表达数组）
 //   - 无 `values: [a, b, c]` 内联数组（必须用缩进列表表达）
 //
-// 物理路径: scripts/check-md-canonical.ts
-// 用法:
+// 物理路径：scripts/check-md-canonical.ts
+// 用法：
 //   bun scripts/check-md-canonical.ts <dir1> [dir2 ...]
-// 输出: JSON 形式 { checked, passed, failed, violations }
-// 退出码: 0 = 全部通过；1 = 有 .md 违规
+// 输出：JSON 形式 { checked, passed, failed, violations }
+// 退出码：0 = 全部通过；1 = 有 .md 违规
 //
-// 注册到 lefthook pre-commit (Phase 5)
+// 注册到 lefthook pre-commit（待 Phase C 接入）
 // =============================================================================
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'

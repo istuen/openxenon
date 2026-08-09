@@ -1,6 +1,9 @@
 #!/usr/bin/env bun
 /**
- * scripts/check-md-fallback-stats.ts — v0.6.1 PR-3 CI 守卫（INFO 等级）
+ * scripts/check-md-fallback-stats.ts — v0.7.5 同步（v0.6.1 PR-3 CI 守卫，INFO 等级）
+ *
+ * version: 0.7.5
+ * synced-at: 2026-08-09
  *
  * 扫描 .openxenon 下的 .oxn fallback 文件数量 → 打印 INFO 日志（非 blocker）。
  *

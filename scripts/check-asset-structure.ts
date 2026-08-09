@@ -295,7 +295,8 @@ function checkAxiomBodyComplexity(
   // 判定豁免：field-load Axiom 允许嵌套（operations/observe/path 等）
   const isFieldLoadAxiom =
     (kind === 'stack' && (parentGroup === 'Tools' || parentGroup === 'Foundation')) ||
-    (kind === 'blueprint' && (BP_FIELD_LOAD_GROUPS.has(parentGroup ?? '') || (parentGroup !== null && /^Use\b/.test(parentGroup)))) ||
+    (kind === 'blueprint' &&
+      (BP_FIELD_LOAD_GROUPS.has(parentGroup ?? '') || (parentGroup !== null && /^Use\b/.test(parentGroup)))) ||
     (kind === 'blueprint' && parentGroup === null && BP_TOP_AXIOMS.has(axiomName))
 
   let inFence = false
@@ -513,7 +514,9 @@ function checkGeneric(parsed: ParsedAsset): Violation[] {
       .map((v) => v.idx)
     const sliceEnd = siblingH3Indices[0] ?? parentGroupEnd
     const axiomBody = bodyLines.slice(info.idx + 1, sliceEnd)
-    violations.push(...checkAxiomBodyComplexity(file, title, info.parentGroup, axiomBody, parsed.bodyStart + info.idx, parsed.kind))
+    violations.push(
+      ...checkAxiomBodyComplexity(file, title, info.parentGroup, axiomBody, parsed.bodyStart + info.idx, parsed.kind),
+    )
   }
 
   return violations
@@ -713,7 +716,16 @@ function checkBlueprint(parsed: ParsedAsset): Violation[] {
       }
     }
     const axiomBody = bodyLines.slice(a.line - parsed.bodyStart + 1, endIdx)
-    violations.push(...checkAxiomBodyComplexity(file, a.title, null, axiomBody, parsed.bodyStart + a.line - parsed.bodyStart, parsed.kind))
+    violations.push(
+      ...checkAxiomBodyComplexity(
+        file,
+        a.title,
+        null,
+        axiomBody,
+        parsed.bodyStart + a.line - parsed.bodyStart,
+        parsed.kind,
+      ),
+    )
   }
 
   // 6b. ## Use <type> + ## Slot 内的 Axiom body 扁平化（field-load Axiom 自动豁免）
@@ -721,9 +733,7 @@ function checkBlueprint(parsed: ParsedAsset): Violation[] {
     const isUseGroup = /^Use\s/.test(g.title)
     const isSlotGroup = g.title === 'Slot'
     if (!isUseGroup && !isSlotGroup) continue
-    const gStart = bodyLines.findIndex(
-      (line) => H2_RE.test(line) && new RegExp(`^##\\s+${g.title}\\s*$`).test(line),
-    )
+    const gStart = bodyLines.findIndex((line) => H2_RE.test(line) && new RegExp(`^##\\s+${g.title}\\s*$`).test(line))
     if (gStart === -1) continue
     const nextH2 = bodyLines.slice(gStart + 1).findIndex((line) => H2_RE.test(line))
     const sliceEnd = nextH2 === -1 ? bodyLines.length : gStart + 1 + nextH2

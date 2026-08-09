@@ -1,6 +1,9 @@
 #!/usr/bin/env bun
 /**
- * scripts/check-no-new-langium-usage.ts — v0.6.1 PR-4 CI 守卫（fatal 等级）
+ * scripts/check-no-new-langium-usage.ts — v0.7.5 同步（v0.6.1 PR-4 CI 守卫，fatal 等级）
+ *
+ * version: 0.7.5
+ * synced-at: 2026-08-09
  *
  * 检测 PR 引入的"新增文件"是否使用 Langium import。**已有文件不动**。
  *

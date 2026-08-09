@@ -1,6 +1,13 @@
 #!/usr/bin/env bun
 /**
- * check-doc-boundary — 文档三层守门（v0.7 重构 + v0.7.4 Phase 5 + v0.7.4-remediation Step 3）
+ * check-doc-boundary — 文档三层守门（v0.7 重构 + v0.7.4 Phase 5 + v0.7.4-remediation Step 3 + v0.7.5 cleanup）
+ *
+ * version: 0.7.5
+ * synced-at: 2026-08-09
+ *
+ * v0.7.5 cleanup:
+ * - 移除 `domain-terms-have-glossary-ref` 规则（v3.0 收编后 glossary-ref 字段已收敛到 ### Term H3 auto-slug，
+ *   `## Terms:` 段名也已收编为 `## Concept` free-form Group；本规则不再适用）
  *
  * 规则矩阵（v0.7 topic-first）：
  *   docs/product/{zh-cn,en}/*  → 禁止  .openxenon/**
@@ -203,20 +210,11 @@ const RULES: BoundaryRule[] = [
     phasePending: 'rfc-0017-phase-3',
   },
   {
-    name: 'concepts-no-term-redef',
-    description: 'concepts/*.md 中 ### 标题的 slug 不得与 glossary term slug 碰撞',
-    sourcePattern: /^docs\/product\/zh-cn\/concepts\/[a-z-]+\.md$/,
-    targetPattern: /^.*$/,
+    name: 'concepts-page-no-term-redefinition',
+    description: 'concepts/*.md 不得以 ### 形式重定义 glossary 中的 term',
+    sourcePattern: /^docs\/product\/.+\/concepts\/.+\.md$/,
+    targetPattern: /\[.+\]\(\.\.\/.*#(.+?)\)/,
     message: '概念页不得以 ### 形式重定义 glossary 中的 term',
-    isExemption: true,
-    phasePending: 'rfc-0017-phase-3',
-  },
-  {
-    name: 'domain-terms-have-glossary-ref',
-    description: 'Domain ## Terms: 段下的 ### term 必须含 glossary-ref 字段',
-    sourcePattern: /^\.openxenon\/assets\/domains\/.*\.md$/,
-    targetPattern: /^.*$/,
-    message: 'Domain ## Terms: 段下的 term 必须含 glossary-ref 字段（sync 后由脚本维护）',
     isExemption: true,
     phasePending: 'rfc-0017-phase-3',
   },

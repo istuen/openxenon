@@ -1,19 +1,24 @@
 /**
- * scripts/check-naming.ts — v0.3 stage 4 T14
+ * scripts/check-naming.ts — v0.7.5 重写
  *
- * 角色：
- * - 校验 `.openxenon/pools/sprints/v0.3-md-ssot/` 下文件名
- * - 校验 Intent 资产名（domains/blueprints/works/proofs/）
- * - 遵循 naming-system.md v1.0 规范：
- *   `<scope>-<topic-slug>[-v<X.Y.Z>][@<status>].md`
+ * version: 0.7.5
+ * synced-at: 2026-08-09
+ *
+ * 角色（v0.7.5）：
+ * - 校验 `.openxenon/` 下的所有 .md 文件命名
+ * - 遵循 v0.6+ 三情态文档规范：
+ *   - Asset（5 类）：`<scope>-<topic-slug>.md`（kebab-case）
+ *   - Draft（3 类）：`<DraftType>-<slug>.md`（DraftType ∈ {design, issue, report}）
+ *   - RFC（子目录）：`rfc/RFC-NNNN-<theme>.md` 或 `rfc-NNNN-<theme>.md`
+ *   - Doc：kebab-case（docs/{dev,product,rfc}/）
  * - 退出码：0 通过 / 1 失败
  *
  * 校验规则：
- * 1. 跨切架构：可省略 version；阶段文档必带
- * 2. DEPRECATED 文档：必须带 @deprecated 状态
- * 3. 阶段文档：必须含 v<X.Y.Z> 后缀
- * 4. 实体名：scope-topic-slug 必须是 kebab-case
- * 5. 字母数字：仅允许 [a-z0-9-]
+ * 1. kebab-case：仅允许 [a-z0-9-]，禁止大写字母 / 下划线 / 空格
+ * 2. DraftType 前缀：design-* / issue-* / report-*
+ * 3. RFC 编号：rfc-NNNN-* 或 RFC-NNNN-*
+ * 4. DEPRECATED：必须带 -deprecated 后缀 + 住 .archived/
+ * 5. 系统文件：.gitkeep / README.md 豁免
  *
  * L0–L3 兼容性：
  * - L1-Infra 工具脚本
@@ -52,24 +57,19 @@ export interface NamingCheckOptions {
 // 命名规则
 // ========================
 
-/** 跨切架构文档（可省略 version）*/
-const CROSSCUTTING_DOCS = [
-  'md-ssot-system',
-  'v0.3.0-roadmap',
-  'intent-ssot-boundary',
-  'naming-system',
-  'process-version-iteration-flow',
-  'process-forges-deprecation-migration',
-  'process-pool-operation',
-  'l0-l3-alignment',
-  'arch-v0.2.0-feature-matrix',
-  'arch-v0.3-implementation-report',
-]
+/** 跨切架构文档（v0.7.5 不再使用，可省略 version）——保留空数组兼容性 */
+const CROSSCUTTING_DOCS: string[] = []
 
-/** 阶段文档（必带 version）*/
-const STAGE_DOCS_PATTERN = /^[a-z-]+-(req|arch|dev-design|test-design|product)-md-(ssot|intent)-v\d+\.\d+\.\d+\.md$/
+/** DraftType 前缀（v0.6+ 3 DraftType） */
+const DRAFT_TYPE_PATTERN = /^(design|report|issue)-[a-z0-9-]+\.md$/
 
-/** 审计/复盘/决策文档（带版本或日期）*/
+/** RFC 编号（v0.7+ 引入 RFC 体系，编号 4 位数字 + theme） */
+const RFC_PATTERN = /^[Rr][Ff][Cc]-?\d{4}-?[a-z0-9-]+\.md$/
+
+/** 通用 kebab-case（fallback） */
+const KEBAB_CASE_PATTERN = /^[a-z0-9][a-z0-9-]*\.md$/
+
+/** 审计/复盘/决策文档（保留 v0.3 兼容） */
 const AUDIT_RETRO_JOURNAL_PATTERN = /^(audit|retro)-\d+\.\d+\.\d+-[a-z-]+\.md$/
 const JOURNAL_PATTERN = /^\d{4}-\d{2}-\d{2}-[a-z-]+\.md$/
 
@@ -144,38 +144,43 @@ function checkFileName(fileName: string, fullPath: string): NamingIssue[] {
     return [] // OK
   }
 
-  // 3. 阶段文档
-  if (STAGE_DOCS_PATTERN.test(fileName)) {
+  // 3. RFC 编号（v0.7+ 体系；rfc/RFC-NNNN-*.md 或顶层 RFC-NNNN-*.md）
+  if (RFC_PATTERN.test(fileName)) {
     return [] // OK
   }
 
-  // 4. 审计/复盘
+  // 4. DraftType 前缀（v0.6+ 3 DraftType：design/report/issue）
+  if (DRAFT_TYPE_PATTERN.test(fileName)) {
+    return [] // OK
+  }
+
+  // 5. 审计/复盘
   if (AUDIT_RETRO_JOURNAL_PATTERN.test(fileName)) {
     return [] // OK
   }
 
-  // 5. Journal（日期前缀）
+  // 6. Journal（日期前缀）
   if (JOURNAL_PATTERN.test(fileName)) {
     return [] // OK
   }
 
-  // 6. v0.X.0-roadmap 形式
+  // 7. v0.X.0-roadmap 形式
   if (/^v\d+\.\d+\.\d+-roadmap\.md$/.test(fileName)) {
     return [] // OK
   }
 
-  // 7. 检查特殊模式：-v<X.Y.Z>.md 后缀（阶段文档）
+  // 8. 检查特殊模式：-v<X.Y.Z>.md 后缀（阶段文档）
   if (/-v\d+\.\d+\.\d+\.md$/.test(fileName)) {
     return [] // OK（任意带版本号的文档）
   }
 
-  // 8. 检查 .gitkeep 等系统文件
+  // 9. 检查 .gitkeep 等系统文件
   if (fileName === '.gitkeep') {
     return []
   }
 
-  // 9. 检查 pool-roadmap.md（入口）
-  if (fileName === 'pool-roadmap.md') {
+  // 10. kebab-case fallback（最低接受条件）
+  if (KEBAB_CASE_PATTERN.test(fileName)) {
     return [] // OK
   }
 
