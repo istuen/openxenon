@@ -30,7 +30,7 @@ export const SUB_TARGETS = [
   'promote-asset-workflow',
   'promote-asset-stack',
   'promote-asset-blueprint',
-  'promote-asset-roadmap',
+  'promote-asset-assetmap', // 🆕 v0.6.4: 'promote-asset-roadmap' → 'promote-asset-assetmap'
   'promote-work',
   'promote-draft-goal',
 ] as const
@@ -136,8 +136,8 @@ function resolveSubTarget(target: DraftTarget, kind: DraftAssetKind | null): Sub
       return 'promote-asset-stack'
     case 'blueprint':
       return 'promote-asset-blueprint'
-    case 'roadmap':
-      return 'promote-asset-roadmap'
+    case 'assetmap': // 🆕 v0.6.4: 'roadmap' → 'assetmap'
+      return 'promote-asset-assetmap'
     default:
       throw new Error(`Internal: unknown kind ${kind}`)
   }
@@ -158,7 +158,7 @@ function computeTargetPath(target: DraftTarget, kind: DraftAssetKind | null, nam
   }
   // target=asset
   if (!kind) throw new Error('Internal: target=asset with null kind')
-  const dir = kind === 'roadmap' ? 'assetmaps' : `${kind}s`
+  const dir = kind === 'assetmap' ? 'assetmaps' : `${kind}s` // 🆕 v0.6.4: 'roadmap' → 'assetmap'
   return join('.openxenon', 'assets', dir, `${name}.md`)
 }
 

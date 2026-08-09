@@ -58,7 +58,7 @@ interface SkillMeta {
 }
 
 // v0.6 Skill 极简：2 个 Skill
-// - oxn-asset: Asset 生命周期（创建/修改/演进/删除），覆盖 5 种 AssetKind（domain/workflow/stack/blueprint/roadmap）
+// - oxn-asset: Asset 生命周期（创建/修改/演进/删除），覆盖 5 种 AssetKind（domain/workflow/stack/blueprint/assetmap）
 // - oxn-work:  Work 编排 + 执行（4 子模式 explore/develop/fix/onboarding），引用 Asset 到 Tasks
 //
 // v0.6.1-alpha.0: 每个 Skill = 1 SKILL.md (≤200 tokens 目标) + 5 references/* + assets/* 模板
@@ -69,7 +69,7 @@ const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
     {
       id: 'oxn-asset',
       description:
-        'Asset 生命周期管理（v0.6.1-alpha.4）— 创建/修改/演进/删除 domain / workflow / stack / blueprint / roadmap。底层走 oxn work --type asset 模式。当用户需要建、改、删 Asset 时触发。不处理 Work 编排、任务执行、Proof 展示（那是 oxn-work）',
+        'Asset 生命周期管理（v0.6.1-alpha.4）— 创建/修改/演进/删除 domain / workflow / stack / blueprint / assetmap。底层走 oxn work --type asset 模式。当用户需要建、改、删 Asset 时触发。不处理 Work 编排、任务执行、Proof 展示（那是 oxn-work）',
     },
     {
       id: 'oxn-work',
@@ -86,7 +86,7 @@ const skillMeta: Record<SupportedLocale, SkillMeta[]> = {
     {
       id: 'oxn-asset',
       description:
-        'Asset lifecycle management (v0.6.1-alpha.4) — create/modify/evolve/delete domain / workflow / stack / blueprint / roadmap. Underlying oxn work --type asset mode. Triggered when user needs to create, modify, or delete Assets. Does NOT handle Work orchestration, task execution, or Proof display (that is oxn-work)',
+        'Asset lifecycle management (v0.6.1-alpha.4) — create/modify/evolve/delete domain / workflow / stack / blueprint / assetmap. Underlying oxn work --type asset mode. Triggered when user needs to create, modify, or delete Assets. Does NOT handle Work orchestration, task execution, or Proof display (that is oxn-work)',
     },
     {
       id: 'oxn-work',

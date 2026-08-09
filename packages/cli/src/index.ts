@@ -151,7 +151,7 @@ const main = defineCommand({
     blueprint: () => import('./commands/blueprint').then((m) => m.default),
     // ---- v0.6.1-alpha.4: External inline status (check/status/mark) ----
     external: () => import('./commands/external').then((m) => m.externalCommand),
-    // ---- v0.7: scene-based AssetMap CLI (asset-kind=roadmap navigation; AssetKind 枚举值仍为 'roadmap') ----
+    // ---- v0.7: scene-based AssetMap CLI (asset-kind=assetmap navigation; AssetKind 枚举值 🆕 v0.6.4 已同步为 'assetmap') ----
     assetmap: () => import('./commands/assetmap').then((m) => m.default),
 
     // ---- v0.6.1-alpha.1: Asset lifecycle (8 subcommands: list/show/create/validate/archive/delete/evolve)

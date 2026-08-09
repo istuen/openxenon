@@ -35,13 +35,14 @@ import type { Root, RootContent } from 'mdast'
  *
  * v0.6.1-alpha.1 Batch 2: 扩展为 5 种 AssetKind（domain / blueprint / stack / library / external）
  * + 3 种运行时实体（work / task / proof）
+ * 🆕 v0.6.4: 'roadmap' → 'assetmap'（用户面统一收敛）
  */
 export type IntentEntityType =
   | 'domain'
   | 'workflow' // 🆕 v0.6.1-alpha.2 Phase 0: 原 blueprint 改名
   | 'stack'
   | 'blueprint' // 🆕 v0.6.1-alpha.4 Phase 2: 新语义（组合模板 ## Refs）
-  | 'roadmap'
+  | 'assetmap' // 🆕 v0.6.4: 原 roadmap 改名
   | 'work'
   | 'task'
   | 'proof'

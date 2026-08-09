@@ -23,7 +23,7 @@ function setupProject(): void {
   mkdirSync(join(tmpDir, '.openxenon', 'assets', 'workflows'), { recursive: true })
   mkdirSync(join(tmpDir, '.openxenon', 'assets', 'stacks'), { recursive: true })
   mkdirSync(join(tmpDir, '.openxenon', 'assets', 'domains'), { recursive: true })
-  mkdirSync(join(tmpDir, '.openxenon', 'assets', 'roadmaps'), { recursive: true })
+  mkdirSync(join(tmpDir, '.openxenon', 'assets', 'assetmaps'), { recursive: true })
   writeFileSync(
     join(tmpDir, '.openxenon', 'config.json'),
     JSON.stringify({ version: 1, mode: 'PRODUCTION', locale: 'zh-CN' }),

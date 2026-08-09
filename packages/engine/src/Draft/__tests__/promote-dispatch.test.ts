@@ -237,15 +237,15 @@ describe('dispatchPromote - Asset target', () => {
     teardown()
   })
 
-  test('11. Asset+roadmap 写 .openxenon/assets/assetmaps/<name>.md (注意:roadmap→assetmaps)', () => {
+  test('11. Asset+assetmap 写 .openxenon/assets/assetmaps/<name>.md (注意:assetmap→assetmaps)', () => {
     setup()
     const result = dispatchPromote({
       projectRoot: FIXTURE_PROJECT,
       name: 'oxn-system',
       target: 'asset',
-      kind: 'roadmap',
-      subTarget: 'promote-asset-roadmap',
-      draftFrontmatter: { 'promote-target': 'asset', 'promote-kind': 'roadmap' },
+      kind: 'assetmap', // 🆕 v0.6.4: 'roadmap' → 'assetmap'
+      subTarget: 'promote-asset-assetmap', // 🆕 v0.6.4
+      draftFrontmatter: { 'promote-target': 'asset', 'promote-kind': 'assetmap' }, // 🆕 v0.6.4
       draftBody: '## Scenes\n\n### explore\n- blueprint: explore-analyze-report',
     })
     expect(result.ok).toBe(true)
@@ -262,14 +262,14 @@ describe('dispatchPromote - Asset target', () => {
       workflow: 'workflows',
       stack: 'stacks',
       blueprint: 'blueprints',
-      roadmap: 'assetmaps',
+      assetmap: 'assetmaps', // 🆕 v0.6.4
     }
     for (const [kind, dir] of Object.entries(expectedDirs)) {
       const result = dispatchPromote({
         projectRoot: FIXTURE_PROJECT,
         name: `t-${kind}`,
         target: 'asset',
-        kind: kind as 'domain' | 'workflow' | 'stack' | 'blueprint' | 'roadmap',
+        kind: kind as 'domain' | 'workflow' | 'stack' | 'blueprint' | 'assetmap', // 🆕 v0.6.4
         subTarget: `promote-asset-${kind}` as 'promote-asset-domain',
         draftFrontmatter: { 'promote-target': 'asset', 'promote-kind': kind },
         draftBody: `# ${kind}`,

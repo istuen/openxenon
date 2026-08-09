@@ -101,8 +101,8 @@ export function syncRoadmap(opts: SyncOptions): SyncReport {
   }
   for (const a of liveAssets) {
     const k = `${a.kind}::${a.name}`
-    if (!referencedSet.has(k) && a.kind !== 'roadmap') {
-      // Don't count Roadmap itself as orphan
+    if (!referencedSet.has(k) && a.kind !== 'assetmap') {
+      // Don't count AssetMap itself as orphan
       report.orphans.push({ kind: a.kind, name: a.name })
     }
   }
@@ -112,27 +112,37 @@ export function syncRoadmap(opts: SyncOptions): SyncReport {
     if (existsSync(mdPath)) {
       let content = readFileSync(mdPath, 'utf-8')
 
-      // 1. Remove dangling links (rewrite table rows)
+      // 1. Remove dangling links (rewrite bullet rows; legacy table form also supported)
       for (const d of report.dangling) {
+        const bulletPattern = new RegExp(
+          `^-\\s*${escapeRegex(d.link.kind)}\\s*:\\s*${escapeRegex(d.link.name)}\\s*[—-].*$\\n?`,
+          'gm',
+        )
         const rowPattern = new RegExp(
-          `^\\|\\s*${escapeRegex(d.link.kind)}\\s*\\|\\s*${escapeRegex(d.link.name)}\\s*\\|.*\\|$`,
+          `^\\|\\s*${escapeRegex(d.link.kind)}\\s*\\|\\s*${escapeRegex(d.link.name)}\\s*\\|.*\\|\\s*$\\n?`,
           'gm',
         )
         const before = content
-        content = content.replace(rowPattern, '')
+        content = content.replace(bulletPattern, '').replace(rowPattern, '')
         if (content !== before) report.removedCount++
-        // Also remove leading blank line after header+separator (3 lines)
-        content = content.replace(/\n\n### scene: /g, '\n\n### scene: ')
+        // Also remove leading blank line after scene heading (3 lines)
+        content = content.replace(/\n\n### scene[:-]\s/g, '\n\n### scene[:-] ')
       }
 
       // 2. Refresh outdated descriptions
       for (const o of report.outdated) {
+        const bulletPattern = new RegExp(
+          `^(-\\s*${escapeRegex(o.link.kind)}\\s*:\\s*${escapeRegex(o.link.name)}\\s*[—-])\\s*(.*)$`,
+          'gm',
+        )
         const rowPattern = new RegExp(
           `^(\\|\\s*${escapeRegex(o.link.kind)}\\s*\\|\\s*${escapeRegex(o.link.name)}\\s*\\|).*(\\|)\\s*$`,
           'gm',
         )
         const before = content
-        content = content.replace(rowPattern, `$1 ${o.currentAbstract} $2`)
+        content = content
+          .replace(bulletPattern, `$1 ${o.currentAbstract}`)
+          .replace(rowPattern, `$1 ${o.currentAbstract} $2`)
         if (content !== before) report.refreshedCount++
       }
 

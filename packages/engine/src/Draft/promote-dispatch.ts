@@ -200,10 +200,10 @@ function buildAssetTarget(
   frontmatter: Record<string, string>,
   body: string,
   targetDirOverride?: string,
-  configAssetDirs?: { domain?: string; workflow?: string; stack?: string; blueprint?: string; roadmap?: string },
+  configAssetDirs?: { domain?: string; workflow?: string; stack?: string; blueprint?: string; assetmap?: string }, // 🆕 v0.6.4: 'roadmap' → 'assetmap'
 ): TargetSpec {
   // v0.6.3 Fix #2: targetDirOverride > config.assetDirs[kind] > default
-  const defaultDir = kind === 'roadmap' ? 'assetmaps' : `${kind}s`
+  const defaultDir = kind === 'assetmap' ? 'assetmaps' : `${kind}s` // 🆕 v0.6.4: 'roadmap' → 'assetmap'
   const dirRel = targetDirOverride || (configAssetDirs?.[kind] ?? join('.openxenon', 'assets', defaultDir))
   // Domain 用 PascalCase 文件名（如 MemberContext.md）; 其他用 kebab-case
   const filename = kind === 'domain' ? `${toPascalCase(name)}.md` : `${name}.md`

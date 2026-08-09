@@ -88,7 +88,7 @@ describe('parseRoadmapMdContent', () => {
 
   test('throws on wrong entity type', () => {
     expect(() => parseRoadmapMdContent('---\nentity: domain\nname: x\n---\n\n# Roadmap: x\n\n## Scenes\n')).toThrow(
-      /entity must be 'roadmap'/,
+      /entity must be 'assetmap'/,
     )
   })
 
@@ -146,5 +146,54 @@ name: bad-cols
 `
     const { warnings } = parseRoadmapMdContent(md)
     expect(warnings.some((w) => w.includes('header should be'))).toBe(true)
+  })
+
+  // 🆕 v0.6.4: canonical bullet-list format
+  test('parses v0.6.4 canonical bullet-list format with assetmap entity', () => {
+    const md = `---
+entity: assetmap
+version: 3.1.0
+name: test-bullet
+---
+# AssetMap: test-bullet
+
+## Scenes
+
+### scene-doc
+- desc: write/read documentation
+- domain: oxn-domain — 顶层词汇边界
+- workflow: doc-author — 通用文档撰写流水线
+- blueprint: doc-prod-workflow — 产品手册撰写组合模板
+
+### scene-dev
+- desc: modify code, add CLI subcommand
+- workflow: dev-workflow — 通用开发流程
+`
+    const { roadmap, warnings } = parseRoadmapMdContent(md)
+    expect(roadmap.scenes).toHaveLength(2)
+    expect(roadmap.scenes[0]?.name).toBe('doc')
+    expect(roadmap.scenes[0]?.description).toBe('write/read documentation')
+    expect(roadmap.scenes[0]?.links).toHaveLength(3)
+    expect(roadmap.scenes[0]?.links[0]).toEqual({
+      kind: 'domain',
+      name: 'oxn-domain',
+      description: '顶层词汇边界',
+    })
+    expect(roadmap.scenes[1]?.links[0]?.kind).toBe('workflow')
+    expect(warnings).toHaveLength(0)
+  })
+
+  test('warns on legacy entity value "roadmap"', () => {
+    const md = `---
+entity: roadmap
+version: 1
+name: legacy-rd
+---
+# Roadmap: legacy-rd
+
+## Scenes
+`
+    const { warnings } = parseRoadmapMdContent(md)
+    expect(warnings.some((w) => w.includes("'roadmap' is deprecated"))).toBe(true)
   })
 })

@@ -1,6 +1,14 @@
 #!/usr/bin/env bun
 // =============================================================================
-// check-asset-structure.ts — Asset 结构 v2 守门（design-asset-structure-unification Phase 1+2）
+// check-asset-structure.ts — Asset 结构 v2/v3 守门
+//
+// version: 0.7.5
+// synced-at: 2026-08-09
+//
+// v3.0 升级（2026-08-09）：
+// - 新增 Axiom 扁平化守门：E_ASSET_AXIOM_HAS_TABLE / HAS_CODE_FENCE / HAS_SUBNESTED_LIST
+// - Blueprint 顶层 ### Scope / ### Context Template 强制（移除 H2 兼容）
+// - BP_FIELD_LOAD_GROUPS 豁免（Slot / SubTargetDispatch / Use <type>）
 //
 // 角色：
 // - 扫 .openxenon/assets/{domains,workflows,stacks,blueprints,assetmaps}/*.md
@@ -48,11 +56,16 @@ type ViolationCode =
   | 'E_ASSET_BLANK_AXIOM'
   | 'E_ASSET_INVALID_AXIOM_BODY'
   | 'E_ASSET_INVALID_GROUP_BODY'
+  | 'E_ASSET_AXIOM_HAS_TABLE'
+  | 'E_ASSET_AXIOM_HAS_CODE_FENCE'
+  | 'E_ASSET_AXIOM_HAS_SUBNESTED_LIST'
   | 'E_ASSET_BLUEPRINT_USE_KIND_MISSING'
   | 'E_ASSET_BLUEPRINT_USE_KIND_UNKNOWN'
   | 'E_ASSET_BLUEPRINT_DUPLICATE_USE_TYPE'
   | 'E_ASSET_BLUEPRINT_MISSING_USE_OR_SLOT'
   | 'E_ASSET_BLUEPRINT_MISSING_SCOPE'
+  | 'E_ASSET_BLUEPRINT_SCOPE_NOT_TOP_LEVEL'
+  | 'E_ASSET_BLUEPRINT_CONTEXT_TEMPLATE_NOT_TOP_LEVEL'
   | 'E_ASSET_BLUEPRINT_INVALID_TOP_LEVEL'
   | 'E_ASSET_BLUEPRINT_SLOT_MISSING_DEPS'
 
@@ -165,6 +178,9 @@ function parseAsset(file: string, content: string, kind: AssetKind): ParsedAsset
       axioms.push(entry)
       if (currentH2 === null) {
         topLevelAxioms.push(entry)
+      } else if (kind === 'blueprint' && BP_TOP_AXIOMS.has(title)) {
+        // Blueprint 特例：### Scope / ### Context Template 即使紧跟 ## Slot 也算 top-level
+        topLevelAxioms.push(entry)
       }
     }
   }
@@ -188,12 +204,19 @@ function parseAsset(file: string, content: string, kind: AssetKind): ParsedAsset
 
 const VALID_USE_KINDS: ReadonlySet<AssetKind> = new Set(['domain', 'workflow', 'stack', 'blueprint', 'assetmap'])
 
+// Blueprint 特例：顶层 ### Scope / ### Context Template 即使紧跟 ## Slot 也算 top-level
+const BP_TOP_AXIOMS = new Set(['Scope', 'Context Template'])
+
+// Blueprint field-load Group（field 字段负载 Axiom 豁免 sub-bullet）
+const BP_FIELD_LOAD_GROUPS = new Set(['Slot', 'SubTargetDispatch'])
+
 const ENTITY_TO_KIND: Record<string, AssetKind> = {
   domain: 'domain',
   workflow: 'workflow',
   stack: 'stack',
   blueprint: 'blueprint',
-  roadmap: 'assetmap',
+  assetmap: 'assetmap', // 🆕 v0.6.4: canonical entity value
+  roadmap: 'assetmap', // legacy alias (deprecated v0.6.4)
 }
 
 function isBlankLine(line: string): boolean {
@@ -237,6 +260,93 @@ function isListContinuation(line: string): boolean {
 function isTableLine(line: string): boolean {
   const t = line.trim()
   return t.startsWith('|')
+}
+
+/**
+ * 检测 Axiom body 内是否含 sub-bullet（缩进 2+ 空格 + `-`）
+ * - 用于「Axiom 扁平化」守门
+ * - Stack Tool / Blueprint Slot / Scope / Context Template / Use <type> 豁免（field-load Axiom 天然需要嵌套）
+ */
+function isSubBullet(line: string): boolean {
+  return /^ {2,}-\s/.test(line)
+}
+
+/**
+ * Axiom 扁平化守门（v3.0 新约束）：
+ * - Axiom body 内禁止 inline 表格、code fence、sub-bullet
+ * - 豁免：
+ *   - Stack `## Tools` / `## Foundation` Group（Tool 字段负载如 operations 需嵌套）
+ *   - Blueprint `## Slot` Group（Slot observe/operate/deps 字段负载）
+ *   - Blueprint `## Use <type>` Group（Asset 引用 path/kind 字段负载）
+ *   - 顶层 ### Scope / ### Context Template（Blueprint 顶层字段负载）
+ *
+ * 调用方传 axiomBody 数组（已 slice 到 Axiom 范围）；返回 violation 列表。
+ */
+function checkAxiomBodyComplexity(
+  file: string,
+  axiomName: string,
+  parentGroup: string | null,
+  axiomBody: string[],
+  bodyStartLine: number,
+  kind: AssetKind,
+): Violation[] {
+  const violations: Violation[] = []
+
+  // 判定豁免：field-load Axiom 允许嵌套（operations/observe/path 等）
+  const isFieldLoadAxiom =
+    (kind === 'stack' && (parentGroup === 'Tools' || parentGroup === 'Foundation')) ||
+    (kind === 'blueprint' && (BP_FIELD_LOAD_GROUPS.has(parentGroup ?? '') || (parentGroup !== null && /^Use\b/.test(parentGroup)))) ||
+    (kind === 'blueprint' && parentGroup === null && BP_TOP_AXIOMS.has(axiomName))
+
+  let inFence = false
+  for (let j = 0; j < axiomBody.length; j++) {
+    const line = axiomBody[j] ?? ''
+    const lineNo = bodyStartLine + j + 1
+
+    // 检测 code fence（任意 Axiom 内都触发，除非 field-load）
+    if (isFenceOpen(line)) {
+      inFence = !inFence
+      if (!isFieldLoadAxiom) {
+        violations.push({
+          file,
+          code: 'E_ASSET_AXIOM_HAS_CODE_FENCE',
+          message: `### ${axiomName}（${parentGroup ?? '顶层'} Group）内含 code fence —— Axiom 扁平化要求纯 bullet（拆 Axiom 或转 prose）`,
+          line: lineNo,
+        })
+      }
+      continue
+    }
+
+    // 在 fence 内的行视为 fence 一部分；fence 检测已在上方触发
+    if (inFence) continue
+
+    // 检测 inline 表格（任意 Axiom 内都触发，除非 field-load）
+    if (isTableLine(line)) {
+      if (!isFieldLoadAxiom) {
+        violations.push({
+          file,
+          code: 'E_ASSET_AXIOM_HAS_TABLE',
+          message: `### ${axiomName}（${parentGroup ?? '顶层'} Group）内含表格 —— Axiom 扁平化要求纯 bullet（转 bullet 列表保留信息）`,
+          line: lineNo,
+        })
+      }
+      continue
+    }
+
+    // 检测 sub-bullet（缩进 2+ 空格 + -）
+    if (isSubBullet(line)) {
+      if (!isFieldLoadAxiom) {
+        violations.push({
+          file,
+          code: 'E_ASSET_AXIOM_HAS_SUBNESTED_LIST',
+          message: `### ${axiomName}（${parentGroup ?? '顶层'} Group）内含 sub-bullet（缩进 ${line.match(/^ +/)?.[0].length ?? 0} 空格 + -）—— Axiom 扁平化要求纯 bullet`,
+          line: lineNo,
+        })
+      }
+    }
+  }
+
+  return violations
 }
 
 /**
@@ -391,6 +501,21 @@ function checkGeneric(parsed: ParsedAsset): Violation[] {
     }
   }
 
+  // 5. Axiom 扁平化守门（v3.0 新约束）：Axiom body 内禁止 table / code fence / sub-bullet
+  //    豁免：Stack Tool (Tools/Foundation Group) / Blueprint Slot (Slot Group) / Blueprint Use / 顶层 Scope / Context Template
+  for (const [key, info] of h3Indices) {
+    if (info.parentGroup === null) continue // 顶层 Axiom 留给 checkBlueprint 处理
+    const title = key.split('###')[1] ?? ''
+    const parentGroupEnd =
+      [...h2Indices.entries()].filter(([, idx]) => idx > info.idx).map(([, idx]) => idx)[0] ?? bodyLines.length
+    const siblingH3Indices = [...h3Indices.values()]
+      .filter((v) => v.parentGroup === info.parentGroup && v.idx > info.idx)
+      .map((v) => v.idx)
+    const sliceEnd = siblingH3Indices[0] ?? parentGroupEnd
+    const axiomBody = bodyLines.slice(info.idx + 1, sliceEnd)
+    violations.push(...checkAxiomBodyComplexity(file, title, info.parentGroup, axiomBody, parsed.bodyStart + info.idx, parsed.kind))
+  }
+
   return violations
 }
 
@@ -476,8 +601,8 @@ function checkBlueprint(parsed: ParsedAsset): Violation[] {
       if (h3m) lastH3 = h3m[1]!.trim()
       if (LIST_RE.test(line) && lastH3 !== null) {
         const text = line.replace(LIST_RE, '$1')
-        // 允许 - path: / - kind: / - workflow: / - domain: / - stack: / - blueprint: / - roadmap:
-        if (!/^(path|kind|workflow|domain|stack|blueprint|roadmap)\s*:/.test(text)) {
+        // 允许 - path: / - kind: / - workflow: / - domain: / - stack: / - blueprint: / - assetmap:
+        if (!/^(path|kind|workflow|domain|stack|blueprint|assetmap)\s*:/.test(text)) {
           violations.push({
             file,
             code: 'E_ASSET_INVALID_AXIOM_BODY',
@@ -490,7 +615,6 @@ function checkBlueprint(parsed: ParsedAsset): Violation[] {
 
   // 3. ## Slot 下 ### Axiom 必须含 deps 字段负载（observe / operate 可选）
   //    Scope / Context Template 是 Blueprint 顶层字段特例，豁免 deps 校验
-  const BP_TOP_AXIOMS = new Set(['Scope', 'Context Template'])
   for (const _g of slotGroups) {
     const gStart = bodyLines.findIndex((line) => H2_RE.test(line) && /^##\s+Slot\s*$/.test(line))
     if (gStart === -1) continue
@@ -523,35 +647,124 @@ function checkBlueprint(parsed: ParsedAsset): Violation[] {
     }
   }
 
-  // 4. ### Scope 或 ## Scope 必填（兼容两种形态）
+  // 4. v2.1+ 严格：Blueprint 必须有顶层 ### Scope + ### Context Template
+  //    旧形态 ## Scope / ## Context Template H2 触发升级提示
   const topScope = topLevelAxioms.find((a) => a.title === 'Scope')
-  const hasScopeH2 = groups.some((g) => g.title === 'Scope')
-  if (!topScope && !hasScopeH2) {
-    violations.push({
-      file,
-      code: 'E_ASSET_BLUEPRINT_MISSING_SCOPE',
-      message: 'Blueprint 需 ### Scope 或 ## Scope 段（allow / forbid 文件 glob）',
-    })
+  const topCtxTpl = topLevelAxioms.find((a) => a.title === 'Context Template')
+  const legacyScopeH2 = groups.find((g) => g.title === 'Scope')
+  const legacyCtxTplH2 = groups.find((g) => g.title === 'Context Template')
+
+  if (!topScope) {
+    if (legacyScopeH2) {
+      violations.push({
+        file,
+        code: 'E_ASSET_BLUEPRINT_SCOPE_NOT_TOP_LEVEL',
+        message: 'Blueprint ## Scope 应升为顶层 ### Scope（v2.1+ 强制；Blueprint 特例字段必须顶层）',
+        line: legacyScopeH2.line,
+      })
+    } else {
+      violations.push({
+        file,
+        code: 'E_ASSET_BLUEPRINT_MISSING_SCOPE',
+        message: 'Blueprint 需顶层 ### Scope（allow / forbid 文件 glob）',
+      })
+    }
+  }
+  if (!topCtxTpl) {
+    if (legacyCtxTplH2) {
+      violations.push({
+        file,
+        code: 'E_ASSET_BLUEPRINT_CONTEXT_TEMPLATE_NOT_TOP_LEVEL',
+        message: 'Blueprint ## Context Template 应升为顶层 ### Context Template（v2.1+ 强制）',
+        line: legacyCtxTplH2.line,
+      })
+    } else {
+      violations.push({
+        file,
+        code: 'E_ASSET_BLUEPRINT_MISSING_SCOPE',
+        message: 'Blueprint 需顶层 ### Context Template（Work Context / Task Context 字段负载）',
+      })
+    }
   }
 
   // 5. 顶层 ### 只允许 Scope / Context Template（Blueprint 特例白名单）
-  //    兼容形态：Blueprint 可用 ## Scope / ## Context Template H2 替代顶层 ###；
-  //    此时 ## 段内允许 free-form bullet（不强制 Axiom 体）
-  const hasScopeVariant = groups.some((g) => g.title === 'Scope' || g.title === 'Context Template')
-  if (!hasScopeVariant) {
-    for (const a of topLevelAxioms) {
-      if (a.title !== 'Scope' && a.title !== 'Context Template') {
-        violations.push({
-          file,
-          code: 'E_ASSET_BLUEPRINT_INVALID_TOP_LEVEL',
-          message: `Blueprint 顶层 ### ${a.title} 不在白名单（仅允许 Scope / Context Template）`,
-          line: a.line,
-        })
+  for (const a of topLevelAxioms) {
+    if (a.title !== 'Scope' && a.title !== 'Context Template') {
+      violations.push({
+        file,
+        code: 'E_ASSET_BLUEPRINT_INVALID_TOP_LEVEL',
+        message: `Blueprint 顶层 ### ${a.title} 不在白名单（仅允许 Scope / Context Template）`,
+        line: a.line,
+      })
+    }
+  }
+
+  // 6. Axiom 扁平化守门（v3.0 新约束）：Blueprint Axiom body 内禁止 table / code fence / sub-bullet
+  //    豁免：## Use <type> / ## Slot Group（含 field-load Axiom）；顶层 Scope / Context Template
+  for (const a of topLevelAxioms) {
+    if (!BP_TOP_AXIOMS.has(a.title)) continue
+    // 顶层 Axiom body 切片：到下一个 H2 / H3 / EOF
+    let endIdx = bodyLines.length
+    for (let j = a.line - parsed.bodyStart; j < bodyLines.length; j++) {
+      const line = bodyLines[j] ?? ''
+      if (j > a.line - parsed.bodyStart && /^#{2,3}\s/.test(line)) {
+        endIdx = j
+        break
       }
     }
-  } else {
-    // 旧形态 H2（## Scope / ## Context Template）下可能有 ### Work Context / ### Task Context 嵌套
-    // 这些 ### 在 ## 之内，不算顶层 Axiom（已被 topLevelAxioms 排除）；无需额外校验
+    const axiomBody = bodyLines.slice(a.line - parsed.bodyStart + 1, endIdx)
+    violations.push(...checkAxiomBodyComplexity(file, a.title, null, axiomBody, parsed.bodyStart + a.line - parsed.bodyStart, parsed.kind))
+  }
+
+  // 6b. ## Use <type> + ## Slot 内的 Axiom body 扁平化（field-load Axiom 自动豁免）
+  for (const g of groups) {
+    const isUseGroup = /^Use\s/.test(g.title)
+    const isSlotGroup = g.title === 'Slot'
+    if (!isUseGroup && !isSlotGroup) continue
+    const gStart = bodyLines.findIndex(
+      (line) => H2_RE.test(line) && new RegExp(`^##\\s+${g.title}\\s*$`).test(line),
+    )
+    if (gStart === -1) continue
+    const nextH2 = bodyLines.slice(gStart + 1).findIndex((line) => H2_RE.test(line))
+    const sliceEnd = nextH2 === -1 ? bodyLines.length : gStart + 1 + nextH2
+    const slice = bodyLines.slice(gStart + 1, sliceEnd)
+    // 切片内逐 ### 划分 Axiom body
+    let lastH3Title: string | null = null
+    let lastH3Start = -1
+    for (let j = 0; j < slice.length; j++) {
+      const line = slice[j] ?? ''
+      const h3m = line.match(H3_RE)
+      if (h3m) {
+        if (lastH3Title !== null && lastH3Start !== -1) {
+          const axiomBody = slice.slice(lastH3Start + 1, j)
+          violations.push(
+            ...checkAxiomBodyComplexity(
+              file,
+              lastH3Title,
+              g.title,
+              axiomBody,
+              parsed.bodyStart + gStart + 1 + lastH3Start,
+              parsed.kind,
+            ),
+          )
+        }
+        lastH3Title = h3m[1]!.trim()
+        lastH3Start = j
+      }
+    }
+    if (lastH3Title !== null && lastH3Start !== -1) {
+      const axiomBody = slice.slice(lastH3Start + 1)
+      violations.push(
+        ...checkAxiomBodyComplexity(
+          file,
+          lastH3Title,
+          g.title,
+          axiomBody,
+          parsed.bodyStart + gStart + 1 + lastH3Start,
+          parsed.kind,
+        ),
+      )
+    }
   }
 
   return violations
@@ -574,7 +787,8 @@ const ENTITY_DIR_HINT: Record<string, AssetKind> = {
   workflow: 'workflow',
   stack: 'stack',
   blueprint: 'blueprint',
-  roadmap: 'assetmap',
+  assetmap: 'assetmap', // 🆕 v0.6.4: canonical entity value
+  roadmap: 'assetmap', // legacy alias (deprecated v0.6.4)
 }
 
 function listAssetFiles(assetsDir: string): Array<{ file: string; kind: AssetKind }> {

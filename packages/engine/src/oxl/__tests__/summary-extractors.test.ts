@@ -250,13 +250,13 @@ describe('readDomainFile — v0.7.3 P2: ## Terms: 后缀 + multiline + items 修
 
   test('regression: 7 active domains readDomainFile 后 terms/bans/invariants 关键字段不空', () => {
     const realDomains = [
+      // 🆕 v0.6.4 PR-B: 删 `oxn-insight-domain`（Q5 退役）
       'oxn-domain',
       'oxn-engine-domain',
       'oxn-cli-domain',
       'oxn-work-domain',
       'oxn-asset-domain',
-      'oxn-proof-domain',
-      'oxn-insight-domain',
+      'oxn-proof-domain', // 🆕 v0.6.4: 包含原 `oxn-probe-domain` 内容
     ]
     // Test file path: packages/engine/src/oxl/__tests__/summary-extractors.test.ts
     // → ../../../.. → repo root → .openxenon/assets/domains/
@@ -272,13 +272,13 @@ describe('readDomainFile — v0.7.3 P2: ## Terms: 后缀 + multiline + items 修
       // invariants 也都非空（4-30 不等）
       expect(d?.language?.invariant.length).toBeGreaterThan(0)
     }
-    // 6/7 domains 应有 bans（oxn-domain 是 root，无 Bans 段）
+    // 🆕 v0.6.4 PR-B: 6 active domains, 5/6 应有 bans（oxn-domain 是 root，无 Bans 段）
     let domainsWithBans = 0
     for (const name of realDomains) {
       const path = join(domainsDir, `${name}.md`)
       const d = readDomainFile(path)
       if ((d?.language?.ban.length ?? 0) > 0) domainsWithBans++
     }
-    expect(domainsWithBans).toBeGreaterThanOrEqual(6)
+    expect(domainsWithBans).toBeGreaterThanOrEqual(5)
   })
 })

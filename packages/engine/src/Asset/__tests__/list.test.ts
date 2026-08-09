@@ -3,8 +3,8 @@
  *
  * 验证 list() 和 listAll() 行为：
  * - list({kind}) 按指定 kind 返回该目录下的 .md 文件
- * - listAll() 必须返回 5 类 AssetKind（domain / workflow / stack / blueprint / roadmap）
- *   — bug fix：v0.6.2 listAll 硬编码只扫 3 类，遗漏 workflow + roadmap
+ * - listAll() 必须返回 5 类 AssetKind（domain / workflow / stack / blueprint / assetmap）
+ *   — bug fix：v0.6.2 listAll 硬编码只扫 3 类，遗漏 workflow + assetmap
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -52,7 +52,7 @@ describe('Asset.list({kind}) 单 kind 列举', () => {
 })
 
 describe('Asset.listAll() 全 kind 列举（hotfix 回归测试）', () => {
-  test('3. listAll 必须覆盖 5 类 AssetKind（bug fix：v0.6.2 漏 workflow/roadmap）', () => {
+  test('3. listAll 必须覆盖 5 类 AssetKind（bug fix：v0.6.2 漏 workflow/assetmap）', () => {
     setupProject()
     writeFileSync(join(tmpDir, '.openxenon', 'assets', 'domains', 'd1.md'), 'a')
     writeFileSync(join(tmpDir, '.openxenon', 'assets', 'workflows', 'w1.md'), 'b')
@@ -69,7 +69,7 @@ describe('Asset.listAll() 全 kind 列举（hotfix 回归测试）', () => {
     expect(kinds.has('workflow')).toBe(true)
     expect(kinds.has('stack')).toBe(true)
     expect(kinds.has('blueprint')).toBe(true)
-    expect(kinds.has('roadmap')).toBe(true)
+    expect(kinds.has('assetmap')).toBe(true)
     expect(kinds.size).toBe(5)
     teardown()
   })

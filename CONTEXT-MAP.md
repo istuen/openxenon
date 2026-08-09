@@ -1,7 +1,11 @@
 # Context Map
 
-> OpenXenon 是一个多 context 词汇架构：9 个 Domain .md 文件共同构成项目术语权威源。
+> OpenXenon 是一个多 context 词汇架构：7 个 Domain .md 文件共同构成项目术语权威源。
 > 本文件是入口索引；各 Domain 文件是各 context 的精确定义。
+>
+> **🆕 v0.6.4 PR-B 收敛**（Q5 + Q6）：
+> - 删 `OxnInsightDomain`（8 → 7 contexts）：Insight 7 个 invariant + 4 个 Axiom 全部收编到 `OxnProofDomain`（E2=a 决策）
+> - 合 `OxnProbeDomain` 到 `OxnProofDomain`：Probe 5 层名 + outcome 三态 + InterferenceFlag + Inv26-29（Q6 + Q11 b）
 >
 > **0.6.x 新增**：OxnProjectDomain（项目工程元层）—— 定义文档三情态分离（Asset / RFC / Doc）、
 > 内置 Asset 两层机制（`@oxn/` + `@prj/`）、自举种子豁免（src/builtin/）、
@@ -15,8 +19,7 @@
 | **OxnEngineDomain** | [.openxenon/assets/domains/oxn-engine-domain.md](./.openxenon/assets/domains/oxn-engine-domain.md) | OXN Engine 领域；L0-L3 分层、Kernel/Infra、错误契约 |
 | **OxnAssetDomain** | [.openxenon/assets/domains/oxn-asset-domain.md](./.openxenon/assets/domains/oxn-asset-domain.md) | Asset 业务领域；5 类 AssetKind + 论文结构 |
 | **OxnWorkDomain** | [.openxenon/assets/domains/oxn-work-domain.md](./.openxenon/assets/domains/oxn-work-domain.md) | Work 业务领域；IAP 三阶段 + Round + 证据链 |
-| **OxnProofDomain** | [.openxenon/assets/domains/oxn-proof-domain.md](./.openxenon/assets/domains/oxn-proof-domain.md) | Proof 业务领域；Probe + Trace + 客观事实采集 |
-| **OxnInsightDomain** | [.openxenon/assets/domains/oxn-insight-domain.md](./.openxenon/assets/domains/oxn-insight-domain.md) | Insight 业务领域；涌现层 + 跨 Work 模式 |
+| **OxnProofDomain** | [.openxenon/assets/domains/oxn-proof-domain.md](./.openxenon/assets/domains/oxn-proof-domain.md) | Proof 业务领域；**Proof + Probe + Insight 合并**（v0.6.4 PR-B 后 36 个 invariant） |
 | **OxnCliDomain** | [.openxenon/assets/domains/oxn-cli-domain.md](./.openxenon/assets/domains/oxn-cli-domain.md) | OXN CLI 领域；命令 + i18n + Skill |
 | **OxnProjectDomain** | [.openxenon/assets/domains/oxn-project-domain.md](./.openxenon/assets/domains/oxn-project-domain.md) | OXN 项目工程领域（v0.7+）；文档三情态 + 内置 Asset 两层 + 自举种子豁免 |
 | **OxnDraftDomain** | [.openxenon/assets/domains/oxn-draft-domain.md](./.openxenon/assets/domains/oxn-draft-domain.md) | OXN Draft 业务领域；描述性工作稿管理（report/issue/design） |
@@ -35,10 +38,8 @@ OxnAssetDomain         OxnCliDomain
     ▼                          │
 OxnWorkDomain                   │
     │                          │
-    ├─────► OxnProofDomain ────┘
-    │
-    ▼
-OxnInsightDomain（reference 全部 6 个业务 context）
+    └─────► OxnProofDomain ────┘
+           （🆕 v0.6.4 包含 Probe + Insight 子域）
 
 OxnProjectDomain（v0.7+，reference oxn-domain + oxn-engine-domain + oxn-asset-domain，
                 单向补父域未说的元层词汇；不向下引用其他子域）
@@ -50,7 +51,7 @@ OxnDraftDomain（reference oxn-asset-domain + oxn-project-domain，
 - **OxnEngineDomain → OxnAssetDomain**：Engine 消费 Asset 边界
 - **OxnAssetDomain → OxnCliDomain**：CLI 消费 Asset 类型
 - **OxnWorkDomain → OxnAssetDomain + OxnProofDomain**：Work 编排 Asset + 产出 Proof
-- **OxnInsightDomain → 全部 6 个 context**：Insight 涌现层跨 Work 推理，消费所有 context
+- 🆕 **v0.6.4 PR-B 收敛**：删 `OxnInsightDomain`（Q5），合并 `OxnProbeDomain` 到 `OxnProofDomain`（Q6）。原 `OxnInsightDomain` 6 个引用关系全部消解（其作为 cross-context consumer 角色已无人使用）
 - **OxnProjectDomain → oxn-domain/oxn-engine-domain/oxn-asset-domain**：项目工程元层，引用父域 + 资产相关子域；自身不被任何子域引用（避免环形依赖）
 - **OxnDraftDomain → oxn-asset-domain + oxn-project-domain**：Draft 是 Asset 的前置状态（描述性情态），同时受项目工程元层约束
 

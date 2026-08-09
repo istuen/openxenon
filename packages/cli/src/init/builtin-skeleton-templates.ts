@@ -195,17 +195,17 @@ citations: 0
 - desc: TODO: stage 3 阶段要做什么
 `
 
-const ASSET_ROADMAP_SKELETON = `---
+const ASSET_ASSETMAP_SKELETON = `---
 entity: skeleton
-target-entity: roadmap
+target-entity: assetmap
 version: 0.1.0
-name: TODO_<roadmap-name>
+name: TODO_<assetmap-name>
 abstract: |
   TODO: one-line description of this navigation map
 references: []
 ---
 
-# Roadmap: TODO_<roadmap-name>
+# AssetMap: TODO_<assetmap-name>
 
 > TODO: one-line description of this navigation map
 
@@ -275,7 +275,7 @@ export const BUILTIN_SKELETON_TEMPLATES: readonly BuiltinSkeletonTemplate[] = [
   { filename: 'asset-workflow.md', content: ASSET_WORKFLOW_SKELETON },
   { filename: 'asset-stack.md', content: ASSET_STACK_SKELETON },
   { filename: 'asset-blueprint.md', content: ASSET_BLUEPRINT_SKELETON },
-  { filename: 'asset-roadmap.md', content: ASSET_ROADMAP_SKELETON },
+  { filename: 'asset-assetmap.md', content: ASSET_ASSETMAP_SKELETON }, // 🆕 v0.6.4: 'asset-roadmap.md' → 'asset-assetmap.md'
   { filename: 'work.md', content: WORK_SKELETON },
 ] as const
 

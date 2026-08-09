@@ -89,7 +89,7 @@ describe('ADR-0090: builtin registry 加载守卫', () => {
     test('roadmaps/assetmaps: 1 个 (md-system) 加载', () => {
       const rm = registry.getRoadmap('md-system')
       expect(rm).not.toBeNull()
-      expect(rm?._type).toBe('roadmap')
+      expect(rm?._type).toBe('assetmap') // 🆕 v0.6.4: 'roadmap' → 'assetmap'
       expect(typeof rm?.abstract).toBe('string')
       expect((rm?.abstract as string).length).toBeGreaterThan(0)
     })
@@ -109,7 +109,7 @@ describe('ADR-0090: builtin registry 加载守卫', () => {
       { kind: 'domain' as const, name: 'doc-md-domain' },
       { kind: 'workflow' as const, name: 'md-author-workflow' },
       { kind: 'stack' as const, name: 'md-stack' },
-      { kind: 'roadmap' as const, name: 'md-system' },
+      { kind: 'assetmap' as const, name: 'md-system' }, // 🆕 v0.6.4
     ]
 
     for (const { kind, name } of cases) {

@@ -64,6 +64,7 @@ const OXN_BUILTIN_BLUEPRINT = 'oxn-blueprint'
 //   - 10 个 builtin domain 对应 OXN 10 个核心域 (oxn-domain 等)
 //   - v0.6.2-alpha.3 增 `oxn-draft-promote-domain`（Draft Promote 路由领域）
 //   - 未来若 builtin 列表变更: 修改 fallback + 在 .openxenon/assets/domains/ 创建 .md
+// 🆕 v0.6.4 PR-B: 删 `oxn-insight-domain`（Q5 退役）+ `oxn-probe-domain` 并入 `oxn-proof-domain`（Q6 合并）
 const OXN_BUILTIN_DOMAINS_FALLBACK = [
   'oxn-asset-domain',
   'oxn-cli-domain',
@@ -71,9 +72,8 @@ const OXN_BUILTIN_DOMAINS_FALLBACK = [
   'oxn-draft-domain',
   'oxn-draft-promote-domain',
   'oxn-engine-domain',
-  'oxn-insight-domain',
   'oxn-project-domain',
-  'oxn-proof-domain',
+  'oxn-proof-domain', // 🆕 v0.6.4: 包含原 `oxn-probe-domain` 内容（Probe Axioms + Inv26-29）
   'oxn-work-domain',
   'skeleton', // v0.6.3 Q3: 7 skeleton 模板 entity (独立 entity，不需 .openxenon/assets/domains/ 副本)
 ]

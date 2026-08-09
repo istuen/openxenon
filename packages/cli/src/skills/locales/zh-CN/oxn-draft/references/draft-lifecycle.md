@@ -221,7 +221,7 @@ oxn draft promote <name> [--target auto|rfc|asset|work] [--archive-after]
 
 **7 sub-target**：
 - `promote-rfc` → `docs/rfcs/zh-cn/RFC-XXXX-<theme>.md`
-- `promote-asset-{domain|workflow|stack|blueprint|roadmap}` → `.openxenon/assets/{kind}/{name}.md`
+- `promote-asset-{domain|workflow|stack|blueprint|assetmap}` → `.openxenon/assets/{kind}/{name}.md`
 - `promote-work` → `.openxenon/works/<id>/work.md`
 
 **关键约束**：
@@ -253,7 +253,7 @@ oxn draft create <name> --target <rfc|asset|work> [--kind <5 AssetKind>]
 
 **7 个 skeleton 模板**（`.openxenon/draft-skeletons/`）：
 - `rfc.md` — RFC skeleton
-- `asset-{domain|workflow|stack|blueprint|roadmap}.md` — 5 AssetKind skeleton
+- `asset-{domain|workflow|stack|blueprint|assetmap}.md` — 5 AssetKind skeleton
 - `work.md` — Work skeleton
 
 **注入字段**：

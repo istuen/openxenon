@@ -44,7 +44,7 @@ export interface ReferenceTarget {
   /** 严重程度 */
   severity: ReferenceSeverity
   /** 引用类型 */
-  kind: 'domain' | 'blueprint' | 'stack' | 'roadmap' | 'work' | 'task' | 'proof' | 'url' | 'path' | 'unknown'
+  kind: 'domain' | 'blueprint' | 'stack' | 'assetmap' | 'work' | 'task' | 'proof' | 'url' | 'path' | 'unknown' // 🆕 v0.6.4: 'roadmap' → 'assetmap'
 }
 
 export interface ReferenceCheckResult {
@@ -110,7 +110,8 @@ export function parseReferenceTarget(raw: string, _projectRoot?: string): Refere
         blueprints: 'blueprint',
         domains: 'domain',
         stacks: 'stack',
-        roadmaps: 'roadmap',
+        assetmaps: 'assetmap', // 🆕 v0.6.4: 'roadmaps' → 'assetmaps'
+        roadmaps: 'assetmap', // legacy alias
       }
       return {
         raw: trimmed,

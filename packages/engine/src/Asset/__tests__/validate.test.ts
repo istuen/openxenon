@@ -96,15 +96,15 @@ name: valid
     teardown()
   })
 
-  test('5. roadmap Asset 含 ## Scenes + ## Usage + ## Scene quick-reference → ok=true', async () => {
+  test('5. assetmap Asset 含 ## Scenes + ## Usage + ## Scene quick-reference → ok=true', async () => {
     setupProject()
     writeFileSync(
       join(tmpDir, '.openxenon', 'assets', 'assetmaps', 'multi-h2.md'),
       `---
-entity: roadmap
+entity: assetmap
 name: multi-h2
 ---
-# Roadmap: multi-h2
+# AssetMap: multi-h2
 
 ## Scenes
 ### scene-a
@@ -117,7 +117,7 @@ descriptive text
 descriptive text
 `,
     )
-    const result = await validate({ kind: 'roadmap', name: 'multi-h2', projectRoot: tmpDir })
+    const result = await validate({ kind: 'assetmap', name: 'multi-h2', projectRoot: tmpDir })
     expect(result.ok).toBe(true)
     expect(result.errors).toEqual([])
     teardown()

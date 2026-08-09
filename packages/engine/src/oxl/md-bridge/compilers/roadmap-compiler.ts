@@ -57,7 +57,7 @@ interface RoadmapLink {
 }
 
 export class RoadmapCompiler implements EntityCompiler {
-  readonly entityType: IntentEntityType = 'roadmap'
+  readonly entityType: IntentEntityType = 'assetmap' // 🆕 v0.6.4: 'roadmap' → 'assetmap'
 
   // ====================
   // compile
@@ -170,7 +170,7 @@ export class RoadmapCompiler implements EntityCompiler {
     }
 
     return {
-      entity: 'roadmap',
+      entity: 'assetmap', // 🆕 v0.6.4: 'roadmap' → 'assetmap'
       name: typeof frontmatter.name === 'string' ? frontmatter.name : '',
       version: typeof frontmatter.version === 'string' ? frontmatter.version : '0.3.0',
       abstract: typeof frontmatter.abstract === 'string' ? frontmatter.abstract : undefined,
@@ -214,7 +214,8 @@ export class RoadmapCompiler implements EntityCompiler {
         errors.push({
           code: 'E_MD_CATEGORY_UNKNOWN',
           message:
-            `Unknown H2 category '${ctx.h2}' for entity type 'roadmap'. ` + `Allowed: ${ROADMAP_CATEGORIES.join(', ')}`,
+            `Unknown H2 category '${ctx.h2}' for entity type 'assetmap'. ` + // 🆕 v0.6.4
+            `Allowed: ${ROADMAP_CATEGORIES.join(', ')}`,
           severity: 'error',
           line: ctx.h3Position?.line,
         })

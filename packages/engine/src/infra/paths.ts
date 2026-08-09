@@ -11,7 +11,15 @@ export const GLOBAL_ARSENAL_ROOT = join(GLOBAL_BOUNDARY, 'arsenal') // TODO(v1.1
 export type Scope = 'project' | 'global'
 
 export type AssetState = 'draft' | 'canonical'
-export type AssetType = 'probes' | 'blueprints' | 'parts'
+/**
+ * 🆕 v0.6.4 PR-E（Q3）：EngineModuleType = AssetKind=非 Asset 的引擎模块类型（builtin probe/blueprint/part）。
+ * 原名 `AssetType`（paths.ts:14）易与 AssetKind（5 类定义性资产）混淆；本次重命名为 `EngineModuleType` 显式表明
+ *   "非 Asset 的引擎内置模块"语义（区别于 oxl/driver.ts:29 的 `AssetType = 'domain' | 'blueprint' | 'work' | 'task' | 'proof'`
+ *   IAP 实体类型 + oxl/scope/oxn-scope.ts:21 的 `OxnAssetType = 'probe' | 'part' | 'blueprint' | 'interface'` builtin scope 类型）。
+ *
+ * 注意：`probes` / `blueprints` / `parts` 三值本身未变（值级别不破坏），仅类型名变更（type-level rename）。
+ */
+export type EngineModuleType = 'probes' | 'blueprints' | 'parts'
 
 export function getProjectBoundary(cwd: string = process.cwd()): string {
   return join(cwd, BOUNDARY_DIR)
@@ -68,7 +76,7 @@ export interface ProjectConfig {
     workflow?: string // 🆕 v0.6.1-alpha.2: 原 blueprint 改名
     stack?: string
     blueprint?: string // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
-    roadmap?: string // 🆕 v0.6.1-alpha.1
+    assetmap?: string // 🆕 v0.6.4: roadmap → assetmap 命名收敛
   }
   /** v0.6.2: Draft 工作目录（默认 '<boundaryDir>/drafts'） */
   draftDir?: string
@@ -82,7 +90,7 @@ export interface ProjectConfig {
       workflow?: string
       stack?: string
       blueprint?: string
-      roadmap?: string
+      assetmap?: string // 🆕 v0.6.4: roadmap → assetmap
     }
     /** Work 目标目录（默认 '.openxenon/works'） */
     workDir?: string
@@ -96,7 +104,7 @@ export const DEFAULT_ASSET_DIRS = {
   workflow: 'workflows', // 🆕 v0.6.1-alpha.2: 原 blueprint 改名
   stack: 'stacks', // 🆕 v0.6.2-alpha.1: 同步复数约定（与 domains/workflows/blueprints/roadmaps + @md/stacks/ 引用一致；fallback 已为 stacks，单数 primary 是 typo）
   blueprint: 'blueprints', // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
-  roadmap: 'assetmaps', // 🆕 v0.7: roadmap → assetmap 命名收敛（AssetKind 枚举值仍为 'roadmap'）
+  assetmap: 'assetmaps', // 🆕 v0.6.4: roadmap → assetmap 命名收敛（AssetKind 枚举值亦同步）
 } as const
 
 /**
@@ -104,13 +112,16 @@ export const DEFAULT_ASSET_DIRS = {
  * 收敛自原 6 类型（domain/blueprint/stack/roadmap/library/external）。
  * library/external 在 v0.6.1-alpha.2 中被收敛：library 降级为 .md 文件，external 降级为边界内 inline 声明。
  * 原 Blueprint (slots/deps/observe) 改名为 Workflow；新 Blueprint = 组合模板。
+ *
+ * 🆕 v0.6.4: 'roadmap' → 'assetmap'（break-change；目录仍为 'assetmaps/'）
+ * v0.7 RFC-0013 D4 锁定 AssetKind 枚举值不变，但 v0.6.4 设计决定全面回收 Roadmap 术语。
  */
 export const ALL_ASSET_KINDS = [
   'domain',
   'workflow', // 🆕 v0.6.1-alpha.2: 原 blueprint 改名
   'stack',
   'blueprint', // 🆕 v0.6.1-alpha.2: 新语义（组合模板）
-  'roadmap',
+  'assetmap', // 🆕 v0.6.4: 原 roadmap 改名（用户面收敛）
 ] as const
 
 export type AssetKind = (typeof ALL_ASSET_KINDS)[number]
@@ -179,7 +190,7 @@ export function resolveAssetCandidates(
   const boundary = join(projectRoot, boundaryDir)
   const primary = resolveAssetDir(projectRoot, kind, config)
   // 旧布局 fallback：<boundaryDir>/<plural>/（domains/workflows/blueprints/assetmaps/stacks）
-  // 🆕 v0.7: roadmap → assetmap 命名收敛（AssetKind 枚举值仍为 'roadmap'）
+  // 🆕 v0.6.4: roadmap → assetmap 命名收敛
   const fallbackDir =
     kind === 'domain'
       ? 'domains'
@@ -187,7 +198,7 @@ export function resolveAssetCandidates(
         ? 'workflows'
         : kind === 'blueprint'
           ? 'blueprints'
-          : kind === 'roadmap'
+          : kind === 'assetmap'
             ? 'assetmaps'
             : 'stacks'
   const fallback = join(boundary, fallbackDir)

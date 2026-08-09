@@ -119,14 +119,14 @@ describe('ADR-0090: builtin assets .md 加载测试（mdast 路径）', () => {
     }
   })
 
-  describe('assetmap/roadmap .md 文件结构（ADR-0090 D2 新增）', () => {
+  describe('assetmap/assetmap .md 文件结构（ADR-0090 D2 新增）', () => {
     for (const path of listMd(BUILTIN_ASSETMAPS_DIR)) {
       test(`${path} frontmatter 合规`, () => {
         const content = readFileSync(path, 'utf-8')
         const { frontmatter } = parseMarkdown(content)
 
-        // RFC-0013 D4: AssetKind 枚举保留 'roadmap'，目录收敛为 'assetmaps/'
-        expect(frontmatter.entity).toBe('roadmap')
+        // 🆕 v0.6.4: AssetKind 枚举同步为 'assetmap'
+        expect(frontmatter.entity).toBe('assetmap')
         expect(typeof frontmatter.name).toBe('string')
         expect(typeof frontmatter.abstract).toBe('string')
       })

@@ -77,7 +77,7 @@ oxn draft create fix-payment-idempotency --target work
 
 **何时用 `--target`**:
 - `rfc` — 准备升级为 RFC(Draft frontmatter 含 `promote-target: rfc`)
-- `asset` + `--kind <domain|workflow|stack|blueprint|roadmap>` — 准备升级为 5 类 Asset 之一
+- `asset` + `--kind <domain|workflow|stack|blueprint|assetmap>` — 准备升级为 5 类 Asset 之一
 - `work` — 准备升级为 Work 实例
 - 无 `—target` — 通用草稿(可后续 `retarget` 加 target)
 
@@ -120,7 +120,7 @@ oxn draft promote <name> [--target auto|rfc|asset|work] [--archive-after]
 
 **7 sub-target**:
 - `promote-rfc` → `docs/rfcs/zh-cn/RFC-XXXX-<theme>.md`
-- `promote-asset-{domain|workflow|stack|blueprint|roadmap}` → `.openxenon/assets/{kind}/{name}.md`
+- `promote-asset-{domain|workflow|stack|blueprint|assetmap}` → `.openxenon/assets/{kind}/{name}.md`
 - `promote-work` → `.openxenon/works/<id>/work.md`
 
 **示例**:
@@ -194,7 +194,7 @@ oxn draft retarget my-design --new-target rfc
 | `OXN_DRAFT_ALREADY_ARCHIVED` | archive 目标已存在 | 丢弃归档副本或改名 |
 | `OXN_DRAFT_TARGET_INVALID` | `--target` 不在 3 类中 | 用 `rfc` / `asset` / `work` |
 | `OXN_DRAFT_KIND_REQUIRED` | `--target=asset` 缺 `--kind` | 加 `--kind=<5 AssetKind>` |
-| `OXN_DRAFT_KIND_INVALID` | `--kind` 不在 5 类中 | 用 `domain` / `workflow` / `stack` / `blueprint` / `roadmap` |
+| `OXN_DRAFT_KIND_INVALID` | `--kind` 不在 5 类中 | 用 `domain` / `workflow` / `stack` / `blueprint` / `assetmap` |
 | `OXN_DRAFT_SKELETON_NOT_FOUND` | skeleton 模板不存在 | 建 `.openxenon/draft-skeletons/<target>[-kind].md` |
 | `OXN_DRAFT_PROMOTE_TARGET_MISSING` | frontmatter 缺 `promote-target` | `oxn draft retarget` 加 target |
 | `OXN_DRAFT_PROMOTE_TARGET_UNKNOWN` | `promote-target` 值不在 3 类中 | 改 frontmatter 或 `--target` |

@@ -61,13 +61,13 @@ describe('promoteDraft', () => {
     teardown()
   })
 
-  test('3. asset+roadmap 派生到 assetmaps 目录', () => {
+  test('3. asset+assetmap 派生到 assetmaps 目录', () => {
     setup()
-    writeDraft('rm-foo', '---\nentity: roadmap\npromote-target: asset\npromote-kind: roadmap\n---\n# Roadmap\n')
+    writeDraft('rm-foo', '---\nentity: assetmap\npromote-target: asset\npromote-kind: assetmap\n---\n# AssetMap\n') // 🆕 v0.6.4: 'roadmap' → 'assetmap'
     const result = promoteDraft({ projectRoot: FIXTURE_PROJECT, name: 'rm-foo' }, null)
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    expect(result.subTarget).toBe('promote-asset-roadmap')
+    expect(result.subTarget).toBe('promote-asset-assetmap') // 🆕 v0.6.4
     expect(result.targetPath).toContain('.openxenon/assets/assetmaps/rm-foo.md')
     teardown()
   })
@@ -92,7 +92,7 @@ describe('promoteDraft', () => {
       { name: 'w', fm: 'promote-target: asset\npromote-kind: workflow', expectedSub: 'promote-asset-workflow' },
       { name: 's', fm: 'promote-target: asset\npromote-kind: stack', expectedSub: 'promote-asset-stack' },
       { name: 'b', fm: 'promote-target: asset\npromote-kind: blueprint', expectedSub: 'promote-asset-blueprint' },
-      { name: 'r', fm: 'promote-target: asset\npromote-kind: roadmap', expectedSub: 'promote-asset-roadmap' },
+      { name: 'r', fm: 'promote-target: asset\npromote-kind: assetmap', expectedSub: 'promote-asset-assetmap' }, // 🆕 v0.6.4
       { name: 'wk', fm: 'promote-target: work', expectedSub: 'promote-work' },
     ]
     for (const c of cases) {

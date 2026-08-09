@@ -27,7 +27,7 @@ function setupSkeletonDir(): void {
     'asset-workflow.md': '---\nentity: workflow\n---\n# Workflow\n',
     'asset-stack.md': '---\nentity: stack\n---\n# Stack\n',
     'asset-blueprint.md': '---\nentity: blueprint\n---\n# Blueprint\n',
-    'asset-roadmap.md': '---\nentity: roadmap\n---\n# Roadmap\n',
+    'asset-assetmap.md': '---\nentity: assetmap\n---\n# AssetMap\n', // 🆕 v0.6.4
     'work.md': '---\nworkId: TODO\n---\n# Work\n',
   }
   for (const [name, content] of Object.entries(templates)) {
@@ -173,7 +173,7 @@ describe('forkDraftSkeleton', () => {
 
   test('12. 4 target 枚举完整（v0.5.0 D2 goal 新增）', () => {
     expect(DRAFT_TARGETS).toEqual(['rfc', 'asset', 'work', 'goal'])
-    expect(ASSET_KINDS).toEqual(['domain', 'workflow', 'stack', 'blueprint', 'roadmap'])
+    expect(ASSET_KINDS).toEqual(['domain', 'workflow', 'stack', 'blueprint', 'assetmap']) // 🆕 v0.6.4
   })
 })
 

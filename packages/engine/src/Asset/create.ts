@@ -249,7 +249,7 @@ export async function create(input: CreateInput): Promise<CreateResult> {
       // v0.7+ canonical: Stack 输出 ## Tools 段（极简 .md 单一格式）
       content = createStackTemplate(input.name)
       break
-    case 'roadmap':
+    case 'assetmap': // 🆕 v0.6.4: 'roadmap' → 'assetmap'
       content = createRoadmapTemplate(input.name)
       break
     default:

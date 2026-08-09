@@ -321,13 +321,13 @@ describe('oxn draft promote --commit (NG6)', () => {
     expect(existsSync(body.data.phases.commit.filePath)).toBe(true)
   })
 
-  test('Asset+roadmap --commit → 写 .openxenon/assets/assetmaps/<kebab>.md', async () => {
+  test('Asset+assetmap --commit → 写 .openxenon/assets/assetmaps/<kebab>.md', async () => {
     await env.initProject()
-    await env.runCli(['draft', 'create', 'commit-roadmap', '--target', 'asset', '--kind', 'roadmap', '--json'])
-    const r = await env.runCli(['draft', 'promote', 'commit-roadmap', '--commit', '--json'])
+    await env.runCli(['draft', 'create', 'commit-assetmap', '--target', 'asset', '--kind', 'assetmap', '--json']) // 🆕 v0.6.4: 'roadmap' → 'assetmap'
+    const r = await env.runCli(['draft', 'promote', 'commit-assetmap', '--commit', '--json'])
     expect(r.exitCode).toBe(0)
     const body = JSON.parse(r.stdout)
-    expect(body.data.phases.commit.filePath).toContain('.openxenon/assets/assetmaps/commit-roadmap.md')
+    expect(body.data.phases.commit.filePath).toContain('.openxenon/assets/assetmaps/commit-assetmap.md')
     expect(existsSync(body.data.phases.commit.filePath)).toBe(true)
   })
 

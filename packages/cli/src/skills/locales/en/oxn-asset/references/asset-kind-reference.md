@@ -10,7 +10,7 @@
 | **workflow** | Execution flow (slot DAG, renamed from blueprint) | Props / Slots / **Externals** (optional) | env, timeout; build, test, verify |
 | **stack** | Tech stack constraints (runtime/linter/test) | Runtimes / Linters / Tests / **Externals** (optional) | typescript, biome, bun-test |
 | **blueprint** | Composition template (domain + workflow + stack) | **Refs** (cross-kind references) | integrate-payment, dev-standard |
-| **roadmap** | Navigation graph (scene → asset) | Scenes (sub: scene) | scene: doc, scene: dev |
+| **assetmap** | Navigation graph (scene → asset) | Scenes (sub: scene) | scene-doc, scene-dev |
 
 > **v0.6.1-alpha.4 convergence**:
 > - library/external Asset types removed (see ADR-0053)

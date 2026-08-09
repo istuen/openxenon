@@ -39,12 +39,12 @@ const VALID_SCOPES: ReadonlySet<string> = new Set(['blueprints', 'domains', 'sta
  * 解析 `@md/<scope>/<name>` 引用值。
  *
  * @param raw 引用字符串（必须非空；前后空白会被 trim）
- * @param expectedKind 调用方预期的 scope 类别（'blueprint' | 'domain' | 'stack' | 'roadmap'）
- *                   用于字段-值一致性校验（AssetKind 枚举值仍为 'roadmap'）
+ * @param expectedKind 调用方预期的 scope 类别（'blueprint' | 'domain' | 'stack' | 'assetmap'）
+ *                   用于字段-值一致性校验（🆕 v0.6.4: 'roadmap' → 'assetmap'）
  * @returns 拆解后的 `{ scope, name }`
  * @throws IAPError axis=INTENT, code=REFERENCE_PREFIX_INVALID
  */
-export function parseMdRef(raw: string, expectedKind: 'blueprint' | 'domain' | 'stack' | 'roadmap'): MdRef {
+export function parseMdRef(raw: string, expectedKind: 'blueprint' | 'domain' | 'stack' | 'assetmap'): MdRef {
   const trimmed = (raw ?? '').trim()
 
   if (!trimmed) {
@@ -150,6 +150,7 @@ export function parseMdRef(raw: string, expectedKind: 'blueprint' | 'domain' | '
 /**
  * 把 AssetKind 翻成 MDScope（共用 helper）
  */
-export function kindToScope(kind: 'blueprint' | 'domain' | 'stack' | 'roadmap'): MDScope {
+export function kindToScope(kind: 'blueprint' | 'domain' | 'stack' | 'assetmap'): MDScope {
+  // 🆕 v0.6.4: 'roadmap' → 'assetmap'
   return kind === 'blueprint' ? 'blueprints' : kind === 'domain' ? 'domains' : kind === 'stack' ? 'stacks' : 'assetmaps'
 }

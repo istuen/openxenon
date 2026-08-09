@@ -54,7 +54,7 @@ function loadDraftConfig(): {
       workflow?: string
       stack?: string
       blueprint?: string
-      roadmap?: string
+      assetmap?: string // 🆕 v0.6.4: 'roadmap' → 'assetmap'
     }
     workDir?: string
   }
@@ -78,7 +78,7 @@ function loadDraftConfig(): {
               workflow?: string
               stack?: string
               blueprint?: string
-              roadmap?: string
+              assetmap?: string // 🆕 v0.6.4: 'roadmap' → 'assetmap'
             }
             workDir?: string
           }

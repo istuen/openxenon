@@ -250,19 +250,20 @@ export async function validateAssetPaper4Fields(
     warnings.push(msg)
     assetLogger.warn(msg, { kind, name, field: 'abstract' })
   }
-  // Roadmap intentionally omits references field
-  // Roadmap's "navigation" role is fulfilled by its own links[] (per grammar comment 2026-07-08).
-  if (references === undefined && kind !== 'roadmap') {
+  // AssetMap (formerly Roadmap) intentionally omits references field
+  // AssetMap's "navigation" role is fulfilled by its own links[] (per grammar comment 2026-07-08).
+  // 🆕 v0.6.4: 'roadmap' → 'assetmap'
+  if (references === undefined && kind !== 'assetmap') {
     const msg = `references field missing (use references = ["X", "Y"] or references = [])`
     warnings.push(msg)
     assetLogger.warn(msg, { kind, name, field: 'references' })
   }
-  if (citations === undefined && kind !== 'roadmap') {
+  if (citations === undefined && kind !== 'assetmap') {
     const msg = `citations field missing (set initial value, e.g. citations = 0)`
     warnings.push(msg)
     assetLogger.warn(msg, { kind, name, field: 'citations' })
   }
-  if (!auditTrail && kind !== 'roadmap') {
+  if (!auditTrail && kind !== 'assetmap') {
     const msg = `auditTrail comment missing (add // auditTrail: created by <name> at <time>)`
     warnings.push(msg)
     assetLogger.warn(msg, { kind, name, field: 'auditTrail' })

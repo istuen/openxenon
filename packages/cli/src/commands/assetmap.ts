@@ -110,7 +110,7 @@ export default defineCommand({
           if (data.abstract) console.log(`> ${data.abstract}\n`)
           console.log(`Scenes: ${scenes.length}\n`)
           for (const s of scenes) {
-            console.log(`### scene: ${s.name}`)
+            console.log(`### scene-${s.name}`) // 🆕 v0.6.4: '### scene: <name>' → '### scene-<name>'
             console.log(`> ${s.description}`)
             console.log('')
             console.log('| kind | name | description |')
@@ -226,7 +226,7 @@ export default defineCommand({
     }),
 
     validate: defineCommand({
-      meta: { name: 'validate', description: 'Validate an AssetMap (内部委托 oxn asset validate --kind roadmap)' },
+      meta: { name: 'validate', description: 'Validate an AssetMap (内部委托 oxn asset validate --kind assetmap)' },
       args: {
         name: { type: 'positional', required: true, description: 'AssetMap name' },
       },
@@ -236,7 +236,7 @@ export default defineCommand({
         const format = args.json ? 'json' : 'human'
         const { execSync } = await import('node:child_process')
         try {
-          const out = execSync(`bun run packages/cli/src/index.ts asset validate ${args.name} --kind roadmap --json`, {
+          const out = execSync(`bun run packages/cli/src/index.ts asset validate ${args.name} --kind assetmap --json`, {
             cwd: getProjectRoot(),
             encoding: 'utf-8',
           })

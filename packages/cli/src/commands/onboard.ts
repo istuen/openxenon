@@ -274,14 +274,14 @@ function sourceCodeSummary(signals: ProjectSignals): string {
 // 5 Asset 完整性检查（Stage A 暂用占位，Stage C 接入 oxn asset check）
 // -----------------------------------------------------------------------------
 
-type AssetKind = 'domain' | 'workflow' | 'stack' | 'blueprint' | 'roadmap'
+type AssetKind = 'domain' | 'workflow' | 'stack' | 'blueprint' | 'assetmap' // 🆕 v0.6.4: 'roadmap' → 'assetmap'
 
 const REQUIRED_STARTER_ASSETS: Array<{ kind: AssetKind; name: string }> = [
   { kind: 'domain', name: 'doc-md-domain' },
   { kind: 'workflow', name: 'md-author-workflow' },
   { kind: 'stack', name: 'md-stack' },
   { kind: 'blueprint', name: 'md-author-blueprint' },
-  { kind: 'roadmap', name: 'md-system' },
+  { kind: 'assetmap', name: 'md-system' }, // 🆕 v0.6.4
 ]
 
 function checkStarterAssets(projectRoot: string): {
@@ -290,7 +290,7 @@ function checkStarterAssets(projectRoot: string): {
 } {
   const missing: Array<{ kind: AssetKind; name: string }> = []
   for (const a of REQUIRED_STARTER_ASSETS) {
-    const kindDir = a.kind === 'roadmap' ? 'assetmaps' : `${a.kind}s`
+    const kindDir = a.kind === 'assetmap' ? 'assetmaps' : `${a.kind}s` // 🆕 v0.6.4
     const p = join(projectRoot, BOUNDARY_DIR, ASSETS_DIR, kindDir, `${a.name}.md`)
     if (!existsSync(p)) {
       missing.push(a)
@@ -320,7 +320,7 @@ interface CopyResult {
 }
 
 function kindDirName(kind: AssetKind): string {
-  return kind === 'roadmap' ? 'assetmaps' : `${kind}s`
+  return kind === 'assetmap' ? 'assetmaps' : `${kind}s` // 🆕 v0.6.4: 'roadmap' → 'assetmap'
 }
 
 async function copyAndValidateStarterAssets(projectRoot: string): Promise<CopyResult> {
@@ -502,7 +502,7 @@ function suggestProjectAssetNames(signals: ProjectSignals): {
   workflow: string
   stack: string
   blueprint: string
-  roadmap: string
+  assetmap: string // 🆕 v0.6.4: 'roadmap' → 'assetmap'
 } {
   const lang = []
   if (signals.hasPackageJson) lang.push('node')
@@ -518,7 +518,7 @@ function suggestProjectAssetNames(signals: ProjectSignals): {
     workflow: `${projectTag}-dev-workflow`,
     stack: `${projectTag}-stack`,
     blueprint: `${projectTag}-blueprint`,
-    roadmap: `${projectTag}-system`,
+    assetmap: `${projectTag}-system`, // 🆕 v0.6.4
   }
 }
 
@@ -552,14 +552,14 @@ function runBootstrap(projectRoot: string): void {
       `  --domain ${names.domain} --stack ${names.stack} --workflow ${names.workflow}`,
       ``,
       `# AssetMap（项目场景路由）`,
-      `oxn asset create ${names.roadmap} --kind roadmap`,
+      `oxn asset create ${names.assetmap} --kind assetmap`, // 🆕 v0.6.4
     ],
     finalSteps: [
       `oxn asset validate ${names.domain} --kind domain`,
       `oxn asset validate ${names.workflow} --kind workflow`,
       `oxn asset validate ${names.stack} --kind stack`,
       `oxn asset validate ${names.blueprint} --kind blueprint`,
-      `oxn asset validate ${names.roadmap} --kind roadmap`,
+      `oxn asset validate ${names.assetmap} --kind assetmap`, // 🆕 v0.6.4
     ],
     note: '5 Asset 全部创建后，运行 `oxn onboard --new` 可叠加 5 个 md-* 起手 Asset（基于通用 MD 工具链）',
   }

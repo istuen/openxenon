@@ -58,12 +58,13 @@ export function resolveAndDetectAssetDir(
   config: ProjectConfig | null = null,
 ): ResolvedAssetPath {
   // 🆕 v0.6.1-alpha.2: 加入 workflow 5 kind 校验（删除 library/external）
-  if (kind !== 'domain' && kind !== 'workflow' && kind !== 'blueprint' && kind !== 'stack' && kind !== 'roadmap') {
+  // 🆕 v0.6.4: 'roadmap' → 'assetmap'
+  if (kind !== 'domain' && kind !== 'workflow' && kind !== 'blueprint' && kind !== 'stack' && kind !== 'assetmap') {
     throw new IAPError(
       'INFRA',
       'KIND_UNSUPPORTED',
       IAPAction.YIELD_TO_HUMAN,
-      'Only domain / workflow / blueprint / stack / roadmap are asset-dir configurable. Work / proof are process.',
+      'Only domain / workflow / blueprint / stack / assetmap are asset-dir configurable. Work / proof are process.',
       { kind },
     )
   }
@@ -71,7 +72,7 @@ export function resolveAndDetectAssetDir(
   const boundary = join(projectRoot, BOUNDARY_DIR)
   const primary = resolveAssetDir(projectRoot, kind, config)
   // fallback 旧布局：.openxenon/<plural>/（domains/workflows/blueprints/assetmaps/stacks — v0.5 兼容）
-  // 🆕 v0.7: roadmap → assetmap 命名收敛（AssetKind 枚举值仍为 'roadmap'）
+  // 🆕 v0.6.4: roadmap → assetmap 命名收敛
   const fallbackDir =
     kind === 'domain'
       ? 'domains'
@@ -79,7 +80,7 @@ export function resolveAndDetectAssetDir(
         ? 'workflows'
         : kind === 'blueprint'
           ? 'blueprints'
-          : kind === 'roadmap'
+          : kind === 'assetmap'
             ? 'assetmaps'
             : 'stacks'
   const fallback = join(boundary, fallbackDir)
@@ -139,8 +140,9 @@ export function migrateAssetsToV6Layout(
   dryRun = false,
 ): MigrateResult {
   const result: MigrateResult = { moved: [], skipped: [], configUpdated: false }
-  // 🆕 v0.6.1-alpha.2: 加入 workflow + blueprint（5 类型） + roadmap
-  const kinds: Exclude<AssetKind, never>[] = ['domain', 'workflow', 'blueprint', 'stack', 'roadmap']
+  // 🆕 v0.6.1-alpha.2: 加入 workflow + blueprint（5 类型）
+  // 🆕 v0.6.4: roadmap → assetmap
+  const kinds: Exclude<AssetKind, never>[] = ['domain', 'workflow', 'blueprint', 'stack', 'assetmap']
 
   for (const kind of kinds) {
     const resolved = resolveAndDetectAssetDir(projectRoot, kind, config)
@@ -186,9 +188,8 @@ export function migrateAssetsToV6Layout(
       changed = true
     } else {
       for (const kind of kinds) {
-        if (!config.assetDirs[kind as 'domain' | 'workflow' | 'blueprint' | 'stack' | 'roadmap']) {
-          config.assetDirs[kind as 'domain' | 'workflow' | 'blueprint' | 'stack' | 'roadmap'] =
-            DEFAULT_ASSET_DIRS[kind as 'domain' | 'workflow' | 'blueprint' | 'stack' | 'roadmap']
+        if (!config.assetDirs[kind as AssetKind]) {
+          config.assetDirs[kind as AssetKind] = DEFAULT_ASSET_DIRS[kind as AssetKind]
           changed = true
         }
       }

@@ -30,7 +30,7 @@ function setup(): void {
     'asset-workflow.md': '---\nentity: workflow\n---\n# Workflow\n',
     'asset-stack.md': '---\nentity: stack\n---\n# Stack\n',
     'asset-blueprint.md': '---\nentity: blueprint\n---\n# Blueprint\n',
-    'asset-roadmap.md': '---\nentity: roadmap\n---\n# Roadmap\n',
+    'asset-assetmap.md': '---\nentity: assetmap\n---\n# AssetMap\n', // 🆕 v0.6.4
     'work.md': '---\nworkId: TODO\n---\n# Work\n',
   }
   for (const [name, content] of Object.entries(templates)) {

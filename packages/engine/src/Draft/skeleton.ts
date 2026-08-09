@@ -32,7 +32,7 @@ import { getBoundaryDir } from '@openxenon/engine/infra/oxnrc'
 export const DRAFT_TARGETS = ['rfc', 'asset', 'work', 'goal'] as const
 export type DraftTarget = (typeof DRAFT_TARGETS)[number]
 
-export const ASSET_KINDS = ['domain', 'workflow', 'stack', 'blueprint', 'roadmap'] as const
+export const ASSET_KINDS = ['domain', 'workflow', 'stack', 'blueprint', 'assetmap'] as const // 🆕 v0.6.4: 'roadmap' → 'assetmap'
 export type DraftAssetKind = (typeof ASSET_KINDS)[number]
 
 export interface ForkSkeletonInput {

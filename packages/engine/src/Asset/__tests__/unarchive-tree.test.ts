@@ -196,19 +196,20 @@ describe('I-5b: oxn asset tree', () => {
     teardown()
   })
 
-  test('8. tree reverse 方向显示谁引用了我', async () => {
+  test('8. tree reverse 方向显示谁引用了我（🆕 v0.6.4 PR-D: bare name 同 kind 解析）', async () => {
     setupProject()
     writeFileSync(
       join(tmpDir, '.openxenon', 'assets', 'domains', 'popular.md'),
       '---\nentity: domain\n---\n# Domain: popular\n',
     )
+    // 🆕 v0.6.4 PR-D: bare name references 强制同 kind（Inv15/Inv30）；跨 kind 必须走 Blueprint ## Use 段
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'workflows', 'fan1.md'),
-      '---\nentity: workflow\nreferences: [popular]\n---\n# Workflow: fan1\n',
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'fan1.md'),
+      '---\nentity: domain\nreferences: [popular]\n---\n# Domain: fan1\n',
     )
     writeFileSync(
-      join(tmpDir, '.openxenon', 'assets', 'blueprints', 'fan2.md'),
-      '---\nentity: blueprint\nreferences: [popular]\n---\n# Blueprint: fan2\n',
+      join(tmpDir, '.openxenon', 'assets', 'domains', 'fan2.md'),
+      '---\nentity: domain\nreferences: [popular]\n---\n# Domain: fan2\n',
     )
     const result = await tree({
       projectRoot: tmpDir,
@@ -217,8 +218,8 @@ describe('I-5b: oxn asset tree', () => {
     })
     expect(result.ok).toBe(true)
     expect(result.humanTree).toContain('domain:popular')
-    expect(result.humanTree).toContain('workflow:fan1')
-    expect(result.humanTree).toContain('blueprint:fan2')
+    expect(result.humanTree).toContain('domain:fan1')
+    expect(result.humanTree).toContain('domain:fan2')
     teardown()
   })
 

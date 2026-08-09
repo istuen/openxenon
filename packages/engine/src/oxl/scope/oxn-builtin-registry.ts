@@ -489,7 +489,7 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
         abstract: parsed.abstract,
         references: parsed.references,
         _builtin: true,
-        _type: 'roadmap',
+        _type: 'assetmap', // 🆕 v0.6.4: 'roadmap' → 'assetmap'
         _sourcePath: parsed._sourcePath,
         _raw: parsed.raw,
       })
@@ -624,7 +624,7 @@ export class OxnBuiltinRegistry implements IBuiltinRegistry {
       domain: 'domains',
       workflow: 'workflows',
       stack: 'stacks',
-      roadmap: 'assetmaps',
+      assetmap: 'assetmaps', // 🆕 v0.6.4: 'roadmap' → 'assetmap'
     }
     const subdir = subdirMap[kind]
     if (!subdir) return null

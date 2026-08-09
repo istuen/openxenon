@@ -1,5 +1,5 @@
 ---
-entity: roadmap
+entity: assetmap
 version: 0.1.0
 name: md-system
 abstract: |

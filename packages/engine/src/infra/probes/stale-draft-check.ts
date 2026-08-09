@@ -136,7 +136,7 @@ function classifyRef(
   ref: string,
   projectRoot: string,
 ): { status: 'active' | 'archived' | 'missing'; resolvedPath?: string } {
-  const kinds = ['domain', 'workflow', 'stack', 'blueprint', 'roadmap'] as const
+  const kinds = ['domain', 'workflow', 'stack', 'blueprint', 'assetmap'] as const // 🆕 v0.6.4: 'roadmap' → 'assetmap'
   const name = ref.includes('/') ? (ref.split('/').pop() ?? ref) : ref.replace(/^[^:]+:/, '')
   for (const kind of kinds) {
     const active = resolveAssetFile(projectRoot, kind, name, 'md')

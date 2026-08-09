@@ -2,7 +2,7 @@ import { createHash } from 'crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from './filesystem'
 import { join } from 'path'
 import { z } from 'zod'
-import type { AssetState, AssetType } from '@openxenon/engine/infra/paths'
+import type { AssetState, EngineModuleType } from '@openxenon/engine/infra/paths'
 import { GLOBAL_ARSENAL_ROOT } from '@openxenon/engine/infra/paths'
 import { resolveBoundary } from '@openxenon/engine/infra/paths'
 import type { Scope as InfraScope } from '@openxenon/engine/infra/paths'
@@ -27,7 +27,7 @@ export type Scope = InfraScope | 'fallback' | 'builtin'
 
 export interface StandardAsset {
   name: string
-  type: AssetType
+  type: EngineModuleType
   state: AssetState
   path: string
   content: string
@@ -47,7 +47,7 @@ function tryReadAssetFile(dir: string, name: string, subPath?: string): { conten
 
 export function scanArsenalStructure(
   boundary: string,
-  type: AssetType,
+  type: EngineModuleType,
   stateFilter?: 'draft' | 'canonical' | 'both',
 ): StandardAsset[] {
   const typePath = join(boundary, type)
@@ -127,7 +127,7 @@ export function scanArsenalStructure(
   return assets
 }
 
-function getTypeFromPath(assetPath: string): AssetType | null {
+function getTypeFromPath(assetPath: string): EngineModuleType | null {
   if (assetPath.includes('/probes/') || assetPath.includes('/probe/')) {
     return 'probes'
   }
@@ -143,15 +143,15 @@ function getTypeFromPath(assetPath: string): AssetType | null {
 function scanArsenalsDirectory(
   scope: Scope,
   projectBoundary: string | undefined,
-  type: AssetType,
+  type: EngineModuleType,
   stateFilter?: 'draft' | 'canonical' | 'both',
 ): StandardAsset[] {
-  function scanProjectBoundary(type: AssetType): StandardAsset[] {
+  function scanProjectBoundary(type: EngineModuleType): StandardAsset[] {
     if (!projectBoundary) return []
     return scanArsenalStructure(join(projectBoundary, 'arsenal'), type, stateFilter)
   }
 
-  function scanGlobal(type: AssetType): StandardAsset[] {
+  function scanGlobal(type: EngineModuleType): StandardAsset[] {
     return scanArsenalStructure(GLOBAL_ARSENAL_ROOT, type, stateFilter) // TODO(v1.1-path): 重复定义于 oxn-workspace-manager.ts
   }
 
@@ -187,7 +187,7 @@ export function loadArsenalsByState(
 export function loadArsenalsByTypeAndState(
   scope: Scope,
   projectBoundary: string | undefined,
-  type: AssetType,
+  type: EngineModuleType,
   state: AssetState,
 ): StandardAsset[] {
   return scanArsenalsDirectory(scope, projectBoundary, type, state)
@@ -287,7 +287,7 @@ export function loadStandardByName(
   scope: Scope,
   projectBoundary: string | undefined,
   name: string,
-  type: AssetType,
+  type: EngineModuleType,
   options?: LoadStandardOptions,
 ): StandardAsset | null {
   const stateFilter = options?.state || 'canonical'
@@ -329,7 +329,7 @@ export function resolveAssetPath(
   scope: Scope,
   projectBoundary: string | undefined,
   name: string,
-  type: AssetType,
+  type: EngineModuleType,
   state: AssetState,
 ): string | null {
   const boundary =

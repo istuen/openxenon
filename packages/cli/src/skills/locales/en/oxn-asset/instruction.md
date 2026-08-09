@@ -2,11 +2,11 @@
 
 ## Goal
 Manage the full Asset lifecycle: create / modify / evolve / delete / query. Covers 5 AssetKind (v0.6.1-alpha.4 three-boundary framework):
-**domain** / **workflow** / **stack** / **blueprint** / **roadmap**
+**domain** / **workflow** / **stack** / **blueprint** / **assetmap**
 
 Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop).
 
-> **v0.7 naming convergence**: User-facing CLI command and directory converged from `roadmap` to `assetmap` (`oxn assetmap`, `assets/assetmaps/`); **AssetKind enum value remains `roadmap`** (RFC-0013 D4 explicitly preserves code enum, internal code/AssetKind fields still use `'roadmap'`).
+> **🆕 v0.6.4 naming convergence**: User-facing CLI command and directory converged from `roadmap` to `assetmap` (`oxn assetmap`, `assets/assetmaps/`); **AssetKind enum value also changed from `'roadmap'` to `'assetmap'`** (v0.7 RFC-0013 D4 originally locked the code enum, but v0.6.4 design decision fully recycles the Roadmap term; break-change).
 
 ## Hard rules
 - Asset creation triggers planLock; modification must go through `oxn work create --type asset` (v0.6.3+ hard-block)
@@ -15,6 +15,18 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 - 5 AssetKind H2 category whitelists **must not mix**
 - **External inline**: `url` OR `path` (mutually exclusive); `kind` ∈ 6-value enum
 - External status changes **do NOT** participate in Asset content_hash
+
+## 🆕 v0.6.4 PR-D references syntax (Q7 option B)
+
+Pre-v0.6.4 had 3 reference syntaxes (bare name / `@md/{kind}/{name}` / file path), causing `isAssetReferenced()` false negatives → archive/delete gate failures. v0.6.4 unifies to **bare name + parent-kind metadata** inference:
+
+- **Asset frontmatter `references:` field**: use **bare name** (canonical); forced same-AssetKind (e.g. `references: [oxn-engine-domain, oxn-work-domain]`, parser parent kind = domain)
+- **`@md/{kind}/{name}`**: deprecated but still supported (legacy Blueprint frontmatter); new code should not write
+- **Cross-kind references**: must use Blueprint `## Use` section (explicit `kind:` field, e.g. `- workflow: oxn-workflow`)
+- Resolution priority: (1) bare name → forced parent kind inference → `assets/{parentKind}s/{name}.md`
+  (2) `@md/{kind}/{name}` → explicit kind + name (deprecated)
+  (3) cross-kind → Blueprint `## Use` section (explicit kind)
+- Parser: `packages/engine/src/Asset/internal/reference-checker.ts:extractReferences(parentKind, refStr)` + `resolveReference(parentKind, refStr, projectRoot)`
 
 ## Paradigm quick reference (three boundaries)
 - **Domain** = business boundary (term/ban/invariant + optional ## Externals)
@@ -38,7 +50,7 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 | workflow | `assets/workflow.md` | Props / Slots / **Externals** |
 | stack | `assets/stack.md` | Runtimes / Linters / Tests / **Externals** |
 | blueprint | `assets/blueprint.md` | **Refs** |
-| roadmap | `assets/roadmap.md` | Scenes |
+| assetmap | `assets/assetmaps/assetmap.md` | Scenes |
 
 > **External detail + kind enum + status + CLI**: see `references/asset-kind-reference.md` + `references/asset-creation.md`
 
@@ -46,6 +58,7 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 - `IAP_ASSET_PATH_CONFLICT` / `IAP_ALIGN_LOCK_HASH_MISMATCH` → YIELD_TO_HUMAN
 - `E_MD_DUPLICATE_H3` / `E_MD_CATEGORY_UNKNOWN` → fix H3/H2 naming
 - `E_MD_EXTERNAL_KIND_INVALID` / `_URL_PATH_CONFLICT` / `_URL_PATH_REQUIRED` → fix External fields
+- 🆕 `IAP_INTENT_CROSS_KIND_REF` (v0.6.4 PR-D preserved) → cross-kind references go to Blueprint `## Use`
 
 ## Forbidden
 - Don't write deprecated syntax: `noun` / `verb` / `domain_rules` / `expectation` / `rule`
@@ -55,6 +68,8 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 - Don't delete referenced Assets (run `oxn asset archive` first)
 - Don't create library/external Asset types (removed in v0.6.1-alpha.4)
 - Don't declare External in Blueprint (Blueprint is pure composition layer)
+- 🆕 Don't write `@md/{kind}/{name}` in Asset `references:` field (v0.6.4 PR-D deprecated)
+- 🆕 Don't write cross-kind references in Asset `references:` field (must use Blueprint `## Use`, Inv15/Inv30)
 
 ## AssetMap routing
 

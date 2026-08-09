@@ -14,7 +14,7 @@
 | workflow | `assets/workflow.md` | 2 props + 3 slots + **externals**（可选）| Props / Slots / **Externals** |
 | stack | `assets/stack.md` | 2 runtimes + 1 linter + 1 test + **externals**（可选）| Runtimes / Linters / Tests / **Externals** |
 | blueprint | `assets/blueprint.md` | 3 boundary refs + 可选 nested blueprint | **Refs**（仅此一个）|
-| roadmap | `assets/roadmap.md` | N 个 scene H3 | Scenes (sub: scene) |
+| assetmap | `assets/assetmaps/assetmap.md` | N 个 scene H3 | Scenes (sub: scene) |
 
 ### 步骤 2：fork 模板
 

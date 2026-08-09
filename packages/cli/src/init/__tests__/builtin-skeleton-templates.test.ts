@@ -40,7 +40,7 @@ describe('BUILTIN_SKELETON_TEMPLATES - 常量结构', () => {
       'asset-workflow.md',
       'asset-stack.md',
       'asset-blueprint.md',
-      'asset-roadmap.md',
+      'asset-assetmap.md', // 🆕 v0.6.4
       'work.md',
     ])
   })
@@ -63,7 +63,7 @@ describe.each([...BUILTIN_SKELETON_TEMPLATES])('template $filename', (tpl) => {
     //   asset-{kind} → 具体 kind (domain/workflow/stack/blueprint/roadmap)
     //   work → 'work'
     const targetEntity = m?.[1] ?? ''
-    expect(['rfc', 'domain', 'workflow', 'stack', 'blueprint', 'roadmap', 'work']).toContain(targetEntity)
+    expect(['rfc', 'domain', 'workflow', 'stack', 'blueprint', 'assetmap', 'work']).toContain(targetEntity) // 🆕 v0.6.4
   })
 
   test('frontmatter 不含注入字段 (skeleton fork 时注入)', () => {

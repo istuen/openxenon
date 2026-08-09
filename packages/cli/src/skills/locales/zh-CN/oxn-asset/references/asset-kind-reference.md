@@ -10,7 +10,7 @@
 | **workflow** | 执行流程（slot DAG，原 Blueprint 改名） | Props / Slots / **Externals**（可选）| env, timeout; build, test, verify |
 | **stack** | 技术栈约束（runtime/linter/test） | Runtimes / Linters / Tests / **Externals**（可选）| typescript, biome, bun-test |
 | **blueprint** | 组合模板（domain + workflow + stack 组合） | **Refs**（跨类型引用）| integrate-payment, dev-standard |
-| **roadmap** | 导航图（scene → asset） | Scenes (sub: scene) | scene: doc, scene: dev |
+| **assetmap** | 导航图（scene → asset） | Scenes (sub: scene) | scene-doc, scene-dev |
 
 > **v0.6.1-alpha.4 收敛**：
 > - library/external 资产类型已删除（详见 ADR-0053）

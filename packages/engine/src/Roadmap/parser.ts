@@ -2,29 +2,32 @@
  * Roadmap/parser.ts — scene-based .md parser (v0.7+ 命名收敛为 AssetMap)
  *
  * Input: `.openxenon/assets/assetmaps/<name>.md` (scene-based; v0.7 已从 `roadmaps/` 收敛为 `assetmaps/`)
- * Output: `Roadmap` AST (in-memory; 类型名沿用 'Roadmap'，AssetKind 枚举值仍为 'roadmap')
+ * Output: `Roadmap` AST (in-memory; 类型名沿用 'Roadmap'，AssetKind 枚举值 v0.6.4 同步为 'assetmap')
  *
- * Format (v0.6.x scene-based):
+ * Format (v0.6.4+ scene-based, current canonical):
  * ```
  * ---
- * entity: roadmap
+ * entity: assetmap          # 🆕 v0.6.4: 'roadmap' → 'assetmap'
  * version: 1
  * name: oxn-system
  * abstract: |
  *   ...
  * ---
  *
- * # Roadmap: oxn-system
+ * # AssetMap: oxn-system   (heading 文本可保留 'Roadmap' 作 alias)
  *
  * ## Scenes
  *
- * ### scene: doc
- * > Scenario description
- *
- * | kind | name | description |
- * |---|---|---|
- * | domain | Foo | Foo description |
+ * ### scene-doc              # 🆕 v0.6.4: '### scene: <name>' → '### scene-<name>'
+ * - desc: write/read documentation ...
+ * - domain: oxn-domain — 顶层词汇边界
+ * - workflow: doc-author — 通用文档撰写流水线
+ * - blueprint: doc-prod-workflow — 产品手册撰写组合模板
  * ```
+ *
+ * Backward compatibility (deprecated but supported):
+ * - `### scene: <name>` (legacy H3 + colon)
+ * - markdown table `| kind | name | description |` (legacy)
  *
  * Note: roadmap-compiler.ts (oxl/md-bridge) was the .oxn-based path (deprecated in v0.7).
  *       This parser is the .md-based path for AI Agent consumption.
@@ -63,8 +66,12 @@ export function parseRoadmapMdContent(content: string): RoadmapParseResult {
   // 1. Parse frontmatter
   const fm = parseFrontmatter(content)
   if (!fm.name) throw new Error('Roadmap .md missing frontmatter name')
-  if (!fm.entity || fm.entity !== 'roadmap') {
-    throw new Error(`Roadmap .md frontmatter entity must be 'roadmap', got '${fm.entity}'`)
+  // 🆕 v0.6.4: accept 'assetmap' (canonical) + 'roadmap' (deprecated alias)
+  if (!fm.entity || (fm.entity !== 'assetmap' && fm.entity !== 'roadmap')) {
+    throw new Error(`Roadmap .md frontmatter entity must be 'assetmap' (or legacy 'roadmap'), got '${fm.entity}'`)
+  }
+  if (fm.entity === 'roadmap') {
+    warnings.push("Roadmap .md frontmatter entity 'roadmap' is deprecated; use 'assetmap'")
   }
   const version = parseVersion(fm.version) ?? 1
   const abstract = fm.abstract ?? ''
@@ -140,14 +147,17 @@ function extractSection(body: string, heading: string): string | null {
 
 function parseScenesBlock(block: string, warnings: string[]): RoadmapScene[] {
   const scenes: RoadmapScene[] = []
-  // Split by ### scene: <name>
+  // 🆕 v0.6.4: support both `### scene-<name>` (canonical) and `### scene: <name>` (legacy deprecated)
   const lines = block.split('\n')
   let i = 0
   while (i < lines.length) {
     const line = lines[i] ?? ''
-    const sceneMatch = line.match(/^###\s+scene:\s*(\S+)\s*$/)
+    const sceneMatch = line.match(/^###\s+scene[:-]\s*(\S+)\s*$/)
     if (sceneMatch) {
       const sceneName = sceneMatch[1]!
+      if (line.includes(':')) {
+        warnings.push(`Scene heading '${line.trim()}' uses legacy 'scene: <name>' syntax; migrate to 'scene-<name>'`)
+      }
       const sceneLines: string[] = []
       i++
       while (i < lines.length && !/^###\s/.test(lines[i] ?? '')) {
@@ -164,18 +174,47 @@ function parseScenesBlock(block: string, warnings: string[]): RoadmapScene[] {
 }
 
 function parseSceneBlock(name: string, block: string, warnings: string[]): RoadmapScene {
-  // Description: first > blockquote line(s)
-  const descMatch = block.match(/^>\s*(.+?)(?:\n|$)/m)
-  const description = descMatch?.[1]?.trim() ?? ''
+  // 🆕 v0.6.4: support both blockquote (`> desc`) and bullet (`- desc: ...`)
+  const blockquoteMatch = block.match(/^>\s*(.+?)(?:\n|$)/m)
+  const bulletDescMatch = block.match(/^-\s*desc:\s*(.+?)(?:\n|$)/m)
+  const description = (blockquoteMatch?.[1] ?? bulletDescMatch?.[1] ?? '').trim()
 
-  // Links: markdown table with | kind | name | description |
-  const links = parseLinksTable(block, name, warnings)
+  // 🆕 v0.6.4: support both markdown table and bullet list `- <kind>: <name> — <description>`
+  const bulletLinks = parseLinksBullets(block, name, warnings)
+  const tableLinks = parseLinksTable(block, name, warnings)
+  // Prefer bullet form if any bullet lines exist; otherwise fall back to table (backward compat)
+  const links = bulletLinks.length > 0 ? bulletLinks : tableLinks
 
   if (links.length === 0) {
     warnings.push(`Scene '${name}' has no links`)
   }
 
   return { name, description, links }
+}
+
+/**
+ * v0.6.4 canonical bullet-list link parser:
+ *   - domain: oxn-domain — 顶层词汇边界 + 产品定位 + IAP 三阶段
+ *   - workflow: doc-author — 通用文档撰写流水线（6 slot）
+ *   - blueprint: doc-prod-workflow — 产品手册撰写组合模板
+ */
+function parseLinksBullets(block: string, sceneName: string, warnings: string[]): RoadmapLink[] {
+  const links: RoadmapLink[] = []
+  const lines = block.split('\n')
+  for (const line of lines) {
+    const m = line.match(/^-\s*([a-zA-Z][a-zA-Z0-9_-]*)\s*:\s*(\S+)\s*[—-]\s*(.+?)\s*$/)
+    if (!m) continue
+    const kind = m[1]!
+    const name = m[2]!
+    const description = m[3]!
+    if (kind === 'desc') continue // desc is the scene description, not a link
+    if (!VALID_KINDS.includes(kind as AssetKind)) {
+      warnings.push(`Scene '${sceneName}' link has invalid kind '${kind}' for '${name}'`)
+      continue
+    }
+    links.push({ kind: kind as AssetKind, name, description })
+  }
+  return links
 }
 
 function parseLinksTable(block: string, sceneName: string, warnings: string[]): RoadmapLink[] {
@@ -224,6 +263,11 @@ function parseLinksTable(block: string, sceneName: string, warnings: string[]): 
       headerSeen = false
       separatorSeen = false
     }
+  }
+  if (links.length > 0) {
+    warnings.push(
+      `Scene '${sceneName}' uses legacy markdown table format; migrate to bullet list '- <kind>: <name> — <description>'`,
+    )
   }
   return links
 }
