@@ -30,7 +30,7 @@ synced-at: 2026-08-09
 - domain: oxn-cli-domain — CLI + i18n + Skill + VitePress 站点配置
 - domain: oxn-project-domain — 工程术语：RFC + Built-in Asset + 三情态（0.6.x+ 新增，定义 OXN 自身工程元词汇）
 - workflow: doc-author — 通用文档撰写流水线（6 slot）
-- workflow: doc-publish — Doc site build + GitHub Pages deploy
+- workflow: doc-publish — （🆕 v0.7.0 RFC-0027 PR-H：删除；VitePress 部署由 CI 完成，doc-author.publish slot 涵盖）
 
 ### scene-dev
 - desc: modify code, add CLI subcommand, evolve Asset.
@@ -39,10 +39,10 @@ synced-at: 2026-08-09
 - domain: oxn-engine-domain — L0-L3 分层 + Kernel/Infra 司法行政分离
 - domain: oxn-proof-domain — Proof + ProbeOutcome/outcome/Report（🆕 v0.6.4: Insight 术语收编）
 - workflow: dev-workflow — 通用开发流程（🆕 v0.6.4 PR-C: 9 slot，含 cli-add / ts-implement / refactor / git-branch 4 个折入的专用 slot；E3 c slot 由上下文推断）
-- workflow: asset-create — Asset 创建流水线
-- workflow: asset-evolve — Asset 演进流水线
-- workflow: asset-archive — Asset 归档流水线
-- workflow: explore-analyze-report — 代码库探索 → 分析 → 报告
+- workflow: asset-create — Asset 生命周期统一流水线 v3（🆕 v0.7.0 RFC-0027 PR-H：mode 参数化覆盖 create/skeleton/evolve/archive 4 个原独立 Workflow）
+- workflow: asset-evolve — （🆕 v0.7.0 RFC-0027 PR-H：合并到 asset-create --mode evolve）
+- workflow: asset-archive — （🆕 v0.7.0 RFC-0027 PR-H：合并到 asset-create --mode archive）
+- workflow: explore-analyze-report — （🆕 v0.7.0 RFC-0027 PR-H：删除；用 `oxn draft create --type report` 替代）
 - workflow: fix-issue — 问题诊断 → 定位 → 修复 → 验证
 - workflow: migrate-version — 跨版本迁移
 - workflow: release-cut — 切版本 + changelog

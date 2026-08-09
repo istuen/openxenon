@@ -89,7 +89,7 @@ describe('oxn draft create', () => {
     expect(content).toContain('entity: rfc')
     expect(content).toContain('id: RFC-XXXX')
     expect(content).toContain('promote-target: rfc')
-    expect(content).toContain('created-from: draft-skeleton-fork@0.1.0')
+    expect(content).toContain('created-from: asset-create@3.0.0-mode-skeleton')
     expect(content).toContain('## 决策要点')
   })
 

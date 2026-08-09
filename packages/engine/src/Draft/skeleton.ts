@@ -71,7 +71,7 @@ export interface ForkSkeletonError {
 }
 
 const SKELETON_DIR = 'draft-skeletons'
-const WORKFLOW_VERSION = 'draft-skeleton-fork@0.1.0'
+const WORKFLOW_VERSION = 'asset-create@3.0.0-mode-skeleton' // 🆕 v0.7.0 RFC-0027 PR-H: 旧 draft-skeleton-fork@0.1.0 已合并到 asset-create mode=skeleton
 
 function isDraftTarget(value: string): value is DraftTarget {
   return (DRAFT_TARGETS as readonly string[]).includes(value)

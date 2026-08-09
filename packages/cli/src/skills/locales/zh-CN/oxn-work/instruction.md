@@ -16,7 +16,7 @@ D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
 ## 蓝图选择
 | 需求 | 模板（.md 含 OXN 代码块）→ Blueprint |
 |---|---|
-| 摸清/报告 | `assets/work-explore.md` → `explore-analyze-report` |
+| 摸清/报告 | `assets/work-explore.md` → `dev-workflow` (slot: ts-implement)（🆕 v0.7.0 RFC-0027 PR-H：原 `explore-analyze-report` Workflow 已删除；用 dev-workflow ts-implement slot） |
 | 单域开发 | `assets/work-develop.md` → `dev-workflow` |
 | bug 修复 | `assets/work-fix.md` → `fix-issue` |
 | 跨域 | `assets/work-onboarding.md` → `dev-workflow` (多 domain) |

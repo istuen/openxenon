@@ -242,13 +242,14 @@ oxn draft retarget <name> --new-target <rfc|asset|work> [--new-kind <5 AssetKind
 
 **关键约束**：
 - 显式 retarget（不允许直接编辑 frontmatter 改 promote-target）
-- retarget 调 draft-skeleton-fork Workflow 重新派生 skeleton
+- retarget 调 `asset-create --mode skeleton` 重新派生 skeleton（🆕 v0.7.0 RFC-0027 PR-H）
 - 工程师 body 内容自动保留
 
-### 8.3 Skeleton 派生（draft-skeleton-fork Workflow）
+### 8.3 Skeleton 派生（asset-create --mode skeleton；🆕 v0.7.0 RFC-0027 PR-H 合并自 draft-skeleton-fork）
 
 ```bash
 oxn draft create <name> --target <rfc|asset|work> [--kind <5 AssetKind>]
+# 内部 CLI 调用：asset-create --mode skeleton
 ```
 
 **7 个 skeleton 模板**（`.openxenon/draft-skeletons/`）：
@@ -259,7 +260,7 @@ oxn draft create <name> --target <rfc|asset|work> [--kind <5 AssetKind>]
 **注入字段**：
 - `promote-target: <rfc|asset|work>`（必填）
 - `promote-kind: <5 AssetKind>`（仅 target=asset）
-- `created-from: draft-skeleton-fork@0.1.0`
+- `created-from: asset-create@3.0.0-mode-skeleton`（🆕 v0.7.0 RFC-0027 PR-H：原 `draft-skeleton-fork@0.1.0`）
 - `synced-at: <YYYY-MM-DD>`
 
 **关键约束**：

@@ -49,7 +49,7 @@ describe('forkDraftSkeleton', () => {
     if (!result.ok) return
     expect(result.content).toContain('promote-target: rfc')
     expect(result.content).not.toContain('promote-kind:')
-    expect(result.content).toContain('created-from: draft-skeleton-fork@0.1.0')
+    expect(result.content).toContain('created-from: asset-create@3.0.0-mode-skeleton')
     expect(result.content).toContain('# RFC')
     expect(result.injectedFrontmatter['promote-target']).toBe('rfc')
     expect(result.injectedFrontmatter['promote-kind']).toBe(null)

@@ -497,7 +497,7 @@ export const PROBE_CATALOG: ProbeCatalogEntry[] = [
   },
   {
     // v0.6.2: docs-build — 跑 vitepress build docs 验证文档站点构建通过
-    // 由 doc-author / doc-publish / 3 promote blueprint 的 validate slot observe
+    // 由 doc-author / 3 promote blueprint 的 validate slot observe（🆕 v0.7.0 RFC-0027 PR-H：doc-publish 已删除）
     semanticName: 'docs-build',
     description: 'Run `bun run docs:build` (vitepress build) to verify doc site builds (exit 0 → PASS)',
     inputs: [

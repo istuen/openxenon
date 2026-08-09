@@ -19,7 +19,7 @@ name: explore-dsl
 ## Tasks
 
 ### explore
-- blueprint: @md/blueprints/explore-analyze-report
+- blueprint: @md/blueprints/dev-workflow
 - domain: @md/domains/DSLContext
 - part: explore
   - skill_context: 探索 grammar/schema/validator/compiler 四个子模块

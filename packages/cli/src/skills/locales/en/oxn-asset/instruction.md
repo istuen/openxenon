@@ -22,7 +22,7 @@ Pre-v0.6.4 had 3 reference syntaxes (bare name / `@md/{kind}/{name}` / file path
 
 - **Asset frontmatter `references:` field**: use **bare name** (canonical); forced same-AssetKind (e.g. `references: [oxn-engine-domain, oxn-work-domain]`, parser parent kind = domain)
 - **`@md/{kind}/{name}`**: deprecated but still supported (legacy Blueprint frontmatter); new code should not write
-- **Cross-kind references**: must use Blueprint `## Use` section (explicit `kind:` field, e.g. `- workflow: oxn-workflow`)
+- **Cross-kind references**: must use Blueprint `## Use` section (explicit `kind:` field, e.g. `- workflow: dev-workflow`)
 - Resolution priority: (1) bare name → forced parent kind inference → `assets/{parentKind}s/{name}.md`
   (2) `@md/{kind}/{name}` → explicit kind + name (deprecated)
   (3) cross-kind → Blueprint `## Use` section (explicit kind)

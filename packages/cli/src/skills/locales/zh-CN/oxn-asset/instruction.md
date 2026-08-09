@@ -22,7 +22,7 @@ v0.6.4 之前 references 3 套语法并存（bare name / `@md/{kind}/{name}` / f
 
 - **Asset frontmatter `references:` 字段**：使用 **bare name**（canonical）；强制同 AssetKind（例 `references: [oxn-engine-domain, oxn-work-domain]`，解析时 parent kind = domain）
 - **`@md/{kind}/{name}`**：deprecated 仍兼容（Blueprint frontmatter 老代码能跑）；新代码不写
-- **跨 kind 引用**：必须用 Blueprint `## Use` 段（显式 `kind:` 字段，例 `- workflow: oxn-workflow`）
+- **跨 kind 引用**：必须用 Blueprint `## Use` 段（显式 `kind:` 字段，例 `- workflow: dev-workflow`）
 - 解析优先级：(1) bare name → 强制 parent kind 推断 → `assets/{parentKind}s/{name}.md` 查
   (2) `@md/{kind}/{name}` → 显式 kind + name（deprecated）
   (3) 跨 kind → Blueprint `## Use` 段（显式 kind）

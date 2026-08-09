@@ -163,7 +163,7 @@ oxn draft retarget my-design --new-target rfc
 
 **Key constraints**:
 - Explicit retarget (no direct frontmatter edit on `promote-target`)
-- retarget calls draft-skeleton-fork Workflow
+- retarget calls `asset-create --mode skeleton` (🆕 v0.7.0 RFC-0027 PR-H: original `draft-skeleton-fork` Workflow merged into `asset-create` mode parameterization)
 - Engineer body content auto-preserved
 
 ## Promote routing (Draft → formal artifact)
@@ -228,4 +228,4 @@ oxn draft retarget my-design --new-target rfc
 - `.openxenon/assets/domains/oxn-draft-promote-domain.md` v0.1.0 — Promote routing boundary
 - `.openxenon/assets/blueprints/draft-promote-router.md` — routing Blueprint
 - `.openxenon/assets/blueprints/promote-target-aware-workflow.md` — L2 generic Promote
-- `.openxenon/assets/workflows/draft-skeleton-fork.md` — Skeleton fork Workflow
+- `.openxenon/assets/workflows/asset-create.md` v3.0.0 — Skeleton fork mode (🆕 v0.7.0 RFC-0027 PR-H: original `draft-skeleton-fork` Workflow merged)

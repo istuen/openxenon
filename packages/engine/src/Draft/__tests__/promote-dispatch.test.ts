@@ -246,7 +246,7 @@ describe('dispatchPromote - Asset target', () => {
       kind: 'assetmap', // 🆕 v0.6.4: 'roadmap' → 'assetmap'
       subTarget: 'promote-asset-assetmap', // 🆕 v0.6.4
       draftFrontmatter: { 'promote-target': 'asset', 'promote-kind': 'assetmap' }, // 🆕 v0.6.4
-      draftBody: '## Scenes\n\n### explore\n- blueprint: explore-analyze-report',
+      draftBody: '## Scenes\n\n### explore\n- blueprint: dev-workflow',
     })
     expect(result.ok).toBe(true)
     if (!result.ok) return

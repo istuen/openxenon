@@ -163,7 +163,7 @@ oxn draft retarget my-design --new-target rfc
 
 **关键约束**:
 - 显式 retarget(不允许直接编辑 frontmatter 改 promote-target)
-- retarget 调 draft-skeleton-fork Workflow 重新派生 skeleton
+- retarget 调 `asset-create --mode skeleton` 重新派生 skeleton（🆕 v0.7.0 RFC-0027 PR-H：原 `draft-skeleton-fork` Workflow 已合并到 `asset-create` mode 参数化）
 - 工程师 body 内容自动保留
 
 ## Promote 引导(Draft → 正式产物)
@@ -228,4 +228,4 @@ oxn draft retarget my-design --new-target rfc
 - `.openxenon/assets/domains/oxn-draft-promote-domain.md` v0.1.0 — Promote 路由边界
 - `.openxenon/assets/blueprints/draft-promote-router.md` — 总路由 Blueprint
 - `.openxenon/assets/blueprints/promote-target-aware-workflow.md` — L2 通用 Promote
-- `.openxenon/assets/workflows/draft-skeleton-fork.md` — Skeleton 派生 Workflow
+- `.openxenon/assets/workflows/asset-create.md` v3.0.0 — Skeleton 派生 mode（🆕 v0.7.0 RFC-0027 PR-H：原 `draft-skeleton-fork` Workflow 已合并）
