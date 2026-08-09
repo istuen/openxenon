@@ -63,7 +63,7 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#assetmap) — AssetKind=assetmap 的语义别名（首选术语）——meta 索引层，AI 路由入口（6 scene 路由表 + Domain/Blueprint 索引）；不参与 references DAG。
 与版本计划文档 "Roadmap"（`dev/versions/`）不同情态（定义性 Asset vs 描述性 Doc）、不同位置。
 🆕 v0.6.4: AssetKind 枚举值同步从 `roadmap` 改为 `assetmap`（v0.7 RFC-0013 D4 原锁定枚举值不变，但 v0.6.4 设计决定全面回收 Roadmap 术语）。
-- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#assetmap) — AssetKind=assetmap 的语义别名——OXN 系统导航索引（6 scene 路由表 + Domain/Blueprint 索引）；AI 路由入口。不是版本路线图。
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#assetmap) — 🆕 v0.7.0 RFC-0027 PR-F（D3）：canonical 归 `oxn-asset-domain.md §AssetMap`；本域仅保留指向。
 
 ### AssetPaper
 
@@ -78,7 +78,7 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 ### Boundary
 
 
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#boundary) — Asset 的别名。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#boundary) — 🆕 v0.7.0 RFC-0027 PR-F（D10）：删 Axiom（Asset 别名，合并到 Asset 定义）；语义保留到 Asset Axiom 注释。
 
 ### BuiltinAsset
 
@@ -113,11 +113,6 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 该 token 有权发布的包。因此社区扩散感染的目标包与原 keyv 家族无业务关系
 （如 @picsart/ai-sdk / @qlik/embed-runtime），但发布时间仍是 2026-08-04~05。
 
-### CompanionAsset
-
-
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#companionasset) — draft-promote-router Blueprint（v0.6.2-alpha.3 新）：总路由 + 4 阶段生命周期。
-
 ### Compromised Version
 
 
@@ -127,8 +122,8 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 ### Daemon
 
 
-- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#daemon) — OXN Engine 后台守护进程；负责运行时状态监听（Work 长时间未变化 → 通知工程师）+ 事件监听（Probe DEVIATED/INCONCLUSIVE 通知 + CLI socket 事件）；不监听文件系统，不阻断 Work，不修改 Kernel 规则；ADR-0068。
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#daemon) — OXN Engine 后台守护进程，监听人机协作的变化与边界预警。
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#daemon) — 🆕 v0.7.0 RFC-0027 PR-F（D4）：canonical（吸收 oxn-domain + engine-domain 旧内容）。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#daemon) — 🆕 v0.7.0 RFC-0027 PR-F（D4）：canonical 归 `oxn-engine-domain.md §Daemon`（L0-L3 架构 SSOT）；本 Axiom 删（避免重复定义）。
 
 ### DefinitionalModality
 
@@ -179,10 +174,6 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#draftpromotelifecycle) — Draft Promote 阶段（v0.6.2-alpha.3 新增）——4 阶段：
-1. `gather`：router Blueprint 读 Draft frontmatter + body。
-2. `validate-skeleton`：校验 frontmatter 字段 + H2 段结构（含必填字段检查）。
-3. `fork-missing`：缺字段时从 skeleton 模板补全（保留工程师填写的内容）。
-4. `dispatch-target`：按 promote-target 路由到 3 类目标执行体（rfc / asset / work）。
 
 ### DraftSkeleton
 
@@ -224,7 +215,6 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 ### FutureExtension
 
 
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#futureextension) — v0.6.2-alpha.3 落地 7 个 skeleton + 4 阶段 router + 3 target dispatch
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#futureextension) — v0.6.2-alpha.3 部分实现（Asset 层 + 路由命令）；剩余（execute mode 自动跟踪、content 校验 Probe 化）待 v0.7.x scene-based Roadmap 收敛后再决。
 
 ### Goal
@@ -258,8 +248,8 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 ### Infra
 
 
-- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#infra) — L1 副作用/IO 执行模块；负责OpenXenon 跟 外部宿主环境的出入口，包括文件、网络等具有副作用的交互。
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#infra) — L1 副作用 / IO 执行模块：只回答事实不做判定（不能给自己盖章）；3 个 IO Primitive（io.stat/io.read/io.exec）通过 ProviderRegistry 暴露。
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#infra) — 🆕 v0.7.0 RFC-0027 PR-F（D4）：canonical（吸收 proof-domain 内容）。
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#infra) — 🆕 v0.7.0 RFC-0027 PR-F（D4）：canonical 归 `oxn-engine-domain.md §Infra`（L0-L3 架构 SSOT）；本 Axiom 删（避免重复定义）。
 
 ### Insight
 
@@ -282,11 +272,6 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#intentpooldeprecated) — Intent Pool v3 已退役（v0.4.0 / D1 2026-08-07）—— 设计稿 .openxenon/drafts/design-version-iteration-redesign.md D1 决策。
 
-### IntentPoolRetired
-
-
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#intentpoolretired) — 🆕 v0.6.4 PR-B（合并自 `oxn-insight-domain`）：Intent Pool v3 已退役（v0.3.0 / D1 2026-08-07）。
-
 ### InterferenceFlag
 
 
@@ -295,8 +280,8 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 ### Kernel
 
 
-- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#kernel) — L0 纯逻辑验证模块；通过 Infra 调用带副作用的 Probe 来观测客观事实并验证。
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#kernel) — L0 纯逻辑验证模块（记录事实不评判 ADR-0031）：零 IO 约束，只接受 Infra 观测产出 ProbeOutcome，不调 fs/net/child_process。
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#kernel) — 🆕 v0.7.0 RFC-0027 PR-F（D4）：canonical（吸收 proof-domain 内容）。
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#kernel) — 🆕 v0.7.0 RFC-0027 PR-F（D4）：canonical 归 `oxn-engine-domain.md §Kernel`（L0-L3 架构 SSOT）；本 Axiom 删（避免重复定义）。
 
 ### kind-isolation
 
@@ -421,7 +406,7 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 ### Philosophy
 
 
-- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#philosophy) — OXN Engine 哲学占位。
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#philosophy) — 🆕 v0.7.0 RFC-0027 PR-F（D8）：删占位 Axiom。OXN Engine 哲学沉淀到 ADR-0031（记录事实不评判） + ADR-0066/0067（OXN 不判质量只记事实）；本 Axiom 已无信息量。
 
 ### PlanLock
 
@@ -460,26 +445,11 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#projectbootstrap) — 5 起手 Asset 复制到 `&lt;project&gt;/.openxenon/assets/` 并完成 `oxn asset check` 校验的过程。包含 3 步：(1) `oxn onboard --new` 触发复制；(2) 工程师填项目专属内容；(3) `oxn asset check` 验证 5 Asset 完整性。Proof-First 模式下 bootstrap 可选；完整 IAP 模式下 bootstrap 必走。ADR-0089 D2。
 
-### PromoteBoundaryIsolation
-
-
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promoteboundaryisolation) — Draft promote 仅跨 3 类 Target 输出目录（docs/rfcs/zh-cn/ / .openxenon/assets/ / .openxenon/works/），不写其他目录
-
-### PromoteLifecycle
-
-
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promotelifecycle) — gather：draft-promote-router 读 Draft frontmatter + body，校验 Draft 存在 + promote-target 字段不缺
-
-### PromoteRoute
-
-
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#promoteroute) — promote-target=rfc → promote-target-aware-workflow Blueprint + rfc 分支（落盘 `docs/rfcs/zh-cn/RFC-XXXX-&lt;theme&gt;.md`）
-
 ### Proof
 
 
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#proof) — OXN 验证 AI Agent 执行结果并记录的协作**过程**证明（不是结果证明）。执行主体 OXN Engine（ADR-0031 记录事实不评判）；物理观测 L1-Infra + 客观结果 L0-Kernel。物理产物（`frozen.json` + `outcome.md` + `trace.jsonl` + `state.json`）是副作用，**不是** Proof 术语本身。
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#proof) — OXN Engine 记录的协作**过程**证明（不是协作结果证明）；包含 frozen.json + trace.jsonl + state.json 三件套；OXN 只记录事实不评判合格；具体领域见 [`oxn-proof-domain`](./oxn-proof-domain.md)。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#proof) — OXN Engine 记录的协作**过程**证明（不是协作结果证明）；物理产物四件套 `frozen.json` + `outcome.md` + `trace.jsonl` + `state.json`（🆕 v0.7.0 RFC-0027 PR-F D6 修正：oxn-domain 三件套 → proof-domain 四件套，统一为四件套避免歧义）；OXN 只记录事实不评判合格；具体领域见 [`oxn-proof-domain`](./oxn-proof-domain.md)。
 
 ### Provenance
 
@@ -537,11 +507,6 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#skeleton) — per-target 模板文件的实体类型（v0.6.3 Q1 新增）。
 
-### SkeletonForking
-
-
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#skeletonforking) — skeleton 派生规则：v0.6.2-alpha.3 起 Draft 创建时（`--target` 模式）从 `.openxenon/draft-skeletons/&lt;target&gt;[-&lt;kind&gt;].md` 派生（v0.6.3 Fix #1 移到 boundary 顶层）
-
 ### Skill
 
 
@@ -568,11 +533,6 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 - [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#supply-chain-attack) — 攻击者通过入侵合法软件包的发布链路（注册表账号 / CI / 维护者 GitHub 账号），
 将恶意代码注入到被广泛信任的包版本中，让下游 install 在用户机器上自动执行。
 与"个人账号劫持发垃圾包"区别：受害者信任的是包名本身（非首次接触的新包）。
-
-### TargetDispatchTable
-
-
-- [oxn-draft-promote-domain](/openxenon/assets/domains/oxn-draft-promote-domain.md#targetdispatchtable) — 路由 translate 表——把 Draft target 语法转成 promote-target-aware-workflow Blueprint 内部 task name（v0.2.0 D2 起 8 行）
 
 ### TargetFrozenJsonStructure
 
@@ -603,7 +563,7 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#versionhygiene) — 版本号卫生规则——Dev Version 版本号恒严格大于已发布 Release Version 版本号；OXN CLI 不注入 build metadata（git SHA / build timestamp / "dev" 标记），版本号字符串本身是 Dev/Release 在运行时的唯一区分器。流程保障：`release-cut` workflow 的 `post-publish-bump` slot 在 publish 后**立即** bump dev 到下一个 `-alpha.0`，关闭共享版本号过渡窗口。权威定义：[ADR-0083](../../docs/adrs/0083-version-hygiene-over-build-metadata.md)。
-- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#versionhygiene) — Dev Version 与 Release Version 在运行时的唯一区分器——dev 版本号恒严格大于已发布 release 版本号。OXN CLI **不**注入 build metadata（git SHA / build timestamp / "dev" 标记）；版本号字符串本身是唯一信号。判据：`oxn --version` 在 dev shell 与 release shell 输出不同字符串。关闭歧义窗口的流程保障：`release-cut` workflow 的 `post-publish-bump` slot 在 publish 后**立即** bump 3 个 package.json 到下一个 `-alpha.0`。
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#versionhygiene) — 🆕 v0.7.0 RFC-0027 PR-F（D3）：canonical 归 `oxn-project-domain.md §VersionHygiene`；CLI 域仅保留指向。
 
 ### Work
 
