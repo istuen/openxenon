@@ -52,22 +52,23 @@ synced-at: 2026-08-09
 - domain: oxn-engine-domain — L0-L3 架构边界（防 Kernel IO）+ IAPError 错误契约
 - domain: oxn-proof-domain — ProbeOutcome 三态 + InterferenceFlag + Insight→Draft 涌现（🆕 v0.6.4: 合并 Probe + Insight）
 - workflow: fix-issue — Bug 复现 + 定位 + 修复 → 验证
+- blueprint: bug-fix-blueprint — Bug 修复组合模板 4 阶段（diagnose→locate→fix→verify；🆕 v0.7.0 RFC-0027 PR-I 接入 79 次代码引用补 0 Asset 引用）
 
 ### scene-test
-- desc: write tests, run test suite, analyze coverage.
+- desc: write tests, run test suite, analyze coverage.（🆕 v0.7.0 RFC-0027 PR-I（D12）：导航 stub, v0.7.0+ 激活）
 - domain: oxn-work-domain — Work/Task/Part 在 Align 阶段的执行模型
 - domain: oxn-engine-domain — L0-L3 架构约束 + 跨平台一致性 + 命名规范
 - workflow: dev-workflow — 复用 dev-workflow（test 是 develop 阶段的 verify slot）
 
 ### scene-release
-- desc: version migration, release cut, changelog.
+- desc: version migration, release cut, changelog.（🆕 v0.7.0 RFC-0027 PR-I（D12）：导航 stub, v0.7.0+ 激活）
 - domain: oxn-engine-domain — Monorepo 双包边界（packages/cli + packages/engine）
 - domain: oxn-cli-domain — zh-CN locale + t() 翻译
 - workflow: migrate-version — 跨版本迁移
 - workflow: release-cut — 切版本 + changelog
 
 ### scene-onboard
-- desc: new contributor first day, full project overview.
+- desc: new contributor first day, full project overview.（🆕 v0.7.0 RFC-0027 PR-I（D12）：导航 stub, v0.7.0+ 激活）
 - domain: oxn-domain — 顶层产品定位 + 三方协作模型
 - domain: oxn-engine-domain — L0-L3 架构核心
 - domain: oxn-asset-domain — Asset create/evolve/archive 词汇
