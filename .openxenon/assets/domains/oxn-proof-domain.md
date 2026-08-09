@@ -34,11 +34,15 @@ synced-at: 2026-08-09
 - **禁止**：在 aggregate 层直接使用 `outcome` 字段名（撞名 ProbeOutcome 专用字段，详见 inv-27），必须用 `summary.<...>` 形式。
 - `passed: boolean` 是 v0.1 legacy 兼容字段，将随 v0.8 移除。
 
-### Part
+### BuiltinPart
+- 🆕 v0.7.0 RFC-0027 PR-G（D7）：原 `Part` Axiom 改名 `BuiltinPart`（消除与 work-domain Part 的 Critical Name Collision）；work-domain Part = Task 内 skill 执行单元（不同概念），本域 BuiltinPart = OXN 内置零件。
 - OXN 内置零件（封装可复用工程动作如 git-commit），引用 @oxn/parts/* scope。
+- 向后兼容：`Part` 作为 `BuiltinPart` 的 deprecated alias 保留至 v0.8 移除（PR-G 已加 @deprecated JSDoc）。
 
-### Scope
+### ReferenceScope
+- 🆕 v0.7.0 RFC-0027 PR-G（D7）：原 `Scope` Axiom 改名 `ReferenceScope`（消除与 work-domain Scope 的 Critical Name Collision）；work-domain Scope = Blueprint ## Scope 段（文件范围），本域 ReferenceScope = OXN 引用作用域（解析位置）。
 - OXN 引用作用域（@oxn builtin / @prj 项目级；@gbl 已废弃）。
+- 向后兼容：`Scope` 作为 `ReferenceScope` 的 deprecated alias 保留至 v0.8 移除。
 
 ### Kernel
 - 🆕 v0.7.0 RFC-0027 PR-F（D4）：canonical 归 `oxn-engine-domain.md §Kernel`（L0-L3 架构 SSOT）；本 Axiom 删（避免重复定义）。
@@ -126,7 +130,7 @@ synced-at: 2026-08-09
 - HARD_HALT_AS_IAP
 - 🆕 v0.7.0 RFC-0027 PR-F（D5）：canonical 归 `oxn-engine-domain.md §ForbiddenErrorContractFamily`（错误契约 SSOT），本域删（避免重复定义）。
 - Signal
-- Flag
+- 🆕 v0.7.0 RFC-0027 PR-G（D7）：`Flag` 改名为 `InterferenceFlag`（消除与 cli-domain Flag/Option/Switch 参数层 Critical Name Collision）；canonical 已在 `§InterferenceFlag` Axiom；本 ForbiddenConstructs 删。
 - TaintMark
 - Corruption
 - Pollution
