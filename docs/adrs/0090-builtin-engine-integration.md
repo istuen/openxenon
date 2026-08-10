@@ -7,7 +7,7 @@ accepted: 2026-08-05
 supersedes: null
 superseded-by: null
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - .openxenon/assets/domains/oxn-asset-domain.md
   - .openxenon/assets/domains/oxn-engine-domain.md
   - .openxenon/assets/assetmaps/oxn-system.md

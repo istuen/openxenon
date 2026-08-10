@@ -6,7 +6,7 @@ date: 2026-07-22
 supersedes: null
 superseded-by: null
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - .openxenon/assets/domains/
   - docs/glossary/zh-cn/
   - .openxenon/assets/workflows/doc-author.md
@@ -147,7 +147,7 @@ on-fail:
 
 ## References
 
-- [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — 根级词汇表（已声明 Domain 是 SSOT）
+- [AGENTS.md](../../../../AGENTS.md) — 唯一 Meta 层入口（v0.7+ RFC-0028 撤销 CONTEXT-MAP.md）
 - [ADR-0066 术语精简](./0066-terminology-simplification.md) — 废弃词清单
 - [ADR-0067 彻底不判贯彻](./0067-no-judgment-principle.md) — 三态改名
 - [doc-author.md constraints](../../../assets/workflows/doc-author.md) — "词汇禁用旧词"清单同步源

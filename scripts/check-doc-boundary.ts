@@ -56,7 +56,7 @@ interface BoundaryRule {
   isExemption?: boolean
   /**
    * 目标豁免：target 匹配此正则时跳过该规则（用于"规则方向正确但有少量特例"）。
-   * 与 isExemption 不同：isExemption 标记规则整体为正向（CONTEXT-MAP → Asset 允许）；
+   * 与 isExemption 不同：isExemption 标记规则整体为正向；
    * targetExempt 仅豁免特定目标。
    */
   targetExempt?: RegExp
@@ -151,52 +151,44 @@ const RULES: BoundaryRule[] = [
     message: 'RFC（规定性）不应引用 dev 手册（描述性）',
   },
   {
-    // v0.6.2-alpha.2 (RFC-0018 D6)
+    // v0.6.2-alpha.2 (RFC-0018 D6) + v0.7.0 (RFC-0028 D5 撤销 CONTEXT-MAP 例外)
     // 来自 oxn-project-domain.md ban `rfc-to-meta`：规定性不依赖元入口
     name: 'rfc-no-meta',
-    description: 'docs/rfc/ 不可引用项目工程元层（README/AGENTS/CONTEXT-MAP/.changes/dev）',
+    description: 'docs/rfc/ 不可引用项目工程元层（README/AGENTS/.changes/dev）',
     sourcePattern: /^docs\/rfc\//,
-    targetPattern: /^(README\.md|AGENTS\.md|CONTEXT-MAP\.md|\.changes\/|dev\/)/,
-    message: 'RFC 不应依赖项目工程元层（RFC-0018 D4）',
+    targetPattern: /^(README\.md|AGENTS\.md|\.changes\/|dev\/)/,
+    message: 'RFC 不应依赖项目工程元层（RFC-0018 D4 + RFC-0028 D5）',
   },
   {
-    // v0.6.2-alpha.2 (RFC-0018 D6)
-    // 来自 oxn-project-domain.md ban `docs-product-to-meta`：产品手册不依赖 README/AGENTS/.changes/dev（CONTEXT-MAP 例外）
+    // v0.6.2-alpha.2 (RFC-0018 D6) + v0.7.0 (RFC-0028 D5)
+    // 来自 oxn-project-domain.md ban `docs-product-to-meta`：产品手册不依赖 README/AGENTS/.changes/dev（AGENTS.md 作为入口指针例外）
     name: 'docs-product-no-meta',
-    description: 'docs/product/ 不可引用项目工程元层（CONTEXT-MAP.md 例外）',
+    description: 'docs/product/ 不可引用项目工程元层（AGENTS.md 例外）',
     sourcePattern: /^docs\/product\//,
     targetPattern: /^(README\.md|AGENTS\.md|\.changes\/|dev\/)/,
-    message: '产品手册不应依赖 README/AGENTS/.changes/dev（CONTEXT-MAP.md 例外，RFC-0018 D4）',
+    message: '产品手册不应依赖 README/AGENTS/.changes/dev（AGENTS.md 作为入口指针例外，RFC-0018 D4 + RFC-0028 D5）',
   },
   {
-    // v0.6.2-alpha.2 (RFC-0018 D6)
-    // 来自 oxn-project-domain.md ban `docs-dev-to-meta`：开发手册不依赖项目工程元层（CONTEXT-MAP/AGENTS.md 例外）
+    // v0.6.2-alpha.2 (RFC-0018 D6) + v0.7.0 (RFC-0028 D5)
+    // 来自 oxn-project-domain.md ban `docs-dev-to-meta`：开发手册不依赖项目工程元层（AGENTS.md 作为入口指针例外）
     name: 'docs-dev-no-meta',
-    description: 'docs/dev/ 不可引用项目工程元层（CONTEXT-MAP.md + AGENTS.md 例外）',
+    description: 'docs/dev/ 不可引用项目工程元层（AGENTS.md 例外）',
     sourcePattern: /^docs\/dev\//,
     targetPattern: /^(README\.md|\.changes\/|dev\/)/,
-    message: '开发手册不应依赖 README/.changes/dev（CONTEXT-MAP.md + AGENTS.md 例外，RFC-0018 D4）',
+    message: '开发手册不应依赖 README/.changes/dev（AGENTS.md 作为入口指针例外，RFC-0018 D4 + RFC-0028 D5）',
   },
   {
-    // v0.6.2-alpha.2 (RFC-0018 D6)
-    // 来自 oxn-project-domain.md ban `assets-to-meta`：Asset 不依赖项目工程元层（CONTEXT-MAP 特例豁免）
+    // v0.6.2-alpha.2 (RFC-0018 D6) + v0.7.0 (RFC-0028 D5)
+    // 来自 oxn-project-domain.md ban `assets-to-meta`：Asset 不依赖项目工程元层
+    // RFC-0028 D5 撤销 CONTEXT-MAP.md 特例豁免（CONTEXT-MAP.md 已退役）
     name: 'assets-no-meta',
-    description: '.openxenon/assets/ 不可引用项目工程元层（CONTEXT-MAP.md 特例豁免）',
+    description: '.openxenon/assets/ 不可引用项目工程元层（AGENTS.md 作为入口指针例外）',
     sourcePattern: /^\.openxenon\/assets\//,
     targetPattern: /^(README\.md|AGENTS\.md|\.changes\/|dev\/)/,
-    message: 'Asset 不应依赖 README/AGENTS/.changes/dev（CONTEXT-MAP.md 索引场景例外，RFC-0018 D4.3）',
+    message: 'Asset 不应依赖 README/AGENTS/.changes/dev（AGENTS.md 作为入口指针例外，RFC-0018 D4 + RFC-0028 D5）',
   },
-  {
-    // v0.6.2-alpha.2 (RFC-0018 D6)
-    // 特例豁免：CONTEXT-MAP.md 作为 Domain 索引页可引 Asset
-    // 此规则为正向（CONTEXT-MAP → Asset 允许），不作为 violation 检查；标记为 allow_rule
-    name: 'context-map-asset-index-allowed',
-    description: 'CONTEXT-MAP.md 作为 Domain 索引页可引 Asset（RFC-0018 D4.3 特例豁免）',
-    sourcePattern: /^CONTEXT-MAP\.md$/,
-    targetPattern: /^\.openxenon\/assets\//,
-    message: 'CONTEXT-MAP.md 引用 Asset 是索引场景（RFC-0018 D4.3 豁免）',
-    isExemption: true,
-  },
+  // v0.7.0 (RFC-0028 D5) 撤销：`context-map-asset-index-allowed` 规则整条删除
+  // 原因：CONTEXT-MAP.md 已退役，豁免目标不存在；Meta 层入口由 AGENTS.md 统一承担
   // ── RFC-0017 §D6 — 术语双层 SSOT 守门规则（Phase 2 写入，Phase 3 后启用） ──
   // 启用时机：docs/product/zh-cn/concepts/glossary.md 已生成 + 8 个概念页去重完成后。
   // 当前标记 phase-pending，由 PHASE_PENDING_RULES 过滤不触发 violation。

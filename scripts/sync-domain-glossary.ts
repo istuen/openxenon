@@ -8,8 +8,11 @@
  *   副作用：.openxenon/assets/domains/*.md（每个 term 头部插入 glossary-ref）
  *
  * 操作流程：
- *   1. 读取 9 个 Domain 文件，**仅**提取 `## Terms:` 段下的 `### term` H3
- *      （排除 `## Invariants` / `## Bans` 段，per RFC-0017 §D2/D3）
+ *   1. 读取 9 个 Domain 文件，**全部**提取每个 `###` H3（无论在哪个 ## Group 下）
+ *      —— v0.7.4 Asset 结构 v2 收编后 Group 名 free-form，OXN 不解释业务含义，
+ *      任何 Group 都可能含 term；不再按 Group 名白名单过滤。
+ *      （历史：曾用 `TERM_GROUP_NAMES` 白名单过滤 `## Concept / ## Practice` 等；
+ *      因 whitelist 阻碍新 Group 名演进，2026-08-10 grilling 决议移除。）
  *   2. 合并去重（按 references DAG 找 root；同 name 多 Domain 定义全部保留为 domains: 列表）
  *   3. 按字母排序，输出 ~140 个去重 term
  *   4. 渲染到 glossary.md（SYNC:START/END 外覆盖，sentinel 内保留）
@@ -111,68 +114,36 @@ export function parseFrontmatter(content: string): { references: string[] } {
 }
 
 /**
- * 🆕 v0.7.4 (Asset 结构 v2)：Term 类 Group 白名单
- * 包括 ## Terms: <group>（legacy）+ ## Concept + ## DocModality / ## DocArch / ## DocDisambiguation /
- * ## Bootstrap / ## EvolutionStrategy / ## Versioning / ## AssetDisambiguation /
- * ## Practice / ## Foundation / ## Phases / ## Reference / ## FailureHandling /
- * ## Quality / ## Scenes / ## UseWorkflow / ## UseDomain / ## UseStack 等
+ * 🆕 v0.7.4 (Asset 结构 v2) + 2026-08-10 grilling：移除 Term 类 Group 白名单。
+ * 任何 `## Group`（free-form）下的 `### Axiom` 都视为 glossary term——因为 OXN
+ * 不解释 Group 业务含义，whitelist 阻碍新 Group 名演进。Group 名只用于 cross-reference 锚定。
+ *
+ * 历史：曾用 `TERM_GROUP_NAMES` 白名单过滤 `## Concept / ## Practice` 等已知名；
+ * 因 whitelist 阻碍新 Group 名（如 `## DesignPhilosophy`）演进，2026-08-10 grilling 决议移除。
  */
-const TERM_GROUP_NAMES = new Set([
-  'Terms',
-  'Concept',
-  'DocModality',
-  'DocArch',
-  'DocDisambiguation',
-  'Bootstrap',
-  'EvolutionStrategy',
-  'Versioning',
-  'AssetDisambiguation',
-  'Practice',
-  'Foundation',
-  'Phases',
-  'Reference',
-  'FailureHandling',
-  'Quality',
-  'Scenes',
-  'UseWorkflow',
-  'UseDomain',
-  'UseStack',
-  'UseBlueprint',
-  'SceneQuickRef',
-])
 
-/** 提取 Domain 文件所有 Term 类 Group 下的 ### term（H3） */
+/** 提取 Domain 文件所有 ### term（H3），不按 Group 过滤 */
 export function extractTermsFromDomain(filePath: string, domainName: string): DomainTerm[] {
   const content = readFileSync(filePath, 'utf-8')
   const lines = content.split('\n')
   const terms: DomainTerm[] = []
-  let inTermsSection = false
   let currentTerm: { name: string; line: number; descLines: string[] } | null = null
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!
 
-    // 切换 section
-    const h2Match = line.match(/^##\s+(.+?)\s*$/)
-    if (h2Match) {
-      // flush 上一个 term
+    // H2 Group 仅作锚定锚点（不切换 in-section 状态）
+    if (line.match(/^##\s+(.+?)\s*$/)) {
       if (currentTerm) {
         terms.push(buildDomainTerm(currentTerm, domainName))
         currentTerm = null
       }
-      const rawTitle = h2Match[1]!.trim()
-      // ## Terms: <group> → 提取 group 前缀
-      const groupKey = rawTitle.split(':')[0]!.trim()
-      inTermsSection = TERM_GROUP_NAMES.has(groupKey)
       continue
     }
 
-    if (!inTermsSection) continue
-
-    // H3 term 标题
+    // H3 term 标题（无 Group 白名单：所有 ### 都视为 term）
     const h3Match = line.match(/^### (.+)$/)
     if (h3Match) {
-      // flush 上一个 term
       if (currentTerm) {
         terms.push(buildDomainTerm(currentTerm, domainName))
       }

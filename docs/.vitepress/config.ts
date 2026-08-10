@@ -76,8 +76,6 @@ export default defineConfig({
     /\/glossary\/zh-cn\/index$/,
     /\/glossary\/zh-cn\/$/,
     /\.\/\.\.\/zh-cn\/index$/,
-    // CONTEXT-MAP.md 在 docs/ 之外
-    /\.\.+\/CONTEXT-MAP/,
     // Phase -1 Remediation：docs/adrs/ 镜像 ADR 含历史 .openxenon/ 路径（frozen 不可变）
     /^\.\.\/\.\.\/works\//,
     /^\.\.\/\.\.\/\.openxenon\//,

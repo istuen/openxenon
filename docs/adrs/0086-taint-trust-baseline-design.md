@@ -9,7 +9,7 @@ related:
   - docs/adrs/0002-kernel-l0.md
   - docs/adrs/0084-collaboration-boundary-layering.md
   - docs/rfcs/RFC-0015-proof-system-overhaul.md
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
 ---
 
 # ADR-0086: Taint Trust Baseline — 12 flag 硬编码 + Provider-Handler 接线契约

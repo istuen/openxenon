@@ -253,3 +253,5 @@ esac
 - [`.openxenon/assets/domains/oxn-cli-domain.md`](../assets/domains/oxn-cli-domain.md) — Step 3 编辑对象
 - [`CONTEXT-MAP.md`](../../CONTEXT-MAP.md) — Step 3 编辑对象（沿用 2026-07-27 术语新增模式）
 - 2026-07-30 `/grilling` session 产出
+
+<!-- 已迁移：v0.7 CONTEXT-MAP.md 退役，详见 RFC-0028。文件中 CONTEXT-MAP 原文引用保留作为历史考古链，失效链接请用 git blame 追溯或参考对应 Domain / RFC。-->

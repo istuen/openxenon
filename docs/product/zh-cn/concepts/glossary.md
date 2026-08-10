@@ -2,7 +2,7 @@
 title: 术语表
 entity: glossary
 generated-by: scripts/sync-domain-glossary.ts
-synced-at: 2026-08-09
+synced-at: 2026-08-10
 ---
 
 # 术语表
@@ -30,22 +30,22 @@ synced-at: 2026-08-09
 keyv / flat-cache / file-entry-cache / cacheable-request / cacheable / @cacheable/* /
 cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
-### Align
-
-
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#align) — 人机协作的工作过程，AI Agent 遵守边界并收敛执行。
-
 ### Artifact
 
 
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#artifact) — Align 阶段产出的物理事实（被 Probe 观测的对象），路径必须落在 Work 沙盒内或宿主项目目录。
+
+### ArtifactDeclaration
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#artifactdeclaration) — Task 内声明的预期产物路径列表（## Artifacts）；lock 时 Engine 校验 ⊆ Blueprint Scope.allow AND ∩ Scope.forbid = ∅；与运行时 Artifact（含 hash）区分；来源 design-blueprint-context-template。
 
 ### Asset
 
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#asset) — Asset 是工程师为 AI 协作定义的**环境约束**；5 类 AssetKind（domain / workflow / stack / blueprint / assetmap）；Work 引用 Asset（单向）；创建后强校验（planLock + content_hash），不被 Work 改写。
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#asset) — 见 [`oxn-asset-domain`](./oxn-asset-domain.md#asset)。本文域内特指"Project 资产"——住 `.openxenon/assets/`。
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#asset) — 工程师为 AI 协作定义的**环境约束**；5 类 AssetKind（domain/workflow/stack/blueprint/assetmap）。具体领域见 [`oxn-asset-domain`](./oxn-asset-domain.md)。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#asset) — OXN 定义协作边界的知识，包括 Domain、Workflow、Stack，并由 Blueprint 组合使用。
 
 ### AssetCheck
 
@@ -70,20 +70,60 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#assetpaper) — Asset 论文结构 3 字段不变量（ADR-0051）：abstract + references + citations 缺一不可。学术论文↔Asset 映射。
 
+### banned-files
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#banned-files) — items:
+这三个文件名即告警。Shai-Hulud 蠕虫的执行入口文件，合法依赖不会用到。
+
+### banned-github-repo-pattern
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#banned-github-repo-pattern) — items:
+GitHub 上 ~1300 个公开仓库匹配此 pattern，每个对应一名受害者的加密凭据包。
+任何本地凭据文件（npmrc/.aws/.ssh 等）出现在这些仓库说明本地已失陷。
+
+### banned-network-endpoints
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#banned-network-endpoints) — items:
+C2 fallback + 通过以太坊主网智能合约下发新 C2 域名（攻击者可随时轮换）。
+任何 runtime 出站流量命中 → 立即隔离机器。
+
+### banned-script-patterns
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#banned-script-patterns) — items:
+合法依赖不会以 setup.mjs / Math_Symbol.js 作为 preinstall hook。
+
+### banned-versions-community-spread
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#banned-versions-community-spread) — items:
+这些包本身与 keyv 家族无业务关系，但 npm publish token 被盗后被 push 新版本。
+数据源：同上 Aikido 博客。
+
+### banned-versions-primary
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#banned-versions-primary) — items:
+任何 lockfile / package.json / node_modules 命中任一即阻断 install。
+数据源：https://www.aikido.dev/blog/keyv-and-friends-compromised-in-npm-supply-chain-attack
+
 ### BirthCert
 
 
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#birthcert) — Work 静态门禁卡（.work 目录），写一次后只读（OS chmod 0o444），含 assets + context + diagnostics。
 
-### Boundary
-
-
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#boundary) — 🆕 v0.7.0 RFC-0027 PR-F（D10）：删 Axiom（Asset 别名，合并到 Asset 定义）；语义保留到 Asset Axiom 注释。
-
 ### BuiltinAsset
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#builtinasset) — 随 OXN 版本发布的内置 Asset；住 `src/builtin/`；通过 `@oxn/` scope 解析；项目可用 `@prj/` override。自举种子——手动创建不经 Work，后续变更走 asset-evolve Work。
+
+### BuiltinPart
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#builtinpart) — 🆕 v0.7.0 RFC-0027 PR-G（D7）：原 `Part` Axiom 改名 `BuiltinPart`（消除与 work-domain Part 的 Critical Name Collision）；work-domain Part = Task 内 skill 执行单元（不同概念），本域 BuiltinPart = OXN 内置零件。
 
 ### Ceiling
 
@@ -119,6 +159,16 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 - [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#compromised-version) — 已被官方或权威来源（GitHub Security Advisory / npm audit / Aikido Intel）标注为恶意的具体包版本号。
 本事件覆盖 16 个包 × 精确版本（11 原生感染 + 5 社区扩散）。
 
+### ContextMD
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#contextmd) — Work 内上下文文件（works/&lt;id&gt;/context.md）；AI Agent 按 Blueprint ## Context Template 从 ## Use 引用的 Assets 组装；纳入 PlanLock 5-hash（workContextHash）；lock 前写完；来源 design-blueprint-context-template Draft（2026-08-06 grilling）。
+
+### ContextTemplate
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#contexttemplate) — Blueprint 内上下文组装指令段（## Context Template）；可选，缺省 Engine 用内置默认模板（基于 Use refs + Boundaries + Goal 推导）；Blueprint 可覆写默认（如 bug-fix-blueprint 在 diagnose 段加"证据落盘"指令）；来源 design-blueprint-context-template。
+
 ### Daemon
 
 
@@ -129,6 +179,12 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#definitionalmodality) — 定义性情态——回答"X 是什么"的文档；住 `.openxenon/assets/{kind}/*.md`（E1 Asset）；自举种子允许手动创建（见 Bootstrap Seed Exemption）。
+
+### DeprecatedConstructsV040
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#deprecatedconstructsv040) — intent-pool
+v0.4.0（D1 2026-08-07）起禁止新建/引用——Intent Pool v3 退役并吸收进 Draft：
 
 ### DescriptiveModality
 
@@ -190,6 +246,26 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#drafttype) — Draft 用途分类——3 类：report（调研报告） / issue（问题记录） / design（设计稿）。映射到文件名前缀（Q-S1/Q-S5）：
 
+### EscapeHatchAxiomNameCarrying
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#escapehatchaxiomnamecarrying) — 逃生舱 A：Axiom 命名承载——拆多 Axiom 平铺（`### Inv1` / `### Inv1A` / `### Inv1B`），命名承载层级；Engine 用 `slugify(H3)` 做 ID，序号不解析。
+
+### EscapeHatchCrossAssetReference
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#escapehatchcrossassetreference) — 逃生舱 C：跨 Asset 引用——同 kind `references`（Inv15 + Inv16 预算 N=5）/ 跨 kind Blueprint `## Use`（显式 `kind:` 字段）/ 跨 kind 导航 AssetMap `scene.links`；Engine DAG 校验防环（Inv5DagNoCycles）。
+
+### EscapeHatchFieldLoadNested
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#escapehatchfieldloadnested) — 逃生舱 D：field-load Axiom 内嵌（Blueprint/Stack 限定豁免）——Tool `operations:` / Slot `observe/operate/deps:` / Use `path/kind:` / Scope `allow/forbid:` / Context Template `business/process/...`；OXN 守门明确豁免（`scripts/check-asset-structure.ts:295-301`）。
+
+### EscapeHatchGroupSwitch
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#escapehatchgroupswitch) — 逃生舱 B：Group 切换——新主题开新 `## Group`（`## Concept` / `## Boundary` / `## Foundation` 等皆 free-form）。
+
 ### External
 
 
@@ -206,6 +282,57 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#floor) — 下限参照——OXN 为 AI Agent 的局部最优全局非优情况提供的确定性保底参照。Asset + Work 专注某个目标，构成 AI 选择动作时的 floor。OXN 提高 floor 不提高 ceiling（ADR-0073 判据 3）。
+
+### ForbiddenConstructs
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#forbiddenconstructs) — ignoreAssetLock
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#forbiddenconstructs) — L2Domain
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#forbiddenconstructs) — Resource
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#forbiddenconstructs) — Flag
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#forbiddenconstructs) — WorkV0Layout
+
+### ForbiddenCrossLayerImports
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#forbiddencrosslayerimports) — docs-to-openxenon
+文档三层严格隔离 + Meta 层隔离（v0.3.0 起）：
+
+### ForbiddenDraftAsAsset
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#forbiddendraftasasset) — draft-asset-promote
+
+### ForbiddenDraftBuiltinTemplate
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#forbiddendraftbuiltintemplate) — draft-template
+
+### ForbiddenDraftFrontmatterRequired
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#forbiddendraftfrontmatterrequired) — draft-frontmatter-required
+
+### ForbiddenDraftPrefixV060D46
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#forbiddendraftprefixv060d46) — draft-prefix-doc
+
+### ForbiddenErrorContractFamily
+
+
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#forbiddenerrorcontractfamily) — 🆕 v0.7.0 RFC-0027 PR-F（D5）：canonical 错误处理 ForbiddenConstructs（吸收自 cli/proof/work 三个 Domain）。
+
+### ForbiddenMetaInternalCoupling
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#forbiddenmetainternalcoupling) — readme-to-rfc
+项目工程元层内部互引限制（v0.3.0 起）：
+
+### ForbiddenTrustMarkAndBoundaryDeviation
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#forbiddentrustmarkandboundarydeviation) — 🆕 v0.6.4 PR-B（合并自 `oxn-probe-domain` JudgeWords 注释）：Taint / TaintMark / Boundary Deviation / 干涉 四个旧术语的唯一收敛目标 = InterferenceFlag（ADR-0086 + ADR-0066）。中文"干涉"统一为"干扰"（http-provider.ts:13 / file-provider.ts:13 当前混用）。Boundary Deviation 在 ADR-0066 已标记过渡 term，0.6.3 起彻底 ban。
 
 ### Frozen
 
@@ -225,12 +352,7 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 ### Hall
 
 
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#hall) — 研讨厅，人机协作范围内的中央枢纽。
-
-### IAP
-
-
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#iap) — 工程师定义意图（Intent），AI Agent 对齐执行（Align），OXN 验证记录（Proof）。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#hall) — 待定，研讨厅，人机协作范围内的中央枢纽。
 
 ### IAPError
 
@@ -255,17 +377,12 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#insight) — 🆕 v0.6.4 PR-B（合并自 `oxn-insight-domain`）：Insight 是 E4 涌现层；整体论 vs 前三层还原论；只输出协作态势信号（边界使用/触碰/Loop 收敛/退出模式），不输出代码质量评分；永不自动回写 Asset。
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#insight) — 洞察 IAP 并提供涌现的可能性。具体领域见 [`oxn-proof-domain`](./oxn-proof-domain.md#insight)（🆕 v0.6.4 PR-B：合并自 `oxn-insight-domain`）。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#insight) — 洞察 IAP 并提供涌现的可能性。
 
 ### InsightDraftMapping
 
 
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#insightdraftmapping) — 🆕 v0.6.4 PR-B（合并自 `oxn-insight-domain`）：Insight 输出类型 → DraftType 映射（D1 锁定）：
-
-### Intent
-
-
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#intent) — 人机协作的软件目标，AI Agent 对齐的工作对象。
 
 ### IntentPoolDeprecated
 
@@ -277,6 +394,867 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#interferenceflag) — 🆕 v0.6.4 PR-B（合并自 `oxn-probe-domain`）：信号污染标记 = L1-Infra Provider 在 IO 时检测到的干扰信号；是 "Taint / Boundary Deviation / InterferenceFlag" 三个旧术语的**唯一收敛目标**（ADR-0086 + ADR-0066）
 
+### inv-1: lockfile-zero-ioc-match
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#inv-1-lockfile-zero-ioc-match) — value: |
+本项目的 bun.lock 与 pnpm-lock.yaml 两份 lockfile 必须 0 命中 banned-versions-primary 与
+banned-versions-community-spread 两个黑名单。校验时机：
+(1) pre-commit hook（每次 commit）
+(2) CI pipeline（每次 PR / push）
+(3) oxn asset check 期间（引用本 Domain 的 Work lock 期）
+命中 → 阻断并提示升级到 safe version（见 inv-2）。
+
+### inv-2: prefer-legacy-major-for-affected-family
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#inv-2-prefer-legacy-major-for-affected-family) — value: |
+对于 banned-versions-primary 列出的 11 个包，在它们发布 safe patch 之前，
+工程上必须固定到中毒版本之前的最旧 major（lockfile pin）。
+当前本项目实际锁定的版本：
+推导路径：eslint@10.5.0 → file-entry-cache@^8.0.0 → flat-cache@^4.0.0 → keyv@^4.5.4
+禁止任何 PR 把上述包升到 major +1 以上的版本，除非 Aikido / npm security advisory 明确标记 safe。
+
+### inv-3: no-malicious-file-in-source-tree
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#inv-3-no-malicious-file-in-source-tree) — value: |
+项目源码树（含 packages/**、src/**、oxn-vscode/**、.openxenon/**、docs/**）内禁止出现
+setup.mjs / Math_Symbol.js / math_init.js 三个文件名。
+扫描工具：find . -name 'setup.mjs' -not -path '*/node_modules/*' -not -path '*/.pnpm/*' -not -path '*/.bun/*'
+扫描结果必须为空；命中即报错并阻断 commit。
+
+### inv-4: no-suspicious-preinstall
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#inv-4-no-suspicious-preinstall) — value: |
+本项目任何 package.json 的 scripts 段禁止包含以 node setup.mjs / node Math_Symbol.js /
+node math_init.js 开头的 preinstall / install / postinstall hook。
+合法依赖不会用这种命名作为 hook。
+即使是 pnpm / bun / npm 的 onlyBuiltDependencies 白名单也不应包含这三类文件路径。
+
+### inv-5: dual-lockfile-cross-check
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#inv-5-dual-lockfile-cross-check) — value: |
+本项目同时存在 bun.lock（bun 原生格式）+ pnpm-lock.yaml（pnpm YAML 格式）两份 lockfile。
+任何依赖变更必须在两份中同步（pnpm 作为权威，bun.lock 通过 pnpm install 重建后由 bun 校验一致）。
+防止任一 lockfile 单独被篡改（攻击者改 bun.lock 但 pnpm-lock.yaml 是干净镜像会暴露）。
+CI 校验：两边都跑 oxn asset validate 同一份黑名单。
+
+### inv-6: registry-mirror-tracking
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#inv-6-registry-mirror-tracking) — value: |
+本项目当前通过 npmmirror 镜像（registry.npmmirror.com）拉取包，
+镜像源对 IOC 版本的下架存在滞后窗口。
+必须在镜像源未下架前用 lockfile 哈希 + 黑名单双校验兜底，不能仅依赖镜像源审查。
+镜像源 URL 变更（换回官方 npmjs）属于结构性变更，需走 PR + 双 lockfile 重生成。
+
+### inv-7: audit-cadence
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#inv-7-audit-cadence) — value: |
+本 Domain 词汇扩展遵循事件驱动 + 季度回归双节奏：
+(1) 事件驱动：Aikido / GitHub Security Advisory / npm audit 公布新事件 → 24h 内追加 Terms/Bans
+(2) 季度回归：每季度跑一次 oxn asset validate + 完整 lockfile 重审计，
+对照本 Domain banned-versions-* 黑名单，确认所有锁定版本仍然 safe。
+历史事件归档走 banned-versions-archived-{yyyymm} 命名（如 banned-versions-archived-202608）。
+
+### inv-8: advisory-aggregate-policy
+
+
+- [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#inv-8-advisory-aggregate-policy) — value: |
+同一供应链事件覆盖多个包时，必须聚合到单一 Domain（本资产）而非为每个包新建 Domain。
+理由：(1) 16 包共享同一攻击链特征 + 同一波次时间窗；(2) AI Agent 路由时按 supply-chain 关键词
+即可定位本 Domain，无需逐包遍历；(3) 后续同类事件可复用本 Domain 的 IOC 校验器骨架。
+跨事件（不同时间窗 / 不同攻击家族）才考虑拆 Domain。
+
+### Inv10AdaptersRootNoOverlap
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv10adaptersrootnooverlap) — AdaptersRoot 互不重叠：opencode→.opencode/skills/；claude→.claude/skills/；agents→.agents/skills/。
+
+### Inv10DeleteRequiresNoRefs
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv10deleterequiresnorefs) — Asset 删除（`oxn asset delete X --force`）：仅当无任何引用 + 业务团队同意才能硬删；否则 → IAP_ASSET_HAS_REFS（YIELD_TO_HUMAN）。
+
+### Inv10DevCanRefRfcDrafts
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv10devcanrefrfcdrafts) — dev/ 可引用 RFC + sprint 设计稿（v0.3.0 起）——Roadmap（dev/versions/）与 PlanningPool（dev/pool/）作为前瞻性规划，可引用 .openxenon/drafts/rfc/ + .openxenon/drafts/sprint/ 作为探索稿溯源。check-doc-boundary.ts `dev-allow-rfc-ref` 规则允许此引用模式。
+
+### Inv10DraftTargetGoalPairV050
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv10drafttargetgoalpairv050) — v0.5.0（D2 2026-08-07）起：`oxn draft promote --target=goal --goal-slug=&lt;slug&gt;` 把 Draft 升华为 Goal。
+
+### Inv10ProofNeutralRecord
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv10proofneutralrecord) — Proof 是中性的客观事实记录（不带立场判定）；原 inv-10 "proof-has-position" 已被 ADR-0067 废弃——OXN 不判定合格/不合格；判定权归工程师基于 outcome 聚合结构自行判定。
+
+### Inv10V0MigrateRequired
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv10v0migraterequired) — V0 布局必须先 oxn work migrate 才能走 lock 守卫；V0 直接 run → IAP_ALIGN_V0_LEGACY_BLOCKED。
+
+### Inv11ConfigTwoLayer
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv11configtwolayer) — OxnConfig（.oxnrc，git tracked）只存 leaderMode；ProjectConfig（.openxenon/.config，git ignored）存 mode/locale/debug/tools 等。
+
+### Inv11DraftTargetWorkRejectedV050D3
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv11drafttargetworkrejectedv050d3) — v0.6.0（D3 2026-08-07）起：`oxn draft promote --target=work` 全部拒收（CLI + Engine 双层）。
+
+### Inv11FrozenImmutable
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv11frozenimmutable) — FrozenJson（frozen.json）生成后只读：AI 与工程师都只能读，禁手改。
+
+### Inv11IntentPoolV3Retired
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv11intentpoolv3retired) — Intent Pool v3 退役（v0.4.0 / D1 2026-08-07）——5 池机制（research/design/issue/audit/journal）吸收进 Draft（origin=insight，type-mapping 见 oxn-proof-domain.md §InsightDraftMapping；🆕 v0.6.4 PR-B：合并自 `oxn-insight-domain`）。
+
+### Inv11MigratedV0Preserve
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv11migratedv0preserve) — MigratedV0Dir 保留 V0 备份供审计；OXN 不自动清，工程师手动清理（避免误删导致不可恢复）。
+
+### Inv11PhysicalLocation
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv11physicallocation) — Asset 物理位置 v0.6 默认：.openxenon/assets/{kind}/X.md；v0.5 fallback：.openxenon/{kind}/X.md（保留兼容但新项目不再使用）。
+
+### Inv12DrafttypeStrictLockV060D46
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv12drafttypestrictlockv060d46) — v0.6.0（§4.6 2026-08-07）起：`oxn draft create --prefix &lt;X&gt;` 严格锁 3 类——`report` / `issue` / `design`。
+
+### Inv12GoalVersionRename
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv12goalversionrename) — v0.6.0（D5+ 2026-08-07）起：Goal / Version 概念正名——
+
+### Inv12KebabCommand
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv12kebabcommand) — 命令名 kebab-case（与 Skill ID 命名一致）；OXN 不强制 PascalCase / kebab-case 风格，只强制声明 vs 文件规范化后一致（跨平台一致性保障）。
+
+### Inv12NamingConvention
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv12namingconvention) — Asset 命名规范：domain PascalCase（MemberContext）；blueprint / stack / assetmap kebab-case（dev-workflow）。
+
+### Inv12RefFailFast
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv12reffailfast) — Work 引用 Asset 用 domain X ref @prj/{dir}/{name}；@prj 寻址必须实际存在（CLI 加载期 fail-fast）。
+
+### Inv12SignatureTamperDetection
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv12signaturetamperdetection) — frozen.json 签名被外部篡改 → 抛 OXN_CRASH_SIGNATURE_MISMATCH（防线击穿），进程退出 2。
+
+### Inv13BranchModelMainDevFeatGoal
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv13branchmodelmaindevfeatgoal) — v0.6.0（§4.7 2026-08-07）起：分支模型三层——
+
+### Inv13MonthlyCleanupCycleV060D46
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv13monthlycleanupcyclev060d46) — v0.6.0（§4.6 2026-08-07）起：每月 1 号自动归档 inactive drafts。
+
+### Inv13NameFileConsistency
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv13namefileconsistency) — Asset 名称规范化：toKebab(declared) === toKebab(file_stem)；不一致 → IAP_INTENT_NAME_FILE_MISMATCH（YIELD_TO_HUMAN）。
+
+### Inv13OxnConfigPackage
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv13oxnconfigpackage) — CLI 顶层统一走 `oxn-config` 包；不允许直接读 .oxnrc 字符串拼接。
+
+### Inv13TaskPartSlotAlign
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv13taskpartslotalign) — Task 内 Part 名必须对齐 Blueprint Slot 名；不对齐 → work run 时找不到对齐目标（DEP_NOT_FOUND）。
+
+### Inv13TraceAppendOnly
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv13traceappendonly) — Trace（work-trace.jsonl）只能追加写、不能重写；append-only 约束；Trace-before-State（ADR-0009）。
+
+### Inv14CliViaEngineBarrel
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv14cliviaenginebarrel) — CLI 必须通过 packages/engine barrel 消费 Engine 公共 API，严禁 import `@openxenon/engine/src/...` 穿透（从 oxn-engine-domain.inv-4 前半承接）。
+
+### Inv14DuplicateNameConflict
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv14duplicatenameconflict) — 重复创建同 name 资产 → OXN_ASSET_EXISTS（PATH_CONFLICT）；--force 覆盖；不静默合并。
+
+### Inv14PromoteRouterSingleEntry
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv14promoteroutersingleentry) — 🆕 v0.7.0 RFC-0027 PR-F（D1 合并自 OxnDraftPromoteDomain）：Draft Promote 路由单一入口——所有 Draft→target 路由必经 draft-promote-router Blueprint。
+
+### Inv14RedFlagInconclusive
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv14redflaginconclusive) — 8 项 RED flag 触发 INCONCLUSIVE：waf_detected / just_modified / detached_head / shallow_clone / sandbox_violation / network_timeout / response_truncated / permission_denied。
+
+### Inv14TaskDagNoCycles
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv14taskdagnocycles) — Work 内 task DAG 必须无环（Kahn's algorithm 校验）；有环 → IAP_INTENT_DAG_CYCLE（YIELD_TO_HUMAN，含 cycleHint）。
+
+### Inv15AssetKindNotShortcut
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv15assetkindnotshortcut) — --asset-kind 走标准 Work 流程（不是短路）；oxn asset create 是 alias（内部调 oxn work create --asset-kind）。
+
+### Inv15CliDaemonSocket
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv15clidaemonsocket) — cli↔daemon 仅走 unix socket + JSON payload；payload schema 唯一权威由 Engine 包提供；cli 必须 import 共享类型，不得自造（从 oxn-engine-domain.inv-8 承接）。
+
+### Inv15KindIsolationInReferences
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv15kindisolationinreferences) — 🆕 v0.6.4 PR-D（Q7 B 方案强化）：Asset.references 仅可引用**同 AssetKind**（bare name 强制 parent kind 推断；target name 必须在该 kind 文件夹下实际存在）。**跨 kind 引用必须用 Blueprint `## Use` 段**（显式 `kind:` 字段，例 `- workflow: oxn-workflow`）。`@md/{kind}/{name}` 形式标记 deprecated（向后兼容 v0.6.4 之前 Blueprint frontmatter）。
+
+### Inv15Promote4StagesNoSkip
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv15promote4stagesnoskip) — 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：Draft Promote 4 阶段不可跳——gather → validate-skeleton → fork-missing → dispatch-target 顺序强制。
+
+### Inv15YellowFlagPassThrough
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv15yellowflagpassthrough) — 4 项 YELLOW flag 透传记录，不改变 outcome：cdn_cache / cache_path / symlink。
+
+### Inv16CliDomainUnidirectionalRef
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv16clidomainunidirectionalref) — 本域与 oxn-domain 单向引用：CLI 子域补父域未说的部分，重名 term（OXN CLI）不重定义；错误类型术语归 Engine 域，本域 references 含 oxn-engine-domain 用于消费侧 TopCatch / ExitCode 映射引用；不向下引用 oxn-asset-domain。
+
+### Inv16CliRequiredArgs
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv16clirequiredargs) — oxn work run --work-file 必填；oxn work submit --work-name + --task 必填；少参数 → OXN_CLI_INPUT_ERROR。
+
+### Inv16FileProviderNoExec
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv16fileprovidernoexec) — FileProvider.ioExec 必须抛 IAPError（file provider does not implement io.exec; use shell:// URI）。
+
+### Inv16RefsBudgetLimit
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv16refsbudgetlimit) — Asset references 数量预算 N=5：单一节点 fan-out 上限（防依赖地狱）；超过触发 IAP_INTENT_REFS_BUDGET_EXCEEDED（v0.6.2+ soft-warn）；Roadmap scene.links 不受此限。
+
+### Inv16SkeletonAsset1To1
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv16skeletonasset1to1) — 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：skeleton 模板与目标 Asset 1:1 对齐——7 个 skeleton 必含目标 H2 段，不许简化。
+
+### Inv17HttpWafBlacklist
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv17httpwafblacklist) — HttpProvider WAF 头黑名单 6 项硬编码（cf-ray/x-sucuri-id/x-akamai-transformed/x-imperva-id/x-azure-ref/x-aws-waf-token）。
+
+### Inv17LeafAssetLegitimacy
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv17leafassetlegitimacy) — Leaf Asset legitimacy：Asset.references=[] 是合法 leaf 节点；叶子 Asset 可被 Work/Task/Roadmap 引用，不要求必须有引用方；僵尸判断由 Roadmap 是否引用 + citations==0 + 创建后未使用 共同决定。
+
+### Inv17NoCreateNewAlias
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv17nocreatenewalias) — oxn work new 已在 v1.0 移除；CLI 拒绝 unknown command 'new'（不能是别名）；统一用 oxn work create。
+
+### Inv17PromoteSourceDraftUnchanged
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv17promotesourcedraftunchanged) — 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：Promote 后源 Draft 不变——promote 是从 Draft 拷贝到 Target，不是状态转移。
+
+### Inv18RetargetExplicit
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv18retargetexplicit) — 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：Draft retarget 显式——若工程师要改 promote-target，需用 `oxn draft retarget &lt;name&gt; --new-target <...>`。
+
+### Inv18RoundPreservesCompleted
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv18roundpreservescompleted) — Round 切换不重置 task 状态：completed 的 task 保留，deviated/running 的回 pending 供工程师重跑或调整；roundHistory 不可丢（finalize 保留所有 round 记录供 E4 Insight）。
+
+### Inv18SandboxNoCodeGen
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv18sandboxnocodegen) — 沙箱 context 禁动态代码生成（codeGeneration: { strings: false, wasm: false }）。
+
+### Inv18TemplateIsEngineSsot
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv18templateisenginessot) — Asset 模板（assets/{kind}.md）是 OXN Engine 的 SSOT；CLI 创建时复用模板；禁止 in-place 改模板（改动必须走 PR）。
+
+### Inv19BootstrapNotThrow
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv19bootstrapnotthrow) — ProviderRegistry.bootstrapFromDisk 遇 CORRUPTED/MISSING 不抛错，仅标 status 计数。
+
+### Inv19CitationsAutoIncrement
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv19citationsautoincrement) — Asset 引用方（Work/Task/Asset）变更后，引用目标 citations 字段自动 +1；不需手工改。
+
+### Inv19MaxIterationsHardLimit
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv19maxiterationshardlimit) — maxIterations 硬限制：oxn work next-round 在 currentRound >= maxIterations 时拒绝，错误码 IAP_ALIGN_ROUND_MAX_EXCEEDED；提示用户用 oxn work finalize 收口；默认 maxIterations=3。
+
+### Inv19PromoteDraftGoalV020
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv19promotedraftgoalv020) — 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：v0.2.0（D2 2026-08-07）起：`promote-target=goal` 走新 sub-target `promote-draft-goal`
+
+### Inv1BuiltinProbeTypes
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv1builtinprobetypes) — Builtin 探针类型必须是 fs_exists / fs_not_exists / fs_match / shell_exec 之一（v0.1 范围）。
+
+### Inv1CliDecomposition
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv1clidecomposition) — OXN CLI = 命令解析（Command/SubCommand/Arg）+ 错误消费（TopCatch 4 档分流 / ExitCode）+ I18n + Skill 分发 + Config 加载；任何 CLI 行为必须可拆解到这些子模块。
+
+### Inv1Doc3Modalities
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv1doc3modalities) — 文档三情态严格分离——Asset（定义性，回答"是什么"）+ RFC（规定性，回答"为什么决定"）+ Doc（描述性，回答"怎么用"），三者各居其位，互不依赖。三情态全集中的任意两情态组合是设计错误信号。
+
+### Inv1DraftIsDescriptiveModality
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv1draftisdescriptivemodality) — Draft = 描述性情态（Descriptive Modality）的前置状态——未提升前不参与版本控制、不参与跨层引用、不被 Work / Asset / Proof / Insight 消费。
+
+### Inv1IAPPhasesNoSkip
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv1iapphasesnoskip) — 3 IAP 阶段顺序不可跳：Intent → Align → Proof；违反 → IAPError 拒绝。
+
+### Inv1KindWhitelist
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv1kindwhitelist) — 5 AssetKind 白名单不可混用（domain ≠ workflow ≠ stack ≠ blueprint ≠ assetmap）；H2 分类严格隔离；混用 → E_MD_CATEGORY_UNKNOWN。🆕 v0.6.4: 'roadmap' → 'assetmap'。
+
+### Inv1LayerVsPhase
+
+
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv1layervsphase) — L0-L3 与 P0-P3 是两个正交概念：L0-L3 描述代码分层，P0-P3 描述产品路线图。
+
+### Inv20NotMixedWithWork
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv20notmixedwithwork) — Asset 不与 Work 混用：同一 .openxenon/ 目录下 Asset（.md）与 Work（.md）互不引用；Asset 通过 @prj 寻址被 Work 引用。
+
+### Inv20PromoteTargetWorkDeprecatedV030
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv20promotetargetworkdeprecatedv030) — 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：v0.3.0（D3 2026-08-07）起：`promote-target=work` 已退役——CLI 与 Engine 双层拒收。
+
+### Inv20RoundManualTrigger
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv20roundmanualtrigger) — Round 切换手动触发（oxn work next-round --outcome DEVIATED），不自动循环（避免无限循环 + 便于人工调整 Intent）；outcome DEVIATED 不自动触发新 Round。
+
+### Inv20WorkPrecheckOnlyThisWork
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv20workprecheckonlythiswork) — workPrecheck 仅阻断该 Work（v2 核心倒置：其他 Work 不受影响）。
+
+### Inv21AiAssetViaDraft
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv21aiassetviadraft) — AI 自建 Asset 必须走 Draft → Promote 路径——先 `oxn draft create` 建描述性工作稿，工程师审核后通过 `oxn work create --type asset` 走 IAP 闭环升格为正式 Asset。AI 不能直接建 Asset。Draft 是 Asset 的前置状态（描述性情态），与 Asset（定义性情态）情态分离。来源：ADR-0084（2026-07-31）。
+
+### Inv21DaemonStartupNoNetwork
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv21daemonstartupnonetwork) — daemonStartup 启动期只读 + 不触网（v2 核心倒置：CORRUPTED 标状态不阻断 Daemon）。
+
+### Inv21RunAllowRerunPending
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv21runallowrerunpending) — oxn work run 行为变更：state.status=pending/running 时允许重新调用（re-run 自动重置 deviated/running task → pending，completed 保留）；state.status ∈ {completed, deviated, error}（已收口）时拒绝，报 OXN_WORK_ALREADY_FINALIZED。
+
+### Inv22ArtifactInSandbox
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv22artifactinsandbox) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv22FrozenImmutable 删，canonical 归 oxn-proof-domain.md §Inv11FrozenImmutable（frozen.json SSOT）；原 Inv24 序号顺延。
+
+### Inv22AssetExposesProbeContractNotImpl
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv22assetexposesprobecontractnotimpl) — Asset 暴露 Probe 调用契约（有哪些、怎么调用）**不破坏确定性**——确定性根基是 Probe 执行代码不可变（OXN 构建产物，AI 无法修改）。Asset 暴露调用契约 ≠ 代码修改；参数化（stackTools）改变观测行为不改变执行代码。ADR-0076「验证标准 AI 不可见」是软对抗（提高针对性绕过成本）非确定性根基。来源：ADR-0072 erratum v1.0.1（2026-07-31）。
+
+### Inv22ProbeFromBlueprint
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv22probefromblueprint) — Probe 标准必须来自 Blueprint 的 observe 数组（Intent 阶段），不能由 Align 阶段运行时追加。
+
+### Inv23ProbePassImpliesFixed
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv23probepassimpliesfixed) — 单向 Blueprint 修复语义（One-Shot Blueprint Fix Semantics）—— Blueprint 是 slot DAG 单向流（`oxn-work-domain.md:inv-29 task-no-reverse-blueprint` 已锁 Task 不反改 Blueprint）；ProbeOutcome=COMPLETED 即意味着该 Boundary 的目标已满足 = fixed，无需显式"fixed" 状态。DEVIATED → 工程师读 Report → 开**新 Work**（同一 Blueprint 或调整后）—— 非 Blueprint retry，非自动 loop。自动的是"Probe 验证自动跑"，非"修复自动循环"。来源：2026-07-27 grilling session G1 决策。
+
+### Inv23ProjectBootstrap5Assets
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv23projectbootstrap5assets) — 项目消费者 onboarding 必须 bootstrap 5 起手 Asset（Domain + Workflow + Stack + Blueprint + AssetMap）。缺任一 → `oxn asset check` 报错；Missing 状态下不可进入完整 IAP。5 起手 Asset 物理位置：src/builtin/projects/starter/（RFC-0011 @oxn/ 层）；通过 `oxn onboard --new` 复制到 @prj/ 层（`&lt;project&gt;/.openxenon/assets/`）。5 Asset 命名：doc-md-domain / md-author-workflow / md-stack / md-author-blueprint / md-system。替代 ADR-0069 D1 "6 Asset 下限"（含 Roadmap/AssetMap）。ADR-0089 D1 + D3。边界：OXN 自身 bootstrap 仍走 RFC-0012 自举豁免（src/builtin/），**不**受本 inv 约束。
+
+### Inv23TraceAppendOnly
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv23traceappendonly) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv23TraceAppendOnly 内容保留，序号顺延为 Inv23（canonical 归 oxn-proof-domain.md §Inv13TraceAppendOnly 镜像；本 Axiom 作为 Work 侧引用）。
+
+### Inv24ProbeFromBlueprint
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv24probefromblueprint) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv25ProbeFromBlueprint 删，canonical 归 oxn-proof-domain.md §Inv22ProbeFromBlueprint（Probe 在 Proof 中观察）。
+
+### Inv24ProofCodeImmutability
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv24proofcodeimmutability) — Probe 执行代码不可变是确定性根基——OXN 构建产物（其他项目消费构建后的 OXN，无法修改代码）。Asset 暴露 Probe 调用契约（有哪些、怎么调用）不破坏确定性；Probe 执行可由 Asset 派生参数（stackTools）参数化——参数化改变观测行为不改变代码。ADR-0076「验证标准 AI 不可见」是软对抗（提高针对性绕过成本）非确定性根基。来源：ADR-0072 erratum v1.0.1（2026-07-31）。
+
+### Inv24StarterAssetReadonly
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv24starterassetreadonly) — 5 起手 Asset 在 src/builtin/projects/starter/ 路径下为只读（chmod 0o444）；工程师不直接修改源模板，调整通过 `oxn onboard --existing --bootstrap` 派生项目专属 Asset。避免模板污染；类比 RFC-0012 自举豁免。ADR-0089 Consequences 风险缓解。
+
+### Inv25BlueprintScopeDeclarative
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv25blueprintscopedeclarative) — Blueprint `## Scope` 段声明 allow/forbid 文件 glob（静态锁定，PlanLock 保护）：allow 为允许修改的文件路径 glob 列表，缺省工程根全树（`**`）；forbid 为禁止修改的文件路径 glob 列表，缺省空列表；与 Blueprint `## Use` 引用机制正交（Use = Asset 引用；Scope = 文件边界）；不新增 Probe；lock 时由 inv-35 (artifacts-within-scope) 校验 Task ArtifactDeclaration ⊆ Scope。来源：design-blueprint-context-template Draft（2026-08-06 grilling）。
+
+### Inv25DomainBlueprintIsolated
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv25domainblueprintisolated) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv26 序号顺延。
+
+### Inv25ProofFirstFloor
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv25prooffirstfloor) — Proof 是 OXN 下限——`oxn proof` 命令独立于 Work/Asset 可用。OXN Engine 不强制 AI 走完整 IAP 流程；Proof-First 是 OXN 给工程师的**核心确定性工具**（5 分钟上手，AI 假完成 OXN 不骗自己）。来源：ADR-0084（2026-07-31）。
+
+### Inv26BlueprintContextTemplateOptional
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv26blueprintcontexttemplateoptional) — Blueprint `## Context Template` 段可选：缺省 Engine 用内置默认模板（基于 Use refs + Boundaries + Goal 推导）；Blueprint 可覆写默认（如 bug-fix-blueprint 在 diagnose 段加"证据落盘"指令）。Blueprint 不复制 Asset 内容 —— 只声明"去哪取什么"（与 inv-26 域/蓝图隔离原则一致）；AI Agent 按 Goal 自己判断从引用的 Domain 取哪些 Terms/Invariants。来源：design-blueprint-context-template Draft（2026-08-06 grilling）。
+
+### Inv26NoUpstreamNoDownstream
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv26noupstreamnodownstream) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv27 序号顺延。
+
+### Inv26Probe5LayerNaming
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv26probe5layernaming) — 🆕 v0.6.4 PR-B（合并自 `oxn-probe-domain`）：Probe 的 5 层名都在 Probe Domain 内：`probeName` = 本体名（catalog 注册名）；`useName` = 业务场景名（key 字符集 `^[a-zA-Z0-9-]+$`）；`ref` = scope + 本体名（`@oxn/probes/&lt;probeName&gt;`）；`probeType` = runtime 派发键（snake_case）；file = 实现文件（`packages/engine/src/infra/probes/&lt;probeName&gt;.ts`）。5 层不可省略、不可互换。
+
+### Inv27OperateSubsetStackOperations
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv27operatesubsetstackoperations) — Blueprint slot.operate 里的每个 name 必须在 Blueprint 引用的 Stack tool.operations 中可解析：lock 期 work-validator 对每个 slot.operate[] 项跑 (name → Stack tool.operations[name]) 校验；不可解析 → IAP_INTENT_OPERATION_NOT_FOUND（YIELD_TO_HUMAN），列出缺失 name + 引用的 Stack 名；校验范围：Blueprint.use.stack[] 引用的所有 Stack 文件 union。来源：design-stack-operation-referent Draft（2026-08-07 grilling）。
+
+### Inv27OutcomeProbeOnly
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv27outcomeprobeonly) — 🆕 v0.6.4 PR-B（合并自 `oxn-probe-domain`）：`outcome` 字段是 Probe 内验证结果专用；aggregate 层（Proof 聚合）**禁止**直接使用 `outcome` 字段名，必须使用 `summary` 容器包裹 outcome + 计数。`passed: boolean` 是 v0.1 legacy 兼容字段，将随 v0.8 移除；新代码必须使用 outcome。
+
+### Inv27UpstreamFrozenThenDownstream
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv27upstreamfrozenthendownstream) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv28 序号顺延。
+
+### Inv28InterferenceFlagCanonical
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv28interferenceflagcanonical) — 🆕 v0.6.4 PR-B（合并自 `oxn-probe-domain`）：InterferenceFlag 是信任/污染/干扰三个语义领域的唯一术语；`Taint` / `Boundary Deviation` / `TrustMark` 永久 ban。基础 RED/YELLOW 映射不可配置（ADR-0086 信任是系统决策不是用户决策）。
+
+### Inv28OperationDisambiguation
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv28operationdisambiguation) — Blueprint 引用的 Stack 集合内，若两个 tool 声明同名 operation（同一 operation.name 出现在不同 tool.operations 下），lock 期报 IAP_INTENT_OPERATION_AMBIGUOUS（YIELD_TO_HUMAN），列出冲突 tool 名 + operation 名。修复方式：operate 项使用 tool:operation 限定名（如 `bun-test:test`），Engine 解析时按限定名直接定位。operation 名在 Stack 集合内默认要求唯一（不限定名场景）；Blueprint 引用多 Stack 时跨 Stack 同名 operation 也触发此校验。来源：design-stack-operation-referent Draft（2026-08-07 grilling）。
+
+### Inv28TaskNoReverseBlueprint
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv28tasknoreverseblueprint) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv29 序号顺延。
+
+### Inv293StateSpellingLayered
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv293statespellinglayered) — 🆕 v0.6.4 PR-B（合并自 `oxn-probe-domain`）：Probe 验证的 3 态拼写分层（human canonical `.md` lowercase / machine SSOT JSON uppercase -ED / Kernel ProbeOutcome TS union uppercase 无 -ED）是设计；禁止在边界外互换。映射边界固定在 `buildFrozenProof` (proof-frozen-writer.ts:45-79) 和 `proof-compiler.ts:parse()`。
+
+### Inv29StructureV2Shape
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv29structurev2shape) — Asset 正文统一为 `## Group → ### Axiom → - Theorem` 三层结构；Blueprint 特例 `## Use <Asset Type> + ## Slot + 顶层 ### Scope / ### Context Template`。形态 A（Axiom + Theorem）/ 形态 B（纯 Axiom）/ 形态 C（纯 Theorem）均合法。守门脚本 `bun scripts/check-asset-structure.ts` 接入 pre-commit。来源：design-asset-structure-unification Draft（2026-08-08 grilling）。
+
+### Inv29WorkInsightDataSource
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv29workinsightdatasource) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv30 序号顺延。
+
+### Inv2AssetModeRequiresKind
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv2assetmoderequireskind) — `--type asset` 必填 `--asset-kind X`；5 AssetKind 之外的值 → OXN_INVALID_ASSET_KIND（CLI 加载期拒绝）。
+
+### Inv2BuiltinVersionMonotonic
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv2builtinversionmonotonic) — Builtin 资产版本（_version）单调递增，不可降级。
+
+### Inv2DomainContextMap
+
+
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv2domaincontextmap) — Domain 实体（用户业务域）与 L0-L3 宪法（OXN 元域）通过 ContextMap 显式连接，不可互相包含。
+
+### Inv2DraftNoProbe
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv2draftnoprobe) — OXN 不执行 Draft 创建逻辑业务——CLI 调 Engine → Infra Module（fs.writeFileSync 或 fork skeleton 后 writeFileSync），无 Probe 验证。
+
+### Inv2ExitCodes
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv2exitcodes) — 进程退出码：0=成功 / 1=IAPError 或 CliInputError / 2=OXNCrash 或未知异常；二轨不混：IAPError 走 stdout JSON，OXNCrash 走 stderr stack。
+
+### Inv2IntentSubsteps
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv2intentsubsteps) — Intent 子步骤：create → [add-task?] → lock（内含 validate）；lock 内先 validate（语法+DAG+引用）再 hash。
+
+### Inv2RfcIsSsot
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv2rfcisssot) — RFC 是 OXN 项目的 SSOT——所有规定性内容（决策、约束、规则）必须落 RFC；不存 ADR + OXP 双层。
+
+### Inv30ChannelOnlyTracking
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv30channelonlytracking) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv31 序号顺延。
+
+### Inv30InsightWritesDraft
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv30insightwritesdraft) — 🆕 v0.6.4 PR-B（原 `oxn-insight-domain` Inv1）：v0.3.0（D1）起：Insight 输出落地为 Draft（origin=insight），不再经 Intent Pool v3。
+
+### Inv30ReferencesSyntaxCanonical
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv30referencessyntaxcanonical) — 🆕 v0.6.4 PR-D（Q7 B 方案）：references 语法统一为 **bare name**（v0.6.4 canonical），parent-kind metadata 推断。`@md/{kind}/{name}` 形式 deprecated 但保留解析兼容（Blueprint frontmatter 老代码仍能跑）。
+
+### Inv31ContextMDInPlanLock
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv31contextmdinplanlock) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv32 序号顺延。
+
+### Inv31InsightManualGateViaDraft
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv31insightmanualgateviadraft) — 🆕 v0.6.4 PR-B（原 `oxn-insight-domain` Inv2）：v0.3.0（D1）起 manual-gate 改写：Insight 永不自动 apply 到 Asset；必须经 Draft lifecycle 闸门。
+
+### Inv32ContextWrittenBeforeLock
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv32contextwrittenbeforelock) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv33 序号顺延。
+
+### Inv32InsightDraftTypeMapping
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv32insightdrafttypemapping) — 🆕 v0.6.4 PR-B（原 `oxn-insight-domain` Inv3）：Insight→Draft type 映射锁定（§InsightDraftMapping term）：research / audit / journal → Draft `report`（合并到 report-*.md）；design → Draft `design`；issue → Draft `issue`。0 信息损失；3 DraftType 与 domain 锁定的 3 类一致。
+
+### Inv33PatternPersistence
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv33patternpersistence) — 🆕 v0.6.4 PR-B（原 `oxn-insight-domain` Inv4）：Pattern 一经创建持久化（.openxenon/drafts/insight-patterns/）；更新 / 归档不会丢失历史。
+
+### Inv33TaskContextInPlanLock
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv33taskcontextinplanlock) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv34 序号顺延。
+
+### Inv34ArtifactsWithinScope
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv34artifactswithinscope) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv35 序号顺延。
+
+### Inv34InsightOutputScope
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv34insightoutputscope) — 🆕 v0.6.4 PR-B（原 `oxn-insight-domain` Inv5）：Insight 不输出代码质量评分；只输出协作态势信号（边界使用 / 触碰 / Loop 收敛 / 退出模式）。
+
+### Inv35CrossWorkPatternThreshold
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv35crossworkpatternthreshold) — 🆕 v0.6.4 PR-B（原 `oxn-insight-domain` Inv6）：模式识别阈值 occurrences ≥ 3；低于此阈值不进入 Pattern 库（避免噪声）。
+
+### Inv35OperateIsReferenceNotGate
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv35operateisreferencenotgate) — 🆕 v0.7.0 RFC-0027 PR-F（D2）：原 Inv36 序号顺延。
+
+### Inv36InsightApplyValidates
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv36insightapplyvalidates) — 🆕 v0.6.4 PR-B（原 `oxn-insight-domain` Inv7）：`oxn insight apply` 命令形态保留但语义改写：必须先 validate target Asset 草案；validate 失败回滚到 .bak 文件。
+
+### Inv3AssetModeSkipTaskDag
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv3assetmodeskiptaskdag) — Asset 模式（--type asset）不走 task DAG；不写 .work / .run；只写 .openxenon/assets/{kind}/{name}.md + planLock。
+
+### Inv3BuiltinAssetTwoLayer
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv3builtinassettwolayer) — Built-in Asset 两层覆盖——`@oxn/` scope fallback（编译时内置）+ `@prj/` scope override（项目资产），后者优先。Phase 4 收窄为 probes + blueprints（D18）。
+
+### Inv3BuiltinNoPrjDep
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv3builtinnoprjdep) — Builtin 资产不依赖任何 @prj 资产（避免循环引用）。
+
+### Inv3DraftDirIsolation
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv3draftdirisolation) — Draft 文件夹隔离——`.openxenon/drafts/` 是边界内的本地暂存区，不对外发布，不被远程同步。
+
+### Inv3KernelInfraSeparation
+
+
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv3kernelinfraseparation) — Kernel 与 Infra 司法/行政分离：Kernel 验证 ProbeOutcome（COMPLETED/DEVIATED/INCONCLUSIVE）；Infra 只回答事实不做判定；Kernel 不能直接执行 Task；Infra 不能绕过 Daemon 自己宣布 Work 完成。Kernel 全面禁用 fs/net/child_process/process.env/process.std*/EventEmitter。Kernel 不做"整体合格/失败"聚合判定（详见 ADR-0067）。
+
+### Inv3LockIncludesValidate
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv3lockincludesvalidate) — lock 内含 validate：无需先跑 validate；lock --dry-run 保留只校验不锁。
+
+### Inv3TopCatchShunt
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv3topcatchshunt) — TopCatch 4 档分流：IAPError / OXNCrash / CliInputError / Crash 兜底；Crash 兜底绝不暴露给 AI（属于 OXNCrash 语义）。
+
+### Inv4BootstrapSeedExemption
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv4bootstrapseedexemption) — 自举种子豁免仅限 src/builtin/——项目 `.openxenon/assets/` 资产变更必须经 Work 流转；src/builtin/ 内置资产可手动创建（bootstrap）。两者边界清晰。
+
+### Inv4DraftIndependentOfAssetLifecycle
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv4draftindependentofassetlifecycle) — Draft 创建不依赖 Asset Lifecycle——CLI 直接调 engine.createDraft，无 asset.create 中间层。
+
+### Inv4IAPErrorActionYield
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv4iaperroractionyield) — IAPError 的 action 字段 v1.0.2 后仅 YIELD_TO_HUMAN 一种（AI 不能自己改，必须叫人）。
+
+### Inv4KernelZeroIo
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv4kernelzeroio) — Kernel 永远不触碰物理世界：不调用 fs.existsSync / 任何 IO（fs.* / net.* / child_process 一律不出现）。
+
+### Inv4LockBeforeRun
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv4lockbeforerun) — lock 成功前不能 run：缺 planLock → 拒绝启动；unlock 状态可 run 但不写 .run/state.json。
+
+### Inv4MonorepoBoundary
+
+
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv4monorepoboundary) — Monorepo 包边界：packages/cli 不能 import packages/engine 内部模块，仅走 packages/engine 公共 API；packages/engine 不能 import packages/cli（engine 是被依赖方）。
+
+### Inv4PaperFieldsRequired
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv4paperfieldsrequired) — Asset 论文结构 3 字段必填：abstract + references + citations 缺一不可；缺失 → IAP_INTENT_ASSET_INCOMPLETE。
+
+### Inv5DaemonIndependence
+
+
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv5daemonindependence) — Daemon 不能 import CLI（必须走 socket 通信）；不能直接 import fs（必须通过 L1-Infra 收口）。
+
+### Inv5DagNoCycles
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv5dagnocycles) — Asset 引用 DAG 无环：AssetA.references 含 AssetB + AssetB.references 含 AssetA → IAP_INTENT_DAG_CYCLE（含 cycleHint）。
+
+### Inv5DraftSkeletonRecommended
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv5draftskeletonrecommended) — Draft skeleton 推荐派生——`oxn draft create --target X` 模式推荐从 `.openxenon/draft-skeletons/&lt;target&gt;[-&lt;kind&gt;].md` 派生骨架，但不强制（v0.6.3 Q3 放开）。
+
+### Inv5InfraNoVerdict
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv5infranoverdict) — Infra 只回答事实，不做判定：Infra 不能宣布 COMPLETED / DEVIATED（不能给自己盖章）。
+
+### Inv5JsonForAi
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv5jsonforai) — AI 调用必须传 --json；CLI 默认 human 模式走 t() 翻译；human 模式禁止硬编码英文/中文（biome lint 拒绝）。
+
+### Inv5ProjectDomainUnidirectional
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv5projectdomainunidirectional) — 本域单向引用父域 oxn-domain——本域补父域未说的部分（项目工程元词汇）；不向下引用其他子域（oxn-engine-domain/oxn-asset-domain 等只作为术语引用，不作为 references 字段直接依赖）。
+
+### Inv5RunBeforeSubmit
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv5runbeforesubmit) — run 成功后才能 submit：缺 .run/state.json → IAP_ALIGN_WORK_NOT_RUNNING (YIELD_TO_HUMAN)。
+
+### Inv6DefaultLocale
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv6defaultlocale) — DEFAULT_LOCALE = 'zh-CN' 是唯一权威兜底；CLI / Skill / 文档站点全用此值；en locale 已废弃（不允许独立维护）。
+
+### Inv6DraftPromoteSingleEntry
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv6draftpromotesingleentry) — Draft Promote 路由单一入口——所有 target 路由都通过 draft-promote-router Blueprint，不允许 CLI 直接拼装 Work。
+
+### Inv6EngineDomainUnidirectionalRef
+
+
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv6enginedomainunidirectionalref) — 本域与 oxn-domain 单向引用：Engine 子域补父域未说的部分，重名 term（OXN Engine）不重定义；不向下引用 oxn-cli-domain/oxn-asset-domain。
+
+### Inv6InfraNoSelfDone
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv6infranoselfdone) — Infra 不能绕过 Daemon 自己宣布 Work 完成（行政不能给自己盖章）。
+
+### Inv6Meta4Layer
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv6meta4layer) — 项目工程元层 4 类文档各居其位（v0.3.0 起；v0.4.0 D5+ 调整）——README.md / AGENTS.md / CONTEXT-MAP.md / .changes/ / dev/{fix,pool}/ 各自有 RFC-0018 锁定引用规则，互不混用。
+
+### Inv6NoSelfReference
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv6noselfreference) — Asset 不能引用自己（v0.6.3+ hard-block）：Asset.references 含自身 → IAP_INTENT_SELF_REFERENCE。
+
+### Inv6PlanLockHashConsistency
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv6planlockhashconsistency) — PlanLock 5 组件 hash 必一致（v0.7+；v0.6 兼容 3 组件）：workMd / workContext / blueprints / tasks / taskContexts 之一漂移 → IAP_ALIGN_LOCK_HASH_MISMATCH。
+
+### Inv7ContextMapAssetIndexExempted
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv7contextmapassetindexexempted) — CONTEXT-MAP.md 作为 Domain 索引页可引用 Asset（v0.3.0 起特例豁免）——CONTEXT-MAP.md 本质是 8 Domain 索引入口，引用 .openxenon/assets/domains/*.md 是结构需要，非情态越界。check-doc-boundary.ts `context-map-asset-index-allowed` 规则显式豁免。
+
+### Inv7DaemonNoRuleMutate
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv7daemonnorulemutate) — Daemon 不能修改 Kernel 规则（司法不能立法）。
+
+### Inv7EngineRootDomain
+
+
+- [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv7enginerootdomain) — 本 Domain 定义 OpenXenon 引擎层词汇边界。
+
+### Inv7LocaleResolvePriority
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv7localeresolvepriority) — resolveLocale 优先级：--locale flag > config.locale > LANG env > DEFAULT ('zh-CN')。
+
+### Inv7LockThenNoDrift
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv7lockthennodrift) — lock 后任何 .md 资产漂移（域/蓝图/work.md/task.md/context.md 之一）→ 立即 LOCK_HASH_MISMATCH 阻断。
+
+### Inv7PlanLockHashStrict
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv7planlockhashstrict) — Asset 创建后 planLock 强校验 fileHash；漂移触发 IAP_ALIGN_LOCK_HASH_MISMATCH（与 Work planLock 4 组件 hash 等效）。
+
+### Inv7SkeletonIndependentEntity
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv7skeletonindependententity) — Skeleton 独立 entity——`.openxenon/draft-skeletons/` 下的 7 个模板文件 frontmatter `entity: skeleton`，不与任何 AssetKind 混淆（v0.6.3 Q1 锁定）。
+
+### Inv8EvolveCreatesNewVersion
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv8evolvecreatesnewversion) — Asset 演进（--evolve-from）创建新版本，旧版 planLock 自动失效。
+
+### Inv8KernelNoDirectTask
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv8kernelnodirecttask) — Kernel 不能直接执行 Task（立法不能行政）。
+
+### Inv8OriginIdentifiesProducerV040
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv8originidentifiesproducerv040) — v0.4.0（D1 2026-08-07）起：Draft frontmatter `origin: human | insight`，默认 `human`。
+
+### Inv8ReadmeIntroductionSloganSync
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv8readmeintroductionslogansync) — README.md 与 docs/product/zh-cn/introduction.md slogan 双向同步（v0.6.2-alpha.2 锁定）—— README.md 是仓库根入口（含 GitHub 渲染），introduction.md 是 VitePress 产品入口。两者 slogan 一致；v0.6.2-alpha.2 同时替换 13 个文件（CONTEXT-MAP + README + docs/ + glossary/）。
+
+### Inv8SkillSsotFromCli
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv8skillssotfromcli) — Skill SSOT 唯一来源由 CLI 包提供；不允许手写英文 Skill 字典（CLI init 时自动从 zh-CN 镜像）。
+
+### Inv8WorkOxnRequired
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv8workoxnrequired) — work.md 失踪但 .work 还在 → IAP_ALIGN_WORK_REMOVED（区别于 WORK_NOT_FOUND）。
+
+### Inv9ArchivePreservesCitations
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv9archivepreservescitations) — Asset 归档（`oxn asset archive X --reason Y`）：文件 mv 到 .openxenon/.archived/{kind}/X.md；citations 保留；planLock 仍可查询（只读）。
+
+### Inv9AssetKindViaWork
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv9assetkindviawork) — --asset-kind X 走标准 Work 流程（Phase C）：选 asset-create workflow + 4 task 骨架；不再是短路。
+
+### Inv9ChangesCanRefRfcAdr
+
+
+- [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#inv9changescanrefrfcadr) — .changes/ 可引用 RFC + ADR 追溯当前版本包含内容（v0.3.0 起）—— Version Fragment 在版本转正时落盘，可引用 docs/adrs/ 与 docs/rfc/zh-cn/ 标记交付。check-doc-boundary.ts `changes-allow-rfc-ref` 规则允许此引用模式。
+
+### Inv9DraftListFilterByOriginV040
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#inv9draftlistfilterbyoriginv040) — `oxn draft list --origin=human|insight` 按 producer 过滤（v0.4.0 新增）；无 origin= 列出全部（向后兼容）。
+
+### Inv9InitCompilesThreeAdapters
+
+
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv9initcompilesthreeadapters) — oxn init 默认同时把同一份 SSOT Skill 编译到 3 套 AdaptersRoot（opencode/claude/agents）；compileAllSkills(toolIds, ...) 是入口。
+
+### Inv9ProbeDeviationNotifiesNotBlocks
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#inv9probedeviationnotifiesnotblocks) — ProbeOutcome DEVIATED 时 Daemon 通知工程师（不阻断 Work 进入 done）；原 inv-9 "escape-on-probe-fail" 已被 ADR-0067 废弃——OXN 不阻断，只记录。
+
 ### Kernel
 
 
@@ -287,6 +1265,21 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#kind-isolation) — references 仅同 AssetKind 原则；跨 kind 组合由 Blueprint 承担，跨 kind 导航由 Roadmap scene.links 承担；ADR-0054。
+
+### LeafByDesignEngineIRAtomicity
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#leafbydesignengineiratomicity) — 根因 1：Engine IR atomicity——`classifyAxiom()` 把 Axiom 内容归并到 `DomainTerm / DomainBan / DomainInvariant / DomainStackEntry` 4 个 atomic 字段，无 SubTheorem 容器；sub-bullet 被 Engine 丢弃（`packages/engine/src/oxl/md-pipeline/transformers/domain.ts:74-141`）。
+
+### LeafByDesignKnowledgeJudgment
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#leafbydesignknowledgejudgment) — 根因 3：知识判断隔离——定理依赖属"知识判断"，OXN 立法不管（ADR-0066/0067），归工程师 + AI 自然语言推理。
+
+### LeafByDesignReferentStability
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#leafbydesignreferentstability) — 根因 2：参照系稳定性——OXN 是确定性参照系（ADR-0072），管结构稳定不管推理质量；嵌套 list 把"软推理"硬化为"硬层级"，污染 LLM 推理灵活性。
 
 ### Locale
 
@@ -314,6 +1307,11 @@ cache-manager / ecto，任一成员被攻陷意味着整簇失守。
 
 ## M-R
 
+### MemoryMD
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#memorymd) — Work 级动态记忆文件（works/&lt;id&gt;/memory.md，Phase 2 实现）；Loop History + Key Observations + Round Notes；不纳入 PlanLock；append-only 追加；原 context.md 定义（ADR-0049）实体名改为 memory.md。
+
 ### MetaModality
 
 
@@ -339,7 +1337,17 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 ### OpenXenon
 
 
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#openxenon) — 工程师定义 AI Agent 协作边界的工具（slogan）。正定义：工程师通过 OXN 定义 Asset，作为 AI Agent 在 Work 约束的协作边界，由 Proof 验证其成果。以 Skills 形式注入 AI Agent 工作台（Cursor / OpenCode / Codex / Claude Code）。OXN 本身不是 AI Agent，而是 AI Agent 之上的工具层。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#openxenon) — 缩写：OXN
+
+### OpenXenon Language
+
+
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#openxenon-language) — OpenXenon 的特定领域语言（DSL），基于 MD 格式 。
+
+### Operate
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#operate) — Blueprint slot 内执行参照数组（`## Boundaries ### &lt;slot&gt; - operate: [name...]`）；声明 AI Agent 在该 slot 应运行的 Operation 名列表。work-context-builder 在 lock 期解析 BlueprintIR.boundaries[].operate → 匹配 Blueprint 引用的 Stack tool.operations → 注入 WorkContextResult.slotOperations（只到 name，不注入完整 command）。AI Agent 从 Task context 看到 operation 名 → 从已注入的 stackTools 解析 command → 执行。
 
 ### Operation
 
@@ -355,22 +1363,16 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 
 - [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#oxl) — Engine 通过 unified 库实现 MD 语法的特性，包括编译、校验。
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#oxl) — OpenXenon Language，OpenXenon 的特定领域语言（DSL），用于声明与校验 OXN 实体。具体领域见 [`oxn-engine-domain.OXL`](./oxn-engine-domain.md#oxl)。
-
-### OXN
-
-
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#oxn) — OpenXenon 缩写。
 
 ### OXN CLI
 
 
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#oxn-cli) — OpenXenon 交互入口之一。具体领域见 [`oxn-cli-domain`](./oxn-cli-domain.md)。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#oxn-cli) — OpenXenon 交互入口之一。
 
 ### OXN Engine
 
 
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#oxn-engine) — OpenXenon 核心引擎。具体领域见 [`oxn-engine-domain`](./oxn-engine-domain.md)。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#oxn-engine) — OpenXenon 核心引擎。
 
 ### OXN_CLI
 
@@ -395,7 +1397,6 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 ### Part
 
 
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#part) — OXN 内置零件（封装可复用工程动作如 git-commit），引用 @oxn/parts/* scope。
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#part) — Task 内 skill 执行单元（skill_context + acceptance），内联在 task.md 内不可独立成文件。
 
 ### Phase
@@ -445,17 +1446,47 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#projectbootstrap) — 5 起手 Asset 复制到 `&lt;project&gt;/.openxenon/assets/` 并完成 `oxn asset check` 校验的过程。包含 3 步：(1) `oxn onboard --new` 触发复制；(2) 工程师填项目专属内容；(3) `oxn asset check` 验证 5 Asset 完整性。Proof-First 模式下 bootstrap 可选；完整 IAP 模式下 bootstrap 必走。ADR-0089 D2。
 
+### PromoteBoundaryIsolation
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#promoteboundaryisolation) — Draft promote 仅跨 3 类 Target 输出目录（docs/rfcs/zh-cn/ / .openxenon/assets/ / .openxenon/works/），不写其他目录
+
+### PromoteCompanionAsset
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#promotecompanionasset) — draft-promote-router Blueprint（v0.6.2-alpha.3 新）：总路由 + 4 阶段生命周期。
+
+### PromoteFutureExtension
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#promotefutureextension) — v0.6.2-alpha.3 落地 7 个 skeleton + 4 阶段 router + 3 target dispatch
+
+### PromoteLifecycle
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#promotelifecycle) — gather：draft-promote-router 读 Draft frontmatter + body，校验 Draft 存在 + promote-target 字段不缺
+
+### PromoteRoute
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#promoteroute) — promote-target=rfc → promote-target-aware-workflow Blueprint + rfc 分支（落盘 `docs/rfcs/zh-cn/RFC-XXXX-&lt;theme&gt;.md`）
+
 ### Proof
 
 
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#proof) — OXN 验证 AI Agent 执行结果并记录的协作**过程**证明（不是结果证明）。执行主体 OXN Engine（ADR-0031 记录事实不评判）；物理观测 L1-Infra + 客观结果 L0-Kernel。物理产物（`frozen.json` + `outcome.md` + `trace.jsonl` + `state.json`）是副作用，**不是** Proof 术语本身。
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#proof) — OXN Engine 记录的协作**过程**证明（不是协作结果证明）；物理产物四件套 `frozen.json` + `outcome.md` + `trace.jsonl` + `state.json`（🆕 v0.7.0 RFC-0027 PR-F D6 修正：oxn-domain 三件套 → proof-domain 四件套，统一为四件套避免歧义）；OXN 只记录事实不评判合格；具体领域见 [`oxn-proof-domain`](./oxn-proof-domain.md)。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#proof) — 通过 Probes 对协作成果进行验证，并提供证明。
 
 ### Provenance
 
 
 - [NpmSupplyChainAdvisory](/openxenon/assets/domains/NpmSupplyChainAdvisory.md#provenance) — NPM 包构建来源证明 — 本事件中 GitHub Actions 签发的 provenance 未被伪造（攻击者控制了 maintainer GitHub 账号，
 走的是正常 publish 流程 + 真实签名），所以 provenance 不能作为唯一信任门禁，必须配合 IOC + 版本黑名单双校验。
+
+### ReferenceScope
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#referencescope) — 🆕 v0.7.0 RFC-0027 PR-G（D7）：原 `Scope` Axiom 改名 `ReferenceScope`（消除与 work-domain Scope 的 Critical Name Collision）；work-domain Scope = Blueprint ## Scope 段（文件范围），本域 ReferenceScope = OXN 引用作用域（解析位置）。
 
 ### Referent
 
@@ -492,7 +1523,7 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 ### Scope
 
 
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#scope) — OXN 引用作用域（@oxn builtin / @prj 项目级；@gbl 已废弃）。
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#scope) — Blueprint 内文件范围声明段（## Scope）；allow/forbid glob 列表；静态锁定，PlanLock 保护；与 Blueprint ## Use 引用机制正交（Scope 是文件边界，Use 是 Asset 引用）；来源 design-blueprint-context-template。
 
 ### Shai-Hulud Worm
 
@@ -507,6 +1538,11 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#skeleton) — per-target 模板文件的实体类型（v0.6.3 Q1 新增）。
 
+### SkeletonForking
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#skeletonforking) — skeleton 派生规则：v0.6.2-alpha.3 起 Draft 创建时（`--target` 模式）从 `.openxenon/draft-skeletons/&lt;target&gt;[-&lt;kind&gt;].md` 派生（v0.6.3 Fix #1 移到 boundary 顶层）
+
 ### Skill
 
 
@@ -516,6 +1552,11 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#slot) — Blueprint 内拓扑节点（slot DAG），Engine 校验无环；Task 内 Part 名必须对齐 slot 名。
+
+### SlotFoldingRule
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#slotfoldingrule) — 🆕 v0.6.4 PR-C（Q8 决策）：dev-workflow 折叠为 9 slot（4 通用 + 5 专用，E3 c 采纳）。Blueprint 引用 dev-workflow 时不强制指定 slot，由 Work 上下文推断（goal 关键词 + sub-target 类型）。
 
 ### StarterAsset
 
@@ -534,6 +1575,11 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 将恶意代码注入到被广泛信任的包版本中，让下游 install 在用户机器上自动执行。
 与"个人账号劫持发垃圾包"区别：受害者信任的是包名本身（非首次接触的新包）。
 
+### TargetDispatchTable
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#targetdispatchtable) — 路由 translate 表——把 Draft target 语法转成 promote-target-aware-workflow Blueprint 内部 task name（v0.2.0 D2 起 8 行）
+
 ### TargetFrozenJsonStructure
 
 
@@ -543,6 +1589,26 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#task) — Align 执行单元，对齐 1 个 Blueprint 并可引用 N 个 Domain；内联 Part + Probe；DAG 无环（Kahn 校验）。
+
+### TaskContext
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#taskcontext) — Task 级上下文内容（语义层）；AI Agent 从 WorkContext 按 Blueprint ## Boundaries 的每个 Slot 拆分；每个 TaskContext 携带 WorkContext 中与该 Slot 相关的子集 + 该 Slot 的 acceptance；纳入 PlanLock 5-hash（taskContextsHash）；来源 design-blueprint-context-template。
+
+### TaskMemory
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#taskmemory) — Task 级动态记忆内容；Round 间追加；不纳入 PlanLock；来源 design-blueprint-context-template。
+
+### Theorem
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#theorem) — Asset 结构第 3 层节点；物理形态 `- &lt;text&gt;` bullet 行；隶属于最近 `### Axiom`（无主 Axiom 时为形态 C Composite Theorem，归当前 Group）；设计为叶子节点（不可任意 list 嵌套）；MD 语法底层支持无限嵌套（CommonMark / GFM / mdast 无深度上限），OXN 拒绝是设计选择非技术限制。
+
+### TheoremEscapeHatch
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#theoremescapehatch) — 必须表达 Theorem 深度时的逃生舱索引：4 类详见下方 Axioms（AxiomNameCarrying / GroupSwitch / CrossAssetReference / FieldLoadNested）。
 
 ### Trace
 
@@ -568,7 +1634,17 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 ### Work
 
 
-- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#work) — 人机协作的工作空间，衔接 Asset 与 Proof；AI Agent 在 Asset 边界内自主工作（create → read Blueprint → write Context → orchestrate Tasks → execute → 汇报 → react → finalize）；具体领域见 [`oxn-work-domain`](./oxn-work-domain.md)。
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#work) — 人机协作的工作空间
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#work) — Work 是 E2 人机协作的工作空间；编排流程 3 IAP 阶段顺序不可跳；必经路径 create→lock→run→submit×N→finalize。
+
+### WorkContext
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#workcontext) — Work 级上下文内容（语义层）；AI Agent 按 Blueprint Context Template 从 Use refs 引用的 Domain/Workflow/Stack 提取相关 Terms/Invariants/Slots 编写；同一 Blueprint 的 N 个 Work 的 WorkContext 结构一致（除 Goal 外）；来源 design-blueprint-context-template。
+
+### WorkMemory
+
+
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#workmemory) — Work 级动态记忆内容；Round 间追加；不纳入 PlanLock；与 PlanLock 保护的 WorkContext 形成"声明 vs 动态"二分；来源 design-blueprint-context-template。
 
 <!-- SYNC:END -->

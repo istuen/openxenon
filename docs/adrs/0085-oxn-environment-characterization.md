@@ -6,7 +6,7 @@ date: 2026-07-31
 supersedes: null
 superseded-by: null
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - docs/adrs/0084-collaboration-boundary-layering.md
   - docs/adrs/0072-oxn-as-referent-for-nondeterministic-agent.md
   - docs/adrs/0073-oxn-implementation-boundary-criteria.md
@@ -122,7 +122,8 @@ OXN 环境的"部分可观察"是对**工程师**而言的——OXN 不向工程
 
 ## References
 
-- [.openxenon/CONTEXT-MAP.md](../../../CONTEXT-MAP.md) — R&N Term #8 / #11 / #17 上下文
+- [RFC-0028 CONTEXT-MAP 退役](../rfc/zh-cn/RFC-0028-context-map-deprecation.md) — R&N Term #8 / #11 / #17 内容 v0.7+ 已回迁各 Domain 文件
+- [AGENTS.md](../../../AGENTS.md) — 唯一 Meta 层入口
 - [docs/adrs/0084-collaboration-boundary-layering.md](./0084-collaboration-boundary-layering.md) — 协作边界分层模型（本 ADR 的上层叙事）
 - [docs/adrs/0072-oxn-as-referent-for-nondeterministic-agent.md](./0072-oxn-as-referent-for-nondeterministic-agent.md) — OXN 不是智能体
 - [docs/adrs/0073-oxn-implementation-boundary-criteria.md](./0073-oxn-implementation-boundary-criteria.md) — 路径判据（确定性 vs 优化）

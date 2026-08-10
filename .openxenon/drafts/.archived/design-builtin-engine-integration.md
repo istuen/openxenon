@@ -121,3 +121,6 @@ packages/engine/src/
 - ADR-0069: Asset Bootstrap Completeness（被 ADR-0089 部分 superseded）
 - ADR-0050: Onboarding via Starter Work（archived，被 ADR-0089 路径 B2 继承）
 - `.openxenon/.archived/pools/drafts/builtin-assets-scope.md`: v0.6 builtin split 决策
+
+
+<!-- 已迁移：v0.7 CONTEXT-MAP.md 退役，详见 RFC-0028。文件中 CONTEXT-MAP 原文引用保留作为历史考古链，失效链接请用 git blame 追溯或参考对应 Domain / RFC。-->

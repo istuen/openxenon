@@ -137,3 +137,41 @@ oxn assetmap show oxn-system --scene debug     ✓ scene-debug 正常输出
 - **PR-E**：Q1 + Q3 物理归位（Probe 文件迁 `.openxenon/probes/` + `AssetType` → `EngineModuleType`）
 
 详见 `.openxenon/drafts/design-asset-convergence-v064.md` §4。
+
+---
+
+## 后续清理（2026-08-10）
+
+### `oxn-domain.md` 删 `## Boundary` 段（4 Axiom 收尾）
+
+| 删 Axiom | 原内容 | 删除理由 |
+|---|---|---|
+| `ProductIdentity` | "OpenXenon = OXN CLI + OXN Engine" | 与 `### OpenXenon` Concept axiom 重复 |
+| `RootNoDownwardRef` | "本 Domain 是唯一 root Domain; references 为空; 其他 Domain 在 references 字段中引用本 Domain" | 0 代码 enforce；`references: []` frontmatter 已自证；`findRoot()`（`Roadmap/parser.ts:23`）通过 DAG 反推 |
+| `ProductBoundary` | "本 Domain 定义 OpenXenon 产品词汇边界" | 0 代码 enforce；`abstract:` frontmatter 已声明"OpenXenon 顶层领域" |
+| `ThreeTopConceptsClosedLoop` | "Intent + Align + Proof 三者构成产品核心机制闭环" | 0 代码 enforce；CONTEXT-MAP.md §OpenXenon 三方协作模型段已说（更全） |
+
+**决策性质**：与 RFC-0027 D10（Boundary Axiom 删）同性质，扩展到 ROOT Domain meta-assertion。ROOT Domain 极简原则——不装自身 meta-assertion，否则悖论"root 域有 invariant，谁 enforce 这 invariant？"
+
+**`## Boundary` Group 在 oxn-domain.md 中整体删除**（不再含任何 Axiom）。`## Concept` Group 保留 13 Axiom 不变（OpenXenon / OXN CLI / OXN Engine / OpenXenon Language / Proof / Asset / Work / Insight / Hall / Daemon / Referent / Floor / Ceiling）。
+
+**文件变化**：84 行 → 60 行（-24 行，-29%）。
+
+**Glossary 同步**：`bun scripts/sync-domain-glossary.ts --write` 自动移除 4 个 entry（`RootNoDownwardRef` / `ProductBoundary` / `ThreeTopConceptsClosedLoop` / `ProductIdentity`）。全文 anchor 扫描：0 个外部硬链引用。
+
+**守门验证**：
+```
+bun run typecheck                                          ✓ pass
+bun run check                                              ✓ pass (1 pre-existing info)
+bun scripts/check-asset-structure.ts                       ✓ 23/23 pass
+bun scripts/check-doc-boundary.ts                          ✓ 0 violations
+bun scripts/validate-dependencies.ts                       ✓ 0 violations
+bun scripts/sync-domain-glossary.ts --write                ✓ 9 Domain / 306 unique term
+```
+
+**架构原则一致性**：
+- ✓ 5 AssetKind 封闭（ADR-0053）
+- ✓ ROOT Domain 极简（RFC-0018 D4.3）
+- ✓ Boundary = Invariants 惯例（oxn-asset-domain.md `## Boundary` 装 30 个真正 Inv，oxn-domain.md 不再误用）
+- ✓ 版本号中性（AGENTS.md L47）
+- ✓ Domain 9 个总数不变

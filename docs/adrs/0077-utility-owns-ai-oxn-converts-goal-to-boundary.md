@@ -6,10 +6,10 @@ date: 2026-07-23
 supersedes: null
 supeded-by: null
 related:
+  - RFC-0028
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
   - .openxenon/drafts/rfc/0074-insight-ingredient-not-reasoner.md
-  - .openxenon/CONTEXT-MAP.md
 ---
 
 # ADR-0077: Utility 归属 AI；OXN 的机制是目标→边界参照转换
@@ -150,4 +150,4 @@ Term #9 原论断："utility 故意外包给工程师"。这是从 OXN 视角的
 - [ADR-0073 OXN 实现边界判据](./0073-oxn-implementation-boundary-criteria.md) — 判据 3（floor/ceiling）+ 判据 4（满足非优化）
 - [ADR-0074 Insight 原料非推理](./0074-insight-ingredient-not-reasoner.md) — Insight 作为边界参照效能反馈原料
 - [ADR-0012 Main/Sub Agent 审计链](./0012-main-sub-agent-audit-chain.md) — 两步验证（AI 先自验→OXN 后公证）
-- `CONTEXT-MAP.md` Term #9（utility）+ Term #15（CSP）+ Term #18（utility theory）
+- `CONTEXT-MAP.md` Term #9（utility）+ Term #15（CSP）+ Term #18（utility theory）—— v0.7+ 内容已回迁 `oxn-asset-domain.md §AssetPeasRole`（详见 RFC-0028 §D2）

@@ -466,3 +466,5 @@ Q6（cost 进排序？）→ 是，从 Blueprint 同步到 Roadmap 表格列
 Q7（frozen.json 扩展？）→ taskName optional 向后兼容
 Q8（执行方式？）→ 4 块 Work 分块 + 先写 Draft（本文件）+ ADR 草稿
 ```
+
+<!-- 已迁移：v0.7 CONTEXT-MAP.md 退役，详见 RFC-0028。文件中 CONTEXT-MAP 原文引用保留作为历史考古链，失效链接请用 git blame 追溯或参考对应 Domain / RFC。-->

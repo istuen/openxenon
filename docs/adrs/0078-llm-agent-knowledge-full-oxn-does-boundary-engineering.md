@@ -6,11 +6,11 @@ date: 2026-07-23
 supersedes: null
 superseded-by: null
 related:
+  - RFC-0028
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
   - .openxenon/drafts/rfc/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md
   - .openxenon/drafts/rfc/0074-insight-ingredient-not-reasoner.md
-  - .openxenon/CONTEXT-MAP.md
 ---
 
 # ADR-0078: LLM Agent 是 knowledge-full；OXN 做边界工程非知识工程
@@ -123,4 +123,4 @@ ADR-0072 命名了 Referent 结构。ADR-0073 给了判据。ADR-0077 给了机�
 - [ADR-0073 OXN 实现边界判据](./0073-oxn-implementation-boundary-criteria.md) — 判据 2（agent 级别：补偿非确定性不是能力）
 - [ADR-0077 Utility 归属与目标→边界转换](./0077-utility-owns-ai-oxn-converts-goal-to-boundary.md) — 机制（本 ADR 提供前提）
 - [ADR-0074 Insight 原料非推理](./0074-insight-ingredient-not-reasoner.md) — OXN 不推理
-- `CONTEXT-MAP.md` Term #16（Asset 全声明式）+ Term #21（脚手架）+ Term #22（knowledge engineering）
+- `CONTEXT-MAP.md` Term #16（Asset 全声明式）+ Term #21（脚手架）+ Term #22（knowledge engineering）—— v0.7+ 内容已回迁 `oxn-asset-domain.md`（详见 RFC-0028 §D2）

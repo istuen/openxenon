@@ -6,9 +6,9 @@ date: 2026-07-23
 supersedes: null
 superseded-by: null
 related:
+  - RFC-0028
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
-  - .openxenon/CONTEXT-MAP.md
   - docs/product/zh-cn/concepts/insight.md
 ---
 
@@ -115,8 +115,8 @@ Asset 是双向枢纽：
 
 ### 衍生
 
-- **CONTEXT-MAP 对照表扩展 Term #12**（本次落地）
-- **CONTEXT-MAP 新增分布式学习闭环小节**（本次落地）
+- **CONTEXT-MAP 对照表扩展 Term #12**（历史 2026-07-25 落地；v0.7+ RFC-0028 §D2 内容已回迁 oxn-proof-domain.md §Insight + §ProofAsObjectiveOutcome）
+- **CONTEXT-MAP 新增分布式学习闭环小节**（历史 2026-07-25 落地；v0.7+ 内容已迁 RFC-0003 §D4 与 RFC-0018 附录 A）
 <!-- allow-version -->
 - **v0.7+ Insight RFC 约束**：必须遵守本 ADR 的"原料 vs 推理"分离
 <!-- /allow-version -->
@@ -134,7 +134,8 @@ Asset 是双向枢纽：
 
 - [ADR-0072 OXN 参照系定位](./0072-oxn-as-referent-for-nondeterministic-agent.md) — Referent 结构命名
 - [ADR-0073 OXN 实现边界判据](./0073-oxn-implementation-boundary-criteria.md) — 四判据集（本 ADR 用四判据验证 Insight）
-- [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — 对照表 + 学习闭环落地点
+- [RFC-0028 CONTEXT-MAP 退役](../rfc/zh-cn/RFC-0028-context-map-deprecation.md) — v0.7+ 对照表内容已回迁各 Domain 文件
+- [AGENTS.md](../../../../AGENTS.md) — 唯一 Meta 层入口
 - [Insight 概念文档](../../../docs/product/zh-cn/concepts/insight.md) — "AI 推理涌现，非 Engine 规则计算"（本 ADR 锐化此论断）
 - [ADR-0066 术语精简](./0066-terminology-simplification.md) — 彻底不判法源
 - [ADR-0067 彻底不判贯彻](./0067-no-judgment-principle.md) — 三态改名

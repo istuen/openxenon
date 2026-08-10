@@ -520,3 +520,5 @@ type: breaking-change
 6. **PR-E** 最后合入（物理归位，破坏性最强）
 
 每个 PR 合入后跑 §6 验证命令清单；CI 全绿方可下一个 PR。
+
+<!-- 已迁移：v0.7 CONTEXT-MAP.md 退役，详见 RFC-0028。文件中 CONTEXT-MAP 原文引用保留作为历史考古链，失效链接请用 git blame 追溯或参考对应 Domain / RFC。-->

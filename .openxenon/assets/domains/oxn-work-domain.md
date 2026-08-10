@@ -23,6 +23,11 @@ synced-at: 2026-08-09
 ### Work
 - Work 是 E2 人机协作的工作空间；编排流程 3 IAP 阶段顺序不可跳；必经路径 create→lock→run→submit×N→finalize。
 
+### WorkAsSolutionReference
+- PEAS 解的目标参照——AI 把理解的上下文按 Blueprint 写成 Work 作解参照，每个 Task = 解的原子动作。
+- 不是执行器（ADR-0072 修正）——Work 是 AI 调用 OXN 确定性通道的协议/接口。真正执行器分裂：AI 工具调用（非确定）+ OXN writer（确定）。
+- OXN 不做业务 goal-test（ADR-0066/0067）；Work 自带结构性完成参照（所有 Task submitted = 结构完整，AI 可自检）。
+
 ### Phase
 - 单个 IAP 阶段（Intent/Align/Proof 之一），按顺序不可跳。子步骤按阶段分别定义。
 

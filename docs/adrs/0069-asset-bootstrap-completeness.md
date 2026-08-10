@@ -6,7 +6,7 @@ date: 2026-07-22
 supersedes: null
 superseded-by: null
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - .openxenon/assets/roadmaps/oxn-system.md
   - .openxenon/assets/domains/oxn-asset-domain.md
   - .openxenon/assets/workflows/dev-workflow.md
@@ -143,7 +143,7 @@ v0.6 引入 Asset 体系后，OXN 自身有完整的根 Asset 三件套（oxn-do
 
 ## References
 
-- [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — 根级词汇表
+- [AGENTS.md](../../../../AGENTS.md) — 唯一 Meta 层入口（v0.7+ RFC-0028 撤销 CONTEXT-MAP.md）
 - [Roadmap oxn-system](../../../assets/roadmaps/oxn-system.md) — 6 scene 路由
 - [ADR-0054 三边界框架](./0054-three-boundary-framework.md) — Domain/Workflow/Stack 三正交维度
 - [ADR-0055 Blueprint 提升](./0055-blueprint-as-composition-template.md) — Blueprint 组合模板

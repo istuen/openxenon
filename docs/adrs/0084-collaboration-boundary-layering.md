@@ -6,7 +6,7 @@ date: 2026-07-31
 supersedes: null
 superseded-by: null
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - docs/adrs/0085-oxn-environment-characterization.md
   - docs/adrs/0072-oxn-as-referent-for-nondeterministic-agent.md
   - docs/adrs/0073-oxn-implementation-boundary-criteria.md
@@ -136,7 +136,7 @@ Proof（下限层）—— AI 通过 OXN 自证；工程师用 Probe 定义确�
 
 ## References
 
-- [.openxenon/CONTEXT-MAP.md](../../../CONTEXT-MAP.md) — 协作边界分层语境
+- [AGENTS.md](../../../AGENTS.md) — 唯一 Meta 层入口（v0.7+ RFC-0028 撤销 CONTEXT-MAP.md）
 - [docs/adrs/0085-oxn-environment-characterization.md](./0085-oxn-environment-characterization.md) — 环境 6 轴刻画
 - [docs/adrs/0072-oxn-as-referent-for-nondeterministic-agent.md](./0072-oxn-as-referent-for-nondeterministic-agent.md) — 确定性根基 erratum
 - [docs/adrs/0073-oxn-implementation-boundary-criteria.md](./0073-oxn-implementation-boundary-criteria.md) — 四判据（与本 ADR 正交）

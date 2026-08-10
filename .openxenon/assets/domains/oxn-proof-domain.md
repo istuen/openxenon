@@ -29,10 +29,25 @@ synced-at: 2026-08-09
 - OXN 验证 AI Agent 执行结果并记录的协作**过程**证明（不是结果证明）。执行主体 OXN Engine（ADR-0031 记录事实不评判）；物理观测 L1-Infra + 客观结果 L0-Kernel。物理产物（`frozen.json` + `outcome.md` + `trace.jsonl` + `state.json`）是副作用，**不是** Proof 术语本身。
 - 聚合结果字段详见 `### outcome`（下方）；IAP 阶段名 = Proof Domain 实例化之一（与 Intent/Align 并列，但当前已少用 Intent/Align）。
 
+### ProofAsObjectiveOutcome
+- PEAS 客观产物——不是传感器。真正传感器分裂：AI 工具 I/O（非确定）+ Probe（确定，OXN 自有，AI 主动调用自证）。
+- OXN 验证 AI Agent 的执行结果（ProbeOutcome 三态），不评判执行内容的好坏。
+- 原则：OXN 验证事实不评判质量——"彻底不判"（ADR-0066/0067）。
+
+### ProbeOutcomeThreeStates
+- 三态：`COMPLETED` / `DEVIATED` / `INCONCLUSIVE`（frozen.json uppercase + -ED 是 JSON Schema enum 惯例；proof.md human canonical 用 `pass/fail/inconclusive`；Kernel TS union 用 `PASS/FAIL/INCONCLUSIVE`）。
+- 中性：探测目标是否符合预期；"完成"指探测完成，不是目标完成。
+- OXN 验证动作：AI Agent 提交执行结果后，OXN 跑 Probe → 产出 ProbeOutcome。
+
 ### Outcome
 - Proof 聚合结果。在 schema 中以 `summary` 容器出现：
 - **禁止**：在 aggregate 层直接使用 `outcome` 字段名（撞名 ProbeOutcome 专用字段，详见 inv-27），必须用 `summary.<...>` 形式。
 - `passed: boolean` 是 v0.1 legacy 兼容字段，将随 v0.8 移除。
+
+### OutcomeAggregateStructure
+- 结构：`{completed: N, deviated: N, inconclusive: N}`。
+- 不聚合判定：OXN 不做"整体合格/失败"聚合判定；只提供各状态 Probe 数量。
+- 判定权归工程师。
 
 ### BuiltinPart
 - 🆕 v0.7.0 RFC-0027 PR-G（D7）：原 `Part` Axiom 改名 `BuiltinPart`（消除与 work-domain Part 的 Critical Name Collision）；work-domain Part = Task 内 skill 执行单元（不同概念），本域 BuiltinPart = OXN 内置零件。

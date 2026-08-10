@@ -6,10 +6,10 @@ date: 2026-07-23
 supersedes: null
 superseded-by: null
 related:
+  - RFC-0028
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
   - .openxenon/drafts/rfc/0012-main-sub-agent-audit-chain.md
-  - .openxenon/CONTEXT-MAP.md
 ---
 
 # ADR-0076: 对抗关系归属与跨 LLM 参照锚点
@@ -98,7 +98,7 @@ OXN 的参照系让不同 LLM 对齐同一确定性边界：
 
 ### 衍生
 
-- **CONTEXT-MAP 对照表**：Term #14 新增（本次落地）
+- **CONTEXT-MAP 对照表**：Term #14 新增（历史 2026-07-31 落地；v0.7+ RFC-0028 §D2 内容已回迁 oxn-domain.md §Referent + oxn-asset-domain.md §AssetPeasRole）
 - **ADR-0012 扩展记录**：本 ADR 是 ADR-0012 在跨 LLM 场景的延伸
 <!-- allow-version -->
 - **Probe 可见性矩阵**：后续可细化哪些 Probe 字段对 AI 可见/隐藏（v0.8+ Probe 体系演进 RFC 候选）
@@ -116,6 +116,7 @@ OXN 的参照系让不同 LLM 对齐同一确定性边界：
 - [ADR-0072 OXN 参照系定位](./0072-oxn-as-referent-for-nondeterministic-agent.md) — Referent 结构命名
 - [ADR-0073 OXN 实现边界判据](./0073-oxn-implementation-boundary-criteria.md) — 四判据验证
 - [ADR-0012 Main/Sub Agent 审计链](./0012-main-sub-agent-audit-chain.md) — 审计链哲学（本 ADR 扩展到跨 LLM）
-- [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — 对照表扩展
+- [RFC-0028 CONTEXT-MAP 退役](../rfc/zh-cn/RFC-0028-context-map-deprecation.md) — v0.7+ 对照表内容已回迁各 Domain 文件
+- [AGENTS.md](../../../../AGENTS.md) — 唯一 Meta 层入口
 - [IAP 范式文档](../../../docs/product/zh-cn/concepts/iap-paradigm.md) — §9 信息隐藏原则（本 ADR 锐化两层分离）
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach* — adversarial search (minimax/alpha-beta) 原义

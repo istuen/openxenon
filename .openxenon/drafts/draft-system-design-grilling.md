@@ -313,3 +313,5 @@ oxn draft discard <name>
 - `oxn-asset-domain.md`（AssetKind + AssetLifecycle 定义）
 - `oxn-work-domain.md`（Work/Task/Part/IAP 三阶段定义）
 - `oxn-project-domain.md`（项目工程元层 + drafts 边界规则）
+
+<!-- 已迁移：v0.7 CONTEXT-MAP.md 退役，详见 RFC-0028。文件中 CONTEXT-MAP 原文引用保留作为历史考古链，失效链接请用 git blame 追溯或参考对应 Domain / RFC。-->

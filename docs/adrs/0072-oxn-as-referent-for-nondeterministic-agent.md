@@ -6,7 +6,7 @@ date: 2026-07-23
 supersedes: null
 superseded-by: null
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - .openxenon/assets/domains/oxn-domain.md
   - .openxenon/drafts/rfc/0066-terminology-simplification.md
   - .openxenon/drafts/rfc/0067-no-judgment-principle.md
@@ -22,7 +22,7 @@ related:
 
 ## Context
 
-**触发问题**：`CONTEXT-MAP.md` 自 2026-07-21 grilling session 起用 PEAS 框架描述 OpenXenon 的三方协作（Asset=E / Work=A / Proof=S / Report=外部呈现）。但该映射从未经过 Russell & Norvig《人工智能：一种现代方法》原义的严格盘问。本次 grilling session 用 R&N 七个核心术语（智能体结构 / 世界模型 / 感知器 / 执行器 / 动作 / 解 / 图）逐一对照 OXN 既有词汇，发现 PEAS 映射存在三处错误，且 OXN 相对 R&N 的根本定位此前未被命名。
+**触发问题**：`CONTEXT-MAP.md`（已退役 v0.7+，详见 RFC-0028）自 2026-07-21 grilling session 起用 PEAS 框架描述 OpenXenon 的三方协作（Asset=E / Work=A / Proof=S / Report=外部呈现）。但该映射从未经过 Russell & Norvig《人工智能：一种现代方法》原义的严格盘问。本次 grilling session 用 R&N 七个核心术语（智能体结构 / 世界模型 / 感知器 / 执行器 / 动作 / 解 / 图）逐一对照 OXN 既有词汇，发现 PEAS 映射存在三处错误，且 OXN 相对 R&N 的根本定位此前未被命名。PEAS 内容已回迁 `oxn-domain.md §OpenXenonThreePartyCollaboration` + `oxn-asset-domain.md §AssetPeasRole` + `oxn-work-domain.md §WorkAsSolutionReference` + `oxn-proof-domain.md §ProofAsObjectiveOutcome`。
 
 **R&N 的核心假设**（与 OXN 现实的冲突）：
 
@@ -60,16 +60,16 @@ OXN Engine 是确定性程序，不是 R&N 意义上的智能体（无性能度�
 
 ### D3: PEAS 映射三处错误，整体重写
 
-现有 `CONTEXT-MAP.md` PEAS 块的判决：
+PEAS 块判决（v0.7+ 已回迁各 Domain 文件）：
 
-| PEAS | 现有映射 | 判决 | 修正 |
-|---|---|---|---|
-| E (Environment) | Asset | ✅ 对 | 保留 |
-| A (Actuator) | Work | ❌ 错 | Work 是通道非执行器；真正执行器分裂（AI 工具调用 + OXN writer） |
-| S (Sensor) | Proof | ❌ 错 | Proof 是产物非传感器；真正传感器分裂（AI 工具 I/O + Probe） |
-| P (Performance) | （缺失） | ⚠️ 缺失即设计 | 显式标注：ADR-0066/0067 彻底不判，P 外包给工程师 |
+| PEAS | 现有映射 | 判决 | 修正 | 回迁位置 |
+|---|---|---|---|---|
+| E (Environment) | Asset | ✅ 对 | 保留 | `oxn-asset-domain.md §AssetPeasRole` |
+| A (Actuator) | Work | ❌ 错 | Work 是通道非执行器；真正执行器分裂（AI 工具调用 + OXN writer） | `oxn-work-domain.md §WorkAsSolutionReference` |
+| S (Sensor) | Proof | ❌ 错 | Proof 是产物非传感器；真正传感器分裂（AI 工具 I/O + Probe） | `oxn-proof-domain.md §ProofAsObjectiveOutcome` |
+| P (Performance) | （缺失） | ⚠️ 缺失即设计 | 显式标注：ADR-0066/0067 彻底不判，P 外包给工程师 | `oxn-domain.md §PerformanceMeasureNotEnforced` |
 
-PEAS 块需**整体重写**而非微调——E 对、A/S 双错、P 故意缺。本次同步修订 `CONTEXT-MAP.md`。
+PEAS 块需**整体重写**而非微调——E 对、A/S 双错、P 故意缺。v0.7+ 已回迁各 Domain 文件（RFC-0028 §D2）；原 `CONTEXT-MAP.md`（2026-08-10 退役）承载的 PEAS 内容已不再存在。
 
 ### D4: R&N 四个"agent 自有"动作在 OXN 里被拆成三角色协议
 
@@ -100,14 +100,14 @@ R&N 假定单一 agent 独占四个动作；OXN 把每个都拆成"AI 非确定�
 <!-- allow-version -->
 - **对照表是快照**：R&N 术语映射会随 OXN 演进（如 v0.7+ Insight 涌现推理可能改变"搜索"的映射）。需在对照表标注版本。
 <!-- /allow-version -->
-- **PEAS 重写影响外部引用**：`CONTEXT-MAP.md` 被多处引用（7 个 Domain SSOT、glossary、docs/product）。重写后需检查下游引用是否依赖旧的"A=Work/S=Proof"表述。
+- **PEAS 重写影响外部引用**：v0.7+ PEAS 内容已回迁各 Domain 文件（RFC-0028 §D2），原 `CONTEXT-MAP.md` 已退役；glossary 通过 sync-domain-glossary 自动同步。
 - **Referent 是新词**：增加术语学习成本。但它是统一模式的命名，不引入新实体，认知收益大于成本。
 
 ### 衍生
 
-- **CONTEXT-MAP.md PEAS 块重写**（本次落地）
-- **oxn-domain.md 新增 Referent 术语**（本次落地）
-- **glossary/zh-cn/core-terms.md 同步**（本次落地，ADR-0070 同步约定）
+- **CONTEXT-MAP.md PEAS 块重写**（历史 2026-07-23 落地）—— v0.7+ 由 RFC-0028 §D2 撤销，回迁各 Domain 文件
+- **oxn-domain.md 新增 Referent 术语**（本次落地）—— v0.7+ 已被 RFC-0028 §D2 引用作为回迁目标之一
+- **glossary/zh-cn/core-terms.md 同步**（本次落地，ADR-0070 同步约定）—— v0.7+ 改用 `docs/product/zh-cn/concepts/glossary.md`
 - **后续 grilling**：R&N 的 environment types / rationality / utility / problem formulation 尚未盘问，待后续 session
 - **OXP promote 候选**：本 ADR 可 promote 为 OXP-0004+（待排序）
 
@@ -145,12 +145,13 @@ R&N 假定单一 agent 独占四个动作；OXN 把每个都拆成"AI 非确定�
 **兼容性**：
 
 - 本 errata 不删除原 Decision 内容，仅追加 Errata 段。
-- 引用本 ADR 的下游文档（CONTEXT-MAP、glossary）按 Errata 段口径更新，不强制重写原 Decision。
-- 旧 `CONTEXT-MAP.md:PEAS` 映射不受影响（Errata 仅影响 D1 表的"OXN 参照版本"列）。
+- 引用本 ADR 的下游文档（glossary；CONTEXT-MAP 已退役 2026-08-10）按 Errata 段口径更新，不强制重写原 Decision。
+- 旧 PEAS 映射在 `oxn-domain.md §OpenXenonThreePartyCollaboration` + `oxn-asset-domain.md §AssetPeasRole` + `oxn-work-domain.md §WorkAsSolutionReference` + `oxn-proof-domain.md §ProofAsObjectiveOutcome` 落地；Errata 仅影响 D1 表的"OXN 参照版本"列。
 
 ## References
 
-- [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — PEAS 块重写落地点
+- [RFC-0028 CONTEXT-MAP 退役](../rfc/zh-cn/RFC-0028-context-map-deprecation.md) — v0.7+ PEAS 内容回迁各 Domain 文件
+- [AGENTS.md](../../../../AGENTS.md) — 唯一 Meta 层入口（v0.7+ RFC-0028 撤销 CONTEXT-MAP.md）
 - [oxn-domain.md](../../../assets/domains/oxn-domain.md) — Referent 术语新增落地点
 - [ADR-0066 术语精简](./0066-terminology-simplification.md) — "判定权归工程师"立法（P 外包的法源）
 - [ADR-0067 彻底不判贯彻](./0067-no-judgment-principle.md) — 三态改名 + 彻底不判原则

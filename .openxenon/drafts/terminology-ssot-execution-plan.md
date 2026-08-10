@@ -319,3 +319,6 @@ Round 2 讨论中曾提议把 root `CONTEXT-MAP.md` 降级为 `docs/context-map.
 | Round 1 | RFC spec 6 处硬伤（数字偏差 4x、去重 spec 单薄、v0.7 耦合、H3 范围歧义、linter 不可实现、内部不一致） | 4 个关键问题 |
 | Round 2 | 用户提出 5 角色认知模型（Domain / Context Map / Blueprint / Glossary / AGENTS）+ `.openxenon/context-map/*.yaml` | 3 个张力问题 |
 | Round 3 | 用户收敛：放弃 yaml 方案，回到"MD 唯一正交点"+ AGENTS.md 行为宪法；确认 Stack 语义不动 | 6 项冻结决议 + 执行计划 |
+
+
+<!-- 已迁移：v0.7 CONTEXT-MAP.md 退役，详见 RFC-0028。文件中 CONTEXT-MAP 原文引用保留作为历史考古链，失效链接请用 git blame 追溯或参考对应 Domain / RFC。-->

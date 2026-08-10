@@ -276,3 +276,5 @@ Proof:
 6. Engine 实现（PlanLock 5-hash + Scope 校验）
 7. CLI 实现（3-flag 注入）
 8. 现有 Blueprint 迁移
+
+<!-- 已迁移：v0.7 CONTEXT-MAP.md 退役，详见 RFC-0028。文件中 CONTEXT-MAP 原文引用保留作为历史考古链，失效链接请用 git blame 追溯或参考对应 Domain / RFC。-->

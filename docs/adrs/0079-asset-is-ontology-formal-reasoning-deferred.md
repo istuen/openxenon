@@ -6,11 +6,11 @@ date: 2026-07-23
 supersedes: null
 superseded-by: null
 related:
+  - RFC-0028
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
   - .openxenon/drafts/rfc/0074-insight-ingredient-not-reasoner.md
   - .openxenon/drafts/rfc/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md
   - .openxenon/drafts/rfc/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md
-  - .openxenon/CONTEXT-MAP.md
 ---
 
 # ADR-0079: Asset 全体是 Ontology；OXN 形式化推理能力保留不实现
@@ -126,4 +126,4 @@ LLM 的知识库包含 Ontology 概念（或可推理出），因此 Ontology �
 - [ADR-0074 Insight 原料非推理](./0074-insight-ingredient-not-reasoner.md) — OXN 不推理（本 ADR 明确推理归属 AI Agent）
 - [ADR-0077 Utility 归属与目标→边界转换](./0077-utility-owns-ai-oxn-converts-goal-to-boundary.md) — 机制
 - [ADR-0078 LLM agent knowledge-full](./0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md) — 前提（本 ADR 补充 Asset 聚焦 + Ontology 结构）
-- `CONTEXT-MAP.md` Term #16（Asset 全声明式）+ Term #22（边界工程）+ Term #24（ontology）
+- `CONTEXT-MAP.md` Term #16（Asset 全声明式）+ Term #22（边界工程）+ Term #24（ontology）—— v0.7+ 内容已回迁 `oxn-asset-domain.md`（详见 RFC-0028 §D2）

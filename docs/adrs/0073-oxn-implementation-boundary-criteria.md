@@ -6,8 +6,8 @@ date: 2026-07-23
 supersedes: null
 superseded-by: null
 related:
+  - RFC-0028
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
-  - .openxenon/CONTEXT-MAP.md
   - .openxenon/assets/domains/oxn-domain.md
   - .openxenon/drafts/rfc/0066-terminology-simplification.md
   - .openxenon/drafts/rfc/0067-no-judgment-principle.md
@@ -144,7 +144,7 @@ AI 可涌现比工程师更优的选择（反向帮助工程师增加经验、�
 ### 衍生
 
 - **`Floor` + `Ceiling` 术语入 oxn-domain.md**（本次落地）——D3 判据的对偶概念，高频引用
-- **CONTEXT-MAP 对照表扩展 4 行**（本次落地）
+- **CONTEXT-MAP 对照表扩展 4 行**（历史 2026-07-23 落地；v0.7+ RFC-0028 §D2 内容已回迁 oxn-domain.md + oxn-asset-domain.md + oxn-proof-domain.md）
 - **后续 grilling 可扩展判据**：Utility 深挖 / Search strategies / Adversarial search / Learning 等术语可能产出第五、六判据
 <!-- allow-version -->
 - **架构守卫集成候选**：四判据可转化为 CI 检查（如"新功能 PR 必须声明过哪几判据"）——v0.8+ 计划
@@ -161,7 +161,8 @@ AI 可涌现比工程师更优的选择（反向帮助工程师增加经验、�
 ## References
 
 - [ADR-0072 OXN 参照系定位](./0072-oxn-as-referent-for-nondeterministic-agent.md) — Referent 结构命名（本 ADR 在其上加功能判据）
-- [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — 对照表扩展落地点
+- [RFC-0028 CONTEXT-MAP 退役](../rfc/zh-cn/RFC-0028-context-map-deprecation.md) — 对照表内容 v0.7+ 已回迁各 Domain 文件
+- [AGENTS.md](../../../../AGENTS.md) — 唯一 Meta 层入口
 - [oxn-domain.md](../../../assets/domains/oxn-domain.md) — Floor/Ceiling 术语新增落地点
 - [ADR-0066 术语精简](./0066-terminology-simplification.md) — P 外包给工程师（D2 判据法源）
 - [ADR-0067 彻底不判贯彻](./0067-no-judgment-principle.md) — 彻底不判原则（D2/D3 判据法源）

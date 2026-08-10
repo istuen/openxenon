@@ -14,8 +14,8 @@ related:
   - RFC-0011
   - RFC-0012
   - RFC-0013
+  - RFC-0028
   - .openxenon/assets/domains/oxn-project-domain.md
-  - CONTEXT-MAP.md
   - AGENTS.md
 synced-at: 2026-08-05
 ---
@@ -29,7 +29,7 @@ synced-at: 2026-08-05
 > **来源**：2026-07-31 `/grilling` session（domain-modeling skill）
 > **批次**：2026-07-31 v0.6.2-alpha.2 配套新增
 <!-- /allow-version -->
-> **关系**：本 RFC 是 RFC-0009 的**扩展**（增加第 4 层），不替代；与 RFC-0010/0011/0012/0013 四个 meta-RFC 并列
+> **关系**：本 RFC 是 RFC-0009 的**扩展**（增加第 4 层），不替代；与 RFC-0010/0011/0012/0013 四个 meta-RFC 并列。2026-08-10 由 RFC-0028 撤销 §D3（CONTEXT-MAP.md 重构决策反转），新增 §D5（CONTEXT-MAP.md 退役）；本 RFC 的 Meta 层由 5 类文档降为 4 类（CONTEXT-MAP.md 已删除）。
 
 ## 摘要
 
@@ -37,9 +37,9 @@ OXN 文档架构从 RFC-0009 的三情态（Asset / RFC / Doc）扩展为**四�
 
 1. 四层 SSOT 全景表
 2. 项目工程元层 5 类文档的精确定位与演进策略
-3. CONTEXT-MAP.md 重构（从 283 行降级至 ≤ 100 行；R&N 7 术语对照迁入本 RFC 附录）
+3. CONTEXT-MAP.md 重构（从 283 行降级至 ≤ 100 行；R&N 7 术语对照迁入本 RFC 附录）—— 2026-08-10 由 RFC-0028 §D1 撤销
 4. 项目工程元层跨层引用规则（含 5 类例外豁免）
-5. `check-doc-boundary.ts` 新增 5 条规则矩阵
+5. `check-doc-boundary.ts` 新增 5 条规则矩阵（2026-08-10 由 RFC-0028 §D3 简化 4 条）
 
 ## 决策
 
@@ -50,7 +50,7 @@ OXN 文档架构从 RFC-0009 的三情态（Asset / RFC / Doc）扩展为**四�
 | **Asset（定义性）** | "X 是什么" | `.openxenon/assets/{kind}/*.md` | RFC-0009 / RFC-0011 / RFC-0014 |
 | **RFC（规定性）** | "为什么决定 X" | `docs/rfc/zh-cn/RFC-XXXX-<theme>.md` | RFC-0009 / RFC-0010 / RFC-0013 |
 | **Doc（描述性）** | "怎么用 X" | `docs/{product,dev}/{zh-cn,en}/*.md` | RFC-0009 / RFC-0006 |
-| **Meta（项目工程元）** | "OXN 自己怎么组织" | `README.md` / `AGENTS.md` / `CONTEXT-MAP.md` / `.changes/` / `dev/` | **本 RFC 新增** |
+| **Meta（项目工程元）** | "OXN 自己怎么组织" | `README.md` / `AGENTS.md` / `.changes/` / `dev/` | **本 RFC 新增**（2026-08-10 RFC-0028 撤销 CONTEXT-MAP.md） |
 
 **Meta 层与三情态并列，不从属**——它是 OXN 自身工程元层（meta-vocabulary），不描述用户业务，描述 OXN 项目的工程结构与文档架构。
 
@@ -60,37 +60,20 @@ OXN 文档架构从 RFC-0009 的三情态（Asset / RFC / Doc）扩展为**四�
 |---|---|---|---|---|---|
 | **README.md** | 仓库根入口（marketing + 5min quickstart + GitHub 渲染） | 仓库根 | 与 `docs/product/zh-cn/introduction.md` slogan 双向同步 | 描述性 + 元入口 | D4.1 |
 | **AGENTS.md** | AI Agent 进入项目的第一份入口（开发 + AI 协作） | 仓库根 | 跟随主版本演进 | 描述性 + 元入口 | D4.2 |
-| **CONTEXT-MAP.md** | 8 Domain 索引 + 项目工程顶层术语入口 | 仓库根 | 8 Domain 变更时同步更新索引 | 定义性（Domain 索引） | D4.3 |
 | **.changes/0-X-Y-*.md** | Version Fragment（changelog 片段） | 仓库根 | 版本转正时落盘 | 描述性（用户可见） | RFC-0013 D3 |
 | **dev/{versions,fix,pool}/** | Roadmap + Fix Record + PlanningPool | 仓库根 | RFC-0013 D3/D4 + PlanningPool 2026-07-27 补 | 描述性（开发者面向） | RFC-0013 D4 |
 
-### D3：CONTEXT-MAP.md 重构
+### D3：CONTEXT-MAP.md 重构 —— **2026-08-10 由 RFC-0028 §D1 撤销**
 
-#### D3.1：内容迁出清单
+> 原 D3 内容（CONTEXT-MAP.md 从 283 行降级至 ≤ 100 行；R&N 7 术语对照迁入本 RFC 附录；新增 §跨层引用段）由 RFC-0028 §D1 撤销。CONTEXT-MAP.md 整体删除（不再降级），Meta 层入口由 `AGENTS.md` §入口指针 + §AI Agent 唯一入口段统一承担。
 
-| 当前段（CONTEXT-MAP.md） | 迁入位置 |
-|---|---|
-| R&N 32 术语对照表（line 115-150，36 行） | **本 RFC 附录 A** |
-| OXN 实现边界四判据（line 152-160，9 行） | RFC-0007 §D1（已固化，复用） |
-| 分布式学习闭环（line 163-187，25 行） | RFC-0003 §D4（已固化，复用） |
-| 术语新增记录 / 落地执行（line 211-283，72 行） | `.openxenon/drafts/rfc/context-map-history.md`（历史快照，不追踪） |
+#### D3 撤销理由（RFC-0028 §D1）
 
-#### D3.2：保留段清单（≤ 100 行）
+1. **内容语义**：CONTEXT-MAP §核心术语锐化段（Referent / OpenXenon / Asset / Work / Proof / P / Report / ProbeOutcome / outcome / StructureV2 共 9 段）**全部是 OpenXenon Domain 概念**，本质是各 Domain 文件的"中央缓存副本"，不是独立 SSOT。
+2. **索引功能**：CONTEXT-MAP §Contexts（9 Domain 表）已被 AssetMap `oxn-system.md` §Scenes 覆盖（按 scene 路由维度信息量更大）。
+3. **入口角色**：CONTEXT-MAP 的"入口"角色被 `AGENTS.md` §意图解析流程 + §入口指针完整覆盖。
 
-- §1-§2：Contexts + Relationships 8 Domain 索引（约 50 行）
-- §3 核心术语锐化：Referent / OpenXenon / Asset / Work / Proof / P / Report / ProbeOutcome / outcome（约 35 行）
-
-#### D3.3：新增段
-
-CONTEXT-MAP.md 末尾加：
-
-```markdown
-## 跨层引用
-
-- 详细 R&N 32 术语对照 → [RFC-0018 附录 A](./RFC-0018-project-engineering-meta.html#附录-a-rn-32-术语对照)
-- OXN 实现边界四判据 → [RFC-0007 §D1](./RFC-0007-domain-positioning.html#d1)
-- 分布式学习闭环 → [RFC-0003 §D4](./RFC-0003-ai-collaboration.html#d4)
-```
+### D4：项目工程元层跨层引用规则
 
 ### D4：项目工程元层跨层引用规则
 
@@ -101,7 +84,6 @@ CONTEXT-MAP.md 末尾加：
 - ✅ → `docs/product/zh-cn/introduction.md`（与 slogan 同步，AGENTS.md §v0.6.2 锁定双向同步）
 <!-- /allow-version -->
 - ✅ → `docs/glossary/zh-cn/*`（术语链）
-- ✅ → `CONTEXT-MAP.md`（同元层内部）
 - ✅ → `AGENTS.md`（同元层内部）
 - ✅ → `LICENSE`（项目基础信息）
 
@@ -113,57 +95,50 @@ CONTEXT-MAP.md 末尾加：
 #### D4.2：AGENTS.md 引用规则
 
 允许：
-- ✅ → `.openxenon/CONTEXT-MAP.md`（8 Domain 索引入口）
 - ✅ → `.openxenon/assets/domains/*`（AI 需要读 Domain SSOT）
+- ✅ → `.openxenon/assets/assetmaps/oxn-system.md`（AI 路由）
 - ✅ → `docs/rfc/zh-cn/*`（AI 需要读 RFC 规定性内容）
 - ✅ → `docs/{product,dev}/{zh-cn,en}/*`（AI 需要读产品手册与开发手册）
 - ✅ → `dev/versions/*` `dev/pool/*`（AI 路由 Roadmap）
-- ✅ → `README.md` / `CONTEXT-MAP.md`（同元层内部）
+- ✅ → `README.md`（同元层内部）
 
 禁止：
 - ❌ → `.openxenon/drafts/rfc/*`（草稿不应被 AI 作为 SSOT 引用；通过 promote workflow 上 RFC 后再引）
 
-#### D4.3：CONTEXT-MAP.md 引用规则
+#### D4.3：CONTEXT-MAP.md 引用规则 —— **2026-08-10 由 RFC-0028 §D1 撤销**
 
-允许（**特例豁免**）：
-- ✅ → `.openxenon/assets/domains/*.md`（CONTEXT-MAP 本质是 Domain 索引页）
-- ✅ → `docs/rfc/zh-cn/*`（元入口引用 RFC）
-- ✅ → `README.md` / `AGENTS.md`（同元层内部）
+> CONTEXT-MAP.md 已整体删除，规则自然失效。Meta 层入口豁免改由 D4.2（AGENTS.md 例外）+ D6 表格（4 条规则）承担。
 
-禁止：
-- ❌ → `docs/product/*` `docs/dev/*`（CONTEXT-MAP 是工程元层，不引产品/开发手册）
-- ❌ → `.openxenon/drafts/*`（同 RFC-0009）
-
-### D5：Meta 层与三情态组合检查
+### D5：Meta 层与三情态组合检查 —— **2026-08-10 由 RFC-0028 §D5 修订**
 
 | 组合 | 含义 | 状态 |
 |---|---|---|
-| Asset + Meta | 既是定义又是元入口 | ✅ 允许特例——`CONTEXT-MAP.md` 引用 Asset（索引场景） |
+| Asset + Meta | 既是定义又是元入口 | ✅ 允许特例——`AGENTS.md` 引用 Asset（入口指针场景，RFC-0028 §D4） |
 | RFC + Meta | 既是规定又是元入口 | ❌ 设计错误——RFC 不应依赖 README.md / AGENTS.md |
 | Doc + Meta | 既是描述又是元入口 | ⚠️ **特例允许**——README.md 是 marketing + 入口混合，与 `docs/product/zh-cn/introduction.md` 双向同步 |
-| Meta + Meta | 同元层内部互引 | ✅ 允许——README.md / AGENTS.md / CONTEXT-MAP.md 互引 |
+| Meta + Meta | 同元层内部互引 | ✅ 允许——README.md / AGENTS.md 互引（CONTEXT-MAP.md 已退役） |
 | Asset + RFC + Doc + Meta | 全四情态组合 | ✅ **仅 README.md**——唯一合法的四情态载体 |
 
-### D6：check-doc-boundary.ts 新增 5 条规则
+### D6：check-doc-boundary.ts 规则矩阵（2026-08-10 由 RFC-0028 §D3 简化 5 → 4）
 
 | 规则名 | sourcePattern | targetPattern | 例外 |
 |---|---|---|---|
-| `rfc-no-meta` | `^docs/rfc/` | `^(README\.md\|AGENTS\.md\|CONTEXT-MAP\.md\|\.changes/\|dev/)` | 无 |
-| `docs-product-no-meta` | `^docs/product/` | `^(README\.md\|AGENTS\.md\|\.changes/\|dev/)` | `CONTEXT-MAP.md` 例外（产品手册可引元入口） |
-| `docs-dev-no-meta` | `^docs/dev/` | `^(README\.md\|AGENTS\.md\|\.changes/\|dev/)` | `CONTEXT-MAP.md` 例外 |
-| `assets-no-meta` | `^\.openxenon/assets/` | `^(README\.md\|AGENTS\.md\|\.changes/\|dev/)` | `CONTEXT-MAP.md` 例外 |
-| `context-map-asset-index-allowed` | `^CONTEXT-MAP\.md` | `^\.openxenon/assets/` | 无 |
+| `rfc-no-meta` | `^docs/rfc/` | `^(README\.md\|AGENTS\.md\|\.changes/\|dev/)` | 无 |
+| `docs-product-no-meta` | `^docs/product/` | `^(README\.md\|AGENTS\.md\|\.changes/\|dev/)` | `AGENTS.md` 作为入口指针例外（RFC-0028 §D4） |
+| `docs-dev-no-meta` | `^docs/dev/` | `^(README\.md\|\.changes/\|dev/)` | `AGENTS.md` 作为入口指针例外（RFC-0028 §D4） |
+| `assets-no-meta` | `^\.openxenon/assets/` | `^(README\.md\|AGENTS\.md\|\.changes/\|dev/)` | `AGENTS.md` 作为入口指针例外（RFC-0028 §D4） |
+| ~~`context-map-asset-index-allowed`~~ | ~~`^CONTEXT-MAP\.md`~~ | ~~`^\.openxenon/assets/`~~ | **整规则删除**（RFC-0028 §D3：CONTEXT-MAP.md 已退役） |
 
 ### D7：实施步骤（7 步）
 
 1. RFC-0018 落盘（本文件）
-2. CONTEXT-MAP.md 重构（删除 line 115-283，加 D3.3 段）
+2. CONTEXT-MAP.md 重构（删除 line 115-283，加 D3.3 段）—— 2026-08-10 由 RFC-0028 撤销，CONTEXT-MAP.md 整体删除
 <!-- allow-version -->
 3. `oxn-project-domain.md` 升版 v0.2.0 → v0.3.0（增 3 term + 5 inv + 3 ban）
 <!-- /allow-version -->
-4. AGENTS.md §文档三层架构段升级（三层 → 四层）
-5. `scripts/check-doc-boundary.ts` 扩 5 条规则
-6. 写 `.changes/0-6-2-alpha-2-meta-layer.md`
+4. AGENTS.md §文档三层架构段升级（三层 → 四层）—— 2026-08-10 由 RFC-0028 §D4 升级为"AI Agent 唯一入口（v0.7+）"
+5. `scripts/check-doc-boundary.ts` 扩 5 条规则 —— 2026-08-10 由 RFC-0028 §D3 简化为 4 条
+6. 写 `.changes/0-6-2-alpha-2-meta-layer.md` + `.changes/0-7-0-context-map-deprecation.md`
 7. 跑 6 条验证命令
 
 ## 影响范围
@@ -189,13 +164,14 @@ CONTEXT-MAP.md 末尾加：
 
 - RFC-0018 与 RFC-0009 互锁（RFC-0009 三情态 + RFC-0018 四层 = OXN 文档架构完整图）
 - 后续如果 `OXN_DOC_LAYERS` 改成 5 层（如新增 "Insight 涌现层文档"），需要新 RFC supersede 本 RFC
-- `oxn-init` Skill 的 SSOT 列表更新（含 README.md / AGENTS.md / CONTEXT-MAP.md / .changes/ / dev/）
+- `oxn-init` Skill 的 SSOT 列表更新（含 README.md / AGENTS.md / .changes/ / dev/；CONTEXT-MAP.md 已退役，2026-08-10 RFC-0028 §D1）
 
 ## Alternatives Considered
 
 - **维持三情态不动，把 README/AGENTS/CONTEXT-MAP 当特例豁免**：否决。特例豁免需要硬编码在 RFC-0009 与 check-doc-boundary.ts 里，分散维护成本高；新建 Meta 层把豁免规则集中到 RFC-0018，更易演进
 - **Meta 层并入 Doc 层（README/AGENTS/CONTEXT-MAP 当作 docs/ 子集）**：否决。物理位置不同（仓库根 vs `docs/`），演进策略不同（与版本同步 vs 与产品迭代同步），硬塞 Doc 层会扭曲 RFC-0009
 - **R&N 32 术语对照留在 CONTEXT-MAP.md**：否决。CONTEXT-MAP.md 是索引页不是规定性内容承载；R&N 对照是规定性（"OXN 在 R&N 理论中是什么"），应归 RFC
+- **CONTEXT-MAP.md 保留作为 Meta 入口（否决 RFC-0028）**：2026-08-10 复审否决。CONTEXT-MAP 内容实质是 OpenXenon Domain 概念（PEAS / Referent / StructureV2 等），非独立 SSOT；AGENTS.md 已具备入口与路由完整流程；CONTEXT-MAP 删除可击穿跨层豁免 5 条规则简化为 4 条
 - **meta-RFC 编号从 RFC-0014 起（跳过 RFC-0014~0017 已被占）**：否决。RFC-0018 是连续编号，与 RFC-0017 未来命名不冲突；编号不影响语义
 
 ## 附录 A：R&N 32 术语对照表
@@ -256,15 +232,16 @@ CONTEXT-MAP.md 末尾加：
 - 计算机视觉—— OXN 不处理多媒体
 - 强化学习—— OXN 不训练 AI
 
-## 附录 B：项目工程元层 5 类文档快速对照
+## 附录 B：项目工程元层 4 类文档快速对照（2026-08-10 RFC-0028 撤销 CONTEXT-MAP.md）
 
 | 文档 | 一句话定义 | 给谁看 |
 |---|---|---|
 | README.md | OpenXenon 是什么 + 5 分钟上手 | GitHub 访客 + 新工程师 |
-| AGENTS.md | AI Agent 进入项目怎么协作 + 硬性规则 | AI Agent（OpenCode/Codex/Claude Code） |
-| CONTEXT-MAP.md | 8 Domain 索引 + 核心术语锐化入口 | 贡献者 + RFC 起草者 |
+| AGENTS.md | AI Agent 进入项目怎么协作 + 硬性规则（v0.7+ 唯一 Meta 入口） | AI Agent（OpenCode/Codex/Claude Code） |
 | .changes/0-X-Y-*.md | 版本 changelog（用户可见变更） | 升级用户 |
 | dev/{versions,fix,pool}/ | 前瞻 Roadmap + 修复记录 + 规划池 | 核心开发者 |
+
+> 历史：CONTEXT-MAP.md（2026-06 至 2026-08 服役）作为 8 Domain 索引 + 核心术语锐化入口已于 2026-08-10 由 RFC-0028 §D1 整体删除；其内容已分别回迁各 Domain 文件与本 RFC 附录 A。
 
 ## 参考
 
@@ -277,6 +254,6 @@ CONTEXT-MAP.md 末尾加：
 <!-- allow-version -->
 - [.openxenon/assets/domains/oxn-project-domain.md](../../.openxenon/assets/domains/oxn-project-domain.md) — 项目工程元层 Domain SSOT（v0.3.0）
 <!-- /allow-version -->
-- [CONTEXT-MAP.md](../../CONTEXT-MAP.md) — 8 Domain 索引（重构后 ≤ 100 行）
+- [RFC-0028 CONTEXT-MAP.md 退役](./RFC-0028-context-map-deprecation.md) — 2026-08-10 撤销本 RFC §D3（CONTEXT-MAP.md 重构决策反转）+ §D5 新增（Meta 层由 5 类文档降为 4 类）
 - [AGENTS.md](../../AGENTS.md) — AI Agent 入口
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach* — R&N 智能体理论原义来源

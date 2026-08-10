@@ -7,7 +7,7 @@ accepted: 2026-08-02
 supersedes: null
 superseded-by: null
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - docs/adrs/0084-collaboration-boundary-layering.md
   - docs/rfcs/RFC-0015-proof-system-overhaul.md
   - AGENTS.md

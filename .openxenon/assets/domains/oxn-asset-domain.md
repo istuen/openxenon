@@ -182,7 +182,64 @@ v1.0.0 (2026-08-08): 收编为 Asset 结构 v2 三层模型（## Group → ### A
 - Blueprint `## Use` 段 cross-kind 组合强制显式 `kind:` 字段（`- workflow: oxn-workflow`），不加 `@md/` 前缀。
 - Asset.references 数量预算 N=5（Inv16）不受影响；只是解析方式变化。
 
+## DesignPhilosophy
+
+### Theorem
+- Asset 结构第 3 层节点；物理形态 `- <text>` bullet 行；隶属于最近 `### Axiom`（无主 Axiom 时为形态 C Composite Theorem，归当前 Group）；设计为叶子节点（不可任意 list 嵌套）；MD 语法底层支持无限嵌套（CommonMark / GFM / mdast 无深度上限），OXN 拒绝是设计选择非技术限制。
+
+### TheoremEscapeHatch
+- 必须表达 Theorem 深度时的逃生舱索引：4 类详见下方 Axioms（AxiomNameCarrying / GroupSwitch / CrossAssetReference / FieldLoadNested）。
+
+### LeafByDesignEngineIRAtomicity
+- 根因 1：Engine IR atomicity——`classifyAxiom()` 把 Axiom 内容归并到 `DomainTerm / DomainBan / DomainInvariant / DomainStackEntry` 4 个 atomic 字段，无 SubTheorem 容器；sub-bullet 被 Engine 丢弃（`packages/engine/src/oxl/md-pipeline/transformers/domain.ts:74-141`）。
+
+### LeafByDesignReferentStability
+- 根因 2：参照系稳定性——OXN 是确定性参照系（ADR-0072），管结构稳定不管推理质量；嵌套 list 把"软推理"硬化为"硬层级"，污染 LLM 推理灵活性。
+
+### LeafByDesignKnowledgeJudgment
+- 根因 3：知识判断隔离——定理依赖属"知识判断"，OXN 立法不管（ADR-0066/0067），归工程师 + AI 自然语言推理。
+
+### EscapeHatchAxiomNameCarrying
+- 逃生舱 A：Axiom 命名承载——拆多 Axiom 平铺（`### Inv1` / `### Inv1A` / `### Inv1B`），命名承载层级；Engine 用 `slugify(H3)` 做 ID，序号不解析。
+
+### EscapeHatchGroupSwitch
+- 逃生舱 B：Group 切换——新主题开新 `## Group`（`## Concept` / `## Boundary` / `## Foundation` 等皆 free-form）。
+
+### EscapeHatchCrossAssetReference
+- 逃生舱 C：跨 Asset 引用——同 kind `references`（Inv15 + Inv16 预算 N=5）/ 跨 kind Blueprint `## Use`（显式 `kind:` 字段）/ 跨 kind 导航 AssetMap `scene.links`；Engine DAG 校验防环（Inv5DagNoCycles）。
+
+### EscapeHatchFieldLoadNested
+- 逃生舱 D：field-load Axiom 内嵌（Blueprint/Stack 限定豁免）——Tool `operations:` / Slot `observe/operate/deps:` / Use `path/kind:` / Scope `allow/forbid:` / Context Template `business/process/...`；OXN 守门明确豁免（`scripts/check-asset-structure.ts:295-301`）。
+
+- 来源：2026-08-10 grilling session（grill-with-docs + domain-modeling skill）；与 `### StructureV2`（line 63）+ `CONTEXT-MAP.md` "StructureV2 三层锁"段交叉锚定。
+
 ## Slogan
 
 - OXN = 工程师定义 AI Agent 协作边界的工具。
 - Asset 是 AI Agent 不可篡改的工程契约。
+
+## ContextEngineering
+
+### AssetPeasRole
+- PEAS E（Environment）—— Asset 是工程师为 AI Agent 协作定义的边界环境。
+- R&N 对照（ADR-0072）：Asset 是世界模型的确定性参照——LLM 上下文是 AI 自有的世界模型（漂移衰减），Asset 是稳定的只读参照锚点。参照系只覆盖读侧；写侧拆成三角色协议（AI 提案 → OXN 记录 → 工程师升格），无单一更新函数。
+
+### BlueprintContextEngineering
+- 上下文工程的元结构：声明哪些 Assets 提供什么上下文（Use）+ 如何拆分为 Slot（Boundaries）+ 文件范围（Scope）+ 组装指令（Context Template）。
+- 三层职责分离：Use = 聚合 / Boundaries = 结构 / Scope = 范围 / Context Template = 指令。
+- 不复制内容 — Blueprint 保持纯净，只声明"去哪取"。
+
+### WorkContextStaticPlanLockProtected
+- Work 级上下文内容（AI Agent 按 Blueprint Context Template 从 Use refs 引用的 Assets 组装）。
+- 位置：`works/<id>/context.md`；lock 前写完；纳入 PlanLock 5-hash；lock 后漂移 → `HASH_MISMATCH`。
+- 与 `memory.md` 的二分：WorkContext = 静态结构骨架（PlanLock 锁）；`memory.md` = 动态记忆（append-only）。
+
+### TaskContextPerSlotSplit
+- Task 级上下文内容（AI Agent 从 WorkContext 按 Blueprint `## Boundaries` 的每个 Slot 拆分）。
+- 位置：`works/<id>/tasks/<t>/context.md`；纳入 PlanLock 5-hash；与 `workContextHash` 分开定位 drift。
+
+### PlanLockFiveHash
+- v0.7+ 结构：`workMdHash + workContextHash + blueprintsHash + tasksHash + taskContextsHash → allHash`。
+- 保障：同一 Blueprint 的 N 个 Work 的 WorkContext 结构一致（除 Goal 外）—— 跨 Work 比较 hash 一致 ⇒ 结构骨架一致。
+- 与通用上下文工程的边界：通用把所有知识塞 LLM 上下文窗口无边界；OXN 每个 Work 独立 `context.md`（goal-scoped，PlanLock 锁），目标聚焦、范围隔离、可审计。
+- 本质区别：OXN 的上下文工程是"声明 vs 物化"二分 — Blueprint 声明（Use + Boundaries + Scope + Context Template），Work 物化（context.md + memory.md），Task 拆分（context.md + Artifacts）。

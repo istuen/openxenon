@@ -204,7 +204,7 @@ synced-at: 2026-08-08
 - 例外：README.md 与 docs/product/zh-cn/introduction.md slogan 双向同步（v0.6.2-alpha.2 锁定）。
 
 ### Inv7ContextMapAssetIndexExempted
-- CONTEXT-MAP.md 作为 Domain 索引页可引用 Asset（v0.3.0 起特例豁免）——CONTEXT-MAP.md 本质是 8 Domain 索引入口，引用 .openxenon/assets/domains/*.md 是结构需要，非情态越界。check-doc-boundary.ts `context-map-asset-index-allowed` 规则显式豁免。
+- 🆕 v0.7.0 RFC-0028 D3 撤销：CONTEXT-MAP.md 已整体删除（2026-08-10），`context-map-asset-index-allowed` 守门规则同步删除。原 Inv7 失效——CONTEXT-MAP.md 不再是 Meta 层入口；Meta 层入口改由 `AGENTS.md` §AI Agent 唯一入口段承担（详见 RFC-0028 §D4）。本 Axiom 保留作为历史记录（git blame 可追溯）。
 
 ### Inv8ReadmeIntroductionSloganSync
 - README.md 与 docs/product/zh-cn/introduction.md slogan 双向同步（v0.6.2-alpha.2 锁定）—— README.md 是仓库根入口（含 GitHub 渲染），introduction.md 是 VitePress 产品入口。两者 slogan 一致；v0.6.2-alpha.2 同时替换 13 个文件（CONTEXT-MAP + README + docs/ + glossary/）。

@@ -7,7 +7,7 @@ accepted: 2026-08-04
 supersedes: null
 superseded-by: null
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - .openxenon/assets/domains/oxn-asset-domain.md
   - .openxenon/assets/domains/oxn-project-domain.md
   - .openxenon/assets/assetmaps/oxn-system.md
@@ -255,7 +255,8 @@ AI 收到 "用 OXN 引导" 指令
 - [ADR-0069 asset-bootstrap-completeness](./0069-asset-bootstrap-completeness.md) — 部分 superseded（D1 → D1）
 - [ADR-0050-onboarding-via-starter-work](./0050-onboarding-via-starter-work.md) — 部分 superseded（机制保留为 internals）
 - [ADR-0067](../rfc/adrs/) — 不评判"P 故意外包"原则（apply to D3 上限）
-- [CONTEXT-MAP.md](../../CONTEXT-MAP.md) — 9 Domain 上下文索引
+- [AGENTS.md](../../AGENTS.md) — 唯一 Meta 层入口 + 9 Domain 路径层级
+- [.openxenon/assets/assetmaps/oxn-system.md](../../.openxenon/assets/assetmaps/oxn-system.md) — 6 scene 路由 + Domain 索引（替代原 CONTEXT-MAP §Contexts）
 - [oxn-asset-domain.md](../../.openxenon/assets/domains/oxn-asset-domain.md) — Asset 业务领域（待补 Onboarding Starter 术语）
 - [oxn-project-domain.md](../../.openxenon/assets/domains/oxn-project-domain.md) — 项目工程领域（待补 Project Bootstrap 术语）
 

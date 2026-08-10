@@ -6,11 +6,11 @@ date: 2026-07-23
 supersedes: null
 superseded-by: null
 related:
+  - RFC-0028
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
   - .openxenon/drafts/rfc/0012-main-sub-agent-audit-chain.md
   - .openxenon/drafts/rfc/0068-daemon-responsibility-boundary.md
-  - .openxenon/CONTEXT-MAP.md
   - docs/product/zh-cn/concepts/work.md
 ---
 
@@ -112,7 +112,7 @@ OXN 的核心价值是**忠实记录 + Probe 验证**——记录并提供反馈
 
 ### 衍生
 
-- **CONTEXT-MAP 对照表**：Term #13 新增 + Term #7 修订标注（本次落地）
+- **CONTEXT-MAP 对照表**：Term #13 新增 + Term #7 修订标注（历史 2026-07-27 落地；v0.7+ RFC-0028 §D2 内容已回迁 oxn-work-domain.md §WorkAsSolutionReference + §Round）
 <!-- allow-version -->
 - **代码修改待办**（v0.7+）：
 <!-- /allow-version -->
@@ -140,7 +140,8 @@ OXN 的核心价值是**忠实记录 + Probe 验证**——记录并提供反馈
 - [ADR-0068 Daemon 职责边界](./0068-daemon-responsibility-boundary.md) — 记录不阻断（本 ADR 延续）
 - [ADR-0066 术语精简](./0066-terminology-simplification.md) — 彻底不判
 - [ADR-0074 Insight 原料非推理](./0074-insight-ingredient-not-reasoner.md) — 超限信号作为 Insight 原料
-- [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — 对照表扩展
+- [RFC-0028 CONTEXT-MAP 退役](../rfc/zh-cn/RFC-0028-context-map-deprecation.md) — v0.7+ 对照表内容已回迁各 Domain 文件
+- [AGENTS.md](../../../../AGENTS.md) — 唯一 Meta 层入口
 <!-- allow-version -->
 - [Work 概念文档](../../../docs/product/zh-cn/concepts/work.md) — §3 Round loop（待 v0.7+ 修订）
 <!-- /allow-version -->

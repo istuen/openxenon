@@ -7,7 +7,7 @@ supersedes: null
 superseded-by: null
 promoted-to: docs/rfc/zh-cn/OXP-0001-terminology-simplification.md
 related:
-  - .openxenon/CONTEXT-MAP.md
+  - RFC-0028
   - .openxenon/docs/adrs/0031-proof-notary-not-judge.md
   - .openxenon/docs/adrs/0057-trust-chain-core-model.md
   - .openxenon/docs/adrs/0011-evidence-chain-triple.md
@@ -122,7 +122,7 @@ OXN 不做"整体合格/失败"聚合判定——只提供各状态的 Probe 数
 
 ## References
 
-- [CONTEXT-MAP.md](../../../../CONTEXT-MAP.md) — 根级词汇表
+- [AGENTS.md](../../../../AGENTS.md) — 唯一 Meta 层入口（v0.7+ RFC-0028 撤销 CONTEXT-MAP.md）
 - [oxn-proof-domain.md](../../../assets/domains/oxn-proof-domain.md) — Proof 业务领域
 - [oxn-engine-domain.md](../../../assets/domains/oxn-engine-domain.md) — OXN Engine 业务领域
 - [ADR-0067](#) — 彻底不判贯彻（待写）
