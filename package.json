@@ -47,13 +47,14 @@
     "check:no-langium": "bun scripts/check-no-new-langium-usage.ts",
     "check:adr-landing": "bun scripts/check-adr-landing.ts",
     "check:adr-landing:strict": "bun scripts/check-adr-landing.ts --strict",
+    "check:adr-landing:enforce": "bun scripts/check-adr-landing.ts --enforce",
     "check:asset-structure": "bun scripts/check-asset-structure.ts",
     "check:versioned-docs": "bun scripts/check-versioned-docs.ts",
     "check:all": "bun run check:asset-structure && bun run check:naming && bun run check:md-canonical && bun run check:heading-skeleton && bun run check:md-fallback && bun run check:intent-types-drift && bun run check:no-langium && bun run check:adr-landing && bun run check:versioned-docs && bun run docs:boundary",
     "docs:boundary": "bun scripts/check-doc-boundary.ts",
-    "docs:dev": "vitepress dev docs",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:dev": "pnpm --filter @openxenon/docs dev",
+    "docs:build": "pnpm --filter @openxenon/docs build",
+    "docs:preview": "pnpm --filter @openxenon/docs preview"
   },
   "dependencies": {
     "citty": "^0.1.6",
@@ -78,8 +79,7 @@
     "bun-types": "^1.3.14",
     "eslint": "^10.5.0",
     "lefthook": "^2.1.9",
-    "typescript": "^5.9.3",
-    "vitepress": "^1.6.4"
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=18"
