@@ -113,6 +113,22 @@ export default defineConfig({
     /^\.?\.\/\.\.\/\d{4}-[a-z0-9-]+$/,
     // ADR 引向历史 .changes/ 路径（多级）
     /\.\.+\/\.changes\//,
+    // 仓库根 .archived/ 历史 ADR（frozen）
+    /\.\.+\/\.archived\//,
+    // 仓库根 .openxenon/drafts/ 历史设计稿（frozen，相对路径形式 ./../../openxenon/... 或 ./../openxenon/...）
+    /^\.\/\.\.\/\.\.\/openxenon\//,
+    /^\.\/\.\.\/openxenon\//,
+    /^\.\/\.openxenon\//,
+    // 仓库根 scripts/ 工具脚本
+    /\.\.+\/scripts\//,
+    // en 站点 cross-locale 链接（路径前缀 ./../../zh-cn/）
+    /^\.\/\.\.\/\.\.\/zh-cn\//,
+    // 路径错位的 index 链接（frozen ADR 中残留的目录引用；支持多级 path + 末尾 /index）
+    /^\.\/\.\.\/[^/]+\/[^/]+\/index$/,
+    /^\.\/\.\.\/\.\.\/[^/]+\/[^/]+\/index$/,
+    // RFC/ADR 历史引用 docs/adrs/（frozen 历史归档，已被合并/删除）
+    /^\.\/\.\.\/\.\.\/docs\/adrs\/2026-/,
+    /^\.\/\.\.\/\.\.\/adrs\/2026-/,
   ],
 
   // v0.7 重构：locale key 改 topic-first
@@ -130,7 +146,6 @@ export default defineConfig({
           { text: '规范 (RFC)', link: '/rfc/zh-cn/' },
           { text: '术语表', link: '/product/zh-cn/concepts/glossary.html' },
           { text: '快速开始', link: '/product/zh-cn/quickstart.html' },
-          { text: 'AI 入口', link: '/product/zh-cn/ai-entry.html' },
         ],
         sidebar: {
           '/product/zh-cn/': [
@@ -140,7 +155,6 @@ export default defineConfig({
                 { text: '产品手册首页', link: '/product/zh-cn/' },
                 { text: '介绍', link: '/product/zh-cn/introduction.html' },
                 { text: '快速开始', link: '/product/zh-cn/quickstart.html' },
-                { text: 'AI 协作者入口', link: '/product/zh-cn/ai-entry.html' },
                 { text: '常见问题', link: '/product/zh-cn/faq.html' },
                 { text: '路线图', link: '/product/zh-cn/roadmap.html' },
               ],
@@ -282,7 +296,6 @@ export default defineConfig({
         nav: [
           { text: 'Home', link: '/product/en/' },
           { text: 'Quickstart', link: '/product/en/quickstart.html' },
-          { text: 'AI Entry', link: '/product/en/llm-prompt.html' },
         ],
         sidebar: {
           '/product/en/': [
@@ -329,9 +342,6 @@ export default defineConfig({
                 { text: 'FAQ', link: '/product/en/faq.html' },
               ],
             },
-          ],
-          '/product/en/llm-prompt/': [
-            { text: 'AI Entry', items: [{ text: 'llm-prompt', link: '/product/en/llm-prompt.html' }] },
           ],
         },
       },

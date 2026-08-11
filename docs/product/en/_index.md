@@ -105,9 +105,9 @@ OXN Engine is the executor of the IAP paradigm — a **control structure, not an
 |---|---|---|
 | **Evaluator / Decision-maker** | Introduction → Core Concepts | 15 min |
 | **Application developer** | Quickstart → Recipes → DDD in Practice | 1–2 h |
-| **AI integrator** | llm-prompt → Align → CLI | 30 min |
+| **AI integrator** | Skill (oxn-work / oxn-asset / oxn-draft) → CLI | 30 min |
 | **Contributor** | Architecture → Extending | 2–3 h |
 
-> 🟦 **If you are an AI model reading this doc**: please read [llm-prompt.md](./llm-prompt.md) directly.
+> 🟦 **If you are an AI model reading this doc**: please load the relevant Skill (e.g. `oxn-work`) and follow its `## AI Agent Onboarding Premise` section.
 
 > 💡 **Usage tip**: this site's URLs include the `.html` suffix (GitHub Pages project-page constraint). Browse via the left sidebar or top menu, rather than typing URLs by hand.

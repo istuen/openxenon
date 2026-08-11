@@ -31,7 +31,7 @@ synced-at: 2026-08-08
 - 描述性情态——回答"怎么用 X"的文档；住 `docs/{product,dev}/{zh-cn,en}/*.md`；产品手册与开发手册。
 
 ### MetaModality
-- 项目工程元情态——回答"OXN 自己怎么组织"的文档；住仓库根 + `dev/` + `.changes/`。包含 5 类项目工程文档（README.md / AGENTS.md / CONTEXT-MAP.md / .changes/ / dev/）。**特例**：可与 Descriptive Modality 组合（README.md = marketing + 入口）；可与 Definitional Modality 组合（CONTEXT-MAP.md = 8 Domain 索引）。RFC-0018 锁定。
+- 项目工程元情态——回答"OXN 自己怎么组织"的文档；住仓库根 + `dev/` + `.changes/`。包含 4 类项目工程文档（README.md / AGENTS.md / .changes/ / dev/）。**特例**：可与 Descriptive Modality 组合（README.md = marketing + 入口）。v0.7+ RFC-0028 §D1 撤销 CONTEXT-MAP.md Meta 层归属，Meta 层入口由 AGENTS.md §AI Agent 唯一入口段统一承担。
 
 ## DocArch
 
@@ -148,9 +148,9 @@ synced-at: 2026-08-08
 - `.openxenon/drafts/rfc/` ADR/RFC 暂存 → 项目 Asset 禁止（应通过 docs/ 概念页）；
 - `docs/dev/` → `.openxenon/drafts/` 禁止（开发手册不可引用 ADR 暂存内部）；
 - **RFC → 项目工程元层禁止**（v0.3.0 新增，规定性不应依赖元入口）；
-- **产品手册 → 项目工程元层禁止**（v0.3.0 新增，README.md/AGENTS.md/.changes/dev 例外豁免通过 CONTEXT-MAP.md 入口）；
+- **产品手册 → 项目工程元层禁止**（v0.3.0 新增，README.md/AGENTS.md/.changes/dev 例外豁免通过 AGENTS.md 入口）；
 - **开发手册 → 项目工程元层禁止**（v0.3.0 新增）；
-- **Asset → 项目工程元层禁止**（v0.3.0 新增，CONTEXT-MAP.md 索引场景豁免）。
+- **Asset → 项目工程元层禁止**（v0.3.0 新增；v0.7.0 RFC-0028 §D3 撤销 CONTEXT-MAP.md 索引场景豁免）。
 
 ### ForbiddenMetaInternalCoupling
 - readme-to-rfc
@@ -184,10 +184,15 @@ synced-at: 2026-08-08
 ### Inv1Doc3Modalities
 - 文档三情态严格分离——Asset（定义性，回答"是什么"）+ RFC（规定性，回答"为什么决定"）+ Doc（描述性，回答"怎么用"），三者各居其位，互不依赖。三情态全集中的任意两情态组合是设计错误信号。
 
-### Inv2RfcIsSsot
-- RFC 是 OXN 项目的 SSOT——所有规定性内容（决策、约束、规则）必须落 RFC；不存 ADR + OXP 双层。
-- v0.7 起废除 OXP 双层机制，48 条 Adopted ADR 迁移为 8 主题 RFC + 4 meta-RFC。
-- v0.3.0 增补：CONTEXT-MAP.md 中的 R&N 32 术语对照迁至 RFC-0018 附录 A（规定性内容正确归位）。
+### Inv2RfcSotDecisionLayer
+- 🆕 v0.7.0 RFC-0029 D1 修订：原 "RFC 是 SSOT" 措辞改为 "RFC/ADR = 规定性决策记录层"；与 AGENTS.md 裁决规则对齐。
+- **RFC/ADR = 规定性决策记录层（why）**——回答"为什么决定 X"的文档；住 `docs/rfc/zh-cn/RFC-XXXX-<theme>.md`；frozen + errata 演进策略；中文 only。
+- **现行约束语义 SSOT = `.openxenon/assets/domains/*.md`**（Asset 结构 v2：## Group → ### Axiom → - Theorem）——AI Agent 在 Blueprint 闭包时实际消费的"约束定义层"。
+- **工程术语外部 SSOT = `docs/product/zh-cn/concepts/glossary.md`**（单页；由 `scripts/sync-domain-glossary.ts` 单向生成，Domain → glossary）。
+- **ADR 不再作为独立机制**——v0.7 起所有 ADR 已迁移为 RFC + Domain 落点（48 Adopted → 8 主题 RFC + 4 meta-RFC；6 Superseded → `.openxenon/.archived/docs/adrs/`）。后续决策走 RFC + Domain 路径。
+- **引用方向**：RFC/ADR 正文/related 引用 Domain 锚点作为约束解释（RFC → Domain 方向，RFC-0028 已开先例）；Domain 不反向引用 RFC/ADR（assets-no-docs 规则）。
+- v0.3.0 增补（保留）：CONTEXT-MAP.md 中的 R&N 32 术语对照迁至 RFC-0018 附录 A（已由 RFC-0028 整体回收）。
+- 本 Invariant 修订须由 RFC 授权（RFC-0029）；未来变更走 Draft → RFC promote 路径。
 
 ### Inv3BuiltinAssetTwoLayer
 - Built-in Asset 两层覆盖——`@oxn/` scope fallback（编译时内置）+ `@prj/` scope override（项目资产），后者优先。Phase 4 收窄为 probes + blueprints（D18）。
@@ -199,8 +204,9 @@ synced-at: 2026-08-08
 - 本域单向引用父域 oxn-domain——本域补父域未说的部分（项目工程元词汇）；不向下引用其他子域（oxn-engine-domain/oxn-asset-domain 等只作为术语引用，不作为 references 字段直接依赖）。
 
 ### Inv6Meta4Layer
-- 项目工程元层 4 类文档各居其位（v0.3.0 起；v0.4.0 D5+ 调整）——README.md / AGENTS.md / CONTEXT-MAP.md / .changes/ / dev/{fix,pool}/ 各自有 RFC-0018 锁定引用规则，互不混用。
+- 项目工程元层 4 类文档各居其位（v0.3.0 起；v0.4.0 D5+ 调整；v0.7.0 RFC-0028 §D1 撤销 CONTEXT-MAP.md）——README.md / AGENTS.md / .changes/ / dev/{fix,pool}/ 各自有 RFC-0018 锁定引用规则，互不混用。
 - 调整说明（v0.4.0 D5+）：`dev/versions/` 整体退役（RoadmapDeprecated）；`dev/pool/` 概念正名为 Goal；Version 回顾记录统一住 `.changes/`。
+- 调整说明（v0.7.0 RFC-0028）：CONTEXT-MAP.md 整体删除；Meta 层入口由 AGENTS.md §AI Agent 唯一入口段统一承担。
 - 例外：README.md 与 docs/product/zh-cn/introduction.md slogan 双向同步（v0.6.2-alpha.2 锁定）。
 
 ### Inv7ContextMapAssetIndexExempted
@@ -240,3 +246,12 @@ synced-at: 2026-08-08
 - `feat/v0.6.1` / `feat/v0.6.1-alpha.1` / `feat/v0.5-*` / `feat/v0.4-*`
 - `feat/v0.6-iap-refactor` / `feat/v0.5-proof-insight-loop`
 - 创建 `feat/gooal-<slug>` 强制约定：slug 必匹配 `<dev-pool-slug>`；D4 后 dev/pool/<slug>.md 即 Goal entry，branch 与 Goal 1:1 锁定（§2.4）。
+
+### Inv14AdrAcceptedLandingRequired
+- ADR Accepted 必须配套 filesystem 落地清单 + pre-commit 强制校验——ADR 接受（`Status: Accepted`）时**必须**在 frontmatter 结构化声明 filesystem 落地清单（`landing-files:`），并经 pre-commit 强制校验。落地不全 → 阻止 ADR Accepted。
+- **`landing-files` 语义**——Accepted ADR `landing-files` 不可为空（除非 `landing-reason: declarative`）；Draft/Superseded/Withdrawn ADR `landing-files` 可选；路径格式相对仓库根（与 git diff 一致）；多入口允许（ADR 可能影响多个文件）。
+- **`landing-reason` 豁免**——`declarative`（纯宣言无文件落地，如策略类 ADR）/ `external`（指向仓库外，如外部依赖升级不在本仓改）/ `postponed`（接受时未落地但有明确日期；超期需重新评估）。
+- **Decision 内容必须落 Domain**——`landing-files` 中至少一条路径为 `.openxenon/assets/domains/*.md`（决策落 Domain Axiom/Theorem 证明）；否则落地仅 filesystem 而非 SSOT，违反定义性 SSOT 原则。
+- **守门机制**——`scripts/check-adr-landing.ts`（pre-commit）扫描：Accepted + landing-files=[] + 无 landing-reason → 报错；对每条 landing-files 路径在 git diff（staged + unstaged）中匹配，无 diff → 报错。
+- **declarative 豁免门槛**——`landing-reason: declarative` 必须明确写（避免漏填）；纯术语正名类 ADR 可用此豁免（如 ADR-0066 同期 Domain 内容回迁已被 RFC-0027/0028 覆盖）。
+- **历史 ADR 不补**——存量 0066~0098 已 Accepted 不补 landing-files（ADR-0099 生效后未来 ADR 必须遵守）；回溯 audit 由 advisory 脚本处理。

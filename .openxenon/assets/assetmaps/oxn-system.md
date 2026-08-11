@@ -1,14 +1,15 @@
 ---
 entity: assetmap
-version: 3.1.0
+version: 3.2.0
 name: oxn-system
 abstract: |
-  OpenXenon scene-based routing v3.1: 6 builtin scenes (doc / dev / debug / test / release / onboard) map goals to Domain + Workflow + Blueprint (composition). AI Agent reads this Roadmap + calls oxn roadmap suggest --goal --scene to locate relevant Assets.
-  0.6.x+：文档按三情态分离（Asset/RFC/Doc），RFC 体系取代旧 ADR + OXP 双层；8 个 Domain + 12 RFC（8 主题 + 4 meta）为 AI 必读。
+  OpenXenon scene-based routing v3.2: 6 builtin scenes (doc / dev / debug / test / release / onboard) map goals to Domain + Workflow + Blueprint (composition). AI Agent reads this AssetMap + calls `oxn assetmap suggest --goal --scene` to locate relevant Assets.
+  v0.7+：文档按四层 SSOT 全景（Asset / RFC / Doc / Meta）组织，CONTEXT-MAP.md 已退役（RFC-0028）。8 个 oxn-* Domain（含 oxn-draft-domain）是定义性 SSOT，AI Agent 按 scene 按需引用，不存在固定必读清单。RFC-0001..0027 按 L3 回源引用（裁决冲突查 Domain Axiom，决策溯源查 RFC）。NpmSupplyChainAdvisory 是探索成果（入侵检测），不入常规索引。
   v3.0.0 (2026-08-08): 收编为 Asset 结构 v2（## Scenes + ## Usage + ## SceneQuickRef）；保留 roadmap 目录命名兼容 v0.7.4（RFC-0013 D4：代码枚举值仍为 `roadmap`，目录 `assetmaps/`）。
   v3.1.0 (2026-08-09): Axiom 正文简化——移除 inline 表格与 bash 代码块，每 Axiom 仅含 `- 一行/一段文字` bullets。
+  v3.2.0 (2026-08-10): 移除 "8 Domain + 12 RFC 必读" 陈旧表述（v0.7 RFC-0028 退役 CONTEXT-MAP + RFC-0018 §D1 简化裁决）；同步场景/导航/Usage 段。
 oxn-source-sha: d64d46c08cfc02bc3a20bd319d599a390f20d090
-synced-at: 2026-08-09
+synced-at: 2026-08-10
 ---
 
 # AssetMap: oxn-system
@@ -17,9 +18,9 @@ synced-at: 2026-08-09
 > AI Agent: `oxn assetmap suggest --goal "<goal>" --scene <scene>` for ranked matches.
 > After Asset create/edit: `oxn assetmap sync oxn-system --scene <scene> --dry-run` (manual hint, NOT auto-sync).
 >
-> 当前自举范围（2026-07-26 0.6.2-alpha.0 Phase 5）：**dev** 和 **doc** 是 2 个能自举跑起来的 scene；其余 4 个（debug/test/release/onboard）作为导航存在，引用已收敛到活跃 `oxn-*-domain` + 12 RFC。
+> 当前自举范围（2026-07-26 0.6.2-alpha.0 Phase 5；v0.7.0 巩固）：**dev** 和 **doc** 是 2 个能自举跑起来的 scene；其余 4 个（debug/test/release/onboard）作为导航存在，引用收敛到活跃 `oxn-*-domain`（8 个）+ RFC L3 回源（RFC-0001..0027 共 27 个，按需）。
 >
-> **0.6.x+ 文档架构**：RFC（规定性，12 个）取代旧 ADR + OXP 双层；详见 [RFC-0009 文档三情态分离](../../../../docs/rfc/zh-cn/RFC-0009-doc-three-modalities.html)。
+> **v0.7+ 文档架构**：RFC（规定性，27 个 + errata）取代旧 ADR + OXP 双层；四层 SSOT 全景（Asset / RFC / Doc / Meta）；详见 [RFC-0009 文档三情态分离](../../../../docs/rfc/zh-cn/RFC-0009-doc-three-modalities.html) + [RFC-0018 项目工程元层](../../../../docs/rfc/zh-cn/RFC-0018-project-engineering-meta.html) + [RFC-0028 CONTEXT-MAP 退役](../../../../docs/rfc/zh-cn/RFC-0028-context-map-deprecation.html)。
 
 ## Scenes
 

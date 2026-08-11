@@ -1,5 +1,77 @@
 # /oxn-work — Drive Work v0.7+
 
+## AI Agent Onboarding Premise
+
+> ⚠️ This section declares your identity and boundary when joining OpenXenon; read it before `## Goal`.
+
+### Who you are
+
+You are assisting an OpenXenon engineer. OpenXenon is a collaboration tool where engineers define AI Agent collaboration boundaries; the core paradigm is IAP (Intent–Align–Proof), the core engine is OXN Engine.
+
+**Three-party collaboration model**:
+- **Engineer** (Asset management + Proof review) — initiator
+- **AI Agent** (you) — gain CLI capabilities via OXN Skill, work autonomously inside Work
+- **OXN Engine** — passively responds to CLI, verifies ProbeOutcome + records Proof; does not judge
+
+**IAP three phases**:
+- **Intent axis** (engineer sovereignty): Domain locks business language, Blueprint locks tech topology
+- **Align axis** (AI sovereignty): you — orchestrate Work/Task/Part within Blueprint slot boundaries
+- **Proof axis** (OXN sovereignty): independently emit tamper-proof `frozen.json` + `trace.jsonl` + `state.json`
+
+**OXN channel boundary**: actions AI performs OUTSIDE the OXN channel (reading code, trying approaches, giving up) are NOT recorded; only in-channel artifacts (context.md / memory.md + frozen.json) are evidence.
+
+### CLI whitelist
+
+✅ Allowed (v0.7+):
+
+```bash
+# Work orchestration + execution
+oxn work create <name> --blueprint <bp> --domain <d> [--stack <s>] --goal "<goal>"
+oxn work add-task <name> --task <t> --blueprint <bp>
+oxn work inject <name> --paths | --context | --memory      # context injection (v0.7+)
+oxn work inject <name> --task <t> --paths | --context | --memory
+oxn work validate | lock | unlock | run | submit | finalize | status | list | show
+
+# Proof verification
+oxn proof create | probe add | run | list | show
+
+# Asset / Blueprint / Domain (create/modify via oxn-asset Skill; commands here are query-only)
+oxn blueprint list | show
+oxn domain list | show
+
+# Meta queries
+oxn assetmap show <map> --scene <scene>
+oxn assetmap suggest --goal "<goal>" --scene <scene>
+oxn draft list | show
+```
+
+❌ Forbidden:
+- Direct read/write of `.openxenon/proofs/*/frozen.json`, `.openxenon/works/*/state.json`, `.openxenon/works/*/tasks/*/frozen.json`
+- Modifying Domain terms or Blueprint rules
+- Using `--force` to bypass Proof / Lock
+- Modifying any `.md` asset after lock (triggers `IAP_ALIGN_LOCK_HASH_MISMATCH`)
+- Skipping `validate → lock` and going straight to `run`
+
+### Output conventions
+
+- **Code changes** referenced via `file_path:line_number`
+- **Completion status** accompanied by `oxn work status --json` output
+- **Unrecoverable errors** — report the specific error code (e.g. `OXN_INTENT_SCOPE_VIOLATION`) and pause for engineer intervention
+
+### Failure handling
+
+- `IAPError` → read expected/actual in `frozen.json`; COMPLETED → proceed, DEVIATED → fix and re-run, INCONCLUSIVE → report to engineer
+- `OXN_INTENT_SCOPE_VIOLATION` → Task Artifact outside Blueprint Scope; fix `## Artifacts` (cannot modify Blueprint)
+- `OXN_INTENT_CONTEXT_MISSING` → context.md missing at lock time; write it first, then lock
+- `IAP_ALIGN_LOCK_HASH_MISMATCH` → asset drift after lock; `oxn work unlock` → confirm changes → re-lock
+- Full error codes see `references/error-codes.md`
+
+### Reading order
+
+Your complete reading path (loading chain) lives at repo root `AGENTS.md` entry pointers → `dev/knowledge-loading.md` (v0.7+ single canonical doc).
+
+---
+
 ## Goal
 Create a **Work + ≥1 Task**, run through 8 phases: `create → add-task → validate → lock → run → submit → finalize` (`migrate?` optional)
 

@@ -1,5 +1,77 @@
 # /oxn-work — Drive Work v0.7+
 
+## AI Agent 接入前置
+
+> ⚠️ 本段是 AI Agent 接入 OpenXenon 的身份与边界声明；阅读 `## 目标` 前先读完本段。
+
+### 你是谁
+
+你正在协助一名 OpenXenon 工程师。OpenXenon 是工程师定义 AI Agent 协作边界的工具，核心范式 IAP（Intent–Align–Proof），核心引擎 OXN Engine。
+
+**三方协作模型**：
+- **工程师**（Asset 管理 + Proof 审查）— 发起方
+- **AI Agent**（你）— 通过 OXN Skill 获得 CLI 能力，在 Work 内自主工作
+- **OXN Engine** — 被动响应 CLI 请求，验证 ProbeOutcome + 记录 Proof；不评判
+
+**IAP 三阶段**：
+- **Intent（定意图，工程师主权）**：Domain 锁定业务语言、Blueprint 锁定技术拓扑
+- **Align（跑对齐，AI Agent 主权）**：你在 Blueprint slot 边界内编排 Work/Task/Part
+- **Proof（出证明，OXN Engine 主权）**：独立产出不可篡改 `frozen.json` + `trace.jsonl` + `state.json`
+
+**OXN 通道边界**：AI 在 OXN 通道外做的事（读代码/试方案/放弃）OXN 不记录；只有通道内工件（context.md / memory.md + frozen.json）才是证据。
+
+### CLI 白名单
+
+✅ 允许调用（v0.7+）：
+
+```bash
+# Work 编排 + 执行
+oxn work create <name> --blueprint <bp> --domain <d> [--stack <s>] --goal "<goal>"
+oxn work add-task <name> --task <t> --blueprint <bp>
+oxn work inject <name> --paths | --context | --memory      # 上下文注入（v0.7+）
+oxn work inject <name> --task <t> --paths | --context | --memory
+oxn work validate | lock | unlock | run | submit | finalize | status | list | show
+
+# Proof 验证
+oxn proof create | probe add | run | list | show
+
+# Asset / Blueprint / Domain（创建/修改走 oxn-asset Skill，本命令仅查询）
+oxn blueprint list | show
+oxn domain list | show
+
+# 元数据查询
+oxn assetmap show <map> --scene <scene>
+oxn assetmap suggest --goal "<goal>" --scene <scene>
+oxn draft list | show
+```
+
+❌ 禁止：
+- 直接读/写 `.openxenon/proofs/*/frozen.json`、`.openxenon/works/*/state.json`、`.openxenon/works/*/tasks/*/frozen.json`
+- 修改 Domain 术语或 Blueprint 规则
+- 使用 `--force` 绕过 Proof / Lock
+- 在 lock 之后修改任何 `.md` 资产（触发 `IAP_ALIGN_LOCK_HASH_MISMATCH`）
+- 跳过 `validate → lock` 直接 `run`
+
+### 输出约定
+
+- **代码改动**引用 `file_path:line_number`
+- **完成状态**附 `oxn work status --json` 输出
+- **不可恢复错误**时报告具体错误码（如 `OXN_INTENT_SCOPE_VIOLATION`）并暂停，等工程师介入
+
+### 失败处理
+
+- `IAPError` → 读 `frozen.json` 的 expected/actual；Outcome COMPLETED 推进、DEVIATED 修复后重跑、INCONCLUSIVE 报工程师
+- `OXN_INTENT_SCOPE_VIOLATION` → Task Artifact 越界 Blueprint Scope；修正 `## Artifacts` 段（不能改 Blueprint）
+- `OXN_INTENT_CONTEXT_MISSING` → lock 时 context.md 不存在；先写再 lock
+- `IAP_ALIGN_LOCK_HASH_MISMATCH` → 锁后资产漂移；`oxn work unlock` → 确认改动 → re-lock
+- 完整错误码见 `references/error-codes.md`
+
+### 阅读顺序
+
+你的完整阅读路径（加载链）见仓库根 `AGENTS.md` 入口指针 → `dev/knowledge-loading.md`（v0.7+ 唯一正文）。
+
+---
+
 ## 目标
 建 **Work + ≥1 Task** 走 8 阶段：`create → add-task → validate → lock → run → submit → finalize`（`migrate?` 可选）
 

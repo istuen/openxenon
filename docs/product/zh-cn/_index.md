@@ -20,4 +20,4 @@ title: 产品手册
 | **深入** | [E1-E4 四实体](./concepts/iap-paradigm) — Asset / Work / Proof / Insight | 30 分钟 |
 | **实战** | [实战案例](./practice/recipes) — 端到端可运行的工作流 | 按需 |
 | **参考** | [用户参考](./reference/cli-user-guide) — CLI / 模板 / 术语表 | 按需 |
-| **AI** | [AI 入口](./ai-entry) — AI Agent 协作者专用页 | 5 分钟 |
+| **AI** | AI 入口已并入 Skill（见仓库 `dev/knowledge-loading.md`） | — |
