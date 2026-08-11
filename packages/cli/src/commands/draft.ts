@@ -357,13 +357,17 @@ export default defineCommand({
       meta: {
         name: 'promote',
         description:
-          'Promote Draft → 3 类 Target（rfc / asset / work）。v0.6.2-alpha.3+ 走 draft-promote-router Blueprint。v0.6.3 NG6 起支持 --commit 实际写文件。',
+          'Promote Draft → 4 类 Target（rfc / asset / work / goal）。v0.6.2-alpha.3+ 走 draft-promote-router Blueprint。v0.6.3 NG6 起支持 --commit 实际写文件。v0.7.0+ --target work 废弃（OXN_DRAFT_TARGET_WORK_DEPRECATED），--target goal 需 --goal-slug。',
       },
       args: {
         name: { type: 'positional', required: true, description: 'Draft name（可省略 prefix）' },
         target: {
           type: 'string',
-          description: `显式覆盖 frontmatter promote-target。可选：auto | ${DRAFT_TARGETS.join(' | ')}。默认 auto（读 frontmatter）`,
+          description: `显式覆盖 frontmatter promote-target。可选：auto | ${DRAFT_TARGETS.filter((t) => t !== 'work').join(' | ')}（work v0.7.0+ 废弃）。默认 auto（读 frontmatter）`,
+        },
+        'goal-slug': {
+          type: 'string',
+          description: 'v0.7.0+: --target=goal 必填；kebab-case slug（用作 Goal id + branch 后缀 feat/goal-<slug>）',
         },
         'archive-after': { type: 'boolean', description: 'Promote 完成后自动 archive 原 Draft' },
         commit: {
@@ -383,10 +387,29 @@ export default defineCommand({
         const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
         const name = ctx.args.name as string
         const targetOverrideRaw = ctx.args.target as string | undefined
+        const goalSlugRaw = ctx.args['goal-slug'] as string | undefined
+        const goalSlug = !goalSlugRaw || goalSlugRaw === '' ? undefined : goalSlugRaw
         const archiveAfter = ctx.args['archive-after'] === true
         const commit = ctx.args.commit === true
         const force = ctx.args.force === true
         const targetDirOverride = ctx.args['target-dir'] as string | undefined
+
+        // v0.7.0 RFC-0026 D3: --target work 已废弃（破坏 Goal 承诺层 → npm 0.4 停 4 个月根因）
+        // 引导用户改用 --target goal 走 Goal 承诺层
+        if (targetOverrideRaw === 'work') {
+          outputUserInputError(
+            'OXN_DRAFT_TARGET_WORK_DEPRECATED',
+            `--target work 已废弃（RFC-0026 D3）。work 直达破坏 Goal 承诺层，导致版本失控。`,
+            {
+              suggestion:
+                '请改走 Goal 承诺层：\n' +
+                '  1. oxn draft promote --target goal --goal-slug <slug>\n' +
+                '  2. 然后 oxn goal work <slug> 创建 IAP Work\n' +
+                '见 RFC-0026 §D3 + oxn-draft-domain §DraftTarget。',
+            },
+          )
+          return
+        }
 
         const targetOverride: DraftTarget | 'auto' | undefined =
           !targetOverrideRaw || targetOverrideRaw === ''
@@ -398,7 +421,7 @@ export default defineCommand({
                 : (() => {
                     outputUserInputError(
                       'OXN_DRAFT_TARGET_INVALID',
-                      `Invalid --target "${targetOverrideRaw}". Valid: auto | ${DRAFT_TARGETS.join(', ')}`,
+                      `Invalid --target "${targetOverrideRaw}". Valid: auto | ${DRAFT_TARGETS.filter((t) => t !== 'work').join(', ')}（work v0.7.0+ 废弃）`,
                     )
                     return undefined
                   })()
@@ -410,6 +433,7 @@ export default defineCommand({
             projectRoot: getProjectRoot(),
             name,
             targetOverride,
+            goalSlug,
             archiveAfter,
             commit,
             force,
