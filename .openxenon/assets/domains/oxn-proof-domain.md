@@ -119,6 +119,9 @@ synced-at: 2026-08-09
 - design → Draft `design`
 - issue → Draft `issue`
 - 零信息损失；frontmatter `origin: insight` 标识 producer；`promote-target` 由工程师在 review 时选定。
+- **5 池吸收进 3 类 Draft**——Intent Pool v3 5 类原类型（research / design / issue / audit / journal）零信息损失地映射到 Draft 3 类（report / design / issue）；audit 与 journal 折叠入 report。
+- **Intent Pool v3 整体退役**——v0.4.0 D1 起；5 池机制（research/design/issue/audit/journal）由 Insight 改写 Draft 取代；详见 oxn-project-domain.md §Inv11IntentPoolV3Retired + oxn-draft-domain.md §DraftOrigin。
+- **手工 gate 不再单独层**——Insight 评审走 Draft review/discard；不再有独立的"pool review/approve/reject" CLI（`oxn pool *` 全部废弃，详见 oxn-cli-domain.md §ForbiddenConstructs）。
 
 ### TrustBaselineLadder
 - 信任基线分层——Probe 信任设计为 3 档分层，每层定义信任级别 + 升级路径 + 不可绕过性。

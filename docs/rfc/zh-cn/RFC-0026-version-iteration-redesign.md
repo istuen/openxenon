@@ -2,10 +2,29 @@
 entity: rfc
 id: RFC-0026
 theme: version-iteration-redesign
-status: Draft
+status: Accepted
 date: 2026-08-07
-synced-at: 2026-08-07
+accepted: 2026-08-11
+accepted-at: 2026-08-11
+supersedes: []
+superseded-by: ~
+landing-files:
+  - .openxenon/assets/domains/oxn-project-domain.md
+  - .openxenon/assets/domains/oxn-draft-domain.md
+  - .openxenon/assets/domains/oxn-cli-domain.md
+  - .openxenon/assets/domains/oxn-proof-domain.md
 landing-reason: declarative
+related:
+  - RFC-0027
+  - RFC-0028
+  - RFC-0029
+  - RFC-0030
+  - .openxenon/assets/domains/oxn-project-domain.md
+  - .openxenon/assets/domains/oxn-draft-domain.md
+  - .openxenon/assets/domains/oxn-cli-domain.md
+  - .openxenon/assets/domains/oxn-proof-domain.md
+  - AGENTS.md
+synced-at: 2026-08-11
 ---
 
 # Design: 版本迭代重设计（三层承诺流水线 · Goal-Centric Versioning）

@@ -304,6 +304,7 @@ v0.4.0（D1 2026-08-07）起禁止新建/引用——Intent Pool v3 退役并吸
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#forbiddenconstructs) — ignoreAssetLock
 - [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#forbiddenconstructs) — L2Domain
 - [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#forbiddenconstructs) — Resource
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#forbiddenconstructs) — oxn-pool-create
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#forbiddenconstructs) — WorkV0Layout
 
 ### ForbiddenCrossLayerImports
@@ -367,6 +368,7 @@ v0.4.0（D1 2026-08-07）起禁止新建/引用——Intent Pool v3 退役并吸
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#goal) — 承诺层规划单元——1:1 锁定一个 IAP 准备分支（`feat/goal-&lt;slug&gt;`）+ 一份 Work + 一个清晰边界。
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#goal) — Goal CLI 子命令集（v0.6.0 起 5 子命令）：
 
 ### Hall
 
@@ -1691,6 +1693,7 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 
 - [oxn-project-domain](/openxenon/assets/domains/oxn-project-domain.md#version) — 回顾性发布记录——cut 时诞生，**frozen-at-cut**；住 `.changes/0-X-Y-&lt;theme&gt;.md`；`status: released`。
+- [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#version) — Version CLI 子命令集（v0.6.0 起 4 子命令）：
 
 ### VersionHygiene
 

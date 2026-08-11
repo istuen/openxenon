@@ -61,6 +61,40 @@ synced-at: 2026-08-08
 - **2 层配置**——OXnConfig（系统级，git ignored）+ ProjectConfig（项目级，git tracked）；详见 Inv11ConfigTwoLayer。
 - **走 oxn-config 包**——CLI 顶层统一走 `oxn-config` 包；不允许直接读 .oxnrc 字符串拼接（详见 Inv13OxnConfigPackage）。
 
+### Goal
+- Goal CLI 子命令集（v0.6.0 起 5 子命令）：
+- `oxn goal create <slug>`：创建 Goal entry（写 `dev/pool/<slug>.md` + 自动 `git checkout -b feat/goal-<slug> dev`）。
+- `oxn goal list [--status <s>]`：列出 Goal 按 status 过滤。
+- `oxn goal show <slug>`：显示 Goal 详情。
+- `oxn goal work <slug> [--blueprint <bp>]`：创建 Goal 对应 Work（自动选 Blueprint）。
+- `oxn goal archive <slug>`：Goal 归档。
+- `oxn goal validate`：frontmatter 必填字段校验。
+- 物理实现：`packages/cli/src/commands/goal.ts`。
+- **branch 强一致**——CLI 校验 `branch: feat/goal-<slug>` 与文件名一致；`feat/gooal-<slug>` 拼写错误属 commit 阻断项。
+
+### Version
+- Version CLI 子命令集（v0.6.0 起 4 子命令）：
+- `oxn version cut [--trigger done|change|schedule] [--dry-run]`：触发 cut；走 release-cut workflow 6-slot。
+- `oxn version list [--since <date>]`：列出已发布 Version（按日期过滤）。
+- `oxn version show <version>`：显示 Version 详情（goals/works 列表）。
+- `oxn version status <version>`：显示 Goal/Work 状态聚合。
+- 物理实现：`packages/cli/src/commands/version.ts`。
+- **release-cut 联动**——cut 命令触发后调 release-cut workflow 的 6-slot 流水线（详见 `release-cut.md`）。
+
+## Forbidden
+
+### ForbiddenConstructs
+- oxn-pool-create
+- oxn-pool-list
+- oxn-pool-review
+- oxn-pool-approve
+- oxn-pool-reject
+- oxn-draft-promote-target-work
+- OXN_POOL_DEPRECATED（已禁用错误码，1 版本兼容期后移除）
+- OXN_DRAFT_TARGET_WORK_DEPRECATED（已禁用错误码）
+
+- desc: v0.7.0 三层承诺流水线（Draft → Goal → Version）落地配套禁用——`oxn pool *` 5 子命令全部废弃（Intent Pool v3 退役，由 Draft origin=insight 替代），`oxn draft promote --target work` 改为报 OXN_DRAFT_TARGET_WORK_DEPRECATED 引导走 goal；兼容期 1 版本（v0.6.x → v0.7.0 期间报 deprecation warning），v0.8.0 彻底移除 CLI 命令 + 引擎层 writePoolEntry 等 util；DraftType 强制 3 类（report/issue/design）已由 oxn-draft-domain.md §ForbiddenDraftPrefixV060D46 锁定，本域不重复。
+
 ## Boundary
 
 ### Inv1CliDecomposition

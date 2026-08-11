@@ -45,12 +45,14 @@ synced-at: 2026-08-09
 - Draft Promote 路由去向——4 值枚举（v0.5.0 D2 起；Q-T1 + D2）：
 - `rfc`：目标为 RFC（落盘 docs/rfcs/zh-cn/RFC-XXXX-<theme>.md），由 promote-target-aware-workflow Blueprint 路由。
 - `asset`：目标为 5 类 Asset（落盘 .openxenon/assets/{kind}/{name}.md），按 `--kind` 分支。
-- `work`：目标为 Work（落盘 .openxenon/works/<id>/work.md），不细分子类型（v0.6.0 D3 起 draft-promote --target=work 拒收，引导走 goal → `oxn goal work`）。
+- `work`：目标为 Work（落盘 .openxenon/works/<id>/work.md），**v0.6.0 D3 起 draft-promote --target=work 拒收**，报 `OXN_DRAFT_TARGET_WORK_DEPRECATED`，引导走 goal → `oxn goal work`（D3 决策）。
 - `goal`（v0.5.0 新增）：目标为 Goal（落盘 dev/pool/<slug>.md），promote 完成后 auto `git checkout -b feat/goal-<slug> dev`。
 - Goal = 规划期承诺单元；与 DraftTarget=work 区别：work=IAP 执行（多轮），goal=IAP 准备（单 commitment）。
 - physical isolation：dev/pool/ 是 dev/ 元层（v0.6.2-alpha.2 起治理）；.openxenon/works/ 是 .openxenon 边界。
 - 物理载体：Draft 文件 frontmatter `promote-target: <rfc|asset|work|goal>`（v0.6.2-alpha.3 起，可选）。
 - 路由规则：详见 `## PromoteRoute` 段 §TargetDispatchTable（v0.5.0 起 8 sub-target）。
+- **D2 --target goal 升华路径**——`oxn draft promote --target goal --goal-slug=<s>` 从 Draft 升华；4 阶段生命周期；dispatch 后 auto `git checkout -b feat/goal-<slug> dev`；源 Draft 不变（promote 是 copy）。
+- **D3 --target work 拒收**——`work` target 报 `OXN_DRAFT_TARGET_WORK_DEPRECATED` 错误码 + 引导提示走 `--target goal`；快捷途径破坏 Goal 承诺层导致版本失控（npm 0.4 停 4 个月根因）。
 
 ### DraftSkeleton
 - per-target 模板——含 frontmatter（必填字段占位）+ H2 段（按目标类型，例如 RFC 的 `## 决策` / Domain 的 `## Terms`）+ TODO 占位。
@@ -68,6 +70,8 @@ synced-at: 2026-08-09
 - origin 不影响 promote 路由（仍是 rfc/asset/work 3 类），仅标识 producer；
 - list 可按 `oxn draft list --origin=insight` 过滤（CLI v0.4.0 新增 flag）。
 - Origin 不参与 AssetLifecycle（不参与 citations）；仅 Draft 内部 metadata。
+- **D1 Insight → Draft 通路**——Intent Pool v3 退役后，Insight 不再单独成池；改为创建 Draft（`origin: insight`），由 Draft lifecycle 承载 review/discard。
+- **insight → human 不可逆**——`origin: insight` 是追溯链标记；不允许工程师手动改为 human（避免 producer 链断裂）。
 
 ### Skeleton
 - per-target 模板文件的实体类型（v0.6.3 Q1 新增）。

@@ -78,6 +78,8 @@ synced-at: 2026-08-08
 - **frozen-at-cut**——Version 在 cut 时诞生即冻结；后续修改必须新建 Version 而非编辑历史 Version。
 - **frontmatter 9 字段强校验**——`version` / `date` / `type` / `status` / `theme` / `goals[]` / `works[]` / `tag` / `branch` 全部必填；缺任一 → 阻止 cut。
 - **release-cut workflow 6-slot**——(1) pre-cut-check (2) cut-record (3) tag-create (4) post-publish-bump (5) changelog-aggregate (6) close-feat-branch；详见 `release-cut.md`。
+- **Forcing Function a+b+c**——Version cut 由 3 触发器驱动：(a) 时间节奏（默认 1 周）/ (b) 最小 Goal 完成（Work finalized + Domain proof PASS）/ (c) Goal 变更（scope 蔓延或方向偏移）。任一触发即 cut。
+- **Cut 必走 dry-run**——自动 cadence（cron / GitHub Actions）首次 cut 前人工 ack；后续 `oxn version cut --dry-run` 强制必走。
 
 ### Goal
 - 承诺层规划单元——1:1 锁定一个 IAP 准备分支（`feat/goal-<slug>`）+ 一份 Work + 一个清晰边界。
@@ -101,6 +103,9 @@ synced-at: 2026-08-08
 - **Goal 1:1 锁定 feat-branch**——`branch: feat/goal-<slug>` 强一致；CLI 校验；`feat/gooal-<slug>` 拼写错误属 commit 阻断项。
 - **Goal 晚绑 Version**——frontmatter 不含 `version` 字段（`scheduled-version: ~`）；Version cut 时才绑定；详见 Inv12GoalVersionRename。
 - **Goal 完成 → 下一个 Goal**——Goal status=done 触发 release-cut 评估；不强制 cut（cut 由 forcing function 驱动）。
+- **D2 Draft 升华路径**——`oxn draft promote --target goal --goal-slug=<s>` 从 Draft 升华；4 阶段生命周期（gather → validate-skeleton → fork-missing → dispatch-target）；dispatch 后自动 `git checkout -b feat/goal-<slug> dev`；源 Draft 不变（promote 是 copy 不是 state transition）。
+- **D3 --target work 废弃**——`oxn draft promote --target work` 报 `OXN_DRAFT_TARGET_WORK_DEPRECATED` 引导走 Goal；快捷途径破坏 Goal 承诺层导致版本失控（npm 0.4 停 4 个月根因）。
+- **D4 dev/pool 迁移完成**——10 entries（2026-08-07 确认）已全部加 `branch: feat/goal-<slug>` + `source: direct` + `scheduled-version: ~`；概念正名 PlanningPool → Goal。
 
 ### RoadmapDeprecated
 - Roadmap 概念已退役（v0.4.0 / D5+ 2026-08-07）—— 设计稿 `.openxenon/drafts/design-version-iteration-redesign.md` §2.2 决策。
@@ -251,6 +256,8 @@ synced-at: 2026-08-08
 - `feat/v0.6.1` / `feat/v0.6.1-alpha.1` / `feat/v0.5-*` / `feat/v0.4-*`
 - `feat/v0.6-iap-refactor` / `feat/v0.5-proof-insight-loop`
 - 创建 `feat/gooal-<slug>` 强制约定：slug 必匹配 `<dev-pool-slug>`；D4 后 dev/pool/<slug>.md 即 Goal entry，branch 与 Goal 1:1 锁定（§2.4）。
+- **main 仅接收 dev merge**——main 只接受从 dev 来的 merge commit + tag；禁止从 feat/* 直 merge 到 main。
+- **dev 是所有 Goal 分支源头**——未来所有 `feat/goal-<slug>` 必须从 dev 拉；老 `feat/v0.X` 分支不再接受新 commit（已归档）。
 
 ### Inv14AdrAcceptedLandingRequired
 - ADR Accepted 必须配套 filesystem 落地清单 + pre-commit 强制校验——ADR 接受（`Status: Accepted`）时**必须**在 frontmatter 结构化声明 filesystem 落地清单（`landing-files:`），并经 pre-commit 强制校验。落地不全 → 阻止 ADR Accepted。
