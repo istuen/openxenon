@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-012: Runtime 适配层（Node 18+ 兜底 + Bun 加速）
 
 > **状态**：Accepted

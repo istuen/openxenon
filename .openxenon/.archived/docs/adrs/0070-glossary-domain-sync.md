@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-22
 supersedes: null
 superseded-by: null
@@ -10,6 +10,8 @@ related:
   - .openxenon/assets/domains/
   - docs/glossary/zh-cn/
   - .openxenon/assets/workflows/doc-author.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0070: Glossary ↔ Domain 同步机制

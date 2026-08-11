@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-17
 supersedes: null
 superseded-by: null
@@ -12,13 +12,17 @@ related:
   - .openxenon/docs/adrs/0060-domain-vocabulary-boundary.md
   - .openxenon/assets/blueprints/oxn-blueprint.md
   - .openxenon/works/v073-ideal-data-flow/work.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0061: Blueprint → Work → Task 数据流契约
 
+<!-- allow-version -->
 > **状态**：✅ Accepted + **P0-P8 全落地 (v0.7.3 GA, 2026-07-17)**
 > **日期**：2026-07-17
 > **来源**：[v0.7.3-ideal-data-flow-rfc §2 + §3](../../rfcs/v0.7.3-ideal-data-flow-rfc.md)
+<!-- /allow-version -->
 > **影响层**：L2-Work（`packages/engine/src/Work/`）+ L2-Proof（`packages/engine/src/Proof/`）+ L1-OXL（`packages/engine/src/oxl/summary-extractors.ts`）
 > **承接 Work**：[`v073-ideal-data-flow`](../../../works/v073-ideal-data-flow/work.md)
 
@@ -36,11 +40,15 @@ related:
 | **D6** | `## Refs` legacy `kind: domain` 软警告 | `detectLegacyDomainRefs` + `OXN_WORK_LEGACY_DOMAIN_REF` (软警告) | P7 GA |
 | **D7** | PlanLock hash 公式不动 + work-context-builder 读 blueprints.json | `loadPerWorkBlueprints` + `summarizeBlueprints` + `loadDomainLanguagesFromBlueprint` | P1 alpha.2 |
 
+<!-- allow-version -->
 依据：[v0.7.3 理想态数据流 RFC §4 Phased Landing](../../rfcs/v0.7.3-ideal-data-flow-rfc.md) + [changelog](../../changes/0-7-3-ideal-data-flow.md)
+<!-- /allow-version -->
 
 ## 背景
 
+<!-- allow-version -->
 v0.6.1 ADR-0055 已规定 Work `## Refs` 只接受 `kind: blueprint`，Domain/Workflow/Stack 通过 Blueprint 间接引用。v0.7.0 ADR-0060 D4 又规定同名特性词（如 OXL）可在 root + 多个子 Domain 多视角共存。但 runtime 实现层未跟上：
+<!-- /allow-version -->
 
 1. **F1**：`work-context-builder.ts` 不读 `blueprints.json`，BlueprintIR 完全不进 runtime
 2. **F2**：`work-context-builder.ts:209-223` 只读 Domain `externals`，丢弃 `language{terms,bans,invariants}`
@@ -86,10 +94,12 @@ Workflow `## Slots` 形成 slot DAG（slot.deps）；Task `## Tasks` 内每个 t
 ADR-0055 已规定 Work `## Refs` 只接受 `kind: blueprint`，但 `trust-closure/work.md` 等历史 Work 仍有 `kind: domain`。
 
 方案：
+<!-- allow-version -->
 - v0.7.3 lock 期：检测到 `kind: domain` 触发 `OXN_WORK_LEGACY_DOMAIN_REF` 软警告（不阻断 lock，记录到 diagnostics）
 - v0.8.0 lock 期：硬阻断（`IAP_INTENT_LEGACY_DOMAIN_REF_BLOCKED`）
 
 理由：给历史 Work 一个 migrate 窗口；不立即 hard cut 防止 v0.7.3 release 阻碍。
+<!-- /allow-version -->
 
 ### D7：PlanLock hash 公式扩展 — 不动公式【a】
 
@@ -113,12 +123,15 @@ ADR-0055 已规定 Work `## Refs` 只接受 `kind: blueprint`，但 `trust-closu
 - **P3 多视角冲击**：未做 §5.1 缓解策略时可达 +8000 tok/Task → 需 CLI `--context-mode lean` 切回单视角
 - **P5 DAG 校验过严**：`trust-closure` 等历史 Work 的 task DAG 可能违反 slot DAG → 需 `--skip-workflow-dag-check` escape hatch
 - **P6 Stack 注入副作用**：Probe 结果可复现性需验证（仅注入 `version`/`timeout`/`lockfile` 三项环境元数据，不动 `command` 主参数）
+<!-- allow-version -->
 - **D6 deprecation 窗口**：trust-closure 等历史 Work 的 `kind: domain` ref 在 v0.7.3 仅 warn，v0.8.0 hard cut → 需提前 migrate
 
 ### 落地路径（v0.7.3 Phased Landing）
+<!-- /allow-version -->
 
 | Phase | 内容 | 版本 |
 |---|---|---|
+<!-- allow-version -->
 | P0 | RFC 定稿 + 本 ADR 立法 | v0.7.3-alpha.1 |
 | P1 | `work-context-builder.ts` 读 `blueprints.json`，注入 `BlueprintIR` + 边界 Domain IR（F1+F2） | v0.7.3-alpha.2 |
 | P2 | Domain 注入路径 regex → mdast 切换（修 `## Terms:` 后缀 + multiline `- desc: \|` 两个 bug） | v0.7.3-alpha.2 |
@@ -128,6 +141,7 @@ ADR-0055 已规定 Work `## Refs` 只接受 `kind: blueprint`，但 `trust-closu
 | P6 | Stack.tools 注入 ProbeRunner（D5） | v0.7.3-beta.1 |
 | P7 | Work `## Refs` 旧 `kind: domain` deprecation warn（D6） | v0.7.3 |
 | P8 | ADR-0054/0055/0060 标注"runtime 已实现"（移除纸面规范标记） | v0.7.3 |
+<!-- /allow-version -->
 
 ### Token 预算缓解策略（P3 实现）
 
@@ -148,7 +162,9 @@ ADR-0055 已规定 Work `## Refs` 只接受 `kind: blueprint`，但 `trust-closu
 ## 跨引用
 
 - 上游 ADR：[ADR-0054 三边界框架](./0054-three-boundary-framework.md) + [ADR-0055 Blueprint 组合模板](./0055-blueprint-as-composition-template.md) + [ADR-0060 Domain 词汇边界](./0060-domain-vocabulary-boundary.md)
+<!-- allow-version -->
 - 落地 RFC：[v0.7.3-ideal-data-flow-rfc](../../rfcs/v0.7.3-ideal-data-flow-rfc.md)
+<!-- /allow-version -->
 - 承接 Work：[`v073-ideal-data-flow`](../../../works/v073-ideal-data-flow/work.md)
 - 受影响文件：
   - `packages/engine/src/Work/work-context-builder.ts`

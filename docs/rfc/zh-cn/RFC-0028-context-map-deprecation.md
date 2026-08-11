@@ -17,6 +17,7 @@ related:
   - .openxenon/assets/domains/oxn-proof-domain.md
   - AGENTS.md
 synced-at: 2026-08-10
+landing-reason: declarative
 ---
 
 # RFC-0028: CONTEXT-MAP.md 退役

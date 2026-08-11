@@ -53,7 +53,7 @@ synced-at: 2026-08-08
 ### OpenXenonThreePartyCollaboration
 - 协作三方模型：工程师 = 发起方（Asset 管理 + 审查 Proof）/ AI Agent = 发起方（Work 内自主工作回路）/ OXN Engine = 接收方（被动响应 CLI 请求，验证 ProbeOutcome + 记录 Proof）。
 - CLI 能力完全对称：同一套 `oxn` 命令，工程师与 AI Agent 都能调用。
-- OXN Engine 不是智能体，是确定性参照系（Referent，ADR-0072）。
+- OXN Engine 不是智能体，是确定性参照系（Referent）。
 
 ### IAPClosedLoop
 - Intent + Align + Proof 三相闭环：工程师定义意图（Intent），AI Agent 对齐执行（Align），OXN 验证记录（Proof）。
@@ -61,6 +61,6 @@ synced-at: 2026-08-08
 - 与 `oxn-work-domain §IAP 三阶段` 同义（同一对象不同视角）。
 
 ### PerformanceMeasureNotEnforced
-- PEAS P 故意外包给工程师——OXN 由 ADR-0066/0067 立法"彻底不判"，不做性能度量最大化。
+- PEAS P 故意外包给工程师——OXN 立法"彻底不判"，不做性能度量最大化。
 - outcome 聚合结构只提供各状态 Probe 数量，不聚合判定"整体合格/失败"。判定权归工程师。
 - R&N 对照：R&N 假定 agent 自带性能度量并最大化；OXN 的 P 不在系统内，在工程师脑子里。

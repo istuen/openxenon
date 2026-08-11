@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0053: Superseded ADR-0048（library/external Asset 类型收敛）
 
 > **状态**：⛔ Superseded

@@ -9,6 +9,7 @@ superseded-by: ~
 related:
   - .openxenon/drafts/rfc-migration-master-plan.md
 synced-at: 2026-07-26
+landing-reason: declarative
 ---
 
 # RFC-0009: 文档三情态分离——Asset / RFC / Doc

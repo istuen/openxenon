@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-23
 supersedes: null
 supeded-by: null
@@ -10,6 +10,8 @@ related:
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
   - .openxenon/drafts/rfc/0074-insight-ingredient-not-reasoner.md
   - .openxenon/CONTEXT-MAP.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0077: Utility 归属 AI；OXN 的机制是目标→边界参照转换

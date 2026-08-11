@@ -10,6 +10,7 @@ related:
   - ADR-0023: docs/adrs/0023-at-addressing-no-arrow-pointer.md
   - ADR-0030: docs/adrs/0030-term-cross-reference-upstream-dag.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0006: `@` 一贯寻址哲学 + `->` 伪指针否决

@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0027: Domain 作为 SSOT 的工程化治理
 
 > **来源**：`docs_tmp/ssot-domain-1.md` (2026-06-17)
@@ -26,7 +33,9 @@ Domain 不只是 DSL 资产，也是 **SSOT（Single Source of Truth）**：领�
 ## 候选落地
 
 - `docs/zh-cn/core-concepts.md` §Domain 作为 SSOT 段落
+<!-- allow-version -->
 - v0.7-emergence RFC：Anchor/Slot 文档绑定机制
+<!-- /allow-version -->
 
 ## 参考
 

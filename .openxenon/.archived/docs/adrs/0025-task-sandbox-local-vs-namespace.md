@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0025: Task 沙箱豁免 + `./` vs `@` namespace 纪律
 
 > **来源**：`docs_tmp/task-oxn-2.md`, `task-oxn-3.md` (2026-05-22)

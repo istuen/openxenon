@@ -1,8 +1,17 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0028: ResourcePort（外部服务虚拟 FS）+ CachePort + WorkSnapshot（待办）
 
 > **来源**：`docs_tmp/mirage-1.md` (2026-06-11)
 > **抽取日**：2026-07-04
+<!-- allow-version -->
 > **状态**：Proposed → v0.7-emergence 待办
+<!-- /allow-version -->
 > **影响层**：L1-Infra
 
 ## 决策（提案）
@@ -43,7 +52,9 @@ interface WorkSnapshot {
 ## 当前状态
 
 - ❌ 均未实现
+<!-- allow-version -->
 - 🔗 候选落地：v0.7-emergence RFC 增补 §Future Work
+<!-- /allow-version -->
 - 🔗 `packages/sdk` 嵌入式 SDK 路径可在 monorepo split 时承接
 
 ## 参考

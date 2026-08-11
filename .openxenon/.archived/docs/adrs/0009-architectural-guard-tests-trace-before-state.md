@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0009: 架构守护测试模式 + Trace-before-State 写入顺序
 
 > **来源**：`docs_tmp/kernel-test-3.md` (2026-05-28)

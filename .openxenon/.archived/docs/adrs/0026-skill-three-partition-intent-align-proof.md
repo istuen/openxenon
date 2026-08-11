@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0026: Skills 三分（oxn-intent / oxn-align / oxn-proof）
 
 > **来源**：`docs_tmp/ssot-domain-1.md` (2026-06-17)
@@ -30,7 +37,9 @@ AGENTS.md 当前已落实：
 ## 候选落地
 
 - `AGENTS.md` Skills 段增补 /oxn-intent 说明
+<!-- allow-version -->
 - `.opencode/skills/oxn-intent/SKILL.md` 新增（v0.7+）
+<!-- /allow-version -->
 
 ## 参考
 

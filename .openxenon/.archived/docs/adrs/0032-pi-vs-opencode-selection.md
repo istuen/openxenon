@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0032: Pi vs OpenCode 选型最终结论（避免反复讨论）
 
 > **来源**：`docs_tmp/harness-1.md`, `harness-3.md` (2026-07-02)

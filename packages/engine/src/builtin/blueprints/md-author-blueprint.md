@@ -3,7 +3,7 @@ entity: blueprint
 version: 0.1.0
 name: md-author-blueprint
 abstract: |
-  MD 文档编写组合模板（4 part）。OXN 项目消费者 onboarding 5 起手 Asset 之一（ADR-0089 D1）。
+  MD 文档编写组合模板（4 part）。OXN 项目消费者 onboarding 5 起手 Asset 之一。
   引用 doc-md-domain（词汇）+ md-author-workflow（执行）+ md-stack（实现）。
   与 OXN 自身 dev-workflow / doc-author Blueprint 兼容。
 references:
@@ -18,7 +18,7 @@ synced-at: 2026-08-04
 
 > MD 文档编写组合模板。OXN 内置 5 起手 Asset 之一。
 > 4 part（write-doc / edit-doc / validate-doc / publish-doc）覆盖文档全生命周期。
-> Skill 场景标识：与 `/oxn-work` Skill 配合，AI 通过此 Blueprint 标识**文档编写场景**（ADR-0089 D6）。
+> Skill 场景标识：与 `/oxn-work` Skill 配合，AI 通过此 Blueprint 标识**文档编写场景**。
 
 ## Use
 

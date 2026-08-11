@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-21
 supersedes: null
 superseded-by: null
@@ -12,6 +12,8 @@ related:
   - .openxenon/docs/adrs/0057-trust-chain-core-model.md
   - .openxenon/assets/domains/oxn-proof-domain.md
   - .openxenon/assets/domains/oxn-engine-domain.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0067: 彻底不判原则的代码贯彻

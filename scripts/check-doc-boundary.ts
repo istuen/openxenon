@@ -138,7 +138,7 @@ const RULES: BoundaryRule[] = [
     description: 'docs/rfc/ 不可引用 docs/product/（规定性应独立可读；例外 glossary）',
     sourcePattern: /^docs\/rfc\//,
     targetPattern: /^docs\/product\//,
-    targetExempt: /^docs\/product\/zh-cn\/concepts\/glossary\.html(#.*)?$/,
+    targetExempt: /^docs\/product\/zh-cn\/concepts\/glossary\.(html|md)(#.*)?$/,
     message: 'RFC（规定性）不应引用 product 手册（描述性）',
   },
   {

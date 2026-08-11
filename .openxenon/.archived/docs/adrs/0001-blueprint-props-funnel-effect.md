@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0001: Blueprint props 漏斗效应 + 三层默认值优先级
 
 > **来源**：`docs_tmp/blueprint5.md` (2026-05-19)

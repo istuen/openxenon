@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0003: 运行期隔离 + frozen 命名规则（不带源格式后缀）
 
 > **来源**：`docs_tmp/oxn-grammer2.md` (2026-05-20)

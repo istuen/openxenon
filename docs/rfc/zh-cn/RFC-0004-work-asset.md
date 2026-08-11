@@ -22,6 +22,7 @@ related:
   - ADR-0075: docs/adrs/0075-round-loop-as-ai-search-record.md
   - ADR-012: docs/adrs/012-runtime-adapter.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0004: Work / Asset 体系——三边界框架 + Blueprint 组合 + 数据流契约

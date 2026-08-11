@@ -1,6 +1,15 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0048: library/ + external/ 子目录设计（外部信息引入）
 
+<!-- allow-version -->
 > **来源**：v0.6.3 Asset Paper Schema RFC §1.2
+<!-- /allow-version -->
 > **抽取日**：2026-07-05
 > **状态**：⛔ Superseded（由 three-boundary-blueprint-elevation-rfc.md 触发；library 降级为 .md、external 收敛为边界内 inline）
 > **superseded-by**：[ADR-0053](./0053-superseded-0048-library-external-scheme.md)（记录废弃）+ [ADR-0056](./0056-external-inline-and-status.md)（接管 External inline）
@@ -82,7 +91,9 @@ $ oxn external add --name github-issues \
 - ✅ 外部信息通过 Work 路径引入，保留 IAP 闭环
 - ✅ library/ 提供"已消化"的稳定内容（KV Cache 友好）
 - ✅ external/ 提供"按需 fetch"的临时引用（节省存储）
+<!-- allow-version -->
 - ✅ 完全替代 v0.7.x Memory RFC 的 L3 角色
+<!-- /allow-version -->
 - ⚠ library/ 需限制 size < 50KB（防止 Asset 变成 dumps）
 - 🔗 关联 ADR-0051（Asset 论文结构 + 引用计数）
 
@@ -95,6 +106,8 @@ $ oxn external add --name github-issues \
 
 ## 参考
 
+<!-- allow-version -->
 - v0.6.3 Asset Paper Schema RFC §1.2
+<!-- /allow-version -->
 - ADR-0051 Asset-as-Paper 论文结构
 - harness-3.md §Memory 层（重新定位为 library 路径）

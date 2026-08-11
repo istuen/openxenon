@@ -9,6 +9,7 @@ superseded-by: ~
 related:
   - .openxenon/drafts/rfc-migration-master-plan.md
 synced-at: 2026-07-26
+landing-reason: declarative
 ---
 
 # RFC-0010: RFC frozen + errata 演进策略

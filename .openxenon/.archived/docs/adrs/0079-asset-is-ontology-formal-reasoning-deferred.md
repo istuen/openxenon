@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-23
 supersedes: null
 superseded-by: null
@@ -11,6 +11,8 @@ related:
   - .openxenon/drafts/rfc/0077-utility-owns-ai-oxn-converts-goal-to-boundary.md
   - .openxenon/drafts/rfc/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md
   - .openxenon/CONTEXT-MAP.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0079: Asset 全体是 Ontology；OXN 形式化推理能力保留不实现

@@ -18,6 +18,7 @@ related:
   - .openxenon/assets/domains/oxn-project-domain.md
   - AGENTS.md
 synced-at: 2026-08-05
+landing-reason: declarative
 ---
 
 # RFC-0018: 项目工程元层与 SSOT 全景
@@ -242,6 +243,27 @@ OXN 文档架构从 RFC-0009 的三情态（Asset / RFC / Doc）扩展为**四�
 | dev/{versions,fix,pool}/ | 前瞻 Roadmap + 修复记录 + 规划池 | 核心开发者 |
 
 > 历史：CONTEXT-MAP.md（2026-06 至 2026-08 服役）作为 8 Domain 索引 + 核心术语锐化入口已于 2026-08-10 由 RFC-0028 §D1 整体删除；其内容已分别回迁各 Domain 文件与本 RFC 附录 A。
+
+<!-- allow-version -->
+
+### v0.4 (2026-08-11) — RFC-0029 + RFC-0030 收尾修订
+
+<!-- /allow-version -->
+
+- **背景**：RFC-0029 D1 修订 `oxn-project-domain.md §Inv2RfcSotDecisionLayer` 语义（"RFC 是 SSOT" → "RFC/ADR = why 记录层"）；RFC-0030 D1 物理归档 87 历史 ADR 至 `.openxenon/.archived/docs/adrs/`（仅 ADR-0099 留作机制定义根）。
+- **D3 修订**（CONTEXT-MAP.md 撤销）：
+  - 已由 RFC-0028 §D1（2026-08-10）整体删除，Meta 层由 5 类文档降为 4 类
+  - 本附录 B 已同步更新（删除 CONTEXT-MAP.md 行）
+- **D5 修订**（Meta 层组合检查）：
+  - "RFC + Meta" 仍为 ❌ 设计错误（RFC 不应依赖 README.md / AGENTS.md）
+  - "Asset + Meta" 特例保留：AGENTS.md 引用 Asset（入口指针场景，RFC-0028 §D4）
+  - "Doc + Meta" 特例保留：README.md 是 marketing + 入口混合
+- **D6 修订**（check-doc-boundary 规则）：
+  - 5 → 4 条规则（RFC-0028 §D3 简化）
+  - 新增隐式约束：Asset 正文不得含 RFC-NNNN / ADR-NNNN 编号（`scripts/check-asset-structure.ts` E_ASSET_RFC_ADR_CITATION 守门）
+- **附录 A R&N 32 术语对照**：保留为历史溯源；现由 `oxn-asset-domain.md §AssetPeasRole` + `oxn-work-domain.md §WorkAsSolutionReference` + `oxn-proof-domain.md §ProofAsObjectiveOutcome` + `oxn-domain.md §PerformanceMeasureNotEnforced` 等价承载
+- **配套 RFC-0030**：v0.7.0 文档架构闭环由 RFC-0027 + RFC-0028 + RFC-0029 + RFC-0030 四 RFC 共同构成
+- **影响**：Meta 层入口由 AGENTS.md §AI Agent 唯一入口段统一承担；ADR 物理收敛（仅 1 机制根）；R&N 对照历史溯源保留
 
 ## 参考
 

@@ -15,6 +15,7 @@ related:
 promoted-from: .openxenon/drafts/.archived/rfc/v0.7.3-ideal-data-flow-rfc.md
 note: 文件名带 v0.7.3 前缀是历史遗留，实际落地在 v0.6.1（见 .changes/0-6-1-ideal-data-flow.md）
 synced-at: 2026-08-05
+landing-reason: declarative
 ---
 
 # RFC-0022: 理想态数据流 runtime 闭环（Blueprint → Work → Task）

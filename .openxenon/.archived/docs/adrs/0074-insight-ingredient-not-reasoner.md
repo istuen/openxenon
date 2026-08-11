@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-23
 supersedes: null
 superseded-by: null
@@ -10,6 +10,8 @@ related:
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
   - .openxenon/CONTEXT-MAP.md
   - docs/product/zh-cn/concepts/insight.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0074: Insight 架构边界——原料提供者非推理引擎

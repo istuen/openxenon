@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-23
 supersedes: null
 superseded-by: ADR-0081
@@ -12,6 +12,8 @@ related:
   - .openxenon/drafts/error-conflict-handling-convergence.md
   - .openxenon/drafts/rn-grilling-summary-assessment.md
   - .openxenon/drafts/rfc/0081-oxn-unified-error-framework.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0080: 错误与冲突处理术语统一 + 新增错误规范机制

@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0002: Probe default 规则 + 五级参数优先级链
 
 > **来源**：`docs_tmp/complie3.md` (2026-05-19)

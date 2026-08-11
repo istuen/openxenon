@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0018: LSP readonly `@glo/` + Fork-to-Local + atomic-index + CLI proxy
 
 > **来源**：`docs_tmp/oxn-lsp-1.md`, `oxn-lsp-2.md` (2026-05-21)

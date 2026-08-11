@@ -18,6 +18,7 @@ related:
   - ADR-0017: docs/adrs/0017-probe-stats-cross-proof-accumulation.md
   - ADR-013: docs/adrs/013-filesystem-port-vs-runtime-file.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0002: Kernel / L0 边界——真空约束 + Port 注入 + 证据链三件套

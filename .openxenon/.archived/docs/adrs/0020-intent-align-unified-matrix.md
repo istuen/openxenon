@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0020: Intent / Align 统一矩阵（Blueprint = Intent, Work = Align）
 
 > **来源**：`docs_tmp/oxn-ddd-1.md` (2026-06-04)

@@ -3,9 +3,7 @@ entity: workflow
 version: 3.0.0
 name: asset-create
 abstract: |
-  Asset 生命周期统一流水线 v3（mode 参数化）：4 模式覆盖 create / skeleton / evolve / archive 全生命周期。
-  v2.0.0 (2026-08-08): 收编为 Asset 结构 v2（## Phases → ### Axiom → - Theorem）。
-  v3.0.0 (2026-08-09): 🆕 v0.7.0 RFC-0027 PR-H 合并 4 个独立 Workflow（draft-skeleton-fork / asset-archive / asset-evolve / oxn-workflow）→ mode 参数化。4 模式：create（默认）/ skeleton（从 .openxenon/draft-skeletons/ 派生）/ evolve（read → plan → apply）/ archive（check-references → confirm → move）。原 oxn-workflow 双轨（dev/doc）由 root Blueprint oxn-blueprint 在 `## Boundaries` 中组合 dev-workflow + doc-author 实现，不再需要独立 root Workflow。
+  Asset 生命周期统一流水线（mode 参数化）：4 模式覆盖 create / skeleton / evolve / archive 全生命周期。
 references:
   - oxn-asset-domain
   - oxn-draft-domain
@@ -22,7 +20,7 @@ synced-at: 2026-08-09
 > - `--mode evolve`：读当前内容 → 制定变更计划 → 应用变更 → 更新 planLock 哈希
 > - `--mode archive`：检查引用 → 二次确认 → 物理移至 .openxenon/.archived/assets/{kind}/<name>.md
 >
-> 🆕 v0.7.0 RFC-0027 PR-H 合并 4 个独立 Workflow：
+> mode 参数化覆盖 4 个原独立 Workflow：
 > - draft-skeleton-fork.md（删）→ mode skeleton
 > - asset-archive.md（删）→ mode archive
 > - asset-evolve.md（删）→ mode evolve
@@ -36,7 +34,7 @@ synced-at: 2026-08-09
 - mode 参数解析失败 → 报 `OXN_ASSET_MODE_INVALID`（列出 4 个合法 mode）。
 
 ### fork-template
-- 🆕 v3.0.0：mode create / skeleton 走此 phase；mode evolve / archive 跳过。
+- mode create / skeleton 走此 phase；mode evolve / archive 跳过。
 - mode create：从 .openxenon/assets/ 同 kind 模板 fork 一份空白骨架（含 frontmatter + 章节结构 + 必填字段占位）。
 - mode skeleton：从 .openxenon/draft-skeletons/<target>[-<kind>].md 解析 skeleton 字符串（v0.6.3 Fix #1 路径修正）。失败 → 报 `OXN_DRAFT_SKELETON_NOT_FOUND`（推荐性 hint，不阻塞）。
 - 共同产物：返回 skeleton 字符串（CLI writeFileSync 写文件）。
@@ -51,7 +49,7 @@ synced-at: 2026-08-09
 - 通过后落盘并 citations 自增；mode archive 不落 .openxenon/assets/ 而是落 .openxenon/.archived/assets/{kind}/。
 
 ### apply-mode
-- 🆕 v3.0.0：mode 特定后处理：
+- mode 特定后处理：
 - mode archive 的 check-references phase（移至 choose-kind 阶段）：mode=archive 时先跑 check-references，citations > 0 或被 Workflow/Blueprint/AssetMap 引用 → 报 `OXN_ASSET_ARCHIVE_BLOCKED`（v0.6.3 Inv10 delete-requires-no-refs）。
 - mode archive 的 confirm phase：二次确认归档操作（人类 review）。
 - mode evolve 的 read-current / plan-changes phase（移至 fork-template 之前）：read-current 读取目标 Asset 当前内容，列出所有引用方与 citations 数；plan-changes 制定变更计划（新增/删除/修改 哪几条；是否破坏 kind-isolation；是否影响 Roadmap 路由）。
@@ -60,7 +58,7 @@ synced-at: 2026-08-09
 ## Practice
 
 ### ModeParameterization
-- 🆕 v0.7.0 RFC-0027 PR-H：4 mode 通过 `--mode <create|skeleton|evolve|archive>` 参数切换。
+- 4 mode 通过 `--mode <create|skeleton|evolve|archive>` 参数切换。
 - 默认 mode=create（向后兼容 v2.0.0 老调用）。
 - mode skeleton 由 `oxn draft create --target X` 触发（CLI 内部调 `--mode skeleton`）。
 - mode evolve 由 `oxn asset evolve <name>` 触发（CLI alias）。
@@ -71,7 +69,7 @@ synced-at: 2026-08-09
 - mode create / skeleton：写文件失败 → CLI 报 `OXN_ASSET_CREATE_FAILED`（保留文件路径便于工程师手动清理）。
 
 ### MergeOf4Workflows
-- 🆕 v0.7.0 RFC-0027 PR-H 合并历史：本 Workflow 集成了 v2.0.0 之前的 4 个独立 Workflow 行为（asset-create v2 / draft-skeleton-fork / asset-archive / asset-evolve）。删文件 4 个 + 本文件重写。
+- 本 Workflow 集成了 v2.0.0 之前的 4 个独立 Workflow 行为（asset-create v2 / draft-skeleton-fork / asset-archive / asset-evolve）。删文件 4 个 + 本文件重写。
 - 引用方更新：
 - `promote-target-aware-workflow.md` `## Use workflow` 段：原 `draft-skeleton-fork` 改 `asset-create`（PR-D 已完成）
 - `oxn-system.md` scene-dev 删除 4 个孤儿 workflow 引用行（原 PR-C 已删 4 个；本 PR 再删 2 个）

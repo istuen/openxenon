@@ -8,7 +8,9 @@ synced-at: 2026-07-26
 <!-- allow-version -->
 > OpenXenon 规范（RFC）归档。OpenXenon Proposal (OXP) 双层机制已废除（v0.7），所有规定性内容统一为单层 RFC。
 <!-- /allow-version -->
-> RFC 是 OpenXenon 项目的 SSOT——所有决策、约束、规则必须落 RFC；不再保留 ADR（内部日志）+ OXP（外部镜像）双层。
+<!-- allow-version -->
+> 🆕 v0.7.0 RFC-0029 修订：RFC = **规定性决策记录层**（why 记录层），回答"为什么决定 X"——决策记录 + 替代方案 + 风险评估。**现行约束语义 SSOT 在 `.openxenon/assets/domains/*.md`**（Axiom/Theorem 结构），AI Agent 在 Blueprint 闭包时实际消费。ADR 不再作为独立机制（v0.7 起全部迁移为 RFC + Domain 落点）。
+<!-- /allow-version -->
 
 ## 什么是 RFC？
 
@@ -117,15 +119,23 @@ OXP 文件已删除（Phase 3 步骤 3.1）。
 ## ADR 归档查询
 
 <!-- allow-version -->
-v0.7+ 所有 ADR 已物理归档到 `.openxenon/.archived/docs/adrs/`，共 72 文件（64 迁移 ADR + 6 早期 Superseded + 2 历史 ADR）。
+v0.7+ ADR 治理机制（per RFC-0030 D1 + RFC-0027 + RFC-0029）：
+
+- **1 机制根**：ADR-0099（landing-files + landing-reason 机制定义）— 唯一保留在 `docs/adrs/`，`status: Active-Mechanism`
+- **88 归档 ADR**：物理归档至 `.openxenon/.archived/docs/adrs/`，全部 `status: Archived` + `archived-by: RFC-0030-D1`
+  - 64 迁移 ADR（v0.7 主题合并入 RFC）
+  - 6 早期 Superseded
+  - 18 历史 ADR（含 012/013 runtime adapter 系列）
+- **后续 ADR 创建**：不允许。v0.7 起 ADR 不再独立机制，所有新决策走 RFC + Domain 路径（per Inv2RfcSotDecisionLayer）
 <!-- /allow-version -->
 
 | 查询需求 | 位置 |
 |---|---|
-| RFC 的 ADR 来源追溯 | 各 RFC 文档 `## 相关决策` 段 |
+| ADR 治理机制定义根 | `docs/adrs/0099-adr-landing-mandatory.md` |
 | ADR 全文检索 | `.openxenon/.archived/docs/adrs/00XX-*.md` |
-| ADR 状态查询 | ADR frontmatter `status` 字段 |
+| ADR 状态查询 | ADR frontmatter `status` 字段（`Archived` / `Active-Mechanism`） |
 | Supersede 关系 | ADR frontmatter `supersedes` / `superseded-by` 字段 |
+| ADR → RFC 来源追溯 | 各 RFC 文档 `## 相关决策` 段 |
 
 ## 下一步
 

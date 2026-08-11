@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0013: L1 contracts 不允许 Langium 类型泄露（ACL 守则）
 
 > **来源**：`docs_tmp/dsl-index-export-1.md`, `dsl-index-export-2.md`, `dsl-index-export-3.md` (2026-05-28)

@@ -19,6 +19,7 @@ related:
   - ADR-0006: docs/adrs/0006-three-phase-model.md
   - ADR-0015: docs/adrs/0015-insight-four-entity-evidence-chain.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0003: AI 协作哲学——三相拓扑 + 彻底不判 + 对抗关系归属

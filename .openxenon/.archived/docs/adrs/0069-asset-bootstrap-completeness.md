@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-22
 supersedes: null
 superseded-by: null
@@ -11,6 +11,8 @@ related:
   - .openxenon/assets/domains/oxn-asset-domain.md
   - .openxenon/assets/workflows/dev-workflow.md
   - .openxenon/assets/workflows/doc-author.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0069: Asset 自举完整性——最小可用 Asset 集规范

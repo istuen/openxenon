@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-21
 supersedes: null
 superseded-by: null
@@ -15,6 +15,8 @@ related:
   - .openxenon/assets/domains/oxn-proof-domain.md
   - .openxenon/assets/domains/oxn-engine-domain.md
   - .openxenon/assets/domains/oxn-work-domain.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0066: 术语精简——废弃叙事层冗余术语，统一到 Proof

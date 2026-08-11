@@ -2,8 +2,16 @@
 // =============================================================================
 // check-asset-structure.ts — Asset 结构 v2/v3 守门
 //
-// version: 0.7.5
-// synced-at: 2026-08-09
+// version: 0.7.7
+// synced-at: 2026-08-11
+//
+// v3.2 升级（2026-08-11）：
+// - 新增 Asset → RFC/ADR 反向引用守门：E_ASSET_RFC_ADR_CITATION
+//   （Asset 正文不得含 RFC-NNNN / ADR-NNNN 编号；Asset 自身即 SSOT，RFC/ADR 是扩展阅读）
+//
+// v3.1 升级（2026-08-11）：
+// - 新增 Axiom 首 bullet 变更标注守门：E_ASSET_ANNOTATION_FIRST_BULLET
+//   （🆕 vX.Y.Z ... 注解不得作为 Axiom 首 bullet——污染 glossary desc）
 //
 // v3.0 升级（2026-08-09）：
 // - 新增 Axiom 扁平化守门：E_ASSET_AXIOM_HAS_TABLE / HAS_CODE_FENCE / HAS_SUBNESTED_LIST
@@ -68,6 +76,8 @@ type ViolationCode =
   | 'E_ASSET_BLUEPRINT_CONTEXT_TEMPLATE_NOT_TOP_LEVEL'
   | 'E_ASSET_BLUEPRINT_INVALID_TOP_LEVEL'
   | 'E_ASSET_BLUEPRINT_SLOT_MISSING_DEPS'
+  | 'E_ASSET_ANNOTATION_FIRST_BULLET'
+  | 'E_ASSET_RFC_ADR_CITATION'
 
 interface Violation {
   file: string
@@ -502,7 +512,33 @@ function checkGeneric(parsed: ParsedAsset): Violation[] {
     }
   }
 
-  // 5. Axiom 扁平化守门（v3.0 新约束）：Axiom body 内禁止 table / code fence / sub-bullet
+  // 5. Axiom 首 bullet 不得为变更标注（v3.1 新约束）：
+  //    🆕 vX.Y.Z ... 注解不得作为 Axiom 的首条 bullet——
+  //    注解记录的是迁移历史（信息已在 git log / RFC / changelog），
+  //    作为首 bullet 会污染 glossary（sync-domain-glossary 取首 bullet 作 desc）。
+  //    修正方式：删除注解行（信息已在 git log），或把注解挪到定义 bullet 之后。
+  for (const [key, info] of h3Indices) {
+    if (info.parentGroup === null) continue // 顶层 Axiom 留给 checkBlueprint 处理
+    const title = key.split('###')[1] ?? ''
+    const parentGroupEnd =
+      [...h2Indices.entries()].filter(([, idx]) => idx > info.idx).map(([, idx]) => idx)[0] ?? bodyLines.length
+    const siblingH3Indices = [...h3Indices.values()]
+      .filter((v) => v.parentGroup === info.parentGroup && v.idx > info.idx)
+      .map((v) => v.idx)
+    const sliceEnd = siblingH3Indices[0] ?? parentGroupEnd
+    const axiomBody = bodyLines.slice(info.idx + 1, sliceEnd)
+    const firstBullet = axiomBody.find((line) => LIST_RE.test(line))
+    if (firstBullet && /^🆕\s/.test(firstBullet.replace(/^\s*-\s+/, ''))) {
+      violations.push({
+        file,
+        code: 'E_ASSET_ANNOTATION_FIRST_BULLET',
+        message: `### ${info.parentGroup ? `${info.parentGroup} / ` : ''}${title} 首 bullet 是变更标注（🆕 v...）；注解污染 glossary desc，应删除或后置`,
+        line: info.line,
+      })
+    }
+  }
+
+  // 6. Axiom 扁平化守门（v3.0 新约束）：Axiom body 内禁止 table / code fence / sub-bullet
   //    豁免：Stack Tool (Tools/Foundation Group) / Blueprint Slot (Slot Group) / Blueprint Use / 顶层 Scope / Context Template
   for (const [key, info] of h3Indices) {
     if (info.parentGroup === null) continue // 顶层 Axiom 留给 checkBlueprint 处理
@@ -517,6 +553,27 @@ function checkGeneric(parsed: ParsedAsset): Violation[] {
     violations.push(
       ...checkAxiomBodyComplexity(file, title, info.parentGroup, axiomBody, parsed.bodyStart + info.idx, parsed.kind),
     )
+  }
+
+  // 7. Asset 不得引用 RFC/ADR 编号文档（v3.2 新约束）：
+  //    Asset 作为 SSOT 自身就是出处；RFC/ADR 是这些 SSOT 的扩展阅读或描述。
+  //    引用方向：RFC → Asset（landing-files），Asset 不反向引用 RFC/ADR。
+  //    豁免：
+  //    - RFC-XXXX 占位符（doc-md-domain 追踪标记）
+  //    - docs/rfc/zh-cn/RFC-XXXX-<theme>.md 路径模板（概念定义位置）
+  //    - 无编号的 "RFC" / "ADR" 字样（如 ### RFC 术语定义、PR-X 标识）
+  //    正则只匹配 RFC/ADR + 数字编号，避免误伤概念定义。
+  const RFC_ADR_NUMBERED = /\b(?:RFC|ADR)-\d{3,4}\b/
+  for (let i = 0; i < bodyLines.length; i++) {
+    const line = bodyLines[i] ?? ''
+    if (RFC_ADR_NUMBERED.test(line)) {
+      violations.push({
+        file,
+        code: 'E_ASSET_RFC_ADR_CITATION',
+        message: `Asset 正文引用了 RFC/ADR 编号文档（${line.match(RFC_ADR_NUMBERED)?.[0]}）；Asset 不反向引用 RFC/ADR（v3.2 引用方向守门）。Asset 自身即 SSOT，删除此引用或降级为概念术语提及。`,
+        line: parsed.bodyStart + i,
+      })
+    }
   }
 
   return violations

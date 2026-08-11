@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0014: "Why OpenXenon" — AI 漂移的根因与人格化叙事
 
 > **来源**：`docs_tmp/slogan-readme-2.md` (2026-06-17)

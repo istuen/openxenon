@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0019: Blueprint Type 范式（task / plan / explore）
 
 > **来源**：`docs_tmp/oxn-type-1.md`, `oxn-type-review-1.md` (2026-05-22)
@@ -13,7 +20,9 @@ Blueprint 通过 `type` 字段声明其语义类别：
 ```oxl
 blueprint "my-feature" {
   type "task"       // 单次执行单元
+<!-- allow-version -->
   // type "plan"    // 多次 Round 编排（v0.6+）
+<!-- /allow-version -->
   // type "explore" // 探索性 work（无严格 Proof）
   ...
 }
@@ -21,7 +30,9 @@ blueprint "my-feature" {
 
 ### 三类语义
 
+<!-- allow-version -->
 | Type | 意图 | Proof 严格度 | v0.6 状态 |
+<!-- /allow-version -->
 |---|---|---|---|
 | `task` | 单次任务执行 | 强制 | ✅ 落地 |
 | `plan` | 多 Round 编排 | 强制 | ✅ 落地 |

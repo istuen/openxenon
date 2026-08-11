@@ -3,10 +3,7 @@ entity: domain
 name: OxnDraftDomain
 abstract: |
   OpenXenon Draft 体系领域（Asset 结构 v2：Group → Axiom → Theorem）——定义 Draft 工作稿（未提升的描述性内容）、DraftType（report/issue/design）、
-  DraftLifecycle（create → archive | discard）、DraftTarget（rfc/asset/work/**goal**）、Skeleton（per-target 模板，v0.6.3 Q1 引入 entity: skeleton）、
-  DraftOrigin（v0.4.0 起 human | insight 标识 producer）、PromoteRoute（v0.7.0 RFC-0027 PR-F 合并自 OxnDraftPromoteDomain）。
-  v1.0.0 (2026-08-08): 收编为 Asset 结构 v2 三层模型。语义锁定；13 个 invariant 全部保留。
-  v1.1.0 (2026-08-09): 🆕 v0.7.0 RFC-0027 PR-F（D1）合并 `oxn-draft-promote-domain.md`：消除 Inv5DagNoCycles 循环引用 + 节省 1 个 Domain 文件 + 单向 references 收敛。PromoteRoute / SkeletonForking / PromoteLifecycle / TargetDispatchTable 全部并入新 ## PromoteRoute 段；7 个 Promote Invariant 并入 ## Boundary 段（合计 20 个 invariant）。
+  DraftLifecycle（create → archive | discard）、DraftTarget（rfc/asset/work/**goal**）、Skeleton（per-target 模板）、DraftOrigin（human | insight）、PromoteRoute。
 references:
   - oxn-domain
   - oxn-project-domain
@@ -21,7 +18,7 @@ synced-at: 2026-08-09
 > 与 OxnAssetDomain（E1 Asset）和 docs/ Doc（已提升）形成三角：Draft → Asset/Doc 是单向 promote 关系。
 > 本域仅定义概念 + 边界规则，不描述 CLI 实现（CLI 在 @openxenon/engine/Draft + packages/cli/src/commands/draft.ts）。
 >
-> 🆕 v0.7.0 RFC-0027 PR-F（D1）：与 `oxn-draft-promote-domain.md` 合并。Promote 相关概念（PromoteRoute / SkeletonForking / PromoteLifecycle / TargetDispatchTable / PromoteBoundaryIsolation）并入本域 `## PromoteRoute` 段；Promote 相关 invariant（Inv1-7）并入 `## Boundary` 段。单向 references：本域 → oxn-asset-domain + oxn-project-domain + oxn-domain（原 promote 域对本域的 back-reference 已删除）。
+> 与 `oxn-draft-promote-domain.md` 合并。Promote 相关概念（PromoteRoute / SkeletonForking / PromoteLifecycle / TargetDispatchTable / PromoteBoundaryIsolation）并入本域 `## PromoteRoute` 段；Promote 相关 invariant（Inv1-7）并入 `## Boundary` 段。单向 references：本域 → oxn-asset-domain + oxn-project-domain + oxn-domain（原 promote 域对本域的 back-reference 已删除）。
 
 ## Concept
 
@@ -66,7 +63,7 @@ synced-at: 2026-08-09
 - v0.4.0（D1 2026-08-07）起：Draft producer 标识字段，frontmatter `origin: human | insight`，默认 `human`。
 - `human`（默认）：工程师手写探索稿、reflection、issue 记录。
 - `insight`：由 OXN Insight 系统生成；落地路径为 `.openxenon/drafts/<drafttype>-<slug>.md`。
-- 5 类原 Intent Pool 类型 → 3 DraftType 映射由 oxn-proof-domain.md §InsightDraftMapping 锁定（🆕 v0.6.4 PR-B：合并自 `oxn-insight-domain`）；
+- 5 类原 Intent Pool 类型 → 3 DraftType 映射由 oxn-proof-domain.md §InsightDraftMapping 锁定；
 - origin 字段由 Insight 注入，不允许工程师从 insight 退回 human（避免追溯链断裂）。
 - origin 不影响 promote 路由（仍是 rfc/asset/work 3 类），仅标识 producer；
 - list 可按 `oxn draft list --origin=insight` 过滤（CLI v0.4.0 新增 flag）。
@@ -89,6 +86,9 @@ synced-at: 2026-08-09
 - `fork-missing`：缺字段时从 skeleton 模板补全（保留工程师填写的内容）。
 - `dispatch-target`：按 promote-target 路由到 3 类目标执行体（rfc / asset / work）。
 - 不走 Work IAP：Draft promote 是单次路由 + 转换，不分 Intent / Align / Proof 三阶段。
+- **4 阶段事务性**——promote 全程单次 transactional；任何阶段失败回滚源 Draft 不变。
+- **promote ≠ 状态转移**——promote 后源 Draft 文件保留；工程师决定是否 archive / discard。
+- **目标 3 类封闭**——rfc / asset / work 三类 target；goal 是 v0.2 新增的扩展（详见 PromoteRoute）。
 
 ### DraftPathConfig
 - 可经 `.oxnrc` `draftDir` 字段配（v0.6.2 新增；走 ProjectConfig.draftDir）。
@@ -100,12 +100,14 @@ synced-at: 2026-08-09
 - 物理实现：`packages/cli/src/commands/draft.ts` + `@openxenon/engine/Draft`。
 - v0.6.2 4 命令（create / list / archive / discard）；v0.6.2-alpha.3 增 2 命令（promote / retarget）。
 - 与 `oxn work` / `oxn proof` 平级；不与 `oxn asset` 混（Draft 不走 Asset 生命周期，Q-S4 不引入"通道"术语）。
+- **CLI 与 Engine 分离**——CLI 仅命令编排，所有业务逻辑经 Engine → Infra Module；CLI 不内嵌 template/校验逻辑。
 
 ### DraftCompanionAsset
 - draft-skeleton-fork Workflow（v0.6.2-alpha.3 新）：派生 skeleton。
 - draft-promote-router Blueprint（v0.6.2-alpha.3 新）：总路由 + 4 阶段生命周期。
 - promote-target-aware-workflow Blueprint（v0.6.2-alpha.3 重构，原 4 件合并）：3 target 通用 promote。
 - 详见 .openxenon/assets/blueprints/draft-promote-router.md 等。
+- **Blueprint 单一入口**——所有 promote 走 promote-target-aware-workflow Blueprint；不允许 CLI 拼装 Work（详见 Inv6DraftPromoteSingleEntry）。
 
 ### FutureExtension
 - v0.6.2-alpha.3 部分实现（Asset 层 + 路由命令）；剩余（execute mode 自动跟踪、content 校验 Probe 化）待 v0.7.x scene-based Roadmap 收敛后再决。
@@ -121,6 +123,7 @@ synced-at: 2026-08-09
 - promote-target=goal（v0.2.0 新增）→ promote-target-aware-workflow Blueprint + promote-draft-goal 子任务（落盘 `dev/pool/<slug>.md` + auto `git checkout -b feat/goal-<slug> dev`）
 - 物理载体：frontmatter `promote-target: <rfc|asset|work|goal>` + `promote-kind: <5 AssetKind>`（仅 asset 时需要）
 - 默认值：`--target auto` 模式下，若未声明则报错 `OXN_DRAFT_PROMOTE_TARGET_MISSING`
+- **8 行 dispatch 表封闭**——`TargetDispatchTable` 8 行映射，新增 target 必须修改 router + dispatch 表。
 
 ### SkeletonForking
 - skeleton 派生规则：v0.6.2-alpha.3 起 Draft 创建时（`--target` 模式）从 `.openxenon/draft-skeletons/<target>[-<kind>].md` 派生（v0.6.3 Fix #1 移到 boundary 顶层）
@@ -180,7 +183,6 @@ synced-at: 2026-08-09
 
 ### ForbiddenDraftAsAsset
 - draft-asset-promote
-- 🆕 v0.7.0 RFC-0027 PR-F（D11 合并）：原 `ForbiddenDraftPromoteAsAsset` 的 `draft-promote-asset` + `draft-promote-assetkind` 2 项并入本 Axiom。draft-promote 引擎虽产出 Asset 形态，但不产生新 AssetKind；Draft 命名空间与 Asset 命名空间分离（drafts/ vs assets/）；同名 Draft + Asset 也无冲突。
 
 ### ForbiddenDraftPrefixV060D46
 - draft-prefix-doc
@@ -258,7 +260,7 @@ synced-at: 2026-08-09
 ### Inv9DraftListFilterByOriginV040
 - `oxn draft list --origin=human|insight` 按 producer 过滤（v0.4.0 新增）；无 origin= 列出全部（向后兼容）。
 - 行为：`oxn draft list --origin=insight` 列出所有 insight 生成的 Draft（含 v0.6.x 已存 draft 中由 `--from-insight` 生成的，可能缺 origin 字段——按 origin=insight 默认兼容）。
-- 配合 oxn-proof-domain.md §Inv30InsightManualGateViaDraft 闸门使用（🆕 v0.6.4 PR-B：原 oxn-insight-domain.md §Invariants.inv-2）。
+- 配合 oxn-proof-domain.md §Inv30InsightManualGateViaDraft 闸门使用。
 
 ### Inv10DraftTargetGoalPairV050
 - v0.5.0（D2 2026-08-07）起：`oxn draft promote --target=goal --goal-slug=<slug>` 把 Draft 升华为 Goal。
@@ -301,32 +303,26 @@ synced-at: 2026-08-09
 - 设计约束：cleanup cycle 是"软治理"，不替代 owner 主动决策；与 §4.6 一次性归类互为补充。
 
 ### Inv14PromoteRouterSingleEntry
-- 🆕 v0.7.0 RFC-0027 PR-F（D1 合并自 OxnDraftPromoteDomain）：Draft Promote 路由单一入口——所有 Draft→target 路由必经 draft-promote-router Blueprint。
 - 禁止绕过：CLI 不允许直接 `oxn work create --blueprint promote-target-aware-workflow` 跳 router。
 - 兜底：router 路由前 check caller-stack，确保来自 oxn draft 子命令；非法调用报 `OXN_DRAFT_PROMOTE_NOT_ROUTED`。
 
 ### Inv15Promote4StagesNoSkip
-- 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：Draft Promote 4 阶段不可跳——gather → validate-skeleton → fork-missing → dispatch-target 顺序强制。
 - 禁止短路：例如 validate-skeleton 失败后不允许直接 dispatch。
 - 兜底：每阶段用独立 transaction，失败回滚；下次 retry 走完整流程。
 
 ### Inv16SkeletonAsset1To1
-- 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：skeleton 模板与目标 Asset 1:1 对齐——7 个 skeleton 必含目标 H2 段，不许简化。
 - 校验时机：draft-skeleton-fork Workflow 调 fork-template slot 后，对照 AssetKind 编译器要求（如 Domain 编译要求 `## Terms` H2 段）。
 - 兜底：若目标 compiler 校验失败，fork 不动文件，CLI 报 `OXN_DRAFT_SKELETON_TARGET_MISMATCH`。
 
 ### Inv17PromoteSourceDraftUnchanged
-- 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：Promote 后源 Draft 不变——promote 是从 Draft 拷贝到 Target，不是状态转移。
 - 工程师决定是否 archive / discard（oxn draft archive / discard 命令）。
 - 兜底：promote-target-aware-workflow 完成 dispatch-target 后，校验源 Draft 文件 mtime 未变。
 
 ### Inv18RetargetExplicit
-- 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：Draft retarget 显式——若工程师要改 promote-target，需用 `oxn draft retarget <name> --new-target <...>`。
 - 不允许直接编辑 frontmatter 改 promote-target（避免绕过 router 的 fork-missing 阶段）。
 - 兜底：retarget 重新调 draft-skeleton-fork 派生新骨架，保留工程师已填的 H2 段内容。
 
 ### Inv19PromoteDraftGoalV020
-- 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：v0.2.0（D2 2026-08-07）起：`promote-target=goal` 走新 sub-target `promote-draft-goal`
 - 强约束 1：`oxn draft promote --target=goal --goal-slug=<slug>` 必须同时带 `--goal-slug`
 - 强约束 2：Goal entry 落 `dev/pool/<slug>.md`
 - 强约束 3：promote 后 auto `git checkout -b feat/goal-<slug> dev`（dev 不存在则基于 main；分支已存在则报 `OXN_DRAFT_PROMOTE_GOAL_BRANCH_EXISTS`）
@@ -335,7 +331,6 @@ synced-at: 2026-08-09
 - 强约束 6：失败事务回滚——分支未创建 + 文件未写 → 整事务回滚
 
 ### Inv20PromoteTargetWorkDeprecatedV030
-- 🆕 v0.7.0 RFC-0027 PR-F（D1 合并）：v0.3.0（D3 2026-08-07）起：`promote-target=work` 已退役——CLI 与 Engine 双层拒收。
 - 拒收时机：
 - CLI 层：`packages/cli/src/commands/draft.ts` `promote` 子命令收到 `--target=work` 立即抛 `OXN_DRAFT_PROMOTE_TARGET_WORK_REMOVED`（vs CLI 不抛 + Engine 兜底）。
 - Engine 层：`promote.ts` Phase 2 select-target 拦截 `target === 'work'`，同样抛 `OXN_DRAFT_PROMOTE_TARGET_WORK_REMOVED`（双层守门 + Workfrontmatter 直读或 `--target=work` 都拦）。

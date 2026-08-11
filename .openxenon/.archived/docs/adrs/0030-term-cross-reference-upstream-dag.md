@@ -1,8 +1,17 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0030: `@term/X` 跨 term 寻址 + `@upstream` DAG 验证（待办）
 
 > **来源**：`docs_tmp/domain-md-1.md` (2026-06-18)
 > **抽取日**：2026-07-04
+<!-- allow-version -->
 > **状态**：Proposed → v0.7-emergence DSL 演进待办
+<!-- /allow-version -->
 > **影响层**：L1-OXL / Domain
 
 ## 决策（提案）
@@ -37,7 +46,9 @@ domain "Order" {
 
 - ❌ 未实现
 - ⚠️ 当前跨 term 用普通字符串（编译期无法校验）
+<!-- allow-version -->
 - 🔗 候选落地：v0.7-emergence DSL 演进
+<!-- /allow-version -->
 
 ## 参考
 

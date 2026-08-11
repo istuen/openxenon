@@ -1,18 +1,26 @@
 ---
 entity: adr
 id: ADR-0099
-status: Accepted
+status: Active-Mechanism
 date: 2026-08-07
+role: mechanism-root
+note: |
+  v0.7+ 唯一保留在 docs/adrs/ 的活跃 ADR；定义 landing-files + landing-reason 机制。
+  其他 87 ADR 已迁移为 RFC（主题合并）或物理归档（.openxenon/.archived/docs/adrs/）。
+  详见 RFC-0030 D1 + RFC-0029 + RFC-0027。
 related:
-  - docs/adrs/0093-version-cut-record.md
-  - docs/adrs/0094-goal-primary-planning.md
-  - docs/adrs/0095-intent-pool-v3-retired.md
-  - docs/adrs/0096-draft-work-route-deprecated.md
-  - docs/adrs/0097-version-forcing-function.md
-  - docs/adrs/0098-branch-model-main-dev-feat.md
+  - RFC-0030
+  - RFC-0027
+  - RFC-0029
+  - .openxenon/assets/domains/oxn-project-domain.md
+  - .openxenon/.archived/docs/adrs/
 landing-files:
   - docs/adrs/0099-adr-landing-mandatory.md
   - scripts/check-adr-landing.ts
+  - .openxenon/assets/domains/oxn-project-domain.md
+landing-reason: ~
+superseded-by: ~
+archived-at: ~
 ---
 
 # ADR-0099: ADR Accepted 必须配套 filesystem 落地清单 + pre-commit 强制校验

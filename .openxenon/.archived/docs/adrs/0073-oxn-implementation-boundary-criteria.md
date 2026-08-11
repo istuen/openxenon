@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-23
 supersedes: null
 superseded-by: null
@@ -11,6 +11,8 @@ related:
   - .openxenon/assets/domains/oxn-domain.md
   - .openxenon/drafts/rfc/0066-terminology-simplification.md
   - .openxenon/drafts/rfc/0067-no-judgment-principle.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0073: OXN 实现边界判据——四轴判据集

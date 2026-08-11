@@ -12,6 +12,7 @@ related:
   - RFC-0011: docs/rfc/zh-cn/RFC-0011-builtin-asset-two-layer.md
   - RFC-0010: docs/rfc/zh-cn/RFC-0010-frozen-errata.md
 synced-at: 2026-08-01
+landing-reason: declarative
 ---
 
 # RFC-0016: 通用验证 probe 扩展——file-hash / test-coverage / json-path / port-listening

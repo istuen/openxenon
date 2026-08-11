@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0023: `@` 一贯寻址哲学 + `->` 伪指针否决
 
 > **来源**：`docs_tmp/domain-md-2.md` (2026-06-18)

@@ -12,6 +12,7 @@ related:
   - ADR-0052: docs/adrs/0052-langium-retirement-oxn-deprecation.md
   - ADR-0019: docs/adrs/0019-blueprint-type-paradigm.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0001: OXL/Blueprint 哲学——Props 漏斗 + 关键字分离 + MD-native 语法

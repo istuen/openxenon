@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-013: FileSystemPort (Type A) 与 runtime/file.ts (Type B) 职责分工
 
 > **状态**：Accepted

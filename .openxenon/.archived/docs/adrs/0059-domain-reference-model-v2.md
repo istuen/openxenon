@@ -1,13 +1,24 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0059: Domain 引用模型 v2
 
+<!-- allow-version -->
 > **状态**：🟢 Accepted（v0.7 RFC §10 同步拍板）
 > **日期**：2026-07-16
 > **来源**：[v0.7-domain-hierarchy-restructure-rfc §10](../../rfcs/v0.7-domain-hierarchy-restructure-rfc.md)
+<!-- /allow-version -->
 > **影响层**：L1-OXL（AssetFrontmatter schema）+ L2-Engine（Domain transformer）+ L3（oxn CLI）
 
 ## 背景
 
+<!-- allow-version -->
 v0.7 RFC §3 决定采用"三层 Domain 架构"（oxn-domain root + 2 个 package Domain + 4 个 module Domain），但未明确 references / citations / composes 等 frontmatter 字段的精确语义。本 ADR 收紧这些语义，解决三个具体问题：
+<!-- /allow-version -->
 
 1. **oxn-domain 与 sub-Domain 间的引用方向**：root 应该引用 sub（top-down），还是 sub 引用 root（bottom-up）？
 2. **Domain 引用是否与论文引用同语义**：Domain 可拆分/合并/重写，与论文不可改写矛盾。
@@ -194,4 +205,6 @@ Step 5：MD 链接指向源 Domain 的条目渐进更新到新 Domain
 - **ADR-0051 Asset-as-Paper**：保留 Asset = 论文结构的语义（abstract/references/citations/auditTrail 4 字段）。本 ADR 是其补充：说明 Domain 不是论文，引用图可变
 - **ADR-0054 三边界框架**：不受影响
 - **md-native-grammar-rfc**：不受影响（本 ADR 不改 MD 语法）
+<!-- allow-version -->
 - **v0.7-domain-hierarchy-restructure-rfc §10**：本 ADR 是其细化与执行约束
+<!-- /allow-version -->

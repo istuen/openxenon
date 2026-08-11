@@ -5,6 +5,7 @@ theme: version-iteration-redesign
 status: Draft
 date: 2026-08-07
 synced-at: 2026-08-07
+landing-reason: declarative
 ---
 
 # Design: 版本迭代重设计（三层承诺流水线 · Goal-Centric Versioning）

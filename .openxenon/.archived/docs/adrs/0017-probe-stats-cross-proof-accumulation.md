@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0017: probe-stats.json 跨 proof 累积机制
 
 > **来源**：`docs_tmp/insight-1.md` (2026-06-10)

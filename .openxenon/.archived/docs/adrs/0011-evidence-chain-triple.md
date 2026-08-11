@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0011: 证据链三件套（frozen.json + work-trace.jsonl + work-state.json）
 
 > **来源**：`docs_tmp/kernel-infra-2.md` (2026-05-27)
@@ -12,7 +19,9 @@
 
 ```
 works/<work-name>/
+<!-- allow-version -->
 ├── .work                         # v1.1 出生证明 + planLock
+<!-- /allow-version -->
 ├── .run/
 │   ├── frozen.json               # 编译期产物（不可变）
 │   ├── trace.jsonl               # NDJSON 事件流（append-only）
@@ -50,7 +59,9 @@ works/<work-name>/
 - ✅ frozen.json 是 hash 锚点，Proof 校验可信
 - ✅ trace 是 audit chain 的物理载体
 - ✅ outcome 聚合结构：OXN 不做整体合格判定，只提供各状态 Probe 数量
+<!-- allow-version -->
 - 🔗 v1.1 planLock 在 `.work` 文件中维护 4 组件 hash
+<!-- /allow-version -->
 
 ## 参考
 

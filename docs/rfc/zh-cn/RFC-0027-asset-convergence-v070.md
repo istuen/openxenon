@@ -5,6 +5,7 @@ theme: asset-convergence-v070
 status: Accepted
 date: 2026-08-09
 synced-at: 2026-08-09
+landing-reason: declarative
 ---
 
 # RFC-0027: Asset 收敛 v2（v0.7.0）

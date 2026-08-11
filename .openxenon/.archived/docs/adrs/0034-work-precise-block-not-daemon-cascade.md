@@ -1,16 +1,27 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0034: Work 前置精准阻断 vs Daemon 全局崩溃（probe-cli-1 细节差异）
 
 > **来源**：`docs_tmp/probe-cli-1.md` (2026-06-14)
 > **抽取日**：2026-07-04
 > **状态**：Superseded → 已落实 Work 前置精准阻断
+<!-- allow-version -->
 > **superseded-by**：v0.6 Daemon 重构（Work 精准阻断已落地）
+<!-- /allow-version -->
 > **影响层**：L1-Infra / Daemon
 
 ## 决策
 
 第三方 Probe 被篡改时，**Work 前置精准阻断**（仅 Work fail），**Daemon 仍正常服务其他 Work**。
 
+<!-- allow-version -->
 ## 现状（v0.6.1）
+<!-- /allow-version -->
 
 - ✅ `oxn probe add/list/fix` CLI 已落地
 - ✅ Probe 沙箱（Bun `vm.SourceTextModule` + FORBIDDEN_GLOBALS 7 + FORBIDDEN_MODULES 10）

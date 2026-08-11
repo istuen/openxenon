@@ -15,6 +15,7 @@ related:
   - RFC-0018: docs/rfc/zh-cn/RFC-0018-project-engineering-meta.md
 promoted-from: .openxenon/drafts/design-stack-operation-referent.md
 synced-at: 2026-08-07
+landing-reason: declarative
 ---
 
 # RFC-0024: Stack Operation 参照系

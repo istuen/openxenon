@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0021: Intent / Align / Observe 四关键字分离
 
 > **来源**：`docs_tmp/intent-align-1.md` 至 `intent-align-5.md` (2026-05-29)

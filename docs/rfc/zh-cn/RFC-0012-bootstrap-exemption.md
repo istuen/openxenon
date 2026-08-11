@@ -9,6 +9,7 @@ superseded-by: ~
 related:
   - .openxenon/drafts/rfc-migration-master-plan.md
 synced-at: 2026-07-26
+landing-reason: declarative
 ---
 
 # RFC-0012: 自举种子豁免——src/builtin/ Asset 手动创建不经 Work

@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0016: AI 启示"三层不要"
 
 > **来源**：`docs_tmp/insight-1.md` (2026-06-10)

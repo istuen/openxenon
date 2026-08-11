@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0031: "Proof = 公证人 ≠ 裁判" 边界精确化
 
 > **来源**：`docs_tmp/harness-3.md` (2026-07-02)

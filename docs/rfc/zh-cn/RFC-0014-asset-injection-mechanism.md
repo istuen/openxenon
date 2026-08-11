@@ -12,6 +12,7 @@ related:
   - ADR-0078: docs/adrs/0078-llm-agent-knowledge-full-oxn-does-boundary-engineering.md
   - ADR-0079: docs/adrs/0079-asset-is-ontology-formal-reasoning-deferred.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0014: Asset 注入机制——结构化抽取锚定非确定性
@@ -80,7 +81,7 @@ ADR-0078 说"为什么需要边界参照而非知识注入"；ADR-0073 判据 1 
 > **RAG 路径**——把执行细节（"先挖土，把土运走，挖到 10 米深再搭建"）向量化后按 query 检索。检索层本身是非确定的：同一 query 在不同 embedding 版本/索引状态下可能返回残缺 chunk（如"把土运走，再搭建"）。这层非确定性叠在 LLM 非确定性上，方向是放大。
 >
 > **Asset 路径**——抽取确定性结构：
-> - [Domain](/product/zh-cn/concepts/glossary.html#domain)：术语 {土, 运输, 深度, 搭建} + 不变量 {深度 ≥ 10m 才能搭建}
+> - [Domain](/product/zh-cn/concepts/glossary.html#domain)：术语 {土, 运输, 深度, 搭建} + 不变量 {深度 &ge; 10m 才能搭建}
 > - [Workflow](/product/zh-cn/concepts/glossary.html#workflow)：slot DAG [挖土 → 运输土 → 测量深度 → 搭建]
 > - [Stack](/product/zh-cn/concepts/glossary.html#stack)：工具 {挖土机, 运输机, 水泥车}
 > - [Blueprint](/product/zh-cn/concepts/glossary.html#blueprint)：组合上述三边界为"地基"编排模板

@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0056: External inline 收敛 + 状态管理
 
 > **状态**：✅ Adopted

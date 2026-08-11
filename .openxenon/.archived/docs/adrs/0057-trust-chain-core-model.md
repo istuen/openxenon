@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0057: 信任链——OpenXenon 的核心模型
 
 > **状态**：⛔ Superseded by [ADR-0066](./0066-terminology-simplification.md)

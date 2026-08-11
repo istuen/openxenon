@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0037: part-resolver 从 Kernel 迁 L2 Work 的依据
 
 > **来源**：`docs_tmp/system-1.md` (2026-05-26)

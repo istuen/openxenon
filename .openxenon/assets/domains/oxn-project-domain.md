@@ -4,8 +4,6 @@ name: OxnProjectDomain
 abstract: |
   OpenXenon 项目工程领域（Asset 结构 v2：Group → Axiom → Theorem）；定义 OXN 自身工程语汇——文档架构情态、Asset/RFC/Doc/Meta 四层 SSOT、
   内置 Asset 两层机制、自举种子豁免、版本号政策（Alpha / Version Fragment / Roadmap / Fix Record / AssetMap）。
-  v1.0.0 (2026-08-08): 收编为 Asset 结构 v2 三层模型。语义锁定；13 个 invariant 全部保留。
-  v1.0.1 (2026-08-09): 术语同步 — AssetKind=roadmap 回收为 assetmap（v0.6.4 break-change）。
 references:
   - oxn-domain
   - oxn-engine-domain
@@ -31,7 +29,7 @@ synced-at: 2026-08-08
 - 描述性情态——回答"怎么用 X"的文档；住 `docs/{product,dev}/{zh-cn,en}/*.md`；产品手册与开发手册。
 
 ### MetaModality
-- 项目工程元情态——回答"OXN 自己怎么组织"的文档；住仓库根 + `dev/` + `.changes/`。包含 4 类项目工程文档（README.md / AGENTS.md / .changes/ / dev/）。**特例**：可与 Descriptive Modality 组合（README.md = marketing + 入口）。v0.7+ RFC-0028 §D1 撤销 CONTEXT-MAP.md Meta 层归属，Meta 层入口由 AGENTS.md §AI Agent 唯一入口段统一承担。
+- 项目工程元情态——回答"OXN 自己怎么组织"的文档；住仓库根 + `dev/` + `.changes/`。包含 4 类项目工程文档（README.md / AGENTS.md / .changes/ / dev/）。**特例**：可与 Descriptive Modality 组合（README.md = marketing + 入口）。v0.7+ 撤销 CONTEXT-MAP.md Meta 层归属，Meta 层入口由 AGENTS.md §AI Agent 唯一入口段统一承担。
 
 ## DocArch
 
@@ -45,23 +43,25 @@ synced-at: 2026-08-08
 - 随 OXN 版本发布的内置 Asset；住 `src/builtin/`；通过 `@oxn/` scope 解析；项目可用 `@prj/` override。自举种子——手动创建不经 Work，后续变更走 asset-evolve Work。
 - v0.6 Registry mock 与 `.md` 文件 SSOT 不一致（F1）；D18 收窄 Phase 4 范围（仅 probes+blueprints）。
 - **别名（已合并）**：Builtin / BuiltinAsset（glossary 不再单独列出）
+- **两层覆盖**——`@oxn/`（Engine 编译内置）+ `@prj/`（项目 override）；`@prj/` 优先。详见 Inv3BuiltinAssetTwoLayer。
+- **自举豁免**——`src/builtin/` 路径下手动创建不经 Work（自举豁免）；详见 Inv4BootstrapSeedExemption。
 
 ### StarterAsset
 - `oxn init --starter` 拷贝到 `.openxenon/assets/` 的 Built-in Asset 副本；用户拥有可改。与 `@oxn/` fallback 两层覆盖（D8）。
 
 ## Bootstrap
 
-- 存在后后续变更走 asset-evolve Work。RFC-0012 锁定（meta-RFC）。
+- 存在后后续变更走 asset-evolve Work（RFC 锁定，meta-RFC）。
 
 ## EvolutionStrategy
 
-- Supersede 走新 RFC 标 superseded-by / supersedes。RFC-0010 锁定（meta-RFC）。RFC-0013 D6 移除 version 字段（对齐业界标准）。
+- Supersede 走新 RFC 标 superseded-by / supersedes（RFC 锁定，meta-RFC）。移除 version 字段（对齐业界标准）。
 
 ## Versioning
 
 - 格式 `0.6.2-alpha.0` < `0.6.2`。允许多次迭代。patch 不走 alpha。
 - 开启条件：minor 由工程师人工确认；major 必经。一旦开启必须走完到 stable（不能跳过该版本）。
-- 转正条件：工程师人工 sign-off（无自动条件）。RFC-0013 锁定（meta-RFC）。
+- 转正条件：工程师人工 sign-off（无自动条件）。RFC 锁定（meta-RFC）。
 
 ### Version
 - 回顾性发布记录——cut 时诞生，**frozen-at-cut**；住 `.changes/0-X-Y-<theme>.md`；`status: released`。
@@ -75,6 +75,9 @@ synced-at: 2026-08-08
 - package.json 为版本号 SSOT，8 文件一致性由 version-check 强制。
 - 历史别名：Version Fragment（v0.4.0 / D5+ 2026-08-07 起合并入 Version 单一术语；设计稿 `.openxenon/drafts/design-version-iteration-redesign.md` §2.2）。
 - 配套 CLI：`oxn version {cut,list,show,status}` 4 子命令。
+- **frozen-at-cut**——Version 在 cut 时诞生即冻结；后续修改必须新建 Version 而非编辑历史 Version。
+- **frontmatter 9 字段强校验**——`version` / `date` / `type` / `status` / `theme` / `goals[]` / `works[]` / `tag` / `branch` 全部必填；缺任一 → 阻止 cut。
+- **release-cut workflow 6-slot**——(1) pre-cut-check (2) cut-record (3) tag-create (4) post-publish-bump (5) changelog-aggregate (6) close-feat-branch；详见 `release-cut.md`。
 
 ### Goal
 - 承诺层规划单元——1:1 锁定一个 IAP 准备分支（`feat/goal-<slug>`）+ 一份 Work + 一个清晰边界。
@@ -95,36 +98,42 @@ synced-at: 2026-08-08
 - 来源 3 路：(1) 工程师直接建（`oxn goal create`）；(2) `oxn draft promote --target goal --goal-slug=<slug>` 从 Draft 升华；(3) 历史 PlanningPool entry 一次性迁移（frontmatter 加 branch/source 字段）。
 - 历史别名：PlanningPool（v0.4.0 / D5+ 2026-08-07 起正名为 Goal；路径 `dev/pool/` 保留复用）。
 - 配套 CLI：`oxn goal {create,list,show,work,archive}` 5 子命令。
+- **Goal 1:1 锁定 feat-branch**——`branch: feat/goal-<slug>` 强一致；CLI 校验；`feat/gooal-<slug>` 拼写错误属 commit 阻断项。
+- **Goal 晚绑 Version**——frontmatter 不含 `version` 字段（`scheduled-version: ~`）；Version cut 时才绑定；详见 Inv12GoalVersionRename。
+- **Goal 完成 → 下一个 Goal**——Goal status=done 触发 release-cut 评估；不强制 cut（cut 由 forcing function 驱动）。
 
 ### RoadmapDeprecated
 - Roadmap 概念已退役（v0.4.0 / D5+ 2026-08-07）—— 设计稿 `.openxenon/drafts/design-version-iteration-redesign.md` §2.2 决策。
 - 历史：`dev/versions/<slug>.md` 前瞻性版本计划文档；frontmatter 必填 `version`；scheduling 时由 `git mv` 从 PlanningPool 来。
 - 当前：D5+ 起前瞻 intent 移到 Goal 层（`dev/pool/`）；回顾记录移回 Version（`.changes/`）；`dev/versions/` 目录整体退役（含 README + Blueprint-2.md 模板归档到 `.openxenon/.archived/dev/versions/`）。
-- 注意：与 AssetKind=assetmap（AssetMap）是不同概念（不同情态、不同位置），历来分清（RFC-0013 D4）。🆕 v0.6.4 起 AssetKind 枚举值已改为 `assetmap`。
+- 注意：与 AssetKind=assetmap（AssetMap）是不同概念（不同情态、不同位置），历来分清。AssetKind 枚举值已改为 `assetmap`。
 - 退役扫描：`scripts/check-versioned-docs.ts` 已豁免（`dev/versions/` 在 ALLOW_PATTERNS，但目录已删，规则失效无害）。
 
 ### FixRecord
 - 开发者面向的 bug 修复记录；住 `dev/fix/`；比 Version Fragment 更详细（含根因分析、调试过程）。
 - 不对外公开（dev/ 是开发者手册，不是产品文档）。
-- 与 Version Fragment 互补——fix record 给开发者，fragment 给用户（RFC-0013 D3）。
+- 与 Version Fragment 互补——fix record 给开发者，fragment 给用户。
 
 ### IntentPoolDeprecated
 - Intent Pool v3 已退役（v0.4.0 / D1 2026-08-07）—— 设计稿 .openxenon/drafts/design-version-iteration-redesign.md D1 决策。
 - 历史：5 池模型（research / design / issue / audit / journal）由 Insight 写入 `.openxenon/pools/<pool>/<slug>/frozen.json`；
-- 当前：D1 后 Insight 经 Draft 通路写入（origin=insight），详见 oxn-proof-domain.md §InsightDraftMapping（🆕 v0.6.4 PR-B：合并自 `oxn-insight-domain`）+ oxn-draft-domain.md §DraftOrigin。
+- 当前：D1 后 Insight 经 Draft 通路写入（origin=insight），详见 oxn-proof-domain.md §InsightDraftMapping+ oxn-draft-domain.md §DraftOrigin。
 - CLI 退役：`oxn pool {create,list,review,approve,reject}` 全部抛 `OXN_POOL_DEPRECATED`（兼容期 1 版本）。
 - 与 PlanningPool（dev/pool/）不同：PlanningPool = Goal 概念正名候选（D4 待后续 Wave），与 Intent Pool 是不同层次。
 - 配套：CLI 退役 1 版本后彻底移除 pool 命令代码 + 引擎层 `writePoolEntry` 等 util。
 
 ### VersionHygiene
-- 版本号卫生规则——Dev Version 版本号恒严格大于已发布 Release Version 版本号；OXN CLI 不注入 build metadata（git SHA / build timestamp / "dev" 标记），版本号字符串本身是 Dev/Release 在运行时的唯一区分器。流程保障：`release-cut` workflow 的 `post-publish-bump` slot 在 publish 后**立即** bump dev 到下一个 `-alpha.0`，关闭共享版本号过渡窗口。权威定义：[ADR-0083](../../docs/adrs/0083-version-hygiene-over-build-metadata.md)。
+- 版本号卫生规则——Dev Version 版本号恒严格大于已发布 Release Version 版本号；OXN CLI 不注入 build metadata（git SHA / build timestamp / "dev" 标记），版本号字符串本身是 Dev/Release 在运行时的唯一区分器。流程保障：`release-cut` workflow 的 `post-publish-bump` slot 在 publish 后**立即** bump dev 到下一个 `-alpha.0`，关闭共享版本号过渡窗口。
+- **Dev > Release**——Dev Version 版本号恒 > Release Version（如 `0.7.0-alpha.0` > `0.6.4`）；不允许共享版本号过渡期。
+- **无 build metadata**——OXN CLI 不注入 git SHA / build timestamp / "dev" 标记；版本号字符串本身是区分器。
+- **post-publish-bump 强制**——release-cut workflow 的 post-publish-bump slot 在 publish 后**立即** bump dev 到下一个 `-alpha.0`；不依赖人工纪律。
+- **8 文件一致性**——package.json 为版本号 SSOT；8 文件（package.json + cli/engine + 6 处 frontmatter）一致性由 `version-check` 强制。
 
 ## AssetDisambiguation
 
 ### AssetMap
-- 🆕 v0.7.0 RFC-0027 PR-F（D3）：canonical 归 `oxn-asset-domain.md §AssetMap`；本域仅保留指向。
 - AssetKind=assetmap 的语义别名（首选术语）——meta 索引层，AI 路由入口（6 scene 路由表 + Domain/Blueprint 索引）；不参与 references DAG。
-- 与 Roadmap（版本计划文档）不同情态、不同位置。原别名 "Roadmap" 已废弃，避免与版本计划文档混淆（RFC-0013 D4）。🆕 v0.6.4 起 AssetKind 枚举值已同步改为 `assetmap`。
+- 与 Roadmap（版本计划文档）不同情态、不同位置。原别名 "Roadmap" 已废弃，避免与版本计划文档混淆。AssetKind 枚举值已同步改为 `assetmap`。
 
 ## Forbidden
 
@@ -150,7 +159,7 @@ synced-at: 2026-08-08
 - **RFC → 项目工程元层禁止**（v0.3.0 新增，规定性不应依赖元入口）；
 - **产品手册 → 项目工程元层禁止**（v0.3.0 新增，README.md/AGENTS.md/.changes/dev 例外豁免通过 AGENTS.md 入口）；
 - **开发手册 → 项目工程元层禁止**（v0.3.0 新增）；
-- **Asset → 项目工程元层禁止**（v0.3.0 新增；v0.7.0 RFC-0028 §D3 撤销 CONTEXT-MAP.md 索引场景豁免）。
+- **Asset → 项目工程元层禁止**（v0.3.0 新增；v0.7.0 撤销 CONTEXT-MAP.md 索引场景豁免）。
 
 ### ForbiddenMetaInternalCoupling
 - readme-to-rfc
@@ -185,14 +194,13 @@ synced-at: 2026-08-08
 - 文档三情态严格分离——Asset（定义性，回答"是什么"）+ RFC（规定性，回答"为什么决定"）+ Doc（描述性，回答"怎么用"），三者各居其位，互不依赖。三情态全集中的任意两情态组合是设计错误信号。
 
 ### Inv2RfcSotDecisionLayer
-- 🆕 v0.7.0 RFC-0029 D1 修订：原 "RFC 是 SSOT" 措辞改为 "RFC/ADR = 规定性决策记录层"；与 AGENTS.md 裁决规则对齐。
 - **RFC/ADR = 规定性决策记录层（why）**——回答"为什么决定 X"的文档；住 `docs/rfc/zh-cn/RFC-XXXX-<theme>.md`；frozen + errata 演进策略；中文 only。
 - **现行约束语义 SSOT = `.openxenon/assets/domains/*.md`**（Asset 结构 v2：## Group → ### Axiom → - Theorem）——AI Agent 在 Blueprint 闭包时实际消费的"约束定义层"。
 - **工程术语外部 SSOT = `docs/product/zh-cn/concepts/glossary.md`**（单页；由 `scripts/sync-domain-glossary.ts` 单向生成，Domain → glossary）。
 - **ADR 不再作为独立机制**——v0.7 起所有 ADR 已迁移为 RFC + Domain 落点（48 Adopted → 8 主题 RFC + 4 meta-RFC；6 Superseded → `.openxenon/.archived/docs/adrs/`）。后续决策走 RFC + Domain 路径。
-- **引用方向**：RFC/ADR 正文/related 引用 Domain 锚点作为约束解释（RFC → Domain 方向，RFC-0028 已开先例）；Domain 不反向引用 RFC/ADR（assets-no-docs 规则）。
-- v0.3.0 增补（保留）：CONTEXT-MAP.md 中的 R&N 32 术语对照迁至 RFC-0018 附录 A（已由 RFC-0028 整体回收）。
-- 本 Invariant 修订须由 RFC 授权（RFC-0029）；未来变更走 Draft → RFC promote 路径。
+- **引用方向**：RFC/ADR 正文/related 引用 Domain 锚点作为约束解释（RFC → Domain 方向）；Domain 不反向引用 RFC/ADR（assets-no-docs 规则）。
+- v0.3.0 增补（保留）：CONTEXT-MAP.md 中的 R&N 32 术语对照已整体回收。
+- 本 Invariant 修订须由 RFC 授权；未来变更走 Draft → RFC promote 路径。
 
 ### Inv3BuiltinAssetTwoLayer
 - Built-in Asset 两层覆盖——`@oxn/` scope fallback（编译时内置）+ `@prj/` scope override（项目资产），后者优先。Phase 4 收窄为 probes + blueprints（D18）。
@@ -204,13 +212,10 @@ synced-at: 2026-08-08
 - 本域单向引用父域 oxn-domain——本域补父域未说的部分（项目工程元词汇）；不向下引用其他子域（oxn-engine-domain/oxn-asset-domain 等只作为术语引用，不作为 references 字段直接依赖）。
 
 ### Inv6Meta4Layer
-- 项目工程元层 4 类文档各居其位（v0.3.0 起；v0.4.0 D5+ 调整；v0.7.0 RFC-0028 §D1 撤销 CONTEXT-MAP.md）——README.md / AGENTS.md / .changes/ / dev/{fix,pool}/ 各自有 RFC-0018 锁定引用规则，互不混用。
+- 项目工程元层 4 类文档各居其位（v0.3.0 起；v0.4.0 D5+ 调整；v0.7.0 撤销 CONTEXT-MAP.md）——README.md / AGENTS.md / .changes/ / dev/{fix,pool}/ 各自有 RFC 锁定引用规则，互不混用。
 - 调整说明（v0.4.0 D5+）：`dev/versions/` 整体退役（RoadmapDeprecated）；`dev/pool/` 概念正名为 Goal；Version 回顾记录统一住 `.changes/`。
-- 调整说明（v0.7.0 RFC-0028）：CONTEXT-MAP.md 整体删除；Meta 层入口由 AGENTS.md §AI Agent 唯一入口段统一承担。
+- 调整说明（v0.7.0）：CONTEXT-MAP.md 整体删除；Meta 层入口由 AGENTS.md §AI Agent 唯一入口段统一承担。
 - 例外：README.md 与 docs/product/zh-cn/introduction.md slogan 双向同步（v0.6.2-alpha.2 锁定）。
-
-### Inv7ContextMapAssetIndexExempted
-- 🆕 v0.7.0 RFC-0028 D3 撤销：CONTEXT-MAP.md 已整体删除（2026-08-10），`context-map-asset-index-allowed` 守门规则同步删除。原 Inv7 失效——CONTEXT-MAP.md 不再是 Meta 层入口；Meta 层入口改由 `AGENTS.md` §AI Agent 唯一入口段承担（详见 RFC-0028 §D4）。本 Axiom 保留作为历史记录（git blame 可追溯）。
 
 ### Inv8ReadmeIntroductionSloganSync
 - README.md 与 docs/product/zh-cn/introduction.md slogan 双向同步（v0.6.2-alpha.2 锁定）—— README.md 是仓库根入口（含 GitHub 渲染），introduction.md 是 VitePress 产品入口。两者 slogan 一致；v0.6.2-alpha.2 同时替换 13 个文件（CONTEXT-MAP + README + docs/ + glossary/）。
@@ -222,7 +227,7 @@ synced-at: 2026-08-08
 - dev/ 可引用 RFC + sprint 设计稿（v0.3.0 起）——Roadmap（dev/versions/）与 PlanningPool（dev/pool/）作为前瞻性规划，可引用 .openxenon/drafts/rfc/ + .openxenon/drafts/sprint/ 作为探索稿溯源。check-doc-boundary.ts `dev-allow-rfc-ref` 规则允许此引用模式。
 
 ### Inv11IntentPoolV3Retired
-- Intent Pool v3 退役（v0.4.0 / D1 2026-08-07）——5 池机制（research/design/issue/audit/journal）吸收进 Draft（origin=insight，type-mapping 见 oxn-proof-domain.md §InsightDraftMapping；🆕 v0.6.4 PR-B：合并自 `oxn-insight-domain`）。
+- Intent Pool v3 退役——5 池机制（research/design/issue/audit/journal）吸收进 Draft（origin=insight，type-mapping 见 oxn-proof-domain.md §InsightDraftMapping）。
 - CLI `oxn pool *` 5 子命令兼容 1 版本后彻底移除；`.openxenon/pools/` 路径自始未创建；`writePoolEntry` 引擎 util 同步退役。
 - 配套 §Bans: deprecated-constructs-v0.4.0（禁新引用）；§Terms: IntentPoolDeprecated term（历史溯源）。
 - RFC-NNNN-version-iteration-redesign.md 待 D2/D3/D4 + RFC promote 后续 Wave 落地，详见 `.openxenon/drafts/design-version-iteration-redesign.md` §Promote。
@@ -253,5 +258,7 @@ synced-at: 2026-08-08
 - **`landing-reason` 豁免**——`declarative`（纯宣言无文件落地，如策略类 ADR）/ `external`（指向仓库外，如外部依赖升级不在本仓改）/ `postponed`（接受时未落地但有明确日期；超期需重新评估）。
 - **Decision 内容必须落 Domain**——`landing-files` 中至少一条路径为 `.openxenon/assets/domains/*.md`（决策落 Domain Axiom/Theorem 证明）；否则落地仅 filesystem 而非 SSOT，违反定义性 SSOT 原则。
 - **守门机制**——`scripts/check-adr-landing.ts`（pre-commit）扫描：Accepted + landing-files=[] + 无 landing-reason → 报错；对每条 landing-files 路径在 git diff（staged + unstaged）中匹配，无 diff → 报错。
-- **declarative 豁免门槛**——`landing-reason: declarative` 必须明确写（避免漏填）；纯术语正名类 ADR 可用此豁免（如 ADR-0066 同期 Domain 内容回迁已被 RFC-0027/0028 覆盖）。
-- **历史 ADR 不补**——存量 0066~0098 已 Accepted 不补 landing-files（ADR-0099 生效后未来 ADR 必须遵守）；回溯 audit 由 advisory 脚本处理。
+- **declarative 豁免门槛**——`landing-reason: declarative` 必须明确写（避免漏填）；纯术语正名类决策可用此豁免。
+- **历史 ADR 不补**——存量已 Accepted 的历史 ADR 不补 landing-files；未来决策必须遵守；回溯 audit 由 advisory 脚本处理。
+- **机制根唯一保留**——v0.7 后，`docs/adrs/` 仅 landing-files 机制根 ADR 保留（`status: Active-Mechanism`）；其余 ADR 物理归档至 `.openxenon/.archived/docs/adrs/`（相关 RFC 为该决策的授权）。
+- **RFC/ADR 决策落点必经 Domain**——每条 Accepted ADR/RFC 在 frontmatter `landing-files` 或 `related:` 中必须含至少一条 `.openxenon/assets/domains/*.md` 路径（per `scripts/check-adr-landing.ts` v0.8.0 规则 3）。

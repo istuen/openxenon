@@ -11,6 +11,7 @@ related:
   - ADR-0074: docs/adrs/0074-insight-ingredient-not-reasoner.md
   - ADR-0026: docs/adrs/0026-skill-three-partition-intent-align-proof.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0005: Insight 原料提供者非推理引擎 + Skill 三分发

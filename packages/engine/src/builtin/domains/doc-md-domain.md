@@ -13,7 +13,7 @@ synced-at: 2026-08-04
 
 # Domain: DocMdDomain
 
-> MD 文档编写通用领域。OXN 内置 5 起手 Asset 之一（ADR-0089 D1）。
+> MD 文档编写通用领域。OXN 内置 5 起手 Asset 之一。
 > 适用场景：项目消费者使用 OXN 引导后的文档编写 Domain。
 > 边界声明：仅覆盖 MD 文档编写的"通用"约定，不指向 OXN 自身术语体系。
 

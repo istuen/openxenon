@@ -8,6 +8,7 @@ accepted-at: 2026-07-27
 supersedes: []
 superseded-by: ~
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0013: 版本号政策——Versioning Policy

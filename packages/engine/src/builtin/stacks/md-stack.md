@@ -4,7 +4,7 @@ version: 0.1.0
 name: md-stack
 abstract: |
   MD 文档编写工具链：md-pipeline（OXN 自身 MD 引擎）+ markdownlint + markdown-link-check。
-  OXN 项目消费者 onboarding 5 起手 Asset 之一（ADR-0089 D1）。
+  OXN 项目消费者 onboarding 5 起手 Asset 之一。
   关键约束：所有项目文档必走 md-pipeline 编译；commit 前必跑 markdownlint。
 references: []
 citations: 0

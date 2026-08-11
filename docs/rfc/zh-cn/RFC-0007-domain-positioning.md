@@ -20,6 +20,7 @@ related:
   - ADR-0027: docs/adrs/0027-domain-as-ssot-governance.md
   - ADR-0034: docs/adrs/0034-work-precise-block-not-daemon-cascade.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0007: Domain 词汇架构与 OXN 定位——Referent 参照系 + 边界工程 + Ontology

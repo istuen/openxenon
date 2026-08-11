@@ -14,6 +14,7 @@ related:
   - RFC-0022: docs/rfc/zh-cn/RFC-0022-ideal-data-flow.md
 promoted-from: .openxenon/drafts/design-stack-operation-followup.md
 synced-at: 2026-08-07
+landing-reason: declarative
 ---
 
 # RFC-0025: Stack Operation 后续落地（3 项 P-RFC 收敛）

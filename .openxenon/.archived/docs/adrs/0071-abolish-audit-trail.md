@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-23
 supersedes:
   - ADR-0051
@@ -10,6 +10,8 @@ related:
   - .openxenon/drafts/rfc/0051-asset-paper-citation-network.md
   - .openxenon/assets/domains/oxn-asset-domain.md
   - .openxenon/drafts/rfc/0066-terminology-simplification.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0071: 废除 auditTrail 字段——Asset Paper 从 4 字段降为 3 字段

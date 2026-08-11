@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-23
 supersedes: null
 superseded-by: null
@@ -12,6 +12,8 @@ related:
   - .openxenon/drafts/rfc/0068-daemon-responsibility-boundary.md
   - .openxenon/CONTEXT-MAP.md
   - docs/product/zh-cn/concepts/work.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0075: Round loop 定位修订——从 OXN 强制机制改为 AI 搜索行为记录

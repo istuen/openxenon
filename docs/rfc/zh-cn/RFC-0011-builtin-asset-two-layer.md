@@ -10,6 +10,7 @@ related:
   - .openxenon/drafts/rfc-migration-master-plan.md
   - F1/F2/F3: OxnBuiltinRegistry 三 SSOT 不一致 + scope 绕过 + stale path
 synced-at: 2026-07-26
+landing-reason: declarative
 ---
 
 # RFC-0011: 内置 Asset 两层机制——`@oxn/` fallback + `@prj/` override

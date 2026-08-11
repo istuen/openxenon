@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0035: catalog.json schema + Probe-excluded 规则 + `oxn arsenal list`
 
 > **来源**：`docs_tmp/next-version-3.md`, `next-version-4.md` (2026-05-28)

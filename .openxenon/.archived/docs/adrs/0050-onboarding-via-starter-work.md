@@ -1,6 +1,15 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0050: Onboarding via Starter Work
 
+<!-- allow-version -->
 > **来源**：v0.6.3 Asset Paper Schema RFC §0.2
+<!-- /allow-version -->
 > **抽取日**：2026-07-05
 > **状态**：Adopted
 > **影响层**：L3-CLI（`oxn init` + `oxn work create`）
@@ -11,7 +20,9 @@
 
 ## 决策背景
 
+<!-- allow-version -->
 v0.7.x Memory RFC 计划用 5 步交互向导（`oxn memory onboard`）引导新项目：
+<!-- /allow-version -->
 1. Project Type
 2. Tech Stack
 3. Business Domain
@@ -53,9 +64,11 @@ $ oxn init --ai opencode
 # → 工程师可直接基于这些 Asset 创建新 Work
 ```
 
+<!-- allow-version -->
 ## 与 v0.6.x `oxn init` 的差异
 
 | 维度 | v0.6.x | v0.7.x（新）|
+<!-- /allow-version -->
 |---|---|---|
 | init 输出 | `.openxenon/` 目录结构 | `.openxenon/` + 自动 starter-work |
 | Asset 生成 | 手动 `oxn domain create` | starter-work IAP 自动产出 |
@@ -91,6 +104,8 @@ stack/myapp-stack.oxn           ✅ created by w-onboarding-...
 
 ## 参考
 
+<!-- allow-version -->
 - v0.6.3 Asset Paper Schema RFC §0.2
 - ADR-0049 Work/context.md 设计
 - v0.7.x Memory RFC §3（被反弹的 5 步 wizard）
+<!-- /allow-version -->

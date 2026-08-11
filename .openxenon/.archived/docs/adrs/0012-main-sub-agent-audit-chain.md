@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0012: Main/Sub Agent 审计链哲学
 
 > **来源**：`docs_tmp/kernel-infra-4.md` (2026-05-27)

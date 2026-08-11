@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0054: 三边界框架（Domain/Workflow/Stack 正交维度）
 
 > **状态**：✅ Adopted
@@ -7,7 +14,9 @@
 
 ## Context
 
+<!-- allow-version -->
 v0.6.1-alpha.1 有 6 种 AssetKind（domain/blueprint/stack/roadmap/library/external），边界类型混淆：
+<!-- /allow-version -->
 - Blueprint 承载"执行模板"行为，与"组合模板"职责混合
 - library/external 是为特定用例引入的独立类型，增加了概念负担
 - 工程师无法清晰区分"哪些 Asset 定义边界"vs"哪些 Asset 是模板"

@@ -15,6 +15,7 @@ related:
   - ADR-0019: docs/adrs/0019-blueprint-type-paradigm.md
 promoted-from: .openxenon/drafts/.archived/rfc/three-boundary-blueprint-elevation-rfc.md
 synced-at: 2026-08-05
+landing-reason: declarative
 ---
 
 # RFC-0020: 三边界框架 + Blueprint 提升组合模板
@@ -1231,10 +1232,10 @@ Phase 3 (ADR + 文档 + Roadmap, 收尾)
 
 - [v0.6 IAP 架构重构 RFC](../../docs/rfcs/v0.6-iap-refactor-rfc.md) — E1-E4 四实体模型
 - [MD-Native Grammar RFC](../../docs/rfcs/md-native-grammar-rfc.md) — H1/H2/H3 + nested list 语法范式
-- [ADR-0019](../../docs/adrs/0019-blueprint-type-paradigm.md) — Blueprint Type 范式（将被 Superseded）
-- [ADR-0020](../../docs/adrs/0020-intent-align-unified-matrix.md) — Intent-Align 统一矩阵
-- [ADR-0048](../../docs/adrs/0048-asset-library-external-scheme.md) — library/external 子目录（将被 Superseded）
-- [ADR-0051](../../docs/adrs/0051-asset-paper-citation-network.md) — Asset-as-Paper 论文结构
+- [ADR-0019](../../adrs/0019-blueprint-type-paradigm.md) — Blueprint Type 范式（将被 Superseded）
+- [ADR-0020](../../adrs/0020-intent-align-unified-matrix.md) — Intent-Align 统一矩阵
+- [ADR-0048](../../adrs/0048-asset-library-external-scheme.md) — library/external 子目录（将被 Superseded）
+- [ADR-0051](../../adrs/0051-asset-paper-citation-network.md) — Asset-as-Paper 论文结构
 - [2026-07-10 kind-isolation journal](../../pools/journals/2026-07-10-references-kind-isolation.md) — kind-isolation 原则确立
 - [v0.6.3 Asset Paper Schema RFC](../../docs/rfcs/v0.6.3-asset-paper-schema-rfc.md) — Library/External 设计原始 RFC
-- [ADR-0040~0047 Memory Series Superseded](../../docs/adrs/2026-07-05-archive-0040-0047-memory-series-superseded.md) — Memory 层反弹记录
+- [ADR-0040~0047 Memory Series Superseded](../../adrs/2026-07-05-archive-0040-0047-memory-series-superseded.md) — Memory 层反弹记录

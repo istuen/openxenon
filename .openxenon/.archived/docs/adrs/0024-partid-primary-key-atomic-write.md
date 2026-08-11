@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0024: partId 主键宪法 + atomic-write（write tmp + rename）
 
 > **来源**：`docs_tmp/task-oxn-1.md` (2026-05-21)

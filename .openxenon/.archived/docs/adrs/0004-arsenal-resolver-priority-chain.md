@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0004: ArsenalResolver 优先级链（Project > Global > Builtin）
 
 > **来源**：`docs_tmp/system-2.md` (2026-05-26)

@@ -13,6 +13,7 @@ related:
   - ADR-0033: docs/adrs/0033-iap-public-naming-disagreement.md
   - ADR-0036: docs/adrs/0036-canonical-oxn-naming-superseded.md
 synced-at: 2026-07-27
+landing-reason: declarative
 ---
 
 # RFC-0008: 命名精简与字段演进策略——Terminology Simplification & Field Evolution

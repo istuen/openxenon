@@ -7,6 +7,7 @@ date: 2026-08-02
 synced-at: 2026-08-02
 promote-target: rfc
 created-from: draft-skeleton-fork@0.1.0
+landing-reason: declarative
 ---
 
 <!-- allow-version -->

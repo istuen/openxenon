@@ -17,6 +17,7 @@ related:
   - ADR-0086: docs/adrs/0086-taint-trust-baseline-design.md
   - RFC-0016: docs/rfc/zh-cn/RFC-0016-generic-verification-probes.md
 synced-at: 2026-08-01
+landing-reason: declarative
 ---
 
 # RFC-0015: Proof 体系重整——产物命名 / Taint 接入 / 注册表收敛 / Probe 分层

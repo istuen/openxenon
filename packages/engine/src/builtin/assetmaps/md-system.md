@@ -4,7 +4,7 @@ version: 0.1.0
 name: md-system
 abstract: |
   MD 文档系统 4 场景路由：integrate / extend / collaborate / upgrade。
-  OXN 项目消费者 onboarding 5 起手 Asset 之一（ADR-0089 D1）。
+  OXN 项目消费者 onboarding 5 起手 Asset 之一。
   与 OXN 自身 oxn-system 6 scene 路由对齐（doc / dev / debug / test / release / onboard）。
   区别：oxn-system 面向 OXN 自身贡献者；md-system 面向项目消费者文档协作场景。
 references: []

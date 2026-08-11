@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.1.0
-status: Proposed
+status: Archived
 date: 2026-07-25
 supersedes: null
 superseded-by: null
@@ -10,6 +10,8 @@ related:
   - .openxenon/drafts/rfc/0080-error-terminology-unification-and-governance.md
   - .openxenon/drafts/error-code-registry.md
   - .openxenon/drafts/rfc/0072-oxn-as-referent-for-nondeterministic-agent.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0082: OXN Diagnostic 统一（LoggerPort + consola 隔离层 + 纯日志单通道）

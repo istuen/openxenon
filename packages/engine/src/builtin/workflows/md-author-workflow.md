@@ -4,7 +4,7 @@ version: 0.1.0
 name: md-author-workflow
 abstract: |
   MD 文档编写 6 slot 流水线：retrieve → design → develop → test → verify → review。
-  OXN 项目消费者 onboarding 5 起手 Asset 之一（ADR-0089 D1）。
+  OXN 项目消费者 onboarding 5 起手 Asset 之一。
   与 OXN 自身 dev-workflow 4 slot 兼容（retrieve/design/develop/test 4 子集对齐）。
 references:
   - doc-md-domain

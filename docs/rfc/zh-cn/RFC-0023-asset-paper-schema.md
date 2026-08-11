@@ -16,6 +16,7 @@ deferred-rfc:
 promoted-from: .openxenon/drafts/.archived/rfc/v0.6.3-asset-paper-schema-rfc.md
 note: 文件名带 v0.6.3 前缀；4 字段 schema 在 v0.6.1-alpha.1 落地，图渲染 deferred 到 v0.7.0
 synced-at: 2026-08-05
+landing-reason: declarative
 ---
 
 # RFC-0023: Asset Paper Schema — 引用计数 + 依赖 DAG
@@ -216,9 +217,9 @@ references:                        # 引用 Asset（不复制内容，只存指�
 ## 7. 关联 ADR
 
 - [ADR-0048 library/external 子目录方案](../../../.archived/docs/adrs/0048-asset-library-external-scheme.md)
-- [ADR-0049 Work/context.md 取代 Memory L1](../adrs/0049-work-context-md-replaces-memory.md)
-- [ADR-0050 Onboarding via Starter Work](../adrs/0050-onboarding-via-starter-work.md)
-- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../adrs/0051-asset-paper-citation-network.md)
+- [ADR-0049 Work/context.md 取代 Memory L1](../../adrs/0049-work-context-md-replaces-memory.md)
+- [ADR-0050 Onboarding via Starter Work](../../adrs/0050-onboarding-via-starter-work.md)
+- [ADR-0051 Asset-as-Paper 论文结构 + 引用计数 + DAG](../../adrs/0051-asset-paper-citation-network.md)
 
 ---
 

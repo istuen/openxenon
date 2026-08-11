@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-23
 supersedes: null
 superseded-by: null
@@ -10,6 +10,8 @@ related:
   - .openxenon/drafts/rfc/0073-oxn-implementation-boundary-criteria.md
   - .openxenon/drafts/rfc/0012-main-sub-agent-audit-chain.md
   - .openxenon/CONTEXT-MAP.md
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0076: 对抗关系归属与跨 LLM 参照锚点

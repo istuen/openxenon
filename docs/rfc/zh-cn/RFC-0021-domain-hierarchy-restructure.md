@@ -14,6 +14,7 @@ related:
 promoted-from: .openxenon/drafts/.archived/rfc/v0.7-domain-hierarchy-restructure-rfc.md
 note: 文件名带 v0.7 前缀是历史遗留，实际落地在 v0.6.1（见 .changes/0-6-1-domain-hierarchy.md）
 synced-at: 2026-08-05
+landing-reason: declarative
 ---
 
 # RFC-0021: Domain 三层架构（root / package / module）

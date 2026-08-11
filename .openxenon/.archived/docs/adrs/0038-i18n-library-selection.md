@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0038: i18n 库选型（Paraglide vs typesafe-i18n vs i18next）
 
 > **来源**：`docs_tmp/i18n-tool.md` (2026-05-23)

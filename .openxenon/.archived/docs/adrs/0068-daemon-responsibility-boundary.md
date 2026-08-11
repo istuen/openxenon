@@ -1,7 +1,7 @@
 ---
 entity: adr
 version: 1.0.0
-status: Accepted
+status: Archived
 date: 2026-07-22
 supersedes: null
 superseded-by: null
@@ -11,6 +11,8 @@ related:
   - .openxenon/assets/domains/oxn-engine-domain.md
   - .openxenon/assets/domains/oxn-work-domain.md
   - ADR-0067 彻底不判贯彻
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
 ---
 
 # ADR-0068: Daemon 职责边界——运行时状态监听 + 事件监听

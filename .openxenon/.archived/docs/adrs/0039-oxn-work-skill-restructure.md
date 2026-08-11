@@ -1,8 +1,17 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0039: oxn-work Skill 重构（拆 5 references + 4 assets）
 
 > **来源**：`docs_tmp/skill-1.md` (2026-07-03)
 > **抽取日**：2026-07-04
+<!-- allow-version -->
 > **状态**：Proposed → v0.7-plus-roadmap 待办
+<!-- /allow-version -->
 > **影响层**：Skill 架构
 
 ## 决策（提案）

@@ -1,9 +1,18 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0033: IAP 对外命名分歧（Intent/Align/Verify vs "出证明"）
 
 > **来源**：`docs_tmp/refactor-1.md` (2026-06-28)
 > **抽取日**：2026-07-04
 > **状态**：Superseded（保持"出证明"对外命名）
+<!-- allow-version -->
 > **superseded-by**：v0.6.1 命名统一（"出证明"成为正式对外命名）
+<!-- /allow-version -->
 > **影响层**：Brand / Docs 命名
 
 ## 决策
@@ -24,7 +33,9 @@ refactor-1 提出对外改为 "Intent/Align/Verify"（Proof 通俗化为 Verify�
 
 ### 否决理由
 
+<!-- allow-version -->
 - "出证明" 已经在 instruction.md / v0.6 RFC / 多处 docs 落地
+<!-- /allow-version -->
 - 改名带来 docs 全量更新成本
 - "Proof" 在工程语境（法律 / 数学证明）有精确含义，不算术语壁垒
 

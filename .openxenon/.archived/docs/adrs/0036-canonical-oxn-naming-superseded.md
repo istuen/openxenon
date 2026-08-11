@@ -1,14 +1,25 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0036: canonical.oxn 命名约定依据
 
 > **来源**：`docs_tmp/arsenal-oxn-2.md` (2026-05-21)
 > **抽取日**：2026-07-04
 > **状态**：Superseded（已用 blueprint.oxn + frozen.json 三件套替代）
+<!-- allow-version -->
 > **superseded-by**：blueprint.oxn + frozen.json 三件套（v0.6.1 正式替代 canonical.oxn）
+<!-- /allow-version -->
 > **影响层**：E1 Asset
 
 ## 历史决策
 
+<!-- allow-version -->
 v0.1 阶段 OXL 设计用 `canonical.oxn` 作为资产"正本"文件名（区别于"草稿"），由 `forge` 命令生成。
+<!-- /allow-version -->
 
 ## 当前状态
 

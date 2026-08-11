@@ -12,6 +12,7 @@ related:
   - RFC-0018: docs/rfc/zh-cn/RFC-0018-project-engineering-meta.md
   - ADR-0087: docs/adrs/0087-md-single-orthogonal-point.md
 synced-at: 2026-08-01
+landing-reason: declarative
 ---
 
 # RFC-0017: 术语双层 SSOT 架构——Domain 内部 + glossary 外部
@@ -30,12 +31,17 @@ OXN 术语体系重构为**双层 SSOT**：`.openxenon/assets/domains/*.md`（9 
 
 ## 决策要点
 
-### D1：术语双层 SSOT 角色定义
+### D1：术语三层 SSOT 角色定义
+
+<!-- allow-version -->
+> 🆕 v0.7.0 RFC-0029 D3 修订：原术语双层 SSOT 扩展为三层（RFC/ADR why 记录层 + Domain what 定义层 + glossary 用户视图层）；与 AGENTS.md 裁决规则第 1 档（定义性 SSOT = Domain）对齐。
+<!-- /allow-version -->
 
 | 层 | 角色 | 物理位置 | 受众 | 含什么 |
 |---|---|---|---|---|
-| **Domain（内部 SSOT）** | 术语权威定义源（含 inv/ban） | `.openxenon/assets/domains/*.md` | OXN Runtime / Engine / AI Agent | desc + inv + ban + 来源标注 |
-| **glossary（外部 SSOT）** | 面向用户的术语词典 | `docs/product/zh-cn/concepts/glossary.md` | 外部用户 / 产品手册读者 / 新工程师 | desc + glossary-ref + 视角标注 |
+| **RFC/ADR（why 记录层）** | 规定性决策记录——回答"为什么决定 X" | `docs/rfc/zh-cn/RFC-XXXX-<theme>.md` | 工程师 / AI 评审员 / 历史回溯 | Decision + Context + Alternatives + Consequences + Errata |
+| **Domain（内部 SSOT / what 定义层）** | 现行约束语义权威定义源（含 inv/ban） | `.openxenon/assets/domains/*.md` | OXN Runtime / Engine / AI Agent | desc + inv + ban + 设计理念（Group → Axiom → Theorem） |
+| **glossary（外部 SSOT / 用户视图层）** | 面向用户的术语词典 | `docs/product/zh-cn/concepts/glossary.md` | 外部用户 / 产品手册读者 / 新工程师 | desc + glossary-ref + 视角标注 |
 
 ### D2：单向同步 + 唯一入口
 
@@ -44,6 +50,9 @@ OXN 术语体系重构为**双层 SSOT**：`.openxenon/assets/domains/*.md`（9 
 - glossary 中允许 SYNC:START/END sentinel 之外的手工导读与索引，但术语本体不允许手工编辑
 - 方向：**Domain → glossary**，**绝不允许反向**（防止 glossary 篡改 SSOT）
 - 与 RFC-0009 D3.2 兼容：`Asset → docs/` ❌（直接引用禁止）；本 RFC 通过 sync 脚本建立合规通道 ✅
+<!-- allow-version -->
+- 🆕 v0.7.0 RFC-0029 D3 修订：RFC/ADR 正文/related 引用 Domain 锚点作为现行约束解释（RFC → Domain 方向，RFC-0028 已开先例）；Domain 不反向引用 RFC/ADR（assets-no-docs 规则）。
+<!-- /allow-version -->
 
 ### D3：Domain 承载所有 inv/ban
 
@@ -98,7 +107,7 @@ OXN 术语体系重构为**双层 SSOT**：`.openxenon/assets/domains/*.md`（9 
 | `insight.md` | 含 term 定义 | 同上 |
 | `lifecycle.md` | 含 term 定义 | 同上 |
 | `asset-paper.md` | 含 term 定义 | 同上 |
-| `_index.md` | 概念索引 | 顶部加 "所有术语请查 [glossary.md](./glossary.md)" |
+| `_index.md` | 概念索引 | 顶部加 "所有术语请查 [glossary.md](./../../product/zh-cn/concepts/glossary.md)" |
 
 具体规则：
 
@@ -228,7 +237,7 @@ name: scripts/sync-domain-glossary.ts
 ### Phase 3：8 个概念页去重
 
 1. 逐页移除 term 定义段，改 narrative + `[X](./glossary.md#x)` 引用
-2. 每个概念页顶部加 "术语见 [glossary.md](./glossary.md)" 指针
+2. 每个概念页顶部加 "术语见 [glossary.md](./../../product/zh-cn/concepts/glossary.md)" 指针
 3. `concepts/_index.md` 重排：8 个概念页 + glossary 字典页
 
 ### Phase 4：删除 `docs/glossary/zh-cn/` 多文件
@@ -264,8 +273,8 @@ name: scripts/sync-domain-glossary.ts
 - [RFC-0009 文档三情态分离](./RFC-0009-doc-three-modalities.md) — Asset/RFC/Doc 三情态基线；D3 边界规则是本 RFC 合规依据
 - [RFC-0014 Asset 注入机制](./RFC-0014-asset-injection-mechanism.md) — Domain 解析
 - [RFC-0018 项目工程元层与 SSOT 全景](./RFC-0018-project-engineering-meta.md) — Meta 层 5 类 + 跨层引用规则
-- [ADR-0087 MD 唯一正交点](../adrs/0087-md-single-orthogonal-point.md) — MD frontmatter 唯一机器可读元数据源，禁止平行 yaml
-- [ADR-0059 Domain reference model v2](../adrs/0059-domain-reference-model-v2.md) — sub→root 引用机制（D2）；本 RFC 需补一个 errata 强化
+- [ADR-0087 MD 唯一正交点](../../adrs/0087-md-single-orthogonal-point.md) — MD frontmatter 唯一机器可读元数据源，禁止平行 yaml
+- [ADR-0059 Domain reference model v2](../../adrs/0059-domain-reference-model-v2.md) — sub→root 引用机制（D2）；本 RFC 需补一个 errata 强化
 
 ## Errata
 
@@ -304,3 +313,21 @@ name: scripts/sync-domain-glossary.ts
 - **影响**：术语提取（D7 sync）现在跨所有 Term 类 Group 工作；Engine 不再硬编码 `## Terms:` 段名。
 
 > 本段用于后续追加修正说明。核心决策自 RFC Accepted 起冻结。
+
+<!-- allow-version -->
+
+### v0.3 (2026-08-11) — RFC-0029 + RFC-0030 收尾修订
+
+<!-- /allow-version -->
+
+- **背景**：RFC-0029 D3 扩展原 D1/D2 双层 SSOT 架构为三层（why 记录层 + what 定义层 + 用户视图层）；RFC-0030 D3 进一步收尾与历史 ADR 物理归档配套。
+- **D1 修订**（原双层 SSOT 表格）：
+  - **RFC/ADR = why 记录层**（住 `docs/rfc/zh-cn/RFC-XXXX-<theme>.md`）
+  - **Domain = what 定义层**（住 `.openxenon/assets/domains/*.md`；AI Agent L2 闭包实际消费）
+  - **glossary = 用户视图层**（住 `docs/product/zh-cn/concepts/glossary.md`；sync 脚本单向生成）
+- **D2 修订**（原单向同步规则）：
+  - 新增"RFC/ADR 正文/related 引用 Domain 锚点作为现行约束解释（RFC → Domain 方向，RFC-0028 已开先例）"
+  - Domain 不反向引用 RFC/ADR（assets-no-docs 规则）
+- **D3 配套**：ADR 不再独立机制；87 ADR 已迁移或归档（详见 `.openxenon/.archived/docs/adrs/`）；仅 ADR-0099 保留为机制定义根（per RFC-0030 D1）
+- **D7 sync 脚本不变**：仍只读 Domain，不读 RFC；改动仅影响叙事层，不影响数据流
+- **影响**：术语双层 SSOT 升级为三层；RFC-0029 D1 Inv2RfcSotDecisionLayer 修订 + RFC-0030 D1 ADR 物理归档共同构成 v0.7.0 文档架构完整闭环

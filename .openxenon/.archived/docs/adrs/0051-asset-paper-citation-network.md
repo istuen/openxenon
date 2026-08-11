@@ -1,6 +1,15 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0051: Asset-as-Paper 论文结构 + 引用计数 + DAG
 
+<!-- allow-version -->
 > **来源**：v0.6.3 Asset Paper Schema RFC §1.1, §1.3
+<!-- /allow-version -->
 > **抽取日**：2026-07-05
 > **状态**：Adopted（`auditTrail` 部分被 [ADR-0071](./0071-abolish-audit-trail.md) 废除；`abstract` + `references` + `citations` + DAG 仍有效）
 > **影响层**：L1-Infra（Asset IO）+ L2-Engine（引用计数 + DAG 校验）
@@ -85,7 +94,9 @@ function computeCitations(assets: Asset[]): void {
 }
 ```
 
+<!-- allow-version -->
 **动态监听**（v0.7.1 优化）：
+<!-- /allow-version -->
 - Asset 新增/修改/删除触发增量重算
 - `oxn asset graph <name>` 实时显示子树
 
@@ -155,8 +166,10 @@ Low citations:
 - ✅ 依赖网络显式化（DAG 校验）
 - ✅ 循环引用检测（耦合度告警）
 - ✅ 基础 vs 应用 Asset 自动分层（影响半径不同）
+<!-- allow-version -->
 - ⚠ 引用计数性能瓶颈（N > 10K 需优化，v0.7.1 增量）
 - 🔗 关联 v0.7.0 W11-12 Asset 影响图（数据源）
+<!-- /allow-version -->
 
 ## 反模式
 
@@ -167,7 +180,9 @@ Low citations:
 
 ## 参考
 
+<!-- allow-version -->
 - v0.6.3 Asset Paper Schema RFC §1.1, §1.3
 - ADR-0048 library/external 子目录
 - v0.7.0 W11-12 Asset 影响图计划
 - harness-3.md §Memory 层（v0.6.3 重新定位为"Asset 价值量化"）
+<!-- /allow-version -->

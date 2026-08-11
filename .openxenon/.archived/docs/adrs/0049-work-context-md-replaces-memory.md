@@ -1,6 +1,15 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0049: Work/context.md 取代 Memory L1
 
+<!-- allow-version -->
 > **来源**：v0.6.3 Asset Paper Schema RFC §3
+<!-- /allow-version -->
 > **抽取日**：2026-07-05
 > **状态**：Adopted
 > **影响层**：L2-Work（context.md schema + lifecycle）
@@ -11,7 +20,9 @@ Work 内动态上下文不再走 `.openxenon/memory/`，而是使用 `works/<wor
 
 ## 决策背景
 
+<!-- allow-version -->
 v0.7.x Memory RFC 反弹后，Work 内"易失信息"（当前 Round、临时推导、工具结果）需要新承载：
+<!-- /allow-version -->
 
 | 原方案（被反弹）| 新方案（本 ADR）|
 |---|---|
@@ -84,12 +95,16 @@ Loop N（每轮）→ 追加到 Loop History + Key Observations
    ↓
 Work finalize → context.md 冻结（不再修改）
    ↓
+<!-- allow-version -->
 [可选] 写一份 summary 到 .openxenon/works/<id>/memory-summary.md（v0.8.0 计划）
+<!-- /allow-version -->
 ```
 
 ## 后果
 
+<!-- allow-version -->
 - ✅ 取代 v0.7.x Memory L1（无需新模块）
+<!-- /allow-version -->
 - ✅ 自动获得 Work 的 8 阶段流程（validate/lock/run/submit/finalize）
 - ✅ Work finalize 后 context.md 冻结（满足"易失信息"特性）
 - ✅ KV Cache 优化：context.md 字节级稳定 → Stable Prefix
@@ -103,6 +118,8 @@ Work finalize → context.md 冻结（不再修改）
 
 ## 参考
 
+<!-- allow-version -->
 - v0.6.3 Asset Paper Schema RFC §3
 - ADR-0050 Onboarding via Starter Work
 - v0.7.x Memory RFC 反弹记录（archive/）
+<!-- /allow-version -->

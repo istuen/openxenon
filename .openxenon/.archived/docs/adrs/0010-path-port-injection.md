@@ -1,3 +1,10 @@
+---
+entity: adr
+status: Archived
+archived-at: 2026-08-11
+archived-by: RFC-0030-D1
+---
+
 # ADR-0010: PathPort 注入原理（L0 不能硬编码路径）
 
 > **来源**：`docs_tmp/kernel-45.md`, `kernel-46.md` (2026-05-26)
