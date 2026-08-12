@@ -86,6 +86,14 @@ synced-at: 2026-08-09
 - **Asset = 边界声明**——不描述"系统如何变化"（运行时语义在 Engine 内核），只描述"什么存在 / 什么不允许 / 什么是术语"。Engine 用 classifyAxiom 归并到 DomainTerm/DomainBan/DomainInvariant/DomainStackEntry 4 个原子字段（无 sub-bullet）。
 - **形式推理归工程师**——若项目需严格本体推理（class hierarchy + property constraint + 自动 consistency check），应走外部工具（Protege / SHACL / OWL reasoner）；OXN 不内建形式推理机，OXN 提供稳定语汇 + 引用图。
 - **OXN 与 LLMs 的边界**——LLM Agent 知识全集（世界模型）由 LLM 自带，OXN 提供 Asset 参照锚点（确定性边界）让 LLM 推理有对齐基准；两者职责分工。
+- 与"知识工程"边界：Asset = 边界线索（boundary clue）≠ 知识（knowledge）；OXN 做边界工程不做知识工程——见紧随的 `### BoundaryEngineeringVsKnowledgeEngineering` Axiom。
+
+### BoundaryEngineeringVsKnowledgeEngineering
+- 工程语义二分（Domain SSOT 锚定；why 记录层由 docs/rfc/zh-cn/ 承担）：边界工程（boundary engineering）= 定义"什么存在 / 什么不允许 / 什么是术语"；OXN 立法管辖。知识工程（knowledge engineering）= 把经验沉淀为可复用知识；属"价值判断"范畴，OXN 立法不管。
+- OXN 的边界工程职责：提供稳定语汇（Domain term/ban/invariant）+ 引用图（Asset references DAG）+ 行为契约（Blueprint slot + Scope + observe）；提供客观见证（Proof frozen.json）——只见证事实、不评判质量；提供经验回流通道（Draft → Promote）——但通道本身是边界工程的产物，不是知识工程的产物。
+- OXN 不承担的知识工程职责：哪些经验值得沉淀（价值判断）→ 工程师；沉淀后的知识如何组织（语义归类）→ 工程师 + AI 自然语言推理；沉淀冲突如何仲裁（多版本决策）→ 工程师 review + Asset evolve。
+- 行为规则：AI 不能直接建 Asset（`### Inv21AiAssetViaDraft`）——AI 输出必须先落 Draft，经工程师 review 后才能升 Asset。这条规则同时锁住边界工程的"边界"和知识工程的"决策"。
+- glossary-ref: boundary-engineering-vs-knowledge-engineering
 
 ## Forbidden
 

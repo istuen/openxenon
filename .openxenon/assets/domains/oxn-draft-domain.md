@@ -118,6 +118,13 @@ synced-at: 2026-08-09
 - D8 推迟扩展：AI Agent 自动推断 promote-target（基于内容关键字）；多人协同 Draft（lock/concurrent edit）。
 - v0.6.3 Q2 推迟：skeleton 版本号 + sync 机制；skeleton 演进通知；OXN_DRAFT_SKELETON_NOT_FOUND 加可发现性 hint。
 
+### BoundaryLearning
+- 经验回流 Asset 的唯一 SSOT 锚定路径（v0.7+ 收口术语，why 记录层由 docs/rfc/zh-cn/ 承担）：memory.md（Work 动态记录）→ Draft（`origin: insight`）→ 工程师 review → Promote Asset。
+- 术语对照：**边界学习**（boundary learning，本 Axiom 锁定）= 把协作经验回灌到边界定义；走 Draft lifecycle，工程师闸门。**知识沉淀**（knowledge deposition，**禁止使用**）= 假设存在"知识本体"概念；与 oxn-asset-domain 的 AssetAsOntology Axiom "Asset = 边界线索 ≠ 知识" 冲突，已 ban（oxn-proof-domain §ForbiddenConstructs: `autoInsightApply` / `autoPatternPromote`）。**经验回流**（experience refluxing，本 Axiom 同义别名）= 工程师视角的同义说法。
+- 路径阶段（与 `### DraftPromoteLifecycle` 4 阶段对应）：(1) 留痕：`works/<id>/memory.md` append-only 记录过程信号（Round Notes + Key Observations）；(2) 候选：Insight 扫描 Work 的 memory.md → 生成 Draft（`origin: insight`，`promote-target: asset` 或 `rfc`）；(3) 闸门：工程师 `oxn draft list --origin=insight` 检视 → `oxn draft show <name>` → 决定 `archive` / `discard` / `promote`（与 `### Inv8OriginIdentifiesProducerV040` 协同）；(4) 升格：Promote 走 draft-promote-router Blueprint → 落 `.openxenon/assets/{kind}/{name}.md` 或 `docs/rfcs/zh-cn/RFC-XXXX-<theme>.md`。
+- 硬约束（来自 oxn-proof-domain / oxn-asset-domain 现有 Invariant，本 Axiom 不重复）：路径必经工程师闸门（oxn-proof-domain §`Inv31InsightManualGateViaDraft` + oxn-asset-domain §`Inv21AiAssetViaDraft`）；Draft origin=insight 不允许工程师改回 origin=human（`### Inv8OriginIdentifiesProducerV040`）；Draft 文件不被 Work / Asset / Proof 直接消费，仅在 promote 后才进 Asset 生命周期（`### Inv1DraftIsDescriptiveModality`）。
+- glossary-ref: boundary-learning
+
 ## PromoteRoute
 
 ### PromoteRoute

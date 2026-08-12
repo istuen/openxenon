@@ -64,3 +64,12 @@ synced-at: 2026-08-08
 - PEAS P 故意外包给工程师——OXN 立法"彻底不判"，不做性能度量最大化。
 - outcome 聚合结构只提供各状态 Probe 数量，不聚合判定"整体合格/失败"。判定权归工程师。
 - R&N 对照：R&N 假定 agent 自带性能度量并最大化；OXN 的 P 不在系统内，在工程师脑子里。
+
+## Slogan
+
+### EngineeringDefinesAgentBoundary
+- OpenXenon 的唯一产品目标（Domain SSOT 锚定；why 记录层由 `docs/rfc/zh-cn/` 承担）：工程（OpenXenon）是定义 AI Agent 协作边界的工具。
+- 边界三分类（与 E1-E3 实体对应）：静态约束边界（E1 Asset）由 Domain 词汇/禁令/不变量 + Workflow 槽位拓扑 + Stack 环境约束 + Blueprint 组合 + AssetMap 路由承载，由工程师定义、OXN 强校验；运行时上下文边界（E2 Work）由 PlanLock 5-hash（workMd / workContext / blueprints / tasks / taskContexts）封存，lock 后漂移立即阻断；客观见证边界（E3 Proof）由 chmod 0o444 + SHA-256 self-excluding content_hash 的 frozen.json 承载，只记录事实、不评判正确性。
+- 三方分工（与 `### OpenXenonThreePartyCollaboration` 同构）：工程师 = 边界定义者（Asset 管理 + 边界演化判断）；AI Agent = 边界内执行者（Work 内自主工作；可在 Scope 范围内偏离路径）；OXN Engine = 客观见证者（确定性参照系；Kernel Zero IO；Infra No Verdict）。
+- 与"性能度量最大化"（R&N 默认）正交：本 Axiom 把"价值判断"外包给工程师，不内建性能度量函数；见 `### PerformanceMeasureNotEnforced`。
+- glossary-ref: engineering-defines-agent-boundary

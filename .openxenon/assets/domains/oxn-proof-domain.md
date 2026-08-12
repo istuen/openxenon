@@ -20,8 +20,21 @@ synced-at: 2026-08-09
 ## Concept
 
 ### Proof
-- OXN 验证 AI Agent 执行结果并记录的协作**过程**证明（不是结果证明）。执行主体 OXN Engine（记录事实不评判）；物理观测 L1-Infra + 客观结果 L0-Kernel。物理产物（`frozen.json` + `outcome.md` + `trace.jsonl` + `state.json`）是副作用，**不是** Proof 术语本身。
-- 聚合结果字段详见 `### outcome`（下方）；IAP 阶段名 = Proof Domain 实例化之一（与 Intent/Align 并列，但当前已少用 Intent/Align）。
+- OXN Engine 对 AI Agent 执行结果的**客观见证**（attestation）。见证 = "AI 做了什么"（事实层面，可机器判定），不评判 = "做得好不好"（价值层面，需工程判断）。
+- 工程语义对照：notarization（公证）≠ verification（验证）。公证是确定性行为（hash / 谓词 / 触发）；验证是工程判断（业务正确性 / 设计合理性）。OpenXenon 锁定公证语义；验证语义归工程师 + AI 自然语言推理。
+- 物理观测 L1-Infra（Provider）+ 客观结果 L0-Kernel（`judge`）+ 人类可读 L2-Engine（`outcome.md`）；分层零耦合。
+- 物理产物（`frozen.json` + `outcome.md` + `trace.jsonl` + `state.json`）是副作用，**不是** Proof 术语本身。
+- 聚合结果字段详见 `### Outcome`（下方）；IAP 阶段名 = Proof Domain 实例化之一（与 Intent/Align 并列，但当前已少用 Intent/Align）。
+- 与 `### ProofAsAttestationNotVerification`（紧随）配套定义"公证 vs 验证"边界。
+
+### ProofAsAttestationNotVerification
+- 工程语义边界：Proof 是**公证**（notarization），不是**验证**（verification）。
+- 公证的可判定性：数字文件存在（`fs.existsSync`）→ 确定性；文件内容匹配某 hash（`sha256(file) == declared_hash`）→ 确定性；文件内容包含某字符串（`file_contains(path, pattern)`）→ 确定性；进程退出码（`shell_exec(cmd) returns 0`）→ 确定性；所有 builtin Probe 类型（`### Inv1BuiltinProbeTypes`）都是确定性谓词，不引入 LLM 判断。
+- 验证的不可判定性（OXN 不承担）："代码是否正确实现业务逻辑"——需业务理解，需工程判断；"测试通过是否证明功能可用"——需产品判断；"代码风格是否规范"——需团队共识；价值判断 = 不可机器判定 = 归工程师。
+- 行为规则：ProbeOutcome DEVIATED 时只通知（`### Inv9ProbeDeviationNotifiesNotBlocks`），不阻断 Work finalize；OXN 不基于 outcome 判定"整体合格/失败"（`### Inv10ProofNeutralRecord`）。
+- 工程师判断路径：基于 frozen.json（事实证据）+ outcome.md（人类可读判定）+ memory.md（过程记录）+ Domain invariants（业务约束）综合判断；OXN 提供事实层，不提供判断层。
+- 与 `### TestProofBoundary`（oxn-work-domain 引用）协同：测试（开发期主动验证）与 Proof（finalize 期独立见证）正交；同一观测目标不应既走测试又走 Proof（oxn-work-domain 的 TestProofBoundary Term 锁定）。
+- glossary-ref: proof-attestation-not-verification
 - **Proof = 协作过程证明，非结果证明**——OXN 记录"如何验证"的过程，不持有"任务是否合格"的判定；合格判定归工程师。
 - **Proof 物理四件套**——`frozen.json`（不可变快照）+ `outcome.md`（人类可读）+ `trace.jsonl`（事件流）+ `state.json`（运行时状态）；4 文件必须同步产出。
 - **Proof 与 Insight 正交**——Proof 是单次协作过程产物；Insight 是跨 Work 涌现信号；两者职责分明，不可混用。

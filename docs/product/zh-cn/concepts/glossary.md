@@ -2,7 +2,7 @@
 title: 术语表
 entity: glossary
 generated-by: scripts/sync-domain-glossary.ts
-synced-at: 2026-08-11
+synced-at: 2026-08-12
 ---
 
 # 术语表
@@ -135,6 +135,16 @@ C2 fallback + 通过以太坊主网智能合约下发新 C2 域名（攻击者�
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#blueprintpropsfunnel) — Blueprint props ≠ Part props 合集，是**漏斗**：Blueprint 通过硬编码 / 拼接 / 默认值吸收子层复杂度；Blueprint 充当"参数收敛器"，简化上层调用。
 
+### BoundaryEngineeringVsKnowledgeEngineering
+
+
+- [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#boundaryengineeringvsknowledgeengineering) — 工程语义二分（Domain SSOT 锚定；why 记录层由 docs/rfc/zh-cn/ 承担）：边界工程（boundary engineering）= 定义"什么存在 / 什么不允许 / 什么是术语"；OXN 立法管辖。知识工程（knowledge engineering）= 把经验沉淀为可复用知识；属"价值判断"范畴，OXN 立法不管。
+
+### BoundaryLearning
+
+
+- [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#boundarylearning) — 经验回流 Asset 的唯一 SSOT 锚定路径（v0.7+ 收口术语，why 记录层由 docs/rfc/zh-cn/ 承担）：memory.md（Work 动态记录）→ Draft（`origin: insight`）→ 工程师 review → Promote Asset。
+
 ### BuiltinAsset
 
 
@@ -265,6 +275,11 @@ v0.4.0（D1 2026-08-07）起禁止新建/引用——Intent Pool v3 退役并吸
 
 
 - [oxn-draft-domain](/openxenon/assets/domains/oxn-draft-domain.md#drafttype) — Draft 用途分类——3 类：report（调研报告） / issue（问题记录） / design（设计稿）。映射到文件名前缀（Q-S1/Q-S5）：
+
+### EngineeringDefinesAgentBoundary
+
+
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#engineeringdefinesagentboundary) — OpenXenon 的唯一产品目标（Domain SSOT 锚定；why 记录层由 `docs/rfc/zh-cn/` 承担）：工程（OpenXenon）是定义 AI Agent 协作边界的工具。
 
 ### EscapeHatchAxiomNameCarrying
 
@@ -1523,8 +1538,13 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 ### Proof
 
 
-- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#proof) — OXN 验证 AI Agent 执行结果并记录的协作**过程**证明（不是结果证明）。执行主体 OXN Engine（记录事实不评判）；物理观测 L1-Infra + 客观结果 L0-Kernel。物理产物（`frozen.json` + `outcome.md` + `trace.jsonl` + `state.json`）是副作用，**不是** Proof 术语本身。
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#proof) — OXN Engine 对 AI Agent 执行结果的**客观见证**（attestation）。见证 = "AI 做了什么"（事实层面，可机器判定），不评判 = "做得好不好"（价值层面，需工程判断）。
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#proof) — 通过 Probes 对协作成果进行验证，并提供证明。
+
+### ProofAsAttestationNotVerification
+
+
+- [oxn-proof-domain](/openxenon/assets/domains/oxn-proof-domain.md#proofasattestationnotverification) — 工程语义边界：Proof 是**公证**（notarization），不是**验证**（verification）。
 
 ### ProofAsObjectiveOutcome
 
