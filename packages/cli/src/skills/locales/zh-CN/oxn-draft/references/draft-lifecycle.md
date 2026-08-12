@@ -209,20 +209,22 @@ Draft 文件**可被 Promote Blueprint 的 gather slot 读取**（作为提升�
 ### 8.1 promote 命令
 
 ```bash
-oxn draft promote <name> [--target auto|rfc|asset|work] [--archive-after]
+oxn draft promote <name> [--target auto|rfc|asset|goal] [--goal-slug <slug>] [--archive-after]
+# v0.7.0+: --target work 废弃（OXN_DRAFT_TARGET_WORK_DEPRECATED），引导走 --target goal
 ```
 
 **4 阶段生命周期**（走 draft-promote-router Blueprint）：
 
 1. **gather** — 读 Draft frontmatter + body
 2. **select-target** — 读 promote-target 字段（或 `--target` 覆盖）
-3. **validate** — 校验必填字段（promote-target + promote-kind 仅 target=asset）
+3. **validate** — 校验必填字段（promote-target + promote-kind 仅 target=asset；--target=goal 需 --goal-slug）
 4. **dispatch-target** — 路由到 promote-target-aware-workflow Blueprint 对应 sub-target
 
-**7 sub-target**：
+**8 sub-target**（v0.7.0 RFC-0026 D2 加 promote-draft-goal）：
 - `promote-rfc` → `docs/rfcs/zh-cn/RFC-XXXX-<theme>.md`
 - `promote-asset-{domain|workflow|stack|blueprint|assetmap}` → `.openxenon/assets/{kind}/{name}.md`
-- `promote-work` → `.openxenon/works/<id>/work.md`
+- `promote-work` → `.openxenon/works/<id>/work.md`（v0.7.0 起拒收，OXN_DRAFT_TARGET_WORK_DEPRECATED）
+- `promote-draft-goal` → `dev/pool/<slug>.md`（v0.5.0 新增，v0.7.0 RFC-0026 D2 CLI 落地）
 
 **关键约束**：
 - 源 Draft 文件 mtime 不变（不修改原 Draft）
@@ -232,7 +234,8 @@ oxn draft promote <name> [--target auto|rfc|asset|work] [--archive-after]
 ### 8.2 retarget 命令
 
 ```bash
-oxn draft retarget <name> --new-target <rfc|asset|work> [--new-kind <5 AssetKind>]
+oxn draft retarget <name> --new-target <rfc|asset|goal> [--new-kind <5 AssetKind>]
+# v0.7.0+: --new-target work 废弃（同 promote 拒收逻辑）
 ```
 
 **职责**：
@@ -248,17 +251,19 @@ oxn draft retarget <name> --new-target <rfc|asset|work> [--new-kind <5 AssetKind
 ### 8.3 Skeleton 派生（asset-create --mode skeleton；🆕 v0.7.0 RFC-0027 PR-H 合并自 draft-skeleton-fork）
 
 ```bash
-oxn draft create <name> --target <rfc|asset|work> [--kind <5 AssetKind>]
+oxn draft create <name> --target <rfc|asset|goal> [--kind <5 AssetKind>] [--goal-slug <slug>]
 # 内部 CLI 调用：asset-create --mode skeleton
+# v0.7.0+: --target goal 加 --goal-slug；work 路径走 oxn goal create（不再直接 work target）
 ```
 
-**7 个 skeleton 模板**（`.openxenon/draft-skeletons/`）：
+**8 个 skeleton 模板**（`.openxenon/draft-skeletons/`；v0.7.0 RFC-0026 D2 加 goal.md）：
 - `rfc.md` — RFC skeleton
 - `asset-{domain|workflow|stack|blueprint|assetmap}.md` — 5 AssetKind skeleton
 - `work.md` — Work skeleton
+- `goal.md` — Goal skeleton（v0.7.0 RFC-0026 D2 新增；`--target goal` 升华路由依赖）
 
 **注入字段**：
-- `promote-target: <rfc|asset|work>`（必填）
+- `promote-target: <rfc|asset|goal>`（必填；work v0.7.0+ 废弃）
 - `promote-kind: <5 AssetKind>`（仅 target=asset）
 - `created-from: asset-create@3.0.0-mode-skeleton`（🆕 v0.7.0 RFC-0027 PR-H：原 `draft-skeleton-fork@0.1.0`）
 - `synced-at: <YYYY-MM-DD>`

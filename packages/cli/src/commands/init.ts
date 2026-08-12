@@ -57,12 +57,13 @@ function ensureProjectBoundary(projectRoot: string): void {
   if (!existsSync(gitignorePath)) {
     writeFileSync(gitignorePath, PROJECT_BOUNDARY_GITIGNORE, 'utf-8')
   }
-  // v0.6.3 Fix #1: 落地 7 skeleton 模板到 .openxenon/draft-skeletons/
+  // v0.6.3 Fix #1: 落地 8 skeleton 模板到 .openxenon/draft-skeletons/（v0.7.0 RFC-0026 D2 加 goal.md）
   ensureBuiltinSkeletons(projectRoot)
 }
 
 /**
- * v0.6.3 Fix #1: 创建 7 内置 skeleton 模板（rfc / asset-{5} / work）
+ * v0.6.3 Fix #1: 创建 8 内置 skeleton 模板（rfc / asset-{5} / work / goal）
+ *   - v0.7.0 RFC-0026 D2: 加 goal.md（--target goal 升华路径依赖）
  *
  * 用途：新项目 `oxn draft create --target` 立即可用，无需手动复制模板。
  * 失败 fallback：创建失败不阻塞 init 流程（log warning）。

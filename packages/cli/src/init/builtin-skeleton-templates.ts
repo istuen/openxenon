@@ -1,10 +1,11 @@
 /**
  * Built-in skeleton templates for `oxn draft create --target` mode.
  *
- * 7 模板（v0.6.2-alpha.3 新增）：
+ * 8 模板（v0.6.2-alpha.3 新增 + v0.7.0 RFC-0026 D2 加 goal.md）：
  *   - rfc.md
- *   - asset-domain.md / asset-workflow.md / asset-stack.md / asset-blueprint.md / asset-roadmap.md
+ *   - asset-domain.md / asset-workflow.md / asset-stack.md / asset-blueprint.md / asset-assetmap.md
  *   - work.md
+ *   - goal.md (v0.7.0 RFC-0026 D2: --target goal 升华路由骨架)
  *
  * 用途：
  *   - `oxn init` 创建时落地到 `.openxenon/draft-skeletons/`
@@ -265,9 +266,58 @@ TODO: 工程师声明的意图
 - TODO: 关键观察
 `
 
+const GOAL_SKELETON = `---
+entity: skeleton
+target-entity: goal
+---
+
+# Goal: <theme>
+
+> Goal = IAP 准备阶段承诺单元；与 Work（IAP 执行）正交。
+> v0.5.0 / D2 起由 \`oxn draft promote --target goal --goal-slug <slug>\` 从 Draft 派生（v0.7.0 RFC-0026 D2 落地）。
+
+## Goal Frontmatter (派生后)
+
+\`\`\`yaml
+---
+id: <slug>                    # kebab-case
+theme: <human-readable>
+priority: low | medium | high | critical
+status: planned
+created-at: YYYY-MM-DD
+scheduled-version: ~          # 改语义："未绑版本"（Goal 天然晚绑）
+synced-at: YYYY-MM-DD
+branch: feat/goal-<slug>      # 新增：强制显式分支名（auto git checkout -b）
+source: draft                 # 本次 D2 路径固定为 draft
+source-ref: <draft-path>      # 若 source=draft，记录源 Draft 路径
+---
+\`\`\`
+
+- 出池条件：cut forcing function 触发（见 RFC-0026 §2.4 a+b+c）。
+- 1:1 with branch：每个 Goal 一条 \`feat/goal-<slug>\` 分支（auto 创建于 promote 时）。
+- 1:1 with Work：每个 Goal 经 \`oxn goal work <slug>\` 创建对应 Work。
+
+## Intent
+
+TODO: 描述 Goal 要回答什么问题 / 解决什么边界（一两句话）。
+
+## Why
+
+TODO: 为什么这个 Goal 重要；与已存在的 Goal/Work/RFC 的关系。
+
+## Acceptance
+
+TODO: Goal finalize 的判定标准（Domain proof PASS → 立即 cut 当前 Version）。
+
+## References
+
+- 源 Draft: \`<source-ref>\`（由 promote 注入）
+- 关联 RFC / ADR: TODO
+`
+
 /**
- * All 7 built-in skeleton templates.
- * Order matters: rfc first, then 5 assets, then work.
+ * All 8 built-in skeleton templates.
+ * Order matters: rfc first, then 5 assets, then work, then goal.
  */
 export const BUILTIN_SKELETON_TEMPLATES: readonly BuiltinSkeletonTemplate[] = [
   { filename: 'rfc.md', content: RFC_SKELETON },
@@ -277,6 +327,7 @@ export const BUILTIN_SKELETON_TEMPLATES: readonly BuiltinSkeletonTemplate[] = [
   { filename: 'asset-blueprint.md', content: ASSET_BLUEPRINT_SKELETON },
   { filename: 'asset-assetmap.md', content: ASSET_ASSETMAP_SKELETON }, // 🆕 v0.6.4: 'asset-roadmap.md' → 'asset-assetmap.md'
   { filename: 'work.md', content: WORK_SKELETON },
+  { filename: 'goal.md', content: GOAL_SKELETON }, // 🆕 v0.7.0 RFC-0026 D2: --target goal 升华骨架
 ] as const
 
 /**
