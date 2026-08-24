@@ -21,12 +21,12 @@ import {
   extractBlueprintIR,
   extractWorkIR,
   extractTaskIR,
-  extractProofIR,
   validateCanonical,
   type RemarkCanonicalOptions,
 } from './md-pipeline'
 
-export type AssetType = 'domain' | 'blueprint' | 'work' | 'task' | 'proof'
+// Proof asset 已随 RFC-0032 Phase 2 退出 (proof/insight/daemon 全部删除); AssetType 不再含 'proof'
+export type AssetType = 'domain' | 'blueprint' | 'work' | 'task'
 
 export type DriverName = 'unified'
 
@@ -56,9 +56,7 @@ type ExtractByAssetType<T extends AssetType> = T extends 'domain'
       ? ReturnType<typeof extractWorkIR>
       : T extends 'task'
         ? ReturnType<typeof extractTaskIR>
-        : T extends 'proof'
-          ? ReturnType<typeof extractProofIR>
-          : never
+        : never
 
 const unifiedDriver: UnifiedDriver = {
   name: 'unified',
@@ -76,8 +74,6 @@ const unifiedDriver: UnifiedDriver = {
         return extractWorkIR(tree, frontmatter) as never
       case 'task':
         return extractTaskIR(tree, frontmatter) as never
-      case 'proof':
-        return extractProofIR(tree, frontmatter) as never
     }
   },
   validate(tree, options) {

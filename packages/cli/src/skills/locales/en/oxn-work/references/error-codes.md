@@ -12,7 +12,7 @@
 | `IAP_ALIGN_LOCK_NOT_FOUND` | .work.planLock missing / not locked | YIELD_TO_HUMAN: `oxn work lock` not called / init missing |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | One of the 4-component hashes drifted (workOxn/workDomains/blueprints/tasks) | YIELD_TO_HUMAN: check `context.component` field to locate drift source |
 | `IAP_ALIGN_WORK_REMOVED` | work directory deleted / work.oxn missing (regardless of .work status) | YIELD_TO_HUMAN (distinct from `WORK_NOT_FOUND`: work never existed) |
-| `OXN_ROUND_ALREADY_PASSED` | Already PASSED, but `next-round` called again | YIELD_TO_HUMAN: call `oxn work finalize` to close |
+| `OXN_ROUND_ALREADY_PASSED` | Already PASSED, but `next-round` called again | YIELD_TO_HUMAN: call `oxn work submit` to close the work (RFC-0032 D6: next-round removed; error code kept for history) |
 | `OXN_ROUND_VERDICT_INVALID` | `--verdict` value not in PASSED/FAILED/INCONCLUSIVE | Fix the command flag |
 | `OXN_TASK_OXN_MISSING` | task.oxn not found at `work run` time | Call `oxn work add-task` |
 | `WORK_NOT_FOUND` | work was never created | Call `oxn work create` |

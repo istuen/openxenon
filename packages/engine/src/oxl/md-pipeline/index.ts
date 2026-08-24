@@ -45,12 +45,10 @@ export {
   extractBlueprintIR,
   extractWorkIR,
   extractTaskIR,
-  extractProofIR,
   remarkDomainExtractor,
   remarkBlueprintExtractor,
   remarkWorkExtractor,
   remarkTaskExtractor,
-  remarkProofExtractor,
   DOMAIN_CATEGORIES,
   BLUEPRINT_CATEGORIES,
   WORK_CATEGORIES,
@@ -73,9 +71,8 @@ export {
   type TaskIR,
   type TaskPart,
   type TaskProbe,
-  type ProofIR,
-  type ProofProbeIR,
 } from './transformers'
+// Proof 已随 RFC-0032 Phase 2 退出 MVP; extractProofIR / remarkProofExtractor / ProofIR / ProofProbeIR 不再 re-export
 
 // --- plugins (PR-C3) ---
 export {

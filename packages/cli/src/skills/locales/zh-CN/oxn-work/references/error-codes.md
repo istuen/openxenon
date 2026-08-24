@@ -12,7 +12,7 @@
 | `IAP_ALIGN_LOCK_NOT_FOUND` | .work.planLock 缺失/未锁 | YIELD_TO_HUMAN：未调 `oxn work lock` / init 缺失 |
 | `IAP_ALIGN_LOCK_HASH_MISMATCH` | 4 组件 hash 之一漂移（workOxn/workDomains/blueprints/tasks） | YIELD_TO_HUMAN：context.component 字段定位漂移源 |
 | `IAP_ALIGN_WORK_REMOVED` | work 目录被删 / work.oxn 失踪（无论 .work 是否还在） | YIELD_TO_HUMAN（区别于 WORK_NOT_FOUND：work 从未存在过） |
-| `OXN_ROUND_ALREADY_PASSED` | 已 PASSED 仍调 next-round | YIELD_TO_HUMAN：调 `oxn work finalize` 收口 |
+| `OXN_ROUND_ALREADY_PASSED` | 已 PASSED 仍调 next-round | YIELD_TO_HUMAN：调 `oxn work submit` 完成 work（RFC-0032 D6 next-round 已退场，错误码保留作历史）|
 | `OXN_ROUND_VERDICT_INVALID` | `--verdict` 值不在 PASSED/FAILED/INCONCLUSIVE | 修命令参数 |
 | `OXN_TASK_OXN_MISSING` | work run 时未找到 task.oxn | 调 `oxn work add-task` |
 | `WORK_NOT_FOUND` | work 从未创建过 | 调 `oxn work create` |

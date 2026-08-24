@@ -105,12 +105,11 @@ oxn work submit --work <w> --task <t> --json
 oxn work status --work <w> --json
 ```
 
-### Step 8: `work finalize` (v1.1 close)
+### RFC-0032 Phase 2/3 (0.6.4-alpha.0+): `oxn work finalize` removed
 
-```bash
-oxn work finalize <work-name> --json
-# Aggregate all rounds + write final state
-```
+Work lifecycle now 4 steps: `create → lock → run → submit`.
+Original Step 8 (`finalize` aggregating rounds + writing frozen.json) was removed in Phase 2 (it depended on `frozen/work-domains.ts`).
+Reference: `.openxenon/drafts/design-mvp-convergence-grilling.md` and RFC-0032 §D10/D13.
 
 ## Reference Commands
 
@@ -132,7 +131,6 @@ oxn work finalize <work-name> --json
 | Start work state machine | `oxn work run --work-file <work.oxn>` |
 | Advance parts within task | `oxn work submit --work <w> --task <t>` |
 | Query work status | `oxn work status --work <w>` |
-| Close work | `oxn work finalize <w>` |
 
 ## Pattern Selection Quick Reference
 

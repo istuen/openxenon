@@ -11,9 +11,9 @@ title: 介绍
 ## 什么是 OpenXenon
 
 OpenXenon（OXN）是一款面向 AI Agent 的人机协作工具。
-它以 Skills 形式注入现有的 AI Agent 工作台（Cursor / OpenCode / Codex / Claude Code），通过**工程师定义 Asset → 作为 AI Agent 在 Work 约束的协作边界 → 由 Proof 验证其成果**的闭环，让工程师能信任 AI Agent 在边界内的执行。
+它以 Skills 形式注入现有的 AI Agent 工作台(Cursor / OpenCode / Codex / Claude Code),通过**工程师定义 Asset（领域知识结构化）→ 作为 AI Agent 在 Work 约束的协作边界 → 由 Probe 检查产物**的闭环（D25/D27，RFC-0032），让工程师能信任 AI Agent 在边界内的执行。
 
-OXN 不评判"工作是否合格"——判定权归工程师，OXN 只通过 Probe 自动跑（完成 / 偏离 / 未完成）并把结果记录为不可篡改的验证证据（frozen.json + trace.jsonl + state.json 三件套），让工程师基于事实决策。
+OXN 不评判“工作是否合格”——判定权归工程师，OXN 只提供 Probe 工具能力（AI 经 CLI 检查产物，结果记 Work trace.jsonl + state.json），让工程师基于事实决策（D27，RFC-0032）。
 
 ## 为什么存在
 

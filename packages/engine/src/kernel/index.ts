@@ -243,25 +243,6 @@ export type {
   ProbeCatalogEntry,
   TranslatedProbe,
 } from './verdicts/catalog'
-export {
-  evidenceChainFromFrozen,
-  buildProbeStatsView,
-  detectEmergentPatterns,
-  computeInsightFromInputs,
-} from './verdicts/insight-compute'
-export {
-  computeCrossProofInsightFromInputs,
-  type CrossProofFilter,
-} from './verdicts/cross-proof-compute'
-export { computePipelineInsightFromInputs } from './verdicts/pipeline-compute'
-export type {
-  PipelineInput,
-  DomainInput,
-  BlueprintInput,
-  WorkInput,
-} from './verdicts/pipeline-compute'
-export { updateProbeStats, initProbeStatsFromFrozen } from './verdicts/probe-stats-updater'
-
 // ───────── 枚举 + 常量（Kernel 自身）─────────
 export type {
   TaskStatus,

@@ -11,7 +11,7 @@
 
 import { defineCommand } from 'citty'
 import { getProviderRegistry } from '@openxenon/engine/infra/registry/provider-registry'
-import { daemonStartup } from '@openxenon/engine/infra/registry/daemon-startup'
+import { providerStartup } from '@openxenon/engine/infra/registry/provider-startup'
 import { output } from './output'
 
 function getProjectRoot(): string {
@@ -29,8 +29,8 @@ export const probeListSubcommand = defineCommand({
   async run({ args }) {
     const projectRoot = getProjectRoot()
 
-    // 1. daemonStartup: 注册 builtin + bootstrap
-    await daemonStartup(projectRoot)
+    // 1. providerStartup: 注册 builtin + bootstrap (RFC-0032 Phase 2: 原 daemonStartup 改名)
+    await providerStartup(projectRoot)
     const reg = getProviderRegistry()
 
     const list = reg.list()

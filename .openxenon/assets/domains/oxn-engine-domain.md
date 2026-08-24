@@ -34,13 +34,6 @@ synced-at: 2026-08-08
 - **3 Primitive 封闭**——io.stat / io.read / io.exec 是 Infra 暴露的全部 IO 接口；新增 IO 能力必须新增 Primitive 而非直接 fs/net 调用。
 - **Infra 不能绕过 Daemon**——Infra 不监听文件系统变化、不主动汇报 Work 完成；监听和汇报由 Daemon 承担。
 
-### Daemon
-- OXN Engine 后台守护进程；负责运行时状态监听（Work 长时间未变化 → 通知工程师）+ 事件监听（Probe DEVIATED/INCONCLUSIVE 通知 + CLI socket 事件）；不监听文件系统，不阻断 Work，不修改 Kernel 规则。
-- 监听人机协作范围内的变化与边界预警。
-- **Daemon 独立性**——Daemon 不能 import CLI（必须走 socket 通信）；不能直接 import fs（必须通过 L1-Infra 收口）。
-- **Daemon 不阻断 Work**——Daemon 只负责监控和通知，不主动 halt / restart / cancel Work；Work 决策权归工程师。
-- **CrashLoop 禁止**——Daemon 必须用 `oxn daemon *` 命令管理；禁用 CrashLoop/ForkDaemon/SystemdUnit/LaunchD 等替代方案。
-
 ### OXL
 - Engine 通过 unified 库实现 MD 语法的特性，包括编译、校验。
 - **MD-native DSL**——OXL 基于 Markdown + frontmatter；通过 unified 库（remark + mdast）实现编译和校验。
@@ -144,9 +137,6 @@ synced-at: 2026-08-08
 
 ### Inv4MonorepoBoundary
 - Monorepo 包边界：packages/cli 不能 import packages/engine 内部模块，仅走 packages/engine 公共 API；packages/engine 不能 import packages/cli（engine 是被依赖方）。
-
-### Inv5DaemonIndependence
-- Daemon 不能 import CLI（必须走 socket 通信）；不能直接 import fs（必须通过 L1-Infra 收口）。
 
 ### Inv6EngineDomainUnidirectionalRef
 - 本域与 oxn-domain 单向引用：Engine 子域补父域未说的部分，重名 term（OXN Engine）不重定义；不向下引用 oxn-cli-domain/oxn-asset-domain。

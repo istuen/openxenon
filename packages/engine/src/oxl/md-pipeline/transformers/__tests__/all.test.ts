@@ -12,7 +12,6 @@ import {
   extractBlueprintIR,
   extractWorkIR,
   extractTaskIR,
-  extractProofIR,
   remarkDomainExtractor,
   remarkWorkExtractor,
 } from '../index'
@@ -244,47 +243,14 @@ describe('v0.4 PR-C2: extractTaskIR', () => {
 })
 
 // =============================================================================
-// Proof
+// Proof section removed in RFC-0032 Phase 2 (D25: Proof deleted; see fix task Step 6)
 // =============================================================================
 
-const SAMPLE_PROOF = `---
-entity: proof
-version: 0.1.0
-name: build-validity
-proofs-target-work: ../../works/feat-x/work.oxn
----
-
-# Proof: build-validity
-
-> 验证 v0.3.0 build 产物
-
-## Probes
-### artifact-exists
-- ref: "@oxn/probes/fs-exists"
-- params:
-  - path: "./dist/cli.js"
-
-### typecheck
-- ref: "@oxn/probes/ts-compiles"
-- params: {}
-`
-
-describe('v0.4 PR-C2: extractProofIR', () => {
-  test('提取 probes + proofs-target-work (Q4-A)', () => {
-    const { tree: root, frontmatter } = parseMarkdown(SAMPLE_PROOF)
-    const ir = extractProofIR(root, frontmatter)
-    expect(ir.probes).toHaveLength(2)
-    expect(ir.probes[0]?.probeName).toBe('artifact-exists')
-    expect(ir.probes[0]?.ref).toBe('@oxn/probes/fs-exists')
-    expect(ir.proofsTargetWork).toBe('../../works/feat-x/work.oxn')
-  })
-})
-
 // =============================================================================
-// unified plugin composition (5 plugins 同时用)
+// unified plugin composition (4 plugins 同时用, Phase 2 后 Proof 退出)
 // =============================================================================
 
-describe('v0.4 PR-C2: 5 plugins composition', () => {
+describe('v0.4 PR-C2: 4 plugins composition', () => {
   test('all 5 extractors 可独立 use (unified plugin 形式)', () => {
     const tree: Root = unified().use(remarkParse).use(remarkFrontmatter).parse(SAMPLE_WORK) as Root
     remarkWorkExtractor()(tree)
@@ -292,17 +258,15 @@ describe('v0.4 PR-C2: 5 plugins composition', () => {
     expect(ir.context.goal).toBe('重构 auth 模块')
   })
 
-  test('空 markdown → 5 个 extractors 全部返回空 IR', () => {
+  test('空 markdown → 4 个 extractors 全部返回空 IR', () => {
     const { tree: root, frontmatter } = parseMarkdown('---\nname: Empty\n---\n\n')
     const d = extractDomainIR(root, frontmatter)
     const b = extractBlueprintIR(root, frontmatter)
     const w = extractWorkIR(root, frontmatter)
     const t = extractTaskIR(root, frontmatter)
-    const p = extractProofIR(root, frontmatter)
     expect(d.terms).toEqual([])
     expect(b.boundaries).toEqual([])
     expect(w.tasks).toEqual([])
     expect(t.parts).toEqual([])
-    expect(p.probes).toEqual([])
   })
 })

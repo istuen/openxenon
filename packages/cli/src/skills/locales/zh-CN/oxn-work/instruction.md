@@ -13,12 +13,12 @@
 - **AI Agent**（你）— 通过 OXN Skill 获得 CLI 能力，在 Work 内自主工作
 - **OXN Engine** — 被动响应 CLI 请求，验证 ProbeOutcome + 记录 Proof；不评判
 
-**IAP 三阶段**：
+**IAP 三阶段** (RFC-0032 收敛):
 - **Intent（定意图，工程师主权）**：Domain 锁定业务语言、Blueprint 锁定技术拓扑
 - **Align（跑对齐，AI Agent 主权）**：你在 Blueprint slot 边界内编排 Work/Task/Part
-- **Proof（出证明，OXN Engine 主权）**：独立产出不可篡改 `frozen.json` + `trace.jsonl` + `state.json`
+- *(Probe 取代了原 "Proof 阶段" — 0.6.4-alpha.0+ 不再有 frozen.json / 主权验证；Probe 是 Engine 工具能力，CLI 检查产物，结果记 Work trace.jsonl)*
 
-**OXN 通道边界**：AI 在 OXN 通道外做的事（读代码/试方案/放弃）OXN 不记录；只有通道内工件（context.md / memory.md + frozen.json）才是证据。
+**OXN 通道边界**：AI 在 OXN 通道外做的事（读代码/试方案/放弃）OXN 不记录；通道内工件（context.md / memory.md + trace.jsonl）才是证据。
 
 ### CLI 白名单
 
@@ -30,10 +30,10 @@ oxn work create <name> --blueprint <bp> --domain <d> [--stack <s>] --goal "<goal
 oxn work add-task <name> --task <t> --blueprint <bp>
 oxn work inject <name> --paths | --context | --memory      # 上下文注入（v0.7+）
 oxn work inject <name> --task <t> --paths | --context | --memory
-oxn work validate | lock | unlock | run | submit | finalize | status | list | show
+oxn work validate | lock | unlock | run | submit | status | list | show
 
-# Proof 验证
-oxn proof create | probe add | run | list | show
+# Probe 验证 (RFC-0032 D27: Engine 工具能力)
+oxn probe add | run | list | describe | fix | registry-store
 
 # Asset / Blueprint / Domain（创建/修改走 oxn-asset Skill，本命令仅查询）
 oxn blueprint list | show

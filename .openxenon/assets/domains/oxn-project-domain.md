@@ -121,8 +121,8 @@ synced-at: 2026-08-08
 
 ### IntentPoolDeprecated
 - Intent Pool v3 已退役（v0.4.0 / D1 2026-08-07）—— 设计稿 .openxenon/drafts/design-version-iteration-redesign.md D1 决策。
-- 历史：5 池模型（research / design / issue / audit / journal）由 Insight 写入 `.openxenon/pools/<pool>/<slug>/frozen.json`；
-- 当前：D1 后 Insight 经 Draft 通路写入（origin=insight），详见 oxn-proof-domain.md §InsightDraftMapping+ oxn-draft-domain.md §DraftOrigin。
+- 历史：5 池模型（research / design / issue / audit / journal）已退役（v0.7+ Insight 删除，）。
+- 当前：经验回流经 Draft 通路写入（origin=human），详见 oxn-draft-domain.md §DraftOrigin。
 - CLI 退役：`oxn pool {create,list,review,approve,reject}` 全部抛 `OXN_POOL_DEPRECATED`（兼容期 1 版本）。
 - 与 PlanningPool（dev/pool/）不同：PlanningPool = Goal 概念正名候选（D4 待后续 Wave），与 Intent Pool 是不同层次。
 - 配套：CLI 退役 1 版本后彻底移除 pool 命令代码 + 引擎层 `writePoolEntry` 等 util。
@@ -232,7 +232,7 @@ synced-at: 2026-08-08
 - dev/ 可引用 RFC + sprint 设计稿（v0.3.0 起）——Roadmap（dev/versions/）与 PlanningPool（dev/pool/）作为前瞻性规划，可引用 .openxenon/drafts/rfc/ + .openxenon/drafts/sprint/ 作为探索稿溯源。check-doc-boundary.ts `dev-allow-rfc-ref` 规则允许此引用模式。
 
 ### Inv11IntentPoolV3Retired
-- Intent Pool v3 退役——5 池机制（research/design/issue/audit/journal）吸收进 Draft（origin=insight，type-mapping 见 oxn-proof-domain.md §InsightDraftMapping）。
+- Intent Pool v3 退役——5 池机制（research/design/issue/audit/journal）吸收进 Draft（origin=human， Insight 删除）。
 - CLI `oxn pool *` 5 子命令兼容 1 版本后彻底移除；`.openxenon/pools/` 路径自始未创建；`writePoolEntry` 引擎 util 同步退役。
 - 配套 §Bans: deprecated-constructs-v0.4.0（禁新引用）；§Terms: IntentPoolDeprecated term（历史溯源）。
 - RFC-NNNN-version-iteration-redesign.md 待 D2/D3/D4 + RFC promote 后续 Wave 落地，详见 `.openxenon/drafts/design-version-iteration-redesign.md` §Promote。
@@ -269,3 +269,12 @@ synced-at: 2026-08-08
 - **历史 ADR 不补**——存量已 Accepted 的历史 ADR 不补 landing-files；未来决策必须遵守；回溯 audit 由 advisory 脚本处理。
 - **机制根唯一保留**——v0.7 后，`docs/adrs/` 仅 landing-files 机制根 ADR 保留（`status: Active-Mechanism`）；其余 ADR 物理归档至 `.openxenon/.archived/docs/adrs/`（相关 RFC 为该决策的授权）。
 - **RFC/ADR 决策落点必经 Domain**——每条 Accepted ADR/RFC 在 frontmatter `landing-files` 或 `related:` 中必须含至少一条 `.openxenon/assets/domains/*.md` 路径（per `scripts/check-adr-landing.ts` v0.8.0 规则 3）。
+
+### Inv15DevGuideInterface
+- root `dev/` 与 `docs/dev/zh-cn/` 是**两个独立入口**，不可互替——
+- **root `dev/`** = OpenXenon **项目自身**开发者操作手册（meta 层入口）；住 `dev/{pool,fix,meta,knowledge-loading}.md` + `dev/README.md`；受 AGENTS.md §AI Agent 唯一入口段 + dev/knowledge-loading.md 引用；描述 OXN 维护者如何开发 OXN 本身（Goal 入池 / Version cut / Release flow / Asset 创建等）。
+- **`docs/dev/zh-cn/`** = OpenXenon **消费者**开发者手册（VitePress 站点层）；住 `docs/dev/zh-cn/{getting-started,architecture,monorepo,oxn-cli,oxn-engine,l0-l3-constitution,three-tier-docs,conventions,debugging,testing,releasing,ai-collaboration}.md`；受 VitePress `_index.md` 站点导航驱动；描述 OXN 用户/贡献者如何使用 OXN 开发**他们的项目**（如何定义 Asset / 写 Blueprint / 跑 Work / 跑 Probe）。
+- **内容可重叠**——两份文档可讨论同一概念（如 Architecture / Monorepo / L0-L3 宪法），但**视角不同**（meta vs consumer）。
+- **入口互不替代**——AGENTS.md / VitePress 导航分别引用各自入口；不允许 root `dev/` 直接挂 VitePress 渲染，也不允许 `docs/dev/` 描述 OXN 项目自身 meta 流转。
+- **修 root `dev/` 等于改元入口**——必须走 PR review；其他 commit message 不可绕过 review。
+- **守门机制**——`scripts/check-doc-boundary.ts` 已禁止 `docs/dev/` → `.openxenon/drafts/` + `.openxenon/assets/`（dev-no-drafts / dev-no-assets 两条规则）；root `dev/` 不受同一守门（meta 层豁免），但 PR review 兜底。

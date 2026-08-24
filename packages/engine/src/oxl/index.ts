@@ -64,12 +64,12 @@ export { MdastOxlDriver } from './md-bridge'
 
 // --- AST types (v0.7.0: md-native only, no langium) ---
 // AST types are now defined in md-pipeline/transformers
+// Phase 2 (RFC-0032 D25): Proof 实体已退出, 不再 re-export ProofDeclaration
 export type {
   DomainIR as DomainDeclaration,
   BlueprintIR as BlueprintDeclaration,
   WorkIR as WorkDeclaration,
   TaskIR as TaskDeclaration,
-  ProofIR as ProofDeclaration,
 } from './md-pipeline/transformers'
 
 // =============================================================================

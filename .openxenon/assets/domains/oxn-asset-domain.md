@@ -48,13 +48,13 @@ synced-at: 2026-08-09
 - 项目消费者 onboarding 用的 5 个内置 Asset（doc-md-domain / md-author-workflow / md-stack / md-author-blueprint / md-system），物理位置 `src/builtin/projects/starter/`，走 `@oxn/` 公共层；通过 `oxn onboard --new` 复制到 `<project>/.openxenon/assets/`（@prj/ 层）。5 起手 Asset 是 onboarding 的最小可用集（替代旧 6 Asset 列表）。
 
 ### ProjectBootstrap
-- 5 起手 Asset 复制到 `<project>/.openxenon/assets/` 并完成 `oxn asset check` 校验的过程。包含 3 步：(1) `oxn onboard --new` 触发复制；(2) 工程师填项目专属内容；(3) `oxn asset check` 验证 5 Asset 完整性。Proof-First 模式下 bootstrap 可选；完整 IAP 模式下 bootstrap 必走。
+- 5 起手 Asset 复制到 `<project>/.openxenon/assets/` 并完成 `oxn asset check` 校验的过程。包含 3 步：(1) `oxn onboard --new` 触发复制；(2) 工程师填项目专属内容；(3) `oxn asset check` 验证 5 Asset 完整性。bootstrap 必走。
 
 ### OnboardingPath
-- 项目消费者 onboarding 3 入口路径：`oxn onboard --new`（新项目入口）/ `oxn onboard --existing --proof-first`（存量 B1：先 Proof-First 5 分钟）/ `oxn onboard --existing --bootstrap`（存量 B2：AI 探索建 Asset）。入口探测：`oxn onboard --detect`（基于 package.json / compose.yaml / Cargo.toml / pyproject.toml 4 类信号）。Skill 入口：复用 `/oxn-work`，通过 Blueprint 区分场景。
+- 项目消费者 onboarding 2 入口路径：`oxn onboard --new`（新项目入口）/ `oxn onboard --existing --bootstrap`（存量：AI 探索建 Asset）。入口探测：`oxn onboard --detect`（基于 package.json / compose.yaml / Cargo.toml / pyproject.toml 4 类信号）。Skill 入口：复用 `/oxn-work`，通过 Blueprint 区分场景。
 
 ### AssetCheck
-- 5 起手 Asset 完整性校验（替代旧"数量下限校验"）：校验项 — Domain ≥ 1（必含 doc-md-domain）/ Workflow ≥ 1（必含 md-author-workflow）/ Stack ≥ 1（必含 md-stack）/ Blueprint ≥ 1（必含 md-author-blueprint）/ AssetMap ≥ 1（必含 md-system）。缺任一 → 提示运行 `oxn onboard --new`；不阻断 Proof-First 模式。
+- 5 起手 Asset 完整性校验（替代旧"数量下限校验"）：校验项 — Domain ≥ 1（必含 doc-md-domain）/ Workflow ≥ 1（必含 md-author-workflow）/ Stack ≥ 1（必含 md-stack）/ Blueprint ≥ 1（必含 md-author-blueprint）/ AssetMap ≥ 1（必含 md-system）。缺任一 → 提示运行 `oxn onboard --new`。
 
 ### StructureV2
 - Asset 正文 v2 统一结构：`## Group → ### Axiom → - Theorem`；Blueprint 特例：`## Use <Asset Type> + ## Slot + 顶层 ### Scope / ### Context Template`。3 形态（Axiom + Theorem / 纯 Axiom / 纯 Theorem）均合法。Group 名 free-form，Engine 不解释业务含义。
@@ -90,7 +90,7 @@ synced-at: 2026-08-09
 
 ### BoundaryEngineeringVsKnowledgeEngineering
 - 工程语义二分（Domain SSOT 锚定；why 记录层由 docs/rfc/zh-cn/ 承担）：边界工程（boundary engineering）= 定义"什么存在 / 什么不允许 / 什么是术语"；OXN 立法管辖。知识工程（knowledge engineering）= 把经验沉淀为可复用知识；属"价值判断"范畴，OXN 立法不管。
-- OXN 的边界工程职责：提供稳定语汇（Domain term/ban/invariant）+ 引用图（Asset references DAG）+ 行为契约（Blueprint slot + Scope + observe）；提供客观见证（Proof frozen.json）——只见证事实、不评判质量；提供经验回流通道（Draft → Promote）——但通道本身是边界工程的产物，不是知识工程的产物。
+- OXN 的边界工程职责：提供稳定语汇（Domain term/ban/invariant）+ 引用图（Asset references DAG）+ 行为契约（Blueprint slot + Scope + observe）；提供经验回流通道（Draft → Promote）——但通道本身是边界工程的产物，不是知识工程的产物。
 - OXN 不承担的知识工程职责：哪些经验值得沉淀（价值判断）→ 工程师；沉淀后的知识如何组织（语义归类）→ 工程师 + AI 自然语言推理；沉淀冲突如何仲裁（多版本决策）→ 工程师 review + Asset evolve。
 - 行为规则：AI 不能直接建 Asset（`### Inv21AiAssetViaDraft`）——AI 输出必须先落 Draft，经工程师 review 后才能升 Asset。这条规则同时锁住边界工程的"边界"和知识工程的"决策"。
 - glossary-ref: boundary-engineering-vs-knowledge-engineering

@@ -21,7 +21,10 @@
 // =============================================================================
 
 import type { ProbeObservation, ProbeStrategy, ProbeOutcome } from '../contracts/probe-port'
-import { applyTrustBaseline } from './trust-baseline'
+
+// trust-baseline (InterferenceFlag 短路) 已随 Phase 2 删 (RFC-0032 D25)
+// judge() 现在直接调 strategy, YELLOW flag 仅透传, 不再有 RED → INCONCLUSIVE 短路
+// INCONCLUSIVE 仍保留三态, 但只能由 strategy 主动返 (如 manual assessment)
 
 /** 把 expected 归一化为 number（默认 1，用于 fs_exists 命中数阈值） */
 function expectedAsNumber(expected: unknown): number {
@@ -993,21 +996,24 @@ export function getVerdictStrategy(observationType: string): ProbeStrategy | nul
 /** Kernel 入口：根据 observationType 路由到对应纯函数 strategy */
 export function judge(observation: ProbeObservation, params: Record<string, unknown>): ProbeOutcome {
   const flags = observation.interference?.flags ?? []
-  return applyTrustBaseline(flags, () => {
-    const strategy = getVerdictStrategy(observation.probeType)
-    if (!strategy) {
-      return {
-        outcome: 'DEVIATED',
-        passed: false,
-        message: `no verdict strategy for probe type: ${observation.probeType}`,
-        params,
-        failureMessage: `unknown probe type: ${observation.probeType}`,
-      }
+  const strategy = getVerdictStrategy(observation.probeType)
+  if (!strategy) {
+    const base: ProbeOutcome = {
+      outcome: 'DEVIATED',
+      passed: false,
+      message: `no verdict strategy for probe type: ${observation.probeType}`,
+      params,
+      failureMessage: `unknown probe type: ${observation.probeType}`,
     }
-    const v = strategy(observation, params)
-    return {
-      ...v,
-      outcome: v.passed ? 'COMPLETED' : 'DEVIATED',
-    }
-  })
+    return flags.length > 0 ? { ...base, interferenceFlags: [...flags] } : base
+  }
+  const v = strategy(observation, params)
+  const base: ProbeOutcome = {
+    ...v,
+    outcome: v.passed ? 'COMPLETED' : 'DEVIATED',
+  }
+  if (flags.length > 0) {
+    return { ...base, interferenceFlags: [...flags] }
+  }
+  return base
 }

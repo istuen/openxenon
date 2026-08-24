@@ -4,12 +4,12 @@
  * 取代 src/oxl/md-bridge/compilers/{domain,blueprint,work,task,proof}-compiler.ts
  * 的 parse() 方法 (compat 期间未删, 由本目录提供新实现)
  *
- * 5 plugins (unified-native):
+ * 5 plugins (unified-native) — Phase 2 后只剩 4 plugins:
  *   - remarkDomainExtractor()    →  tree.data.domain
  *   - remarkBlueprintExtractor() →  tree.data.blueprint
  *   - remarkWorkExtractor()      →  tree.data.work
  *   - remarkTaskExtractor()      →  tree.data.task
- *   - remarkProofExtractor()     →  tree.data.proof
+ * (Proof 已退场, 见 RFC-0032 D25)
  *
  * 用法:
  * ```ts
@@ -80,13 +80,6 @@ export {
   type TaskPart,
   type TaskProbe,
 } from './task'
-
-export {
-  extractProofIR,
-  remarkProofExtractor,
-  type ProofIR,
-  type ProofProbeIR,
-} from './proof'
 
 export {
   extractStackIR,

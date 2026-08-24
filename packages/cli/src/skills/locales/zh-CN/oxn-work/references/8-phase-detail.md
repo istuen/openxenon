@@ -104,12 +104,11 @@ oxn work submit --work <w> --task <t> --json
 oxn work status --work <w> --json
 ```
 
-### 步骤 8：`work finalize`（v1.1 收口）
+### RFC-0032 Phase 2/3 (0.6.4-alpha.0+): `oxn work finalize` 已删
 
-```bash
-oxn work finalize <work-name> --json
-# 汇总所有 round + 写最终状态
-```
+Work 生命周期收敛为 4 步: `create → lock → run → submit`。
+原 Step 8 (`finalize` 汇总 round + 写 frozen.json) 随 Phase 2 删除 (依赖 frozen/work-domains.ts)。
+参照: `.openxenon/drafts/design-mvp-convergence-grilling.md` 与 RFC-0032 §D10/D13。
 
 ## 参考命令表
 
@@ -131,7 +130,6 @@ oxn work finalize <work-name> --json
 | 启动 work 状态机 | `oxn work run --work-file <work.oxn>` |
 | 推进 task 内 part | `oxn work submit --work <w> --task <t>` |
 | 查询 work 状态 | `oxn work status --work <w>` |
-| 收口 work | `oxn work finalize <w>` |
 
 ## 模式选择速查
 

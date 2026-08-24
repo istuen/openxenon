@@ -15,8 +15,8 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import {
   type OxnBuiltinRegistry,
-  resetBuiltinRegistry,
   getBuiltinRegistry,
+  resetBuiltinRegistry,
 } from '@openxenon/engine/oxl/scope/oxn-builtin-registry'
 
 describe('ADR-0090: builtin registry 加载守卫', () => {

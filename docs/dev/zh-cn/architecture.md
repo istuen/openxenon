@@ -8,16 +8,15 @@ title: 架构
 
 > OXN 架构 = **E1-E4 结构实体 + L0-L3 工程分层**。E1-E4 是理念，L0-L3 是代码依赖方向。物理目录用各自名称（`kernel/`、`oxl/`、`infra/`、`cli/`、`daemon/`、`src/service/<Domain>/`），不直接对应 E 或 L。
 
-## 1. E1-E4 结构实体（理念层）
+## 1. 结构实体（Asset + Work，D8 RFC-0032）
 
 | 实体 | 性质 | 主导权 | 对应代码模块 |
 |---|---|---|---|
-| E1 Asset | 静态硬约束边界 | 工程师 | `service/Asset/` |
-| E2 Work | 动态协作（IAP 三阶段 + Round） | 工程师 ↔ AI | `service/Intent/` + `service/Align/` |
-| E3 Engine | 独立验证主权基座 | OXN | L0-L2 全部 |
-<!-- allow-version -->
-| E4 Insight | 涌现层（1+1>2） | AI 推理 | `service/Insight/`（v0.6 哲学占位） |
-<!-- /allow-version -->
+| Asset | 领域知识结构化表示（D24，RFC-0032） | 工程师 | `service/Asset/` |
+| Work | DAG 协作空间（create→lock→run→submit，D10/D13） | 工程师 ↔ AI | `service/Work/` |
+| Engine | 实现基座（L0-L3，Probe 工具能力，D27） | OXN | L0-L2 全部 |
+
+> Proof / Insight / Daemon 已删除（D25，RFC-0032）；Probe 作为 Engine 工具能力保留（D27）。
 
 详见 [Core Concepts](../../product/zh-cn/concepts/iap-paradigm.html)。
 
@@ -153,17 +152,14 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 
 ## 7. 与 OpenSpec 架构对比
 
-<!-- allow-version -->
-| 维度 | OpenSpec | OXN v0.6 |
-<!-- /allow-version -->
+| 维度 | OpenSpec | OXN v0.7（RFC-0032） |
 |---|---|---|
-| 哲学色底 | 还原论（spec → change → archive 线性拆解） | 还原论 + 整体论辩证统一（E4 Insight 涌现） |
-| Asset/规范 角色 | 被 change 改写的目标 | 被 Work 引用的硬约束边界 |
-| 验证主体 | AI 自查 + 人工 review | Engine 独立第三方公证 |
-| 工作流形态 | 单次线性 propose → apply → archive | **多轮 IAP 循环**（Round × N） |
-| 整体涌现 | 无 | E4 Insight 专门承接 |
-| Inner Loop | 单次 verify | 多轮 Round：fail → 回到 Intent → 新一轮 Align |
-| 明确设计目标 | 让 spec 与实现一致 | 让系统整体功能大于部分之和（1+1>2） |
+| 哲学色底 | 还原论（spec → change → archive 线性拆解） | 还原论 + 结构化知识表示（Asset + Work DAG） |
+| Asset/规范 角色 | 被 change 改写的目标 | 被 Work 引用的结构化知识边界 |
+| 知识来源 | AI 概率检索（RAG chunks） | 工程师显式组合（Blueprint 脚手架，D24） |
+| 工作流形态 | 单次线性 propose → apply → archive | DAG 协作（create→lock→run→submit，D10） |
+| 漂移控制 | 依赖 prompt 约束 | PlanLock 4-hash 硬封存（lock 后漂移阻断） |
+| 明确设计目标 | 让 spec 与实现一致 | 结构化知识 + DAG 上下文，降低 RAG 概率漂移 |
 
 ## 8. Skill 入口架构
 
@@ -175,7 +171,7 @@ packages/cli/src/skills/            ← Skills 资源 (v0.6 阶段 6 迁入)
 ├── types.ts                        OpenXenonSkill / ReferenceFile
 ├── index.ts                        barrel
 <!-- allow-version -->
-└── locales/                        4 个 i18n 文件（v0.6 Skill 极简：仅 oxn-work）
+└── locales/                        2 个 locale（en + zh-CN，D20 RFC-0032）
 <!-- /allow-version -->
     ├── en/oxn-work/instruction.md
     ├── en/oxn-work/references/blueprint-format.md

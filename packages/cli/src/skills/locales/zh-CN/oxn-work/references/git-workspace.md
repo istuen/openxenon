@@ -53,7 +53,7 @@ cd -
 oxn work run gw-feat-x --json
 oxn work submit gw-feat-x --task ship --json          # 4 次（4 part = 4 slot）
 oxn work status gw-feat-x --json                       # overallStatus = passed
-oxn work finalize gw-feat-x --json                     # 收口（v0.6.1 新增）— 写最终状态
+oxn work finalize gw-feat-x --json                     # ⚠️ RFC-0032 Phase 2 已删；改用 `oxn work submit --work <w> --task <t>` 完成 work
 ```
 
 ## 拿到可合并性证据（关键）

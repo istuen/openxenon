@@ -155,15 +155,16 @@ const main = defineCommand({
     assetmap: () => import('./commands/assetmap').then((m) => m.default),
 
     // ---- v0.6.1-alpha.1: Asset lifecycle (8 subcommands: list/show/create/validate/archive/delete/evolve)
-    // ---- alias 兼容: oxn work create --type asset --asset-kind X 仍保留 (work.ts handleAssetModeCreate)
+    // ---- alias 兼容: oxn work create --type asset --asset-kind X 仍保留
+    //       (走 work.ts 内 createWorkWithAssetMode, 完整标准 Work 流程)
     asset: () => import('./commands/asset').then((m) => m.default),
 
     // ---- Align runtime (work + task + state machine) ----
     work: () => import('./commands/work').then((m) => m.default),
 
-    // ---- Proof axis (v0.1.2: Proof-First 入口，独立运作) ----
-    proof: () => import('./commands/proof').then((m) => m.default),
-    insight: () => import('./commands/insight').then((m) => m.default),
+    // RFC-0032 Phase 2: proof/insight 命令族退场 (D25)
+    //   替代入口: oxn probe {add,list,describe,run,fix} — Engine 能力保留
+    //   Phase 3 仍会进一步删 work finalize / next-round
 
     // ---- v0.6.0 D5+ 2026-08-07: Goal 体系（5 命令：create / list / show / work / archive）
     // ---- 设计：.openxenon/drafts/design-version-iteration-redesign.md §4.3

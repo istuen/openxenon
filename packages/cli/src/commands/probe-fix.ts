@@ -16,7 +16,7 @@
 import { defineCommand } from 'citty'
 import { IAPError, IAPAction } from '@openxenon/engine/kernel'
 import { getProviderRegistry } from '@openxenon/engine/infra/registry/provider-registry'
-import { daemonStartup } from '@openxenon/engine/infra/registry/daemon-startup'
+import { providerStartup } from '@openxenon/engine/infra/registry/provider-startup'
 import { output } from './output'
 
 function getProjectRoot(): string {
@@ -34,8 +34,8 @@ export const probeFixSubcommand = defineCommand({
   async run({ args }) {
     const projectRoot = getProjectRoot()
 
-    // 1. daemonStartup: 注册 builtin + bootstrap
-    await daemonStartup(projectRoot)
+    // 1. providerStartup: 注册 builtin + bootstrap
+    await providerStartup(projectRoot)
     const reg = getProviderRegistry()
 
     // 2. 查 manifest

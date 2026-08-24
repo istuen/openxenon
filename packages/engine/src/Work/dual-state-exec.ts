@@ -37,7 +37,7 @@ import {
 } from './dual-state-io'
 import { IAPError, IAPAction, type IAPAxis, type StackToolInfo } from '@openxenon/engine/kernel'
 import { readTaskFile } from '@openxenon/engine/oxl/summary-extractors'
-import { executeProbe, type ProofProbeIR } from '@openxenon/engine/Proof/runner'
+import { executeProbe, type ProofProbeIR } from '@openxenon/engine/infra/probes/execute-probe'
 import { buildWorkContext } from './work-context-builder'
 
 // =============================================================================
@@ -577,116 +577,6 @@ export function runNoopProbe(partName: string, partAlign: string): { probe: stri
     probe: 'part-reachable',
     passed: true,
     output: { partName, align: partAlign, mode: 'v0.1-noop' },
-  }
-}
-
-// =============================================================================
-// v0.6 PR-2: Round 多轮 IAP 循环
-//
-// 设计要点：
-//   - 手动触发（`oxn work next-round`），不自动循环（避免无限循环）
-//   - 上一轮 verdict 与 failures 写入 roundHistory
-//   - currentRound 自增 1
-//   - 任务 DAG 状态保留（taskIndex 不重置；新一轮跑时按 task 实际状态推进）
-//   - finalize 时汇总所有 round 给 E4 Insight 消费
-// =============================================================================
-
-export interface NextRoundParams {
-  projectRoot: string
-  workName: string
-  /** 本轮最终 verdict（调用方从 frozen.json.outcome 读取后传入） */
-  outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
-  /** 本轮失败的 task 名列表（调用方从 taskState 收集） */
-  failures?: string[]
-  /** 可选本轮总结 */
-  notes?: string
-}
-
-export interface NextRoundResult {
-  workspace: WorkspaceState
-  /** 新开的 round 编号 */
-  round: number
-  /** 上一轮（即本函数关闭的）的 verdict */
-  previousOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
-  /** roundHistory 长度（含已关闭的上一轮） */
-  historyLength: number
-}
-
-export function nextRoundWork(params: NextRoundParams): NextRoundResult {
-  const state = loadWorkState(params.projectRoot, params.workName)
-  if (!state) {
-    throwExecError(
-      'ALIGN',
-      'OXN_WORK_NOT_STARTED',
-      `work .run/state.json not found for "${params.workName}". Run \`oxn work run <name>\` first.`,
-    )
-  }
-
-  // 🆕 v0.6.1-alpha.5 Phase A.2: maxIterations 硬限制（避免无限 Round 循环）
-  // 先检查（PASSED 优先：PASSED 状态应走 finalize 而非 next-round）
-  const maxIterations = state.skillContext?.maxIterations ?? 3
-  if (state.currentRound >= maxIterations) {
-    throwExecError(
-      'ALIGN',
-      'IAP_ALIGN_ROUND_MAX_EXCEEDED',
-      `Work "${params.workName}" round ${state.currentRound} reached max iterations (${maxIterations}). ` +
-        `Use \`oxn work finalize\` to close the work.`,
-    )
-  }
-
-  // 若上一轮 PASSED，不应继续 next-round（应调 finalize）
-  if (params.outcome === 'COMPLETED') {
-    throwExecError(
-      'ALIGN',
-      'OXN_ROUND_ALREADY_PASSED',
-      `Work "${params.workName}" round ${state.currentRound} already PASSED. Run \`oxn work finalize\` instead of \`oxn work next-round\`.`,
-    )
-  }
-
-  // 关闭当前 round
-  const nowIso = new Date().toISOString()
-  const closedRound: RoundRecord = {
-    round: state.currentRound,
-    startedAt: state.roundHistory.at(-1)?.startedAt ?? state.createdAt,
-    endedAt: nowIso,
-    outcome: params.outcome,
-    failures: params.failures ?? [],
-    ...(params.notes ? { notes: params.notes } : {}),
-  }
-
-  // 防御：避免重复关闭同一 round（重复 next-round 会 push 重复记录）
-  const lastOpen = state.roundHistory.at(-1)
-  if (!lastOpen || lastOpen.endedAt) {
-    state.roundHistory.push(closedRound)
-  } else {
-    // 替换最后一条（避免 next-round 失败造成的 partially-closed 状态）
-    state.roundHistory[state.roundHistory.length - 1] = closedRound
-  }
-
-  // 开启新 round
-  state.currentRound = state.currentRound + 1
-  state.roundHistory.push({
-    round: state.currentRound,
-    startedAt: nowIso,
-    outcome: 'PENDING',
-    failures: [],
-  })
-
-  state.updatedAt = nowIso
-  saveWorkState(params.projectRoot, params.workName, state)
-  appendWorkTrace(params.projectRoot, params.workName, {
-    event: 'next-round',
-    workName: params.workName,
-    newRound: state.currentRound,
-    previousOutcome: params.outcome,
-    at: nowIso,
-  })
-
-  return {
-    workspace: state,
-    round: state.currentRound,
-    previousOutcome: params.outcome,
-    historyLength: state.roundHistory.length,
   }
 }
 

@@ -62,16 +62,10 @@ synced-at: 2026-08-09
 - 关键区别：Skeleton **不是** Draft 内置 template 机制（B-α 决议），独立 entity 标识不与其他 AssetKind 混淆。
 
 ### DraftOrigin
-- v0.4.0（D1 2026-08-07）起：Draft producer 标识字段，frontmatter `origin: human | insight`，默认 `human`。
-- `human`（默认）：工程师手写探索稿、reflection、issue 记录。
-- `insight`：由 OXN Insight 系统生成；落地路径为 `.openxenon/drafts/<drafttype>-<slug>.md`。
-- 5 类原 Intent Pool 类型 → 3 DraftType 映射由 oxn-proof-domain.md §InsightDraftMapping 锁定；
-- origin 字段由 Insight 注入，不允许工程师从 insight 退回 human（避免追溯链断裂）。
+- v0.4.0 起引入 Draft producer 标识字段（origin）；v0.7+ Insight 删除后 origin 恒为 `human`。
+- `human`（唯一值）：工程师手写探索稿、reflection、issue 记录。
 - origin 不影响 promote 路由（仍是 rfc/asset/work 3 类），仅标识 producer；
-- list 可按 `oxn draft list --origin=insight` 过滤（CLI v0.4.0 新增 flag）。
 - Origin 不参与 AssetLifecycle（不参与 citations）；仅 Draft 内部 metadata。
-- **D1 Insight → Draft 通路**——Intent Pool v3 退役后，Insight 不再单独成池；改为创建 Draft（`origin: insight`），由 Draft lifecycle 承载 review/discard。
-- **insight → human 不可逆**——`origin: insight` 是追溯链标记；不允许工程师手动改为 human（避免 producer 链断裂）。
 
 ### Skeleton
 - per-target 模板文件的实体类型（v0.6.3 Q1 新增）。
@@ -119,10 +113,10 @@ synced-at: 2026-08-09
 - v0.6.3 Q2 推迟：skeleton 版本号 + sync 机制；skeleton 演进通知；OXN_DRAFT_SKELETON_NOT_FOUND 加可发现性 hint。
 
 ### BoundaryLearning
-- 经验回流 Asset 的唯一 SSOT 锚定路径（v0.7+ 收口术语，why 记录层由 docs/rfc/zh-cn/ 承担）：memory.md（Work 动态记录）→ Draft（`origin: insight`）→ 工程师 review → Promote Asset。
-- 术语对照：**边界学习**（boundary learning，本 Axiom 锁定）= 把协作经验回灌到边界定义；走 Draft lifecycle，工程师闸门。**知识沉淀**（knowledge deposition，**禁止使用**）= 假设存在"知识本体"概念；与 oxn-asset-domain 的 AssetAsOntology Axiom "Asset = 边界线索 ≠ 知识" 冲突，已 ban（oxn-proof-domain §ForbiddenConstructs: `autoInsightApply` / `autoPatternPromote`）。**经验回流**（experience refluxing，本 Axiom 同义别名）= 工程师视角的同义说法。
-- 路径阶段（与 `### DraftPromoteLifecycle` 4 阶段对应）：(1) 留痕：`works/<id>/memory.md` append-only 记录过程信号（Round Notes + Key Observations）；(2) 候选：Insight 扫描 Work 的 memory.md → 生成 Draft（`origin: insight`，`promote-target: asset` 或 `rfc`）；(3) 闸门：工程师 `oxn draft list --origin=insight` 检视 → `oxn draft show <name>` → 决定 `archive` / `discard` / `promote`（与 `### Inv8OriginIdentifiesProducerV040` 协同）；(4) 升格：Promote 走 draft-promote-router Blueprint → 落 `.openxenon/assets/{kind}/{name}.md` 或 `docs/rfcs/zh-cn/RFC-XXXX-<theme>.md`。
-- 硬约束（来自 oxn-proof-domain / oxn-asset-domain 现有 Invariant，本 Axiom 不重复）：路径必经工程师闸门（oxn-proof-domain §`Inv31InsightManualGateViaDraft` + oxn-asset-domain §`Inv21AiAssetViaDraft`）；Draft origin=insight 不允许工程师改回 origin=human（`### Inv8OriginIdentifiesProducerV040`）；Draft 文件不被 Work / Asset / Proof 直接消费，仅在 promote 后才进 Asset 生命周期（`### Inv1DraftIsDescriptiveModality`）。
+- 经验回流 Asset 的唯一 SSOT 锚定路径（v0.7+ 收口术语，why 记录层由 docs/rfc/zh-cn/ 承担）：memory.md（Work 动态记录）→ Draft（`origin: human`）→ 工程师 review → Promote Asset。
+- 术语对照：**边界学习**（boundary learning，本 Axiom 锁定）= 把协作经验回灌到边界定义；走 Draft lifecycle，工程师闸门。**知识沉淀**（knowledge deposition，**禁止使用**）= 假设存在"知识本体"概念；与 oxn-asset-domain 的 AssetAsOntology Axiom "Asset = 边界线索 ≠ 知识" 冲突，已 ban（原 oxn-proof-domain §ForbiddenConstructs，已归档）。**经验回流**（experience refluxing，本 Axiom 同义别名）= 工程师视角的同义说法。
+- 路径阶段（与 `### DraftPromoteLifecycle` 4 阶段对应）：(1) 留痕：`works/<id>/memory.md` append-only 记录过程信号（Round Notes + Key Observations）；(2) 候选：工程师从 memory.md 提炼 → 手写 Draft（`origin: human`，`promote-target: asset` 或 `rfc`）；(3) 闸门：工程师 `oxn draft list` 检视 → `oxn draft show <name>` → 决定 `archive` / `discard` / `promote`（与 `### Inv8OriginIdentifiesProducerV040` 协同）；(4) 升格：Promote 走 draft-promote-router Blueprint → 落 `.openxenon/assets/{kind}/{name}.md` 或 `docs/rfcs/zh-cn/RFC-XXXX-<theme>.md`。
+- 硬约束（来自 oxn-asset-domain 现有 Invariant，本 Axiom 不重复）：路径必经工程师闸门（oxn-asset-domain §`Inv21AiAssetViaDraft`）；Draft 文件不被 Work / Asset 直接消费，仅在 promote 后才进 Asset 生命周期（`### Inv1DraftIsDescriptiveModality`）。
 - glossary-ref: boundary-learning
 
 ## PromoteRoute
@@ -146,7 +140,7 @@ synced-at: 2026-08-09
 - validate-skeleton：校 frontmatter 字段 + H2 段结构（对照 PromoteRoute 的目标骨架清单）；缺字段报错 `OXN_DRAFT_PROMOTE_VALIDATE_FAILED`，列出缺失清单
 - fork-missing：从 skeleton 模板补全缺字段（保留工程师填写的内容）；不修改工程师已填字段
 - dispatch-target：按 PromoteRoute 调 promote-target-aware-workflow Blueprint 的对应分支（rfc / asset-<kind> / work），Work 执行后续 gather/author/validate/promote 4 Boundary
-- 关键约束：promote 不分 Intent / Align / Proof 三阶段（与 Work IAP 不同）；是单次 transactional 操作
+- 关键约束：promote 不走 Work 生命周期（create→lock→run→submit）；是单次 transactional 操作
 
 ### TargetDispatchTable
 - 路由 translate 表——把 Draft target 语法转成 promote-target-aware-workflow Blueprint 内部 task name（v0.2.0 D2 起 8 行）
@@ -217,14 +211,14 @@ synced-at: 2026-08-09
 ## Boundary
 
 ### Inv1DraftIsDescriptiveModality
-- Draft = 描述性情态（Descriptive Modality）的前置状态——未提升前不参与版本控制、不参与跨层引用、不被 Work / Asset / Proof / Insight 消费。
+- Draft = 描述性情态（Descriptive Modality）的前置状态——未提升前不参与版本控制、不参与跨层引用、不被 Work / Asset 消费。
 - v0.6.2-alpha.3 后 promote 走 draft-promote-router Blueprint（4 阶段：gather → validate-skeleton → fork-missing → dispatch-target），从 drafts/ 读源文件，落到目标位置（docs/rfcs/ 或 .openxenon/assets/ 或 .openxenon/works/）。
 - promote 后源 Draft 文件不变（不是状态转移，是拷贝）。工程师决定是否 archive / discard。
 
 ### Inv2DraftNoProbe
 - OXN 不执行 Draft 创建逻辑业务——CLI 调 Engine → Infra Module（fs.writeFileSync 或 fork skeleton 后 writeFileSync），无 Probe 验证。
 - v0.6.2-alpha.3 起：blank 模式（默认）逻辑不变；skeleton 模式（`--target`）调 draft-skeleton-fork Workflow，由 Asset 层返回 skeleton 字符串。
-- 5.1 洞察：Proof-First 是验证器不是执行器。19 个 Probe 全部是 read-only 观察，不是 write 操作。
+- 5.1 洞察：Probe 是工具能力不是执行器；Probe 全部是 read-only 观察，不是 write 操作（D27）。
 - Draft 创建不需要验证（创建行为本身是证据），所以不需要 Probe 守护。
 
 ### Inv3DraftDirIsolation
@@ -261,17 +255,14 @@ synced-at: 2026-08-09
 - 与 inv-3 边界规则协同：`.openxenon/draft-skeletons/` 在 boundary 顶层（draft-skeleton-fork Workflow 入口）。
 
 ### Inv8OriginIdentifiesProducerV040
-- v0.4.0（D1 2026-08-07）起：Draft frontmatter `origin: human | insight`，默认 `human`。
+- v0.7+ Insight 删除后：Draft frontmatter `origin: human`（唯一值）。
 - origin 不影响 promote 路由（仍走 rfc / asset / work 3 类）；
 - origin 不参与 Asset citations（仅 Draft 内部 metadata）；
-- origin=insight 不允许工程师改写为 human（避免追溯链断裂；强约束，写校验见 `oxn draft edit --origin` 错误返回）；
-- 工程师可改写 origin=human → origin=insight（罕见：标记自己的反思为可追溯项；现状不限，但需在 commit msg 说明）；
 - origin 不强制必填（向后兼容 v0.6.x 旧 Draft）；新 Draft 创建默认 origin=human。
 
 ### Inv9DraftListFilterByOriginV040
-- `oxn draft list --origin=human|insight` 按 producer 过滤（v0.4.0 新增）；无 origin= 列出全部（向后兼容）。
-- 行为：`oxn draft list --origin=insight` 列出所有 insight 生成的 Draft（含 v0.6.x 已存 draft 中由 `--from-insight` 生成的，可能缺 origin 字段——按 origin=insight 默认兼容）。
-- 配合 oxn-proof-domain.md §Inv30InsightManualGateViaDraft 闸门使用。
+- `oxn draft list --origin=human` 按 producer 过滤；无 origin= 列出全部（向后兼容）。
+- v0.7+ origin 恒为 human（Insight 删除）；旧 Draft 中 `--from-insight` 生成的按 origin=human 兼容。
 
 ### Inv10DraftTargetGoalPairV050
 - v0.5.0（D2 2026-08-07）起：`oxn draft promote --target=goal --goal-slug=<slug>` 把 Draft 升华为 Goal。

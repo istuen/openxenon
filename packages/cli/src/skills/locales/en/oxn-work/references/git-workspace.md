@@ -53,7 +53,7 @@ cd -
 oxn work run gw-feat-x --json
 oxn work submit gw-feat-x --task ship --json          # 4 times (4 part = 4 slot)
 oxn work status gw-feat-x --json                       # overallStatus = passed
-oxn work finalize gw-feat-x --json                     # Finalize (added in v0.6.1) — write final status
+oxn work finalize gw-feat-x --json                     # ⚠️ REMOVED in RFC-0032 Phase 2; use `oxn work submit --work <w> --task <t>` instead
 ```
 
 ## Obtaining Mergeability Evidence (Critical)

@@ -18,7 +18,8 @@
 //     finalize <name> [--verdict V]   — 收口 + 写 frozen.json
 //
 //   Auxiliary:
-//     list / migrate / status / unlock / next-round / compile / sync
+//     list / migrate / status / unlock / compile / sync
+//   (next-round 已随 RFC-0032 Phase 3 退场 — D6 推翻 Round 模型)
 //
 // 命名范式: V1 布局（详见 kernel/constants.ts）
 //   - DSL 图纸: work.md / task.md
@@ -51,7 +52,7 @@ import { getFormatFromArgs, output, outputError, outputUserInputError } from './
 import type { WorkDeclaration } from '@openxenon/engine/oxl'
 import { extractBlueprintIR } from '@openxenon/engine/oxl/md-pipeline/transformers/blueprint.js'
 import type { WorkPart } from '@openxenon/engine/oxl/md-pipeline/transformers/work.js'
-import { runTask, runWork, submitTask, nextRoundWork } from '@openxenon/engine/Work'
+import { runTask, runWork, submitTask } from '@openxenon/engine/Work'
 import {
   ensureWorkDir,
   getTaskOxnPath,
@@ -116,7 +117,9 @@ import {
   type DomainFileSummary,
 } from '@openxenon/engine/oxl/summary-extractors'
 import { validateWorkFile } from '@openxenon/engine/oxl/work-file-loader'
-import { finalizeWorkDomains } from '@openxenon/engine/infra/frozen/work-domains'
+// finalizeWorkDomains (work-domains.ts) 已随 RFC-0032 Phase 2 删除
+// 该 import 历史用途: oxn work finalize 子命令 (200 行) 评估 Domain proof
+// 解决方案: 同步删除 finalize 子命令, 该 import 行一并清理
 
 // ---------------------------------------------------------------------------
 // 报告层类型（来自 engine/work-reporter）
@@ -3126,330 +3129,16 @@ const unlockSubcommand = defineCommand({
 //   - work.md 缺失：OXN_WORK_NOT_FOUND
 //   - 既没 V0 也没 V1：OXN_WORK_NO_V0_LAYOUT（"纯 planning work，不需要迁移"）
 //   - 已 V1：kind=already-v1（no-op + warning 提示手动清理残留 V0）
-//
 
 // =============================================================================
-// v0.6 PR-2: `oxn work next-round <name>` — 关闭当前 round + 开启下一轮
+// RFC-0032 Phase 2 (2026-08-23): oxn work finalize 子命令已删 (原 line 3232-3432)
 //
-// 行为：
-//   - 读取本轮 verdict（从 frozen.json.outcome）+ 失败 task 列表
-//   - 关闭当前 round（追加到 roundHistory，标记 endedAt + verdict + failures）
-//   - 若 verdict=PASSED → 抛 OXN_ROUND_ALREADY_PASSED（提示用 finalize 而非 next-round）
-//   - 开启新 round（currentRound++，追加 PENDING 记录）
-//   - 追加 trace event
-//   - 写 .run/state.json
-//
-// 手动触发（v0.6），不自动循环（避免无限循环 + 便于人工调整 Intent）
-// =============================================================================
-const nextRoundSubcommand = defineCommand({
-  meta: {
-    name: 'next-round',
-    description: '关闭当前 round + 开启下一轮 IAP 循环（v0.6 PR-2）',
-  },
-  args: {
-    name: { type: 'positional', required: true, description: t('work.args.workName') },
-    '--outcome': {
-      type: 'string',
-      required: true,
-      description: '本轮 verdict：PASSED | FAILED | INCONCLUSIVE',
-    },
-    '--failures': {
-      type: 'string',
-      description: '本轮失败的 task 名列表（逗号分隔，可选）',
-    },
-    '--notes': { type: 'string', description: '本轮总结备注（可选）' },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const workName = ctx.args.name as string
-    const outcomeRaw = ctx.args.outcome as string
-    const failuresRaw = (ctx.args as Record<string, unknown>).failures as string | undefined
-    const notes = (ctx.args as Record<string, unknown>).notes as string | undefined
-    const projectRoot = getProjectRoot()
-
-    // 验证 verdict
-    if (outcomeRaw !== 'COMPLETED' && outcomeRaw !== 'DEVIATED' && outcomeRaw !== 'INCONCLUSIVE') {
-      return outputError(
-        {
-          code: 'OXN_ROUND_OUTCOME_INVALID',
-          message: `invalid --outcome: ${outcomeRaw}`,
-          suggestion: 'valid values: PASSED | FAILED | INCONCLUSIVE',
-        },
-        format,
-      )
-    }
-    const outcome = outcomeRaw as 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
-
-    if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
-    }
-
-    const failures = failuresRaw
-      ? failuresRaw
-          .split(',')
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0)
-      : []
-
-    try {
-      const result = nextRoundWork({
-        projectRoot,
-        workName,
-        outcome,
-        failures,
-        ...(notes ? { notes } : {}),
-      })
-      output(
-        {
-          ok: true,
-          data: {
-            workName,
-            round: result.round,
-            previousOutcome: result.previousOutcome,
-            historyLength: result.historyLength,
-            workspace: result.workspace,
-          },
-          human: renderNextRoundHuman(result),
-        },
-        format,
-      )
-    } catch (err) {
-      if (err instanceof IAPError) {
-        const ctx = err.context as { oxnCode?: unknown } | undefined
-        const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
-        return outputError({ code: oxnCode, message: err.message }, format)
-      }
-      const message = err instanceof Error ? err.message : String(err)
-      output(errorJson('OXN_NEXT_ROUND_FAILED', message), format)
-    }
-  },
-})
-
-// =============================================================================
-// v0.6.1-alpha.0 #3-1: `oxn work finalize <name>` — 收口 work（汇总所有 round → 最终 frozen.json）
-//
-// 行为：
-//   - 关闭当前 active round（追加 endedAt + verdict）
-//   - 标记 work 终态（passed / failed / finalized）
-//   - 写 trace event
-//   - finalize 不强制要求最后一轮 PASSED（允许「失败收档」语义）
+// 删除原因: 依赖 @openxenon/engine/infra/frozen/work-domains (frozen/ 随 Phase 2 全删)
+// 属 Phase 3 lifecycle 范围 (D10/D13) 但编译依赖倒逼提前删除
+// Phase 3 重新引入替代设计 (脱离 frozen.json)
 // =============================================================================
 
-/**
- * A2 (D4): 收集 Work 引用 Domain 的 invariant，构造 DomainProofInput[]。
- * 从 work.md ## Use 提取 kind:domain 的 domain → 读每个 Domain.md 的 ## Invariants。
- */
-function collectWorkDomainProofs(
-  projectRoot: string,
-  workName: string,
-  assetFormat: string,
-): Array<{ domain: string; invariant: string }> {
-  const workFile = resolveWorkFilePath(projectRoot, workName, assetFormat)
-  if (!existsSync(workFile)) return []
-  const content = readFileSync(workFile, 'utf-8')
-
-  const refsSection = content.match(/## Use\n([\s\S]*?)(?=\n## |\n# |$)/)
-  const domains: string[] = []
-  if (refsSection) {
-    for (const block of refsSection[1]!.split(/\n(?=### )/)) {
-      if (!block.startsWith('### ')) continue
-      const name = block.replace(/^### /, '').trim()
-      let kind = block.match(/- kind:\s*(\S+)/)?.[1]
-      if (kind !== 'domain') {
-        // 🆕 v0.7 fallback: 新格式 - domain: @md/domains/<name>（H3 名 + 单字段）
-        if (block.match(/- domain:\s*\S+/)) kind = 'domain'
-      }
-      if (kind === 'domain') domains.push(name)
-    }
-  }
-
-  const inputs: Array<{ domain: string; invariant: string }> = []
-  for (const d of domains) {
-    const candidates = [
-      join(projectRoot, BOUNDARY_DIR, 'domains', `${d}.md`),
-      join(projectRoot, BOUNDARY_DIR, 'domains', d.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase(), 'domain.md'),
-    ]
-    for (const p of candidates) {
-      if (!existsSync(p)) continue
-      const dom = readDomainFile(p)
-      if (dom?.language?.invariant) {
-        for (const inv of dom.language.invariant) {
-          inputs.push({ domain: d, invariant: inv })
-        }
-      }
-      break
-    }
-  }
-  return inputs
-}
-
-const finalizeSubcommand = defineCommand({
-  meta: {
-    name: 'finalize',
-    description: '收口 work（汇总所有 round + 写最终状态）',
-  },
-  args: {
-    name: { type: 'positional', required: true, description: t('work.args.workName') },
-    '--outcome': {
-      type: 'string',
-      description: '最终裁决：PASSED | FAILED | INCONCLUSIVE（默认沿用最后一轮 verdict）',
-    },
-    '--notes': { type: 'string', description: '收口备注' },
-    '--force': { type: 'boolean', description: '忽略 Domain proof 硬阻断，仍记录边界违反并收口' },
-    '--dry-run': { type: 'boolean', description: '仅评估 Domain proof，不写 frozen.json' },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const workName = ctx.args.name as string
-    const outcomeRaw = ctx.args.outcome as string | undefined
-    const notes = (ctx.args as Record<string, unknown>).notes as string | undefined
-    const force = ctx.args.force === true
-    const dryRun = ctx.args['dry-run'] === true
-    const projectRoot = getProjectRoot()
-
-    let outcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | undefined
-    if (outcomeRaw) {
-      if (outcomeRaw !== 'COMPLETED' && outcomeRaw !== 'DEVIATED' && outcomeRaw !== 'INCONCLUSIVE') {
-        return outputError(
-          {
-            code: 'OXN_ROUND_OUTCOME_INVALID',
-            message: `invalid --outcome: ${outcomeRaw}`,
-            suggestion: 'valid values: PASSED | FAILED | INCONCLUSIVE',
-          },
-          format,
-        )
-      }
-      outcome = outcomeRaw
-    }
-
-    if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
-    }
-
-    // A2 (D4): 收集 Work 引用 Domain 的 invariant → 评估 Domain proof（边界违反记录）
-    const domainProofs = collectWorkDomainProofs(
-      projectRoot,
-      workName,
-      resolveAssetFormat(readProjectConfig(projectRoot)),
-    )
-
-    // dry-run：仅评估 Domain proof（若有），输出结果，绝不写 frozen.json / 收口
-    if (dryRun) {
-      if (domainProofs.length === 0) {
-        return output(
-          {
-            ok: true,
-            data: { workName, dryRun: true, domainProofs: [], overallOutcome: 'COMPLETED' },
-            human: `Work "${workName}" dry-run: no domain invariants declared (no-op)`,
-          },
-          format,
-        )
-      }
-      try {
-        const res = await finalizeWorkDomains(workName, projectRoot, domainProofs, true)
-        return output(
-          {
-            ok: true,
-            data: {
-              workName,
-              dryRun: true,
-              domainProofs: res.node.domainProofs,
-              overallOutcome: res.node.overallOutcome,
-            },
-            human: `Work "${workName}" dry-run: ${res.node.domainProofs.length} domain proof(s), overall=${res.node.overallOutcome}`,
-          },
-          format,
-        )
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
-        return output(errorJson('OXN_FINALIZE_DRYRUN_FAILED', message), format)
-      }
-    }
-
-    let boundaryViolations:
-      | Array<{ domain: string; invariant: string; outcome: string; failureMessage?: string }>
-      | undefined
-    if (domainProofs.length > 0) {
-      try {
-        const res = await finalizeWorkDomains(workName, projectRoot, domainProofs, force)
-        boundaryViolations = res.node.domainProofs.map((e) => ({
-          domain: e.domain,
-          invariant: e.invariant,
-          outcome: e.outcome,
-          ...(e.failureMessage ? { failureMessage: e.failureMessage } : {}),
-        }))
-      } catch (err) {
-        // Domain proof FAIL/MANUAL/INCONCLUSIVE 且无 --force → 拒绝收口（OXN_FINALIZE_REJECTED）
-        if (err instanceof IAPError) {
-          const ctx = err.context as { oxnCode?: unknown } | undefined
-          const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
-          return outputError({ code: oxnCode, message: err.message }, format)
-        }
-        const message = err instanceof Error ? err.message : String(err)
-        return output(errorJson('OXN_FINALIZE_REJECTED', message), format)
-      }
-    }
-
-    try {
-      const { finalizeWork } = await import('@openxenon/engine/Work/dual-state-exec')
-      const result = finalizeWork({
-        projectRoot,
-        workName,
-        ...(outcome ? { outcome } : {}),
-        ...(notes ? { notes } : {}),
-        ...(boundaryViolations ? { boundaryViolations } : {}),
-      })
-      output(
-        {
-          ok: true,
-          data: {
-            workName,
-            finalOutcome: result.finalOutcome,
-            totalRounds: result.totalRounds,
-            finalizedAt: result.finalizedAt,
-            boundaryViolations: boundaryViolations ?? [],
-            workspace: result.workspace,
-          },
-          human: renderFinalizeHuman(result),
-        },
-        format,
-      )
-    } catch (err) {
-      if (err instanceof IAPError) {
-        const ctx = err.context as { oxnCode?: unknown } | undefined
-        const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
-        return outputError({ code: oxnCode, message: err.message }, format)
-      }
-      const message = err instanceof Error ? err.message : String(err)
-      output(errorJson('OXN_FINALIZE_FAILED', message), format)
-    }
-  },
-})
-
-function renderFinalizeHuman(result: {
-  finalOutcome: string
-  totalRounds: number
-  workspace: { workName: string }
-}): string {
-  return [
-    `Work ${result.workspace.workName} finalized ✓`,
-    `  Final outcome: ${result.finalOutcome}`,
-    `  Total rounds: ${result.totalRounds}`,
-  ].join('\n')
-}
-
-function renderNextRoundHuman(result: ReturnType<typeof nextRoundWork>): string {
-  const lines: string[] = [
-    `Work ${result.workspace.workName}: new round ${result.round} opened`,
-    `  Previous outcome: ${result.previousOutcome}`,
-    `  History length: ${result.historyLength} (1 active + ${result.historyLength - 1} closed)`,
-  ]
-  return lines.join('\n')
-}
+// RFC-0032 Phase 3 (2026-08-23): renderNextRoundHuman 已删 (随 next-round 子命令退场)
 
 const migrateSubcommand = defineCommand({
   meta: {
@@ -3567,8 +3256,8 @@ export default defineCommand({
     context: contextSubcommand,
     lock: lockSubcommand,
     unlock: unlockSubcommand,
-    'next-round': nextRoundSubcommand,
-    finalize: finalizeSubcommand,
+    // RFC-0032 Phase 3: next-round 子命令已删 (D6 推翻 Round 模型)
+    // RFC-0032 Phase 2: finalize 子命令已删 (依赖 frozen/work-domains.ts)
     migrate: migrateSubcommand,
   },
   run() {

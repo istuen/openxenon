@@ -4,8 +4,7 @@ title: OXN Engine 开发者手册
 
 # OXN Engine 开发者手册
 
-> **术语权威源**：本文档基于 [oxn-engine-domain 引擎术语](/product/zh-cn/concepts/glossary.html#
-> （Layer 1 · packages/engine/）编译。所有 term 定义以该 Domain 为唯一 SSOT。
+> **术语权威源**：本文档基于 `oxn-engine-domain` 引擎术语（Layer 1 · `packages/engine/`）编译。所有 term 定义以该 Domain 为唯一 SSOT（见 [术语表](/openxenon/product/zh-cn/concepts/glossary.html)）。
 
 ## What —— 是什么
 
@@ -54,16 +53,7 @@ packages/engine/
 
 ## L0-L3 分层架构
 
-| 层 | 路径 | 性质 | 关键约束 |
-|---|---|---|---|
-| **L0-Schema** | `kernel/schemas/` | 纯类型校验 | 不允许 import 其他层 |
-| **L0-Contract** | `kernel/contracts/` | 跨层契约 | 不允许 import L0-Processor+ |
-| **L0-Processor** | `kernel/processors/, verdicts/` | 纯函数判定 | 不允许 import L1+ |
-| **L1-Infra** | `infra/` | 物理 IO 收口 | 不允许 import L0-Processor |
-| **L1-OXL** | `oxl/` | DSL 解析 | 不允许 import L0-Processor |
-| **L2-Builtin** | `builtin/` | 内置资产 | 暂残留根 src/，待迁入 |
-| **L2-Work** | `Work/`, `Asset/`, `Intent/`, ... | 业务模块 | 不允许 import L3 |
-| **L3** | `cli/`, `daemon/` | 入口/外部交互 | 允许 import 所有下层 |
+> **见 [架构总览 §2 L0-L3 工程分层](./architecture.html#2-l0-l3-工程分层)**——L0 Schema/Contract/Processor + L1 Infra/OXL + L2 模块 + L3 入口的完整分层表与依赖图。Engine 模块的 7 项核心不变量（Kernel 真空 / ProbeObservation vs ProbeOutcome / Trace-before-State / PathPort 注入 / Langium 类型隔离 等）详见 [架构总览 §9](./architecture.html#9-l0-l1-runtime-不变量)。
 
 **CI 守门**：`bun scripts/validate-dependencies.ts` + ESLint `no-restricted-imports`
 按目录配置，跨层引用即 fail。
@@ -125,27 +115,23 @@ Daemon 主循环
 
 ## 双包 Monorepo 边界
 
-```
-packages/cli (L3 薄调用层)
-  ↓ import @openxenon/engine/* (Barrel)
-packages/engine (L0-L2 + daemon)
-  ↑ 不允许反向 import
+> **见 [架构总览 §6 L3 Tools](./architecture.html#6-l3-tools-工具入口层)**——CLI / Skills / Daemon 的物理位置 + 职责分工。本节聚焦 Engine 自身的 **cli↔daemon socket 协议约束**（架构总览省略的细节）。
 
-packages/cli ↔ packages/daemon
-  ↑ 仅 unix socket + JSON payload
-  ↑ 禁止互相 import 模块
-```
+**cli↔daemon 通信约束**（Engine 内部专属）：
 
-**关键约束**：
-- cli 严禁 import `@openxenon/engine/src/...` 穿透（必须走 Barrel）
-- engine 严禁 import cli（engine 是被依赖方）
-- 锁文件唯一权威：`bun.lock`；禁用 `pnpm-lock.yaml` / `package-lock.json` / `yarn.lock`
-- builtin 资产 `@oxn` scope 与 project 资产 `@prj` scope 严格隔离
+- 仅 `unix socket` + JSON payload，禁止互相 import 模块
+- payload schema 唯一权威：`src/daemon/protocol.ts`
+- `oxn daemon *` 命令：`start / stop / restart / logs --lines N / kill / status`
+  - 绕开 CrashLoop / ForkDaemon / SystemdUnit / LaunchD — 必须走 oxn 命令
+
+**Builtin Asset scope 隔离**：
+- `@oxn`（Engine 编译内置，src/builtin/）vs `@prj`（项目 override，`.openxenon/assets/`）严格分离
+- 详见 [`oxn-asset-domain Inv3BuiltinAssetTwoLayer`](../openxenon/assets/domains/oxn-asset-domain.md)
 
 ## 参考
 
-- [OXN 顶层术语 · core-terms](/product/zh-cn/concepts/glossary.html#
-- [OXN Engine 术语 · engine-terms](/product/zh-cn/concepts/glossary.html#（本文档 SSOT）
+- [OXN 顶层术语 · core-terms](/openxenon/product/zh-cn/concepts/glossary.html)
+- [OXN Engine 术语 · engine-terms](/openxenon/assets/domains/oxn-engine-domain.md)（本文档 SSOT）
 - [OXN CLI 开发者手册 · oxn-cli.md](./oxn-cli.md)
 - [L0-L3 宪法 · l0-l3-constitution.md](./l0-l3-constitution.md)
 - [Monorepo 双包 · monorepo.md](./monorepo.md)

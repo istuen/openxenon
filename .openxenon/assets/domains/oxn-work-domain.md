@@ -7,7 +7,7 @@ references:
   - oxn-domain
   - oxn-engine-domain
   - oxn-asset-domain
-  - oxn-proof-domain
+  - oxn-probe-domain
 citations: 0
 synced-at: 2026-08-09
 ---
@@ -17,7 +17,7 @@ synced-at: 2026-08-09
 ## Concept
 
 ### Work
-- Work 是 E2 人机协作的工作空间；编排流程 3 IAP 阶段顺序不可跳；必经路径 create→lock→run→submit×N→finalize。
+- Work 是 DAG 协作空间（D15/D13）；编排流程 create→lock→run→submit 顺序不可跳（D10）。
 
 ### WorkAsSolutionReference
 - PEAS 解的目标参照——AI 把理解的上下文按 Blueprint 写成 Work 作解参照，每个 Task = 解的原子动作。
@@ -25,7 +25,7 @@ synced-at: 2026-08-09
 - OXN 不做业务 goal-test（OXN 只记事实不判合格）；Work 自带结构性完成参照（所有 Task submitted = 结构完整，AI 可自检）。
 
 ### Phase
-- 单个 IAP 阶段（Intent/Align/Proof 之一），按顺序不可跳。子步骤按阶段分别定义。
+- Work 生命周期阶段（create/lock/run/submit 之一），按顺序不可跳。子步骤按阶段分别定义。
 
 ### Task
 - Align 执行单元，对齐 1 个 Blueprint 并可引用 N 个 Domain；内联 Part + Probe；DAG 无环（Kahn 校验）。
@@ -39,9 +39,6 @@ synced-at: 2026-08-09
 ### Probe
 - 物理观测单元（prop 输入 + output 判定），内联在 part 内；标准必须来自 Blueprint observe 数组。
 
-### Round
-- Work 多轮 IAP 循环（v0.6 新增），手动触发（`oxn work next-round`），maxIterations 硬限制（默认 3）。
-
 ### BirthCert
 - Work 静态门禁卡（.work 目录），写一次后只读（OS chmod 0o444），含 assets + context + diagnostics。
 
@@ -51,18 +48,8 @@ synced-at: 2026-08-09
 ### Artifact
 - Align 阶段产出的物理事实（被 Probe 观测的对象），路径必须落在 Work 沙盒内或宿主项目目录。
 
-### Frozen
-- Work finalize 后的不可变证据文件（frozen.json），生成后只读（chmod 0o444 + content_hash + signature）；包含 outcome 聚合结构 + boundary deviations 标记；三件套之一（详见 Proof）。
-
 ### Loop
-- Work 核心动态过程（三相模型 Phase 2）；物质运动态；所有变化被 trace 记录。
-
-### TestProofBoundary
-- 测试 / Proof 边界——OXN 的测试方法论与 Proof 体系的分工：测试 = 工程师 + AI Agent 在开发期主动跑的验证（命令驱动，结果反馈给开发者）；Proof = OXN Engine 在 Work finalize 后跑的不可篡改证据采集（Probe 驱动，落 frozen.json）。
-- **E0-E3 全栈**——测试（E0-E3）按 L0-L3 划分（单元 / 集成 / E2E / 全栈）；Proof 是 E3 Engine 跨层 Probe 观测（不绑层）。两者覆盖维度正交。
-- **测试方法论归属**——测试 = 开发期主动行为，由 Work Task Part 内 skill_context 驱动；OXN 不强制规定测试框架（项目内 `oxn-stack.md` 声明）；测试结果由 AI 自主消费，不入 frozen.json。
-- **Proof 方法论归属**——Proof = Work finalize 期 OXN Engine 跑 Probe 行为；Probe 声明必须在 Blueprint `## Use observe: [...]` 阶段（Intent 阶段）；结果进 frozen.json 三件套（outcome + boundary deviations + InterferenceFlag）。
-- **不重叠原则**——同一观测目标不应既走测试又走 Proof：测试由开发者自决，Proof 由 OXN 不可篡改记录；测试通过 ≠ Proof COMPLETED（验证者是不同主体）。锁定。
+- Work 核心动态过程；物质运动态；所有变化被 trace 记录（D13）。
 
 ## ContextEngineering
 
@@ -133,7 +120,7 @@ synced-at: 2026-08-09
 ## Boundary
 
 ### Inv1IAPPhasesNoSkip
-- 3 IAP 阶段顺序不可跳：Intent → Align → Proof；违反 → IAPError 拒绝。
+- 生命周期顺序不可跳：create → lock → run → submit；违反 → IAPError 拒绝。
 
 ### Inv2IntentSubsteps
 - Intent 子步骤：create → [add-task?] → lock（内含 validate）；lock 内先 validate（语法+DAG+引用）再 hash。
@@ -183,17 +170,8 @@ synced-at: 2026-08-09
 ### Inv17NoCreateNewAlias
 - oxn work new 已在 v1.0 移除；CLI 拒绝 unknown command 'new'（不能是别名）；统一用 oxn work create。
 
-### Inv18RoundPreservesCompleted
-- Round 切换不重置 task 状态：completed 的 task 保留，deviated/running 的回 pending 供工程师重跑或调整；roundHistory 不可丢（finalize 保留所有 round 记录供 E4 Insight）。
-
-### Inv19MaxIterationsHardLimit
-- maxIterations 硬限制：oxn work next-round 在 currentRound >= maxIterations 时拒绝，错误码 IAP_ALIGN_ROUND_MAX_EXCEEDED；提示用户用 oxn work finalize 收口；默认 maxIterations=3。
-
-### Inv20RoundManualTrigger
-- Round 切换手动触发（oxn work next-round --outcome DEVIATED），不自动循环（避免无限循环 + 便于人工调整 Intent）；outcome DEVIATED 不自动触发新 Round。
-
 ### Inv21RunAllowRerunPending
-- oxn work run 行为变更：state.status=pending/running 时允许重新调用（re-run 自动重置 deviated/running task → pending，completed 保留）；state.status ∈ {completed, deviated, error}（已收口）时拒绝，报 OXN_WORK_ALREADY_FINALIZED。
+- oxn work run 行为变更：state.status=pending/running 时允许重新调用（re-run 自动重置 deviated/running task → pending，completed 保留）；state.status ∈ {completed, deviated, error}（已 submit）时拒绝，报 OXN_WORK_ALREADY_FINALIZED。
 
 ### Inv22ArtifactInSandbox
 - Artifact 路径必须落在 Work 沙盒内或宿主项目目录。
@@ -216,9 +194,6 @@ synced-at: 2026-08-09
 ### Inv28TaskNoReverseBlueprint
 - Task 执行结果不能反改 Blueprint 声明（真相解释权单向，不允许对齐结果回灌意图）。
 
-### Inv29WorkInsightDataSource
-- Work 是 Insight 的唯一客观数据源——trace.jsonl + frozen.json + state.json 构成 Insight 涌现的客观数据基础。缺 Work 的项目 Insight 涌现退化为基于工程师经验 + AI 推理（可偏差），违反原料提供者原则。Work 的不可省核心价值在此，不在"过程追踪"本身。
-
 ### Inv30ChannelOnlyTracking
 - Work 追踪只覆盖 OXN 通道内行为（state.json + trace.jsonl 记录状态机事件），不记录 AI Agent 在通道外的行为（读代码、试方案、放弃、推理过程）。通道外 = OXN 边界外，OXN 不强制 AI 留在通道内。通道内追踪是协作边界的**特征**（非缺陷）——chat 提供推理可见性（临时），Work 提供证据持久性（持久），两者信息源不交叉是设计选择。
 
@@ -235,4 +210,4 @@ synced-at: 2026-08-09
 - Task ArtifactDeclaration ⊆ Blueprint Scope.allow AND ∩ Scope.forbid = ∅：lock 时 Engine 对每个 Task ## Artifacts 段中每个 path 跑 glob 校验；违反 → IAP_INTENT_SCOPE_VIOLATION (YIELD_TO_HUMAN)，列出违规 path + Scope 段。Scope 段不存在时，allow 默认为工程根全树（`**`），forbid 为空（向后兼容）。
 
 ### Inv35OperateIsReferenceNotGate
-- operate 声明 AI Agent 的执行参照，**不是**强制门禁。OXN 不验证 AI 是否实际运行了 operate 中的命令（通道外行为不可追踪，inv-31 channel-only-tracking）—— 验证由 observe Probe 独立承担（OXN 跑 Probe，ProbeOutcome 进 frozen.json）。operate 与 observe 正交：同一命令 AI 跑一遍 + OXN 跑一遍的冗余是设计特征（AI 跑是工作流先自检，OXN 跑是独立证据采集），非缺陷。与「OXN 不判质量只记事实」一致：OXN 不评判 AI 是否遵循 operate，只记录 observe 验证结果。
+- operate 声明 AI Agent 的执行参照，**不是**强制门禁。OXN 不验证 AI 是否实际运行了 operate 中的命令（通道外行为不可追踪，inv-31 channel-only-tracking）—— 验证由 observe Probe 独立承担（AI 经 CLI 跑 Probe，ProbeOutcome 记 Work trace，D27）。operate 与 observe 正交：同一命令 AI 跑一遍 + Probe 跑一遍的冗余是设计特征（AI 跑是工作流先自检，Probe 跑是工具能力检查），非缺陷。与「OXN 不判质量只记事实」一致：OXN 不评判 AI 是否遵循 operate，只记录 Probe 验证结果。

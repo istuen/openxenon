@@ -25,7 +25,7 @@
  */
 
 import { describe, expect, test } from 'bun:test'
-import { readdirSync, readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { parseMarkdown } from '@openxenon/engine/oxl/md-pipeline/utils'
 
 const BUILTIN_DIR = 'packages/engine/src/builtin'

@@ -4,8 +4,7 @@ title: OXN CLI 开发者手册
 
 # OXN CLI 开发者手册
 
-> **术语权威源**：本文档基于 [oxn-cli-domain CLI 术语](/product/zh-cn/concepts/glossary.html#
-> （Layer 1 · packages/cli/）编译。所有 term 定义以该 Domain 为唯一 SSOT。
+> **术语权威源**：本文档基于 `oxn-cli-domain` CLI 术语（Layer 1 · `packages/cli/`）编译。所有 term 定义以该 Domain 为唯一 SSOT（见 [术语表](/openxenon/product/zh-cn/concepts/glossary.html)）。
 
 ## What —— 是什么
 
@@ -137,8 +136,8 @@ AssemblyIR（IR）
 
 ## 参考
 
-- [OXN 顶层术语 · core-terms](/product/zh-cn/concepts/glossary.html#
-- [OXN CLI 术语 · cli-terms](/product/zh-cn/concepts/glossary.html#（本文档 SSOT）
+- [OXN 顶层术语 · core-terms](/openxenon/product/zh-cn/concepts/glossary.html)
+- [OXN CLI 术语 · cli-terms](/openxenon/assets/domains/oxn-cli-domain.md)（本文档 SSOT）
 - [架构总览 · architecture.md](./architecture.md)
 <!-- allow-version -->
 - v0.7 Domain 三层架构 RFC（v0.7 探索阶段产物，已并入 [RFC-0007 Domain 词汇与 OXN 定位](../../rfc/zh-cn/RFC-0007-domain-positioning.html)）
