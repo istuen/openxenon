@@ -53,6 +53,28 @@ synced-at: 2026-08-14
 - 判定权归工程师。
 - R&N 对照：R&N 假定 agent 自带性能度量并最大化；OXN 的 P 不在系统内，在工程师脑子里。
 
+
+
+## Boundary
+
+### Inv1OpenXenonCoreEntities
+- OpenXenon 核心实体三件套：Asset（领域知识结构化表示，D24，）+ Work（DAG 协作空间，D15/D13，）+ Probe（OXN Engine 提供给 AI Agent 的工具能力，D27，）。
+- 三实体各自独立 Domain 详细定义，oxn-domain 母文件只承担"母档案 + 三实体交叉索引"职责。
+
+### Inv2IAPRetiredToNarrativeLayer
+- IAP（Intent/Align/Proof）三相闭环已退役到理念叙事层（D10，）。
+- 实现术语为 Asset/Work/Probe；IAP 仅作为 Work 内阶段视角（`oxn-work-domain §Phase`）保留叙事价值。
+- Proof 主权验证已删（D25，），Probe 作为工具能力保留（D27，）。
+
+### Inv3ThreePartyCollaborationBoundary
+- 协作三方：工程师（Asset 管理 + 边界判断）/ AI Agent（Work 内自主工作）/ OXN Engine（Probe 工具能力 + 确定性参照系）。
+- 三方能力边界不重叠：工程师不直接执行 Probe（走 `oxn probe` CLI）；AI Agent 不修改 Asset（v0.6.3+ hard-block）；OXN Engine 不做"价值判断"（PEAS P 外包给工程师）。
+- 详见 `### PerformanceMeasureNotEnforced`。
+
+### Inv4PlanLockRetired
+- 🗑️ PlanLock 已退役（v1.3 D2）：Work 不再依赖 lock/unlock；work.md 可自由修改。
+- 漂移检测改由 submit 时刻 hash + trace.jsonl SUBMIT/ASSET_DRIFT 事件承担（可观测不阻断）。
+- 旧 `.work` 单文件已删除（D5）；assets 信息运行时读 work.md `## Use` 段。
 ## Slogan
 
 ### EngineeringDefinesAgentBoundary

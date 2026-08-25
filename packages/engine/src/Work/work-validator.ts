@@ -521,7 +521,8 @@ export function collectAndThrowScopeViolations(
  *   - 校验每个 slot.operate[] 项：
  *     - 限定名 `tool:operation`：直接定位，跳过消歧；不在 → OPERATION_NOT_FOUND
  *     - 简单名：无候选 → OPERATION_NOT_FOUND；≥2 候选 → OPERATION_AMBIGUOUS
- *   - 任意 violation → throw IAPError (YIELD_TO_HUMAN)
+ *   - 任意 violation → 追加到 warnings（不阻断，inv-35 约束：operate 是参照不是门禁）
+ *   - v0.8.0 收敛承诺：operate 名字严格映射后升级为硬阻断
  *
  * 与 ADR-0055 / RFC-0022 P4 一致：lock 时一次性校验，不新增 Probe。
  */
@@ -530,7 +531,8 @@ export function collectAndThrowOperateViolations(
   projectRoot: string,
   _workName: string,
   blueprintsIdx: PerWorkBlueprintsIndex,
-): void {
+): string[] {
+  const warnings: string[] = []
   const violations: Array<{
     slot: string
     blueprint: string
@@ -601,22 +603,25 @@ export function collectAndThrowOperateViolations(
     }
   }
 
-  if (violations.length === 0) return
+if (violations.length === 0) return warnings
 
-  const lines = violations.map((v) => {
+  // 🆕 RFC-0025 收敛：operate 是参照（inv-35），不是门禁。v0.8.0 之前不阻断 run/validate。
+  // 仅追加 warnings（供人类决策），不 throw IAPError。
+  // v0.8.0 收敛承诺：operate 名字严格映射到 Stack tool.operations 后升级为硬阻断。
+  for (const v of violations) {
     if (v.code === 'OPERATION_NOT_FOUND') {
-      return `  - blueprint "${v.blueprint}" slot "${v.slot}": operate "${v.name}" not found in Stack tool.operations`
+      warnings.push(
+        `blueprint "${v.blueprint}" slot "${v.slot}": operate "${v.name}" not found in Stack tool.operations ` +
+          `(inv-35: operate is reference, not gate; v0.8.0 will hard-block)`,
+      )
+    } else {
+      warnings.push(
+        `blueprint "${v.blueprint}" slot "${v.slot}": operate "${v.name}" ambiguous ` +
+          `(${v.candidates!.join(', ')}); use qualified name like ${v.candidates![0]}`,
+      )
     }
-    return `  - blueprint "${v.blueprint}" slot "${v.slot}": operate "${v.name}" ambiguous (${v.candidates!.join(', ')}); use qualified name like ${v.candidates![0]}`
-  })
-
-  throw new IAPError(
-    'INTENT',
-    violations.some((v) => v.code === 'OPERATION_NOT_FOUND') ? 'OPERATION_NOT_FOUND' : 'OPERATION_AMBIGUOUS',
-    IAPAction.YIELD_TO_HUMAN,
-    `Blueprint slot.operate[] reference invalid: ${violations.length} violation(s).\n${lines.join('\n')}`,
-    { violations },
-  )
+  }
+  return warnings
 }
 
 // =============================================================================
@@ -724,7 +729,8 @@ export async function validateAndWriteArtifacts(params: {
   //   - inv-27: operate 名 ⊆ Blueprint 引用 Stack tool.operations
   //   - inv-28: 多 tool 同名 → OPERATION_AMBIGUOUS（要求限定名）
   //   - lock 时一次性校验；不新增 Probe
-  collectAndThrowOperateViolations(work, projectRoot, workName, blueprintsIdx)
+  const operateWarnings = collectAndThrowOperateViolations(work, projectRoot, workName, blueprintsIdx)
+  if (operateWarnings.length > 0) warnings.push(...operateWarnings)
 
   // 🆕 v0.7.3 P7 (ADR-0061 §D6): Work ## Refs 旧 kind: domain 软警告
   //   - 不阻断 artifacts 写入（仅 push warning + structured entry）

@@ -256,7 +256,7 @@ describe('readDomainFile — v0.7.3 P2: ## Terms: 后缀 + multiline + items 修
       'oxn-cli-domain',
       'oxn-work-domain',
       'oxn-asset-domain',
-      'oxn-proof-domain', // 🆕 v0.6.4: 包含原 `oxn-probe-domain` 内容
+      'oxn-probe-domain', // 🆕 v0.6.4: 包含原 `oxn-probe-domain` 内容
     ]
     // Test file path: packages/engine/src/oxl/__tests__/summary-extractors.test.ts
     // → ../../../.. → repo root → .openxenon/assets/domains/

@@ -58,8 +58,8 @@ export const BoundaryRefSlimSchema = z.object({
   ref: z.string().min(1),
   scope: z.enum(['@oxn', '@prj']).default('@prj'),
   version: z.number().int().min(1).default(1),
-  // 🆕 v0.6.1-alpha.4 Phase B.5: fileHash 必填（BoundaryRefEntry 一致；parseBlueprintSlim 真实计算）
-  fileHash: z.string().regex(/^[0-9a-f]{64}$/),
+  // 🆕 v0.6.1-alpha.4 Phase B.5: fileHash（ref 文件存在时必填 sha256 hex；不存在/解析失败时空字符串）
+  fileHash: z.string().regex(/^(\s*|[0-9a-f]{64})$/),
 })
 
 export const PerWorkBlueprintEntrySchema = z.object({

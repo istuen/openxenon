@@ -237,7 +237,7 @@ describe('collectAndThrowOperateViolations — v0.7.4 stack-operation-referent',
         stackRefs: singleStackRef,
       },
     ])
-    expect(() => collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)).toThrow(IAPError)
+    const ws = collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx); expect(ws.length).toBeGreaterThan(0)
     try {
       collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)
     } catch (e) {
@@ -254,7 +254,7 @@ describe('collectAndThrowOperateViolations — v0.7.4 stack-operation-referent',
         stackRefs: singleStackRef,
       },
     ])
-    expect(() => collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)).toThrow(IAPError)
+    const ws = collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx); expect(ws.length).toBeGreaterThan(0)
     try {
       collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)
     } catch (e) {
@@ -270,7 +270,7 @@ describe('collectAndThrowOperateViolations — v0.7.4 stack-operation-referent',
         stackRefs: singleStackRef,
       },
     ])
-    expect(() => collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)).toThrow(IAPError)
+    const ws = collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx); expect(ws.length).toBeGreaterThan(0)
     try {
       collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)
     } catch (e) {
@@ -322,7 +322,7 @@ citations: 0
         stackRefs: dualRef,
       },
     ])
-    expect(() => collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)).toThrow(IAPError)
+    const ws = collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx); expect(ws.length).toBeGreaterThan(0)
     try {
       collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)
     } catch (e) {
@@ -387,7 +387,7 @@ citations: 0
         stackRefs: singleStackRef,
       },
     ])
-    expect(() => collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)).toThrow(IAPError)
+    const ws = collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx); expect(ws.length).toBeGreaterThan(0)
     try {
       collectAndThrowOperateViolations(dummyWork, tmpDir, workName, idx)
     } catch (e) {
