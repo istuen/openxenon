@@ -33,15 +33,23 @@ import type {
 import { extractHeadingContexts, findH1 } from '../../md-pipeline/utils.js'
 import { extractListFields, getScalar, getArray, type ListField } from '../../md-pipeline/utils.js'
 import type { IntentEntityType } from '../pipeline.js'
+import { VALID_DOMAIN_GROUP_NAMES } from '../../md-pipeline/transformers/domain.js'
+import type { DomainCategory as DomainCategoryType } from '../../md-pipeline/transformers/domain.js'
 
 /** Domain H2 分类白名单
  *
- * v0.7 重构（PR-1）：
- * - 删除 'Stack' 类别（v0.4 PR-A 软推荐已废弃——Stack 由独立 Asset 处理）
- * - 删除 'Externals'（external 并入 frontmatter references）
+ * v3.2.1 同步（fix-oxn-validation-gate-sync）：
+ * - Asset 结构 v2（v0.7.4）允许 Group 名 free-form；不再硬编码 3 分类白名单
+ * - 改为从 md-pipeline/transformers/domain.ts 的 GROUP_TO_CATEGORY 派生
+ *   （VALID_DOMAIN_GROUP_NAMES 是 Object.keys(GROUP_TO_CATEGORY)）
+ * - 覆盖：legacy Terms/Bans/Invariants/Stack + v2 canonical Concept/Forbidden/Boundary +
+ *   v2 free-form Practice/Foundation/Phases/Reference/FailureHandling/Quality/
+ *   ToolchainRule/UseWorkflow/UseDomain/UseStack/Scenes
+ * - 删 'Externals'（v0.7 PR-1：external 并入 frontmatter references）
+ * - 🆕 v3.2.1: 'Stack' 现在是合法 Group 名（v2 free-form 决策取代 v0.7 PR-1）
  */
-const DOMAIN_CATEGORIES = ['Terms', 'Bans', 'Invariants'] as const
-type DomainCategory = (typeof DOMAIN_CATEGORIES)[number]
+const DOMAIN_CATEGORIES: readonly string[] = VALID_DOMAIN_GROUP_NAMES
+type DomainCategory = DomainCategoryType
 
 /**
  * DomainCompiler — Domain 实体编译器

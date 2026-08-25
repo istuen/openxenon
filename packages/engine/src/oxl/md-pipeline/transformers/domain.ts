@@ -71,6 +71,15 @@ const GROUP_TO_CATEGORY: Record<string, DomainCategory> = {
   Scenes: 'Terms',
 }
 
+/**
+ * v3.2.1 同步：暴露 GROUP_TO_CATEGORY 的 keys 给 md-bridge/compilers/domain-compiler.ts
+ * validate() 用它作为「合法 Domain H2 Group 名」白名单。
+ *
+ * 注：包含 `Stack` 是因为 v0.7.4 free-form Group 名不限；v0.7 PR-1 的「## Stack 应被拒绝」
+ * 决策已被 v2 free-form 语义取代（Stack 作为 Group 名仍允许；只是不再映射到内部 Category）。
+ */
+export const VALID_DOMAIN_GROUP_NAMES: readonly string[] = Object.keys(GROUP_TO_CATEGORY)
+
 function classifyAxiom(categoryPrefix: string, fields: ListField[], desc: string): DomainCategory {
   // 1. 旧结构 H2 名直接映射（Terms / Bans / Invariants / Stack）
   if (

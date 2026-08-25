@@ -171,13 +171,37 @@ describe('DomainCompiler.validate', () => {
     expect(dup).toBeUndefined()
   })
 
-  // ─── v0.7: Stack 已从 Domain 移除（v0.4 PR-A 软推荐已废弃） ───
-  test('## Stack 分类被拒绝（不属于 Domain 合法 H2）', () => {
+  // ─── v3.2.1 同步（fix-oxn-validation-gate-sync）：Asset 结构 v2 free-form ───
+  // v0.7 PR-1「## Stack 被拒绝」决策已被 v2 free-form 取代；现在 Stack 作为 Group 名合法
+  // （transformer 会映射为 'Stack' Category），validate 不再拒绝。
+  test('## Stack 分类现在合法（v2 free-form）', () => {
     const root = parseMd('# Domain: Test\n\n## Stack\n\n### runtime\n\n- language: typescript\n')
     const frontmatter = { entity: 'domain', name: 'Test' }
     const errors = compiler.validate({ mdast: root, frontmatter })
     const unknown = errors.find((e) => e.code === 'E_MD_CATEGORY_UNKNOWN')
-    expect(unknown).toBeDefined()
+    expect(unknown).toBeUndefined()
+  })
+
+  // 🆕 v3.2.1: v2 canonical Group 名 Concept / Forbidden / Boundary 现在合法
+  test('## Concept / ## Forbidden / ## Boundary 全部合法（v2 canonical）', () => {
+    const root = parseMd(
+      '# Domain: Test\n\n## Concept\n\n### A\n- desc: x\n\n## Forbidden\n\n### B\n- items:\n  - foo\n\n## Boundary\n\n### C\n- value: rule\n',
+    )
+    const frontmatter = { entity: 'domain', name: 'Test' }
+    const errors = compiler.validate({ mdast: root, frontmatter })
+    const fatal = errors.filter((e) => e.severity === 'error')
+    expect(fatal).toEqual([])
+  })
+
+  // 🆕 v3.2.1: v2 free-form Group 名（GROUP_TO_CATEGORY 已收录的）也合法
+  test('## Practice / ## Foundation / ## Quality 等 GROUP_TO_CATEGORY 收录名合法', () => {
+    const root = parseMd(
+      '# Domain: Test\n\n## Practice\n\n### p1\n- desc: x\n\n## Foundation\n\n### f1\n- desc: y\n\n## Quality\n\n### q1\n- desc: z\n',
+    )
+    const frontmatter = { entity: 'domain', name: 'Test' }
+    const errors = compiler.validate({ mdast: root, frontmatter })
+    const fatal = errors.filter((e) => e.severity === 'error')
+    expect(fatal).toEqual([])
   })
 
   test('## Terms / ## Bans / ## Invariants 共存合法', () => {

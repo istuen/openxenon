@@ -88,53 +88,76 @@ export function checkDirectories(dirs: string[]): CheckResult {
   const result: CheckResult = { checked: 0, passed: 0, failed: [], skipped: 0, errors: [] }
 
   for (const dir of dirs) {
-    let entries: string[]
-    try {
-      if (!statSync(dir).isDirectory()) continue
-      entries = readdirSync(dir)
-    } catch {
-      continue
-    }
-
-    for (const entry of entries) {
-      const fullPath = join(dir, entry)
-      let st
-      try {
-        st = statSync(fullPath)
-      } catch {
-        continue
-      }
-
-      if (st.isFile() && fullPath.endsWith('.md')) {
-        const draftType = draftTypeFromPath(fullPath)
-        if (!draftType) continue // 非 Draft 路径，跳过
-
-        const spec = DRAFT_SPECS[draftType]
-        if (!spec) continue
-
-        result.checked++
-
-        // design 是探索性，无 required → 直接通过
-        if (spec.required.length === 0) {
-          result.passed++
-          continue
-        }
-
-        const content = readFileSync(fullPath, 'utf-8')
-        const v = validateHeadingSkeleton(content, spec)
-        if (v.ok) {
-          result.passed++
-        } else {
-          result.failed.push(fullPath)
-          result.errors.push({ file: fullPath, missing: v.missing, unexpected: v.unexpected })
-        }
-      }
-      // 跳过子目录（如 rfc/）以避免重复检查
-    }
+    walkDraftTree(dir, result)
   }
 
   return result
 }
+
+/**
+ * DFS 递归 walk Draft 目录树。
+ * - 跳过 `.archived/`（约定不检查归档）
+ * - 对每个 .md 文件调 draftTypeFromPath 推类型，不匹配则跳过
+ * - 递归到子目录（修复 v3.2.1 pre-existing：rfc/ 子目录路径被丢弃的 bug）
+ */
+function walkDraftTree(dir: string, result: CheckResult): void {
+  let entries: string[]
+  try {
+    if (!statSync(dir).isDirectory()) return
+    entries = readdirSync(dir)
+  } catch {
+    return
+  }
+
+  for (const entry of entries) {
+    const fullPath = join(dir, entry)
+    let st
+    try {
+      st = statSync(fullPath)
+    } catch {
+      continue
+    }
+
+    if (st.isFile() && fullPath.endsWith('.md')) {
+      checkDraftFile(fullPath, result)
+    } else if (st.isDirectory()) {
+      // 跳过 .archived/ 目录（约定不检查归档草稿）
+      if (entry === '.archived') continue
+      // 递归 walk 子目录（如 drafts/rfc/）
+      walkDraftTree(fullPath, result)
+    }
+  }
+}
+
+/**
+ * 检查单个 Draft 文件的骨架是否符合 DRAFT_SPECS[draftType].required。
+ */
+function checkDraftFile(filePath: string, result: CheckResult): void {
+  const draftType = draftTypeFromPath(filePath)
+  if (!draftType) return // 非 Draft 路径，跳过
+
+  const spec = DRAFT_SPECS[draftType]
+  if (!spec) return
+
+  result.checked++
+
+  // design 是探索性，无 required → 直接通过
+  if (spec.required.length === 0) {
+    result.passed++
+    return
+  }
+
+  const content = readFileSync(filePath, 'utf-8')
+  const v = validateHeadingSkeleton(content, spec)
+  if (v.ok) {
+    result.passed++
+  } else {
+    result.failed.push(filePath)
+    result.errors.push({ file: filePath, missing: v.missing, unexpected: v.unexpected })
+  }
+}
+
+// CLI 入口
 
 // CLI 入口
 if (import.meta.main) {

@@ -562,8 +562,10 @@ function checkGeneric(parsed: ParsedAsset): Violation[] {
   //    - RFC-XXXX 占位符（doc-md-domain 追踪标记）
   //    - docs/rfc/zh-cn/RFC-XXXX-<theme>.md 路径模板（概念定义位置）
   //    - 无编号的 "RFC" / "ADR" 字样（如 ### RFC 术语定义、PR-X 标识）
-  //    正则只匹配 RFC/ADR + 数字编号，避免误伤概念定义。
-  const RFC_ADR_NUMBERED = /\b(?:RFC|ADR)-\d{3,4}\b/
+  //    - 🆕 v3.2.1: RFC-NNNN/ADR-NNNN 后面紧跟 D[0-9]+ Decision 引用（如 RFC-0032 D25）
+  //      （这是「指向决策点」而非「反向引用文档」，是合法的历史溯源）
+  //    正则只匹配 RFC/ADR + 数字编号 + 后面不是 D-section，避免误伤决策点引用。
+  const RFC_ADR_NUMBERED = /\b(?:RFC|ADR)-\d{3,4}(?!\s+D\d{1,3})\b/
   for (let i = 0; i < bodyLines.length; i++) {
     const line = bodyLines[i] ?? ''
     if (RFC_ADR_NUMBERED.test(line)) {
