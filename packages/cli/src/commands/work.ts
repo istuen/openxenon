@@ -1,35 +1,25 @@
 // =============================================================================
-// `oxn work` — Work 编排与运行时
+// `oxn work` — Work 编排与运行时（RFC-0033 极简化 3 步生命周期）
 //
-// 单一实体（Work）的完整生命周期，按 IAP 三阶段分组：
-//
-//   Intent (工程师主权):
-//     create <name> --blueprint <bp>  — 写 works/<w>/work.md + auto task skeleton
-//     add-task <name> --task <t> ...  — 写 works/<w>/tasks/<t>/task.md
-//     lock <name> [--dry-run]        — validate 内含 + hash + 写 planLock
-//     validate <name>                 — alias for lock --dry-run
-//
-//   Align (AI 主权):
-//     run <name>                      — 启动状态机，落 .run/state.json
-//     submit <name> --task <t>        — 推进 task 内 part
-//     context <name> --task <t>       — 渲染 AI 上下文
-//
-//   Proof (Engine 主权):
-//     finalize <name> [--verdict V]   — 收口 + 写 frozen.json
+//   create <name> --blueprint <bp>      — 写 works/<w>/work.md + auto task skeleton
+//   run <name> [--validate-only]        — 启动状态机 / 仅校验（替代原 `validate` 子命令）
+//   submit <name> --task <t>            — 推进 task 内 part + 算 workMdHash 指纹 + DRIFT 检测
 //
 //   Auxiliary:
-//     list / migrate / status / unlock / compile / sync
-//   (next-round 已随 RFC-0032 Phase 3 退场 — D6 推翻 Round 模型)
+//     add-task / edit-task / delete-task / list-task / task-status
+//     list / migrate / status / context / inject
+//   （lock/unlock/validate/finalize/next-round 已随 RFC-0033 / RFC-0032 退役）
 //
 // 命名范式: V1 布局（详见 kernel/constants.ts）
 //   - DSL 图纸: work.md / task.md
-//   - 静态门禁: .work
-//   - 运行时:  .run/state.json / .run/trace.jsonl / .run/frozen.json
-//              .run/tasks/<t>/state.json / .run/tasks/<t>/trace.jsonl / .run/tasks/<t>/frozen.json
+//   - 运行时:  .run/state.json + .run/trace.jsonl（含 SUBMIT/ASSET_DRIFT 事件）
+//              .run/tasks/<t>/state.json + .run/tasks/<t>/trace.jsonl
 //
-// 阶段守卫:
-//   - NV-1: .run/state.json 存在 ⇒ add-task/edit-task/delete-task 拒绝
-//   - NV-2: .run/state.json 缺失 ⇒ submit 拒绝
+// 阶段守卫（RFC-0033 D1/D2/D5）：
+//   - create → run → submit：3 步顺序不可跳（add-task 可选，写 work.md ## Tasks 段）
+//   - .run/state.json 存在 ⇒ add-task/edit-task/delete-task 拒绝
+//   - .run/state.json 缺失 ⇒ submit 拒绝（run 必须先跑）
+//   - 无 planLock / 无 IAP_ALIGN_LOCK_* 错误（RFC-0033 D2 PlanLock 已删）
 // =============================================================================
 
 import { defineCommand } from 'citty'
@@ -46,7 +36,7 @@ import {
 import { t } from '@openxenon/engine/infra/i18n'
 import { join, relative } from 'path'
 import { BOUNDARY_DIR, RUN_DIR, TASK_OXN_FILE, WORK_OXN_FILE, WORK_RUN_STATE_JSON } from '@openxenon/engine/kernel'
-import { assertDirNameConsistent } from '@openxenon/engine/kernel'
+// 🗑️ RFC-0033 D2: assertDirNameConsistent import 已删（PlanLock 检查的 work.name vs dirName 一致性校验随之废弃，运行时直接读 work.md）
 import { IAPError } from '@openxenon/engine/errors'
 import { getFormatFromArgs, output, outputError, outputUserInputError } from './output'
 import type { WorkDeclaration } from '@openxenon/engine/oxl'
@@ -65,7 +55,7 @@ import {
   workStateExists,
   resolveWorkFilePath,
 } from '@openxenon/engine/Work/dual-state-io'
-import { resetCurrentRoundTasks } from '@openxenon/engine/Work/dual-state-exec'
+import { resetTasksForReRun, appendWorkTrace } from '@openxenon/engine/Work/dual-state-exec'
 // 🆕 v0.6.1-alpha.4 Phase B: 删除 resolveDomainFile import（Domain 引用走 Blueprint ## Use 路径）
 import { resolveBlueprintFile } from '@openxenon/engine/Work/per-work-blueprints-merger'
 import {
@@ -80,14 +70,8 @@ import {
 } from '@openxenon/engine/Work/work-context-builder'
 import type { StackToolInfo } from '@openxenon/engine/kernel'
 import { buildBlueprintDiagnostic, type RefDiagnostic } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
-import {
-  applyPlanLock,
-  clearPlanLock,
-  readWorkFile as readBirthCert,
-  verifyPlanLock,
-  writeWorkFile,
-  type BirthCert,
-} from '@openxenon/engine/Work/birth-cert'
+import { readWorkFile as readBirthCert } from '@openxenon/engine/Work/birth-cert'
+// 🗑️ RFC-0033 D2: writeWorkFile / BirthCert import 已删（planLock 写路径不再需要）
 import { hashWorkPlan } from '@openxenon/engine/Work/plan-hash'
 import { readProjectConfig } from './project-config-io'
 import {
@@ -547,7 +531,7 @@ async function createWorkWithAssetMode(input: CreateWorkWithAssetModeInput): Pro
           files: { work: workFile },
           tasks: autoTasks,
           nextStep:
-            `Edit the task files, then run: oxn work validate ${workName} && oxn work lock ${workName} && oxn work run ${workName}\n` +
+            `Edit the task files, then run: oxn work run ${workName} --validate-only && oxn work run ${workName}\n` +
             `  Asset will be created after all tasks pass through the IAP pipeline.`,
         },
       },
@@ -825,7 +809,7 @@ const createSubcommand = defineCommand({
               files: { work: workFile },
               tasks: autoTasks,
               nextStep:
-                `Edit the task files, then run: oxn work validate ${workName} && oxn work lock ${workName} && oxn work run ${workName}\n` +
+                `Edit the task files, then run: oxn work run ${workName} --validate-only && oxn work run ${workName}\n` +
                 `  Tip: view AssetMap scene for related Assets: oxn assetmap show oxn-system --scene <scene>`,
             },
           },
@@ -889,172 +873,6 @@ const createSubcommand = defineCommand({
 
 // ---------------------------------------------------------------------------
 // Subcommand: validate
-// ---------------------------------------------------------------------------
-const validateSubcommand = defineCommand({
-  meta: {
-    name: 'validate',
-    description: t('work.validate.description'),
-  },
-  args: {
-    name: { type: 'positional', required: true, description: t('work.args.workName') },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-    // 🆕 v0.7.3 P5 (ADR-0061 §D4): escape hatch —— 跳过 Workflow slot DAG 闭包校验
-    '--skip-workflow-dag-check': {
-      type: 'boolean',
-      description: 'Skip Workflow slot DAG closure check (legacy works only).',
-    },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args)
-    const workName = ctx.args.name as string
-    const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
-    const assetFormat = resolveAssetFormat(config)
-    // 🆕 v0.7.3 P5 (ADR-0061 §D4): escape hatch (citty strips leading "--")
-    const skipDagCheck = Boolean(ctx.args['skip-workflow-dag-check'])
-
-    if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
-    }
-
-    const workFile = resolveWorkFilePath(projectRoot, workName, assetFormat)
-    if (!existsSync(workFile)) {
-      return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workFile}` }, format)
-    }
-
-    // ── 1. 语法解析 ──
-    let work: WorkDeclaration
-    try {
-      const result = await validateWorkFile(workFile)
-      if (!result.ok || !result.work) {
-        const code = result.errors.some(
-          (e) => e.startsWith('[Parser]') || e.startsWith('[Lexer]') || e.includes('parse failed'),
-        )
-          ? 'OXN_WORK_VALIDATE_FAILED'
-          : 'OXN_NO_WORK'
-        return outputError({ code, message: result.errors.join('; ') }, format)
-      }
-      work = result.work
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      return outputError({ code: 'OXN_WORK_VALIDATE_FAILED', message }, format)
-    }
-
-    // ── 1.5 v1.1: work.md 内 `work "X"` 与目录名 <w> 一致性校验（macOS-safe） ──
-    const workDir = join(projectRoot, '.openxenon', 'works', workName)
-    try {
-      assertDirNameConsistent(work.name, workDir, 'work')
-    } catch (err) {
-      if (err instanceof IAPError) {
-        return outputError(
-          {
-            code: err.name,
-            message: err.message,
-            ...(err.context?.suggestion !== undefined ? { suggestion: String(err.context.suggestion) } : {}),
-          },
-          format,
-        )
-      }
-      throw err
-    }
-
-    // ── 2. 检查 task.md 是否都已建（沿用现有逻辑） ──
-    const missingTaskOxn: string[] = []
-    for (const t of work.tasks ?? []) {
-      const tName = parsePartName(t.name)
-      if (!existsSync(getTaskOxnPath(projectRoot, workName, tName))) {
-        missingTaskOxn.push(tName)
-      }
-    }
-
-    // ── 3. PR-6: 写 artifacts（解析 + 落 3 文件） ──
-    let result: Awaited<ReturnType<typeof validateAndWriteArtifacts>>
-    try {
-      result = await validateAndWriteArtifacts({
-        projectRoot,
-        workName,
-        work,
-        missingTaskOxn,
-        // 🆕 v0.7.3 P5 (ADR-0061 §D4): escape hatch 透传
-        skipDagCheck,
-      })
-    } catch (err) {
-      // 🆕 v0.7.3 P4 (ADR-0061 §D3) + P5 (ADR-0061 §D4): IAPError 统一捕获
-      if (err instanceof IAPError) {
-        return outputError(
-          {
-            code: err.name,
-            message: err.message,
-            context: err.context,
-          },
-          format,
-        )
-      }
-      throw err
-    }
-
-    if (!result.ok) {
-      const code =
-        result.warnings.some((w) => w.includes('locked')) && result.unresolved === undefined
-          ? 'OXN_WORK_LOCKED'
-          : 'OXN_WORK_REFS_UNRESOLVED'
-      return output(
-        {
-          ok: false,
-          data: {
-            code,
-            valid: false,
-            unresolved: result.unresolved ?? [],
-            warnings: result.warnings,
-            note: 'no artifacts written (validate failed)',
-          },
-          human:
-            `Work validate FAILED\n` +
-            `  Unresolved refs: ${(result.unresolved ?? []).length}\n` +
-            (result.unresolved ?? []).map((u) => `    - ${u.kind} "${u.name}": ${u.reason}`).join('\n') +
-            (result.warnings.length > 0 ? `\n  Warnings: ${result.warnings.join(' | ')}` : ''),
-        },
-        format,
-      )
-    }
-
-    const a = result.artifacts!
-    output(
-      {
-        ok: true,
-        data: {
-          workName,
-          blueprintRef: work.refs?.find((r) => r.kind === 'blueprint')?.name,
-          valid: true,
-          errors: [],
-          warnings: result.warnings,
-          // 🆕 v0.7.3 P7 (ADR-0061 §D6): legacy domain ref 条目（structured）
-          ...(result.legacyDomainRefs && result.legacyDomainRefs.length > 0
-            ? { legacyDomainRefs: result.legacyDomainRefs }
-            : {}),
-          artifacts: {
-            // 🆕 Phase B: 删 domainsJson（Domain 引用走 Blueprint ## Use）
-            blueprintsJson: a.blueprintsJsonPath,
-            workFile: a.workFilePath,
-          },
-          assetCounts: a.assetCounts,
-        },
-        human:
-          `Work validate OK\n` +
-          // 🆕 Phase B: 删 Domain refs 计数（Domain 引用走 Blueprint ## Use）
-          `  Blueprint refs: ${a.assetCounts.blueprints} resolved\n` +
-          `  Task count:  ${a.assetCounts.tasks}\n` +
-          `\n  Artifacts written:\n` +
-          `    - ${a.blueprintsJsonPath}\n` +
-          `    - ${a.workFilePath}` +
-          (result.warnings.length > 0 ? `\n\n  Warnings: ${result.warnings.join(' | ')}` : ''),
-      },
-      format,
-    )
-  },
-})
-
 // ---------------------------------------------------------------------------
 // Subcommand: add-task (Phase 1: P1 守卫 + 写 task.md)
 // ---------------------------------------------------------------------------
@@ -1582,6 +1400,10 @@ const runSubcommand = defineCommand({
     name: { type: 'positional', required: true, description: t('work.args.workName') },
     '--json': { type: 'boolean', description: t('format.json') },
     '--yaml': { type: 'boolean', description: t('format.yaml') },
+    // RFC-0033 D1: --validate-only = 只跑校验不启动状态机（替代原独立 `oxn work validate` 子命令）
+    '--validate-only': { type: 'boolean', description: t('work.run.args.validateOnly') },
+    // PR-13/PRD: escape hatch — 跳过 Workflow slot DAG 闭合校验（仅 --validate-only 生效）
+    '--skip-workflow-dag-check': { type: 'boolean', description: t('work.run.args.skipDagCheck') },
   },
   async run(ctx) {
     const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
@@ -1589,88 +1411,27 @@ const runSubcommand = defineCommand({
     const projectRoot = getProjectRoot()
     const config = readProjectConfig(projectRoot)
     const assetFormat = resolveAssetFormat(config)
+    const validateOnly = ctx.args['validate-only'] === true
+    const skipDagCheck = ctx.args['skip-workflow-dag-check'] === true
 
-    // v0.6.1-alpha.0 #3-5: work 目录整个被删 → 报 OXN_ALIGN_WORK_REMOVED
-    //   区分：未 init 走 LOCK_NOT_FOUND（work 从未存在过，提案 work create）；
-    //         已 init 但 .openxenon/works/<w>/ 被删 → WORK_REMOVED（暗示 work 锁后被删）
+    // RFC-0033 D2: 工作目录缺失即报 NOT_FOUND，不再区分 LOCK_NOT_FOUND / WORK_REMOVED（PlanLock 已删）
     const workDir = getWorkDir(projectRoot, workName)
     if (!existsSync(workDir)) {
-      // 优先判断"未 init"：.openxenon/works/ 整目录不存在 → LOCK_NOT_FOUND
       const worksRoot = join(projectRoot, BOUNDARY_DIR, 'works')
-      const code = existsSync(worksRoot) ? 'OXN_ALIGN_WORK_REMOVED' : 'OXN_ALIGN_LOCK_NOT_FOUND'
+      const code = existsSync(worksRoot) ? 'OXN_WORK_NOT_FOUND' : 'OXN_NO_PROJECT'
       const message =
-        code === 'OXN_ALIGN_WORK_REMOVED'
-          ? `work "${workName}" cannot run: work directory deleted`
-          : `work "${workName}" cannot run: no works/ directory — project not initialized or never created a work`
+        code === 'OXN_WORK_NOT_FOUND'
+          ? `work "${workName}" not found at ${workDir}`
+          : `works/ directory missing — run \`oxn init\` first or create a work with \`oxn work create ${workName}\``
       const suggestion =
-        code === 'OXN_ALIGN_WORK_REMOVED'
-          ? `run \`oxn work list\` to see existing works; or create a new one with \`oxn work create ${workName}\``
-          : '先执行 `oxn work validate <name>` 生成 .work'
+        code === 'OXN_WORK_NOT_FOUND'
+          ? `run \`oxn work create ${workName}\` to create it`
+          : 'run `oxn init` to initialize the project'
       return outputError({ code, message, suggestion }, format)
     }
 
     try {
-      // PR-8: 锁守卫优先于 work.md 缺失检查——
-      //   若 work.md 缺失是因为 lock 后被删（不是初建），应报 WORK_REMOVED 而非 NOT_FOUND，
-      //   语义更准（"你锁的计划被破坏了" vs "你这 work 根本不存在"）。
-      //   因此先调 lock 校验，再做 work.md 缺失检查。
-      const birthCert = readBirthCert(projectRoot, workName)
-      if (birthCert.ok && birthCert.cert.planLock !== null) {
-        // 已有 planLock；再做 hash 校验（这一步会捕获 work.md 缺失 → work-removed）
-        const lockVerify = verifyPlanLock(projectRoot, workName, birthCert.cert)
-        if (!lockVerify.ok) {
-          const code =
-            lockVerify.reason === 'work-removed'
-              ? 'OXN_ALIGN_WORK_REMOVED'
-              : lockVerify.reason === 'no-plan-lock'
-                ? 'OXN_ALIGN_LOCK_NOT_FOUND'
-                : 'OXN_ALIGN_LOCK_HASH_MISMATCH'
-          return outputError(
-            {
-              code,
-              message: `Work run BLOCKED: ${lockVerify.message}`,
-              suggestion: t('work.hashChangedSuggestion', { workName }),
-              context: {
-                reason: lockVerify.reason,
-                component: lockVerify.component,
-                expected: lockVerify.expected,
-                actual: lockVerify.actual,
-              },
-            },
-            format,
-          )
-        }
-      } else if (!birthCert.ok) {
-        // .work 缺失或损坏 → 提示先 validate（planLock === null 走下方再判）
-        if (birthCert.reason === 'missing') {
-          return outputError(
-            {
-              code: 'OXN_ALIGN_LOCK_NOT_FOUND',
-              message: `work "${workName}" cannot run: .work missing`,
-              suggestion: t('work.validateRequired'),
-            },
-            format,
-          )
-        }
-        return outputError(
-          {
-            code: 'OXN_ALIGN_LOCK_NOT_FOUND',
-            message: `work "${workName}" cannot run: .work ${birthCert.reason}`,
-            suggestion: t('work.birthCertInvalid', { errors: birthCert.errors.join('; ') }),
-          },
-          format,
-        )
-      } else {
-        // .work 存在但 planLock === null
-        return outputError(
-          {
-            code: 'OXN_ALIGN_LOCK_NOT_FOUND',
-            message: `work "${workName}" has no planLock; run refuses to start execution`,
-            suggestion: t('work.lockHint'),
-          },
-          format,
-        )
-      }
+      // RFC-0033 D2: 锁守卫已删；不再校验 .work 文件 / planLock。work.md 可自由修改。
 
       const filePath = resolveWorkFilePath(projectRoot, workName, assetFormat)
       if (!existsSync(filePath)) {
@@ -1688,6 +1449,98 @@ const runSubcommand = defineCommand({
       }
       const work = result.work
       const inlineParts = (result.work.tasks ?? []).flatMap((t) => t.parts ?? [])
+
+      // RFC-0033 D1: --validate-only 模式：parse + 校验 + 写 work assets 后退出，不启动状态机
+      if (validateOnly) {
+        try {
+          const missing: string[] = []
+          const taskEntries = work.tasks ?? []
+          const declaredTaskNames = taskEntries.map((t) => parsePartName(t.name))
+          for (const name of declaredTaskNames) {
+            if (!existsSync(getTaskOxnPath(projectRoot, workName, name))) {
+              missing.push(name)
+            }
+          }
+          if (missing.length > 0) {
+            return output(
+              errorJson(
+                'OXN_TASK_OXN_MISSING',
+                `work "${workName}" declares ${declaredTaskNames.length} tasks but ${missing.length} task.md missing: ${missing.join(', ')}`,
+                `create them with: oxn work add-task <name> --task <task> --blueprint <bp>`,
+              ),
+              format,
+            )
+          }
+          const validationResult = await validateAndWriteArtifacts({
+            projectRoot,
+            workName,
+            work,
+            missingTaskOxn: missing,
+            ...(skipDagCheck ? { skipDagCheck: true } : {}),
+          })
+          if (!validationResult.ok) {
+            return output(
+              {
+                ok: false,
+                data: {
+                  code: 'OXN_WORK_REFS_UNRESOLVED',
+                  valid: false,
+                  unresolved: validationResult.unresolved ?? [],
+                  warnings: validationResult.warnings,
+                  note: 'validate-only failed: refs unresolved',
+                },
+                human:
+                  `Work validate FAILED (--validate-only)\n` +
+                  `  Unresolved refs: ${(validationResult.unresolved ?? []).length}\n` +
+                  (validationResult.unresolved ?? [])
+                    .map((u) => `    - ${u.kind} "${u.name}": ${u.reason}`)
+                    .join('\n') +
+                  (validationResult.warnings.length > 0
+                    ? `\n  Warnings: ${validationResult.warnings.join(' | ')}`
+                    : ''),
+              },
+              format,
+            )
+          }
+          const a = validationResult.artifacts!
+          return output(
+            {
+              ok: true,
+              data: {
+                workName,
+                valid: true,
+                validateOnly: true,
+                warnings: validationResult.warnings,
+                ...(validationResult.legacyDomainRefs && validationResult.legacyDomainRefs.length > 0
+                  ? { legacyDomainRefs: validationResult.legacyDomainRefs }
+                  : {}),
+                artifacts: {
+                  blueprintsJson: a.blueprintsJsonPath,
+                  // 🗑️ RFC-0033 D5: 删 workFile（.work 文件已退役；运行时改读 work.md）
+                },
+                assetCounts: a.assetCounts,
+              },
+              human:
+                `Work validate OK (--validate-only)\n` +
+                `  Blueprint refs: ${a.assetCounts.blueprints} resolved\n` +
+                `  Task count:  ${a.assetCounts.tasks}\n` +
+                `\n  Artifacts written:\n` +
+                `    - ${a.blueprintsJsonPath}` +
+                (validationResult.warnings.length > 0
+                  ? `\n\n  Warnings: ${validationResult.warnings.join(' | ')}`
+                  : ''),
+            },
+            format,
+          )
+        } catch (err) {
+          if (err instanceof IAPError) {
+            const ctx = err.context as { oxnCode?: unknown } | undefined
+            const oxnCode = typeof ctx?.oxnCode === 'string' ? ctx.oxnCode : err.name
+            return outputError({ code: oxnCode, message: err.message, ...(ctx ? { context: ctx } : {}) }, format)
+          }
+          throw err
+        }
+      }
 
       // 🆕 v0.6.1-alpha.5 Phase A.1: 允许 Round 2+ re-run（state.status=pending/running 时）
       // 只有 state.status ∈ {passed, failed, error}（已收口）时才拒绝（避免重跑已结束 Work）
@@ -1718,8 +1571,8 @@ const runSubcommand = defineCommand({
             format,
           )
         }
-        // Round 2+ re-run：重置当前 Round 的 task 状态为 pending（保留 passed 状态）
-        resetCurrentRoundTasks(existingState)
+        // Re-run：重置 task 状态（failed / running → pending，passed 保留；RFC-0033 D6 Round 退役）
+        resetTasksForReRun(existingState)
         saveWorkState(projectRoot, workName, existingState)
         // 不报错，继续 re-run 流程
       }
@@ -1870,6 +1723,12 @@ const runSubcommand = defineCommand({
 // ---------------------------------------------------------------------------
 // Subcommand: submit (Phase 2: 推进 task 内 part)
 // ---------------------------------------------------------------------------
+//
+// RFC-0033 D3/D4 submit 扩展：
+//   1. submitTask 完成后调 hashWorkPlan 算 workMdHash（完成指纹）
+//   2. 读 trace.jsonl 找上次 SUBMIT 事件的 workMdHash
+//   3. 不一致 → append ASSET_DRIFT 事件（不阻断 submit）
+//   4. append SUBMIT 事件（带 workMdHash + probeResult）
 const submitSubcommand = defineCommand({
   meta: {
     name: 'submit',
@@ -1908,6 +1767,41 @@ const submitSubcommand = defineCommand({
         taskName,
       })
 
+      // RFC-0033 D3/D4: submit 时算 workMdHash + DRIFT 检测 + append SUBMIT 事件
+      const workMdHash = hashWorkPlan(projectRoot, workName).workMdHash
+      const previousHash = workMdHash !== null ? readLastSubmitWorkMdHash(projectRoot, workName) : null
+      let submitIndex = readSubmitIndex(projectRoot, workName) + 1
+      let driftDetected = false
+      if (workMdHash !== null && previousHash !== null && previousHash !== workMdHash) {
+        // 漂移可观测不阻断：append ASSET_DRIFT 事件
+        appendWorkTrace(projectRoot, workName, {
+          event: 'ASSET_DRIFT',
+          workName,
+          component: 'workMd',
+          previousHash,
+          currentHash: workMdHash,
+          submitIndex,
+        })
+        driftDetected = true
+      }
+
+      // 决定本次 SUBMIT 事件的 submitIndex（已写 ASSET_DRIFT 时用新计数，否则 +1）
+      // 注：上面读到的 submitIndex 是漂移前的计数；写完 DRIFT 后 SUBMIT 沿用同一 submitIndex（即"这次 submit 检测到漂移"）
+      // 简化：submitIndex 在 append SUBMIT 后递增，DRIFT 用 current submitIndex（同一个）
+      const probeResult: 'COMPLETED' | 'DEVIATED' = result.status === 'passed' ? 'COMPLETED' : 'DEVIATED'
+      const partName = result.nextPart ?? result.taskState.completedParts.at(-1) ?? 'unknown'
+      if (workMdHash !== null) {
+        appendWorkTrace(projectRoot, workName, {
+          event: 'SUBMIT',
+          workName,
+          taskName,
+          partName,
+          probeResult,
+          workMdHash,
+        })
+        submitIndex = readSubmitIndex(projectRoot, workName) // 重读以反映已追加
+      }
+
       const probeResults: Array<{
         probe: string
         passed: boolean
@@ -1942,6 +1836,9 @@ const submitSubcommand = defineCommand({
             taskFrozen: taskFrozenPath,
             workFrozen: workFrozenPath,
             workspaceStatus: loadWorkState(projectRoot, workName)?.status ?? 'pending',
+            // RFC-0033 D4: 漂移可观测字段
+            ...(workMdHash !== null ? { workMdHash } : {}),
+            ...(driftDetected ? { drift: { component: 'workMd', previousHash, currentHash: workMdHash } } : {}),
           },
         },
         format,
@@ -1957,6 +1854,62 @@ const submitSubcommand = defineCommand({
     }
   },
 })
+
+// =============================================================================
+// RFC-0033 D4 helpers：读 trace.jsonl 上次 SUBMIT hash + submit 计数
+// =============================================================================
+
+/**
+ * 逆序读 trace.jsonl 找最后一条 SUBMIT 事件的 workMdHash。
+ * 返回 null 表示首次 submit 或 trace 缺失。
+ */
+function readLastSubmitWorkMdHash(projectRoot: string, workName: string): string | null {
+  const tracePath = join(projectRoot, BOUNDARY_DIR, 'works', workName, RUN_DIR, 'trace.jsonl')
+  if (!existsSync(tracePath)) return null
+  let content: string
+  try {
+    content = readFileSync(tracePath, 'utf-8')
+  } catch {
+    return null
+  }
+  const lines = content.split('\n').filter((l) => l.trim())
+  for (let i = lines.length - 1; i >= 0; i--) {
+    try {
+      const obj = JSON.parse(lines[i]!) as Record<string, unknown>
+      if (obj.event === 'SUBMIT' && typeof obj.workMdHash === 'string') {
+        return obj.workMdHash
+      }
+    } catch {
+      // skip malformed line
+    }
+  }
+  return null
+}
+
+/**
+ * 数 trace.jsonl 中 SUBMIT 事件总数（含本次即将追加的）。
+ */
+function readSubmitIndex(projectRoot: string, workName: string): number {
+  const tracePath = join(projectRoot, BOUNDARY_DIR, 'works', workName, RUN_DIR, 'trace.jsonl')
+  if (!existsSync(tracePath)) return 0
+  let content: string
+  try {
+    content = readFileSync(tracePath, 'utf-8')
+  } catch {
+    return 0
+  }
+  let count = 0
+  for (const line of content.split('\n')) {
+    if (!line.trim()) continue
+    try {
+      const obj = JSON.parse(line) as Record<string, unknown>
+      if (obj.event === 'SUBMIT') count++
+    } catch {
+      // skip
+    }
+  }
+  return count
+}
 
 // ---------------------------------------------------------------------------
 // Subcommand: inject (v0.7+ Blueprint Context Template)
@@ -2131,39 +2084,30 @@ const statusSubcommand = defineCommand({
     const workName = ctx.args.name as string
     const projectRoot = getProjectRoot()
     try {
-      // PR-14a: status 是观察者；以 .work（birth cert）作为 work 是否存在的真源
-      const birthCert = readBirthCert(projectRoot, workName)
-      if (!birthCert.ok) {
-        const hint =
-          birthCert.reason === 'missing'
-            ? 'Work has no .work birth cert. Run `oxn work validate <name>` to generate it.'
-            : `.work birth cert has ${birthCert.reason}: ${birthCert.errors.join('; ')}`
-        return output(
-          errorJson(
-            'OXN_WORK_NOT_FOUND',
-            `work "${workName}" not found (.work birth cert missing or invalid: ${birthCert.reason})`,
-            hint,
-          ),
+      // RFC-0033 D5: status 是观察者；以 work.md（运行时读 ## Use）作为 work 是否存在的真源；
+      // .work 文件仅作为 assets 快照（向后兼容），存在与否不影响 status。
+      const config = readProjectConfig(projectRoot)
+      const assetFormat = resolveAssetFormat(config)
+      const workMdPath = resolveWorkFilePath(projectRoot, workName, assetFormat)
+      if (!existsSync(workMdPath)) {
+        return outputError(
+          { code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workMdPath}` },
           format,
         )
       }
+      const birthCert = readBirthCert(projectRoot, workName)
+      // birthCert 仅作为旧 .work 文件读取（向后兼容）；本状态输出不以 planLock 为准
+      void birthCert
       const workspace = loadWorkState(projectRoot, workName)
       if (!workspace) {
-        // .work 存在但 .run/state.json 缺失：work 还没跑过
+        // .work 存在但 .run/state.json 缺失：work 还没跑过（RFC-0033 D5/D6：不再报 planLock 状态）
         return output(
           {
             ok: true,
             data: {
               workName,
               workspace: null,
-              planLock: birthCert.cert.planLock
-                ? {
-                    present: true as const,
-                    lockedAt: birthCert.cert.planLock.lockedAt,
-                    allHash: birthCert.cert.planLock.allHash ?? null,
-                  }
-                : { present: false as const, lockedAt: null, allHash: null },
-              note: 'work has been validated but not yet run; .run/state.json missing',
+              note: 'work created but not yet run; .run/state.json missing',
             },
           },
           format,
@@ -2216,15 +2160,7 @@ const statusSubcommand = defineCommand({
 
       const report = makeReport(derivedState)
 
-      // PR-14a: planLock 字段已在前置 .work 读取中获取，复用
-      const planLockField = birthCert.cert.planLock
-        ? {
-            present: true as const,
-            lockedAt: birthCert.cert.planLock.lockedAt,
-            allHash: birthCert.cert.planLock.allHash ?? null,
-          }
-        : { present: false as const, lockedAt: null, allHash: null }
-
+      // 🗑️ RFC-0033 D2: planLock 字段已删（PlanLock 退役，status 输出无锁状态）
       output(
         {
           ok: true,
@@ -2237,7 +2173,6 @@ const statusSubcommand = defineCommand({
               taskCount: workspace.tasks.length,
             },
             tasks: taskBreakdown,
-            planLock: planLockField,
           },
         },
         format,
@@ -2271,11 +2206,7 @@ const contextSubcommand = defineCommand({
     task: { type: 'string', description: t('work.context.args.task') },
     'state-path': { type: 'string', description: t('work.status.args.statePath') },
     'emit-md': { type: 'string', description: t('work.status.args.reportPath') },
-    'unlock-check': {
-      type: 'boolean',
-      default: false,
-      description: t('work.status.args.skipLockCheck'),
-    },
+    // RFC-0033 D2: --unlock-check 已删（PlanLock 退役，context 不再校验锁状态）
     /** 🆕 v0.7.3 P3 (ADR-0061 §D1+D2 + §5.1 token 预算缓解):
      *  - full (默认): 多 Domain 主/背景视角注入 + 块状 termViews 渲染
      *  - lean: 单 Domain 老路径（向后兼容；skip 背景 domain 加载） */
@@ -2293,8 +2224,6 @@ const contextSubcommand = defineCommand({
     const taskName = ctx.args.task as string | undefined
     const statePathArg = ctx.args['state-path'] as string | undefined
     const emitMdPath = ctx.args['emit-md'] as string | undefined
-    const lockCheck = ctx.args['unlock-check'] !== true
-    const noLockCheck = !lockCheck
     // 🆕 v0.7.3 P3: contextMode flag (full|lean)
     const rawContextMode = String(ctx.args['context-mode'] ?? 'full')
     const contextMode: 'full' | 'lean' = rawContextMode === 'lean' ? 'lean' : 'full'
@@ -2304,68 +2233,8 @@ const contextSubcommand = defineCommand({
 
     const workFile = resolveWorkFilePath(root, workName, assetFormat)
 
-    // PR-9: context 与 run 对称 —— 锁守卫优先于 work.md 缺失检查
-    // 默认硬要求；--unlock-check 用于诊断 stale 计划
-    let birthCertForHealth: { ok: boolean; cert?: BirthCert } | null = null
-    if (!noLockCheck) {
-      const birthCert = readBirthCert(root, workName)
-      birthCertForHealth = birthCert
-      if (birthCert.ok && birthCert.cert.planLock !== null) {
-        // 已有 planLock；先做 hash 校验（捕获 work.md 缺失 → work-removed）
-        const lockVerify = verifyPlanLock(root, workName, birthCert.cert)
-        if (!lockVerify.ok) {
-          const code =
-            lockVerify.reason === 'work-removed'
-              ? 'OXN_ALIGN_WORK_REMOVED'
-              : lockVerify.reason === 'no-plan-lock'
-                ? 'OXN_ALIGN_LOCK_NOT_FOUND'
-                : 'OXN_ALIGN_LOCK_HASH_MISMATCH'
-          return outputError(
-            {
-              code,
-              message: `Context read BLOCKED: ${lockVerify.message}`,
-              suggestion: t('work.hashChangedSuggestion', { workName }) + t('work.unlockCheckHint'),
-              context: {
-                reason: lockVerify.reason,
-                component: lockVerify.component,
-                expected: lockVerify.expected,
-                actual: lockVerify.actual,
-              },
-            },
-            format,
-          )
-        }
-      } else if (!birthCert.ok) {
-        if (birthCert.reason === 'missing') {
-          return outputError(
-            {
-              code: 'OXN_ALIGN_LOCK_NOT_FOUND',
-              message: `work "${workName}" cannot read context: .work missing`,
-              suggestion: t('work.validateRequired'),
-            },
-            format,
-          )
-        }
-        return outputError(
-          {
-            code: 'OXN_ALIGN_LOCK_NOT_FOUND',
-            message: `work "${workName}" cannot read context: .work ${birthCert.reason}`,
-            suggestion: t('work.birthCertInvalid', { errors: birthCert.errors.join('; ') }),
-          },
-          format,
-        )
-      } else {
-        // .work 存在但 planLock === null
-        return outputError(
-          {
-            code: 'OXN_ALIGN_LOCK_NOT_FOUND',
-            message: `work "${workName}" has no planLock; context refuses stale read`,
-            suggestion: t('work.lockHint') + t('work.unlockCheckHint'),
-          },
-          format,
-        )
-      }
-    }
+    // 🗑️ RFC-0033 D2: 锁守卫已删（PlanLock 整体退役，context 直接读 work.md）
+    // 旧逻辑：planLock === null → OXN_ALIGN_LOCK_NOT_FOUND；hash mismatch → OXN_ALIGN_LOCK_HASH_MISMATCH
 
     if (!existsSync(workFile)) {
       return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workFile}` }, format)
@@ -2536,21 +2405,9 @@ const contextSubcommand = defineCommand({
         },
         taskParts,
         isolationNotice: t('work.isolationNotice'),
-        lockHealth: noLockCheck
-          ? { status: 'bypassed', reason: 'unlock-check flag set' }
-          : birthCertForHealth?.ok && birthCertForHealth.cert?.planLock
-            ? {
-                status: 'ok',
-                lockedAt: birthCertForHealth.cert.planLock.lockedAt,
-                allHash: birthCertForHealth.cert.planLock.allHash ?? null,
-                components: {
-                  workMdHash: birthCertForHealth.cert.planLock.workMdHash,
-                  // 🆕 Phase B: 删 workDomainsHash（blueprintsHash 升级为 composite 含 Blueprint + 3 边界）
-                  blueprintsHash: birthCertForHealth.cert.planLock.blueprintsHash,
-                  tasksHash: birthCertForHealth.cert.planLock.tasksHash,
-                },
-              }
-            : { status: 'unknown' },
+        // 🗑️ RFC-0033 D2: lockHealth 字段已删（PlanLock 退役，context 不再校验锁状态）
+        // 保留字段位置占位以保持向后兼容 schema（status: 'disabled' 表明该字段不再追踪）
+        lockHealth: { status: 'disabled', reason: 'planlock retired per RFC-0033 D2' },
         diagnostics,
         ...(stackTools && stackTools.length > 0 ? { stackTools } : {}),
       }
@@ -2784,362 +2641,11 @@ function renderContextHuman(c: {
 //   4. 写 .work.planLock = { lockedAt, workMdHash, workDomainsHash, blueprintsHash, tasksHash }
 //   5. 返回 planLock 详情
 //
-// 失败模式（统一 OXN_WORK_LOCK_FAILED）：
-//   - .work 不存在 → 提示先 `oxn work validate`
-//   - planLock !== null → 提示先 `oxn work unlock`
-//   - 4 组件 hash 有缺失（task 0 个或文件失踪）→ 报告具体 missing
+// 失败模式（RFC-0033 D2 已删 lock 步）：
+//   - .work 不存在 → 提示先 `oxn work run --validate-only`
+//   - planLock 已退役 → 无对应错误
+//   - 4 组件 hash 概念已退役 → 改为 workMdHash 单组件
 //
-const lockSubcommand = defineCommand({
-  meta: {
-    name: 'lock',
-    description: t('work.lock.description'),
-  },
-  args: {
-    name: { type: 'positional', required: true, description: t('work.args.workName') },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-    '--dry-run': { type: 'boolean', description: 'validate only, do not write planLock' },
-  },
-  async run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const workName = ctx.args.name as string
-    const dryRun = ctx.args['dry-run'] === true
-    const projectRoot = getProjectRoot()
-    const config = readProjectConfig(projectRoot)
-
-    if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
-    }
-
-    // ── 0.5 Phase D: 快速检查 — 已锁则拒绝（不需跑 validate） ──
-    const existingCert = readBirthCert(projectRoot, workName)
-    if (existingCert.ok && existingCert.cert.planLock !== null) {
-      return outputError(
-        {
-          code: 'OXN_WORK_LOCK_FAILED',
-          message: `work "${workName}" already locked`,
-          suggestion: t('work.unlockSuggestion', { workName }),
-          context: { lockedAt: existingCert.cert.planLock.lockedAt },
-        },
-        format,
-      )
-    }
-
-    // ── 0.6 Phase D: lock 内含 validate — 先解析 work.md + 校验 + 写 .work ──
-    const workFile = resolveWorkFilePath(projectRoot, workName, resolveAssetFormat(config))
-    if (!existsSync(workFile)) {
-      return outputError({ code: 'OXN_WORK_NOT_FOUND', message: `work "${workName}" not found at ${workFile}` }, format)
-    }
-
-    let work: WorkDeclaration
-    try {
-      const result = await validateWorkFile(workFile)
-      if (!result.ok || !result.work) {
-        const code = result.errors.some(
-          (e) => e.startsWith('[Parser]') || e.startsWith('[Lexer]') || e.includes('parse failed'),
-        )
-          ? 'OXN_WORK_VALIDATE_FAILED'
-          : 'OXN_NO_WORK'
-        return outputError({ code, message: result.errors.join('; ') }, format)
-      }
-      work = result.work
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      return outputError({ code: 'OXN_WORK_VALIDATE_FAILED', message }, format)
-    }
-
-    // v1.1: work.md 内 `work "X"` 与目录名 <w> 一致性校验
-    const workDir = join(projectRoot, '.openxenon', 'works', workName)
-    try {
-      assertDirNameConsistent(work.name, workDir, 'work')
-    } catch (err) {
-      if (err instanceof IAPError) {
-        return outputError(
-          {
-            code: err.name,
-            message: err.message,
-            ...(err.context?.suggestion !== undefined ? { suggestion: String(err.context.suggestion) } : {}),
-          },
-          format,
-        )
-      }
-      throw err
-    }
-
-    // 检查 task.md 是否都已建
-    const missingTaskOxn: string[] = []
-    for (const t of work.tasks ?? []) {
-      const tName = parsePartName(t.name)
-      if (!existsSync(getTaskOxnPath(projectRoot, workName, tName))) {
-        missingTaskOxn.push(tName)
-      }
-    }
-
-    // validate + 写 .work (BirthCert)
-    const validationResult = await validateAndWriteArtifacts({
-      projectRoot,
-      workName,
-      work,
-      missingTaskOxn,
-    })
-
-    if (!validationResult.ok) {
-      return output(
-        {
-          ok: false,
-          data: {
-            code: 'OXN_WORK_REFS_UNRESOLVED',
-            valid: false,
-            unresolved: validationResult.unresolved ?? [],
-            warnings: validationResult.warnings,
-            note: dryRun ? 'validate only (dry-run)' : 'lock failed: validate did not pass',
-          },
-          human:
-            `Work validate FAILED\n` +
-            `  Unresolved refs: ${(validationResult.unresolved ?? []).length}\n` +
-            (validationResult.unresolved ?? []).map((u) => `    - ${u.kind} "${u.name}": ${u.reason}`).join('\n') +
-            (validationResult.warnings.length > 0 ? `\n  Warnings: ${validationResult.warnings.join(' | ')}` : ''),
-        },
-        format,
-      )
-    }
-
-    // dry-run 模式：validate 通过即止，不写 planLock
-    if (dryRun) {
-      const a = validationResult.artifacts!
-      output(
-        {
-          ok: true,
-          data: {
-            workName,
-            valid: true,
-            dryRun: true,
-            warnings: validationResult.warnings,
-            artifacts: {
-              blueprintsJson: a.blueprintsJsonPath,
-              workFile: a.workFilePath,
-            },
-            assetCounts: a.assetCounts,
-          },
-          human:
-            `Work validate OK (dry-run)\n` +
-            `  Blueprint refs: ${a.assetCounts.blueprints} resolved\n` +
-            `  Task count:  ${a.assetCounts.tasks}\n` +
-            `\n  Artifacts written:\n` +
-            `    - ${a.blueprintsJsonPath}\n` +
-            `    - ${a.workFilePath}` +
-            (validationResult.warnings.length > 0 ? `\n\n  Warnings: ${validationResult.warnings.join(' | ')}` : ''),
-        },
-        format,
-      )
-      return
-    }
-
-    // ── 1. 重新读 .work（validate 已写，理应存在） ──
-    const existing = readBirthCert(projectRoot, workName)
-    if (!existing.ok) {
-      const hint =
-        existing.reason === 'missing'
-          ? t('work.validateRequired')
-          : t('work.birthCertInvalid', { errors: existing.errors.join('; ') })
-      return outputError(
-        {
-          code: 'OXN_WORK_LOCK_FAILED',
-          message: `.work not lockable: ${existing.reason}`,
-          suggestion: hint,
-        },
-        format,
-      )
-    }
-
-    // ── 2. 算 hash ──
-    const hash = hashWorkPlan(projectRoot, workName)
-
-    // 🆕 v0.7+ PlanLock 5-hash: inv-33 (context-written-before-lock)
-    // context.md 必须在 lock 前写完；缺失 → IAP_INTENT_CONTEXT_MISSING
-    const missingContext = hash.missing.find(
-      (m) => m === 'context.md' || (m.startsWith('tasks/') && m.endsWith('/context.md')),
-    )
-    if (missingContext) {
-      return outputError(
-        {
-          code: 'OXN_INTENT_CONTEXT_MISSING',
-          message:
-            `Work "${workName}" cannot lock: ${missingContext} not found. ` +
-            `Write context.md before lock per inv-33 (context-written-before-lock).`,
-          suggestion:
-            `Write works/<w>/context.md (Work Context) and works/<w>/tasks/<t>/context.md (Task Context) ` +
-            `before running \`oxn work lock ${workName}\`. See design-blueprint-context-template Draft.`,
-          context: { missing: hash.missing },
-        },
-        format,
-      )
-    }
-
-    if (hash.allHash === null) {
-      return outputError(
-        {
-          code: 'OXN_WORK_LOCK_FAILED',
-          message: `cannot compute complete plan hash; missing: ${hash.missing.join(', ')}`,
-          suggestion: t('work.lockFailed'),
-        },
-        format,
-      )
-    }
-
-    // ── 3. 写 planLock ──
-    const locked = applyPlanLock(existing.cert, hash)
-    writeWorkFile(projectRoot, workName, locked)
-
-    const pl = locked.planLock!
-    output(
-      {
-        ok: true,
-        data: {
-          workName,
-          lockedAt: pl.lockedAt,
-          planLock: {
-            workMdHash: pl.workMdHash,
-            // 🆕 v0.7+ PlanLock 5-hash
-            workContextHash: pl.workContextHash,
-            blueprintsHash: pl.blueprintsHash,
-            tasksHash: pl.tasksHash,
-            // 🆕 v0.7+ PlanLock 5-hash
-            taskContextsHash: pl.taskContextsHash,
-            allHash: pl.allHash,
-          },
-          nextStep: `run \`oxn work run ${workName}\` to start execution`,
-        },
-        human: `Work "${workName}" locked ✓
-  Locked at: ${pl.lockedAt}
-  Components:
-    - work.md:     ${pl.workMdHash.slice(0, 16)}...
-    - context.md: ${(pl.workContextHash ?? '(legacy)').toString().slice(0, 16)}...
-    - blueprints.json: ${pl.blueprintsHash.slice(0, 16)}...
-    - tasks:        ${pl.tasksHash.slice(0, 16)}...
-    - taskContexts: ${(pl.taskContextsHash ?? '(legacy)').toString().slice(0, 16)}...
-    - all:          ${pl.allHash?.slice(0, 16) ?? '(legacy)'}...
-
-  Next: run \`oxn work run ${workName}\` to start execution`,
-      },
-      format,
-    )
-  },
-})
-
-// ---------------------------------------------------------------------------
-// Subcommand: unlock (PR-7)
-// ---------------------------------------------------------------------------
-//
-// 行为：
-//   1. 校验 .work 存在
-//   2. 校验 planLock !== null（未锁则报错，提示 lock 才是正常路径）
-//   3. 清 planLock → null；updatedAt 刷新
-//
-// 注意：unlock 后 work.md / domains.json / blueprints.json / tasks/*.md 可被自由修改。
-//       重新 lock 时会算新 hash；旧 planLock 丢失（仅 .work.updatedAt 留痕）。
-//
-const unlockSubcommand = defineCommand({
-  meta: {
-    name: 'unlock',
-    description: t('work.unlock.description'),
-  },
-  args: {
-    name: { type: 'positional', required: true, description: t('work.args.workName') },
-    '--json': { type: 'boolean', description: t('format.json') },
-    '--yaml': { type: 'boolean', description: t('format.yaml') },
-  },
-  run(ctx) {
-    const format = getFormatFromArgs(ctx.args as Record<string, unknown>)
-    const workName = ctx.args.name as string
-    const projectRoot = getProjectRoot()
-
-    if (!projectBoundaryExists()) {
-      return outputError({ code: 'OXN_NO_PROJECT', message: t('errors.projectNotInit') }, format)
-    }
-
-    const existing = readBirthCert(projectRoot, workName)
-    if (!existing.ok) {
-      return outputError(
-        {
-          code: 'OXN_WORK_UNLOCK_FAILED',
-          message: `.work not readable: ${existing.reason}`,
-          suggestion: t('work.unlockHint'),
-        },
-        format,
-      )
-    }
-
-    if (existing.cert.planLock === null) {
-      return outputError(
-        {
-          code: 'OXN_WORK_UNLOCK_FAILED',
-          message: `work "${workName}" is not locked`,
-          suggestion: t('work.unlockRequired'),
-        },
-        format,
-      )
-    }
-
-    const cleared = clearPlanLock(existing.cert)
-    writeWorkFile(projectRoot, workName, cleared)
-
-    output(
-      {
-        ok: true,
-        data: {
-          workName,
-          cleared: true,
-          clearedAt: cleared.updatedAt,
-          previousLockedAt: existing.cert.planLock.lockedAt,
-          // 🆕 v0.7+ PlanLock 5-hash: 提示包含 context.md + tasks/<t>/context.md
-          nextStep:
-            'edit work.md / context.md / tasks/<t>/task.md / tasks/<t>/context.md as needed, then re-run `oxn work validate` and `oxn work lock`',
-        },
-        human: `Work "${workName}" unlocked ✓
-  Cleared at: ${cleared.updatedAt}
-  Previous lock was at: ${existing.cert.planLock.lockedAt}
-
-  Next:
-    1. Edit work.md / context.md / tasks/<t>/task.md / tasks/<t>/context.md as needed
-    2. Re-run \`oxn work validate ${workName}\` to refresh domains.json / blueprints.json / .work
-    3. Re-run \`oxn work lock ${workName}\` to lock the new plan`,
-      },
-      format,
-    )
-  },
-})
-
-// ---------------------------------------------------------------------------
-// Subcommand: migrate (PR-10)
-// ---------------------------------------------------------------------------
-//
-// 把 V0 旧布局（works/<w>/{work-state,work-trace,work-frozen}.{json,jsonl} +
-//                       works/<w>/tasks/<t>/{task-state,task-trace,task-frozen}.{json,jsonl}）
-// 一次性迁到 V1（.run/ 目录 + .work + per-work slim 索引）。
-//
-// 行为：
-//   1. 探测 V0 文件存在 + V1 产物不存在 → 准备迁移
-//   2. 把 V0 文件备份到 works/<w>/.migrated-v0/<rel>（不删，工程师手动清理）
-//   3. 把备份恢复到 V1 路径（.run/state.json 等）
-//   4. 重新生成 .work / domains.json / blueprints.json
-//   5. 返回迁移报告
-//
-// 失败模式：
-//   - work.md 缺失：OXN_WORK_NOT_FOUND
-//   - 既没 V0 也没 V1：OXN_WORK_NO_V0_LAYOUT（"纯 planning work，不需要迁移"）
-//   - 已 V1：kind=already-v1（no-op + warning 提示手动清理残留 V0）
-
-// =============================================================================
-// RFC-0032 Phase 2 (2026-08-23): oxn work finalize 子命令已删 (原 line 3232-3432)
-//
-// 删除原因: 依赖 @openxenon/engine/infra/frozen/work-domains (frozen/ 随 Phase 2 全删)
-// 属 Phase 3 lifecycle 范围 (D10/D13) 但编译依赖倒逼提前删除
-// Phase 3 重新引入替代设计 (脱离 frozen.json)
-// =============================================================================
-
-// RFC-0032 Phase 3 (2026-08-23): renderNextRoundHuman 已删 (随 next-round 子命令退场)
-
 const migrateSubcommand = defineCommand({
   meta: {
     name: 'migrate',
@@ -3223,7 +2729,7 @@ const migrateSubcommand = defineCommand({
           ((result.invalidRefs?.length ?? 0) > 0
             ? `\n\n  Diagnostics (${result.invalidRefs!.length}):\n${result.invalidRefs!.map((d) => `    ! [${d.type}] ${d.ref}: ${d.message}`).join('\n')}`
             : '') +
-          `\n\n  Next: \`oxn work lock ${workName}\` then \`oxn work run ${workName}\`\n` +
+          `\n\n  Next: \`oxn work run ${workName}\`\n` +
           t('work.migrate.cleanupHint'),
       },
       format,
@@ -3242,7 +2748,7 @@ export default defineCommand({
   subCommands: {
     list: listSubcommand,
     create: createSubcommand,
-    validate: validateSubcommand,
+    // RFC-0033 D1: validate 子命令已删；校验并入 `oxn work run --validate-only`
     'add-task': addTaskSubcommand,
     'list-task': listTaskSubcommand,
     'task-status': taskStatusSubcommand,
@@ -3254,10 +2760,10 @@ export default defineCommand({
     status: statusSubcommand,
     inject: injectSubcommand,
     context: contextSubcommand,
-    lock: lockSubcommand,
-    unlock: unlockSubcommand,
+    // RFC-0033 D2: lock/unlock 子命令已删（PlanLock 整体退役，work.md 可自由修改）
     // RFC-0032 Phase 3: next-round 子命令已删 (D6 推翻 Round 模型)
     // RFC-0032 Phase 2: finalize 子命令已删 (依赖 frozen/work-domains.ts)
+    // RFC-0032 D25: 后续计划让 finalize 不依赖 frozen/ 重新引入
     migrate: migrateSubcommand,
   },
   run() {

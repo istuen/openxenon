@@ -5,28 +5,25 @@
 //   - runWork         → 写 works/<w>/.run/state.json
 //   - runTask         → 校验 + 写 works/<w>/.run/tasks/<t>/state.json
 //   - submitTask      → 推进 task part，写 task 级 state + 同步 work 索引
-//   - writeTaskFrozen → task 终态时生成 .run/tasks/<t>/frozen.json
-//   - writeWorkFrozen → work 终态时生成 .run/frozen.json
+//
+// 🗑️ RFC-0032 Phase 2: .run/frozen.json 已随 Proof 删除同步退场（dual-state-exec 不再写 frozen.json）
+// 🗑️ RFC-0033 D6: currentRound / roundHistory / finalizeWork 已随 Round 模型退役同步删除
 //
 // 命名范式：详见 kernel/constants.ts V1 布局
 // =============================================================================
 
-import { existsSync, mkdirSync, renameSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
-import { dirname } from 'path'
+import { existsSync, mkdirSync, writeFileSync } from '@openxenon/engine/infra/filesystem'
 import {
   createInitialTaskState,
   createInitialWorkspaceState,
-  type RoundRecord,
   type TaskState,
   type WorkspaceState,
   type WorkspaceTaskStatus,
 } from './dual-state'
 import {
   ensureTaskDir,
-  getTaskFrozenPath,
   getTaskOxnPath,
   getTaskTracePath,
-  getWorkFrozenPath,
   getWorkRunDir,
   getWorkStatePath,
   getWorkTracePath,
@@ -254,18 +251,7 @@ export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
     status = 'passed'
     frozen = true
     taskState.status = 'passed'
-    writeTaskFrozen(params.projectRoot, params.workName, params.taskName, {
-      taskName: params.taskName,
-      workName: params.workName,
-      blueprint: taskState.blueprint,
-      completedAt: new Date().toISOString(),
-      trace: taskState.completedParts,
-      probeResults: probeResults.map((p) => ({
-        probe: p.probe,
-        passed: p.passed,
-        output: p.output,
-      })),
-    })
+    // 🗑️ RFC-0032 Phase 2: writeTaskFrozen / frozen.json 随 Proof 退场 — task 终态仅写 .run/tasks/<t>/state.json
   } else {
     taskState.status = 'running'
   }
@@ -283,34 +269,15 @@ export function submitTask(params: SubmitTaskParams): SubmitTaskResult {
       }
     }
     const allTasksDone = workState.tasks.every((t) => t.status === 'passed' || t.status === 'failed')
-    let workFrozen = false
     if (allTasksDone && workState.tasks.every((t) => t.status === 'passed')) {
       workState.status = 'passed'
-      workFrozen = true
     } else if (workState.tasks.some((t) => t.status === 'failed')) {
       workState.status = 'failed'
     } else {
       workState.status = 'running'
     }
+    // 🗑️ RFC-0032 Phase 2: writeWorkFrozen / frozen.json 随 Proof 退场 — work 终态仅写 .run/state.json
     saveWorkState(params.projectRoot, params.workName, workState)
-
-    if (workFrozen) {
-      writeWorkFrozen(params.projectRoot, params.workName, {
-        workName: params.workName,
-        completedAt: new Date().toISOString(),
-        tasks: workState.tasks.map((t) => ({
-          taskName: t.taskName,
-          status: t.status,
-          completedAt: t.completedAt ?? null,
-        })),
-        finalOutcome: 'COMPLETED',
-        totalRounds: workState.roundHistory.length,
-        roundHistory: workState.roundHistory,
-        taskFrozenPaths: workState.tasks
-          .map((t) => getTaskFrozenPath(params.projectRoot, params.workName, t.taskName))
-          .filter((p) => existsSync(p)),
-      })
-    }
   }
 
   appendTaskTrace(params.projectRoot, params.workName, params.taskName, {
@@ -370,7 +337,7 @@ export async function submitTaskWithProbes(params: SubmitTaskParams): Promise<Su
       workName: params.workName,
       taskName: params.taskName,
       assetFormat: 'md', // v0.7.3 默认 .md（向后兼容）
-      lockCheck: false, // submit 流程不阻塞 lock 检查（前面已 verifyPlanLock 过）
+      lockCheck: false, // submit 流程不再做 lock 检查（RFC-0033 D2 PlanLock 已删）
     })
     stackTools = ctx.stackTools
   } catch {
@@ -399,21 +366,8 @@ export async function submitTaskWithProbes(params: SubmitTaskParams): Promise<Su
     }),
   )
 
-  // 4. task 终态 → 重写 frozen.json 写入真实 verdict
-  if (base.frozen) {
-    writeTaskFrozen(params.projectRoot, params.workName, params.taskName, {
-      taskName: params.taskName,
-      workName: params.workName,
-      blueprint: base.taskState.blueprint,
-      completedAt: new Date().toISOString(),
-      trace: base.taskState.completedParts,
-      probeResults: realResults.map((p) => ({
-        probe: p.probe,
-        passed: p.passed,
-        output: p.output,
-      })),
-    })
-  }
+  // 🗑️ RFC-0032 Phase 2: frozen.json 随 Proof 退场 — task 终态不写 frozen.json
+  //   Probe 真实 verdict 由 trace.jsonl PROBE_RESULT 事件持久化（RFC-0032 D27）
 
   return { ...base, probeResults: realResults }
 }
@@ -435,65 +389,35 @@ function collectTaskProbeDecls(
 
 // =============================================================================
 // frozen.json writers
+// 🗑️ RFC-0032 Phase 2: TaskFrozenSnapshot / WorkFrozenSnapshot / writeTaskFrozen /
+//    writeWorkFrozen / writeFrozen 全部随 Proof 删除退场（仅写 trace.jsonl）。
 // =============================================================================
 
-interface TaskFrozenSnapshot {
-  taskName: string
-  workName: string
-  blueprint: string
-  completedAt: string
-  trace: string[]
-  probeResults: Array<{ probe: string; passed: boolean; output?: unknown }>
-}
-
-interface WorkFrozenSnapshot {
-  workName: string
-  completedAt: string
-  tasks: Array<{ taskName: string; status: WorkspaceTaskStatus; completedAt: string | null }>
-  /** A1 (D3): 最终裁决（PASSED/FAILED/INCONCLUSIVE/PENDING） */
-  finalOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'PENDING'
-  /** A1 (D3): round 总数 */
-  totalRounds: number
-  /** A1 (D3): 所有 round 摘要（含每轮 verdict/failures） */
-  roundHistory: RoundRecord[]
-  /** A1 (D3): 每个 task frozen.json 路径索引 */
-  taskFrozenPaths: string[]
-  /** A2 (D4): 边界违反记录（finalizeWorkDomains 注入；无则省略） */
-  boundaryViolations?: Array<{
-    domain: string
-    invariant: string
-    outcome: string
-    failureMessage?: string
-  }>
-}
-
-function writeTaskFrozen(projectRoot: string, workName: string, taskName: string, snapshot: TaskFrozenSnapshot): void {
-  const path = getTaskFrozenPath(projectRoot, workName, taskName)
-  writeFrozen(path, snapshot)
-}
-
-function writeWorkFrozen(projectRoot: string, workName: string, snapshot: WorkFrozenSnapshot): void {
-  const path = getWorkFrozenPath(projectRoot, workName)
-  writeFrozen(path, snapshot)
-}
-
-function writeFrozen(path: string, snapshot: unknown): void {
-  // v1.1 fix-p3-refactor path-dirname: 改用 dirname(path) 替代 substring+lastIndexOf('/'),
-  // 兼容 Windows 路径分隔符 (path.sep 在 win32 是 '\\', POSIX 是 '/')
-  const dir = dirname(path)
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true })
+/**
+ * 🗑️ RFC-0033 D6: Round 模型退役后，重置 task 状态供 re-run 使用：
+ *   - Round 概念已删，但 re-run 语义保留（state.status ∈ {passed,failed,error} 拒绝；其他允许）
+ *   - 重置语义：failed / running → pending（passed 保留）
+ *
+ * 供 CLI `oxn work run` 在 re-run 路径调用（Inv21RunAllowRerunPending）。
+ */
+export function resetTasksForReRun(state: WorkspaceState): void {
+  for (const task of state.tasks) {
+    if (task.status === 'failed' || task.status === 'running') {
+      task.status = 'pending'
+    }
+    // passed 任务保留 passed（不重跑）
   }
-  const tmpPath = `${path}.tmp`
-  writeFileSync(tmpPath, JSON.stringify(snapshot, null, 2), 'utf-8')
-  renameSync(tmpPath, path)
+  state.updatedAt = new Date().toISOString()
 }
 
 // =============================================================================
 // Trace append（work + task 双层）
 // =============================================================================
 
-function appendWorkTrace(projectRoot: string, workName: string, event: Record<string, unknown>): void {
+/**
+ * RFC-0033 D3/D4：appendWorkTrace 导出供 CLI submit 子命令写 SUBMIT/ASSET_DRIFT 事件。
+ */
+export function appendWorkTrace(projectRoot: string, workName: string, event: Record<string, unknown>): void {
   const dir = getWorkRunDir(projectRoot, workName)
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   const path = getWorkTracePath(projectRoot, workName)
@@ -578,160 +502,4 @@ export function runNoopProbe(partName: string, partAlign: string): { probe: stri
     passed: true,
     output: { partName, align: partAlign, mode: 'v0.1-noop' },
   }
-}
-
-/**
- * v0.6 PR-2: 读取工作区的 round 状态快照
- */
-export interface RoundStatus {
-  currentRound: number
-  totalRounds: number
-  history: ReadonlyArray<RoundRecord>
-}
-
-export function getRoundStatus(projectRoot: string, workName: string): RoundStatus | null {
-  const state = loadWorkState(projectRoot, workName)
-  if (!state) return null
-  return {
-    currentRound: state.currentRound,
-    totalRounds: state.roundHistory.length,
-    history: state.roundHistory,
-  }
-}
-
-/**
- * v0.6.1-alpha.0 #3-1: 收口 work（汇总所有 round → 写最终 frozen.json）
- *
- * 行为：
- *   - 关闭当前 active round（追加 endedAt + 最终 verdict）
- *   - 标记 work status = 'finalized' 或 'passed'/'failed'（看最后 verdict）
- *   - 写 .run/frozen.json（含所有 round summary）
- *   - 追加 trace event
- *   - 清 planLock（避免后续 run 误判）
- *
- * finalize 不应依赖当前 round 已 PASSED（允许「总结失败 + 收档」语义）
- */
-export interface FinalizeParams {
-  projectRoot: string
-  workName: string
-  /** 最终裁决（默认用最后 closed round 的 outcome） */
-  outcome?: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE'
-  notes?: string
-  /** A2 (D4): 由调用方预计算的 Domain 边界违反记录（finalizeWorkDomains 结果注入） */
-  boundaryViolations?: Array<{
-    domain: string
-    invariant: string
-    outcome: string
-    failureMessage?: string
-  }>
-}
-
-export interface FinalizeResult {
-  workspace: WorkspaceState
-  finalOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'PENDING'
-  totalRounds: number
-  finalizedAt: string
-}
-
-export function finalizeWork(params: FinalizeParams): FinalizeResult {
-  const state = loadWorkState(params.projectRoot, params.workName)
-  if (!state) {
-    throwExecError(
-      'ALIGN',
-      'OXN_WORK_NOT_STARTED',
-      `work .run/state.json not found for "${params.workName}". Run \`oxn work run <name>\` first.`,
-    )
-  }
-
-  const nowIso = new Date().toISOString()
-
-  // 关闭当前 active round（若有）
-  const lastRecord = state.roundHistory.at(-1)
-  let finalOutcome: 'COMPLETED' | 'DEVIATED' | 'INCONCLUSIVE' | 'PENDING' = 'PENDING'
-
-  if (lastRecord && !lastRecord.endedAt) {
-    const outcome = params.outcome ?? 'DEVIATED' // 默认 DEVIATED（用户主动收口）
-    state.roundHistory[state.roundHistory.length - 1] = {
-      ...lastRecord,
-      endedAt: nowIso,
-      outcome,
-      ...(params.notes ? { notes: params.notes } : {}),
-    }
-    finalOutcome = outcome
-  } else if (lastRecord) {
-    // 最后一条已 endedAt
-    finalOutcome = lastRecord.outcome
-  }
-
-  // 标记 work 终态
-  if (finalOutcome === 'COMPLETED') {
-    state.status = 'passed'
-  } else if (finalOutcome === 'DEVIATED') {
-    state.status = 'failed'
-  } else {
-    // INCONCLUSIVE / PENDING → 用 'error'（未达 PASSED 状态但已收口）
-    state.status = 'error'
-  }
-  state.updatedAt = nowIso
-  saveWorkState(params.projectRoot, params.workName, state)
-
-  // A1 (D3): 写 work-level .run/frozen.json（含所有 round 摘要 + task frozen 索引）
-  // 失败路径（verdict=FAILED/INCONCLUSIVE）也写，使 Insight pipeline 可读失败工作
-  const taskFrozenPaths: string[] = []
-  for (const t of state.tasks) {
-    const p = getTaskFrozenPath(params.projectRoot, params.workName, t.taskName)
-    if (existsSync(p)) taskFrozenPaths.push(p)
-  }
-  writeWorkFrozen(params.projectRoot, params.workName, {
-    workName: params.workName,
-    completedAt: nowIso,
-    tasks: state.tasks.map((t) => ({
-      taskName: t.taskName,
-      status: t.status,
-      completedAt: t.completedAt ?? null,
-    })),
-    finalOutcome,
-    totalRounds: state.roundHistory.length,
-    roundHistory: state.roundHistory,
-    taskFrozenPaths,
-    ...(params.boundaryViolations && params.boundaryViolations.length > 0
-      ? { boundaryViolations: params.boundaryViolations }
-      : {}),
-  })
-
-  // 写 trace
-  appendWorkTrace(params.projectRoot, params.workName, {
-    event: 'finalize',
-    workName: params.workName,
-    finalOutcome,
-    totalRounds: state.roundHistory.length,
-    at: nowIso,
-  })
-
-  return {
-    workspace: state,
-    finalOutcome,
-    totalRounds: state.roundHistory.length,
-    finalizedAt: nowIso,
-  }
-}
-
-/**
- * 🆕 v0.6.1-alpha.5 Phase A.1: 重置当前 Round 的 task 状态。
- *
- * 用于 Round 2+ re-run 场景（work run 在 state.status=running 时可重新调用）：
- * - 保留已 passed 的 task（passed 不可重跑）
- * - failed → pending（重跑机会）
- * - running → pending（避免状态卡死）
- *
- * @param state - 当前的 WorkspaceState（会被原地修改）
- */
-export function resetCurrentRoundTasks(state: WorkspaceState): void {
-  for (const task of state.tasks) {
-    if (task.status === 'failed' || task.status === 'running') {
-      task.status = 'pending'
-    }
-    // passed 任务保留 passed（不重跑）
-  }
-  state.updatedAt = new Date().toISOString()
 }

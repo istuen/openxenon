@@ -12,5 +12,5 @@ export * from './work-validator'
 export * from './work-reporter'
 export * from './work-diagnostics'
 export * from './work-manager'
-export * from './work-lock'
+// 🗑️ RFC-0033 D2: work-lock 已删（PlanLock 整体退役）
 export * from './work-context-builder'

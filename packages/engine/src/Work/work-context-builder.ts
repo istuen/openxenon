@@ -15,7 +15,7 @@ import { extractWorkIR } from '@openxenon/engine/oxl/md-pipeline/transformers/wo
 import { serializeWorkToOxn } from '@openxenon/engine/oxl/md-pipeline/oxn-serializer.js'
 import { getTaskOxnPath, getTaskStatePath, resolveWorkFilePath } from './dual-state-io'
 import { collectUnresolvedRefDiagnostics } from './work-diagnostics'
-import { readWorkFile as readBirthCert, verifyPlanLock } from './birth-cert'
+// 🗑️ RFC-0033 D2: readBirthCert / verifyPlanLock import 已删（PlanLock 退役，context 不再校验锁状态）
 import type { RefDiagnostic } from '@openxenon/engine/oxl/compiler/ref-diagnostic'
 import type { AssetFormat } from '@openxenon/engine/infra/paths'
 import {
@@ -550,25 +550,13 @@ export function partitionBackgroundDomains(
 }
 
 export function buildWorkContext(params: WorkContextBuilderParams): WorkContextResult {
-  const { projectRoot, workName, taskName, assetFormat, lockCheck = true, statePath: statePathArg } = params
+  // 🗑️ RFC-0033 D2: lockCheck 参数已删（保留位置以保持向后兼容 schema；忽略该参数）
+  const { projectRoot, workName, taskName, assetFormat, statePath: statePathArg } = params
   const root = projectRoot
 
-  if (lockCheck) {
-    const birthCert = readBirthCert(root, workName)
-    if (birthCert.ok && birthCert.cert.planLock !== null) {
-      const lockVerify = verifyPlanLock(root, workName, birthCert.cert)
-      if (!lockVerify.ok) {
-        throw new Error(`Context read BLOCKED: ${lockVerify.message}`)
-      }
-    } else if (!birthCert.ok) {
-      if (birthCert.reason === 'missing') {
-        throw new Error(`work "${workName}" cannot read context: .work missing`)
-      }
-      throw new Error(`work "${workName}" cannot read context: .work ${birthCert.reason}`)
-    } else {
-      throw new Error(`work "${workName}" has no planLock; context refuses stale read`)
-    }
-  }
+  // 🗑️ RFC-0033 D2: lockCheck 块已删 — PlanLock 整体删除，context 不再校验锁状态
+  //   - 旧逻辑：planLock === null → 拒绝读取
+  //   - 新逻辑：直接读 work.md（work.md 可自由修改，submit 时 hash 指纹记录漂移）
 
   const workFile = resolveWorkFilePath(root, workName, assetFormat)
   if (!existsSync(workFile)) {

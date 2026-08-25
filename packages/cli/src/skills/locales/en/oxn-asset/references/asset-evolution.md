@@ -1,27 +1,25 @@
-# Asset Evolution (Modification)
+# Asset Evolution (Modification · v1.3 · RFC-0033 adapted)
 
 > This file is the on-demand supplement to the `oxn-asset` Skill. Consult when modifying an existing Asset.
 
-## Evolution Workflow
+## Evolution Workflow (RFC-0033 D2 retired planLock step)
 
 ### Step 1: Locate the Asset
 
 ```bash
 oxn asset list --type domain --name MemberContext
 # Or
-ls .openxenon/domains/MemberContext.oxn
+ls .openxenon/domains/MemberContext.md
 ```
 
-### Step 2: Check planLock
+### Step 2: Check referencing Works (RFC-0033 D2: planLock retired)
 
 ```bash
 oxn asset show MemberContext --json
-# View lock status, citations, dependent Asset list
+# View referencing Works + citations + dependent Asset list
 ```
 
-If the Asset **is referenced by a locked Work**:
-- Triggers `IAP_ALIGN_LOCK_HASH_MISMATCH` (if you bypass lock)
-- **Must** first `oxn work unlock <w>` → modify Asset → `oxn work lock <w>`
+🗑️ **No more planLock check**: Asset freely modifiable; referencing Works continue to function (work.md freely modifiable).
 
 ### Step 3: Trigger Asset Mode Work (Modify)
 
@@ -32,17 +30,17 @@ oxn work create evolve-MemberContext \
   --json
 ```
 
-Work internal IAP:
-- **Intent**: Modify MemberContext.oxn (specify what to change)
+Work internal flow (RFC-0033 D1: 3 steps):
+- **Intent**: Modify MemberContext.md (specify what to change)
 - **Align**: AI reads old → writes new (with diff)
-- **Proof**: `oxn domain validate MemberContext` passes
+- **Validate**: `oxn domain validate MemberContext` passes
 
-### Step 4: planLock Recompute
+### Step 4: Referencing Works Auto-Adapt (RFC-0033 D2 no re-lock needed)
 
 After Asset modification:
-- All Works referencing this Asset's `planLock` automatically invalidated
-- Must `oxn work lock <w>` to re-lock
-- `assets.json` slim index auto-recomputes
+- All Works referencing this Asset **don't need re-lock** (planLock retired)
+- Next submit with work.md hash change → trace.jsonl appends ASSET_DRIFT event (not blocking)
+- `assets.json` slim index auto-recomputes (at run --validate-only)
 
 ### Step 5: citations Auto-increment
 
@@ -53,11 +51,11 @@ After any Asset modification, **reverse references** (Assets depending on this) 
 | Scenario | Recommendation |
 |---|---|
 | Modify 1-2 terms | Evolution (same Asset) |
-| Modify H2 category structure | Evolution + strict planLock validation |
+| Modify H2 category structure | Evolution + trigger referencing Works re-validate |
 | Completely different business boundary | New creation (archive old Asset) |
 
 ## Anti-Patterns
 
-- ❌ Direct `write_file` modify .oxn (v0.6.3+ hard-blocks, must use Work path)
-- ❌ Modify .oxn without unlocking related Work (triggers `LOCK_HASH_MISMATCH`)
-- ❌ Delete .oxn without going through archive flow (loses audit trail)
+- ❌ Direct `write_file` modify .md (v0.6.3+ hard-blocks, must use Work path)
+- ❌ Delete .md without going through archive flow (loses audit trail)
+- ❌ Expect OXN to BLOCK Asset modifications causing Work errors (RFC-0033 D4: DRIFT only records not blocks)

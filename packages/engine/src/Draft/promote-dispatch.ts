@@ -152,7 +152,6 @@ function buildWorkFrontmatter(frontmatter: Record<string, string>, name: string)
     intent: frontmatter.intent || 'TODO: one-line description',
     createdAt: frontmatter.createdAt || today,
     status: frontmatter.status || 'aligning',
-    currentRound: frontmatter.currentRound || '1',
     references: frontmatter.references || '[]',
     'synced-at': today,
   }

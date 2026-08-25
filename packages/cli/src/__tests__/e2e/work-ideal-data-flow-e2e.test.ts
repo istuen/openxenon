@@ -10,7 +10,7 @@
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { setupCliEnv, type CliEnv } from '../helpers/run-cli'
 
@@ -95,9 +95,9 @@ async function setupWorkFixture(opts: SetupOpts = {}): Promise<void> {
 }
 
 // 递归复制目录（src → dst）
-import { cpSync, existsSync as _exists } from 'fs'
+import { cpSync, existsSync } from 'fs'
 function cpDirSync(src: string, dst: string): void {
-  if (!_exists(src)) return
+  if (!existsSync(src)) return
   cpSync(src, dst, { recursive: true })
 }
 
@@ -107,7 +107,7 @@ describe('P4 (D3) — probe vs Blueprint slot observe[] hard-check', () => {
   test('合法 probe（在 slot.observe[]）→ validate 成功', async () => {
     // oxn-blueprint slot 'design' observe=['lint-check', 'ts-compiles']
     await setupWorkFixture({ taskProbes: ['@oxn/probes/lint-check'] })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
+    const r = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only', '--json'])
     expect(r.exitCode).toBe(0)
     const body = JSON.parse(r.stdout)
     expect(body.ok).toBe(true)
@@ -117,7 +117,7 @@ describe('P4 (D3) — probe vs Blueprint slot observe[] hard-check', () => {
   test('越界 probe（不在 slot.observe[]）→ exit 1 + code IAP_INTENT_PROBE_OUT_OF_BOUNDARY', async () => {
     // 'forbidden-probe' 不在 design slot.observe[] 中
     await setupWorkFixture({ taskProbes: ['@oxn/probes/forbidden-probe'] })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
+    const r = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only', '--json'])
     expect(r.exitCode).toBe(1)
     const body = JSON.parse(r.stdout)
     expect(body.ok).toBe(false)
@@ -133,7 +133,7 @@ describe('P4 (D3) — probe vs Blueprint slot observe[] hard-check', () => {
 
   test('无 probe → validate 成功（probe 检查为空跳过）', async () => {
     await setupWorkFixture({ taskProbes: [] })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
+    const r = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only', '--json'])
     expect(r.exitCode).toBe(0)
     const body = JSON.parse(r.stdout)
     expect(body.ok).toBe(true)
@@ -149,7 +149,7 @@ describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
       taskBoundary: 'dev',
       taskDeps: [], // 同 slot 边界，无外部依赖
     })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
+    const r = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only', '--json'])
     expect(r.exitCode).toBe(0)
     expect(JSON.parse(r.stdout).ok).toBe(true)
   })
@@ -160,7 +160,7 @@ describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
       taskBoundary: 'dev',
       taskDeps: ['doc'],
     })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
+    const r = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only', '--json'])
     expect(r.exitCode).toBe(1)
     const body = JSON.parse(r.stdout)
     expect(body.ok).toBe(false)
@@ -180,7 +180,7 @@ describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
       taskBoundary: 'dev',
       taskDeps: ['nonexistent-task-name'],
     })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
+    const r = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only', '--json'])
     expect(r.exitCode).toBe(1)
     const body = JSON.parse(r.stdout)
     expect(body.error.code).toBe('IAP_INTENT_TASK_DAG_VIOLATES_SLOT')
@@ -192,7 +192,14 @@ describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
       taskBoundary: 'dev',
       taskDeps: ['doc'], // 正常情况会触发 violation
     })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--skip-workflow-dag-check', '--json'])
+    const r = await env.runCli([
+      'work',
+      'run',
+      'p457-fixture',
+      '--validate-only',
+      '--skip-workflow-dag-check',
+      '--json',
+    ])
     expect(r.exitCode).toBe(0)
     expect(JSON.parse(r.stdout).ok).toBe(true)
   })
@@ -203,7 +210,7 @@ describe('P5 (D4) — Workflow.slot DAG vs Task.deps DAG closure', () => {
 describe('P7 (D6) — Work ## Refs legacy kind: domain soft warning', () => {
   test('无 legacy ref → validate 成功 + 无 warning', async () => {
     await setupWorkFixture({ legacyDomainRef: null })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
+    const r = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only', '--json'])
     expect(r.exitCode).toBe(0)
     const body = JSON.parse(r.stdout)
     expect(body.ok).toBe(true)
@@ -215,7 +222,7 @@ describe('P7 (D6) — Work ## Refs legacy kind: domain soft warning', () => {
     await setupWorkFixture({
       legacyDomainRef: { name: 'LegacyProbe', ref: '@prj/domains/LegacyProbe' },
     })
-    const r = await env.runCli(['work', 'validate', 'p457-fixture', '--json'])
+    const r = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only', '--json'])
     expect(r.exitCode).toBe(0) // 软警告不阻断
     const body = JSON.parse(r.stdout)
     expect(body.ok).toBe(true)
@@ -231,15 +238,13 @@ describe('P7 (D6) — Work ## Refs legacy kind: domain soft warning', () => {
     })
   })
 
-  test('legacy ref 不阻断后续 lock 流程', async () => {
+  test('legacy ref 不阻断后续 run 流程（RFC-0033 D2：lock 已删，validate → run 链）', async () => {
     await setupWorkFixture({
       legacyDomainRef: { name: 'LegacyProbe', ref: '@prj/domains/LegacyProbe' },
     })
-    const lockR = await env.runCli(['work', 'lock', 'p457-fixture'])
-    // lock 走的是不同路径，不依赖 validate.ok，但应该仍然成功（warning 不影响）
-    // 因为 lock 跳过 validate 重检，只读 .work
-    // 验证 lock 返回的输出不含 OXN_WORK_LEGACY_DOMAIN_REF 错误
-    expect(lockR.exitCode).toBe(0)
+    // RFC-0033 D2: lock 已删；改用 run --validate-only 验证 warning 不阻断
+    const runR = await env.runCli(['work', 'run', 'p457-fixture', '--validate-only'])
+    expect(runR.exitCode).toBe(0)
   })
 })
 
@@ -249,19 +254,9 @@ describe('P6 (D5) — Stack.tools runtime injection to context', () => {
   test('oxn work context --context-mode full 输出含 ## Stack Tools 段', async () => {
     await setupWorkFixture({})
     // 先 validate（让 blueprintIR 写入）
-    await env.runCli(['work', 'validate', 'p457-fixture'])
-    await env.runCli(['work', 'context', 'p457-fixture', '--task', 'step1', '--context-mode', 'full'])
-    // 不论 lock 与否，context 应输出；可能因 lock-not-found 退出非 0
-    // 我们只关心 human 输出中是否有 Stack Tools 段
-    // 由于 work-context-builder 自身不依赖 lock（lockCheck=false on work.context 时由 CLI 处理）
-    // 但我们的 CLI 在 work context 里仍然校验 planLock，可能导致 OXN_ALIGN_LOCK_NOT_FOUND
-    // 这里我们检查 stderr/stdout 任一是否含 "Stack Tools"
-    // 由于 step1 task boundary=design 在 oxn-blueprint 中，stackRefs 应被加载
-    // 但 task-level context 是否注入 stackTools 取决于 boundary 域加载路径
-    // 简化：先 lock 一次，再 context
-    if (!existsSync(join(env.tmpDir, '.openxenon', 'works', 'p457-fixture', '.work.planLock'))) {
-      await env.runCli(['work', 'lock', 'p457-fixture'])
-    }
+    await env.runCli(['work', 'run', 'p457-fixture', '--validate-only'])
+    // RFC-0033 D2: lock 已删；context 直接读 work.md，不再校验 planLock
+    // step1 task boundary=design 在 oxn-blueprint 中，stackRefs 应被加载
     const r2 = await env.runCli(['work', 'context', 'p457-fixture', '--task', 'step1', '--context-mode', 'full'])
     expect(r2.exitCode).toBe(0)
     expect(r2.stdout).toContain('## Stack Tools (9)')

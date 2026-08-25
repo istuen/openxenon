@@ -1,11 +1,13 @@
 import { z } from 'zod'
 
 // =============================================================================
-// v0.1 DDD 双层状态机
+// v0.1 DDD 双层状态机（RFC-0033 D6 简化）
 //
 // 层级 1: WorkspaceState (work.md 级)
 //   - 范围：整个 work 编排
 //   - 内容：work 名 + 上下文 + 任务 DAG 整体状态 + 所有 task 的轻量索引
+//   - 🗑️ RFC-0033 D6: currentRound / roundHistory 已删（Round 模型 RFC-0032 D6 已退役）
+//   - 🗑️ RFC-0033 D6: planLock 字段已删（hash 改为 submit 时刻指纹 + trace.jsonl SUBMIT 事件）
 //
 // 层级 2: TaskState (task.md 级)
 //   - 范围：单个 task 的执行
@@ -28,18 +30,11 @@ export const WorkspaceTaskIndexSchema = z.object({
 })
 
 /**
- * v0.6 PR-2: 单轮 IAP 循环记录。
- * - 每次 `oxn work next-round` 触发一次（手动，不自动）
- * - verdict 记录到 history 供后续 E4 Insight 消费
+ * 🗑️ RFC-0032 D6 + RFC-0033 D6: Round 模型已退役
+ *   - RoundRecord 已删（无 Round 概念，verdict 走 SUBMIT 事件）
+ *   - roundHistory 已删（轮次信息无意义；status 是终态唯一来源）
+ *   - currentRound 已删（无活跃轮次概念）
  */
-export const RoundRecordSchema = z.object({
-  round: z.number().int().min(1),
-  startedAt: z.string(),
-  endedAt: z.string().optional(),
-  outcome: z.enum(['COMPLETED', 'DEVIATED', 'INCONCLUSIVE', 'PENDING']),
-  failures: z.array(z.string()).default([]), // probe 失败 task 名列表
-  notes: z.string().optional(),
-})
 
 export const WorkspaceStateSchema = z.object({
   workName: z.string().min(1),
@@ -59,15 +54,10 @@ export const WorkspaceStateSchema = z.object({
       maxIterations: z.number().int().min(1).default(3),
     })
     .optional(),
-  // v0.6 PR-2: Round 多轮 IAP 循环
-  //  - currentRound: 当前活跃 round 编号（1-based；1 表示首轮）
-  //  - roundHistory: 已结束 round 的快照（含 verdict + failures）
-  currentRound: z.number().int().min(1).default(1),
-  roundHistory: z.array(RoundRecordSchema).default([]),
-  // PR-14c: diagnostics 软警告（域/蓝图文件 lock 后被删等场景）
+  // PR-14c: diagnostics 软警告（域/蓝图文件被删等场景）
   //   不入 IAPError 体系，severity 必为 'warn'
-  //   当 lock 通过但 ref 解析失败时，run 把收集的 diagnostics 写入此处
-  //   供 status / future Daemon 读取判断是否在无约束下执行
+  //   当 ref 解析失败时，run 把收集的 diagnostics 写入此处
+  //   供 status 读取判断是否在无约束下执行
   diagnostics: z
     .array(
       z.object({
@@ -85,7 +75,6 @@ export const WorkspaceStateSchema = z.object({
 export type WorkspaceTaskStatus = z.infer<typeof WorkspaceTaskStatusSchema>
 export type WorkspaceTaskIndex = z.infer<typeof WorkspaceTaskIndexSchema>
 export type WorkspaceState = z.infer<typeof WorkspaceStateSchema>
-export type RoundRecord = z.infer<typeof RoundRecordSchema>
 
 export function createInitialWorkspaceState(params: {
   workName: string
@@ -123,16 +112,6 @@ export function createInitialWorkspaceState(params: {
       constraints: params.constraints ?? [],
       maxIterations: params.maxIterations ?? 3,
     },
-    // v0.6 PR-2: Round 多轮 IAP 循环
-    currentRound: 1,
-    roundHistory: [
-      {
-        round: 1,
-        startedAt: now,
-        outcome: 'PENDING',
-        failures: [],
-      },
-    ],
     ...(params.diagnostics && params.diagnostics.length > 0 ? { diagnostics: params.diagnostics } : {}),
   }
 }

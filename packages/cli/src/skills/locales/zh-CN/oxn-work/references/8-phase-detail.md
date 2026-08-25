@@ -1,28 +1,26 @@
-# 8 阶段流程详解（v1.1）
+# 3 阶段流程详解（v1.3 · RFC-0033 极简化）
 
 > 本文件是 `SKILL.md` 的按需加载补充。执行 `oxn work` 实际阶段时查阅。
 
-## 8 阶段全景
+## 3 阶段全景（RFC-0033 D1）
 
 ```
-migrate? → create → add-task → validate → lock → run → submit → status → finalize
-                                       │        │
-                                       ▼        ▼
-                                  .work       .work.planLock
-                                静态门禁卡    4 组件 hash
+migrate? → create → run → submit → status
+                    │       │
+                    ▼       ▼
+                  启动     hash + DRIFT
+                 状态机   （可观测不阻断）
 ```
 
-- `migrate?`（步骤 0，可选）：V0→V1 布局迁移，新建 work 跳过
+- `migrate?`（可选）：V0→V1 布局迁移，新建 work 跳过
 - `create`：建 work 骨架
-- `add-task`：建至少 1 个 task.oxn
-- `validate`：校验 work.oxn + 写 `.work`
-- `lock`：写 planLock + 4 组件 hash
-- `run`：启动状态机（要求 lock 完成）
-- `submit`：推进 task 内 part
+- `run [--validate-only]`：校验 + 启动状态机
+- `submit`：推进 task 内 part + 算 workMdHash 指纹 + DRIFT 检测
 - `status`：查询 work 状态
-- `finalize`：收口，汇总所有 round + 写最终状态
 
-## 创建 Work + Task（8 步示例）
+🗑️ RFC-0033 D1/D2 已删：`validate` / `lock` / `unlock` / `add-task`（降级为辅助，可直接改 work.md）
+
+## 创建 Work + Task（3 步示例）
 
 ### 步骤 0（V0→V1 迁移，可选）
 
@@ -34,7 +32,7 @@ oxn work migrate <work-name>
 
 ### 步骤 1：前置（创建/修改 Asset，**非本 Skill 范围**）
 
-> **注意**：本 Skill 不管 Asset 创建/修改。如需创建/修改 Domain/Blueprint/Stack 等，请触发 **`oxn-asset` Skill**（它通过 `oxn work create --type asset --asset-kind X` 走 IAP 闭环）。
+> **注意**：本 Skill 不管 Asset 创建/修改。如需创建/修改 Domain/Blueprint/Stack 等，请触发 **`oxn-asset` Skill**。
 >
 > 假设 Asset 已就绪。
 
@@ -42,7 +40,7 @@ oxn work migrate <work-name>
 
 ```bash
 oxn work create <work-name> --blueprint <bp>
-# 编辑 .openxenon/works/<work>/work.oxn
+# 编辑 .openxenon/works/<work>/work.md
 ```
 
 或手写：
@@ -50,10 +48,8 @@ oxn work create <work-name> --blueprint <bp>
 ```oxn
 work "MyFeature" {
   context { goal = "..."; constraints = []; loop_policy { max_iterations = 3 } }
-  domain "MemberContext"   ref "@prj/domains/MemberContext";
   blueprint "dev-workflow" ref "@prj/blueprints/dev-workflow";
   task "step1" {
-    domain "MemberContext";
     blueprint "dev-workflow";
     part "build" { skill_context = "..." }
     deps = [];
@@ -61,54 +57,66 @@ work "MyFeature" {
 }
 ```
 
-### 步骤 3：创建至少一个 Task
+### 步骤 3：创建至少一个 Task（可选，AI 也可直接编辑 work.md ## Tasks 段）
 
 ```bash
 oxn work add-task \
   --work <work-name> \
   --task-name <task-name> \
-  --blueprint <blueprint-name> \
-  [--domain <DomainName>]
+  --blueprint <blueprint-name>
 ```
 
-### 步骤 4：编辑 task 内容（手写 `task.oxn`）
+### 步骤 4：编辑 task 内容（手写 `task.md`）
 
-### 步骤 5：`work validate`
+### 步骤 5：`work run --validate-only`（替代原 `oxn work validate`）
 
 ```bash
-oxn work validate <work-name> --json
-# 校验 work.oxn + 写 .work 静态门禁卡（assets 快照：域/蓝图 fileHash）
-# planLock 此时为 null（未锁）
+oxn work run <work-name> --validate-only --json
+# 校验 work.md + 写 .work（assets 快照：域/蓝图 fileHash；向后兼容）
+# RFC-0033 D2: PlanLock 已删，不写 planLock 字段
 ```
 
-### 步骤 6：`work lock`
+### 步骤 6：`work run`（启动状态机）
 
 ```bash
-oxn work lock <work-name> --json
-# 计算 4 组件 hash：
-#   workOxnHash      = SHA-256(work.oxn)
-#   workDomainsHash  = SHA-256(concatenated domain.oxn files)
-#   blueprintsHash   = SHA-256(concatenated blueprint.oxn files)
-#   tasksHash        = SHA-256(concatenated task.oxn files)
-# 写入 .work.planLock + allHash
-# 锁后任何 .oxn 资产漂移 = IAP_ALIGN_LOCK_HASH_MISMATCH
+oxn work run <work-name> --json
+# RFC-0033 D2: 不要求 lock；work.md 可自由修改
 ```
 
-`oxn work unlock`（解锁，清 planLock 保留 assets）
-
-### 步骤 7：驱动状态机
+### 步骤 7：`work submit`（推进 task + hash 指纹 + DRIFT 检测）
 
 ```bash
-oxn work run --work-file <work>/work.oxn --json
-oxn work submit --work <w> --task <t> --json
-oxn work status --work <w> --json
+oxn work submit <work-name> --task <task-name> --json
+# RFC-0033 D3: submit 时算 workMdHash → 记入 trace.jsonl SUBMIT 事件
+# RFC-0033 D4: 与上次 SUBMIT 的 workMdHash 比对 → 不一致 append ASSET_DRIFT（不阻断）
 ```
 
-### RFC-0032 Phase 2/3 (0.6.4-alpha.0+): `oxn work finalize` 已删
+### 步骤 8：`work status`（查询状态）
 
-Work 生命周期收敛为 4 步: `create → lock → run → submit`。
-原 Step 8 (`finalize` 汇总 round + 写 frozen.json) 随 Phase 2 删除 (依赖 frozen/work-domains.ts)。
-参照: `.openxenon/drafts/design-mvp-convergence-grilling.md` 与 RFC-0032 §D10/D13。
+```bash
+oxn work status <work-name> --json
+# RFC-0033 D5: 以 work.md 作为 work 是否存在的真源（.work 文件可选，向后兼容）
+```
+
+### 步骤 9（修改 work.md / context.md）
+
+```
+🗑️ RFC-0033 D2: 无需 unlock；work.md / context.md 可自由修改；
+   下次 submit 时 Engine 自动检测 hash 变化 + 记录 ASSET_DRIFT 事件。
+```
+
+## RFC-0032 + RFC-0033 退役记录
+- **RFC-0032 D6**：Round 模型删除 → `finalize` 子命令删除（依赖 frozen.json）
+- **RFC-0032 D10**：IAP 退役到理念叙事层
+- **RFC-0032 D13**：Work 追踪自身职责（trace 记录事实）
+- **RFC-0032 D25**：Proof 删除 → PlanLock 删除（RFC-0033 D2）
+- **RFC-0032 D27**：Probe 保留为 Engine 工具能力
+- **RFC-0033 D1**：3 步生命周期 create → run → submit
+- **RFC-0033 D2**：PlanLock 整体删除
+- **RFC-0033 D3**：hash 重定义为 submit 时刻完成指纹
+- **RFC-0033 D4**：DRIFT 可观测不阻断
+- **RFC-0033 D5**：`.work` 单文件删除（保留为向后兼容 assets 快照）
+- **RFC-0033 D6**：hash 载体 = trace.jsonl（state.json 不存 hash）
 
 ## 参考命令表
 
@@ -124,18 +132,18 @@ Work 生命周期收敛为 4 步: `create → lock → run → submit`。
 | 列出 work 下所有 task | `oxn work list-tasks --work <w>` |
 | 查看 task 状态 | `oxn work task-status --work <w> --task <t>` |
 | 获取 AI 上下文（全量隔离） | `oxn work context --work <w> --task <t>` |
-| 校验 work.oxn + 写 .work | `oxn work validate <w>` |
-| 锁 work（planLock + 4 组件 hash） | `oxn work lock <w>` |
-| 解锁 work | `oxn work unlock <w>` |
-| 启动 work 状态机 | `oxn work run --work-file <work.oxn>` |
-| 推进 task 内 part | `oxn work submit --work <w> --task <t>` |
+| 校验 work.md + 写 .work（替代原 validate） | `oxn work run <w> --validate-only` |
+| 启动 work 状态机 | `oxn work run <w>` |
+| 推进 task 内 part + hash 指纹 + DRIFT 检测 | `oxn work submit <w> --task <t>` |
 | 查询 work 状态 | `oxn work status --work <w>` |
+
+🗑️ **已删命令**（v1.3）：`oxn work validate` / `oxn work lock` / `oxn work unlock`
 
 ## 模式选择速查
 
 | 你的需求 | 选哪个模式 | 关键标志 | 模板 |
 |---|---|---|---|
-| 摸清一个域、写报告 | 模式 1（explore） | 1 task + 1 blueprint slot | `assets/work-explore.oxn` |
-| 单域完整开发 | 模式 2（develop） | 1 task 多 part（= blueprint 多 slot） | `assets/work-develop.oxn` |
-| bug 修复、流程化诊断 | 模式 3（fix） | N task 串行 deps | `assets/work-fix.oxn` |
-| 跨多个限界上下文 | 模式 4（onboarding） | work 级 N domain + task 按需 inject | `assets/work-onboarding.oxn` |
+| 摸清一个域、写报告 | 模式 1（explore） | 1 task + 1 blueprint slot | `assets/work-explore.md` |
+| 单域完整开发 | 模式 2（develop） | 1 task 多 part（= blueprint 多 slot） | `assets/work-develop.md` |
+| bug 修复、流程化诊断 | 模式 3（fix） | N task 串行 deps | `assets/work-fix.md` |
+| 跨多个限界上下文 | 模式 4（onboarding） | work 级 N domain + task 按需 inject | `assets/work-onboarding.md` |

@@ -1,32 +1,27 @@
 // =============================================================================
-// plan-hash.test.ts — PR-2 单元测试
+// plan-hash.test.ts — PR-2 + RFC-0033 极简化单元测试
 //
 // 覆盖：
 //   1. normalizeText：去 BOM / CRLF / 末尾空行
 //   2. hashText：相同内容 → 相同 hash；不同内容 → 不同 hash
 //   3. hashFile：文件存在/不存在
-//   4. listTaskFiles：稳定排序、跳过隐藏/无 task.md 的目录
-//   5. hashWorkPlan：4 组件 + allHash，缺失组件为 null，missing[] 准确
-//   6. hashAssetList：按 name 排序
-//   7. probePlanPresence：探测 4 组件实际状态
+//   4. hashWorkPlan（RFC-0033 简化）：仅 workMdHash，缺失则 missing[] 报告
+//   5. hashAssetList：按 name 排序
+//   6. sha256Hex：直接调用
+//
+// 🗑️ RFC-0033 D2/D3 删除：
+//   - 5-hash 复合（workContextHash / blueprintsHash / tasksHash / taskContextsHash / allHash）
+//   - listTaskFiles（task hash 不再参与 plan lock；Submit 时刻只算 workMdHash）
+//   - listTaskContextFiles
+//   - probePlanPresence
+//   - getWorkDomainsJsonPath / getWorkBlueprintsJsonPath
 // =============================================================================
 
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import {
-  getWorkBlueprintsJsonPath,
-  getWorkMdPath,
-  hashAssetList,
-  hashFile,
-  hashText,
-  hashWorkPlan,
-  listTaskFiles,
-  normalizeText,
-  probePlanPresence,
-  sha256Hex,
-} from '../plan-hash'
+import { hashAssetList, hashFile, hashText, hashWorkPlan, normalizeText, sha256Hex } from '../plan-hash'
 
 let tmpDir: string
 let workName: string
@@ -61,7 +56,6 @@ describe('normalizeText', () => {
     expect(normalizeText('a\n\nb')).toBe('a\n\nb')
   })
   test('组合：BOM + CRLF + 末尾空行', () => {
-    // \r\n 后再 \r\n = b\n\n  ;  a\n + b\n\n = a\nb\n\n  ;  折叠为 a\nb\n
     expect(normalizeText('\uFEFFa\r\nb\r\n\r\n')).toBe('a\nb\n')
   })
 })
@@ -103,141 +97,55 @@ describe('hashFile', () => {
   })
 })
 
-// ───────── listTaskFiles ─────────
+// ───────── hashWorkPlan（RFC-0033 D3 简化）─────────
 
-describe('listTaskFiles', () => {
-  test('空 tasks/ 返回 []', () => {
-    expect(listTaskFiles(tmpDir, workName)).toEqual([])
-  })
-  test('稳定排序', () => {
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'zebra'), { recursive: true })
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'alpha'), { recursive: true })
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'mike'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'zebra', 'task.md'), 'z')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'alpha', 'task.md'), 'a')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'mike', 'task.md'), 'm')
-    const out = listTaskFiles(tmpDir, workName)
-    expect(out.map((t) => t.taskName)).toEqual(['alpha', 'mike', 'zebra'])
-  })
-  test('跳过隐藏目录', () => {
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', '.hidden'), { recursive: true })
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'visible'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', '.hidden', 'task.md'), 'h')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'visible', 'task.md'), 'v')
-    const out = listTaskFiles(tmpDir, workName)
-    expect(out.map((t) => t.taskName)).toEqual(['visible'])
-  })
-  test('跳过无 task.md 的目录', () => {
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'no-md'), { recursive: true })
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'has-md'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'no-md', 'readme.md'), 'r')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'has-md', 'task.md'), 'h')
-    const out = listTaskFiles(tmpDir, workName)
-    expect(out.map((t) => t.taskName)).toEqual(['has-md'])
-  })
-  test('hash 字段填入', () => {
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 't'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 't', 'task.md'), 'content')
-    const out = listTaskFiles(tmpDir, workName)
-    expect(out[0]?.hash).toBe(hashText('content'))
-  })
-})
-
-// ───────── hashWorkPlan ─────────
-
-function writeTask(name: string, content: string, contextContent?: string): void {
-  const dir = join(tmpDir, '.openxenon', 'works', workName, 'tasks', name)
-  mkdirSync(dir, { recursive: true })
-  writeFileSync(join(dir, 'task.md'), content)
-  // 🆕 v0.7+ PlanLock 5-hash: 同时写 task context.md
-  if (contextContent !== undefined) {
-    writeFileSync(join(dir, 'context.md'), contextContent)
-  }
-}
-
-describe('hashWorkPlan', () => {
-  test('全 5 组件存在 → allHash 不为 null', () => {
-    writeFileSync(getWorkMdPath(tmpDir, workName), 'work.md content')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'context.md'), 'work context')
-    writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
-    writeTask('a', 'task a', 'task a context')
+describe('hashWorkPlan (RFC-0033 简化)', () => {
+  test('work.md 存在 → workMdHash 填值，missing[] 为空', () => {
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'work.md'), 'work content')
     const r = hashWorkPlan(tmpDir, workName)
     expect(r.workMdHash).not.toBe(null)
-    expect(r.workContextHash).not.toBe(null)
-    expect(r.blueprintsHash).not.toBe(null)
-    expect(r.tasksHash).not.toBe(null)
-    expect(r.taskContextsHash).not.toBe(null)
-    expect(r.allHash).not.toBe(null)
     expect(r.missing).toEqual([])
   })
 
   test('work.md 缺失 → workMdHash=null + missing 含 work.md', () => {
-    writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
     const r = hashWorkPlan(tmpDir, workName)
     expect(r.workMdHash).toBe(null)
     expect(r.missing).toContain('work.md')
-    expect(r.allHash).toBe(null)
   })
 
-  test('无 task 时 tasksHash=null 且 missing 不含 task（empty ≠ missing）', () => {
-    writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
-    writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
+  test('RFC-0033 D3：PlanHash 只含 workMdHash（无 5-hash 复合）', () => {
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'work.md'), 'work')
     const r = hashWorkPlan(tmpDir, workName)
-    expect(r.tasksHash).toBe(null)
-    // 🆕 v0.7+ PlanLock 5-hash: context.md 缺失计入 missing
-    expect(r.missing).toEqual(['context.md']) // 0 task = empty, not "missing"; context.md 缺失
-    expect(r.allHash).toBe(null) // 但 allHash 仍为 null（不完整）
+    // 旧字段已删
+    expect((r as { workContextHash?: unknown }).workContextHash).toBeUndefined()
+    expect((r as { blueprintsHash?: unknown }).blueprintsHash).toBeUndefined()
+    expect((r as { tasksHash?: unknown }).tasksHash).toBeUndefined()
+    expect((r as { taskContextsHash?: unknown }).taskContextsHash).toBeUndefined()
+    expect((r as { allHash?: unknown }).allHash).toBeUndefined()
   })
 
-  test('稳定的 tasksHash（add 顺序无关）', () => {
-    writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
-    writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
-
-    writeTask('z', 'z')
-    writeTask('a', 'a')
-    const h1 = hashWorkPlan(tmpDir, workName).tasksHash
-
-    const aPath = join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'a', 'task.md')
-    writeFileSync(aPath, 'changed')
-    const hChanged = hashWorkPlan(tmpDir, workName).tasksHash
-    writeFileSync(aPath, 'a')
-    const hRestored = hashWorkPlan(tmpDir, workName).tasksHash
-
-    expect(hChanged).not.toBe(h1)
-    expect(hRestored).toBe(h1)
+  test('CRLF work.md 与 LF work.md hash 相同（归一化）', () => {
+    const crlfDir = join(tmpdir(), `plan-hash-crlf-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    const lfDir = join(tmpdir(), `plan-hash-lf-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+    try {
+      mkdirSync(join(crlfDir, '.openxenon', 'works', workName, 'tasks'), { recursive: true })
+      mkdirSync(join(lfDir, '.openxenon', 'works', workName, 'tasks'), { recursive: true })
+      writeFileSync(join(crlfDir, '.openxenon', 'works', workName, 'work.md'), 'work\r\ncontent')
+      writeFileSync(join(lfDir, '.openxenon', 'works', workName, 'work.md'), 'work\ncontent')
+      const crlfHash = hashWorkPlan(crlfDir, workName).workMdHash
+      const lfHash = hashWorkPlan(lfDir, workName).workMdHash
+      expect(crlfHash).toBe(lfHash)
+    } finally {
+      rmSync(crlfDir, { recursive: true, force: true })
+      rmSync(lfDir, { recursive: true, force: true })
+    }
   })
 
-  test('同 DAG 不同 add 顺序 → tasksHash 相同', () => {
-    writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
-    writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
-
-    writeTask('a', 'A')
-    writeTask('b', 'B')
-    writeTask('c', 'C')
-    const h1 = hashWorkPlan(tmpDir, workName).tasksHash
-
-    rmSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'a'), { recursive: true })
-    rmSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'b'), { recursive: true })
-    rmSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'c'), { recursive: true })
-
-    writeTask('c', 'C')
-    writeTask('a', 'A')
-    writeTask('b', 'B')
-    const h2 = hashWorkPlan(tmpDir, workName).tasksHash
-
-    expect(h1).toBe(h2)
-  })
-
-  test('1 改 1 → allHash 也变（组件联动）', () => {
-    writeFileSync(getWorkMdPath(tmpDir, workName), 'work')
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'context.md'), 'context')
-    writeFileSync(getWorkBlueprintsJsonPath(tmpDir, workName), '{}')
-    writeTask('a', 'A', 'context A')
-    const h1 = hashWorkPlan(tmpDir, workName).allHash
-
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'a', 'task.md'), 'A2')
-    const h2 = hashWorkPlan(tmpDir, workName).allHash
-
+  test('修改 work.md → workMdHash 变', () => {
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'work.md'), 'A')
+    const h1 = hashWorkPlan(tmpDir, workName).workMdHash
+    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'work.md'), 'A modified')
+    const h2 = hashWorkPlan(tmpDir, workName).workMdHash
     expect(h1).not.toBe(h2)
   })
 })
@@ -274,25 +182,6 @@ describe('hashAssetList', () => {
     writeFileSync(f, 'A2')
     const h2 = hashAssetList([{ name: 'A', version: 1, filePath: f }])
     expect(h1).not.toBe(h2)
-  })
-})
-
-// ───────── probePlanPresence ─────────
-
-describe('probePlanPresence', () => {
-  test('空 work → 全 false / 空 tasks', () => {
-    const r = probePlanPresence(tmpDir, workName)
-    expect(r.workMd).toBe(false)
-    // 🆕 Phase B: 删 domainsJson（Domain refs 走 Blueprint ## Refs）
-    expect(r.blueprintsJson).toBe(false)
-    expect(r.tasks).toEqual([])
-  })
-
-  test('有 task.md 但无 .work → 报告存在', () => {
-    mkdirSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'x'), { recursive: true })
-    writeFileSync(join(tmpDir, '.openxenon', 'works', workName, 'tasks', 'x', 'task.md'), 'X')
-    const r = probePlanPresence(tmpDir, workName)
-    expect(r.tasks).toEqual([{ taskName: 'x', hasMd: true, hasContextMd: false }])
   })
 })
 

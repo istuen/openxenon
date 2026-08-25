@@ -62,7 +62,7 @@ oxn work create MyDomain --type asset --asset-kind domain
 ```
 
 - Goes through IAP closed loop
-- planLock protection
+- 🗑️ planLock retired (RFC-0033 D2); Asset modification triggers ASSET_DRIFT in referencing Works (observable not blocking)
 - `oxn-asset` Skill recommends this path
 
 ## Anti-Patterns

@@ -46,6 +46,7 @@ OpenXenon 是基于 Bun 构建的领域知识结构化引擎：`oxn` CLI + 基�
 - 不得把 glossary / docs 当 SSOT 改——改术语走 `.openxenon/assets/domains/*.md` + 跑 `bun scripts/sync-domain-glossary.ts`
 - 执行任务前必须先建 Work，禁止在 Asset 外裸奔写代码：`oxn work create <name> --blueprint <bp>`
 - Work trace 只记录过程，不评判质量（ADR-0066/0067，D13 RFC-0032）
+- Work 生命周期 3 步：create → run → submit（RFC-0033 D1）；hash 提交时刻指纹 + DRIFT 可观测不阻断（RFC-0033 D3/D4）
 - 读 AssetMap 是为了"找 Blueprint"，不是找 Domain 关系
 - Skill 维护流：改 `packages/cli/src/skills/locales/{zh-CN,en}/<skill>/instruction.md` → 跑 `bun run packages/cli/src/index.ts init -f` → `.opencode/skills/` 自动重建
 - 跨层引用规则：RFC / Doc / Dev 不依赖 Meta 层（v0.7.0 RFC-0028 §D3 撤销 CONTEXT-MAP.md 特例豁免），守门在 pre-commit 自动跑

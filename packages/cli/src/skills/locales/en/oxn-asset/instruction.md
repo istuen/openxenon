@@ -9,7 +9,8 @@ Underlying flow: `oxn work create --type asset --asset-kind X` (IAP closed loop)
 > **🆕 v0.6.4 naming convergence**: User-facing CLI command and directory converged from `roadmap` to `assetmap` (`oxn assetmap`, `assets/assetmaps/`); **AssetKind enum value also changed from `'roadmap'` to `'assetmap'`** (v0.7 RFC-0013 D4 originally locked the code enum, but v0.6.4 design decision fully recycles the Roadmap term; break-change).
 
 ## Hard rules
-- Asset creation triggers planLock; modification must go through `oxn work create --type asset` (v0.6.3+ hard-block)
+- 🗑️ **RFC-0033 D2**: Asset planLock retired; Asset freely modifiable after creation, referencing Works don't need re-lock
+- Modification must go through `oxn work create --type asset` (v0.6.3+ hard-block retained)
 - `references[]` DAG validation: no circular deps (same-kind isolation; cross-kind via Blueprint composition)
 - `abstract` / `references` / `citations` / `auditTrail` 4 fields must be complete
 - 5 AssetKind H2 category whitelists **must not mix**
@@ -55,7 +56,8 @@ Pre-v0.6.4 had 3 reference syntaxes (bare name / `@md/{kind}/{name}` / file path
 > **External detail + kind enum + status + CLI**: see `references/asset-kind-reference.md` + `references/asset-creation.md`
 
 ## Key error codes
-- `IAP_ASSET_PATH_CONFLICT` / `IAP_ALIGN_LOCK_HASH_MISMATCH` → YIELD_TO_HUMAN
+- `IAP_ASSET_PATH_CONFLICT` → YIELD_TO_HUMAN
+- 🗑️ `IAP_ALIGN_LOCK_HASH_MISMATCH` retired (RFC-0033 D2) — Asset changes no longer block Works
 - `E_MD_DUPLICATE_H3` / `E_MD_CATEGORY_UNKNOWN` → fix H3/H2 naming
 - `E_MD_EXTERNAL_KIND_INVALID` / `_URL_PATH_CONFLICT` / `_URL_PATH_REQUIRED` → fix External fields
 - 🆕 `IAP_INTENT_CROSS_KIND_REF` (v0.6.4 PR-D preserved) → cross-kind references go to Blueprint `## Use`
@@ -63,7 +65,7 @@ Pre-v0.6.4 had 3 reference syntaxes (bare name / `@md/{kind}/{name}` / file path
 ## Forbidden
 - Don't write deprecated syntax: `noun` / `verb` / `domain_rules` / `expectation` / `rule`
 - Don't directly `write_file` to .oxn (v0.6.3+ hard-block)
-- Don't modify .oxn after lock (run `oxn work unlock` first)
+- 🗑️ Don't modify .md after lock (RFC-0033 D2: planLock retired, no unlock needed; modify Asset → run --validate-only triggers referencing Work DRIFT detection)
 - Don't mix Asset mode and Work mode (Asset mode has no task DAG)
 - Don't delete referenced Assets (run `oxn asset archive` first)
 - Don't create library/external Asset types (removed in v0.6.1-alpha.4)

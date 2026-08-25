@@ -1,4 +1,4 @@
-# /oxn-work — Drive Work v0.7+
+# /oxn-work — Drive Work v1.3（RFC-0033 极简化）
 
 ## AI Agent 接入前置
 
@@ -9,28 +9,32 @@
 你正在协助一名 OpenXenon 工程师。OpenXenon 是工程师定义 AI Agent 协作边界的工具，核心范式 IAP（Intent–Align–Proof），核心引擎 OXN Engine。
 
 **三方协作模型**：
-- **工程师**（Asset 管理 + Proof 审查）— 发起方
+- **工程师**（Asset 管理 + 决策审查）— 发起方
 - **AI Agent**（你）— 通过 OXN Skill 获得 CLI 能力，在 Work 内自主工作
-- **OXN Engine** — 被动响应 CLI 请求，验证 ProbeOutcome + 记录 Proof；不评判
+- **OXN Engine** — 被动响应 CLI 请求，执行 Probe + 记录 trace；不评判
 
-**IAP 三阶段** (RFC-0032 收敛):
+**IAP 简化为三阶段对齐（RFC-0032 + RFC-0033 收敛）**：
 - **Intent（定意图，工程师主权）**：Domain 锁定业务语言、Blueprint 锁定技术拓扑
 - **Align（跑对齐，AI Agent 主权）**：你在 Blueprint slot 边界内编排 Work/Task/Part
 - *(Probe 取代了原 "Proof 阶段" — 0.6.4-alpha.0+ 不再有 frozen.json / 主权验证；Probe 是 Engine 工具能力，CLI 检查产物，结果记 Work trace.jsonl)*
 
 **OXN 通道边界**：AI 在 OXN 通道外做的事（读代码/试方案/放弃）OXN 不记录；通道内工件（context.md / memory.md + trace.jsonl）才是证据。
 
-### CLI 白名单
+### CLI 白名单（v1.3 · RFC-0033 D1 极简化）
 
-✅ 允许调用（v0.7+）：
+✅ 允许调用：
 
 ```bash
-# Work 编排 + 执行
+# Work 编排 + 执行（3 步生命周期）
 oxn work create <name> --blueprint <bp> --domain <d> [--stack <s>] --goal "<goal>"
-oxn work add-task <name> --task <t> --blueprint <bp>
-oxn work inject <name> --paths | --context | --memory      # 上下文注入（v0.7+）
+oxn work run <name> [--validate-only]                # 启动状态机 或 仅校验
+oxn work submit <name> --task <t>                    # 推进 task（含 hash 指纹 + DRIFT 检测）
+oxn work add-task <name> --task <t> --blueprint <bp> # 可选：AI 也可直接改 work.md ## Tasks 段
+oxn work status | list | show                        # 状态查询
+
+# 上下文注入（v1.3 · 保留）
+oxn work inject <name> --paths | --context | --memory
 oxn work inject <name> --task <t> --paths | --context | --memory
-oxn work validate | lock | unlock | run | submit | status | list | show
 
 # Probe 验证 (RFC-0032 D27: Engine 工具能力)
 oxn probe add | run | list | describe | fix | registry-store
@@ -46,11 +50,10 @@ oxn draft list | show
 ```
 
 ❌ 禁止：
-- 直接读/写 `.openxenon/proofs/*/frozen.json`、`.openxenon/works/*/state.json`、`.openxenon/works/*/tasks/*/frozen.json`
+- 直接读/写 `.openxenon/works/*/state.json`、`.openxenon/works/*/tasks/*/trace.jsonl`
 - 修改 Domain 术语或 Blueprint 规则
-- 使用 `--force` 绕过 Proof / Lock
-- 在 lock 之后修改任何 `.md` 资产（触发 `IAP_ALIGN_LOCK_HASH_MISMATCH`）
-- 跳过 `validate → lock` 直接 `run`
+- 使用 `--force` 绕过 Work 流程
+- **已删命令**（v1.3 RFC-0033 退役）：`oxn work validate` / `oxn work lock` / `oxn work unlock` — 校验并入 `run --validate-only`，PlanLock 整体删除
 
 ### 输出约定
 
@@ -58,12 +61,12 @@ oxn draft list | show
 - **完成状态**附 `oxn work status --json` 输出
 - **不可恢复错误**时报告具体错误码（如 `OXN_INTENT_SCOPE_VIOLATION`）并暂停，等工程师介入
 
-### 失败处理
+### 失败处理（v1.3 RFC-0033 D4）
 
-- `IAPError` → 读 `frozen.json` 的 expected/actual；Outcome COMPLETED 推进、DEVIATED 修复后重跑、INCONCLUSIVE 报工程师
+- `IAPError` → 读错误上下文 + trace.jsonl 事件；COMPLETED 推进、DEVIATED 修复后重跑、INCONCLUSIVE 报工程师
 - `OXN_INTENT_SCOPE_VIOLATION` → Task Artifact 越界 Blueprint Scope；修正 `## Artifacts` 段（不能改 Blueprint）
-- `OXN_INTENT_CONTEXT_MISSING` → lock 时 context.md 不存在；先写再 lock
-- `IAP_ALIGN_LOCK_HASH_MISMATCH` → 锁后资产漂移；`oxn work unlock` → 确认改动 → re-lock
+- `OXN_WORK_NOT_STARTED` → run 未跑；先 `oxn work run`
+- `ASSET_DRIFT`（trace 事件，可观测不阻断）→ workMd 改了；如确认是预期改动，继续 submit 即可
 - 完整错误码见 `references/error-codes.md`
 
 ### 阅读顺序
@@ -73,17 +76,17 @@ oxn draft list | show
 ---
 
 ## 目标
-建 **Work + ≥1 Task** 走 8 阶段：`create → add-task → validate → lock → run → submit → finalize`（`migrate?` 可选）
+建 **Work + ≥1 Task** 走 3 阶段（RFC-0033 D1）：`create → run → submit`（`migrate?` 可选）
 
 ## 硬规则
-- `validate`→`lock`→`run` 严格；无 `--force`
-- lock 后漂移 = `HASH_MISMATCH`；OXN 不 commit/push
+- **3 步顺序不可跳**：create → run → submit
+- work.md 可自由修改（submit 时自动算 hash 指纹 + DRIFT 检测，可观测不阻断）
 - Part/Probe 内联于 `task { part { probe {} } }`
-- **v0.7+ PlanLock 5-hash**：lock 前必须写 `works/<w>/context.md` 与 `tasks/<t>/context.md`（inv-33）
+- OXN 不 commit/push
 
 ## 范式
 D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
-- **AI Agent 通道内追踪边界**：AI 在 OXN 通道外做的事（读代码/试方案/放弃）OXN 不记录，仅工作上下文（context.md / memory.md）+ state.json + trace.jsonl + frozen.json 持久化（ADR-0084）
+- **AI Agent 通道内追踪边界**：AI 在 OXN 通道外做的事（读代码/试方案/放弃）OXN 不记录，仅 context.md / memory.md + state.json + trace.jsonl 持久化（ADR-0084）
 
 ## 蓝图选择
 | 需求 | 模板（.md 含 OXN 代码块）→ Blueprint |
@@ -97,12 +100,12 @@ D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
 > v0.7+：Work 不再有 mode（task/explore/edit）；行为差异由 Blueprint slots/observe 承载。
 > v0.7+：MD 文档编写场景用 `md-author-blueprint`（5 起手 Asset 之一）。
 
-## 执行（v0.7+ AssetMap-driven Asset 选取）
+## 执行（v1.3 AssetMap-driven Asset 选取）
 
 1. **前置**：项目已 `oxn init`，所需 Asset 已就绪 — 若需创建/修改 Asset，**触发 `oxn-asset` Skill**。
 2. **首次接入项目（v0.7+ ADR-0089）**：项目未 bootstrap 5 起手 Asset 时，触发 `oxn onboard` 流程：
    - 跑 `oxn onboard --detect --json` 探测项目状态
-   - 解析探测结果 → 列 3 选项卡片（`A` 新项目 / `B1` 存量-Proof-First / `B2` 存量-探索建 Asset）
+   - 解析探测结果 → 列 3 选项卡片（`A` 新项目 / `B1` 存量-Definition-First / `B2` 存量-探索建 Asset）
    - **等工程师确认选项** → 执行对应 `oxn onboard --new` / `--existing --proof-first`（已 reroute 为 definition-first 5 分钟回路）/ `--existing --bootstrap`
    - Bootstrap 完成后（`.openxenon/.bootstrap-done` 标记存在），进入正常 Work 流程
 3. **查 AssetMap 确定可用 Asset**（人机主动，非自动推荐）：
@@ -123,7 +126,12 @@ D=业务 Intent | B=技术 Intent | W=Align 编排 | T=Align 执行
      [--constraints "c1" "c2"]
    ```
    或手动 `fork assets/work-{explore,develop,fix,onboarding}.md → work.md` 自编辑 `## Refs` + `## Context`。
-6. **走 8 阶段**：`references/8-phase-detail.md`
+6. **走 3 阶段**（v1.3 RFC-0033）：
+   ```
+   oxn work run <name> --validate-only   # 仅校验（替代原 oxn work validate）
+   oxn work run <name>                   # 启动状态机
+   oxn work submit <name> --task <t>     # 推进 + hash 指纹 + DRIFT 检测
+   ```
 7. **报错**：`references/error-codes.md`
 
 ## 上下文注入（v0.7+ · Blueprint Context Template · 3-flag）
@@ -154,20 +162,20 @@ oxn work inject <name> --task <t> --memory
 1. oxn work inject <name> --paths
    → 返回 JSON：
      {
-       work_md:    ".openxenon/works/<name>/work.md",
-       context_md: ".openxenon/works/<name>/context.md",
-       memory_md:  ".openxenon/works/<name>/memory.md",
-       tasks: [
-         { name: "dev", task_md: "...", context_md: "...", memory_md: "..." },
-         { name: "doc", task_md: "...", context_md: "...", memory_md: "..." },
-       ]
-     }
+         work_md:    ".openxenon/works/<name>/work.md",
+         context_md: ".openxenon/works/<name>/context.md",
+         memory_md:  ".openxenon/works/<name>/memory.md",
+         tasks: [
+           { name: "dev", task_md: "...", context_md: "...", memory_md: "..." },
+           { name: "doc", task_md: "...", context_md: "...", memory_md: "..." },
+         ]
+       }
    → AI Agent 拿到三件套路径，可选择性读文件
 
 2. oxn work inject <name> --context
    → 输出 works/<name>/context.md 内容（Markdown，非 JSON）
-   → AI Agent 拿到 WorkContext（PlanLock 锁定的静态结构骨架）
-   → 若文件不存在 → OXN_INTENT_CONTEXT_MISSING（提示 AI 先写再 lock）
+   → AI Agent 拿到 WorkContext（运行时读，不再被 PlanLock 锁定）
+   → 若文件不存在 → OXN_INTENT_CONTEXT_MISSING（提示 AI 先写）
 
 3. AI Agent 读 Blueprint ## Use 引用的所有 Domain/Workflow/Stack 文件
    → 自己判断哪些 Terms/Invariants 与本 Work Goal 相关
@@ -183,7 +191,7 @@ oxn work inject <name> --task <t> --memory
 Task 切换时：
 5. oxn work inject <name> --task <t> --context
    → 输出 works/<name>/tasks/<t>/context.md 内容（Markdown）
-   → AI Agent 拿到 TaskContext（PlanLock 锁定的 Per-Slot 子集）
+   → AI Agent 拿到 TaskContext
 
 6. oxn work inject <name> --task <t> --memory
    → 输出 works/<name>/tasks/<t>/memory.md 内容
@@ -204,14 +212,14 @@ Task 切换时：
 
 ```yaml
 ## Operations to run
-  - slot=verify: [lint, typecheck, test]      # operate 数组：AI 应运行的 operation 名
+   - slot=verify: [lint, typecheck, test]      # operate 数组：AI 应运行的 operation 名
 ## Stack Tools (含 operations 子段)
-  - biome
-      · op lint: bun run check               # 在这里找 command
-  - typescript
-      · op typecheck: bun run typecheck
-  - bun-test
-      · op test: bun test
+   - biome
+       · op lint: bun run check               # 在这里找 command
+   - typescript
+       · op typecheck: bun run typecheck
+   - bun-test
+       · op test: bun test
 ```
 
 **精确查询路径**：
@@ -225,18 +233,16 @@ Task 切换时：
 - 例如 `operate: [test]` + `observe: [test-pass]`：AI 跑 `bun test` 是预检；OXN 跑 `test-pass` Probe 是证据采集
 - 不要从 observe 名反推 operate 命令（observe 名 ≠ 必有对应 operate）
 
-### Task ## Artifacts 声明（inv-35 · lock 时 Scope 校验）
+### Task ## Artifacts 声明（inv-35 · run 时 Scope 校验）
 
-Task.md 写 `## Artifacts` 段声明预期产物路径，lock 时 Engine 校验 ⊆ Blueprint `## Scope.allow`：
+Task.md 写 `## Artifacts` 段声明预期产物路径，run 时 Engine 校验 ⊆ Blueprint `## Scope.allow`：
 
 ```yaml
 ## Artifacts
-  - path: packages/engine/src/Work/plan-hash.ts
-    type: code
-  - path: packages/engine/src/Work/birth-cert.ts
-    type: code
-  - path: packages/engine/src/__tests__/plan-hash-5hash.test.ts
-    type: test
+   - path: packages/engine/src/Work/plan-hash.ts
+     type: code
+   - path: packages/engine/src/Work/birth-cert.ts
+     type: code
 ```
 
 **type 取值**：`code` | `config` | `document` | `test`（来自 `enums.ts`）。
@@ -251,7 +257,7 @@ Task.md 写 `## Artifacts` 段声明预期产物路径，lock 时 Engine 校验 
 2. **不能改 Blueprint ## Scope 来绕过**（Scope 是 Blueprint 作者的边界声明）
 3. 如确需越界 → 走 `oxn asset evolve` 派生新版本 Blueprint
 
-### 写入 context.md 流程（Intent 阶段）
+### 写入 context.md 流程（Intent 阶段 · v1.3）
 
 ```
 Step 1: oxn work create <name> --blueprint <bp>
@@ -264,47 +270,41 @@ Step 3: AI Agent 读 Blueprint ## Context Template + ## Use refs
         → 自己判断从引用 Domain 取哪些 Terms/Invariants
         → 写 works/<name>/context.md（Work Context）
         → 按 Blueprint ## Boundaries 拆分 → 写 tasks/<t>/context.md（Task Context）
+        （v1.3：context.md 可在任意阶段写，无需先 lock）
 
-Step 4: oxn work validate <name>
+Step 4: oxn work run <name> --validate-only
         → 校验 Blueprint refs 解析 + Task ## Artifacts ⊆ Blueprint ## Scope.allow
         → 失败 → 看错误码（OXN_WORK_REFS_UNRESOLVED / OXN_INTENT_SCOPE_VIOLATION）修
-
-Step 5: oxn work lock <name>
-        → PlanLock 5-hash：
-          workMdHash + workContextHash + blueprintsHash + tasksHash + taskContextsHash → allHash
-        → context.md 不存在 → OXN_INTENT_CONTEXT_MISSING（必须先写）
-        → 校验通过 → 写 planLock 到 .work
+        （v1.3：旧 validate 子命令已删，并入 run --validate-only）
 ```
 
-### 修改 context.md 流程
+### 修改 work.md / context.md 流程（v1.3）
 
 ```
-Step 1: oxn work unlock <name>
-        → 清 planLock → 提示 "可编辑 work.md / context.md / tasks/<t>/task.md / tasks/<t>/context.md"
+Step 1: 直接编辑 work.md / context.md / tasks/<t>/task.md / tasks/<t>/context.md
+        （v1.3：不再需要 unlock；work.md 可自由修改）
 
-Step 2: 编辑 context.md / task context.md
-
-Step 3: oxn work validate <name>
-        → 重新校验 + 刷新 blueprints.json / .work
-
-Step 4: oxn work lock <name>
-        → 重新算 5-hash + 写 planLock
+Step 2: oxn work submit <name> --task <t>
+        → submit 时 Engine 算 workMdHash → 与上次 SUBMIT 比较
+        → 不一致 → append ASSET_DRIFT 事件到 trace.jsonl（不阻断 submit）
+        → append SUBMIT 事件（带 workMdHash + probeResult）
+        （多次 DRIFT = Blueprint 或 AI 遇到问题，可观测不硬编码判断）
 ```
 
-### PlanLock 5-hash 保障
+### Hash 语义（v1.3 · HashAsSubmitFingerprint）
 
-- 同一 Blueprint 的 N 个 Work 的 WorkContext 结构一致（除 Goal 外）
-- 跨 Work 比较 hash 一致 ⇒ 结构骨架一致
-- lock 后漂移 → `IAP_ALIGN_LOCK_HASH_MISMATCH` (component='workContext' | 'taskContexts')
-- 旧 3-hash `.work` 文件仍可读（向后兼容）
+- **不保护 work.md 不可改**：work.md 可自由修改（防漂移的锁已删）
+- **submit 时刻算 work.md hash**：作为完成指纹记入 trace.jsonl 的 SUBMIT 事件
+- **改 work.md 不阻断 submit**：仅 append ASSET_DRIFT 事件（可观测）
+- 1 个 Task 正常 = 1 条 SUBMIT 事件；改过 work.md 再 submit = 1 条 ASSET_DRIFT + 1 条新 SUBMIT
 
-### 错误响应速查
+### 错误响应速查（v1.3）
 
 | 错误码 | 触发 | AI 响应 |
 |---|---|---|
-| `OXN_INTENT_CONTEXT_MISSING` | lock 时 context.md 不存在 | 先写 `works/<name>/context.md` 再 lock |
 | `OXN_INTENT_SCOPE_VIOLATION` | Task Artifact 越界 Scope | 修正 Task `## Artifacts` 段（不能改 Blueprint Scope） |
-| `IAP_ALIGN_LOCK_HASH_MISMATCH` | lock 后 context.md / tasks/<t>/context.md 漂移 | 走 `oxn work unlock` → 确认改动 → re-lock |
+| `OXN_WORK_NOT_STARTED` | submit 时 run 未跑 | 先 `oxn work run <name>` |
+| `OXN_WORK_NOT_FOUND` | work 不存在 | `oxn work create <name>` |
 | `OXN_CLI_INPUT_ERROR` | `oxn work inject <name>` 无 flag | 加 `--paths` / `--context` / `--memory` 重试 |
 
 ## 多 Asset 与 Tasks 的关系
@@ -312,13 +312,12 @@ Step 4: oxn work lock <name>
 - **Work 级 `## Refs`**：声明 domain[] + blueprint[] + stack[] ref 池（多个）
 - **Task 级**：每个 task 在 `task.oxn` 内**单选** 1 blueprint + 1 domain（Work 级 ref 池的子集）
 - **新增 task 校验**：task 选的 blueprint/domain **必须**在 Work 级 ref 池内（`add-task` 报错 `not declared in work`）
-- **planLock 影响**：work 级多 ref 让 `domains.json` / `blueprints.json` slim 索引含 N 条 entry；hash 算法不变（hash 整个 .json）
 
 ## 错误
-`LOCK_NOT_FOUND`/`HASH_MISMATCH` → YIELD | `TASK_OXN_MISSING` → `add-task` | `ROUND_ALREADY_PASSED` → `work finalize`
+`WORK_NOT_STARTED` → 先 run | `TASK_OXN_MISSING` → `add-task` | `SCOPE_VIOLATION` → 修 Artifacts 段
 
 ## 禁止
-跳 validate+lock；锁后改 `.oxn`；废弃语法（`align|inject|noun|verb|new`）。
+跳 run 直接 submit；废弃语法（`align|inject|noun|verb|new`）；**已删命令**（`oxn work validate` / `lock` / `unlock`）。
 
 ## v0.7+ Onboarding 触发规则（ADR-0089 D6）
 

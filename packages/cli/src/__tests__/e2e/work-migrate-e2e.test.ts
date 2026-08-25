@@ -176,28 +176,29 @@ describe('oxn work migrate (PR-10)', () => {
 
     const r = JSON.parse((await runCli(['work', 'migrate', 'demo', '--json'])).stdout)
     expect(r.ok).toBe(true)
-    expect(r.data.artifactsWritten).toHaveLength(2)
-    expect(r.data.artifactsWritten.some((p: string) => p.endsWith('.work'))).toBe(true)
+    // 🗑️ RFC-0033 D5: migrate 不再写 .work 文件；只写 blueprints.json + .run/state.json
+    expect(r.data.artifactsWritten.every((p: string) => !p.endsWith('.work'))).toBe(true)
     expect(r.data.artifactsWritten.some((p: string) => p.endsWith('blueprints.json'))).toBe(true)
 
     // 产物文件确实在
-    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'))).toBe(true)
+    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'))).toBe(false) // 🗑️ RFC-0033 D5
     expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', 'blueprints.json'))).toBe(true)
   })
 
-  test('happy path：迁移后 .work planLock=null，assets 含 fileHash', async () => {
+  test('happy path：迁移后不写 .work（RFC-0033 D5），assets 运行时读 work.md ## Use', async () => {
     await initProject()
     setupV0Project()
     setupV0Work('demo', [])
 
     await runCli(['work', 'migrate', 'demo', '--json'])
 
-    const cert = JSON.parse(readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'), 'utf-8'))
-    expect(cert.kind).toBe('work-birth-cert')
-    expect(cert.planLock).toBe(null)
-    expect(cert.assets.domains).toBeUndefined()
-    expect(cert.assets.blueprints).toHaveLength(1)
-    expect(cert.assets.blueprints[0].fileHash).toMatch(/^[0-9a-f]{64}$/)
+    // RFC-0033 D5: .work 文件已退役，assets 由运行时读 work.md ## Use
+    expect(existsSync(join(tmpDir, '.openxenon', 'works', 'demo', '.work'))).toBe(false)
+    // blueprints.json 包含 assets 引用信息（运行时 read）
+    const blueprintsJson = JSON.parse(
+      readFileSync(join(tmpDir, '.openxenon', 'works', 'demo', 'blueprints.json'), 'utf-8'),
+    )
+    expect(blueprintsJson.blueprints).toBeDefined()
   })
 
   // ───────── 幂等 ─────────

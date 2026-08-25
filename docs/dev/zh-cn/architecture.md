@@ -13,7 +13,7 @@ title: 架构
 | 实体 | 性质 | 主导权 | 对应代码模块 |
 |---|---|---|---|
 | Asset | 领域知识结构化表示（D24，RFC-0032） | 工程师 | `service/Asset/` |
-| Work | DAG 协作空间（create→lock→run→submit，D10/D13） | 工程师 ↔ AI | `service/Work/` |
+| Work | DAG 协作空间（3 步生命周期 create→run→submit，RFC-0033 D1 极简化） | 工程师 ↔ AI | `service/Work/` |
 | Engine | 实现基座（L0-L3，Probe 工具能力，D27） | OXN | L0-L2 全部 |
 
 > Proof / Insight / Daemon 已删除（D25，RFC-0032）；Probe 作为 Engine 工具能力保留（D27）。
@@ -129,13 +129,18 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 ├── assets/stack/
 ├── works/<w>/
 │   ├── work.md
-<!-- allow-version -->
-│   ├── round-1/                  ← v0.6 Round 快照
-<!-- /allow-version -->
-│   ├── round-2/
-│   └── .run/{state,trace,frozen}.json
+│   ├── context.md
+│   ├── blueprints.json
+│   ├── tasks/<t>/{task.md, context.md}
+│   └── .run/{state.json, trace.jsonl}
 ├── proofs/<p>/
 └── pools/
+
+<!-- RFC-0033 D5: .work 单文件已删；assets 快照由 work.md ## Use 段运行时读取 -->
+
+<!-- allow-version -->
+兼容旧项目（v0.5）：通过 config fallback 自动探测。
+<!-- /allow-version -->
 ```
 
 <!-- allow-version -->
@@ -157,8 +162,8 @@ OXN Runtime = L0 Kernel + L1 OXL + L1 Infra：
 | 哲学色底 | 还原论（spec → change → archive 线性拆解） | 还原论 + 结构化知识表示（Asset + Work DAG） |
 | Asset/规范 角色 | 被 change 改写的目标 | 被 Work 引用的结构化知识边界 |
 | 知识来源 | AI 概率检索（RAG chunks） | 工程师显式组合（Blueprint 脚手架，D24） |
-| 工作流形态 | 单次线性 propose → apply → archive | DAG 协作（create→lock→run→submit，D10） |
-| 漂移控制 | 依赖 prompt 约束 | PlanLock 4-hash 硬封存（lock 后漂移阻断） |
+| 工作流形态 | 单次线性 propose → apply → archive | DAG 协作（create→run→submit 3 步，RFC-0033 D1） |
+| 漂移控制 | 依赖 prompt 约束 | submit 时刻算 hash 指纹 + ASSET_DRIFT 事件（可观测不阻断） |
 | 明确设计目标 | 让 spec 与实现一致 | 结构化知识 + DAG 上下文，降低 RAG 概率漂移 |
 
 ## 8. Skill 入口架构

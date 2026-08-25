@@ -44,7 +44,7 @@ oxn domain create MyDomain
 Asset mode Work complete, OXN auto-syncs:
 - Write `.openxenon/assets/<kind>/<name>.oxn` (or v0.5 fallback `domains/blueprints/`)
 - Write `.openxenon/assets/<kinds>-md/<name>.md` (MD mirror)
-- planLock locks
+- planLock locks (🗑️ RFC-0033 D2 retired; assets are freely modifiable now)
 - chmod 0o444 (read-only)
 
 ## Create vs Modify vs Delete

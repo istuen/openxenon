@@ -1,4 +1,4 @@
-# /oxn-work — Drive Work v0.7+
+# /oxn-work — Drive Work v1.3 (RFC-0033 minimized)
 
 ## AI Agent Onboarding Premise
 
@@ -9,28 +9,32 @@
 You are assisting an OpenXenon engineer. OpenXenon is a collaboration tool where engineers define AI Agent collaboration boundaries; the core paradigm is IAP (Intent–Align–Proof), the core engine is OXN Engine.
 
 **Three-party collaboration model**:
-- **Engineer** (Asset management + Proof review) — initiator
+- **Engineer** (Asset management + decision review) — initiator
 - **AI Agent** (you) — gain CLI capabilities via OXN Skill, work autonomously inside Work
-- **OXN Engine** — passively responds to CLI, verifies ProbeOutcome + records Proof; does not judge
+- **OXN Engine** — passively responds to CLI, executes Probes + records trace; does not judge
 
-**IAP three phases** (RFC-0032 convergence):
+**IAP simplified to three-phase alignment** (RFC-0032 + RFC-0033 convergence):
 - **Intent axis** (engineer sovereignty): Domain locks business language, Blueprint locks tech topology
 - **Align axis** (AI sovereignty): you — orchestrate Work/Task/Part within Blueprint slot boundaries
 - *(Probe replaces the legacy "Proof axis" — 0.6.4-alpha.0+ no longer produces frozen.json / sovereign verification; Probe is an Engine tool capability, CLI checks artifacts, results recorded in Work trace.jsonl)*
 
 **OXN channel boundary**: actions AI performs OUTSIDE the OXN channel (reading code, trying approaches, giving up) are NOT recorded; only in-channel artifacts (context.md / memory.md + trace.jsonl) are evidence.
 
-### CLI whitelist
+### CLI Whitelist (v1.3 · RFC-0033 D1 minimized)
 
-✅ Allowed (v0.7+):
+✅ Allowed:
 
 ```bash
-# Work orchestration + execution
+# Work orchestration + execution (3-step lifecycle)
 oxn work create <name> --blueprint <bp> --domain <d> [--stack <s>] --goal "<goal>"
-oxn work add-task <name> --task <t> --blueprint <bp>
-oxn work inject <name> --paths | --context | --memory      # context injection (v0.7+)
+oxn work run <name> [--validate-only]                # Start state machine OR validate-only
+oxn work submit <name> --task <t>                    # Advance task (with hash fingerprint + DRIFT detection)
+oxn work add-task <name> --task <t> --blueprint <bp> # Optional: AI can also edit work.md ## Tasks directly
+oxn work status | list | show                        # Status queries
+
+# Context injection (v1.3 · retained)
+oxn work inject <name> --paths | --context | --memory
 oxn work inject <name> --task <t> --paths | --context | --memory
-oxn work validate | lock | unlock | run | submit | status | list | show
 
 # Probe verification (RFC-0032 D27: Engine tool capability)
 oxn probe add | run | list | describe | fix | registry-store
@@ -46,11 +50,10 @@ oxn draft list | show
 ```
 
 ❌ Forbidden:
-- Direct read/write of `.openxenon/proofs/*/frozen.json`, `.openxenon/works/*/state.json`, `.openxenon/works/*/tasks/*/frozen.json`
+- Direct read/write of `.openxenon/works/*/state.json`, `.openxenon/works/*/tasks/*/trace.jsonl`
 - Modifying Domain terms or Blueprint rules
-- Using `--force` to bypass Proof / Lock
-- Modifying any `.md` asset after lock (triggers `IAP_ALIGN_LOCK_HASH_MISMATCH`)
-- Skipping `validate → lock` and going straight to `run`
+- Using `--force` to bypass Work flow
+- **Retired commands** (v1.3 RFC-0033): `oxn work validate` / `oxn work lock` / `oxn work unlock` — validation merged into `run --validate-only`, PlanLock entirely removed
 
 ### Output conventions
 
@@ -58,12 +61,12 @@ oxn draft list | show
 - **Completion status** accompanied by `oxn work status --json` output
 - **Unrecoverable errors** — report the specific error code (e.g. `OXN_INTENT_SCOPE_VIOLATION`) and pause for engineer intervention
 
-### Failure handling
+### Failure handling (v1.3 RFC-0033 D4)
 
-- `IAPError` → read expected/actual in `frozen.json`; COMPLETED → proceed, DEVIATED → fix and re-run, INCONCLUSIVE → report to engineer
+- `IAPError` → read error context + trace.jsonl events; COMPLETED → proceed, DEVIATED → fix and re-run, INCONCLUSIVE → report to engineer
 - `OXN_INTENT_SCOPE_VIOLATION` → Task Artifact outside Blueprint Scope; fix `## Artifacts` (cannot modify Blueprint)
-- `OXN_INTENT_CONTEXT_MISSING` → context.md missing at lock time; write it first, then lock
-- `IAP_ALIGN_LOCK_HASH_MISMATCH` → asset drift after lock; `oxn work unlock` → confirm changes → re-lock
+- `OXN_WORK_NOT_STARTED` → run not yet executed; run `oxn work run` first
+- `ASSET_DRIFT` (trace event, observable not blocking) → workMd changed; if confirmed expected, continue submit
 - Full error codes see `references/error-codes.md`
 
 ### Reading order
@@ -73,22 +76,22 @@ Your complete reading path (loading chain) lives at repo root `AGENTS.md` entry 
 ---
 
 ## Goal
-Create a **Work + ≥1 Task**, run through 8 phases: `create → add-task → validate → lock → run → submit → finalize` (`migrate?` optional)
+Create a **Work + ≥1 Task**, run through 3 phases (RFC-0033 D1): `create → run → submit` (`migrate?` optional)
 
 ## Hard Rules
-- `validate`→`lock`→`run` is strict; no `--force`
-- Drift after lock = `HASH_MISMATCH`; OXN does not commit/push
+- **3-step order cannot skip**: create → run → submit
+- work.md can be freely modified (submit auto-detects hash fingerprint + DRIFT, observable not blocking)
 - Part/Probe inline in `task { part { probe {} } }`
-- **v0.7+ PlanLock 5-hash**: before lock, AI Agent must write `works/<w>/context.md` and `tasks/<t>/context.md` (inv-33)
+- OXN does not commit/push
 
 ## Paradigm
 D=Business Intent | B=Tech Intent | W=Align orchestration | T=Align execution
-- **AI Agent in-channel tracking boundary**: actions AI performs OUTSIDE OXN channel (reading code, trying approaches, giving up) are NOT recorded by OXN — only in-channel artifacts (context.md / memory.md + state.json + trace.jsonl + frozen.json) are persisted (ADR-0084)
+- **AI Agent in-channel tracking boundary**: actions AI performs OUTSIDE OXN channel (reading code, trying approaches, giving up) are NOT recorded by OXN — only in-channel artifacts (context.md / memory.md + state.json + trace.jsonl) are persisted (ADR-0084)
 
 ## Blueprint Selection
 | Need | Template (.md with OXN blocks) → Blueprint |
 |---|---|
-| Explore / report | `assets/work-explore.md` → `explore-analyze-report` |
+| Explore / report | `assets/work-explore.md` → `dev-workflow` (slot: ts-implement) (🆕 v0.7.0 RFC-0027 PR-H: legacy `explore-analyze-report` Workflow deleted; use dev-workflow ts-implement slot) |
 | Single-domain dev | `assets/work-develop.md` → `dev-workflow` |
 | Bug fix | `assets/work-fix.md` → `fix-issue` |
 | Cross-domain | `assets/work-onboarding.md` → `dev-workflow` (multi domain) |
@@ -97,12 +100,12 @@ D=Business Intent | B=Tech Intent | W=Align orchestration | T=Align execution
 > v0.7+: Work no longer has mode (task/explore/edit); behavior differences carried by Blueprint slots/observe.
 > v0.7+: MD authoring scenario uses `md-author-blueprint` (one of 5 starter Assets).
 
-## Execution (v0.7+ AssetMap-driven Asset selection)
+## Execution (v1.3 AssetMap-driven Asset selection)
 
 1. **Prereq**: project initialized via `oxn init`; required Assets ready — to create/modify Assets, **invoke `oxn-asset` Skill**.
 2. **First-time project onboarding (v0.7+ ADR-0089)**: when project hasn't bootstrapped 5 starter Assets, trigger `oxn onboard` flow:
    - Run `oxn onboard --detect --json` (detection, side-effect-free)
-   - Parse detection result → list 3 option cards (`A` new project / `B1` existing-Proof-First / `B2` existing-bootstrap)
+   - Parse detection result → list 3 option cards (`A` new project / `B1` existing-Definition-First / `B2` existing-bootstrap)
    - **Wait for engineer confirmation** (do not auto-decide)
    - Execute chosen `oxn onboard --new` / `--existing --proof-first` (rerouted to definition-first 5-min loop) / `--existing --bootstrap`
    - After bootstrap (`.openxenon/.bootstrap-done` marker exists), enter normal Work flow
@@ -124,7 +127,12 @@ D=Business Intent | B=Tech Intent | W=Align orchestration | T=Align execution
      [--constraints "c1" "c2"]
    ```
    Or manually `fork assets/work-{explore,develop,fix,onboarding}.md → work.md` and edit `## Refs` + `## Context` by hand.
-6. **Run 8 phases**: `references/8-phase-detail.md`
+6. **Run 3 phases** (v1.3 RFC-0033):
+   ```
+   oxn work run <name> --validate-only   # Validate-only (replaces legacy oxn work validate)
+   oxn work run <name>                   # Start state machine
+   oxn work submit <name> --task <t>     # Advance + hash fingerprint + DRIFT detection
+   ```
 7. **Errors**: `references/error-codes.md`
 
 ## Context Injection (v0.7+ · Blueprint Context Template · 3-flag)
@@ -167,8 +175,8 @@ oxn work inject <name> --task <t> --memory
 
 2. oxn work inject <name> --context
    → Outputs works/<name>/context.md content (Markdown, not JSON)
-   → AI Agent gets WorkContext (PlanLock-locked static structure skeleton)
-   → File missing → OXN_INTENT_CONTEXT_MISSING (prompts AI to write before lock)
+   → AI Agent gets WorkContext (runtime-read, no longer PlanLock-locked)
+   → File missing → OXN_INTENT_CONTEXT_MISSING (prompts AI to write)
 
 3. AI Agent reads Blueprint ## Use-referenced all Domain/Workflow/Stack files
    → Self-determines which Terms/Invariants are relevant to this Work Goal
@@ -184,7 +192,7 @@ oxn work inject <name> --task <t> --memory
 When switching tasks:
 5. oxn work inject <name> --task <t> --context
    → Outputs works/<name>/tasks/<t>/context.md content (Markdown)
-   → AI Agent gets TaskContext (PlanLock-locked Per-Slot subset)
+   → AI Agent gets TaskContext
 
 6. oxn work inject <name> --task <t> --memory
    → Outputs works/<name>/tasks/<t>/memory.md content
@@ -199,9 +207,9 @@ When switching tasks:
 - **Don't return full Work structure** (avoid token bloat + LLM JSON parse overhead)
 - **At least 1 flag**: no-flag call → `OXN_CLI_INPUT_ERROR` hinting `--paths` or `--context`
 
-### Task ## Artifacts Declaration (inv-35 · Scope validation at lock)
+### Task ## Artifacts Declaration (inv-35 · Scope validation at run)
 
-Task.md writes `## Artifacts` section declaring expected artifact paths; at lock, Engine validates ⊆ Blueprint `## Scope.allow`:
+Task.md writes `## Artifacts` section declaring expected artifact paths; at run, Engine validates ⊆ Blueprint `## Scope.allow`:
 
 ```yaml
 ## Artifacts
@@ -209,8 +217,6 @@ Task.md writes `## Artifacts` section declaring expected artifact paths; at lock
     type: code
   - path: packages/engine/src/Work/birth-cert.ts
     type: code
-  - path: packages/engine/src/__tests__/plan-hash-5hash.test.ts
-    type: test
 ```
 
 **type values**: `code` | `config` | `document` | `test` (from `enums.ts`).
@@ -225,7 +231,7 @@ Task.md writes `## Artifacts` section declaring expected artifact paths; at lock
 2. **Don't modify Blueprint ## Scope to bypass** (Scope is Blueprint author's boundary declaration)
 3. If genuinely needs cross-boundary → use `oxn asset evolve` to derive new Blueprint version
 
-### Writing context.md Flow (Intent Phase)
+### Writing context.md Flow (Intent Phase · v1.3)
 
 ```
 Step 1: oxn work create <name> --blueprint <bp>
@@ -238,47 +244,41 @@ Step 3: AI Agent reads Blueprint ## Context Template + ## Use refs
         → Self-determines which Terms/Invariants to take from referenced Domain
         → Write works/<name>/context.md (Work Context)
         → Split by Blueprint ## Boundaries → write tasks/<t>/context.md (Task Context)
+        (v1.3: context.md can be written at any phase, no need to lock first)
 
-Step 4: oxn work validate <name>
+Step 4: oxn work run <name> --validate-only
         → Validates Blueprint refs resolution + Task ## Artifacts ⊆ Blueprint ## Scope.allow
         → Fails → check error code (OXN_WORK_REFS_UNRESOLVED / OXN_INTENT_SCOPE_VIOLATION) to fix
-
-Step 5: oxn work lock <name>
-        → PlanLock 5-hash:
-          workMdHash + workContextHash + blueprintsHash + tasksHash + taskContextsHash → allHash
-        → context.md missing → OXN_INTENT_CONTEXT_MISSING (must write first)
-        → Validation passes → write planLock to .work
+        (v1.3: legacy validate subcommand deleted, merged into run --validate-only)
 ```
 
-### Modifying context.md Flow
+### Modifying work.md / context.md Flow (v1.3)
 
 ```
-Step 1: oxn work unlock <name>
-        → Clear planLock → hint "can edit work.md / context.md / tasks/<t>/task.md / tasks/<t>/context.md"
+Step 1: Directly edit work.md / context.md / tasks/<t>/task.md / tasks/<t>/context.md
+        (v1.3: no unlock needed; work.md is freely modifiable)
 
-Step 2: Edit context.md / task context.md
-
-Step 3: oxn work validate <name>
-        → Re-validate + refresh blueprints.json / .work
-
-Step 4: oxn work lock <name>
-        → Re-compute 5-hash + write planLock
+Step 2: oxn work submit <name> --task <t>
+        → At submit, Engine computes workMdHash → compares with previous SUBMIT
+        → Mismatch → append ASSET_DRIFT event to trace.jsonl (does not block submit)
+        → Append SUBMIT event (with workMdHash + probeResult)
+        (Multiple DRIFTs = Blueprint or AI encountering issues, observable without hardcoded judgment)
 ```
 
-### PlanLock 5-hash Guarantee
+### Hash Semantics (v1.3 · HashAsSubmitFingerprint)
 
-- N Works from same Blueprint have consistent WorkContext structure (except Goal)
-- Cross-Work hash equality ⇒ structural skeleton consistency
-- Post-lock drift → `IAP_ALIGN_LOCK_HASH_MISMATCH` (component='workContext' | 'taskContexts')
-- Old 3-hash `.work` files still readable (backward compatible)
+- **Does NOT protect work.md from modification**: work.md freely modifiable (drift-prevention lock deleted)
+- **Submit-time hash of work.md**: recorded as completion fingerprint in trace.jsonl SUBMIT event
+- **Modified work.md does NOT block submit**: only appends ASSET_DRIFT event (observable)
+- 1 normal Task = 1 SUBMIT event; modified work.md + submit = 1 ASSET_DRIFT + 1 new SUBMIT
 
-### Error Response Cheatsheet
+### Error Response Cheatsheet (v1.3)
 
 | Error code | Trigger | AI Response |
 |---|---|---|
-| `OXN_INTENT_CONTEXT_MISSING` | lock with context.md missing | Write `works/<name>/context.md` first, then lock |
 | `OXN_INTENT_SCOPE_VIOLATION` | Task Artifact out-of-bounds Scope | Fix Task `## Artifacts` section (don't modify Blueprint Scope) |
-| `IAP_ALIGN_LOCK_HASH_MISMATCH` | post-lock context.md / tasks/<t>/context.md drift | Run `oxn work unlock` → confirm change → re-lock |
+| `OXN_WORK_NOT_STARTED` | submit before run | Run `oxn work run <name>` first |
+| `OXN_WORK_NOT_FOUND` | work doesn't exist | `oxn work create <name>` |
 | `OXN_CLI_INPUT_ERROR` | `oxn work inject <name>` with no flag | Add `--paths` / `--context` / `--memory` and retry |
 
 ## Multiple Assets and Tasks relationship
@@ -286,13 +286,12 @@ Step 4: oxn work lock <name>
 - **Work-level `## Refs`**: declare `domain[]` + `blueprint[] + `stack[]` ref pool (N items)
 - **Task-level**: each task picks **single** 1 blueprint + 1 domain in `task.oxn` (subset of Work-level ref pool)
 - **add-task validation**: task's chosen blueprint/domain **must** exist in Work-level ref pool (`add-task` errors with `not declared in work`)
-- **planLock impact**: Work-level multi-refs cause `domains.json` / `blueprints.json` slim index to contain N entries; hash algorithm unchanged (hash the whole .json file)
 
 ## Errors
-`LOCK_NOT_FOUND`/`HASH_MISMATCH` → YIELD | `TASK_OXN_MISSING` → `add-task` | `ROUND_ALREADY_PASSED` → `work finalize`
+`WORK_NOT_STARTED` → run first | `TASK_OXN_MISSING` → `add-task` | `SCOPE_VIOLATION` → fix Artifacts section
 
 ## Prohibitions
-Skip validate+lock; modify `.oxn` after lock; legacy syntax (`align|noun|verb|new`).
+Skip run and go directly to submit; legacy syntax (`align|noun|verb|new`); **retired commands** (`oxn work validate` / `lock` / `unlock`).
 
 > Note: `inject` is a v0.7+ LEGAL subcommand (`oxn work inject`) for 3-flag context injection.
 

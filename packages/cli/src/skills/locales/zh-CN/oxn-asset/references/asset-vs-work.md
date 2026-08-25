@@ -9,8 +9,8 @@
 | 入口触发 | "建/改/删 Asset" | "跑 work / 编排 task" |
 | 底层 CLI | `oxn work create --type asset --asset-kind X` | `oxn work create --type develop` |
 | 主要操作 | CRUD Asset | 编排 + 执行 + 展示 Proof |
-| 状态管理 | planLock + citations + DAG | 8 阶段 + Round + .work.planLock |
-| references/ 焦点 | AssetKind / 创建 / 演进 / 生命周期 | 8 阶段 / 错误码 / 反模式 / git workspace |
+| 状态管理 | 🗑️ planLock 已退役（RFC-0033 D2）+ citations + DAG | 3 步生命周期 + .run/state.json + trace.jsonl |
+| references/ 焦点 | AssetKind / 创建 / 演进 / 生命周期 | 3 阶段 / 错误码 / 反模式 / git workspace |
 
 ## 内部 CLI 对应
 
@@ -62,7 +62,7 @@ oxn work create MyDomain --type asset --asset-kind domain
 ```
 
 - 走 IAP 闭环
-- planLock 保护
+- 🗑️ planLock 已退役（RFC-0033 D2）；Asset 修改后引用 Work 触发 ASSET_DRIFT（可观测不阻断）
 - Skill `oxn-asset` 教学推荐此路径
 
 ## 反模式

@@ -236,7 +236,6 @@ workId: TODO_<work-id>
 intent: TODO: one-line description of the work's intent
 createdAt: 2026-08-02
 status: aligning
-currentRound: 1
 references:
   - assets/domain/TODO_domain.md
 ---

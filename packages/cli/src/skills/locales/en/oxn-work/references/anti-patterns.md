@@ -1,4 +1,4 @@
-# Anti-Patterns (v1.1)
+# Anti-Patterns (v1.3 · RFC-0033 minimized)
 
 > This file is the on-demand supplement to `SKILL.md`. Consult during code review or troubleshooting.
 
@@ -6,29 +6,29 @@
 
 | Anti-Pattern | Consequence | Fix |
 |---|---|---|
-| Skip validate+lock and go straight to run | Triggers `IAP_ALIGN_LOCK_NOT_FOUND` | Run the full 5→6 steps (validate → lock → run) |
-| Bypass lock guard for production | No `--force` backdoor exists | Always go through the lock flow |
-| Modify .oxn after locking | Triggers `IAP_ALIGN_LOCK_HASH_MISMATCH` (planLock has frozen the 4-component hash) | First `oxn work unlock`, then modify, then `validate → lock` |
-| Delete .work file | Loses static gate card = `LOCK_NOT_FOUND` | Never delete; OXN will not auto-recover |
-| Submit before run | `work run` is setup, `submit` is advance | Strict order: run → submit |
-| Skip task creation | `work run` fails fast (`OXN_TASK_OXN_MISSING`) | First run `oxn work add-task` |
-| work.oxn references task names that don't exist | `work run` validation fails | Align task blocks with `task` list in work.oxn |
+| Skip run and go directly to submit | `submit` returns `OXN_WORK_NOT_STARTED` | Strict order: create → run → submit |
+| Skip run --validate-only | Missing .work + blueprints.json assets snapshot; downstream consumers reading may fail | First `oxn work run <w> --validate-only`, then `oxn work run <w>` |
+| Expect OXN to BLOCK work.md modifications | Will NOT block (RFC-0033 D4: DRIFT observable not blocking) | At submit, check trace.jsonl for ASSET_DRIFT event appended |
+| Search for .work file | .work retired (RFC-0033 D5) | work.md is the source of truth for work existence |
+| Search for oxn work lock/unlock/validate | Commands retired (RFC-0033 D2) | Use `oxn work run --validate-only` |
 
 ## Conceptual Confusion Anti-Patterns
 
 | Anti-Pattern | Fix |
 |---|---|
-| Confuse `ref` with `align` | `domain "X" ref "..."` is a work-level declaration; `domain "X"` inside a task is align |
-| Put `part` fields outside a task block | part must be nested inside a task block |
+| Mix ref with align | `domain "X" ref "..."` is work-level declaration; `domain "X"` inside task is align |
+| Add `part` field outside task block | part must be nested in task block |
 
-## Deprecated Syntax (Removed in v1.0+)
+## Deprecated Syntax (removed since v1.0+)
 
-| Deprecated | Replace With |
+| Deprecated | Replaced by |
 |---|---|
 | `task "X" align "Y.Z"` | `task "X" { blueprint "Y"; part "Z" }` |
 | `inject "X"` | `domain "X"` inside task |
 | Domain `noun` / `verb` / `domain_rules` | `term` / `ban` / `invariant` |
-| Blueprint `expectation` / `rule` blocks | Removed; validation is handled by Probe |
+| Blueprint `expectation` / `rule` block | Removed; validation handled by Probe |
 | `work "X" ref "@oxn/blueprints/Y"` | `blueprint "Y" ref "...";` declaration |
 | `oxn work new` | `oxn work create` |
-| `oxn part new` / `oxn probe new` | Part / Probe **are not standalone assets**; write inline within task blocks |
+| `oxn work validate` | `oxn work run <w> --validate-only` (RFC-0033 D1) |
+| `oxn work lock` / `oxn work unlock` | Retired (RFC-0033 D2; work.md freely modifiable) |
+| `oxn part new` / `oxn probe new` | Part / Probe **not standalone assets**, inline in task block |

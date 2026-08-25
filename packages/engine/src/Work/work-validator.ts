@@ -1,7 +1,7 @@
 import { existsSync } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
 import type { WorkDeclaration } from '../oxl'
-import { getWorkMdPath, getWorkGatePath, getTaskOxnPath } from './dual-state-io'
+import { getWorkMdPath, getTaskOxnPath } from './dual-state-io'
 import { validatePathScope, type Scope } from '../Asset/scope-matcher'
 // 🆕 v0.6.1-alpha.4 Phase B: 删 buildPerWorkDomainsIndex/writePerWorkDomainsIndex/getPerWorkDomainsJsonPath import
 import {
@@ -10,13 +10,7 @@ import {
   getPerWorkBlueprintsJsonPath,
   type PerWorkBlueprintsIndex,
 } from './per-work-blueprints-merger'
-import {
-  createBirthCert,
-  readWorkFile as readBirthCert,
-  writeWorkFile,
-  type BirthCert,
-  type BlueprintAssetEntry,
-} from './birth-cert'
+import type { BlueprintAssetEntry } from './birth-cert'
 import { hashFile } from './plan-hash'
 import { readTaskFile } from '../oxl/summary-extractors'
 import { IAPError, IAPAction } from '../kernel'
@@ -83,7 +77,7 @@ export interface ValidateArtifactsResult {
   artifacts?: {
     // 🆕 Phase B: 删 domainsJsonPath
     blueprintsJsonPath: string
-    workFilePath: string
+    // 🗑️ RFC-0033 D5: 删 workFilePath（.work 单文件已退役；运行时改读 work.md ## Use 段）
     // 🆕 Phase B: 删 domains 计数
     assetCounts: { blueprints: number; tasks: number }
   }
@@ -747,17 +741,9 @@ export async function validateAndWriteArtifacts(params: {
     outPath: blueprintsJsonPath,
   })
 
-  const existing = readBirthCert(projectRoot, workName)
-  if (existing.ok && existing.cert.planLock !== null) {
-    return {
-      ok: false,
-      warnings: [
-        ...warnings,
-        `work is locked (planLock.lockedAt=${existing.cert.planLock.lockedAt}); ` +
-          `validate refuses to overwrite .work. Run \`oxn work unlock ${workName}\` first.`,
-      ],
-    }
-  }
+  // 🗑️ RFC-0033 D2: 锁状态检查已删（PlanLock 退役，validate 总是允许覆盖 .work assets）
+  // 旧逻辑：planLock !== null → 警告 + 拒绝（防止 lock 后改 work.md）
+  // 新逻辑：work.md 可自由修改，submit 时刻 hash 指纹记录漂移
 
   // 🆕 Phase B: 删 domainAssets 构造（Domain 引用走 Blueprint ## Refs，由 blueprintAssets.domainRefs 携带）
   const blueprintAssets: BlueprintAssetEntry[] = blueprintsIdx.blueprints.map((b) => ({
@@ -784,25 +770,17 @@ export async function validateAndWriteArtifacts(params: {
   const constraints = work.context?.constraints ?? []
   const maxIterations = (work as { loopPolicy?: { maxIterations?: number } }).loopPolicy?.maxIterations ?? 3
 
-  const cert: BirthCert = createBirthCert({
-    workName,
-    goal,
-    constraints,
-    maxIterations,
-    // 🆕 Phase B: 删 assets.domains（Domain 引用完全由 Blueprint ## Refs 承担）
-    assets: { blueprints: blueprintAssets },
-  })
-  if (existing.ok) {
-    cert.createdAt = existing.cert.createdAt
-  }
-  writeWorkFile(projectRoot, workName, cert)
+  // 🗑️ RFC-0033 D5: 不再写 .work 文件
+  //   assets 信息由运行期读 work.md ## Use 段获取（work-context-builder.buildWorkContext）
+  //   birth-cert.ts 的 createBirthCert/writeWorkFile 已退役为 no-op stub
+  void { workName, goal, constraints, maxIterations, blueprintAssets } // 保留引用防止 unused 警告
 
   return {
     ok: true,
     artifacts: {
       // 🆕 Phase B: 删 domainsJsonPath（Domain 引用走 Blueprint ## Refs）
+      // 🗑️ RFC-0033 D5: 删 workFilePath（.work 单文件已退役；运行时改读 work.md）
       blueprintsJsonPath,
-      workFilePath: getWorkGatePath(projectRoot, workName),
       assetCounts: {
         // 🆕 Phase B: 删 domains 计数（Domain 引用走 Blueprint ## Refs）
         blueprints: blueprintAssets.length,

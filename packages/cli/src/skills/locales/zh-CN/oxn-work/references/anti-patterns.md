@@ -1,4 +1,4 @@
-# 反模式（v1.1）
+# 反模式（v1.3 · RFC-0033 极简化）
 
 > 本文件是 `SKILL.md` 的按需加载补充。代码审查或排查时查阅。
 
@@ -6,13 +6,11 @@
 
 | 反模式 | 后果 | 修复 |
 |---|---|---|
-| 跳过 validate+lock 直接 run | 触发 `IAP_ALIGN_LOCK_NOT_FOUND` | 走完整 5→6 步（validate → lock → run） |
-| 绕过 lock 守卫跑生产 | 无 `--force` 后门 | 永远走 lock 流程 |
-| 在锁后修改 .oxn | 触发 `IAP_ALIGN_LOCK_HASH_MISMATCH`（planLock 已冻 4 组件 hash） | 先 `oxn work unlock`，再修改，再 `validate → lock` |
-| 删 .work 文件 | 丢失静态门禁卡 = `LOCK_NOT_FOUND` | 永远不删；OXN 不自动恢复 |
-| 先 submit 后 run | `work run` 是 setup，`submit` 是 advance | 严格 run → submit 次序 |
-| 跳过 task 创建 | `work run` fail-fast 拦截（`OXN_TASK_OXN_MISSING`） | 先 `oxn work add-task` |
-| work.oxn 引用不存在的 task 名 | `work run` 校验失败 | task 块和 work.oxn 的 `task` 列表对齐 |
+| 跳过 run 直接 submit | `submit` 报 `OXN_WORK_NOT_STARTED` | 严格 create → run → submit 次序 |
+| 跳过 run --validate-only | 缺 .work + blueprints.json 资产快照，向后兼容下游消费方可能读取失败 | 先 `oxn work run <w> --validate-only`，再 `oxn work run <w>` |
+| 改 work.md 后期望 OXN 阻断 | 不会阻断（RFC-0033 D4：DRIFT 可观测不阻断） | submit 时检查 trace.jsonl 看是否 append ASSET_DRIFT 事件 |
+| 找 .work 文件 | .work 已退役（RFC-0033 D5） | work.md 是 work 存在的真源 |
+| 找 oxn work lock/unlock/validate | 命令已删（RFC-0033 D2） | 用 `oxn work run --validate-only` |
 
 ## 概念混淆反模式
 
@@ -31,4 +29,6 @@
 | Blueprint `expectation` / `rule` 块 | 已删除，验证由 Probe 承担 |
 | `work "X" ref "@oxn/blueprints/Y"` | `blueprint "Y" ref "...";` 声明 |
 | `oxn work new` | `oxn work create` |
+| `oxn work validate` | `oxn work run <w> --validate-only`（RFC-0033 D1） |
+| `oxn work lock` / `oxn work unlock` | 已退役（RFC-0033 D2；work.md 可自由修改） |
 | `oxn part new` / `oxn probe new` | Part / Probe **不是独立资产**，在 task 块内联写 |

@@ -33,7 +33,7 @@ oxn init --ai opencode            # 注入 OpenXenon 空间 + AI Skill
 | 实体 | 角色 | 产出 | 锁定机制 |
 |---|---|---|---|
 | **Asset** | 工程师 | Domain / Workflow / Stack / Blueprint / AssetMap | `term` / `ban` / `invariant` 锁定边界 |
-| **Work** | 工程师 ↔ AI | Work / Task / Part（DAG） | PlanLock 4-hash（lock 后漂移阻断） |
+| **Work** | 工程师 ↔ AI | Work / Task / Part（DAG） | submit 时刻算 hash 指纹 + DRIFT 事件（可观测不阻断，RFC-0033 D3/D4） |
 | **Probe** | AI Agent（经 CLI） | ProbeOutcome（记 Work trace） | 工具能力，不产 frozen（D27） |
 
 > IAP（Intent/Align/Proof）退役到理念叙事层（D10，RFC-0032）；实现术语为 Asset/Work/Probe。OXN 不评判合格——判定权归工程师。

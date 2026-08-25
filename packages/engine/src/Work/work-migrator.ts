@@ -52,14 +52,14 @@ import {
   writeFileSync,
 } from '@openxenon/engine/infra/filesystem'
 import { join } from 'path'
-import { BOUNDARY_DIR, RUN_DIR, RUN_TASKS_SUBDIR, WORK_FILE } from '@openxenon/engine/kernel'
+import { BOUNDARY_DIR, RUN_DIR, RUN_TASKS_SUBDIR } from '@openxenon/engine/kernel'
 // 🆕 v0.6.1-alpha.4 Phase B: 删除 buildPerWorkDomainsIndex/writePerWorkDomainsIndex/getPerWorkDomainsJsonPath import
 import {
   buildPerWorkBlueprintsIndex,
   writePerWorkBlueprintsIndex,
   getPerWorkBlueprintsJsonPath,
 } from './per-work-blueprints-merger'
-import { createBirthCert, writeWorkFile, type BirthCert } from './birth-cert'
+import type { BirthCert } from './birth-cert'
 import { hashFile } from './plan-hash'
 
 // ───────── V0 路径常量（硬编码的旧命名）─────────
@@ -253,7 +253,6 @@ async function regenerateV1Artifacts(
   artifactsWritten: string[]
   invalidRefs: InvalidRef[]
 }> {
-  const workDir = join(projectRoot, BOUNDARY_DIR, 'works', workName)
   const workContent = readFileSync(workMdPath, 'utf-8')
   const artifactsWritten: string[] = []
   const invalidRefs: InvalidRef[] = []
@@ -265,7 +264,8 @@ async function regenerateV1Artifacts(
   writePerWorkBlueprintsIndex({ projectRoot, workName, workMdPath, outPath: blueprintsJsonPath })
   artifactsWritten.push(blueprintsJsonPath)
 
-  // 解析 work.md context
+  // 解析 work.md context（🗑️ RFC-0033 D5: goal/constraints/maxIterations 不再写入 .work 文件；
+  // 保留解析仅用于日志/兼容性诊断，运行期读 work.md）
   const goalMatch = workContent.match(/goal\s*=\s*"((?:[^"\\]|\\.)*)"/)
   const goal = goalMatch?.[1]?.replace(/\\"/g, '"') ?? ''
   const constraintsMatch = workContent.match(/constraints\s*=\s*\[([^\]]*)\]/)
@@ -274,6 +274,7 @@ async function regenerateV1Artifacts(
     : []
   const maxItersMatch = workContent.match(/max_iterations\s*=\s*(\d+)/)
   const maxIterations = maxItersMatch ? Number.parseInt(maxItersMatch[1]!, 10) : 3
+  void { goal, constraints, maxIterations } // 保留供未来日志使用
 
   // 🆕 v0.6.1-alpha.4 Phase B: 删除 domains invalid ref 收集（Domain 引用走 Blueprint ## Refs 路径）
   for (const b of blueprintsIdx.blueprints) {
@@ -302,15 +303,11 @@ async function regenerateV1Artifacts(
       fileHash: hashFile(join(projectRoot, b.file)) ?? '',
     }))
 
-  const cert: BirthCert = createBirthCert({
-    workName,
-    goal,
-    constraints,
-    maxIterations,
-    assets: { blueprints: blueprintAssets }, // 🆕 Phase B: 删 domains 字段
-  })
-  writeWorkFile(projectRoot, workName, cert)
-  artifactsWritten.push(join(workDir, WORK_FILE))
+  // 🗑️ RFC-0033 D5: 不再写 .work 单文件
+  //   旧 V0→V1 migrate 路径改为只写 .run/state.json + .run/trace.jsonl + blueprints.json
+  //   assets 信息由运行期读 work.md ## Use 段（work-context-builder.buildWorkContext）
+  void blueprintAssets as unknown as BirthCert // 保留变量引用避免 unused 警告
+  artifactsWritten.push(join(projectRoot, BOUNDARY_DIR, 'works', workName, '.run', 'state.json'))
 
   return { artifactsWritten, invalidRefs }
 }

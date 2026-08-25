@@ -1,4 +1,4 @@
-# Asset 生命周期（删除/归档）
+# Asset 生命周期（删除/归档 · v1.3 · RFC-0033 适配）
 
 > 本文件是 `oxn-asset` Skill 的按需加载补充。删除/归档 Asset 时查阅。
 
@@ -11,15 +11,16 @@ oxn asset archive MemberContext --reason "业务边界已合并到 IdentityConte
 ```
 
 效果：
-- Asset `.oxn` / `.md` 移动到 `.openxenon/.archived/assets/<kind>s/<name>.oxn`
+- Asset `.md` 移动到 `.openxenon/.archived/assets/<kind>s/<name>.md`
 - `metadata` 写入归档原因、归档时间、原 citations
-- planLock 仍可查询（只读）
+
+🗑️ RFC-0033 D2: planLock 已删，无需考虑锁状态
 
 ### 步骤 2：通知引用方
 
 归档后，所有引用此 Asset 的 Work 应：
 - 更新 `domain "X" ref "..."` 改为新 Asset
-- `oxn work lock` 重新锁
+- `oxn work run <w> --validate-only` 重新校验（无需 lock）
 - 旧 Work 的 `context.md` 记录归档事件
 
 ### 步骤 3：DAG 校验
@@ -37,7 +38,7 @@ oxn asset delete MemberContext --force --json
 ```
 
 效果：
-- 直接删除 `.oxn` / `.md`
+- 直接删除 `.md`
 - `assets.json` slim 索引删除
 - git history 保留（可恢复）
 

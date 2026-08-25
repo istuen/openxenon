@@ -9,7 +9,8 @@
 > **🆕 v0.6.4 命名收敛**：用户面 CLI 命令与目录从 `roadmap` 收敛为 `assetmap`（`oxn assetmap`、`assets/assetmaps/`）；**AssetKind 枚举值亦同步从 `'roadmap'` 改为 `'assetmap'`**（v0.7 RFC-0013 D4 原锁定枚举值不变，但 v0.6.4 设计决定全面回收 Roadmap 术语；break-change）。
 
 ## 硬规则
-- Asset 创建后 planLock 锁定，修改必须走 `oxn work create --type asset`（v0.6.3+ hard-block）
+- 🗑️ **RFC-0033 D2**：Asset planLock 已删除；Asset 创建后可自由修改，引用 Work 不需重锁
+- 修改必须走 `oxn work create --type asset`（v0.6.3+ hard-block 保留）
 - `references[]` DAG 校验：不能有循环依赖（同 kind 隔离；跨类型由 Blueprint 组合）
 - `abstract` / `references` / `citations` / `auditTrail` 4 字段必须填完整
 - 5 种 AssetKind 的 H2 分类白名单**不可混用**
@@ -55,15 +56,16 @@ v0.6.4 之前 references 3 套语法并存（bare name / `@md/{kind}/{name}` / f
 > **External 详细 + kind enum + 状态 + CLI**：见 `references/asset-kind-reference.md` + `references/asset-creation.md`
 
 ## 关键错误码
-- `IAP_ASSET_PATH_CONFLICT` / `IAP_ALIGN_LOCK_HASH_MISMATCH` → YIELD_TO_HUMAN
+- `IAP_ASSET_PATH_CONFLICT` → YIELD_TO_HUMAN
+- 🗑️ `IAP_ALIGN_LOCK_HASH_MISMATCH` 已退役（RFC-0033 D2）— Asset 改动不再阻断 Work
 - `E_MD_DUPLICATE_H3` / `E_MD_CATEGORY_UNKNOWN` → 修复 H3/H2 命名
 - `E_MD_EXTERNAL_KIND_INVALID` / `_URL_PATH_CONFLICT` / `_URL_PATH_REQUIRED` → 修复 External 字段
 - 🆕 `IAP_INTENT_CROSS_KIND_REF`（v0.6.4 PR-D 保留）→ 跨 kind references 走 Blueprint `## Use` 段
 
 ## 禁止项
 - 不写废弃语法：`noun` / `verb` / `domain_rules` / `expectation` / `rule`
-- 不直接 `write_file` 改 .oxn（v0.6.3+ hard-block）
-- 不锁后改 .oxn（先 `oxn work unlock`）
+- 不直接 `write_file` 改 .md（v0.6.3+ hard-block）
+- 🗑️ 不锁后改 .md（RFC-0033 D2：planLock 已删，无需 unlock；改 Asset → run --validate-only 触发引用 Work DRIFT 检测）
 - 不混用 Asset 模式和 Work 模式
 - 不删被引用的 Asset（先 `oxn asset archive`）
 - 不创建 library/external Asset 类型（v0.6.1-alpha.4 已删除）

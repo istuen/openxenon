@@ -102,30 +102,27 @@ ${taskNames.map((t) => `  task "${t}" { blueprint "LifecycleBP" }`).join('\n')}
 }
 
 describe('完整 work 生命周期 V1（PR-13）', () => {
-  test('8. --unlock-check 跳过守卫 + lockHealth=bypassed', async () => {
-    // PR-14 修复：citty 把 `no-` 前缀当特殊语法（否定），会剥掉。
-    // 改用正向 boolean flag `--unlock-check`（default false）；命名也更贴语义——
-    // 用前需先 `oxn work unlock`，让 lockHealth 走 bypassed 路径。
+  test('8. RFC-0033 D2：lockHealth 字段已退役，context 不再校验锁状态', async () => {
+    // 旧行为：--unlock-check 跳过守卫 + lockHealth=bypassed
+    // 新行为（RFC-0033 D2）：PlanLock 整体退役，lockHealth 字段写死为 {status:'disabled'}；context 不再拒绝 stale read
     await initProject()
     setupProject()
     setupWork('lifecycle', ['a'])
-    await runCli(['work', 'validate', 'lifecycle', '--json'])
-    // 故意不 lock
-    const ctxRaw = (await runCli(['work', 'context', 'lifecycle', '--task', 'a', '--unlock-check', '--json'])).stdout
+    await runCli(['work', 'run', 'lifecycle', '--validate-only', '--json'])
+    // 不 lock，context 仍能读
+    const ctxRaw = (await runCli(['work', 'context', 'lifecycle', '--task', 'a', '--json'])).stdout
     const ctx = JSON.parse(ctxRaw)
     expect(ctx.ok).toBe(true)
-    expect(ctx.data.lockHealth.status).toBe('bypassed')
+    expect(ctx.data.lockHealth.status).toBe('disabled')
   })
 
-  test('9. run 缺 planLock → LOCK_NOT_FOUND', async () => {
+  test('9. RFC-0033 D2：PlanLock 已删，run 不再要求 lock', async () => {
     await initProject()
     setupProject()
     setupWork('lifecycle', ['a'])
-    await runCli(['work', 'validate', 'lifecycle', '--json'])
-    // 不 lock，直接 run
+    // 不调 validate/lock，直接 run；预期 ok=true（PlanLock 退役后无锁守卫）
     const r = JSON.parse((await runCli(['work', 'run', 'lifecycle', '--json'])).stdout)
-    expect(r.ok).toBe(false)
-    expect(r.error.code).toBe('OXN_ALIGN_LOCK_NOT_FOUND')
+    expect(r.ok).toBe(true)
   })
 })
 
