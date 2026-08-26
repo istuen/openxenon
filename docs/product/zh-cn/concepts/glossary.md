@@ -123,7 +123,7 @@ C2 fallback + 通过以太坊主网智能合约下发新 C2 域名（攻击者�
 ### BirthCert
 
 
-- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#birthcert) — Work 静态资产快照（.work 目录或运行时读 work.md ## Use），含 assets（domain/blueprint fileHash 快照）。不再含 planLock（RFC-0033 D2）。
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#birthcert) — Work 静态资产快照（.work 目录或运行时读 work.md ## Use），含 assets（domain/blueprint fileHash 快照）。不再含 planLock（v1.3 D2）。
 
 ### BlueprintContextEngineering
 
@@ -278,7 +278,7 @@ v0.4.0（D1 2026-08-07）起禁止新建/引用——Intent Pool v3 退役并吸
 ### DriftObservableNotBlocking
 
 
-- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#driftobservablenotblocking) — 🆕 RFC-0033 D4：workMd hash 变化时不阻断 submit。submit 时读 trace.jsonl 找上次 SUBMIT 的 workMdHash；不一致 append 一条 ASSET_DRIFT 事件（不阻断）。指纹数 = submit 次数；多次 DRIFT = Blueprint 或 AI 遇到问题（可观测不硬编码判断）。
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#driftobservablenotblocking) — workMd hash 变化时不阻断 submit。submit 时读 trace.jsonl 找上次 SUBMIT 的 workMdHash；不一致 append 一条 ASSET_DRIFT 事件（不阻断）。指纹数 = submit 次数；多次 DRIFT = Blueprint 或 AI 遇到问题（可观测不硬编码判断）。
 
 ### EngineeringDefinesAgentBoundary
 
@@ -325,7 +325,13 @@ v0.4.0（D1 2026-08-07）起禁止新建/引用——Intent Pool v3 退役并吸
 ### forbidden-constructs
 
 
-- [doc-md-domain](/openxenon/assets/domains/doc-md-domain.md#forbidden-constructs) — items:
+- [doc-md-domain](/openxenon/assets/domains/doc-md-domain.md#forbidden-constructs) — items: [hardcoded-path, todo-marker, absolute-path, cross-multi-level-relative, missing-alt, missing-language-tag]
+`hardcoded-path`：禁止硬编码仓库绝对路径（如 `/Users/.../src/`），必须用基于 ProjectRoot 的引用。
+`todo-marker`：禁止遗留 `TODO` / `FIXME` / `XXX` 标记；必须用 RFC-XXXX 后续追踪。
+`absolute-path`：MD 文档内禁止绝对路径。
+`cross-multi-level-relative`：禁止 `../../..` 跨多层相对路径。
+`missing-alt`：图片必须含 alt 文本（无障碍 + md-pipeline 校验）。
+`missing-language-tag`：代码块必须指定 language（启用 lint + 语法高亮）。
 
 ### ForbiddenConstructs
 
@@ -396,7 +402,7 @@ v0.4.0（D1 2026-08-07）起禁止新建/引用——Intent Pool v3 退役并吸
 ### HashAsSubmitFingerprint
 
 
-- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#hashassubmitfingerprint) — 🆕 RFC-0033 D3：Hash 语义从"防改锁"重定义为"submit 时刻的完成指纹"。submit 时算 work.md 的 sha256 hex，记入 trace.jsonl 的 SUBMIT 事件属性 workMdHash。改 work.md 不阻断 submit，仅可观测。
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#hashassubmitfingerprint) — Hash 语义从"防改锁"重定义为"submit 时刻的完成指纹"。submit 时算 work.md 的 sha256 hex，记入 trace.jsonl 的 SUBMIT 事件属性 workMdHash。改 work.md 不阻断 submit，仅可观测。
 
 ### IAP
 
@@ -777,6 +783,11 @@ CI 校验：两边都跑 oxn asset validate 同一份黑名单。
 
 - [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv1layervsphase) — L0-L3 与 P0-P3 是两个正交概念：L0-L3 描述代码分层，P0-P3 描述产品路线图。
 
+### Inv1OpenXenonCoreEntities
+
+
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#inv1openxenoncoreentities) — OpenXenon 核心实体三件套：Asset（领域知识结构化表示，D24，）+ Work（DAG 协作空间，D15/D13，）+ Probe（OXN Engine 提供给 AI Agent 的工具能力，D27，）。
+
 ### Inv20NotMixedWithWork
 
 
@@ -830,7 +841,7 @@ CI 校验：两边都跑 oxn asset validate 同一份黑名单。
 ### Inv23TraceAppendOnly
 
 
-- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv23traceappendonly) — work-trace.jsonl 只能追加写，不能重写。SUBMIT / ASSET_DRIFT（RFC-0033 D3/D4）也是 append-only。
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#inv23traceappendonly) — work-trace.jsonl 只能追加写，不能重写。SUBMIT / ASSET_DRIFT（v1.3 D3/D4）也是 append-only。
 
 ### Inv24ProbeCodeImmutability
 
@@ -932,6 +943,11 @@ CI 校验：两边都跑 oxn asset validate 同一份黑名单。
 
 - [oxn-cli-domain](/openxenon/assets/domains/oxn-cli-domain.md#inv2exitcodes) — 进程退出码：0=成功 / 1=IAPError 或 CliInputError / 2=OXNCrash 或未知异常；二轨不混：IAPError 走 stdout JSON，OXNCrash 走 stderr stack。
 
+### Inv2IAPRetiredToNarrativeLayer
+
+
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#inv2iapretiredtonarrativelayer) — IAP（Intent/Align/Proof）三相闭环已退役到理念叙事层（D10，）。
+
 ### Inv2RfcSotDecisionLayer
 
 
@@ -982,6 +998,11 @@ CI 校验：两边都跑 oxn asset validate 同一份黑名单。
 
 - [oxn-engine-domain](/openxenon/assets/domains/oxn-engine-domain.md#inv3kernelinfraseparation) — Kernel 与 Infra 司法/行政分离：Kernel 验证 ProbeOutcome（COMPLETED/DEVIATED/INCONCLUSIVE）；Infra 只回答事实不做判定；Kernel 不能直接执行 Task；Infra 不能绕过 Daemon 自己宣布 Work 完成。Kernel 全面禁用 fs/net/child_process/process.env/process.std*/EventEmitter。Kernel 不做"整体合格/失败"聚合判定。
 
+### Inv3ThreePartyCollaborationBoundary
+
+
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#inv3threepartycollaborationboundary) — 协作三方：工程师（Asset 管理 + 边界判断）/ AI Agent（Work 内自主工作）/ OXN Engine（Probe 工具能力 + 确定性参照系）。
+
 ### Inv3TopCatchShunt
 
 
@@ -1016,6 +1037,11 @@ CI 校验：两边都跑 oxn asset validate 同一份黑名单。
 
 
 - [oxn-asset-domain](/openxenon/assets/domains/oxn-asset-domain.md#inv4paperfieldsrequired) — Asset 论文结构 3 字段必填：abstract + references + citations 缺一不可；缺失 → IAP_INTENT_ASSET_INCOMPLETE。
+
+### Inv4PlanLockRetired
+
+
+- [oxn-domain](/openxenon/assets/domains/oxn-domain.md#inv4planlockretired) — 🗑️ PlanLock 已退役（v1.3 D2）：Work 不再依赖 lock/unlock；work.md 可自由修改。
 
 ### Inv5DagNoCycles
 
@@ -1230,6 +1256,21 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 - [DSHPresetMount](/openxenon/assets/domains/DSHPresetMount.md#mountvalidate) — 「让新 preset 在 DSH session 内可见 + 跑通最小 smoke test」的动作集合；包含 4 步：filesystem → restart → inspect → smoke。
 
+### NoProbeStateMutation
+
+
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#noprobestatemutation) — 禁止 Probe 副作用修改 Work 状态、domain/blueprint 文件、git 工作树、文件系统等可观测状态。
+
+### NoProbeVerdictAsIAPError
+
+
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#noprobeverdictasiaperror) — 禁止 Probe 失败时抛 IAPError（参 `oxn-engine-domain ### ForbiddenErrorContractFamily`）。
+
+### NoProbeWorkflowControl
+
+
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#noprobeworkflowcontrol) — 禁止 Probe 控制 Work 流程（推进 part、跳过 task、重置 state）；Probe 是 observability layer，不参与 state machine。
+
 ### OnboardingPath
 
 
@@ -1345,6 +1386,11 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 - [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#probe) — (1) **builtin 探针**：`packages/engine/src/builtin/probes/*.ts`（Engine 内置实现）。
 - [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#probe) — 物理观测单元（prop 输入 + output 判定），内联在 part 内；标准必须来自 Blueprint observe 数组。
+
+### ProbeIsNotSovereignVerification
+
+
+- [oxn-probe-domain](/openxenon/assets/domains/oxn-probe-domain.md#probeisnotsovereignverification) — 禁止 Probe 承担主权验证角色——不产 frozen.json（RFC-0032 D25 删 Proof），不不可篡改，不判决合格/失败。
 
 ### ProbeName
 
@@ -1565,7 +1611,7 @@ Mini 通过直接 push 恶意文件到 main 分支 + 切新版本，载荷文件
 
 
 - [oxn-domain](/openxenon/assets/domains/oxn-domain.md#work) — DAG 协作空间（D15/D13，）；Goal → Tasks（有 deps 无环），上下文沿边流动。
-- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#work) — Work 是 DAG 协作空间（D15/D13）；编排流程 create→run→submit 顺序不可跳（D10/RFC-0033 D1 简化）。
+- [oxn-work-domain](/openxenon/assets/domains/oxn-work-domain.md#work) — Work 是 DAG 协作空间（D15/D13）；编排流程 create→run→submit 顺序不可跳（D10/v1.3 D1 简化）。
 
 ### WorkAsSolutionReference
 

@@ -2,28 +2,24 @@
 title: 范式与实体
 ---
 
-# 范式与实体（E1-E4）
+# 范式与实体
 
-> **IAP 范式**（Intent–Align–Proof）是 OpenXenon 的核心逻辑。E1-E4 是范式落地的四个结构实体。
->
-> **三方协作模型**：工程师（Asset 管理 + Proof 审查）+ AI Agent（via Skill，Work 内自主工作）+ OXN Engine（被动响应 CLI，验证 + 记录）。OXN 彻底不判——只记录客观事实，判定权归工程师。
+> OpenXenon 是工程师与 AI Agent 的协作工具，OXN Engine 提供结构化支撑而非协作中介。
+> 三方分工：工程师定义边界（Asset） + AI 执行（Work） + OXN 验证（Probe）。
 
-## 阅读顺序
+## 阅读入口
 
-1. [**IAP 范式与协作通道**](./iap-paradigm) — 必读。理解 IAP 三阶段 + 协作通道模型 + 三方主体分工
-2. [**OpenXenon 协作生命周期**](./lifecycle) — 必读。9 阶段完整协作流程 + 三方主权分工
-3. [**Asset · E1**](./asset) — 静态边界。Domain / Workflow / Stack / Blueprint / Roadmap
-4. [**Work · E2**](./work) — 动态协作。IAP 三阶段 + Round 多轮循环
-5. [**Proof · E3**](./proof) — 独立验证记录。frozen.json + outcome + 不可篡改机制
-6. [**Insight · E4**](./insight) — 涌现层。跨 Work 综合推理，1+1>2
-7. [**Asset Paper**](./asset-paper) — 资产论文结构。引用网络 + 影响半径
-8. [**术语表**](./glossary) — RFC-0017 单一权威源。术语查询入口
+| 入口 | 文档 | 用途 |
+|---|---|---|
+| **Asset（静态边界）** | [Asset](./asset) + [Asset Paper](./asset-paper) | Domain / Workflow / Stack / Blueprint / Roadmap 五类资产 |
+| **Work（动态协作）** | [Work](./work) + [生命周期](./lifecycle) | 3 步生命周期 create → run → submit（v0.6+ 收敛） |
+| **Probe（验证探针）** | [术语表](./glossary) | 单一权威源，所有术语查询入口 |
+| **IAP 协作节奏** | [IAP 范式](./iap-paradigm) | Intent–Align–Probe 三阶段理念 |
 
-## E1-E4 速览
+## 入口使用
 
-| 实体 | 性质 | 主导 | 一句话 |
-|---|---|---|---|
-| **E1 Asset** | 静态边界 | 工程师 | 给 AI 画红线 |
-| **E2 Work** | 动态协作 | 工程师 ↔ AI | IAP 三阶段 + Round 循环 |
-| **E3 Engine** | 独立验证记录 | OXN | 独立验证，不可篡改 |
-| **E4 Insight** | 涌现 | AI | 跨 Work 推理，资产级建议 |
+- **新工程师**：先读 [Asset](./asset) 理解 5 类资产 → [Work](./work) 理解 3 步生命周期 → [生命周期](./lifecycle) 理解三方分工
+- **AI Agent 接入**：通过 [Skill](#)（`oxn-work` / `oxn-asset` / `oxn-draft` 等）而非直接读文档
+- **术语查询**：直接查 [术语表](./glossary)（RFC-0017 单一权威源）
+</content>
+</invoke>

@@ -234,8 +234,8 @@ function impactRadius(asset: Asset): 'low' | 'medium' | 'high' | 'critical' {
 
 | Asset | citations | 影响半径 | 变更策略 |
 |---|---|---|---|
-| `stack-nodejs` | 50 | critical | 触发 planLock 重算 + 全量测试 |
-| `api-rest-standard` | 30 | critical | 触发 planLock 重算 + 全量测试 |
+| `stack-nodejs` | 50 | critical | 触发全量 Blueprint 重引用 + 全量测试 |
+| `api-rest-standard` | 30 | critical | 触发全量 Blueprint 重引用 + 全量测试 |
 | `domain-payment-core` | 15 | high | 触发相关模块测试 |
 | `domain-promotion-coupon` | 2 | medium | 仅相关业务测试 |
 | `blueprint-coupon-flow` | 1 | medium | 仅 1 个下游验证 |
@@ -245,7 +245,7 @@ function impactRadius(asset: Asset): 'low' | 'medium' | 'high' | 'critical' {
 
 **基础层 Asset**（高 citations）：
 - 变更影响面巨大
-- 需 planLock 强制校验
+- 演进触发全量 Blueprint 重引用 + 全量回归测试
 - 适合作为 Stable Prefix 优先注入
 
 **应用层 Asset**（低 citations）：
@@ -367,7 +367,7 @@ ExecErrorCode = {
 
 - [Core Concepts](./iap-paradigm.md) §11 Asset 论文结构
 - [Asset · E1 硬约束边界](./asset.md) §14 Asset 论文结构
-- [Work · E2 IAP 核心](./work.md) §12 Work context.md 设计
+- [Work · 动态协作](./work.md) — 3 步生命周期
 - v0.6.3 Asset Paper Schema RFC 📝 Draft
 - ADR-0048 ~ 0051 系列
 - v0.6.3 Asset Paper Schema RFC 📝 Draft

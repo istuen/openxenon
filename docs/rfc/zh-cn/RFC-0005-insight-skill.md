@@ -5,7 +5,7 @@ theme: insight-skill
 status: Accepted
 date: 2026-07-26
 supersedes: []
-superseded-by: ~
+superseded-by: RFC-0032
 related:
   - ADR-0018: docs/adrs/0018-lsp-readonly-fork-atomic-cli-proxy.md
   - ADR-0074: docs/adrs/0074-insight-ingredient-not-reasoner.md
@@ -149,3 +149,16 @@ OXN 提供 3 个独立 Skill，分别承载 IAP（Intent / Align / Proof）三�
 - **影响范围段**：标注"Skill 三分发已在 SSOT 落地"。
 
 > 本段用于后续追加修正说明。核心决策自 RFC-0005 Accepted 起冻结。
+
+<!-- allow-version -->
+### v1.0.2 (2026-08-25) — Insight 整体系被 RFC-0032 取代
+<!-- /allow-version -->
+
+- **背景**：[RFC-0032 MVP 收敛 D25](./RFC-0032-mvp-convergence.md) 删除 Insight 整体系（代码 + Domain + Skill + 概念页）；本 RFC 是 Insight 的设计 RFC，整体系被删后作为历史归档保留（frontmatter `superseded-by: RFC-0032`）。
+- **保留部分**（仍生效）：
+  - **D5 Skill LSP 四原则**（readonly `@glo/` + Fork-to-Local + atomic-index + CLI Proxy + 降级启动）：与 Insight 删除无关，仍是 LSP 架构基线。
+  - **Skill 三分发 IAP 映射**（oxn-intent / oxn-align / oxn-proof）：与 Insight 删除无关，仍是当前 Skill 入口。
+- **被取代部分**：
+  - **D1-D4 Insight 架构边界**（OXN 提供原料 / AI 推理 / 分布式学习 / 双向闭环）：Insight 实体已删，相关决策无落地实体。
+  - **Insight → Draft 涌现机制**：原 RFC-0017 v0.3 与 RFC-0030 D1 提到的 Insight → Draft 路径失效（Insight 模块已删）。
+- **影响**：本 RFC 从"Insight 设计 + Skill 架构"双主题降级为"Skill 架构"单主题；Insight 相关引用未来需要时改引 RFC-0032 D25 删档记录。

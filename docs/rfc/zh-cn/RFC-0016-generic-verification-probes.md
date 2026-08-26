@@ -2,12 +2,12 @@
 entity: rfc
 id: RFC-0016
 theme: generic-verification-probes
-status: Draft
+status: Accepted
 date: 2026-08-01
+accepted-at: 2026-08-25
 supersedes: []
 superseded-by: ~
 related:
-  - RFC-0015: docs/rfc/zh-cn/RFC-0015-proof-system-overhaul.md
   - RFC-0002: docs/rfc/zh-cn/RFC-0002-kernel-l0.md
   - RFC-0011: docs/rfc/zh-cn/RFC-0011-builtin-asset-two-layer.md
   - RFC-0010: docs/rfc/zh-cn/RFC-0010-frozen-errata.md
@@ -19,9 +19,9 @@ landing-reason: declarative
 
 > **类型**：RFC（OpenXenon 规范）
 > **主题**：generic-verification-probes
-> **状态**：📝 Draft（评审中，未执行）
-> **来源**：从 [RFC-0015 §D6（已修订）](./RFC-0015-proof-system-overhaul.html#d6oxn-internal-生命周期-probe-补缺-4-个-prj-probe) 拆分。原 RFC-0015 §D6 设计了 4 个通用 builtin probe，本 RFC 承接该设计独立推进。
-> **批次**：Proof / Probe / Verdict 子系统能力扩展
+> **状态**：✅ Accepted（核心冻结，仅可追加 errata 段）
+> **来源**：原 RFC-0015 §D6 设计了 4 个通用 builtin probe，本 RFC 承接该设计独立推进。RFC-0015 整体系已于 v0.7 收敛归档（[RFC-0032 D25](../../openxenon/.archived/docs/rfcs/RFC-0015-proof-system-overhaul.md)），4 个 probe 已实现并保留。
+> **批次**：通用 builtin probe 能力扩展
 
 ## 摘要
 
@@ -32,21 +32,7 @@ landing-reason: declarative
 3. **json-path** —— JSONPath 值匹配预期（结构化 JSON 字段校验）
 4. **port-listening** —— 端口正在监听（验证服务已启动）
 
-**与 RFC-0015 的关系**：RFC-0015 原 §D6 设计了上述 4 个通用 probe，但后续被重写为 4 个 OXN-internal 生命周期 probe（[boundary-guard / stale-draft-check / asset-migrate-check / oxn-runtime-version](./RFC-0015-proof-system-overhaul.html#d6oxn-internal-生命周期-probe-补缺-4-个-prj-probe)）。**通用 probe 扩展拆分至本 RFC 独立推进**——避免 RFC-0015 "Proof 体系重整" 主题被通用能力扩展拖累。
-
 **scope 归属**：全部 4 个 probe 为 `@oxn/` universal builtin（与 [RFC-0011 内置 Asset 两层机制](./RFC-0011-builtin-asset-two-layer.html) 一致），任何 OXN 用户项目均可使用，**不需要回退到 `@prj/`**。
-
-**与 RFC-0015 D6 的 4 个 OXN-internal probe 互补**：
-
-| 维度 | RFC-0015 D6（OXN-internal） | 本 RFC-0016（通用） |
-|---|---|---|
-| 验证对象 | OXN 自身结构（work refs / drafts refs / archived assets / engine version） | 通用工程产物（文件 / 测试 / JSON / 网络） |
-| scope | `@prj/` | `@oxn/` |
-| 适用范围 | 仅 OXN 项目 | 任何项目 |
-| 数量 | 4（已实现，需修复） | 4（未实现，需新增） |
-| 主题归属 | "重整" —— OXN-internal probe 生命周期管理 | "扩展" —— 通用 builtin probe 能力补缺 |
-
-本 RFC 为 Draft，仅落盘设计，**不立即执行任何代码变更**。实施时机独立于 RFC-0015，可与 RFC-0015 任意阶段并行。
 
 ## 决策要点
 
@@ -106,7 +92,7 @@ landing-reason: declarative
 **为什么不 shell-exec**：shell-exec 只能跑 `bun test --coverage` 然后看 exit code（反映 pass/fail）——exit 0 不能区分 "lines 65%" 还是 "lines 95%"。需要主动解析 `coverage-summary.json` 的 JSON 值后做数值阈值比较。
 
 <!-- allow-version -->
-**多 runner 支持**：v0.6.2 仅支持 bun（OXN 内置默认）；v0.7.0 扩展 jest / vitest 时按 [RFC-0015 D5.1](./RFC-0015-proof-system-overhaul.html#d51-handler-读-stacktoolinfo-覆盖硬编码命令) 模式从 `StackToolInfo` 读取。
+**多 runner 支持**：v0.6.2 仅支持 bun（OXN 内置默认）；jest / vitest 适配留待后续 RFC（runner 命令从 StackToolInfo 读取，统一经 Provider 路由）。
 <!-- /allow-version -->
 
 ### D3：json-path（中等优先级）
@@ -168,8 +154,6 @@ landing-reason: declarative
 
 **为什么不 shell-exec**：`lsof -i` / `netstat -an` / `ss -ltn` 各平台命令不同，且需要 grep 解析；Node `net.connect` 跨平台且语义清晰（直接尝试连接）。
 
-**Taint 集成**：本 probe 应走 `HttpProvider` (`infra/providers/http-provider.ts`) 的 `network_timeout` flag 检测，与 [RFC-0015 D2.1](./RFC-0015-proof-system-overhaul.html#d21-全部-probe-handler-改经-provider-做-io) 一致——handler 持有 `HttpProvider` 引用，连接失败时填 `interference.flags: ['network_timeout']`。
-
 ## 实施
 
 ### 实施规模
@@ -198,29 +182,20 @@ Phase 1 (D1 + D3): file-hash + json-path    — 低风险，1 周
 
 Phase 2 (D4): port-listening                — 中风险，1 周
   ├─ D4.1 port-listening handler + verdict + catalog entry + 单测
-  └─ D4.2 Taint 集成（HttpProvider network_timeout flag）
-  
-  风险：中（涉及网络 IO + Provider 集成）
+
+  风险：中（涉及网络 IO）
   依赖：Phase 1 完成后评审（验证 catalog 3-way 一致性检查机制）
 
 Phase 3 (D2): test-coverage                 — 中-高风险，2 周
   ├─ D2.1 test-coverage handler + verdict + catalog entry + 单测
-  ├─ D2.2 多 runner 适配（bun → jest / vitest，按 RFC-0015 D5.1 模式）
+  ├─ D2.2 多 runner 适配（bun → jest / vitest，从 StackToolInfo 读取）
   └─ D2.3 e2e 集成（与现有 test-pass probe 对照）
-  
+
   风险：中-高（依赖 coverage 工具链 + 跨 runner 兼容性）
   依赖：Phase 2 完成后（验证 Handler-Provider 接线模式）
 ```
 
-**总计**：~4 周，可与 RFC-0015 任意阶段并行（无共享代码 / 配置依赖）。
-
-### 与 RFC-0015 D6 的代码隔离
-
-| 风险 | 缓解 |
-|---|---|
-| 4 个新 probe 加入 `builtin: 'oxn'` 而非 `'prj'` 误判 | 这次全部 4 个都是真正通用 probe（适用任何项目），与 OXN-internal 无关，无 scope 错位可能 |
-| 与 RFC-0015 D6 4 个 probe 在 catalog 顺序冲突 | catalog entries 按 `semanticName` 字母序排列，新加 4 个插在合适位置无冲突 |
-| 与 D4.2 "8 个 OXN-internal 移 @prj/"实施期重叠 | 本 RFC Phase 1 推迟至 RFC-0015 D4.2 完成后启动（避免 catalog 同步性窗口期冲突） |
+**总计**：~4 周。
 
 ### 必跑验证（[RFC-0010 D5](./RFC-0010-frozen-errata.html)）
 
@@ -250,9 +225,6 @@ bun scripts/check-doc-boundary.ts
 
 ### 不在本 RFC 范围
 
-- ❌ OXN-internal probe 迁移（RFC-0015 D4.2）
-- ❌ Taint 接入（RFC-0015 D2）
-- ❌ 工具绑定可配置化（RFC-0015 D5）
 - ❌ 完整 RFC 9535 JSONPath 语法（D3 仅采用简化子集）
 <!-- allow-version -->
 - ❌ test-coverage 多 runner 完整适配（D2 Phase 2 仅 bun，jest/vitest 留 v0.7.0）
@@ -269,7 +241,6 @@ bun scripts/check-doc-boundary.ts
 
 ## 相关决策
 
-- [RFC-0015 Proof 体系重整](./RFC-0015-proof-system-overhaul.md) — D4.2 OXN-internal probe 移 @prj/ + D5 工具绑定可配置化（catalog 3-way 一致性机制基础）
 - [RFC-0002 Kernel/L0 边界](./RFC-0002-kernel-l0.md) — L0 兰姆达真空约束（本 RFC D1/D3 verdict 函数边界依据）
 - [RFC-0011 内置 Asset 两层机制](./RFC-0011-builtin-asset-two-layer.md) — `@oxn/` universal builtin + `@prj/` project override 解析顺序
 - [RFC-0010 RFC frozen+errata 演进策略](./RFC-0010-frozen-errata.md) — D5 每次变更必跑 6 项验证
@@ -277,7 +248,7 @@ bun scripts/check-doc-boundary.ts
 
 ## Errata
 
-> 本段用于后续追加修正说明。核心决策自 RFC-0016 Draft 起评审，尚未冻结。
+> 本段用于后续追加修正说明。核心决策自 RFC-0016 Accepted 起冻结。
 
 ### 2026-08-01：核心代码落地完成
 

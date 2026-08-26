@@ -5,7 +5,7 @@ theme: terminology-two-tier-ssot
 status: Draft
 date: 2026-08-01
 supersedes: []
-superseded-by: ~
+superseded-by: AGENTS.md#裁决规则
 related:
   - RFC-0009: docs/rfc/zh-cn/RFC-0009-doc-three-modalities.md
   - RFC-0014: docs/rfc/zh-cn/RFC-0014-asset-injection-mechanism.md
@@ -331,3 +331,18 @@ name: scripts/sync-domain-glossary.ts
 - **D3 配套**：ADR 不再独立机制；87 ADR 已迁移或归档（详见 `.openxenon/.archived/docs/adrs/`）；仅 ADR-0099 保留为机制定义根（per RFC-0030 D1）
 - **D7 sync 脚本不变**：仍只读 Domain，不读 RFC；改动仅影响叙事层，不影响数据流
 - **影响**：术语双层 SSOT 升级为三层；RFC-0029 D1 Inv2RfcSotDecisionLayer 修订 + RFC-0030 D1 ADR 物理归档共同构成 v0.7.0 文档架构完整闭环
+
+<!-- allow-version -->
+### v0.4 (2026-08-25) — 裁决规则被 AGENTS.md §裁决规则 2 档简化取代
+<!-- /allow-version -->
+
+- **背景**：RFC-0018 D1 把 5 级裁决矩阵（Meta > Definition > Behavior > Reference > Note）简化为 2 档（Domain SSOT + AGENTS.md 兜底）；RFC-0028 D1 整体退役 CONTEXT-MAP.md，由 [AGENTS.md](../../../../AGENTS.md#裁决规则v7-简化--2-档) §裁决规则（v0.7+ 简化 · 2 档）承载。RFC-0017 D6/D7 的"check-doc-boundary.ts 守门 + E_GLOSSARY_* 错误码"作为工程实现保留，不动。
+- **superseded-by = AGENTS.md**（frontmatter 已加）：本 RFC 的"裁决规则"部分被 AGENTS.md §裁决规则取代（非 RFC，因 2 档简化在 Meta 层 AGENTS.md 而非新立 RFC）。
+- **本 RFC 保留部分**：
+  - **Domain 内部 SSOT**（保留）：`.openxenon/assets/domains/*.md` 仍是 OXN 现行约束的权威源。
+  - **glossary 外部 SSOT**（保留）：`docs/product/zh-cn/concepts/glossary.md` 仍是面向用户的术语词典。
+  - **单向同步 Domain → glossary**（保留）：`scripts/sync-domain-glossary.ts` 行为契约（D7）不变。
+  - **概念页去除 term 定义段**（保留）：`concepts/*.md` 仍以 narrative + glossary 链接形式承载。
+- **本 RFC 被取代部分**：
+  - **D6/D7 "裁决规则"**：原"双层 SSOT + check-doc-boundary.ts 守门 + E_GLOSSARY_* 错误码"作为裁决机制 — 现由 AGENTS.md §裁决规则 2 档简化（Domain SSOT + AGENTS.md 兜底）取代；守门脚本与错误码保留为工程实现细节，不构成裁决机制。
+- **影响**：本 RFC 从"可执行的裁决规则 RFC"降级为"术语承载架构 RFC"——D6/D7 守门细节继续生效，但不再作为裁决权威源。
